@@ -1,7 +1,6 @@
 import { AdminFormControlButton, AdminFormShell } from '../../../components/admin-form-controls';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
-import { AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
+import { AdminDisclosure, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
@@ -114,17 +113,31 @@ export function BookingEvidenceSections({
   decisionNotePresets,
   bookingEvidenceBundleRows,
 }: BookingEvidenceSectionsProps) {
+  const attentionGuardrails = decisionEvidenceGuardrails.filter((row) => row.tone !== 'pill-success');
+  const advancedRecordCount =
+    evidencePacket.records.length +
+    chatEvidenceDecisionBoard.rows.length +
+    manualDecisionReadiness.length +
+    bookingEvidenceBundleRows.length;
+
   return (
-    <>
-      <AdminSection
-        actions={<StatusBadge tone="info">{decisionEvidenceGuardrails.length} guardrail row(s)</StatusBadge>}
-        className="admin-mb-16"
-        description="Required, supporting, and finance records for admin-only outcome work. Use this before cancellation, no-show, refund, release, cash settlement, or completed-service closeout."
-        id="booking-decision-evidence-guardrails"
-        title="Decision evidence guardrails"
-      >
+    <AdminSection
+      actions={
+        <div className="actions">
+          <StatusBadgeFromPillClass pillClass={evidencePacket.tone}>{evidencePacket.status}</StatusBadgeFromPillClass>
+          <AdminTextLink href="/bookings/post-match-cancellations?view=manual-decision">Open cancellation queue</AdminTextLink>
+        </div>
+      }
+      className="admin-mb-16"
+      description="Decision completeness, retained chat, location, payment, alerts, and operator notes in one factual view."
+      id="booking-evidence-summary"
+      title="Evidence summary"
+    >
+      <p className="muted admin-mt-8">{evidencePacket.summary}</p>
+      <EvidenceMetricSummary metrics={evidencePacket.metrics} />
+      {attentionGuardrails.length > 0 ? (
         <div className="booking-settlement-ledger booking-evidence-ledger admin-mt-12" aria-label="Decision evidence guardrail rows">
-          {decisionEvidenceGuardrails.map((row) => (
+          {attentionGuardrails.map((row) => (
             <div className="booking-settlement-ledger-row is-evidence-record" key={row.id}>
               <div>
                 <span className="booking-settlement-ledger-label">{row.title}</span>
@@ -135,121 +148,79 @@ export function BookingEvidenceSections({
                 <DecisionGuardrailEvidence row={row} />
               </p>
               <p>{row.nextStep}</p>
-              <AdminTextLink href={row.href}>
-                Open
-              </AdminTextLink>
+              <AdminTextLink href={row.href}>Open {row.title.replace(/^(Required|Supporting|Finance|Operations):\s*/i, '')}</AdminTextLink>
             </div>
           ))}
         </div>
-      </AdminSection>
-
-      <AdminSection
-        actions={
-          <StatusBadgeFromPillClass pillClass={evidencePacket.tone}>
-            {evidencePacket.status}
-          </StatusBadgeFromPillClass>
-        }
-        className="admin-mb-16"
-        description="Cancellation, no-show, refund, and settlement decisions should use retained booking evidence. This packet groups chat, location, payment, alerts, notes, and audit records as factual decision context for the Customer and Partner."
-        id="booking-evidence-packet"
-        title="Evidence packet for admin decision"
-      >
-        <p className="muted admin-mt-8">
-          {evidencePacket.summary}
+      ) : (
+        <p className="admin-inline-notice is-success admin-mt-12" role="status">
+          No evidence gaps are currently flagged.
         </p>
-        <EvidenceMetricSummary metrics={evidencePacket.metrics} />
-        <div className="booking-settlement-ledger booking-evidence-ledger admin-mt-12" aria-label="Evidence packet records">
-          {evidencePacket.records.map((record) => (
-            <div className="booking-settlement-ledger-row is-evidence-record" id={record.id} key={record.id}>
-              <span className="booking-settlement-ledger-label">{record.label}</span>
-              <div>
-                <strong>{record.title}</strong>
-                <p className="muted">{record.detail}</p>
-              </div>
-              <p>
-                <EvidenceRecordEvidence record={record} />
-              </p>
-              <StatusBadge tone="neutral">Record</StatusBadge>
-              <AdminTextLink href={record.href}>
-                Open
-              </AdminTextLink>
-            </div>
-          ))}
-        </div>
-      </AdminSection>
+      )}
 
-      <AdminSection
-        actions={
-          <StatusBadgeFromPillClass pillClass={chatEvidenceDecisionBoard.tone}>
-            {chatEvidenceDecisionBoard.status}
-          </StatusBadgeFromPillClass>
-        }
-        className="admin-mb-16"
-        description="Retained chat evidence is the first place operators should look before cancellation, no-show, refund, release, or completed-work closeout. This board keeps the view limited to factual records and operator context."
-        id="booking-chat-evidence-decision-board"
-        title="Chat evidence decision board"
-      >
-        <p className="muted admin-mt-8">
-          {chatEvidenceDecisionBoard.summary}
-        </p>
-        <EvidenceMetricSummary metrics={chatEvidenceDecisionBoard.metrics} />
-        <div className="booking-settlement-ledger booking-evidence-ledger admin-mt-12" aria-label="Chat evidence decision rows">
-          {chatEvidenceDecisionBoard.rows.map((row) => (
-            <div className="booking-settlement-ledger-row is-evidence-record" key={row.lane}>
-              <div>
-                <span className="booking-settlement-ledger-label">{row.lane}</span>
-                <p className="muted">{row.scope}</p>
+      <AdminDisclosure className="booking-detail-section-disclosure admin-mt-12" id="booking-evidence-advanced-records">
+        <summary className="booking-detail-section-summary">
+          <span className="booking-detail-section-summary-copy">
+            <strong>Advanced records</strong>
+            <small>Full evidence packet, chat rows, decision lanes, note presets, and retained bundle records.</small>
+          </span>
+          <span className="booking-detail-section-summary-meta">{advancedRecordCount} records</span>
+        </summary>
+        <div className="booking-detail-section-disclosure-body">
+          <span aria-hidden="true" id="booking-decision-evidence-guardrails" />
+          <span aria-hidden="true" id="booking-evidence-packet" />
+          <div className="booking-settlement-ledger booking-evidence-ledger" aria-label="Evidence packet records">
+            {evidencePacket.records.map((record) => (
+              <div className="booking-settlement-ledger-row is-evidence-record" id={record.id} key={record.id}>
+                <span className="booking-settlement-ledger-label">{record.label}</span>
+                <div>
+                  <strong>{record.title}</strong>
+                  <p className="muted">{record.detail}</p>
+                </div>
+                <p><EvidenceRecordEvidence record={record} /></p>
+                <StatusBadge tone="neutral">Record</StatusBadge>
+                <AdminTextLink href={record.href}>Open {record.label.toLowerCase()} record</AdminTextLink>
               </div>
-              <StatusBadgeFromPillClass pillClass={row.tone}>{row.state}</StatusBadgeFromPillClass>
-              <p>{row.record}</p>
-              <p>{row.operatorUse}</p>
-              <AdminTextLink href={row.href}>
-                Open
-              </AdminTextLink>
-            </div>
-          ))}
-        </div>
-      </AdminSection>
-
-      <AdminSection
-        actions={
-          <div className="actions">
-            <AdminTextLink href="/bookings?view=manual-decision">
-              Open manual queue
-            </AdminTextLink>
-            <StatusBadge tone="info">{manualDecisionReadiness.length} decision lane(s)</StatusBadge>
+            ))}
           </div>
-        }
-        className="admin-mb-16"
-        description="Operations-only decision board for cancellation, no-show, refund/release, cash fee settlement, and completed closeout. It keeps the decision factual and evidence-based."
-        id="manual-decision-board"
-        title="Manual outcome decision board"
-      >
-        <div className="booking-settlement-ledger booking-evidence-ledger admin-mt-12" aria-label="Manual decision rows">
-          {manualDecisionReadiness.map((row) => (
-            <div className="booking-settlement-ledger-row is-evidence-record" key={row.lane}>
-              <div>
-                <span className="booking-settlement-ledger-label">{row.lane}</span>
-                <p className="muted">{row.scope}</p>
+
+          <span aria-hidden="true" id="booking-chat-evidence-decision-board" />
+          <p className="muted admin-mt-12">{chatEvidenceDecisionBoard.summary}</p>
+          <EvidenceMetricSummary metrics={chatEvidenceDecisionBoard.metrics} />
+          <div className="booking-settlement-ledger booking-evidence-ledger admin-mt-12" aria-label="Chat evidence records">
+            {chatEvidenceDecisionBoard.rows.map((row) => (
+              <div className="booking-settlement-ledger-row is-evidence-record" key={row.lane}>
+                <div>
+                  <span className="booking-settlement-ledger-label">{row.lane}</span>
+                  <p className="muted">{row.scope}</p>
+                </div>
+                <StatusBadgeFromPillClass pillClass={row.tone}>{row.state}</StatusBadgeFromPillClass>
+                <p>{row.record}</p>
+                <p>{row.operatorUse}</p>
+                <AdminTextLink href={row.href}>Open {row.lane.toLowerCase()}</AdminTextLink>
               </div>
-              <StatusBadgeFromPillClass pillClass={row.tone}>{row.status}</StatusBadgeFromPillClass>
-              <p>{row.evidence}</p>
-              <p>{row.operatorUse}</p>
-              <AdminTextLink href={row.href}>
-                Open
-              </AdminTextLink>
-            </div>
-          ))}
-        </div>
-        <AdminNotePanel className="admin-mt-14">
-          <AdminSectionHeader
-            actions={<StatusBadge tone="info">{decisionNotePresets.length} preset(s)</StatusBadge>}
-            description="Fast factual notes for missing evidence, payment review, cash fee settlement, and closeout handling. Use these before changing booking outcomes."
-            title="Decision note presets"
-          />
-          <div className="booking-decision-preset-list admin-mt-12">
+            ))}
+          </div>
+
+          <span aria-hidden="true" id="manual-decision-board" />
+          <div className="booking-settlement-ledger booking-evidence-ledger admin-mt-12" aria-label="Manual decision records">
+            {manualDecisionReadiness.map((row) => (
+              <div className="booking-settlement-ledger-row is-evidence-record" key={row.lane}>
+                <div>
+                  <span className="booking-settlement-ledger-label">{row.lane}</span>
+                  <p className="muted">{row.scope}</p>
+                </div>
+                <StatusBadgeFromPillClass pillClass={row.tone}>{row.status}</StatusBadgeFromPillClass>
+                <p>{row.evidence}</p>
+                <p>{row.operatorUse}</p>
+                <AdminTextLink href={row.href}>Open {row.lane.toLowerCase()}</AdminTextLink>
+              </div>
+            ))}
+          </div>
+
+          <div className="booking-decision-preset-list admin-mt-12" aria-label="Decision note presets">
             {decisionNotePresets.map((preset) => (
-              <AdminCard className="booking-decision-preset-card" key={preset.id}>
+              <div className="booking-settlement-ledger-row is-evidence-record" key={preset.id}>
                 <StatusBadge tone="neutral">{preset.label}</StatusBadge>
                 <div>
                   <strong>{preset.title}</strong>
@@ -260,39 +231,28 @@ export function BookingEvidenceSections({
                   <input type="hidden" name="preset" value={preset.preset} />
                   <AdminFormControlButton type="submit">Add note</AdminFormControlButton>
                 </AdminFormShell>
-              </AdminCard>
+              </div>
             ))}
           </div>
-        </AdminNotePanel>
-      </AdminSection>
 
-      <AdminSection
-        actions={<StatusBadge tone="info">{bookingEvidenceBundleRows.length} evidence lane(s)</StatusBadge>}
-        className="admin-mb-16"
-        description="Single booking command view that ties the customer, Partner, confirmed service address, chat record, payment, earning, wallet, location, alerts, and operator notes into one factual bundle."
-        id="booking-full-evidence-bundle"
-        title="Booking full evidence bundle"
-      >
-        <div className="booking-settlement-ledger booking-evidence-ledger admin-mt-12" aria-label="Booking full evidence bundle rows">
-          {bookingEvidenceBundleRows.map((row) => (
-            <div className="booking-settlement-ledger-row is-evidence-record" key={row.lane}>
-              <div>
-                <span className="booking-settlement-ledger-label">{row.lane}</span>
-                <p className="muted">{row.recordLabel}</p>
+          <span aria-hidden="true" id="booking-full-evidence-bundle" />
+          <div className="booking-settlement-ledger booking-evidence-ledger admin-mt-12" aria-label="Booking evidence bundle records">
+            {bookingEvidenceBundleRows.map((row) => (
+              <div className="booking-settlement-ledger-row is-evidence-record" key={row.lane}>
+                <div>
+                  <span className="booking-settlement-ledger-label">{row.lane}</span>
+                  <p className="muted">{row.recordLabel}</p>
+                </div>
+                <StatusBadgeFromPillClass pillClass={row.tone}>{row.status}</StatusBadgeFromPillClass>
+                <p><EvidenceBundleRowEvidence row={row} /></p>
+                <p>{row.operatorUse}</p>
+                <AdminTextLink href={row.href}>Open {row.lane.toLowerCase()}</AdminTextLink>
               </div>
-              <StatusBadgeFromPillClass pillClass={row.tone}>{row.status}</StatusBadgeFromPillClass>
-              <p>
-                <EvidenceBundleRowEvidence row={row} />
-              </p>
-              <p>{row.operatorUse}</p>
-              <AdminTextLink href={row.href}>
-                Open
-              </AdminTextLink>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </AdminSection>
-    </>
+      </AdminDisclosure>
+    </AdminSection>
   );
 }
 
@@ -300,6 +260,7 @@ function EvidenceMetricSummary({ metrics }: { metrics: EvidenceMetric[] }) {
   return (
     <AdminTraceSummary
       className="admin-mt-12"
+      inferScope={false}
       metrics={metrics.map((metric) => ({
         detail: metric.helper,
         label: metric.label,

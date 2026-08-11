@@ -1,19 +1,18 @@
 import type { AdminNotification } from '../../lib/admin-api';
-import { formatDateTime, shortId } from '../../lib/admin-format';
+import { shortId } from '../../lib/admin-format';
 import {
   isStaleNotificationPushDeviceDelivery,
-  notificationPushDeviceFreshnessLabel,
 } from '../../lib/admin-notification-push-device';
+import { notificationDeliveryDisposition } from '../../lib/admin-notification-delivery';
 import type { StatusBadgeTone } from '../../components/status-badge';
 import {
   notificationDeliveryFailureCode,
-  notificationDeliveryRecoveryHint,
 } from './notification-delivery-response';
 import { notificationReviewRunbook } from './notification-review-runbook';
+import { readNotificationRetryDecision } from './notification-retry-decision';
 
 export type NotificationConfirmationAction =
   | 'assign-finance-review'
-  | 'enable-device'
   | 'retry'
   | 'review-legacy';
 
@@ -49,14 +48,30 @@ export type NotificationActionConfirmation = {
 };
 
 export type NotificationActionReturnContext = {
+  readonly age?: string;
   readonly booking?: string;
+  readonly canRetry?: boolean;
+  readonly channel?: string;
+  readonly dataScope?: string;
   readonly financeAge?: string;
   readonly financeAssigneeAdminId?: string;
   readonly financeAssigneeOptions?: readonly { readonly label: string; readonly value: string }[];
   readonly financeOwner?: string;
+  readonly failureCode?: string;
+  readonly failureProvider?: string;
   readonly incidentState?: string;
+  readonly issue?: string;
+  readonly mode?: string;
+  readonly page?: string;
+  readonly q?: string;
   readonly range?: string;
+  readonly recipientRole?: string;
   readonly review?: string;
+  readonly sla?: string;
+  readonly sort?: string;
+  readonly scope?: string;
+  readonly status?: string;
+  readonly type?: string;
   readonly user?: string;
 };
 
@@ -73,7 +88,15 @@ type RetryConfirmationCopy = {
   readonly tone: StatusBadgeTone;
 };
 
-const FCM_SETUP_REVIEW_KEYS = new Set(['disabled-device', 'failed', 'fcm', 'needs-retry', 'stale-device']);
+const FCM_SETUP_REVIEW_KEYS = new Set([
+  'delivery-gap',
+  'disabled-device',
+  'failed',
+  'fcm',
+  'needs-retry',
+  'no-push-path',
+  'stale-device',
+]);
 const BACKGROUND_JOB_EVIDENCE_QUEUES = new Set([
   'bank-statement-escalation',
   'booking-timeouts',
@@ -95,17 +118,6 @@ export function retryNotificationConfirmHref(
     ...notificationReturnQueryEntries(context),
     ['confirm', 'retry'],
     ['notificationId', notificationId],
-  ]);
-}
-
-export function enablePushDeviceConfirmHref(
-  pushDeviceId: string,
-  context: NotificationActionReturnContext = {},
-) {
-  return notificationHref([
-    ...notificationReturnQueryEntries(context),
-    ['confirm', 'enable-device'],
-    ['pushDeviceId', pushDeviceId],
   ]);
 }
 
@@ -151,7 +163,6 @@ export function notificationBackgroundJobEvidenceHref(notification: AdminNotific
 export function readNotificationConfirmationAction(value: string): NotificationConfirmationAction | null {
   if (
     value === 'assign-finance-review' ||
-    value === 'enable-device' ||
     value === 'retry' ||
     value === 'review-legacy'
   ) {
@@ -170,6 +181,7 @@ export function buildNotificationActionConfirmation(
   }
 
   if (action === 'retry') {
+    if (!values.canRetry) return null;
     return buildRetryConfirmation(notifications, values);
   }
 
@@ -181,7 +193,7 @@ export function buildNotificationActionConfirmation(
     return buildLegacyReviewConfirmation(notifications, values);
   }
 
-  return buildEnableDeviceConfirmation(notifications, values);
+  return null;
 }
 
 function buildFinanceReviewAssignmentConfirmation(
@@ -331,16 +343,30 @@ function buildRetryConfirmation(
     return null;
   }
 
+  const disposition = notificationDeliveryDisposition(notification);
+  if (disposition === 'delivered') {
+    return null;
+  }
+
+  const decision = readNotificationRetryDecision(notification);
+  if (decision.state !== 'allowed') return null;
   const evidence = notificationRetryEvidence(notification);
+  if (evidence.eligibleCount === 0) return null;
   const latestDelivery = latestNotificationDelivery(notification);
   const reviewGuidance = notificationReviewGuidanceText(values.review);
-  const copy = retryConfirmationCopy(notification, latestDelivery, evidence, reviewGuidance);
+  const copy = retryConfirmationCopy(
+    notification,
+    latestDelivery,
+    `${decision.reason}${decision.evidence ? ` ${decision.evidence}` : ''} ${evidence.description}`,
+    reviewGuidance,
+    disposition,
+  );
   const returnHref = notificationReturnHref(values);
 
   return {
     action: 'retry',
     cancelHref: returnHref,
-    confirmLabel: copy.confirmLabel,
+    confirmLabel: 'Retry unresolved paths',
     description: copy.description,
     hiddenInputs: [
       { name: 'notificationId', value: notification.id },
@@ -348,15 +374,23 @@ function buildRetryConfirmation(
     ],
     id: notification.id,
     supportingLinks: [
+      ...notificationSourceSupportingLinks(notification),
       {
         description: 'Open retry, delivery, and device recovery audit events before resending.',
         href: notificationAuditTrailHref(notification.id),
         label: 'Audit trail',
       },
-      ...notificationRetryDeviceSupportingLinks(latestDelivery),
       ...notificationReviewSupportingLinks(values.review),
     ],
-    title: `Retry notification ${shortId(notification.id)}?`,
+    textInputs: [{
+      label: 'Retry reason',
+      maxLength: 500,
+      minLength: 12,
+      name: 'reason',
+      placeholder: 'Why are the unresolved delivery paths safe to retry?',
+      required: true,
+    }],
+    title: `Retry unresolved paths for ${shortId(notification.id)}?`,
     tone: copy.tone,
   };
 }
@@ -366,8 +400,17 @@ function retryConfirmationCopy(
   latestDelivery: NotificationDelivery | undefined,
   evidence: string,
   reviewGuidance: string,
+  disposition: ReturnType<typeof notificationDeliveryDisposition>,
 ): RetryConfirmationCopy {
   const id = shortId(notification.id);
+
+  if (disposition === 'partial') {
+    return {
+      confirmLabel: 'Retry failed devices',
+      description: `Notification ${id} has both successful and failed device paths. Retry keeps successful devices excluded and only attempts unresolved device paths. ${evidence}${reviewGuidance}`,
+      tone: 'warning',
+    };
+  }
 
   if (!latestDelivery) {
     return {
@@ -409,57 +452,10 @@ function retryConfirmationCopy(
     };
   }
 
-  if (latestDelivery.status === 'SENT') {
-    return {
-      confirmLabel: 'Retry anyway',
-      description: `Notification ${id} already has a successful latest delivery. Retry only if support confirmed the user still missed it. ${evidence}${reviewGuidance}`,
-      tone: 'info',
-    };
-  }
-
   return {
     confirmLabel: 'Retry notification',
     description: `Retry notification ${id} after reviewing duplicate-send risk. ${evidence}${reviewGuidance}`,
     tone: 'warning',
-  };
-}
-
-function buildEnableDeviceConfirmation(
-  notifications: readonly AdminNotification[],
-  values: NotificationConfirmationValues,
-): NotificationActionConfirmation | null {
-  const { pushDeviceId } = values;
-  const match = findNotificationPushDevice(notifications, pushDeviceId);
-  if (!match) {
-    return null;
-  }
-  const reviewGuidance = notificationReviewGuidanceText(values.review);
-  const returnHref = notificationReturnHref(values);
-
-  return {
-    action: 'enable-device',
-    cancelHref: returnHref,
-    confirmLabel: 'Re-enable device',
-    description: `Re-enable ${match.platform} push device ${shortId(
-      match.pushDeviceId,
-    )} only after a fresh token or operator confirmation exists. Latest evidence: ${deliveryEvidenceSummary(
-      match.delivery,
-    )}.${reviewGuidance}`,
-    hiddenInputs: [
-      { name: 'pushDeviceId', value: match.pushDeviceId },
-      { name: 'returnHref', value: returnHref },
-    ],
-    id: match.pushDeviceId,
-    supportingLinks: [
-      {
-        description: 'Open device recovery audit events before re-enabling push delivery.',
-        href: notificationAuditTrailHref(match.pushDeviceId),
-        label: 'Audit trail',
-      },
-      ...notificationReviewSupportingLinks(values.review),
-    ],
-    title: `Re-enable device ${shortId(match.pushDeviceId)}?`,
-    tone: 'danger',
   };
 }
 
@@ -469,11 +465,26 @@ function notificationReturnHref(context: NotificationActionReturnContext) {
 
 function notificationReturnQueryEntries(context: NotificationActionReturnContext) {
   return [
+    ['mode', context.mode],
+    ['issue', context.issue],
+    ['status', context.status],
+    ['recipientRole', context.recipientRole],
+    ['channel', context.channel],
+    ['dataScope', context.dataScope],
+    ['q', context.q],
+    ['type', context.type],
     ['range', context.range],
     ['review', context.review],
+    ['age', context.age],
+    ['sla', context.sla],
+    ['sort', context.sort],
+    ['page', context.page],
     ['financeAge', context.financeAge],
     ['financeOwner', context.financeOwner],
     ['incidentState', context.incidentState],
+    ['failureProvider', context.failureProvider],
+    ['failureCode', context.failureCode],
+    ['scope', context.scope],
     ['booking', context.booking],
     ['user', context.user],
   ] as const;
@@ -525,25 +536,6 @@ function financeReviewAuditTrailHref(sourceId: string) {
   return `/audit-log?q=${encodeURIComponent(sourceId)}&range=all`;
 }
 
-function notificationRetryDeviceSupportingLinks(latestDelivery: NotificationDelivery | undefined) {
-  const pushDeviceId = latestDelivery?.pushDevice?.id;
-  if (!pushDeviceId || !notificationRetryNeedsDeviceEvidence(latestDelivery)) {
-    return [];
-  }
-
-  return [
-    {
-      description: 'Open push device recovery and token change audit events before retrying.',
-      href: notificationAuditTrailHref(pushDeviceId),
-      label: 'Device audit',
-    },
-  ];
-}
-
-function notificationRetryNeedsDeviceEvidence(latestDelivery: NotificationDelivery) {
-  return latestDelivery.pushDevice?.enabled === false || isStaleNotificationPushDeviceDelivery(latestDelivery);
-}
-
 function notificationReviewGuidanceText(review: string | undefined) {
   const runbook = notificationReviewRunbook(review ?? '');
   return runbook ? ` Runbook: ${runbook.title}. ${runbook.primaryAction}` : '';
@@ -557,50 +549,86 @@ function notificationReviewHasFcmSetupLink(review: string | undefined) {
   return Boolean(review && FCM_SETUP_REVIEW_KEYS.has(review));
 }
 
-function findNotificationPushDevice(notifications: readonly AdminNotification[], pushDeviceId: string) {
-  for (const notification of notifications) {
-    for (const delivery of notificationDeliveries(notification)) {
-      if (delivery.pushDevice?.id === pushDeviceId) {
-        return {
-          delivery,
-          platform: delivery.pushDevice.platform ?? 'unknown',
-          pushDeviceId,
-        };
-      }
-    }
-  }
-  return null;
+export function notificationRetryEvidence(notification: AdminNotification) {
+  const latestByPath = latestNotificationDeliveryPaths(notification);
+  const acceptedDeviceIds = new Set(
+    newestNotificationDeliveries(notification)
+      .filter((delivery) => delivery.status === 'SENT')
+      .flatMap((delivery) => {
+        const deviceId = delivery.pushDevice?.id ?? delivery.pushDeviceId;
+        return deviceId ? [deviceId] : [];
+      }),
+  );
+  const eligibleDevices = (notification.user?.pushDevices ?? [])
+    .filter(
+      (device) =>
+        device.enabled === true && notificationDeviceMatchesTargetRole(notification, device.role),
+    )
+    .filter((device) => typeof device.id === 'string' && !acceptedDeviceIds.has(device.id));
+  const failed = latestByPath.filter((delivery) => delivery.status === 'FAILED').length;
+  const accepted = latestByPath.filter((delivery) => delivery.status === 'SENT').length;
+  const unresolved = latestByPath.filter((delivery) => delivery.status !== 'SENT');
+  const paths = unresolved.length > 0
+    ? unresolved.slice(0, 4).map((delivery) => {
+        const failureCode = notificationDeliveryFailureCode(delivery);
+        return `${delivery.provider} ${maskedDeviceId(delivery.pushDevice?.id ?? delivery.pushDeviceId)} ${delivery.status}${failureCode ? ` (${failureCode})` : ''}`;
+      }).join('; ')
+    : eligibleDevices.slice(0, 4).map((device) => `${device.platform ?? 'device'} ${maskedDeviceId(device.id)} not attempted`).join('; ');
+  const excluded = acceptedDeviceIds.size;
+  return {
+    description: `${notification.title} for ${notificationRecipientLabel(notification)} (${notificationTargetRoleLabel(notification)}). ${failed} failed · ${accepted} accepted · ${eligibleDevices.length} eligible for retry. Unresolved paths: ${paths || 'none loaded'}. ${excluded} successful path${excluded === 1 ? '' : 's'} excluded.`,
+    eligibleCount: eligibleDevices.length,
+  };
 }
 
-function notificationRetryEvidence(notification: AdminNotification) {
-  const latest = latestNotificationDelivery(notification);
-  if (!latest) {
-    return 'No delivery attempt is captured yet; confirm workers before retrying.';
+function latestNotificationDeliveryPaths(notification: AdminNotification) {
+  const latest = new Map<string, NotificationDelivery>();
+  for (const delivery of newestNotificationDeliveries(notification)) {
+    const key = delivery.pushDevice?.id ?? delivery.pushDeviceId ?? `${delivery.provider}:without-device`;
+    if (!latest.has(key)) latest.set(key, delivery);
   }
-  return `Latest evidence: ${deliveryEvidenceSummary(latest)}.`;
+  return [...latest.values()];
+}
+
+function notificationSourceSupportingLinks(notification: AdminNotification) {
+  const data = notificationDataRecord(notification.data);
+  const bookingId = notificationDataString(data.bookingId);
+  const recipientHref = notification.user?.providerProfile?.id
+    ? `/partners/${notification.user.providerProfile.id}`
+    : notification.user?.customerProfile?.id
+      ? `/customers/${notification.user.customerProfile.id}`
+      : null;
+  return [
+    ...(bookingId ? [{ href: `/bookings/${bookingId}`, label: 'Booking', description: 'Review the source booking before retrying.' }] : []),
+    ...(recipientHref ? [{ href: recipientHref, label: 'Recipient', description: 'Open the recipient record and current contact context.' }] : []),
+  ];
+}
+
+function notificationRecipientLabel(notification: AdminNotification) {
+  return notification.user?.providerProfile?.displayName ?? notification.user?.fullName ?? `user ${shortId(notification.user?.id)}`;
+}
+
+function notificationTargetRoleLabel(notification: AdminNotification) {
+  const targetRole = notificationDataString(notificationDataRecord(notification.data).targetRole)?.toUpperCase();
+  if (targetRole === 'PROVIDER') return 'Partner';
+  if (targetRole === 'CUSTOMER') return 'Customer';
+  if ((notification.user?.roles ?? []).some((role) => role.toUpperCase() === 'PROVIDER')) return 'Partner';
+  if ((notification.user?.roles ?? []).some((role) => role.toUpperCase() === 'ADMIN')) return 'Admin';
+  return 'Customer';
+}
+
+function notificationDeviceMatchesTargetRole(notification: AdminNotification, deviceRole?: string | null) {
+  const target = notificationTargetRoleLabel(notification);
+  if (!deviceRole) return target !== 'Admin';
+  return deviceRole.toUpperCase() === (target === 'Partner' ? 'PROVIDER' : target.toUpperCase());
+}
+
+function maskedDeviceId(value?: string | null) {
+  return value ? `••••${value.slice(-4)}` : 'device unknown';
 }
 
 function latestNotificationDelivery(notification: AdminNotification) {
   return newestNotificationDeliveries(notification)[0];
-}
-
-function deliveryEvidenceSummary(delivery: NotificationDelivery) {
-  const parts = [
-    `${delivery.provider} ${delivery.status}`,
-    delivery.pushDevice?.platform ? `platform ${delivery.pushDevice.platform}` : 'platform unknown',
-    `attempted ${formatDateTime(delivery.attemptedAt)}`,
-    delivery.pushDevice?.enabled === false ? 'device disabled' : 'device enabled',
-    notificationPushDeviceFreshnessLabel(delivery).toLowerCase(),
-  ];
-  const failureCode = notificationDeliveryFailureCode(delivery);
-  if (failureCode) {
-    parts.push(`failure ${failureCode}`);
-  }
-  const recoveryHint = notificationDeliveryRecoveryHint(delivery);
-  if (recoveryHint) {
-    parts.push(`next ${recoveryHint}`);
-  }
-  return parts.join('; ');
 }
 
 function deliveryAttemptMs(delivery: NotificationDelivery) {

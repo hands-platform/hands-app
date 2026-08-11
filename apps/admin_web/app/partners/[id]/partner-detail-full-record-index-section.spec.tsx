@@ -1,25 +1,52 @@
-import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
+
+import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 
 describe('PartnerDetailFullRecordIndexSection', () => {
-  it('uses the shared Vuexy admin card surface for the section shell', () => {
-    const source = readFileSync('app/partners/[id]/partner-detail-full-record-index-section.tsx', 'utf8');
+  it('renders a bounded workspace index and preserves approval queue context', () => {
+    const markup = renderToStaticMarkup(
+      <PartnerDetailFullRecordIndexSection
+        approvalOpenCount={2}
+        bookingRecordCount={4}
+        canViewDiagnostics
+        decisionQueue="approval-pending"
+        financeOpenCount={1}
+        partnerId="partner-1"
+        workOpenCount={3}
+      />,
+    );
 
-    expect(source).toContain('AdminTraceSummary');
-    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
-    expect(source).toContain('AdminCard');
-    expect(source).toContain('AdminSectionHeader');
-    expect(source).not.toContain('className="card admin-mb-16"');
-    expect(source).not.toContain('<div className="ops-section-header">');
+    expect(markup).toContain('Partner work areas');
+    expect(markup).toContain('6 open');
+    expect(markup).toContain('Approval &amp; profile');
+    expect(markup).toContain('Work readiness');
+    expect(markup).toContain('Booking evidence');
+    expect(markup).toContain('Money');
+    expect(markup).toContain('History &amp; controls');
+    expect(markup).toContain('Diagnostics');
+    expect(markup).toContain(
+      '/partners/partner-1?section=dossier&amp;decisionQueue=approval-pending',
+    );
+    expect(markup).toContain(
+      '/partners/partner-1?section=dossier&amp;dossier=finance&amp;decisionQueue=approval-pending',
+    );
+    expect(markup).not.toContain('Profile and KYC');
+    expect(markup).not.toContain('Operations timeline');
   });
 
-  it('uses a shared badge atom for the booking record count', () => {
-    const source = readFileSync('app/partners/[id]/partner-detail-full-record-index-section.tsx', 'utf8');
-    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+  it('omits Developer diagnostics for ordinary operators', () => {
+    const markup = renderToStaticMarkup(
+      <PartnerDetailFullRecordIndexSection
+        approvalOpenCount={0}
+        bookingRecordCount={0}
+        canViewDiagnostics={false}
+        financeOpenCount={0}
+        partnerId="partner-1"
+        workOpenCount={0}
+      />,
+    );
 
-    expect(source).toContain('StatusBadge');
-    expect(source).not.toContain('<span className="pill pill-info">{bookingRecordCount} booking record(s)</span>');
-    expect(source).toContain("import type { ReactNode } from 'react';");
-    expect(source).toContain('readonly cashDebtLabel: ReactNode;');
-    expect(pageSource).toContain('cashDebtLabel={<MoneyText amount={cashFeeDebtTotal} />}');
+    expect(markup).toContain('No action');
+    expect(markup).not.toContain('Diagnostics');
   });
 });

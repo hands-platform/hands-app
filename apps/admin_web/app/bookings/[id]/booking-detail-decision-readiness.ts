@@ -54,8 +54,7 @@ export function bookingDetailDecisionReadiness({
       bookingStatus: booking.status,
       closureStatus,
       canMarkNoShow: canMarkNoShow(booking.status),
-      decisionEvidenceReady:
-        messageCount > 0 || Boolean(latestLocation) || notificationCount > 0 || operatorNoteCount > 0,
+      decisionEvidenceReady: messageCount > 0 && operatorNoteCount > 0,
       evidenceSummary,
       paymentExists: Boolean(booking.payment),
       paymentStatus: booking.payment?.status ?? 'NONE',

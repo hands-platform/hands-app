@@ -160,7 +160,17 @@ export function PaymentFeePolicyManagement({
             label="Contract and pricing evidence"
             labelVisibility="visible"
             name="notes"
-            placeholder="Contract reference, pricing schedule, provider evidence, and review context"
+            placeholder="Contract reference, pricing schedule, payment provider evidence, and review context"
+            rows={2}
+          />
+          <AdminFormTextarea
+            className="full-span"
+            label="Draft reason"
+            labelVisibility="visible"
+            minLength={12}
+            name="reason"
+            placeholder="Why this policy draft is required"
+            required
             rows={2}
           />
           <AdminFormControlButton className="button-primary" type="submit">
@@ -220,7 +230,17 @@ export function PaymentFeePolicyManagement({
               label="Contract and pricing evidence"
               labelVisibility="visible"
               name="notes"
-              placeholder="Contract reference, pricing schedule, provider evidence, and review context"
+              placeholder="Contract reference, pricing schedule, payment provider evidence, and review context"
+              rows={2}
+            />
+            <AdminFormTextarea
+              className="full-span"
+              label="Update reason"
+              labelVisibility="visible"
+              minLength={12}
+              name="reason"
+              placeholder="Why these draft details are changing"
+              required
               rows={2}
             />
             <AdminFormControlButton className="button-secondary" type="submit">
@@ -286,6 +306,16 @@ export function PaymentFeePolicyManagement({
                 { label: 'Fixed amount', value: 'FIXED' },
                 { label: 'Rate + fixed', value: 'RATE_PLUS_FIXED' },
               ]}
+            />
+            <AdminFormTextarea
+              className="full-span"
+              label="Rule change reason"
+              labelVisibility="visible"
+              minLength={12}
+              name="reason"
+              placeholder={`Why the ${method} fee rule is changing`}
+              required
+              rows={2}
             />
             <AdminFormInput
               defaultValue={rule?.rateBps ?? 0}

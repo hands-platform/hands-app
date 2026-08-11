@@ -1,6 +1,6 @@
 import type { AdminBooking } from '../../lib/admin-api';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
-import { partnerDisplayText as operatorDisplayText } from '../../lib/admin-copy';
+import { adminCountLabel, partnerDisplayText as operatorDisplayText } from '../../lib/admin-copy';
 import { formatMoney } from '../../lib/admin-format';
 
 export const ACTIVE_BOOKING_STATUSES = new Set([
@@ -47,8 +47,8 @@ export function buildBookingHandoffQueue(
         partnerDetail: selectedPartner
           ? 'Selected Partner'
           : preferredPartner
-            ? `Preferred Partner / ${participantCount} participant(s)`
-            : `${participantCount} participant(s)`,
+            ? `Preferred Partner / ${adminCountLabel(participantCount, 'participant')}`
+            : adminCountLabel(participantCount, 'participant'),
         status: booking.status,
         statusClass: bookingStatusClass(booking.status),
         paymentLabel: booking.payment

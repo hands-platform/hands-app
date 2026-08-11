@@ -46,12 +46,12 @@ class ProviderFirstRevenuePayoutSetupPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'First earning recorded',
+                      'Đã ghi nhận thu nhập đầu tiên',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$completedBookingCount completed service(s). Finish wallet contact details and payout agreements before withdrawal review. Bank details are requested from Earnings when withdrawal or deposit support is needed.',
+                      'Đã hoàn tất $completedBookingCount dịch vụ. Hãy hoàn thiện địa chỉ liên hệ và thỏa thuận ví trước khi yêu cầu rút tiền.',
                     ),
                   ],
                 ),
@@ -60,18 +60,19 @@ class ProviderFirstRevenuePayoutSetupPanel extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ProviderPayoutSetupStatusRow(
-            label: 'Wallet bank details',
-            value: 'From Earnings',
+            label: 'Thông tin ngân hàng',
+            value: 'Trong mục Thu nhập',
             complete: true,
           ),
           ProviderPayoutSetupStatusRow(
-            label: 'Residential address',
-            value: addressReady ? 'Saved' : 'Missing',
+            label: 'Địa chỉ cư trú',
+            value: addressReady ? 'Đã lưu' : 'Còn thiếu',
             complete: addressReady,
           ),
           ProviderPayoutSetupStatusRow(
-            label: 'Payout agreements',
-            value: agreementsReady ? 'Accepted' : '$missingAgreementCount left',
+            label: 'Thỏa thuận thanh toán',
+            value:
+                agreementsReady ? 'Đã chấp nhận' : 'Còn $missingAgreementCount',
             complete: agreementsReady,
           ),
           const SizedBox(height: 12),
@@ -83,13 +84,13 @@ class ProviderFirstRevenuePayoutSetupPanel extends StatelessWidget {
                 FilledButton.tonalIcon(
                   onPressed: onUpdateAddress,
                   icon: const Icon(Icons.home_outlined),
-                  label: const Text('Update address'),
+                  label: const Text('Cập nhật địa chỉ'),
                 ),
               if (!agreementsReady)
                 FilledButton.tonalIcon(
                   onPressed: onAcceptAgreements,
                   icon: const Icon(Icons.assignment_turned_in_outlined),
-                  label: const Text('Accept wallet agreements'),
+                  label: const Text('Chấp nhận thỏa thuận ví'),
                 ),
             ],
           ),
@@ -169,7 +170,7 @@ class ProviderLevelRoadmap extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Partner level roadmap',
+                  'Lộ trình tài khoản',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
@@ -236,7 +237,7 @@ class ProviderLevelRoadmapRow extends StatelessWidget {
           ),
           if (milestone.current) ...[
             const SizedBox(width: 8),
-            const Chip(label: Text('Current')),
+            const Chip(label: Text('Hiện tại')),
           ],
         ],
       ),
@@ -275,7 +276,7 @@ class ProviderPayoutGateChecklist extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Wallet operations checklist',
+                  'Danh sách kiểm tra ví',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
@@ -284,7 +285,7 @@ class ProviderPayoutGateChecklist extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Agreement version: $agreementVersion',
+            'Phiên bản thỏa thuận: $agreementVersion',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 10),
@@ -365,7 +366,7 @@ class ProviderKycDecisionChecklist extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'KYC review checklist',
+                  'Danh sách xét duyệt KYC',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
@@ -374,7 +375,7 @@ class ProviderKycDecisionChecklist extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'HANDS operations checks these items before Level 2 work access. Review status: $reviewStatus.',
+            'HANDS kiểm tra các mục này trước khi mở quyền nhận việc. Trạng thái: $reviewStatus.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 10),
@@ -447,7 +448,7 @@ class ProviderOnboardingHistoryList extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Recent review activity',
+                  'Hoạt động xét duyệt gần đây',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
@@ -560,8 +561,8 @@ class ProviderOnboardingHistoryRow extends StatelessWidget {
         ? actor!['fullName'].toString()
         : actor?['phone']?.toString();
     final statusText = fromStatus == null && toStatus == null
-        ? 'Recorded'
-        : '${fromStatus ?? 'New'} -> ${toStatus ?? 'Updated'}';
+        ? 'Đã ghi nhận'
+        : '${providerOnboardingReviewStatusLabel(fromStatus)} -> ${providerOnboardingReviewStatusLabel(toStatus)}';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -585,7 +586,7 @@ class ProviderOnboardingHistoryRow extends StatelessWidget {
                 Text(
                   [
                     formatRelativeMoment(log['createdAt']),
-                    if (actorName != null) 'by $actorName',
+                    if (actorName != null) 'bởi $actorName',
                   ].join(' / '),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),

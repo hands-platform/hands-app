@@ -1,39 +1,46 @@
 import { buildPartnerControlPageMetrics } from './partner-control-page-metrics';
 
 describe('partner control page metrics', () => {
-  it('maps summary tuples to Admin page metrics with helper copy', () => {
+  it('maps the four operating metrics to exact workspaces and policy copy', () => {
     expect(
       buildPartnerControlPageMetrics([
-        ['Open reports', '2'],
-        ['Wallet debt', '1'],
-      ]),
+        ['Reports needing review', '2'],
+        ['Active restrictions', '1'],
+        ['Debt gates', '3'],
+        ['Overdue', '4'],
+      ], undefined, { overdue: 4, urgent: 1 }),
     ).toEqual([
-      {
-        helper: 'Reports still open or under investigation.',
-        label: 'Open reports',
+      expect.objectContaining({
+        helper:
+          'Open and investigating reports that still need an operator decision. Urgent 1 · overdue 4.',
+        href: '/partner-controls?details=reports',
+        kind: 'risk',
+        label: 'Reports needing review',
+        scope: 'All partners',
         value: '2',
-      },
-      {
-        helper: 'Partners with cash fee debt requiring finance follow-up.',
-        label: 'Wallet debt',
-        value: '1',
-      },
+      }),
+      expect.objectContaining({
+        href: '/partner-controls?details=sanctions',
+        label: 'Active restrictions',
+      }),
+      expect.objectContaining({
+        helper: 'Negative wallet gates final acceptance, service start, and payout release.',
+        href: '/partner-controls?details=controls&review=cash-debt',
+        label: 'Debt gates',
+      }),
+      expect.objectContaining({
+        href: '/partner-controls?details=reports&review=overdue&sort=oldest',
+        label: 'Overdue',
+      }),
     ]);
   });
 
-  it('keeps an explicit fallback for future summary labels', () => {
-    expect(buildPartnerControlPageMetrics([['New metric', '3']])[0]).toEqual({
-      helper: 'Partner control desk metric.',
-      label: 'New metric',
-      value: '3',
+  it('distinguishes true zero and unavailable totals', () => {
+    expect(buildPartnerControlPageMetrics([['Reports needing review', '0']])[0]).toMatchObject({
+      kind: 'live',
     });
-  });
-
-  it('keeps onboarding gaps focused on Level 2 readiness instead of wallet-only finance setup', () => {
-    expect(buildPartnerControlPageMetrics([['Onboarding gaps', '4']])[0]).toEqual({
-      helper: 'Partners missing KYC, required documents, service setup, or approval readiness.',
-      label: 'Onboarding gaps',
-      value: '4',
+    expect(buildPartnerControlPageMetrics([['Reports needing review', 'Unavailable']])[0]).toMatchObject({
+      kind: 'record',
     });
   });
 });

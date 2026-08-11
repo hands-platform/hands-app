@@ -8,18 +8,11 @@ import type {
   AdminBookingSettlementGapRepairPreview,
   AdminBookingSettlementRepairCheckpoint,
   AdminBookingSettlementGapSummary,
-  AdminCashSettlementSummary,
-  AdminEarning,
-  AdminEarningSummary,
-  AdminPayment,
-  AdminPaymentSummary,
-  AdminPayoutBatch,
-  AdminRefund,
-  AdminRefundSummary,
   AdminUser,
 } from '../../lib/admin-api';
-import { adminGet } from '../../lib/admin-api';
-import FinanceCloseoutPage from './page';
+import { adminGet, adminGetResult } from '../../lib/admin-api';
+import { financeCloseoutComparisonSelectionLabel } from './finance-closeout-settlement-selection-controls';
+import FinanceCloseoutPage, { metadata } from './page';
 
 vi.mock('../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
@@ -27,50 +20,146 @@ vi.mock('../../lib/admin-api', async () => {
   return {
     ...actual,
     adminGet: vi.fn(),
+    adminGetResult: vi.fn(),
+  };
+});
+
+vi.mock('next/navigation', async () => {
+  const actual = await vi.importActual<typeof import('next/navigation')>('next/navigation');
+
+  return {
+    ...actual,
+    useRouter: () => ({ replace: vi.fn() }),
   };
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedAdminGetResult = vi.mocked(adminGetResult);
 const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
+const repairDrawerSource = readFileSync(
+  new URL('./finance-closeout-settlement-repair-drawer.tsx', import.meta.url),
+  'utf8',
+);
+const financeOverviewPageSource = readFileSync(new URL('../finance-overview/page.tsx', import.meta.url), 'utf8');
+const availableSettlementSummary: AdminBookingSettlementGapSummary = {
+  age24To72Hours: 0,
+  age3To7Days: 0,
+  age7DaysPlus: 0,
+  backlog: 0,
+  canonical: 0,
+  evidenceBlocked: 0,
+  generatedAt: '2026-08-09T01:00:00.000Z',
+  historicalReady: 0,
+  manualReview: 0,
+  oldestGapAt: null,
+  recent: 0,
+  total: 0,
+};
 
 describe('FinanceCloseoutPage', () => {
   beforeEach(() => {
     mockedAdminGet.mockReset();
+    mockedAdminGetResult.mockReset();
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
+      const data = await mockedAdminGet(href, fallback);
+      return {
+        data:
+          href.startsWith('/admin/booking-settlement-gaps/summary') && data == null
+            ? availableSettlementSummary
+            : data,
+        ok: true,
+        status: 200,
+      };
+    });
   });
 
-  it('loads only daily operations APIs in the default closeout workspace', async () => {
+  it('loads only settlement repair APIs in the default closeout workspace', async () => {
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
 
     const page = await FinanceCloseoutPage({});
     const markup = renderToStaticMarkup(page);
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
-    expect(markup).toContain('Operations closeout');
-    expect(markup).not.toContain('Settlement gap filters');
-    expect(hrefs).toContain('/admin/payments?range=today&take=10&review=needs-action');
-    expect(hrefs).toContain('/admin/booking-settlement-gaps/summary');
-    expect(hrefs.some((href) => href.startsWith('/admin/booking-settlement-gaps?'))).toBe(false);
+    expect(markup).toContain('Repair queue filters');
+    expect(markup).toContain('Batch evidence');
+    expect(markup).not.toContain('Settlement review mode');
+    expect(markup).toContain('Settlement backlog');
+    expect(hrefs).toContain('/admin/booking-settlement-gaps/summary?age=backlog&track=canonical');
+    expect(hrefs).toContain('/admin/booking-settlement-gaps?age=backlog&skip=0&take=10&track=canonical');
+    expect(hrefs.some((href) => href.startsWith('/admin/payments?'))).toBe(false);
   });
 
-  it('loads only settlement repair APIs in the settlement workspace', async () => {
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+  it.each([401, 403, 429, 500, null])(
+    'fails closed when a required settlement source returns %s',
+    async (status) => {
+      mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({
+        data: fallback,
+        ok: false,
+        status,
+      }));
 
-    const page = await FinanceCloseoutPage({
-      searchParams: Promise.resolve({ view: 'settlement' }),
-    });
+      const page = await FinanceCloseoutPage({});
+      const markup = renderToStaticMarkup(page);
+
+      expect(markup).toContain('Data unavailable — do not close or repair');
+      expect(markup).toContain('A failed source is not an empty queue.');
+      expect(markup).not.toContain('No settlement gaps match this queue.');
+      expect(markup).not.toContain('0 booking(s)');
+    },
+  );
+
+  it('fails closed when a required source returns a successful null payload', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => ({
+      data: href.startsWith('/admin/booking-settlement-gaps/summary') ? null : fallback,
+      ok: true,
+      status: 200,
+    }));
+
+    const page = await FinanceCloseoutPage({});
     const markup = renderToStaticMarkup(page);
-    const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
-    expect(markup).toContain('Settlement gap filters');
-    expect(markup).toContain('Settlement backlog');
-    expect(markup).not.toContain('Historical settlement dry-run');
-    expect(markup).not.toContain('Closeout reconciliation board');
-    expect(hrefs).toContain('/admin/booking-settlement-gaps/summary');
-    expect(hrefs).toContain(
-      '/admin/booking-settlement-gaps?age=backlog&skip=0&take=10&track=canonical',
+    expect(markup).toContain('Data unavailable — do not close or repair');
+    expect(markup).toContain('Settlement summary: Invalid response');
+    expect(markup).not.toContain('No settlement gaps match this queue.');
+  });
+
+  it('keeps a successful empty queue distinct from a source failure', async () => {
+    const emptySummary: AdminBookingSettlementGapSummary = {
+      age24To72Hours: 0,
+      age3To7Days: 0,
+      age7DaysPlus: 0,
+      backlog: 0,
+      canonical: 0,
+      evidenceBlocked: 0,
+      generatedAt: '2026-08-09T01:00:00.000Z',
+      historicalReady: 0,
+      manualReview: 0,
+      oldestGapAt: null,
+      recent: 0,
+      total: 0,
+    };
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href === '/admin/booking-settlement-gaps/summary?age=backlog&track=canonical'
+        ? emptySummary
+        : fallback,
     );
-    expect(hrefs.some((href) => href.startsWith('/admin/payments?'))).toBe(false);
-    expect(hrefs.some((href) => href.startsWith('/admin/earnings?'))).toBe(false);
+
+    const page = await FinanceCloseoutPage({});
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Required finance sources loaded');
+    expect(markup).toContain('0 booking(s)');
+    expect(markup).toContain('No settlement gaps match this queue.');
+    expect(markup).not.toContain('Data unavailable — do not close or repair');
+  });
+
+  it('redirects the former operations view to the authoritative Finance Overview', async () => {
+    await expect(
+      FinanceCloseoutPage({ searchParams: Promise.resolve({ range: '7d', view: 'operations' }) }),
+    ).rejects.toMatchObject({
+      digest: expect.stringContaining('/finance-overview?range=7d'),
+    });
+    expect(financeOverviewPageSource).toContain('title="Finance Overview"');
   });
 
   it('loads the historical batch workspace without fetching the settlement backlog', async () => {
@@ -83,8 +172,8 @@ describe('FinanceCloseoutPage', () => {
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
     expect(markup).toContain('Historical batch filters');
-    expect(markup).toContain('Historical settlement dry-run');
-    expect(markup).not.toContain('Settlement gap filters');
+    expect(markup).toContain('Batch safety check (read-only)');
+    expect(markup).not.toContain('Repair queue filters');
     expect(markup).not.toContain('Settlement backlog');
     expect(hrefs).toContain('/admin/booking-settlement-gaps/summary');
     expect(hrefs.some((href) => href.startsWith('/admin/booking-settlement-gaps?'))).toBe(false);
@@ -109,9 +198,7 @@ describe('FinanceCloseoutPage', () => {
       status: 'FAILED',
     };
     mockedAdminGet.mockImplementation(async (href, fallback) =>
-      href === '/admin/booking-settlement-gaps/booking-checkpoint-1/checkpoint'
-        ? checkpoint
-        : fallback,
+      href === '/admin/booking-settlement-gaps/booking-checkpoint-1/checkpoint' ? checkpoint : fallback,
     );
 
     const page = await FinanceCloseoutPage({
@@ -127,172 +214,29 @@ describe('FinanceCloseoutPage', () => {
     expect(markup).toContain('JOURNAL_BALANCED, PAYMENT_CLEARING_EXPECTATION');
   });
 
-  it('renders bounded server closeout rows without applying second local date filters', async () => {
-    const summary: AdminEarningSummary = {
-      availableNetAmount: 0,
-      count: 0,
-      currency: 'VND',
-      grossAmount: 0,
-      netAmount: 0,
-      paidNetAmount: 0,
-      pendingNetAmount: 0,
-      platformFee: 0,
-      withholdingAmount: 0,
-    };
-    const refund = {
-      amount: 120000,
-      bookingId: 'server-closeout-booking',
-      createdAt: '2020-01-01T00:00:00.000Z',
-      id: 'server-closeout-refund',
-      paymentId: 'server-closeout-payment',
-      status: 'REQUESTED',
-    } as AdminRefund;
-
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/payments?range=today&take=10&review=needs-action') {
-        return [] as AdminPayment[];
-      }
-      if (href === '/admin/refunds?range=today&take=10&review=open') {
-        return [refund];
-      }
-      if (href === '/admin/earnings/summary?range=today') {
-        return summary;
-      }
-      if (href === '/admin/earnings?range=today&take=10&review=closeout-review') {
-        return [] as AdminEarning[];
-      }
-      if (href === '/admin/payout-batches?range=today&take=10&review=needs-review') {
-        return [] as AdminPayoutBatch[];
-      }
-      if (href === '/admin/cash-settlement-summary?range=today') {
-        return null as AdminCashSettlementSummary | null;
-      }
-      return fallback;
-    });
+  it('links the completed repair to its booking, settlement, earning, and audit evidence', async () => {
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
 
     const page = await FinanceCloseoutPage({
-      searchParams: Promise.resolve({ range: 'today' }),
+      searchParams: Promise.resolve({
+        checkpointBookingId: 'booking-repaired-1',
+        repairActorId: 'admin-actor-1',
+        repairApprovalAdminId: 'admin-approver-2',
+        repairAuditLogId: 'audit-repair-1',
+        repairCompletedAt: '2026-07-13T12:00:00.000Z',
+        repairEarningId: 'earning-repair-1',
+        repairNotice: 'repaired',
+        repairSnapshotId: 'snapshot-repair-1',
+      }),
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Refund queue');
-    expect(markup).toContain('1 OPEN');
-  });
-
-  it('uses the server earnings summary instead of recalculating from the bounded earnings sample', async () => {
-    const summary: AdminEarningSummary = {
-      availableNetAmount: 900000,
-      count: 24,
-      currency: 'VND',
-      grossAmount: 1200000,
-      netAmount: 900000,
-      paidNetAmount: 0,
-      pendingNetAmount: 0,
-      platformFee: 300000,
-      withholdingAmount: 0,
-    };
-
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/payments?range=today&take=10&review=needs-action') {
-        return [] as AdminPayment[];
-      }
-      if (href === '/admin/refunds?range=today&take=10&review=open') {
-        return [] as AdminRefund[];
-      }
-      if (href === '/admin/earnings/summary?range=today') {
-        return summary;
-      }
-      if (href === '/admin/earnings?range=today&take=10&review=closeout-review') {
-        return [] as AdminEarning[];
-      }
-      if (href === '/admin/payout-batches?range=today&take=10&review=needs-review') {
-        return [] as AdminPayoutBatch[];
-      }
-      if (href === '/admin/cash-settlement-summary?range=today') {
-        return null as AdminCashSettlementSummary | null;
-      }
-      return fallback;
-    });
-
-    const page = await FinanceCloseoutPage({
-      searchParams: Promise.resolve({ range: 'today' }),
-    });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('Available payout');
-    expect(markup).toContain('900.000 VND');
-  });
-
-  it('uses payment and refund summaries for closeout counts instead of bounded samples', async () => {
-    const earningsSummary: AdminEarningSummary = {
-      availableNetAmount: 0,
-      count: 0,
-      currency: 'VND',
-      grossAmount: 0,
-      netAmount: 0,
-      paidNetAmount: 0,
-      pendingNetAmount: 0,
-      platformFee: 0,
-      withholdingAmount: 0,
-    };
-    const paymentSummary: AdminPaymentSummary = {
-      authorized: 12,
-      callbackReview: 0,
-      callbackVerified: 0,
-      captured: 0,
-      cashDebt: 0,
-      linkedRefunds: 0,
-      needsAction: 15,
-      pendingCash: 3,
-      refunded: 0,
-      totalCount: 15,
-    };
-    const refundSummary: AdminRefundSummary = {
-      completedCount: 0,
-      needsUpdateCount: 0,
-      openCount: 4,
-      outcomeLinkedCount: 0,
-      refundedBookingCount: 0,
-      requestedCount: 4,
-      totalCount: 4,
-    };
-
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/payments?range=today&take=10&review=needs-action') {
-        return [] as AdminPayment[];
-      }
-      if (href === '/admin/payments/summary?range=today') {
-        return paymentSummary;
-      }
-      if (href === '/admin/refunds?range=today&take=10&review=open') {
-        return [] as AdminRefund[];
-      }
-      if (href === '/admin/refunds/summary?range=today') {
-        return refundSummary;
-      }
-      if (href === '/admin/earnings/summary?range=today') {
-        return earningsSummary;
-      }
-      if (href === '/admin/earnings?range=today&take=10&review=closeout-review') {
-        return [] as AdminEarning[];
-      }
-      if (href === '/admin/payout-batches?range=today&take=10&review=needs-review') {
-        return [] as AdminPayoutBatch[];
-      }
-      if (href === '/admin/cash-settlement-summary?range=today') {
-        return null as AdminCashSettlementSummary | null;
-      }
-      return fallback;
-    });
-
-    const page = await FinanceCloseoutPage({
-      searchParams: Promise.resolve({ range: 'today' }),
-    });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('12 HOLD(S)');
-    expect(markup).toContain('3 CASH');
-    expect(markup).toContain('4 OPEN');
+    expect(markup).toContain('/bookings/booking-repaired-1');
+    expect(markup).toContain('/finance-tax/booking-settlement-audit?q=snapshot-repair-1');
+    expect(markup).toContain('/earnings?q=earning-repair-1');
+    expect(markup).toContain('/audit-log?q=audit-repair-1');
+    expect(markup).toContain('Actor admin-actor-1');
+    expect(markup).toContain('Approver admin-approver-2');
   });
 
   it('uses shared segmented controls for closeout range filters', () => {
@@ -306,44 +250,17 @@ describe('FinanceCloseoutPage', () => {
     expect(pageSource).not.toContain('PillClassBadgeLink');
   });
 
-  it('shows the active closeout range near the filter controls', async () => {
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
-
-    const page = await FinanceCloseoutPage({
-      searchParams: Promise.resolve({ range: 'today' }),
-    });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('Active finance closeout filters');
-    expect(markup).toContain('Range: Today');
-  });
-
   it('uses the shared Vuexy text link atom for closeout audit links', () => {
     expect(pageSource).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
     expect(pageSource).toContain('<AdminTextLink');
     expect(pageSource).not.toContain('className="text-link"');
   });
 
-  it('uses shared money atoms for closeout page KPI amounts', () => {
-    expect(pageSource).toContain('MoneyText');
-    expect(pageSource).not.toContain('formatMoney(');
-  });
-
-  it('scopes closeout KPI cards by the selected range and action risk', async () => {
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
-
-    const page = await FinanceCloseoutPage({
-      searchParams: Promise.resolve({ range: '7d' }),
-    });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('Last 7 days');
-    expect(markup).toContain('Payment holds and cash rows to close for this range.');
-    expect(markup).toContain('Refund cases still open for this range.');
-    expect(markup).toContain('Partner cash-fee debt needing settlement evidence for this range.');
-    expect(markup).toContain('Payout batches still waiting for release checks.');
-    expect(markup).not.toContain('Authorization holds and pending cash rows.');
-    expect(markup).not.toContain('Payout batches not yet paid or cancelled.');
+  it('does not retain the moved operations-closeout fetch and KPI implementation', () => {
+    expect(pageSource).not.toContain('AdminEarningSummary');
+    expect(pageSource).not.toContain('buildReconciliation(');
+    expect(pageSource).not.toContain('MoneyText');
+    expect(pageSource).not.toContain('/admin/payments?');
   });
 
   it('renders the server-paginated settlement backlog with age summary and booking links', async () => {
@@ -371,18 +288,18 @@ describe('FinanceCloseoutPage', () => {
       total: 21,
     };
     const gapSummary: AdminBookingSettlementGapSummary = {
-      age24To72Hours: 2,
-      age3To7Days: 4,
-      age7DaysPlus: 15,
+      age24To72Hours: 0,
+      age3To7Days: 0,
+      age7DaysPlus: 21,
       backlog: 21,
-      canonical: 5,
-      evidenceBlocked: 1,
+      canonical: 0,
+      evidenceBlocked: 0,
       generatedAt: '2026-07-13T00:00:00.000Z',
-      historicalReady: 15,
-      manualReview: 1,
+      historicalReady: 21,
+      manualReview: 0,
       oldestGapAt: '2026-06-01T00:00:00.000Z',
-      recent: 1,
-      total: 22,
+      recent: 0,
+      total: 21,
     };
 
     mockedAdminGet.mockImplementation(async (href, fallback) => {
@@ -392,7 +309,10 @@ describe('FinanceCloseoutPage', () => {
       ) {
         return gapList;
       }
-      if (href === '/admin/booking-settlement-gaps/summary') {
+      if (
+      href ===
+        '/admin/booking-settlement-gaps/summary?age=7d-plus&track=historical-ready&q=Settlement&period=2026-07&paymentMethod=CARD'
+      ) {
         return gapSummary;
       }
       return fallback;
@@ -421,13 +341,16 @@ describe('FinanceCloseoutPage', () => {
     expect(markup).toContain('Preview repair');
     expect(markup).toContain('Showing 11 to 11 of 21 bookings');
     expect(markup).toContain('Settlement backlog pagination');
-    expect(markup).toContain('7d+: 15');
-    expect(markup).toContain('Historical evidence ready');
-    expect(markup).toContain('Historical ready');
-    expect(markup).toContain('Evidence blocked: 1');
+    expect(markup).toContain('Gap age: 7+ days');
+    expect(markup).toContain('Repair track: Historical policy review');
+    expect(markup).toContain('<p>Evidence blocked</p>');
+    expect(markup).toContain('<span class="sr-only">Evidence blocked: </span>0');
     expect(markup).toContain('Month: 2026-07');
     expect(markup).toContain('Payment: Card');
-    expect(markup).toContain('Review selected');
+    expect(markup).toContain('Matching bookings: 21');
+    expect(markup).toContain('Oldest: 70d ago');
+    expect(markup).toContain('Compare selected (0)');
+    expect(markup).toContain('Select up to 10 records. 0 selected.');
     expect(markup).toContain('Select booking-settlement-gap-11');
   });
 
@@ -435,8 +358,13 @@ describe('FinanceCloseoutPage', () => {
     const selectedIds = Array.from({ length: 12 }, (_, index) => `selected-gap-${index + 1}`);
 
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      const match = href.match(/^\/admin\/booking-settlement-gaps\/(selected-gap-\d+)\/preview$/);
-      if (match) return settlementPreviewFixture(match[1]);
+      if (href.startsWith('/admin/booking-settlement-gaps/preview-batch?bookingIds=')) {
+        return {
+          generatedAt: '2026-07-13T00:00:00.000Z',
+          items: selectedIds.slice(0, 10).map(settlementPreviewFixture),
+          requested: 10,
+        };
+      }
       return fallback;
     });
 
@@ -444,15 +372,17 @@ describe('FinanceCloseoutPage', () => {
       searchParams: Promise.resolve({ reviewBookingId: selectedIds }),
     });
     const markup = renderToStaticMarkup(page);
-    const selectedPreviewCalls = mockedAdminGet.mock.calls.filter(([href]) => href.endsWith('/preview'));
+    const selectedPreviewCalls = mockedAdminGet.mock.calls.filter(([href]) =>
+      href.startsWith('/admin/booking-settlement-gaps/preview-batch?bookingIds='),
+    );
 
-    expect(selectedPreviewCalls).toHaveLength(10);
+    expect(selectedPreviewCalls).toHaveLength(1);
     expect(markup).toContain('Selected settlement review (10)');
-    expect(markup).toContain('Read-only comparison for the selected settlement gaps.');
-    expect(markup).toContain('Open governed repair');
-    expect(markup).toContain('Full preview passed.');
-    expect(markup).not.toContain('selected-gap-11');
-    expect(markup).not.toContain('selected-gap-12');
+    expect(markup).toContain('Read-only comparison using the same technical and policy gate');
+    expect(markup).toContain('Review &amp; repair');
+    expect(markup).toContain('Technical and policy preview passed.');
+    expect(markup).not.toContain('<strong>selected-gap-11</strong>');
+    expect(markup).not.toContain('<strong>selected-gap-12</strong>');
   });
 
   it('loads the bounded historical dry-run only when explicitly requested', async () => {
@@ -462,7 +392,7 @@ describe('FinanceCloseoutPage', () => {
         blocked: 0,
         companyOutputVatPositive: 0,
         companyOutputVatZero: 66,
-        eligible: 66,
+        eligible: 0,
         journalBalanced: 66,
         paymentFeeDefaulted: 66,
         paymentFeePolicyMatched: 0,
@@ -471,6 +401,7 @@ describe('FinanceCloseoutPage', () => {
         platformVatUnexplainedZero: 0,
         platformVatZeroFromPolicy: 0,
         reconciliationReview: 0,
+        reviewRequired: 66,
       },
       evaluated: 66,
       generatedAt: '2026-07-13T00:00:00.000Z',
@@ -495,7 +426,7 @@ describe('FinanceCloseoutPage', () => {
             blocked: 0,
             companyOutputVatPositive: 0,
             companyOutputVatZero: 2,
-            eligible: 2,
+            eligible: 0,
             journalBalanced: 2,
             paymentFeeDefaulted: 2,
             paymentFeePolicyMatched: 0,
@@ -504,6 +435,7 @@ describe('FinanceCloseoutPage', () => {
             platformVatUnexplainedZero: 0,
             platformVatZeroFromPolicy: 0,
             reconciliationReview: 0,
+            reviewRequired: 2,
           },
           executionStatus: 'REVIEW_REQUIRED',
           paymentMethod: 'MOMO',
@@ -555,15 +487,16 @@ describe('FinanceCloseoutPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Historical settlement dry-run (66)');
+    expect(markup).toContain('Batch safety check (read-only) · 66 evaluated');
     expect(markup).toContain('66 of 66');
-    expect(markup).toContain('66 eligible · 0 blocked');
+    expect(markup).toContain('0 approved · 66 review · 0 blocked');
     expect(markup).toContain('66 balanced · 0 delta review');
     expect(markup).toContain('0 policy · 66 defaulted');
     expect(markup).toContain('Retained service VAT rule 66 · Policy zero 0 · Unexplained zero 0');
     expect(markup).toContain('2 fee default · 0 unexplained VAT · 0 delta');
     expect(markup).toContain('CASH: 34 · MOMO: 32');
     expect(markup).toContain('Finance policy gate');
+    expect(markup).toContain('Payment-fee policy evidence needs review: 66');
     expect(markup).toContain('Review required');
     expect(markup).toContain('Review payment fee policy and activation blockers');
     expect(markup).toContain('href="/finance-tax/payment-fees"');
@@ -583,6 +516,7 @@ describe('FinanceCloseoutPage', () => {
       canRepair: true,
       completedAt: '2026-07-01T00:00:00.000Z',
       currency: 'VND',
+      generatedAt: '2026-07-13T00:00:00.000Z',
       customer: { id: 'customer-1', user: { fullName: 'Settlement Customer' } },
       earning: {
         currency: 'VND',
@@ -599,10 +533,16 @@ describe('FinanceCloseoutPage', () => {
       monthlyPeriod: '2026-07',
       partner: { id: 'partner-1', displayName: 'Settlement Partner' },
       payment: { amount: 500000, currency: 'VND', id: 'payment-1', method: 'CARD', status: 'CAPTURED' },
+      policyDecision: 'APPROVED',
+      policyExceptionCodes: [],
+      policyReasons: [],
+      policyVersion: 'CANONICAL_COMPLETION_SETTLEMENT_V1',
       preservesExistingEarningLifecycle: true,
       repairMode: 'CANONICAL_COMPLETION_SETTLEMENT',
       serviceCount: 1,
       settlementSnapshotId: null,
+      sourceVersion: 'preview-version-1',
+      technicalEligibility: true,
     };
     const approver = {
       email: 'finance@example.com',
@@ -624,12 +564,76 @@ describe('FinanceCloseoutPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Settlement repair preview');
-    expect(markup).toContain('Eligible for controlled repair');
+    expect(markup).toContain('Approved for controlled repair');
     expect(markup).toContain('Dual approval required');
     expect(markup).toContain('Finance Approver · finance-admin-2');
     expect(markup).toContain('Confirm booking ID');
     expect(markup).toContain('Create missing settlement');
     expect(markup).toContain('Existing status preserved');
+  });
+
+  it('locks repair when technical evidence passes but finance policy requires review', async () => {
+    const preview = {
+      ...settlementPreviewFixture('booking-policy-review'),
+      canRepair: false,
+      policyDecision: 'REVIEW_REQUIRED' as const,
+      policyExceptionCodes: ['PAYMENT_FEE_POLICY_DEFAULTED'],
+      policyReasons: ['Historical payment fee evidence defaulted without a matched policy rule.'],
+      policyVersion: 'HISTORICAL_SETTLEMENT_POLICY_V1',
+      repairMode: 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION' as const,
+      technicalEligibility: true,
+    };
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/booking-settlement-gaps/booking-policy-review/preview') return preview;
+      if (href === '/admin/users?take=50&role=ADMIN&view=finance-approver-directory') return [];
+      return fallback;
+    });
+
+    const page = await FinanceCloseoutPage({
+      searchParams: Promise.resolve({ repairBookingId: 'booking-policy-review' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Policy review required — repair locked');
+    expect(markup).toContain('Historical payment fee evidence defaulted without a matched policy rule.');
+    expect(markup).toContain('Review payment fee policy evidence');
+    expect(markup).not.toContain('name="approvalAdminId"');
+    expect(markup).not.toContain('Reconstruct historical settlement');
+  });
+
+  it('turns technical blockers into assigned remediation without repeating policy text', async () => {
+    const repeatedMessage = 'Captured payment evidence is missing.';
+    const preview = {
+      ...settlementPreviewFixture('booking-payment-blocked'),
+      blockers: [{ code: 'PAYMENT_MISSING', message: repeatedMessage }],
+      canRepair: false,
+      payment: null,
+      policyDecision: 'BLOCKED' as const,
+      policyExceptionCodes: ['TECHNICAL_EVIDENCE_BLOCKED'],
+      policyReasons: [repeatedMessage],
+      technicalEligibility: false,
+    };
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/booking-settlement-gaps/booking-payment-blocked/preview') return preview;
+      if (href === '/admin/users?take=50&role=ADMIN&view=finance-approver-directory') return [];
+      return fallback;
+    });
+
+    const page = await FinanceCloseoutPage({
+      searchParams: Promise.resolve({ repairBookingId: 'booking-payment-blocked' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Blocker remediation');
+    expect(markup).toContain('Responsible team');
+    expect(markup).toContain('Payments Operations');
+    expect(markup).toContain('Missing evidence');
+    expect(markup).toContain('Next action');
+    expect(markup).toContain('Open booking payment evidence');
+    expect(markup).toContain('Recheck evidence');
+    expect(markup).toContain('PAYMENT_MISSING');
+    expect(markup.match(new RegExp(repeatedMessage, 'g'))).toHaveLength(1);
+    expect(markup).not.toContain('name="approvalAdminId"');
   });
 
   it('labels paid evidence reconstruction separately from canonical settlement repair', async () => {
@@ -640,6 +644,7 @@ describe('FinanceCloseoutPage', () => {
       canRepair: true,
       completedAt: '2026-06-10T00:00:00.000Z',
       currency: 'VND',
+      generatedAt: '2026-07-13T00:00:00.000Z',
       customer: { id: 'customer-1', user: { fullName: 'Settlement Customer' } },
       earning: {
         currency: 'VND',
@@ -661,10 +666,16 @@ describe('FinanceCloseoutPage', () => {
       monthlyPeriod: '2026-06',
       partner: { id: 'partner-1', displayName: 'Settlement Partner' },
       payment: { amount: 400000, currency: 'VND', id: 'payment-1', method: 'MOMO', status: 'CAPTURED' },
+      policyDecision: 'APPROVED',
+      policyExceptionCodes: [],
+      policyReasons: [],
+      policyVersion: 'historical-policy-1',
       preservesExistingEarningLifecycle: true,
       repairMode: 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION',
       serviceCount: 1,
       settlementSnapshotId: null,
+      sourceVersion: 'preview-version-2',
+      technicalEligibility: true,
     };
     const approver = {
       email: 'finance@example.com',
@@ -690,6 +701,24 @@ describe('FinanceCloseoutPage', () => {
     expect(markup).toContain('Reconstruct historical settlement');
     expect(markup).toContain('preserves the paid earning and wallet lifecycle');
   });
+
+  it.each([
+    [0, 'Compare selected (0)'],
+    [1, 'Compare selected (1)'],
+    [10, 'Compare selected (10)'],
+    [11, 'Compare selected (10)'],
+  ])('bounds the comparison selection label at ten records', (count, label) => {
+    expect(financeCloseoutComparisonSelectionLabel(count)).toBe(label);
+  });
+
+  it('declares an operator-specific page title', () => {
+    expect(metadata).toEqual({ title: 'Settlement Repair · HANDS Admin' });
+  });
+
+  it('closes the repair drawer without a document navigation so focus can return to its trigger', () => {
+    expect(repairDrawerSource).toContain("router.replace(closeHref, { scroll: false })");
+    expect(repairDrawerSource).not.toContain('window.location.assign(closeHref)');
+  });
 });
 
 function settlementPreviewFixture(bookingId: string): AdminBookingSettlementGapRepairPreview {
@@ -700,6 +729,7 @@ function settlementPreviewFixture(bookingId: string): AdminBookingSettlementGapR
     canRepair: true,
     completedAt: '2026-07-01T00:00:00.000Z',
     currency: 'VND',
+    generatedAt: '2026-07-13T00:00:00.000Z',
     customer: { id: 'customer-1', user: { fullName: 'Settlement Customer' } },
     earning: {
       currency: 'VND',
@@ -722,9 +752,15 @@ function settlementPreviewFixture(bookingId: string): AdminBookingSettlementGapR
       method: 'CARD',
       status: 'CAPTURED',
     },
+    policyDecision: 'APPROVED',
+    policyExceptionCodes: [],
+    policyReasons: [],
+    policyVersion: 'CANONICAL_COMPLETION_SETTLEMENT_V1',
     preservesExistingEarningLifecycle: true,
     repairMode: 'CANONICAL_COMPLETION_SETTLEMENT',
     serviceCount: 1,
     settlementSnapshotId: null,
+    sourceVersion: `${bookingId}-version`,
+    technicalEligibility: true,
   };
 }

@@ -9,7 +9,14 @@ import {
   AdminProviderWalletWithdrawalRequest,
   AdminProviderWalletWithdrawalRequestSummary,
   adminGet,
+  adminGetResult,
 } from '../../lib/admin-api';
+import {
+  AdminFormControlButton,
+  AdminFormGrid,
+  AdminFormInput,
+  AdminFormSelect,
+} from '../../components/admin-form-controls';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
@@ -21,9 +28,11 @@ import { AdminActionCard, AdminTaskCard, AdminTaskGrid } from '../../components/
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { ConfirmDialog } from '../../components/confirm-dialog';
+import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import { formatRelativeTime, shortRecordId } from '../../lib/admin-format';
+import { adminWorkflowStatusLabel } from '../../lib/admin-copy';
 import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
 import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
 import {
@@ -38,6 +47,8 @@ import {
   markPayoutFailed,
   markPayoutPaid,
   markPayoutProcessing,
+  reversePaidPayout,
+  reversePaidProviderWalletWithdrawal,
   updatePayoutTransferRef,
   updateProviderWalletWithdrawalRequest,
 } from './actions';
@@ -49,31 +60,21 @@ import {
 } from './payout-action-confirmation';
 import { PayoutBatchListSection } from './payout-batch-list-section';
 import type { PayoutBatchTableRow } from './payout-batch-table';
-import { PayoutCommandQueueSection, type PayoutCommandSignal } from './payout-command-queue-section';
-import { buildPayoutPartnerFinanceQueueRows } from './payout-partner-finance-queue-model';
-import { PayoutPartnerFinanceQueueSection } from './payout-partner-finance-queue-section';
+import type { PayoutCommandSignal } from './payout-command-queue-section';
 import { PayoutWalletWithdrawalRequestSection } from './payout-wallet-withdrawal-request-section';
 import {
   PayoutMoneyFlowSection,
   type PayoutMoneyFlowCard,
   type PayoutMoneyFlowCheck,
 } from './payout-money-flow-section';
-import { PayoutInclusionAuditSection, type PayoutInclusionAuditRow } from './payout-inclusion-audit-section';
-import {
-  PayoutReleaseBlockerQueueSection,
-  type PayoutReleaseBlockerQueueItem,
-} from './payout-release-blocker-queue-section';
-import {
-  PayoutServiceEvidenceSection,
-  type PayoutServiceEvidenceItem,
-} from './payout-service-evidence-section';
-import { PayoutStatusLanesSection, type PayoutStatusLane } from './payout-status-lanes-section';
+import type { PayoutServiceEvidenceItem } from './payout-service-evidence-section';
 import { buildFinanceApproverOptions } from '../finance-tax/finance-approver-options';
 import {
   buildPayoutFilters,
   buildPayoutOperationsApiHrefs,
   buildPayoutServerPagination,
   payoutHref,
+  payoutWithdrawalClearSavedViewHref,
 } from './payouts-page-model';
 
 type PayoutsPageProps = {
@@ -87,27 +88,46 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const isPolicyWorkspace = filters.workspace === 'policy';
   const isAuditWorkspace = filters.workspace === 'audit';
   const isRecordsWorkspace = filters.workspace === 'records';
+  const isBankReconciliationScope =
+    filters.evidence === 'bank-match-incomplete' && Boolean(filters.period);
   const workspaceLabel =
-    filters.workspace === 'policy'
-      ? 'Release policy'
-      : filters.workspace === 'audit'
-        ? 'Audit evidence'
-        : filters.workspace === 'records'
-          ? 'Records'
-          : 'Operations';
+    filters.view === 'withdrawals'
+      ? 'Withdrawals'
+      : filters.view === 'reconciliation'
+        ? 'Reconciliation'
+        : 'Payout batches';
+  const currentPayoutViewHref = payoutCurrentViewHref(filters);
   const confirmationAction = readPayoutConfirmationAction(readSearchParam(params.confirm));
+  const confirmationBatchId = readSearchParam(params.payoutBatchId);
   const payoutRangeScope = dateRangeLabel(filters.range);
   const apiHrefs = buildPayoutOperationsApiHrefs(filters);
+  const confirmationPayoutBatchHref =
+    confirmationBatchId && confirmationBatchId !== filters.editPayoutBatchId
+      ? `/admin/payout-batches/${encodeURIComponent(confirmationBatchId)}`
+      : null;
   const [
-    allBatches,
-    payoutSummary,
+    payoutBatchesResult,
+    payoutSummaryResult,
+    payoutOverviewSummaryResult,
+    selectedPayoutBatchResult,
+    confirmationPayoutBatchResult,
     allEarnings,
     policySettings,
-    walletWithdrawalRequests,
-    walletWithdrawalSummary,
+    walletWithdrawalRequestsResult,
+    walletWithdrawalSummaryResult,
+    walletWithdrawalGlobalSummaryResult,
   ] = await Promise.all([
-    adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
-    adminGet<AdminPayoutBatchSummary | null>(apiHrefs.payoutBatchSummaryHref, null),
+    apiHrefs.payoutBatchesHref
+      ? adminGetResult<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, [])
+      : Promise.resolve({ data: [] as AdminPayoutBatch[], ok: true, status: 204 }),
+    adminGetResult<AdminPayoutBatchSummary | null>(apiHrefs.payoutBatchSummaryHref, null),
+    adminGetResult<AdminPayoutBatchSummary | null>(apiHrefs.payoutBatchOverviewSummaryHref, null),
+    apiHrefs.selectedPayoutBatchHref
+      ? adminGetResult<AdminPayoutBatch | null>(apiHrefs.selectedPayoutBatchHref, null)
+      : Promise.resolve({ data: null, ok: true, status: 204 }),
+    confirmationPayoutBatchHref
+      ? adminGetResult<AdminPayoutBatch | null>(confirmationPayoutBatchHref, null)
+      : Promise.resolve({ data: null, ok: true, status: 204 }),
     apiHrefs.earningsHref
       ? adminGet<AdminEarning[]>(apiHrefs.earningsHref, [])
       : Promise.resolve([] as AdminEarning[]),
@@ -115,64 +135,80 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       ? adminGet<AdminOperationalPolicySetting[]>(apiHrefs.operationalPolicyHref, [])
       : Promise.resolve([] as AdminOperationalPolicySetting[]),
     apiHrefs.providerWalletWithdrawalRequestsHref
-      ? adminGet<AdminProviderWalletWithdrawalRequest[]>(apiHrefs.providerWalletWithdrawalRequestsHref, [])
-      : Promise.resolve([] as AdminProviderWalletWithdrawalRequest[]),
+      ? adminGetResult<AdminProviderWalletWithdrawalRequest[]>(apiHrefs.providerWalletWithdrawalRequestsHref, [])
+      : Promise.resolve({ data: [] as AdminProviderWalletWithdrawalRequest[], ok: true, status: 204 }),
     apiHrefs.providerWalletWithdrawalRequestSummaryHref
-      ? adminGet<AdminProviderWalletWithdrawalRequestSummary | null>(
+      ? adminGetResult<AdminProviderWalletWithdrawalRequestSummary | null>(
           apiHrefs.providerWalletWithdrawalRequestSummaryHref,
           null,
         )
-      : Promise.resolve(null),
+      : Promise.resolve({ data: null, ok: true, status: 204 }),
+    adminGetResult<AdminProviderWalletWithdrawalRequestSummary | null>(
+      apiHrefs.providerWalletWithdrawalRequestGlobalSummaryHref,
+      null,
+    ),
   ]);
+  const allBatches = payoutBatchesResult.data;
+  const payoutSummary = payoutSummaryResult.data;
+  const payoutOverviewSummary = payoutOverviewSummaryResult.data;
+  const walletWithdrawalRequests = walletWithdrawalRequestsResult.data;
+  const walletWithdrawalSummary = walletWithdrawalSummaryResult.data;
+  const walletWithdrawalGlobalSummary = walletWithdrawalGlobalSummaryResult.data;
   const batches = sortBatches(allBatches);
   const earnings = allEarnings;
-  const summary = buildSummary(batches, payoutSummary);
-  const payoutBatchRows = buildPayoutBatchTableRows(batches);
-  const payoutBatchPagination = buildPayoutServerPagination(payoutBatchRows, filters, summary.total);
-  const withdrawalTotal =
-    filters.withdrawalReconciliation === 'unmatched'
-      ? (walletWithdrawalSummary?.paidUnreconciled ?? 0)
-      : filters.withdrawalReconciliation === 'matched'
-        ? (walletWithdrawalSummary?.paidReconciled ?? 0)
-        : walletWithdrawalRequests.length;
-  const withdrawalPagination = filters.withdrawalReconciliation
+  const summary = buildSummary(batches, payoutOverviewSummary);
+  const payoutBatchRows = buildPayoutBatchTableRows(batches, filters);
+  const payoutBatchTotal = payoutSummary?.total ?? payoutBatchRows.length;
+  const payoutBatchPagination = buildPayoutServerPagination(payoutBatchRows, filters, payoutBatchTotal);
+  const selectedPayoutBatchRow =
+    payoutBatchRows.find((row) => row.id === filters.editPayoutBatchId) ??
+    (selectedPayoutBatchResult.data
+      ? buildPayoutBatchTableRows([selectedPayoutBatchResult.data], filters)[0]
+      : null);
+  const withdrawalTotal = walletWithdrawalSummary?.filteredTotal ?? walletWithdrawalRequests.length;
+  const withdrawalPagination = isRecordsWorkspace || isAuditWorkspace
     ? buildPayoutServerPagination(
         walletWithdrawalRequests,
         { ...filters, page: filters.withdrawalPage },
         withdrawalTotal,
       )
     : null;
-  const commandSignals = isOperationsWorkspace ? buildPayoutCommandSignals(batches) : [];
-  const payoutLanes = isAuditWorkspace ? buildPayoutLanes(batches) : [];
-  const payoutStatusLanes = isAuditWorkspace ? buildPayoutStatusLanes(payoutLanes) : [];
-  const serviceEvidence =
-    isOperationsWorkspace || isAuditWorkspace ? buildPayoutServiceEvidence(batches) : [];
-  const moneyFlowCards = isOperationsWorkspace ? buildPayoutMoneyFlowCards(summary, serviceEvidence) : [];
-  const moneyFlowChecks = isOperationsWorkspace ? buildPayoutMoneyFlowChecks(batches, serviceEvidence) : [];
+  const moneyFlowCards = filters.recon === 'overview'
+    ? buildScopedPayoutMoneyFlowCards(payoutOverviewSummary?.moneyFlow)
+    : [];
+  const moneyFlowChecks = filters.recon === 'overview'
+    ? buildScopedPayoutMoneyFlowChecks(payoutOverviewSummary?.moneyFlow)
+    : [];
   const liveOperationsPolicy = buildAdminLiveOperationsPolicy(policySettings);
-  const appliedPayoutPolicyCards = isPolicyWorkspace ? buildAppliedPayoutPolicyCards(liveOperationsPolicy) : [];
+  const appliedPayoutPolicyCards = isPolicyWorkspace
+    ? buildAppliedPayoutPolicyCards(liveOperationsPolicy)
+    : [];
   const releasePolicyDesk = isPolicyWorkspace ? buildPayoutReleasePolicyDesk(batches, earnings, summary) : [];
   const releaseCycleBoard = isPolicyWorkspace ? buildPayoutReleaseCycleBoard(batches, earnings) : [];
   const marketplaceUnblockBridge = isPolicyWorkspace
     ? buildPayoutMarketplaceUnblockBridge(batches, earnings, summary)
     : [];
-  const releaseQueue = isOperationsWorkspace ? buildPayoutReleaseQueue(batches) : [];
-  const releaseBlockerRows = isOperationsWorkspace ? buildPayoutReleaseBlockerRows(releaseQueue) : [];
-  const partnerFinanceQueueRows = isOperationsWorkspace ? buildPayoutPartnerFinanceQueueRows(batches) : [];
-  const inclusionAudit = isAuditWorkspace ? buildPayoutInclusionAudit(earnings, batches) : null;
-  const confirmationBatchId = readSearchParam(params.payoutBatchId);
-  const confirmationBatch = allBatches.find((batch) => batch.id === confirmationBatchId);
+  const confirmationBatch =
+    allBatches.find((batch) => batch.id === confirmationBatchId) ??
+    [selectedPayoutBatchResult.data, confirmationPayoutBatchResult.data].find(
+      (batch) => batch?.id === confirmationBatchId,
+    ) ??
+    null;
+  const confirmationBatches =
+    confirmationBatch && !allBatches.some((batch) => batch.id === confirmationBatch.id)
+      ? [...allBatches, confirmationBatch]
+      : allBatches;
   const confirmation = buildPayoutActionConfirmation(
-    allBatches,
+    confirmationBatches,
     confirmationAction,
     confirmationBatchId,
     confirmationBatch ? payoutActionAvailability(confirmationBatch, confirmationAction) : {},
+    currentPayoutViewHref,
   );
+  const selectedWithdrawalForReversal =
+    walletWithdrawalRequests.find((request) => request.id === filters.reverseWithdrawalRequestId) ?? null;
   const needsFinanceApproverDirectory =
-    confirmationAction === 'paid' ||
-    walletWithdrawalRequests.some(
-      (request) => request.status === 'APPROVED' || request.status === 'BANK_TRANSFER_PENDING',
-    );
+    confirmationAction === 'reverse' || Boolean(selectedWithdrawalForReversal);
   const [currentOperatorAccess, financeApproverUsers] = needsFinanceApproverDirectory
     ? await Promise.all([
         getCurrentAdminOperatorAccess(),
@@ -186,72 +222,76 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
 
   return (
     <AdminPageTemplate
+      actions={
+        filters.returnTo ? (
+          <AdminTextLink href={filters.returnTo}>Back to Finance Overview</AdminTextLink>
+        ) : undefined
+      }
       description="Partner payout batches for transfer readiness, tax evidence, cash-fee debt holds, and finance release checks."
-      metrics={[
+      metrics={isBankReconciliationScope ? [
         {
-          helper: 'Payout batches in the selected range.',
-          kind: 'period',
-          label: 'Total batches',
-          scope: payoutRangeScope,
-          value: summary.total,
+          helper: 'Paid payout batches in the selected monthly close whose bank OUTFLOW match is incomplete.',
+          kind: 'risk',
+          label: 'Bank match candidates',
+          scope: filters.period ?? 'Monthly close',
+          value: payoutSummaryResult.ok
+            ? (payoutSummary?.bankReconciliationCandidateCount ?? 0)
+            : 'Unavailable',
         },
+        {
+          helper: 'Posted company-bank credit still lacking matched bank evidence.',
+          kind: 'risk',
+          label: 'Remaining bank match',
+          scope: filters.period ?? 'Monthly close',
+          value: payoutSummaryResult.ok ? (
+            <MoneyText
+              amount={payoutSummary?.bankReconciliationRemainingAmount ?? 0}
+              currency={payoutSummary?.currency ?? 'VND'}
+            />
+          ) : 'Unavailable',
+        },
+      ] : [
         {
           helper: 'Draft or failed payout batches.',
           kind: 'risk',
           label: 'Needs review',
           scope: 'Needs action',
-          value: summary.needsReview,
+          value: payoutOverviewSummaryResult.ok ? summary.needsReview : 'Unavailable',
         },
         {
           helper: 'Processing transfer batches.',
           kind: 'live',
-          label: 'In progress',
-          scope: 'Live',
-          value: summary.inProgress,
+          label: 'Transfers in progress',
+          scope: 'Current queue',
+          value: payoutOverviewSummaryResult.ok ? summary.inProgress : 'Unavailable',
         },
         {
+          helper: 'Paid withdrawals still missing a bank reconciliation match.',
           kind: 'risk',
-          label: 'Payout holds',
-          scope: 'Needs action',
-          value: summary.payoutHolds,
-          helper: 'Batches blocked by Partner account checks.',
+          label: 'Bank matches pending',
+          scope: 'All open evidence',
+          value: walletWithdrawalGlobalSummaryResult.ok
+            ? (walletWithdrawalGlobalSummary?.paidUnreconciled ?? 0)
+            : 'Unavailable',
         },
         {
-          kind: 'action',
-          label: 'Missing refs',
-          scope: 'Pending',
-          value: summary.missingTransferRefs,
-          helper: 'Transfer references required before paid.',
-        },
-        {
-          helper: 'Paid payout batches.',
-          kind: 'record',
-          label: 'Settled',
-          scope: 'Transfer records',
-          value: summary.settled,
-        },
-        {
-          kind: 'period',
-          label: 'Total net',
+          helper: 'Paid payout batches missing transfer, withholding, wallet-ledger, or posted GL evidence.',
+          kind: 'risk',
+          label: 'Wallet / GL closeout repair',
           scope: payoutRangeScope,
-          value: <MoneyText amount={summary.totalNetAmount} currency={summary.currency} />,
-          helper: 'Partner net in visible batches.',
-        },
-        {
-          kind: 'period',
-          label: 'Withheld tax',
-          scope: payoutRangeScope,
-          value: <MoneyText amount={summary.withholdingAmount} currency={summary.currency} />,
-          helper: 'Tax logs attached to payout batches.',
+          value: payoutOverviewSummaryResult.ok
+            ? (payoutOverviewSummary?.postPaymentRepairCount ?? 0)
+            : 'Unavailable',
         },
       ]}
       title="Partner Payouts"
     >
       {confirmation ? (
         <>
-          {confirmation.action === 'paid' && financeApproverOptions.length === 0 ? (
+          {confirmation.action === 'reverse' && financeApproverOptions.length === 0 ? (
             <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
-              No other Finance approver is available. Assign the FINANCE_APPROVER role before closing this payout as paid.
+              No other Finance approver is available. Assign the FINANCE_APPROVER role before posting this
+              payout reversal.
             </AdminInlineNotice>
           ) : null}
           <ConfirmDialog
@@ -259,19 +299,47 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             cancelHref={confirmation.cancelHref}
             confirmLabel={confirmation.confirmLabel}
             description={confirmation.description}
-            disabled={confirmation.disabled || (confirmation.action === 'paid' && financeApproverOptions.length === 0)}
+            disabled={
+              confirmation.disabled ||
+              (confirmation.action === 'reverse' && financeApproverOptions.length === 0)
+            }
             hiddenInputs={[
               { name: 'payoutBatchId', value: confirmation.payoutBatchId },
               { name: 'transferRef', value: confirmation.transferRef },
             ]}
             id={`payout-${confirmation.action}-${confirmation.payoutBatchId}`}
             selectInputs={
-              confirmation.action === 'paid'
+              confirmation.action === 'reverse'
                 ? [
                     {
                       label: 'Separate Finance approver',
                       name: 'approvalAdminId',
                       options: [{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions],
+                      required: true,
+                    },
+                  ]
+                : []
+            }
+            textInputs={
+              confirmation.action === 'reverse'
+                ? [
+                    {
+                      label: 'Reversal reason',
+                      minLength: 10,
+                      name: 'reason',
+                      placeholder: 'Why the bank transfer was returned or rejected',
+                      required: true,
+                    },
+                    {
+                      label: 'Bank reversal reference',
+                      name: 'reversalReference',
+                      placeholder: 'Bank return or rejection reference',
+                      required: true,
+                    },
+                    {
+                      label: 'Bank evidence URL',
+                      name: 'attachmentUrl',
+                      placeholder: 'Private evidence URL',
                       required: true,
                     },
                   ]
@@ -283,165 +351,391 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         </>
       ) : null}
 
+      {selectedWithdrawalForReversal ? (
+        <ConfirmDialog
+          action={reversePaidProviderWalletWithdrawal}
+          cancelHref={currentPayoutViewHref}
+          confirmLabel="Reverse paid withdrawal"
+          description={
+            <>
+              Reverse withdrawal {shortRecordId(selectedWithdrawalForReversal.id)} for{' '}
+              {selectedWithdrawalForReversal.providerProfile?.displayName ??
+                selectedWithdrawalForReversal.providerProfile?.user?.phone ??
+                'Unknown Partner'}{' '}
+              after confirming bank return evidence. Amount:{' '}
+              <MoneyText
+                amount={selectedWithdrawalForReversal.amount}
+                currency={selectedWithdrawalForReversal.currency}
+              />
+              . Current transfer reference: {selectedWithdrawalForReversal.transferRef || 'Missing'}.
+              {' '}Bank:{' '}
+              {selectedWithdrawalForReversal.bankAccount
+                ? `${selectedWithdrawalForReversal.bankAccount.bankName} ${
+                    selectedWithdrawalForReversal.bankAccount.accountNumberMasked ??
+                    `ending ${selectedWithdrawalForReversal.bankAccount.accountNumberLast4 ?? 'unknown'}`
+                  }`
+                : 'not linked'}.
+              {' '}Paid at: <DateTimeText fallback="Unknown" value={selectedWithdrawalForReversal.paidAt} />.
+              {' '}Paid by:{' '}
+              {selectedWithdrawalForReversal.paidBy?.fullName ??
+                selectedWithdrawalForReversal.paidBy?.email ??
+                selectedWithdrawalForReversal.paidBy?.id ??
+                'not recorded'}.
+              {' '}Bank match:{' '}
+              {selectedWithdrawalForReversal.reconciliationState === 'MATCHED'
+                ? 'matched'
+                : 'not matched'}.
+              {' '}Accounting preview: Dr Bank / Cr Partner wallet liability. Paid journal:{' '}
+              {selectedWithdrawalForReversal.preflight?.paidJournalPosted ? 'posted' : 'missing'}.
+            </>
+          }
+          disabled={
+            selectedWithdrawalForReversal.preflight?.canReversePaid === false ||
+            financeApproverOptions.length === 0
+          }
+          hiddenInputs={[{ name: 'requestId', value: selectedWithdrawalForReversal.id }]}
+          id={`withdrawal-reversal-${selectedWithdrawalForReversal.id}`}
+          selectInputs={[
+            {
+              label: 'Separate Finance approver',
+              name: 'approvalAdminId',
+              options: [{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions],
+              required: true,
+            },
+          ]}
+          textInputs={[
+            {
+              label: 'Reversal reason',
+              minLength: 10,
+              name: 'reason',
+              placeholder: 'Why the bank transfer was returned or rejected',
+              required: true,
+            },
+            {
+              label: 'Bank reversal reference',
+              name: 'reversalReference',
+              placeholder: 'Bank return or rejection reference',
+              required: true,
+            },
+            {
+              label: 'Bank reversal evidence URL',
+              name: 'attachmentUrl',
+              placeholder: 'Private evidence URL',
+              required: true,
+            },
+          ]}
+          title="Reverse paid withdrawal"
+          tone="danger"
+        />
+      ) : null}
+
+      {!payoutOverviewSummaryResult.ok ? (
+        <AdminInlineNotice className="admin-mb-16" role="alert" tone="danger">
+          Payout summary could not be loaded. Reload before using this page for release or reconciliation.
+        </AdminInlineNotice>
+      ) : null}
+      {!walletWithdrawalGlobalSummaryResult.ok ? (
+        <AdminInlineNotice className="admin-mb-16" role="alert" tone="danger">
+          Withdrawal reconciliation summary could not be loaded. Global bank-match risk is unavailable.
+        </AdminInlineNotice>
+      ) : null}
+      {(isOperationsWorkspace || filters.recon === 'payout-closeout-repair') && !payoutBatchesResult.ok ? (
+        <AdminInlineNotice className="admin-mb-16" role="alert" tone="danger">
+          Payout batch rows could not be loaded. Reload before acting on this queue.
+        </AdminInlineNotice>
+      ) : null}
+      {(isRecordsWorkspace || filters.recon === 'bank-unmatched') && !walletWithdrawalRequestsResult.ok ? (
+        <AdminInlineNotice className="admin-mb-16" role="alert" tone="danger">
+          Withdrawal rows could not be loaded. Reload before approving or reconciling a withdrawal.
+        </AdminInlineNotice>
+      ) : null}
+      {(isRecordsWorkspace || filters.recon === 'bank-unmatched') && !walletWithdrawalSummaryResult.ok ? (
+        <AdminInlineNotice className="admin-mb-16" role="alert" tone="danger">
+          The selected withdrawal scope could not be summarized. Row counts and pagination are unavailable.
+        </AdminInlineNotice>
+      ) : null}
+      {(walletWithdrawalGlobalSummary?.paidUnreconciled ?? 0) > 0 ? (
+        <AdminInlineNotice className="admin-mb-16" role="status" tone="warning">
+          {walletWithdrawalGlobalSummary?.paidUnreconciled} paid withdrawal(s) remain unmatched across all dates. A
+          clear selected queue does not clear this global evidence backlog.
+        </AdminInlineNotice>
+      ) : null}
+      {isBankReconciliationScope ? (
+        <AdminInlineNotice className="admin-mb-16" role="status" tone="warning">
+          Showing the exact {filters.period} paid payout batches used by Finance Overview. Remaining amounts
+          reflect active MATCHED or PARTIALLY_MATCHED OUTFLOW evidence only.
+        </AdminInlineNotice>
+      ) : null}
+
       <AdminTablePanel
         className="payout-date-range-card"
-        description={`Range: ${dateRangeLabel(filters.range)}. Operations stays action-first; policy, audit, and record evidence load in separate workspaces.`}
+        description={
+          isBankReconciliationScope
+            ? `Accounting period: ${filters.period} · Asia/Ho_Chi_Minh. This list is the monthly payout bank-evidence exception scope.`
+            : `Selected range: ${dateRangeLabel(filters.range)} · Asia/Ho_Chi_Minh. Each view loads only its own row data; global bank-match risk remains visible.`
+        }
         footer={
           <AdminFilterChipGroup ariaLabel="Payout evidence views">
-            <AdminTextLink href="/finance-closeout">Open finance closeout</AdminTextLink>
+            <AdminTextLink href="/finance-overview">Open Finance Overview</AdminTextLink>
+            <AdminTextLink href={operationalPolicyHref(OPERATIONAL_POLICY_KEYS.payoutBatchCycle)}>
+              Payout policy
+            </AdminTextLink>
           </AdminFilterChipGroup>
         }
-        resultLabel={`${workspaceLabel} · ${summary.total} batch(es)`}
-        resultTone={summary.total > 0 ? 'info' : 'warning'}
-        title="Payout date range"
+        resultLabel={`${workspaceLabel} · generated ${formatRelativeTime(
+          payoutOverviewSummary?.generatedAt ?? null,
+          { justNow: 'just now' },
+        )}`}
+        resultTone={payoutOverviewSummaryResult.ok ? 'info' : 'danger'}
+        title="Payout workspace"
       >
         <div className="booking-date-filter-bar payout-range-filter-group admin-mt-12">
-          <span className="payout-range-filter-group-label">Workspace</span>
+          <span className="payout-range-filter-group-label">View</span>
           <AdminSegmentedControl
-            activeValue={filters.workspace}
-            ariaLabel="Payout workspaces"
+            activeValue={filters.view}
+            ariaLabel="Payout views"
             className="payout-workspace-filter-buttons"
             options={[
               {
-                href: payoutHref({ range: filters.range, workspace: 'operations' }),
-                label: 'Operations',
-                value: 'operations',
+                href: payoutHref({ range: filters.range, view: 'batches' }),
+                label: 'Payout batches',
+                value: 'batches',
               },
               {
-                href: payoutHref({ range: filters.range, workspace: 'policy' }),
-                label: 'Release policy',
-                value: 'policy',
+                href: payoutHref({ range: filters.range, view: 'withdrawals' }),
+                label: 'Withdrawals',
+                value: 'withdrawals',
               },
               {
-                href: payoutHref({ range: filters.range, workspace: 'audit' }),
-                label: 'Audit evidence',
-                value: 'audit',
-              },
-              {
-                href: payoutHref({ range: filters.range, workspace: 'records' }),
-                label: 'Records',
-                value: 'records',
+                href: payoutHref({ range: filters.range, recon: 'overview', view: 'reconciliation' }),
+                label: 'Reconciliation',
+                value: 'reconciliation',
               },
             ]}
           />
         </div>
-        <div className="booking-date-filter-bar payout-range-filter-group admin-mt-12">
-          <span className="payout-range-filter-group-label">Range</span>
+        {filters.view === 'reconciliation' ? (
+          <div className="booking-date-filter-bar payout-range-filter-group admin-mt-12">
+            <span className="payout-range-filter-group-label">Workspace</span>
+            <AdminSegmentedControl
+              activeValue={filters.recon ?? 'overview'}
+              ariaLabel="Payout reconciliation workspaces"
+              className="payout-workspace-filter-buttons"
+              options={[
+                {
+                  href: payoutHref({ range: filters.range, recon: 'overview', view: 'reconciliation' }),
+                  label: 'Overview',
+                  value: 'overview',
+                },
+                {
+                  href: payoutHref({
+                    range: filters.range,
+                    recon: 'bank-unmatched',
+                    view: 'reconciliation',
+                  }),
+                  label: `Bank unmatched (${walletWithdrawalGlobalSummary?.paidUnreconciled ?? 0})`,
+                  value: 'bank-unmatched',
+                },
+                {
+                  href: payoutHref({
+                    range: filters.range,
+                    recon: 'payout-closeout-repair',
+                    view: 'reconciliation',
+                  }),
+                  label: `Wallet / GL closeout repair (${payoutOverviewSummary?.postPaymentRepairCount ?? 0})`,
+                  value: 'payout-closeout-repair',
+                },
+              ]}
+            />
+          </div>
+        ) : null}
+        {!isBankReconciliationScope ? (
+          <div className="booking-date-filter-bar payout-range-filter-group admin-mt-12">
+            <span className="payout-range-filter-group-label">Range</span>
           <AdminSegmentedControl
             activeValue={filters.range}
             ariaLabel="Payout date range"
             className="payout-range-filter-buttons"
             options={[
-              { href: payoutHref({ range: 'all', workspace: filters.workspace }), label: 'All dates', value: 'all' },
-              { href: payoutHref({ range: 'today', workspace: filters.workspace }), label: 'Today', value: 'today' },
-              { href: payoutHref({ range: '7d', workspace: filters.workspace }), label: 'Last 7 days', value: '7d' },
-              { href: payoutHref({ range: '30d', workspace: filters.workspace }), label: 'Last 30 days', value: '30d' },
+              {
+                href: payoutHref({ range: 'all', recon: filters.recon, view: filters.view }),
+                label: 'All dates',
+                value: 'all',
+              },
+              {
+                href: payoutHref({ range: 'today', recon: filters.recon, view: filters.view }),
+                label: 'Today',
+                value: 'today',
+              },
+              {
+                href: payoutHref({ range: '7d', recon: filters.recon, view: filters.view }),
+                label: 'Last 7 days',
+                value: '7d',
+              },
+              {
+                href: payoutHref({ range: '30d', recon: filters.recon, view: filters.view }),
+                label: 'Last 30 days',
+                value: '30d',
+              },
+            ]}
+            />
+          </div>
+        ) : null}
+        {filters.recon !== 'overview' ? (
+        <AdminFormGrid action="/payouts" className="payout-filter-form admin-mt-12" method="get">
+          {filters.view !== 'batches' ? <input name="view" type="hidden" value={filters.view} /> : null}
+          {filters.recon ? <input name="recon" type="hidden" value={filters.recon} /> : null}
+          {filters.range !== 'all' ? <input name="range" type="hidden" value={filters.range} /> : null}
+          {filters.evidence ? <input name="evidence" type="hidden" value={filters.evidence} /> : null}
+          {filters.period ? <input name="period" type="hidden" value={filters.period} /> : null}
+          {filters.returnTo ? <input name="returnTo" type="hidden" value={filters.returnTo} /> : null}
+          {filters.status ? <input name="status" type="hidden" value={filters.status} /> : null}
+          <AdminFormInput
+            defaultValue={filters.q}
+            label={
+              filters.view === 'withdrawals' || filters.recon === 'bank-unmatched'
+                ? 'Search withdrawal ID, Partner, phone, bank last 4, or transfer reference'
+                : 'Search batch ID, Partner, phone, or transfer reference'
+            }
+            name="q"
+            placeholder="Search records"
+            type="search"
+          />
+          {filters.view === 'batches' && !isBankReconciliationScope ? (
+            <AdminFormSelect
+              defaultValue={filters.queue ?? ''}
+              label="Queue"
+              name="queue"
+              options={[
+                { label: 'Open work', value: 'open' },
+                { label: 'Needs review', value: 'review' },
+                { label: 'In transfer', value: 'transfer' },
+                { label: 'Paid history', value: 'paid' },
+                { label: 'Cancelled archive', value: 'archived' },
+              ]}
+            />
+          ) : null}
+          <AdminFormSelect
+            defaultValue={filters.sort}
+            label="Sort"
+            name="sort"
+            options={[
+              { label: 'Newest first', value: 'newest' },
+              { label: 'Oldest first', value: 'oldest' },
+              { label: 'Highest amount', value: 'amount-desc' },
+              { label: 'Lowest amount', value: 'amount-asc' },
             ]}
           />
-        </div>
+          <AdminFormControlButton type="submit">Apply filters</AdminFormControlButton>
+        </AdminFormGrid>
+        ) : null}
       </AdminTablePanel>
       {isPolicyWorkspace ? (
         <AdminTablePanel
           className="payout-release-policy-card"
           description="Shows the operating gates before partner payout release. Weekly, monthly, and admin-selected batch timing stays configurable from Operations Policy."
           resultLabel={`${releasePolicyDesk.length} gate(s)`}
-          resultTone={releasePolicyDesk.some((signal) => signal.pillClass === 'pill-danger') ? 'danger' : 'info'}
+          resultTone={
+            releasePolicyDesk.some((signal) => signal.pillClass === 'pill-danger') ? 'danger' : 'info'
+          }
           title="Payout batch release policy desk"
         >
-        <AdminFilterChipGroup ariaLabel="Payout release policy links" className="admin-mb-12">
-          <AdminTextLink href={operationalPolicyHref(OPERATIONAL_POLICY_KEYS.payoutBatchCycle)}>
-            Batch policy
-          </AdminTextLink>
-        </AdminFilterChipGroup>
-        <AdminSectionHeader
-          className="admin-mt-14"
-          description="Live Admin policy values used by finance before payout release, cash-fee clearance, and final acceptance, service start, and payout release reopening."
-          status={<StatusBadge tone="info">Live policy default</StatusBadge>}
-          title="Applied operations policy"
-        />
-        <AdminTraceSummary
-          className="admin-mt-12"
-          defaultKind="live"
-          defaultScope="Live policy"
-          metrics={appliedPayoutPolicyCards.map((card) => ({
-            detail: card.helper,
-            label: card.label,
-            value: card.value,
-          }))}
-        />
-        <AdminTaskGrid>
-          {releasePolicyDesk.map((signal) => (
-            <AdminTaskCard
-              actionLabel={signal.action}
-              className={signal.className}
-              detail={signal.detail}
-              key={signal.title}
-              leading={<StatusBadgeFromPillClass pillClass={signal.pillClass}>{signal.status}</StatusBadgeFromPillClass>}
-              title={signal.title}
-            />
-          ))}
-        </AdminTaskGrid>
-        <AdminSectionHeader
-          actions={
-            <AdminTextLink href="/cash-settlements">
-              Cash settlements
+          <AdminFilterChipGroup ariaLabel="Payout release policy links" className="admin-mb-12">
+            <AdminTextLink href={operationalPolicyHref(OPERATIONAL_POLICY_KEYS.payoutBatchCycle)}>
+              Batch policy
             </AdminTextLink>
-          }
-          className="admin-mt-16"
-          description="Finance can read this from top to bottom before a bank transfer run. Partner cash-fee debt stays out of payout release until cleared."
-          title="Payout release cycle board"
-        />
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table payout-release-cycle-table"
-            emptyMessage="No payout release cycle steps are configured."
-            headers={['Step', 'Queue', 'Operator check', 'Next action']}
-            rowCount={releaseCycleBoard.length}
-          >
-            {releaseCycleBoard.map((item) => (
-              <tr key={item.step}>
-                <td>
-                  <strong>{item.step}</strong>
-                  <div className="muted">{item.timing}</div>
-                </td>
-                <td>
-                  <StatusBadgeFromPillClass pillClass={item.pillClass}>{item.status}</StatusBadgeFromPillClass>
-                  <div className="muted">{item.queue}</div>
-                </td>
-                <td>{item.operatorCheck}</td>
-                <td>{item.nextAction}</td>
-              </tr>
+          </AdminFilterChipGroup>
+          <AdminSectionHeader
+            className="admin-mt-14"
+            description="Live Admin policy values used by finance before payout release, cash-fee clearance, and final acceptance, service start, and payout release reopening."
+            status={<StatusBadge tone="info">Live policy default</StatusBadge>}
+            title="Applied operations policy"
+          />
+          <AdminTraceSummary
+            className="admin-mt-12"
+            defaultKind="live"
+            defaultScope="Live policy"
+            metrics={appliedPayoutPolicyCards.map((card) => ({
+              detail: card.helper,
+              label: card.label,
+              value: card.value,
+            }))}
+          />
+          <AdminTaskGrid>
+            {releasePolicyDesk.map((signal) => (
+              <AdminTaskCard
+                actionLabel={signal.action}
+                className={signal.className}
+                detail={signal.detail}
+                key={signal.title}
+                leading={
+                  <StatusBadgeFromPillClass pillClass={signal.pillClass}>
+                    {signal.status}
+                  </StatusBadgeFromPillClass>
+                }
+                title={signal.title}
+              />
             ))}
-          </AdminDataTable>
-        </AdminTableScroll>
-        <AdminSectionHeader
-          actions={
-            <AdminTextLink href="/bookings?view=marketplace">
-              Marketplace monitor
-            </AdminTextLink>
-          }
-          className="admin-mt-16"
-          description="Connects Partner cash-fee debt to the gates operators care about: final acceptance, service start, and payout release. Partners can see marketplace requests while the wallet is negative."
-          title="Marketplace and payout unblock bridge"
-        />
-        <AdminTaskGrid className="admin-mt-12">
-          {marketplaceUnblockBridge.map((item) => (
-            <AdminActionCard
-              actionLabel={item.action}
-              className={item.className}
-              detail={item.detail}
-              href={item.href}
-              key={item.title}
-              leading={<StatusBadgeFromPillClass pillClass={item.pillClass}>{item.status}</StatusBadgeFromPillClass>}
-              title={item.title}
-              variant="ops-task"
-            />
-          ))}
-        </AdminTaskGrid>
+          </AdminTaskGrid>
+          <AdminSectionHeader
+            actions={<AdminTextLink href="/cash-settlements">Cash settlements</AdminTextLink>}
+            className="admin-mt-16"
+            description="Finance can read this from top to bottom before a bank transfer run. Partner cash-fee debt stays out of payout release until cleared."
+            title="Payout release cycle board"
+          />
+          <AdminTableScroll>
+            <AdminDataTable
+              className="vuexy-booking-table payout-release-cycle-table"
+              emptyMessage="No payout release cycle steps are configured."
+              headers={['Step', 'Queue', 'Operator check', 'Next action']}
+              rowCount={releaseCycleBoard.length}
+            >
+              {releaseCycleBoard.map((item) => (
+                <tr key={item.step}>
+                  <td>
+                    <strong>{item.step}</strong>
+                    <div className="muted">{item.timing}</div>
+                  </td>
+                  <td>
+                    <StatusBadgeFromPillClass pillClass={item.pillClass}>
+                      {item.status}
+                    </StatusBadgeFromPillClass>
+                    <div className="muted">{item.queue}</div>
+                  </td>
+                  <td>{item.operatorCheck}</td>
+                  <td>{item.nextAction}</td>
+                </tr>
+              ))}
+            </AdminDataTable>
+          </AdminTableScroll>
+          <AdminSectionHeader
+            actions={<AdminTextLink href="/bookings?view=marketplace">Marketplace monitor</AdminTextLink>}
+            className="admin-mt-16"
+            description="Connects Partner cash-fee debt to the gates operators care about: final acceptance, service start, and payout release. Partners can see marketplace requests while the wallet is negative."
+            title="Marketplace and payout unblock bridge"
+          />
+          <AdminTaskGrid className="admin-mt-12">
+            {marketplaceUnblockBridge.map((item) => (
+              <AdminActionCard
+                actionLabel={item.action}
+                className={item.className}
+                detail={item.detail}
+                href={item.href}
+                key={item.title}
+                leading={
+                  <StatusBadgeFromPillClass pillClass={item.pillClass}>
+                    {item.status}
+                  </StatusBadgeFromPillClass>
+                }
+                title={item.title}
+                variant="ops-task"
+              />
+            ))}
+          </AdminTaskGrid>
         </AdminTablePanel>
       ) : null}
 
-      {isOperationsWorkspace ? (
+      {filters.recon === 'overview' && payoutOverviewSummaryResult.ok ? (
         <>
           <PayoutMoneyFlowSection
             cards={moneyFlowCards}
@@ -449,73 +743,190 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             currency={summary.currency}
             rangeLabel={dateRangeLabel(filters.range)}
           />
-
-          <PayoutCommandQueueSection signals={commandSignals} />
+          <section aria-labelledby="payout-reconciliation-queues-title" className="admin-mb-16">
+            <AdminSectionHeader
+              description="Choose the evidence boundary that needs work. No payout or withdrawal rows are loaded in this overview."
+              title="Reconciliation queues"
+              titleId="payout-reconciliation-queues-title"
+            />
+            <AdminTaskGrid className="admin-mt-12">
+              <AdminActionCard
+                actionLabel="Review bank matches"
+                detail={
+                  <>
+                    <MoneyText
+                      amount={walletWithdrawalGlobalSummary?.paidUnreconciledAmount ?? 0}
+                      currency={walletWithdrawalGlobalSummary?.currency ?? summary.currency}
+                    />{' '}
+                    paid withdrawals still lack a bank match.
+                  </>
+                }
+                href={payoutHref({
+                  range: filters.range,
+                  recon: 'bank-unmatched',
+                  view: 'reconciliation',
+                })}
+                leading={
+                  <StatusBadge tone={walletWithdrawalGlobalSummary?.paidUnreconciled ? 'warning' : 'success'}>
+                    {walletWithdrawalGlobalSummary?.paidUnreconciled ?? 0} pending
+                  </StatusBadge>
+                }
+                title="Bank unmatched"
+                variant="ops-task"
+              />
+              <AdminActionCard
+                actionLabel="Review closeout evidence"
+                detail="Paid payout batches missing transfer, withholding, wallet-ledger, or posted GL evidence. Record origin is not classified without an authoritative rollout cutoff."
+                href={payoutHref({
+                  range: filters.range,
+                  recon: 'payout-closeout-repair',
+                  view: 'reconciliation',
+                })}
+                leading={
+                  <StatusBadge tone={payoutOverviewSummary?.postPaymentRepairCount ? 'warning' : 'success'}>
+                    {payoutOverviewSummary?.postPaymentRepairCount ?? 0} pending
+                  </StatusBadge>
+                }
+                title="Wallet / GL closeout repair"
+                variant="ops-task"
+              />
+            </AdminTaskGrid>
+          </section>
         </>
       ) : null}
 
-      {inclusionAudit ? <PayoutInclusionAuditSection audit={inclusionAudit} /> : null}
-
-      {isOperationsWorkspace ? (
-        <>
-          <PayoutReleaseBlockerQueueSection items={releaseBlockerRows} />
-          <PayoutPartnerFinanceQueueSection rows={partnerFinanceQueueRows} />
-        </>
+      {!payoutOverviewSummaryResult.ok ? (
+        <AdminInlineNotice className="admin-mb-16" role="alert" tone="danger">
+          Payout summary could not be loaded. Refresh before using totals or reconciliation counts.
+        </AdminInlineNotice>
       ) : null}
 
-      {isOperationsWorkspace || isRecordsWorkspace ? (
+      {(isRecordsWorkspace || filters.recon === 'bank-unmatched') && !walletWithdrawalRequestsResult.ok ? (
+        <AdminInlineNotice className="admin-mb-16" role="alert" tone="danger">
+          Withdrawal rows could not be loaded. No zero result is being inferred from this failure.
+        </AdminInlineNotice>
+      ) : null}
+
+      {(isOperationsWorkspace || filters.recon === 'payout-closeout-repair') && !payoutBatchesResult.ok ? (
+        <AdminInlineNotice className="admin-mb-16" role="alert" tone="danger">
+          Payout batch rows could not be loaded. Refresh before taking a finance action.
+        </AdminInlineNotice>
+      ) : null}
+
+      {(isRecordsWorkspace || filters.recon === 'bank-unmatched') && walletWithdrawalRequestsResult.ok ? (
         <PayoutWalletWithdrawalRequestSection
           activeReconciliation={filters.withdrawalReconciliation}
           activeStatus={filters.withdrawalStatus}
           pagination={withdrawalPagination}
           paginationHrefForPage={(withdrawalPage) =>
             payoutHref({
+              focusWithdrawalRequests: true,
               page: filters.page,
               pageSize: filters.pageSize,
               range: filters.range,
+              recon: filters.recon,
               withdrawalPage,
               withdrawalPartnerId: filters.withdrawalPartnerId,
               withdrawalReconciliation: filters.withdrawalReconciliation,
-              withdrawalStatus: filters.withdrawalStatus,
-              workspace: filters.workspace,
+              withdrawalStatus: filters.hasWithdrawalSavedView ? filters.withdrawalStatus : null,
+              view: filters.view,
+            })
+          }
+          reconciliationHrefForView={(withdrawalReconciliation) =>
+            payoutHref({
+              focusWithdrawalRequests: true,
+              page: filters.page,
+              pageSize: filters.pageSize,
+              range: filters.range,
+              recon: filters.recon,
+              withdrawalPartnerId: filters.withdrawalPartnerId,
+              withdrawalReconciliation,
+              withdrawalStatus: 'PAID',
+              view: filters.view,
             })
           }
           range={filters.range}
           requests={walletWithdrawalRequests}
-          financeApproverOptions={financeApproverOptions}
+          reverseHrefForRequest={(requestId) =>
+            payoutHref({
+              pageSize: filters.pageSize,
+              q: filters.q,
+              range: filters.range,
+              recon: filters.recon,
+              reverseWithdrawalRequestId: requestId,
+              sort: filters.sort,
+              view: filters.view,
+              withdrawalPartnerId: filters.withdrawalPartnerId,
+              withdrawalReconciliation: filters.withdrawalReconciliation,
+              withdrawalStatus: filters.withdrawalStatus,
+            })
+          }
+          savedView={
+            filters.hasWithdrawalSavedView
+              ? {
+                  clearHref: payoutWithdrawalClearSavedViewHref(filters),
+                  label: withdrawalSavedViewLabel(filters),
+                  resultCount: withdrawalTotal,
+                }
+              : null
+          }
+          statusHrefForView={(withdrawalStatus) =>
+            payoutHref({
+              focusWithdrawalRequests: true,
+              page: filters.page,
+              pageSize: filters.pageSize,
+              range: filters.range,
+              recon: filters.recon,
+              withdrawalPartnerId: filters.withdrawalPartnerId,
+              withdrawalStatus,
+              view: filters.view,
+            })
+          }
           summary={walletWithdrawalSummary}
           updateWithdrawalRequestAction={updateProviderWalletWithdrawalRequest}
         />
       ) : null}
 
-      {isAuditWorkspace ? (
-        <PayoutServiceEvidenceSection
-          batchCount={batches.filter((batch) => (batch.earnings?.length ?? 0) > 0).length}
-          currency={summary.currency}
-          items={serviceEvidence}
-        />
-      ) : null}
-
-      {isAuditWorkspace ? (
-        <PayoutStatusLanesSection batchCount={batches.length} lanes={payoutStatusLanes} />
-      ) : null}
-
-      {isOperationsWorkspace || isRecordsWorkspace ? (
+      {(isOperationsWorkspace || filters.recon === 'payout-closeout-repair') && payoutBatchesResult.ok ? (
         <PayoutBatchListSection
           pagination={payoutBatchPagination}
           paginationHrefForPage={(page) =>
             payoutHref({
+              evidence: filters.evidence,
               page,
               pageSize: filters.pageSize,
+              period: filters.period,
+              q: filters.q,
+              queue: filters.queue,
               range: filters.range,
-              withdrawalPage: filters.withdrawalPage,
-              withdrawalPartnerId: filters.withdrawalPartnerId,
-              withdrawalReconciliation: filters.withdrawalReconciliation,
-              withdrawalStatus: filters.withdrawalStatus,
-              workspace: filters.workspace,
+              recon: filters.recon,
+              returnTo: filters.returnTo,
+              sort: filters.sort,
+              status: filters.status,
+              view: filters.view,
             })
           }
           rows={payoutBatchPagination.rows}
+          selectedRowLoaded={Boolean(selectedPayoutBatchRow)}
+          selectedRowRequested={Boolean(filters.editPayoutBatchId)}
+          selectedRow={selectedPayoutBatchRow}
+          selectionClearHref={
+            payoutHref({
+              evidence: filters.evidence,
+              page: filters.page,
+              pageSize: filters.pageSize,
+              period: filters.period,
+              q: filters.q,
+              queue: filters.queue,
+              range: filters.range,
+              recon: filters.recon,
+              returnTo: filters.returnTo,
+              sort: filters.sort,
+              status: filters.status,
+              view: filters.view,
+            })
+          }
+          showOperatorEvidence={isAuditWorkspace}
           updateTransferRefAction={updatePayoutTransferRef}
         />
       ) : null}
@@ -533,13 +944,67 @@ function sortBatches(batches: AdminPayoutBatch[]) {
   });
 }
 
-function buildPayoutBatchTableRows(batches: readonly AdminPayoutBatch[]): PayoutBatchTableRow[] {
+function withdrawalSavedViewLabel(filters: ReturnType<typeof buildPayoutFilters>) {
+  if (filters.withdrawalReconciliation === 'unmatched') {
+    return 'Withdrawal requests · Bank match pending';
+  }
+  if (filters.withdrawalReconciliation === 'matched') {
+    return 'Withdrawal requests · Reconciled';
+  }
+  if (filters.withdrawalPartnerId) {
+    return `Withdrawal requests · Partner ${shortRecordId(filters.withdrawalPartnerId)}`;
+  }
+  return `Withdrawal requests · ${adminWorkflowStatusLabel(filters.withdrawalStatus)}`;
+}
+
+function payoutCurrentViewHref(filters: ReturnType<typeof buildPayoutFilters>) {
+  return payoutHref({
+    editPayoutBatchId: filters.editPayoutBatchId,
+    evidence: filters.evidence,
+    page: filters.page,
+    pageSize: filters.pageSize,
+    period: filters.period,
+    q: filters.q,
+    queue: filters.queue,
+    range: filters.range,
+    recon: filters.recon,
+    returnTo: filters.returnTo,
+    sort: filters.sort,
+    status: filters.status,
+    view: filters.view,
+    withdrawalPage: filters.withdrawalPage,
+    withdrawalPartnerId: filters.withdrawalPartnerId,
+    withdrawalReconciliation: filters.withdrawalReconciliation,
+    withdrawalStatus: filters.hasWithdrawalSavedView ? filters.withdrawalStatus : null,
+  });
+}
+
+function buildPayoutBatchTableRows(
+  batches: readonly AdminPayoutBatch[],
+  filters: ReturnType<typeof buildPayoutFilters>,
+): PayoutBatchTableRow[] {
   return batches.map((batch) => {
     const blockingReasons = payoutBlockingReasons(batch);
     const payoutHold = activePayoutHold(batch);
+    const bankAccount = selectedPayoutBankAccount(batch);
+    const preflightMessages = batch.riskModel
+      ? batch.riskModel.phase === 'POST_PAYMENT'
+        ? batch.riskModel.reconciliationFindings
+        : [
+            ...(batch.riskModel.releasePreflight?.blockers ?? []),
+            ...(batch.riskModel.releasePreflight?.warnings ?? []),
+          ]
+      : [...(batch.preflight?.blockers ?? []), ...(batch.preflight?.warnings ?? [])];
 
     return {
       id: batch.id,
+      bankAccountDetail: bankAccount
+        ? `${bankAccount.accountHolderName} · ${bankAccount.status}`
+        : 'No bank account is attached to this payout target.',
+      bankAccountLabel: bankAccount
+        ? `${bankAccount.bankName} · ${bankAccount.accountNumberMasked ?? bankAccount.accountNumberLast4 ?? 'Hidden'}`
+        : 'Missing',
+      bankReconciliationRemainingAmount: batch.bankReconciliation?.remainingAmount,
       shortId: shortRecordId(batch.id),
       updatedLabel: formatRelativeTime(batch.createdAt, { justNow: 'Updated just now' }),
       partnerLabel: batch.providerProfile?.displayName ?? batch.providerProfile?.user?.phone ?? 'Unknown',
@@ -577,6 +1042,34 @@ function buildPayoutBatchTableRows(batches: readonly AdminPayoutBatch[]): Payout
         ok: item.ok,
       })),
       readinessSummary: payoutReadinessSummary(batch),
+      rawStatus: batch.status,
+      reviewHref: payoutHref({
+        editPayoutBatchId: batch.id,
+        evidence: filters.evidence,
+        page: filters.page,
+        pageSize: filters.pageSize,
+        period: filters.period,
+        q: filters.q,
+        queue: filters.queue,
+        range: filters.range,
+        recon: filters.recon,
+        returnTo: filters.returnTo,
+        sort: filters.sort,
+        status: filters.status,
+        view: filters.view,
+      }),
+      riskDetail:
+        preflightMessages.map((message) => message.message).join(' ') ||
+        (blockingReasons.length
+          ? blockingReasons.map((reason) => reason.detail).join(' ')
+          : 'No payout release risk is currently reported.'),
+      riskLabel: preflightMessages.length
+        ? `${preflightMessages.length} ${batch.riskModel?.phase === 'POST_PAYMENT' ? 'repair finding(s)' : 'release check(s)'}`
+          : blockingReasons.length
+            ? `${blockingReasons.length} check(s)`
+            : batch.riskModel?.phase === 'POST_PAYMENT'
+              ? 'Evidence complete'
+              : 'Clear',
       currency: batch.currency,
       totalAmount: batch.totalNetAmount,
       withholdingAmount: batchWithholdingAmount(batch),
@@ -586,37 +1079,76 @@ function buildPayoutBatchTableRows(batches: readonly AdminPayoutBatch[]): Payout
         ? formatRelativeTime(batch.paidAt, { justNow: 'Updated just now' })
         : 'Awaiting settlement',
       actionExecutionItems: payoutActionExecutionMap(batch),
-      actionMenuItems: payoutActionMenuItems(batch),
+      actionMenuItems: payoutActionMenuItems(batch, payoutCurrentViewHref(filters)),
       payoutHold: Boolean(payoutHold),
-      paidBlockedByReleaseCheck: !isTerminalPayoutBatch(batch) && blockingReasons.length > 0,
+      paidBlockedByReleaseCheck:
+        !isTerminalPayoutBatch(batch) &&
+        (batch.preflight ? !batch.preflight.canMarkPaid : blockingReasons.length > 0),
     };
   });
 }
 
-function payoutActionMenuItems(batch: AdminPayoutBatch) {
+function selectedPayoutBankAccount(batch: AdminPayoutBatch) {
+  const accounts = batch.providerProfile?.bankAccounts ?? [];
+  return (
+    accounts.find((account) => account.id === batch.preflight?.approvedBankAccountId) ??
+    accounts.find((account) => account.isPrimary && account.status === 'APPROVED' && !account.deletedAt) ??
+    accounts.find((account) => account.isPrimary && !account.deletedAt) ??
+    accounts.find((account) => !account.deletedAt) ??
+    null
+  );
+}
+
+function payoutActionMenuItems(
+  batch: AdminPayoutBatch,
+  currentViewHref: string,
+) {
   return [
     ...(batch.status === 'DRAFT'
       ? [
           payoutActionMenuItem(
             batch,
             'processing',
-            'Processing',
+            'Start transfer preparation',
             'Review before starting transfer processing.',
             'info',
+            currentViewHref,
           ),
         ]
       : []),
     ...(!isTerminalPayoutBatch(batch)
-      ? [payoutActionMenuItem(batch, 'paid', 'Paid', 'Review before marking this payout paid.', 'warning')]
+      ? [
+          payoutActionMenuItem(
+            batch,
+            'paid',
+            'Approve paid closeout',
+            'Review before approving this payout paid closeout.',
+            'warning',
+            currentViewHref,
+          ),
+        ]
       : []),
     ...(batch.status === 'PROCESSING'
       ? [
           payoutActionMenuItem(
             batch,
             'failed',
-            'Failed',
+            'Record transfer failure',
             'Review before preserving a failed transfer state.',
             'danger',
+            currentViewHref,
+          ),
+        ]
+      : []),
+    ...(batch.status === 'PAID'
+      ? [
+          payoutActionMenuItem(
+            batch,
+            'reverse',
+            'Post reversal',
+            'Restore the Partner wallet only after bank return evidence is attached.',
+            'danger',
+            currentViewHref,
           ),
         ]
       : []),
@@ -629,12 +1161,13 @@ function payoutActionMenuItem(
   label: string,
   fallbackDescription: string,
   tone: 'danger' | 'info' | 'warning',
+  currentViewHref: string,
 ) {
   const disabledReason = payoutActionDisabledReason(batch, action);
 
   return {
     kind: 'link' as const,
-    href: payoutActionConfirmHref(batch.id, action),
+    href: payoutActionConfirmHref(batch.id, action, currentViewHref),
     label,
     disabled: Boolean(disabledReason),
     description: disabledReason ?? fallbackDescription,
@@ -660,6 +1193,35 @@ function payoutActionAvailability(batch: AdminPayoutBatch, action: PayoutConfirm
 }
 
 function payoutActionDisabledReason(batch: AdminPayoutBatch, action: PayoutConfirmationAction) {
+  if (batch.preflight) {
+    const actionAvailability =
+      action === 'processing'
+        ? batch.preflight.actionAvailability?.startProcessing
+        : action === 'paid'
+          ? batch.preflight.actionAvailability?.markPaid
+          : action === 'reverse'
+            ? batch.preflight.actionAvailability?.reversePaid
+            : batch.preflight.actionAvailability?.markFailed;
+    if (actionAvailability) {
+      return actionAvailability.allowed
+        ? null
+        : actionAvailability.blockers.map((blocker) => blocker.message).join(' ') ||
+            `Server preflight does not allow the ${action} action for this batch.`;
+    }
+    const allowed =
+      action === 'processing'
+        ? batch.preflight.canStartProcessing
+        : action === 'paid'
+          ? batch.preflight.canMarkPaid
+          : action === 'reverse'
+            ? batch.preflight.canReversePaid
+            : batch.preflight.canMarkFailed;
+    if (!allowed) {
+      const evidence = batch.preflight.blockers.map((blocker) => blocker.message).join(' ');
+      return evidence || `Server preflight does not allow the ${action} action for this batch.`;
+    }
+    return null;
+  }
   const payoutHold = activePayoutHold(batch);
   const blockingReasons = payoutBlockingReasons(batch);
 
@@ -680,6 +1242,10 @@ function payoutActionDisabledReason(batch: AdminPayoutBatch, action: PayoutConfi
       return batch.status === 'PROCESSING'
         ? null
         : `Batch status is ${batch.status}; failed action is available only while processing.`;
+    case 'reverse':
+      return batch.status === 'PAID'
+        ? null
+        : `Batch status is ${batch.status}; reversal is available only for a paid payout.`;
   }
 }
 
@@ -691,6 +1257,8 @@ function payoutConfirmationAction(action: PayoutConfirmationAction) {
       return markPayoutPaid;
     case 'processing':
       return markPayoutProcessing;
+    case 'reverse':
+      return reversePaidPayout;
   }
 }
 
@@ -719,23 +1287,20 @@ function buildSummary(batches: AdminPayoutBatch[], payoutSummary?: AdminPayoutBa
       payoutSummary?.needsReview ??
       batches.filter((batch) => batch.status === 'DRAFT' || batch.status === 'FAILED').length,
     inProgress: payoutSummary?.inProgress ?? batches.filter((batch) => batch.status === 'PROCESSING').length,
-    payoutHolds: payoutSummary?.payoutHolds ?? batches.filter((batch) => Boolean(activePayoutHold(batch))).length,
+    payoutHolds:
+      payoutSummary?.payoutHolds ?? batches.filter((batch) => Boolean(activePayoutHold(batch))).length,
     missingTransferRefs:
-      payoutSummary?.missingTransferRefs ?? batches.filter((batch) => transferRefRequiredBeforePaid(batch)).length,
+      payoutSummary?.missingTransferRefs ??
+      batches.filter((batch) => transferRefRequiredBeforePaid(batch)).length,
     settled: payoutSummary?.settled ?? batches.filter((batch) => batch.status === 'PAID').length,
-    totalNetAmount: payoutSummary?.totalNetAmount ?? batches.reduce((sum, batch) => sum + batch.totalNetAmount, 0),
+    totalNetAmount:
+      payoutSummary?.totalNetAmount ?? batches.reduce((sum, batch) => sum + batch.totalNetAmount, 0),
     withholdingAmount:
-      payoutSummary?.withholdingAmount ?? batches.reduce((sum, batch) => sum + batchWithholdingAmount(batch), 0),
+      payoutSummary?.withholdingAmount ??
+      batches.reduce((sum, batch) => sum + batchWithholdingAmount(batch), 0),
     currency: payoutSummary?.currency ?? currency,
   };
 }
-
-type PayoutLane = {
-  title: string;
-  batches: AdminPayoutBatch[];
-  pillClass: string;
-  emptyText: string;
-};
 
 type PayoutBlockingReason = {
   label: string;
@@ -750,13 +1315,6 @@ type PayoutActionExecutionItem = {
   reason: ReactNode;
   operatorRule: string;
   pillClass: string;
-};
-
-type PayoutReleaseQueueItem = {
-  batch: AdminPayoutBatch;
-  reason: PayoutBlockingReason;
-  providerLabel: string;
-  severity: 'Block' | 'Check';
 };
 
 type PayoutReleaseCycleItem = {
@@ -820,138 +1378,71 @@ function buildPayoutServiceEvidence(batches: AdminPayoutBatch[]): PayoutServiceE
     .slice(0, 12);
 }
 
-function buildPayoutMoneyFlowCards(
-  summary: ReturnType<typeof buildSummary>,
-  serviceEvidence: PayoutServiceEvidenceItem[],
+function buildScopedPayoutMoneyFlowCards(
+  moneyFlow: AdminPayoutBatchSummary['moneyFlow'],
 ): PayoutMoneyFlowCard[] {
-  const grossRepresented = sumPayoutServiceEvidence(serviceEvidence, 'grossAmount');
-  const providerNetRepresented = sumPayoutServiceEvidence(serviceEvidence, 'netAmount');
-  const platformFeeRepresented = sumPayoutServiceEvidence(serviceEvidence, 'platformFee');
-  const taxRepresented = sumPayoutServiceEvidence(serviceEvidence, 'withholdingAmount');
-  const cashDebtRepresented = sumPayoutServiceEvidence(serviceEvidence, 'cashDebtAmount');
-
+  if (!moneyFlow) return [];
   return [
+    { amount: moneyFlow.grossAmount, detail: 'Gross earning evidence in the full selected range.', label: 'Gross' },
     {
-      label: 'Gross represented',
-      amount: grossRepresented,
-      detail: 'Customer charge attached to earnings inside payout batches.',
+      amount: moneyFlow.payoutNetAmount,
+      detail: `Payout batches in selected range: ${moneyFlow.scopeBatchCount}.`,
+      label: 'Batch net',
     },
     {
-      label: 'Partner payout',
-      amount: summary.totalNetAmount,
-      detail: 'Batch net amount planned for partner transfer.',
+      amount: moneyFlow.evidenceNetAmount,
+      detail: `Payout batches with linked earnings: ${moneyFlow.evidenceBatchCount}. This does not validate wallet-ledger or GL posting.`,
+      label: 'Linked earnings net',
     },
-    {
-      label: 'Partner net evidence',
-      amount: providerNetRepresented,
-      detail: 'Service evidence net amount used to cross-check batch totals.',
-    },
-    {
-      label: 'HANDS fee',
-      amount: platformFeeRepresented,
-      detail: 'Platform fee represented by earnings inside payout batches.',
-    },
-    {
-      label: 'Tax withheld',
-      amount: taxRepresented || summary.withholdingAmount,
-      detail: 'Withholding logs and earning tax amount before final settlement.',
-    },
-    {
-      label: 'Cash debt represented',
-      amount: cashDebtRepresented,
-      detail: 'Negative wallet amount that should not be paid out as partner net.',
-    },
+    { amount: moneyFlow.platformFeeAmount, detail: 'HANDS fee represented by linked earnings.', label: 'Platform fee' },
+    { amount: moneyFlow.withholdingAmount, detail: 'Partner withholding represented by linked earnings.', label: 'Withholding' },
+    { amount: moneyFlow.cashDebtAmount, detail: 'Negative earning exposure attached to this range.', label: 'Cash debt' },
   ];
 }
 
-function buildPayoutMoneyFlowChecks(
-  batches: AdminPayoutBatch[],
-  serviceEvidence: PayoutServiceEvidenceItem[],
+function buildScopedPayoutMoneyFlowChecks(
+  moneyFlow: AdminPayoutBatchSummary['moneyFlow'],
 ): PayoutMoneyFlowCheck[] {
-  const currency = batches[0]?.currency ?? 'VND';
-  const serviceNet = sumPayoutServiceEvidence(serviceEvidence, 'netAmount');
-  const batchNet = batches.reduce((sum, batch) => sum + batch.totalNetAmount, 0);
-  const netGap = Math.abs(batchNet - serviceNet);
-  const missingServiceEvidence =
-    batches.filter((batch) => (batch.earnings?.length ?? 0) > 0).length > 0 && !serviceEvidence.length;
-  const cashDebtEvidence = sumPayoutServiceEvidence(serviceEvidence, 'cashDebtAmount');
-  const activeMissingRef = batches.filter((batch) => transferRefRequiredBeforePaid(batch));
-  const paidMissingRef = batches.filter((batch) => batch.status === 'PAID' && !batch.transferRef);
-  const taxOpen = batches.filter((batch) =>
-    (batch.withholdingLogs ?? []).some((log) => log.status !== 'PAID'),
-  );
-
+  if (!moneyFlow) {
+    return [
+      {
+        action: 'Reload before using this evidence.',
+        className: 'ops-task-blocked',
+        detail: 'The full-range money-flow contract is unavailable.',
+        pillClass: 'pill-danger',
+        status: 'NOT EVALUATED',
+        title: 'Earning linkage scope',
+      },
+    ];
+  }
+  const evaluated = moneyFlow.completeness === 'COMPLETE';
+  const matched = moneyFlow.verdict === 'MATCHED';
   return [
     {
-      title: 'Batch net reconciliation',
-      status: netGap > 0 ? 'CHECK' : 'MATCHED',
+      action: evaluated ? 'Full selected-range evidence was evaluated.' : 'Load missing earning evidence before deciding.',
+      className: evaluated ? 'ops-task-done' : 'ops-task-blocked',
+      detail: `${moneyFlow.evidenceBatchCount} of ${moneyFlow.scopeBatchCount} selected payout batches have linked earnings; all-date payout batches: ${moneyFlow.totalBatchCount}. This check does not validate wallet-ledger or GL posting.`,
+      pillClass: evaluated ? 'pill-success' : 'pill-warning',
+      status: evaluated ? 'COMPLETE' : 'NOT EVALUATED',
+      title: 'Earning linkage coverage',
+    },
+    {
+      action: matched
+        ? 'Batch net and earning evidence net agree in this range.'
+        : evaluated
+          ? 'Investigate the full-range net difference.'
+          : 'Do not interpret the gap until evidence is complete.',
+      className: matched ? 'ops-task-done' : 'ops-task-blocked',
       detail: (
         <>
-          Batch net versus service evidence gap: <MoneyText amount={netGap} currency={currency} />.
+          Full-range batch net minus evidence net: <MoneyText amount={moneyFlow.netGap} currency="VND" />.
         </>
       ),
-      action:
-        netGap > 0
-          ? 'Review batch composition before marking bank transfer complete.'
-          : 'Batch net aligns with service evidence.',
-      className: netGap > 0 ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: netGap > 0 ? 'pill-warn' : 'pill-success',
-    },
-    {
-      title: 'Service evidence',
-      status: missingServiceEvidence ? 'MISSING' : `${serviceEvidence.length} OPTION(S)`,
-      detail: missingServiceEvidence
-        ? 'At least one payout batch has earnings but no service evidence was generated.'
-        : 'Payout batches are connected to service duration options where available.',
-      action: missingServiceEvidence
-        ? 'Check booking service links before approving payout.'
-        : 'Service option links are ready for finance review.',
-      className: missingServiceEvidence ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: missingServiceEvidence ? 'pill-danger' : 'pill-success',
-    },
-    {
-      title: 'Cash debt exclusion',
-      status: cashDebtEvidence > 0 ? 'CHECK' : 'CLEAR',
-      detail: cashDebtEvidence
-        ? (
-            <>
-              <MoneyText amount={cashDebtEvidence} currency={currency} /> negative wallet amount appears in payout
-              evidence.
-            </>
-          )
-        : 'No negative wallet amount is represented in payout evidence.',
-      action: cashDebtEvidence
-        ? 'Remove or settle cash debt before transfer.'
-        : 'Cash payment fee debt is not leaking into payout transfer.',
-      className: cashDebtEvidence > 0 ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: cashDebtEvidence > 0 ? 'pill-danger' : 'pill-success',
-    },
-    {
-      title: 'Settlement references',
-      status: `${activeMissingRef.length + paidMissingRef.length + taxOpen.length} CHECK`,
-      detail: `${activeMissingRef.length} active batch(es) need bank ref before paid, ${paidMissingRef.length} paid missing ref, ${taxOpen.length} batch(es) with open tax logs.`,
-      action:
-        activeMissingRef.length || paidMissingRef.length || taxOpen.length
-          ? 'Complete transfer refs and withholding log status.'
-          : 'Transfer references and withholding logs look complete.',
-      className:
-        activeMissingRef.length || paidMissingRef.length || taxOpen.length
-          ? 'ops-task-blocked'
-          : 'ops-task-done',
-      pillClass:
-        activeMissingRef.length || paidMissingRef.length || taxOpen.length ? 'pill-danger' : 'pill-success',
+      pillClass: matched ? 'pill-success' : evaluated ? 'pill-danger' : 'pill-warning',
+      status: moneyFlow.verdict.replace('_', ' '),
+      title: 'Net reconciliation',
     },
   ];
-}
-
-function sumPayoutServiceEvidence(
-  serviceEvidence: PayoutServiceEvidenceItem[],
-  field: keyof Pick<
-    PayoutServiceEvidenceItem,
-    'grossAmount' | 'netAmount' | 'platformFee' | 'withholdingAmount' | 'cashDebtAmount'
-  >,
-) {
-  return serviceEvidence.reduce((sum, item) => sum + item[field], 0);
 }
 
 function buildPayoutReleasePolicyDesk(
@@ -991,14 +1482,14 @@ function buildPayoutReleasePolicyDesk(
     {
       title: 'Cash debt exclusion',
       status: cashDebtRows.length ? `${cashDebtRows.length} held` : 'Clear',
-      detail: cashDebtRows.length
-        ? (
-            <>
-              <MoneyText amount={cashDebtAmount} currency={currency} /> partner cash-fee debt is held outside payout
-              release.
-            </>
-          )
-        : 'No unbatched partner cash-fee debt is waiting in the current earning range.',
+      detail: cashDebtRows.length ? (
+        <>
+          <MoneyText amount={cashDebtAmount} currency={currency} /> partner cash-fee debt is held outside
+          payout release.
+        </>
+      ) : (
+        'No unbatched partner cash-fee debt is waiting in the current earning range.'
+      ),
       action: cashDebtRows.length
         ? 'Clear deposit or approved offset in Cash Settlements before payout release.'
         : 'Payout release is not carrying partner cash-fee debt.',
@@ -1143,14 +1634,14 @@ function buildPayoutMarketplaceUnblockBridge(
     {
       title: 'Final acceptance gate',
       status: unbatchedCashDebt.length ? `${cashDebtPartnerCount} partner wallet(s)` : 'Clear',
-      detail: unbatchedCashDebt.length
-        ? (
-            <>
-              <MoneyText amount={cashDebtAmount} currency={cashDebtCurrency} /> unpaid HANDS fee or withholding blocks
-              final acceptance and service start.
-            </>
-          )
-        : 'No negative Partner wallet is blocking final acceptance or service start from the current earning range.',
+      detail: unbatchedCashDebt.length ? (
+        <>
+          <MoneyText amount={cashDebtAmount} currency={cashDebtCurrency} /> unpaid HANDS fee or withholding
+          blocks final acceptance and service start.
+        </>
+      ) : (
+        'No negative Partner wallet is blocking final acceptance or service start from the current earning range.'
+      ),
       action: unbatchedCashDebt.length
         ? 'Partner can see marketplace requests, but final acceptance, service start, and payout release are blocked until fee deposit or approved offset is posted.'
         : 'Partner marketplace eligibility follows booking-address radius, KYC, service, and app-presence rules.',
@@ -1167,7 +1658,7 @@ function buildPayoutMarketplaceUnblockBridge(
       action: activeBlockedBatches.length
         ? 'Open the release blocker queue before marking any payout as paid.'
         : `${readyForTransfer.length} active batch(es) can continue through finance review and transfer.`,
-      href: activeBlockedBatches.length ? '#release-blocker-queue' : '/finance-closeout',
+      href: activeBlockedBatches.length ? '#release-blocker-queue' : '/payouts',
       className: activeBlockedBatches.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: activeBlockedBatches.length ? 'pill-danger' : 'pill-success',
     },
@@ -1200,66 +1691,6 @@ function buildPayoutMarketplaceUnblockBridge(
   ];
 }
 
-function buildPayoutInclusionAudit(earnings: AdminEarning[], batches: AdminPayoutBatch[]) {
-  const currency = earnings[0]?.currency ?? batches[0]?.currency ?? 'VND';
-  const batchedIds = new Set(batches.flatMap((batch) => (batch.earnings ?? []).map((earning) => earning.id)));
-  const unbatched = earnings.filter((earning) => !earning.payoutBatchId && !batchedIds.has(earning.id));
-  const ready = unbatched.filter((earning) => isEarningBatchReady(earning));
-  const cashDebt = unbatched.filter((earning) => earning.netAmount < 0);
-  const closeoutReview = unbatched.filter(
-    (earning) => !isEarningBatchReady(earning) && earning.netAmount >= 0 && earning.status !== 'CANCELLED',
-  );
-  const alreadyBatched = earnings.filter((earning) => earning.payoutBatchId || batchedIds.has(earning.id));
-  const rows = [
-    ...ready.slice(0, 4).map((earning) => payoutInclusionRow(earning, 'Ready')),
-    ...cashDebt.slice(0, 3).map((earning) => payoutInclusionRow(earning, 'Hold')),
-    ...closeoutReview.slice(0, 3).map((earning) => payoutInclusionRow(earning, 'Hold')),
-  ];
-
-  return {
-    readyCount: ready.length,
-    blockedCount: cashDebt.length + closeoutReview.length,
-    cards: [
-      {
-        label: 'Ready unbatched',
-        value: `${ready.length}`,
-        helper: (
-          <>
-            <MoneyText amount={sumEarnings(ready, 'netAmount')} currency={currency} /> can move into the next
-            batch.
-          </>
-        ),
-      },
-      {
-        label: 'Cash debt held',
-        value: `${cashDebt.length}`,
-        helper: (
-          <>
-            <MoneyText amount={Math.abs(sumEarnings(cashDebt, 'netAmount'))} currency={currency} /> company-fee debt
-            stays out.
-          </>
-        ),
-      },
-      {
-        label: 'Closeout review',
-        value: `${closeoutReview.length}`,
-        helper: 'Needs booking, payment, or earning status review before batching.',
-      },
-      {
-        label: 'Already batched',
-        value: `${alreadyBatched.length}`,
-        helper: (
-          <>
-            <MoneyText amount={sumEarnings(alreadyBatched, 'netAmount')} currency={currency} /> already attached to
-            batches.
-          </>
-        ),
-      },
-    ],
-    rows,
-  };
-}
-
 function isEarningBatchReady(earning: AdminEarning) {
   return (
     !earning.payoutBatchId &&
@@ -1269,104 +1700,11 @@ function isEarningBatchReady(earning: AdminEarning) {
   );
 }
 
-function payoutInclusionRow(earning: AdminEarning, status: PayoutInclusionAuditRow['status']) {
-  const service = earning.booking?.services?.[0]?.service;
-  const serviceLabel = service
-    ? `${service.name} / ${service.durationMin} min`
-    : `Booking ${shortRecordId(earning.bookingId)}`;
-  const providerLabel =
-    earning.providerProfile?.displayName ?? earning.providerProfile?.user?.phone ?? 'Unknown partner';
-  const holdReason =
-    earning.netAmount < 0
-      ? 'Cash booking created company-fee debt. Keep it out of partner payout until deposit or admin offset is verified.'
-      : earning.booking?.status !== 'COMPLETED'
-        ? `Booking status is ${earning.booking?.status ?? 'missing'}, so it is not payout-ready.`
-        : `Earning status is ${earning.status}; review closeout before batching.`;
-
-  return {
-    id: earning.id,
-    status,
-    title: (
-      <>
-        {providerLabel} / <MoneyText amount={earning.netAmount} currency={earning.currency} />
-      </>
-    ),
-    detail: `${serviceLabel} / ${earning.status} / created ${
-      earning.createdAt
-        ? formatRelativeTime(earning.createdAt, { justNow: 'Updated just now' })
-        : 'unknown time'
-    }`,
-    operatorRule:
-      status === 'Ready'
-        ? 'Positive completed earning can be included in the next configured payout batch.'
-        : holdReason,
-    href: `/bookings/${earning.bookingId}`,
-  };
-}
-
 function sumEarnings(
   earnings: AdminEarning[],
   field: 'grossAmount' | 'platformFee' | 'withholdingAmount' | 'netAmount',
 ) {
   return earnings.reduce((sum, earning) => sum + Number(earning[field] ?? 0), 0);
-}
-
-function buildPayoutReleaseQueue(batches: AdminPayoutBatch[]): PayoutReleaseQueueItem[] {
-  return batches
-    .map<PayoutReleaseQueueItem | null>((batch) => {
-      const reasons = payoutBlockingReasons(batch);
-      const primaryReason = reasons[0];
-      if (!primaryReason) {
-        return null;
-      }
-
-      return {
-        batch,
-        reason: primaryReason,
-        providerLabel:
-          batch.providerProfile?.displayName ?? batch.providerProfile?.user?.phone ?? 'Unknown partner',
-        severity: primaryReason.pillClass === 'pill-danger' ? 'Block' : 'Check',
-      };
-    })
-    .filter((item): item is PayoutReleaseQueueItem => Boolean(item))
-    .sort((left, right) => {
-      if (left.severity !== right.severity) {
-        return left.severity === 'Block' ? -1 : 1;
-      }
-      return Date.parse(right.batch.createdAt) - Date.parse(left.batch.createdAt);
-    })
-    .slice(0, 6);
-}
-
-function buildPayoutReleaseBlockerRows(
-  releaseQueue: readonly PayoutReleaseQueueItem[],
-): PayoutReleaseBlockerQueueItem[] {
-  return releaseQueue.map((item) => ({
-    action: item.reason.action,
-    amount: item.batch.totalNetAmount,
-    blockingReasons: payoutBlockingReasons(item.batch).map((reason) => ({
-      label: reason.label,
-      pillClass: reason.pillClass,
-    })),
-    currency: item.batch.currency,
-    detail: payoutReleaseBlockerDetail(item.reason, item.batch),
-    id: item.batch.id,
-    label: item.reason.label,
-    providerLabel: item.providerLabel,
-    severity: item.severity,
-  }));
-}
-
-function payoutReleaseBlockerDetail(reason: PayoutBlockingReason, batch: AdminPayoutBatch): ReactNode {
-  if (reason.label === 'Tax log missing') {
-    return (
-      <>
-        Withholding exists (<MoneyText amount={batchWithholdingAmount(batch)} currency={batch.currency} />) but no
-        tax log is linked.
-      </>
-    );
-  }
-  return reason.detail;
 }
 
 function payoutActionExecutionMap(batch: AdminPayoutBatch): PayoutActionExecutionItem[] {
@@ -1433,16 +1771,16 @@ function payoutActionExecutionMap(batch: AdminPayoutBatch): PayoutActionExecutio
             ? 'Tax check'
             : 'No earnings',
       reason:
-        earnings.length && (!withholdingAmount || withholdingLogs.length)
-          ? `${earnings.length} earning row(s) and ${withholdingLogs.length} tax log(s) are attached.`
-          : earnings.length
-            ? (
-                <>
-                  <MoneyText amount={withholdingAmount} currency={batch.currency} /> withholding exists without a
-                  linked tax log.
-                </>
-              )
-            : 'This payout batch has no earning rows attached.',
+        earnings.length && (!withholdingAmount || withholdingLogs.length) ? (
+          `${earnings.length} earning row(s) and ${withholdingLogs.length} tax log(s) are attached.`
+        ) : earnings.length ? (
+          <>
+            <MoneyText amount={withholdingAmount} currency={batch.currency} /> withholding exists without a
+            linked tax log.
+          </>
+        ) : (
+          'This payout batch has no earning rows attached.'
+        ),
       operatorRule:
         'Finance closeout should reconcile booking, earning, tax, wallet, and payout records together.',
       pillClass:
@@ -1528,84 +1866,6 @@ function addEarningToServiceEvidence(
   });
 }
 
-function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSignal[] {
-  const needsReview = batches.filter((batch) => batch.status === 'DRAFT' || batch.status === 'FAILED');
-  const processing = batches.filter((batch) => batch.status === 'PROCESSING');
-  const held = batches.filter((batch) => Boolean(activePayoutHold(batch)));
-  const activeMissingRef = batches.filter((batch) => transferRefRequiredBeforePaid(batch));
-  const missingTransferRef = batches.filter((batch) => batch.status === 'PAID' && !batch.transferRef);
-  const missingEarnings = batches.filter((batch) => !batch.earnings?.length);
-  const missingWithholdingLogs = batches.filter(
-    (batch) => batchWithholdingAmount(batch) > 0 && !batch.withholdingLogs?.length,
-  );
-  const pendingWithholding = batches.filter((batch) =>
-    (batch.withholdingLogs ?? []).some((log) => log.status !== 'PAID'),
-  );
-  const reconciliationWarnings =
-    missingTransferRef.length +
-    activeMissingRef.length +
-    missingEarnings.length +
-    missingWithholdingLogs.length +
-    pendingWithholding.length;
-  const currency = batches[0]?.currency ?? 'VND';
-
-  return [
-    {
-      title: 'Review amount',
-      status: `${needsReview.length} BATCH(ES)`,
-      detail: (
-        <MoneyText
-          amount={needsReview.reduce((sum, batch) => sum + batch.totalNetAmount, 0)}
-          currency={currency}
-        />
-      ),
-      action: needsReview.length
-        ? 'Check failed and draft batches before starting bank transfer.'
-        : 'No batch currently needs finance review.',
-      className: needsReview.length ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: needsReview.length ? 'pill-warn' : 'pill-success',
-    },
-    {
-      title: 'Banking in motion',
-      status: `${processing.length} PROCESSING`,
-      detail: (
-        <MoneyText
-          amount={processing.reduce((sum, batch) => sum + batch.totalNetAmount, 0)}
-          currency={currency}
-        />
-      ),
-      action: processing.length
-        ? 'Confirm transfer results, then mark paid or failed.'
-        : 'No payout is currently in banking transfer.',
-      className: processing.length ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: processing.length ? 'pill-info' : 'pill-success',
-    },
-    {
-      title: 'Payout holds',
-      status: `${held.length} HELD`,
-      detail: held.length
-        ? held
-            .map((batch) => activePayoutHold(batch)?.reason ?? 'Active hold')
-            .slice(0, 2)
-            .join(' ')
-        : 'No active payout hold on listed batches.',
-      action: held.length ? 'Open partner checks before attempting payout.' : 'No payout hold action.',
-      className: held.length ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: held.length ? 'pill-danger' : 'pill-success',
-    },
-    {
-      title: 'Reconciliation',
-      status: `${reconciliationWarnings} CHECK`,
-      detail: `${activeMissingRef.length} active missing ref, ${missingTransferRef.length} paid missing ref, ${pendingWithholding.length} tax open, ${missingWithholdingLogs.length} tax missing, ${missingEarnings.length} empty batch.`,
-      action: reconciliationWarnings
-        ? 'Fix active transfer refs, withholding status, or empty batch records.'
-        : 'Paid batch references and tax logs look consistent.',
-      className: reconciliationWarnings ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: reconciliationWarnings ? 'pill-danger' : 'pill-success',
-    },
-  ];
-}
-
 function transferRefRequiredBeforePaid(batch: AdminPayoutBatch) {
   return !isTerminalPayoutBatch(batch) && !batch.transferRef;
 }
@@ -1615,6 +1875,40 @@ function isTerminalPayoutBatch(batch: AdminPayoutBatch) {
 }
 
 function payoutBlockingReasons(batch: AdminPayoutBatch): PayoutBlockingReason[] {
+  if (batch.riskModel) {
+    const messages =
+      batch.riskModel.phase === 'POST_PAYMENT'
+        ? batch.riskModel.reconciliationFindings
+        : [
+            ...(batch.riskModel.releasePreflight?.blockers ?? []),
+            ...(batch.riskModel.releasePreflight?.warnings ?? []),
+          ];
+    return messages.map((message) => ({
+      label: payoutPreflightLabel(message.code),
+      detail: message.message,
+      action: message.message,
+      pillClass:
+        batch.riskModel?.releasePreflight?.warnings.some((warning) => warning.code === message.code)
+          ? 'pill-warn'
+          : 'pill-danger',
+    }));
+  }
+  if (batch.preflight) {
+    return [
+      ...batch.preflight.blockers.map((blocker) => ({
+        label: payoutPreflightLabel(blocker.code),
+        detail: blocker.message,
+        action: blocker.message,
+        pillClass: 'pill-danger',
+      })),
+      ...batch.preflight.warnings.map((warning) => ({
+        label: payoutPreflightLabel(warning.code),
+        detail: warning.message,
+        action: warning.message,
+        pillClass: 'pill-warn',
+      })),
+    ];
+  }
   const reasons: PayoutBlockingReason[] = [];
   const payoutHold = activePayoutHold(batch);
   const withholdingAmount = batchWithholdingAmount(batch);
@@ -1669,19 +1963,19 @@ function payoutBlockingReasons(batch: AdminPayoutBatch): PayoutBlockingReason[] 
 
   if (withholdingAmount > 0 && !withholdingLogs.length) {
     reasons.push({
-      label: 'Tax log missing',
-      detail: 'Withholding exists but no tax log is linked.',
-      action: 'Create or repair withholding logs before reconciliation.',
+      label: 'Withholding record missing',
+      detail: 'Withholding exists but no payout deduction record is linked.',
+      action: 'Create or repair the payout withholding record before release.',
       pillClass: 'pill-warn',
     });
   }
 
-  if (withholdingLogs.some((log) => log.status !== 'PAID')) {
+  if (batch.status === 'PAID' && withholdingLogs.some((log) => log.status !== 'PAID')) {
     reasons.push({
-      label: 'Tax open',
-      detail: 'One or more withholding logs are not marked paid.',
-      action: 'Complete withholding settlement status.',
-      pillClass: 'pill-warn',
+      label: 'Withholding evidence mismatch',
+      detail: 'This paid payout still has an incomplete partner withholding deduction record.',
+      action: 'Repair the payout deduction evidence before reconciliation.',
+      pillClass: 'pill-danger',
     });
   }
 
@@ -1697,62 +1991,18 @@ function payoutBlockingReasons(batch: AdminPayoutBatch): PayoutBlockingReason[] 
   return reasons;
 }
 
-function buildPayoutLanes(batches: AdminPayoutBatch[]): PayoutLane[] {
-  return [
-    {
-      title: 'Blocked by hold',
-      batches: batches.filter((batch) => Boolean(activePayoutHold(batch))),
-      pillClass: 'pill-danger',
-      emptyText: 'No active payout hold in the current payout list.',
-    },
-    {
-      title: 'Failed recovery',
-      batches: batches.filter((batch) => batch.status === 'FAILED'),
-      pillClass: 'pill-warn',
-      emptyText: 'No failed batch needs recovery.',
-    },
-    {
-      title: 'Draft review',
-      batches: batches.filter((batch) => batch.status === 'DRAFT' && !activePayoutHold(batch)),
-      pillClass: 'pill-warn',
-      emptyText: 'No draft batch is waiting for review.',
-    },
-    {
-      title: 'Processing confirmation',
-      batches: batches.filter((batch) => batch.status === 'PROCESSING' && !activePayoutHold(batch)),
-      pillClass: 'pill-info',
-      emptyText: 'No bank transfer is currently in progress.',
-    },
-    {
-      title: 'Paid reconciliation',
-      batches: batches.filter((batch) => batch.status === 'PAID'),
-      pillClass: 'pill-success',
-      emptyText: 'No paid batch is available for reconciliation yet.',
-    },
-    {
-      title: 'Cancelled archive',
-      batches: batches.filter((batch) => batch.status === 'CANCELLED'),
-      pillClass: 'pill-neutral',
-      emptyText: 'No cancelled payout batch is in the current list.',
-    },
-  ];
-}
-
-function buildPayoutStatusLanes(lanes: readonly PayoutLane[]): PayoutStatusLane[] {
-  return lanes.map((lane) => ({
-    title: lane.title,
-    batches: lane.batches.map((batch) => ({
-      id: batch.id,
-      amount: batch.totalNetAmount,
-      currency: batch.currency,
-      earningCount: batch.earnings?.length ?? 0,
-      opsHint: opsHint(batch),
-      partnerLabel:
-        batch.providerProfile?.displayName ?? batch.providerProfile?.user?.phone ?? 'Unknown partner',
-    })),
-    pillClass: lane.pillClass,
-    emptyText: lane.emptyText,
-  }));
+function payoutPreflightLabel(code: string) {
+  if (code === 'WITHHOLDING_LOG_MISSING') {
+    return 'Withholding record missing';
+  }
+  if (code === 'WITHHOLDING_DEDUCTION_EVIDENCE_INCOMPLETE') {
+    return 'Withholding evidence mismatch';
+  }
+  return code
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
 function batchWithholdingAmount(batch: AdminPayoutBatch) {
@@ -1858,15 +2108,16 @@ function payoutChecklist(batch: AdminPayoutBatch) {
   const payoutHold = activePayoutHold(batch);
   const withholdingAmount = batchWithholdingAmount(batch);
   const withholdingLogs = batch.withholdingLogs ?? [];
-  const withholdingLogsPaid =
+  const withholdingEvidenceReady =
     withholdingAmount <= 0 ||
-    (withholdingLogs.length > 0 && withholdingLogs.every((log) => log.status === 'PAID'));
+    (withholdingLogs.length > 0 &&
+      (batch.status !== 'PAID' || withholdingLogs.every((log) => log.status === 'PAID')));
   const transferRefReady = batch.status !== 'PAID' || Boolean(batch.transferRef);
   const paidDateReady = batch.status !== 'PAID' || Boolean(batch.paidAt);
   const earningsAttached = earnings.length > 0;
   return [
     {
-      label: payoutHold ? 'Held' : 'No hold',
+      label: payoutHold ? 'On hold' : 'No hold',
       ok: !payoutHold,
       detail: payoutHold
         ? `Partner has an active payout hold: ${payoutHold.reason}`
@@ -1882,19 +2133,23 @@ function payoutChecklist(batch: AdminPayoutBatch) {
     {
       label:
         withholdingAmount <= 0
-          ? 'No tax due'
+          ? 'No withholding'
           : withholdingLogs.length
-            ? withholdingLogsPaid
-              ? 'Tax paid'
-              : 'Tax open'
-            : 'Tax log missing',
-      ok: withholdingLogsPaid,
+            ? batch.status === 'PAID'
+              ? withholdingEvidenceReady
+                ? 'Deduction recorded'
+                : 'Deduction mismatch'
+              : 'Deduction ready'
+            : 'Deduction record missing',
+      ok: withholdingEvidenceReady,
       detail:
         withholdingAmount <= 0
           ? 'No withholding amount is recorded for this batch.'
           : withholdingLogs.length
-            ? `${withholdingLogs.length} withholding log(s) are linked.`
-            : 'Withholding amount exists but no withholding log is linked.',
+            ? batch.status === 'PAID'
+              ? `${withholdingLogs.length} payout withholding deduction record(s) are linked. Government remittance is tracked in Monthly Tax Closing.`
+              : `${withholdingLogs.length} payout withholding deduction record(s) are ready to close with the partner payout.`
+            : 'Withholding amount exists but no payout deduction record is linked.',
     },
     {
       label: batch.transferRef ? 'Bank ref' : batch.status === 'PAID' ? 'No ref' : 'Ref later',

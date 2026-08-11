@@ -5,15 +5,18 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './observability/all-exceptions.filter';
 import { requestIdMiddleware } from './observability/request-id.middleware';
 import { corsOriginFromEnv } from './security/cors-origin';
-import { rateLimitMiddleware } from './security/rate-limit.middleware';
+import { apiRateLimitPolicies, rateLimitMiddleware } from './security/rate-limit.middleware';
 import { securityHeadersMiddleware } from './security/security-headers.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
   app.enableCors({ origin: corsOriginFromEnv(), credentials: true, exposedHeaders: ['x-request-id'] });
   app.use(securityHeadersMiddleware);
   app.use(requestIdMiddleware);
-  app.use(rateLimitMiddleware({ windowMs: 60_000, max: 30, pathPattern: /^\/api\/auth\//, keyPathDepth: 3 }));
+  for (const policy of apiRateLimitPolicies) {
+    app.use(rateLimitMiddleware(policy));
+  }
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new AllExceptionsFilter());
   app.setGlobalPrefix('api');

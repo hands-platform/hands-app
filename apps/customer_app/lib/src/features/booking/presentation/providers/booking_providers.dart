@@ -11,3 +11,8 @@ final customerBookingRepositoryProvider =
     ref.read(realtimeSocketProvider),
   );
 });
+
+final customerPaymentActionRepositoryProvider =
+    Provider<CustomerPaymentActionRepository>((ref) {
+  return CustomerPaymentActionRepositoryImpl(ref.read(apiClientProvider));
+});

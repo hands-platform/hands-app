@@ -5,6 +5,7 @@ import { PROVIDER_LOCATION_TTL_SECONDS, ProviderCachedLocation } from '../locati
 import { resolveMatchingPolicy } from '../matching/matching.policy';
 
 const OTP_TTL_SECONDS = 60 * 5;
+const OTP_SEND_COOLDOWN_SECONDS = 60;
 
 @Injectable()
 export class RedisStateService implements OnModuleDestroy {
@@ -88,12 +89,32 @@ export class RedisStateService implements OnModuleDestroy {
     await this.redis.set(`auth:otp:${phone}`, otp, 'EX', OTP_TTL_SECONDS);
   }
 
+  async reserveOtpSend(phone: string) {
+    const result = await this.redis.set(
+      `auth:otp:send-cooldown:${phone}`,
+      '1',
+      'EX',
+      OTP_SEND_COOLDOWN_SECONDS,
+      'NX',
+    );
+    return result === 'OK';
+  }
+
+  async incrementOtpAttempts(phone: string) {
+    const key = `auth:otp:attempts:${phone}`;
+    const count = await this.redis.incr(key);
+    if (count === 1) {
+      await this.redis.expire(key, OTP_TTL_SECONDS);
+    }
+    return count;
+  }
+
   getOtp(phone: string) {
     return this.redis.get(`auth:otp:${phone}`);
   }
 
-  consumeOtp(phone: string) {
-    return this.redis.del(`auth:otp:${phone}`);
+  async consumeOtp(phone: string) {
+    await this.redis.del(`auth:otp:${phone}`, `auth:otp:attempts:${phone}`);
   }
 
   async revokeRefreshToken(tokenHash: string, ttlSeconds: number) {

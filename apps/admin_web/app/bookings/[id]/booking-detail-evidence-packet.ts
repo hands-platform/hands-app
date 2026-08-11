@@ -46,7 +46,7 @@ export function bookingDetailEvidencePacket({
   const addressSnapshotLabel = bookingAddressSnapshotLabel(booking);
 
   return buildBookingEvidencePacket({
-    chatReady: bookingChatReady(booking),
+    chatReady: bookingChatReady(booking) && messages.length > 0,
     messageCount: messages.length,
     latestMessageAtLabel: messages.length > 0 ? formatDate(messages[messages.length - 1]?.createdAt) : null,
     latestMessageAtValue: messages.length > 0 ? messages[messages.length - 1]?.createdAt : null,

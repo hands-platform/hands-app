@@ -1,48 +1,84 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-describe('notifications page access wiring', () => {
+describe('Notification Delivery page contract', () => {
   const source = readFileSync(join(process.cwd(), 'app/notifications/page.tsx'), 'utf8');
 
-  it('gates FCM diagnostics behind Developer/System operator access', () => {
-    expect(source).toContain('getCurrentAdminOperatorAccess');
-    expect(source).toContain('canViewAdminDeveloperSystem');
+  it('uses one delivery workspace with exactly two primary modes', () => {
+    expect(source).toContain('title="Notification Delivery"');
+    expect(source).toContain('Review unresolved mobile send issues and inspect delivery records.');
+    expect(source).toContain("buildNotificationDeliveryHref(view, { mode: 'action', page: 1 })");
+    expect(source).toContain("buildNotificationDeliveryHref(view, { mode: 'records', page: 1 })");
+    expect(source).not.toContain('Current incidents');
+    expect(source).not.toContain('Historical cleanup');
+    expect(source).not.toContain('NotificationFilterBoardSection');
+  });
+
+  it('keeps failure groups selected and exposes the four recovery queues', () => {
+    expect(source).toContain("issue: 'groups'");
+    expect(source).toContain("label: 'Failure groups'");
+    expect(source).toContain("{ issue: 'failed', label: 'Failed'");
+    expect(source).toContain("{ issue: 'no-attempt', label: 'No send attempt after 15m'");
+    expect(source).toContain("issue: 'no-route'");
+    expect(source).toContain("label: 'No active push route'");
+    expect(source).toContain("{ issue: 'stale-route', label: 'App route needs refresh'");
+    expect(source).toContain("return 'Open failure groups'");
+    expect(source).not.toContain('System incidents');
+    expect(source).not.toContain('Finance overdue');
+    expect(source).toContain("view.scope === 'history'");
+    expect(source).toContain('summary?.historicalDeliveryIncidentCount');
+    expect(source).toContain('notificationFailureCodeLabel(view.failureCode)');
+    expect(source).toContain('option.count.toLocaleString()');
+    expect(source).toContain('summary.noPushPathRecipientCount.toLocaleString()');
+    expect(source).toContain("view.issue === 'groups' || view.issue === option.issue");
+  });
+
+  it('keeps record filters compact and truthful about provider acceptance', () => {
+    for (const label of ['Search', 'Recipient role', 'Channel', 'Send status', 'Date', 'Sort']) {
+      expect(source).toContain(`label="${label}"`);
+    }
+    expect(source).toContain("{ label: 'Accepted by FCM', value: 'accepted' }");
+    expect(source).toContain('FCM acceptance is provider acknowledgement, not proof that the device received or opened');
+    expect(source).not.toContain('Push delivered');
+  });
+
+  it('separates read access from explicit retry access', () => {
+    expect(source).toContain("hasAdminOperatorCategory(operatorAccess, 'NOTIFICATIONS_RETRY')");
+    expect(source).toContain('canRetry,');
     expect(source).toContain('filterNotificationActionConfirmationSupportingLinks');
-    expect(source).toContain('const confirmation = filterNotificationActionConfirmationSupportingLinks(');
-    expect(source).toContain('canViewDiagnostics={canViewDiagnostics}');
-    expect(source).toContain("requestedDiagnosticsMode === 'full' && canViewDiagnostics");
-    expect(source).not.toContain("const diagnosticsMode = readSearchParam(params.diagnostics) === 'full' ? 'full' : 'compact';");
+    expect(source).toContain('canViewAdminDeveloperSystem(operatorAccess)');
   });
 
-  it('keeps system incident review separate from push delivery diagnostics', () => {
-    expect(source).toContain("const isSystemIncidentReview = model.filters.review === 'system-incidents';");
-    expect(source).toContain("const isFinanceOverdueReview = model.filters.review === 'finance-overdue';");
-    expect(source).toContain("const isFinanceOverdueHistory = model.filters.review === 'finance-overdue-history';");
-    expect(source).toContain('const visibleNotificationFilterLinks = isFinanceOverdueReview || isFinanceOverdueHistory');
-    expect(source).toContain("link.review === 'finance-overdue-history'");
-    expect(source).toContain('isSystemIncidentReview || isFinanceOverdueReview || isFinanceOverdueHistory');
-    expect(source).toContain('{!isOperationalReview ? (');
-    expect(source).toContain('Review open, recovered, and legacy Admin system incidents');
-    expect(source).toContain('exceeded the 48-hour review SLA');
-    expect(source).toContain('retained as audit history');
+  it('distinguishes unavailable records and summary from true empty results', () => {
+    expect(source).toContain('adminGetResult<AdminNotification[]>');
+    expect(source).toContain('adminGetResult<AdminNotificationBoardSummary | null>');
+    expect(source).toContain('Notification records unavailable');
+    expect(source).toContain('No empty queue is shown while the record source is unavailable.');
+    expect(source).toContain('Notification summary unavailable');
+    expect(source).toContain('No delivery records match these filters.');
+    expect(source).toContain('No delivery records exist for this period.');
   });
 
-  it('builds Finance owner workload filters from server summary and current operator access', () => {
-    expect(source).toContain('notificationSummary?.financeReviewOwnerSummary');
-    expect(source).toContain('findCurrentFinanceOwner(financeOwners, operatorAccess)');
-    expect(source).toContain('buildFinanceOwnerLinks(model.filters, currentFinanceOwner?.id ?? null, ownerCounts)');
-    expect(source).toContain('My reviews (');
-    expect(source).toContain('Unassigned (');
-    expect(source).toContain('financeOwnerLinks={financeOwnerLinks}');
+  it('canonicalizes invalid and out-of-range pages without losing independent filters', () => {
+    expect(source).toContain("if (rawPage && (!/^\\d+$/.test(rawPage) || Number(rawPage) < 1))");
+    expect(source).toContain('view.page > model.notificationPagination.totalPages');
+    expect(source).toContain('buildNotificationDeliveryHref(view, { page: model.notificationPagination.totalPages })');
+    expect(source).toContain('hrefForPage={(page) => buildNotificationDeliveryHref(view, { page })}');
   });
 
-  it('wires audited Finance review ownership actions and explicit result notices', () => {
-    expect(source).toContain('financeAssigneeAdminId: currentFinanceOwner?.id');
-    expect(source).toContain('financeAssigneeOptions');
-    expect(source).toContain("confirmation.action === 'assign-finance-review'");
-    expect(source).toContain('? assignFinanceReview');
-    expect(source).toContain('Finance review owner updated.');
-    expect(source).toContain('Finance review assignment failed.');
-    expect(source).toContain('selectInputs={confirmation.selectInputs}');
+  it('shows honest scope, Vietnam time, refresh, and boundary state', () => {
+    expect(source).toContain('Current · under 24h');
+    expect(source).toContain('24h+ history');
+    expect(source).toContain('All ages');
+    expect(source).toContain('Asia/Ho_Chi_Minh');
+    expect(source).toContain('NotificationRefreshButton');
+    expect(source).toContain('Explicit production records');
+    expect(source).toContain('Unknown source backlog');
+    expect(source).toContain('Synthetic test records');
+    expect(source).toContain('Applied notification record filters');
+    expect(source).toContain('Clear record filters');
+    expect(source).toContain('notificationRecordFilterLabels');
+    expect(source).not.toContain('Scope unverified');
+    expect(source).not.toContain('All delivery paths healthy');
   });
 });

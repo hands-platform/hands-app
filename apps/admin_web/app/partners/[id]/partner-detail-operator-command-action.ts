@@ -71,5 +71,5 @@ function partnerDetailReviewConfirmHref(
 }
 
 function partnerDetailBaseHref(providerId: string) {
-  return `/partners/${encodeURIComponent(providerId)}?section=full`;
+  return `/partners/${encodeURIComponent(providerId)}?section=control&control=work`;
 }

@@ -32,7 +32,7 @@ describe('buildBookingsPageModel', () => {
     expect(model.bookingCreateRejections).toEqual([]);
     expect(model.initialEvidenceFilter).toBe('all');
     expect(model.initialGateFilter).toBe('all');
-    expect(model.initialView).toBe('active');
+    expect(model.initialView).toBe('attention');
     expect(model.liveOperationsPolicy).toBeTruthy();
   });
 });

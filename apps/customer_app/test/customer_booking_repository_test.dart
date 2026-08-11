@@ -88,6 +88,44 @@ void main() {
     expect(methods.map((item) => item.method), ['CASH', 'MOMO']);
     expect(methods.last.requiresRedirect, isTrue);
   });
+
+  test('returns the booking inside the provider-selection event envelope',
+      () async {
+    final api = _FakeApiClient(
+      postResponse: {
+        'bookingId': 'booking-1',
+        'event': 'booking.matched',
+        'status': 'MATCHED',
+        'booking': {
+          'id': 'booking-1',
+          'status': 'PROVIDER_ON_THE_WAY',
+          'selectedProvider': {'id': 'partner-2'},
+          'chatRoom': {'id': 'chat-1'},
+          'services': [
+            {'serviceId': 'service-1'}
+          ],
+          'payment': {'method': 'CASH', 'status': 'AUTHORIZED'},
+        },
+      },
+      getResponse: const {},
+    );
+    final repository =
+        CustomerBookingRepositoryImpl(api, _FakeRealtimeSocket());
+
+    final booking = await repository.selectProvider(
+      'booking-1',
+      'partner-2',
+    );
+
+    expect(api.postPath, '/customer/bookings/booking-1/select-provider');
+    expect(api.postBody, {'providerId': 'partner-2'});
+    expect(booking['id'], 'booking-1');
+    expect(booking['selectedProvider'], {'id': 'partner-2'});
+    expect(booking['chatRoom'], {'id': 'chat-1'});
+    expect(booking['services'], isNotEmpty);
+    expect(booking['payment'], isNotNull);
+    expect(booking, isNot(contains('booking')));
+  });
 }
 
 class _FakeApiClient extends ApiClient {

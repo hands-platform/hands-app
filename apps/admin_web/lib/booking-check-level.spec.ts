@@ -8,7 +8,7 @@ import {
 describe('bookingCheckLevel', () => {
   it('returns clear when there are no active booking checks', () => {
     expect(bookingCheckLevel([])).toEqual({
-      label: 'Clear',
+      label: 'Checks clear',
       helper: 'No active checks',
       tone: 'signal-ok',
     });
@@ -27,17 +27,17 @@ describe('bookingCheckLevel', () => {
     });
   });
 
-  it('returns monitor when medium is the highest severity', () => {
+  it('returns watch when medium is the highest severity', () => {
     expect(bookingCheckLevel([{ severity: 'medium', title: 'No partner supply' }])).toEqual({
-      label: 'Monitor',
+      label: 'Watch',
       helper: '1 check(s)',
       tone: 'signal-info',
     });
   });
 
-  it('returns note when only low severity booking checks exist', () => {
+  it('returns watch when only low severity booking checks exist', () => {
     expect(bookingCheckLevel([{ severity: 'low', title: 'Chat quiet' }])).toEqual({
-      label: 'Note',
+      label: 'Watch',
       helper: '1 check(s)',
       tone: 'signal-info',
     });

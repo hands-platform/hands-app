@@ -62,29 +62,44 @@ export class MatchingGateway implements OnGatewayConnection {
     this.emitBookingMonitorEvent(bookingId, 'provider.rejected', payload);
   }
 
+  emitProviderArrived(bookingId: string, payload: unknown) {
+    this.emitBookingMonitorEvent(bookingId, 'provider.arrived', payload);
+  }
+
   emitBookingOpened(bookingId: string, payload: unknown) {
     this.emitBookingMonitorEvent(bookingId, 'booking.opened', payload);
-    this.server.to(SOCKET_ROOMS.providers()).emit('booking.opened', payload);
+    this.server
+      .to(SOCKET_ROOMS.providers())
+      .emit('booking.opened', providerBookingSignal(bookingId, 'booking.opened', 'OPEN_MATCHING'));
   }
 
   emitDirectBookingRequested(userId: string, bookingId: string, payload: unknown) {
-    this.server.to(SOCKET_ROOMS.user(userId)).emit('booking.opened', payload);
+    this.server
+      .to(SOCKET_ROOMS.user(userId))
+      .emit('booking.opened', providerBookingSignal(bookingId, 'booking.opened', 'OPEN_MATCHING'));
     this.emitBookingMonitorEvent(bookingId, 'booking.opened', payload);
   }
 
   emitBackupBookingAvailable(userIds: string[], bookingId: string, payload: unknown) {
+    const signal = providerBookingSignal(bookingId, 'booking.opened', 'OPEN_MATCHING');
     for (const userId of userIds) {
-      this.server.to(SOCKET_ROOMS.user(userId)).emit('booking.opened', payload);
+      this.server.to(SOCKET_ROOMS.user(userId)).emit('booking.opened', signal);
     }
     this.emitBookingMonitorEvent(bookingId, 'booking.opened', payload);
   }
 
   emitBookingMatched(bookingId: string, payload: unknown) {
     this.emitBookingMonitorEvent(bookingId, 'booking.matched', payload);
+    this.server
+      .to(SOCKET_ROOMS.providers())
+      .emit('booking.matched', providerBookingSignal(bookingId, 'booking.matched', 'MATCHED'));
   }
 
   emitBookingExpired(bookingId: string, payload: unknown) {
     this.emitBookingMonitorEvent(bookingId, 'booking.expired', payload);
+    this.server
+      .to(SOCKET_ROOMS.providers())
+      .emit('booking.expired', providerBookingSignal(bookingId, 'booking.expired', 'EXPIRED'));
   }
 
   emitServiceCompleted(bookingId: string, payload: unknown) {
@@ -150,4 +165,8 @@ export class MatchingGateway implements OnGatewayConnection {
     });
     return Boolean(booking);
   }
+}
+
+function providerBookingSignal(bookingId: string, event: string, status: string) {
+  return { bookingId, event, status };
 }

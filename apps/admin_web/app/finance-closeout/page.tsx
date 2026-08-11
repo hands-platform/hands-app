@@ -1,25 +1,20 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
 import {
   AdminApiRequestError,
   AdminOperatorAccessDeniedError,
-  adminGet,
+  adminGetResult,
   adminPostOrThrow,
   type AdminBookingSettlementGapDryRun,
   type AdminBookingSettlementGapList,
   type AdminBookingSettlementGapRepairPreview,
+  type AdminBookingSettlementGapRepairPreviewBatch,
   type AdminBookingSettlementGapRepairResult,
   type AdminBookingSettlementRepairCheckpoint,
   type AdminBookingSettlementGapSummary,
-  type AdminCashSettlementSummary,
-  type AdminEarning,
-  type AdminEarningSummary,
-  type AdminPayment,
-  type AdminPaymentSummary,
-  type AdminPayoutBatch,
-  type AdminRefund,
-  type AdminRefundSummary,
   type AdminUser,
+  type AdminGetResult,
 } from '../../lib/admin-api';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFilterSummary } from '../../components/admin-filter-summary';
@@ -33,12 +28,9 @@ import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminNoticeCard } from '../../components/admin-surface';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminTextLink } from '../../components/admin-text-link';
-import { MoneyText } from '../../components/money-text';
-import { formatRelativeAge } from '../../lib/admin-format';
+import { formatDateTime, formatRelativeAge } from '../../lib/admin-format';
 import {
-  buildCloseoutTasks,
   buildFinanceCloseoutApiHrefs,
-  buildFinanceCloseoutEvidenceChecklist,
   buildFinanceCloseoutFilters,
   buildFinanceCloseoutOperationsHref,
   buildFinanceCloseoutPageHref,
@@ -47,51 +39,43 @@ import {
   buildFinanceCloseoutSettlementPagination,
   buildFinanceCloseoutSettlementPeriodOptions,
   buildFinanceCloseoutSettlementDryRunHref,
-  buildHandoffRows,
-  buildReconciliation,
-  buildShiftCloseActionMap,
   FINANCE_CLOSEOUT_SETTLEMENT_AGE_OPTIONS,
   FINANCE_CLOSEOUT_SETTLEMENT_PAYMENT_METHOD_OPTIONS,
   FINANCE_CLOSEOUT_SETTLEMENT_TRACK_OPTIONS,
 } from '../../lib/finance-closeout';
-import { FinanceCloseoutEvidenceChecklistSection } from './finance-closeout-evidence-checklist-section';
-import { FinanceCloseoutCashDebtHandoffSection } from './finance-closeout-cash-debt-handoff-section';
-import { FinanceCloseoutPaymentEarningSection } from './finance-closeout-payment-earning-section';
-import { FinanceCloseoutPayoutReleaseChecksSection } from './finance-closeout-payout-release-checks-section';
-import { FinanceCloseoutShiftActionMapSection } from './finance-closeout-shift-action-map-section';
 import { FinanceCloseoutSettlementBacklogSection } from './finance-closeout-settlement-backlog-section';
 import { FinanceCloseoutSettlementBatchPreviewSection } from './finance-closeout-settlement-batch-preview-section';
 import { FinanceCloseoutSettlementDryRunSection } from './finance-closeout-settlement-dry-run-section';
 import { FinanceCloseoutSettlementRepairDrawer } from './finance-closeout-settlement-repair-drawer';
-import { FinanceCloseoutTaskBoardSection } from './finance-closeout-task-board-section';
 
 type FinanceCloseoutPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+export const metadata: Metadata = {
+  title: 'Settlement Repair · HANDS Admin',
+};
+
 export default async function FinanceCloseoutPage({ searchParams }: FinanceCloseoutPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = buildFinanceCloseoutFilters(params);
-  const isSettlementWorkspace = filters.workspace === 'settlement';
-  const isSettlementQueue = isSettlementWorkspace && filters.settlementMode === 'queue';
-  const isSettlementBatch = isSettlementWorkspace && filters.settlementMode === 'batch';
+  if (filters.workspace === 'operations') {
+    redirect(buildFinanceCloseoutOperationsHref(filters.range));
+  }
+  const isSettlementQueue = filters.settlementMode === 'queue';
+  const isSettlementBatch = filters.settlementMode === 'batch';
   const repairBookingId = readPageParam(params, 'repairBookingId');
   const checkpointBookingId = readPageParam(params, 'checkpointBookingId');
   const repairNotice = readPageParam(params, 'repairNotice');
+  const repairAuditLogId = readPageParam(params, 'repairAuditLogId');
+  const repairSnapshotId = readPageParam(params, 'repairSnapshotId');
+  const repairEarningId = readPageParam(params, 'repairEarningId');
+  const repairActorId = readPageParam(params, 'repairActorId');
+  const repairApprovalAdminId = readPageParam(params, 'repairApprovalAdminId');
+  const repairCompletedAt = readPageParam(params, 'repairCompletedAt');
   const shouldRunSettlementDryRun = readPageParam(params, 'settlementDryRun') === '1';
   const reviewBookingIds = readPageParamList(params, 'reviewBookingId', 10);
   const apiHrefs = buildFinanceCloseoutApiHrefs(filters);
-  const emptyEarningsSummary: AdminEarningSummary = {
-    count: 0,
-    grossAmount: 0,
-    platformFee: 0,
-    withholdingAmount: 0,
-    netAmount: 0,
-    pendingNetAmount: 0,
-    availableNetAmount: 0,
-    paidNetAmount: 0,
-    currency: 'VND',
-  };
   const emptySettlementGaps: AdminBookingSettlementGapList = {
     generatedAt: '',
     hasNext: false,
@@ -101,160 +85,204 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
     total: 0,
   };
   const [
-    payments,
-    paymentSummary,
-    refunds,
-    refundSummary,
-    earningsSummary,
-    earnings,
-    payouts,
-    cashSummary,
-    settlementGaps,
-    settlementGapSummary,
-    settlementDryRun,
-    repairPreview,
-    financeApprovers,
-    selectedRepairPreviews,
-    repairCheckpoint,
+    settlementGapsResult,
+    settlementGapSummaryResult,
+    settlementDryRunResult,
+    repairPreviewResult,
+    financeApproversResult,
+    selectedRepairPreviewsResult,
+    repairCheckpointResult,
   ] = await Promise.all([
-    isSettlementWorkspace ? Promise.resolve<AdminPayment[]>([]) : adminGet<AdminPayment[]>(apiHrefs.paymentsHref, []),
-    isSettlementWorkspace
-      ? Promise.resolve<AdminPaymentSummary | null>(null)
-      : adminGet<AdminPaymentSummary | null>(apiHrefs.paymentSummaryHref, null),
-    isSettlementWorkspace ? Promise.resolve<AdminRefund[]>([]) : adminGet<AdminRefund[]>(apiHrefs.refundsHref, []),
-    isSettlementWorkspace
-      ? Promise.resolve<AdminRefundSummary | null>(null)
-      : adminGet<AdminRefundSummary | null>(apiHrefs.refundSummaryHref, null),
-    isSettlementWorkspace
-      ? Promise.resolve<AdminEarningSummary>(emptyEarningsSummary)
-      : adminGet<AdminEarningSummary>(apiHrefs.earningsSummaryHref, emptyEarningsSummary),
-    isSettlementWorkspace ? Promise.resolve<AdminEarning[]>([]) : adminGet<AdminEarning[]>(apiHrefs.earningsHref, []),
-    isSettlementWorkspace
-      ? Promise.resolve<AdminPayoutBatch[]>([])
-      : adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
-    isSettlementWorkspace
-      ? Promise.resolve<AdminCashSettlementSummary | null>(null)
-      : adminGet<AdminCashSettlementSummary | null>(apiHrefs.cashSettlementSummaryHref, null),
     isSettlementQueue
-      ? adminGet<AdminBookingSettlementGapList>(apiHrefs.bookingSettlementGapsHref, emptySettlementGaps)
-      : Promise.resolve<AdminBookingSettlementGapList>(emptySettlementGaps),
-    adminGet<AdminBookingSettlementGapSummary | null>(apiHrefs.bookingSettlementGapSummaryHref, null),
+      ? adminGetResult<AdminBookingSettlementGapList>(
+          apiHrefs.bookingSettlementGapsHref,
+          emptySettlementGaps,
+        )
+      : Promise.resolve(successfulAdminResult(emptySettlementGaps)),
+    adminGetResult<AdminBookingSettlementGapSummary | null>(
+      apiHrefs.bookingSettlementGapSummaryHref,
+      null,
+    ),
     isSettlementBatch && shouldRunSettlementDryRun
-      ? adminGet<AdminBookingSettlementGapDryRun | null>(apiHrefs.bookingSettlementGapDryRunHref, null)
-      : Promise.resolve<AdminBookingSettlementGapDryRun | null>(null),
+      ? adminGetResult<AdminBookingSettlementGapDryRun | null>(
+          apiHrefs.bookingSettlementGapDryRunHref,
+          null,
+        )
+      : Promise.resolve(successfulAdminResult<AdminBookingSettlementGapDryRun | null>(null)),
     isSettlementQueue && repairBookingId
-      ? adminGet<AdminBookingSettlementGapRepairPreview | null>(
+      ? adminGetResult<AdminBookingSettlementGapRepairPreview | null>(
           `/admin/booking-settlement-gaps/${encodeURIComponent(repairBookingId)}/preview`,
           null,
         )
-      : Promise.resolve<AdminBookingSettlementGapRepairPreview | null>(null),
+      : Promise.resolve(successfulAdminResult<AdminBookingSettlementGapRepairPreview | null>(null)),
     isSettlementQueue && repairBookingId
-      ? adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
-      : Promise.resolve<AdminUser[]>([]),
-    isSettlementBatch && reviewBookingIds.length
-      ? Promise.all(
-          reviewBookingIds.map((bookingId) =>
-            adminGet<AdminBookingSettlementGapRepairPreview | null>(
-              `/admin/booking-settlement-gaps/${encodeURIComponent(bookingId)}/preview`,
-              null,
-            ),
-          ),
+      ? adminGetResult<AdminUser[]>(
+          '/admin/users?take=50&role=ADMIN&view=finance-approver-directory',
+          [],
+          {
+            freshness: 'stable',
+            revalidateSeconds: 300,
+            tags: ['finance-approver-directory'],
+          },
         )
-      : Promise.resolve<Array<AdminBookingSettlementGapRepairPreview | null>>([]),
+      : Promise.resolve(successfulAdminResult<AdminUser[]>([])),
+    isSettlementBatch && reviewBookingIds.length
+      ? adminGetResult<AdminBookingSettlementGapRepairPreviewBatch>(
+          `/admin/booking-settlement-gaps/preview-batch?bookingIds=${encodeURIComponent(reviewBookingIds.join(','))}`,
+          { generatedAt: '', items: [], requested: reviewBookingIds.length },
+        )
+      : Promise.resolve(
+          successfulAdminResult<AdminBookingSettlementGapRepairPreviewBatch>({
+            generatedAt: '',
+            items: [],
+            requested: 0,
+          }),
+        ),
     isSettlementQueue && checkpointBookingId
-      ? adminGet<AdminBookingSettlementRepairCheckpoint | null>(
+      ? adminGetResult<AdminBookingSettlementRepairCheckpoint | null>(
           `/admin/booking-settlement-gaps/${encodeURIComponent(checkpointBookingId)}/checkpoint`,
           null,
         )
-      : Promise.resolve<AdminBookingSettlementRepairCheckpoint | null>(null),
+      : Promise.resolve(successfulAdminResult<AdminBookingSettlementRepairCheckpoint | null>(null)),
   ]);
 
-  const currency = earningsSummary.currency || payments[0]?.currency || cashSummary?.currency || 'VND';
-  const filteredRefunds = refunds;
-  const filteredEarnings = earnings;
-  const filteredPayouts = payouts;
-  const filteredEarningsSummary = { ...earningsSummary, currency };
-  const reconciliation = buildReconciliation({
-    payments,
-    paymentSummary,
-    refunds: filteredRefunds,
-    refundSummary,
-    earningsSummary: filteredEarningsSummary,
-    earnings: filteredEarnings,
-    payouts: filteredPayouts,
-    cashSummary,
-    currency,
-    range: filters.range,
-  });
-  const closeoutTasks = buildCloseoutTasks(reconciliation);
-  const evidenceChecklist = buildFinanceCloseoutEvidenceChecklist(reconciliation);
-  const shiftCloseActionMap = buildShiftCloseActionMap(reconciliation);
-  const handoffRows = buildHandoffRows(reconciliation);
-  const closeoutRangeScope = filters.label;
+  const settlementGaps = settlementGapsResult.data;
+  const settlementGapSummary = settlementGapSummaryResult.data;
+  const settlementDryRun = settlementDryRunResult.data;
+  const repairPreview = repairPreviewResult.data;
+  const financeApprovers = financeApproversResult.data;
+  const selectedRepairPreviews = selectedRepairPreviewsResult.data.items;
+  const repairCheckpoint = repairCheckpointResult.data;
+  const requiredSources = [
+    ...(isSettlementQueue
+      ? [
+          {
+            available: settlementGapsResult.ok && settlementGapsResult.data != null,
+            label: 'Settlement backlog',
+            result: settlementGapsResult as AdminGetResult<unknown>,
+          },
+        ]
+      : []),
+    {
+      available: settlementGapSummaryResult.ok && settlementGapSummaryResult.data != null,
+      label: 'Settlement summary',
+      result: settlementGapSummaryResult as AdminGetResult<unknown>,
+    },
+    ...(isSettlementBatch && shouldRunSettlementDryRun
+      ? [
+          {
+            available: settlementDryRunResult.ok && settlementDryRunResult.data != null,
+            label: 'Historical dry-run',
+            result: settlementDryRunResult as AdminGetResult<unknown>,
+          },
+        ]
+      : []),
+    ...(isSettlementBatch && reviewBookingIds.length
+      ? [
+          {
+            available: selectedRepairPreviewsResult.ok && selectedRepairPreviewsResult.data != null,
+            label: 'Selected previews',
+            result: selectedRepairPreviewsResult as AdminGetResult<unknown>,
+          },
+        ]
+      : []),
+    ...(isSettlementQueue && repairBookingId
+      ? [
+          {
+            available: repairPreviewResult.ok && repairPreviewResult.data != null,
+            label: 'Repair preview',
+            result: repairPreviewResult as AdminGetResult<unknown>,
+          },
+          {
+            available: financeApproversResult.ok,
+            label: 'Finance approvers',
+            result: financeApproversResult as AdminGetResult<unknown>,
+          },
+        ]
+      : []),
+    ...(isSettlementQueue && checkpointBookingId
+      ? [
+          {
+            available: repairCheckpointResult.ok && repairCheckpointResult.data != null,
+            label: 'Repair checkpoint',
+            result: repairCheckpointResult as AdminGetResult<unknown>,
+          },
+        ]
+      : []),
+  ];
+  const settlementSourcesAvailable = requiredSources.every((source) => source.available);
+  const lastRefreshedAt =
+    repairPreview?.generatedAt ||
+    settlementDryRun?.generatedAt ||
+    selectedRepairPreviewsResult.data.generatedAt ||
+    settlementGapSummary?.generatedAt ||
+    settlementGaps.generatedAt;
+
   const settlementPagination = buildFinanceCloseoutSettlementPagination(settlementGaps);
-  const selectedSettlementPreviews = selectedRepairPreviews.filter(
-    (preview): preview is AdminBookingSettlementGapRepairPreview => preview !== null,
-  );
+  const selectedSettlementPreviews = selectedRepairPreviews;
   const settlementPeriodOptions = buildFinanceCloseoutSettlementPeriodOptions();
   const settlementPaymentMethodLabel =
     FINANCE_CLOSEOUT_SETTLEMENT_PAYMENT_METHOD_OPTIONS.find(
       (option) => option.value === filters.settlementPaymentMethod,
     )?.label ?? 'All payment methods';
+  const queueSummaryLabels = [
+    `Gap age: ${filters.settlementAgeLabel}`,
+    `Repair track: ${filters.settlementTrackLabel}`,
+    ...(filters.settlementPeriod === 'all' ? [] : [`Month: ${filters.settlementPeriod}`]),
+    ...(filters.settlementPaymentMethod === 'all'
+      ? []
+      : [`Payment: ${settlementPaymentMethodLabel}`]),
+    `Matching bookings: ${settlementGaps.total}`,
+    `Oldest: ${formatRelativeAge(settlementGapSummary?.oldestGapAt, 'None')}`,
+  ];
+  const batchScopeLabels = [
+    ...(filters.settlementPeriod === 'all' ? [] : [`Month: ${filters.settlementPeriod}`]),
+    ...(filters.settlementPaymentMethod === 'all'
+      ? []
+      : [`Payment: ${settlementPaymentMethodLabel}`]),
+    'Limit: 100 records',
+    'Read-only — no records will be changed',
+  ];
 
   return (
     <AdminPageTemplate
       description={
-        isSettlementWorkspace
-          ? isSettlementQueue
-            ? 'Governed repair queue for completed bookings without a retained settlement snapshot.'
-            : 'Read-only historical batch diagnostics before individual dual-approval repair.'
-          : 'End-of-shift operations board for payment holds, refunds, earnings, cash wallet debt, and payout releases.'
+        isSettlementQueue
+          ? 'Review missing settlement snapshots, verify policy evidence, and repair only approved records.'
+          : 'Read-only historical batch diagnostics before individual dual-approval repair.'
       }
       metrics={
-        isSettlementQueue
+        !settlementSourcesAvailable
+          ? []
+          : isSettlementQueue
           ? [
               {
-                helper: 'Completed bookings older than 24 hours without a settlement snapshot.',
+                helper: 'Completed bookings without a settlement snapshot in the active filters.',
                 kind: 'risk',
-                label: 'Settlement backlog',
-                scope: 'Backlog >24h',
-                value: settlementGapSummary?.backlog ?? settlementGaps.total,
-              },
-              {
-                helper: 'Canonical booking evidence can be reconstructed through the guarded repair flow.',
-                kind: 'action',
-                label: 'Canonical repair',
-                scope: 'Repair queue',
-                value: settlementGapSummary?.canonical ?? 0,
-              },
-              {
-                helper: 'Historical paid evidence is ready for preview and dual approval.',
-                kind: 'action',
-                label: 'Historical ready',
-                scope: 'Repair queue',
-                value: settlementGapSummary?.historicalReady ?? 0,
+                label: 'Matching repair gaps',
+                scope: 'Active filters',
+                value: settlementGapSummary?.total ?? settlementGaps.total,
               },
               {
                 helper: 'Evidence must be corrected before a settlement snapshot can be created.',
                 kind: 'risk',
                 label: 'Evidence blocked',
-                scope: 'Needs review',
+                scope: 'Active filters',
                 value: settlementGapSummary?.evidenceBlocked ?? 0,
               },
               {
-                helper: 'Finance must inspect these rows before choosing a repair path.',
-                kind: 'risk',
-                label: 'Manual review',
-                scope: 'Needs review',
-                value: settlementGapSummary?.manualReview ?? 0,
+                helper: 'Age of the oldest missing settlement snapshot in the active filter scope.',
+                kind: 'record',
+                label: 'Oldest gap',
+                scope: 'Active filters',
+                value: formatRelativeAge(settlementGapSummary?.oldestGapAt, 'None'),
               },
             ]
-          : isSettlementBatch
-            ? [
+          : [
                 {
-                  helper: 'Historical paid evidence available for bounded read-only diagnostics.',
+                  helper: 'Historical paid evidence awaiting explicit policy review.',
                   kind: 'action',
-                  label: 'Historical ready',
+                  label: 'Historical policy review',
                   scope: 'Batch scope',
                   value: settlementGapSummary?.historicalReady ?? 0,
                 },
@@ -266,13 +294,6 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
                   value: settlementGapSummary?.evidenceBlocked ?? 0,
                 },
                 {
-                  helper: 'Finance must inspect these records before choosing an individual repair path.',
-                  kind: 'risk',
-                  label: 'Manual review',
-                  scope: 'Batch scope',
-                  value: settlementGapSummary?.manualReview ?? 0,
-                },
-                {
                   helper: 'Age of the oldest missing settlement snapshot in the retained summary.',
                   kind: 'record',
                   label: 'Oldest gap',
@@ -280,65 +301,20 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
                   value: formatRelativeAge(settlementGapSummary?.oldestGapAt, 'None'),
                 },
               ]
-          : [
-              {
-                helper: 'Completed bookings older than 24 hours without a settlement snapshot.',
-                kind: 'risk',
-                label: 'Settlement backlog',
-                scope: 'Backlog >24h',
-                value: settlementGapSummary?.backlog ?? 0,
-              },
-              {
-                helper: 'Payment holds and cash rows to close for this range.',
-                kind: 'action',
-                label: 'Open payment items',
-                scope: closeoutRangeScope,
-                value: reconciliation.openPaymentCount,
-              },
-              {
-                helper: 'Refund cases still open for this range.',
-                kind: 'risk',
-                label: 'Refund items',
-                scope: closeoutRangeScope,
-                value: reconciliation.openRefundCount,
-              },
-              {
-                label: 'Cash debt',
-                value: <MoneyText amount={reconciliation.cashDebtAmount} currency={currency} />,
-                helper: 'Partner cash-fee debt needing settlement evidence for this range.',
-                kind: 'risk',
-                scope: closeoutRangeScope,
-              },
-              {
-                label: 'Available payout',
-                value: <MoneyText amount={filteredEarningsSummary.availableNetAmount} currency={currency} />,
-                helper: 'Partner net waiting for payout batching in this range.',
-                kind: 'action',
-                scope: closeoutRangeScope,
-              },
-              {
-                helper: 'Payout batches still waiting for release checks.',
-                kind: 'action',
-                label: 'Open payout batches',
-                scope: closeoutRangeScope,
-                value: reconciliation.openPayoutCount,
-              },
-              {
-                helper: 'Payment or payout references to complete before handoff.',
-                kind: 'risk',
-                label: 'Missing refs',
-                scope: closeoutRangeScope,
-                value: reconciliation.missingReferenceCount,
-              },
-            ]
       }
-      title="Finance Closeout"
+      title="Settlement Repair"
     >
       {repairNotice ? (
         <AdminNoticeCard
           className="admin-mb-16"
           role={repairNotice === 'repaired' ? 'status' : 'alert'}
-          tone={repairNotice === 'repaired' ? 'success' : repairNotice === 'checkpoint-failed' ? 'warning' : 'danger'}
+          tone={
+            repairNotice === 'repaired'
+              ? 'success'
+              : repairNotice === 'checkpoint-failed'
+                ? 'warning'
+                : 'danger'
+          }
         >
           <strong>
             {repairNotice === 'repaired'
@@ -356,224 +332,202 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
                 : ` · ${repairCheckpoint.checks.length} checks passed`}
             </p>
           ) : null}
+          {repairNotice === 'repaired' || repairNotice === 'checkpoint-failed' ? (
+            <div className="admin-inline-actions admin-mt-8" aria-label="Settlement repair evidence">
+              {checkpointBookingId ? (
+                <AdminTextLink href={`/bookings/${encodeURIComponent(checkpointBookingId)}`}>
+                  Booking evidence
+                </AdminTextLink>
+              ) : null}
+              {repairSnapshotId ? (
+                <AdminTextLink
+                  href={`/finance-tax/booking-settlement-audit?q=${encodeURIComponent(repairSnapshotId)}`}
+                >
+                  Settlement snapshot
+                </AdminTextLink>
+              ) : null}
+              {repairEarningId ? (
+                <AdminTextLink href={`/earnings?q=${encodeURIComponent(repairEarningId)}`}>
+                  Partner earning
+                </AdminTextLink>
+              ) : null}
+              {repairAuditLogId ? (
+                <AdminTextLink href={`/audit-log?q=${encodeURIComponent(repairAuditLogId)}`}>
+                  Audit log
+                </AdminTextLink>
+              ) : null}
+            </div>
+          ) : null}
+          {repairActorId || repairApprovalAdminId || repairCompletedAt ? (
+            <p className="muted admin-mt-8">
+              Actor {repairActorId || 'Unavailable'} · Approver {repairApprovalAdminId || 'Unavailable'} ·
+              Completed {repairCompletedAt ? formatDateTime(repairCompletedAt) : 'Unavailable'}
+            </p>
+          ) : null}
         </AdminNoticeCard>
       ) : null}
 
+      {!settlementSourcesAvailable ? (
+        <AdminNoticeCard className="admin-mb-16" role="alert" tone="danger">
+          <strong>Data unavailable — do not close or repair</strong>
+          <p className="muted">
+            {requiredSources.filter((source) => source.available).length} of {requiredSources.length}{' '}
+            required sources loaded. A failed source is not an empty queue.
+          </p>
+          <ul>
+            {requiredSources.map((source) => (
+              <li key={source.label}>
+                {source.label}:{' '}
+                {source.available
+                  ? 'Loaded'
+                  : source.result.ok
+                    ? 'Invalid response'
+                    : source.result.status ?? 'Network error'}
+              </li>
+            ))}
+          </ul>
+          <p className="muted">
+            Last confirmed refresh: {lastRefreshedAt ? formatDateTime(lastRefreshedAt) : 'Unavailable'}
+          </p>
+          <AdminTextLink href={currentFinanceCloseoutHref(params)}>Retry required sources</AdminTextLink>
+        </AdminNoticeCard>
+      ) : (
+        <AdminNoticeCard className="admin-mb-16" role="status" tone="info">
+          <strong>Required finance sources loaded</strong>
+          <p className="muted">
+            Last refreshed ICT: {lastRefreshedAt ? formatDateTime(lastRefreshedAt) : 'Just now'}
+          </p>
+          <AdminTextLink href={currentFinanceCloseoutHref(params)}>Refresh now</AdminTextLink>
+        </AdminNoticeCard>
+      )}
+
       <AdminFilterPanel
         className="admin-mt-16 admin-mb-16"
-        description="Daily closeout work and historical settlement repair are loaded independently."
-        resultLabel={isSettlementWorkspace ? 'Settlement repair' : 'Operations closeout'}
-        title="Closeout workspace"
+        description="Use the repair queue for governed action. Batch evidence remains read-only diagnostics."
+        resultLabel={isSettlementQueue ? 'Repair queue' : 'Batch evidence'}
+        title="Settlement repair workspace"
       >
         <AdminSegmentedControl
-          activeValue={filters.workspace}
+          activeValue={isSettlementQueue ? 'settlement-queue' : 'settlement-batch'}
           ariaLabel="Finance closeout workspaces"
           options={[
             {
-              href: buildFinanceCloseoutOperationsHref(filters.range),
-              label: 'Operations closeout',
-              value: 'operations',
+              href: buildFinanceCloseoutPageHref(filters, {
+                settlementMode: 'queue',
+                settlementPage: 1,
+              }),
+              label: 'Repair queue',
+              value: 'settlement-queue',
             },
             {
-              href: buildFinanceCloseoutPageHref(filters, { settlementPage: 1 }),
-              label: 'Settlement repair',
-              value: 'settlement',
+              href: buildFinanceCloseoutPageHref(filters, {
+                settlementMode: 'batch',
+                settlementPage: 1,
+              }),
+              label: 'Batch evidence',
+              value: 'settlement-batch',
             },
           ]}
         />
+        <AdminTextLink href={buildFinanceCloseoutOperationsHref(filters.range)}>
+          Open Finance Overview
+        </AdminTextLink>
       </AdminFilterPanel>
-
-      {isSettlementWorkspace ? (
-        <AdminFilterPanel
-          className="admin-mb-16"
-          description="Use the bounded queue for individual governed repair. Use batch review only for read-only historical diagnostics."
-          resultLabel={isSettlementQueue ? 'Repair queue' : 'Batch review'}
-          title="Settlement review mode"
-        >
-          <AdminSegmentedControl
-            activeValue={filters.settlementMode}
-            ariaLabel="Settlement review modes"
-            options={[
-              {
-                href: buildFinanceCloseoutPageHref(filters, {
-                  settlementMode: 'queue',
-                  settlementPage: 1,
-                }),
-                label: 'Repair queue',
-                value: 'queue',
-              },
-              {
-                href: buildFinanceCloseoutPageHref(filters, {
-                  settlementMode: 'batch',
-                  settlementPage: 1,
-                }),
-                label: 'Batch review',
-                value: 'batch',
-              },
-            ]}
-          />
-        </AdminFilterPanel>
-      ) : null}
-
-      {!isSettlementWorkspace ? (
-        <AdminFilterPanel
-        actions={
-          <AdminTextLink href="/audit-log?bucket=Finance%2FCloseout">Open finance audit</AdminTextLink>
-        }
-        className="admin-mb-16"
-        description={
-          <>
-            Range: {filters.label}. Refunds, earnings, payout batches, and local cash debt use record dates.
-            Payment hold rows remain all-time until payment timestamps are exposed by the API.
-          </>
-        }
-        resultLabel={filters.label}
-        title="Finance date range"
-      >
-        <div className="booking-date-filter-bar finance-closeout-filter-group">
-          <span className="finance-closeout-filter-group-label">Range</span>
-          <AdminSegmentedControl
-            activeValue={filters.range}
-            ariaLabel="Finance closeout date range"
-            className="finance-closeout-filter-buttons"
-            options={[
-              {
-                href: buildFinanceCloseoutOperationsHref('all'),
-                label: 'All records',
-                value: 'all',
-              },
-              {
-                href: buildFinanceCloseoutOperationsHref('today'),
-                label: 'Today',
-                value: 'today',
-              },
-              {
-                href: buildFinanceCloseoutOperationsHref('7d'),
-                label: 'Last 7 days',
-                value: '7d',
-              },
-              {
-                href: buildFinanceCloseoutOperationsHref('30d'),
-                label: 'Last 30 days',
-                value: '30d',
-              },
-            ]}
-          />
-        </div>
-        <AdminFilterSummary
-          ariaLabel="Active finance closeout filters"
-          labels={[`Range: ${filters.label}`]}
-          tone="info"
-        />
-      </AdminFilterPanel>
-      ) : null}
 
       {isSettlementQueue ? (
         <AdminFilterPanel
-        actions={
-          <AdminTextLink
-            href={buildFinanceCloseoutPageHref(filters, {
-              settlementAge: 'backlog',
-              settlementMode: 'queue',
-              settlementPage: 1,
-              settlementPaymentMethod: 'all',
-              settlementPeriod: 'all',
-              settlementQuery: '',
-              settlementTrack: 'canonical',
-            })}
-          >
-            Clear filters
-          </AdminTextLink>
-        }
-        className="admin-mb-16"
-        description="Completed bookings without a settlement snapshot. Choose a repair track first, then age. Historical readiness is a baseline evidence check; the preview remains the final finance safety gate."
-        resultLabel={`${settlementGaps.total} booking(s)`}
-        title="Settlement gap filters"
-      >
-        <div className="booking-date-filter-bar finance-closeout-filter-group">
-          <span className="finance-closeout-filter-group-label">Repair track</span>
-          <AdminSegmentedControl
-            activeValue={filters.settlementTrack}
-            ariaLabel="Settlement repair track"
-            className="finance-closeout-filter-buttons"
-            options={FINANCE_CLOSEOUT_SETTLEMENT_TRACK_OPTIONS.map((option) => ({
-              href: buildFinanceCloseoutPageHref(filters, {
+          actions={
+            <AdminTextLink
+              href={buildFinanceCloseoutPageHref(filters, {
+                settlementAge: 'backlog',
+                settlementMode: 'queue',
                 settlementPage: 1,
-                settlementTrack: option.value,
-              }),
-              ...option,
-            }))}
-          />
-        </div>
-        <div className="booking-date-filter-bar finance-closeout-filter-group">
-          <span className="finance-closeout-filter-group-label">Age</span>
-          <AdminSegmentedControl
-            activeValue={filters.settlementAge}
-            ariaLabel="Settlement gap age"
-            className="finance-closeout-filter-buttons"
-            options={FINANCE_CLOSEOUT_SETTLEMENT_AGE_OPTIONS.map((option) => ({
-              href: buildFinanceCloseoutPageHref(filters, {
-                settlementAge: option.value,
-                settlementPage: 1,
-              }),
-              ...option,
-            }))}
-          />
-        </div>
-        <AdminFormShell
-          action="/finance-closeout"
-          className="admin-directory-filter-grid admin-mt-12"
-          method="get"
+                settlementPaymentMethod: 'all',
+                settlementPeriod: 'all',
+                settlementQuery: '',
+                settlementTrack: 'canonical',
+              })}
+            >
+              Clear filters
+            </AdminTextLink>
+          }
+          className="admin-mb-16"
+          description="Completed bookings without a settlement snapshot. Choose a repair track first, then age. Historical evidence is a policy-review candidate; the current preview remains the final finance safety gate."
+          resultLabel={settlementSourcesAvailable ? `${settlementGaps.total} booking(s)` : 'Data unavailable'}
+          title="Repair queue filters"
         >
-          <input name="view" type="hidden" value="settlement" />
-          <input name="range" type="hidden" value={filters.range} />
-          <input name="settlementAge" type="hidden" value={filters.settlementAge} />
-          <input name="settlementPage" type="hidden" value="1" />
-          <input name="settlementTrack" type="hidden" value={filters.settlementTrack} />
-          <AdminFormSelect
-            defaultValue={filters.settlementPeriod}
-            label="Settlement month"
-            labelVisibility="visible"
-            name="settlementPeriod"
-            options={settlementPeriodOptions}
-          />
-          <AdminFormSelect
-            defaultValue={filters.settlementPaymentMethod}
-            label="Payment method"
-            labelVisibility="visible"
-            name="settlementPaymentMethod"
-            options={FINANCE_CLOSEOUT_SETTLEMENT_PAYMENT_METHOD_OPTIONS}
-          />
-          <AdminFormSearch
-            defaultValue={filters.settlementQuery}
-            label="Search settlement backlog"
-            name="q"
-            placeholder="Booking, customer, phone, or Partner"
-          />
-          <AdminFormControlButton className="button-secondary" type="submit">
-            Search backlog
-          </AdminFormControlButton>
-        </AdminFormShell>
-        <AdminFilterSummary
-          ariaLabel="Settlement gap age summary"
-          labels={[
-            `Queue: ${filters.settlementAgeLabel}`,
-            `Track: ${filters.settlementTrackLabel}`,
-            `Month: ${filters.settlementPeriod === 'all' ? 'All months' : filters.settlementPeriod}`,
-            `Payment: ${settlementPaymentMethodLabel}`,
-            `Canonical: ${settlementGapSummary?.canonical ?? 0}`,
-            `Historical ready: ${settlementGapSummary?.historicalReady ?? 0}`,
-            `Evidence blocked: ${settlementGapSummary?.evidenceBlocked ?? 0}`,
-            `Manual review: ${settlementGapSummary?.manualReview ?? 0}`,
-            `24–72h: ${settlementGapSummary?.age24To72Hours ?? 0}`,
-            `3–7d: ${settlementGapSummary?.age3To7Days ?? 0}`,
-            `7d+: ${settlementGapSummary?.age7DaysPlus ?? 0}`,
-            `Under 24h: ${settlementGapSummary?.recent ?? 0}`,
-            `Oldest: ${formatRelativeAge(settlementGapSummary?.oldestGapAt, 'None')}`,
-          ]}
-          tone={(settlementGapSummary?.backlog ?? 0) > 0 ? 'warning' : 'success'}
-        />
-      </AdminFilterPanel>
+          <div className="booking-date-filter-bar finance-closeout-filter-group">
+            <span className="finance-closeout-filter-group-label">Repair track</span>
+            <AdminSegmentedControl
+              activeValue={filters.settlementTrack}
+              ariaLabel="Settlement repair track"
+              className="finance-closeout-filter-buttons"
+              options={FINANCE_CLOSEOUT_SETTLEMENT_TRACK_OPTIONS.map((option) => ({
+                href: buildFinanceCloseoutPageHref(filters, {
+                  settlementPage: 1,
+                  settlementTrack: option.value,
+                }),
+                ...option,
+              }))}
+            />
+          </div>
+          <div className="booking-date-filter-bar finance-closeout-filter-group">
+            <span className="finance-closeout-filter-group-label">Gap age</span>
+            <AdminSegmentedControl
+              activeValue={filters.settlementAge}
+              ariaLabel="Settlement gap age"
+              className="finance-closeout-filter-buttons"
+              options={FINANCE_CLOSEOUT_SETTLEMENT_AGE_OPTIONS.map((option) => ({
+                href: buildFinanceCloseoutPageHref(filters, {
+                  settlementAge: option.value,
+                  settlementPage: 1,
+                }),
+                ...option,
+              }))}
+            />
+          </div>
+          <AdminFormShell
+            action="/finance-closeout"
+            className="admin-directory-filter-grid admin-mt-12"
+            method="get"
+          >
+            <input name="view" type="hidden" value="settlement" />
+            <input name="range" type="hidden" value={filters.range} />
+            <input name="settlementAge" type="hidden" value={filters.settlementAge} />
+            <input name="settlementPage" type="hidden" value="1" />
+            <input name="settlementTrack" type="hidden" value={filters.settlementTrack} />
+            <AdminFormSelect
+              defaultValue={filters.settlementPeriod}
+              label="Settlement month"
+              labelVisibility="visible"
+              name="settlementPeriod"
+              options={settlementPeriodOptions}
+            />
+            <AdminFormSelect
+              defaultValue={filters.settlementPaymentMethod}
+              label="Payment method"
+              labelVisibility="visible"
+              name="settlementPaymentMethod"
+              options={FINANCE_CLOSEOUT_SETTLEMENT_PAYMENT_METHOD_OPTIONS}
+            />
+            <AdminFormSearch
+              defaultValue={filters.settlementQuery}
+              label="Search settlement backlog"
+              name="q"
+              placeholder="Booking, customer, phone, or Partner"
+            />
+            <AdminFormControlButton className="button-secondary" type="submit">
+              Search backlog
+            </AdminFormControlButton>
+          </AdminFormShell>
+          {settlementSourcesAvailable ? (
+            <AdminFilterSummary
+              ariaLabel="Settlement gap age summary"
+              labels={queueSummaryLabels}
+              tone={(settlementGapSummary?.backlog ?? 0) > 0 ? 'warning' : 'success'}
+            />
+          ) : null}
+        </AdminFilterPanel>
       ) : null}
 
       {isSettlementBatch ? (
@@ -594,11 +548,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
           resultLabel="Read only"
           title="Historical batch filters"
         >
-          <AdminFormShell
-            action="/finance-closeout"
-            className="admin-directory-filter-grid"
-            method="get"
-          >
+          <AdminFormShell action="/finance-closeout" className="admin-directory-filter-grid" method="get">
             <input name="view" type="hidden" value="settlement" />
             <input name="settlementMode" type="hidden" value="batch" />
             <input name="range" type="hidden" value={filters.range} />
@@ -622,18 +572,13 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
           </AdminFormShell>
           <AdminFilterSummary
             ariaLabel="Historical settlement batch scope"
-            labels={[
-              `Month: ${filters.settlementPeriod === 'all' ? 'All months' : filters.settlementPeriod}`,
-              `Payment: ${settlementPaymentMethodLabel}`,
-              'Limit: 100 records',
-              'Writes: Disabled',
-            ]}
+            labels={batchScopeLabels}
             tone="info"
           />
         </AdminFilterPanel>
       ) : null}
 
-      {isSettlementQueue ? (
+      {isSettlementQueue && settlementSourcesAvailable ? (
         <FinanceCloseoutSettlementBacklogSection
           hrefForPage={(page) => buildFinanceCloseoutPageHref(filters, { settlementPage: page })}
           hrefForRepair={(bookingId) => buildFinanceCloseoutSettlementRepairHref(filters, bookingId)}
@@ -649,7 +594,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
           }}
           rows={settlementGaps.items}
         />
-      ) : isSettlementBatch ? (
+      ) : isSettlementBatch && settlementSourcesAvailable ? (
         <>
           <FinanceCloseoutSettlementDryRunSection
             clearHref={buildFinanceCloseoutPageHref(filters, { settlementMode: 'batch' })}
@@ -664,34 +609,15 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
             previews={selectedSettlementPreviews}
           />
         </>
-      ) : (
-        <>
-          <FinanceCloseoutTaskBoardSection tasks={closeoutTasks} />
-
-          <FinanceCloseoutPaymentEarningSection currency={currency} summary={filteredEarningsSummary} />
-
-          <FinanceCloseoutCashDebtHandoffSection
-            cashDebtAmount={reconciliation.cashDebtAmount}
-            currency={currency}
-            oldestOpenAt={cashSummary?.oldestOpenAt}
-            providerCount={cashSummary?.providerCount ?? 0}
-            rowCount={cashSummary?.rowCount ?? 0}
-          />
-
-          <FinanceCloseoutEvidenceChecklistSection items={evidenceChecklist} />
-
-          <FinanceCloseoutShiftActionMapSection items={shiftCloseActionMap} />
-
-          <FinanceCloseoutPayoutReleaseChecksSection rows={handoffRows} />
-        </>
-      )}
+      ) : null}
 
       {isSettlementQueue && repairBookingId ? (
         <FinanceCloseoutSettlementRepairDrawer
           action={repairBookingSettlementGapAction}
           approvers={financeApprovers}
           closeHref={buildFinanceCloseoutPageHref(filters)}
-          preview={repairPreview}
+          preview={settlementSourcesAvailable ? repairPreview : null}
+          recheckHref={buildFinanceCloseoutSettlementRepairHref(filters, repairBookingId)}
           returnFilters={{
             q: filters.settlementQuery,
             range: filters.range,
@@ -714,6 +640,7 @@ async function repairBookingSettlementGapAction(formData: FormData) {
   const confirmationBookingId = readFormValue(formData, 'confirmationBookingId');
   const approvalAdminId = readFormValue(formData, 'approvalAdminId');
   const reason = readFormValue(formData, 'reason');
+  const sourceVersion = readFormValue(formData, 'sourceVersion');
   const filters = buildFinanceCloseoutFilters({
     q: readFormValue(formData, 'q'),
     range: readFormValue(formData, 'range'),
@@ -726,7 +653,7 @@ async function repairBookingSettlementGapAction(formData: FormData) {
   const closeHref = buildFinanceCloseoutPageHref(filters);
   const previewHref = bookingId ? buildFinanceCloseoutSettlementRepairHref(filters, bookingId) : closeHref;
 
-  if (!bookingId || !approvalAdminId || reason.length < 8) {
+  if (!bookingId || !approvalAdminId || !sourceVersion || reason.length < 12) {
     redirect(withRepairNotice(previewHref, 'invalid'));
   }
   if (confirmationBookingId !== bookingId) {
@@ -737,7 +664,7 @@ async function repairBookingSettlementGapAction(formData: FormData) {
   try {
     result = await adminPostOrThrow<AdminBookingSettlementGapRepairResult>(
       `/admin/booking-settlement-gaps/${encodeURIComponent(bookingId)}/repair`,
-      { approvalAdminId, reason },
+      { approvalAdminId, reason, sourceVersion },
     );
   } catch (error) {
     redirect(withRepairNotice(previewHref, settlementRepairErrorCode(error)));
@@ -748,6 +675,14 @@ async function repairBookingSettlementGapAction(formData: FormData) {
       closeHref,
       result.checkpoint.passed ? 'repaired' : 'checkpoint-failed',
       result.bookingId,
+      {
+        approvalAdminId: result.approvalAdminId,
+        auditLogId: result.auditLogId,
+        actorId: result.actorId,
+        completedAt: result.completedAt,
+        earningId: result.earningId,
+        snapshotId: result.settlementSnapshotId,
+      },
     ),
   );
 }
@@ -771,10 +706,43 @@ function readFormValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? '').trim();
 }
 
-function withRepairNotice(href: string, notice: string, checkpointBookingId?: string) {
+function successfulAdminResult<T>(data: T): AdminGetResult<T> {
+  return { data, ok: true, status: 200 };
+}
+
+function currentFinanceCloseoutHref(params: Record<string, string | string[] | undefined>) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    (Array.isArray(value) ? value : value ? [value] : []).forEach((item) => query.append(key, item));
+  });
+  const encoded = query.toString();
+  return encoded ? `/finance-closeout?${encoded}` : '/finance-closeout';
+}
+
+function withRepairNotice(
+  href: string,
+  notice: string,
+  checkpointBookingId?: string,
+  evidence?: {
+    actorId: string;
+    approvalAdminId: string;
+    auditLogId: string;
+    completedAt: string;
+    earningId: string;
+    snapshotId: string;
+  },
+) {
   const url = new URL(href, 'http://admin.local');
   url.searchParams.set('repairNotice', notice);
   if (checkpointBookingId) url.searchParams.set('checkpointBookingId', checkpointBookingId);
+  if (evidence) {
+    url.searchParams.set('repairActorId', evidence.actorId);
+    url.searchParams.set('repairApprovalAdminId', evidence.approvalAdminId);
+    url.searchParams.set('repairAuditLogId', evidence.auditLogId);
+    url.searchParams.set('repairCompletedAt', evidence.completedAt);
+    url.searchParams.set('repairEarningId', evidence.earningId);
+    url.searchParams.set('repairSnapshotId', evidence.snapshotId);
+  }
   return `${url.pathname}?${url.searchParams.toString()}`;
 }
 
@@ -791,11 +759,13 @@ function settlementRepairNoticeMessage(notice: string) {
   if (notice === 'checkpoint-failed')
     return 'The repair write exists, but one or more accounting checks failed. Do not retry; review the checkpoint and finance audit evidence.';
   if (notice === 'confirmation') return 'The confirmation booking ID did not match.';
-  if (notice === 'invalid') return 'Approver, reason, and booking confirmation are required.';
+  if (notice === 'invalid')
+    return 'Approver, a reason of at least 12 characters, current preview, and booking confirmation are required.';
   if (notice === 'access-denied' || notice === 'api-403')
     return 'Your operator category cannot perform this repair.';
   if (notice === 'api-400')
     return 'The API blocked this repair because finance evidence or approval is not valid.';
-  if (notice === 'admin-session' || notice === 'api-401') return 'Admin authentication expired. Sign in again.';
+  if (notice === 'admin-session' || notice === 'api-401')
+    return 'Admin authentication expired. Sign in again.';
   return 'The finance write failed. No successful repair was confirmed.';
 }

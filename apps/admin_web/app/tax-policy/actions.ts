@@ -17,14 +17,16 @@ export async function createTaxPolicyVersion(formData: FormData) {
   }
   const notes = String(formData.get('notes') || '').trim();
   const defaultRateBps = parseInteger(formData.get('defaultRateBps'));
+  const approval = taxPolicyApprovalPayload(formData);
 
   const policy = await adminPost<AdminTaxPolicyVersion | null>(
     '/admin/tax-policy-versions',
     {
-      name,
-      status,
+      ...approval,
       effectiveFrom,
+      name,
       notes: notes || undefined,
+      status,
     },
     null,
   );
@@ -33,10 +35,11 @@ export async function createTaxPolicyVersion(formData: FormData) {
     await adminPost(
       `/admin/tax-policy-versions/${policy.id}/rules`,
       {
-        scope: 'DEFAULT',
-        rateBps: defaultRateBps,
-        fixedAmount: 0,
         active: true,
+        ...approval,
+        fixedAmount: 0,
+        rateBps: defaultRateBps,
+        scope: 'DEFAULT',
       },
       null,
     );
@@ -59,14 +62,16 @@ export async function updateTaxPolicyVersion(formData: FormData) {
     return redirectTaxPolicyValidation(error);
   }
   const notes = String(formData.get('notes') || '').trim();
+  const approval = taxPolicyApprovalPayload(formData);
 
   await adminPatch(
     `/admin/tax-policy-versions/${id}`,
     {
-      status,
+      ...approval,
       effectiveFrom,
       effectiveTo,
       notes: notes || null,
+      status,
     },
     null,
   );
@@ -83,17 +88,19 @@ export async function createTaxRule(formData: FormData) {
   } catch (error) {
     return redirectTaxPolicyValidation(error);
   }
+  const approval = taxPolicyApprovalPayload(formData);
 
   await adminPost(
     `/admin/tax-policy-versions/${policyId}/rules`,
     {
+      active: true,
+      ...approval,
+      fixedAmount: ruleInput.fixedAmount,
+      maxGrossAmount: ruleInput.maxGrossAmount ?? undefined,
+      minGrossAmount: ruleInput.minGrossAmount ?? undefined,
+      rateBps: ruleInput.rateBps,
       scope: ruleInput.scope,
       serviceType: ruleInput.serviceType || undefined,
-      minGrossAmount: ruleInput.minGrossAmount ?? undefined,
-      maxGrossAmount: ruleInput.maxGrossAmount ?? undefined,
-      rateBps: ruleInput.rateBps,
-      fixedAmount: ruleInput.fixedAmount,
-      active: true,
     },
     null,
   );
@@ -111,17 +118,19 @@ export async function updateTaxRule(formData: FormData) {
     return redirectTaxPolicyValidation(error);
   }
   const active = formData.get('active') === 'on';
+  const approval = taxPolicyApprovalPayload(formData);
 
   await adminPatch<AdminTaxRule | null>(
     `/admin/tax-rules/${ruleId}`,
     {
+      active,
+      ...approval,
+      fixedAmount: ruleInput.fixedAmount,
+      maxGrossAmount: ruleInput.maxGrossAmount,
+      minGrossAmount: ruleInput.minGrossAmount,
+      rateBps: ruleInput.rateBps,
       scope: ruleInput.scope,
       serviceType: ruleInput.serviceType,
-      minGrossAmount: ruleInput.minGrossAmount,
-      maxGrossAmount: ruleInput.maxGrossAmount,
-      rateBps: ruleInput.rateBps,
-      fixedAmount: ruleInput.fixedAmount,
-      active,
     },
     null,
   );
@@ -137,6 +146,13 @@ function parseInteger(value: FormDataEntryValue | null) {
   }
   const number = Number(raw);
   return Number.isInteger(number) ? number : null;
+}
+
+function taxPolicyApprovalPayload(formData: FormData) {
+  return {
+    approvalAdminId: String(formData.get('approvalAdminId') ?? '').trim(),
+    operatorReason: String(formData.get('operatorReason') ?? '').trim(),
+  };
 }
 
 function parseRequiredDate(value: FormDataEntryValue | null, label: string) {

@@ -17,7 +17,7 @@ const savedPolicy: BookingMatchingPolicySnapshot = {
 describe('matchingPolicySummaryLabel', () => {
   it('describes saved marketplace policy without changing booking authority copy', () => {
     expect(matchingPolicySummaryLabel(savedPolicy)).toBe(
-      'Saved policy: 7m / 6.5km / 12m fresh / 8 invite cap / marketplace immediate / customer final',
+      'Saved policy: 7m / 6.5km / 12m fresh / 8 invite cap / marketplace immediate / first-pick accept matches / customer fallback',
     );
   });
 

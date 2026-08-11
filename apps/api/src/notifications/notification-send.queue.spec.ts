@@ -13,6 +13,10 @@ describe('notification send queue descriptor', () => {
       options: {
         attempts: 3,
         backoff: { type: 'exponential', delay: 5_000 },
+        deduplication: {
+          id: 'notification-1',
+          keepLastIfActive: true,
+        },
         removeOnComplete: true,
         removeOnFail: false,
       },

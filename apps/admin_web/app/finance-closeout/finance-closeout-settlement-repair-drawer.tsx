@@ -1,4 +1,8 @@
+'use client';
+
+import { useCallback, useRef } from 'react';
 import { ShieldCheck, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 import type { AdminBookingSettlementGapRepairPreview, AdminUser } from '../../lib/admin-api';
 import { formatDateTime } from '../../lib/admin-format';
@@ -13,14 +17,18 @@ import {
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminDetailGrid, AdminDrawerSurface, AdminNoticeCard } from '../../components/admin-surface';
+import { AdminDrawerBackdropButton } from '../../components/admin-drawer-backdrop-button';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
+import { AdminTextLink } from '../../components/admin-text-link';
+import { useAdminModalFocus } from '../../components/use-admin-modal-focus';
 
 type FinanceCloseoutSettlementRepairDrawerProps = {
   readonly action: (formData: FormData) => void | Promise<void>;
   readonly approvers: readonly AdminUser[];
   readonly closeHref: string;
   readonly preview: AdminBookingSettlementGapRepairPreview | null;
+  readonly recheckHref: string;
   readonly returnFilters: {
     readonly q: string;
     readonly range: string;
@@ -37,32 +45,52 @@ export function FinanceCloseoutSettlementRepairDrawer({
   approvers,
   closeHref,
   preview,
+  recheckHref,
   returnFilters,
 }: FinanceCloseoutSettlementRepairDrawerProps) {
-  const financeApprovers = approvers.filter((approver) => approver.roles.includes('FINANCE_APPROVER'));
+  const router = useRouter();
+  const drawerRef = useRef<HTMLElement>(null);
+  const onClose = useCallback(() => router.replace(closeHref, { scroll: false }), [closeHref, router]);
+  useAdminModalFocus(drawerRef, onClose);
+
+  const financeApprovers = approvers.filter(
+    (approver) =>
+      approver.roles.includes('FINANCE_APPROVER') &&
+      !/\b(test|smoke|demo)\b/i.test(
+        [approver.id, approver.fullName, approver.email, approver.phone].filter(Boolean).join(' '),
+      ),
+  );
   const isHistorical = preview?.repairMode === 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION';
+  const policyDecision = preview?.policyDecision ?? (preview?.canRepair ? 'APPROVED' : 'BLOCKED');
+  const policyReasons = preview?.policyReasons ?? [];
+  const policyExceptionCodes = preview?.policyExceptionCodes ?? [];
+  const repairApproved = policyDecision === 'APPROVED' && preview?.canRepair;
+  const titleId = 'settlement-repair-preview-title';
 
   return (
     <>
-      <a aria-label="Close settlement repair preview" className="calendar-drawer-backdrop" href={closeHref} />
+      <AdminDrawerBackdropButton aria-hidden="true" onClick={onClose} tabIndex={-1} />
       <AdminDrawerSurface
         ariaLabel="Settlement repair preview"
+        ariaLabelledBy={titleId}
         ariaModal
         className="calendar-drawer service-menu-dialog"
-        role="dialog"
+        surfaceRef={drawerRef}
+        tabIndex={-1}
       >
         <div className="calendar-drawer-header">
           <div>
             <span className="calendar-drawer-eyebrow">Governed finance repair</span>
-            <h2>Settlement repair preview</h2>
+            <h2 id={titleId}>Settlement repair preview</h2>
           </div>
-          <AdminFormControlLink
+          <AdminFormControlButton
             aria-label="Close settlement repair preview"
             className="button-secondary calendar-icon-button"
-            href={closeHref}
+            onClick={onClose}
+            type="button"
           >
             <X aria-hidden="true" size={16} />
-          </AdminFormControlLink>
+          </AdminFormControlButton>
         </div>
 
         <div className="calendar-drawer-body">
@@ -75,20 +103,51 @@ export function FinanceCloseoutSettlementRepairDrawer({
             </AdminNoticeCard>
           ) : (
             <>
-              <AdminNoticeCard tone={preview.canRepair ? 'warning' : 'danger'}>
-                <strong>{preview.canRepair ? 'Eligible for controlled repair' : 'Repair blocked'}</strong>
+              <section aria-labelledby="settlement-repair-summary-title">
+                <h3 id="settlement-repair-summary-title">Summary</h3>
+                <AdminNoticeCard tone={repairApproved ? 'warning' : 'danger'}>
+                <strong>
+                  {repairApproved
+                    ? 'Approved for controlled repair'
+                    : policyDecision === 'REVIEW_REQUIRED'
+                      ? 'Policy review required — repair locked'
+                      : 'Repair blocked'}
+                </strong>
                 <p className="muted">
                   {isHistorical
                     ? 'This action preserves the paid earning and wallet lifecycle, then reconstructs the missing snapshot, journal, and non-cash clearing from retained evidence.'
                     : 'This action reruns the canonical completed-booking settlement path while preserving any existing earning lifecycle.'}{' '}
                   Monthly closing, payment, and dual-approval controls remain enforced.
                 </p>
-                <StatusBadge tone={preview.canRepair ? 'warning' : 'danger'}>
-                  {preview.canRepair ? 'Dual approval required' : `${preview.blockers.length} blocker(s)`}
+                <StatusBadge tone={repairApproved ? 'warning' : 'danger'}>
+                  {repairApproved ? 'Dual approval required' : policyDecision.replace('_', ' ')}
                 </StatusBadge>
-              </AdminNoticeCard>
+                </AdminNoticeCard>
+              </section>
 
-              <AdminDetailGrid ariaLabel="Settlement repair evidence" className="admin-mt-16">
+              <section aria-labelledby="settlement-repair-change-title" className="admin-mt-16">
+                <h3 id="settlement-repair-change-title">Before and after</h3>
+                <AdminDetailGrid ariaLabel="Settlement repair before and after">
+                  <AdminFormStaticValue
+                    label="Before"
+                    labelVisibility="visible"
+                    value="Settlement snapshot missing; existing earning lifecycle retained"
+                  />
+                  <AdminFormStaticValue
+                    label="After"
+                    labelVisibility="visible"
+                    value={
+                      isHistorical
+                        ? 'Snapshot, journal, and non-cash clearing reconstructed from retained evidence'
+                        : 'Canonical completion settlement creates the missing snapshot and accounting records'
+                    }
+                  />
+                </AdminDetailGrid>
+              </section>
+
+              <section aria-labelledby="settlement-repair-evidence-title" className="admin-mt-16">
+                <h3 id="settlement-repair-evidence-title">Evidence</h3>
+                <AdminDetailGrid ariaLabel="Settlement repair evidence">
                 <AdminFormStaticValue label="Booking" labelVisibility="visible" value={preview.bookingId} />
                 <AdminFormStaticValue
                   label="Completed"
@@ -157,22 +216,100 @@ export function FinanceCloseoutSettlementRepairDrawer({
                     value={`${preview.historicalEvidenceSummary.platformFeeLogCount} fee · ${preview.historicalEvidenceSummary.taxLogCount} tax · ${preview.historicalEvidenceSummary.walletLedgerEntryCount} wallet`}
                   />
                 ) : null}
-              </AdminDetailGrid>
+                </AdminDetailGrid>
+              </section>
 
               {preview.blockers.length ? (
-                <AdminNoticeCard className="admin-mt-16" role="alert" tone="danger">
-                  <strong>Resolve before repair</strong>
-                  <ul>
-                    {preview.blockers.map((blocker) => (
-                      <li key={blocker.code}>{blocker.message}</li>
-                    ))}
-                  </ul>
-                </AdminNoticeCard>
+                <section aria-labelledby="settlement-repair-remediation-title" className="admin-mt-16">
+                  <h3 id="settlement-repair-remediation-title">Blocker remediation</h3>
+                  <AdminNoticeCard role="alert" tone="danger">
+                    <strong>Resolve {preview.blockers.length} evidence issue(s) before repair</strong>
+                    <p className="muted">
+                      Repair remains locked until the source evidence is corrected and the preview is run again.
+                    </p>
+                  </AdminNoticeCard>
+                  <div className="finance-closeout-remediation-list">
+                    {preview.blockers.map((blocker) => {
+                      const remediation = settlementBlockerRemediation(preview, blocker);
+                      return (
+                        <section className="finance-closeout-remediation-item" key={blocker.code}>
+                          <strong>{blocker.message}</strong>
+                          <dl>
+                            <div>
+                              <dt>Responsible team</dt>
+                              <dd>{remediation.responsibleTeam}</dd>
+                            </div>
+                            <div>
+                              <dt>Missing evidence</dt>
+                              <dd>{remediation.missingEvidence}</dd>
+                            </div>
+                            <div>
+                              <dt>Next action</dt>
+                              <dd>{remediation.nextAction}</dd>
+                            </div>
+                          </dl>
+                          <AdminTextLink href={remediation.href}>{remediation.linkLabel}</AdminTextLink>
+                          <details>
+                            <summary>Technical details</summary>
+                            <code>{blocker.code}</code>
+                          </details>
+                        </section>
+                      );
+                    })}
+                  </div>
+                  <p className="admin-mt-12">
+                    <AdminTextLink href={recheckHref}>Recheck evidence</AdminTextLink>
+                  </p>
+                </section>
               ) : null}
 
-              {preview.canRepair ? (
+              <section aria-labelledby="settlement-repair-policy-title" className="admin-mt-16">
+                <h3 id="settlement-repair-policy-title">Policy gate</h3>
+                <AdminNoticeCard
+                  role={policyDecision === 'APPROVED' ? 'status' : 'alert'}
+                  tone={policyDecision === 'APPROVED' ? 'success' : 'danger'}
+                >
+                  <strong>{policyDecision.replace('_', ' ')}</strong>
+                  <p className="muted">Policy version: {preview.policyVersion ?? 'Current policy'}</p>
+                  {preview.blockers.length ? (
+                    <p className="muted">
+                      Blocked by {preview.blockers.length} evidence issue(s) listed above. Repair remains locked
+                      until a new preview passes.
+                    </p>
+                  ) : policyReasons.length ? (
+                    <ul>
+                      {policyReasons.map((reason, index) => (
+                        <li key={`${policyExceptionCodes[index] ?? 'POLICY'}-${index}`}>
+                          {reason}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="muted">Technical evidence and retained finance policy both passed.</p>
+                  )}
+                  {policyDecision === 'REVIEW_REQUIRED' ? (
+                    <p>
+                      <AdminTextLink href="/finance-tax/payment-fees">
+                        Review payment fee policy evidence
+                      </AdminTextLink>
+                    </p>
+                  ) : null}
+                  {policyDecision !== 'APPROVED' ? (
+                    <p>
+                      <AdminTextLink href={`/bookings/${encodeURIComponent(preview.bookingId)}`}>
+                        Open source booking evidence
+                      </AdminTextLink>
+                    </p>
+                  ) : null}
+                </AdminNoticeCard>
+              </section>
+
+              {repairApproved ? (
+                <section aria-labelledby="settlement-repair-approval-title" className="admin-mt-16">
+                  <h3 id="settlement-repair-approval-title">Approval</h3>
                 <AdminDrawerFormGrid action={action} className="service-menu-dialog-form admin-mt-16">
                   <input name="bookingId" type="hidden" value={preview.bookingId} />
+                  <input name="sourceVersion" type="hidden" value={preview.sourceVersion ?? ''} />
                   <input name="range" type="hidden" value={returnFilters.range} />
                   <input name="settlementAge" type="hidden" value={returnFilters.settlementAge} />
                   <input name="settlementPage" type="hidden" value={String(returnFilters.settlementPage)} />
@@ -202,11 +339,12 @@ export function FinanceCloseoutSettlementRepairDrawer({
                     label="Repair reason"
                     labelVisibility="visible"
                     maxLength={500}
-                    minLength={8}
+                    minLength={12}
                     name="reason"
                     required
                     rows={4}
                   />
+                  <p className="muted">Use at least 12 non-whitespace characters and state the evidence basis.</p>
                   <AdminFormInput
                     autoComplete="off"
                     label="Confirm booking ID"
@@ -236,6 +374,7 @@ export function FinanceCloseoutSettlementRepairDrawer({
                     </AdminFormControlLink>
                   </AdminDrawerActionFooter>
                 </AdminDrawerFormGrid>
+                </section>
               ) : null}
             </>
           )}
@@ -243,4 +382,97 @@ export function FinanceCloseoutSettlementRepairDrawer({
       </AdminDrawerSurface>
     </>
   );
+}
+
+type SettlementBlocker = AdminBookingSettlementGapRepairPreview['blockers'][number];
+
+function settlementBlockerRemediation(
+  preview: AdminBookingSettlementGapRepairPreview,
+  blocker: SettlementBlocker,
+) {
+  const bookingHref = `/bookings/${encodeURIComponent(preview.bookingId)}`;
+  const code = blocker.code.toUpperCase();
+
+  if (code === 'SETTLEMENT_EXISTS') {
+    return {
+      responsibleTeam: 'Finance Operations',
+      missingEvidence: 'The existing settlement record must be reconciled before another repair is considered.',
+      nextAction: 'Open the settlement ledger, confirm the existing snapshot, then return and recheck.',
+      href: `/finance-tax/booking-settlement-audit?q=${encodeURIComponent(preview.bookingId)}`,
+      linkLabel: 'Open settlement records',
+    };
+  }
+  if (code.includes('MONTHLY_PERIOD')) {
+    return {
+      responsibleTeam: 'Finance Close & Tax',
+      missingEvidence: 'The monthly close state does not permit this settlement repair.',
+      nextAction: 'Review the monthly close and its retained evidence before requesting another preview.',
+      href: `/finance-tax/monthly-tax-closing?period=${encodeURIComponent(preview.monthlyPeriod)}`,
+      linkLabel: 'Open monthly close',
+    };
+  }
+  if (code.includes('PAYMENT')) {
+    return {
+      responsibleTeam: 'Payments Operations',
+      missingEvidence: 'A captured payment and its retained payment evidence are required.',
+      nextAction: 'Verify payment status, amount, and callback evidence, then recheck this repair.',
+      href: preview.payment ? `/payments/${encodeURIComponent(preview.payment.id)}` : bookingHref,
+      linkLabel: preview.payment ? 'Open payment evidence' : 'Open booking payment evidence',
+    };
+  }
+  if (code.includes('PLATFORM_FEE')) {
+    return {
+      responsibleTeam: 'Finance Policy',
+      missingEvidence: 'Platform-fee logs or the applicable fee policy do not reconcile.',
+      nextAction: 'Review the fee policy and retained fee logs before running the preview again.',
+      href: '/finance-tax/payment-fees',
+      linkLabel: 'Open payment fee policy',
+    };
+  }
+  if (code.includes('VAT')) {
+    return {
+      responsibleTeam: 'Finance Close & Tax',
+      missingEvidence: 'Platform VAT evidence or the applicable VAT rate is incomplete.',
+      nextAction: 'Reconcile the period VAT evidence, then return and recheck.',
+      href: `/finance-tax/platform-vat?period=${encodeURIComponent(preview.monthlyPeriod)}`,
+      linkLabel: 'Open platform VAT',
+    };
+  }
+  if (code.includes('TAX') || code.includes('WITHHOLDING')) {
+    return {
+      responsibleTeam: 'Finance Close & Tax',
+      missingEvidence: 'Partner withholding evidence or the applicable tax rate is incomplete.',
+      nextAction: 'Reconcile the Partner tax evidence for this period, then recheck.',
+      href: `/finance-tax/partner-withholding-tax?period=${encodeURIComponent(preview.monthlyPeriod)}`,
+      linkLabel: 'Open Partner withholding',
+    };
+  }
+  if (code.includes('WALLET')) {
+    return {
+      responsibleTeam: 'Finance Operations',
+      missingEvidence: 'The retained Partner wallet lifecycle does not reconcile with the paid earning.',
+      nextAction: 'Review the Partner wallet ledger and correct the evidence before rechecking.',
+      href: preview.partner
+        ? `/wallet-adjustments?view=records&recordOwnerId=${encodeURIComponent(preview.partner.id)}`
+        : bookingHref,
+      linkLabel: preview.partner ? 'Open Partner wallet records' : 'Open booking evidence',
+    };
+  }
+  if (code.includes('EARNING') || code.includes('PAYOUT')) {
+    return {
+      responsibleTeam: 'Partner Finance',
+      missingEvidence: 'The Partner earning or payout lifecycle does not match the booking evidence.',
+      nextAction: 'Verify the earning status and payout linkage before running another preview.',
+      href: preview.earning ? `/earnings?q=${encodeURIComponent(preview.earning.id)}` : bookingHref,
+      linkLabel: preview.earning ? 'Open Partner earning' : 'Open booking evidence',
+    };
+  }
+
+  return {
+    responsibleTeam: 'Booking Operations',
+    missingEvidence: 'Booking, Partner, service, coupon, or amount evidence is incomplete or inconsistent.',
+    nextAction: 'Correct the source booking evidence, then return and run the preview again.',
+    href: bookingHref,
+    linkLabel: 'Open source booking evidence',
+  };
 }

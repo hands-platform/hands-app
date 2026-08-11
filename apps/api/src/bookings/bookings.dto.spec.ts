@@ -31,6 +31,15 @@ describe('booking request DTO validation', () => {
     return paramTypes?.[2] as object | undefined;
   }
 
+  function rejectPreferredProviderBookingBodyMetatype() {
+    const paramTypes = Reflect.getMetadata(
+      'design:paramtypes',
+      BookingsController.prototype,
+      'reject',
+    ) as unknown[];
+    return paramTypes?.[2] as object | undefined;
+  }
+
   function createProviderCustomerReviewBodyMetatype() {
     const paramTypes = Reflect.getMetadata(
       'design:paramtypes',
@@ -63,6 +72,85 @@ describe('booking request DTO validation', () => {
     expect((completeProviderBookingBodyMetatype() as { name?: string })?.name).toBe(
       'CompleteProviderBookingDto',
     );
+  });
+
+  it('validates an optional preferred partner rejection reason payload', async () => {
+    const metatype = rejectPreferredProviderBookingBodyMetatype();
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    await expect(
+      pipe.transform({}, { type: 'body', metatype: metatype as never, data: '' }),
+    ).resolves.toEqual({});
+
+    await expect(
+      pipe.transform(
+        { reasonCode: 'SCHEDULE_CONFLICT', reasonDetail: '   ' },
+        { type: 'body', metatype: metatype as never, data: '' },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      pipe.transform(
+        { reasonCode: 'UNKNOWN', reasonDetail: 'Cannot take this request.' },
+        { type: 'body', metatype: metatype as never, data: '' },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      pipe.transform(
+        {
+          reasonCode: 'TOO_FAR',
+          reasonDetail: '  Travel time is outside my current range.  ',
+        },
+        { type: 'body', metatype: metatype as never, data: '' },
+      ),
+    ).resolves.toMatchObject({
+      reasonCode: 'TOO_FAR',
+      reasonDetail: 'Travel time is outside my current range.',
+    });
+  });
+
+  it('requires a supported partner cancellation reason and detailed note', async () => {
+    const metatype = cancelProviderBookingBodyMetatype();
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    await expect(
+      pipe.transform(
+        {
+          lat: 10.7769,
+          lng: 106.7009,
+          note: 'Arrived but could not find the customer.',
+        },
+        { type: 'body', metatype: metatype as never, data: '' },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      pipe.transform(
+        {
+          lat: 10.7769,
+          lng: 106.7009,
+          reasonCode: 'NOT_A_REAL_REASON',
+          note: 'Arrived but could not find the customer.',
+        },
+        { type: 'body', metatype: metatype as never, data: '' },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      pipe.transform(
+        {
+          lat: 10.7769,
+          lng: 106.7009,
+          reasonCode: 'CUSTOMER_NOT_FOUND',
+          note: '  Arrived but could not find the customer.  ',
+        },
+        { type: 'body', metatype: metatype as never, data: '' },
+      ),
+    ).resolves.toMatchObject({
+      reasonCode: 'CUSTOMER_NOT_FOUND',
+      note: 'Arrived but could not find the customer.',
+    });
   });
 
   it('uses a concrete DTO for partner customer evaluations', () => {
@@ -124,6 +212,7 @@ describe('booking request DTO validation', () => {
     await expect(
       pipe.transform(
         {
+          reasonCode: 'CUSTOMER_REQUESTED',
           note: 'Customer requested cancellation after matching.',
         },
         { type: 'body', metatype: cancelProviderBookingBodyMetatype() as never, data: '' },
@@ -134,6 +223,7 @@ describe('booking request DTO validation', () => {
       {
         lat: 10.7769,
         lng: 106.7009,
+        reasonCode: 'CUSTOMER_REQUESTED',
         note: 'Customer requested cancellation after matching.',
         walletBalance: -100000,
       },
@@ -143,6 +233,7 @@ describe('booking request DTO validation', () => {
     expect(transformed).toMatchObject({
       lat: 10.7769,
       lng: 106.7009,
+      reasonCode: 'CUSTOMER_REQUESTED',
       note: 'Customer requested cancellation after matching.',
     });
     expect(transformed).not.toHaveProperty('walletBalance');

@@ -1,7 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import type { AdminCustomerReferralParent, AdminPartnerReferralParent, AdminReferralPolicy } from '../../lib/admin-api';
+import type {
+  AdminCustomerReferralParent,
+  AdminCustomerReferralRewardQueueRow,
+  AdminPartnerReferralParent,
+  AdminReferralPolicy,
+} from '../../lib/admin-api';
 import {
   ReferralDashboard,
   buildReferralParentApiHref,
@@ -92,6 +97,7 @@ const rows: AdminCustomerReferralParent[] = [
             },
             qualifyingBookingId: 'booking-1',
             status: 'REWARDED',
+            updatedAt: '2026-06-24T11:00:00.000Z',
             walletLedgerReference: 'wallet-ledger-1',
           },
         ],
@@ -118,6 +124,40 @@ const rows: AdminCustomerReferralParent[] = [
   },
 ];
 
+const rewardRows: AdminCustomerReferralRewardQueueRow[] = [
+  {
+    amount: 25_000,
+    attribution: {
+      createdAt: '2026-06-24T10:30:00.000Z',
+      fraudReviewStatus: 'CLEAR',
+      id: 'attribution-1',
+      status: 'QUALIFIED',
+    },
+    availableAt: '2026-06-24T10:40:00.000Z',
+    createdAt: '2026-06-24T10:40:00.000Z',
+    currency: 'VND',
+    detailHref: '/referrals/customers/parent-customer',
+    id: 'reward-available-1',
+    latestDecision: null,
+    parent: {
+      href: '/customers/parent-customer',
+      id: 'parent-customer',
+      label: 'Parent Customer',
+      phone: '+84000000001',
+    },
+    qualifyingBookingId: 'booking-1',
+    referred: {
+      href: '/customers/referred-customer',
+      id: 'referred-customer',
+      label: 'Referred Customer',
+      phone: '+84000000002',
+    },
+    status: 'AVAILABLE',
+    updatedAt: '2026-06-24T11:00:00.000Z',
+    walletLedgerReference: null,
+  },
+];
+
 const referralStoreEnvKeys = [
   'REFERRAL_PUBLIC_BASE_URL',
   'REFERRAL_CUSTOMER_ANDROID_STORE_URL',
@@ -131,7 +171,7 @@ const dashboardSource = readFileSync('app/referrals/referral-dashboard.tsx', 'ut
 const storeSetupSource = readFileSync('app/referrals/referral-store-setup-status.tsx', 'utf8');
 
 function defaultReferralDashboardFiltersForTest() {
-  return { q: '', reward: 'all' as const, status: 'all' as const };
+  return { fraud: 'all' as const, q: '', range: 'all' as const, reward: 'all' as const, status: 'all' as const };
 }
 
 describe('ReferralDashboard', () => {
@@ -170,35 +210,47 @@ describe('ReferralDashboard', () => {
     expect(dashboardSource).not.toContain('<div className="service-trace-summary">');
   });
 
-  it('renders policy controls and the hold-window release action', () => {
+  it('separates daily reward operations from restricted policy controls', () => {
     const markup = renderToStaticMarkup(
-      <ReferralDashboard audience="customer" policy={policy} rows={rows} />,
+      <ReferralDashboard audience="customer" canManageRewards policy={policy} rows={rows} />,
+    ).replace(/\s+/g, ' ');
+    const policyMarkup = renderToStaticMarkup(
+      <ReferralDashboard audience="customer" canEditPolicy policy={policy} policyMode rows={[]} />,
     ).replace(/\s+/g, ' ');
 
     expect(markup).toContain('Customer Referrals');
-    expect(markup).toContain('Policy changes are audited');
-    expect(markup).toContain('aria-label="Customer referral policy controls"');
-    expect(markup).toContain('class="vuexy-customer-form referral-policy-form admin-mt-16"');
-    expect(markup).toContain('class="admin-form-input admin-form-control-labeled admin-form-control-fluid"');
-    expect(markup).toContain('class="admin-form-select admin-form-control-labeled admin-form-control-fluid"');
-    expect(markup).toContain('class="admin-form-textarea admin-form-control-labeled admin-form-control-fluid admin-grid-span-2"');
-    expect(markup).toContain('class="admin-form-control-button button button-primary referral-policy-save-button"');
-    expect(markup).not.toContain('referral-policy-field');
-    expect(markup).not.toContain('read-only here');
+    expect(markup).not.toContain('aria-label="Customer referral policy controls"');
+    expect(markup).not.toContain('Referral policy');
+    expect(policyMarkup).toContain('Customer Referrals Policy');
+    expect(policyMarkup).toContain('SYSTEM_POLICY access, confirmation, and an audit reason');
+    expect(policyMarkup).toContain('aria-label="Customer referral policy controls"');
+    expect(policyMarkup).toContain('class="vuexy-customer-form referral-policy-form admin-mt-16"');
+    expect(policyMarkup).toContain('class="admin-form-input admin-form-control-labeled admin-form-control-fluid"');
+    expect(policyMarkup).toContain('class="admin-form-select admin-form-control-labeled admin-form-control-fluid"');
+    expect(policyMarkup).toContain('class="admin-form-textarea admin-form-control-labeled admin-form-control-fluid admin-grid-span-2"');
+    expect(policyMarkup).toContain('class="admin-form-control-button button button-primary referral-policy-save-button"');
+    expect(policyMarkup).toContain('name="expectedUpdatedAt"');
+    expect(policyMarkup).toContain('name="confirmation"');
+    expect(policyMarkup).not.toContain('referral-policy-field');
+    expect(policyMarkup).not.toContain('Referral operations filters');
+    expect(policyMarkup).not.toContain('Customer referral operations');
     expect(markup).not.toContain('Release ready rewards');
     expect(markup).not.toContain('Mark ready rewards available');
-    expect(markup).toContain('Stage ready reward candidates');
-    expect(markup).toContain('aria-label="Referral policy actions"');
-    expect(markup).toContain('Policy actions');
-    expect(markup).toContain('Reward candidates ready for credit');
+    expect(markup).not.toContain('Stage ready reward candidates');
+    expect(markup).toContain('Needs action');
+    expect(markup).toContain('All parent records');
+    expect(markup).toContain('Ready to credit');
     expect(markup).toContain('Credited rewards');
-    expect(markup).toContain('Platform fee VAT');
-    expect(markup).toContain('9%');
-    expect(markup).toContain('name="platformFeeVatRate"');
+    expect(policyMarkup).toContain('Platform fee VAT');
+    expect(policyMarkup).toContain('9%');
+    expect(policyMarkup).toContain('name="platformFeeVatRate"');
+    expect(policyMarkup).toContain('name="perRewardCapAmount"');
+    expect(policyMarkup).toContain('name="currencyDisplay"');
+    expect(policyMarkup).toContain('disabled=""');
+    expect(policyMarkup).not.toContain('Fixed reward</');
+    expect(policyMarkup).not.toContain('Not applicable');
     expect(markup).toContain('15.000 VND');
     expect(markup).toContain('Credited <span class="money-text money-text-positive">15.000 VND</span>');
-    expect(markup).toContain('Wallet credit is separate');
-    expect(markup).toContain('Wallet posting still happens from each reward detail action');
     expect(markup).toContain('Referral rewards are company marketing/acquisition expenses');
     expect(markup).toContain('Wallet offsets settle payable and receivable balances');
     expect(markup).toContain('Customer referral cashout requires admin approval and tax review');
@@ -211,37 +263,120 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('admin-directory-filter-select');
     expect(markup).toContain('admin-directory-filter-actions');
     expect(markup).not.toContain('Clear filters');
+    expect(markup).not.toContain('aria-label="Active referral filters"');
+    expect(markup).not.toContain('>Clear</a>');
+    expect(markup).toContain('type="hidden" name="reward" value="attention"');
     expect(markup).toContain('Android store ready');
     expect(markup).toContain('iOS store missing');
     expect(markup).toContain('Public link base missing');
-    expect(markup).toContain('Missing setup: REFERRAL_PUBLIC_BASE_URL, REFERRAL_CUSTOMER_IOS_STORE_URL');
-    expect(markup.match(/Missing setup:/g)).toHaveLength(1);
+    expect(markup).toContain('One or more required public or store destinations are not configured.');
+    expect(markup).not.toContain('REFERRAL_PUBLIC_BASE_URL');
+    expect(markup).not.toContain('REFERRAL_CUSTOMER_IOS_STORE_URL');
     expect(markup).not.toContain('Configure store URLs');
     expect(markup).not.toContain('href="/setup#referrals"');
     expect(markup).toContain('Parent Customer');
     expect(markup).toContain('HANDSCUST');
     expect(markup).toContain('date-time-text');
     expect(markup).toContain(
-      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section"',
+      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-customer-table-card admin-section"',
     );
-    expect(markup).toContain('Actions');
-    expect(markup).toContain('admin-action-dropdown referral-parent-action-dropdown');
-    expect(markup).toContain('aria-label="Referral parent actions for parent-customer"');
-    expect(markup).toContain('Latest Credit by Ops Admin');
-    expect(markup).toContain('class="admin-disclosure referral-parent-reward-decision-details"');
-    expect(markup).toContain('<summary>Decision details</summary>');
-    expect(markup).toContain('manual payout check');
-    expect(markup).toContain('Open referral detail');
-    expect(markup).toContain('Open parent profile');
-    expect(markup).toContain('Open referral link');
+    expect(markup).toContain('Referral link');
+    expect(markup).toContain('vuexy-customer-table-card');
+    expect(markup).toContain('vuexy-customer-table referral-parent-operations-table referral-customer-operations-table');
+    expect(markup).toContain('Setup blocked');
+    expect(markup).not.toContain('>Actions</th>');
+    expect(markup).not.toContain('admin-action-dropdown referral-parent-action-dropdown');
+    expect(markup).not.toContain('aria-label="Referral parent actions for parent-customer"');
+    expect(markup).not.toContain('class="admin-disclosure referral-parent-reward-decision-details"');
+    expect(markup).not.toContain('<summary>Decision details</summary>');
+    expect(markup).not.toContain('Open referral detail');
+    expect(markup).not.toContain('Open parent profile');
+    expect(markup).not.toContain('Open referral link');
   });
+
+  it('keeps policy settings out of daily operations for unauthorized operators', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralDashboard
+        audience="customer"
+        canEditPolicy={false}
+        canManageRewards={false}
+        policy={policy}
+        rows={rows}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('Referral operations filters');
+    expect(markup).toContain('Customer referral operations');
+    expect(markup).not.toContain('Referral policy');
+    expect(markup).not.toContain('Open policy settings');
+    expect(markup).not.toContain('aria-label="Customer referral policy controls"');
+    expect(markup).not.toContain('Stage ready reward candidates');
+  });
+
+  it('renders the reward-level needs-action queue before the parent record disclosure', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralDashboard
+        audience="customer"
+        policy={policy}
+        rewardQueueSummaries={[{ amount: 25_000, count: 1, reward: 'attention' }]}
+        rewardRows={rewardRows}
+        rows={rows}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('aria-label="Customer referral reward queue"');
+    expect(markup).toContain('Decision evidence');
+    expect(markup).toContain('Integrity clear');
+    expect(markup).toContain('Ready to credit');
+    expect(markup).not.toContain('Referral sign-ups');
+    expect(markup).toContain('Review reward');
+    expect(markup).toContain('/referrals/customers/parent-customer?rewardId=reward-available-1');
+    expect(markup.indexOf('Needs action')).toBeLessThan(markup.indexOf('All parent records'));
+  });
+
+  it('shows a read failure instead of rendering zero metrics or mutable queues', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralDashboard
+        audience="customer"
+        policy={policy}
+        readError="Customer referral data could not be loaded. Retry before making a reward decision."
+        rows={[]}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('Referral data unavailable');
+    expect(markup).toContain('Customer referral data could not be loaded');
+    expect(markup).toContain('>Retry</a>');
+    expect(markup).not.toContain('Ready to credit');
+    expect(markup).not.toContain('Customer referral reward queue');
+  });
+
+  it.each([
+    ['customer', policy, rows],
+    ['partner', partnerPolicy, [] as AdminPartnerReferralParent[]],
+  ] as const)(
+    'removes the duplicate cashout action from %s referrals and keeps policy settings',
+    (audience, referralPolicy, referralRows) => {
+      const markup = renderToStaticMarkup(
+        <ReferralDashboard
+          audience={audience}
+          canEditPolicy
+          policy={referralPolicy}
+          rows={referralRows as never}
+        />,
+      ).replace(/\s+/g, ' ');
+
+      expect(markup).not.toContain('Open reward cashouts');
+      expect(markup).toContain('Open policy settings');
+    },
+  );
 
   it('keeps referral setup links behind Developer/System access', () => {
     const markup = renderToStaticMarkup(
       <ReferralDashboard audience="customer" canViewDeveloperSetup policy={policy} rows={rows} />,
     ).replace(/\s+/g, ' ');
 
-    expect(markup).toContain('Configure store URLs');
+    expect(markup).toContain('Open Developer setup');
     expect(markup).toContain('href="/setup#referrals"');
   });
 
@@ -259,7 +394,7 @@ describe('ReferralDashboard', () => {
   it('keeps referral policy, readiness, and list filters off the legacy booking monitor filter class', () => {
     expect(dashboardSource).toContain('className="referral-accounting-guardrails-panel admin-mt-16"');
     expect(dashboardSource).toContain('className="referral-link-readiness-panel admin-mt-16"');
-    expect(dashboardSource).toContain('className="vuexy-customer-filter-card admin-mt-16"');
+    expect(dashboardSource).toContain('className="vuexy-customer-filter-card referral-dashboard-filter-panel admin-mt-16"');
     expect(dashboardSource).toContain('className="referral-policy-panel admin-mt-16"');
     expect(dashboardSource).not.toContain('className="booking-monitor-filter-panel admin-mt-16"');
     expect(dashboardSource).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-customer-filter-card"');
@@ -319,7 +454,7 @@ describe('ReferralDashboard', () => {
       status: 'blocked',
     });
 
-    expect(filters).toEqual({ q: 'Parent', reward: 'held', status: 'blocked' });
+    expect(filters).toEqual({ fraud: 'all', q: 'Parent', range: 'all', reward: 'held', status: 'blocked' });
     expect(buildReferralListHref('customer', filters, { reward: 'available' })).toBe(
       '/referrals/customers?q=Parent&status=blocked&reward=available',
     );
@@ -415,7 +550,7 @@ describe('ReferralDashboard', () => {
     const markup = renderToStaticMarkup(
       <ReferralDashboard
         audience="customer"
-        filters={{ q: 'smoke', reward: 'available', status: 'pending' }}
+        filters={{ fraud: 'all', q: 'smoke', range: 'all', reward: 'available', status: 'pending' }}
         policy={policy}
         rows={rows}
         rewardQueueSummaries={buildReferralRewardQueueSummaries([...rows, heldParent])}
@@ -428,7 +563,7 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('1 · <span class="money-text money-text-positive">25.000 VND</span>');
     expect(markup).toContain('Pending checks');
     expect(markup).toContain('1 · <span class="money-text money-text-positive">5.000 VND</span>');
-    expect(markup).toContain('Held review');
+    expect(markup).toContain('On-hold review');
     expect(markup).toContain('1 · <span class="money-text money-text-positive">10.000 VND</span>');
     expect(markup).toContain('Credited');
     expect(markup).toContain('href="/referrals/customers?q=smoke&amp;status=pending"');
@@ -443,7 +578,7 @@ describe('ReferralDashboard', () => {
     const markup = renderToStaticMarkup(
       <ReferralDashboard
         audience="partner"
-        filters={{ q: 'smoke', reward: 'available', status: 'pending' }}
+        filters={{ fraud: 'all', q: 'smoke', range: 'all', reward: 'available', status: 'pending' }}
         policy={partnerPolicy}
         rewardQueueSummaries={[]}
         rows={[] satisfies AdminPartnerReferralParent[]}
@@ -460,6 +595,22 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('href="/referrals/partners"');
     expect(markup).toContain('Clear referral filters');
     expect(markup).not.toContain('Parents appear here only after at least one referral attribution is recorded.');
+  });
+
+  it('preserves the all-records queue when operators apply additional filters', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralDashboard
+        audience="customer"
+        filters={{ fraud: 'all', q: '', range: 'all', reward: 'all', status: 'all' }}
+        policy={policy}
+        rows={rows}
+        rewardQueueSummaries={buildReferralRewardQueueSummaries(rows)}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('type="hidden" name="reward" value="all"');
+    expect(markup).toContain('Reward: All rewards');
+    expect(markup).toContain('>Clear</a>');
   });
 
   it('uses the shared Vuexy empty-state atom for referral parent fallbacks', () => {
@@ -481,7 +632,7 @@ describe('ReferralDashboard', () => {
       <ReferralDashboard audience="customer" policy={policy} rows={[heldParent]} />,
     ).replace(/\s+/g, ' ');
 
-    expect(markup).toContain('Held <span class="money-text money-text-positive">10.000 VND</span>');
+    expect(markup).toContain('On hold <span class="money-text money-text-positive">10.000 VND</span>');
   });
 
   it('filters referral parents by search, referral status, and reward state', () => {
@@ -501,7 +652,9 @@ describe('ReferralDashboard', () => {
     });
 
     const filtered = filterReferralParentRows('customer', [qualifiedParent, blockedParent], {
+      fraud: 'all',
       q: 'blocked',
+      range: 'all',
       reward: 'held',
       status: 'blocked',
     });
@@ -519,7 +672,9 @@ describe('ReferralDashboard', () => {
     });
 
     const filtered = filterReferralParentRows('customer', [creditedParent], {
+      fraud: 'all',
       q: '',
+      range: 'all',
       reward: 'credited',
       status: 'all',
     });
@@ -577,6 +732,7 @@ function referralParent({
             currency: 'VND',
             id: `${id}-reward`,
             status: rewardStatus,
+            updatedAt: '2026-06-24T11:10:00.000Z',
           },
         ],
         status: referralStatus,

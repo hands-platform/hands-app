@@ -29,6 +29,7 @@ export const BOOKING_STATUS_FAILURE_IMPACT_PATHS = [
 ] as const;
 
 export const BOOKING_POST_MATCH_CANCELLATION_IMPACT_PATHS = [
+  '/bookings/post-match-cancellations',
   '/earnings',
   '/cash-settlements',
   '/partner-controls',

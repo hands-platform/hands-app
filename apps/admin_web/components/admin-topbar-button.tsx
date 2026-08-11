@@ -1,22 +1,24 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 
 type AdminTopbarButtonProps = {
   readonly children: ReactNode;
   readonly className?: string;
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'className'>;
 
-export function AdminTopbarButton({
-  children,
-  className,
-  type = 'button',
-  ...buttonProps
-}: AdminTopbarButtonProps) {
-  return (
-    <button {...buttonProps} className={joinClassNames('admin-topbar-button', className)} type={type}>
-      {children}
-    </button>
-  );
-}
+export const AdminTopbarButton = forwardRef<HTMLButtonElement, AdminTopbarButtonProps>(
+  function AdminTopbarButton({ children, className, type = 'button', ...buttonProps }, ref) {
+    return (
+      <button
+        {...buttonProps}
+        className={joinClassNames('admin-topbar-button', className)}
+        ref={ref}
+        type={type}
+      >
+        {children}
+      </button>
+    );
+  },
+);
 
 function joinClassNames(...classNames: Array<string | undefined>) {
   return classNames

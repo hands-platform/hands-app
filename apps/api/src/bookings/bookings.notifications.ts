@@ -1,4 +1,5 @@
 import { Role } from '@prisma/client';
+import { chatNotificationRoutingData } from '../notifications/notification-push-payload';
 
 export type BookingNotificationPayload = {
   userId: string;
@@ -41,7 +42,6 @@ export function bookingOpenedNotification(input: {
 export function preferredProviderRequestedNotification(input: {
   userId: string;
   bookingId: string;
-  customerProfileId: string;
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
@@ -49,11 +49,14 @@ export function preferredProviderRequestedNotification(input: {
     type: 'booking.requested',
     title: 'New direct booking request',
     body: 'A customer requested one of your services.',
-    data: { bookingId: input.bookingId, customerProfileId: input.customerProfileId },
+    data: { bookingId: input.bookingId },
   };
 }
 
-export function providerBookingCancelledNotification(userId: string, bookingId: string): BookingNotificationPayload {
+export function providerBookingCancelledNotification(
+  userId: string,
+  bookingId: string,
+): BookingNotificationPayload {
   return {
     userId,
     targetRole: Role.PROVIDER,
@@ -128,7 +131,10 @@ export function selectedPartnerMatchedCustomerNotification(input: {
   };
 }
 
-export function firstPickMatchedProviderNotification(userId: string, bookingId: string): BookingNotificationPayload {
+export function firstPickMatchedProviderNotification(
+  userId: string,
+  bookingId: string,
+): BookingNotificationPayload {
   return {
     userId,
     targetRole: Role.PROVIDER,
@@ -169,7 +175,7 @@ export function customerFirstPickRejectedNotification(input: {
     targetRole: Role.CUSTOMER,
     type: 'booking.rejected',
     title: 'Partner declined your booking',
-    body: 'We are still looking for another available partner.',
+    body: 'This booking request has ended. You can review the result and make a new booking.',
     data: { bookingId: input.bookingId, providerProfileId: input.providerProfileId },
   };
 }
@@ -224,17 +230,28 @@ export function serviceStartedProviderNotification(input: {
   bookingId: string;
   chatRoomId?: string;
 }): BookingNotificationPayload {
+  const chatRoomId = input.chatRoomId?.trim();
   return {
     userId: input.userId,
     targetRole: Role.PROVIDER,
     type: 'service.started',
     title: 'Service started',
-    body: 'Continue with the customer in the matched chat if needed.',
-    data: { bookingId: input.bookingId, chatRoomId: input.chatRoomId },
+    body: chatRoomId
+      ? 'Continue with the customer in the matched chat if needed.'
+      : 'Your active booking is ready in Jobs.',
+    data: chatRoomId
+      ? chatNotificationRoutingData({
+          bookingId: input.bookingId,
+          chatRoomId,
+        })
+      : { bookingId: input.bookingId, destination: 'jobs' },
   };
 }
 
-export function customerServiceCompletedNotification(userId: string, bookingId: string): BookingNotificationPayload {
+export function customerServiceCompletedNotification(
+  userId: string,
+  bookingId: string,
+): BookingNotificationPayload {
   return {
     userId,
     targetRole: Role.CUSTOMER,
@@ -245,7 +262,10 @@ export function customerServiceCompletedNotification(userId: string, bookingId: 
   };
 }
 
-export function providerEarningCreatedNotification(userId: string, bookingId: string): BookingNotificationPayload {
+export function providerEarningCreatedNotification(
+  userId: string,
+  bookingId: string,
+): BookingNotificationPayload {
   return {
     userId,
     targetRole: Role.PROVIDER,

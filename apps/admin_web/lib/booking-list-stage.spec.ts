@@ -53,7 +53,7 @@ describe('bookingListStageFromFacts', () => {
       ),
     ).toMatchObject({
       key: 'handoff-repair',
-      label: 'Stage 4 repair',
+      label: 'Handoff repair',
       tone: 'danger',
       href: '/bookings/booking-1#chat',
     });
@@ -88,7 +88,7 @@ describe('bookingListStageFromFacts', () => {
       ),
     ).toMatchObject({
       key: 'handoff',
-      label: 'Stage 4 handoff',
+      label: 'Service handoff',
       tone: 'ok',
     });
 
@@ -105,7 +105,7 @@ describe('bookingListStageFromFacts', () => {
     ).toMatchObject({
       key: 'customer-choice',
       detail: '2 customer-selectable Partner(s) are waiting for customer selection.',
-      label: 'Stage 3 choice',
+      label: 'Customer choice',
     });
 
     expect(
@@ -118,14 +118,14 @@ describe('bookingListStageFromFacts', () => {
     ).toMatchObject({
       key: 'marketplace',
       detail: '3 marketplace Partner(s) are visible while matching stays open.',
-      label: 'Stage 2 marketplace',
+      label: 'Marketplace open',
     });
   });
 
   it('builds customer choice and marketplace stages from open matching facts', () => {
     expect(bookingListStageFromFacts(stageInput({ selectableCount: 2 }))).toMatchObject({
       key: 'customer-choice',
-      label: 'Stage 3 choice',
+      label: 'Customer choice',
       tone: 'warn',
     });
 
@@ -136,7 +136,7 @@ describe('bookingListStageFromFacts', () => {
     ).toMatchObject({
       key: 'marketplace',
       action: 'Monitor marketplace alert delivery and customer choice list quality.',
-      label: 'Stage 2 marketplace',
+      label: 'Marketplace open',
       tone: 'info',
     });
   });
@@ -144,14 +144,14 @@ describe('bookingListStageFromFacts', () => {
   it('builds first-pick and intake fallback stages', () => {
     expect(bookingListStageFromFacts(stageInput({ responseWindowExpired: true }))).toMatchObject({
       key: 'first-pick',
-      label: 'Stage 1 first-pick',
+      label: 'Preferred pending',
       tone: 'danger',
     });
 
     expect(bookingListStageFromFacts(stageInput({ status: 'PAYMENT_PENDING' }))).toMatchObject({
       key: 'intake',
       detail: 'Booking is payment pending.',
-      label: 'Stage 0 intake',
+      label: 'Booking intake',
       tone: 'info',
     });
   });

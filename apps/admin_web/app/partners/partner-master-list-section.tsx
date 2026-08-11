@@ -5,17 +5,16 @@ import {
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
-import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
+import { adminCountLabel, partnerOperatingStatusLabel } from '../../lib/admin-copy';
+import { formatMoney as formatProviderMoney, formatRelativeAge } from '../../lib/admin-format';
 import { providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
-import {
-  buildPartnerListHref,
-  type PartnerPagination,
-  type ProviderFilters,
-} from './partner-filters';
+import { buildPartnerListHref, type PartnerPagination, type ProviderFilters } from './partner-filters';
 import type { PartnerMasterRow } from './partner-master-row';
+import { PARTNER_APPROVAL_QUEUE_HREF, partnerApprovalQueueDetailHref } from './partner-review-mode';
 
 export type PartnerMasterListSectionRow = PartnerMasterRow;
 
@@ -25,7 +24,7 @@ type PartnerMasterListSectionProps = {
   readonly pagination: PartnerPagination<PartnerMasterListSectionRow>;
 };
 
-type PartnerMasterListSectionMode = 'default' | 'unapproved' | 'unsettled';
+type PartnerMasterListSectionMode = 'approval-pending' | 'default' | 'unapproved' | 'unsettled';
 
 type PartnerMasterListSectionCopy = {
   description: string;
@@ -35,40 +34,52 @@ type PartnerMasterListSectionCopy = {
 
 const DEFAULT_PARTNER_MASTER_TABLE_HEADERS = [
   'Partner',
-  'Gender',
-  'State',
-  'Level',
-  'Access',
-  'Location',
-  'Work',
+  'Availability',
+  'Onboarding',
+  'Activity',
   'Wallet',
-  'Account',
+  'Account / action',
 ] as const;
 
 const UNAPPROVED_PARTNER_MASTER_TABLE_HEADERS = [
   'Partner',
-  'Gender',
-  'Approval needs',
-  'KYC / Level',
-  'Access',
-  'Location',
+  'Stage',
+  'Next action',
+  'Partner activity',
   'Account',
+  'Action',
 ] as const;
 
 const UNSETTLED_PARTNER_MASTER_TABLE_HEADERS = [
   'Partner',
-  'State',
-  'Work',
-  'Wallet',
-  'Revenue',
-  'Payout',
+  'Debt',
+  'Restrictions',
+  'Withdrawal',
   'Account',
+  'Action',
 ] as const;
 
-export function PartnerMasterListSection({ filters, mode = 'default', pagination }: PartnerMasterListSectionProps) {
+const APPROVAL_PENDING_PARTNER_MASTER_TABLE_HEADERS = [
+  'Partner',
+  'Submitted / Age',
+  'Review state',
+  'Top issues',
+  'Correction context',
+  'Action',
+] as const;
+
+export function PartnerMasterListSection({
+  filters,
+  mode = 'default',
+  pagination,
+}: PartnerMasterListSectionProps) {
   const rows = pagination.rows;
   const copy = buildPartnerMasterListSectionCopy(mode, pagination.totalRows);
   const headers = partnerMasterTableHeaders(mode);
+
+  if (mode === 'approval-pending' && rows.length === 0) {
+    return <PartnerApprovalEmptyState filters={filters} />;
+  }
 
   return (
     <AdminTablePanel
@@ -78,10 +89,10 @@ export function PartnerMasterListSection({ filters, mode = 'default', pagination
       resultLabel={copy.statusLabel}
       title={copy.title}
     >
-      <AdminTableScroll>
+      <AdminTableScroll ariaLabel={`${copy.title} records`}>
         <AdminDataTable
-          className="vuexy-booking-table vuexy-partner-table"
-          emptyMessage={<PartnerMasterEmptyState />}
+          className={`vuexy-booking-table vuexy-partner-table is-${mode}`}
+          emptyMessage={<PartnerMasterEmptyState filters={filters} mode={mode} />}
           headers={headers}
           rowCount={rows.length}
         >
@@ -103,22 +114,42 @@ export function PartnerMasterListSection({ filters, mode = 'default', pagination
 }
 
 function partnerMasterTableHeaders(mode: PartnerMasterListSectionMode) {
+  if (mode === 'approval-pending') return APPROVAL_PENDING_PARTNER_MASTER_TABLE_HEADERS;
   if (mode === 'unapproved') return UNAPPROVED_PARTNER_MASTER_TABLE_HEADERS;
   if (mode === 'unsettled') return UNSETTLED_PARTNER_MASTER_TABLE_HEADERS;
   return DEFAULT_PARTNER_MASTER_TABLE_HEADERS;
 }
 
 function renderPartnerMasterRow(row: PartnerMasterListSectionRow, mode: PartnerMasterListSectionMode) {
+  if (mode === 'approval-pending') {
+    return (
+      <tr key={row.provider.id}>
+        <td data-label="Partner">{renderPartnerCell(row)}</td>
+        <td data-label="Submitted / Age">{renderApprovalSubmittedCell(row)}</td>
+        <td data-label="Review state">{renderApprovalStateCell(row)}</td>
+        <td data-label="Top issues">{renderApprovalQueueIssuesCell(row)}</td>
+        <td data-label="Correction context">{renderApprovalHoldReasonCell(row)}</td>
+        <td data-label="Action">
+          <AdminFormControlLink
+            className="button-secondary"
+            href={partnerApprovalQueueDetailHref(row.provider.id)}
+          >
+            Review submission
+          </AdminFormControlLink>
+        </td>
+      </tr>
+    );
+  }
+
   if (mode === 'unapproved') {
     return (
       <tr key={row.provider.id}>
-        <td>{renderPartnerCell(row)}</td>
-        <td>{row.gender}</td>
-        <td>{renderApprovalNeedsCell(row)}</td>
-        <td>{renderLevelCell(row)}</td>
-        <td>{renderAccessCell(row)}</td>
-        <td>{renderLocationCell(row)}</td>
-        <td>{renderAccountCell(row, { showApprovalNeeds: false })}</td>
+        <td data-label="Partner">{renderPartnerCell(row)}</td>
+        <td data-label="Stage">{renderOnboardingStageCell(row)}</td>
+        <td data-label="Next action">{renderOnboardingNextActionCell(row)}</td>
+        <td data-label="Partner activity">{renderPartnerActivityCell(row)}</td>
+        <td data-label="Account">{renderAccountCell(row, { showApprovalNeeds: false })}</td>
+        <td data-label="Action">{renderOpenPartnerAction(row, 'Review blockers')}</td>
       </tr>
     );
   }
@@ -126,28 +157,24 @@ function renderPartnerMasterRow(row: PartnerMasterListSectionRow, mode: PartnerM
   if (mode === 'unsettled') {
     return (
       <tr key={row.provider.id}>
-        <td>{renderPartnerCell(row)}</td>
-        <td>{renderStateCell(row)}</td>
-        <td>{renderWorkCell(row)}</td>
-        <td>{renderWalletCell(row)}</td>
-        <td>{renderRevenueCell(row)}</td>
-        <td>{renderPayoutCell(row)}</td>
-        <td>{renderAccountCell(row)}</td>
+        <td data-label="Partner">{renderPartnerCell(row)}</td>
+        <td data-label="Debt">{renderWalletDebtCell(row)}</td>
+        <td data-label="Restrictions">{renderWalletRestrictionsCell()}</td>
+        <td data-label="Withdrawal">{renderWithdrawalCell(row)}</td>
+        <td data-label="Account">{renderAccountCell(row, { showApprovalNeeds: false })}</td>
+        <td data-label="Action">{renderOpenPartnerAction(row, 'Review wallet debt')}</td>
       </tr>
     );
   }
 
   return (
     <tr key={row.provider.id}>
-      <td>{renderPartnerCell(row)}</td>
-      <td>{row.gender}</td>
-      <td>{renderStateCell(row)}</td>
-      <td>{renderLevelCell(row)}</td>
-      <td>{renderAccessCell(row)}</td>
-      <td>{renderLocationCell(row)}</td>
-      <td>{renderWorkCell(row)}</td>
-      <td>{renderWalletCell(row)}</td>
-      <td>{renderAccountCell(row)}</td>
+      <td data-label="Partner">{renderPartnerCell(row)}</td>
+      <td data-label="Availability">{renderAvailabilityCell(row)}</td>
+      <td data-label="Onboarding">{renderOnboardingCell(row)}</td>
+      <td data-label="Activity">{renderActivityCell(row)}</td>
+      <td data-label="Wallet">{renderWalletCell(row)}</td>
+      <td data-label="Account / action">{renderAccountActionCell(row)}</td>
     </tr>
   );
 }
@@ -171,16 +198,72 @@ function renderPartnerCell(row: PartnerMasterListSectionRow) {
 function PartnerCellHelper({ row }: { readonly row: PartnerMasterListSectionRow }) {
   return (
     <div className="vuexy-partner-person-helper">
-      <small>{row.legalName}</small>
+      <small>
+        Partner ID {row.provider.id.slice(-8)} · {row.phone === 'No phone' ? 'Phone not saved' : 'Phone saved'}
+      </small>
     </div>
+  );
+}
+
+function PartnerApprovalEmptyState({ filters }: { readonly filters: ProviderFilters }) {
+  const filtered = Boolean(
+    filters.age !== 'all' ||
+    filters.approvalMissing ||
+    filters.approvalRisk ||
+    filters.q ||
+    (filters.sla && filters.sla !== 'all'),
+  );
+
+  return (
+    <AdminTablePanel
+      className="vuexy-partner-table-card"
+      description="The approval queue is empty. Continue with held submissions or return to the full directory."
+      id="partner-master-list-approval-pending"
+      resultLabel="0 awaiting decision"
+      title="Partner approvals"
+    >
+      <AdminEmptyState
+        className="partner-approval-empty-state"
+        message={
+          filtered
+            ? 'No submitted dossier matches the current approval filters.'
+            : 'No Partner submission is waiting for an approval decision.'
+        }
+        title={filtered ? 'No approvals match these filters' : 'Approval queue is clear'}
+      />
+      <div className="actions admin-mt-8 partner-approval-empty-actions">
+        {filtered ? (
+          <AdminFormControlLink className="button-secondary" href={PARTNER_APPROVAL_QUEUE_HREF}>
+            Clear approval filters
+          </AdminFormControlLink>
+        ) : null}
+        <AdminFormControlLink className="button-secondary" href="/partners?review=unapproved">
+          View onboarding blockers
+        </AdminFormControlLink>
+        <AdminFormControlLink className="button-secondary" href="/partners">
+          Open partner directory
+        </AdminFormControlLink>
+      </div>
+    </AdminTablePanel>
   );
 }
 
 function renderStateCell(row: PartnerMasterListSectionRow) {
   return (
     <div className="vuexy-partner-stack">
-      <StatusBadge tone={row.online ? 'success' : 'neutral'}>{row.status}</StatusBadge>
+      <StatusBadge tone={row.online ? 'success' : 'neutral'}>
+        {partnerOperatingStatusLabel(row.status)}
+      </StatusBadge>
       <small>{row.latestSessionPlatform}</small>
+    </div>
+  );
+}
+
+function renderAvailabilityCell(row: PartnerMasterListSectionRow) {
+  return (
+    <div className="vuexy-partner-stack">
+      {renderStateCell(row)}
+      {renderLocationCell(row)}
     </div>
   );
 }
@@ -188,8 +271,40 @@ function renderStateCell(row: PartnerMasterListSectionRow) {
 function renderLevelCell(row: PartnerMasterListSectionRow) {
   return (
     <div className="vuexy-partner-stack">
-      <strong>{row.level}</strong>
-      <small>KYC {row.kycStatus}</small>
+      <strong>{partnerOperatingStatusLabel(row.level)}</strong>
+      <small>KYC {partnerOperatingStatusLabel(row.kycStatus)}</small>
+    </div>
+  );
+}
+
+function renderOnboardingStageCell(row: PartnerMasterListSectionRow) {
+  let stage = 'Registration';
+
+  if (row.accountBlocked) {
+    stage = 'Hold';
+  } else if (row.verificationStatus !== 'APPROVED') {
+    stage = 'Verification';
+  } else if (row.kycStatus !== 'APPROVED') {
+    stage = 'KYC';
+  } else if (row.approvalIssues.some((issue) => /document|media/i.test(issue.label))) {
+    stage = 'Documents';
+  }
+
+  return (
+    <div className="vuexy-partner-stack">
+      <StatusBadge tone={row.accountBlocked ? 'danger' : 'warning'}>{stage}</StatusBadge>
+      <small>
+        {partnerOperatingStatusLabel(row.verificationStatus)} · KYC {partnerOperatingStatusLabel(row.kycStatus)}
+      </small>
+    </div>
+  );
+}
+
+function renderOnboardingCell(row: PartnerMasterListSectionRow) {
+  return (
+    <div className="vuexy-partner-stack">
+      {renderLevelCell(row)}
+      {renderApprovalNeedsCell(row)}
     </div>
   );
 }
@@ -197,15 +312,31 @@ function renderLevelCell(row: PartnerMasterListSectionRow) {
 function renderAccessCell(row: PartnerMasterListSectionRow) {
   return (
     <div className="vuexy-partner-stack">
-      <strong>
-        <DateTimeText fallback="No session" value={row.lastSeenAt} />
-      </strong>
+      <StatusBadge tone={partnerAppActivityTone(row.appActivityStatus)}>
+        {partnerAppActivityLabel(row.appActivityStatus)}
+      </StatusBadge>
       <small>
-        Joined <DateTimeText fallback="not recorded" value={row.joinedAt} />
+        App <DateTimeText fallback="not tracked" value={row.appLastActiveAt} />
       </small>
-      <small>{row.latestSessionIp}</small>
+      <small>
+        Session <DateTimeText fallback="not recorded" value={row.lastSeenAt} />
+      </small>
     </div>
   );
+}
+
+function partnerAppActivityLabel(status: PartnerMasterListSectionRow['appActivityStatus']) {
+  if (status === 'active') return 'App active 7D';
+  if (status === 'inactive_7d') return 'App inactive 7D+';
+  return 'App not tracked';
+}
+
+function partnerAppActivityTone(
+  status: PartnerMasterListSectionRow['appActivityStatus'],
+): 'danger' | 'success' | 'warning' {
+  if (status === 'active') return 'success';
+  if (status === 'inactive_7d') return 'danger';
+  return 'warning';
 }
 
 function renderLocationCell(row: PartnerMasterListSectionRow) {
@@ -224,7 +355,9 @@ function renderWorkCell(row: PartnerMasterListSectionRow) {
       <small>
         {row.completedCount} completed / {row.closedCount} closed
       </small>
-      <small>{row.noShowCount} no-show / {row.reviewCount} review(s)</small>
+      <small>
+        {adminCountLabel(row.noShowCount, 'no-show')} / {adminCountLabel(row.reviewCount, 'review')}
+      </small>
     </div>
   );
 }
@@ -233,15 +366,31 @@ function renderWalletCell(row: PartnerMasterListSectionRow) {
   return (
     <div className="vuexy-partner-stack">
       <strong>{formatProviderMoney(row.walletBalance)}</strong>
+      <small>{row.walletBalance < 0 ? 'Settlement required' : 'No negative balance'}</small>
       <small>
-        {row.walletBalance < 0
-          ? 'Settlement required'
-          : 'No negative balance'}
-      </small>
-      <small>
-        Pending {formatProviderMoney(row.pendingPayout)} / available {formatProviderMoney(row.availablePayout)}
+        Pending {formatProviderMoney(row.pendingPayout)} / available{' '}
+        {formatProviderMoney(row.availablePayout)}
       </small>
       {renderWalletWithdrawalSignal(row)}
+    </div>
+  );
+}
+
+function renderWalletDebtCell(row: PartnerMasterListSectionRow) {
+  return (
+    <div className="vuexy-partner-stack">
+      <strong>{formatProviderMoney(row.walletBalance)}</strong>
+      <small>Canonical VND wallet balance</small>
+    </div>
+  );
+}
+
+function renderWalletRestrictionsCell() {
+  return (
+    <div className="vuexy-partner-stack">
+      <StatusBadge tone="danger">Acceptance / service blocked</StatusBadge>
+      <StatusBadge tone="warning">Payout release blocked</StatusBadge>
+      <small>Marketplace visibility remains available</small>
     </div>
   );
 }
@@ -269,20 +418,20 @@ function renderWalletWithdrawalSignal(row: PartnerMasterListSectionRow) {
   return null;
 }
 
-function renderRevenueCell(row: PartnerMasterListSectionRow) {
-  return (
-    <div className="vuexy-partner-stack">
-      <strong>{formatProviderMoney(row.grossRevenue)}</strong>
-      <small>Platform fee {formatProviderMoney(row.platformFee)}</small>
-    </div>
-  );
-}
+function renderWithdrawalCell(row: PartnerMasterListSectionRow) {
+  if (row.walletWithdrawalLatestStatus === 'NONE') {
+    return <span className="muted">No open withdrawal</span>;
+  }
 
-function renderPayoutCell(row: PartnerMasterListSectionRow) {
   return (
     <div className="vuexy-partner-stack">
-      <strong>{formatProviderMoney(row.pendingPayout)}</strong>
-      <small>Available {formatProviderMoney(row.availablePayout)}</small>
+      <strong>{row.walletWithdrawalLatestStatus}</strong>
+      <small>
+        {row.walletWithdrawalLatestAmount === null
+          ? 'No withdrawal amount'
+          : formatProviderMoney(row.walletWithdrawalLatestAmount)}
+      </small>
+      {renderWalletWithdrawalSignal(row)}
     </div>
   );
 }
@@ -292,11 +441,133 @@ function renderApprovalNeedsCell(row: PartnerMasterListSectionRow) {
     return <StatusBadge tone="success">Approval clear</StatusBadge>;
   }
 
+  const visibleIssues = row.approvalIssues.slice(0, 2);
+  const hiddenIssueCount = row.approvalIssues.length - visibleIssues.length;
+
   return (
-    <StatusBadge tone={row.approvalIssues.some((issue) => issue.severity === 'high') ? 'danger' : 'warning'}>
-      {row.approvalIssues.length} approval need(s)
-    </StatusBadge>
+    <div className="vuexy-partner-stack">
+      {visibleIssues.map((issue) => (
+        <StatusBadge key={issue.label} tone={issue.severity === 'high' ? 'danger' : 'warning'}>
+          {issue.label}
+        </StatusBadge>
+      ))}
+      {hiddenIssueCount > 0 ? <small>{`+${hiddenIssueCount} more`}</small> : null}
+    </div>
   );
+}
+
+function renderOnboardingNextActionCell(row: PartnerMasterListSectionRow) {
+  const issue = row.approvalIssues[0];
+  if (!issue) return <StatusBadge tone="success">No onboarding action</StatusBadge>;
+
+  const nextAction = onboardingNextAction(row, issue.label);
+  return (
+    <div className="vuexy-partner-stack">
+      <StatusBadge tone={issue.severity === 'high' ? 'danger' : 'warning'}>{nextAction.owner}</StatusBadge>
+      <strong>{nextAction.action}</strong>
+      <small>{issue.label}</small>
+      {row.approvalIssues.length > 1 ? <small>{`+${row.approvalIssues.length - 1} more`}</small> : null}
+    </div>
+  );
+}
+
+function onboardingNextAction(row: PartnerMasterListSectionRow, label: string) {
+  if (row.accountBlocked) return { action: 'Review account hold', owner: 'Operator' };
+  if (/identity docs/i.test(label)) return { action: 'Upload required identity documents', owner: 'Partner' };
+  if (/document rejected/i.test(label)) return { action: 'Replace rejected document', owner: 'Partner' };
+  if (/document pending/i.test(label)) return { action: 'Review submitted document', owner: 'Operator' };
+  if (/media rejected/i.test(label)) return { action: 'Replace rejected profile media', owner: 'Partner' };
+  if (/media pending/i.test(label)) return { action: 'Review submitted profile media', owner: 'Operator' };
+  if (/verification/i.test(label)) {
+    if (row.verificationStatus === 'SUBMITTED') return { action: 'Review verification submission', owner: 'Operator' };
+    if (row.verificationStatus === 'REJECTED') return { action: 'Resubmit verification', owner: 'Partner' };
+    if (row.verificationStatus !== 'APPROVED') return { action: 'Complete verification', owner: 'Partner' };
+    return { action: `Review required: ${label}`, owner: 'Operator' };
+  }
+  if (/kyc/i.test(label)) {
+    if (row.kycStatus === 'PENDING') return { action: 'Review KYC submission', owner: 'Operator' };
+    if (row.kycStatus === 'REJECTED') return { action: 'Resubmit KYC', owner: 'Partner' };
+    if (row.kycStatus !== 'APPROVED') return { action: 'Complete KYC', owner: 'Partner' };
+    return { action: `Review required: ${label}`, owner: 'Operator' };
+  }
+  return { action: `Review required: ${label}`, owner: 'Operator' };
+}
+
+function renderApprovalSubmittedCell(row: PartnerMasterListSectionRow) {
+  return (
+    <div className="vuexy-partner-stack">
+      <strong>{formatRelativeAge(row.approvalSubmittedAt, 'Waiting time unavailable')}</strong>
+      <small>
+        <DateTimeText fallback="Submission time unavailable" value={row.approvalSubmittedAt} />
+      </small>
+    </div>
+  );
+}
+
+function renderActivityCell(row: PartnerMasterListSectionRow) {
+  return (
+    <div className="vuexy-partner-stack">
+      {renderAccessCell(row)}
+      {renderWorkCell(row)}
+    </div>
+  );
+}
+
+function renderPartnerActivityCell(row: PartnerMasterListSectionRow) {
+  return renderAccessCell(row);
+}
+
+function renderApprovalStateCell(row: PartnerMasterListSectionRow) {
+  return (
+    <div className="vuexy-partner-stack">
+      <StatusBadge tone={partnerApprovalStatusTone(row.verificationStatus)}>
+        Verification {partnerOperatingStatusLabel(row.verificationStatus)}
+      </StatusBadge>
+      <StatusBadge tone={partnerApprovalStatusTone(row.kycStatus)}>
+        KYC {partnerOperatingStatusLabel(row.kycStatus)}
+      </StatusBadge>
+    </div>
+  );
+}
+
+function renderApprovalQueueIssuesCell(row: PartnerMasterListSectionRow) {
+  if (!row.approvalQueueIssues.length) {
+    return <StatusBadge tone="success">Documents ready</StatusBadge>;
+  }
+
+  const visibleIssues = row.approvalQueueIssues.slice(0, 2);
+  const hiddenIssueCount = row.approvalQueueIssues.length - visibleIssues.length;
+
+  return (
+    <div className="vuexy-partner-stack">
+      {visibleIssues.map((issue) => (
+        <StatusBadge key={issue.label} tone={issue.severity === 'high' ? 'danger' : 'warning'}>
+          {issue.label}
+        </StatusBadge>
+      ))}
+      {hiddenIssueCount > 0 ? <small>{`+${hiddenIssueCount} more`}</small> : null}
+    </div>
+  );
+}
+
+function renderApprovalHoldReasonCell(row: PartnerMasterListSectionRow) {
+  if (!row.approvalHoldReason) {
+    return <span className="muted">No hold reason</span>;
+  }
+
+  return (
+    <div className="vuexy-partner-stack">
+      <StatusBadge tone="warning">Correction context</StatusBadge>
+      <small>{row.approvalHoldReason}</small>
+    </div>
+  );
+}
+
+function partnerApprovalStatusTone(status: string): 'danger' | 'neutral' | 'success' | 'warning' {
+  if (status === 'APPROVED') return 'success';
+  if (status === 'REJECTED' || status === 'BLOCKED') return 'danger';
+  if (status === 'SUBMITTED' || status === 'PENDING') return 'warning';
+  return 'neutral';
 }
 
 function renderAccountCell(
@@ -312,7 +583,24 @@ function renderAccountCell(
       </StatusBadge>
       <small>{row.accountNote}</small>
       {showApprovalNeeds ? renderApprovalNeedsCell(row) : null}
-      <small>{row.auditLogCount} memo/event(s)</small>
+      <small>{adminCountLabel(row.auditLogCount, 'memo or event', 'memos or events')}</small>
+    </div>
+  );
+}
+
+function renderOpenPartnerAction(row: PartnerMasterListSectionRow, label: string) {
+  return (
+    <AdminFormControlLink className="button-secondary" href={`/partners/${row.provider.id}`}>
+      {label}
+    </AdminFormControlLink>
+  );
+}
+
+function renderAccountActionCell(row: PartnerMasterListSectionRow) {
+  return (
+    <div className="vuexy-partner-stack">
+      {renderAccountCell(row, { showApprovalNeeds: false })}
+      {renderOpenPartnerAction(row, 'Open profile')}
     </div>
   );
 }
@@ -321,37 +609,80 @@ function buildPartnerMasterListSectionCopy(
   mode: PartnerMasterListSectionMode,
   rowCount: number,
 ): PartnerMasterListSectionCopy {
+  if (mode === 'approval-pending') {
+    return {
+      description:
+        'Check waiting time, verification and KYC state, missing materials, and previous hold context before opening the Partner review. Use Oldest pending to clear overdue submissions first.',
+      statusLabel: `${rowCount} awaiting decision`,
+      title: 'Partner approvals',
+    };
+  }
+
   if (mode === 'unapproved') {
     return {
       description:
-        'Approval-first list for Partners who cannot operate yet because registration, KYC, required documents, public media, device, or account-hold facts still need admin review.',
-      statusLabel: `${rowCount} approval row(s)`,
-      title: 'Unapproved Partners',
+        'Partners blocked from onboarding by verification, KYC, required evidence, or an account hold.',
+      statusLabel: adminCountLabel(rowCount, 'onboarding blocker'),
+      title: 'Onboarding blockers',
     };
   }
 
   if (mode === 'unsettled') {
     return {
       description:
-        'Settlement-first list for Partners with negative wallet balance from unpaid HANDS commission. Check debt, payout, and account state before final acceptance, service start, or payout release.',
-      statusLabel: `${rowCount} settlement row(s)`,
-      title: 'Unsettled Partners',
+        'Partners with a negative canonical VND wallet balance. Open Partner detail to review ledger origin before clearing restrictions.',
+      statusLabel: adminCountLabel(rowCount, 'wallet debt record'),
+      title: 'Wallet debt',
     };
   }
 
   return {
     description:
-      'Compact admin list for ID, profile, contact, onboarding level, app status, location freshness, booking volume, feedback records, revenue, payout readiness, and account state.',
-    statusLabel: `${rowCount} visible row(s)`,
-    title: 'Partners',
+      'Search by partner name, phone, or ID, then open a profile to review status and restrictions.',
+    statusLabel: adminCountLabel(rowCount, 'matching Partner'),
+    title: 'Partner directory',
   };
 }
 
-function PartnerMasterEmptyState() {
+function PartnerMasterEmptyState({
+  filters,
+  mode,
+}: {
+  readonly filters: ProviderFilters;
+  readonly mode: PartnerMasterListSectionMode;
+}) {
+  const filtered = Boolean(
+    filters.q ||
+      filters.activity ||
+      filters.verification ||
+      filters.kyc ||
+      filters.providerStatus ||
+      filters.bookingFlow,
+  );
+  const queueName =
+    mode === 'unapproved' ? 'onboarding blockers' : mode === 'unsettled' ? 'wallet debt records' : 'Partners';
+  const resetHref =
+    mode === 'unapproved'
+      ? '/partners?review=unapproved'
+      : mode === 'unsettled'
+        ? '/partners?review=unsettled'
+        : '/partners';
+
   return (
-    <AdminEmptyState
-      message="Change the filters or clear search to view partner records."
-      title="No partner rows found"
-    />
+    <div className="vuexy-partner-stack">
+      <AdminEmptyState
+        message={
+          filtered
+            ? `No ${queueName} match the current filters.`
+            : `No ${queueName} are currently available in this queue.`
+        }
+        title={filtered ? 'No results match these filters' : 'This queue is clear'}
+      />
+      <div className="actions partner-approval-empty-actions">
+        <AdminFormControlLink className="button-secondary" href={resetHref}>
+          {filtered ? 'Reset filters' : 'Refresh current queue'}
+        </AdminFormControlLink>
+      </div>
+    </div>
   );
 }

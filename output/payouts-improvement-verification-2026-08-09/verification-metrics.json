@@ -1,0 +1,43 @@
+{
+  "capturedAt": "2026-08-09T09:45:53.000Z",
+  "url": "http://localhost:3101/payouts",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "beforeAudit": {
+    "scrollHeight": 12415,
+    "domNodes": 2188,
+    "links": 130,
+    "forms": 11,
+    "visibleInputsAndSelects": 40,
+    "tableRows": 30,
+    "tables": 14
+  },
+  "after": {
+    "scrollHeight": 5295,
+    "scrollWidth": 1440,
+    "clientWidth": 1440,
+    "horizontalPageOverflow": false,
+    "domNodes": 1392,
+    "links": 81,
+    "forms": 2,
+    "visibleInputsAndSelects": 3,
+    "tableRows": 20,
+    "tables": 22,
+    "dialogs": 0
+  },
+  "verifiedFlows": [
+    "Payout batches",
+    "Withdrawals",
+    "Reconciliation with 154 exact repair rows",
+    "Selected empty filter with persistent global warning",
+    "Transfer evidence editor",
+    "Paid withdrawal reversal dialog",
+    "Processing confirmation dialog"
+  ],
+  "currentPageConsole": {
+    "errors": 0,
+    "warnings": 0
+  }
+}

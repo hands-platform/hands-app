@@ -23,6 +23,15 @@ export function missingApprovedRequiredKycDocuments(provider: AdminProvider) {
   return ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.filter((type) => !approvedDocuments.has(type));
 }
 
+export function missingSubmittedRequiredKycDocuments(provider: AdminProvider) {
+  const submittedDocuments = new Set(
+    (provider.documents ?? [])
+      .filter((document) => document.status !== 'REJECTED')
+      .map((document) => document.type),
+  );
+  return ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.filter((type) => !submittedDocuments.has(type));
+}
+
 export function providerKycDocumentStatus(provider: AdminProvider, documentType: string) {
   const document = (provider.documents ?? []).find((item) => item.type === documentType);
   return document?.status ?? 'MISSING';
@@ -37,7 +46,7 @@ export function kycDocumentPillClass(status: string) {
 
 export function partnerKycState(provider: AdminProvider): PartnerKycState {
   const status = provider.kyc?.status ?? 'MISSING';
-  const missingDocuments = missingApprovedRequiredKycDocuments(provider);
+  const missingDocuments = missingSubmittedRequiredKycDocuments(provider);
   const requiredDocumentStatuses = ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.map((type) =>
     providerKycDocumentStatus(provider, type),
   );
@@ -47,8 +56,13 @@ export function partnerKycState(provider: AdminProvider): PartnerKycState {
   const rejectedDocuments = requiredDocumentStatuses.filter(
     (documentStatus) => documentStatus === 'REJECTED',
   ).length;
-  const blockedByDocuments = status !== 'APPROVED' && missingDocuments.length > 0;
-  const readyToApprove = Boolean(provider.kyc) && status !== 'APPROVED' && missingDocuments.length === 0;
+  const blockedByDocuments =
+    status !== 'APPROVED' && (missingDocuments.length > 0 || rejectedDocuments > 0);
+  const readyToApprove =
+    Boolean(provider.kyc) &&
+    !['APPROVED', 'REJECTED'].includes(status) &&
+    missingDocuments.length === 0 &&
+    rejectedDocuments === 0;
   const needsReview =
     status !== 'APPROVED' || blockedByDocuments || pendingDocuments > 0 || rejectedDocuments > 0;
 
@@ -75,8 +89,8 @@ export function partnerKycState(provider: AdminProvider): PartnerKycState {
       readyToApprove,
       blockedByDocuments,
       needsReview,
-      detail: 'KYC record and required identity documents are ready.',
-      operatorAction: 'Review the detail page, then approve or reject KYC.',
+      detail: 'KYC record and all required identity evidence are submitted.',
+      operatorAction: 'Review the full evidence set, then approve or place KYC on hold.',
     };
   }
 
@@ -89,8 +103,10 @@ export function partnerKycState(provider: AdminProvider): PartnerKycState {
       readyToApprove,
       blockedByDocuments,
       needsReview,
-      detail: `Missing approved evidence: ${missingDocuments.map(providerDocumentLabel).join(', ')}.`,
-      operatorAction: 'Approve uploaded evidence first, or reject with a clear resubmission reason.',
+      detail: missingDocuments.length
+        ? `Missing submitted evidence: ${missingDocuments.map(providerDocumentLabel).join(', ')}.`
+        : 'Rejected identity evidence requires Partner resubmission.',
+      operatorAction: 'Ask the Partner to submit or replace the required evidence before approval.',
     };
   }
 

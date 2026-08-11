@@ -2,6 +2,7 @@ import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admi
 import {
   OPERATIONAL_POLICY_KEYS,
   adminOperationalPolicySettingByKey,
+  adminPreferredAcceptModeUsesFirstPickPriority,
   normalizeAdminMarketplaceOpenMode,
 } from '../../lib/operations-policy';
 import { bookingWalletLedgerTotal } from './policy-booking-format';
@@ -91,9 +92,9 @@ function buildPolicyImpactStats(
     normalizeAdminMarketplaceOpenMode(
       policyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode),
     ) === 'IMMEDIATE_WITHIN_WINDOW';
-  const customerConfirm =
-    policyRawValue(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode) ===
-    'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+  const customerConfirm = adminPreferredAcceptModeUsesFirstPickPriority(
+    policyRawValue(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode),
+  );
 
   return {
     activeDispatch,

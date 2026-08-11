@@ -177,6 +177,15 @@ export function filterPartners(
 }
 
 export function partnerMatchesActivity(provider: AdminProvider, activity: string) {
+  if (activity === 'app-active-7d') {
+    return provider.appActivitySummary?.activityStatus === 'active';
+  }
+  if (activity === 'app-inactive-7d') {
+    return provider.appActivitySummary?.activityStatus === 'inactive_7d';
+  }
+  if (activity === 'app-not-tracked') {
+    return (provider.appActivitySummary?.activityStatus ?? 'never_tracked') === 'never_tracked';
+  }
   if (activity === 'never-online') {
     return !partnerLastSessionAt(provider);
   }
@@ -244,6 +253,12 @@ export function partnerMatchesReviewQueue(
   }
   if (review === 'unapproved') {
     return partnerNeedsApprovalReview(provider);
+  }
+  if (review === 'approval-pending') {
+    return (
+      provider.verification?.status === 'SUBMITTED' ||
+      provider.kyc?.status === 'PENDING'
+    );
   }
   if (review === 'unsettled') {
     return partnerUnsettledWalletBalance(provider) < 0;

@@ -100,8 +100,7 @@ export function bookingHasPartnerCommitment(booking: {
 }) {
   return (
     PARTNER_COMMITMENT_BOOKING_STATUSES.has(booking.status) ||
-    Boolean(booking.selectedProviderId) ||
-    Boolean(booking.participants?.some((participant) => participant.status === ParticipantStatus.ACCEPTED))
+    Boolean(booking.selectedProviderId)
   );
 }
 
@@ -121,7 +120,12 @@ export function providerLifecycleAllowedPreviousStatuses(next: BookingStatus) {
     return [BookingStatus.MATCHED, BookingStatus.PROVIDER_ON_THE_WAY, BookingStatus.ARRIVED];
   }
   if (next === BookingStatus.COMPLETED) {
-    return [BookingStatus.IN_SERVICE];
+    return [
+      BookingStatus.MATCHED,
+      BookingStatus.PROVIDER_ON_THE_WAY,
+      BookingStatus.ARRIVED,
+      BookingStatus.IN_SERVICE,
+    ];
   }
   return null;
 }
@@ -222,6 +226,7 @@ export function assertBookingPaymentMethod(paymentMethod: unknown) {
     PaymentMethod.MOMO,
     PaymentMethod.VNPAY,
     PaymentMethod.CARD,
+    PaymentMethod.CUSTOMER_WALLET,
   ];
   if (!checkoutMethods.includes(paymentMethod as PaymentMethod)) {
     throw new BadRequestException('Valid paymentMethod is required');

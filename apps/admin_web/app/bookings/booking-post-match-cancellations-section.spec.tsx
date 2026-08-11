@@ -1,77 +1,54 @@
-import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { normalizedText } from './booking-section-test-utils';
-import { BookingPostMatchCancellationsSection } from './booking-post-match-cancellations-section';
+import { BookingPostMatchCancellationBoard } from './booking-post-match-cancellations-section';
 
-describe('BookingPostMatchCancellationsSection', () => {
-  it('uses shared Vuexy badge atoms instead of raw post-match cancellation pill spans', () => {
-    const source = readFileSync('app/bookings/booking-post-match-cancellations-section.tsx', 'utf8');
-
-    expect(source).toContain('StatusBadgeFromPillClass');
-    expect(source).not.toContain('statusBadgeToneFromPillClass');
-    expect(source).not.toContain('PillClassBadge');
-    expect(source).not.toContain('<span className="pill pill-info">{board.totalCount} total</span>');
-    expect(source).not.toContain('<span className="pill pill-neutral">{board.monthCount} this month</span>');
-    expect(source).not.toContain('<span className={`pill ${metric.tone}`}>{metric.label}</span>');
-  });
-
-  it('scopes decision step typography to direct step content', () => {
-    const css = readFileSync('app/globals.css', 'utf8');
-
-    expect(css).toContain('.booking-post-match-decision-step > span');
-    expect(css).toContain('.booking-post-match-decision-step > strong');
-    expect(css).toContain('.booking-post-match-decision-step > p');
-    expect(css).not.toContain('.booking-post-match-decision-step span');
-    expect(css).not.toContain('.booking-post-match-decision-step strong');
-    expect(css).not.toContain('.booking-post-match-decision-step p');
-  });
-
-  it('renders counts and admin handling guidance for post-match cancellations', () => {
+describe('BookingPostMatchCancellationBoard', () => {
+  it('separates all-date open workload from the selected resolved period', () => {
     const markup = renderToStaticMarkup(
-      <BookingPostMatchCancellationsSection
-        board={{
-          autoApprovedCount: 2,
-          autoApprovalWindowCount: 2,
-          feeHeldCount: 3,
-          feeRestoredCount: 4,
-          monthCount: 5,
-          pendingManualReviewCount: 1,
-          totalCount: 9,
+      <BookingPostMatchCancellationBoard
+        periodLabel="Last 7 days"
+        summary={{
+          adminApprovedCount: 3,
+          adminHeldCount: 2,
+          autoResolvedCount: 4,
+          generatedAt: '2026-08-07T04:00:00.000Z',
+          needsDecisionCount: 5,
+          noShowReviewCount: 1,
+          overdueOpenCount: 2,
+          resolvedCount: 10,
+          unknownLegacyCount: 1,
         }}
       />,
     );
     const rendered = normalizedText(markup);
 
-    expect(rendered).toContain('Post-match Cancellations');
-    expect(rendered).toContain('9 total');
-    expect(rendered).toContain('5 this month');
-    expect(rendered).toContain('Needs admin review');
-    expect(rendered).toContain('Auto-approved');
-    expect(rendered).toContain('Within 15m window');
-    expect(rendered).toContain('Fee held');
-    expect(rendered).toContain('Fee restored');
-    expect(rendered).toContain('1. Review evidence');
-    expect(rendered).toContain('Chat and notes');
-    expect(rendered).toContain('2. Decide fee outcome');
-    expect(rendered).toContain('Approve or hold');
-    expect(rendered).toContain('Approve restores eligible Partner fee impact');
-    expect(rendered).toContain('3. Keep audit trail');
-    expect(rendered).toContain('Resolved record');
-    expect(rendered).toContain('Open queue');
-    expect(rendered).toContain('Partner-side cancellations and no-show reviews after matching');
-    expect(rendered).toContain('Open chat, check the Partner cancellation or no-show evidence');
-    expect(markup).toContain('aria-label="Post-match cancellation counts"');
-    expect(markup).toContain('aria-label="Post-match decision flow"');
-    expect(markup).toContain('href="/bookings/post-match-cancellations"');
-    expect(markup).toContain('class="card admin-section booking-post-match-cancellations-card admin-mt-16"');
-    expect(markup).toContain('class="ops-section-header admin-section-header"');
-    expect(markup).toContain('admin-form-control-link button button-secondary booking-action-button is-secondary');
-    expect(markup).toContain('booking-post-match-cancellations-card');
-    expect(markup).toContain('booking-post-match-header-actions');
-    expect(markup).toContain('booking-post-match-decision-flow');
-    expect(markup).toContain('booking-post-match-decision-step');
-    expect(markup).toContain('vuexy-booking-table');
-    expect(markup).toContain('pill-warn');
-    expect(markup).toContain('pill-danger');
+    expect(rendered).toContain('Open workload · Overall');
+    expect(rendered).toContain('Needs decision: 5');
+    expect(rendered).toContain('No-show: 1');
+    expect(rendered).toContain('Resolved · Last 7 days');
+    expect(rendered).toContain('Total: 10');
+    expect(rendered).toContain('Admin approved · fee waived: 3');
+    expect(rendered.indexOf('Open workload · Overall')).toBeLessThan(rendered.indexOf('Resolved · Last 7 days'));
+  });
+
+  it('does not turn an unavailable summary fallback into zero facts', () => {
+    const markup = renderToStaticMarkup(
+      <BookingPostMatchCancellationBoard
+        periodLabel="Last 30 days"
+        summary={{
+          adminApprovedCount: 0,
+          adminHeldCount: 0,
+          autoResolvedCount: 0,
+          generatedAt: '',
+          needsDecisionCount: 0,
+          noShowReviewCount: 0,
+          overdueOpenCount: 0,
+          resolvedCount: 0,
+          unknownLegacyCount: 0,
+        }}
+      />,
+    );
+
+    expect(markup).toBe('');
   });
 });

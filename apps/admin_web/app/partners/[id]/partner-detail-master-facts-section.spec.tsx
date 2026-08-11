@@ -20,34 +20,44 @@ describe('PartnerDetailMasterFactsSection', () => {
   });
 
   it('keeps partner master fact finance values on the shared MoneyText atom', () => {
-    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+    const modelSource = readFileSync('app/partners/[id]/partner-detail-record-summary-model.tsx', 'utf8');
 
-    expect(pageSource).toContain("import { MoneyText } from '../../../components/money-text';");
-    expect(pageSource).toContain('value: <MoneyText amount={totalRevenue} />');
-    expect(pageSource).toContain('Platform fee <MoneyText amount={platformFee} />');
-    expect(pageSource).toContain('Available <MoneyText amount={payoutReadyAmount} /> / cash debt');
-    expect(pageSource).toContain('<MoneyText amount={cashFeeDebtTotal} />');
-    expect(pageSource).not.toContain('value: formatCurrency(totalRevenue)');
-    expect(pageSource).not.toContain('helper: `Platform fee ${formatCurrency(platformFee)}`');
-    expect(pageSource).not.toContain('helper: `Available ${formatCurrency(payoutReadyAmount)} / cash debt ${formatCurrency(cashFeeDebtTotal)}`');
+    expect(modelSource).toContain("import { MoneyText } from '../../../components/money-text';");
+    expect(modelSource).toContain('value: <MoneyText amount={totalRevenue} />');
+    expect(modelSource).toContain('Platform fee <MoneyText amount={platformFee} />');
+    expect(modelSource).toContain('Available <MoneyText amount={payoutReadyAmount} /> / cash debt');
+    expect(modelSource).toContain('<MoneyText amount={cashFeeDebtTotal} />');
+    expect(modelSource).not.toContain('value: formatCurrency(totalRevenue)');
+    expect(modelSource).not.toContain('helper: `Platform fee ${formatCurrency(platformFee)}`');
+    expect(modelSource).not.toContain(
+      'helper: `Available ${formatCurrency(payoutReadyAmount)} / cash debt ${formatCurrency(cashFeeDebtTotal)}`',
+    );
   });
 
   it('keeps partner master fact date values on the shared DateTimeText atom', () => {
     const sectionSource = readFileSync('app/partners/[id]/partner-detail-master-facts-section.tsx', 'utf8');
-    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+    const modelSource = readFileSync('app/partners/[id]/partner-detail-record-summary-model.tsx', 'utf8');
 
-    expect(pageSource).toContain("import { DateTimeText } from '../../../components/date-time-text';");
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={provider.dateOfBirth} />');
+    expect(modelSource).toContain("import { DateTimeText } from '../../../components/date-time-text';");
+    expect(modelSource).toContain('<DateTimeText fallback="Missing" value={provider.dateOfBirth} />');
     expect(sectionSource).toContain('readonly valueDateTimeFallback?: string;');
     expect(sectionSource).toContain('readonly valueDateTimeValue?: string | null;');
     expect(sectionSource).toContain('valueDateTimeFallback: fact.valueDateTimeFallback');
     expect(sectionSource).toContain('valueDateTimeValue: fact.valueDateTimeValue');
-    expect(pageSource).toContain("valueDateTimeFallback: 'Missing'");
-    expect(pageSource).toContain('valueDateTimeValue: provider.user?.createdAt');
-    expect(pageSource).toContain('<DateTimeText fallback="No app session recorded" value={latestAccessAt} />');
-    expect(pageSource).not.toContain('value: <DateTimeText fallback="Missing" value={provider.user?.createdAt} />');
-    expect(pageSource).not.toContain('value: `${provider.gender ?? \'Not saved\'} / ${formatDate(provider.dateOfBirth)}`');
-    expect(pageSource).not.toContain('value: formatDate(provider.user?.createdAt)');
-    expect(pageSource).not.toContain("helper: latestAccessAt ? `Recent app access ${formatDate(latestAccessAt)}` : 'No app session recorded'");
+    expect(modelSource).toContain("valueDateTimeFallback: 'Missing'");
+    expect(modelSource).toContain('valueDateTimeValue: provider.user?.createdAt');
+    expect(modelSource).toContain(
+      '<DateTimeText fallback="No app session recorded" value={latestAccessAt} />',
+    );
+    expect(modelSource).not.toContain(
+      'value: <DateTimeText fallback="Missing" value={provider.user?.createdAt} />',
+    );
+    expect(modelSource).not.toContain(
+      "value: `${provider.gender ?? 'Not saved'} / ${formatDate(provider.dateOfBirth)}`",
+    );
+    expect(modelSource).not.toContain('value: formatDate(provider.user?.createdAt)');
+    expect(modelSource).not.toContain(
+      "helper: latestAccessAt ? `Recent app access ${formatDate(latestAccessAt)}` : 'No app session recorded'",
+    );
   });
 });

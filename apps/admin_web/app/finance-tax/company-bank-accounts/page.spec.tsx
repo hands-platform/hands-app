@@ -45,11 +45,6 @@ const accounts = [
   },
 ];
 
-const approvers = [
-  { email: 'current@example.com', fullName: 'Current Operator', id: 'operator-current', phone: '', roles: ['ADMIN', 'FINANCE_APPROVER'] },
-  { email: 'approver@example.com', fullName: 'Finance Approver', id: 'approver-2', phone: '', roles: ['ADMIN', 'FINANCE_APPROVER'] },
-];
-
 const auditLogs = [
   {
     action: 'company_bank_account.update',
@@ -67,13 +62,12 @@ describe('CompanyBankAccountsPage', () => {
     mockedAdminGet.mockImplementation(async (href) => {
       if (href === '/admin/company-bank-accounts?status=ALL') return accounts as never;
       if (href === '/admin/audit-logs?q=company_bank_account&take=20') return auditLogs as never;
-      if (href === '/admin/users?take=50&role=ADMIN&view=finance-approver-directory') return approvers as never;
       return [] as never;
     });
   });
 
   it('lists company bank accounts from the bounded admin API using the shared finance table shell', async () => {
-    const page = await CompanyBankAccountsPage();
+    const page = await CompanyBankAccountsPage({});
     const markup = renderToStaticMarkup(page);
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/company-bank-accounts?status=ALL', []);
@@ -89,12 +83,17 @@ describe('CompanyBankAccountsPage', () => {
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
     expect(markup).toContain('class="admin-form-control-link button button-outline"');
+    expect(markup).toContain('aria-label="Edit Operations VND"');
+    expect(markup).toContain('aria-label="Archive Operations VND"');
+    expect(markup).toContain('aria-label="Activate Dormant settlement account"');
+    expect(markup).not.toContain('Actions for Operations VND');
+    expect(markup).not.toContain('#bank-account-1');
     expect(markup).not.toContain('<a class="button button-outline"');
     expect(markup).not.toContain('class="form-input"');
   });
 
   it('separates bank account KPI cards into records, live availability, and audit retention', async () => {
-    const page = await CompanyBankAccountsPage();
+    const page = await CompanyBankAccountsPage({});
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Bank records');
@@ -111,14 +110,17 @@ describe('CompanyBankAccountsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Add company bank account');
-    expect(markup).toContain('Review bank account creation');
-    expect(markup).toContain('Confirm approved account creation');
-    expect(markup).toContain('Finance Approver · approver@example.com');
-    expect(markup).not.toContain('Current Operator · current@example.com');
+    expect(markup).toContain('Review creation request');
+    expect(markup).toContain('Submit creation request');
     expect(markup).toContain(`value="company-bank-account-create"`);
     expect(markup).toContain('name="accountNumberMasked"');
     expect(markup).toContain('name="accountNumberLast4"');
+    expect(markup).not.toContain('name="approvalAdminId"');
     expect(markup).not.toContain('name="accountNumber"');
+    expect(mockedAdminGet).not.toHaveBeenCalledWith(
+      '/admin/users?take=50&role=ADMIN&view=finance-approver-directory',
+      [],
+    );
   });
 
   it('limits edits to the display name and requires account-bound confirmation', async () => {
@@ -127,8 +129,8 @@ describe('CompanyBankAccountsPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Review account name change');
-    expect(markup).toContain('Confirm approved name change');
+    expect(markup).toContain('Review name change request');
+    expect(markup).toContain('Submit name change');
     expect(markup).toContain('name="confirmationAccountId" value="bank-account-1"');
     expect(markup).toContain('name="name"');
     expect(markup).not.toContain('name="bankName"');
@@ -144,17 +146,49 @@ describe('CompanyBankAccountsPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Archive Operations VND?');
+    expect(markup).toContain('Request archive for Operations VND?');
     expect(markup).toContain('Archive account');
-    expect(markup).toContain('Separate Finance approver');
+    expect(markup).not.toContain('Separate Finance approver');
     expect(markup).toContain('Status change evidence');
     expect(source).toContain("adminPatchOrThrow(`/admin/company-bank-accounts/${encodeURIComponent(accountId)}`");
     expect(source).not.toContain('adminDelete');
     expect(source).not.toContain("method: 'DELETE'");
   });
 
+  it('shows a persisted pending proposal with server-principal approve and reject actions', async () => {
+    mockedAdminGet.mockImplementation(async (href) => {
+      if (href === '/admin/company-bank-accounts?status=ALL') {
+        return [
+          {
+            ...accounts[0],
+            metadata: {
+              pendingApproval: {
+                operation: 'UPDATE',
+                requestedByAdminId: 'operator-maker',
+                requestId: 'request-1',
+              },
+            },
+          },
+        ] as never;
+      }
+      if (href === '/admin/audit-logs?q=company_bank_account&take=20') return auditLogs as never;
+      return [] as never;
+    });
+
+    const markup = renderToStaticMarkup(await CompanyBankAccountsPage({}));
+
+    expect(markup).toContain('Pending approval');
+    expect(markup).toContain('Change pending');
+    expect(markup).toContain('aria-label="Approve pending change for Operations VND"');
+    expect(markup).toContain('aria-label="Reject pending change for Operations VND"');
+    expect(source).toContain(
+      "`/admin/company-bank-accounts/${encodeURIComponent(accountId)}/approval-decision`",
+    );
+    expect(source).not.toContain("readFormString(formData, 'approvalAdminId')");
+  });
+
   it('shows only a bounded recent account audit trail with operator evidence', async () => {
-    const page = await CompanyBankAccountsPage();
+    const page = await CompanyBankAccountsPage({});
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Recent account changes');

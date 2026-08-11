@@ -1,0 +1,127 @@
+- generic [active] [ref=f15e1]:
+  - generic [ref=f15e3]:
+    - complementary [ref=f15e4]:
+      - strong [ref=f15e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=f15e7]:
+        - group [ref=f15e8]:
+          - generic "Shift command" [ref=f15e9] [cursor=pointer]
+          - link "Shift command" [ref=f15e27] [cursor=pointer]:
+            - /url: /
+        - group [ref=f15e31]:
+          - generic "Live Operations" [ref=f15e32] [cursor=pointer]
+        - group [ref=f15e49]:
+          - generic "Customer Support" [ref=f15e50] [cursor=pointer]
+          - generic [ref=f15e67]:
+            - link "Customers" [ref=f15e68] [cursor=pointer]:
+              - /url: /customers
+            - link "Customer Reviews" [ref=f15e74] [cursor=pointer]:
+              - /url: /reviews
+            - link "Partner Notes" [ref=f15e78] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations
+            - link "Chat Evidence" [ref=f15e82] [cursor=pointer]:
+              - /url: /chat-archive
+            - link "Customer Notifications" [ref=f15e86] [cursor=pointer]:
+              - /url: /notifications
+            - link "Customer Usage" [ref=f15e90] [cursor=pointer]:
+              - /url: /usage-overview
+        - group [ref=f15e94]:
+          - generic "Partner Operations" [ref=f15e95] [cursor=pointer]
+        - group [ref=f15e112]:
+          - generic "Finance Today" [ref=f15e113] [cursor=pointer]
+        - group [ref=f15e120]:
+          - generic "Finance Records" [ref=f15e121] [cursor=pointer]
+        - group [ref=f15e138]:
+          - generic "Growth & Content" [ref=f15e139] [cursor=pointer]
+        - group [ref=f15e156]:
+          - generic "Tax & Monthly Close" [ref=f15e157] [cursor=pointer]
+        - group [ref=f15e164]:
+          - generic "Restricted Settings" [ref=f15e165] [cursor=pointer]
+        - group [ref=f15e172]:
+          - generic "Admin & System" [ref=f15e173] [cursor=pointer]
+        - group [ref=f15e190]:
+          - generic "Developer / System" [ref=f15e191] [cursor=pointer]
+    - main [ref=f15e199]:
+      - generic "Admin workspace" [ref=f15e200]:
+        - navigation "Breadcrumb" [ref=f15e202]:
+          - link "HANDS" [ref=f15e203] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f15e206]: Customer Support
+          - generic [ref=f15e209]: Partner Notes
+        - generic "Workspace actions" [ref=f15e210]:
+          - button "Search Ctrl K" [ref=f15e212] [cursor=pointer]:
+            - generic [ref=f15e213]: Search
+            - generic [ref=f15e217]: Ctrl K
+          - button "Switch to dark mode" [ref=f15e219] [cursor=pointer]
+          - link "Operations Policy" [ref=f15e222] [cursor=pointer]:
+            - /url: /operations-policy
+          - button "Open operation alerts" [ref=f15e227] [cursor=pointer]
+          - button "Sign out" [ref=f15e232] [cursor=pointer]
+      - generic [ref=f15e236]:
+        - generic [ref=f15e237]:
+          - generic [ref=f15e238]:
+            - heading "Partner Notes About Customers" [level=1] [ref=f15e239]
+            - paragraph [ref=f15e240]: Internal notes Partners submit about customers after completed bookings. These notes are not customer-visible.
+          - generic "Page actions" [ref=f15e241]: Internal · Not customer-visible
+        - region [ref=f15e244]:
+          - generic [ref=f15e245]:
+            - generic [ref=f15e246]:
+              - heading "Partner note search" [level=2] [ref=f15e247]
+              - paragraph [ref=f15e248]: Search immutable internal notes by submitted date, state, customer, Partner, or booking.
+            - generic [ref=f15e249]:
+              - generic [ref=f15e250]: 0 notes
+              - link "Clear filters" [ref=f15e251] [cursor=pointer]:
+                - /url: /reviews/partner-customer-evaluations
+          - generic [ref=f15e252]:
+            - generic "Partner note filters" [ref=f15e253]:
+              - generic "Submitted date" [ref=f15e254]:
+                - link "All dates" [ref=f15e255] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations
+                - link "Today" [ref=f15e256] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=today
+                - link "Previous day" [ref=f15e257] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=yesterday
+                - link "Last 7 days" [ref=f15e258] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=7d
+                - link "Last month" [ref=f15e259] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=30d
+                - link "Custom dates" [ref=f15e260] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=custom
+              - generic [ref=f15e261]:
+                - generic [ref=f15e264]:
+                  - generic [ref=f15e265]: From
+                  - textbox "From" [ref=f15e266] [cursor=pointer]: 2026-07-20
+                - generic [ref=f15e269]:
+                  - generic [ref=f15e270]: To
+                  - textbox "To" [ref=f15e271] [cursor=pointer]: 2026-07-10
+                - button "Apply dates" [ref=f15e272] [cursor=pointer]
+              - generic "Review state" [ref=f15e273]:
+                - link "All" [ref=f15e274] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=custom&dateFrom=2026-07-20&dateTo=2026-07-10
+                - link "Retained" [ref=f15e275] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=custom&dateFrom=2026-07-20&dateTo=2026-07-10&status=retained
+                - link "Needs review" [ref=f15e276] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=custom&dateFrom=2026-07-20&dateTo=2026-07-10&status=needs-review
+                - link "Restricted" [ref=f15e277] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=custom&dateFrom=2026-07-20&dateTo=2026-07-10&status=restricted
+              - generic "Submitted date sort" [ref=f15e278]:
+                - link "Most recently submitted" [ref=f15e279] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=custom&dateFrom=2026-07-20&dateTo=2026-07-10
+                - link "Oldest submitted" [ref=f15e280] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=custom&dateFrom=2026-07-20&dateTo=2026-07-10&sort=oldest
+              - generic [ref=f15e281]:
+                - generic [ref=f15e282]:
+                  - generic [ref=f15e286]: Search Partner notes
+                  - searchbox "Search Partner notes" [ref=f15e287]
+                - generic [ref=f15e288] [cursor=pointer]:
+                  - generic [ref=f15e289]: Rows per page
+                  - combobox "Rows per page" [ref=f15e290]:
+                    - option "10" [selected]
+                    - option "25"
+                    - option "50"
+                - button "Apply" [ref=f15e291] [cursor=pointer]
+            - alert [ref=f15e292]:
+              - generic [ref=f15e296]:
+                - strong [ref=f15e297]: Submitted date is invalid
+                - paragraph [ref=f15e298]: From date must be on or before To date.
+          - generic "Active Partner note filters" [ref=f15e300]: "Submitted: Custom: 2026-07-20 - 2026-07-10"
+  - button "Open Next.js Dev Tools" [ref=f15e307] [cursor=pointer]

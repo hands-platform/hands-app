@@ -50,16 +50,16 @@ class ProviderDocumentUploadSlots extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'KYC document checklist',
+              'Danh sách giấy tờ KYC',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 6),
             Text(
               rejectedRequired.isNotEmpty
-                  ? 'Some required identity photos were rejected. Replace each rejected item, then resubmit KYC.'
+                  ? 'Một số ảnh định danh bắt buộc bị từ chối. Hãy thay từng ảnh rồi gửi lại KYC.'
                   : missingRequired.isEmpty
-                      ? 'Required identity photos are ready for KYC submission.'
-                      : 'Upload the CCCD/CMND front, back, and selfie before submitting KYC.',
+                      ? 'Đã đủ ảnh định danh bắt buộc để gửi KYC.'
+                      : 'Tải mặt trước, mặt sau CCCD/CMND và ảnh chân dung trước khi gửi KYC.',
             ),
             if (rejectedRequired.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -93,7 +93,7 @@ class ProviderDocumentUploadSlots extends StatelessWidget {
             if (missingRequired.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                'Missing: ${missingRequired.join(', ')}',
+                'Còn thiếu: ${missingRequired.join(', ')}',
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ],
@@ -189,7 +189,7 @@ class _DocumentSlot extends StatelessWidget {
                 if (rejectionReason != null && rejectionReason.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
-                    'Reason: $rejectionReason',
+                    'Lý do: $rejectionReason',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colorScheme.error,
                         ),
@@ -201,7 +201,7 @@ class _DocumentSlot extends StatelessWidget {
           const SizedBox(width: 8),
           FilledButton.tonal(
             onPressed: isUploading ? null : () => onUpload(type),
-            child: Text(uploaded || rejected ? 'Replace' : 'Upload'),
+            child: Text(uploaded || rejected ? 'Thay ảnh' : 'Tải ảnh'),
           ),
         ],
       ),
@@ -212,17 +212,17 @@ class _DocumentSlot extends StatelessWidget {
 String providerDocumentTypeLabel(String type) {
   switch (type) {
     case 'CCCD_FRONT':
-      return 'CCCD front side';
+      return 'Mặt trước CCCD';
     case 'CCCD_BACK':
-      return 'CCCD back side';
+      return 'Mặt sau CCCD';
     case 'SELFIE':
-      return 'Selfie verification';
+      return 'Ảnh chân dung xác minh';
     case 'PROFILE_PHOTO':
-      return 'Profile photo';
+      return 'Ảnh hồ sơ';
     case 'WORK_PHOTO':
-      return 'Work photo';
+      return 'Ảnh công việc';
     case 'BANK_QR':
-      return 'Bank QR image';
+      return 'Ảnh mã QR ngân hàng';
     default:
       return type;
   }
@@ -231,36 +231,36 @@ String providerDocumentTypeLabel(String type) {
 String providerDocumentTypeDescription(String type) {
   switch (type) {
     case 'CCCD_FRONT':
-      return 'Front side of CCCD/CMND. Keep all text readable.';
+      return 'Mặt trước CCCD/CMND, bảo đảm mọi chữ đều rõ.';
     case 'CCCD_BACK':
-      return 'Back side of CCCD/CMND. Avoid glare and cropped corners.';
+      return 'Mặt sau CCCD/CMND, tránh lóa sáng hoặc mất góc.';
     case 'SELFIE':
-      return 'Face photo taken by the partner. It must match the ID document.';
+      return 'Ảnh rõ khuôn mặt và khớp với giấy tờ định danh.';
     case 'PROFILE_PHOTO':
-      return 'Public profile photo used after admin review.';
+      return 'Ảnh hồ sơ công khai sau khi được xét duyệt.';
     case 'WORK_PHOTO':
-      return 'Optional work or service evidence for profile review.';
+      return 'Ảnh công việc hoặc dịch vụ, không bắt buộc.';
     case 'BANK_QR':
-      return 'Optional VietQR or banking QR image for payout review.';
+      return 'Ảnh VietQR hoặc QR ngân hàng, không bắt buộc.';
     default:
-      return 'Supporting document for partner verification.';
+      return 'Giấy tờ hỗ trợ xác minh tài khoản.';
   }
 }
 
 String providerDocumentTypeStep(String type) {
   final requiredIndex = requiredProviderDocumentTypes.indexOf(type);
-  if (requiredIndex >= 0) return 'Step ${requiredIndex + 1}';
-  return 'Optional';
+  if (requiredIndex >= 0) return 'Bước ${requiredIndex + 1}';
+  return 'Không bắt buộc';
 }
 
 String providerDocumentStatusLabel(String status) {
   switch (status) {
     case 'APPROVED':
-      return 'Approved by admin.';
+      return 'Đã được duyệt.';
     case 'PENDING_REVIEW':
-      return 'Submitted. Waiting for admin review.';
+      return 'Đã gửi, đang chờ xét duyệt.';
     case 'REJECTED':
-      return 'Rejected. Upload a clearer replacement image.';
+      return 'Bị từ chối. Hãy tải ảnh thay thế rõ hơn.';
     default:
       return status;
   }
@@ -272,7 +272,7 @@ String providerDocumentSlotStatusLabel({
   required Map<String, dynamic>? submittedDocument,
 }) {
   if (uploaded) {
-    return 'Replacement attached. Submit KYC to send it for review.';
+    return 'Đã đính kèm ảnh thay thế. Hãy gửi KYC để xét duyệt.';
   }
   final status = submittedDocument?['status']?.toString();
   if (status == null) {
@@ -286,10 +286,10 @@ String? providerDocumentSlotActionHint({
   required String? status,
 }) {
   if (uploaded) {
-    return 'Next: press Submit KYC so admin can review the new image.';
+    return 'Tiếp theo: nhấn Gửi KYC để xét duyệt ảnh mới.';
   }
   if (status == 'REJECTED') {
-    return 'Next: tap Replace and upload a clearer photo.';
+    return 'Tiếp theo: nhấn Thay ảnh và tải ảnh rõ hơn.';
   }
   return null;
 }
@@ -325,7 +325,7 @@ List<String> providerRejectedKycDocumentSummaries({
       continue;
     }
     final reason = providerDocumentRejectionReason(rejectedDocument) ??
-        'Upload a clearer replacement image.';
+        'Hãy tải ảnh thay thế rõ hơn.';
     summaries.add('${providerDocumentTypeLabel(type)}: $reason');
   }
   return summaries;

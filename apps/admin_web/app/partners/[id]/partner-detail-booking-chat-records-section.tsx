@@ -7,7 +7,7 @@ import {
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
-import { AdminDisclosure, AdminNotePanel } from '../../../components/admin-surface';
+import { AdminNotePanel } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge } from '../../../components/status-badge';
 import {
@@ -87,8 +87,8 @@ export function PartnerDetailBookingChatRecordsSection({
               <td>
                 <p className="muted">{row.chatLine}</p>
                 {row.hasChatRoom ? (
-                  <AdminDisclosure className="admin-chat-transcript-disclosure partner-chat-window-disclosure admin-mt-10">
-                    <summary className="admin-chat-transcript-summary">
+                  <div className="admin-chat-transcript-disclosure partner-chat-window-disclosure is-open admin-mt-10">
+                    <div className="admin-chat-transcript-summary">
                       <div>
                         <strong>Admin chat archive</strong>
                         <p className="muted">
@@ -96,7 +96,7 @@ export function PartnerDetailBookingChatRecordsSection({
                         </p>
                       </div>
                       <StatusBadge tone="info">{row.chatMessages.length} message(s)</StatusBadge>
-                    </summary>
+                    </div>
                     <AdminChatWindow
                       avatarLabel={row.customerLine}
                       emptyMessage="Chat room exists, but no message is stored yet."
@@ -104,7 +104,7 @@ export function PartnerDetailBookingChatRecordsSection({
                       subtitle={row.heading}
                       title="Booking chat evidence"
                     />
-                  </AdminDisclosure>
+                  </div>
                 ) : (
                   <AdminNotePanel className="admin-mt-10">
                     <strong>Chat room missing</strong>

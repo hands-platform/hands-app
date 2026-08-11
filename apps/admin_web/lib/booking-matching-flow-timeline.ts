@@ -60,7 +60,7 @@ export function buildBookingMatchingFlowTimeline<TBooking>(
           : 'Marketplace Partners are visible or no participation lane is currently needed.',
       operatorAction:
         'Use marketplace-ready Partners, location freshness, alert delivery, and operating policy before widening rules.',
-      href: input.noSupply.length ? '/partners?review=marketplace-ready' : '/bookings?view=matching',
+      href: input.noSupply.length ? '/partners?review=ready-now' : '/bookings?view=matching',
       metrics: [
         metric('no marketplace', input.noSupply.length),
         metric('visible', input.marketplaceVisible.length),

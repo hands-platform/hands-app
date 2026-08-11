@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'core/provider_design_system.dart';
 import 'provider_shell.dart';
 
 export 'core/provider_value_helpers.dart';
@@ -22,11 +23,11 @@ class ProviderApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Partner',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB)),
-        useMaterial3: true,
-      ),
+      title: 'HANDS Partner',
+      debugShowCheckedModeBanner: false,
+      theme: buildProviderTheme(),
+      darkTheme: buildProviderTheme(brightness: Brightness.dark),
+      themeMode: ThemeMode.system,
       home: const ProviderShell(),
     );
   }

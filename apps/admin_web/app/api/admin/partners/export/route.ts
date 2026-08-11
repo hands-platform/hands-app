@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import type { AdminOperationalPolicySetting, AdminProvider } from '../../../../../lib/admin-api';
-import { adminGet } from '../../../../../lib/admin-api';
+import { adminGetResult } from '../../../../../lib/admin-api';
 import { requireAdminWebAccess } from '../../../../../lib/admin-session';
 import { buildCsvContent } from '../../../../../lib/csv-export';
 import {
@@ -48,10 +48,18 @@ export async function GET(request: NextRequest) {
 
   const filters = buildProviderFilters(Object.fromEntries(request.nextUrl.searchParams.entries()));
   const dataHrefs = buildPartnerDataHrefs(filters);
-  const [rawProviders, operationalPolicies] = await Promise.all([
-    adminGet<AdminProvider[]>(dataHrefs.listHref, []),
-    adminGet<AdminOperationalPolicySetting[]>(buildProviderOpsPolicyApiHref(), []),
+  const [providersResult, policiesResult] = await Promise.all([
+    adminGetResult<AdminProvider[]>(dataHrefs.listHref, []),
+    adminGetResult<AdminOperationalPolicySetting[]>(buildProviderOpsPolicyApiHref(), []),
   ]);
+  if (!providersResult.ok) {
+    return exportError('Partner export records could not be loaded. Retry the export.');
+  }
+  if (!policiesResult.ok) {
+    return exportError('Partner export policy data could not be loaded. Retry the export.');
+  }
+  const rawProviders = providersResult.data;
+  const operationalPolicies = policiesResult.data;
   const opsPolicy = buildProviderOpsPolicy(operationalPolicies);
   const allProviders = dataHrefs.listIsServerPaginated
     ? rawProviders
@@ -75,6 +83,7 @@ export async function GET(request: NextRequest) {
   const activeFilters = buildProviderActiveFilters(filters);
   const filterLabel =
     activeFilters.length > 0 ? activeFilters.map((filter) => filter.label).join(' | ') : 'All partners';
+  const generatedAt = new Date().toISOString();
   const rows = buildPartnerExportRows({
     fallbackOperationRow: (provider) =>
       buildPartnerOperationRow(provider, opsPolicy, {
@@ -83,6 +92,7 @@ export async function GET(request: NextRequest) {
       }),
     filterLabel,
     filters,
+    generatedAt,
     masterRows,
     operationRows,
   });
@@ -93,6 +103,13 @@ export async function GET(request: NextRequest) {
       ...NO_STORE_HEADERS,
       'content-disposition': 'attachment; filename="hands-partners.csv"',
       'content-type': 'text/csv; charset=utf-8',
+      'x-export-generated-at': generatedAt,
+      'x-export-row-count': String(rows.length),
+      'x-export-scope': 'current-page',
     },
   });
+}
+
+function exportError(error: string) {
+  return NextResponse.json({ error }, { headers: NO_STORE_HEADERS, status: 502 });
 }

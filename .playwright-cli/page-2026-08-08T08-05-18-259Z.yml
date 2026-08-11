@@ -1,0 +1,249 @@
+- generic [active] [ref=f5e1]:
+  - generic [ref=f5e3]:
+    - complementary [ref=f5e4]:
+      - strong [ref=f5e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=f5e7]:
+        - link "Shift Command" [ref=f5e8] [cursor=pointer]:
+          - /url: /
+        - group [ref=f5e14]:
+          - generic "Booking Operations" [ref=f5e15] [cursor=pointer]
+          - generic [ref=f5e24]:
+            - link "Live Bookings" [ref=f5e25] [cursor=pointer]:
+              - /url: /bookings
+            - link "Calendar" [ref=f5e31] [cursor=pointer]:
+              - /url: /calendar
+            - link "Booking Closeout" [ref=f5e35] [cursor=pointer]:
+              - /url: /bookings/completed
+            - link "Shift Handoff" [ref=f5e41] [cursor=pointer]:
+              - /url: /operations-handoff
+            - link "Vietnam Operations Map" [ref=f5e45] [cursor=pointer]:
+              - /url: /vietnam-overview
+        - group [ref=f5e51]:
+          - generic "Customer Support" [ref=f5e52] [cursor=pointer]
+        - group [ref=f5e61]:
+          - generic "Partner Operations" [ref=f5e62] [cursor=pointer]
+        - group [ref=f5e69]:
+          - generic "Finance Operations" [ref=f5e70] [cursor=pointer]
+        - group [ref=f5e78]:
+          - generic "Finance Records & Close" [ref=f5e79] [cursor=pointer]
+        - group [ref=f5e87]:
+          - generic "Growth & Communications" [ref=f5e88] [cursor=pointer]
+        - group [ref=f5e95]:
+          - generic "Administration & Settings" [ref=f5e96] [cursor=pointer]
+    - main [ref=f5e104]:
+      - generic "Admin workspace" [ref=f5e105]:
+        - navigation "Breadcrumb" [ref=f5e107]:
+          - link "HANDS" [ref=f5e108] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f5e111]: Booking Operations
+          - link "Booking Closeout" [ref=f5e114] [cursor=pointer]:
+            - /url: /bookings/completed
+          - generic [ref=f5e117]: Post-match Cancellations
+        - generic "Workspace actions" [ref=f5e118]:
+          - button "Search Ctrl K" [ref=f5e120] [cursor=pointer]:
+            - generic [ref=f5e121]: Search
+            - generic [ref=f5e125]: Ctrl K
+          - button "Switch to dark mode" [ref=f5e127] [cursor=pointer]
+          - link "Operations Policy" [ref=f5e130] [cursor=pointer]:
+            - /url: /operations-policy
+          - button "Open operation alerts" [ref=f5e135] [cursor=pointer]
+          - button "Sign out" [ref=f5e140] [cursor=pointer]
+      - navigation "Booking Closeout workspace" [ref=f5e144]:
+        - strong [ref=f5e145]: Booking Closeout
+        - generic "Booking Closeout pages" [ref=f5e146]:
+          - link "Completed Services" [ref=f5e147] [cursor=pointer]:
+            - /url: /bookings/completed
+          - link "Post-match Cancellations" [ref=f5e148] [cursor=pointer]:
+            - /url: /bookings/post-match-cancellations
+      - generic [ref=f5e149]:
+        - generic [ref=f5e151]:
+          - heading "Post-match cancellation review" [level=1] [ref=f5e152]
+          - paragraph [ref=f5e153]: Review cancellations after a match, confirm evidence, and decide the Partner fee outcome.
+        - generic [ref=f5e154]:
+          - status [ref=f5e155]:
+            - generic [ref=f5e156]: Historical snapshot · refreshed pending
+            - generic [ref=f5e157]: Local data
+          - region "Post-match cancellation queues" [ref=f5e158]:
+            - generic [ref=f5e159]:
+              - generic "Primary booking queues" [ref=f5e160]:
+                - link "Needs decision, 3 bookings" [ref=f5e161] [cursor=pointer]:
+                  - /url: /bookings/post-match-cancellations?view=manual-decision
+                  - text: Needs decision 3
+                - link "Resolved records, 14 bookings" [ref=f5e162] [cursor=pointer]:
+                  - /url: /bookings/post-match-cancellations?view=post-match-cancellations&dateRange=30d
+                  - text: Resolved records 14
+                - link "No-show review, 0 bookings" [ref=f5e163] [cursor=pointer]:
+                  - /url: /bookings/post-match-cancellations?view=no-show
+                  - text: No-show review 0
+              - generic [ref=f5e164]:
+                - generic [ref=f5e165]:
+                  - generic [ref=f5e169]: Search bookings
+                  - searchbox "Search bookings" [ref=f5e170]
+                - generic [ref=f5e171]:
+                  - generic [ref=f5e172]: Cancellation reason
+                  - combobox "Cancellation reason" [ref=f5e173] [cursor=pointer]:
+                    - option "All cancellation reasons" [selected]
+                    - option "Customer requested"
+                    - option "Could not meet customer"
+                    - option "Safety concern"
+                    - option "Unable to provide service"
+                    - option "Other reason"
+                    - option "Legacy / unknown reason"
+                - button "Apply filters" [ref=f5e174] [cursor=pointer]
+              - paragraph [ref=f5e175]: Decision age starts at cancellation time. If unavailable, the latest recorded update is used.
+              - generic [ref=f5e177]:
+                - generic [ref=f5e178]:
+                  - generic [ref=f5e179]: Decision age
+                  - generic "Cancellation decision age" [ref=f5e180]:
+                    - link "All ages (3)" [ref=f5e181] [cursor=pointer]:
+                      - /url: /bookings/post-match-cancellations
+                    - link "Under 1h (0)" [ref=f5e182] [cursor=pointer]:
+                      - /url: /bookings/post-match-cancellations?age=under-1h
+                    - link "1-4h (0)" [ref=f5e183] [cursor=pointer]:
+                      - /url: /bookings/post-match-cancellations?age=1-4h
+                    - link "4-24h (0)" [ref=f5e184] [cursor=pointer]:
+                      - /url: /bookings/post-match-cancellations?age=4-24h
+                    - link "24h+ (3)" [ref=f5e185] [cursor=pointer]:
+                      - /url: /bookings/post-match-cancellations?age=over-24h
+                - generic [ref=f5e186]:
+                  - generic [ref=f5e187]: Order
+                  - generic "Queue sort order" [ref=f5e188]:
+                    - link "Oldest first" [ref=f5e189] [cursor=pointer]:
+                      - /url: /bookings/post-match-cancellations
+                    - link "Newest first" [ref=f5e190] [cursor=pointer]:
+                      - /url: /bookings/post-match-cancellations?sort=newest
+                - generic "Queue SLA status" [ref=f5e191]:
+                  - generic [ref=f5e192]: SLA
+                  - generic [ref=f5e193]:
+                    - link "Show 3 SLA-overdue records" [ref=f5e194] [cursor=pointer]:
+                      - /url: /bookings/post-match-cancellations?sla=overdue
+                      - text: Overdue 3
+                    - generic [ref=f5e195]: Target 2h
+          - region [ref=f5e196]:
+            - generic [ref=f5e197]:
+              - generic [ref=f5e198]:
+                - heading "Needs decision" [level=2] [ref=f5e199]
+                - paragraph [ref=f5e200]: Exact server-filtered matched cancellation queue for evidence and fee outcome review.
+              - generic [ref=f5e201]: "Current result: 3 bookings"
+            - generic [ref=f5e203]:
+              - region "Needs decision booking table" [ref=f5e204]:
+                - table [ref=f5e205]:
+                  - rowgroup [ref=f5e206]:
+                    - row [ref=f5e207]:
+                      - columnheader "Decision · SLA" [ref=f5e208]
+                      - columnheader "Booking · Actor" [ref=f5e209]
+                      - columnheader "Reason · Evidence" [ref=f5e210]
+                      - columnheader "Payment" [ref=f5e211]
+                      - columnheader "Partner fee" [ref=f5e212]
+                      - columnheader "Next action" [ref=f5e213]
+                  - rowgroup [ref=f5e214]:
+                    - row [ref=f5e215]:
+                      - cell "Pending Overdue Decision time unavailable Decision age unavailable" [ref=f5e216]:
+                        - generic [ref=f5e217]:
+                          - generic [ref=f5e218]: Pending
+                          - generic [ref=f5e219]: Overdue
+                          - generic [ref=f5e220]: Decision time unavailable
+                          - generic [ref=f5e221]: Decision age unavailable
+                      - cell "cms4p416 Full booking ID cms4p416900f2vypwf7ym7lso Partner cancelled 30m after match" [ref=f5e222]:
+                        - generic [ref=f5e223]:
+                          - link "cms4p416 Full booking ID cms4p416900f2vypwf7ym7lso" [ref=f5e224] [cursor=pointer]:
+                            - /url: /bookings/cms4p416900f2vypwf7ym7lso?returnTo=%2Fbookings%2Fpost-match-cancellations%23booking-cms4p416900f2vypwf7ym7lso
+                            - text: cms4p416
+                            - generic [ref=f5e228]: Full booking ID cms4p416900f2vypwf7ym7lso
+                          - strong [ref=f5e229]: Partner cancelled
+                          - generic [ref=f5e230]: 30m after match
+                      - cell "Could not meet customer Arrived at saved address and called twice without a response 1 chat message · Location evidence recorded" [ref=f5e231]:
+                        - generic [ref=f5e232]:
+                          - generic [ref=f5e233]: Could not meet customer
+                          - generic "Arrived at saved address and called twice without a response" [ref=f5e234]
+                          - generic [ref=f5e235]: 1 chat message · Location evidence recorded
+                      - cell "CUSTOMER_WALLET AUTHORIZED 400.000 VND" [ref=f5e236]:
+                        - generic [ref=f5e237]:
+                          - generic [ref=f5e238]:
+                            - generic [ref=f5e239]: CUSTOMER_WALLET
+                            - strong [ref=f5e240]: AUTHORIZED
+                          - generic [ref=f5e241]: 400.000 VND
+                      - cell "No earning No Partner fee record Needs decision" [ref=f5e242]:
+                        - generic [ref=f5e243]:
+                          - generic [ref=f5e244]: No earning
+                          - generic [ref=f5e245]: No Partner fee record
+                          - generic [ref=f5e246]: Needs decision
+                      - cell "Review cancellation decision Read evidence and money outcome in booking detail." [ref=f5e247]:
+                        - generic [ref=f5e248]:
+                          - link "Review cancellation decision" [ref=f5e249] [cursor=pointer]:
+                            - /url: /bookings/cms4p416900f2vypwf7ym7lso?returnTo=%2Fbookings%2Fpost-match-cancellations%23booking-cms4p416900f2vypwf7ym7lso#booking-post-match-cancellation-decision
+                          - generic [ref=f5e250]: Read evidence and money outcome in booking detail.
+                    - row [ref=f5e251]:
+                      - cell "Pending Overdue Decision time unavailable Decision age unavailable" [ref=f5e252]:
+                        - generic [ref=f5e253]:
+                          - generic [ref=f5e254]: Pending
+                          - generic [ref=f5e255]: Overdue
+                          - generic [ref=f5e256]: Decision time unavailable
+                          - generic [ref=f5e257]: Decision age unavailable
+                      - cell "cmsd075n Full booking ID cmsd075nc004bvydkqf6tl6yz Partner cancelled 19m after match" [ref=f5e258]:
+                        - generic [ref=f5e259]:
+                          - link "cmsd075n Full booking ID cmsd075nc004bvydkqf6tl6yz" [ref=f5e260] [cursor=pointer]:
+                            - /url: /bookings/cmsd075nc004bvydkqf6tl6yz?returnTo=%2Fbookings%2Fpost-match-cancellations%23booking-cmsd075nc004bvydkqf6tl6yz
+                            - text: cmsd075n
+                            - generic [ref=f5e264]: Full booking ID cmsd075nc004bvydkqf6tl6yz
+                          - strong [ref=f5e265]: Partner cancelled
+                          - generic [ref=f5e266]: 19m after match
+                      - cell "Customer requested Customer_requested_in_chat_smoke 1 chat message · Location evidence recorded" [ref=f5e267]:
+                        - generic [ref=f5e268]:
+                          - generic [ref=f5e269]: Customer requested
+                          - generic "Customer_requested_in_chat_smoke" [ref=f5e270]
+                          - generic [ref=f5e271]: 1 chat message · Location evidence recorded
+                      - cell "CASH PENDING 400.000 VND" [ref=f5e272]:
+                        - generic [ref=f5e273]:
+                          - generic [ref=f5e274]:
+                            - generic [ref=f5e275]: CASH
+                            - strong [ref=f5e276]: PENDING
+                          - generic [ref=f5e277]: 400.000 VND
+                      - cell "No earning No Partner fee record Needs decision" [ref=f5e278]:
+                        - generic [ref=f5e279]:
+                          - generic [ref=f5e280]: No earning
+                          - generic [ref=f5e281]: No Partner fee record
+                          - generic [ref=f5e282]: Needs decision
+                      - cell "Review cancellation decision Read evidence and money outcome in booking detail." [ref=f5e283]:
+                        - generic [ref=f5e284]:
+                          - link "Review cancellation decision" [ref=f5e285] [cursor=pointer]:
+                            - /url: /bookings/cmsd075nc004bvydkqf6tl6yz?returnTo=%2Fbookings%2Fpost-match-cancellations%23booking-cmsd075nc004bvydkqf6tl6yz#booking-post-match-cancellation-decision
+                          - generic [ref=f5e286]: Read evidence and money outcome in booking detail.
+                    - row [ref=f5e287]:
+                      - cell "Pending Overdue Decision time unavailable Decision age unavailable" [ref=f5e288]:
+                        - generic [ref=f5e289]:
+                          - generic [ref=f5e290]: Pending
+                          - generic [ref=f5e291]: Overdue
+                          - generic [ref=f5e292]: Decision time unavailable
+                          - generic [ref=f5e293]: Decision age unavailable
+                      - cell "cmse6j5t Full booking ID cmse6j5tg00obvyhce57cjizv Partner cancelled 18m after match" [ref=f5e294]:
+                        - generic [ref=f5e295]:
+                          - link "cmse6j5t Full booking ID cmse6j5tg00obvyhce57cjizv" [ref=f5e296] [cursor=pointer]:
+                            - /url: /bookings/cmse6j5tg00obvyhce57cjizv?returnTo=%2Fbookings%2Fpost-match-cancellations%23booking-cmse6j5tg00obvyhce57cjizv
+                            - text: cmse6j5t
+                            - generic [ref=f5e300]: Full booking ID cmse6j5tg00obvyhce57cjizv
+                          - strong [ref=f5e301]: Partner cancelled
+                          - generic [ref=f5e302]: 18m after match
+                      - cell "Customer requested Cleanup for an interrupted realtime smoke verification. 0 chat messages · Location evidence recorded" [ref=f5e303]:
+                        - generic [ref=f5e304]:
+                          - generic [ref=f5e305]: Customer requested
+                          - generic "Cleanup for an interrupted realtime smoke verification." [ref=f5e306]
+                          - generic [ref=f5e307]: 0 chat messages · Location evidence recorded
+                      - cell "CASH PENDING 300.000 VND" [ref=f5e308]:
+                        - generic [ref=f5e309]:
+                          - generic [ref=f5e310]:
+                            - generic [ref=f5e311]: CASH
+                            - strong [ref=f5e312]: PENDING
+                          - generic [ref=f5e313]: 300.000 VND
+                      - cell "No earning No Partner fee record Needs decision" [ref=f5e314]:
+                        - generic [ref=f5e315]:
+                          - generic [ref=f5e316]: No earning
+                          - generic [ref=f5e317]: No Partner fee record
+                          - generic [ref=f5e318]: Needs decision
+                      - cell "Review cancellation decision Read evidence and money outcome in booking detail." [ref=f5e319]:
+                        - generic [ref=f5e320]:
+                          - link "Review cancellation decision" [ref=f5e321] [cursor=pointer]:
+                            - /url: /bookings/cmse6j5tg00obvyhce57cjizv?returnTo=%2Fbookings%2Fpost-match-cancellations%23booking-cmse6j5tg00obvyhce57cjizv#booking-post-match-cancellation-decision
+                          - generic [ref=f5e322]: Read evidence and money outcome in booking detail.
+              - generic [ref=f5e323]: Showing 1 to 3 of 3 entries
+  - button "Open Next.js Dev Tools" [ref=f5e330] [cursor=pointer]

@@ -114,18 +114,18 @@ class ProviderServicePrice {
     required bool active,
   }) {
     if (customerPrice == null) {
-      return 'Enter a valid VND amount.';
+      return 'Vui lòng nhập số tiền VND hợp lệ.';
     }
     if (customerPrice < basePrice) {
-      return 'Price must be at least the HANDS minimum.';
+      return 'Giá phải từ mức tối thiểu của HANDS.';
     }
     if (priceStep <= 0 || customerPrice % priceStep != 0) {
-      return 'Price must follow the configured VND step.';
+      return 'Giá phải theo bước VND đã cấu hình.';
     }
     if (active && bookablePayoutOptionForPrice(customerPrice) == null) {
       return hasBookablePriceOptions
-          ? 'Active services require an exact admin payout rule for this price.'
-          : 'Admin must create a payout rule before this service can be activated.';
+          ? 'Dịch vụ đang bật cần quy tắc chi trả chính xác cho mức giá này.'
+          : 'HANDS phải tạo quy tắc chi trả trước khi có thể bật dịch vụ này.';
     }
     return null;
   }
@@ -180,7 +180,7 @@ class ProviderServicePriceGroup {
   String get durationSummary {
     final durations = options.map((option) => option.durationMin).toList()
       ..sort();
-    return durations.map((duration) => '$duration min').join(', ');
+    return durations.map((duration) => '$duration phút').join(', ');
   }
 }
 
@@ -207,7 +207,7 @@ List<ProviderServicePriceGroup> groupProviderServicePrices(
 
     return ProviderServicePriceGroup(
       key: entry.key,
-      name: names[entry.key] ?? 'Service',
+      name: names[entry.key] ?? 'Dịch vụ',
       options: options,
     );
   }).toList();

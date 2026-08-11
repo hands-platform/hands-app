@@ -2,6 +2,30 @@ import '../../../../core/api_client.dart';
 import '../../../../core/realtime_socket.dart';
 import '../../domain/repositories/customer_booking_repository.dart';
 
+class CustomerPaymentActionRepositoryImpl
+    implements CustomerPaymentActionRepository {
+  const CustomerPaymentActionRepositoryImpl(this._api);
+
+  final ApiClient _api;
+
+  @override
+  Future<CustomerPaymentAction> getForBooking(String bookingId) async {
+    final result =
+        await _api.getJson('/customer/bookings/$bookingId/payment-action')
+            as Map<String, dynamic>;
+    final rawUrl = result['checkoutUrl']?.toString() ?? '';
+    final parsed = Uri.parse(rawUrl);
+    return CustomerPaymentAction(
+      bookingId: result['bookingId']?.toString() ?? bookingId,
+      checkoutUri:
+          parsed.hasScheme ? parsed : Uri.parse(_api.baseUrl).resolve(rawUrl),
+      method: result['method']?.toString() ?? '',
+      paymentId: result['paymentId']?.toString() ?? '',
+      status: result['status']?.toString() ?? '',
+    );
+  }
+}
+
 class CustomerBookingRepositoryImpl implements CustomerBookingRepository {
   const CustomerBookingRepositoryImpl(this._api, this._socket);
 
@@ -15,8 +39,15 @@ class CustomerBookingRepositoryImpl implements CustomerBookingRepository {
   }
 
   @override
-  Future<List<dynamic>> listBookings() async {
-    final result = await _api.getJson('/customer/bookings');
+  Future<List<dynamic>> listBookings({String? cursor, int take = 20}) async {
+    final path = Uri(
+      path: '/customer/bookings',
+      queryParameters: {
+        'take': '$take',
+        if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+      },
+    ).toString();
+    final result = await _api.getJson(path);
     return result is List<dynamic> ? result : [];
   }
 
@@ -111,6 +142,18 @@ class CustomerBookingRepositoryImpl implements CustomerBookingRepository {
       '/customer/bookings/$bookingId/select-provider',
       {'providerId': providerProfileId},
     );
-    return result as Map<String, dynamic>;
+    if (result is! Map) {
+      throw const FormatException('Invalid booking selection response');
+    }
+    final envelope = Map<String, dynamic>.from(result);
+    final nestedBooking = envelope['booking'];
+    final booking = nestedBooking is Map
+        ? Map<String, dynamic>.from(nestedBooking)
+        : envelope;
+    if (booking['id']?.toString() != bookingId) {
+      throw const FormatException(
+          'Booking selection response is missing the booking');
+    }
+    return booking;
   }
 }

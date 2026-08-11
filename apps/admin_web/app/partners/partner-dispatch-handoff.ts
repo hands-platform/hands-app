@@ -58,14 +58,14 @@ export function buildPartnerDispatchHandoff(
         title: 'Direct ready',
         value: directReady.length.toString(),
         detail: 'Partners who can receive the first customer request immediately.',
-        href: '/partners?review=direct-ready',
+        href: '/partners?review=ready-now',
         tone: directReady.length ? 'ok' : 'warn',
       },
       {
         title: 'Marketplace ready',
         value: backupReady.length.toString(),
         detail: 'Partners eligible to receive marketplace alerts and join the customer choice list.',
-        href: '/partners?review=marketplace-ready',
+        href: '/partners?review=ready-now',
         tone: backupReady.length ? 'ok' : 'warn',
       },
       {
@@ -73,7 +73,7 @@ export function buildPartnerDispatchHandoff(
         value: acceptanceBlocked.length.toString(),
         detail:
           'Partners blocked from direct requests by KYC, location, push, control, or wallet settlement gates.',
-        href: '/partners?review=acceptance-blocked',
+        href: '/partners?review=available-blocked',
         tone: acceptanceBlocked.length ? 'danger' : 'ok',
       },
       {
@@ -88,7 +88,7 @@ export function buildPartnerDispatchHandoff(
         title: 'Location refresh',
         value: locationRefresh.length.toString(),
         detail: 'Partners who must reopen the app before distance-based matching uses their location.',
-        href: '/partners?review=location',
+        href: '/partners?review=available-blocked-location',
         tone: locationRefresh.length ? 'warn' : 'ok',
       },
       {

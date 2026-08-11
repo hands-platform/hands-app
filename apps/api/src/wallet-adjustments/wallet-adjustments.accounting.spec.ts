@@ -4,6 +4,107 @@ import {
 } from './wallet-adjustments.accounting';
 
 describe('manual wallet adjustment accounting policy', () => {
+  it.each([
+    ['CUSTOMER', 'CREDIT', 'PROMOTION_CREDIT', 'CUSTOMER_PROMOTION_EXPENSE', 'CUSTOMER_WALLET_LIABILITY'],
+    [
+      'CUSTOMER',
+      'CREDIT',
+      'CUSTOMER_COMPENSATION',
+      'CUSTOMER_COMPENSATION_EXPENSE',
+      'CUSTOMER_WALLET_LIABILITY',
+    ],
+    [
+      'CUSTOMER',
+      'CREDIT',
+      'REFERRAL_CORRECTION',
+      'CUSTOMER_REFERRAL_CORRECTION_EXPENSE',
+      'CUSTOMER_WALLET_LIABILITY',
+    ],
+    [
+      'CUSTOMER',
+      'CREDIT',
+      'ERROR_CORRECTION',
+      'MANUAL_WALLET_ADJUSTMENT_EXPENSE',
+      'CUSTOMER_WALLET_LIABILITY',
+    ],
+    [
+      'CUSTOMER',
+      'DEBIT',
+      'REFERRAL_CORRECTION',
+      'CUSTOMER_WALLET_LIABILITY',
+      'CUSTOMER_REFERRAL_CORRECTION_EXPENSE',
+    ],
+    [
+      'CUSTOMER',
+      'DEBIT',
+      'ERROR_CORRECTION',
+      'CUSTOMER_WALLET_LIABILITY',
+      'MANUAL_WALLET_ADJUSTMENT_EXPENSE_CONTRA',
+    ],
+    [
+      'PARTNER',
+      'CREDIT',
+      'CUSTOMER_COMPENSATION',
+      'PARTNER_COMPENSATION_EXPENSE',
+      'PARTNER_WALLET_LIABILITY',
+    ],
+    ['PARTNER', 'CREDIT', 'PARTNER_BONUS', 'PARTNER_BONUS_EXPENSE', 'PARTNER_WALLET_LIABILITY'],
+    [
+      'PARTNER',
+      'CREDIT',
+      'REFERRAL_CORRECTION',
+      'PARTNER_REFERRAL_CORRECTION_EXPENSE',
+      'PARTNER_WALLET_LIABILITY',
+    ],
+    [
+      'PARTNER',
+      'CREDIT',
+      'ERROR_CORRECTION',
+      'MANUAL_WALLET_ADJUSTMENT_EXPENSE',
+      'PARTNER_WALLET_LIABILITY',
+    ],
+    [
+      'PARTNER',
+      'CREDIT',
+      'RECEIVABLE_WRITE_OFF',
+      'PARTNER_RECEIVABLE_WRITE_OFF_EXPENSE',
+      'PARTNER_RECEIVABLE',
+    ],
+    [
+      'PARTNER',
+      'DEBIT',
+      'REFERRAL_CORRECTION',
+      'PARTNER_WALLET_LIABILITY',
+      'PARTNER_REFERRAL_CORRECTION_EXPENSE',
+    ],
+    [
+      'PARTNER',
+      'DEBIT',
+      'ERROR_CORRECTION',
+      'PARTNER_WALLET_LIABILITY',
+      'MANUAL_WALLET_ADJUSTMENT_EXPENSE_CONTRA',
+    ],
+    ['PARTNER', 'DEBIT', 'PENALTY', 'PARTNER_WALLET_LIABILITY', 'PENALTY_INCOME'],
+  ] as const)(
+    'posts %s %s %s to the approved debit and credit accounts',
+    (ownerType, direction, adjustmentType, accountDebit, accountCredit) => {
+      const preview = buildManualWalletAdjustmentPreview({
+        adjustmentType,
+        adminId: 'admin-1',
+        amount: 100_000,
+        approvalId: 'approval-1',
+        currentBalance: adjustmentType === 'RECEIVABLE_WRITE_OFF' ? -500_000 : 500_000,
+        direction,
+        ownerType,
+        reason: 'Policy snapshot',
+      });
+
+      expect(preview.accountingEntries).toEqual([{ accountCredit, accountDebit, amount: 100_000 }]);
+      expect(preview.affects.bankCash).toBe(false);
+      expect(preview.affects.taxPayable).toBe(false);
+    },
+  );
+
   it('manual customer promotion credit increases customer wallet liability and expense, not revenue', () => {
     expect(
       buildManualWalletAdjustmentPreview({
@@ -189,6 +290,8 @@ describe('manual wallet adjustment accounting policy', () => {
       adminId: 'admin-2',
       approvalId: 'approval-2',
       currentBalance: original.afterBalance,
+      monthlyPeriod: '2026-08',
+      monthlyPeriodStatus: 'DRAFT',
       original,
       reason: 'Reverse mistaken promotion',
     });
@@ -210,19 +313,4 @@ describe('manual wallet adjustment accounting policy', () => {
     );
   });
 
-  it('closed monthly period cannot be edited directly', () => {
-    expect(() =>
-      buildManualWalletAdjustmentPreview({
-        adjustmentType: 'ERROR_CORRECTION',
-        adminId: 'admin-1',
-        amount: 100_000,
-        approvalId: 'approval-1',
-        currentBalance: 250_000,
-        direction: 'DEBIT',
-        monthlyPeriodStatus: 'CLOSED',
-        ownerType: 'CUSTOMER',
-        reason: 'Edit closed month',
-      }),
-    ).toThrow('Closed monthly periods require a reversal entry instead of direct edit.');
-  });
 });

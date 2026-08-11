@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import {
+  AdminOperatorPermissionCategory,
   AccountingJournalSourceType,
   BankReconciliationStatus,
   CompanyBankTransactionType,
@@ -23,6 +24,7 @@ const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--e
 const { env } = loadMergedEnv(envFile);
 const port = Number.parseInt(env.PROVIDER_WITHDRAWAL_SMOKE_PORT ?? '3004', 10);
 const apiBaseUrl = `http://127.0.0.1:${port}/api`;
+const runningApiBaseUrl = env.ADMIN_API_BASE_URL ?? 'http://127.0.0.1:3000/api';
 const apiEntry = resolve(repoRoot, 'apps', 'api', 'dist', 'main.js');
 const adminEvidenceMode = process.argv.includes('--admin-evidence');
 const runId = `provider_withdrawal_${Date.now()}`;
@@ -54,6 +56,7 @@ try {
   await waitForHealth();
 
   const actorToken = adminToken(ids.actor, [Role.ADMIN]);
+  const approverToken = adminToken(ids.approver, [Role.ADMIN, Role.FINANCE_APPROVER]);
   const providerToken = jwt.sign(
     { sub: ids.providerUser, activeRole: Role.PROVIDER, roles: [Role.PROVIDER] },
     jwtAccessSecret(),
@@ -93,12 +96,16 @@ try {
   assertCondition(approved.status === ProviderWalletWithdrawalRequestStatus.APPROVED, 'Withdrawal approval failed.');
 
   const transferRef = `LOCAL-WITHDRAWAL-${Date.now()}`;
+  const transferDate = new Date().toISOString();
+  const transferEvidenceUrl = `http://localhost:9000/provider-withdrawal-smoke/${runId}.pdf`;
   const pending = await request(`/admin/provider-wallet/withdrawal-requests/${withdrawalRequestId}`, {
     method: 'PATCH',
     token: actorToken,
     body: {
       status: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
       transferRef,
+      bankTransferDate: transferDate,
+      attachmentUrl: transferEvidenceUrl,
       adminNote: 'Local bank transfer prepared.',
     },
   });
@@ -107,20 +114,42 @@ try {
     'Withdrawal did not enter bank-transfer pending state.',
   );
 
-  const transferDate = new Date().toISOString();
+  const paidRequestBody = {
+    status: ProviderWalletWithdrawalRequestStatus.PAID,
+  };
+  await expectRequestFailure(
+    `/admin/provider-wallet/withdrawal-requests/${withdrawalRequestId}`,
+    { method: 'PATCH', token: actorToken, body: paidRequestBody },
+    'Withdrawal maker was allowed to approve its own paid closeout.',
+  );
   const paid = await request(`/admin/provider-wallet/withdrawal-requests/${withdrawalRequestId}`, {
     method: 'PATCH',
-    token: actorToken,
-    body: {
-      status: ProviderWalletWithdrawalRequestStatus.PAID,
-      approvalAdminId: ids.approver,
-      transferRef,
-      bankTransferDate: transferDate,
-      attachmentUrl: `http://localhost:9000/provider-withdrawal-smoke/${runId}.pdf`,
-      adminNote: 'Local transfer evidence confirmed.',
-    },
+    token: approverToken,
+    body: paidRequestBody,
   });
   assertCondition(paid.status === ProviderWalletWithdrawalRequestStatus.PAID, 'Withdrawal paid closeout failed.');
+
+  await expectRequestFailure(
+    `/admin/provider-wallet/withdrawal-requests/${withdrawalRequestId}`,
+    { method: 'PATCH', token: approverToken, body: paidRequestBody },
+    'Repeated withdrawal paid closeout was not rejected.',
+  );
+  const [paidLedgerCount, withdrawalJournalCount] = await Promise.all([
+    prisma.providerWalletLedgerEntry.count({
+      where: { sourceKey: `partner-wallet-withdrawal:${withdrawalRequestId}:paid` },
+    }),
+    prisma.accountingJournalBatch.count({
+      where: {
+        sourceType: AccountingJournalSourceType.PROVIDER_WITHDRAWAL,
+        providerProfileId: ids.providerProfile,
+      },
+    }),
+  ]);
+  assertCondition(
+    paidLedgerCount === 1 &&
+      withdrawalJournalCount === 2,
+    'Repeated withdrawal paid closeout created duplicate wallet or journal side effects.',
+  );
 
   const [storedLockJournal, paidJournal, walletLedger, walletBalance] = await Promise.all([
     journalFor('lock'),
@@ -163,6 +192,7 @@ try {
       counterpartyName: 'Partner Withdrawal Smoke Partner',
       currency: 'VND',
       description: 'Local Partner wallet withdrawal bank outflow evidence.',
+      operatorReason: 'Record Partner wallet withdrawal bank evidence.',
       occurredAt: transferDate,
       sourceKey: `local-smoke:provider-withdrawal:${runId}:bank-outflow`,
       transferRef,
@@ -172,10 +202,18 @@ try {
   });
   bankTransactionId = bankTransaction.id;
   assertCondition(bankTransaction.status === BankReconciliationStatus.UNMATCHED, 'Bank outflow was not opened.');
+  await request(`/admin/bank-reconciliation/${bankTransactionId}/review-assignment`, {
+    method: 'POST',
+    token: actorToken,
+    body: {
+      assigneeAdminId: ids.actor,
+      reason: 'Assign Partner withdrawal bank evidence review.',
+    },
+  });
 
   const reconciliation = await request(`/admin/bank-reconciliation/${bankTransactionId}/matches`, {
     method: 'POST',
-    token: actorToken,
+    token: approverToken,
     body: {
       approvalAdminId: ids.approver,
       amount,
@@ -202,12 +240,90 @@ try {
     'Stored bank reconciliation evidence is incomplete.',
   );
 
+  const reversalReference = `LOCAL-WITHDRAWAL-REVERSAL-${Date.now()}`;
+  const reversalRequestBody = {
+    approvalAdminId: ids.approver,
+    reason: 'Local smoke confirms a returned Partner withdrawal is restored through reversal.',
+    reversalReference,
+    attachmentUrl: `http://localhost:9000/provider-withdrawal-smoke/${runId}-reversal.pdf`,
+  };
+  const reversed = await request(
+    `/admin/provider-wallet/withdrawal-requests/${withdrawalRequestId}/reversal`,
+    {
+      method: 'POST',
+      token: actorToken,
+      body: reversalRequestBody,
+    },
+  );
+  assertCondition(
+    reversed.withdrawalRequest?.status === ProviderWalletWithdrawalRequestStatus.REVERSED,
+    'Paid withdrawal reversal did not move the request to REVERSED.',
+  );
+  const replayedReversal = await request(
+    `/admin/provider-wallet/withdrawal-requests/${withdrawalRequestId}/reversal`,
+    {
+      method: 'POST',
+      token: actorToken,
+      body: reversalRequestBody,
+    },
+  );
+  const [reversalJournal, reversalLedger, restoredWalletBalance, reversalJournalCount, reversalLedgerCount] =
+    await Promise.all([
+      prisma.accountingJournalBatch.findUnique({
+        where: {
+          sourceKey: `accounting-journal:provider-withdrawal:${withdrawalRequestId}:reversal`,
+        },
+        include: { entries: true },
+      }),
+      prisma.providerWalletLedgerEntry.findUnique({
+        where: { sourceKey: `provider-wallet-withdrawal:${withdrawalRequestId}:reversal` },
+      }),
+      prisma.providerWalletLedgerEntry.aggregate({
+        where: { providerProfileId: ids.providerProfile },
+        _sum: { amount: true },
+      }),
+      prisma.accountingJournalBatch.count({
+        where: {
+          sourceKey: `accounting-journal:provider-withdrawal:${withdrawalRequestId}:reversal`,
+        },
+      }),
+      prisma.providerWalletLedgerEntry.count({
+        where: { sourceKey: `provider-wallet-withdrawal:${withdrawalRequestId}:reversal` },
+      }),
+    ]);
+  assertCondition(Boolean(reversalJournal), 'Withdrawal reversal journal is missing.');
+  assertExactOppositeJournal(reversalJournal, [storedLockJournal, paidJournal]);
+  assertCondition(
+    replayedReversal.withdrawalRequest?.status === ProviderWalletWithdrawalRequestStatus.REVERSED &&
+      reversalLedger?.type === ProviderWalletLedgerType.ADMIN_ADJUSTMENT &&
+      reversalLedger.amount === amount &&
+      restoredWalletBalance._sum.amount === initialWalletBalance &&
+      reversalJournalCount === 1 &&
+      reversalLedgerCount === 1,
+    'Withdrawal reversal did not restore the wallet exactly once.',
+  );
+  const reversalListPath = '/admin/accounting-journal-batches?q=reversal&range=today&take=20';
+  const [isolatedReversalJournals, runningReversalJournals] = await Promise.all([
+    request(reversalListPath, { token: actorToken }),
+    requestAgainst(runningApiBaseUrl, reversalListPath, { token: actorToken }),
+  ]);
+  assertCondition(
+    containsJournal(isolatedReversalJournals, reversalJournal.id),
+    'The isolated API reversal list does not include the posted withdrawal reversal journal.',
+  );
+  assertCondition(
+    containsJournal(runningReversalJournals, reversalJournal.id),
+    'The running API reversal list does not include the posted withdrawal reversal journal.',
+  );
+
   const adminEvidence = adminEvidenceMode
     ? await verifyAdminWebEvidence({
         bankTransactionId,
         lockJournalId: storedLockJournal.id,
         paidJournalId: paidJournal.id,
         providerProfileId: ids.providerProfile,
+        reversalJournalId: reversalJournal.id,
+        reversalReference,
         transferRef,
         withdrawalRequestId,
       })
@@ -220,9 +336,13 @@ try {
         checks: {
           bankOutflowMatched: true,
           dualApprovalApplied: true,
+          duplicatePaidReplayIdempotent: true,
           lockJournalImmutable: true,
           paidJournalBalanced: true,
-          walletLedgerBalance: walletBalance._sum.amount,
+          reversalJournalExactOpposite: true,
+          reversalReplayIdempotent: true,
+          walletLedgerBalanceAfterPaid: walletBalance._sum.amount,
+          walletLedgerBalanceAfterReversal: restoredWalletBalance._sum.amount,
           ...(adminEvidence ? { adminEvidence } : {}),
         },
       },
@@ -319,6 +439,25 @@ async function seed() {
       },
     ],
   });
+  await prisma.adminOperatorPermission.createMany({
+    data: [
+      {
+        userId: ids.actor,
+        categories: [
+          AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+          AdminOperatorPermissionCategory.FINANCE_GENERAL_LEDGER,
+          AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
+        ],
+      },
+      {
+        userId: ids.approver,
+        categories: [
+          AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+          AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
+        ],
+      },
+    ],
+  });
   await prisma.providerProfile.create({
     data: {
       id: ids.providerProfile,
@@ -389,21 +528,62 @@ function assertBalancedJournal(journal, { debitAccount, creditAccount }) {
   );
 }
 
+function assertExactOppositeJournal(reversalJournal, originalJournals) {
+  const expectedEntries = originalJournals
+    .flatMap((journal) =>
+      journal.entries.map((entry) => ({
+        accountCode: entry.accountCode,
+        amount: entry.amount,
+        side: entry.side === 'DEBIT' ? 'CREDIT' : 'DEBIT',
+      })),
+    )
+    .sort(compareJournalEntry);
+  const actualEntries = reversalJournal.entries
+    .map((entry) => ({
+      accountCode: entry.accountCode,
+      amount: entry.amount,
+      side: entry.side,
+    }))
+    .sort(compareJournalEntry);
+  const expectedTotal = originalJournals.reduce((sum, journal) => sum + journal.totalDebit, 0);
+  assertCondition(
+    reversalJournal.status === 'POSTED' &&
+      reversalJournal.totalDebit === expectedTotal &&
+      reversalJournal.totalCredit === expectedTotal &&
+      JSON.stringify(actualEntries) === JSON.stringify(expectedEntries),
+    'Withdrawal reversal journal is not the exact opposite of the original LOCK and PAID journals.',
+  );
+}
+
+function compareJournalEntry(left, right) {
+  return (
+    left.accountCode.localeCompare(right.accountCode) ||
+    left.side.localeCompare(right.side) ||
+    left.amount - right.amount
+  );
+}
+
 async function verifyAdminWebEvidence(evidence) {
   const directPages = [
     {
       path:
-        `/payouts?range=today&withdrawalStatus=PAID&pageSize=10&withdrawalPartnerId=` +
+        `/payouts?range=today&withdrawalStatus=REVERSED&pageSize=10&withdrawalPartnerId=` +
         encodeURIComponent(evidence.providerProfileId),
-      markers: ['Payouts', 'Partner wallet withdrawal requests', 'Withdrawal Smoke Partner', 'Paid', evidence.transferRef],
+      markers: [
+        'Payouts',
+        'Partner wallet withdrawal requests',
+        'Withdrawal Smoke Partner',
+        'Reversed to Partner wallet',
+        evidence.reversalReference,
+      ],
     },
     {
       path: `/finance-tax/general-ledger/${evidence.lockJournalId}`,
-      markers: ['General Ledger Detail', 'Journal batch overview', 'Balanced', evidence.withdrawalRequestId, 'partner_withdrawal_payable'],
+      markers: ['Journal Batch Detail', 'Journal batch overview', 'CLEAR', evidence.withdrawalRequestId, 'partner_withdrawal_payable'],
     },
     {
       path: `/finance-tax/general-ledger/${evidence.paidJournalId}`,
-      markers: ['General Ledger Detail', 'Journal batch overview', 'Balanced', evidence.withdrawalRequestId, 'company_bank_cash'],
+      markers: ['Journal Batch Detail', 'Journal batch overview', 'CLEAR', evidence.withdrawalRequestId, 'company_bank_cash'],
     },
     {
       path: `/finance-tax/bank-reconciliation/${evidence.bankTransactionId}`,
@@ -416,13 +596,42 @@ async function verifyAdminWebEvidence(evidence) {
         evidence.paidJournalId,
       ],
     },
+    {
+      path: `/finance-tax/general-ledger/${evidence.reversalJournalId}`,
+      markers: [
+        'Journal Batch Detail',
+        'Journal batch overview',
+        'Balanced',
+        evidence.withdrawalRequestId,
+        evidence.reversalReference,
+      ],
+    },
+    {
+      path: '/finance-tax/settlement-reversals',
+      markers: [
+        'Settlement Reversals',
+        'Payout and withdrawal reversal journals',
+        'Withdrawal Smoke Partner',
+        'Partner withdrawal reversal',
+      ],
+    },
   ];
   await runAdminWebDirectSmoke({ env, pages: directPages, repoRoot });
-  return { checkedPages: directPages.length, payoutLinked: true, journalsLinked: true, reconciliationLinked: true };
+  return {
+    checkedPages: directPages.length,
+    payoutLinked: true,
+    journalsLinked: true,
+    reconciliationLinked: true,
+    reversalLinked: true,
+  };
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  return requestAgainst(apiBaseUrl, path, options);
+}
+
+async function requestAgainst(baseUrl, path, options = {}) {
+  const response = await fetch(`${baseUrl}${path}`, {
     method: options.method ?? 'GET',
     headers: {
       ...(options.body ? { 'content-type': 'application/json' } : {}),
@@ -436,6 +645,23 @@ async function request(path, options = {}) {
     throw new Error(`${options.method ?? 'GET'} ${path.split('?')[0]} failed with ${response.status}: ${JSON.stringify(body)}`);
   }
   return body;
+}
+
+async function expectRequestFailure(path, options, failureMessage) {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    method: options.method ?? 'GET',
+    headers: {
+      ...(options.body ? { 'content-type': 'application/json' } : {}),
+      ...(options.token ? { authorization: `Bearer ${options.token}` } : {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+    signal: AbortSignal.timeout(15_000),
+  });
+  assertCondition(response.status >= 400 && response.status < 500, failureMessage);
+}
+
+function containsJournal(value, journalId) {
+  return Array.isArray(value) && value.some((journal) => journal?.id === journalId);
 }
 
 async function cleanup() {

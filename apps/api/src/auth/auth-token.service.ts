@@ -49,6 +49,7 @@ const ADMIN_REALTIME_TOKEN_SCOPE = 'admin:realtime';
 const ADMIN_WEB_API_TOKEN_TYPE = 'admin-web-api';
 const ADMIN_WEB_API_TOKEN_AUDIENCE = 'hands-api';
 const ADMIN_WEB_API_TOKEN_SCOPE = 'admin:api';
+const SUPABASE_MOBILE_ROLES = new Set<Role>([Role.CUSTOMER, Role.PROVIDER]);
 
 @Injectable()
 export class AuthTokenService {
@@ -89,12 +90,16 @@ export class AuthTokenService {
   }
 
   async authenticateSocketToken(token: string): Promise<AuthenticatedUser> {
-    const adminRealtimeUser = this.tryVerifyAdminRealtimeJwt(token);
+    const adminRealtimeUser = await this.tryVerifyAdminRealtimeJwt(token);
     if (adminRealtimeUser) {
       return adminRealtimeUser;
     }
 
-    return this.authenticateBearerToken(token);
+    const user = await this.authenticateBearerToken(token);
+    if (user.roles.includes(Role.ADMIN)) {
+      throw new UnauthorizedException('Admin sockets require an admin realtime token');
+    }
+    return user;
   }
 
   private tryVerifyNestJwt(token: string): AuthenticatedUser | null {
@@ -118,7 +123,11 @@ export class AuthTokenService {
     }
   }
 
-  private tryVerifyAdminRealtimeJwt(token: string): AuthenticatedUser | null {
+  private async tryVerifyAdminRealtimeJwt(token: string): Promise<AuthenticatedUser | null> {
+    if (unverifiedJwtType(token) !== ADMIN_REALTIME_TOKEN_TYPE) {
+      return null;
+    }
+
     let payload: AdminRealtimeJwtPayload;
     try {
       payload = this.jwt.verify<AdminRealtimeJwtPayload>(token, {
@@ -142,10 +151,26 @@ export class AuthTokenService {
       return null;
     }
 
+    const user = await this.prisma.user.findFirst({
+      where: {
+        roles: { has: Role.ADMIN },
+        OR: [
+          { id: payload.sub },
+          { email: payload.sub },
+          { phone: payload.sub },
+          { adminOperatorCredential: { is: { email: payload.sub } } },
+        ],
+      },
+      select: { id: true, roles: true },
+    });
+    if (!user) {
+      return null;
+    }
+
     return {
-      id: payload.sub,
+      id: user.id,
       activeRole: Role.ADMIN,
-      roles: [Role.ADMIN],
+      roles: user.roles,
       authProvider: 'admin-realtime',
     };
   }
@@ -211,14 +236,13 @@ export class AuthTokenService {
 
     this.assertSupabaseAudience(payload);
     const tokenRoles = this.resolveSupabaseRoles(payload);
+    this.assertRequestedRoles(tokenRoles, requestedRoles);
     const user = await this.syncSupabaseUser(payload, tokenRoles);
-    const effectiveRoles = Array.from(new Set([...user.roles, ...tokenRoles]));
-    this.assertRequestedRoles(effectiveRoles, requestedRoles);
 
     return {
       id: user.id,
-      activeRole: requestedRoles[0],
-      roles: effectiveRoles,
+      activeRole: requestedRoles[0] ?? tokenRoles[0],
+      roles: tokenRoles,
       authProvider: 'supabase',
       externalUserId: payload.sub,
     };
@@ -312,14 +336,13 @@ export class AuthTokenService {
   }
 
   private resolveSupabaseRoles(payload: SupabaseJwtPayload): Role[] {
-    const rawRoles = [
-      payload.app_metadata?.role,
-      ...(payload.app_metadata?.roles ?? []),
-    ].filter((role): role is string => Boolean(role));
+    const rawRoles = [payload.app_metadata?.role, ...(payload.app_metadata?.roles ?? [])].filter(
+      (role): role is string => Boolean(role),
+    );
 
     const roles = rawRoles
       .map((role) => role.toUpperCase())
-      .filter((role): role is Role => Object.values(Role).includes(role as Role));
+      .filter((role): role is Role => SUPABASE_MOBILE_ROLES.has(role as Role));
 
     return roles.length > 0 ? Array.from(new Set(roles)) : [Role.CUSTOMER];
   }
@@ -332,9 +355,7 @@ export class AuthTokenService {
   }
 
   private async syncSupabaseUser(payload: SupabaseJwtPayload, roles: Role[]) {
-    const phone = payload.phone
-      ? normalizeVietnamPhoneIdentifier(payload.phone)
-      : `supabase:${payload.sub}`;
+    const phone = payload.phone ? normalizeVietnamPhoneIdentifier(payload.phone) : `supabase:${payload.sub}`;
     const email = payload.email?.trim() || null;
 
     const existingBySupabaseId = await this.prisma.user.findUnique({
@@ -342,12 +363,13 @@ export class AuthTokenService {
       include: { customerProfile: true, providerProfile: true },
     });
     if (existingBySupabaseId) {
+      assertSupabaseMobileIdentityBoundary(existingBySupabaseId.roles);
       return this.prisma.user.update({
         where: { id: existingBySupabaseId.id },
         data: {
           phone,
           email,
-          roles: { set: Array.from(new Set([...existingBySupabaseId.roles, ...roles])) },
+          roles: { set: roles },
           customerProfile:
             roles.includes(Role.CUSTOMER) && !existingBySupabaseId.customerProfile
               ? { create: {} }
@@ -371,12 +393,13 @@ export class AuthTokenService {
     });
 
     if (existingByPhone) {
+      assertSupabaseMobileIdentityBoundary(existingByPhone.roles);
       return this.prisma.user.update({
         where: { id: existingByPhone.id },
         data: {
           supabaseUserId: payload.sub,
           email,
-          roles: { set: Array.from(new Set([...existingByPhone.roles, ...roles])) },
+          roles: { set: roles },
           customerProfile:
             roles.includes(Role.CUSTOMER) && !existingByPhone.customerProfile ? { create: {} } : undefined,
           providerProfile:
@@ -412,13 +435,21 @@ export class AuthTokenService {
   }
 }
 
+function assertSupabaseMobileIdentityBoundary(roles: Role[]) {
+  if (roles.some((role) => !SUPABASE_MOBILE_ROLES.has(role))) {
+    throw new UnauthorizedException('Supabase mobile identity cannot use an Admin operator account');
+  }
+}
+
 function unverifiedJwtType(token: string) {
   try {
     const [, payloadSegment] = token.split('.');
     if (!payloadSegment) {
       return null;
     }
-    const payload = JSON.parse(Buffer.from(payloadSegment, 'base64url').toString('utf8')) as { typ?: unknown };
+    const payload = JSON.parse(Buffer.from(payloadSegment, 'base64url').toString('utf8')) as {
+      typ?: unknown;
+    };
     return typeof payload.typ === 'string' ? payload.typ : null;
   } catch {
     return null;

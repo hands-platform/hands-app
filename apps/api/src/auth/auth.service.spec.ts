@@ -40,6 +40,36 @@ describe('AuthService OTP production guard', () => {
     expect(prisma.user.upsert).not.toHaveBeenCalled();
   });
 
+  it('enforces a phone-level OTP resend cooldown', async () => {
+    const { otpDelivery, redisState, service } = createOtpService({
+      redisState: {
+        reserveOtpSend: vi.fn().mockResolvedValue(false),
+      },
+    });
+
+    await expect(service.requestOtp({ phone: '+84900000000', role: Role.CUSTOMER })).rejects.toThrow(
+      'Please wait before requesting another OTP',
+    );
+    expect(redisState.setOtp).not.toHaveBeenCalled();
+    expect(otpDelivery.deliverOtp).not.toHaveBeenCalled();
+  });
+
+  it('invalidates an OTP after five failed verification attempts', async () => {
+    const { prisma, redisState, service } = createOtpService({
+      redisState: {
+        getOtp: vi.fn().mockResolvedValue('654321'),
+        incrementOtpAttempts: vi.fn().mockResolvedValue(5),
+      },
+    });
+
+    await expect(
+      service.verifyOtp({ phone: '+84900000000', otp: '000000', role: Role.CUSTOMER }),
+    ).rejects.toThrow('Invalid OTP');
+
+    expect(redisState.consumeOtp).toHaveBeenCalledWith('+84900000000');
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
   it('rejects production OTP requests when Redis cannot store the OTP', async () => {
     const { otpDelivery, redisState, service } = createOtpService({
       NODE_ENV: 'production',
@@ -116,7 +146,9 @@ describe('AuthService OTP production guard', () => {
       NODE_ENV: 'development',
       redisState: {
         getOtp: vi.fn().mockResolvedValue('123456'),
-        consumeOtp: vi.fn().mockRejectedValue(new Error('redis://:consume-secret@localhost:6379 unavailable')),
+        consumeOtp: vi
+          .fn()
+          .mockRejectedValue(new Error('redis://:consume-secret@localhost:6379 unavailable')),
       },
     });
     prisma.user.findUnique.mockResolvedValue(null);
@@ -129,6 +161,82 @@ describe('AuthService OTP production guard', () => {
     expect(warn.mock.calls.flat().join(' ')).not.toContain('consume-secret');
     expect(warn.mock.calls.flat().join(' ')).not.toContain('redis://');
     warn.mockRestore();
+  });
+
+  it('signs mobile access tokens with the configured access secret used by the bearer guard', async () => {
+    const { config, jwt, prisma, redisState, service } = createOtpService({ NODE_ENV: 'development' });
+    config.get.mockImplementation((key: string) => {
+      if (key === 'NODE_ENV') return 'development';
+      if (key === 'JWT_ACCESS_SECRET') return 'configured-access-secret';
+      return undefined;
+    });
+    redisState.getOtp.mockResolvedValue('123456');
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.upsert.mockResolvedValue({ id: 'user-1', roles: [Role.CUSTOMER] });
+
+    await service.verifyOtp({ phone: '+84900000000', otp: '123456', role: Role.CUSTOMER });
+
+    expect(jwt.sign).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ activeRole: Role.CUSTOMER, sub: 'user-1' }),
+      { secret: 'configured-access-secret' },
+    );
+  });
+
+  it('preserves dual mobile membership while issuing only the selected OTP session role', async () => {
+    const { jwt, prisma, redisState, service } = createOtpService({ NODE_ENV: 'development' });
+    redisState.getOtp.mockResolvedValue('123456');
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'dual-mobile-user',
+      roles: [Role.CUSTOMER, Role.PROVIDER],
+      customerProfile: {},
+      providerProfile: {},
+    });
+    prisma.user.upsert.mockResolvedValue({
+      id: 'dual-mobile-user',
+      roles: [Role.CUSTOMER, Role.PROVIDER],
+      customerProfile: {},
+      providerProfile: {},
+    });
+
+    await expect(
+      service.verifyOtp({ phone: '+84900000000', otp: '123456', role: Role.CUSTOMER }),
+    ).resolves.toMatchObject({
+      user: { id: 'dual-mobile-user', roles: [Role.CUSTOMER] },
+    });
+    expect(prisma.user.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          roles: { set: [Role.CUSTOMER, Role.PROVIDER] },
+        }),
+      }),
+    );
+    expect(jwt.sign).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        activeRole: Role.CUSTOMER,
+        roles: [Role.CUSTOMER],
+        sub: 'dual-mobile-user',
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it('does not let OTP authentication mint stored Admin roles into a mobile token', async () => {
+    const { jwt, prisma, redisState, service } = createOtpService({ NODE_ENV: 'development' });
+    redisState.getOtp.mockResolvedValue('123456');
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'admin-mobile-collision',
+      roles: [Role.ADMIN, Role.CUSTOMER],
+      customerProfile: {},
+      providerProfile: null,
+    });
+
+    await expect(
+      service.verifyOtp({ phone: '+84900000000', otp: '123456', role: Role.CUSTOMER }),
+    ).rejects.toThrow('Mobile authentication cannot use an Admin operator account');
+    expect(prisma.user.upsert).not.toHaveBeenCalled();
+    expect(jwt.sign).not.toHaveBeenCalled();
   });
 
   it('rejects production OTP verification when Redis lookup is unavailable', async () => {
@@ -173,7 +281,7 @@ describe('AuthService refresh', () => {
     expect(signedPayloads[0]).toMatchObject({
       sub: 'user-1',
       activeRole: Role.PROVIDER,
-      roles: [Role.CUSTOMER, Role.PROVIDER],
+      roles: [Role.PROVIDER],
       refreshed: true,
     });
   });
@@ -209,6 +317,17 @@ describe('AuthService refresh', () => {
     expect(signedPayloads[0]).not.toHaveProperty('activeRole');
   });
 
+  it('rejects refresh when a mobile identity has been promoted to an Admin operator', async () => {
+    const { service } = createService({ sub: 'user-1', tokenType: 'refresh', activeRole: Role.CUSTOMER }, [
+      Role.CUSTOMER,
+      Role.ADMIN,
+    ]);
+
+    await expect(service.refresh('refresh-token-1')).rejects.toThrow(
+      'Mobile authentication cannot use an Admin operator account',
+    );
+  });
+
   it('rotates the refresh token and revokes the presented token hash', async () => {
     const { redisState, service } = createService(
       { sub: 'user-1', tokenType: 'refresh', activeRole: Role.CUSTOMER },
@@ -231,6 +350,55 @@ describe('AuthService refresh', () => {
     redisState.consumeRefreshToken.mockResolvedValue(false);
 
     await expect(service.refresh('refresh-token-1')).rejects.toThrow('Refresh token has been revoked');
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('allows only one concurrent refresh to consume the same token', async () => {
+    const { prisma, redisState, service } = createService(
+      { sub: 'user-1', tokenType: 'refresh', activeRole: Role.CUSTOMER },
+      [Role.CUSTOMER],
+    );
+    let consumed = false;
+    redisState.consumeRefreshToken.mockImplementation(async () => {
+      if (consumed) {
+        return false;
+      }
+      consumed = true;
+      await Promise.resolve();
+      return true;
+    });
+
+    const results = await Promise.allSettled([
+      service.refresh('refresh-token-1'),
+      service.refresh('refresh-token-1'),
+    ]);
+
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+    expect(prisma.user.findUnique).toHaveBeenCalledTimes(1);
+  });
+
+  it('blocks refresh when concurrent logout revokes the token first', async () => {
+    const { prisma, redisState, service } = createService(
+      { sub: 'user-1', tokenType: 'refresh', activeRole: Role.CUSTOMER },
+      [Role.CUSTOMER],
+    );
+    let releaseConsume: (() => void) | undefined;
+    let revoked = false;
+    redisState.consumeRefreshToken.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          releaseConsume = () => resolve(!revoked);
+        }),
+    );
+    redisState.revokeRefreshToken.mockImplementation(async () => {
+      revoked = true;
+      releaseConsume?.();
+    });
+
+    const refreshResult = service.refresh('refresh-token-1');
+    await expect(service.logout('refresh-token-1')).resolves.toEqual({ ok: true });
+    await expect(refreshResult).rejects.toThrow('Refresh token has been revoked');
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
@@ -280,6 +448,64 @@ describe('AuthService Supabase exchange', () => {
       }),
     ).rejects.toThrow('Supabase mobile exchange only supports CUSTOMER or PROVIDER roles');
     expect(authTokens.authenticateSupabaseBearerToken).not.toHaveBeenCalled();
+  });
+
+  it('does not exchange a Supabase mobile token into stored Admin roles', async () => {
+    const { authTokens, jwt, prisma, service } = createOtpService({});
+    authTokens.authenticateSupabaseBearerToken.mockResolvedValue({
+      id: 'admin-mobile-collision',
+      activeRole: Role.CUSTOMER,
+      roles: [Role.CUSTOMER],
+      authProvider: 'supabase',
+    });
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      id: 'admin-mobile-collision',
+      roles: [Role.ADMIN, Role.CUSTOMER],
+      customerProfile: {},
+      providerProfile: null,
+    });
+
+    await expect(
+      service.exchangeSupabaseSession({
+        supabaseAccessToken: 'supabase-token',
+        role: Role.CUSTOMER,
+      }),
+    ).rejects.toThrow('Mobile authentication cannot use an Admin operator account');
+    expect(jwt.sign).not.toHaveBeenCalled();
+  });
+
+  it('issues only the selected role when a Supabase identity has both mobile roles', async () => {
+    const { authTokens, jwt, prisma, service } = createOtpService({});
+    authTokens.authenticateSupabaseBearerToken.mockResolvedValue({
+      id: 'dual-mobile-user',
+      activeRole: Role.PROVIDER,
+      roles: [Role.CUSTOMER, Role.PROVIDER],
+      authProvider: 'supabase',
+    });
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      id: 'dual-mobile-user',
+      roles: [Role.CUSTOMER, Role.PROVIDER],
+      customerProfile: {},
+      providerProfile: {},
+    });
+
+    await expect(
+      service.exchangeSupabaseSession({
+        supabaseAccessToken: 'supabase-token',
+        role: Role.PROVIDER,
+      }),
+    ).resolves.toMatchObject({
+      user: { id: 'dual-mobile-user', roles: [Role.PROVIDER] },
+    });
+    expect(jwt.sign).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        activeRole: Role.PROVIDER,
+        roles: [Role.PROVIDER],
+        sub: 'dual-mobile-user',
+      }),
+      expect.any(Object),
+    );
   });
 });
 
@@ -358,7 +584,13 @@ function createOtpService({
   NODE_ENV?: string;
   redisState?: Partial<
     Record<
-      'consumeOtp' | 'getOtp' | 'setOtp' | 'consumeRefreshToken' | 'revokeRefreshToken',
+      | 'consumeOtp'
+      | 'getOtp'
+      | 'incrementOtpAttempts'
+      | 'reserveOtpSend'
+      | 'setOtp'
+      | 'consumeRefreshToken'
+      | 'revokeRefreshToken',
       ReturnType<typeof vi.fn>
     >
   >;
@@ -373,6 +605,7 @@ function createOtpService({
     },
     user: {
       findUnique: vi.fn(),
+      findUniqueOrThrow: vi.fn(),
       upsert: vi.fn(),
     },
   };
@@ -382,6 +615,8 @@ function createOtpService({
   const redisState = {
     consumeOtp: vi.fn().mockResolvedValue(undefined),
     getOtp: vi.fn().mockResolvedValue(null),
+    incrementOtpAttempts: vi.fn().mockResolvedValue(1),
+    reserveOtpSend: vi.fn().mockResolvedValue(true),
     consumeRefreshToken: vi.fn().mockResolvedValue(true),
     revokeRefreshToken: vi.fn().mockResolvedValue(undefined),
     setOtp: vi.fn().mockResolvedValue(undefined),

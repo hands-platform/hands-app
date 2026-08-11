@@ -3,6 +3,8 @@ import {
   buildPushCampaignListHref,
   buildPushCampaignPageHref,
   buildPushCampaignSummaryApiHref,
+  buildPushRecipientSearchApiHref,
+  buildPushRecipientSelectionHref,
   normalizePushCampaignPage,
   pushCampaignDateRangeLabel,
   pushCampaignDateRangeLinks,
@@ -102,5 +104,38 @@ describe('push send page model', () => {
     expect(shouldRequestPushCampaignPreview({ preview: '0', title: 'Weekend blast', body: 'Slots are open' })).toBe(
       false,
     );
+  });
+
+  it('uses existing customer and Partner directory search APIs', () => {
+    expect(buildPushRecipientSearchApiHref('CUSTOMER', ' Mai ')).toBe(
+      '/admin/customers?q=Mai&take=8&skip=0',
+    );
+    expect(buildPushRecipientSearchApiHref('PROVIDER', 'Linh')).toBe(
+      '/admin/partners/list-providers?q=Linh&take=8',
+    );
+  });
+
+  it('preserves campaign copy while selecting or clearing an account', () => {
+    const selected = buildPushRecipientSelectionHref(
+      { body: 'Open slots', preview: '1', title: 'Today', targetRole: 'CUSTOMER' },
+      { recipientSearch: 'Mai', targetRole: 'CUSTOMER', targetUserId: 'user-1' },
+    );
+    const selectedUrl = new URL(selected, 'http://admin.local');
+
+    expect(selectedUrl.searchParams.get('title')).toBe('Today');
+    expect(selectedUrl.searchParams.get('body')).toBe('Open slots');
+    expect(selectedUrl.searchParams.get('recipientSearch')).toBe('Mai');
+    expect(selectedUrl.searchParams.get('targetUserId')).toBe('user-1');
+    expect(selectedUrl.searchParams.has('preview')).toBe(false);
+
+    const cleared = new URL(
+      buildPushRecipientSelectionHref(
+        { recipientSearch: 'Mai', targetRole: 'CUSTOMER', targetUserId: 'user-1' },
+        { recipientSearch: '', targetRole: 'CUSTOMER', targetUserId: null },
+      ),
+      'http://admin.local',
+    );
+    expect(cleared.searchParams.has('recipientSearch')).toBe(false);
+    expect(cleared.searchParams.has('targetUserId')).toBe(false);
   });
 });

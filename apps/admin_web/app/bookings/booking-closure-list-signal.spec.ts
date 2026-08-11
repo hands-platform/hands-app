@@ -25,8 +25,8 @@ describe('bookingClosureListSignal', () => {
         options,
       ),
     ).toEqual({
-      detail: 'admin closure / Customer Requested Cancel / Confirmed in chat.',
-      label: 'Closed formatted:2026-06-07T04:20:00.000Z',
+      detail: 'Customer Requested Cancel · Confirmed in chat. · formatted:2026-06-07T04:20:00.000Z',
+      label: 'Closed by Admin',
       tone: 'pill-info',
     });
   });
@@ -41,15 +41,16 @@ describe('bookingClosureListSignal', () => {
         options,
       ),
     ).toMatchObject({
-      detail: 'actor missing closure / reason not saved',
+      detail: 'Closure reason missing · formatted:2026-06-07T04:20:00.000Z',
+      label: 'Closure actor missing',
       tone: 'pill-danger',
     });
   });
 
   it('shows terminal bookings without closure evidence', () => {
     expect(bookingClosureListSignal(booking({ status: 'EXPIRED' }), options)).toEqual({
-      detail: 'Terminal booking has no explicit closure actor/reason saved yet.',
-      label: 'Terminal',
+      detail: 'Closure actor and reason are not recorded.',
+      label: 'Closure metadata missing',
       tone: 'pill-warn',
     });
   });

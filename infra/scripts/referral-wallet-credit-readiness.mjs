@@ -7,6 +7,7 @@ const repoRoot = resolve(scriptDir, '..', '..');
 
 const sources = {
   adminController: 'apps/api/src/admin/admin.controller.ts',
+  adminReferralRoutes: 'apps/api/src/admin/admin-referral.routes.ts',
   adminRewardSpec: 'apps/api/src/admin/admin.service.spec.ts',
   adminService: 'apps/api/src/admin/admin.service.ts',
   referralService: 'apps/api/src/referrals/referrals.service.ts',
@@ -178,9 +179,14 @@ function extractFunctionBody(source, functionName) {
 }
 
 function detectsNestAdminWalletCreditEndpoint(textBySource) {
-  const controllerHasCreditRoute =
-    textBySource.adminController.includes("referrals/rewards/:id/credit") &&
-    textBySource.adminController.includes('creditReferralReward');
+  const controllerHasCreditRoute = [
+    textBySource.adminController,
+    textBySource.adminReferralRoutes,
+  ].some(
+    (source) =>
+      source.includes("referrals/rewards/:id/credit") &&
+      source.includes('creditReferralReward'),
+  );
   const serviceHasCreditMethod =
     textBySource.adminService.includes('creditReferralReward') &&
     textBySource.adminService.includes('walletLedgerReference');

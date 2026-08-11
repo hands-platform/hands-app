@@ -4,184 +4,132 @@ import {
   buildCashSettlementFilters,
   buildCashSettlementSummaryApiHref,
   cashSettlementHref,
-  cashSettlementQueueLabel,
+  safeCashSettlementReturnTo,
+  safeCashSettlementOverviewReturnTo,
 } from './cash-settlement-page-filters';
-import { buildCashSettlementPriorityBoard } from './cash-settlement-page-priority';
 import {
   applyCashSettlementRowFilters,
   buildCashSettlementOpenDebtTableRows,
   buildCashSettlementRows,
 } from './cash-settlement-page-rows';
-import { buildProviderGroups, buildSummary, mergeAuthoritativeSummary } from './cash-settlement-page-summary';
+import { buildSummary, mergeAuthoritativeSummary } from './cash-settlement-page-summary';
 
 const NOW = Date.parse('2026-06-10T09:00:00.000Z');
 
 describe('cash settlement page model', () => {
-  beforeEach(() => {
-    vi.spyOn(Date, 'now').mockReturnValue(NOW);
-  });
+  beforeEach(() => vi.spyOn(Date, 'now').mockReturnValue(NOW));
+  afterEach(() => vi.restoreAllMocks());
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it('builds open cash debt rows and summary without changing settlement state', () => {
+  it('uses authoritative original, allocated and remaining amounts and excludes fully allocated debt', () => {
     const rows = buildCashSettlementRows([
-      earning({ id: 'cash-high', netAmount: -600000, platformFee: 500000, withholdingAmount: 100000 }),
-      earning({ id: 'paid', netAmount: -50000, status: 'PAID' }),
       earning({
-        booking: { payment: { amount: 100000, method: 'CARD', status: 'AUTHORIZED' } },
-        id: 'card-negative',
+        allocatedAmount: 70_000,
+        id: 'partial',
+        netAmount: -170_000,
+        originalDebtAmount: 170_000,
+        remainingDebtAmount: 100_000,
       }),
       earning({
-        booking: {
-          closedAt: '2026-06-10T08:30:00.000Z',
-          matchedAt: '2026-06-10T08:00:00.000Z',
-          selectedProviderId: 'partner-profile-1',
-          status: 'CANCELLED',
-        },
-        id: 'post-match-held',
-        netAmount: -30000,
+        allocatedAmount: 170_000,
+        id: 'fully-allocated',
+        netAmount: -170_000,
+        originalDebtAmount: 170_000,
+        remainingDebtAmount: 0,
       }),
     ]);
-    const providers = buildProviderGroups(rows);
-    const summary = buildSummary(rows, providers);
 
-    expect(rows.map((row) => row.earning.id)).toEqual(['cash-high', 'card-negative']);
-    expect(summary).toMatchObject({
-      cashPaymentRowCount: 1,
-      debtAmount: 630000,
-      highDebtProviderCount: 1,
-      missingPaymentEvidenceCount: 0,
-      providerCount: 1,
-      rowCount: 2,
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      allocatedAmount: 70_000,
+      debtAmount: 100_000,
+      originalDebtAmount: 170_000,
+    });
+    expect(buildSummary(rows)).toMatchObject({ debtAmount: 100_000, providerCount: 1, rowCount: 1 });
+    expect(buildCashSettlementOpenDebtTableRows(rows)[0]).toMatchObject({
+      allocatedAmount: 70_000,
+      originalDebtAmount: 170_000,
+      remainingDebtAmount: 100_000,
     });
   });
 
-  it('filters queues, search text, and links consistently', () => {
-    const rows = buildCashSettlementRows([
-      earning({ createdAt: '2026-06-08T08:00:00.000Z', id: 'stale-row', settlementRef: null }),
-      earning({ id: 'fresh-row', netAmount: -10000, platformFee: 10000, settlementRef: 'BANK-REF' }),
-    ]);
-
-    expect(
-      buildCashSettlementFilters({
-        page: '3',
-        pageSize: '25',
-        q: ' partner ',
-        queue: 'missing-ref',
-        range: '7d',
+  it('applies the high exposure threshold to remaining debt, not original debt', () => {
+    const below = buildCashSettlementRows([
+      earning({
+        allocatedAmount: 500_001,
+        id: 'below',
+        netAmount: -1_000_000,
+        originalDebtAmount: 1_000_000,
+        remainingDebtAmount: 499_999,
       }),
-    ).toEqual({
-      page: 3,
-      pageSize: 25,
-      q: 'partner',
-      queue: 'missing-ref',
+    ]);
+    const atThreshold = buildCashSettlementRows([
+      earning({
+        allocatedAmount: 500_000,
+        id: 'threshold',
+        netAmount: -1_000_000,
+        originalDebtAmount: 1_000_000,
+        remainingDebtAmount: 500_000,
+      }),
+    ]);
+    const filters = { ...buildCashSettlementFilters({}), queue: 'high-debt' as const };
+
+    expect(applyCashSettlementRowFilters(below, filters)).toHaveLength(0);
+    expect(applyCashSettlementRowFilters(atThreshold, filters)).toHaveLength(1);
+  });
+
+  it('builds bounded server list and summary URLs from one canonical filter model', () => {
+    const filters = buildCashSettlementFilters({
+      age: '4-24h',
+      page: '2',
+      pageSize: '25',
+      q: ' Mai ',
+      queue: 'missing-evidence',
       range: '7d',
+      sla: 'overdue',
+      sort: 'highest-debt',
     });
-    expect(
-      applyCashSettlementRowFilters(rows, { page: 1, pageSize: 10, q: '', queue: 'stale', range: 'all' }).map(
-        (row) => row.earning.id,
-      ),
-    ).toEqual(['stale-row']);
-    expect(
-      applyCashSettlementRowFilters(rows, {
-        page: 1,
-        pageSize: 10,
-        q: 'fresh-row',
-        queue: 'all',
-        range: 'all',
-      }),
-    ).toHaveLength(1);
-    expect(cashSettlementHref({ page: 2, pageSize: 25, q: 'Mai', queue: 'high-debt', range: '30d' })).toBe(
-      '/cash-settlements?range=30d&queue=high-debt&q=Mai&pageSize=25&page=2',
+
+    expect(buildCashSettlementApiHref(filters)).toBe(
+      '/admin/cash-settlement-earnings?range=7d&take=25&age=4-24h&sort=highest-debt&sla=overdue&queue=missing-evidence&q=Mai&skip=25',
     );
-    expect(buildCashSettlementFilters({})).toEqual({
-      page: 1,
-      pageSize: 10,
-      q: '',
-      queue: 'all',
-      range: 'today',
-    });
-    expect(cashSettlementHref({ page: 1, pageSize: 10, q: '', queue: 'all', range: 'all' })).toBe(
-      '/cash-settlements?range=all',
+    expect(buildCashSettlementSummaryApiHref(filters)).toBe(
+      '/admin/cash-settlement-summary?range=7d&age=4-24h&sort=highest-debt&sla=overdue&queue=missing-evidence&q=Mai',
     );
-    expect(
-      buildCashSettlementApiHref(
-        buildCashSettlementFilters({ page: '3', pageSize: '25', q: 'Mai', queue: 'high-debt', range: '7d' }),
-      ),
-    ).toBe('/admin/cash-settlement-earnings?range=7d&take=25&queue=high-debt&q=Mai&skip=50');
-    expect(
-      buildCashSettlementSummaryApiHref(
-        buildCashSettlementFilters({ q: 'Mai', queue: 'high-debt', range: '7d' }),
-      ),
-    ).toBe('/admin/cash-settlement-summary?range=7d&queue=high-debt&q=Mai');
-    expect(cashSettlementQueueLabel('payment-check')).toBe('Payment check');
+    expect(cashSettlementHref(filters)).toContain('queue=missing-evidence');
   });
 
-  it('builds priority board and table row action evidence', () => {
-    const rows = buildCashSettlementRows([
-      earning({
-        createdAt: '2026-06-08T08:00:00.000Z',
-        id: 'old-high',
-        netAmount: -600000,
-        platformFee: 600000,
-      }),
-    ]);
-
-    expect(buildCashSettlementPriorityBoard(rows)[0]).toMatchObject({
-      pillClass: 'pill-danger',
-      priority: 'High debt',
+  it('keeps one accounting month across list, summary, workbench, and safe overview return', () => {
+    const filters = buildCashSettlementFilters({
+      period: '2026-08',
+      queue: 'missing-evidence',
+      returnTo: '/finance-tax?period=2026-08',
     });
-    expect(buildCashSettlementOpenDebtTableRows(rows)[0]?.actionRows.map((row) => row.action)).toEqual([
-      'Confirm cash collection',
-      'Attach settlement reference',
-      'Settle wallet debt',
-      'Wallet evidence',
-      'Aging follow-up',
-    ]);
+
+    expect(buildCashSettlementApiHref(filters)).toBe(
+      '/admin/cash-settlement-earnings?period=2026-08&take=10&sort=oldest&queue=missing-evidence',
+    );
+    expect(buildCashSettlementSummaryApiHref(filters)).toBe(
+      '/admin/cash-settlement-summary?period=2026-08&sort=oldest&queue=missing-evidence',
+    );
+    expect(cashSettlementHref(filters)).toBe(
+      '/cash-settlements?period=2026-08&returnTo=%2Ffinance-tax%3Fperiod%3D2026-08&queue=missing-evidence&sort=oldest',
+    );
+    expect(safeCashSettlementOverviewReturnTo(filters.returnTo)).toBe('/finance-tax?period=2026-08');
+    expect(safeCashSettlementOverviewReturnTo('https://evil.example/finance-tax?period=2026-08')).toBe(
+      '/finance-tax',
+    );
   });
 
-  it('builds cash coupon settlement breakdown from wallet ledger metadata', () => {
-    const cashCouponRows = buildCashSettlementRows([cashCouponEarning()]);
-    const [row] = buildCashSettlementOpenDebtTableRows(cashCouponRows);
-    const providers = buildProviderGroups(cashCouponRows);
-    const summary = buildSummary(cashCouponRows, providers);
-
-    expect(row).toMatchObject({
-      bookingAmount: 540_000,
-      cashCouponOffsetAmount: 60_000,
-      currency: 'VND',
-      debtAmount: 110_000,
-      platformFee: 170_000,
-      taxAmount: 42_000,
-    });
-    expect(row.cashAccountingPreview.map((item) => textContent(item).replace(/\s+/g, ' ').trim())).toEqual([
-      'Dr Partner receivable 110.000 VND',
-      'Cr Platform fee net revenue 58.519 VND',
-      'Cr Company output VAT payable 9.481 VND',
-      'Cr Partner withholding tax payable 42.000 VND',
-      'Coupon offset already applied 60.000 VND',
-    ]);
-    expect(row.walletDeductionBreakdown.map((item) => textContent(item).replace(/\s+/g, ' ').trim())).toEqual([
-      'Platform net wallet deduction 58.519 VND',
-      'Company VAT wallet deduction 9.481 VND',
-      'Partner tax wallet deduction 42.000 VND',
-    ]);
-    expect(providers[0]).toMatchObject({ companyCouponOffset: 60_000 });
-    expect(summary).toMatchObject({
-      companyCouponOffset: 60_000,
-      debtAmount: 110_000,
-      platformFee: 170_000,
-      taxAmount: 42_000,
-    });
+  it('preserves canonical workbench state and rejects unsafe return paths', () => {
+    const context = '/cash-settlements?queue=missing-evidence&q=Mai&sort=highest-debt&page=2';
+    expect(safeCashSettlementReturnTo(context)).toBe(context);
+    expect(safeCashSettlementReturnTo('https://evil.example/cash-settlements')).toBe('/cash-settlements');
+    expect(safeCashSettlementReturnTo('/refunds')).toBe('/cash-settlements');
   });
 
-  it('uses authoritative all-date API summary when available', () => {
-    const visible = buildSummary([], []);
-    const summary = mergeAuthoritativeSummary(visible, {
+  it('merges the authoritative remaining-debt summary without page-only totals', () => {
+    const summary = mergeAuthoritativeSummary(buildSummary([]), {
       cashPaymentRowCount: 2,
-      totalCompanyCouponOffset: 60_000,
       currency: 'VND',
       generatedAt: '2026-06-10T09:00:00.000Z',
       highDebtProviderCount: 1,
@@ -192,113 +140,34 @@ describe('cash settlement page model', () => {
       rowCount: 5,
       staleDebtRowCount: 6,
       topProviderGroups: [],
-      totalDebtAmount: 700000,
-      totalPlatformFee: 600000,
-      totalTaxAmount: 100000,
+      totalCompanyCouponOffset: 60_000,
+      totalDebtAmount: 700_000,
+      totalPlatformFee: 600_000,
+      totalTaxAmount: 100_000,
     } satisfies AdminCashSettlementSummary);
 
-    expect(summary).toMatchObject({
-      companyCouponOffset: 60_000,
-      cashPaymentRowCount: 2,
-      debtAmount: 700000,
-      providerCount: 4,
-      rowCount: 5,
-    });
+    expect(summary).toMatchObject({ debtAmount: 700_000, providerCount: 4, rowCount: 5 });
   });
 });
 
 function earning(input: Partial<AdminEarning> = {}): AdminEarning {
-  const booking = {
-    payment: { amount: 120000, method: 'CASH', status: 'PENDING' },
-    services: [
-      {
-        id: 'booking-service-1',
-        price: 120000,
-        quantity: 1,
-        service: {
-          basePrice: 120000,
-          durationMin: 60,
-          id: 'service-1',
-          name: 'Massage 60',
-        },
-        serviceId: 'service-1',
-      },
-    ],
-    ...input.booking,
-  };
-
   return {
+    booking: {
+      payment: { amount: 170_000, method: 'CASH', status: 'PENDING' },
+      services: [],
+      status: 'COMPLETED',
+    },
     bookingId: 'booking-1',
     createdAt: '2026-06-10T08:00:00.000Z',
     currency: 'VND',
-    grossAmount: 120000,
+    grossAmount: 170_000,
     id: 'earning-1',
-    netAmount: -30000,
-    platformFee: 30000,
+    netAmount: -170_000,
+    platformFee: 150_000,
     providerProfile: { displayName: 'Partner Mai', user: { phone: '+8490' } },
     providerProfileId: 'partner-profile-1',
-    settlementRef: null,
     status: 'PENDING',
-    withholdingAmount: 0,
+    withholdingAmount: 20_000,
     ...input,
-    booking,
   };
-}
-
-function cashCouponEarning(): AdminEarning {
-  return earning({
-    booking: { payment: { amount: 540_000, method: 'CASH', status: 'PENDING' } },
-    grossAmount: 600_000,
-    id: 'cash-coupon',
-    netAmount: -110_000,
-    platformFee: 170_000,
-    withholdingAmount: 42_000,
-    walletLedgerEntries: [
-      {
-        amount: -58_519,
-        currency: 'VND',
-        id: 'ledger-platform',
-        metadata: {
-          accountingComponentAmount: 118_519,
-          cashBookingCompanyCouponExpense: 60_000,
-          totalPartnerDueToCompany: 110_000,
-          walletDeductionCompanyOutputVat: 9_481,
-          walletDeductionPartnerTaxPayable: 42_000,
-          walletDeductionPlatformFeeNetRevenue: 58_519,
-        },
-        sourceKey: 'earning:cash-coupon:cash-platform-fee-net',
-        type: 'CASH_BOOKING_PLATFORM_FEE_DEDUCTED',
-      },
-    ],
-  });
-}
-
-function textContent(value: unknown): string {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value === 'boolean') {
-    return '';
-  }
-  if (typeof value === 'string' || typeof value === 'number') {
-    return String(value);
-  }
-  if (Array.isArray(value)) {
-    return value.map(textContent).join(' ');
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  return textContent(props?.children);
-}
-
-function resolveElement(value: unknown): unknown {
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
-}
-
-function readRecord(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return null;
 }

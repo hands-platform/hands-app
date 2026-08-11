@@ -6,13 +6,19 @@ const root = process.cwd();
 const expectedRoots = [
   'apps/api',
   'apps/admin_web',
+  'apps/public_web',
   'apps/customer_app',
   'apps/provider_app',
   'packages/shared-types',
   'infra',
   'docs',
 ];
-const expectedNodeWorkspaces = ['apps/api', 'apps/admin_web', 'packages/shared-types'];
+const expectedNodeWorkspaces = [
+  'apps/api',
+  'apps/admin_web',
+  'apps/public_web',
+  'packages/shared-types',
+];
 const ignoredDirs = new Set([
   '.git',
   '.next',

@@ -45,6 +45,10 @@ describe('CalendarEventDrawer', () => {
     expect(markup).not.toContain('<div class="calendar-field"><span>Title</span><label class="admin-form-input');
     expect(markup).not.toContain('<div class="calendar-field"><span>Hashtags</span><label class="admin-form-input');
     expect(markup).not.toContain('<label class="calendar-field calendar-field-toggle"><span>All day</span><input');
+    expect(markup).toContain('role="dialog"');
+    expect(markup).toContain('aria-modal="true"');
+    expect(markup).toContain('aria-labelledby="calendar-event-drawer-title"');
+    expect(markup).toContain('tabindex="-1"');
   });
 
   it('uses the shared Vuexy drawer form grid surface', () => {
@@ -66,6 +70,7 @@ describe('CalendarEventDrawer', () => {
 
     expect(source).toContain('AdminDrawerSurface');
     expect(source).not.toContain('<aside aria-label="Event editor" className="calendar-drawer">');
+    expect(source).toContain('useAdminModalFocus(drawerRef, onClose, undefined, isOpen)');
   });
 
   it('uses the shared Vuexy button atom for visible drawer header actions', () => {

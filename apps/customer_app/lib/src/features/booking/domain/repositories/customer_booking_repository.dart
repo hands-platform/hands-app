@@ -24,10 +24,30 @@ class CustomerPaymentMethodOption {
   }
 }
 
+class CustomerPaymentAction {
+  const CustomerPaymentAction({
+    required this.bookingId,
+    required this.checkoutUri,
+    required this.method,
+    required this.paymentId,
+    required this.status,
+  });
+
+  final String bookingId;
+  final Uri checkoutUri;
+  final String method;
+  final String paymentId;
+  final String status;
+}
+
+abstract class CustomerPaymentActionRepository {
+  Future<CustomerPaymentAction> getForBooking(String bookingId);
+}
+
 abstract class CustomerBookingRepository {
   Future<Map<String, dynamic>> getBooking(String bookingId);
 
-  Future<List<dynamic>> listBookings();
+  Future<List<dynamic>> listBookings({String? cursor, int take = 20});
 
   Future<List<CustomerPaymentMethodOption>> listPaymentMethods();
 

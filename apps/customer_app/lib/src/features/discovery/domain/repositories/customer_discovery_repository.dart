@@ -6,11 +6,22 @@ abstract class CustomerDiscoveryRepository {
     required double lng,
   });
 
+  Future<Map<String, dynamic>> getHomeSummary({
+    required double lat,
+    required double lng,
+  });
+
+  Future<Map<String, dynamic>> getWallet();
+
   Future<Map<String, dynamic>?> saveSelectedLocation({
     required double lat,
     required double lng,
     required String addressText,
   });
+
+  Future<List<Map<String, dynamic>>> listSavedLocations();
+
+  Future<void> deleteSavedLocation(String locationId);
 
   Future<Map<String, dynamic>> getProviderDetail(String providerId);
 

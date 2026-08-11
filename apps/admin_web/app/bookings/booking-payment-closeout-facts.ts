@@ -47,3 +47,20 @@ export function bookingCashDebtNeedsOps(booking: AdminBooking): boolean {
     earningStatus: booking.earning?.status,
   });
 }
+
+export function bookingPaymentExceptionFacts(booking: AdminBooking) {
+  const payment = booking.payment;
+  const refundCount = (booking.refunds?.length ?? 0) + (payment?.refunds?.length ?? 0);
+  const isCash = payment?.method === 'CASH';
+
+  return {
+    authorizationPending: !isCash && payment?.status === 'AUTHORIZED',
+    cashCommissionDue: bookingCashDebtNeedsOps(booking),
+    cashStatusPending: isCash && payment?.status === 'PENDING',
+    gatewayRefMissing: !isCash && payment?.status === 'AUTHORIZED' && !payment.providerRef,
+    paymentMissing: !payment,
+    paymentReleasePending:
+      booking.status === 'EXPIRED' && Boolean(payment) && !['RELEASED', 'REFUNDED'].includes(payment?.status ?? ''),
+    refundMismatch: refundCount > 0 && payment?.status !== 'REFUNDED',
+  };
+}

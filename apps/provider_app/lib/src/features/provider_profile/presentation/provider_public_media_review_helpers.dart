@@ -24,23 +24,23 @@ String providerPublicMediaPurposeLabel(String? purpose) {
   switch (purpose) {
     case 'PROFILE_IMAGE':
     case 'profile-image':
-      return 'Profile image';
+      return 'Ảnh hồ sơ';
     case 'PROVIDER_GALLERY':
     case 'provider-gallery':
-      return 'Work photo';
+      return 'Ảnh công việc';
     default:
-      return 'Public media';
+      return 'Ảnh công khai';
   }
 }
 
 String providerPublicMediaReviewLabel(String status) {
   switch (status) {
     case 'APPROVED':
-      return 'Approved and visible to customers';
+      return 'Đã duyệt và hiển thị với khách hàng';
     case 'REJECTED':
-      return 'Needs changes before customers can see it';
+      return 'Cần chỉnh sửa trước khi hiển thị với khách hàng';
     default:
-      return 'Waiting for admin review';
+      return 'Đang chờ HANDS xét duyệt';
   }
 }
 

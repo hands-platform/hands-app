@@ -1,0 +1,191 @@
+
+> finance:manual-wallet-adjustment-policy-dry-run
+> node infra/scripts/manual-wallet-adjustment-policy-migration-dry-run.mjs
+
+{
+  "generatedAt": "2026-08-10T06:14:33.769Z",
+  "mode": "READ_ONLY",
+  "requestCount": 10,
+  "rows": [
+    {
+      "adjustmentType": "PARTNER_BONUS",
+      "blockers": [
+        {
+          "code": "POLICY_MIGRATION_REQUIRED",
+          "message": "PARTNER_BONUS is not allowed for CUSTOMER credit adjustments."
+        },
+        {
+          "code": "WALLET_ADJUSTMENT_PERIOD_REQUIRED",
+          "message": "An accounting month is required for every manual wallet adjustment."
+        }
+      ],
+      "createdAt": "2026-07-15T14:36:39.733Z",
+      "direction": "CREDIT",
+      "id": "cmrm6oa7p00n6vyqk2hgntpiv",
+      "monthlyPeriod": null,
+      "ownerId": "smoke_referral_customer_referred_profile",
+      "ownerType": "CUSTOMER",
+      "proposedAction": "CANCEL_AND_RECREATE"
+    },
+    {
+      "adjustmentType": "PARTNER_BONUS",
+      "blockers": [
+        {
+          "code": "POLICY_MIGRATION_REQUIRED",
+          "message": "PARTNER_BONUS is not allowed for CUSTOMER credit adjustments."
+        },
+        {
+          "code": "WALLET_ADJUSTMENT_PERIOD_REQUIRED",
+          "message": "An accounting month is required for every manual wallet adjustment."
+        }
+      ],
+      "createdAt": "2026-07-15T14:37:09.663Z",
+      "direction": "CREDIT",
+      "id": "cmrm6oxb200rfvyqkashy0g98",
+      "monthlyPeriod": null,
+      "ownerId": "smoke_referral_customer_referred_profile",
+      "ownerType": "CUSTOMER",
+      "proposedAction": "CANCEL_AND_RECREATE"
+    },
+    {
+      "adjustmentType": "PARTNER_BONUS",
+      "blockers": [
+        {
+          "code": "POLICY_MIGRATION_REQUIRED",
+          "message": "PARTNER_BONUS is not allowed for CUSTOMER credit adjustments."
+        },
+        {
+          "code": "WALLET_ADJUSTMENT_PERIOD_REQUIRED",
+          "message": "An accounting month is required for every manual wallet adjustment."
+        }
+      ],
+      "createdAt": "2026-07-15T14:38:42.106Z",
+      "direction": "CREDIT",
+      "id": "cmrm6qwmx010gvyqkm2bm29wg",
+      "monthlyPeriod": null,
+      "ownerId": "smoke_booking_list_customer_profile",
+      "ownerType": "CUSTOMER",
+      "proposedAction": "CANCEL_AND_RECREATE"
+    },
+    {
+      "adjustmentType": "CUSTOMER_COMPENSATION",
+      "blockers": [
+        {
+          "code": "WALLET_ADJUSTMENT_PERIOD_REQUIRED",
+          "message": "An accounting month is required for every manual wallet adjustment."
+        }
+      ],
+      "createdAt": "2026-07-16T16:35:18.467Z",
+      "direction": "CREDIT",
+      "id": "cmrnqcpqa001avyxkdqbr4rcd",
+      "monthlyPeriod": null,
+      "ownerId": "smoke_referral_customer_referred_profile",
+      "ownerType": "CUSTOMER",
+      "proposedAction": "CANCEL_AND_RECREATE"
+    },
+    {
+      "adjustmentType": "REFERRAL_CORRECTION",
+      "blockers": [
+        {
+          "code": "WALLET_ADJUSTMENT_PERIOD_REQUIRED",
+          "message": "An accounting month is required for every manual wallet adjustment."
+        }
+      ],
+      "createdAt": "2026-07-16T16:35:57.077Z",
+      "direction": "CREDIT",
+      "id": "cmrnqdjit001jvyxk1wktgsn8",
+      "monthlyPeriod": null,
+      "ownerId": "smoke_referral_customer_referred_profile",
+      "ownerType": "CUSTOMER",
+      "proposedAction": "CANCEL_AND_RECREATE"
+    },
+    {
+      "adjustmentType": "REFERRAL_CORRECTION",
+      "blockers": [
+        {
+          "code": "WALLET_ADJUSTMENT_PERIOD_REQUIRED",
+          "message": "An accounting month is required for every manual wallet adjustment."
+        }
+      ],
+      "createdAt": "2026-07-16T16:35:57.179Z",
+      "direction": "CREDIT",
+      "id": "cmrnqdjlm001qvyxkl9h5mrud",
+      "monthlyPeriod": null,
+      "ownerId": "smoke_referral_customer_referred_profile",
+      "ownerType": "CUSTOMER",
+      "proposedAction": "CANCEL_AND_RECREATE"
+    },
+    {
+      "adjustmentType": "CUSTOMER_COMPENSATION",
+      "blockers": [
+        {
+          "code": "WALLET_ADJUSTMENT_PERIOD_REQUIRED",
+          "message": "An accounting month is required for every manual wallet adjustment."
+        }
+      ],
+      "createdAt": "2026-07-16T16:38:06.688Z",
+      "direction": "CREDIT",
+      "id": "cmrnqgbj40021vyxk8uzm1enm",
+      "monthlyPeriod": null,
+      "ownerId": "smoke_referral_customer_referred_profile",
+      "ownerType": "CUSTOMER",
+      "proposedAction": "CANCEL_AND_RECREATE"
+    },
+    {
+      "adjustmentType": "CUSTOMER_COMPENSATION",
+      "blockers": [
+        {
+          "code": "WALLET_ADJUSTMENT_PERIOD_REQUIRED",
+          "message": "An accounting month is required for every manual wallet adjustment."
+        }
+      ],
+      "createdAt": "2026-07-16T16:51:43.623Z",
+      "direction": "CREDIT",
+      "id": "cmrnqxtvr00bxvyxk2psax6x4",
+      "monthlyPeriod": null,
+      "ownerId": "smoke_referral_customer_referred_profile",
+      "ownerType": "CUSTOMER",
+      "proposedAction": "CANCEL_AND_RECREATE"
+    },
+    {
+      "adjustmentType": "CUSTOMER_COMPENSATION",
+      "blockers": [
+        {
+          "code": "WALLET_ADJUSTMENT_PERIOD_REQUIRED",
+          "message": "An accounting month is required for every manual wallet adjustment."
+        }
+      ],
+      "createdAt": "2026-07-16T17:07:55.699Z",
+      "direction": "CREDIT",
+      "id": "cmrnrinxu00divyxkky8pjfak",
+      "monthlyPeriod": null,
+      "ownerId": "smoke_referral_customer_referred_profile",
+      "ownerType": "CUSTOMER",
+      "proposedAction": "CANCEL_AND_RECREATE"
+    },
+    {
+      "adjustmentType": "CUSTOMER_COMPENSATION",
+      "blockers": [
+        {
+          "code": "WALLET_ADJUSTMENT_PERIOD_REQUIRED",
+          "message": "An accounting month is required for every manual wallet adjustment."
+        }
+      ],
+      "createdAt": "2026-07-16T17:08:05.151Z",
+      "direction": "CREDIT",
+      "id": "cmrnriv8f00dpvyxktlu8qxhr",
+      "monthlyPeriod": null,
+      "ownerId": "smoke_referral_customer_referred_profile",
+      "ownerType": "CUSTOMER",
+      "proposedAction": "CANCEL_AND_RECREATE"
+    }
+  ],
+  "summary": {
+    "CANCEL_AND_RECREATE": 10,
+    "KEEP": 0,
+    "blockers": {
+      "POLICY_MIGRATION_REQUIRED": 3,
+      "WALLET_ADJUSTMENT_PERIOD_REQUIRED": 10
+    }
+  }
+}

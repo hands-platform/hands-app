@@ -5,34 +5,51 @@ describe('customer detail page structure', () => {
   it('keeps the customer detail page focused on overview and booking operation lists', () => {
     const pageSource = readFileSync(join(process.cwd(), 'app/customers/[id]/page.tsx'), 'utf8');
 
-    expect(pageSource).toContain('Customer operating picture');
+    expect(pageSource).toContain('Current status');
+    expect(pageSource).toContain('id="customer-operator-command-queue"');
+    expect(pageSource).not.toContain('title="Needs action"');
+    expect(pageSource).toContain('CustomerBookingOperationBoard');
     expect(pageSource).toContain('CustomerBookingOperationBoard');
     expect(pageSource).toContain('customer-chat-history-section');
     expect(pageSource).toContain('chatHistoryPage');
     expect(pageSource).toContain('AdminTablePaginationFooter');
     expect(pageSource).toContain('const shouldRenderReviewRecords =');
-    expect(pageSource).toContain("{detailView === 'records' && shouldRenderReviewRecords ? (");
-    expect(pageSource).toContain('const filteredChatBookings = shouldRenderRecordArchive');
-    expect(pageSource).toContain('buildCustomerChatArchiveBookings(bookings, dateFilters)');
-    expect(pageSource).toContain('buildCustomerChatArchiveSummaryBookings(bookings, dateFilters)');
+    expect(pageSource).toContain('{shouldRenderReviewRecords ? (');
+    expect(pageSource).toContain('const recordChatBookings = buildCustomerChatArchiveBookings(bookings)');
+    expect(pageSource).toContain('buildCustomerChatArchiveBookings(bookings)');
+    expect(pageSource).not.toContain('buildCustomerChatArchiveSummaryBookings(bookings)');
+    expect(pageSource).not.toContain('shouldRenderRecordArchive');
+    expect(pageSource).not.toContain('customer-record-disclosure');
+    expect(pageSource).not.toContain('Load record archive');
     expect(pageSource).toContain('customerOperatorCommandQueue.commands.map');
-    expect(pageSource).toContain('Customer contact and evidence');
-    expect(pageSource).toContain('Customer account operations');
-    expect(pageSource).toContain('customerWalletAdjustmentHref');
-    expect(pageSource).toContain('/wallet-adjustments?ownerType=CUSTOMER');
-    expect(pageSource).toContain('AdminManualWalletAdjustmentHistory');
-    expect(pageSource).toContain('customerManualAdjustmentRows');
-    expect(pageSource).toContain('/admin/wallet-adjustments?ownerType=CUSTOMER');
+    expect(pageSource).toContain('profileContactFacts');
+    expect(pageSource).toContain('Payment and wallet summary');
+    expect(pageSource).toContain('Customer behavior');
+    expect(pageSource).toContain('id="customer-behavior-context"');
+    expect(pageSource).toContain('visibleOverviewPartnerRails.length > 0');
+    expect(pageSource).toContain('partnerRails={visibleOverviewPartnerRails}');
+    expect(pageSource).not.toContain(
+      '<details className="customer-secondary-disclosure admin-mb-16" id="customer-behavior-context">',
+    );
+    expect(pageSource).toContain('CustomerWalletAdjustmentPanel');
+    expect(pageSource).toContain('customerWalletLedger');
+    expect(pageSource).toContain('/wallet-ledger?take=');
+    expect(pageSource).not.toContain('/admin/wallet-adjustments?ownerType=CUSTOMER');
+    expect(pageSource).not.toContain('/admin/wallet-adjustment-requests?status=REQUESTED');
     expect(pageSource).toContain('buildCustomerActivityExportHref');
     expect(pageSource).toContain('/api/admin/customers/${encodeURIComponent(customerId)}/activity/export');
+    expect(pageSource).not.toContain('title="Audit record filters"');
+    expect(pageSource).not.toContain('id="record-date-filter"');
     expect(pageSource).not.toContain('buildCsvDataHref');
     expect(pageSource).not.toContain('const customerActivityRecords = buildCustomerActivityRecords');
     expect(pageSource).not.toContain('const filteredCustomerActivityRecords = orderCustomerActivityRecords');
-    expect(pageSource).not.toContain('filteredCustomerActivityRecords.slice(0, CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT)');
+    expect(pageSource).not.toContain(
+      'filteredCustomerActivityRecords.slice(0, CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT)',
+    );
 
-    const operatingBandStart = pageSource.indexOf('title="Customer operating picture"');
+    const operatingBandStart = pageSource.indexOf('title="Current status"');
     const bookingBoardStart = pageSource.indexOf('<CustomerBookingOperationBoard');
-    const accountBandStart = pageSource.indexOf('title="Customer account and balance"');
+    const accountBandStart = pageSource.indexOf('title="Payment & wallet"');
     expect(operatingBandStart).toBeGreaterThan(-1);
     expect(bookingBoardStart).toBeGreaterThan(operatingBandStart);
     expect(accountBandStart).toBeGreaterThan(bookingBoardStart);
@@ -66,9 +83,11 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('Filtered notices');
     expect(pageSource).not.toContain('Customer information');
     expect(pageSource).not.toContain('#customer-info');
-    expect(pageSource).toContain('title="Customer workspace view"');
-    expect(pageSource).toContain('href={`/customers/${customer.id}?view=account`}');
-    expect(pageSource).toContain('href={`/customers/${customer.id}?view=records`}');
+    expect(pageSource).not.toContain('title="Customer workspace"');
+    expect(pageSource).not.toContain('href={`/customers/${customer.id}?view=account`}');
+    expect(pageSource).not.toContain('href={`/customers/${customer.id}?view=records`}');
+    expect(pageSource).not.toContain('detailView');
+    expect(pageSource).toContain('withoutLegacyCustomerDetailView');
     expect(pageSource).not.toContain('CustomerDetailShortcutStrip');
     expect(pageSource).not.toContain('Booking and cancellation history');
     expect(pageSource).not.toContain('customer-booking-history-section');
@@ -78,7 +97,10 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('customer-booking-ops-ledger-section');
     expect(pageSource).not.toContain('Customer chronological activity');
     expect(pageSource).not.toContain('id="customer-activity"');
-    expect(pageSource).not.toContain('bookingHistoryPage');
+    expect(pageSource).not.toContain('liveBookingsPage');
+    expect(pageSource).not.toContain('completedBookingsPage');
+    expect(pageSource).not.toContain('preMatchBookingsPage');
+    expect(pageSource).not.toContain('partnerCancelledBookingsPage');
     expect(pageSource).not.toContain('chatRetentionPage');
     expect(pageSource).not.toContain('bookingOpsLedgerPage');
     expect(pageSource).not.toContain('Customer account facts');
@@ -100,7 +122,7 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('CustomerDailyActivityDigest');
     expect(pageSource).not.toContain('Latest support rows');
     expect(pageSource).not.toContain("booking.payment?.status ?? 'No payment'");
-    expect(pageSource).not.toContain("formatMoney(Number(booking.payment.amount ?? 0))");
+    expect(pageSource).not.toContain('formatMoney(Number(booking.payment.amount ?? 0))');
     expect(pageSource).not.toContain('booking.chatRoom.messages?.length ?? 0');
     expect(pageSource).not.toContain('href={row.chatHref}');
     expect(pageSource).not.toContain('customerActivitySummary');
@@ -114,19 +136,19 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('No customer push device recorded.');
     expect(pageSource).not.toContain('active session(s)');
 
-    const accountEvidenceStart = pageSource.indexOf('id="customer-account-evidence"');
     const accountOperationsStart = pageSource.indexOf('id="customer-account-operations"');
-    expect(accountEvidenceStart).toBeGreaterThan(-1);
-    expect(accountOperationsStart).toBeGreaterThan(accountEvidenceStart);
-    const accountFactsBuilderStart = pageSource.indexOf('function buildCustomerAccountFacts');
-    const accountFactsBuilderEnd = pageSource.indexOf('function buildCustomerActivityPlan');
-    expect(accountFactsBuilderStart).toBeGreaterThan(-1);
-    expect(accountFactsBuilderEnd).toBeGreaterThan(accountFactsBuilderStart);
-    const accountFactsBuilderSource = pageSource.slice(accountFactsBuilderStart, accountFactsBuilderEnd);
-    expect(accountFactsBuilderSource).not.toContain("label: 'Country'");
-    expect(accountFactsBuilderSource).not.toContain("label: 'Gender'");
-    expect(accountFactsBuilderSource).not.toContain("label: 'Sign-up Date'");
-    expect(accountFactsBuilderSource).not.toContain("label: 'Last Login Date'");
-    expect(accountFactsBuilderSource).not.toContain("label: 'Last Login Address'");
+    const inlineWalletRequestStart = pageSource.indexOf('<CustomerWalletAdjustmentPanel');
+    const profileContactCardStart = pageSource.indexOf('contactRows={addresses.map');
+    expect(accountOperationsStart).toBeGreaterThan(-1);
+    expect(inlineWalletRequestStart).toBeGreaterThan(accountOperationsStart);
+    expect(profileContactCardStart).toBeGreaterThan(-1);
+    expect(profileContactCardStart).toBeLessThan(accountOperationsStart);
+    expect(pageSource.match(/contactRows=\{addresses\.map/g)).toHaveLength(1);
+    expect(pageSource).not.toContain('function buildCustomerAccountFacts');
+    expect(pageSource).not.toContain('id="customer-account-evidence"');
+    expect(pageSource).not.toContain('title="Profile and contact"');
+    expect(pageSource).not.toContain("label: 'Name'");
+    expect(pageSource).not.toContain("label: 'Phone'");
+    expect(pageSource).not.toContain("label: 'Email'");
   });
 });

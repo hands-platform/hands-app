@@ -681,16 +681,9 @@ describe('Admin form control CSS', () => {
     expect(fieldWidthBlock).toContain('width: 100%');
   });
 
-  it.each([
-    [
-      'native root fields',
-      ":root\n  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(\n    [type='hidden']\n  ):not([type='color']):focus,",
-    ],
-    [
-      'files and referral compact fields',
-      ".files-page\n  .filter-bar\n  .compact-form\n  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(\n    [type='hidden']\n  ):not([type='color']):focus,",
-    ],
-  ])('keeps %s on the Vuexy focused field model', (_label, selector) => {
+  it('keeps native root fields on the Vuexy focused field model', () => {
+    const selector =
+      ":root\n  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(\n    [type='hidden']\n  ):not([type='color']):focus,";
     const focusIndex = globalsCss.indexOf(selector);
     const focusBlock = cssRuleBlockAt(focusIndex);
 

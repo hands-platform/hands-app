@@ -1,59 +1,36 @@
 import {
-  buildTaxPolicyDetailsHref,
   buildTaxPolicyEditorHref,
   buildTaxPolicyLoadPlan,
 } from './tax-policy-page-model';
 
 describe('tax policy page model', () => {
-  it('keeps the default operator summary bounded and skips evidence queries', () => {
+  it('keeps every tax policy section visible with bounded evidence queries', () => {
     const plan = buildTaxPolicyLoadPlan({});
 
-    expect(plan.detailsMode).toBe('summary');
     expect(plan.taxPolicyVersionsHref).toBe('/admin/tax-policy-versions?take=20');
-    expect(plan.auditLogsHref).toBeNull();
-    expect(plan.recentEarningsHref).toBeNull();
-    expect(plan.shouldRenderSummary).toBe(true);
-    expect(plan.shouldRenderWorkspaceIndex).toBe(true);
+    expect(plan.auditLogsHref).toBe('/admin/audit-logs?q=tax_&take=8');
+    expect(plan.recentEarningsHref).toBe('/admin/earnings?range=30d&take=8');
   });
 
-  it('loads only the data required by each detailed workspace', () => {
+  it('keeps legacy details URLs compatible without hiding page sections', () => {
     const editor = buildTaxPolicyLoadPlan({ details: 'editor' });
     const audit = buildTaxPolicyLoadPlan({ details: 'audit' });
     const records = buildTaxPolicyLoadPlan({ details: 'records' });
 
-    expect(editor.shouldRenderEditor).toBe(true);
-    expect(editor.auditLogsHref).toBeNull();
-    expect(editor.recentEarningsHref).toBeNull();
-
-    expect(audit.shouldRenderAudit).toBe(true);
+    expect(editor.taxPolicyVersionsHref).toBe('/admin/tax-policy-versions?take=20');
     expect(audit.auditLogsHref).toBe('/admin/audit-logs?q=tax_&take=8');
-    expect(audit.recentEarningsHref).toBeNull();
-
-    expect(records.shouldRenderRecords).toBe(true);
-    expect(records.auditLogsHref).toBeNull();
     expect(records.recentEarningsHref).toBe('/admin/earnings?range=30d&take=8');
   });
 
-  it('keeps details=all as a lightweight workspace index', () => {
+  it('keeps details=all as a compatibility URL for the unified page', () => {
     const plan = buildTaxPolicyLoadPlan({ details: 'all' });
 
-    expect(plan.shouldRenderWorkspaceIndex).toBe(true);
-    expect(plan.shouldRenderSummary).toBe(false);
-    expect(plan.shouldRenderEditor).toBe(false);
-    expect(plan.shouldRenderAudit).toBe(false);
-    expect(plan.shouldRenderRecords).toBe(false);
-    expect(plan.auditLogsHref).toBeNull();
-    expect(plan.recentEarningsHref).toBeNull();
+    expect(plan).toEqual(buildTaxPolicyLoadPlan({}));
   });
 
-  it('builds stable workspace links', () => {
-    expect(buildTaxPolicyDetailsHref('summary')).toBe('/tax-policy');
-    expect(buildTaxPolicyDetailsHref('all')).toBe('/tax-policy?details=all');
-    expect(buildTaxPolicyDetailsHref('editor')).toBe('/tax-policy?details=editor');
-    expect(buildTaxPolicyDetailsHref('audit')).toBe('/tax-policy?details=audit');
-    expect(buildTaxPolicyDetailsHref('records')).toBe('/tax-policy?details=records');
+  it('builds a stable selected-policy anchor link', () => {
     expect(buildTaxPolicyEditorHref('policy id/1')).toBe(
-      '/tax-policy?details=editor&policyId=policy%20id%2F1',
+      '/tax-policy?policyId=policy%20id%2F1#tax-policy-editor',
     );
   });
 });

@@ -1,0 +1,292 @@
+- generic [ref=f1e1]:
+  - generic [ref=f1e3]:
+    - complementary [ref=f1e4]:
+      - strong [ref=f1e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=f1e7]:
+        - link "Shift Command" [ref=f1e8] [cursor=pointer]:
+          - /url: /
+        - group [ref=f1e14]:
+          - generic "Booking Operations" [ref=f1e15] [cursor=pointer]
+        - group [ref=f1e24]:
+          - generic "Customer Support" [active] [ref=f1e25] [cursor=pointer]
+          - generic [ref=f1e371]:
+            - link "Customers" [ref=f1e372] [cursor=pointer]:
+              - /url: /customers
+            - link "Customer Signals" [ref=f1e378] [cursor=pointer]:
+              - /url: /reviews
+            - link "Chat Evidence" [ref=f1e382] [cursor=pointer]:
+              - /url: /chat-archive
+        - group [ref=f1e34]:
+          - generic "Partner Operations" [ref=f1e35] [cursor=pointer]
+        - group [ref=f1e42]:
+          - generic "Finance Operations" [ref=f1e43] [cursor=pointer]
+        - group [ref=f1e51]:
+          - generic "Finance Records & Close" [ref=f1e52] [cursor=pointer]
+        - group [ref=f1e60]:
+          - generic "Growth & Communications" [ref=f1e61] [cursor=pointer]
+        - group [ref=f1e68]:
+          - generic "Administration & Settings" [ref=f1e69] [cursor=pointer]
+    - main [ref=f1e77]:
+      - generic "Admin workspace" [ref=f1e78]:
+        - navigation "Breadcrumb" [ref=f1e80]:
+          - link "HANDS" [ref=f1e81] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f1e84]: Shift Command
+        - generic "Workspace actions" [ref=f1e85]:
+          - button "Search Ctrl K" [ref=f1e87] [cursor=pointer]:
+            - generic [ref=f1e88]: Search
+            - generic [ref=f1e92]: Ctrl K
+          - button "Switch to dark mode" [ref=f1e94] [cursor=pointer]
+          - link "Operations Policy" [ref=f1e97] [cursor=pointer]:
+            - /url: /operations-policy
+          - button "Open operation alerts" [ref=f1e102] [cursor=pointer]
+          - button "Sign out" [ref=f1e107] [cursor=pointer]
+      - generic [ref=f1e111]:
+        - generic [ref=f1e112]:
+          - heading "Shift Command" [level=1] [ref=f1e114]
+          - generic "Page actions" [ref=f1e115]:
+            - button "Refresh Start Shift data" [ref=f1e116] [cursor=pointer]: Refresh
+            - status [ref=f1e122]
+        - generic [ref=f1e123]:
+          - navigation "Shift context" [ref=f1e124]:
+            - generic [ref=f1e125]:
+              - generic [ref=f1e126]:
+                - text: Today so far · Updated
+                - time [ref=f1e127]: 8 Aug 2026, 14:59
+                - text: ICT · All sources healthy
+              - generic [ref=f1e128]: Test data excluded · Refresh every 60s
+            - generic [ref=f1e129]:
+              - strong [ref=f1e130]: Local Admin Web Actor
+              - generic [ref=f1e131]: Mine 0
+              - generic [ref=f1e132]: Unassigned 160
+              - generic [ref=f1e133]: SLA overdue 177
+              - link "Open handoff" [ref=f1e134] [cursor=pointer]:
+                - /url: /operations-handoff
+          - region [ref=f1e135]:
+            - generic [ref=f1e136]:
+              - heading "Next action" [level=2] [ref=f1e138]
+              - generic [ref=f1e139]:
+                - generic [ref=f1e140]: SLA overdue
+                - link "Review oldest payment clearing" [ref=f1e141] [cursor=pointer]:
+                  - /url: /finance-tax/payment-clearing?range=all&review=open&age=48h
+            - generic [ref=f1e145]:
+              - generic [ref=f1e147]:
+                - generic [ref=f1e148]: SLA overdue
+                - heading "Payment clearing" [level=3] [ref=f1e149]
+                - paragraph [ref=f1e150]: Oldest 58d ago. 36.800.000 VND remains under review. Review and assign the queue.
+                - strong [ref=f1e151]: 108 cases
+                - generic [ref=f1e152]:
+                  - generic [ref=f1e153]:
+                    - term [ref=f1e154]: Team
+                    - definition [ref=f1e155]: Finance
+                  - generic [ref=f1e156]:
+                    - term [ref=f1e157]: Assignee
+                    - definition [ref=f1e158]: Unassigned
+                  - generic [ref=f1e159]:
+                    - term [ref=f1e160]: Oldest
+                    - definition [ref=f1e161]: 58d ago
+                  - generic [ref=f1e162]:
+                    - term [ref=f1e163]: Impact
+                    - definition [ref=f1e164]: 36.800.000 VND
+                - group "Payment clearing ageing" [ref=f1e165]:
+                  - 'link "Open Payment clearing: Unassigned 108" [ref=f1e166] [cursor=pointer]':
+                    - /url: /finance-tax/payment-clearing?range=all&review=open&owner=unassigned
+                    - text: Unassigned 108
+                  - 'link "Open Payment clearing: 48h+ 106" [ref=f1e167] [cursor=pointer]':
+                    - /url: /finance-tax/payment-clearing?range=all&review=open&age=48h
+                    - text: 48h+ 106
+              - list "Current live operations" [ref=f1e168]:
+                - listitem [ref=f1e169] [cursor=pointer]:
+                  - generic [ref=f1e170]: Customer matching wait
+                  - strong [ref=f1e171]: "0"
+                - listitem [ref=f1e172] [cursor=pointer]:
+                  - generic [ref=f1e173]: In service
+                  - strong [ref=f1e174]: "0"
+                - listitem [ref=f1e175] [cursor=pointer]:
+                  - generic [ref=f1e176]: Unassigned
+                  - strong [ref=f1e177]: "160"
+                - listitem [ref=f1e178] [cursor=pointer]:
+                  - generic [ref=f1e179]: SLA overdue
+                  - strong [ref=f1e180]: "177"
+          - region [ref=f1e181]:
+            - generic [ref=f1e182]:
+              - heading "Open queues" [level=2] [ref=f1e184]
+              - generic [ref=f1e185]: 2 queues
+            - generic [ref=f1e188]:
+              - generic [ref=f1e189]:
+                - generic [ref=f1e190]: SLA overdue
+                - heading "Bank reconciliation" [level=3] [ref=f1e191]
+                - paragraph [ref=f1e192]: Oldest 36d ago. 13.400.000 VND remains under review. Review and assign the queue.
+                - strong [ref=f1e193]: 44 cases
+                - generic [ref=f1e194]:
+                  - generic [ref=f1e195]:
+                    - term [ref=f1e196]: Team
+                    - definition [ref=f1e197]: Finance
+                  - generic [ref=f1e198]:
+                    - term [ref=f1e199]: Assignee
+                    - definition [ref=f1e200]: Unassigned
+                  - generic [ref=f1e201]:
+                    - term [ref=f1e202]: Oldest
+                    - definition [ref=f1e203]: 36d ago
+                  - generic [ref=f1e204]:
+                    - term [ref=f1e205]: Impact
+                    - definition [ref=f1e206]: 13.400.000 VND
+                - group "Bank reconciliation ageing" [ref=f1e207]:
+                  - 'link "Open Bank reconciliation: Unassigned 24" [ref=f1e208] [cursor=pointer]':
+                    - /url: /finance-tax/bank-reconciliation?range=all&review=unmatched&owner=unassigned
+                    - text: Unassigned 24
+                  - 'link "Open Bank reconciliation: 48h+ 43" [ref=f1e209] [cursor=pointer]':
+                    - /url: /finance-tax/bank-reconciliation?range=all&review=unmatched&age=48h
+                    - text: 48h+ 43
+                - link "Review oldest bank reconciliation" [ref=f1e210] [cursor=pointer]:
+                  - /url: /finance-tax/bank-reconciliation?range=all&review=unmatched&age=48h
+              - generic [ref=f1e211]:
+                - generic [ref=f1e212]: SLA overdue
+                - heading "Partner deposit reconciliation" [level=3] [ref=f1e368]
+                - paragraph [ref=f1e369]: Oldest 24d ago. 2.240.000 VND remains under review. Review and assign the queue.
+                - strong [ref=f1e213]: 28 cases
+                - generic [ref=f1e214]:
+                  - generic [ref=f1e215]:
+                    - term [ref=f1e216]: Team
+                    - definition [ref=f1e217]: Finance
+                  - generic [ref=f1e218]:
+                    - term [ref=f1e219]: Assignee
+                    - definition [ref=f1e220]: Unassigned
+                  - generic [ref=f1e221]:
+                    - term [ref=f1e222]: Oldest
+                    - definition [ref=f1e223]: 24d ago
+                  - generic [ref=f1e224]:
+                    - term [ref=f1e225]: Impact
+                    - definition [ref=f1e226]: 2.240.000 VND
+                - group "Partner deposit reconciliation ageing" [ref=f1e370]:
+                  - 'link "Open Partner deposit reconciliation: Unassigned 28" [ref=f1e227] [cursor=pointer]':
+                    - /url: /finance-tax/partner-bank-deposits?review=needs-reconciliation&owner=unassigned
+                    - text: Unassigned 28
+                  - 'link "Open Partner deposit reconciliation: 48h+ 28" [ref=f1e228] [cursor=pointer]':
+                    - /url: /finance-tax/partner-bank-deposits?review=needs-reconciliation&sla=escalate
+                    - text: 48h+ 28
+                - link "Review oldest partner deposit reconciliation" [ref=f1e229] [cursor=pointer]:
+                  - /url: /finance-tax/partner-bank-deposits?review=needs-reconciliation&sla=escalate
+          - region [ref=f1e230]:
+            - generic [ref=f1e231]:
+              - heading "Money status" [level=2] [ref=f1e233]
+              - generic [ref=f1e234]:
+                - generic [ref=f1e235]: 177 overdue · 160 unassigned · 84 backlog · 52.440.000 VND exposed
+                - link "Open finance" [ref=f1e236] [cursor=pointer]:
+                  - /url: /finance-overview
+            - generic [ref=f1e237]:
+              - paragraph [ref=f1e238]: Open Finance queues are prioritised above.
+              - link "Backlog Settlement gaps 84" [ref=f1e240] [cursor=pointer]:
+                - /url: /bookings?view=closeout
+                - generic [ref=f1e241]: Backlog
+                - generic [ref=f1e242]: Settlement gaps
+                - strong [ref=f1e243]: "84"
+          - region [ref=f1e244]:
+            - generic [ref=f1e245]:
+              - heading "Today result" [level=2] [ref=f1e247]
+              - generic [ref=f1e248]:
+                - generic [ref=f1e249]: Today (Vietnam)
+                - group "Shift command analytics range" [ref=f1e250]:
+                  - link "Today" [ref=f1e251] [cursor=pointer]:
+                    - /url: /?range=today
+                  - link "Last 7 days" [ref=f1e252] [cursor=pointer]:
+                    - /url: /?range=7d
+                  - link "Last 30 days" [ref=f1e253] [cursor=pointer]:
+                    - /url: /?range=30d
+            - status [ref=f1e255]:
+              - strong [ref=f1e256]: No bookings or customer activity today.
+              - link "View last 7 days" [ref=f1e257] [cursor=pointer]:
+                - /url: /?range=7d#dashboard-today-result
+          - region [ref=f1e258]:
+            - generic [ref=f1e259]:
+              - heading "Customer and Partner leaders" [level=2] [ref=f1e261]
+              - generic [ref=f1e262]:
+                - generic [ref=f1e263]: Today (Vietnam)
+                - group "Performance directories" [ref=f1e264]:
+                  - link "Customers" [ref=f1e265] [cursor=pointer]:
+                    - /url: /customers
+                  - link "Partners" [ref=f1e266] [cursor=pointer]:
+                    - /url: /partners
+            - region "Partner needs attention" [ref=f1e269]:
+              - generic [ref=f1e271]:
+                - heading "Partner needs attention" [level=3] [ref=f1e272]
+                - paragraph [ref=f1e273]: "Open issues only: operating blocks, 7-day inactivity, and unresolved matched cancellations"
+              - tablist "Partner ranking mode" [ref=f1e274]:
+                - tab "Needs attention 5" [selected] [ref=f1e275] [cursor=pointer]
+              - tabpanel "Needs attention 5" [ref=f1e276]:
+                - region "Scrollable data table" [ref=f1e277]:
+                  - table [ref=f1e278]:
+                    - rowgroup [ref=f1e279]:
+                      - row [ref=f1e280]:
+                        - columnheader "Partner" [ref=f1e281]
+                        - columnheader "Issue" [ref=f1e282]
+                        - columnheader "Last activity" [ref=f1e283]
+                        - columnheader "Open" [ref=f1e284]
+                    - rowgroup [ref=f1e285]:
+                      - row [ref=f1e286]:
+                        - rowheader "1 Provider 0011" [ref=f1e287]:
+                          - generic [ref=f1e288]: "1"
+                          - text: Provider 0011
+                        - cell [ref=f1e289]:
+                          - generic "1 open issue" [ref=f1e290]:
+                            - link "Open 1 inactive issue" [ref=f1e291] [cursor=pointer]:
+                              - /url: /partners/cmpfejut100dlvydwayrrp6nz
+                              - text: Inactive 1
+                        - cell "No recent session" [ref=f1e292]
+                        - cell [ref=f1e293]:
+                          - link "Open" [ref=f1e294] [cursor=pointer]:
+                            - /url: /partners/cmpfejut100dlvydwayrrp6nz
+                      - row [ref=f1e295]:
+                        - rowheader "2 Provider 6889" [ref=f1e296]:
+                          - generic [ref=f1e297]: "2"
+                          - text: Provider 6889
+                        - cell [ref=f1e298]:
+                          - generic "1 open issue" [ref=f1e299]:
+                            - link "Open 1 inactive issue" [ref=f1e300] [cursor=pointer]:
+                              - /url: /partners/cmpgmavzy0003vye4yd5n10a8
+                              - text: Inactive 1
+                        - cell "No recent session" [ref=f1e301]
+                        - cell [ref=f1e302]:
+                          - link "Open" [ref=f1e303] [cursor=pointer]:
+                            - /url: /partners/cmpgmavzy0003vye4yd5n10a8
+                      - row [ref=f1e304]:
+                        - rowheader "3 Provider 2578" [ref=f1e305]:
+                          - generic [ref=f1e306]: "3"
+                          - text: Provider 2578
+                        - cell [ref=f1e307]:
+                          - generic "1 open issue" [ref=f1e308]:
+                            - link "Open 1 inactive issue" [ref=f1e309] [cursor=pointer]:
+                              - /url: /partners/cmph0kzh40003vyr4zm84h5hz
+                              - text: Inactive 1
+                        - cell "No recent session" [ref=f1e310]
+                        - cell [ref=f1e311]:
+                          - link "Open" [ref=f1e312] [cursor=pointer]:
+                            - /url: /partners/cmph0kzh40003vyr4zm84h5hz
+                      - row [ref=f1e313]:
+                        - rowheader "4 Provider 7033" [ref=f1e314]:
+                          - generic [ref=f1e315]: "4"
+                          - text: Provider 7033
+                        - cell [ref=f1e316]:
+                          - generic "1 open issue" [ref=f1e317]:
+                            - link "Open 1 inactive issue" [ref=f1e318] [cursor=pointer]:
+                              - /url: /partners/cmph0r2ym0003vy3cdwqvhz4p
+                              - text: Inactive 1
+                        - cell "No recent session" [ref=f1e319]
+                        - cell [ref=f1e320]:
+                          - link "Open" [ref=f1e321] [cursor=pointer]:
+                            - /url: /partners/cmph0r2ym0003vy3cdwqvhz4p
+                      - row [ref=f1e322]:
+                        - rowheader "5 Partner 2400" [ref=f1e323]:
+                          - generic [ref=f1e324]: "5"
+                          - text: Partner 2400
+                        - cell [ref=f1e325]:
+                          - generic "1 open issue" [ref=f1e326]:
+                            - link "Open 1 inactive issue" [ref=f1e327] [cursor=pointer]:
+                              - /url: /partners/cmq7v7pyf0009vyvgqmq0132p
+                              - text: Inactive 1
+                        - cell "No recent session" [ref=f1e328]
+                        - cell [ref=f1e329]:
+                          - link "Open" [ref=f1e330] [cursor=pointer]:
+                            - /url: /partners/cmq7v7pyf0009vyvgqmq0132p
+  - button "Open Next.js Dev Tools" [ref=f1e336] [cursor=pointer]
+  - alert [ref=f1e340]

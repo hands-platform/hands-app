@@ -3,127 +3,89 @@ import { readFileSync } from 'node:fs';
 import { PaymentDetailActionMapSection } from './payment-detail-action-map-section';
 
 describe('PaymentDetailActionMapSection', () => {
-  it('uses shared Vuexy status badge atoms for action labels', () => {
+  it('renders the current decision, states, evidence, and policy verification first', () => {
+    const section = PaymentDetailActionMapSection({
+      actionLabel: 'Payment detail actions for payment-1',
+      actions: [
+        { href: '/payments/payment-1?confirm=capture', kind: 'link', label: 'Capture payment', tone: 'warning' },
+      ],
+      bookingStatus: 'COMPLETED',
+      cashDebtSettlementForm: null,
+      confirmation: <div>Confirm capture against current evidence.</div>,
+      decisions: [decision()],
+      evidence: {
+        label: 'Verified callback',
+        reason: 'Signature and amount match.',
+        state: 'VERIFIED',
+        verifiedAt: '2026-08-09T02:00:00.000Z',
+      },
+      paymentStatus: 'AUTHORIZED',
+    });
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Payment decision');
+    expect(rendered).toContain('Next safe action Capture payment');
+    expect(rendered).toContain('Current state AUTHORIZED Booking: COMPLETED');
+    expect(rendered).toContain('Payment evidence Verified callback Signature and amount match.');
+    expect(rendered).toContain('Policy check admin-payment-actions-v1');
+    expect(rendered).toContain('Confirm capture against current evidence.');
+  });
+
+  it('fails closed when the API returns no action decisions', () => {
+    const section = PaymentDetailActionMapSection({
+      actionLabel: 'Payment detail actions',
+      actions: [],
+      bookingStatus: 'CANCELLED',
+      cashDebtSettlementForm: null,
+      confirmation: null,
+      decisions: [],
+      evidence: undefined,
+      paymentStatus: 'AUTHORIZED',
+    });
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('No executable action');
+    expect(rendered).toContain('No action decision returned');
+    expect(rendered).toContain('Do not execute a payment action');
+    expect(rendered).not.toContain('No urgent block');
+  });
+
+  it('uses shared panel, badge, detail, menu, and date components', () => {
     const source = readFileSync('app/payments/[id]/payment-detail-action-map-section.tsx', 'utf8');
 
     expect(source).toContain('AdminTablePanel');
-    expect(source).toContain('AdminStageItem');
-    expect(source).toContain('AdminStageList');
-    expect(source).toContain('StatusBadgeFromPillClass');
-    expect(source).not.toContain('statusBadgeToneFromPillClass');
-    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
-    expect(source).not.toContain('<div className="setup-stage-list">');
-    expect(source).not.toContain('className="setup-stage-item"');
-    expect(source).not.toContain('PillClassBadge');
-  });
-
-  it('renders action rows, confirmation content, and menu actions', () => {
-    const section = PaymentDetailActionMapSection({
-      actionLabel: 'Payment detail actions for paymen',
-      actions: [
-        {
-          href: '/payments/payment-1?confirm=sync&paymentId=payment-1',
-          kind: 'link',
-          label: 'Sync gateway',
-          tone: 'info',
-        },
-      ],
-      cashDebtSettlementForm: <form aria-label="Cash fee settlement form" />,
-      confirmation: <div>Confirm capture before running it.</div>,
-      hasBlockingReview: true,
-      rows: [
-        {
-          action: 'Capture',
-          operatorRule: 'Capture only after completed service evidence and payment ledger review.',
-          pillClass: 'pill-warn',
-          reason: 'Service is completed and authorization hold is active.',
-          status: 'Review capture',
-        },
-      ],
-    });
-
-    const rendered = textContent(section);
-
-    expect(rendered).toContain('Payment action execution map');
-    expect(rendered).toContain('Review needed');
-    expect(rendered).toContain('Confirm capture before running it.');
-    expect(rendered).toContain('Capture only after completed service evidence');
-    expect(hrefsIn(section)).toContain('/payments/payment-1?confirm=sync&paymentId=payment-1');
-    expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
-      ]),
-    );
-  });
-
-  it('does not duplicate the base pill class for detail action badges', () => {
-    const section = PaymentDetailActionMapSection({
-      actionLabel: 'Payment detail actions for paymen',
-      actions: [],
-      cashDebtSettlementForm: null,
-      confirmation: null,
-      hasBlockingReview: true,
-      rows: [
-        {
-          action: 'Capture',
-          operatorRule: 'Capture only after review.',
-          pillClass: 'pill pill-warn',
-          reason: 'Authorization hold is active.',
-          status: 'Review capture',
-        },
-      ],
-    });
-
-    expect(classNamesIn(section)).toContain('pill pill-warn');
-    expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminDetails');
+    expect(source).toContain('ActionMenu');
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('Payment action execution map');
   });
 });
 
+function decision() {
+  return {
+    action: 'CAPTURE' as const,
+    policyVersion: 'admin-payment-actions-v1',
+    reason: 'Completed booking and verified callback support capture.',
+    reasonCode: 'CAPTURE_AVAILABLE',
+    recommended: true,
+    requiredEvidence: ['verified callback'],
+    state: 'AVAILABLE' as const,
+    verifiedAt: '2026-08-09T02:00:00.000Z',
+  };
+}
+
 function textContent(value: unknown): string {
   value = resolveElement(value);
-  if (value === null || value === undefined || typeof value === 'boolean') {
-    return '';
-  }
-  if (typeof value === 'string' || typeof value === 'number') {
-    return String(value);
-  }
-  if (Array.isArray(value)) {
-    return value.map(textContent).join(' ');
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  return textContent(props?.children);
+  if (value === null || value === undefined || typeof value === 'boolean') return '';
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (Array.isArray(value)) return value.map(textContent).join(' ');
+  return textContent(readRecord(readRecord(value)?.props)?.children);
 }
 
-function hrefsIn(value: unknown): string[] {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value !== 'object') {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap(hrefsIn);
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  const href = typeof props?.href === 'string' ? [props.href] : [];
-  return [...href, ...hrefsIn(props?.children)];
-}
-
-function classNamesIn(value: unknown): string[] {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value !== 'object') {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap(classNamesIn);
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  const className = typeof props?.className === 'string' ? [props.className] : [];
-  return [...className, ...classNamesIn(props?.children)];
+function normalizedText(value: unknown) {
+  return textContent(value).replace(/\s+/g, ' ').trim();
 }
 
 function resolveElement(value: unknown): unknown {
@@ -133,8 +95,7 @@ function resolveElement(value: unknown): unknown {
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return null;
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
 }

@@ -3,6 +3,15 @@ import { readFileSync } from 'node:fs';
 import { PartnerDetailBookingEvidenceBundlesSection } from './partner-detail-booking-evidence-bundles-section';
 
 describe('PartnerDetailBookingEvidenceBundlesSection', () => {
+  it('fits the five operational columns inside the 1024px Partner workspace', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.partner-detail-page #partner-booking-evidence-bundles .admin-data-table {');
+    expect(css).toContain('table-layout: fixed;');
+    expect(css).toContain(':is(th, td):nth-child(5)');
+    expect(css).toContain('.partner-booking-evidence-details {\n    min-width: 0;');
+  });
+
   it('uses the shared Vuexy badge atom for booking status', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-booking-evidence-bundles-section.tsx', 'utf8');
 
@@ -168,7 +177,10 @@ describe('PartnerDetailBookingEvidenceBundlesSection', () => {
     });
     const rendered = normalizeSpaces(textContent(section));
     const source = readFileSync('app/partners/[id]/partner-detail-booking-evidence-bundles-section.tsx', 'utf8');
-    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+    const bookingRowsModelSource = readFileSync(
+      'app/partners/[id]/partner-detail-booking-rows-model.tsx',
+      'utf8',
+    );
 
     expect(rendered).toContain('Shared booking date marker');
     expect(rendered).toContain('Shared ops date marker');
@@ -178,9 +190,15 @@ describe('PartnerDetailBookingEvidenceBundlesSection', () => {
     expect(source).toContain('readonly opsDetailNode?: ReactNode;');
     expect(source).toContain('{row.bookingLabelNode ?? row.bookingLabel}');
     expect(source).toContain('{row.opsDetailNode ?? row.opsDetail}');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={bookingRecordCreatedAt(booking)} />');
-    expect(pageSource).toContain('participated <DateTimeText fallback="Missing" value={participant.joinedAt} />');
-    expect(pageSource).toContain('responded <DateTimeText fallback="Missing" value={participant.respondedAt} />');
+    expect(bookingRowsModelSource).toContain(
+      '<DateTimeText fallback="Missing" value={bookingRecordCreatedAt(booking)} />',
+    );
+    expect(bookingRowsModelSource).toContain(
+      'participated <DateTimeText fallback="Missing" value={participant.joinedAt} />',
+    );
+    expect(bookingRowsModelSource).toContain(
+      'responded <DateTimeText fallback="Missing" value={participant.respondedAt} />',
+    );
   });
 });
 

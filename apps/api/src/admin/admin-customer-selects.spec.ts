@@ -1,4 +1,5 @@
 import { adminCustomerDetailBookingSelect } from './admin-booking-selects';
+import { CUSTOMER_APP_NOTIFICATION_TYPES } from '../notifications/customer-app-notification.policy';
 import {
   ADMIN_CUSTOMER_DETAIL_FAVORITE_PROVIDER_LIMIT,
   ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT,
@@ -67,6 +68,7 @@ describe('admin customer selects', () => {
       lastLoginAddress: true,
     });
     expect(adminCustomerDetailSelect.user.select.notifications).toMatchObject({
+      where: { type: { in: [...CUSTOMER_APP_NOTIFICATION_TYPES] } },
       take: 10,
       select: adminCustomerNotificationSelect,
     });
@@ -109,6 +111,22 @@ describe('admin customer selects', () => {
         viewCount: true,
         providerProfile: expect.objectContaining({
           select: expect.objectContaining({ displayName: true, status: true }),
+        }),
+      }),
+    });
+    expect(adminCustomerDetailSelect.referralsMade).toMatchObject({
+      take: 10,
+      select: expect.objectContaining({
+        referralCode: expect.any(Object),
+        referredCustomerProfile: expect.any(Object),
+        rewards: expect.objectContaining({
+          take: 10,
+          select: expect.objectContaining({
+            amount: true,
+            availableAt: true,
+            qualifyingBookingId: true,
+            status: true,
+          }),
         }),
       }),
     });
@@ -174,7 +192,7 @@ describe('admin customer selects', () => {
     expect(adminCustomerDetailSelect.user.select.appSessions.select).not.toHaveProperty('updatedAt');
   });
 
-  it('keeps customer detail diagnostics removable from the default operator payload', () => {
+  it('keeps a safe session summary and customer notifications while removing developer diagnostics', () => {
     expect(adminCustomerDetailWithoutDiagnosticsSelect.user).toMatchObject({
       select: expect.objectContaining({
         id: true,
@@ -182,9 +200,26 @@ describe('admin customer selects', () => {
         fullName: true,
       }),
     });
-    expect(adminCustomerDetailWithoutDiagnosticsSelect.user.select).not.toHaveProperty('appSessions');
-    expect(adminCustomerDetailWithoutDiagnosticsSelect.user.select).not.toHaveProperty('pushDevices');
-    expect(adminCustomerDetailWithoutDiagnosticsSelect.user.select).not.toHaveProperty('notifications');
+    expect(adminCustomerDetailWithoutDiagnosticsSelect.user.select.appSessions).toMatchObject({
+      take: 1,
+      select: {
+        deviceLanguage: true,
+        lastSeenAt: true,
+      },
+    });
+    expect(adminCustomerDetailWithoutDiagnosticsSelect.user.select.appSessions.select).not.toHaveProperty(
+      'deviceId',
+    );
+    expect(adminCustomerDetailWithoutDiagnosticsSelect.user.select.appSessions.select).not.toHaveProperty(
+      'ipAddress',
+    );
+    expect(adminCustomerDetailWithoutDiagnosticsSelect.user.select.pushDevices).toMatchObject({
+      take: ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT,
+    });
+    expect(adminCustomerDetailWithoutDiagnosticsSelect.user.select.notifications).toMatchObject({
+      where: { type: { in: [...CUSTOMER_APP_NOTIFICATION_TYPES] } },
+      take: ADMIN_CUSTOMER_DETAIL_NOTIFICATION_LIMIT,
+    });
     expect(adminCustomerDetailWithoutDiagnosticsSelect.bookings).toMatchObject({
       take: ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT,
       select: adminCustomerDetailBookingSelect,

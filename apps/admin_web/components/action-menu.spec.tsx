@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 import { ActionMenu, ActionMenuDropdownSurface, actionMenuItemClassName, readActionMenuTitle } from './action-menu';
+import { ClientActionDropdownSurface } from './client-action-dropdown';
 
 const source = readFileSync('components/action-menu.tsx', 'utf8');
 
@@ -139,6 +140,23 @@ describe('ActionMenu', () => {
     );
   });
 
+  it('uses the managed client surface only when a dropdown opts in', () => {
+    const menu = ActionMenu({
+      actions: [{ href: '/notifications/notification-1', kind: 'link', label: 'Open notification' }],
+      label: 'Managed notification actions',
+      managedDropdown: true,
+      variant: 'dropdown',
+    });
+
+    expect(menu.type).toBe(ClientActionDropdownSurface);
+    expect(menu.props).toMatchObject({
+      className: 'action-menu-dropdown',
+      label: 'Managed notification actions',
+      menuClassName: 'action-menu-panel',
+      triggerClassName: 'action-menu-trigger',
+    });
+  });
+
   it('keeps duplicate action labels and hidden input names on unique React keys', () => {
     expect(source).toContain('actions.map((item, itemIndex) => (');
     expect(source).toContain('key={`${item.kind}:${item.label}:${itemIndex}`}');
@@ -159,6 +177,7 @@ describe('ActionMenu', () => {
       triggerClassName: 'admin-action-trigger payout-trigger',
     });
 
+    expect(dropdown.type).toBe('details');
     expect(dropdown.props.className).toBe('admin-action-dropdown payout-actions');
     expect(classNamesIn(dropdown)).toEqual(
       expect.arrayContaining([
@@ -225,6 +244,7 @@ function classNamesIn(value: unknown): string[] {
 function resolveElement(value: unknown): unknown {
   const record = readRecord(value);
   const props = readRecord(record?.props);
+  if (record?.type === ClientActionDropdownSurface) return value;
   return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
 }
 

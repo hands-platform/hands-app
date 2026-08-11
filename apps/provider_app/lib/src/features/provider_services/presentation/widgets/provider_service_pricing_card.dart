@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../provider_profile/presentation/provider_error_helpers.dart';
 import '../../domain/entities/provider_service_price.dart';
 import '../providers/provider_service_price_providers.dart';
 import 'provider_service_price_formatters.dart';
@@ -51,13 +52,20 @@ class _ProviderServicePricingCardState
       _refresh();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${service.name} price saved')),
+          SnackBar(content: Text('Đã lưu giá ${service.name}')),
         );
       }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Price update failed: $error')),
+          SnackBar(
+            content: Text(
+              providerAppErrorMessage(
+                error,
+                fallback: 'Không thể cập nhật giá dịch vụ.',
+              ),
+            ),
+          ),
         );
       }
     } finally {
@@ -81,20 +89,20 @@ class _ProviderServicePricingCardState
               children: [
                 Expanded(
                   child: Text(
-                    'Service pricing',
+                    'Giá dịch vụ',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
                 IconButton(
                   onPressed: _saving ? null : _refresh,
                   icon: const Icon(Icons.refresh),
-                  tooltip: 'Refresh pricing',
+                  tooltip: 'Làm mới giá',
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              'Each service has duration options such as 60, 90, and 120 minutes. Your customer price must stay above the HANDS minimum, follow 100.000 VND steps, and match an admin payout rule before customers can book it.',
+              'Mỗi dịch vụ có các thời lượng như 60, 90 và 120 phút. Giá cho khách hàng phải từ mức tối thiểu của HANDS, theo bước 100.000 VND và khớp quy tắc chi trả trước khi có thể đặt.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
@@ -107,14 +115,17 @@ class _ProviderServicePricingCardState
                 if (snapshot.hasError) {
                   return PricingNotice(
                     icon: Icons.error_outline,
-                    text: 'Pricing load failed: ${snapshot.error}',
+                    text: providerAppErrorMessage(
+                      snapshot.error,
+                      fallback: 'Không thể tải giá dịch vụ.',
+                    ),
                   );
                 }
                 final services = snapshot.data ?? const [];
                 if (services.isEmpty) {
                   return const PricingNotice(
                     icon: Icons.spa_outlined,
-                    text: 'No active services are configured yet.',
+                    text: 'Chưa có dịch vụ nào được cấu hình.',
                   );
                 }
                 final groups = groupProviderServicePrices(services);
@@ -186,12 +197,12 @@ class _ProviderServicePriceGroupCard extends StatelessWidget {
                     children: [
                       Chip(
                         visualDensity: VisualDensity.compact,
-                        label: Text('${group.activeOptionCount} active'),
+                        label: Text('${group.activeOptionCount} đang bật'),
                       ),
                       Chip(
                         visualDensity: VisualDensity.compact,
                         label: Text(
-                            '${group.payoutReadyOptionCount} payout ready'),
+                            '${group.payoutReadyOptionCount} sẵn sàng chi trả'),
                       ),
                     ],
                   ),
@@ -199,12 +210,12 @@ class _ProviderServicePriceGroupCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Time options: ${group.durationSummary}',
+                'Thời lượng: ${group.durationSummary}',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 4),
               Text(
-                'Each duration option needs its own customer price and admin payout rule.',
+                'Mỗi thời lượng cần giá cho khách hàng và quy tắc chi trả riêng.',
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
@@ -213,7 +224,7 @@ class _ProviderServicePriceGroupCard extends StatelessWidget {
               if (missingStandardDurations.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(
-                  'Admin has not enabled ${missingStandardDurations.join('/')} min for this service yet.',
+                  'HANDS chưa bật thời lượng ${missingStandardDurations.join('/')} phút cho dịch vụ này.',
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall
@@ -223,7 +234,7 @@ class _ProviderServicePriceGroupCard extends StatelessWidget {
               if (group.payoutMissingOptionCount > 0) ...[
                 const SizedBox(height: 6),
                 Text(
-                  '${group.payoutMissingOptionCount} active option(s) need an exact admin payout rule before partners can take bookings.',
+                  '${group.payoutMissingOptionCount} lựa chọn đang bật cần quy tắc chi trả chính xác trước khi nhận đặt lịch.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.error,
                       ),
@@ -262,17 +273,17 @@ class _ProviderServicePriceTile extends StatelessWidget {
         .take(4)
         .join(', ');
     final payoutText = service.currentPriceBelowMinimum
-        ? 'Price is below the HANDS minimum. Raise it before activation.'
+        ? 'Giá thấp hơn mức tối thiểu của HANDS. Hãy tăng giá trước khi bật.'
         : service.currentPriceOffStep
-            ? 'Price must use ${formatVnd(service.priceStep)} steps.'
+            ? 'Giá phải theo bước ${formatVnd(service.priceStep)}.'
             : (service.payoutRuleConfigured
-                ? 'You receive ${formatVnd(service.providerPayoutAmount ?? 0)}'
-                : 'Admin payout rule missing for ${formatVnd(service.effectivePrice)}');
+                ? 'Bạn nhận ${formatVnd(service.providerPayoutAmount ?? 0)}'
+                : 'Thiếu quy tắc chi trả cho ${formatVnd(service.effectivePrice)}');
     final statusText = service.active
         ? service.canActivateAtCurrentPrice
-            ? 'Bookable'
-            : 'Needs rule'
-        : 'Paused';
+            ? 'Có thể đặt'
+            : 'Cần quy tắc'
+        : 'Đang tạm dừng';
     return Padding(
       padding: const EdgeInsets.only(top: 10),
       child: DecoratedBox(
@@ -293,7 +304,7 @@ class _ProviderServicePriceTile extends StatelessWidget {
           leading: CircleAvatar(
             child: Text('${service.durationMin}'),
           ),
-          title: Text('${service.durationMin} min option'),
+          title: Text('Lựa chọn ${service.durationMin} phút'),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Column(
@@ -304,16 +315,17 @@ class _ProviderServicePriceTile extends StatelessWidget {
                   runSpacing: 6,
                   children: [
                     _PricingChip(
-                        label: 'Min', value: formatVnd(service.basePrice)),
+                        label: 'Tối thiểu',
+                        value: formatVnd(service.basePrice)),
                     _PricingChip(
-                      label: 'Step',
+                      label: 'Bước giá',
                       value: formatVnd(service.priceStep),
                     ),
                     _PricingChip(
                       label: statusText,
                       value: service.active && service.canActivateAtCurrentPrice
-                          ? 'ON'
-                          : 'OFF',
+                          ? 'BẬT'
+                          : 'TẮT',
                     ),
                   ],
                 ),
@@ -323,19 +335,19 @@ class _ProviderServicePriceTile extends StatelessWidget {
                 Text(payoutText),
                 if (service.payoutRuleConfigured)
                   Text(
-                    'VAT estimate ${formatVnd(service.estimatedVatAmount)} / other cost ${formatVnd(service.otherCostAmount ?? 0)}',
+                    'VAT dự kiến ${formatVnd(service.estimatedVatAmount)} / chi phí khác ${formatVnd(service.otherCostAmount ?? 0)}',
                   ),
                 if (service.payoutRuleConfigured)
                   Text(
-                    'Company net fee after costs ${formatVnd(service.estimatedCompanyFeeAfterCosts)}',
+                    'Phí ròng của công ty sau chi phí ${formatVnd(service.estimatedCompanyFeeAfterCosts)}',
                   ),
                 if (availablePrices.isNotEmpty)
                   Text(
-                    'Bookable price options: $availablePrices${service.bookablePayoutOptions.length > 4 ? '...' : ''}',
+                    'Mức giá có thể đặt: $availablePrices${service.bookablePayoutOptions.length > 4 ? '...' : ''}',
                   ),
                 if (!service.hasBookablePriceOptions)
                   Text(
-                    'Not bookable until admin adds this duration and price to the payout matrix.',
+                    'Chưa thể đặt cho đến khi HANDS thêm thời lượng và mức giá này vào bảng chi trả.',
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.error,
                     ),
@@ -345,7 +357,7 @@ class _ProviderServicePriceTile extends StatelessWidget {
           ),
           trailing: FilledButton.tonal(
             onPressed: saving ? null : onEdit,
-            child: const Text('Edit'),
+            child: const Text('Chỉnh sửa'),
           ),
         ),
       ),
@@ -362,20 +374,20 @@ class _ProviderServiceMoneyFlow extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _MoneyFlowItem(
-        label: 'Customer pays',
+        label: 'Khách trả',
         value: formatVnd(service.effectivePrice),
       ),
       _MoneyFlowItem(
-        label: 'You receive',
+        label: 'Bạn nhận',
         value: service.payoutRuleConfigured
             ? formatVnd(service.providerPayoutAmount ?? 0)
-            : 'Rule needed',
+            : 'Cần quy tắc',
       ),
       _MoneyFlowItem(
-        label: 'HANDS fee',
+        label: 'Phí HANDS',
         value: service.payoutRuleConfigured
             ? formatVnd(service.platformFee ?? 0)
-            : 'Pending',
+            : 'Đang chờ',
       ),
     ];
 

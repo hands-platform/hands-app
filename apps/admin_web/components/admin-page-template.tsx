@@ -18,6 +18,7 @@ type AdminPageTemplateProps = {
   readonly contentClassName?: string;
   readonly description?: ReactNode;
   readonly metrics?: readonly AdminPageMetric[];
+  readonly metricsClassName?: string;
   readonly title: string;
 };
 
@@ -45,7 +46,7 @@ const ADMIN_PAGE_TITLE_TERMS: Readonly<Record<string, string>> = {
   'Referral accounting guardrails': 'Referral Accounting',
   'Parent account': 'Referral Parent Account',
   'Service catalog': 'Service Catalog',
-  Setup: 'Developer Setup',
+  Setup: 'Setup Readiness',
   'Page not found': 'Page Not Found',
 };
 
@@ -55,6 +56,7 @@ export function AdminPageTemplate({
   contentClassName,
   description,
   metrics = [],
+  metricsClassName,
   title,
 }: AdminPageTemplateProps) {
   const normalizedTitle = adminPageTitleLabel(title);
@@ -71,7 +73,7 @@ export function AdminPageTemplate({
           {actions}
         </div>
       </div>
-      {metrics.length ? <AdminMetricGrid metrics={metrics} /> : null}
+      {metrics.length ? <AdminMetricGrid className={metricsClassName} metrics={metrics} /> : null}
       {contentClassName ? <div className={joinClassNames(contentClassName)}>{children}</div> : children}
     </>
   );

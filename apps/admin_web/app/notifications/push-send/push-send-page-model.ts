@@ -131,6 +131,48 @@ export function shouldRequestPushCampaignPreview(params: Record<string, string |
   );
 }
 
+export function buildPushRecipientSearchApiHref(role: 'CUSTOMER' | 'PROVIDER', query: string) {
+  const search = new URLSearchParams({ q: query.trim(), take: '8' });
+  if (role === 'CUSTOMER') {
+    search.set('skip', '0');
+    return `/admin/customers?${search.toString()}`;
+  }
+  return `/admin/partners/list-providers?${search.toString()}`;
+}
+
+export function buildPushRecipientSelectionHref(
+  params: Record<string, string | string[] | undefined>,
+  update: {
+    readonly recipientSearch?: string;
+    readonly targetRole?: 'CUSTOMER' | 'PROVIDER';
+    readonly targetUserId?: string | null;
+  },
+) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (['campaignId', 'notice', 'preview', 'recipientSearch', 'targetRole', 'targetUserId'].includes(key)) {
+      continue;
+    }
+    for (const item of Array.isArray(value) ? value : [value]) {
+      if (typeof item === 'string' && item.trim()) {
+        query.append(key, item);
+      }
+    }
+  }
+
+  const targetRole = update.targetRole ?? (readSearchParam(params.targetRole) === 'PROVIDER' ? 'PROVIDER' : 'CUSTOMER');
+  query.set('targetRole', targetRole);
+  const recipientSearch = update.recipientSearch ?? readSearchParam(params.recipientSearch);
+  if (recipientSearch.trim()) {
+    query.set('recipientSearch', recipientSearch.trim());
+  }
+  if (update.targetUserId) {
+    query.set('targetUserId', update.targetUserId);
+  }
+
+  return `/notifications/push-send?${query.toString()}`;
+}
+
 function pushCampaignDateRangeWindow(range: PushCampaignDateRange, now = new Date()) {
   const todayStart = startOfLocalDay(now);
   const tomorrowStart = new Date(todayStart.getTime() + DAY_MS);

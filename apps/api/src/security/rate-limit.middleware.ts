@@ -14,7 +14,7 @@ type ResponseLike = {
 
 type Next = () => void;
 
-type RateLimitOptions = {
+export type RateLimitOptions = {
   windowMs: number;
   max: number;
   pathPattern: RegExp;
@@ -27,6 +27,23 @@ type Bucket = {
 };
 
 const buckets = new Map<string, Bucket>();
+
+export const apiRateLimitPolicies: RateLimitOptions[] = [
+  { windowMs: 60_000, max: 30, pathPattern: /^\/api\/auth\//, keyPathDepth: 3 },
+  {
+    windowMs: 60_000,
+    max: 120,
+    pathPattern:
+      /^\/api\/(?:customer\/(?:partners|providers)\/(?:nearby|[^/?]+)|public\/partners(?:\/[^/?]+)?)(?:\?|$)/i,
+    keyPathDepth: 4,
+  },
+  {
+    windowMs: 60_000,
+    max: 180,
+    pathPattern: /^\/api\/payments\/(?:CARD|MOMO|VNPAY)\/callback(?:\?|$)/i,
+    keyPathDepth: 4,
+  },
+];
 
 export function rateLimitMiddleware(options: RateLimitOptions) {
   return (req: RequestLike, res: ResponseLike, next: Next) => {
@@ -64,9 +81,7 @@ export function rateLimitMiddleware(options: RateLimitOptions) {
 }
 
 function clientId(req: RequestLike) {
-  const forwardedFor = req.headers?.['x-forwarded-for'];
-  const firstForwarded = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
-  return firstForwarded?.split(',')[0]?.trim() || req.ip || 'unknown';
+  return req.ip || 'unknown';
 }
 
 function pathKey(path: string, keyPathDepth?: number) {

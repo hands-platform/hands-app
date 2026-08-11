@@ -31,12 +31,12 @@ describe('operations handoff readiness checklist model', () => {
     });
     expect(rowById(rows, 'cash-settlement-reviewed')).toMatchObject({
       count: 2,
-      countLabel: '2 Partner(s)',
+      countLabel: '2 Partners',
       badgeClass: 'pill pill-danger',
     });
     expect(rowById(rows, 'partner-facts-reviewed')).toMatchObject({
       count: 3,
-      countLabel: '3 fact(s)',
+      countLabel: '3 facts',
       badgeClass: 'pill pill-warn',
     });
     expect(rowById(rows, 'handoff-note-written')).toMatchObject({

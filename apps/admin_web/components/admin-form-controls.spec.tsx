@@ -170,6 +170,8 @@ describe('Admin form controls', () => {
 
   it('renders date controls with the same field contract', () => {
     const date = AdminFormDate({
+      ariaDescribedBy: 'from-error',
+      ariaInvalid: true,
       className: 'partner-date-filter',
       defaultValue: '2026-06-17',
       label: 'From date',
@@ -189,6 +191,8 @@ describe('Admin form controls', () => {
     );
     expect(markup).toContain('class="sr-only">From date');
     expect(markup).toContain('class="admin-form-date-input"');
+    expect(markup).toContain('aria-describedby="from-error"');
+    expect(markup).toContain('aria-invalid="true"');
     expect(markup).toContain('name="from"');
     expect(markup).toContain('type="hidden"');
     expect(markup).not.toContain('type="date"');

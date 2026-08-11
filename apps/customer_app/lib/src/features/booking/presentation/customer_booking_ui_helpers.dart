@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../../../app_state.dart';
+import '../../../core/customer_design_system.dart';
 import '../../../core/customer_value_helpers.dart';
+import '../../../core/local_demo_access.dart';
 import '../../map/presentation/customer_location_helpers.dart';
 
 class BookingSectionCard extends StatelessWidget {
@@ -19,7 +21,9 @@ class BookingSectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(CustomerRadii.card),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
@@ -49,11 +53,12 @@ class ServiceTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.handsColors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE6E0D2)),
+        color: colors.surfaceMuted,
+        border: Border.all(color: colors.outline),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -77,6 +82,7 @@ int customerBookingTimestamp(Map<String, dynamic> booking) {
 
 bool isCustomerActiveBooking(Map<String, dynamic> booking) {
   return const {
+    'CREATED',
     'OPEN_MATCHING',
     'MATCHED',
     'PROVIDER_ON_THE_WAY',
@@ -102,14 +108,8 @@ bool canCustomerDirectlyCancelBooking(Map<String, dynamic>? booking) {
   if (booking == null || booking['status'] != 'OPEN_MATCHING') {
     return false;
   }
-  if (asMap(booking['selectedProvider']) != null) {
-    return false;
-  }
-  final participants = asList(booking['participants']);
-  return !participants.whereType<Map<String, dynamic>>().any((participant) {
-    return participant['status'] == 'ACCEPTED' ||
-        participant['status'] == 'SELECTED';
-  });
+  return booking['selectedProviderId'] == null &&
+      asMap(booking['selectedProvider']) == null;
 }
 
 bool customerParticipantSelectableForFinalChoice(
@@ -207,21 +207,135 @@ String formatCustomerRequestOpenedMoment(dynamic value) {
 
 String customerBookingNextAction(Map<String, dynamic> booking) {
   return switch (booking['status']) {
+    'CREATED' => 'Your booking request is being prepared.',
     'OPEN_MATCHING' =>
-      'Waiting for the selected partner or marketplace partners to respond.',
-    'MATCHED' =>
-      'Partner confirmed. Chat is ready to coordinate service start.',
-    'PROVIDER_ON_THE_WAY' =>
-      'Track the partner location and keep your phone nearby.',
-    'ARRIVED' => 'Partner arrived. Confirm details before service starts.',
-    'IN_SERVICE' => 'Service is in progress. Use Chat if you need help.',
-    'COMPLETED' => 'Service complete. Review when ready.',
-    'CANCELLED' => 'Cancelled. Any payment hold should be released.',
-    'REFUNDED' => 'Refund recorded. Check payment status if needed.',
-    'NO_SHOW' =>
-      'No-show recorded by HANDS operations. Chat evidence remains available to support review.',
-    _ => 'Review this booking status before taking action.',
+      'Waiting for confirmation. We will notify you when a partner accepts.',
+    'MATCHED' => 'Your partner is confirmed. Open the booking to continue.',
+    'PROVIDER_ON_THE_WAY' => 'Your partner is on the way.',
+    'ARRIVED' => 'Your partner has arrived.',
+    'IN_SERVICE' => 'Your service is in progress.',
+    'COMPLETED' => 'Your service is complete.',
+    'CANCELLED' => 'This booking was cancelled.',
+    'REFUNDED' => 'The refund has been recorded.',
+    'NO_SHOW' => 'This booking was closed as a no-show.',
+    'EXPIRED' => 'No partner confirmed this request in time.',
+    _ => 'Open the booking to review its latest status.',
   };
+}
+
+enum CustomerBookingListTab { active, history }
+
+enum CustomerBookingHistoryFilter {
+  all,
+  completed,
+  notCompleted,
+  refunded,
+}
+
+List<Map<String, dynamic>> customerBookingsForListTab(
+  List<Map<String, dynamic>> bookings,
+  CustomerBookingListTab tab,
+) {
+  return bookings.where((booking) {
+    return switch (tab) {
+      CustomerBookingListTab.active => isCustomerActiveBooking(booking),
+      CustomerBookingListTab.history => isCustomerClosedBooking(booking),
+    };
+  }).toList();
+}
+
+List<Map<String, dynamic>> customerBookingsForHistoryFilter(
+  List<Map<String, dynamic>> bookings,
+  CustomerBookingHistoryFilter filter,
+) {
+  return bookings.where((booking) {
+    final status = booking['status']?.toString().toUpperCase();
+    return switch (filter) {
+      CustomerBookingHistoryFilter.all => true,
+      CustomerBookingHistoryFilter.completed => status == 'COMPLETED',
+      CustomerBookingHistoryFilter.notCompleted =>
+        const {'CANCELLED', 'NO_SHOW', 'EXPIRED'}.contains(status),
+      CustomerBookingHistoryFilter.refunded => status == 'REFUNDED',
+    };
+  }).toList();
+}
+
+String customerBookingHistoryFilterLabel(
+  CustomerBookingHistoryFilter filter,
+) {
+  return switch (filter) {
+    CustomerBookingHistoryFilter.all => 'All',
+    CustomerBookingHistoryFilter.completed => 'Completed',
+    CustomerBookingHistoryFilter.notCompleted => 'Not completed',
+    CustomerBookingHistoryFilter.refunded => 'Refunded',
+  };
+}
+
+String customerBookingStatusLabel(dynamic value) {
+  return switch (value?.toString().toUpperCase()) {
+    'CREATED' => 'Preparing',
+    'OPEN_MATCHING' => 'Finding a partner',
+    'MATCHED' => 'Partner confirmed',
+    'PROVIDER_ON_THE_WAY' => 'On the way',
+    'ARRIVED' => 'Partner arrived',
+    'IN_SERVICE' => 'In service',
+    'COMPLETED' => 'Completed',
+    'CANCELLED' => 'Cancelled',
+    'NO_SHOW' => 'No-show',
+    'EXPIRED' => 'Not confirmed',
+    'REFUNDED' => 'Refunded',
+    _ => 'Status unavailable',
+  };
+}
+
+String customerBookingPaymentLabel(Map<String, dynamic> booking) {
+  final payment = asMap(booking['payment']);
+  final method = (payment?['method'] ?? booking['paymentMethod'])
+      ?.toString()
+      .toUpperCase();
+  return switch (method) {
+    'CASH' => 'Cash',
+    'WALLET' => 'Wallet',
+    'CARD' => 'Card',
+    'MOMO' => 'MoMo',
+    'VNPAY' => 'VNPay',
+    _ => 'Payment not recorded',
+  };
+}
+
+String formatCustomerBookingListMoment(
+  dynamic value, {
+  DateTime? now,
+}) {
+  final parsed = DateTime.tryParse(value?.toString() ?? '')?.toLocal();
+  if (parsed == null) {
+    return 'Date unavailable';
+  }
+
+  final current = now?.toLocal() ?? DateTime.now();
+  final time =
+      '${parsed.hour % 12 == 0 ? 12 : parsed.hour % 12}:${parsed.minute.toString().padLeft(2, '0')} ${parsed.hour >= 12 ? 'PM' : 'AM'}';
+  if (parsed.year == current.year &&
+      parsed.month == current.month &&
+      parsed.day == current.day) {
+    return 'Today, $time';
+  }
+
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${months[parsed.month - 1]} ${parsed.day}, $time';
 }
 
 Map<String, dynamic>? latestActiveBooking(List<dynamic> bookings) {
@@ -349,6 +463,11 @@ Future<CustomerLocationSnapshot> resolveCustomerLocation(WidgetRef ref) async {
   final lng = position?.longitude;
   if (lat != null && lng != null) {
     if (!isVietnamCoordinate(lat, lng)) {
+      if (!localDemoAccessEnabled) {
+        throw StateError(
+          'Choose a Vietnam service location before creating a booking.',
+        );
+      }
       return CustomerLocationSnapshot(
         latitude: demoCustomerLat,
         longitude: demoCustomerLng,
@@ -364,6 +483,11 @@ Future<CustomerLocationSnapshot> resolveCustomerLocation(WidgetRef ref) async {
       addressText: 'Current GPS location',
       currentLatitude: lat,
       currentLongitude: lng,
+    );
+  }
+  if (!localDemoAccessEnabled) {
+    throw StateError(
+      'Location is unavailable. Choose a Vietnam service location to continue.',
     );
   }
   return const CustomerLocationSnapshot(
@@ -439,20 +563,20 @@ String providerLocationStatusLabel(dynamic value) {
   return 'Old saved location';
 }
 
-Color providerLocationStatusColor(dynamic value) {
+Color providerLocationStatusColor(HandsColors colors, dynamic value) {
   final raw = value?.toString();
   final date = raw == null ? null : DateTime.tryParse(raw)?.toLocal();
   if (date == null) {
-    return Colors.black54;
+    return colors.inkMuted;
   }
   final difference = DateTime.now().difference(date);
   if (difference.inMinutes < 30) {
-    return const Color(0xFF5E8E4A);
+    return colors.success;
   }
   if (difference.inHours < 24) {
-    return const Color(0xFF9A6A18);
+    return colors.warning;
   }
-  return Colors.black54;
+  return colors.inkMuted;
 }
 
 String providerLocationFreshnessLabel(Map<String, dynamic> provider) {
@@ -539,7 +663,7 @@ String waitingStepLabel(String status) {
     case 'IN_SERVICE':
       return 'In service';
     default:
-      return status;
+      return customerBookingStatusLabel(status);
   }
 }
 
@@ -560,34 +684,52 @@ WaitingCustomerAction waitingCustomerAction({
   required String status,
   required int fallbackCount,
   required bool hasChatRoom,
-  Map<String, dynamic> matchingPolicy = const {},
+  String? cancellationReasonCode,
 }) {
+  if (status == 'CREATED') {
+    return const WaitingCustomerAction(
+      title: 'Complete payment',
+      body: 'Finish the secure checkout to start partner matching.',
+    );
+  }
   if (status == 'OPEN_MATCHING' && fallbackCount > 0) {
     return const WaitingCustomerAction(
-      title: 'Marketplace options are ready',
-      body:
-          'Your first-pick partner is still being checked. You can keep waiting or switch to a marketplace partner below.',
+      title: 'Partners are available',
+      body: 'You can keep waiting or choose another available partner below.',
     );
   }
   if (status == 'OPEN_MATCHING') {
-    return WaitingCustomerAction(
-      title: 'Waiting for partner response',
+    return const WaitingCustomerAction(
+      title: 'Waiting for confirmation',
       body:
-          'No action is needed yet. HANDS is waiting for your chosen partner. ${marketplaceStandbyDescription(matchingPolicy)}',
+          'We will notify you as soon as a partner confirms. You can safely leave this screen.',
     );
   }
-  if (hasChatRoom && (status == 'MATCHED' || status == 'PROVIDER_ON_THE_WAY')) {
+  if (status == 'PROVIDER_ON_THE_WAY') {
     return const WaitingCustomerAction(
-      title: 'Booking confirmed',
-      body:
-          'Your partner is confirmed. Chat will help coordinate service start and location details.',
+      title: 'Your partner is on the way',
+      body: 'Follow the latest location here and use chat for arrival details.',
+    );
+  }
+  if (status == 'ARRIVED') {
+    return const WaitingCustomerAction(
+      title: 'Your partner has arrived',
+      body: 'Meet your partner at the service address. Use chat if needed.',
+    );
+  }
+  if (status == 'MATCHED') {
+    return WaitingCustomerAction(
+      title: 'Your booking is confirmed',
+      body: hasChatRoom
+          ? 'Use chat to coordinate arrival and service details.'
+          : 'Your partner is confirmed. Chat will open when it is ready.',
     );
   }
   if (status == 'IN_SERVICE') {
     return const WaitingCustomerAction(
-      title: 'Service is live',
+      title: 'Service in progress',
       body:
-          'Continue in chat if you need help during the service. Review becomes available after completion.',
+          'Use chat if you need help. You can leave a review after completion.',
     );
   }
   if (status == 'COMPLETED') {
@@ -597,15 +739,29 @@ WaitingCustomerAction waitingCustomerAction({
     );
   }
   if (status == 'CANCELLED') {
+    if (cancellationReasonCode == 'PREFERRED_PARTNER_DECLINED') {
+      return const WaitingCustomerAction(
+        title: 'Partner unavailable',
+        body:
+            'The requested partner could not accept. This request is closed and any reserved payment is released.',
+      );
+    }
     return const WaitingCustomerAction(
       title: 'Booking cancelled',
       body: 'This request is closed. The booking record remains in Bookings.',
     );
   }
   if (status == 'EXPIRED') {
+    if (cancellationReasonCode == 'PARTNER_RESPONSE_EXPIRED') {
+      return const WaitingCustomerAction(
+        title: 'Partner did not respond',
+        body:
+            'The 10-minute request window ended without a response. This request is closed and any reserved payment is released.',
+      );
+    }
     return const WaitingCustomerAction(
-      title: 'Request expired',
-      body: 'No partner was selected before the response window closed.',
+      title: 'Not confirmed',
+      body: 'No partner confirmed this request in time.',
     );
   }
   return WaitingCustomerAction(
@@ -737,7 +893,7 @@ String formatExpiry(String? isoValue) {
   return '$hour:$minute';
 }
 
-String formatRemainingTime(String? isoValue) {
+String formatRemainingTime(String? isoValue, {DateTime? now}) {
   if (isoValue == null) {
     return '--';
   }
@@ -745,12 +901,12 @@ String formatRemainingTime(String? isoValue) {
   if (date == null) {
     return '--';
   }
-  final difference = date.difference(DateTime.now());
+  final difference = date.difference(now ?? DateTime.now());
   if (difference.isNegative) {
-    return 'expired';
+    return '00:00';
   }
-  if (difference.inMinutes <= 0) {
-    return '${difference.inSeconds.remainder(60).abs()}s left';
-  }
-  return '${difference.inMinutes}m left';
+  final totalSeconds = difference.inSeconds;
+  final minutes = (totalSeconds ~/ 60).toString().padLeft(2, '0');
+  final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
+  return '$minutes:$seconds';
 }

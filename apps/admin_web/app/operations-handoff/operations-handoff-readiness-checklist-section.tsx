@@ -1,7 +1,9 @@
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
-import { AdminActionCard, AdminSection } from '../../components/admin-surface';
-import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
+import { AdminQueueMeta } from '../../components/admin-overview-card';
+import { AdminActionCard, AdminDisclosure, AdminSection, AdminTaskGrid } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
+import { adminCountLabel } from '../../lib/admin-copy';
 
 import type { HandoffReadinessChecklistRow } from './operations-handoff-readiness-checklist';
 
@@ -15,38 +17,40 @@ export function OperationsHandoffReadinessChecklistSection({
   rows,
 }: OperationsHandoffReadinessChecklistSectionProps) {
   const visibleRows = rows.filter((item) => item.tone !== 'success');
+  const completedRows = rows.filter((item) => item.tone === 'success');
 
   return (
     <AdminSection
-      bodyClassName={visibleRows.length > 0 ? 'ops-task-grid' : undefined}
       className="admin-mb-16"
       description="Past checks that still need booking, chat, cash, alert, customer, or note review."
       status={
         <StatusBadge tone={openCount ? 'warning' : 'success'}>
-          {openCount ? `${openCount} check(s) open` : 'Ready to hand over'}
+          {openCount ? `${adminCountLabel(openCount, 'check')} open` : 'Ready to hand over'}
         </StatusBadge>
       }
       id="operations-handoff-review-checklist"
       title="Operations review checklist"
     >
       {visibleRows.length > 0 ? (
-        visibleRows.map((item) => (
-          <AdminActionCard
-            actionLabel={item.operatorAction}
-            detail={item.detail}
-            href={item.href}
-            key={item.id}
-            signalClassName={badgeClassToSignalClass(item.badgeClass)}
-            signalLabel={item.status}
-            title={item.title}
-            variant="ops-task"
-          >
-            <AdminFilterChipGroup>
-              <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
-              <StatusBadgeFromPillClass pillClass={item.badgeClass}>{item.owner}</StatusBadgeFromPillClass>
-            </AdminFilterChipGroup>
-          </AdminActionCard>
-        ))
+        <AdminTaskGrid>
+          {visibleRows.map((item) => (
+            <AdminActionCard
+              actionLabel={`Review ${item.title}`}
+              detail={item.operatorAction}
+              href={item.href}
+              key={item.id}
+              signalClassName={badgeClassToSignalClass(item.badgeClass)}
+              signalLabel={item.status}
+              title={item.title}
+              variant="ops-task"
+            >
+              <AdminQueueMeta impact={item.detail} owner={item.owner} />
+              <AdminFilterChipGroup>
+                <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
+              </AdminFilterChipGroup>
+            </AdminActionCard>
+          ))}
+        </AdminTaskGrid>
       ) : (
         <AdminEmptyState
           framed
@@ -54,6 +58,30 @@ export function OperationsHandoffReadinessChecklistSection({
           title="No open review checks"
         />
       )}
+      {completedRows.length > 0 ? (
+        <AdminDisclosure className="admin-mt-12">
+          <summary>Completed checks ({completedRows.length})</summary>
+          <AdminTaskGrid>
+            {completedRows.map((item) => (
+              <AdminActionCard
+                actionLabel="Open record"
+                detail={item.operatorAction}
+                href={item.href}
+                key={item.id}
+                signalClassName="signal-ok"
+                signalLabel={item.status}
+                title={item.title}
+                variant="ops-task"
+              >
+                <AdminQueueMeta impact={item.detail} owner={item.owner} />
+                <AdminFilterChipGroup>
+                  <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
+                </AdminFilterChipGroup>
+              </AdminActionCard>
+            ))}
+          </AdminTaskGrid>
+        </AdminDisclosure>
+      ) : null}
     </AdminSection>
   );
 }

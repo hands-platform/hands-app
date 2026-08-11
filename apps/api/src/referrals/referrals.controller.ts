@@ -1,11 +1,11 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
-import { ClaimReferralCodeDto } from './referrals.dto';
+import { ClaimReferralCodeDto, ReferralListQueryDto } from './referrals.dto';
 import { ReferralsService } from './referrals.service';
 
 @Controller()
@@ -26,6 +26,20 @@ export class ReferralsController {
     return this.referrals.getCustomerReferralSummary(user.id);
   }
 
+  @Get('customer/referrals/invites')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  customerReferralInvites(@CurrentUser() user: AuthenticatedUser, @Query() query: ReferralListQueryDto) {
+    return this.referrals.listCustomerReferralInvites(user.id, query);
+  }
+
+  @Get('customer/referrals/rewards')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  customerReferralRewards(@CurrentUser() user: AuthenticatedUser, @Query() query: ReferralListQueryDto) {
+    return this.referrals.listCustomerReferralRewards(user.id, query);
+  }
+
   @Post('customer/referral-code')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CUSTOMER)
@@ -38,6 +52,16 @@ export class ReferralsController {
   @Roles(Role.CUSTOMER)
   claimCustomerReferralCode(@CurrentUser() user: AuthenticatedUser, @Body() body: ClaimReferralCodeDto) {
     return this.referrals.claimCustomerReferralCode(user.id, body);
+  }
+
+  @Post('customer/referrals/rewards/:rewardId/cashout')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  requestCustomerReferralCashout(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('rewardId') rewardId: string,
+  ) {
+    return this.referrals.requestCustomerRewardCashout(user.id, rewardId);
   }
 
   @Get(['partner/referral-code', 'provider/referral-code'])
@@ -66,5 +90,12 @@ export class ReferralsController {
   @Roles(Role.PROVIDER)
   claimPartnerReferralCode(@CurrentUser() user: AuthenticatedUser, @Body() body: ClaimReferralCodeDto) {
     return this.referrals.claimPartnerReferralCode(user.id, body);
+  }
+
+  @Post(['partner/referrals/rewards/:rewardId/cashout', 'provider/referrals/rewards/:rewardId/cashout'])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROVIDER)
+  requestPartnerReferralCashout(@CurrentUser() user: AuthenticatedUser, @Param('rewardId') rewardId: string) {
+    return this.referrals.requestPartnerRewardCashout(user.id, rewardId);
   }
 }

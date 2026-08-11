@@ -24,26 +24,26 @@ describe('admin Vietnam region overview helpers', () => {
     expect(adminVietnamOverviewRangeWindow('today', now)).toMatchObject({
       range: 'today',
       label: 'Today',
-      startAt: new Date('2026-06-22T00:00:00.000Z'),
-      endAt: new Date('2026-06-23T00:00:00.000Z'),
+      startAt: new Date('2026-06-21T17:00:00.000Z'),
+      endAt: new Date('2026-06-22T17:00:00.000Z'),
     });
     expect(adminVietnamOverviewRangeWindow('yesterday', now)).toMatchObject({
       range: 'yesterday',
       label: 'Yesterday',
-      startAt: new Date('2026-06-21T00:00:00.000Z'),
-      endAt: new Date('2026-06-22T00:00:00.000Z'),
+      startAt: new Date('2026-06-20T17:00:00.000Z'),
+      endAt: new Date('2026-06-21T17:00:00.000Z'),
     });
     expect(adminVietnamOverviewRangeWindow('7d', now)).toMatchObject({
       range: '7d',
       label: 'Last 7 days',
-      startAt: new Date('2026-06-16T00:00:00.000Z'),
-      endAt: new Date('2026-06-23T00:00:00.000Z'),
+      startAt: new Date('2026-06-15T17:00:00.000Z'),
+      endAt: new Date('2026-06-22T17:00:00.000Z'),
     });
     expect(adminVietnamOverviewRangeWindow('30d', now)).toMatchObject({
       range: '30d',
       label: 'Last 30 days',
-      startAt: new Date('2026-05-24T00:00:00.000Z'),
-      endAt: new Date('2026-06-23T00:00:00.000Z'),
+      startAt: new Date('2026-05-23T17:00:00.000Z'),
+      endAt: new Date('2026-06-22T17:00:00.000Z'),
     });
     expect(adminVietnamOverviewRangeWindow('all', now)).toMatchObject({
       range: 'all',
@@ -56,8 +56,35 @@ describe('admin Vietnam region overview helpers', () => {
   it('emits Prisma-compatible filters only for bounded Vietnam overview ranges', () => {
     expect(adminVietnamOverviewDateWhere(adminVietnamOverviewRangeWindow('all', now))).toBeUndefined();
     expect(adminVietnamOverviewDateWhere(adminVietnamOverviewRangeWindow('today', now))).toEqual({
-      gte: new Date('2026-06-22T00:00:00.000Z'),
-      lt: new Date('2026-06-23T00:00:00.000Z'),
+      gte: new Date('2026-06-21T17:00:00.000Z'),
+      lt: new Date('2026-06-22T17:00:00.000Z'),
+    });
+  });
+
+  it('switches Today exactly at Vietnam midnight even when the UTC date differs', () => {
+    expect(
+      adminVietnamOverviewRangeWindow('today', new Date('2026-06-21T16:59:59.999Z')),
+    ).toMatchObject({
+      startAt: new Date('2026-06-20T17:00:00.000Z'),
+      endAt: new Date('2026-06-21T17:00:00.000Z'),
+    });
+    expect(
+      adminVietnamOverviewRangeWindow('today', new Date('2026-06-21T17:00:00.000Z')),
+    ).toMatchObject({
+      startAt: new Date('2026-06-21T17:00:00.000Z'),
+      endAt: new Date('2026-06-22T17:00:00.000Z'),
+    });
+  });
+
+  it('keeps Yesterday end-exclusive at the current Vietnam midnight', () => {
+    const yesterday = adminVietnamOverviewRangeWindow(
+      'yesterday',
+      new Date('2026-06-21T17:00:00.000Z'),
+    );
+
+    expect(adminVietnamOverviewDateWhere(yesterday)).toEqual({
+      gte: new Date('2026-06-20T17:00:00.000Z'),
+      lt: new Date('2026-06-21T17:00:00.000Z'),
     });
   });
 

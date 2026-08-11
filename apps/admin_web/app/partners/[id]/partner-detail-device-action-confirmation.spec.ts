@@ -53,7 +53,7 @@ describe('partner detail device action confirmation', () => {
           required: true,
         },
       ],
-      title: 'Block device device-r?',
+      title: 'Block a device for Linh Wellness?',
       tone: 'danger',
     });
   });

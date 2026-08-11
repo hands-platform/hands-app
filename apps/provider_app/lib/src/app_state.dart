@@ -107,6 +107,16 @@ class ProviderRepository {
     return _profileRepository.providerMe();
   }
 
+  Future<Map<String, dynamic>> availability() async {
+    return _profileRepository.availability();
+  }
+
+  Future<Map<String, dynamic>> updateWorkingHours(
+    List<Map<String, dynamic>> workingHours,
+  ) async {
+    return _profileRepository.updateWorkingHours(workingHours);
+  }
+
   Future<Map<String, dynamic>> uploadProfileImage({
     required List<int> bytes,
     required String contentType,
@@ -131,12 +141,30 @@ class ProviderRepository {
     return _bookingRepository.openBookings();
   }
 
-  Future<List<dynamic>> listBookings() async {
-    return _bookingRepository.listBookings();
+  Future<List<dynamic>> listBookings({
+    String? scope,
+    String? cursor,
+    int? take,
+  }) async {
+    return _bookingRepository.listBookings(
+      scope: scope,
+      cursor: cursor,
+      take: take,
+    );
   }
 
   Future<List<dynamic>> requestBookings() async {
     return _bookingRepository.requestBookings();
+  }
+
+  Future<Map<String, dynamic>> bookingAlertPreferences() async {
+    return _bookingRepository.bookingAlertPreferences();
+  }
+
+  Future<Map<String, dynamic>> updateBookingAlertPreferences(
+    Map<String, dynamic> preferences,
+  ) async {
+    return _bookingRepository.updateBookingAlertPreferences(preferences);
   }
 
   Future<Map<String, dynamic>> joinBooking(String bookingId) async {
@@ -147,12 +175,16 @@ class ProviderRepository {
     return _bookingRepository.acceptBooking(bookingId);
   }
 
-  Future<Map<String, dynamic>> rejectBooking(String bookingId) async {
-    return _bookingRepository.rejectBooking(bookingId);
-  }
-
-  Future<Map<String, dynamic>> startBooking(String bookingId) async {
-    return _bookingRepository.startBooking(bookingId);
+  Future<Map<String, dynamic>> rejectBooking(
+    String bookingId, {
+    String? reasonCode,
+    String? reasonDetail,
+  }) async {
+    return _bookingRepository.rejectBooking(
+      bookingId,
+      reasonCode: reasonCode,
+      reasonDetail: reasonDetail,
+    );
   }
 
   Future<Map<String, dynamic>> completeBooking(
@@ -171,6 +203,7 @@ class ProviderRepository {
 
   Future<Map<String, dynamic>> cancelBooking(
     String bookingId, {
+    required String reasonCode,
     required String note,
     double? lat,
     double? lng,
@@ -178,6 +211,7 @@ class ProviderRepository {
   }) async {
     return _bookingRepository.cancelBooking(
       bookingId,
+      reasonCode: reasonCode,
       note: note,
       lat: lat,
       lng: lng,
@@ -201,12 +235,40 @@ class ProviderRepository {
     return _chatRepository.listChatMessages(chatRoomId);
   }
 
+  Future<Map<String, dynamic>> chatNotificationSummary() async {
+    return _chatRepository.notificationSummary();
+  }
+
+  Future<Map<String, dynamic>> markChatNotificationsRead(
+      String chatRoomId) async {
+    return _chatRepository.markNotificationsRead(chatRoomId);
+  }
+
   void joinChat(String chatRoomId) {
     _chatRepository.joinChat(chatRoomId);
   }
 
-  void sendChatMessage(String chatRoomId, String text) {
-    _chatRepository.sendChatMessage(chatRoomId, text);
+  Future<Map<String, dynamic>> sendChatMessage(
+    String chatRoomId,
+    String text,
+  ) {
+    return _chatRepository.sendChatMessage(chatRoomId, text);
+  }
+
+  Future<Map<String, dynamic>> sendChatAttachment(
+    String chatRoomId, {
+    required List<int> bytes,
+    required String contentType,
+  }) {
+    return _chatRepository.sendChatAttachment(
+      chatRoomId,
+      bytes: bytes,
+      contentType: contentType,
+    );
+  }
+
+  Future<Uri> getChatAttachmentUri(String fileId) {
+    return _chatRepository.getChatAttachmentUri(fileId);
   }
 
   Future<void> registerPushToken(String token) async {
@@ -223,6 +285,22 @@ class ProviderRepository {
 
   Future<List<dynamic>> payoutBatches() async {
     return _earningsRepository.payoutBatches();
+  }
+
+  Future<List<dynamic>> walletWithdrawalRequests() async {
+    return _earningsRepository.walletWithdrawalRequests();
+  }
+
+  Future<Map<String, dynamic>> createWalletWithdrawalRequest({
+    required int amount,
+    String? bankAccountId,
+    String? requestNote,
+  }) async {
+    return _earningsRepository.createWalletWithdrawalRequest(
+      amount: amount,
+      bankAccountId: bankAccountId,
+      requestNote: requestNote,
+    );
   }
 
   Future<Map<String, dynamic>> verification() async {

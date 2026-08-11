@@ -41,7 +41,7 @@ describe('partner control desk action confirmation', () => {
 
     expect(confirmation).toEqual({
       action: 'lift-control',
-      cancelHref: '/partner-controls?q=linh&sanction=ACTIVE',
+      cancelHref: '/partner-controls?details=sanctions&q=linh',
       confirmLabel: 'Lift control',
       description:
         'Lift PAYOUT_HOLD control sanction for Partner Linh Wellness after the issue is resolved.',
@@ -51,6 +51,16 @@ describe('partner control desk action confirmation', () => {
         { name: 'sanctionId', value: 'sanction-123456' },
       ],
       sanctionId: 'sanction-123456',
+      textInputs: [
+        {
+          label: 'Lift reason and evidence',
+          maxLength: 500,
+          minLength: 12,
+          name: 'reason',
+          placeholder: 'State what was resolved and which evidence was verified',
+          required: true,
+        },
+      ],
       title: 'Lift control sanction?',
       tone: 'warning',
     });
@@ -65,6 +75,7 @@ describe('partner control desk action confirmation', () => {
 
     expect(confirmation?.description).toBe('Control is already lifted.');
     expect(confirmation?.disabled).toBe(true);
+    expect(confirmation?.textInputs).toEqual([]);
     expect(confirmation?.tone).toBe('neutral');
   });
 
@@ -85,10 +96,10 @@ describe('partner control desk action confirmation', () => {
         status: 'OPEN',
       }),
     ).toBe(
-      '/partner-controls?controlAction=lift-control&sanctionId=sanction+1&q=partner+1&status=OPEN&severity=HIGH&sanction=ACTIVE',
+      '/partner-controls?details=sanctions&q=partner+1&controlAction=lift-control&sanctionId=sanction+1',
     );
     expect(partnerControlDeskCancelHref({ q: 'partner 1', status: 'OPEN' })).toBe(
-      '/partner-controls?q=partner+1&status=OPEN',
+      '/partner-controls?details=reports&q=partner+1&status=OPEN',
     );
   });
 });

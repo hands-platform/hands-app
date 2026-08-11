@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../customer_design_system.dart';
+
 class MvpAsyncList extends StatelessWidget {
   const MvpAsyncList({
     super.key,
@@ -44,11 +46,10 @@ class MvpAsyncList extends StatelessWidget {
                 return Column(
                   children: [
                     for (final item in items)
-                      Card(
-                        child: ListTile(
-                          title: Text(labelBuilder(item)),
-                          trailing: const Icon(Icons.chevron_right),
-                        ),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(labelBuilder(item)),
+                        trailing: const Icon(Icons.arrow_forward_rounded),
                       ),
                   ],
                 );
@@ -83,11 +84,10 @@ class MvpScreen extends StatelessWidget {
           Text(subtitle, style: Theme.of(context).textTheme.bodyLarge),
           const SizedBox(height: 20),
           for (final item in items)
-            Card(
-              child: ListTile(
-                title: Text(item),
-                trailing: const Icon(Icons.chevron_right),
-              ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(item),
+              trailing: const Icon(Icons.arrow_forward_rounded),
             ),
         ],
       ),
@@ -102,11 +102,26 @@ class InfoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
+    final colors = context.handsColors;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.primarySoft,
+        borderRadius: BorderRadius.circular(HandsShapes.medium),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(text),
+        padding: const EdgeInsets.all(HandsSpacing.space16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.info_outline_rounded,
+              size: HandsIconTheme.inline,
+              color: colors.primary,
+            ),
+            const SizedBox(width: HandsSpacing.space12),
+            Expanded(child: Text(text)),
+          ],
+        ),
       ),
     );
   }
@@ -119,10 +134,27 @@ class EmptyPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(text),
+    final colors = context.handsColors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: HandsSpacing.space32),
+      child: Row(
+        children: [
+          Icon(
+            Icons.inbox_outlined,
+            size: HandsIconTheme.standard,
+            color: colors.inkMuted,
+          ),
+          const SizedBox(width: HandsSpacing.space16),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(color: colors.inkMuted),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -135,15 +167,34 @@ class ErrorPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Theme.of(context).colorScheme.errorContainer,
+    final colors = context.handsColors;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(HandsShapes.medium),
+        border: Border.all(color: colors.error.withValues(alpha: 0.24)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onErrorContainer,
-          ),
+        padding: const EdgeInsets.all(HandsSpacing.space16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: HandsIconTheme.inline,
+              color: colors.error,
+            ),
+            const SizedBox(width: HandsSpacing.space12),
+            Expanded(
+              child: Text(
+                text,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: colors.error),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,56 +1,22 @@
 export type VietnamOverviewRange = 'today' | 'yesterday' | '7d' | '30d' | 'all';
 
-export type VietnamOverviewRegionMarkerInput = {
-  readonly activeBookingCount: number;
-  readonly activeCustomerCount: number;
-  readonly cancellationCount: number;
-  readonly completedBookingCount: number;
-  readonly currency: string;
-  readonly customerCount: number;
-  readonly onlinePartnerCount: number;
-  readonly partnerCount: number;
-  readonly regionCode: string;
-  readonly regionName: string;
-  readonly revenueAmount: number;
-  readonly shortName: string;
-};
-
-export type VietnamOverviewMapMarker = {
-  readonly activeBookingCount: number;
-  readonly activeCustomerCount: number;
-  readonly cancellationCount: number;
-  readonly completedBookingCount: number;
-  readonly currency: string;
-  readonly customerCount: number;
-  readonly demandCount: number;
-  readonly featured: boolean;
-  readonly intensity: number;
-  readonly mapXPercent: number;
-  readonly mapYPercent: number;
-  readonly metricDots: readonly VietnamOverviewMetricDot[];
-  readonly onlinePartnerCount: number;
-  readonly partnerCount: number;
-  readonly partnerSummary: string;
-  readonly regionCode: string;
-  readonly regionName: string;
-  readonly revenueAmount: number;
-  readonly shortName: string;
-  readonly tone: 'high' | 'medium' | 'low';
-};
-
 export type VietnamOverviewPointInput = {
   readonly id: string;
   readonly kind: VietnamOverviewMetricDotKey;
   readonly label: string;
   readonly latitude: number;
   readonly longitude: number;
-  readonly occurredAt: string;
+  readonly occurredAt: string | null;
+  readonly activityAt?: string | null;
+  readonly createdAt?: string | null;
+  readonly locationOccurredAt?: string | null;
   readonly regionCode: string;
   readonly source: string;
   readonly addressText?: string | null;
   readonly bookingId?: string | null;
   readonly customerProfileId?: string | null;
   readonly providerProfileId?: string | null;
+  readonly status?: string | null;
 };
 
 export type VietnamOverviewMapPoint = VietnamOverviewPointInput & {
@@ -58,72 +24,34 @@ export type VietnamOverviewMapPoint = VietnamOverviewPointInput & {
   readonly mapYPercent: number;
 };
 
-export type VietnamOverviewMapTilerTile = {
-  readonly src: string;
-  readonly x: number;
-  readonly y: number;
-  readonly z: number;
-};
-
-export type VietnamOverviewMapTilerTileGrid = {
-  readonly cols: number;
-  readonly layerHeightPercent: number;
-  readonly layerLeftPercent: number;
-  readonly layerTopPercent: number;
-  readonly layerWidthPercent: number;
-  readonly rows: number;
-  readonly style: string;
-  readonly tiles: readonly VietnamOverviewMapTilerTile[];
-  readonly viewAspectRatio: number;
-  readonly zoom: number;
-};
-
-export type VietnamOverviewMapZoomLevel = {
-  readonly label: string;
-  readonly scale: number;
-};
-
 export type VietnamOverviewMetricDotKey =
   | 'customers'
   | 'active'
   | 'partners'
   | 'online'
+  | 'busy-partners'
   | 'offline-partners'
   | 'stale-partners'
-  | 'bookings'
+  | 'needs-supply'
+  | 'assigned-bookings'
+  | 'stale-bookings'
   | 'done'
   | 'cancel';
 
-export type VietnamOverviewMetricDot = {
-  readonly key: VietnamOverviewMetricDotKey;
-  readonly label: string;
-  readonly size: number;
-  readonly value: number;
-};
-
-export const vietnamOverviewMetricDotLegend: Array<{
-  key: VietnamOverviewMetricDotKey;
-  label: string;
-}> = [
-  { key: 'customers', label: 'Customers' },
-  { key: 'active', label: 'Active' },
-  { key: 'partners', label: 'Partners' },
-  { key: 'online', label: 'Online' },
-  { key: 'bookings', label: 'Bookings' },
-  { key: 'done', label: 'Done' },
-  { key: 'cancel', label: 'Cancel' },
-];
-
 export const vietnamOverviewRealtimeMetricDotLegend: Array<{
+  group: 'Live coverage' | 'Investigate' | 'Customer context';
   key: VietnamOverviewMetricDotKey;
   label: string;
 }> = [
-  { key: 'customers', label: 'All customers' },
-  { key: 'active', label: 'Active customers' },
-  { key: 'online', label: 'Ready Partners' },
-  { key: 'stale-partners', label: '7d inactive Partners' },
-  { key: 'offline-partners', label: 'Offline Partners' },
-  { key: 'bookings', label: 'Active bookings' },
+  { group: 'Live coverage', key: 'needs-supply', label: 'Needs supply' },
+  { group: 'Live coverage', key: 'online', label: 'Ready Partners' },
+  { group: 'Live coverage', key: 'assigned-bookings', label: 'Matched / in service' },
+  { group: 'Investigate', key: 'stale-bookings', label: 'Stale active records' },
+  { group: 'Investigate', key: 'busy-partners', label: 'Busy Partners' },
+  { group: 'Investigate', key: 'stale-partners', label: 'Partner location unavailable / stale' },
+  { group: 'Investigate', key: 'offline-partners', label: 'Offline Partners' },
+  { group: 'Customer context', key: 'active', label: 'Customers active in last 30 days' },
+  { group: 'Customer context', key: 'customers', label: 'Saved customer locations' },
 ];
 
 export const vietnamOverviewRangeOptions: Array<{ value: VietnamOverviewRange; label: string }> = [
@@ -132,14 +60,6 @@ export const vietnamOverviewRangeOptions: Array<{ value: VietnamOverviewRange; l
   { value: '7d', label: '7 days' },
   { value: '30d', label: '30 days' },
   { value: 'all', label: 'All' },
-];
-
-export const vietnamOverviewMapZoomLevels: readonly VietnamOverviewMapZoomLevel[] = [
-  { label: '100%', scale: 1 },
-  { label: '125%', scale: 1.25 },
-  { label: '150%', scale: 1.5 },
-  { label: '175%', scale: 1.75 },
-  { label: '200%', scale: 2 },
 ];
 
 const vietnamOverviewRanges = new Set<VietnamOverviewRange>(
@@ -156,55 +76,8 @@ export function normalizeVietnamOverviewRange(
     : 'today';
 }
 
-export function vietnamOverviewHref(range: VietnamOverviewRange) {
-  return `/vietnam-overview?range=${range}`;
-}
-
 export function vietnamOverviewRealtimePointsApiHref() {
   return '/admin/vietnam-overview/realtime-points?take=50';
-}
-
-export function vietnamOverviewMapMarkers(
-  regions: readonly VietnamOverviewRegionMarkerInput[],
-): VietnamOverviewMapMarker[] {
-  const rankedRegions = [...regions].sort((left, right) => demandCount(right) - demandCount(left));
-  const maxDemand = Math.max(1, ...rankedRegions.map(demandCount));
-  const maxMetricValue = Math.max(
-    1,
-    ...rankedRegions.flatMap((region) => vietnamOverviewMetricValues(region).map((metric) => metric.value)),
-  );
-
-  return rankedRegions.map((region, index) => {
-    const demand = demandCount(region);
-    const intensity = Math.max(12, Math.round((demand / maxDemand) * 100));
-    const mapPosition = vietnamMapPosition(region, index);
-
-    return {
-      activeBookingCount: region.activeBookingCount,
-      activeCustomerCount: region.activeCustomerCount,
-      cancellationCount: region.cancellationCount,
-      completedBookingCount: region.completedBookingCount,
-      currency: region.currency,
-      customerCount: region.customerCount,
-      demandCount: demand,
-      featured: index === 0,
-      intensity,
-      mapXPercent: mapPosition.x,
-      mapYPercent: mapPosition.y,
-      metricDots: vietnamOverviewMetricValues(region).map((metric) => ({
-        ...metric,
-        size: metricDotSize(metric.value, maxMetricValue),
-      })),
-      onlinePartnerCount: region.onlinePartnerCount,
-      partnerCount: region.partnerCount,
-      partnerSummary: `${region.onlinePartnerCount} online / ${region.partnerCount} Partners`,
-      regionCode: region.regionCode,
-      regionName: region.regionName,
-      revenueAmount: region.revenueAmount,
-      shortName: region.shortName,
-      tone: index === 0 ? 'high' : intensity >= 50 ? 'medium' : 'low',
-    };
-  });
 }
 
 export function vietnamOverviewMapPoints(
@@ -224,25 +97,17 @@ export function vietnamOverviewMapPoints(
       };
     })
     .filter((point): point is VietnamOverviewMapPoint => Boolean(point))
-    .sort((left, right) => new Date(left.occurredAt).getTime() - new Date(right.occurredAt).getTime());
+    .sort(
+      (left, right) =>
+        (left.occurredAt ? new Date(left.occurredAt).getTime() : Number.MAX_SAFE_INTEGER) -
+        (right.occurredAt ? new Date(right.occurredAt).getTime() : Number.MAX_SAFE_INTEGER),
+    );
 }
 
 export function vietnamOverviewRealtimeMapPoints(
   points: readonly VietnamOverviewPointInput[] = [],
 ): VietnamOverviewMapPoint[] {
   return vietnamOverviewMapPoints(points.filter((point) => isRealtimeMapPointKind(point.kind)));
-}
-
-export function vietnamOverviewMetricPointCounts(
-  points: readonly Pick<VietnamOverviewMapPoint, 'kind'>[],
-) {
-  return vietnamOverviewMetricDotLegend.reduce(
-    (counts, item) => ({
-      ...counts,
-      [item.key]: points.filter((point) => point.kind === item.key).length,
-    }),
-    {} as Record<VietnamOverviewMetricDotKey, number>,
-  );
 }
 
 export function vietnamOverviewRealtimePointCounts(
@@ -255,39 +120,6 @@ export function vietnamOverviewRealtimePointCounts(
     }),
     {} as Record<VietnamOverviewMetricDotKey, number>,
   );
-}
-
-export function vietnamOverviewMapTilerTileGrid(): VietnamOverviewMapTilerTileGrid {
-  const tileWindow = vietnamOverviewMapTilerTileWindow(VIETNAM_MAPTILER_TILE_VIEW.zoom);
-  const viewWidth = tileWindow.maxXFloat - tileWindow.minXFloat;
-  const viewHeight = tileWindow.maxYFloat - tileWindow.minYFloat;
-  const tileAreaWidth = tileWindow.maxTileX + 1 - tileWindow.minTileX;
-  const tileAreaHeight = tileWindow.maxTileY + 1 - tileWindow.minTileY;
-  const tiles: VietnamOverviewMapTilerTile[] = [];
-
-  for (let y = tileWindow.minTileY; y <= tileWindow.maxTileY; y += 1) {
-    for (let x = tileWindow.minTileX; x <= tileWindow.maxTileX; x += 1) {
-      tiles.push({
-        src: `/api/admin/maptiler-tiles/${VIETNAM_MAPTILER_TILE_VIEW.zoom}/${x}/${y}.png`,
-        x,
-        y,
-        z: VIETNAM_MAPTILER_TILE_VIEW.zoom,
-      });
-    }
-  }
-
-  return {
-    cols: tileWindow.maxTileX - tileWindow.minTileX + 1,
-    layerHeightPercent: (tileAreaHeight / viewHeight) * 100,
-    layerLeftPercent: ((tileWindow.minTileX - tileWindow.minXFloat) / viewWidth) * 100,
-    layerTopPercent: ((tileWindow.minTileY - tileWindow.minYFloat) / viewHeight) * 100,
-    layerWidthPercent: (tileAreaWidth / viewWidth) * 100,
-    rows: tileWindow.maxTileY - tileWindow.minTileY + 1,
-    style: VIETNAM_MAPTILER_TILE_VIEW.style,
-    tiles,
-    viewAspectRatio: viewWidth / viewHeight,
-    zoom: VIETNAM_MAPTILER_TILE_VIEW.zoom,
-  };
 }
 
 export function isVietnamOverviewMapTilerTile(z: number, x: number, y: number) {
@@ -313,50 +145,46 @@ function isRealtimeMapPointKind(kind: VietnamOverviewMetricDotKey) {
     kind === 'customers' ||
     kind === 'active' ||
     kind === 'online' ||
+    kind === 'busy-partners' ||
     kind === 'stale-partners' ||
     kind === 'offline-partners' ||
-    kind === 'bookings'
+    kind === 'needs-supply' ||
+    kind === 'assigned-bookings' ||
+    kind === 'stale-bookings'
   );
 }
 
-function demandCount(region: VietnamOverviewRegionMarkerInput) {
-  return region.activeBookingCount + region.completedBookingCount;
-}
+export function vietnamOverviewMappedSignalScope(input?: {
+  readonly sources?: readonly {
+    readonly mappedPointCount: number;
+    readonly total: number | null;
+    readonly totalUnavailable: boolean;
+    readonly truncated: boolean;
+  }[];
+}) {
+  const sources = input?.sources ?? [];
+  const returned = sources.reduce((sum, source) => sum + source.mappedPointCount, 0);
+  const hasUnknownTotal = sources.length === 0 || sources.some((source) => source.totalUnavailable || source.total === null);
+  const truncated = sources.some((source) => source.truncated);
+  const total = hasUnknownTotal
+    ? null
+    : sources.reduce((sum, source) => sum + (source.total ?? 0), 0);
 
-function vietnamOverviewMetricValues(region: VietnamOverviewRegionMarkerInput) {
-  return [
-    { key: 'customers', label: 'Customers', value: region.customerCount },
-    { key: 'active', label: 'Active', value: region.activeCustomerCount },
-    { key: 'partners', label: 'Partners', value: region.partnerCount },
-    { key: 'online', label: 'Online', value: region.onlinePartnerCount },
-    { key: 'bookings', label: 'Bookings', value: region.activeBookingCount },
-    { key: 'done', label: 'Done', value: region.completedBookingCount },
-    { key: 'cancel', label: 'Cancel', value: region.cancellationCount },
-  ] satisfies Array<Omit<VietnamOverviewMetricDot, 'size'>>;
-}
-
-function metricDotSize(value: number, maxMetricValue: number) {
-  if (value <= 0) return 8;
-
-  return Math.round(10 + (value / maxMetricValue) * 18);
-}
-
-function vietnamMapPosition(
-  region: Pick<VietnamOverviewRegionMarkerInput, 'regionCode' | 'regionName' | 'shortName'>,
-  index: number,
-) {
-  const normalizedRegion = normalizeRegionKey(
-    `${region.regionCode} ${region.regionName} ${region.shortName}`,
-  );
-  const knownPosition = knownVietnamMapPositions.find(({ keys }) =>
-    keys.some((key) => normalizedRegion.includes(key)),
-  );
-
-  if (knownPosition) {
-    return { x: knownPosition.x, y: knownPosition.y };
+  if (total !== null) {
+    return {
+      returned,
+      total,
+      truncated,
+      copy: `Showing ${returned} of ${total} mapped signals.`,
+    };
   }
 
-  return fallbackVietnamMapPosition(index);
+  return {
+    returned,
+    total: null,
+    truncated,
+    copy: `Showing up to ${returned} recent mapped signals. This is not a complete regional total.`,
+  };
 }
 
 function vietnamCoordinateMapPosition(latitude: number, longitude: number) {
@@ -392,23 +220,6 @@ function vietnamMercatorYPercent(latitude: number) {
 function clampPercent(value: number) {
   return Math.max(4, Math.min(96, value));
 }
-
-function normalizeRegionKey(value: string) {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
-
-const knownVietnamMapPositions = [
-  { keys: ['hanoi', 'ha noi', 'han'], x: 54, y: 20 },
-  { keys: ['hai phong', 'haiphong'], x: 60, y: 24 },
-  { keys: ['da nang', 'danang', 'dng'], x: 57, y: 52 },
-  { keys: ['nha trang', 'khanh hoa'], x: 64, y: 64 },
-  { keys: ['ho chi minh', 'hcm', 'sai gon', 'saigon'], x: 61, y: 76 },
-  { keys: ['vung tau', 'ba ria'], x: 68, y: 84 },
-  { keys: ['can tho', 'mekong'], x: 47, y: 86 },
-] as const;
 
 export const VIETNAM_MAP_BOUNDS = {
   minLat: 8.0,
@@ -453,14 +264,4 @@ function latitudeToTileYFloat(latitude: number, zoom: number) {
     ((1 - Math.log(Math.tan(radians) + 1 / Math.cos(radians)) / Math.PI) / 2) *
     2 ** zoom
   );
-}
-
-function fallbackVietnamMapPosition(index: number) {
-  const xOffsets = [50, 58, 44, 62, 48, 56];
-  const yOffsets = [30, 40, 50, 60, 70, 82];
-
-  return {
-    x: xOffsets[index % xOffsets.length],
-    y: yOffsets[index % yOffsets.length],
-  };
 }

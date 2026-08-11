@@ -1,0 +1,13 @@
+
+> test
+> vitest run --config vitest.config.mts app/wallet-adjustments app/customers/[id]
+
+
+ RUN  v4.1.9 C:/dev/massage-on-demand-vn/apps/admin_web
+
+
+ Test Files  10 passed (10)
+      Tests  84 passed (84)
+   Start at  13:15:18
+   Duration  3.19s (transform 1.91s, setup 0ms, import 8.64s, tests 735ms, environment 1ms)
+

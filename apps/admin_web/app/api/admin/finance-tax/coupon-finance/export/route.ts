@@ -7,7 +7,7 @@ import {
   buildBookingSettlementSnapshotRowsCsvContent,
   buildCouponFinanceApiHref,
   buildTaxSettlementServerPagination,
-  readBookingSettlementFilters,
+  readCouponFinanceFilters,
 } from '../../../../../finance-tax/tax-settlement-page-model';
 
 const NO_STORE_HEADERS = {
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: access.error }, { headers: NO_STORE_HEADERS, status: access.status });
   }
 
-  const filters = readBookingSettlementFilters(Object.fromEntries(request.nextUrl.searchParams.entries()));
+  const filters = readCouponFinanceFilters(Object.fromEntries(request.nextUrl.searchParams.entries()));
   const snapshots = await adminGet<AdminBookingSettlementSnapshot[]>(buildCouponFinanceApiHref(filters), []);
   const storedTotal = snapshots.length ? Math.max(filters.page * filters.take, snapshots.length) : 0;
   const csv = buildBookingSettlementSnapshotRowsCsvContent(

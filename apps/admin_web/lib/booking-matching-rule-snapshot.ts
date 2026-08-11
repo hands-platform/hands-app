@@ -55,10 +55,10 @@ export function matchingPolicySummaryLabel(snapshot: BookingMatchingPolicySnapsh
         ? 'marketplace immediate (legacy normalized)'
         : 'marketplace ?';
   const acceptMode =
-    snapshot.preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT'
-      ? 'customer final'
+    adminPreferredAcceptModeUsesFirstPickPriority(snapshot.preferredAcceptMode)
+      ? 'first-pick accept matches / customer fallback'
       : snapshot.preferredAcceptMode === 'AUTO_MATCH_ON_ACCEPT'
-        ? 'historical auto ignored'
+        ? 'first-pick accept matches (legacy alias)'
         : 'accept ?';
   return `Saved policy: ${timer} / ${radius} / ${freshness} / ${inviteLimit} / ${backupMode} / ${acceptMode}`;
 }
@@ -128,3 +128,4 @@ function formatMeters(value: number | null) {
   }
   return `${value.toLocaleString('en')} m`;
 }
+import { adminPreferredAcceptModeUsesFirstPickPriority } from './operations-policy';

@@ -71,6 +71,7 @@ const customerReferralParent: AdminCustomerReferralParent = {
           },
           qualifyingBookingId: 'booking-1',
           status: 'AVAILABLE',
+          updatedAt: '2026-06-24T11:00:00.000Z',
           walletLedgerReference: 'wallet-ledger-1',
         },
       ],
@@ -145,7 +146,7 @@ describe('Referral detail presentation', () => {
       <ReferralParentDetailPage audience="customer" row={customerReferralParent} />,
     ).replace(/\s+/g, ' ');
 
-    expect(markup).toContain('Customer Referral Detail');
+    expect(markup).toContain('Customer referral · Parent Customer');
     expect(markup).toContain('Parent Customer');
     expect(markup).toContain('/customers/parent-customer');
     expect(markup).toContain('HANDSCUST');
@@ -156,16 +157,18 @@ describe('Referral detail presentation', () => {
     );
     expect(markup).toContain('Attribution attribution-1');
     expect(markup).toContain('Credited 1');
-    expect(markup).toContain('1 reward(s) / <span class="money-text money-text-positive">25.000 VND</span>');
+    expect(markup).toContain('1 reward / <span class="money-text money-text-positive">25.000 VND</span>');
     expect(markup).toContain('wallet-ledger-1');
     expect(markup).toContain('class="admin-disclosure referral-reward-evidence-details"');
+    expect(markup).toContain('class="admin-table-scroll referral-reward-ledger-scroll"');
+    expect(markup).toContain('admin-data-table referral-reward-ledger-table');
     expect(markup).toContain('<summary>Decision evidence</summary>');
     expect(markup).toContain('Decision evidence');
     expect(markup).toContain('Wallet credit wallet-ledger-1');
     expect(markup).toContain('Booking booking-1');
     expect(markup).toContain('Latest decision Credit by Ops Admin');
     expect(markup).toContain('Reason manual payout check');
-    expect(markup).toContain('AVAILABLE');
+    expect(markup).toContain('Ready to credit');
     expect(markup).not.toContain('Hold reward');
     expect(markup).not.toContain('Reverse reward');
   });
@@ -229,7 +232,7 @@ describe('Referral detail presentation', () => {
       />,
     ).replace(/\s+/g, ' ');
 
-    expect(markup).toContain('Configure store URLs');
+    expect(markup).toContain('Open Developer setup');
     expect(markup).toContain('href="/setup#referrals"');
   });
 
@@ -285,7 +288,10 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('No qualifying booking linked');
     expect(markup.match(/No qualifying booking linked/g)).toHaveLength(1);
     expect(markup).toContain('name="parentId" value="parent-customer"');
-    expect(markup).toContain('placeholder="Operator decision reason"');
+    expect(markup).toContain('placeholder="12-500 characters describing the evidence and decision"');
+    expect(markup).toContain('name="expectedStatus" value="PENDING"');
+    expect(markup).toContain('name="expectedUpdatedAt"');
+    expect(markup).toContain('name="confirmation" value="confirmed"');
     expect(markup).toContain('admin-form-input referral-reward-action-reason-input');
     expect(markup).toContain('Reward decision reason');
     expect(markup.match(/name="reason"/g)).toHaveLength(1);
@@ -293,6 +299,33 @@ describe('Referral detail presentation', () => {
     expect(markup).not.toContain('placeholder="Operator reason for reversal"');
     expect(markup).not.toContain('Hold referral reward for admin review from detail page.');
     expect(markup).not.toContain('Reverse referral reward from detail review.');
+  });
+
+  it('releases held rewards back to available with state evidence', () => {
+    const row: AdminCustomerReferralParent = {
+      ...customerReferralParent,
+      referrals: [
+        {
+          ...customerReferralParent.referrals[0],
+          rewards: [
+            {
+              ...customerReferralParent.referrals[0].rewards[0],
+              status: 'HELD',
+              walletLedgerReference: null,
+            },
+          ],
+        },
+      ],
+    };
+    const markup = renderToStaticMarkup(<ReferralParentDetailPage audience="customer" row={row} />).replace(
+      /\s+/g,
+      ' ',
+    );
+
+    expect(markup).toContain('Release hold');
+    expect(markup).toContain('name="expectedStatus" value="HELD"');
+    expect(markup).toContain('name="expectedUpdatedAt"');
+    expect(markup).toContain('name="confirmation" value="confirmed"');
   });
 
   it('uses the shared Vuexy action dropdown surface for reward decision forms', () => {
@@ -396,7 +429,7 @@ describe('Referral detail presentation', () => {
 
     expect(markup).toContain('admin-action-dropdown referral-reward-action-dropdown');
     expect(markup).toContain('Credit to wallet');
-    expect(markup).toContain('placeholder="Operator decision reason"');
+    expect(markup).toContain('placeholder="12-500 characters describing the evidence and decision"');
     expect(markup).toContain('admin-form-input referral-reward-action-reason-input');
     expect(markup).toContain('Reward decision reason');
     expect(markup).toContain('No wallet credit yet');
@@ -538,17 +571,17 @@ describe('Referral detail presentation', () => {
 
     expect(markup).toContain('Referral operations board');
     expect(markup).toContain('Ready to credit');
-    expect(markup).toContain('Held for review');
-    expect(markup).toContain('1 ready / 1 held');
+    expect(markup).toContain('On hold for review');
+    expect(markup).toContain('1 ready / 1 on hold');
     expect(markup).toContain('Credit ready rewards or hold suspicious rows.');
     expect(markup).toContain('Ready 1');
-    expect(markup).toContain('Held 1');
-    expect(markup).toContain('2 reward(s) / <span class="money-text money-text-positive">35.000 VND</span>');
+    expect(markup).toContain('On hold 1');
+    expect(markup).toContain('2 rewards / <span class="money-text money-text-positive">35.000 VND</span>');
     expect(markup).toContain('Reward decision timeline');
     expect(markup).toContain('Attribution captured');
-    expect(markup).toContain('Qualification and fraud check');
+    expect(markup).toContain('Qualification and integrity check');
     expect(markup).toContain('Reward queue');
-    expect(markup).toContain('1 ready · 1 held · 0 pending');
+    expect(markup).toContain('1 ready · 1 on hold · 0 pending');
     expect(markup).toContain('Wallet decision');
     expect(markup).toContain('Use row actions for wallet credit, hold, or reversal.');
   });

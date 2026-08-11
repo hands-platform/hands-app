@@ -88,7 +88,7 @@ export function buildPartnerAcceptanceBlockerBoard(
         detail: `Marketplace matching uses the last location. Partners older than ${opsPolicy.staleLocationMinutes} minutes need an app-open refresh before 10km dispatch.`,
         operatorAction:
           'Ask partners to open the app so location refreshes before they receive or join requests.',
-        href: '/partners?review=location',
+        href: '/partners?review=available-blocked-location',
         tone: locationHold.length ? 'warn' : 'ok',
         samples: partnerBlockerSamples(locationHold, deps),
       },
@@ -123,7 +123,7 @@ export function buildPartnerAcceptanceBlockerBoard(
           'Withdrawal details are requested after first earning, not before Level 2 approval, to reduce onboarding drop-off.',
         operatorAction:
           'Keep booking work possible, but review withdrawal details when the partner requests wallet payout.',
-        href: '/partners?review=payout-setup',
+        href: '/notifications?review=payout-setup',
         tone: firstEarningPayoutGate.length ? 'info' : 'ok',
         samples: partnerBlockerSamples(firstEarningPayoutGate, deps),
       },

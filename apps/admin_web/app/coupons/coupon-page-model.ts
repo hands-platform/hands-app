@@ -1,6 +1,7 @@
 import type { AdminCoupon } from '../../lib/admin-api';
-import { formatDateTime as formatDate, formatMoney, shortDisplayId } from '../../lib/admin-format';
+import { formatMoney, shortDisplayId } from '../../lib/admin-format';
 import type { CouponTableRow } from './coupons-table-section';
+import { couponIsoToIctWallTimeInput, formatCouponIctDateTime } from './coupon-ict-time';
 import { formatDiscount } from './coupon-page-presenters';
 
 export type CampaignCommandTone = 'warn' | 'info' | 'ok';
@@ -134,6 +135,14 @@ export function buildCouponCreateNotice({
     };
   }
 
+  if (notice === 'activate-expired') {
+    return {
+      detail: 'Update the ICT end time before activating this coupon.',
+      title: 'Expired coupon cannot be activated',
+      tone: 'warning',
+    };
+  }
+
   if (notice === 'deleted') {
     return {
       detail: 'The coupon was removed from the coupon list.',
@@ -155,6 +164,14 @@ export function buildCouponCreateNotice({
       detail: 'The API did not delete the coupon. It may have already been removed.',
       title: 'Coupon deletion failed',
       tone: 'danger',
+    };
+  }
+
+  if (notice === 'delete-used') {
+    return {
+      detail: 'This coupon has booking usage and must remain available for audit. Pause it instead of deleting it.',
+      title: 'Used coupon cannot be deleted',
+      tone: 'warning',
     };
   }
 
@@ -206,28 +223,33 @@ export function buildCouponTableRows(coupons: readonly AdminCoupon[]): CouponTab
     code: coupon.code,
     description: coupon.description ?? '-',
     discountLabel: formatDiscount(coupon.discount),
+    endsAtIso: coupon.endsAt ?? '',
     id: coupon.id,
     lowerCode: coupon.code.toLowerCase(),
     opsHint: couponOpsHint(coupon),
     percentValue: couponPercentValue(coupon.discount),
-    startsAtInputValue: datetimeLocalInputValue(coupon.startsAt),
+    startsAtInputValue: couponIsoToIctWallTimeInput(coupon.startsAt),
+    startsAtIso: coupon.startsAt ?? '',
     statusClassName: couponStatusClass(coupon),
     statusLabel: couponStatusLabel(coupon),
-    endsAtInputValue: datetimeLocalInputValue(coupon.endsAt),
+    endsAtInputValue: couponIsoToIctWallTimeInput(coupon.endsAt),
     usageBookingCount: coupon.usageBookingCount ?? coupon.usageBookings?.length ?? 0,
     usageBookings: (coupon.usageBookings ?? []).map((booking) => ({
-      amount: booking.amount ?? 0,
+      amount: booking.amount ?? null,
       bookingHref: `/bookings/${booking.bookingId}`,
       bookingLabel: shortDisplayId(booking.bookingId),
       currency: booking.currency ?? 'VND',
       customerLabel: booking.customerName ?? booking.customerPhone ?? 'Unknown customer',
+      discountAmount: booking.discountAmount ?? null,
       discountLabel: formatMoney(booking.discountAmount, booking.currency ?? 'VND', '-'),
       partnerLabel: booking.partnerName ?? 'Not matched',
-      requestTimeLabel: formatDate(booking.requestTime, 'Not set'),
+      paymentLabel: [booking.paymentMethod, booking.paymentStatus].filter(Boolean).join(' / ') || 'No payment',
+      requestTimeLabel: formatCouponIctDateTime(booking.requestTime, 'Not set'),
       reversalStatusLabel: booking.reversalStatus ?? 'ACTIVE',
       serviceLabel: booking.serviceName ?? '-',
       statusLabel: booking.status ?? '-',
     })),
+    usageCountKnown: coupon.usageBookingCount !== undefined,
     windowState: couponWindowState(coupon),
     windowLabel: couponWindowLabel(coupon),
     windowSignal: couponWindowSignal(coupon),
@@ -376,9 +398,9 @@ function couponWindowSignal(coupon: AdminCoupon) {
 }
 
 function couponWindowLabel(coupon: AdminCoupon) {
-  const start = coupon.startsAt ? formatDate(coupon.startsAt) : 'Immediate';
-  const end = coupon.endsAt ? formatDate(coupon.endsAt) : 'No end date';
-  return `${start} -> ${end}`;
+  const start = coupon.startsAt ? formatCouponIctDateTime(coupon.startsAt) : 'Starts immediately';
+  const end = coupon.endsAt ? formatCouponIctDateTime(coupon.endsAt) : 'No end date';
+  return `${start} · ${end}`;
 }
 
 function couponOpsHint(coupon: AdminCoupon) {
@@ -392,7 +414,7 @@ function couponOpsHint(coupon: AdminCoupon) {
   if (!coupon.active) {
     return 'Re-activate when the campaign should return.';
   }
-  return 'Safe to use in customer checkout now.';
+  return '';
 }
 
 function couponCheckoutHint(coupon: AdminCoupon) {
@@ -406,7 +428,7 @@ function couponCheckoutHint(coupon: AdminCoupon) {
   if (windowState === 'expired') {
     return 'Checkout preview will reject this code because the end time passed.';
   }
-  return 'Checkout preview and booking payment authorization should apply this discount.';
+  return 'Available at checkout now.';
 }
 
 function couponStatusClass(coupon: AdminCoupon) {
@@ -424,19 +446,6 @@ function couponPercentValue(discount: unknown) {
   const input = readRecord(discount);
   const value = input ? readNumber(input.value) : null;
   return input?.type === 'percent' && value !== null ? String(value) : '';
-}
-
-function datetimeLocalInputValue(value?: string | null) {
-  if (!value) {
-    return '';
-  }
-
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) {
-    return '';
-  }
-
-  return date.toISOString().slice(0, 16);
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {

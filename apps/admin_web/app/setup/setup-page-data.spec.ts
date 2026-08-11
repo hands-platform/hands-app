@@ -238,7 +238,13 @@ describe('setup page data', () => {
         .map((command) => command.match(/\/notifications\?review=([^"'\s]+)/)?.[1])
         .filter((review): review is string => Boolean(review)) ?? [];
 
-    expect(linkedReviews).toEqual(['fcm', 'failed', 'disabled-device', 'stale-device', 'pending']);
+    expect(linkedReviews).toEqual([
+      'fcm',
+      'failed',
+      'disabled-device',
+      'stale-device',
+      'unattempted',
+    ]);
     expect(linkedReviews.every((review) => supportedReviews.has(review))).toBe(true);
   });
 

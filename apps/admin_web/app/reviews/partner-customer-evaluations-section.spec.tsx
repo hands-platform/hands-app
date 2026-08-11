@@ -8,99 +8,54 @@ import {
 } from './partner-customer-evaluations-section';
 
 describe('PartnerCustomerEvaluationsSection', () => {
-  it('uses the shared StatusBadge atom for active filter labels', () => {
+  it('uses the shared filter, details, table, and pagination atoms', () => {
     const source = readFileSync(
       new URL('./partner-customer-evaluations-section.tsx', import.meta.url),
       'utf8',
     );
-    const filterSummarySource = readFileSync(
-      new URL('../../components/admin-filter-summary.tsx', import.meta.url),
-      'utf8',
-    );
-
-    expect(filterSummarySource).toContain('StatusBadge');
-    expect(source).toContain('AdminFilterSummary');
-    expect(source).not.toContain('<div className="vuexy-review-filter-summary">');
-    expect(source).not.toContain('<span className="pill pill-warn" key={label}>');
-  });
-
-  it('uses the shared table pagination footer while preserving review classes', () => {
-    const source = readFileSync(
-      new URL('./partner-customer-evaluations-section.tsx', import.meta.url),
-      'utf8',
-    );
-
+    expect(source).toContain('ActionMenu');
+    expect(source).toContain('AdminFilterPanel');
+    expect(source).toContain('AdminDetails');
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTablePaginationFooter');
-    expect(source).toContain('className="vuexy-review-footer"');
-    expect(source).toContain('paginationClassName="vuexy-review-pagination"');
-    expect(source).toContain('pageLinkClassName="vuexy-review-page-link"');
-    expect(source).not.toContain('<AdminTableFooter');
-    expect(source).not.toContain(
-      'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card',
-    );
-    expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
-  });
-
-  it('uses the shared date time atom for evaluation submitted timestamps', () => {
-    const source = readFileSync(
-      new URL('./partner-customer-evaluations-section.tsx', import.meta.url),
-      'utf8',
-    );
-    const modelSource = readFileSync(new URL('./review-page-model.ts', import.meta.url), 'utf8');
-
     expect(source).toContain('DateTimeText');
-    expect(source).not.toContain('readonly createdAtLabel: string;');
-    expect(source).not.toContain('Evaluation submitted {row.createdAtLabel}');
-    expect(modelSource).not.toContain('createdAtLabel: formatReviewDate(review.createdAt)');
-  });
-
-  it('uses the shared Vuexy text link atom for evaluation booking links', () => {
-    const source = readFileSync(
-      new URL('./partner-customer-evaluations-section.tsx', import.meta.url),
-      'utf8',
-    );
-
     expect(source).toContain('AdminTextLink');
-    expect(source).not.toContain('className="text-link"');
+    expect(source).toContain("open={filters.dateRange === 'custom' || undefined}");
+    expect(source).not.toContain('customerPhone');
+    expect(source).not.toContain('customerAvatarStatus');
+    expect(source).not.toContain('Text-only customer evaluation');
   });
 
-  it('keeps partner evaluation filters on the shared filter surface without booking-monitor filter classes', () => {
-    const source = readFileSync(
-      new URL('./partner-customer-evaluations-section.tsx', import.meta.url),
-      'utf8',
-    );
-
-    expect(source).toContain('AdminFilterPanel');
-    expect(source).toContain('className="vuexy-review-filter-card admin-mb-16"');
-    expect(source).not.toContain('className="booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16"');
-  });
-
-  it('renders partner-written customer evaluations as a text-only review board', () => {
+  it('renders immutable Partner notes with submitted date, state, audit metadata, and actions', () => {
     const section = PartnerCustomerEvaluationsSection({
+      dateError: '',
       filters: filters(),
       pagination: pagination([buildRow()]),
+      returnTo: '/reviews/partner-customer-evaluations',
       rows: [buildRow()],
-      totalEvaluationCount: 1,
+      summary: summary(),
     });
 
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('Partner customer evaluation filters');
-    expect(rendered).toContain('Partner customer evaluations');
-    expect(rendered).toContain('Text-only notes Partners write about customers after a booking.');
-    expect(rendered).toContain('Request Time');
-    expect(rendered).toContain('Partner');
+    expect(rendered).toContain('Partner note search');
+    expect(rendered).toContain('Partner notes');
+    expect(rendered).toContain('Submitted');
+    expect(rendered).toContain('Partner note');
     expect(rendered).toContain('Customer');
-    expect(rendered).toContain('Customer evaluation');
+    expect(rendered).toContain('Context');
+    expect(rendered).toContain('Note state');
     expect(rendered).toContain('Customer arrived prepared and confirmed closeout in chat.');
-    expect(rendered).toContain('This page is for admin review only.');
+    expect(rendered).toContain('Needs review');
+    expect(rendered).toContain('Booking context requires verification');
+    expect(rendered).toContain('Operator Linh');
+    expect(rendered).toContain('View full note and context');
+    expect(rendered).toContain('Change note state');
+    expect(rendered).toContain('View moderation history');
+    expect(rendered).toContain('Retain');
+    expect(rendered).toContain('Restrict');
     expect(rendered).not.toContain('Rating');
-    expect(rendered).not.toContain('Actions');
-    expect(rendered).not.toContain('Visibility');
-    expect(rendered).not.toContain('Publish');
-    expect(rendered).not.toContain('Hide');
-    expect(rendered).not.toContain('Hold');
+    expect(rendered).not.toContain('+84900000000');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/bookings/booking-1',
@@ -111,43 +66,50 @@ describe('PartnerCustomerEvaluationsSection', () => {
         '/reviews/partner-customer-evaluations?dateRange=yesterday',
         '/reviews/partner-customer-evaluations?dateRange=7d',
         '/reviews/partner-customer-evaluations?dateRange=30d',
-        '/reviews/partner-customer-evaluations?dateRange=custom',
+        '/reviews/partner-customer-evaluations?status=retained',
+        '/reviews/partner-customer-evaluations?status=needs-review',
+        '/reviews/partner-customer-evaluations?status=restricted',
         '/reviews/partner-customer-evaluations?sort=oldest',
       ]),
     );
-    expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining([
-        'card admin-filter-panel vuexy-review-filter-card admin-mb-16 admin-section',
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card admin-section',
-        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-review-table vuexy-partner-evaluation-table',
-      ]),
-    );
+    expect(renderToStaticMarkup(section)).toContain('partner-notes-table');
+    expect(renderToStaticMarkup(section)).toContain('tabindex="-1"');
   });
 
-  it('renders custom date apply controls through the shared Vuexy button atom', () => {
+  it('renders visible custom date labels and rejects reversed dates inline', () => {
     const section = PartnerCustomerEvaluationsSection({
+      dateError: 'From date must be on or before To date.',
       filters: filters({
-        dateFrom: '2026-06-10',
+        dateFrom: '2026-06-20',
         dateRange: 'custom',
-        dateTo: '2026-06-17',
+        dateTo: '2026-06-10',
       }),
       pagination: pagination([]),
+      returnTo: '/reviews/partner-customer-evaluations?dateRange=custom',
       rows: [],
-      totalEvaluationCount: 0,
+      summary: summary({ totalCount: 0 }),
     });
+    const rendered = normalizedText(section);
 
-    expect(normalizedText(section)).toContain('Apply dates');
+    expect(rendered).toContain('From');
+    expect(rendered).toContain('To');
+    expect(rendered).toContain('Apply dates');
+    expect(rendered).toContain('Submitted date is invalid');
+    expect(rendered).toContain('From date must be on or before To date.');
+    expect(rendered).not.toContain('Partner notes The original Partner note is immutable.');
     expect(classNamesIn(section)).toContain(
       'admin-form-control-button button button-primary booking-date-apply-button',
     );
   });
 
-  it('keeps the all-dates evaluation filter visible and active after clearing date filters', () => {
+  it('keeps All dates explicit on the base route', () => {
     const section = PartnerCustomerEvaluationsSection({
+      dateError: '',
       filters: filters({ dateRange: 'all' }),
       pagination: pagination([buildRow()]),
+      returnTo: '/reviews/partner-customer-evaluations',
       rows: [buildRow()],
-      totalEvaluationCount: 1,
+      summary: summary(),
     });
     const markup = renderToStaticMarkup(section);
 
@@ -155,6 +117,49 @@ describe('PartnerCustomerEvaluationsSection', () => {
     expect(markup).toContain(
       'aria-current="page" class="booking-date-filter-button is-active" href="/reviews/partner-customer-evaluations"',
     );
+  });
+
+  it('distinguishes empty scope from filtered no-match results', () => {
+    const empty = PartnerCustomerEvaluationsSection({
+      dateError: '',
+      filters: filters(),
+      pagination: pagination([]),
+      returnTo: '/reviews/partner-customer-evaluations',
+      rows: [],
+      summary: summary({ totalCount: 0 }),
+    });
+    const noMatch = PartnerCustomerEvaluationsSection({
+      dateError: '',
+      filters: filters({ q: 'guaranteed-no-match' }),
+      pagination: pagination([]),
+      returnTo: '/reviews/partner-customer-evaluations?q=guaranteed-no-match',
+      rows: [],
+      summary: summary(),
+    });
+
+    expect(normalizedText(empty)).toContain('No Partner notes were submitted in this period.');
+    expect(normalizedText(noMatch)).toContain('No Partner notes match the current filters.');
+    expect(normalizedText(noMatch)).toContain('Clear filters');
+  });
+
+  it('uses a page-specific responsive table without a forced 1320px width', () => {
+    const css = readFileSync(new URL('../globals.css', import.meta.url), 'utf8');
+    const tableCss = css.slice(
+      css.indexOf('.partner-notes-table-scroll'),
+      css.indexOf('.partner-notes-table-scroll') + 4_500,
+    );
+
+    expect(tableCss).toContain('overflow: visible');
+    expect(tableCss).toContain('table-layout: fixed');
+    expect(tableCss).toContain('min-width: 220px');
+    expect(css).toContain(
+      '.partner-notes-page :is(.vuexy-review-filter-card, .partner-notes-table-panel)',
+    );
+    expect(tableCss).toContain('@container partner-notes (max-width: 900px)');
+    expect(tableCss).toContain('.partner-notes-table-scroll .partner-notes-table tbody td[data-label]');
+    expect(tableCss).toContain('height: auto');
+    expect(tableCss).toContain('width: auto !important');
+    expect(tableCss).not.toContain('min-width: 1320px');
   });
 });
 
@@ -165,18 +170,32 @@ function buildRow(): PartnerCustomerEvaluationTableRow {
     bookingRequestTimeLabel: '19 Jun 2026, 14:40',
     commentLabel: 'Customer arrived prepared and confirmed closeout in chat.',
     createdAt: '2026-02-23T09:12:00.000Z',
-    customerAvatarStatus: 'offline',
     customerHref: '/customers/customer-1',
-    customerInitials: 'CO',
     customerLabel: 'Customer One',
-    customerPhone: '+84900000000',
     id: 'partner-evaluation-1',
-    partnerAvatarStatus: 'offline',
+    isDefaultRetained: false,
+    lastReviewedAt: '2026-02-24T09:12:00.000Z',
+    lastReviewedBy: 'Operator Linh',
+    lastReviewReason: 'Booking context requires verification',
     partnerHref: '/partners/partner-1',
-    partnerHint: 'Text-only customer evaluation',
-    partnerInitials: 'MP',
     partnerLabel: 'Massage Partner',
+    reportReasonLabel: 'Booking context requires verification',
     serviceLabel: 'Aromatherapy',
+    status: 'REPORTED',
+    statusClassName: 'review-status-chip review-status-reported',
+    statusLabel: 'Needs review',
+  };
+}
+
+function summary(
+  input: Partial<{ needsReview: number; restricted: number; retained: number; totalCount: number }> = {},
+) {
+  return {
+    needsReview: 1,
+    restricted: 0,
+    retained: 0,
+    totalCount: 1,
+    ...input,
   };
 }
 

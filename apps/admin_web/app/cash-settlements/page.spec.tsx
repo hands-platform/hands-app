@@ -3,189 +3,184 @@ import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
-import type {
-  AdminCashSettlementSummary,
-  AdminEarning,
-  AdminOperationalPolicySetting,
-} from '../../lib/admin-api';
-import { adminGet } from '../../lib/admin-api';
+import type { AdminCashSettlementSummary, AdminEarning } from '../../lib/admin-api';
+import { adminGetResult } from '../../lib/admin-api';
 import CashSettlementsPage from './page';
+
+const { mockedRedirect } = vi.hoisted(() => ({ mockedRedirect: vi.fn() }));
+
+vi.mock('next/navigation', () => ({ redirect: mockedRedirect }));
+vi.mock('../../lib/admin-operator-access', () => ({
+  getCurrentAdminOperatorAccess: vi.fn().mockResolvedValue({
+    categories: ['FINANCE_SETTLEMENTS'],
+    isMasterAdmin: false,
+    roles: ['ADMIN'],
+  }),
+}));
 
 vi.mock('../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
-
-  return {
-    ...actual,
-    adminGet: vi.fn(),
-  };
+  return { ...actual, adminGetResult: vi.fn() };
 });
 
-const mockedAdminGet = vi.mocked(adminGet);
+const mockedAdminGetResult = vi.mocked(adminGetResult);
 
 describe('CashSettlementsPage', () => {
   beforeEach(() => {
-    mockedAdminGet.mockReset();
+    mockedAdminGetResult.mockReset();
+    mockedRedirect.mockReset();
   });
 
-  it('renders bounded server settlement rows without applying a second local date filter', async () => {
-    const earning = {
-      booking: {
-        payment: {
-          amount: 300000,
-          currency: 'VND',
-          method: 'CASH',
-          status: 'PENDING',
-        },
-        services: [],
-        status: 'COMPLETED',
-      },
-      bookingId: 'server-cash-booking',
-      createdAt: '2020-01-01T00:00:00.000Z',
-      currency: 'VND',
-      grossAmount: 300000,
-      id: 'server-cash-row',
-      netAmount: -45000,
-      platformFee: 40000,
-      providerProfile: {
-        displayName: 'Server Trusted Cash Partner',
-        user: {
-          fullName: 'Server Trusted Partner',
-          phone: '+84900007777',
-        },
-      },
-      providerProfileId: 'server-provider-row',
-      status: 'AVAILABLE',
-      withholdingAmount: 5000,
-    } as AdminEarning;
-
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/cash-settlement-earnings?range=today&take=10') {
-        return [earning];
+  it('renders four action KPIs and the compact evidence workbench from server-scoped data', async () => {
+    const earning = cashEarning();
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/cash-settlement-earnings?range=today&take=10&sort=oldest') {
+        return { data: [earning], ok: true, status: 200 } as never;
       }
-      if (href === '/admin/cash-settlement-summary?range=today') {
-        return null as AdminCashSettlementSummary | null;
+      if (href === '/admin/cash-settlement-summary?range=today&sort=oldest') {
+        return { data: cashSummary(), ok: true, status: 200 } as never;
       }
-      if (
-        href ===
-        '/admin/operational-policy?keys=cash.settlement_clearance_policy%2Cwallet.negative_balance_gate%2Cpayout.batch_cycle_policy%2Cmatching.marketplace_partner_radius_meters%2Cmatching.backup_provider_radius_meters'
-      ) {
-        return [] as AdminOperationalPolicySetting[];
-      }
-      return fallback;
+      return { data: fallback, ok: false, status: 404 } as never;
     });
 
-    const page = await CashSettlementsPage({
-      searchParams: Promise.resolve({ range: 'today' }),
-    });
+    const page = await CashSettlementsPage({ searchParams: Promise.resolve({ range: 'today' }) });
     const markup = renderToStaticMarkup(page);
 
+    expect(markup).toContain('Cash Settlement Workbench');
+    expect(markup).toContain('Open exposure');
+    expect(markup).toContain('Overdue');
+    expect(markup).toContain('Missing settlement evidence');
+    expect(markup).toContain('Partners affected');
     expect(markup).toContain('Server Trusted Cash Partner');
-    expect(markup).toContain('card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card');
-    expect(markup).not.toContain('class="card admin-mb-16"');
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/cash-settlement-summary?range=today', null);
-    expect(markup).toContain('Open full operations view');
-    expect(markup).toContain('/cash-settlements?view=full');
+    expect(markup).toContain('Filtered cash settlement queue');
+    expect(markup).toContain('All dates · All open');
+    expect(markup).toContain('Filtered queue · All open · 4 row(s)');
+    expect(markup.match(/class="card admin-kpi-card cash-settlement-kpi-card"/g)).toHaveLength(4);
+    expect(markup).toContain('class="admin-metric-grid cash-settlement-kpi-grid"');
+    expect(markup).not.toContain('Review settlement');
+    expect(markup).not.toContain('HANDS-CASH-');
     expect(markup).not.toContain('Cash settlement execution desk');
-    expect(markup).not.toContain('Cash fee operating rules');
-    expect(markup).not.toContain('Cash fee settlement workflow');
-    expect(markup).not.toContain('Partner wallet debt groups');
-    expect(markup).not.toContain('Cash settlement evidence checklist');
-    expect(mockedAdminGet).not.toHaveBeenCalledWith(
-      '/admin/operational-policy?keys=cash.settlement_clearance_policy%2Cwallet.negative_balance_gate%2Cpayout.batch_cycle_policy%2Cmatching.marketplace_partner_radius_meters%2Cmatching.backup_provider_radius_meters',
-      [],
-    );
-    expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/operational-policy', []);
   });
 
-  it('uses the shared ActionMenu atom for the optional full operations link', () => {
-    const source = readFileSync(join(process.cwd(), 'app/cash-settlements/page.tsx'), 'utf8');
+  it('does not render API failures as zero financial values', async () => {
+    mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({
+      data: fallback,
+      ok: false,
+      status: 503,
+    }));
 
-    expect(source).toContain('ActionMenu');
-    expect(source).toContain('AdminTablePanel');
-    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
-    expect(source).not.toContain('<Link');
-    expect(source).not.toContain('className="pill pill-info"');
-  });
-
-  it('uses shared money atoms for cash settlement page metrics', () => {
-    const source = readFileSync(join(process.cwd(), 'app/cash-settlements/page.tsx'), 'utf8');
-
-    expect(source).toContain('MoneyText');
-    expect(source).not.toContain('formatMoney(');
-  });
-
-  it('scopes cash settlement KPI cards by action, risk, and selected period', async () => {
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/cash-settlement-earnings?range=7d&take=10') {
-        return [] as AdminEarning[];
-      }
-      if (href === '/admin/cash-settlement-summary?range=7d') {
-        const summary: AdminCashSettlementSummary = {
-          cashPaymentRowCount: 4,
-          currency: 'VND',
-          generatedAt: '2026-07-13T00:00:00.000Z',
-          highDebtProviderCount: 1,
-          missingPaymentEvidenceCount: 2,
-          oldestOpenAgeMinutes: 26 * 60,
-          oldestOpenAt: '2026-07-11T22:00:00.000Z',
-          providerCount: 3,
-          rowCount: 4,
-          staleDebtRowCount: 1,
-          topProviderGroups: [],
-          totalCompanyCouponOffset: 25000,
-          totalDebtAmount: 100000,
-          totalPlatformFee: 80000,
-          totalTaxAmount: 20000,
-        };
-        return summary;
-      }
-      return fallback;
-    });
-
-    const page = await CashSettlementsPage({
-      searchParams: Promise.resolve({ range: '7d' }),
-    });
+    const page = await CashSettlementsPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Needs action');
-    expect(markup).toContain('Pending');
-    expect(markup).toContain('Risk');
-    expect(markup).toContain('Last 7 days');
-    expect(markup).toContain('Partner-held cash debt needing follow-up.');
-    expect(markup).toContain('Period coupon offsets already applied to cash settlements.');
-    expect(markup).not.toContain('Visible settlement rows after filters.');
-    expect(markup).not.toContain('Rows older than 24 hours.');
+    expect(markup).toContain('Cash settlement data is incomplete');
+    expect(markup).toContain('Unavailable');
+    expect(markup).not.toContain('Open exposure: </span>0');
   });
 
-  it('loads the full cash settlement operations playbook only when requested', async () => {
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/cash-settlement-earnings?range=today&take=10') {
-        return [] as AdminEarning[];
+  it('loads a selected debt by exact earning id instead of searching the current page rows', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/cash-settlement-earnings/earning-exact-22') {
+        return { data: null, ok: false, status: 404 } as never;
       }
-      if (href === '/admin/cash-settlement-summary?range=today') {
-        return null as AdminCashSettlementSummary | null;
-      }
-      if (
-        href ===
-        '/admin/operational-policy?keys=cash.settlement_clearance_policy%2Cwallet.negative_balance_gate%2Cpayout.batch_cycle_policy%2Cmatching.marketplace_partner_radius_meters%2Cmatching.backup_provider_radius_meters'
-      ) {
-        return [] as AdminOperationalPolicySetting[];
-      }
-      return fallback;
+      return { data: fallback, ok: true, status: 200 } as never;
     });
+
+    await CashSettlementsPage({
+      searchParams: Promise.resolve({
+        page: '2',
+        pageSize: '25',
+        queue: 'missing-evidence',
+        review: 'earning-exact-22',
+        sort: 'oldest',
+      }),
+    });
+
+    expect(mockedAdminGetResult).toHaveBeenCalledWith(
+      '/admin/cash-settlement-earnings/earning-exact-22',
+      null,
+    );
+  });
+
+  it('redirects legacy full view to the canonical lightweight guide', async () => {
+    mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({
+      data: fallback,
+      ok: true,
+      status: 200,
+    }));
 
     const page = await CashSettlementsPage({
       searchParams: Promise.resolve({ range: 'today', view: 'full' }),
     });
-    const markup = renderToStaticMarkup(page);
+    renderToStaticMarkup(page);
 
-    expect(markup).toContain('Cash settlement execution desk');
-    expect(markup).toContain('Cash fee operating rules');
-    expect(markup).toContain('Cash fee settlement workflow');
-    expect(markup).toContain('Partner wallet debt groups');
-    expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/operational-policy?keys=cash.settlement_clearance_policy%2Cwallet.negative_balance_gate%2Cpayout.batch_cycle_policy%2Cmatching.marketplace_partner_radius_meters%2Cmatching.backup_provider_radius_meters',
-      [],
-    );
+    expect(mockedRedirect).toHaveBeenCalledWith('/cash-settlements?range=today&view=guide&sort=oldest');
+    expect(mockedAdminGetResult.mock.calls.some(([href]) => String(href).includes('operational-policy'))).toBe(false);
+  });
+
+  it('keeps shared money atoms and removes unsafe direct settlement wiring', () => {
+    const source = readFileSync(join(process.cwd(), 'app/cash-settlements/page.tsx'), 'utf8');
+    expect(source).toContain('MoneyText');
+    expect(source).toContain('adminGetResult');
+    expect(source).toContain('CashSettlementReviewDrawer');
+    expect(source).not.toContain('ConfirmDialog');
+    expect(source).not.toContain('settleCashFeeDebt');
+    expect(source).not.toContain('AdminOperationalPolicySetting');
   });
 });
+
+function cashEarning(): AdminEarning {
+  return {
+    booking: {
+      payment: { amount: 300_000, currency: 'VND', method: 'CASH', status: 'PENDING' },
+      services: [],
+      status: 'COMPLETED',
+    },
+    bookingId: 'server-cash-booking',
+    createdAt: '2026-08-01T00:00:00.000Z',
+    currency: 'VND',
+    grossAmount: 300_000,
+    id: 'server-cash-row',
+    netAmount: -45_000,
+    platformFee: 40_000,
+    providerProfile: {
+      displayName: 'Server Trusted Cash Partner',
+      user: { fullName: 'Server Trusted Partner', phone: '+84900007777' },
+    },
+    providerProfileId: 'server-provider-row',
+    status: 'AVAILABLE',
+    withholdingAmount: 5_000,
+  };
+}
+
+function cashSummary(): AdminCashSettlementSummary {
+  return {
+    cashPaymentRowCount: 4,
+    currency: 'VND',
+    generatedAt: '2026-08-09T00:00:00.000Z',
+    global: {
+      allocatedAmount: 70_000,
+      missingSettlementEvidenceCount: 3,
+      originalDebtAmount: 170_000,
+      providerCount: 3,
+      remainingDebtAmount: 100_000,
+      rowCount: 4,
+      staleDebtRowCount: 2,
+    },
+    highDebtProviderCount: 1,
+    missingPaymentEvidenceCount: 1,
+    missingSettlementEvidenceCount: 3,
+    oldestOpenAgeMinutes: 26 * 60,
+    oldestOpenAt: '2026-08-07T22:00:00.000Z',
+    providerCount: 3,
+    queueCounts: { all: 4, highDebt: 1, missingEvidence: 3, paymentCheck: 0, stale: 2 },
+    rowCount: 4,
+    staleDebtRowCount: 2,
+    topProviderGroups: [],
+    totalCompanyCouponOffset: 25_000,
+    totalAllocatedAmount: 70_000,
+    totalDebtAmount: 100_000,
+    totalOriginalDebtAmount: 170_000,
+    totalPlatformFee: 80_000,
+    totalTaxAmount: 20_000,
+  };
+}

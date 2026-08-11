@@ -123,6 +123,9 @@ describe('BackgroundJobsPage', () => {
     expect(markup).toContain('Background Jobs');
     expect(markup).toContain('Notification delivery');
     expect(markup).toContain('STALE');
+    expect(markup).toContain('<th scope="col">State</th><th scope="col">Queue</th><th scope="col">Waiting</th><th scope="col">Active</th><th scope="col">Failed</th><th scope="col">SLA / delay</th><th scope="col">Action</th>');
+    expect(markup).toContain('Technical evidence');
+    expect(markup).toContain('<th scope="col">Queue ID</th><th scope="col">Workers</th><th scope="col">Delayed</th>');
     expect(markup).toContain('5m overdue');
     expect(markup).toContain('2m');
     expect(markup).toContain('Provider unavailable');

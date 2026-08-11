@@ -8,7 +8,9 @@ import { getCurrentAdminOperatorAccess } from '../../../../../lib/admin-operator
 import BankStatementImportBatchDetailPage from './page';
 
 vi.mock('../../../../../lib/admin-api', async () => {
-  const actual = await vi.importActual<typeof import('../../../../../lib/admin-api')>('../../../../../lib/admin-api');
+  const actual = await vi.importActual<typeof import('../../../../../lib/admin-api')>(
+    '../../../../../lib/admin-api',
+  );
   return { ...actual, adminGet: vi.fn() };
 });
 vi.mock('../../../../../lib/admin-operator-access', () => ({
@@ -82,6 +84,10 @@ describe('BankStatementImportBatchDetailPage', () => {
 
     const page = await BankStatementImportBatchDetailPage({
       params: Promise.resolve({ batchImportId: 'batch-1' }),
+      searchParams: Promise.resolve({
+        returnTo:
+          '/finance-tax/bank-reconciliation?workspace=imports&importRange=all#bank-reconciliation-imports',
+      }),
     });
     const markup = renderToStaticMarkup(page);
 
@@ -98,8 +104,13 @@ describe('BankStatementImportBatchDetailPage', () => {
     expect(markup).toContain('50%');
     expect(markup).toContain('UNMATCHED');
     expect(markup).toContain('MATCHED');
+    expect(markup.indexOf('>IMPORTED</span>')).toBeLessThan(markup.indexOf('>UNMATCHED</span>'));
+    expect(markup).toContain('Matched 1 · Ignored 0 · Reversed 0');
     expect(markup).toContain('Export audit CSV');
     expect(markup).toContain('/api/admin/bank-reconciliation/import-batches/batch-1/export');
+    expect(markup).toContain(
+      'href="/finance-tax/bank-reconciliation?workspace=imports&amp;importRange=all#bank-reconciliation-imports"',
+    );
     expect(markup).not.toContain('Import again');
   });
 
@@ -247,6 +258,6 @@ describe('BankStatementImportBatchDetailPage', () => {
     expect(markup).not.toContain('<option value="owner-current"');
     expect(markup).toContain('Assignment reason');
     expect(source).toContain('/assignment`');
-    expect(source).toContain("reason.length < 12");
+    expect(source).toContain('reason.length < 12');
   });
 });

@@ -86,11 +86,15 @@ export class MatchingService {
     booking: unknown,
     matchSource: BookingMatchSource = MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
   ) {
+    const status =
+      booking && typeof booking === 'object' && 'status' in booking && typeof booking.status === 'string'
+        ? booking.status
+        : 'MATCHED';
     return {
       bookingId,
       booking,
       event: 'booking.matched',
-      status: 'MATCHED',
+      status,
       matchSource,
       finalSelection:
         matchSource === MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER ? 'CUSTOMER_SELECTED' : 'FIRST_PICK_ACCEPTED',

@@ -68,6 +68,7 @@ export function bookingDecisionEvidenceGuardrails(
     input.hasLatestLocation ||
     input.notificationCount > 0 ||
     input.operatorNoteCount > 0;
+  const hasDecisionContext = input.messageCount > 0 && input.operatorNoteCount > 0;
   const hasPayment = Boolean(input.paymentStatus || input.paymentMethod);
   const hasCloseoutBlockers = input.closeoutOpenItemLabels.length > 0;
 
@@ -108,8 +109,20 @@ export function bookingDecisionEvidenceGuardrails(
       id: 'required-chat',
       title: 'Required after match: retained chat',
       scope: 'Matched bookings need customer-Partner chat; admin keeps the record after mobile closeout.',
-      status: input.hasChatRoom ? 'Chat record ready' : chatRequired ? 'Repair needed' : 'Locked until match',
-      tone: input.hasChatRoom ? 'pill-success' : chatRequired ? 'pill-danger' : 'pill-info',
+      status: input.hasChatRoom
+        ? input.messageCount > 0
+          ? 'Chat evidence ready'
+          : 'Retained room · no messages'
+        : chatRequired
+          ? 'Repair needed'
+          : 'Locked until match',
+      tone: input.hasChatRoom
+        ? input.messageCount > 0
+          ? 'pill-success'
+          : 'pill-warn'
+        : chatRequired
+          ? 'pill-danger'
+          : 'pill-info',
       evidence: input.hasChatRoom
         ? `Room ${input.chatRoomShortId ?? 'missing'} / ${input.messageCount} message(s)`
         : chatRequired
@@ -127,8 +140,8 @@ export function bookingDecisionEvidenceGuardrails(
       title: 'Supporting: communication and movement context',
       scope:
         'Chat messages, Partner pin, alerts, and notes explain what happened without judging either side.',
-      status: hasSupportingContext ? 'Context loaded' : 'Needs factual note',
-      tone: hasSupportingContext ? 'pill-success' : 'pill-warn',
+      status: hasDecisionContext ? 'Evidence ready' : hasSupportingContext ? 'Partial context' : 'Needs factual note',
+      tone: hasDecisionContext ? 'pill-success' : 'pill-warn',
       evidence: input.hasLatestLocation && input.latestLocationAtLabel && input.latestLocationAtValue
         ? input.latestLocationAtLabel
         : [

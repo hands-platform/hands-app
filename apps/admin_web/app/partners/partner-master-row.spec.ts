@@ -94,6 +94,10 @@ function partner(input: Partial<AdminProvider> = {}): AdminProvider {
       },
     ],
     auditLogCount: 7,
+    appActivitySummary: {
+      activityStatus: 'active',
+      lastActiveAt: '2026-06-01T06:35:00.000Z',
+    },
     auditLogs: [
       {
         id: 'audit-newer',
@@ -157,6 +161,44 @@ describe('partner master row', () => {
     expect(row.latestSessionIp).toBe('203.0.113.7');
     expect(row.accountBlocked).toBe(false);
     expect(row.accountNote).toBe('Normal account');
+    expect(row.appActivityStatus).toBe('active');
+    expect(row.appLastActiveAt).toBe('2026-06-01T06:35:00.000Z');
+    expect(row.verificationStatus).toBe('MISSING');
+    expect(row.approvalSubmittedAt).toBeNull();
+    expect(row.approvalHoldReason).toBeNull();
+  });
+
+  it('builds an approval queue summary from the oldest pending submission and review materials', () => {
+    const row = buildPartnerMasterRow(
+      partner({
+        blockedAt: '2026-06-05T00:00:00.000Z',
+        blockedReason: 'Confirm the corrected legal name',
+        verification: {
+          id: 'verification-pending',
+          rejectionReason: 'Previous CCCD image was unreadable',
+          status: 'SUBMITTED',
+          submittedAt: '2026-06-03T00:00:00.000Z',
+        },
+        kyc: {
+          id: 'kyc-pending',
+          status: 'PENDING',
+          submittedAt: '2026-06-04T00:00:00.000Z',
+        },
+      }),
+      DEFAULT_PROVIDER_OPS_POLICY,
+      { displayName: (item: AdminProvider) => item.displayName ?? item.id },
+    );
+
+    expect(row.approvalSubmittedAt).toBe('2026-06-03T00:00:00.000Z');
+    expect(row.approvalHoldReason).toBe('Confirm the corrected legal name');
+    expect(row.verificationStatus).toBe('SUBMITTED');
+    expect(row.kycStatus).toBe('PENDING');
+    expect(row.approvalQueueIssues.map((issue) => issue.label)).toEqual(
+      expect.arrayContaining(['account blocked', 'identity docs 3/3 missing']),
+    );
+    expect(row.approvalQueueIssues.map((issue) => issue.label)).not.toContain('verification review');
+    expect(row.approvalQueueIssues.map((issue) => issue.label)).not.toContain('KYC PENDING');
+    expect(row.approvalQueueIssues.map((issue) => issue.label)).not.toContain('location missing');
   });
 
   it('summarizes wallet withdrawal requests for the partner list wallet signal', () => {

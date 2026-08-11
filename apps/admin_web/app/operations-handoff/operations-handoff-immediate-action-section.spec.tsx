@@ -12,7 +12,8 @@ describe('OperationsHandoffImmediateActionSection', () => {
     expect(source).toContain('AdminTaskGrid');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
-    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).toContain('AdminQueueMeta');
+    expect(source).toContain('actionLabel={`Review ${item.title}`}');
     expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain('<div className="ops-task-grid"');
     expect(source).not.toContain('<div className="participant-list');
@@ -27,7 +28,7 @@ describe('OperationsHandoffImmediateActionSection', () => {
         {
           className: 'signal signal-warn',
           count: 2,
-          countLabel: '2 booking(s)',
+          countLabel: '2 bookings',
           detail: 'Customers are waiting for Partner response.',
           href: '/bookings?view=matching',
           id: 'matching-live-window',
@@ -40,7 +41,7 @@ describe('OperationsHandoffImmediateActionSection', () => {
         {
           className: 'signal signal-ok',
           count: 0,
-          countLabel: '0 booking(s)',
+          countLabel: '0 bookings',
           detail: 'All closeout checks are clear.',
           href: '/operations-handoff',
           id: 'closeout-clear',
@@ -60,7 +61,7 @@ describe('OperationsHandoffImmediateActionSection', () => {
     expect(rendered).toContain('Historical issue signals');
     expect(rendered).toContain('Past issue lanes that still need booking, chat, cash, alert, or note follow-up.');
     expect(rendered).toContain('1');
-    expect(rendered).toContain('issue lane(s)');
+    expect(rendered).toContain('issue lanes');
     expect(rendered).toContain('Open matching windows');
     expect(rendered).not.toContain('Closeout clear');
     expect(hrefsIn(section)).toContain('/bookings?view=matching');

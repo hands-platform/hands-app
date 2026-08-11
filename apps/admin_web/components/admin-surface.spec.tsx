@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 
+import { AdminDetails } from './admin-details';
 import {
   AdminActionCard,
   AdminActionFormCard,
@@ -316,7 +317,7 @@ describe('Admin surface components', () => {
       open: true,
     });
 
-    expect(disclosure.type).toBe('details');
+    expect(disclosure.type).toBe(AdminDetails);
     expect(disclosure.props).toMatchObject({
       className: 'card admin-card admin-disclosure chat-transcript-room',
       id: 'chat-room-1',
@@ -331,7 +332,7 @@ describe('Admin surface components', () => {
       open: true,
     });
 
-    expect(disclosure.type).toBe('details');
+    expect(disclosure.type).toBe(AdminDetails);
     expect(disclosure.props).toMatchObject({
       className: 'admin-disclosure payment-payload-keys',
       open: true,

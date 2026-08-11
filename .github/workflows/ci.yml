@@ -11,14 +11,14 @@ jobs:
   node:
     name: Node, Prisma, API, Admin
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
@@ -26,10 +26,31 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Repository contracts
+        run: |
+          npm run authority:check
+          npm run security:secrets
+          npm run security:admin-sensitive
+          npm run policy:coverage
+          npm run notifications:push-data-contract
+          npm run realtime:contract
+          npm run mobile:architecture:check
+          npm run mobile:visible-copy
+          npm run android:signing:check:static
+          npm run docker:contract
+
       - name: Prisma validate
         env:
           DATABASE_URL: postgresql://massage:massage@localhost:5432/massage_vn?schema=public
         run: npx prisma validate --schema apps/api/prisma/schema.prisma
+
+      - name: Prisma migration contract
+        run: |
+          npm run prisma:migrations:check:test
+          npm run prisma:migrations:check
 
       - name: Prisma generate
         env:
@@ -42,6 +63,9 @@ jobs:
       - name: Test Admin Web
         run: npm run test --workspace @massage-vn/admin-web
 
+      - name: Test Public Web
+        run: npm run test --workspace @massage-vn/public-web
+
       - name: Test Admin API read budget contract
         run: npm run admin:api-budget:test
 
@@ -51,6 +75,12 @@ jobs:
       - name: Typecheck Admin Web
         run: npm run typecheck --workspace @massage-vn/admin-web
 
+      - name: Typecheck Public Web
+        run: npm run typecheck --workspace @massage-vn/public-web
+
+      - name: Lint Public Web
+        run: npm run lint --workspace @massage-vn/public-web
+
       - name: Build API
         run: npm run build --workspace @massage-vn/api
 
@@ -59,10 +89,16 @@ jobs:
           ADMIN_API_BASE_URL: http://localhost:3000/api
         run: npm run build --workspace @massage-vn/admin-web
 
+      - name: Build Public Web
+        env:
+          PUBLIC_API_BASE_URL: http://localhost:3000/api
+        run: npm run build --workspace @massage-vn/public-web
+
       - name: Script syntax checks
         run: |
           node --check infra/scripts/api-smoke.mjs
           node --check infra/scripts/admin-api-read-budget.mjs
+          node --check infra/scripts/bootstrap-public-site-structure.mjs
           node --check infra/scripts/check-env.mjs
           node --check infra/scripts/supabase-location-exposure-smoke.mjs
           node --check apps/api/prisma/seed.js
@@ -80,3 +116,103 @@ jobs:
 
       - name: Environment template check
         run: node infra/scripts/check-env.mjs .env.example
+
+  flutter:
+    name: Customer and Partner Flutter
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: 3.38.9
+          cache: true
+
+      - name: Customer dependencies
+        working-directory: apps/customer_app
+        run: flutter pub get
+
+      - name: Customer analyze
+        working-directory: apps/customer_app
+        run: flutter analyze
+
+      - name: Customer tests
+        working-directory: apps/customer_app
+        run: flutter test
+
+      - name: Partner dependencies
+        working-directory: apps/provider_app
+        run: flutter pub get
+
+      - name: Partner analyze
+        working-directory: apps/provider_app
+        run: flutter analyze
+
+      - name: Partner tests
+        working-directory: apps/provider_app
+        run: flutter test
+
+  lifecycle-smoke:
+    name: Migration and paired lifecycle smoke
+    needs: node
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: massage_vn
+          POSTGRES_PASSWORD: massage
+          POSTGRES_USER: massage
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U massage -d massage_vn"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      ADMIN_ACCESS_TOKEN: ci-admin-access-token
+      DATABASE_URL: postgresql://massage:massage@127.0.0.1:5432/massage_vn?schema=public
+      JWT_ACCESS_SECRET: ci-access-secret-with-at-least-32-characters
+      JWT_REFRESH_SECRET: ci-refresh-secret-with-at-least-32-characters
+      REDIS_URL: redis://127.0.0.1:6379
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate --schema apps/api/prisma/schema.prisma
+
+      - name: Apply migration history
+        run: npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
+
+      - name: Build API
+        run: npm run build --workspace @massage-vn/api
+
+      - name: Run Customer and Partner paired lifecycle
+        run: npm run mobile:paired-e2e

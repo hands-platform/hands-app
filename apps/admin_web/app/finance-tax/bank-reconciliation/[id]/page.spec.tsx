@@ -25,7 +25,7 @@ describe('BankReconciliationDetailPage Vuexy links', () => {
     expect(source).toContain('confirmLabel="Confirm ignore"');
     expect(source).toContain('/ignore`');
     expect(source).toContain('It does not settle Partner deposit, wallet, tax, or GL evidence.');
-    expect(source).toContain('Separate Finance approver');
+    expect(source).toContain('different signed-in Finance approver');
     expect(source).toContain('Ignore reason');
   });
 
@@ -35,7 +35,7 @@ describe('BankReconciliationDetailPage Vuexy links', () => {
     expect(source).toContain("readRecordString(record, 'auditActorName')");
     expect(source).toContain("readRecordString(record, 'approvalAdminName')");
     expect(source).toContain("readRecordString(record, 'auditAt')");
-    expect(source).toContain("Approved by {approverLabel}");
+    expect(source).toContain("Finance approver: {approverLabel}");
     expect(source).toContain("return 'Match created'");
     expect(source).toContain('<DateTimeText value={auditAt} />');
     expect(source).toContain("readRecordString(record, 'matchActorName')");
@@ -49,22 +49,26 @@ describe('BankReconciliationDetailPage Vuexy links', () => {
 
   it('shows bank row import and ignore operators from persisted evidence', () => {
     expect(source).toContain('label="Imported by"');
-    expect(source).toContain('label="Import approved by"');
+    expect(source).toContain('label="Import approval stage"');
+    expect(source).toContain("'Required when reconciling'");
     expect(source).toContain('transaction.creationEvidence.importedBy');
     expect(source).toContain('transaction.creationEvidence.approvalAdmin');
-    expect(source).toContain("label: 'Ignored by'");
+    expect(source).toContain("label: 'Action recorded by'");
     expect(source).toContain('transaction.ignoreEvidence?.ignoredBy');
     expect(source).toContain('transaction.ignoreEvidence?.approvalAdmin');
   });
 
   it('offers ranked PAID withdrawal candidates without automatic matching', () => {
     expect(source).toContain('Recommended withdrawal match');
-    expect(source).toContain('A candidate is never matched automatically.');
+    expect(source).toContain('A candidate is never matched');
+    expect(source).toContain('automatically.');
     expect(source).toContain("transaction.type === 'OUTFLOW'");
     expect(source).toContain('withdrawalCandidates.map');
     expect(source).toContain('<input name="sourceType" type="hidden" value="withdrawal" />');
     expect(source).toContain('confirmLabel="Confirm withdrawal match"');
-    expect(source).toContain('A different Finance approver is still required.');
+    expect(source).toContain(
+      'The signed-in Finance approver must differ from the assigned review owner.',
+    );
     expect(source).toContain('withdrawalCandidateEvidence');
   });
 
@@ -98,11 +102,38 @@ describe('BankReconciliationDetailPage Vuexy links', () => {
     expect(source).toContain('title="Review advanced source match"');
     expect(source).toContain('title="Review match reversal"');
     expect(source).toContain('BANK_RECONCILIATION_EVIDENCE_MIN_LENGTH');
-    expect(source).toContain('matchError=confirmation-required');
-    expect(source).toContain('reverseError=confirmation-required');
-    expect(source).toContain('ignoreError=confirmation-required');
-    expect(source).toContain('buildFinanceApproverOptions');
-    expect(source).toContain("options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}");
+    expect(source).toContain("appendDetailParam(returnHref, 'matchError', 'confirmation-required')");
+    expect(source).toContain("appendDetailParam(returnHref, 'reverseError', 'confirmation-required')");
+    expect(source).toContain("appendDetailParam(returnHref, 'ignoreError', 'confirmation-required')");
+    expect(source).toContain('signed-in Finance approver must differ from the assigned review owner');
+    expect(source).not.toContain('buildFinanceApproverOptions');
+    expect(source).not.toContain('name="approvalAdminId"');
+    expect(source).not.toContain('Select Finance approver');
     expect(source).not.toContain('Approving admin ID');
+  });
+
+  it('uses the server reconciliation preflight for match, ignore, and reversal availability', () => {
+    expect(source).toContain('transaction.preflight?.actions.createMatch.allowed');
+    expect(source).toContain('transaction.preflight?.actions.ignore.allowed');
+    expect(source).toContain('transaction.preflight.actions.reverse.allowedMatchIds.includes(match.id)');
+    expect(source).toContain('transaction.preflight?.remainingAmount');
+    expect(source).toContain('Reversal blocked');
+  });
+
+  it('uses server-paged payment candidates and prevents ineligible selection', () => {
+    expect(source).toContain("readParam(noticeParams, 'candidatePage')");
+    expect(source).toContain("readParam(noticeParams, 'candidateTake')");
+    expect(source).toContain('eligiblePaymentClearingCandidates');
+    expect(source).toContain('candidate.exclusionReasons');
+    expect(source).toContain('Previous candidates');
+    expect(source).toContain('Next candidates');
+    expect(source).toContain('No eligible payment clearing candidate available');
+  });
+
+  it('keeps candidate evidence searchable before the review owner gate is satisfied', () => {
+    expect(source).toContain('const paymentClearingCandidateEvidence = (');
+    expect(source).toContain('!statusModel.closed && !canCreateManualMatch');
+    expect(source).toContain('Search and inspect candidate evidence before assigning an owner.');
+    expect(source).toContain('{paymentClearingCandidateEvidence}');
   });
 });

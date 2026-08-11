@@ -1,407 +1,201 @@
-import { AdminRefund, AdminRefundSummary, adminGet } from '../../lib/admin-api';
+import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminSignal } from '../../components/status-badge';
-import { shortId } from '../../lib/admin-format';
+import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminErrorState } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import {
-  AdminDateRange,
-  dateRangeLabel,
-  normalizeDateRange,
-  readSearchParam,
-} from '../../lib/date-range';
+  type AdminRefundOperationsRow,
+  type AdminRefundQueueAge,
+  type AdminRefundQueueMeta,
+  adminGetResult,
+} from '../../lib/admin-api';
+import { formatDateTime, shortId } from '../../lib/admin-format';
 import {
-  RefundCommandBoardSection,
-  type RefundCommandItem,
-  type RefundCommandPreview,
-} from './refund-command-board-section';
-import {
-  RefundDecisionChecklistSection,
-  type RefundDecisionChecklistItem,
-} from './refund-decision-checklist-section';
+  readAdminQueueSlaFilter,
+} from '../../lib/admin-queue-list';
+import { type AdminDateRange, readSearchParam } from '../../lib/date-range';
+import { relativeTimeLabel } from '../bookings/booking-list-time';
+import { RefundCommandBoardSection } from './refund-command-board-section';
 import {
   RefundFilterBoardSection,
-  type RefundFilterLink,
-  type RefundRangeLink,
+  type RefundFilterValues,
 } from './refund-filter-board-section';
-import { RefundsTableSection, type RefundActionExecutionRow, type RefundTableRow } from './refunds-table-section';
+import {
+  RefundsTableSection,
+  type RefundChecklistRow,
+  type RefundTableRow,
+} from './refunds-table-section';
+import { DEFAULT_REFUND_QUEUE_HREF, refundApprovalFocusHref } from './refund-focus-links';
 
 type RefundsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
-const REFUND_OPERATIONS_API_LIMIT = 10;
-const REFUND_OPERATIONS_API_MAX_LIMIT = 50;
-const DEFAULT_REFUND_REVIEW = 'open';
-const EMPTY_REFUND_SUMMARY: AdminRefundSummary = {
-  totalCount: 0,
-  requestedCount: 0,
-  refundedBookingCount: 0,
-  needsUpdateCount: 0,
+
+const REFUND_PAGE_SIZE = 10;
+const REFUND_PAGE_SIZE_MAX = 50;
+const REFUND_RESET_HREF = DEFAULT_REFUND_QUEUE_HREF;
+
+export const metadata: Metadata = { title: 'Refunds | HANDS Admin' };
+
+const EMPTY_REFUND_QUEUE_META: AdminRefundQueueMeta = {
   completedCount: 0,
+  generatedAt: '',
+  globalOpenCount: 0,
+  oldestOpenAt: null,
   openCount: 0,
-  outcomeLinkedCount: 0,
+  processingCount: 0,
+  queueAgeCounts: {
+    all: 0,
+    'under-1h': 0,
+    '1-4h': 0,
+    '4-24h': 0,
+    '1-3d': 0,
+    '3-7d': 0,
+    'over-7d': 0,
+  },
+  queueSla: { overdueCount: 0, thresholdMinutes: 240 },
+  rejectedCount: 0,
+  requestedCount: 0,
+  reviewRequiredCount: 0,
+  selectedTotal: 0,
+  stateMismatchCount: 0,
 };
 
 export default async function RefundsPage({ searchParams }: { searchParams?: RefundsPageSearchParams }) {
   const filters = buildRefundFilters(searchParams ? await searchParams : {});
-  const [summary, refundsPayload] = await Promise.all([
-    adminGet<AdminRefundSummary>(buildRefundSummaryApiHref(filters), EMPTY_REFUND_SUMMARY),
-    adminGet<AdminRefund[]>(buildRefundOperationsApiHref(filters), []),
+  const [metaResult, refundsResult] = await Promise.all([
+    adminGetResult<AdminRefundQueueMeta>(buildRefundQueueMetaApiHref(filters), EMPTY_REFUND_QUEUE_META),
+    adminGetResult<AdminRefundOperationsRow[]>(buildRefundOperationsApiHref(filters), []),
   ]);
-  const refunds = sortRefunds(refundsPayload);
-  const activeFilter = refundFilterLinks().find((item) => item.review === filters.review);
-  const commandBoard = buildRefundCommandBoard(refunds, summary);
-  const decisionChecklist = buildRefundDecisionChecklist(summary);
-  const pagination = buildRefundServerPagination(refunds, filters, summary.totalCount);
-  const refundRows = buildRefundTableRows(pagination.rows);
-  const refundRangeScope = dateRangeLabel(filters.range);
+  const meta = metaResult.data;
+  const totalRows = metaResult.ok ? meta.selectedTotal : refundsResult.data.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / filters.pageSize));
+
+  if (metaResult.ok && filters.page > totalPages) {
+    redirect(refundHref({ ...filters, page: totalPages }));
+  }
+
+  const currentHref = refundHref(filters);
+  const pagination = buildRefundPagination(refundsResult.data, filters, totalRows);
+  const refundRows = buildRefundTableRows(pagination.rows, currentHref);
 
   return (
     <AdminPageTemplate
-      description="Refund operations for customer protection, payment ledger alignment, and finance handoff."
-      metrics={[
-        {
-          helper: 'Refund records matching this queue.',
-          kind: 'record',
-          label: 'Total refunds',
-          scope: refundRangeScope,
-          value: summary.totalCount,
-        },
-        {
-          kind: 'action',
-          label: 'Requested',
-          scope: 'Pending',
-          value: summary.requestedCount,
-          helper: 'Customer refund requests waiting for review.',
-        },
-        {
-          kind: 'period',
-          label: 'Refunded bookings',
-          scope: refundRangeScope,
-          value: summary.refundedBookingCount,
-          helper: 'Bookings already in the refund outcome.',
-        },
-        {
-          kind: 'risk',
-          label: 'Needs update',
-          scope: 'Needs action',
-          value: summary.needsUpdateCount,
-          helper: 'Refund records whose payment ledger still needs attention.',
-        },
-      ]}
+      contentClassName="refund-page-content"
+      description="Control open refund approvals, gateway progress, and reconciliation from one exclusive queue contract."
       title="Refunds"
     >
-      <RefundCommandBoardSection items={commandBoard} />
+      {metaResult.ok ? (
+        <RefundCommandBoardSection
+          approvalRequired={meta.requestedCount}
+          approvalHref={refundHref({ ...filters, page: 1, review: 'requested', sla: 'all' })}
+          currentReview={filters.review}
+          currentSla={filters.sla}
+          currentSort={filters.sort}
+          gatewayProcessing={meta.processingCount}
+          gatewayHref={refundHref({ ...filters, page: 1, review: 'processing', sla: 'all' })}
+          generatedAt={meta.generatedAt}
+          oldestOpenLabel={
+            meta.oldestOpenAt
+              ? relativeTimeLabel(meta.oldestOpenAt, Date.parse(meta.generatedAt))
+              : 'None in scope'
+          }
+          oldestOpenHref={refundHref({ ...filters, page: 1, review: 'open', sla: 'all', sort: 'oldest' })}
+          otherReview={meta.reviewRequiredCount}
+          reconciliationRequired={meta.stateMismatchCount}
+          reconciliationHref={refundHref({ ...filters, page: 1, review: 'state-mismatch', sla: 'all' })}
+          refreshHref={currentHref}
+          slaOverdue={meta.queueSla.overdueCount}
+          slaOverdueHref={refundHref({ ...filters, page: 1, review: 'open', sla: 'overdue' })}
+        />
+      ) : (
+        <AdminErrorState
+          action={<AdminTextLink href={currentHref}>Retry queue totals</AdminTextLink>}
+          message="Refund queue totals could not be loaded. Records and filters remain available, but do not use the visible row count as the full backlog."
+          title="Refund queue totals unavailable"
+        />
+      )}
+
       <RefundFilterBoardSection
-        activeFilterDescription={
-          activeFilter?.review ? refundFilterDescription(activeFilter.review) : null
-        }
-        activeFilterLabel={activeFilter?.review ? activeFilter.label : null}
-        activeRange={filters.range}
-        filteredCount={refunds.length}
-        rangeLabel={dateRangeLabel(filters.range)}
-        rangeLinks={refundRangeLinks(filters.review)}
-        review={filters.review}
-        reviewLinks={refundFilterLinks().map((item) => ({
-          ...item,
-          href: withRefundRange(item.href, filters.range),
-        }))}
-        totalCount={summary.totalCount}
+        ageCounts={meta.queueAgeCounts}
+        ageHref={(age) => refundHref({ ...filters, age, page: 1 })}
+        filters={filters}
+        queueSla={meta.queueSla}
+        resetHref={REFUND_RESET_HREF}
+        slaHref={(sla) => refundHref({ ...filters, page: 1, sla })}
       />
-      <RefundDecisionChecklistSection items={decisionChecklist} />
-      <RefundsTableSection
-        emptyMessage={emptyRefundMessage(filters.review)}
-        pagination={{ ...pagination, rows: refundRows }}
-      />
+
+      {refundsResult.ok ? (
+        <RefundsTableSection
+          emptyMessage={refundEmptyState(filters, metaResult.ok ? meta.globalOpenCount : 0)}
+          pagination={{ ...pagination, rows: refundRows }}
+        />
+      ) : (
+        <AdminErrorState
+          action={<AdminTextLink href={currentHref}>Retry refund records</AdminTextLink>}
+          message="Refund records could not be loaded. Queue totals above are not presented as an empty case list."
+          title="Refund records unavailable"
+        />
+      )}
     </AdminPageTemplate>
   );
 }
 
-function sortRefunds(refunds: AdminRefund[]) {
-  return [...refunds].sort((left, right) => (right.createdAt || '').localeCompare(left.createdAt || ''));
-}
-
-function buildRefundTableRows(refunds: readonly AdminRefund[]): RefundTableRow[] {
-  return refunds.map((refund) => ({
-    amount: refund.amount,
-    bookingHref: `/bookings/${refund.bookingId}`,
-    bookingIdLabel: shortId(refund.bookingId),
-    bookingStatus: refund.booking?.status ?? refund.bookingId,
-    currency: refund.payment?.currency ?? 'VND',
-    customerLabel:
-      refund.booking?.customerProfile?.user?.fullName ??
-      refund.booking?.customerProfile?.user?.phone ??
-      'Unknown',
-    executionRows: refundActionExecutionMap(refund),
-    id: refund.id,
-    opsHint: refundOpsHint(refund),
-    opsSignal: refundOpsSignal(refund),
-    partnerLabel: refund.booking?.selectedProvider?.displayName ?? 'Unmatched',
-    paymentHref: `/payments#payment-${refund.paymentId}`,
-    paymentLabel: `${refund.payment?.method ?? 'UNKNOWN'} / ${refund.payment?.status ?? 'UNKNOWN'}`,
-    shortId: shortId(refund.id),
-    status: refund.status,
-  }));
-}
-
-function buildRefundCommandBoard(refunds: AdminRefund[], summary: AdminRefundSummary): RefundCommandItem[] {
-  const requested = refunds.filter((refund) => refund.status === 'REQUESTED');
-  const paymentMismatch = refunds.filter(
-    (refund) => refund.status === 'REQUESTED' && refund.payment?.status !== 'REFUNDED',
-  );
-  const bookingSettled = refunds.filter(
-    (refund) => refund.status === 'COMPLETED' || refund.booking?.status === 'REFUNDED',
-  );
-  const cancelledOrExpired = refunds.filter((refund) =>
-    ['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(refund.booking?.status ?? ''),
-  );
-
-  return [
-    {
-      title: 'Customer refund requests',
-      detail: 'Guests are waiting for a clear refund decision and customer-facing update.',
-      status: 'REQUESTED',
-      operatorAction: 'Confirm eligibility, payment method, and customer message.',
-      href: '/refunds?review=requested',
-      tone: summary.requestedCount > 0 ? 'warn' : 'ok',
-      refunds: buildRefundCommandPreviews(requested),
-    },
-    {
-      title: 'Payment ledger mismatch',
-      detail: 'Refund record exists but the linked payment is not marked as refunded.',
-      status: 'Payment not refunded',
-      operatorAction: 'Open payment, confirm reversal, then close the refund case.',
-      href: '/refunds?review=needs-update',
-      tone: summary.needsUpdateCount > 0 ? 'warn' : 'ok',
-      refunds: buildRefundCommandPreviews(paymentMismatch),
-    },
-    {
-      title: 'Closed refund evidence',
-      detail: 'Refunds that look settled and should match booking, payment, and audit notes.',
-      status: 'Settled',
-      operatorAction: 'Sample settled cases and make sure operator notes are complete.',
-      href: '/refunds?review=completed',
-      tone: summary.completedCount + summary.refundedBookingCount > 0 ? 'info' : 'ok',
-      refunds: buildRefundCommandPreviews(bookingSettled),
-    },
-    {
-      title: 'Cancel, expire, no-show context',
-      detail: 'Refunds linked to failed service outcomes need consistent customer and wallet handling.',
-      status: 'Closeout related',
-      operatorAction: 'Check booking closeout, cash debt, and customer protection policy.',
-      href: '/bookings?view=closeout',
-      tone: summary.outcomeLinkedCount > 0 ? 'warn' : 'ok',
-      refunds: buildRefundCommandPreviews(cancelledOrExpired),
-    },
-  ];
-}
-
-function buildRefundCommandPreviews(refunds: readonly AdminRefund[]): RefundCommandPreview[] {
-  return refunds.map((refund) => ({
-    amount: refund.amount,
-    currency: refund.payment?.currency ?? 'VND',
-    customerLabel: refundCustomerLabel(refund),
-    id: shortId(refund.id),
-  }));
-}
-
-function buildRefundDecisionChecklist(summary: AdminRefundSummary): RefundDecisionChecklistItem[] {
-  return [
-    {
-      title: 'Booking evidence',
-      detail:
-        'Open the booking, chat, location notes, and operator notes before deciding the refund outcome.',
-      operatorRule: 'Decision must be based on saved evidence, not customer or Partner judgement.',
-      href: '/bookings?view=manual-decision',
-      status: `${summary.outcomeLinkedCount} outcome-linked`,
-      className: summary.outcomeLinkedCount ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: summary.outcomeLinkedCount ? 'pill-warn' : 'pill-success',
-    },
-    {
-      title: 'Payment ledger',
-      detail: 'Check that payment method, hold, refund, or release state matches the refund record.',
-      operatorRule: 'Do not close a refund until payment ledger state and refund status match.',
-      href: '/payments',
-      status: `${summary.needsUpdateCount} update(s)`,
-      className: summary.needsUpdateCount ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: summary.needsUpdateCount ? 'pill-danger' : 'pill-success',
-    },
-    {
-      title: 'Customer update',
-      detail: 'Confirm the customer-facing message is clear after the operator decision is recorded.',
-      operatorRule: 'Every open refund should have an operator note or customer update path.',
-      href: '/refunds?review=open',
-      status: `${summary.openCount} open`,
-      className: summary.openCount ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: summary.openCount ? 'pill-warn' : 'pill-success',
-    },
-    {
-      title: 'Finance handoff',
-      detail: 'Settled refunds should align with booking state, payment rows, and audit records.',
-      operatorRule: 'Sample settled cases during closeout so finance can finish the shift cleanly.',
-      href: '/finance-closeout',
-      status: `${summary.completedCount} settled`,
-      className: summary.completedCount ? 'ops-task-done' : 'ops-task-pending',
-      pillClass: summary.completedCount ? 'pill-success' : 'pill-info',
-    },
-  ];
-}
-
-function refundActionExecutionMap(refund: AdminRefund): RefundActionExecutionRow[] {
-  const bookingStatus = refund.booking?.status ?? 'UNKNOWN';
-  const paymentStatus = refund.payment?.status ?? 'UNKNOWN';
-  const paymentMethod = refund.payment?.method ?? 'UNKNOWN';
-  const isOpen = refund.status !== 'COMPLETED';
-  const paymentAligned = refund.status === 'COMPLETED' || paymentStatus === 'REFUNDED';
-  const outcomeNeedsEvidence = ['CANCELLED', 'EXPIRED', 'NO_SHOW', 'REFUNDED'].includes(bookingStatus);
-  const hasBookingRecord = Boolean(refund.booking);
-
-  return [
-    {
-      action: 'Confirm booking evidence',
-      status: hasBookingRecord ? 'Linked' : 'Missing',
-      reason: hasBookingRecord
-        ? `Booking ${shortId(refund.bookingId)} is linked and currently ${bookingStatus}.`
-        : `Booking ${shortId(refund.bookingId)} is not included in the current refund payload.`,
-      operatorRule:
-        'Open booking detail and keep chat, payment, location, and operator notes attached to the decision.',
-      pillClass: hasBookingRecord ? 'pill-success' : 'pill-danger',
-    },
-    {
-      action: 'Review outcome context',
-      status: outcomeNeedsEvidence ? 'Evidence path' : 'Monitor',
-      reason: outcomeNeedsEvidence
-        ? `Booking outcome is ${bookingStatus}; admin decision evidence should explain the refund path.`
-        : `Booking outcome is ${bookingStatus}; keep the refund aligned with the active booking state.`,
-      operatorRule:
-        'Cancellation, expiry, no-show, and refund outcomes should be handled from saved records, not personal judgement.',
-      pillClass: outcomeNeedsEvidence ? 'pill-warn' : 'pill-neutral',
-    },
-    {
-      action: 'Match payment ledger',
-      status: paymentAligned ? 'Aligned' : 'Update needed',
-      reason: paymentAligned
-        ? `Refund status ${refund.status} and payment status ${paymentStatus} are compatible.`
-        : `Refund status is ${refund.status}, but payment status is ${paymentStatus}.`,
-      operatorRule: 'Do not close the refund case until payment ledger state and refund status match.',
-      pillClass: paymentAligned ? 'pill-success' : 'pill-danger',
-    },
-    {
-      action: 'Customer update',
-      status: isOpen ? 'Message needed' : 'Closed',
-      reason: isOpen
-        ? 'This refund is still open, so the customer-facing update path should be clear.'
-        : 'This refund is closed; confirm the customer can see the outcome in support history.',
-      operatorRule: 'Every open refund should have an operator note or customer communication path.',
-      pillClass: isOpen ? 'pill-warn' : 'pill-success',
-    },
-    {
-      action: 'Finance handoff',
-      status: refund.status === 'COMPLETED' ? 'Ready' : 'Open',
-      reason:
-        refund.status === 'COMPLETED'
-          ? `${paymentMethod} refund can be sampled in finance closeout.`
-          : `${paymentMethod} refund still needs payment and booking evidence before closeout.`,
-      operatorRule: 'Finance closeout should reconcile booking, payment, refund, and audit records together.',
-      pillClass: refund.status === 'COMPLETED' ? 'pill-success' : 'pill-info',
-    },
-  ];
-}
-
 function buildRefundFilters(params: Record<string, string | string[] | undefined>) {
-  const rangeParam = readSearchParam(params.range);
-  const reviewParam = readSearchParam(params.review);
+  const review = readRefundReview(params.review);
 
   return {
-    page: readRefundPage(params.page),
-    pageSize: readRefundPageSize(params.pageSize),
-    review: reviewParam || DEFAULT_REFUND_REVIEW,
-    range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
-  };
+    age: readRefundQueueAge(params.age),
+    customerProfileId: readSearchParam(params.customerProfileId).trim(),
+    page: readPositiveInteger(params.page, 1, Number.MAX_SAFE_INTEGER),
+    pageSize: readPositiveInteger(params.pageSize, REFUND_PAGE_SIZE, REFUND_PAGE_SIZE_MAX),
+    q: readSearchParam(params.q).trim(),
+    range: readRefundRange(params.range),
+    review,
+    sla: review === 'open' ? readAdminQueueSlaFilter(params.sla) : 'all',
+    sort: readSearchParam(params.sort) === 'newest' ? 'newest' : 'oldest',
+  } satisfies RefundFilterValues & { page: number };
 }
 
 function buildRefundOperationsApiHref(filters: ReturnType<typeof buildRefundFilters>) {
-  const params = new URLSearchParams({
-    range: filters.range,
-    take: String(filters.pageSize),
-  });
-  if (shouldIncludeRefundApiReview(filters.review)) {
-    params.set('review', filters.review);
-  }
+  const params = refundApiParams(filters);
+  params.set('take', String(filters.pageSize));
   const skip = (filters.page - 1) * filters.pageSize;
-  if (skip > 0) {
-    params.set('skip', String(skip));
-  }
-
+  if (skip > 0) params.set('skip', String(skip));
+  if (filters.sort !== 'newest') params.set('sort', filters.sort);
   return `/admin/refunds?${params.toString()}`;
 }
 
-function buildRefundSummaryApiHref(filters: ReturnType<typeof buildRefundFilters>) {
+function buildRefundQueueMetaApiHref(filters: ReturnType<typeof buildRefundFilters>) {
+  return `/admin/refunds/queue-meta?${refundApiParams(filters).toString()}`;
+}
+
+function refundApiParams(filters: ReturnType<typeof buildRefundFilters>) {
+  const params = new URLSearchParams({ range: filters.range });
+  if (filters.review !== 'all') params.set('review', filters.review);
+  if (filters.age !== 'all') params.set('age', filters.age);
+  if (filters.review === 'open' && filters.sla !== 'all') params.set('sla', filters.sla);
+  if (filters.customerProfileId) params.set('customerProfileId', filters.customerProfileId);
+  if (filters.q) params.set('q', filters.q);
+  return params;
+}
+
+function refundHref(filters: ReturnType<typeof buildRefundFilters>) {
   const params = new URLSearchParams({
     range: filters.range,
+    review: filters.review,
+    sort: filters.sort,
   });
-  if (shouldIncludeRefundApiReview(filters.review)) {
-    params.set('review', filters.review);
-  }
-
-  return `/admin/refunds/summary?${params.toString()}`;
+  if (filters.age !== 'all') params.set('age', filters.age);
+  if (filters.review === 'open' && filters.sla !== 'all') params.set('sla', filters.sla);
+  if (filters.customerProfileId) params.set('customerProfileId', filters.customerProfileId);
+  if (filters.q) params.set('q', filters.q);
+  if (filters.pageSize !== REFUND_PAGE_SIZE) params.set('pageSize', String(filters.pageSize));
+  if (filters.page > 1) params.set('page', String(filters.page));
+  return `/refunds?${params.toString()}`;
 }
 
-function refundFilterLinks(): RefundFilterLink[] {
-  return [
-    { label: 'All refunds', href: '/refunds?review=all', review: 'all' },
-    { label: 'Open refunds', href: '/refunds?review=open', review: 'open' },
-    { label: 'Requested', href: '/refunds?review=requested', review: 'requested' },
-    { label: 'Needs update', href: '/refunds?review=needs-update', review: 'needs-update' },
-    { label: 'Refunded bookings', href: '/refunds?review=refunded-booking', review: 'refunded-booking' },
-    { label: 'Completed', href: '/refunds?review=completed', review: 'completed' },
-  ];
-}
-
-function refundRangeLinks(review: string): RefundRangeLink[] {
-  return [
-    { label: 'All dates', href: withRefundReview('/refunds', review), range: 'all' as const },
-    { label: 'Today', href: withRefundReview('/refunds?range=today', review), range: 'today' as const },
-    { label: 'Last 7 days', href: withRefundReview('/refunds?range=7d', review), range: '7d' as const },
-    { label: 'Last 30 days', href: withRefundReview('/refunds?range=30d', review), range: '30d' as const },
-  ];
-}
-
-function withRefundRange(href: string, range: AdminDateRange) {
-  if (range === 'all') {
-    return href;
-  }
-  const separator = href.includes('?') ? '&' : '?';
-  return `${href}${separator}range=${range}`;
-}
-
-function withRefundReview(href: string, review: string) {
-  if (!review) {
-    return href;
-  }
-  const separator = href.includes('?') ? '&' : '?';
-  return `${href}${separator}review=${review}`;
-}
-
-function shouldIncludeRefundApiReview(review: string | null | undefined) {
-  return Boolean(review && review !== 'all');
-}
-
-function refundHref(filters: ReturnType<typeof buildRefundFilters>, page?: number) {
-  const params = new URLSearchParams();
-  if (filters.range !== 'all') {
-    params.set('range', filters.range);
-  }
-  if (filters.review) {
-    params.set('review', filters.review);
-  }
-  if (filters.pageSize !== REFUND_OPERATIONS_API_LIMIT) {
-    params.set('pageSize', String(filters.pageSize));
-  }
-  if (page && page > 1) {
-    params.set('page', String(page));
-  }
-  const query = params.toString();
-  return query ? `/refunds?${query}` : '/refunds';
-}
-
-function buildRefundServerPagination<T>(
+function buildRefundPagination<T>(
   rows: readonly T[],
   filters: ReturnType<typeof buildRefundFilters>,
   totalRows: number,
@@ -413,9 +207,8 @@ function buildRefundServerPagination<T>(
 
   return {
     from: rows.length === 0 ? 0 : start + 1,
-    hrefForPage: (nextPage: number) => refundHref(filters, nextPage),
+    hrefForPage: (nextPage: number) => refundHref({ ...filters, page: nextPage }),
     page,
-    pageSize: filters.pageSize,
     rows,
     to: rows.length === 0 ? 0 : Math.min(start + rows.length, safeTotalRows),
     totalPages,
@@ -423,69 +216,253 @@ function buildRefundServerPagination<T>(
   };
 }
 
-function readRefundPage(value: string | string[] | undefined) {
-  const page = Number.parseInt(readSearchParam(value), 10);
-  return Number.isFinite(page) && page > 0 ? page : 1;
+function buildRefundTableRows(refunds: readonly AdminRefundOperationsRow[], returnTo: string): RefundTableRow[] {
+  const nowMs = Date.now();
+
+  return refunds.map((refund) => {
+    const metadata = refundMetadata(refund.metadata);
+    const checklistRows = refundChecklist(refund, metadata);
+    const checklistCompleted = checklistRows.filter((row) => row.pillClass === 'pill-success').length;
+    const blockerCount = checklistRows.filter((row) => row.pillClass === 'pill-danger').length;
+    const customerProfileId = refund.booking?.customerProfile?.id;
+    const action = refundPrimaryAction(refund, returnTo);
+
+    return {
+      ageLabel: relativeTimeLabel(refund.createdAt, nowMs),
+      amount: refund.amount,
+      bookingHref: `/bookings/${encodeURIComponent(refund.bookingId)}`,
+      bookingId: refund.bookingId,
+      bookingIdLabel: shortId(refund.bookingId),
+      bookingStatus: refund.booking?.status ?? 'Unknown',
+      checklistCompleted,
+      checklistRows,
+      createdAtLabel: formatDateTime(refund.createdAt),
+      currency: refund.payment?.currency ?? refund.currency ?? 'VND',
+      customerHref: customerProfileId ? `/customers/${encodeURIComponent(customerProfileId)}` : null,
+      customerLabel:
+        refund.booking?.customerProfile?.user?.fullName ??
+        refund.booking?.customerProfile?.user?.phone ??
+        'Customer not included',
+      evidenceBlockerLabel: blockerCount > 0
+        ? `${blockerCount} control gap${blockerCount === 1 ? '' : 's'}`
+        : 'No control gaps in the current record',
+      evidenceLabel: `${checklistCompleted}/${checklistRows.length} control facts available`,
+      id: refund.id,
+      opsHint: refund.nextAction,
+      opsTone: refundOpsTone(refund),
+      paymentHref: `/payments/${encodeURIComponent(refund.paymentId)}`,
+      paymentId: refund.paymentId,
+      paymentLabel: `${refund.payment?.method ?? 'Unknown method'} · ${refund.payment?.status ?? 'Unknown status'}`,
+      primaryActionHref: action.href,
+      primaryActionLabel: action.label,
+      reason: refund.reason?.trim() || 'No reason recorded',
+      requestSource: refundSourceLabel(metadata.source),
+      shortId: shortId(refund.id),
+      stageLabel: refundStageLabel(refund.operationalStage),
+      workstreamLabel: refund.assignee ?? 'Finance operations',
+    };
+  });
 }
 
-function readRefundPageSize(value: string | string[] | undefined) {
-  const pageSize = Number.parseInt(readSearchParam(value), 10);
-  if (!Number.isFinite(pageSize) || pageSize <= 0) {
-    return REFUND_OPERATIONS_API_LIMIT;
-  }
-  return Math.min(Math.trunc(pageSize), REFUND_OPERATIONS_API_MAX_LIMIT);
+function refundChecklist(
+  refund: AdminRefundOperationsRow,
+  metadata: ReturnType<typeof refundMetadata>,
+): RefundChecklistRow[] {
+  const callbacks = refund.payment?.callbackAttempts ?? [];
+  const gatewayExpected = !['CASH', 'WALLET'].includes(refund.payment?.method ?? '');
+  const gatewayEvidence = Boolean(refund.payment?.providerRef || callbacks.length > 0);
+  const requestContext = Boolean(metadata.requestedAt || metadata.requestedByAdminId || metadata.source);
+
+  return [
+    evidenceCheck(
+      'Booking record',
+      Boolean(refund.booking),
+      refund.booking
+        ? `Booking ${shortId(refund.bookingId)} is linked with status ${refund.booking.status ?? 'unknown'}.`
+        : 'No linked booking record is present in the refund payload.',
+    ),
+    evidenceCheck(
+      'Payment record',
+      Boolean(refund.payment),
+      refund.payment
+        ? `Payment ${shortId(refund.paymentId)} is linked with status ${refund.payment.status}.`
+        : 'No linked payment record is present in the refund payload.',
+    ),
+    evidenceCheck(
+      'Request context',
+      requestContext,
+      requestContext
+        ? [
+            metadata.source ? `Source ${metadata.source}` : null,
+            metadata.requestedByAdminId ? `maker ${shortId(metadata.requestedByAdminId)}` : null,
+            metadata.requestedAt ? `requested ${formatDateTime(metadata.requestedAt)}` : null,
+          ].filter(Boolean).join(' · ')
+        : 'Request source, maker, and request time are not recorded in refund metadata.',
+    ),
+    gatewayExpected
+      ? evidenceCheck(
+          'Gateway evidence',
+          gatewayEvidence,
+          gatewayEvidence
+            ? `${refund.payment?.providerRef ? `Provider reference ${refund.payment.providerRef}` : 'No provider reference'} · ${callbacks.length} recent callback${callbacks.length === 1 ? '' : 's'}.`
+            : 'No provider reference or recent callback is present in the list payload.',
+        )
+      : {
+          detail: `${refund.payment?.method ?? 'This payment method'} does not require gateway callback evidence.`,
+          label: 'Payment channel evidence',
+          pillClass: 'pill-neutral',
+          status: 'Not required',
+        },
+    refund.stateMismatchReason
+      ? {
+          detail: refund.stateMismatchReason,
+          label: 'State alignment',
+          pillClass: 'pill-danger',
+          status: 'Mismatch',
+        }
+      : evidenceCheck(
+          'State alignment',
+          true,
+          'Refund, payment, and booking states are aligned under the API contract.',
+        ),
+  ];
 }
 
-function refundFilterDescription(review: string) {
-  if (review === 'open') {
-    return 'refund cases that are not completed yet.';
-  }
-  if (review === 'requested') {
-    return 'customer refund requests waiting for operator processing.';
-  }
-  if (review === 'needs-update') {
-    return 'requested refunds whose payment record is not marked refunded yet.';
-  }
-  if (review === 'refunded-booking') {
-    return 'bookings already marked as refunded, ready for ledger confirmation.';
-  }
-  if (review === 'completed') {
-    return 'closed refund cases.';
-  }
-  return 'all refund records.';
+function evidenceCheck(label: string, complete: boolean, detail: string): RefundChecklistRow {
+  return {
+    detail,
+    label,
+    pillClass: complete ? 'pill-success' : 'pill-danger',
+    status: complete ? 'Available' : 'Missing',
+  };
 }
 
-function emptyRefundMessage(review: string) {
-  if (!review) {
-    return 'No refunds loaded.';
+function refundPrimaryAction(refund: AdminRefundOperationsRow, returnTo: string) {
+  switch (refund.operationalStage) {
+    case 'AWAITING_DECISION':
+      return { href: refundApprovalFocusHref(refund.id, returnTo), label: 'Review decision' };
+    case 'STATE_MISMATCH':
+      return { href: refundApprovalFocusHref(refund.id, returnTo), label: 'Review state mismatch' };
+    case 'PAYMENT_PROCESSING':
+      return { href: `/payments/${encodeURIComponent(refund.paymentId)}`, label: 'Check gateway progress' };
+    case 'CLOSED':
+      return { href: `/payments/${encodeURIComponent(refund.paymentId)}`, label: 'Review closed payment' };
+    case 'REJECTED':
+      return { href: `/bookings/${encodeURIComponent(refund.bookingId)}`, label: 'Review rejection context' };
+    default:
+      return { href: `/payments/${encodeURIComponent(refund.paymentId)}`, label: 'Review refund state' };
   }
-  return `No refunds currently match this queue. ${refundFilterDescription(review)}`;
 }
 
-function refundOpsSignal(refund: AdminRefund) {
-  if (refund.status === 'REQUESTED') {
-    return <AdminSignal tone="warn">Customer refund requested</AdminSignal>;
+function refundMetadata(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { requestedAt: null, requestedByAdminId: null, source: null };
   }
-  if (refund.status === 'COMPLETED' || refund.booking?.status === 'REFUNDED') {
-    return <AdminSignal tone="ok">Refund settled</AdminSignal>;
-  }
-  return <AdminSignal tone="info">Review refund</AdminSignal>;
+  const record = value as Record<string, unknown>;
+  return {
+    requestedAt: metadataString(record.requestedAt),
+    requestedByAdminId: metadataString(record.requestedByAdminId) ?? metadataString(record.actorId),
+    source: metadataString(record.source),
+  };
 }
 
-function refundOpsHint(refund: AdminRefund) {
-  if (refund.status === 'REQUESTED') {
-    return 'Confirm the payment reversal path and notify the guest once the refund is complete.';
-  }
-  if (refund.booking?.status === 'REFUNDED') {
-    return 'Booking is already marked as refunded. Check payment ledger and customer notes.';
-  }
-  return 'Review this refund before closing the case.';
+function metadataString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
-function refundCustomerLabel(refund: AdminRefund) {
+function refundEmptyState(filters: ReturnType<typeof buildRefundFilters>, globalOpenCount: number) {
+  const currentScope = filters.range === 'today' && filters.review === 'open'
+    ? 'No open refunds were created today.'
+    : 'No refund cases match the current filters.';
+
   return (
-    refund.booking?.customerProfile?.user?.fullName ??
-    refund.booking?.customerProfile?.user?.phone ??
-    'Unknown customer'
+    <div className="refund-empty-state">
+      <AdminEmptyState
+        message={
+          globalOpenCount > 0 && !(filters.range === 'all' && filters.review === 'open')
+            ? `${currentScope} ${globalOpenCount} refund${globalOpenCount === 1 ? ' is' : 's are'} still open across all dates.`
+            : currentScope
+        }
+        title="No cases in this view"
+      />
+      {globalOpenCount > 0 && !(filters.range === 'all' && filters.review === 'open') ? (
+        <AdminTextLink href={REFUND_RESET_HREF}>View all open refunds</AdminTextLink>
+      ) : null}
+    </div>
   );
+}
+
+function refundOpsTone(refund: AdminRefundOperationsRow): RefundTableRow['opsTone'] {
+  switch (refund.operationalStage) {
+    case 'STATE_MISMATCH':
+      return 'warn';
+    case 'AWAITING_DECISION':
+      return 'warn';
+    case 'PAYMENT_PROCESSING':
+      return 'info';
+    case 'CLOSED':
+      return 'ok';
+    case 'REJECTED':
+      return 'ok';
+    default:
+      return 'info';
+  }
+}
+
+function refundSourceLabel(source: string | null | undefined) {
+  if (!source) return 'Legacy request · source not recorded';
+  if (source === 'ADMIN_MANUAL') return 'Created manually by an administrator';
+  if (source === 'UNMATCHED_BOOKING_CLOSE') return 'Created while closing an unmatched booking';
+  if (source === 'CUSTOMER_REQUEST') return 'Created from a customer request';
+  if (source === 'POST_MATCH_CANCELLATION') return 'Created from a post-match cancellation';
+  if (source === 'PAYMENT_DETAIL') return 'Created from payment review';
+  const readableSource = source.toLowerCase().replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase());
+  return `Other source · ${readableSource} (${source})`;
+}
+
+function refundStageLabel(stage: AdminRefundOperationsRow['operationalStage']) {
+  if (stage === 'STATE_MISMATCH') return 'Reconciliation required';
+  if (stage === 'AWAITING_DECISION') return 'Approval required';
+  if (stage === 'PAYMENT_PROCESSING') return 'Gateway processing';
+  if (stage === 'CLOSED') return 'Closed and reconciled';
+  if (stage === 'REJECTED') return 'Rejected';
+  return 'Review required';
+}
+
+function readRefundRange(value: string | string[] | undefined): AdminDateRange {
+  const range = readSearchParam(value);
+  return range === 'today' || range === '7d' || range === '30d' ? range : 'all';
+}
+
+function readRefundReview(value: string | string[] | undefined) {
+  const review = readSearchParam(value);
+  return review === 'all' ||
+    review === 'requested' ||
+    review === 'processing' ||
+    review === 'state-mismatch' ||
+    review === 'completed' ||
+    review === 'rejected'
+    ? review
+    : 'open';
+}
+
+function readRefundQueueAge(value: string | string[] | undefined): AdminRefundQueueAge {
+  const age = readSearchParam(value);
+  return age === 'under-1h' ||
+    age === '1-4h' ||
+    age === '4-24h' ||
+    age === '1-3d' ||
+    age === '3-7d' ||
+    age === 'over-7d'
+    ? age
+    : 'all';
+}
+
+function readPositiveInteger(
+  value: string | string[] | undefined,
+  fallback: number,
+  maximum: number,
+) {
+  const parsed = Number.parseInt(readSearchParam(value), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.min(Math.trunc(parsed), maximum) : fallback;
 }

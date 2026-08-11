@@ -2,281 +2,207 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { vi } from 'vitest';
 
-import { adminPostOrThrow } from '../../lib/admin-api';
-import { createManualWalletAdjustment } from './actions';
+import { AdminApiRequestError, adminGetResult, adminPostOrThrow } from '../../lib/admin-api';
+import {
+  createManualWalletAdjustment,
+  previewManualWalletAdjustment,
+  searchWalletAdjustmentOwners,
+  submitManualWalletAdjustmentRequest,
+} from './actions';
 import * as walletAdjustmentActions from './actions';
 
-vi.mock('next/cache', () => ({
-  revalidatePath: vi.fn(),
-}));
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+vi.mock('next/navigation', () => ({ redirect: vi.fn() }));
+vi.mock('../../lib/admin-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/admin-api')>();
+  return {
+    ...actual,
+    adminGetResult: vi.fn(),
+    adminPostOrThrow: vi.fn(),
+    isAdminApiAuthError: vi.fn((error: unknown) => error instanceof Error && error.message === 'auth'),
+  };
+});
 
-vi.mock('next/navigation', () => ({
-  redirect: vi.fn(),
-}));
-
-vi.mock('../../lib/admin-api', () => ({
-  adminPostOrThrow: vi.fn(),
-  isAdminApiAuthError: vi.fn((error: unknown) => error instanceof Error && error.message === 'auth'),
-}));
-
+const mockedAdminGetResult = vi.mocked(adminGetResult);
 const mockedAdminPostOrThrow = vi.mocked(adminPostOrThrow);
 const mockedRevalidatePath = vi.mocked(revalidatePath);
 const mockedRedirect = vi.mocked(redirect);
 
-describe('manual wallet adjustment server actions', () => {
+function validPartnerForm() {
+  const formData = new FormData();
+  formData.set('ownerType', 'PARTNER');
+  formData.set('ownerId', 'provider-1');
+  formData.set('direction', 'CREDIT');
+  formData.set('adjustmentType', 'PARTNER_BONUS');
+  formData.set('amount', '200000');
+  formData.set('reason', 'Quality bonus approved by operations');
+  formData.set('operationalCause', 'Partner service quality recovery');
+  formData.set('expectedCorrection', 'Credit the approved bonus once');
+  formData.set('monthlyPeriod', '2026-08');
+  formData.set('idempotencyKey', '00000000-0000-4000-8000-000000000001');
+  return formData;
+}
+
+describe('wallet adjustment server actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedAdminPostOrThrow.mockResolvedValue({
-      ledger: { id: 'ledger-1', amount: 200000, currency: 'VND' },
-      preview: { afterBalance: 200000, beforeBalance: 0 },
-    });
+    mockedAdminPostOrThrow.mockResolvedValue({ id: 'wallet-request-1' });
+    mockedAdminGetResult.mockResolvedValue({ data: [], ok: true, status: 200 });
   });
 
-  it('posts a trimmed manual adjustment payload through the Admin API boundary', async () => {
-    const formData = new FormData();
-    formData.set('ownerType', 'PARTNER');
-    formData.set('ownerId', ' provider-1 ');
-    formData.set('direction', 'CREDIT');
-    formData.set('adjustmentType', 'PARTNER_BONUS');
-    formData.set('amount', '200000');
-    formData.set('approvalId', ' approval-2026-06 ');
-    formData.set('approvalAdminId', ' finance-admin-2 ');
-    formData.set('reason', ' Completed launch bonus ');
-    formData.set('monthlyPeriod', '2026-06');
-    formData.set('attachmentUrl', ' https://example.test/evidence.pdf ');
+  it('creates a request with body-only draft values and redirects with only safe identifiers', async () => {
+    const formData = validPartnerForm();
+    formData.set('attachmentUrl', 'https://evidence.example.test/object-1');
 
-    await createManualWalletAdjustment(formData);
+    await submitManualWalletAdjustmentRequest({ status: 'idle' }, formData);
 
     expect(mockedAdminPostOrThrow).toHaveBeenCalledWith('/admin/wallet-adjustment-requests', {
       adjustmentType: 'PARTNER_BONUS',
       amount: 200000,
-      attachmentUrl: 'https://example.test/evidence.pdf',
+      attachmentUrl: 'https://evidence.example.test/object-1',
       direction: 'CREDIT',
-      monthlyPeriod: '2026-06',
+      idempotencyKey: '00000000-0000-4000-8000-000000000001',
+      monthlyPeriod: '2026-08',
+      operationalCause: 'Partner service quality recovery',
       ownerId: 'provider-1',
       ownerType: 'PARTNER',
-      reason: 'Completed launch bonus',
+      expectedCorrection: 'Credit the approved bonus once',
+      reason: 'Quality bonus approved by operations',
     });
-    expect(mockedRevalidatePath).toHaveBeenCalledWith('/wallet-adjustments');
+    const target = String(mockedRedirect.mock.calls[0]?.[0]);
+    expect(target).toContain('view=requests');
+    expect(target).toContain('requestId=wallet-request-1');
+    for (const sensitive of ['provider-1', '200000', 'Quality+bonus', 'evidence.example']) {
+      expect(target).not.toContain(sensitive);
+    }
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/finance-tax/approval-queue');
-    expect(mockedRevalidatePath).toHaveBeenCalledWith('/partners');
-    expect(mockedRevalidatePath).toHaveBeenCalledWith('/customers');
-    expect(mockedRedirect).toHaveBeenCalledWith(
-      expect.stringContaining('adjustmentNotice=requested'),
-    );
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
-    expect(mockedRedirect).not.toHaveBeenCalledWith(expect.stringContaining('approvalId='));
-    expect(mockedRedirect).not.toHaveBeenCalledWith(expect.stringContaining('approvalAdminId='));
   });
 
-  it('redirects to a form notice when the Admin API rejects creation', async () => {
-    mockedAdminPostOrThrow.mockRejectedValueOnce(new Error('rejected'));
-    const formData = new FormData();
-    formData.set('ownerType', 'PARTNER');
-    formData.set('ownerId', 'provider-1');
-    formData.set('direction', 'CREDIT');
-    formData.set('adjustmentType', 'PARTNER_BONUS');
-    formData.set('amount', '200000');
-    formData.set('approvalId', 'approval-2026-06');
-    formData.set('approvalAdminId', 'finance-admin-2');
-    formData.set('reason', 'Rejected by API');
+  it('keeps validation and API failures in local action state without a sensitive redirect', async () => {
+    const invalid = validPartnerForm();
+    invalid.set('amount', '1000000001');
+    invalid.set('reason', 'Sensitive reason that must not enter history');
+    const validation = await submitManualWalletAdjustmentRequest({ status: 'idle' }, invalid);
 
-    await createManualWalletAdjustment(formData);
-
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=failed'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
-  });
-
-  it('redirects to an auth notice when the Admin token is missing or expired', async () => {
-    mockedAdminPostOrThrow.mockRejectedValueOnce(new Error('auth'));
-    const formData = new FormData();
-    formData.set('ownerType', 'PARTNER');
-    formData.set('ownerId', 'provider-1');
-    formData.set('direction', 'CREDIT');
-    formData.set('adjustmentType', 'PARTNER_BONUS');
-    formData.set('amount', '200000');
-    formData.set('approvalId', 'approval-2026-06');
-    formData.set('approvalAdminId', 'finance-admin-2');
-    formData.set('reason', 'Auth failure');
-
-    await createManualWalletAdjustment(formData);
-
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=admin-auth'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
-  });
-
-  it('redirects unsafe or incomplete adjustment requests before posting', async () => {
-    const formData = new FormData();
-    formData.set('ownerType', 'PARTNER');
-    formData.set('ownerId', 'provider-1');
-    formData.set('direction', 'CREDIT');
-    formData.set('adjustmentType', 'PARTNER_BONUS');
-    formData.set('amount', '0');
-    formData.set('approvalId', 'approval-2026-06');
-    formData.set('approvalAdminId', 'finance-admin-2');
-    formData.set('reason', 'No amount');
-
-    await createManualWalletAdjustment(formData);
-
+    expect(validation).toMatchObject({ code: 'AMOUNT_TOO_HIGH', field: 'amount', status: 'error' });
+    expect(mockedRedirect).not.toHaveBeenCalled();
     expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=failed'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
+
+    mockedAdminPostOrThrow.mockRejectedValueOnce(
+      new AdminApiRequestError('POST', '/admin/wallet-adjustment-requests', 400, {
+        code: 'WALLET_ADJUSTMENT_COMBINATION_NOT_ALLOWED',
+      }),
+    );
+    const apiFailure = await submitManualWalletAdjustmentRequest({ status: 'idle' }, validPartnerForm());
+    expect(apiFailure).toMatchObject({
+      code: 'WALLET_ADJUSTMENT_COMBINATION_NOT_ALLOWED',
+      field: 'adjustmentType',
+      status: 'error',
+    });
+    expect(mockedRedirect).not.toHaveBeenCalled();
   });
 
-  it('submits a persistent request without asking the maker for approval identifiers', async () => {
-    const formData = new FormData();
-    formData.set('ownerType', 'PARTNER');
-    formData.set('ownerId', 'provider-1');
-    formData.set('direction', 'CREDIT');
-    formData.set('adjustmentType', 'PARTNER_BONUS');
-    formData.set('amount', '200000');
-    formData.set('reason', 'Needs approval');
+  it('uses POST preview and returns a payload key without navigating', async () => {
+    mockedAdminPostOrThrow.mockResolvedValueOnce({
+      accountingEntries: [],
+      adjustmentType: 'PARTNER_BONUS',
+      affects: { bankCash: false, expense: true, partnerReceivable: false, revenue: false, taxPayable: false, walletLiability: true },
+      afterBalance: 200000,
+      amount: 200000,
+      bankCashAmount: 0,
+      beforeBalance: 0,
+      companyOutputVat: 0,
+      currency: 'VND',
+      direction: 'CREDIT',
+      expenseAmount: 200000,
+      ownerId: 'provider-1',
+      ownerType: 'PARTNER',
+      platformRevenueAmount: 0,
+      reason: 'Quality bonus approved by operations',
+      requiresApproval: true,
+      requiresAttachment: false,
+      revenueAmount: 0,
+      walletDelta: 200000,
+    });
 
-    await createManualWalletAdjustment(formData);
+    const state = await previewManualWalletAdjustment({ status: 'idle' }, validPartnerForm());
 
     expect(mockedAdminPostOrThrow).toHaveBeenCalledWith(
-      '/admin/wallet-adjustment-requests',
-      expect.objectContaining({ ownerId: 'provider-1', amount: 200000 }),
+      '/admin/wallet-adjustments/preview',
+      expect.not.objectContaining({ idempotencyKey: expect.anything() }),
     );
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=requested'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('direction=CREDIT'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentType=PARTNER_BONUS'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('amount=200000'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('reason=Needs+approval'));
+    expect(state.status).toBe('success');
+    expect(state.inputKey).toContain('ownerId:provider-1');
+    expect(mockedRedirect).not.toHaveBeenCalled();
   });
 
-  it('requires attachment evidence before posting high amount or receivable write-off adjustments', async () => {
-    const highAmount = new FormData();
-    highAmount.set('ownerType', 'PARTNER');
-    highAmount.set('ownerId', 'provider-1');
-    highAmount.set('direction', 'CREDIT');
-    highAmount.set('adjustmentType', 'PARTNER_BONUS');
-    highAmount.set('amount', '10000000');
-    highAmount.set('approvalId', 'approval-2026-06');
-    highAmount.set('approvalAdminId', 'finance-admin-2');
-    highAmount.set('reason', 'High amount adjustment');
+  it('rejects unsafe evidence, settlement-only creation, and source-less reversals before API access', async () => {
+    const unsafe = validPartnerForm();
+    unsafe.set('attachmentUrl', 'javascript:alert(1)');
+    expect(await previewManualWalletAdjustment({ status: 'idle' }, unsafe)).toMatchObject({
+      code: 'ATTACHMENT_INVALID',
+      field: 'attachmentUrl',
+    });
 
-    await createManualWalletAdjustment(highAmount);
+    const settlement = validPartnerForm();
+    settlement.set('adjustmentType', 'CASH_BOOKING_DEDUCTION');
+    expect(await previewManualWalletAdjustment({ status: 'idle' }, settlement)).toMatchObject({
+      code: 'WALLET_ADJUSTMENT_SETTLEMENT_ROUTE_REQUIRED',
+    });
 
+    const reversal = validPartnerForm();
+    reversal.set('adjustmentType', 'MANUAL_REVERSAL');
+    expect(await previewManualWalletAdjustment({ status: 'idle' }, reversal)).toMatchObject({
+      code: 'WALLET_ADJUSTMENT_REVERSAL_SOURCE_REQUIRED',
+    });
     expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=attachment-required'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('amount=10000000'));
-    expect(mockedRedirect).not.toHaveBeenCalledWith(expect.stringContaining('approvalId='));
-    expect(mockedRedirect).not.toHaveBeenCalledWith(expect.stringContaining('approvalAdminId='));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('reason=High+amount+adjustment'));
-
-    vi.clearAllMocks();
-
-    const writeOff = new FormData();
-    writeOff.set('ownerType', 'PARTNER');
-    writeOff.set('ownerId', 'provider-1');
-    writeOff.set('direction', 'CREDIT');
-    writeOff.set('adjustmentType', 'RECEIVABLE_WRITE_OFF');
-    writeOff.set('amount', '100000');
-    writeOff.set('approvalId', 'approval-2026-06');
-    writeOff.set('approvalAdminId', 'finance-admin-2');
-    writeOff.set('reason', 'Write off approved by finance');
-
-    await createManualWalletAdjustment(writeOff);
-
-    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=attachment-required'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentType=RECEIVABLE_WRITE_OFF'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('reason=Write+off+approved+by+finance'));
   });
 
-  it('rejects unsafe attachment URLs before posting to the Admin API', async () => {
+  it('searches owners server-side without placing name or phone in the browser URL', async () => {
+    mockedAdminGetResult.mockResolvedValueOnce({
+      data: [{
+        accountStatus: 'APPROVED', currency: 'VND', currentBalance: 100000, displayName: 'Partner One',
+        maskedPhone: '+84•••1234', ownerId: 'provider-1', ownerType: 'PARTNER', reference: 'Partner •••der-1',
+      }],
+      ok: true,
+      status: 200,
+    });
     const formData = new FormData();
     formData.set('ownerType', 'PARTNER');
-    formData.set('ownerId', 'provider-1');
+    formData.set('ownerSearch', 'Partner One');
+
+    const state = await searchWalletAdjustmentOwners({ owners: [], status: 'idle' }, formData);
+
+    expect(mockedAdminGetResult).toHaveBeenCalledWith(
+      '/admin/wallet-adjustments/owners?ownerType=PARTNER&q=Partner+One&take=10',
+      [],
+    );
+    expect(state.status).toBe('success');
+    expect(state.ownerType).toBe('PARTNER');
+    expect(mockedRedirect).not.toHaveBeenCalled();
+  });
+
+  it('preserves the allowlisted customer-detail return without adding draft values', async () => {
+    const formData = new FormData();
+    formData.set('ownerType', 'CUSTOMER');
+    formData.set('ownerId', 'customer-1');
     formData.set('direction', 'CREDIT');
-    formData.set('adjustmentType', 'PARTNER_BONUS');
-    formData.set('amount', '10000000');
-    formData.set('approvalId', 'approval-2026-06');
-    formData.set('approvalAdminId', 'finance-admin-2');
-    formData.set('attachmentUrl', 'javascript:alert(1)');
-    formData.set('reason', 'Unsafe evidence URL');
+    formData.set('adjustmentType', 'CUSTOMER_COMPENSATION');
+    formData.set('amount', '100000');
+    formData.set('reason', 'Customer service compensation');
+    formData.set('operationalCause', 'Confirmed customer support case');
+    formData.set('expectedCorrection', 'Credit the approved compensation once');
+    formData.set('monthlyPeriod', '2026-08');
+    formData.set('redirectTo', '/customers/customer-1#customer-wallet-adjustment-request');
 
     await createManualWalletAdjustment(formData);
 
-    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=attachment-invalid'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('reason=Unsafe+evidence+URL'));
-    expect(mockedRedirect).not.toHaveBeenCalledWith(expect.stringContaining('javascript'));
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/customers/customer-1?walletAdjustmentNotice=requested#customer-wallet-adjustment-request',
+    );
   });
 
-  it('rejects invalid monthly periods before posting to the Admin API', async () => {
-    const formData = new FormData();
-    formData.set('ownerType', 'PARTNER');
-    formData.set('ownerId', 'provider-1');
-    formData.set('direction', 'CREDIT');
-    formData.set('adjustmentType', 'PARTNER_BONUS');
-    formData.set('amount', '200000');
-    formData.set('approvalId', 'approval-2026-06');
-    formData.set('approvalAdminId', 'finance-admin-2');
-    formData.set('monthlyPeriod', '2026/06');
-    formData.set('reason', 'Malformed monthly period');
-
-    await createManualWalletAdjustment(formData);
-
-    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=monthly-period-invalid'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('reason=Malformed+monthly+period'));
-    expect(mockedRedirect).not.toHaveBeenCalledWith(expect.stringContaining('2026%2F06'));
-  });
-
-  it('rejects impossible monthly periods before posting to the Admin API', async () => {
-    const formData = new FormData();
-    formData.set('ownerType', 'PARTNER');
-    formData.set('ownerId', 'provider-1');
-    formData.set('direction', 'CREDIT');
-    formData.set('adjustmentType', 'PARTNER_BONUS');
-    formData.set('amount', '200000');
-    formData.set('approvalId', 'approval-2026-06');
-    formData.set('approvalAdminId', 'finance-admin-2');
-    formData.set('monthlyPeriod', '2026-13');
-    formData.set('reason', 'Impossible monthly period');
-
-    await createManualWalletAdjustment(formData);
-
-    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=monthly-period-invalid'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('reason=Impossible+monthly+period'));
-    expect(mockedRedirect).not.toHaveBeenCalledWith(expect.stringContaining('2026-13'));
-  });
-
-  it('blocks cash booking deduction from the manual wallet adjustment action', async () => {
-    const formData = new FormData();
-    formData.set('ownerType', 'PARTNER');
-    formData.set('ownerId', 'provider-1');
-    formData.set('direction', 'DEBIT');
-    formData.set('adjustmentType', 'CASH_BOOKING_DEDUCTION');
-    formData.set('amount', '200000');
-    formData.set('approvalId', 'approval-2026-06');
-    formData.set('approvalAdminId', 'finance-admin-2');
-    formData.set('reason', 'Cash booking settlement should use settlement flow');
-
-    await createManualWalletAdjustment(formData);
-
-    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=settlement-required'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
-  });
-
-  it('exports only async server actions from the server action module', () => {
-    expect(Object.keys(walletAdjustmentActions)).toEqual(['createManualWalletAdjustment']);
+  it('exports only async server actions', () => {
+    expect(Object.values(walletAdjustmentActions).every((value) => typeof value === 'function')).toBe(true);
   });
 });

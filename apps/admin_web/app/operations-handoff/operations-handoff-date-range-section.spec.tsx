@@ -9,7 +9,7 @@ describe('OperationsHandoffDateRangeSection', () => {
     const source = readFileSync('app/operations-handoff/operations-handoff-date-range-section.tsx', 'utf8');
 
     expect(source).toContain('AdminFilterPanel');
-    expect(source).toContain('AdminFilterSummary');
+    expect(source).not.toContain('AdminFilterSummary');
     expect(source).toContain('resultLabel={dateRangeLabel(range)}');
     expect(source).not.toContain('AdminSection');
     expect(source).not.toContain('<span className="pill pill-info">{dateRangeLabel(range)}</span>');
@@ -27,8 +27,8 @@ describe('OperationsHandoffDateRangeSection', () => {
 
     expect(textContent(section)).toContain('Operations history range');
     expect(textContent(section)).toContain('Last 7 days');
-    expect(textContent(section)).toContain('Range: Last 7 days');
-    expect(textContent(section)).toContain('Detail mode: Summary');
+    expect(textContent(section)).not.toContain('Range: Last 7 days');
+    expect(textContent(section)).not.toContain('Detail mode: Summary');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/operations-handoff?range=all',
@@ -58,6 +58,6 @@ describe('OperationsHandoffDateRangeSection', () => {
     expect(markup).toContain('href="/operations-handoff?details=all&amp;range=30d"');
     expect(markup).toContain('href="/operations-handoff?details=all&amp;range=90d"');
     expect(markup).toContain('button-primary');
-    expect(markup).toContain('Detail mode: All records');
+    expect(markup).not.toContain('Detail mode: All records');
   });
 });

@@ -15,4 +15,11 @@ describe('SettlementReversalsPage Vuexy links', () => {
     expect(source).toContain('<FinanceListCommandBoard ariaLabel="Reversal command board">');
     expect(source).not.toContain('metrics={[');
   });
+
+  it('keeps list payloads light and routes full bank-return evidence to journal detail', () => {
+    expect(source).toContain("q: 'reversal'");
+    expect(source).toContain('Bank return evidence recorded');
+    expect(source).toContain('Open reversal journal');
+    expect(source).not.toContain('disbursementReversalEvidence');
+  });
 });

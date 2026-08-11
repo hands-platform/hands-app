@@ -1,6 +1,13 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import { BookingStatus, EarningStatus, PrismaClient, ProviderWalletLedgerType, Role } from '@prisma/client';
+import {
+  AdminOperatorPermissionCategory,
+  BookingStatus,
+  EarningStatus,
+  PrismaClient,
+  ProviderWalletLedgerType,
+  Role,
+} from '@prisma/client';
 import jwt from 'jsonwebtoken';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
@@ -129,6 +136,27 @@ async function createFixture(prisma, runId) {
 
   const providerProfileId = providerUser.providerProfile.id;
   const customerProfileId = customerUser.customerProfile.id;
+  await prisma.adminOperatorPermission.createMany({
+    data: [
+      {
+        userId: maker.id,
+        categories: [
+          AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+          AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
+          AdminOperatorPermissionCategory.FINANCE_TAX,
+          AdminOperatorPermissionCategory.FINANCE_WALLET_ADJUSTMENTS,
+        ],
+      },
+      {
+        userId: approver.id,
+        categories: [
+          AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+          AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
+          AdminOperatorPermissionCategory.FINANCE_WALLET_ADJUSTMENTS,
+        ],
+      },
+    ],
+  });
   const companyBankAccount = await prisma.companyBankAccount.create({
     data: {
       name: 'Local deposit allocation smoke account',
@@ -343,6 +371,7 @@ try {
   );
   const firstBankEvidenceAmount = Math.max(1, Math.floor(debtTotal / 2));
   const remainingBankEvidenceAmount = debtTotal - firstBankEvidenceAmount;
+  const attachmentUrl = `http://localhost:9000/local-smoke-evidence/${runId}.pdf`;
 
   const request = await requestJson('/admin/provider-wallet/deposit-requests', makerAccessToken, {
     method: 'POST',
@@ -352,7 +381,7 @@ try {
       bankTransactionId,
       depositDate: isolatedDepositDate.toISOString(),
       bankAccount: 'Local smoke bank evidence',
-      attachmentUrl: `http://localhost:9000/local-smoke-evidence/${runId}.pdf`,
+      attachmentUrl,
       notes: 'Local-only full HTTP deposit allocation smoke.',
     },
   });
@@ -362,11 +391,82 @@ try {
     'Deposit preview did not recover receivable first',
     request,
   );
+  await prisma.partnerBankDepositRequest.update({
+    where: { id: request.id },
+    data: { attachmentFileId: null, attachmentUrl: null },
+  });
+  const [makerApprovalQueue, approverApprovalQueue] = await Promise.all([
+    requestJson('/admin/finance-approval-queue?take=10', makerAccessToken),
+    requestJson('/admin/finance-approval-queue?take=10', approverAccessToken),
+  ]);
+  const makerDepositRequest = makerApprovalQueue.partnerBankDepositRequests?.find(
+    (item) => item.id === request.id,
+  );
+  const approverDepositRequest = approverApprovalQueue.partnerBankDepositRequests?.find(
+    (item) => item.id === request.id,
+  );
+  assert(
+    makerDepositRequest?.preflight?.canApprove === false &&
+      makerDepositRequest.preflight.blockers.some(
+        (blocker) => blocker.code === 'MAKER_CANNOT_APPROVE',
+      ),
+    'Maker approval queue did not expose the dual-approval blocker',
+    makerDepositRequest,
+  );
+  assert(
+    approverDepositRequest?.preflight?.ready === false &&
+      approverDepositRequest.preflight.canApprove === false &&
+      approverDepositRequest.preflight.blockers.some(
+        (blocker) => blocker.code === 'BANK_EVIDENCE_NOT_ATTACHED',
+      ),
+    'Finance approver queue did not block a deposit without attached bank evidence',
+    approverDepositRequest,
+  );
 
   await requestJson(`/admin/provider-wallet/deposit-requests/${request.id}/approve`, makerAccessToken, {
     method: 'POST',
     expectedStatus: 400,
   });
+  await requestJson(
+    `/admin/provider-wallet/deposit-requests/${request.id}/approve`,
+    approverAccessToken,
+    { method: 'POST', expectedStatus: 400 },
+  );
+  const [requestAfterMissingEvidenceApproval, ledgerCountAfterMissingEvidenceApproval] =
+    await Promise.all([
+      prisma.partnerBankDepositRequest.findUnique({ where: { id: request.id } }),
+      prisma.providerWalletLedgerEntry.count({
+        where: {
+          sourceKey: `partner-bank-deposit:${fixture.providerProfileId}:${bankTransactionId}`,
+        },
+      }),
+    ]);
+  assert(
+    requestAfterMissingEvidenceApproval?.status === 'REQUESTED' &&
+      ledgerCountAfterMissingEvidenceApproval === 0,
+    'Missing bank evidence approval changed the request or wallet ledger',
+    {
+      ledgerCountAfterMissingEvidenceApproval,
+      status: requestAfterMissingEvidenceApproval?.status,
+    },
+  );
+
+  await prisma.partnerBankDepositRequest.update({
+    where: { id: request.id },
+    data: { attachmentUrl },
+  });
+  const approvalQueueWithEvidence = await requestJson(
+    '/admin/finance-approval-queue?take=10',
+    approverAccessToken,
+  );
+  const approverDepositRequestWithEvidence =
+    approvalQueueWithEvidence.partnerBankDepositRequests?.find((item) => item.id === request.id);
+  assert(
+    approverDepositRequestWithEvidence?.preflight?.ready === true &&
+      approverDepositRequestWithEvidence.preflight.canApprove === true,
+    'Finance approver queue did not become ready after bank evidence was attached',
+    approverDepositRequestWithEvidence,
+  );
 
   const approval = await requestJson(
     `/admin/provider-wallet/deposit-requests/${request.id}/approve`,
@@ -465,6 +565,7 @@ try {
       counterpartyName: 'Deposit Allocation Smoke Partner',
       currency: 'VND',
       description: 'Local-only Partner deposit bank inflow reconciliation smoke.',
+      operatorReason: 'Record Partner deposit bank inflow evidence.',
       occurredAt: new Date().toISOString(),
       transferRef: bankTransactionId,
       type: 'INFLOW',
@@ -477,10 +578,21 @@ try {
     (entry) => entry.side === 'DEBIT' && entry.accountCode === 'company_bank_cash',
   );
   assert(bankCashJournalEntry, 'Approved deposit does not expose a company bank cash debit entry', approvedDetail.journal);
+  await requestJson(
+    `/admin/bank-reconciliation/${importedBankTransaction.id}/review-assignment`,
+    makerAccessToken,
+    {
+      method: 'POST',
+      body: {
+        assigneeAdminId: fixture.maker.id,
+        reason: 'Assign Partner deposit bank evidence review.',
+      },
+    },
+  );
 
   const reconciliation = await requestJson(
     `/admin/bank-reconciliation/${importedBankTransaction.id}/matches`,
-    makerAccessToken,
+    approverAccessToken,
     {
       method: 'POST',
       body: {
@@ -528,6 +640,7 @@ try {
     counterpartyName: 'Deposit Allocation Smoke Partner',
     currency: 'VND',
     description: 'Second split Partner deposit bank inflow evidence.',
+    operatorReason: 'Record second split Partner deposit bank evidence.',
     occurredAt: new Date().toISOString(),
     transferRef: `${bankTransactionId}-SPLIT-2`,
     type: 'INFLOW',
@@ -610,8 +723,8 @@ try {
     {
       method: 'POST',
       body: {
-        approvalAdminId: fixture.approver.id,
         mappingPreset: 'GENERIC',
+        operatorReason: 'Import reviewed split Partner deposit bank evidence.',
         rows: [
           {
             ...secondSplitBankTransactionInput,
@@ -675,9 +788,9 @@ try {
       retainedBatchHistory.reconciliationTransactionCount === 1 &&
       retainedBatchHistory.reconciledTransactionCount === 0 &&
       retainedBatchHistory.operator?.id === fixture.maker.id &&
-      retainedBatchHistory.approver?.id === fixture.approver.id &&
+      retainedBatchHistory.approver === null &&
       batchImportHistory.pagination?.take === 10,
-    'Bank statement batch history API did not return retained provenance and identities',
+    'Bank statement batch history did not retain maker-only provenance before assignment',
     batchImportHistory,
   );
   const openBatchImportHistory = await requestJson(
@@ -801,9 +914,20 @@ try {
     `/admin/bank-reconciliation/${batchImport.results[0].transactionId}`,
     makerAccessToken,
   );
+  await requestJson(
+    `/admin/bank-reconciliation/${secondImportedBankTransaction.id}/review-assignment`,
+    makerAccessToken,
+    {
+      method: 'POST',
+      body: {
+        assigneeAdminId: fixture.maker.id,
+        reason: 'Assign split Partner deposit transaction review.',
+      },
+    },
+  );
   const secondReconciliation = await requestJson(
     `/admin/bank-reconciliation/${secondImportedBankTransaction.id}/matches`,
-    makerAccessToken,
+    approverAccessToken,
     {
       method: 'POST',
       body: {
@@ -817,7 +941,7 @@ try {
   );
 
   const [bankTransactionDetail, reconciledDepositDetail] = await Promise.all([
-    requestJson(`/admin/bank-reconciliation/${importedBankTransaction.id}`, makerAccessToken),
+    requestJson(`/admin/bank-reconciliation/${importedBankTransaction.id}`, approverAccessToken),
     requestJson(`/admin/provider-wallet/deposit-requests/${request.id}`, makerAccessToken),
   ]);
   assert(
@@ -828,6 +952,14 @@ try {
     ),
     'Bank transaction detail does not expose the Partner deposit journal evidence',
     bankTransactionDetail,
+  );
+  assert(
+    bankTransactionDetail.preflight?.remainingAmount === 0 &&
+      bankTransactionDetail.preflight.actions.createMatch.allowed === false &&
+      bankTransactionDetail.preflight.actions.ignore.allowed === false &&
+      bankTransactionDetail.preflight.actions.reverse.allowedMatchIds.length > 0,
+    'Fully reconciled bank detail did not expose authoritative final-action preflight',
+    bankTransactionDetail.preflight,
   );
   assert(
     reconciledDepositDetail.journal.entries.some((entry) =>
@@ -863,7 +995,7 @@ try {
 
   await requestJson(
     `/admin/bank-reconciliation/${secondImportedBankTransaction.id}/matches/${secondReconciliation.match.id}/reverse`,
-    makerAccessToken,
+    approverAccessToken,
     {
       method: 'POST',
       body: {
@@ -895,7 +1027,7 @@ try {
 
   const ignoredReversedBankTransaction = await requestJson(
     `/admin/bank-reconciliation/${secondImportedBankTransaction.id}/ignore`,
-    makerAccessToken,
+    approverAccessToken,
     {
       method: 'POST',
       body: {
@@ -911,7 +1043,7 @@ try {
   );
   await requestJson(
     `/admin/bank-reconciliation/${secondImportedBankTransaction.id}/matches`,
-    makerAccessToken,
+    approverAccessToken,
     {
       method: 'POST',
       expectedStatus: 400,
@@ -941,6 +1073,12 @@ try {
     ignoredBankTransactionDetail,
   );
   assert(
+    ignoredBankTransactionDetail.preflight?.actions.createMatch.allowed === false &&
+      ignoredBankTransactionDetail.preflight.actions.ignore.allowed === false,
+    'Ignored bank detail did not remain blocked in authoritative preflight',
+    ignoredBankTransactionDetail.preflight,
+  );
+  assert(
     ignoredDepositQueue.pagination.total === 1 &&
       ignoredDepositQueue.items[0]?.reconciliationRemainingAmount === remainingBankEvidenceAmount,
     'Ignoring bank evidence incorrectly cleared the Partner deposit obligation',
@@ -966,6 +1104,7 @@ try {
         confirmPotentialDuplicate: true,
         currency: 'VND',
         description: 'Replacement Partner deposit bank inflow evidence after reversal.',
+        operatorReason: 'Record replacement Partner deposit bank evidence.',
         occurredAt: new Date().toISOString(),
         transferRef: `${bankTransactionId}-REPLACEMENT`,
         type: 'INFLOW',
@@ -974,8 +1113,19 @@ try {
     },
   );
   await requestJson(
-    `/admin/bank-reconciliation/${replacementBankTransaction.id}/matches`,
+    `/admin/bank-reconciliation/${replacementBankTransaction.id}/review-assignment`,
     makerAccessToken,
+    {
+      method: 'POST',
+      body: {
+        assigneeAdminId: fixture.maker.id,
+        reason: 'Assign replacement Partner deposit evidence review.',
+      },
+    },
+  );
+  await requestJson(
+    `/admin/bank-reconciliation/${replacementBankTransaction.id}/matches`,
+    approverAccessToken,
     {
       method: 'POST',
       body: {

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createAdminWebSessionCookieValue } from './admin-session';
 
-describe('Admin web middleware', () => {
+describe('Admin web proxy', () => {
   const originalEnv = { ...process.env };
 
   afterEach(() => {
@@ -15,9 +15,9 @@ describe('Admin web middleware', () => {
       ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
       NODE_ENV: 'production',
     };
-    const { middleware } = await import('../middleware');
+    const { proxy } = await import('../proxy');
 
-    const response = await middleware(new NextRequest('http://localhost/bookings?view=matching'));
+    const response = await proxy(new NextRequest('http://localhost/bookings?view=matching'));
 
     expect(response.status).toBe(307);
     expect(response.headers.get('location')).toBe('http://localhost/login?redirectTo=%2Fbookings%3Fview%3Dmatching');
@@ -30,9 +30,9 @@ describe('Admin web middleware', () => {
       ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
       NODE_ENV: 'production',
     };
-    const { middleware } = await import('../middleware');
+    const { proxy } = await import('../proxy');
 
-    const response = await middleware(new NextRequest('http://localhost/api/admin/bookings/cmq/chat-messages'));
+    const response = await proxy(new NextRequest('http://localhost/api/admin/bookings/cmq/chat-messages'));
     const body = (await response.json()) as { error?: string };
 
     expect(response.status).toBe(401);
@@ -46,10 +46,10 @@ describe('Admin web middleware', () => {
       ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
       NODE_ENV: 'production',
     };
-    const { middleware } = await import('../middleware');
+    const { proxy } = await import('../proxy');
 
-    const loginPageResponse = await middleware(new NextRequest('http://localhost/login'));
-    const loginRouteResponse = await middleware(new NextRequest('http://localhost/api/admin/session/login'));
+    const loginPageResponse = await proxy(new NextRequest('http://localhost/login'));
+    const loginRouteResponse = await proxy(new NextRequest('http://localhost/api/admin/session/login'));
 
     expect(loginPageResponse.headers.get('x-middleware-next')).toBe('1');
     expect(loginRouteResponse.headers.get('x-middleware-next')).toBe('1');
@@ -62,20 +62,23 @@ describe('Admin web middleware', () => {
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
       NODE_ENV: 'production',
     };
-    const { middleware } = await import('../middleware');
+    const { proxy } = await import('../proxy');
     const sessionCookie = createAdminWebSessionCookieValue({
       expiresAtMs: Date.now() + 60_000,
       secret: sessionSecret,
       sub: 'admin@hands.vn',
     });
 
-    const response = await middleware(
-      new NextRequest('http://localhost/finance-tax', {
+    const response = await proxy(
+      new NextRequest('http://localhost/partners?review=approval-pending&sort=oldest', {
         headers: { cookie: `hands_admin_session=${sessionCookie}` },
       }),
     );
 
     expect(response.headers.get('x-middleware-next')).toBe('1');
+    expect(response.headers.get('x-middleware-request-x-admin-pathname')).toBe(
+      '/partners?review=approval-pending&sort=oldest',
+    );
   });
 
   it('does not middleware-block realtime token route so route-level dev fallback can apply', async () => {
@@ -84,9 +87,9 @@ describe('Admin web middleware', () => {
       ADMIN_WEB_ALLOW_DEV_REALTIME_TOKEN: 'true',
       NODE_ENV: 'test',
     };
-    const { middleware } = await import('../middleware');
+    const { proxy } = await import('../proxy');
 
-    const response = await middleware(new NextRequest('http://localhost/api/admin/realtime-token'));
+    const response = await proxy(new NextRequest('http://localhost/api/admin/realtime-token'));
 
     expect(response.headers.get('x-middleware-next')).toBe('1');
   });

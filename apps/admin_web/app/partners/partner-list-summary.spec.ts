@@ -117,7 +117,7 @@ describe('partner list summary', () => {
     expect(summary[0]).toMatchObject({
       label: 'Filtered rows',
       value: '2/3',
-      detail: '1 active filter(s) are narrowing the partner list',
+      detail: '1 active filter is narrowing the partner list',
     });
     expect(summary.find((item) => item.label === 'Direct ready')?.value).toBe('1');
     expect(summary.find((item) => item.label === 'Marketplace ready')?.value).toBe('1');

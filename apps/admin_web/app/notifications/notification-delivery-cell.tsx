@@ -1,17 +1,14 @@
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminDisclosure } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
-import {
-  StatusBadgeFromPillClass,
-  StatusBadgeLink,
-} from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 
 export type NotificationDeliveryRow = {
   readonly attemptedAt: string | null;
   readonly deviceFreshnessLabel: string;
+  readonly deviceIdLabel: string;
   readonly deviceLastSeenAt: string | null;
   readonly deviceStateLabel: string;
-  readonly enableDeviceHref: string | null;
   readonly failureCodeLabel: string;
   readonly failureReasonLabel: string;
   readonly httpStatusLabel: string;
@@ -25,49 +22,39 @@ export type NotificationDeliveryRow = {
 
 type NotificationDeliveryCellProps = {
   readonly deliveryRows: readonly NotificationDeliveryRow[];
+  readonly emptyLabel?: string;
   readonly totalAttemptCount?: number;
 };
 
-export function NotificationDeliveryCell({ deliveryRows, totalAttemptCount }: NotificationDeliveryCellProps) {
+export function NotificationDeliveryCell({
+  deliveryRows,
+  emptyLabel = 'No devices / not attempted',
+  totalAttemptCount,
+}: NotificationDeliveryCellProps) {
   if (deliveryRows.length === 0) {
-    return <AdminInlineFallback>No devices / not attempted</AdminInlineFallback>;
+    return <AdminInlineFallback>{emptyLabel}</AdminInlineFallback>;
   }
 
-  if (deliveryRows.length === 1) {
-    return <NotificationDeliveryAttempt delivery={deliveryRows[0]} />;
-  }
-
-  const latest = deliveryRows[0];
-  const previous = deliveryRows[1];
+  const failed = deliveryRows.filter((row) => row.status === 'FAILED').length;
+  const accepted = deliveryRows.filter((row) => row.status === 'SENT').length;
+  const skipped = deliveryRows.filter((row) => row.status === 'SKIPPED').length;
+  const summary = [
+    failed ? `${failed} failed` : null,
+    accepted ? `${accepted} accepted` : null,
+    skipped ? `${skipped} skipped` : null,
+  ].filter(Boolean).join(' · ') || 'Pending';
   const attempts = totalAttemptCount ?? deliveryRows.length;
   const hiddenAttempts = Math.max(0, attempts - deliveryRows.length);
 
   return (
     <AdminDisclosure className="notification-delivery-disclosure">
       <summary className="notification-delivery-summary">
-        <StatusBadgeFromPillClass pillClass={latest.statusClassName}>
-          {latest.status}
-        </StatusBadgeFromPillClass>{' '}
-        <strong>{attempts} attempts</strong>{' '}
-        <span className="muted">
-          / latest {latest.provider} / {latest.platformLabel} / <DateTimeText value={latest.attemptedAt} />
-          {previous ? (
-            <>
-              {' '}
-              / previous {previous.status} at <DateTimeText value={previous.attemptedAt} />
-            </>
-          ) : null}
-          {hiddenAttempts ? ` / ${hiddenAttempts} older in audit` : ''}
-        </span>
+        <strong>{summary}</strong>
+        <span className="muted">{attempts} attempt{attempts === 1 ? '' : 's'}{hiddenAttempts ? ` · ${hiddenAttempts} older in audit` : ''}</span>
       </summary>
       <div className="admin-mt-6">
-        <NotificationDeliveryAttempt delivery={latest} sequenceLabel="Latest attempt" />
-        {deliveryRows.length > 1 ? (
-          <p className="muted admin-mt-4">
-            Previous delivery evidence is summarized above. Open the Notification audit trail for the full
-            attempt history.
-          </p>
-        ) : null}
+        {deliveryRows.map((delivery) => <NotificationDeliveryAttempt delivery={delivery} key={delivery.id} />)}
+        <p className="muted admin-mt-4">Open the audit trail for older attempt history.</p>
       </div>
     </AdminDisclosure>
   );
@@ -75,21 +62,19 @@ export function NotificationDeliveryCell({ deliveryRows, totalAttemptCount }: No
 
 function NotificationDeliveryAttempt({
   delivery,
-  sequenceLabel,
 }: {
   readonly delivery: NotificationDeliveryRow;
-  readonly sequenceLabel?: string;
 }) {
   return (
     <div className="notification-delivery-attempt admin-mb-10">
       <div>
-        {sequenceLabel ? <strong>{sequenceLabel} / </strong> : null}
         <strong>{delivery.provider}</strong>{' '}
         <StatusBadgeFromPillClass pillClass={delivery.statusClassName}>
-          {delivery.status}
+          {notificationDeliveryStatusLabel(delivery.status, delivery.provider)}
         </StatusBadgeFromPillClass>{' '}
         <span className="muted">/ {delivery.platformLabel}</span>
       </div>
+      <div className="muted admin-mt-4">Path {delivery.deviceIdLabel}</div>
       <div className="muted admin-mt-4">
         {delivery.deviceStateLabel} - Attempted <DateTimeText value={delivery.attemptedAt} />
       </div>
@@ -104,11 +89,13 @@ function NotificationDeliveryAttempt({
       {delivery.recoveryHintLabel ? (
         <div className="muted admin-mt-4">Next {delivery.recoveryHintLabel}</div>
       ) : null}
-      {delivery.enableDeviceHref ? (
-        <StatusBadgeLink className="admin-mt-6" href={delivery.enableDeviceHref} tone="warning">
-          Re-enable device
-        </StatusBadgeLink>
-      ) : null}
     </div>
   );
+}
+
+function notificationDeliveryStatusLabel(status: string, provider: string) {
+  if (status === 'SENT') return provider === 'FCM' ? 'Accepted by FCM' : 'Sent to push provider';
+  if (status === 'SKIPPED') return 'Push not sent';
+  if (status === 'FAILED') return 'Failed';
+  return status;
 }

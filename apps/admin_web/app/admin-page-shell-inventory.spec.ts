@@ -6,6 +6,7 @@ const APP_ROOT = join(process.cwd(), 'app');
 const AUTH_SHELL_EXCEPTIONS = new Set(['app/login/page.tsx']);
 
 const REDIRECT_PAGES = new Set([
+  'app/files/page.tsx',
   'app/providers/page.tsx',
   'app/providers/[id]/page.tsx',
   'app/referrals/page.tsx',

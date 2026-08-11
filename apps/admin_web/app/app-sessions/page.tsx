@@ -1,10 +1,12 @@
-import { Bell, Sparkles } from 'lucide-react';
+import { Bell } from 'lucide-react';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminErrorState, AdminNoticeCard } from '../../components/admin-surface';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminAppSessionDirectoryRow, AdminAppSessionSummary } from '../../lib/admin-api';
-import { adminGet } from '../../lib/admin-api';
+import { adminGetResult } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
 import { formatRelativeTime } from '../../lib/admin-format';
 import {
@@ -61,11 +63,14 @@ export default async function AppSessionsPage({
   searchParams?: AppSessionsPageSearchParams;
 }) {
   const filters = buildSessionFilters((await searchParams) ?? {});
-  const [loadedSessions, serverSummary] = await Promise.all([
-    adminGet<AdminAppSessionDirectoryRow[]>(buildAppSessionApiHref(filters), []),
-    adminGet<AdminAppSessionSummary | null>(buildAppSessionSummaryApiHref(filters), null),
+  const [sessionsResult, summaryResult] = await Promise.all([
+    adminGetResult<AdminAppSessionDirectoryRow[]>(buildAppSessionApiHref(filters), []),
+    adminGetResult<AdminAppSessionSummary | null>(buildAppSessionSummaryApiHref(filters), null),
   ]);
-  const sessions = loadedSessions;
+  const sessions = sessionsResult.data;
+  const serverSummary = summaryResult.data;
+  const dataAvailable = sessionsResult.ok && summaryResult.ok && serverSummary !== null;
+  const hasSessionData = dataAvailable && (serverSummary.totalCount > 0 || sessions.length > 0);
   const summary = buildSessionSummary(sessions, serverSummary);
   const roleRows = buildRoleRows(sessions);
   const platformRows = buildPlatformRows(sessions);
@@ -85,52 +90,76 @@ export default async function AppSessionsPage({
       contentClassName="app-sessions-page"
       actions={
         <>
-          <AdminFormControlLink className="button-secondary" href="/">
-            <Sparkles aria-hidden="true" size={16} />
-            Start Shift
-          </AdminFormControlLink>
           <AdminFormControlLink className="button-secondary" href="/notifications">
             <Bell aria-hidden="true" size={16} />
-            Notifications
+            Open notification delivery
           </AdminFormControlLink>
         </>
       }
       description="Customer and Partner app heartbeat view for live operations, support, and version follow-up."
-      metrics={summary.map(([label, value, detail]) => ({
-        helper: detail,
-        ...sessionSummaryMetricMeta(label),
-        label,
-        value,
-      }))}
-      title="App Sessions"
+      metrics={dataAvailable && hasSessionData
+        ? summary.map(([label, value, detail]) => ({
+            helper: detail,
+            ...sessionSummaryMetricMeta(label),
+            label,
+            value,
+          }))
+        : undefined}
+      title="App Session Diagnostics"
     >
 
-      <AppSessionsScopeSection
-        activeFilterHref={sessionFilterHref(filters)}
-        activeFilterLabel={activeFilterLabel}
-        filters={filters}
-        loadedCount={sessions.length}
-        quickFilters={sessionQuickFilters}
-        totalCount={serverSummary?.totalCount ?? loadedSessions.length}
-      />
+      {!dataAvailable ? (
+        <AdminErrorState
+          action={
+            <AdminFormControlLink href={sessionFilterHref(filters)}>
+              Retry session data
+            </AdminFormControlLink>
+          }
+          message="App session records or their summary could not be loaded. Retry before using this page for support decisions."
+          title="App session data unavailable"
+        />
+      ) : (
+        <>
+          <AppSessionsScopeSection
+            activeFilterHref={sessionFilterHref(filters)}
+            activeFilterLabel={activeFilterLabel}
+            filters={filters}
+            loadedCount={sessions.length}
+            quickFilters={sessionQuickFilters}
+            totalCount={serverSummary.totalCount}
+          />
 
-      <AppSessionsCommandBoardSection cards={commandCards} checkCount={checkRows.length} />
+          {!hasSessionData ? (
+            <AdminNoticeCard tone="info">
+              <AdminSectionHeader
+                description="No heartbeat records match the current filters. This is a data-empty state, not a system health confirmation."
+                title="No app session data"
+              />
+              <AdminEmptyState message="Change the role or freshness filter to inspect another session view." title={null} />
+            </AdminNoticeCard>
+          ) : (
+            <>
+              <AppSessionsCommandBoardSection cards={commandCards} checkCount={checkRows.length} />
 
-      <AppSessionsBreakdownSection
-        platformRows={platformRows}
-        roleRows={roleRows}
-        versionRows={versionRows}
-      />
+              <AppSessionsBreakdownSection
+                platformRows={platformRows}
+                roleRows={roleRows}
+                versionRows={versionRows}
+              />
 
-      <AppSessionsCheckQueueSection items={checkRows} />
+              <AppSessionsCheckQueueSection items={checkRows} />
 
-      <AdminTableSection
-        description="Sorted by last heartbeat. Live means the session expiry is still in the future."
-        status={<StatusBadge tone="info">{sessions.length} loaded</StatusBadge>}
-        title="Latest app sessions"
-      >
-        <AppSessionsTableSection emptyMessage="No app sessions loaded." pagination={sessionPagination} />
-      </AdminTableSection>
+              <AdminTableSection
+                description="Sorted by last heartbeat. Live means the session expiry is still in the future."
+                status={<StatusBadge tone="info">{sessions.length} loaded</StatusBadge>}
+                title="Latest app sessions"
+              >
+                <AppSessionsTableSection emptyMessage="No app sessions loaded." pagination={sessionPagination} />
+              </AdminTableSection>
+            </>
+          )}
+        </>
+      )}
     </AdminPageTemplate>
   );
 }

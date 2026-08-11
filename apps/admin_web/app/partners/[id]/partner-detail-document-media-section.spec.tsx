@@ -5,46 +5,37 @@ import {
 } from './partner-detail-document-media-section';
 
 describe('partner detail document and media sections', () => {
-  it('uses the partner detail Vuexy table panel atom for document and media shells', () => {
+  it('keeps typed KYC evidence compact and omits storage metadata', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-document-media-section.tsx', 'utf8');
 
-    expect(source).toContain('PartnerDetailVuexyTablePanel');
-    expect(source).not.toContain('AdminFilterPanel');
-    expect(source).not.toContain('partnerDetailReviewCardClassName');
-  });
-
-  it('uses the shared Vuexy empty-state atom', () => {
-    const source = readFileSync('app/partners/[id]/partner-detail-document-media-section.tsx', 'utf8');
-
+    expect(source).toContain('partner-document-compact-grid');
+    expect(source).toContain('partner-evidence-preview');
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('StatusBadgeFromPillClass');
-    expect(source).toContain('StatusBadge');
-    expect(source).not.toContain('statusBadgeToneFromPillClass');
-    expect(source).not.toContain('PillClassBadge');
-    expect(source).not.toContain('<strong>No evidence found</strong>');
-    expect(source).not.toContain('<span className={`pill ${document.statusTone}`}>{document.status}</span>');
-    expect(source).not.toContain('<span className="pill pill-success">{file.uploadStatus}</span>');
+    expect(source).not.toContain('uploadedAt');
+    expect(source).not.toContain('fileLabel');
+    expect(source).not.toContain('assetLabel');
+    expect(source).not.toContain('detailLabel');
+    expect(source).not.toContain('admin-table-scroll');
+    expect(source).not.toContain('document.reviewActions');
   });
 
-  it('renders typed onboarding documents in a Vuexy table with dropdown review actions', () => {
+  it('renders compact evidence with one overall approve or hold decision', () => {
     const section = PartnerDetailTypedDocumentsCard({
+      canApprove: true,
+      canReview: true,
+      decisionQueue: 'approval-pending',
+      hasKycRecord: true,
+      holdReason: 'Please upload a clearer identity photo.',
+      kycStatus: 'PENDING',
+      partnerId: 'partner-1',
       rows: [
         {
-          assetLabel: 'image/jpeg / 20 Jun 2026, 10:00',
           fileHref: '/files/file-1/open',
-          fileLabel: 'private/cccd-front.jpg',
+          previewable: true,
           id: 'doc-1',
           rejectionReason: 'Upload the full front side again.',
-          reviewActions: [
-            {
-              href: '/partners/partner-1?reviewAction=approve-document',
-              kind: 'link',
-              label: 'Approve doc',
-              tone: 'success',
-            },
-          ],
           reviewHint: 'Front side must match the KYC identity.',
-          reviewLabel: 'Document review actions for doc-1',
           status: 'PENDING_REVIEW',
           statusTone: 'pill-warn',
           typeLabel: 'CCCD front',
@@ -54,34 +45,45 @@ describe('partner detail document and media sections', () => {
 
     const rendered = normalizeSpaces(textContent(section));
 
+    expect(rendered).toContain('KYC evidence');
     expect(rendered).toContain('Typed documents');
-    expect(rendered).toContain('1 document(s)');
     expect(rendered).toContain('CCCD front');
     expect(rendered).toContain('Front side must match the KYC identity.');
-    expect(rendered).toContain('Partner app correction: Upload the full front side again.');
+    expect(rendered).toContain('Upload the full front side again.');
     expect(rendered).toContain('PENDING_REVIEW');
-    expect(hrefsIn(section)).toEqual(
-      expect.arrayContaining(['/files/file-1/open', '/partners/partner-1?reviewAction=approve-document']),
-    );
+    expect(rendered).toContain('Overall KYC review');
+    expect(rendered).toContain('Awaiting decision');
+    expect(rendered).toContain('Approve');
+    expect(rendered).toContain('Current hold reason: Please upload a clearer identity photo.');
+    expect(rendered).toContain('Put on hold');
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining([
+      '/files/file-1/open',
+      '/partners/partner-1?section=dossier&dossier=evidence&decisionQueue=approval-pending&providerId=partner-1&reviewAction=approve-kyc',
+      '/partners/partner-1?section=dossier&dossier=evidence&decisionQueue=approval-pending&providerId=partner-1&reviewAction=hold-kyc',
+    ]));
+    expect(hrefsIn(section)).not.toContain('/partners/partner-1?reviewAction=approve-document');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
-        'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
-        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
-        'files-open-action',
-        'admin-action-dropdown action-menu-dropdown',
+        'card admin-card partner-detail-evidence-card',
+        'partner-document-compact-grid',
+        'partner-document-compact-item',
+        'partner-evidence-preview',
+        'partner-evidence-preview-placeholder',
+        'partner-kyc-overall-decision',
       ]),
     );
+    expect(inputNamesIn(section)).toEqual([]);
   });
 
-  it('renders public profile media in the same table pattern', () => {
+  it('renders ordered public photos with upload, review, move, and delete controls', () => {
     const section = PartnerDetailPublicProfileMediaCard({
+      canEdit: true,
+      canReview: true,
+      partnerId: 'partner-1',
       rows: [
         {
-          detailLabel: 'image/png / 200 KB / uploaded 20 Jun 2026, 10:00',
           fileHref: 'https://cdn.example.test/profile.png',
-          fileLabel: 'public/profile.png',
+          previewable: true,
           id: 'media-1',
           reviewActions: [
             {
@@ -92,98 +94,107 @@ describe('partner detail document and media sections', () => {
             },
           ],
           reviewLabel: 'Media review actions for media-1',
-          reviewedLabel: null,
-          reviewReason: null,
           reviewStatus: 'APPROVED',
           reviewStatusTone: 'pill-success',
-          uploadStatus: 'UPLOADED',
           typeLabel: 'Profile image',
+        },
+        {
+          fileHref: 'https://cdn.example.test/work.png',
+          previewable: true,
+          id: 'media-2',
+          reviewActions: [],
+          reviewLabel: 'Media review actions for media-2',
+          reviewStatus: 'APPROVED',
+          reviewStatusTone: 'pill-success',
+          typeLabel: 'Work photo',
+        },
+      ],
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+    const names = inputNamesIn(section);
+    const ariaLabels = ariaLabelsIn(section);
+
+    expect(rendered).toContain('Customer app');
+    expect(rendered).toContain('Public profile media');
+    expect(rendered).toContain('Photo type');
+    expect(rendered).toContain('Add photo');
+    expect(rendered).toContain('APPROVED');
+    expect(names).toEqual(expect.arrayContaining(['providerId', 'purpose', 'photo', 'fileId', 'fileIds', 'direction']));
+    expect(ariaLabels).toEqual(
+      expect.arrayContaining([
+        'Move Profile image left',
+        'Move Profile image right',
+        'Delete Profile image',
+        'Move Work photo left',
+        'Move Work photo right',
+        'Delete Work photo',
+      ]),
+    );
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining([
+        'https://cdn.example.test/profile.png',
+        'https://cdn.example.test/work.png',
+        '/partners/partner-1?reviewAction=approve-media',
+        '/partners/partner-1?section=dossier&dossier=evidence&providerId=partner-1&reviewAction=delete-media&fileId=media-1',
+      ]),
+    );
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-card partner-detail-public-media-card',
+        'partner-public-media-grid',
+        'partner-public-media-item',
+        'partner-public-media-order-actions',
+      ]),
+    );
+  });
+
+  it('does not expose raw media URLs or upload timestamps as visible copy', () => {
+    const section = PartnerDetailPublicProfileMediaCard({
+      canEdit: true,
+      canReview: true,
+      partnerId: 'partner-1',
+      rows: [
+        {
+          fileHref: 'https://cdn.example.test/private-looking-key.png',
+          id: 'media-1',
+          previewable: true,
+          reviewActions: [],
+          reviewLabel: 'Media review actions for media-1',
+          reviewStatus: 'APPROVED',
+          reviewStatusTone: 'pill-success',
+          typeLabel: 'Work photo',
         },
       ],
     });
 
     const rendered = normalizeSpaces(textContent(section));
 
-    expect(rendered).toContain('Public profile media');
-    expect(rendered).toContain('1 asset(s)');
-    expect(rendered).toContain('Profile image');
-    expect(rendered).toContain('UPLOADED');
-    expect(rendered).toContain('APPROVED');
-    expect(hrefsIn(section)).toEqual(
-      expect.arrayContaining([
-        'https://cdn.example.test/profile.png',
-        '/partners/partner-1?reviewAction=approve-media',
-      ]),
-    );
-    expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
-        'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
-        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
-        'pill pill-success',
-      ]),
-    );
+    expect(rendered).not.toContain('https://cdn.example.test/private-looking-key.png');
+    expect(rendered).not.toContain('uploaded');
+    expect(rendered).not.toContain('reviewed');
   });
 
-  it('prefers shared date nodes over fallback document and media date text', () => {
-    const typedDocuments = PartnerDetailTypedDocumentsCard({
-      rows: [
-        {
-          assetLabel: 'Fallback document uploaded date',
-          assetLabelNode: <span>Shared document uploaded date marker</span>,
-          fileHref: '/files/file-2/open',
-          fileLabel: 'private/cccd-back.jpg',
-          id: 'doc-2',
-          rejectionReason: null,
-          reviewActions: [],
-          reviewHint: 'Back side must match the KYC identity.',
-          reviewLabel: 'Document review actions for doc-2',
-          status: 'APPROVED',
-          statusTone: 'pill-success',
-          typeLabel: 'CCCD back',
-        },
-      ],
+  it('keeps KYC and public media read-only without edit permissions', () => {
+    const kyc = PartnerDetailTypedDocumentsCard({
+      canApprove: false,
+      canReview: false,
+      hasKycRecord: true,
+      kycStatus: 'DRAFT',
+      partnerId: 'partner-1',
+      rows: [],
     });
-    const publicMedia = PartnerDetailPublicProfileMediaCard({
-      rows: [
-        {
-          detailLabel: 'Fallback media uploaded date',
-          detailLabelNode: <span>Shared media uploaded date marker</span>,
-          fileHref: 'https://cdn.example.test/work.png',
-          fileLabel: 'public/work.png',
-          id: 'media-2',
-          reviewActions: [],
-          reviewLabel: 'Media review actions for media-2',
-          reviewedLabel: 'Fallback reviewed date',
-          reviewedLabelNode: <span>Shared reviewed date marker</span>,
-          reviewReason: null,
-          reviewStatus: 'APPROVED',
-          reviewStatusTone: 'pill-success',
-          uploadStatus: 'UPLOADED',
-          typeLabel: 'Work photo',
-        },
-      ],
+    const media = PartnerDetailPublicProfileMediaCard({
+      canEdit: false,
+      canReview: false,
+      partnerId: 'partner-1',
+      rows: [],
     });
-    const rendered = normalizeSpaces(`${textContent(typedDocuments)} ${textContent(publicMedia)}`);
-    const source = readFileSync('app/partners/[id]/partner-detail-document-media-section.tsx', 'utf8');
-    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
-    expect(rendered).toContain('Shared document uploaded date marker');
-    expect(rendered).toContain('Shared media uploaded date marker');
-    expect(rendered).toContain('Shared reviewed date marker');
-    expect(rendered).not.toContain('Fallback document uploaded date');
-    expect(rendered).not.toContain('Fallback media uploaded date');
-    expect(rendered).not.toContain('Fallback reviewed date');
-    expect(source).toContain('readonly assetLabelNode?: ReactNode;');
-    expect(source).toContain('readonly detailLabelNode?: ReactNode;');
-    expect(source).toContain('readonly reviewedLabelNode?: ReactNode;');
-    expect(source).toContain('document.assetLabelNode ?? marketplaceDisplayText(document.assetLabel)');
-    expect(source).toContain('file.detailLabelNode ?? file.detailLabel');
-    expect(source).toContain('file.reviewedLabelNode ?? file.reviewedLabel');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={document.fileAsset.uploadedAt} />');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={file.uploadedAt} />');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={file.reviewedAt} />');
+    expect(normalizeSpaces(textContent(kyc))).toContain('Read-only KYC evidence');
+    expect(normalizeSpaces(textContent(media))).toContain('Read-only public profile media');
+    expect(inputNamesIn(kyc)).toEqual([]);
+    expect(inputNamesIn(media)).toEqual([]);
   });
 });
 
@@ -205,33 +216,34 @@ function textContent(value: unknown): string {
 }
 
 function hrefsIn(value: unknown): string[] {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value !== 'object') {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap(hrefsIn);
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  const href = typeof props?.href === 'string' ? [props.href] : [];
-  return [...href, ...hrefsIn(props?.children)];
+  return stringPropsIn(value, 'href');
 }
 
 function classNamesIn(value: unknown): string[] {
+  return stringPropsIn(value, 'className');
+}
+
+function inputNamesIn(value: unknown): string[] {
+  return stringPropsIn(value, 'name');
+}
+
+function ariaLabelsIn(value: unknown): string[] {
+  return stringPropsIn(value, 'aria-label');
+}
+
+function stringPropsIn(value: unknown, key: string): string[] {
   value = resolveElement(value);
   if (value === null || value === undefined || typeof value !== 'object') {
     return [];
   }
   if (Array.isArray(value)) {
-    return value.flatMap(classNamesIn);
+    return value.flatMap((item) => stringPropsIn(item, key));
   }
 
   const record = readRecord(value);
   const props = readRecord(record?.props);
-  const className = typeof props?.className === 'string' ? [props.className] : [];
-  return [...className, ...classNamesIn(props?.children)];
+  const own = typeof props?.[key] === 'string' ? [props[key] as string] : [];
+  return [...own, ...stringPropsIn(props?.children, key)];
 }
 
 function normalizeSpaces(value: string): string {

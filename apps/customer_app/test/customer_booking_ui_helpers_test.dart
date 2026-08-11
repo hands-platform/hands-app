@@ -10,7 +10,9 @@ void main() {
       );
     });
 
-    test('blocks cancel after a partner accepts', () {
+    test(
+        'keeps cancel available while a marketplace partner awaits customer selection',
+        () {
       expect(
         canCustomerDirectlyCancelBooking({
           'status': 'OPEN_MATCHING',
@@ -18,7 +20,7 @@ void main() {
             {'status': 'ACCEPTED'},
           ],
         }),
-        isFalse,
+        isTrue,
       );
     });
 
@@ -31,6 +33,13 @@ void main() {
         isFalse,
       );
       expect(customerCancellationNeedsOpsReview('MATCHED'), isTrue);
+      expect(
+        canCustomerDirectlyCancelBooking({
+          'status': 'IN_SERVICE',
+          'selectedProviderId': 'partner-1',
+        }),
+        isFalse,
+      );
     });
   });
 
@@ -66,7 +75,8 @@ void main() {
       );
     });
 
-    test('allows joined marketplace participants for final customer choice', () {
+    test('allows joined marketplace participants for final customer choice',
+        () {
       expect(
         customerParticipantSelectableForFinalChoice(
           {
@@ -149,6 +159,152 @@ void main() {
           'chatRoom': {'id': 'room-1'},
         }),
         isFalse,
+      );
+    });
+  });
+
+  group('customer booking list presentation', () {
+    final bookings = <Map<String, dynamic>>[
+      {'id': 'active-1', 'status': 'OPEN_MATCHING'},
+      {'id': 'active-2', 'status': 'IN_SERVICE'},
+      {'id': 'history-1', 'status': 'COMPLETED'},
+      {'id': 'history-2', 'status': 'CANCELLED'},
+    ];
+
+    test('separates active work from booking history', () {
+      expect(
+        customerBookingsForListTab(
+          bookings,
+          CustomerBookingListTab.active,
+        ).map((booking) => booking['id']),
+        ['active-1', 'active-2'],
+      );
+      expect(
+        customerBookingsForListTab(
+          bookings,
+          CustomerBookingListTab.history,
+        ).map((booking) => booking['id']),
+        ['history-1', 'history-2'],
+      );
+    });
+
+    test('filters booking history by customer outcome', () {
+      final history = [
+        {'id': 'completed', 'status': 'COMPLETED'},
+        {'id': 'cancelled', 'status': 'CANCELLED'},
+        {'id': 'expired', 'status': 'EXPIRED'},
+        {'id': 'no-show', 'status': 'NO_SHOW'},
+        {'id': 'refunded', 'status': 'REFUNDED'},
+      ];
+
+      expect(
+        customerBookingsForHistoryFilter(
+          history,
+          CustomerBookingHistoryFilter.completed,
+        ).map((booking) => booking['id']),
+        ['completed'],
+      );
+      expect(
+        customerBookingsForHistoryFilter(
+          history,
+          CustomerBookingHistoryFilter.notCompleted,
+        ).map((booking) => booking['id']),
+        ['cancelled', 'expired', 'no-show'],
+      );
+      expect(
+        customerBookingsForHistoryFilter(
+          history,
+          CustomerBookingHistoryFilter.refunded,
+        ).map((booking) => booking['id']),
+        ['refunded'],
+      );
+    });
+
+    test('uses customer-facing status and payment labels', () {
+      expect(customerBookingStatusLabel('OPEN_MATCHING'), 'Finding a partner');
+      expect(customerBookingStatusLabel('PROVIDER_ON_THE_WAY'), 'On the way');
+      expect(customerBookingStatusLabel('REFUNDED'), 'Refunded');
+      expect(
+        customerBookingPaymentLabel({
+          'payment': {'method': 'MOMO'},
+        }),
+        'MoMo',
+      );
+    });
+
+    test('formats same-day and historical booking dates', () {
+      final now = DateTime(2026, 7, 28, 12);
+      expect(
+        formatCustomerBookingListMoment(
+          '2026-07-28T09:15:00',
+          now: now,
+        ),
+        'Today, 9:15 AM',
+      );
+      expect(
+        formatCustomerBookingListMoment(
+          '2026-07-22T18:05:00',
+          now: now,
+        ),
+        'Jul 22, 6:05 PM',
+      );
+    });
+
+    test('does not expose marketplace policy in the next action', () {
+      expect(
+        customerBookingNextAction({'status': 'OPEN_MATCHING'}),
+        'Waiting for confirmation. We will notify you when a partner accepts.',
+      );
+    });
+
+    test('keeps expired booking copy customer-facing', () {
+      expect(waitingStepLabel('EXPIRED'), 'Not confirmed');
+      expect(
+        waitingCustomerAction(
+          status: 'EXPIRED',
+          fallbackCount: 0,
+          hasChatRoom: false,
+        ).body,
+        'No partner confirmed this request in time.',
+      );
+    });
+
+    test('explains preferred partner rejection and no-response closure', () {
+      expect(
+        waitingCustomerAction(
+          status: 'CANCELLED',
+          fallbackCount: 0,
+          hasChatRoom: false,
+          cancellationReasonCode: 'PREFERRED_PARTNER_DECLINED',
+        ).title,
+        'Partner unavailable',
+      );
+      expect(
+        waitingCustomerAction(
+          status: 'EXPIRED',
+          fallbackCount: 0,
+          hasChatRoom: false,
+          cancellationReasonCode: 'PARTNER_RESPONSE_EXPIRED',
+        ).title,
+        'Partner did not respond',
+      );
+    });
+
+    test('formats the server deadline as MM:SS', () {
+      final now = DateTime.utc(2026, 8, 3, 10);
+      expect(
+        formatRemainingTime(
+          now.add(const Duration(minutes: 9, seconds: 7)).toIso8601String(),
+          now: now,
+        ),
+        '09:07',
+      );
+      expect(
+        formatRemainingTime(
+          now.subtract(const Duration(seconds: 1)).toIso8601String(),
+          now: now,
+        ),
+        '00:00',
       );
     });
   });

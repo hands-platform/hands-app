@@ -26,12 +26,10 @@ export function PayoutCommandQueueSection({ signals }: PayoutCommandQueueSection
       description="Finance-first view for review money, active transfers, payout holds, and reconciliation warnings."
       resultLabel={`${signals.length} signal(s)`}
       resultTone={signals.length > 0 ? 'warning' : 'success'}
-      title="Payout command queue"
+      title="Needs action"
     >
       <AdminFilterChipGroup ariaLabel="Payout command queue links" className="admin-mb-12">
-        <AdminTextLink href="/earnings">
-          Review earnings queue
-        </AdminTextLink>
+        <AdminTextLink href="/earnings">Review earnings queue</AdminTextLink>
       </AdminFilterChipGroup>
       {signals.length ? (
         <AdminTaskGrid>

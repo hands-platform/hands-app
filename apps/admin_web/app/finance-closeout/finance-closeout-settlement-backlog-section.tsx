@@ -7,14 +7,14 @@ import {
 } from '../../components/admin-data-table';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
-import {
-  AdminFormCheckbox,
-  AdminFormControlButton,
-  AdminFormControlStack,
-  AdminFormShell,
-} from '../../components/admin-form-controls';
+import { AdminFormControlStack } from '../../components/admin-form-controls';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
+import {
+  FinanceCloseoutSettlementSelectionAction,
+  FinanceCloseoutSettlementSelectionCheckbox,
+  FinanceCloseoutSettlementSelectionForm,
+} from './finance-closeout-settlement-selection-controls';
 
 type SettlementBacklogPagination = {
   readonly from: number;
@@ -49,20 +49,11 @@ export function FinanceCloseoutSettlementBacklogSection({
   rows,
 }: FinanceCloseoutSettlementBacklogSectionProps) {
   return (
-    <AdminFormShell action="/finance-closeout" method="get">
-      <input name="q" type="hidden" value={reviewFormState.q} />
-      <input name="range" type="hidden" value={reviewFormState.range} />
-      <input name="settlementAge" type="hidden" value={reviewFormState.settlementAge} />
-      <input name="settlementPage" type="hidden" value={String(reviewFormState.settlementPage)} />
-      <input name="settlementPaymentMethod" type="hidden" value={reviewFormState.settlementPaymentMethod} />
-      <input name="settlementPeriod" type="hidden" value={reviewFormState.settlementPeriod} />
-      <input name="settlementTrack" type="hidden" value={reviewFormState.settlementTrack} />
+    <FinanceCloseoutSettlementSelectionForm formState={reviewFormState}>
       <AdminTableSection
         actions={
           <AdminFormControlStack>
-            <AdminFormControlButton className="button-secondary" type="submit">
-              Review selected
-            </AdminFormControlButton>
+            <FinanceCloseoutSettlementSelectionAction />
             <AdminTextLink href="/finance-tax/booking-settlement-audit">
               Open settlement records
             </AdminTextLink>
@@ -70,36 +61,41 @@ export function FinanceCloseoutSettlementBacklogSection({
         }
         bodyClassName="admin-table-section-body"
         description="Completed bookings without a settlement snapshot, ordered oldest first. Select up to 10 visible rows for a read-only eligibility comparison, or open one governed repair flow."
+        id="settlement-repair-backlog"
         scrollable
         title="Settlement backlog"
       >
         <AdminDataTable
+          className="finance-closeout-settlement-table"
           emptyMessage="No settlement gaps match this queue."
           headers={[
             'Select',
-            'Booking',
-            'Customer',
-            'Partner',
+            'Booking / parties',
             'Gap age',
             'Payment',
             'Repair track / earning',
-            'Actions',
+            'Next action',
           ]}
           rowCount={rows.length}
         >
           {rows.map((row) => (
             <tr key={row.id}>
               <td>
-                <AdminFormCheckbox label={`Select ${row.id}`} name="reviewBookingId" value={row.id} />
+                <FinanceCloseoutSettlementSelectionCheckbox bookingId={row.id} />
               </td>
               <td>
                 <AdminTableSubstack>
-                  <strong>{row.id}</strong>
+                  <AdminTextLink
+                    href={`/bookings/${encodeURIComponent(row.id)}`}
+                    title={row.id}
+                  >
+                    {shortBookingId(row.id)}
+                  </AdminTextLink>
                   <span className="muted">Completed / snapshot missing</span>
+                  <span>Customer · {customerLabel(row)}</span>
+                  <span>Partner · {partnerLabel(row)}</span>
                 </AdminTableSubstack>
               </td>
-              <td>{customerLabel(row)}</td>
-              <td>{partnerLabel(row)}</td>
               <td>
                 <AdminTableSubstack>
                   <StatusBadge tone={ageBucketTone(row.ageBucket)}>
@@ -135,10 +131,7 @@ export function FinanceCloseoutSettlementBacklogSection({
                 </AdminTableSubstack>
               </td>
               <td>
-                <AdminTableSubstack>
-                  <AdminTextLink href={hrefForRepair(row.id)}>Preview repair</AdminTextLink>
-                  <AdminTextLink href={`/bookings/${encodeURIComponent(row.id)}`}>Open booking</AdminTextLink>
-                </AdminTableSubstack>
+                <AdminTextLink href={hrefForRepair(row.id)}>Preview repair</AdminTextLink>
               </td>
             </tr>
           ))}
@@ -154,8 +147,12 @@ export function FinanceCloseoutSettlementBacklogSection({
           totalRows={pagination.totalRows}
         />
       </AdminTableSection>
-    </AdminFormShell>
+    </FinanceCloseoutSettlementSelectionForm>
   );
+}
+
+function shortBookingId(bookingId: string) {
+  return bookingId.length > 16 ? `…${bookingId.slice(-15)}` : bookingId;
 }
 
 function customerLabel(row: AdminBookingSettlementGap) {
@@ -206,7 +203,7 @@ function repairTrackLabel(track: AdminBookingSettlementGap['repairTrack']) {
     case 'canonical':
       return 'Canonical';
     case 'historical-ready':
-      return 'Historical ready';
+      return 'Historical policy review';
     case 'evidence-blocked':
       return 'Evidence blocked';
     case 'manual-review':
@@ -215,7 +212,7 @@ function repairTrackLabel(track: AdminBookingSettlementGap['repairTrack']) {
 }
 
 function repairTrackTone(track: AdminBookingSettlementGap['repairTrack']): StatusBadgeTone {
-  if (track === 'historical-ready') return 'success';
+  if (track === 'historical-ready') return 'warning';
   if (track === 'evidence-blocked') return 'danger';
   if (track === 'manual-review') return 'warning';
   return 'info';

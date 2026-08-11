@@ -98,7 +98,7 @@ export const FINANCE_CLOSEOUT_SETTLEMENT_TRACK_OPTIONS: ReadonlyArray<{
   value: FinanceCloseoutSettlementTrack;
 }> = [
   { label: 'Canonical', value: 'canonical' },
-  { label: 'Historical evidence ready', value: 'historical-ready' },
+  { label: 'Historical policy review', value: 'historical-ready' },
   { label: 'Evidence blocked', value: 'evidence-blocked' },
   { label: 'Manual review', value: 'manual-review' },
   { label: 'All repair tracks', value: 'all' },
@@ -453,7 +453,7 @@ export function buildFinanceCloseoutFilters(params: Record<string, string | stri
     params.settlementTrack,
   ].some((value) => (Array.isArray(value) ? value.length > 0 : Boolean(value)));
   const workspace: FinanceCloseoutWorkspace =
-    requestedWorkspace === 'settlement' || hasLegacySettlementIntent ? 'settlement' : 'operations';
+    requestedWorkspace === 'operations' && !hasLegacySettlementIntent ? 'operations' : 'settlement';
   const settlementMode: FinanceCloseoutSettlementMode = hasSettlementQueueIntent
     ? 'queue'
     : requestedSettlementMode === 'batch' || hasSettlementBatchIntent
@@ -513,16 +513,26 @@ export function buildFinanceCloseoutApiHrefs(filters: ReturnType<typeof buildFin
     settlementGapQuery.set('paymentMethod', filters.settlementPaymentMethod);
   }
   const settlementDryRunQuery = new URLSearchParams({ take: '100' });
+  const settlementSummaryQuery = new URLSearchParams();
+  if (filters.settlementMode === 'queue') {
+    settlementSummaryQuery.set('age', filters.settlementAge);
+    settlementSummaryQuery.set('track', filters.settlementTrack);
+  }
+  if (filters.settlementQuery) {
+    settlementSummaryQuery.set('q', filters.settlementQuery);
+  }
   if (filters.settlementPeriod !== 'all') {
     settlementDryRunQuery.set('period', filters.settlementPeriod);
+    settlementSummaryQuery.set('period', filters.settlementPeriod);
   }
   if (filters.settlementPaymentMethod !== 'all') {
     settlementDryRunQuery.set('paymentMethod', filters.settlementPaymentMethod);
+    settlementSummaryQuery.set('paymentMethod', filters.settlementPaymentMethod);
   }
 
   return {
     bookingSettlementGapDryRunHref: `/admin/booking-settlement-gaps/dry-run?${settlementDryRunQuery.toString()}`,
-    bookingSettlementGapSummaryHref: '/admin/booking-settlement-gaps/summary',
+    bookingSettlementGapSummaryHref: `/admin/booking-settlement-gaps/summary${settlementSummaryQuery.size ? `?${settlementSummaryQuery.toString()}` : ''}`,
     bookingSettlementGapsHref: `/admin/booking-settlement-gaps?${settlementGapQuery.toString()}`,
     cashSettlementSummaryHref: `/admin/cash-settlement-summary?range=${filters.range}`,
     earningsHref: `/admin/earnings?${earningQuery.toString()}`,
@@ -570,7 +580,7 @@ export function buildFinanceCloseoutPageHref(
 }
 
 export function buildFinanceCloseoutOperationsHref(range: AdminDateRange) {
-  return range === 'today' ? '/finance-closeout' : `/finance-closeout?range=${range}`;
+  return `/finance-overview?range=${range}`;
 }
 
 export function buildFinanceCloseoutSettlementRepairHref(

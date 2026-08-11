@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 
 import { adminGet } from '../../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
-import BankReconciliationPage from './page';
+import BankReconciliationPage, { generateMetadata } from './page';
 
 vi.mock('next/navigation', async () => {
   const actual = await vi.importActual<typeof import('next/navigation')>('next/navigation');
@@ -29,6 +29,7 @@ const mockedAdminGet = vi.mocked(adminGet);
 const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAccess);
 const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8');
 const batchSource = readFileSync(join(__dirname, 'bank-statement-batch-import.tsx'), 'utf8');
+const selectionSource = readFileSync(join(__dirname, 'bank-reconciliation-selection-summary.tsx'), 'utf8');
 const globalCss = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
 
 describe('BankReconciliationPage', () => {
@@ -52,7 +53,7 @@ describe('BankReconciliationPage', () => {
           unmatchedCount: 0,
         };
       }
-      if (href === '/admin/bank-reconciliation?range=today&take=10&review=unmatched') {
+      if (href === '/admin/bank-reconciliation?range=all&take=10&review=unmatched') {
         return [];
       }
       if (href === '/admin/company-bank-accounts?status=ACTIVE') {
@@ -83,6 +84,27 @@ describe('BankReconciliationPage', () => {
     expect(source).not.toContain('metrics={[');
   });
 
+  it('connects bank transactions to the four-part payment matching workspace', () => {
+    expect(source).toContain('ariaLabel="Payment matching workspace"');
+    expect(source).toContain('paymentMatchingTabLabel(');
+    expect(source).toContain("'Bank transactions',");
+    expect(source).toContain("'Unmatched payment evidence',");
+    expect(source).toContain("'Partial matches',");
+    expect(source).toContain("'Cleared & reversed history',");
+  });
+
+  it('uses workspace-specific document titles for bank operations', async () => {
+    await expect(generateMetadata({ searchParams: Promise.resolve({}) })).resolves.toEqual({
+      title: 'Bank Transactions',
+    });
+    await expect(generateMetadata({ searchParams: Promise.resolve({ workspace: 'imports' }) })).resolves.toEqual({
+      title: 'Bank Statement Imports',
+    });
+    await expect(generateMetadata({ searchParams: Promise.resolve({ workspace: 'manual' }) })).resolves.toEqual({
+      title: 'Manual Bank Entry',
+    });
+  });
+
   it('keeps review assignment separate from reconciliation state-changing actions', () => {
     expect(source).toContain('<ConfirmDialog');
     expect(source).toContain("'Reassign owner'");
@@ -97,9 +119,81 @@ describe('BankReconciliationPage', () => {
     expect(source).toContain('reason.length < 12');
   });
 
+  it('supports bounded bulk review assignment from unresolved queues without changing reconciliation state', () => {
+    expect(source).toContain('assignBankTransactionReviewsAction');
+    expect(source).toContain('adminPostOrThrow<BankReviewAssignmentResult>');
+    expect(source).toContain("'/admin/bank-reconciliation/review-assignments'");
+    expect(source).toContain(".getAll('bankTransactionIds')");
+    expect(source).toContain('bankTransactionIds.length > 50');
+    expect(selectionSource).toContain('Assign selected');
+    expect(source).toContain('name="bankTransactionIds"');
+    expect(selectionSource).toContain('Closed or changed records are rejected');
+    expect(source).toContain('bankReconciliationReviewNeedsOwner(filters.review)');
+  });
+
+  it('renders selection controls without loading owner options until the operator selects work', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/bank-reconciliation?range=all&take=10&review=unmatched') {
+        return [
+          {
+            _count: { reconciliationMatches: 0 },
+            amount: 250000,
+            bankAccountId: 'bank-account-1',
+            createdAt: '2026-07-20T03:00:00.000Z',
+            currency: 'VND',
+            id: 'bank-bulk-target',
+            occurredAt: '2026-07-20T03:00:00.000Z',
+            sourceKey: 'bank-inflow:bulk-target',
+            status: 'UNMATCHED',
+            type: 'INFLOW',
+            updatedAt: '2026-07-20T03:00:00.000Z',
+          },
+        ];
+      }
+      if (href === '/admin/users?take=50&role=ADMIN&view=finance-approver-directory') {
+        return [
+          {
+            adminOperatorPermission: {
+              categories: ['FINANCE_BANK_RECONCILIATION'],
+              id: 'permission-1',
+              updatedAt: '2026-07-20T00:00:00.000Z',
+            },
+            email: 'owner@example.com',
+            fullName: 'Reconciliation Owner',
+            id: 'owner-1',
+            roles: ['ADMIN'],
+          },
+        ];
+      }
+      return fallback;
+    });
+
+    const page = await BankReconciliationPage({});
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Select all visible');
+    expect(markup).toContain('0 selected');
+    expect(markup).not.toContain('Assign selected to');
+    expect(markup).toContain('name="bankTransactionIds"');
+    expect(markup).toContain('value="bank-bulk-target"');
+    expect(markup).toContain('data-bank-selection-amount="250000"');
+    expect(markup).toContain('data-has-selection="false"');
+    expect(markup).not.toContain('finance-bank-bulk-controls');
+    expect(selectionSource).toContain('loadOwnerOptionsRef.current()');
+    expect(selectionSource).toContain('const shouldSelect = summary.count === 0');
+    expect(selectionSource).toContain('disabled={!canSubmit}');
+    expect(mockedAdminGet).not.toHaveBeenCalledWith(
+      '/admin/users?take=50&role=ADMIN&view=finance-approver-directory',
+      [],
+    );
+  });
+
   it('confirms list review reassignment while preserving queue scope and excluding the current owner', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/bank-reconciliation?range=30d&take=10&review=outflow&candidate=eligible') {
+      if (
+        href ===
+        '/admin/bank-reconciliation?range=30d&take=10&review=unmatched&type=OUTFLOW&candidate=eligible'
+      ) {
         return [
           {
             _count: { reconciliationMatches: 0 },
@@ -176,7 +270,8 @@ describe('BankReconciliationPage', () => {
         candidate: 'eligible',
         confirm: 'review-owner',
         range: '30d',
-        review: 'outflow',
+        review: 'unmatched',
+        type: 'OUTFLOW',
       }),
     });
     const markup = renderToStaticMarkup(page);
@@ -184,10 +279,15 @@ describe('BankReconciliationPage', () => {
     expect(markup).toContain('Reassign bank reconciliation review?');
     expect(markup).toContain('Assignment reason');
     expect(markup).toContain('minLength="12"');
-    expect(markup).toContain('<option value="owner-1" selected="">Current Operator · current@example.com</option>');
+    expect(markup).toContain(
+      '<option value="" selected="">Select an eligible Finance operator</option>',
+    );
+    expect(markup).toContain('<option value="owner-1">Current Operator · current@example.com</option>');
     expect(markup).not.toContain('<option value="owner-2">');
     expect(markup).toContain('<option value="owner-3">Alternate Operator · alternate@example.com</option>');
-    expect(markup).toContain('href="/finance-tax/bank-reconciliation?range=30d&amp;review=outflow&amp;candidate=eligible"');
+    expect(markup).toContain(
+      'href="/finance-tax/bank-reconciliation?range=30d&amp;review=unmatched&amp;type=OUTFLOW&amp;candidate=eligible"',
+    );
     expect(markup).toContain('confirm=review-owner&amp;bankTransactionId=bank-review-target');
     expect(markup).not.toContain('>Assign review</summary>');
   });
@@ -229,6 +329,17 @@ describe('BankReconciliationPage', () => {
     expect(batchSource).toContain('sourceFileSha256');
     expect(batchSource).toContain('mappingPreset: preset');
     expect(batchSource).toContain('Batch ID:');
+    expect(batchSource).toContain('Statement import preview facts');
+    expect(batchSource).toContain('<dt>Account</dt>');
+    expect(batchSource).toContain('<dt>Currency</dt>');
+    expect(batchSource).toContain('<dt>Statement period</dt>');
+    expect(batchSource).toContain('<dt>Upload file</dt>');
+    expect(batchSource).toContain('<dt>Statement rows</dt>');
+    expect(batchSource).toContain('<dt>Total parsed amount</dt>');
+    expect(batchSource).toContain('<dt>Duplicate candidates</dt>');
+    expect(batchSource).toContain('<dt>Parsing errors</dt>');
+    expect(batchSource).toContain('<dt>Expected creations</dt>');
+    expect(batchSource).toContain('<dt>File fingerprint</dt>');
     expect(source).toContain('Bank statement import history');
     expect(source).toContain('/admin/bank-reconciliation/import-batches?${search.toString()}');
     expect(source).toContain('File contents are not retained.');
@@ -245,10 +356,12 @@ describe('BankReconciliationPage', () => {
     expect(source).toContain('reconciliationNeedsActionCount');
     expect(source).toContain('reconciliationProgressPercent');
     expect(source).toContain('need action');
-    expect(source).toContain('buildFinanceApproverOptions(adminUsers, currentOperatorId)');
-    expect(source).toContain('financeApproverOptions={financeApproverOptions}');
-    expect(batchSource).toContain('label="Separate Finance approver"');
-    expect(batchSource).not.toContain('Approving admin ID');
+    expect(source).not.toContain('buildFinanceApproverOptions(adminUsers, currentOperatorId)');
+    expect(source).not.toContain('financeApproverOptions={financeApproverOptions}');
+    expect(batchSource).not.toContain('label="Separate Finance approver"');
+    expect(batchSource).not.toContain('approvalAdminId');
+    expect(batchSource).toContain('signed-in importing operator');
+    expect(source).toContain('Required at reconciliation');
   });
 
   it('shows batch reconciliation priority before opening the batch detail', async () => {
@@ -302,7 +415,7 @@ describe('BankReconciliationPage', () => {
     expect(markup).toContain('50% complete');
     expect(markup).toContain('1/2');
     expect(markup).toContain('/finance-tax/bank-reconciliation/import-batches/batch-priority-1');
-    expect(mockedAdminGet).toHaveBeenCalledWith(
+    expect(mockedAdminGet).not.toHaveBeenCalledWith(
       '/admin/users?take=50&role=ADMIN&view=finance-approver-directory',
       [],
     );
@@ -390,17 +503,21 @@ describe('BankReconciliationPage', () => {
         importRange: '30d',
         importReview: 'stale',
         range: '30d',
-        review: 'outflow',
+        review: 'unmatched',
         workspace: 'imports',
       }),
     });
     const markup = renderToStaticMarkup(page);
-    const cleanReturnHref = '/finance-tax/bank-reconciliation?workspace=imports&amp;range=30d&amp;review=outflow&amp;candidate=eligible&amp;importQ=VCB&amp;importRange=30d&amp;importReview=stale&amp;importPage=2';
+    const cleanReturnHref =
+      '/finance-tax/bank-reconciliation?workspace=imports&amp;range=30d&amp;review=unmatched&amp;importQ=VCB&amp;importRange=30d&amp;importReview=stale&amp;importPage=2';
 
     expect(markup).toContain('Reassign bank statement batch review?');
     expect(markup).toContain('VCB-July.csv has 1 open transaction(s)');
     expect(markup).toContain('minLength="12"');
-    expect(markup).toContain('<option value="owner-1" selected="">Current Operator · current@example.com</option>');
+    expect(markup).toContain(
+      '<option value="" selected="">Select an eligible Finance operator</option>',
+    );
+    expect(markup).toContain('<option value="owner-1">Current Operator · current@example.com</option>');
     expect(markup).not.toContain('<option value="owner-2">');
     expect(markup).toContain('<option value="owner-3">Alternate Operator · alternate@example.com</option>');
     expect(markup).toContain(`href="${cleanReturnHref}"`);
@@ -450,7 +567,210 @@ describe('BankReconciliationPage', () => {
     expect(markup).toContain('>Clear</a>');
   });
 
-  it('applies withdrawal candidate priority to rows, summary totals, links, and pagination', async () => {
+  it('filters list and summary by linked evidence source and renders the retained source', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (
+        href ===
+          '/admin/bank-reconciliation/summary?range=30d&review=matched&type=INFLOW&source=PAYMENT_CLEARING' ||
+        href === '/admin/bank-reconciliation/summary?range=30d&type=INFLOW&source=PAYMENT_CLEARING'
+      ) {
+        return {
+          amount: 240000,
+          assignedCount: 0,
+          count: 1,
+          currency: 'VND',
+          ignoredCount: 0,
+          matchedAmount: 240000,
+          matchedCount: 1,
+          partiallyMatchedAmount: 0,
+          partiallyMatchedCount: 0,
+          reversedCount: 0,
+          unassignedCount: 0,
+          unmatchedAmount: 0,
+          unmatchedCount: 0,
+        };
+      }
+      if (
+        href ===
+        '/admin/bank-reconciliation?range=30d&take=10&review=matched&type=INFLOW&source=PAYMENT_CLEARING'
+      ) {
+        return [
+          {
+            _count: { reconciliationMatches: 1 },
+            amount: 240000,
+            bankAccount: {
+              accountNumberLast4: '0001',
+              accountNumberMasked: '****0001',
+              bankName: 'VCB',
+              currency: 'VND',
+              id: 'bank-account-1',
+              name: 'Operations VND',
+            },
+            bankAccountId: 'bank-account-1',
+            counterpartyName: 'MoMo Clearing',
+            currency: 'VND',
+            description: 'Daily payment clearing settlement',
+            id: 'bank-clearing-1',
+            occurredAt: '2026-07-20T03:00:00.000Z',
+            reconciliationMatchedAmount: 240000,
+            reconciliationRemainingAmount: 0,
+            reconciliationSources: ['PAYMENT_CLEARING'],
+            sourceKey: 'bank-clearing-source-1',
+            status: 'MATCHED',
+            transferRef: 'VCB-CLEARING-1',
+            type: 'INFLOW',
+            valueDate: null,
+          },
+        ];
+      }
+      if (
+        href === '/admin/bank-reconciliation/evidence-source-summary?range=30d&review=matched&type=INFLOW'
+      ) {
+        return {
+          amount: 740000,
+          count: 3,
+          currency: 'VND',
+          sources: [
+            { amount: 240000, count: 1, source: 'PAYMENT_CLEARING' },
+            { amount: 0, count: 0, source: 'PARTNER_DEPOSIT' },
+            { amount: 0, count: 0, source: 'WITHDRAWAL' },
+            { amount: 0, count: 0, source: 'PAYOUT' },
+            { amount: 0, count: 0, source: 'REFUND' },
+            { amount: 0, count: 0, source: 'OTHER_JOURNAL' },
+            { amount: 500000, count: 2, source: 'UNCLASSIFIED' },
+          ],
+        };
+      }
+      return fallback;
+    });
+
+    const page = await BankReconciliationPage({
+      searchParams: Promise.resolve({
+        range: '30d',
+        review: 'matched',
+        source: 'payment-clearing',
+        type: 'INFLOW',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/bank-reconciliation/summary?range=30d&review=matched&type=INFLOW&source=PAYMENT_CLEARING',
+      expect.any(Object),
+    );
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/bank-reconciliation?range=30d&take=10&review=matched&type=INFLOW&source=PAYMENT_CLEARING',
+      [],
+    );
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/bank-reconciliation/evidence-source-summary?range=30d&review=matched&type=INFLOW',
+      expect.any(Object),
+    );
+    expect(markup).toContain('Evidence source: Payment clearing.');
+    expect(markup).toContain(
+      'Evidence totals use active matches; one transaction may appear in more than one linked source.',
+    );
+    expect(markup).toContain('value="PAYMENT_CLEARING"');
+    expect(markup).toContain('Payment clearing · 1 · 240.000 VND');
+    expect(markup).toContain('Not linked · 2 · 500.000 VND');
+    expect(markup).toContain('source=UNCLASSIFIED');
+    expect(markup).toContain('<th scope="col">Evidence</th>');
+    expect(markup).not.toContain('Withdrawal evidence');
+  });
+
+  it('keeps period overview metrics stable while the transaction queue is filtered', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/bank-reconciliation/summary?range=30d&review=matched&q=VCB-MATCHED') {
+        return {
+          amount: 200000,
+          assignedCount: 0,
+          count: 1,
+          currency: 'VND',
+          ignoredCount: 0,
+          matchedAmount: 200000,
+          matchedCount: 1,
+          partiallyMatchedAmount: 0,
+          partiallyMatchedCount: 0,
+          reversedCount: 0,
+          unassignedCount: 0,
+          unmatchedAmount: 0,
+          unmatchedCount: 0,
+        };
+      }
+      if (href === '/admin/bank-reconciliation/summary?range=all') {
+        return {
+          amount: 2000000,
+          assignedCount: 2,
+          count: 10,
+          currency: 'VND',
+          ignoredCount: 0,
+          matchedAmount: 1200000,
+          matchedCount: 6,
+          openExposureAmount: 800000,
+          oldestPartiallyMatchedAt: '2026-07-15T02:00:00.000Z',
+          oldestUnassignedAt: '2026-07-14T02:00:00.000Z',
+          partiallyMatchedAmount: 300000,
+          partiallyMatchedCount: 1,
+          reversedCount: 0,
+          unassignedCount: 1,
+          unassignedOver48hAmount: 300000,
+          unassignedOver48hCount: 1,
+          unmatchedAmount: 500000,
+          unmatchedCount: 3,
+        };
+      }
+      return fallback;
+    });
+
+    const page = await BankReconciliationPage({
+      searchParams: Promise.resolve({
+        q: 'VCB-MATCHED',
+        range: '30d',
+        review: 'matched',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Open exposure');
+    expect(markup).toContain('800.000 VND');
+    expect(markup).toContain('4 open bank transaction(s) still have an unmatched remainder.');
+    expect(markup).toContain('48h+ unassigned');
+    expect(markup).toContain('1 total unassigned review(s); 300.000 VND has waited at least 48 hours.');
+    expect(markup).toContain('review=unmatched&amp;age=48h&amp;owner=unassigned');
+    expect(markup).toContain('Resolved rate');
+    expect(markup).toContain('Resolved rate: </span>60%');
+    expect(markup).toContain('Matched records');
+  });
+
+  it('applies and exposes the 48h age filter consistently across the unresolved queue', async () => {
+    const page = await BankReconciliationPage({
+      searchParams: Promise.resolve({
+        age: '48h',
+        range: '30d',
+        review: 'unmatched',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/bank-reconciliation/summary?range=30d&review=unmatched&age=48h',
+      expect.any(Object),
+    );
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/bank-reconciliation/evidence-source-summary?range=30d&review=unmatched&age=48h',
+      expect.any(Object),
+    );
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/bank-reconciliation?range=30d&take=10&review=unmatched&age=48h',
+      [],
+    );
+    expect(markup).toContain('Waiting age: 48h+ waiting.');
+    expect(markup).toContain('48h+ waiting');
+    expect(markup).toContain('All ages');
+    expect(markup).toContain('review=unmatched');
+  });
+
+  it('ignores withdrawal candidate filters outside the dedicated outflow queue', async () => {
     const page = await BankReconciliationPage({
       searchParams: Promise.resolve({
         candidate: 'strong',
@@ -463,27 +783,19 @@ describe('BankReconciliationPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/bank-reconciliation/summary?range=30d&review=unmatched&q=VCB-OUT-120&candidate=strong',
+      '/admin/bank-reconciliation/summary?range=30d&review=unmatched&q=VCB-OUT-120',
       expect.any(Object),
     );
     expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/bank-reconciliation?range=30d&take=10&review=unmatched&skip=10&q=VCB-OUT-120&candidate=strong',
+      '/admin/bank-reconciliation?range=30d&take=10&review=unmatched&skip=10&q=VCB-OUT-120',
       [],
     );
-    expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/bank-reconciliation/withdrawal-candidate-summary?range=30d&q=VCB-OUT-120',
-      expect.any(Object),
-    );
-    expect(markup).toContain('Withdrawal candidates: Strong candidates. Review owner: All owners.');
-    expect(markup).toContain('Oldest candidate transactions appear first.');
-    expect(markup).toContain('Strong candidates');
-    expect(markup).toContain('Needs review');
-    expect(markup).toContain('No candidate');
-    expect(markup).toContain('candidate=review');
-    expect(markup).toContain('candidate=strong');
+    expect(markup).toContain('Queue: Needs action. Review owner: All owners.');
+    expect(markup).not.toContain('Withdrawal candidates:');
+    expect(markup).not.toContain('candidate=review');
+    expect(markup).not.toContain('candidate=strong');
     expect(markup).toContain('q=VCB-OUT-120');
     expect(markup).toContain('review=matched&amp;q=VCB-OUT-120');
-    expect(markup).not.toContain('review=matched&amp;q=VCB-OUT-120&amp;candidate=strong');
   });
 
   it('filters candidate reviews by the current operator without exposing the operator id in page links', async () => {
@@ -492,122 +804,133 @@ describe('BankReconciliationPage', () => {
         candidate: 'eligible',
         owner: 'mine',
         range: '30d',
-        review: 'outflow',
+        review: 'unmatched',
+        type: 'OUTFLOW',
       }),
     });
     const markup = renderToStaticMarkup(page);
 
     expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/bank-reconciliation/summary?range=30d&review=outflow&candidate=eligible&assignment=assigned&assigneeAdminId=owner-1',
+      '/admin/bank-reconciliation/summary?range=30d&review=unmatched&type=OUTFLOW&candidate=eligible&assignment=assigned&assigneeAdminId=owner-1',
       expect.any(Object),
     );
     expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/bank-reconciliation?range=30d&take=10&review=outflow&candidate=eligible&assignment=assigned&assigneeAdminId=owner-1',
+      '/admin/bank-reconciliation?range=30d&take=10&review=unmatched&type=OUTFLOW&candidate=eligible&assignment=assigned&assigneeAdminId=owner-1',
       [],
     );
     expect(markup).toContain('Review owner: My reviews.');
-    expect(markup).toContain('Review ownership');
-    expect(markup).toContain('My assigned reviews');
+    expect(markup).toContain('Needs action · Outflow');
+    expect(markup).toContain('My reviews');
     expect(markup).toContain('owner=unassigned');
+    expect(markup).not.toContain('Review ownership');
     expect(markup).not.toContain('assigneeAdminId=owner-1');
   });
 
-  it('renders review owner identities from the summary without loading the approver directory', async () => {
+  it('shows all-owner unresolved workload without loading the approver directory before assignment', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/bank-reconciliation/withdrawal-candidate-summary?range=30d') {
+      if (
+        href ===
+        '/admin/bank-reconciliation/review-owner-summary?range=30d&review=unmatched&type=OUTFLOW&q=VCB-OUT&candidate=review'
+      ) {
         return {
-          assignedCount: 1,
-          assignments: [
+          currency: 'VND',
+          openAmount: 1200000,
+          openCount: 4,
+          owners: [
             {
               assignee: {
-                email: 'summary-owner@example.com',
-                fullName: 'Summary Owner',
-                id: 'summary-owner-1',
+                email: 'owner@example.com',
+                fullName: 'Reconciliation Owner',
+                id: 'owner-1',
               },
-              assigneeAdminId: 'summary-owner-1',
-              count: 2,
-              over24hCount: 1,
+              assigneeAdminId: 'owner-1',
+              oldestOccurredAt: '2026-07-14T02:00:00.000Z',
+              openAmount: 700000,
+              openCount: 2,
+              over48hAmount: 200000,
+              over48hCount: 1,
+            },
+            {
+              assignee: {
+                email: 'second@example.com',
+                fullName: 'Second Reviewer',
+                id: 'owner-2',
+              },
+              assigneeAdminId: 'owner-2',
+              oldestOccurredAt: '2026-07-15T02:00:00.000Z',
+              openAmount: 200000,
+              openCount: 1,
+              over48hAmount: 0,
               over48hCount: 0,
             },
           ],
-          currency: 'VND',
-          eligibleCount: 2,
-          noneAmount: 0,
-          noneCount: 0,
-          oldestReviewOccurredAt: null,
-          oldestStrongOccurredAt: null,
-          reviewAmount: 0,
-          reviewCount: 0,
-          reviewOver24hCount: 0,
-          reviewOver48hCount: 0,
-          strongAmount: 0,
-          strongCount: 0,
-          strongOver24hCount: 0,
-          strongOver48hCount: 0,
-          unassignedCount: 1,
+          unassigned: {
+            oldestOccurredAt: '2026-07-13T02:00:00.000Z',
+            openAmount: 300000,
+            openCount: 1,
+            over48hAmount: 300000,
+            over48hCount: 1,
+          },
         };
       }
       return fallback;
     });
 
     const page = await BankReconciliationPage({
-      searchParams: Promise.resolve({ range: '30d', review: 'unmatched' }),
+      searchParams: Promise.resolve({
+        candidate: 'review',
+        owner: 'mine',
+        q: 'VCB-OUT',
+        range: '30d',
+        review: 'unmatched',
+        type: 'OUTFLOW',
+      }),
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Summary Owner');
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/bank-reconciliation/review-owner-summary?range=30d&review=unmatched&type=OUTFLOW&q=VCB-OUT&candidate=review',
+      expect.any(Object),
+    );
+    expect(mockedAdminGet.mock.calls.map(([href]) => href)).not.toContain(
+      '/admin/bank-reconciliation/withdrawal-candidate-summary?range=30d',
+    );
     expect(mockedAdminGet).not.toHaveBeenCalledWith(
       '/admin/users?take=50&role=ADMIN&view=finance-approver-directory',
       [],
     );
+    expect(markup).toContain('Review owner workload');
+    expect(markup).toContain('4 open reviews');
+    expect(markup).toContain('Reconciliation Owner');
+    expect(markup).toContain('Second Reviewer');
+    expect(markup).toContain('Needs an owner');
+    expect(markup).toContain('owner=unassigned');
+    expect(markup).toContain('owner=mine');
+    expect(markup).not.toContain('assigneeAdminId=owner-2');
   });
 
   it('shows outflow withdrawal candidate priority before opening transaction detail', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-18T03:00:00.000Z'));
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/bank-reconciliation/summary?range=30d&review=outflow') {
+      if (href === '/admin/bank-reconciliation/summary?range=30d&review=unmatched&type=OUTFLOW') {
         return {
           amount: 1200000,
+          assignedCount: 0,
           count: 2,
           currency: 'VND',
+          ignoredCount: 0,
+          matchedAmount: 0,
           matchedCount: 0,
+          partiallyMatchedAmount: 0,
+          partiallyMatchedCount: 0,
+          reversedCount: 0,
+          unassignedCount: 2,
+          unmatchedAmount: 1200000,
           unmatchedCount: 2,
         };
       }
-      if (href === '/admin/bank-reconciliation/withdrawal-candidate-summary?range=30d') {
-        return {
-          assignedCount: 3,
-          assignments: [
-            {
-              assigneeAdminId: 'owner-1',
-              count: 2,
-              over24hCount: 1,
-              over48hCount: 1,
-            },
-            {
-              assigneeAdminId: 'owner-2',
-              count: 1,
-              over24hCount: 0,
-              over48hCount: 0,
-            },
-          ],
-          currency: 'VND',
-          eligibleCount: 5,
-          noneAmount: 200000,
-          noneCount: 2,
-          oldestReviewOccurredAt: '2026-07-14T02:00:00.000Z',
-          oldestStrongOccurredAt: '2026-07-12T02:00:00.000Z',
-          reviewAmount: 700000,
-          reviewCount: 1,
-          reviewOver24hCount: 1,
-          reviewOver48hCount: 0,
-          strongAmount: 1200000,
-          strongCount: 2,
-          strongOver24hCount: 2,
-          strongOver48hCount: 1,
-          unassignedCount: 2,
-        };
-      }
-      if (href === '/admin/bank-reconciliation?range=30d&take=10&review=outflow') {
+      if (href === '/admin/bank-reconciliation?range=30d&take=10&review=unmatched&type=OUTFLOW') {
         return [
           {
             _count: { reconciliationMatches: 0 },
@@ -643,7 +966,7 @@ describe('BankReconciliationPage', () => {
             bankAccountId: 'bank-account-1',
             currency: 'VND',
             id: 'bank-outflow-none',
-            occurredAt: '2026-07-15T04:00:00.000Z',
+            occurredAt: '2026-07-17T01:00:00.000Z',
             sourceKey: 'bank-outflow:none',
             status: 'UNMATCHED',
             type: 'OUTFLOW',
@@ -662,7 +985,7 @@ describe('BankReconciliationPage', () => {
     });
 
     const page = await BankReconciliationPage({
-      searchParams: Promise.resolve({ range: '30d', review: 'outflow' }),
+      searchParams: Promise.resolve({ range: '30d', review: 'unmatched', type: 'OUTFLOW' }),
     });
     const markup = renderToStaticMarkup(page);
 
@@ -671,54 +994,91 @@ describe('BankReconciliationPage', () => {
     expect(markup).toContain('No withdrawal candidate');
     expect(markup).toContain('0 withdrawal candidate(s)');
     expect(markup).toContain('/finance-tax/bank-reconciliation/bank-outflow-strong');
-    expect(markup).toContain('Strong withdrawal candidates');
-    expect(markup).toContain('Withdrawal candidates to review');
-    expect(markup).toContain('Over 48h');
-    expect(markup).toContain('Over 24h');
-    expect(markup).toContain('Oldest candidate:');
-    expect(markup).toContain('72h waiting · 48h+');
-    expect(markup).toContain('26h waiting · 24h+');
-    expect(markup).toContain('1.200.000 VND');
-    expect(markup).toContain('700.000 VND');
-    expect(markup).toContain('review=outflow&amp;candidate=strong');
-    expect(markup).toContain('review=outflow&amp;candidate=review');
+    expect(markup).toContain('3d waiting · 48h+');
+    expect(markup).toContain('1d 2h waiting · 24h+');
+    expect(markup).toContain('review=unmatched&amp;type=OUTFLOW&amp;candidate=strong');
+    expect(markup).toContain('review=unmatched&amp;type=OUTFLOW&amp;candidate=review');
+    expect(markup).not.toContain('Oldest candidate:');
+    vi.useRealTimers();
   });
 
-  it('shows an all-date import batch work card linked to the open queue', async () => {
+  it('shows one common review SLA for unresolved rows without withdrawal candidates', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-18T03:00:00.000Z'));
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/bank-reconciliation/import-batches/summary') {
+      if (href === '/admin/bank-reconciliation/summary?range=30d&review=partial&type=INFLOW') {
         return {
-          batchCount: 5,
-          escalatedNeedsReconciliationCount: 1,
-          needsReconciliationCount: 2,
-          noTransactionCount: 1,
-          oldestOpenImportedAt: '2026-07-01T00:00:00.000Z',
-          reconciledCount: 2,
-          staleNeedsReconciliationCount: 1,
+          amount: 250000,
+          assignedCount: 0,
+          count: 1,
+          currency: 'VND',
+          ignoredCount: 0,
+          matchedAmount: 0,
+          matchedCount: 0,
+          partiallyMatchedAmount: 250000,
+          partiallyMatchedCount: 1,
+          reversedCount: 0,
+          unassignedCount: 0,
+          unassignedOver48hAmount: 0,
+          unassignedOver48hCount: 0,
+          unmatchedAmount: 0,
+          unmatchedCount: 0,
         };
+      }
+      if (href === '/admin/bank-reconciliation?range=30d&take=10&review=partial&type=INFLOW') {
+        return [
+          {
+            _count: { reconciliationMatches: 1 },
+            amount: 250000,
+            bankAccountId: 'bank-account-1',
+            currency: 'VND',
+            id: 'bank-inflow-partial',
+            occurredAt: '2026-07-16T02:00:00.000Z',
+            reconciliationMatchedAmount: 100000,
+            reconciliationRemainingAmount: 150000,
+            sourceKey: 'bank-inflow:partial',
+            status: 'PARTIALLY_MATCHED',
+            type: 'INFLOW',
+          },
+        ];
       }
       return fallback;
     });
 
     const page = await BankReconciliationPage({
+      searchParams: Promise.resolve({
+        range: '30d',
+        review: 'partial',
+        type: 'INFLOW',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('2d 1h waiting · 48h+');
+    expect(markup).toContain('Unassigned');
+    expect(markup).not.toContain('withdrawal candidate(s)');
+    vi.useRealTimers();
+  });
+
+  it('keeps statement import separate from the live review queue', async () => {
+    const page = await BankReconciliationPage({
       searchParams: Promise.resolve({ range: 'today', review: 'unmatched' }),
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Import batches');
-    expect(markup).toContain('2 statement import batch(es) contain open bank transactions.');
-    expect(markup).toContain('1 over 24 hours.');
-    expect(markup).toContain('1 over 48 hours.');
-    expect(markup).toContain('Over 48h');
-    expect(markup).toContain(
-      '/finance-tax/bank-reconciliation?workspace=imports&amp;range=today&amp;review=unmatched&amp;importRange=all&amp;importReview=escalated',
-    );
-    expect(markup).not.toContain('Match status');
+    expect(markup).toContain('Bank transactions');
+    expect(markup).toContain('Statement imports');
+    expect(markup).toContain('/finance-tax/bank-reconciliation?workspace=imports');
+    expect(markup).toContain('Bank reconciliation filters');
+    expect(markup).toContain('Needs action');
+    expect(markup).not.toContain('CSV bank statement review');
+    expect(markup).not.toContain('Bank statement import history');
+    expect(markup).not.toContain('Manual bank transaction import');
   });
 
   it('keeps manual import bounded and shows validation failures without overlapping raw inputs', async () => {
     const page = await BankReconciliationPage({
-      searchParams: Promise.resolve({ bankImportError: 'invalid', range: 'today' }),
+      searchParams: Promise.resolve({ bankImportError: 'invalid', range: 'today', workspace: 'manual' }),
     });
     const markup = renderToStaticMarkup(page);
 
@@ -727,26 +1087,21 @@ describe('BankReconciliationPage', () => {
     expect(markup).toContain('Bank import form');
     expect(markup).toContain('Bank account');
     expect(markup).toContain('Operations VND - VCB - ****0001 - VND');
-    expect(markup).toContain('<details class="admin-disclosure finance-reconciliation-import-disclosure" open="">');
+    expect(markup).toContain(
+      '<details class="admin-disclosure finance-reconciliation-import-disclosure" open="">',
+    );
     expect(markup).not.toContain(
       '<details class="card admin-card admin-disclosure finance-reconciliation-import-disclosure" open="">',
     );
-    expect(markup).toContain('Bank reconciliation workspace');
-    expect(markup).toContain('Manual entry');
-    expect(markup).not.toContain('Company bank transactions');
+    expect(markup).toContain('Payment Matching');
+    expect(markup).toContain('Statement imports');
     expect(markup).not.toContain('Bank reconciliation filters');
+    expect(markup).not.toContain('CSV bank statement review');
+    expect(markup).not.toContain('Bank statement import history');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');
     expect(markup).toContain('admin-form-textarea');
     expect(markup).not.toContain('class="form-input"');
-    expect(mockedAdminGet).not.toHaveBeenCalledWith(
-      '/admin/bank-reconciliation/summary?range=today&review=unmatched',
-      expect.any(Object),
-    );
-    expect(mockedAdminGet).not.toHaveBeenCalledWith(
-      '/admin/bank-reconciliation?range=today&take=10&review=unmatched',
-      [],
-    );
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/company-bank-accounts?status=ACTIVE', []);
   });
 
@@ -758,39 +1113,66 @@ describe('BankReconciliationPage', () => {
 
     expect(markup).toContain('finance-reconciliation-import-disclosure');
     expect(markup).toContain('Bank import form');
-    expect(markup).not.toContain('<details class="admin-disclosure finance-reconciliation-import-disclosure" open="">');
+    expect(markup).not.toContain(
+      '<details class="admin-disclosure finance-reconciliation-import-disclosure" open="">',
+    );
   });
 
-  it('loads only the APIs required by each reconciliation workspace', async () => {
+  it('loads only the APIs required by the selected reconciliation task', async () => {
     await BankReconciliationPage({ searchParams: Promise.resolve({ range: 'today' }) });
     const operationsHrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
     expect(operationsHrefs).toContain('/admin/bank-reconciliation/summary?range=today&review=unmatched');
+    expect(operationsHrefs).toContain('/admin/bank-reconciliation/summary?range=all');
+    expect(operationsHrefs).toContain(
+      '/admin/bank-reconciliation/review-owner-summary?range=today&review=unmatched',
+    );
     expect(operationsHrefs).toContain('/admin/bank-reconciliation?range=today&take=10&review=unmatched');
-    expect(operationsHrefs).toContain('/admin/bank-reconciliation/import-batches/summary');
+    expect(operationsHrefs).not.toContain('/admin/bank-reconciliation/import-batches/summary');
+    expect(operationsHrefs.some((href) => href.includes('withdrawal-candidate-summary'))).toBe(false);
     expect(operationsHrefs).not.toContain('/admin/company-bank-accounts?status=ACTIVE');
     expect(operationsHrefs).not.toContain('/admin/users?take=50&role=ADMIN&view=finance-approver-directory');
-    expect(operationsHrefs.some((href) => href.startsWith('/admin/bank-reconciliation/import-batches?'))).toBe(false);
+    expect(operationsHrefs).not.toContain(
+      '/admin/bank-reconciliation/import-batches?range=today&skip=0&take=10',
+    );
 
     mockedAdminGet.mockClear();
     await BankReconciliationPage({ searchParams: Promise.resolve({ workspace: 'imports' }) });
     const importHrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
     expect(importHrefs).toContain('/admin/company-bank-accounts?status=ACTIVE');
-    expect(importHrefs).toContain('/admin/users?take=50&role=ADMIN&view=finance-approver-directory');
+    expect(importHrefs).not.toContain('/admin/users?take=50&role=ADMIN&view=finance-approver-directory');
     expect(importHrefs).toContain('/admin/bank-reconciliation/import-batches?range=today&skip=0&take=10');
-    expect(importHrefs).toContain('/admin/bank-reconciliation/import-batches/summary');
+    expect(importHrefs).not.toContain('/admin/bank-reconciliation/import-batches/summary');
     expect(importHrefs).not.toContain('/admin/bank-reconciliation/summary?range=today&review=unmatched');
+    expect(importHrefs).not.toContain(
+      '/admin/bank-reconciliation/review-owner-summary?range=today&review=unmatched',
+    );
     expect(importHrefs).not.toContain('/admin/bank-reconciliation?range=today&take=10&review=unmatched');
 
     mockedAdminGet.mockClear();
     await BankReconciliationPage({ searchParams: Promise.resolve({ workspace: 'manual' }) });
     const manualHrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
-    expect(manualHrefs).toEqual([
-      '/admin/company-bank-accounts?status=ACTIVE',
-      '/admin/users?take=50&role=ADMIN&view=finance-approver-directory',
-    ]);
+    expect(manualHrefs).not.toContain('/admin/bank-reconciliation/summary?range=today&review=unmatched');
+    expect(manualHrefs).not.toContain('/admin/bank-reconciliation/summary?range=today');
+    expect(manualHrefs).not.toContain(
+      '/admin/bank-reconciliation/review-owner-summary?range=today&review=unmatched',
+    );
+    expect(manualHrefs).not.toContain('/admin/bank-reconciliation?range=today&take=10&review=unmatched');
+    expect(manualHrefs).not.toContain('/admin/bank-reconciliation/import-batches?range=today&skip=0&take=10');
+    expect(manualHrefs).toContain('/admin/company-bank-accounts?status=ACTIVE');
+    expect(manualHrefs).not.toContain('/admin/users?take=50&role=ADMIN&view=finance-approver-directory');
+  });
+
+  it('does not load review-owner workload for closed reconciliation records', async () => {
+    await BankReconciliationPage({
+      searchParams: Promise.resolve({ range: '30d', review: 'matched' }),
+    });
+
+    expect(
+      mockedAdminGet.mock.calls.some(([href]) => href.includes('/bank-reconciliation/review-owner-summary')),
+    ).toBe(false);
   });
 
   it('scopes reconciliation disclosure and match heading typography to direct slots', () => {

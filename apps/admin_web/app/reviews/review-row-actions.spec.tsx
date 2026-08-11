@@ -30,5 +30,7 @@ describe('ReviewRowActions Vuexy action menu usage', () => {
 
     expect(source).toContain('AdminDrawerSurface');
     expect(source).not.toContain('<aside\n        aria-labelledby={titleId}');
+    expect(source).toContain('useAdminModalFocus(drawerRef, onClose)');
+    expect(source).toContain('surfaceRef={drawerRef}');
   });
 });

@@ -16,14 +16,14 @@ describe('NotificationFilterBoardSection', () => {
   it('renders active queue, booking context, and quick filter links', () => {
     const section = NotificationFilterBoardSection({
       activeBookingLabel: 'book-1234',
-      activeFilterDescription: 'latest delivery attempts that returned an FCM push failure.',
+      activeFilterDescription: 'latest mobile alert attempts that were not delivered.',
       activeFilterLabel: 'Failed sends',
       activeIncidentState: 'all',
       activeReview: 'failed',
       activeReviewRunbook: {
         detail: 'The latest send attempt failed.',
         primaryAction: 'Open delivery evidence before retry.',
-        title: 'Retry gate',
+        title: 'Failed delivery review',
       },
       activeRange: '7d',
       activeRangeLabel: 'Last 7 days',
@@ -38,19 +38,18 @@ describe('NotificationFilterBoardSection', () => {
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('Notification operation filters');
-    expect(rendered).toContain('Active range: Last 7 days');
-    expect(rendered).toContain('Active queue: Failed sends');
+    expect(rendered).toContain('Current queue: Failed sends');
     expect(rendered).toContain('Range: Last 7 days');
     expect(rendered).toContain('Queue: Failed sends');
-    expect(rendered).toContain('Rows: 2/10');
+    expect(rendered).not.toContain('Rows: 2/10');
     expect(rendered).toContain('Booking: book-1234');
-    expect(rendered).toContain('latest delivery attempts that returned an FCM push failure.');
-    expect(rendered).toContain('Retry gate');
+    expect(rendered).toContain('latest mobile alert attempts that were not delivered.');
+    expect(rendered).toContain('Failed delivery review');
     expect(rendered).toContain('The latest send attempt failed.');
     expect(rendered).toContain('Next action: Open delivery evidence before retry.');
-    expect(rendered).toContain('Active booking context: book-1234');
+    expect(rendered).toContain('Booking context: book-1234');
     expect(rendered).not.toContain('Active booking trace');
-    expect(rendered).toContain('Showing 2 loaded row(s) of 10 total / Last 7 days');
+    expect(rendered).toContain('Showing 2 notifications of 10 / Last 7 days');
     expect(rendered).toContain('Clear filter');
     expect(rendered).toContain('Booking book-1234');
     expect(rendered).toContain('Today');
@@ -58,7 +57,7 @@ describe('NotificationFilterBoardSection', () => {
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining(['/notifications?range=7d', '/notifications?range=7d&review=failed']),
     );
-    expect(ariaCurrentValuesIn(section)).toEqual(['page', 'page']);
+    expect(ariaCurrentValuesIn(section)).toEqual(['page', 'page', 'page', 'page']);
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'booking-date-filter-button is-active',
@@ -91,12 +90,39 @@ describe('NotificationFilterBoardSection', () => {
 
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('Showing 10 loaded row(s) of 10 total / Today');
+    expect(rendered).toContain('Showing 10 notifications of 10 / Today');
     expect(rendered).not.toContain('Clear filter');
-    expect(ariaCurrentValuesIn(section)).toEqual(['page', 'page']);
+    expect(ariaCurrentValuesIn(section)).toEqual(['page', 'page', 'page', 'page']);
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining(['booking-date-filter-button is-active', 'pill pill-success']),
     );
+  });
+
+  it('uses a fixed SLA boundary for delivery incident queues', () => {
+    const section = NotificationFilterBoardSection({
+      activeBookingLabel: null,
+      activeFilterDescription: 'Current delivery incidents.',
+      activeFilterLabel: 'Delivery incidents',
+      activeIncidentState: 'all',
+      activeReview: 'delivery-incidents',
+      activeReviewRunbook: null,
+      activeRange: 'all',
+      activeRangeLabel: 'Last 24 hours',
+      clearHref: '/notifications?review=all',
+      filteredCount: 1,
+      incidentStateLinks: [],
+      links: buildLinks(),
+      rangeLinks: buildRangeLinks(),
+      showQueueAgeControls: false,
+      showRangeControls: false,
+      totalCount: 1,
+    });
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('fixed operational time boundary');
+    expect(rendered).toContain('Range: Last 24 hours');
+    expect(rendered).not.toContain('Notification date range');
+    expect(rendered).not.toContain('Queue age');
   });
 
   it('renders server-backed system incident state controls only when supplied', () => {
@@ -152,7 +178,7 @@ describe('NotificationFilterBoardSection', () => {
       activeReview: 'finance-overdue',
       activeReviewRunbook: null,
       activeRange: 'all',
-      activeRangeLabel: 'All loaded',
+      activeRangeLabel: 'Entire history',
       clearHref: '/notifications?range=all&review=all',
       filteredCount: 2,
       financeAgeLinks: [
@@ -210,6 +236,7 @@ describe('NotificationFilterBoardSection', () => {
 
     expect(source).toContain('StatusBadge');
     expect(source).toContain('AdminFilterSummary');
+    expect(source).toContain('AdminDisclosure');
     expect(source).not.toContain('AdminFilterChipGroup');
     expect(source).not.toContain('StatusBadgeLink');
     expect(source).toContain('AdminSegmentedControl');

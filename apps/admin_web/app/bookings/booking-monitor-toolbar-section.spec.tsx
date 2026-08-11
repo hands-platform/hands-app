@@ -14,7 +14,7 @@ describe('BookingMonitorToolbarSection', () => {
     const markup = renderToStaticMarkup(section);
 
     expect(markup).toContain('admin-form-control-button button button-secondary');
-    expect(rendered).toContain('Pause live');
+    expect(rendered).toContain('Stop auto-refresh');
     expect(rendered).not.toContain('Booking Monitor');
     expect(markup).not.toContain('admin-page-header admin-page-header-toolbar');
     expect(rendered).not.toContain('Refresh now');
@@ -26,7 +26,7 @@ describe('BookingMonitorToolbarSection', () => {
       onToggleLiveUpdates: vi.fn(),
     });
 
-    expect(normalizedText(section)).toContain('Resume live');
+    expect(normalizedText(section)).toContain('Start auto-refresh');
   });
 
   it('leaves route-specific workspace copy to the page shell', () => {

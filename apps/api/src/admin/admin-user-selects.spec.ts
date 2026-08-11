@@ -47,7 +47,7 @@ describe('admin user selects', () => {
     });
     expect(adminNotificationBoardListSelect).toMatchObject({
       user: { select: expect.objectContaining({ id: true, phone: true }) },
-      deliveries: expect.objectContaining({ orderBy: { attemptedAt: 'desc' }, take: 3 }),
+      deliveries: expect.objectContaining({ orderBy: { attemptedAt: 'desc' }, take: 10 }),
     });
     expect(adminAppSessionListSelect.user.select).toMatchObject({
       phone: true,

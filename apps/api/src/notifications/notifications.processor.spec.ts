@@ -1,10 +1,130 @@
 import { Role } from '@prisma/client';
+import { chatNotificationRoutingData } from './notification-push-payload';
 import {
   NotificationRetryProcessor,
   notificationSendPushDeviceOrder,
 } from './notifications.processor';
+import { NotificationsService } from './notifications.service';
 
 describe('NotificationRetryProcessor', () => {
+  it('preserves the Partner chat contract from persistence through queued FCM delivery', async () => {
+    let storedNotification: Record<string, unknown> | undefined;
+    const tx = {
+      notificationDelivery: {
+        create: vi.fn(),
+      },
+      pushDevice: {
+        update: vi.fn(),
+      },
+    };
+    const prisma = {
+      notification: {
+        create: vi.fn(async (input: { data: Record<string, unknown> }) => {
+          storedNotification = { id: 'notification-chat-1', ...input.data };
+          return storedNotification;
+        }),
+        findUnique: vi.fn(async () =>
+          storedNotification
+            ? {
+                ...storedNotification,
+                user: {
+                  pushDevices: [
+                    {
+                      id: 'device-customer',
+                      role: Role.CUSTOMER,
+                      token: 'fcm-token-customer',
+                    },
+                    {
+                      id: 'device-provider',
+                      role: Role.PROVIDER,
+                      token: 'fcm-token-provider',
+                    },
+                  ],
+                },
+              }
+            : null,
+        ),
+      },
+      notificationTemplate: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      pushDevice: {
+        findFirst: vi.fn().mockResolvedValue({ locale: 'en' }),
+      },
+      operationalPolicySetting: {
+        findUnique: vi.fn(),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
+        callback(tx),
+      ),
+    };
+    const queue = {
+      add: vi.fn().mockResolvedValue({ id: 'notification-job-1' }),
+    };
+    const pushDelivery = {
+      send: vi.fn().mockResolvedValue({
+        provider: 'FCM',
+        status: 'SENT',
+        disableDevice: false,
+        response: { messageId: 'fcm-message-1' },
+      }),
+    };
+    const notifications = new NotificationsService(prisma as never, queue as never);
+    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+
+    await notifications.create({
+      userId: 'partner-user-1',
+      targetRole: Role.PROVIDER,
+      type: 'chat.message.created',
+      title: 'New chat message',
+      body: 'A new message is available in your booking chat.',
+      data: chatNotificationRoutingData({
+        bookingId: 'booking-1',
+        chatRoomId: 'chat-room-1',
+      }),
+    });
+
+    expect(storedNotification).toMatchObject({
+      id: 'notification-chat-1',
+      data: {
+        destination: 'chat',
+        bookingId: 'booking-1',
+        chatRoomId: 'chat-room-1',
+        targetRole: Role.PROVIDER,
+      },
+    });
+    expect(queue.add).toHaveBeenCalledWith(
+      'notification-send',
+      { notificationId: 'notification-chat-1' },
+      expect.objectContaining({ attempts: 3 }),
+    );
+
+    const queuedData = queue.add.mock.calls[0]?.[1];
+    await expect(processor.process({ data: queuedData } as never)).resolves.toMatchObject({
+      notificationId: 'notification-chat-1',
+      userId: 'partner-user-1',
+      results: [{ deviceId: 'device-provider', status: 'SENT' }],
+    });
+
+    expect(pushDelivery.send).toHaveBeenCalledTimes(1);
+    expect(pushDelivery.send).toHaveBeenCalledWith({
+      token: 'fcm-token-provider',
+      title: 'New chat message',
+      body: 'A new message is available in your booking chat.',
+      data: {
+        destination: 'chat',
+        bookingId: 'booking-1',
+        chatRoomId: 'chat-room-1',
+        type: 'chat.message.created',
+        notificationId: 'notification-chat-1',
+      },
+      providerOverride: undefined,
+    });
+    expect(JSON.stringify(pushDelivery.send.mock.calls)).not.toContain('fcm-token-customer');
+    expect(prisma.operationalPolicySetting.findUnique).not.toHaveBeenCalled();
+    expect(tx.notificationDelivery.create).toHaveBeenCalledTimes(1);
+  });
+
   it('skips missing notifications without sending push delivery', async () => {
     const prisma = {
       notification: {
@@ -56,7 +176,11 @@ describe('NotificationRetryProcessor', () => {
     expect(pushDelivery.send).not.toHaveBeenCalled();
     expect(prisma.notification.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
-        include: {
+        include: expect.objectContaining({
+          deliveries: {
+            where: { status: 'SENT' },
+            select: { pushDeviceId: true },
+          },
           user: {
             include: {
               pushDevices: expect.objectContaining({
@@ -66,7 +190,7 @@ describe('NotificationRetryProcessor', () => {
               }),
             },
           },
-        },
+        }),
       }),
     );
   });
@@ -258,6 +382,119 @@ describe('NotificationRetryProcessor', () => {
     );
     expect(JSON.stringify(pushDelivery.send.mock.calls)).not.toContain('fcm-token-customer');
     expect(tx.notificationDelivery.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries only devices without a previous successful delivery', async () => {
+    const tx = {
+      notificationDelivery: {
+        create: vi.fn(),
+      },
+      pushDevice: {
+        update: vi.fn(),
+      },
+    };
+    const prisma = {
+      notification: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'notification-1',
+          userId: 'user-1',
+          title: 'New chat message',
+          body: 'A new message is available in your booking chat.',
+          type: 'chat.message.created',
+          data: {
+            destination: 'chat',
+            bookingId: 'booking-1',
+            chatRoomId: 'chat-room-1',
+            targetRole: Role.PROVIDER,
+          },
+          deliveries: [{ pushDeviceId: 'device-already-sent' }],
+          user: {
+            pushDevices: [
+              {
+                id: 'device-already-sent',
+                role: Role.PROVIDER,
+                token: 'fcm-token-already-sent',
+              },
+              {
+                id: 'device-needs-retry',
+                role: Role.PROVIDER,
+                token: 'fcm-token-needs-retry',
+              },
+            ],
+          },
+        }),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
+        callback(tx),
+      ),
+    };
+    const pushDelivery = {
+      send: vi.fn().mockResolvedValue({
+        provider: 'FCM',
+        status: 'SENT',
+        disableDevice: false,
+        response: { messageId: 'fcm-message-1' },
+      }),
+    };
+    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+
+    await expect(
+      processor.process({ data: { notificationId: 'notification-1' } } as never),
+    ).resolves.toMatchObject({
+      notificationId: 'notification-1',
+      results: [{ deviceId: 'device-needs-retry', status: 'SENT' }],
+      skippedDeliveredDeviceCount: 1,
+    });
+
+    expect(pushDelivery.send).toHaveBeenCalledTimes(1);
+    expect(pushDelivery.send).toHaveBeenCalledWith(
+      expect.objectContaining({ token: 'fcm-token-needs-retry' }),
+    );
+    expect(JSON.stringify(pushDelivery.send.mock.calls)).not.toContain('fcm-token-already-sent');
+    expect(tx.notificationDelivery.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips a retry when every target device was already delivered successfully', async () => {
+    const prisma = {
+      notification: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'notification-1',
+          userId: 'user-1',
+          title: 'New chat message',
+          body: 'A new message is available in your booking chat.',
+          type: 'chat.message.created',
+          data: {
+            destination: 'chat',
+            bookingId: 'booking-1',
+            chatRoomId: 'chat-room-1',
+            targetRole: Role.PROVIDER,
+          },
+          deliveries: [{ pushDeviceId: 'device-provider' }],
+          user: {
+            pushDevices: [
+              {
+                id: 'device-provider',
+                role: Role.PROVIDER,
+                token: 'fcm-token-provider',
+              },
+            ],
+          },
+        }),
+      },
+    };
+    const pushDelivery = { send: vi.fn() };
+    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+
+    await expect(
+      processor.process({ data: { notificationId: 'notification-1' } } as never),
+    ).resolves.toEqual({
+      skipped: true,
+      reason: 'ALREADY_DELIVERED',
+      notificationId: 'notification-1',
+      skippedDeliveredDeviceCount: 1,
+    });
+
+    expect(pushDelivery.send).not.toHaveBeenCalled();
   });
 
   it('sends only the recent push-device budget for one notification job', async () => {

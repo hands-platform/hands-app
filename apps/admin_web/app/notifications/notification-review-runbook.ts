@@ -5,6 +5,20 @@ export type NotificationReviewRunbook = {
 };
 
 const notificationReviewRunbooks: Readonly<Record<string, NotificationReviewRunbook>> = {
+  'delivery-incidents': {
+    detail:
+      'Repeated failures are grouped by provider, failure code, and the configured delivery SLA window. Only incidents from the last 24 hours affect the current queue.',
+    primaryAction:
+      'Support contacts affected users when the alert is urgent. Platform reviews the grouped technical cause before any controlled retry.',
+    title: 'Current delivery incidents',
+  },
+  'delivery-incident-history': {
+    detail:
+      'These failures are older than 24 hours and retained for cleanup and audit. They do not contribute to current delivery SLA counts.',
+    primaryAction:
+      'Review recurring causes and stale device records during cleanup; do not treat these rows as current customer incidents.',
+    title: 'Historical cleanup',
+  },
   'finance-overdue': {
     detail:
       'These Finance records remained unresolved for more than 48 hours after import or operator assignment. Notification retry does not resolve the accounting evidence gap.',
@@ -28,45 +42,64 @@ const notificationReviewRunbooks: Readonly<Record<string, NotificationReviewRunb
   },
   'disabled-device': {
     detail:
-      'A push device on this queue is disabled. Recovery should come from a fresh app token, not from blindly reusing the old token.',
+      'These users cannot currently receive a mobile alert through the app.',
     primaryAction:
-      'Ask the customer or Partner to reopen the app, complete token recovery when needed, then re-enable only after the token path is current.',
-    title: 'Device recovery gate',
+      'Contact the customer or Partner directly if the alert is urgent. Ask them to reopen the app before retrying.',
+    title: 'Push unavailable',
   },
   failed: {
     detail:
-      'The latest send attempt failed. Treat retry as a controlled resend after checking the failure code, token freshness, and Firebase credentials.',
+      'The latest mobile alert was not delivered.',
     primaryAction:
-      'Open the row delivery evidence and audit trail, fix the blocker, then use Retry only after the delivery path is valid.',
-    title: 'Retry gate',
+      'Contact the user directly if the alert is urgent. Review the latest attempt, then retry only when the alert is still needed.',
+    title: 'Failed delivery review',
   },
   fcm: {
     detail:
-      'These rows already attempted FCM delivery. Use this queue to confirm delivery route status, token freshness, and Firebase project alignment before broad push.',
+      'These records attempted delivery through mobile push.',
     primaryAction:
-      'Check the live preflight candidate, complete token recovery when app devices changed, then retry only after the notification and device path are valid.',
-    title: 'FCM route gate',
+      'Use the delivery result and audit trail to decide whether the alert needs a controlled retry.',
+    title: 'Mobile push records',
   },
   'needs-retry': {
     detail:
-      'This queue combines current failed sends and disabled device paths, so every row needs a recovery decision before resend.',
+      'This queue contains notifications with at least one device whose latest delivery attempt is still failed.',
     primaryAction:
-      'Resolve the device or credential signal first, then retry from the row action menu with the active queue context preserved.',
+      'Resolve the failure signal first, then retry only unresolved deliveries from the row action menu.',
     title: 'Recovery decision gate',
   },
-  pending: {
+  'delivery-gap': {
     detail:
-      'These rows have no captured delivery attempt yet. Retrying before the worker path is confirmed can hide the original queue issue.',
+      'These alerts still have no delivery confirmation after 15 minutes.',
     primaryAction:
-      'Confirm API workers and delivery processing first; retry only if operations intentionally wants to create a new send attempt.',
-    title: 'Worker path gate',
+      'Contact the user directly if urgent. Confirm the alert is still needed before retrying.',
+    title: 'Delivery not confirmed',
+  },
+  'no-push-path': {
+    detail:
+      'These users cannot currently receive a mobile alert through the app.',
+    primaryAction:
+      'Keep the in-app record, contact the user directly if urgent, and ask them to reopen the app before retrying.',
+    title: 'Push unavailable',
+  },
+  pending: {
+    detail: 'Legacy alias for all notification rows without delivery evidence.',
+    primaryAction: 'Use Delivery not confirmed for current issues and Push unavailable for app-access records.',
+    title: 'Unattempted history',
+  },
+  unattempted: {
+    detail:
+      'This is the complete historical set of inbox rows without delivery evidence.',
+    primaryAction:
+      'Use Delivery not confirmed for current issues; use Push unavailable when the user needs to reopen the app.',
+    title: 'Unattempted history',
   },
   'stale-device': {
     detail:
-      'The latest delivery used an old push token timestamp. A successful FCM response here does not prove the user has a fresh app token.',
+      'These are historical delivery records linked to an enabled device that had not checked in for 30+ days. The record total is not the number of affected users or current devices.',
     primaryAction:
-      'Ask the user to reopen the app so the token refreshes, then prefer token recovery review before relying on another retry.',
-    title: 'Token freshness gate',
+      'Ask the user to reopen the app, then review the latest delivery before relying on another retry.',
+    title: 'App reopen needed',
   },
 };
 

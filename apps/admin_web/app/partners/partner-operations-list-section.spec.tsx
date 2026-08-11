@@ -65,7 +65,7 @@ describe('PartnerOperationsListSection', () => {
     expect(rendered).not.toContain('Money');
     expect(rendered).not.toContain('App/location');
     expect(rendered).not.toContain('Next operator check');
-    expect(rendered).toContain('3 partner(s)');
+    expect(rendered).toContain('3 Partners');
     expect(rendered).toContain('1 can receive direct requests');
     expect(rendered).toContain('1 settlement warning');
     expect(rendered).not.toContain('wallet marketplace hold');
@@ -78,7 +78,7 @@ describe('PartnerOperationsListSection', () => {
     expect(rendered).toContain('Last work: 30 May 2026, 07:00');
     expect(rendered).toContain('Last app activity: 1 Jun 2026, 07:00');
     expect(rendered).toContain('First revenue: yes');
-    expect(rendered).toContain('2 more partner row(s) are hidden for page speed.');
+    expect(rendered).toContain('2 more Partner rows are hidden for page speed.');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
@@ -132,7 +132,7 @@ describe('PartnerOperationsListSection', () => {
 
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('0 partner(s)');
+    expect(rendered).toContain('0 Partners');
     expect(rendered).toContain('Showing 0 entries');
     expect(rendered).toContain('No partners found');
     expect(rendered).toContain('Change the filters or clear search to view partner records.');

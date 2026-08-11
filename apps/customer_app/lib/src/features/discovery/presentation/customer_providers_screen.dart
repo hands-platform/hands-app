@@ -2,9 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../../../app_state.dart';
+import '../../../core/customer_design_system.dart';
+import '../../../core/customer_error_message.dart';
+import '../../../core/local_demo_access.dart';
+import '../../../core/widgets/customer_app_chrome.dart';
 import '../../../core/widgets/customer_feedback_panels.dart';
 import '../../booking/presentation/customer_booking_flow_screens.dart';
 import '../../booking/presentation/customer_booking_ui_helpers.dart';
@@ -14,17 +17,24 @@ import 'customer_discovery_widgets.dart';
 import 'customer_provider_detail_page.dart';
 
 class ProvidersScreen extends ConsumerStatefulWidget {
-  const ProvidersScreen({super.key});
+  const ProvidersScreen({super.key, this.onOpenMore});
+
+  final VoidCallback? onOpenMore;
 
   @override
   ConsumerState<ProvidersScreen> createState() => _ProvidersScreenState();
 }
 
 class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
-  List<dynamic> providers = [];
+  final searchController = TextEditingController();
+  List<Map<String, dynamic>> providers = [];
+  Set<String> favoriteProviderIds = {};
+  CustomerProviderSort sort = CustomerProviderSort.nearest;
+  String? selectedServiceKey;
+  bool favoritesOnly = false;
   double? customerLat;
   double? customerLng;
-  String customerAddress = demoCustomerAddress;
+  String customerAddress = localDemoAccessEnabled ? demoCustomerAddress : '';
   bool customerLocationIsDemo = false;
   bool loading = false;
   String? error;
@@ -41,6 +51,12 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> loadProviders() async {
     setState(() {
       loading = true;
@@ -48,28 +64,32 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
     });
     try {
       final location = await resolveDiscoveryLocation(ref);
-      final items = await ref.read(customerRepositoryProvider).nearbyProviders(
-            lat: location.latitude,
-            lng: location.longitude,
-          );
+      final repository = ref.read(customerRepositoryProvider);
+      final results = await Future.wait<dynamic>([
+        repository.nearbyProviders(
+            lat: location.latitude, lng: location.longitude),
+        repository.listFavoriteProviderIds(),
+      ]);
+      final items = sortNearbyProvidersByDistance(results[0] as List<dynamic>);
       if (!mounted) {
         return;
       }
       setState(() {
         providers = items;
+        favoriteProviderIds = results[1] as Set<String>;
         customerLat = location.latitude;
         customerLng = location.longitude;
         customerAddress = location.addressText ?? customerAddress;
         customerLocationIsDemo = location.isDemoLocation;
         notice = location.isDemoLocation
-            ? 'Browsing uses a Vietnam demo pin. Customers can browse from anywhere; booking requires a confirmed Vietnam service pin.'
+            ? 'Choose a service address to confirm distance and book.'
             : null;
       });
     } catch (exception) {
       if (!mounted) {
         return;
       }
-      setState(() => error = '$exception');
+      setState(() => error = customerErrorMessage(exception));
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -123,32 +143,6 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
         notice =
             'Vietnam service location selected. Nearby partners are sorted from this pin.';
       });
-    }
-  }
-
-  Future<void> signInAndLoad() async {
-    setState(() {
-      loading = true;
-      error = null;
-      notice = null;
-    });
-    try {
-      await ref.read(authControllerProvider.notifier).signInDemoCustomer();
-      final pushResult =
-          await ref.read(registerCurrentDevicePushTokenProvider).call();
-      await loadProviders();
-      if (mounted) {
-        setState(() => notice = pushResult.message);
-      }
-    } catch (exception) {
-      if (!mounted) {
-        return;
-      }
-      setState(() => error = '$exception');
-    } finally {
-      if (mounted) {
-        setState(() => loading = false);
-      }
     }
   }
 
@@ -208,79 +202,154 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
-    return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        children: [
-          Text('Partners', style: Theme.of(context).textTheme.displaySmall),
-          const SizedBox(height: 8),
-          Text(
-            'Nearby partners sorted by distance and availability.',
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 16),
-          if (auth != null) ...[
-            CustomerLocationContextCard(
-              addressText: customerAddress,
-              latitude: customerLat,
-              longitude: customerLng,
-              isDemoLocation: customerLocationIsDemo,
-              onChooseLocation: openCustomerLocationSelector,
+    final profileLabel = auth?.user['displayName']?.toString() ??
+        auth?.user['phone']?.toString();
+    final addressLabel = customerLocationIsDemo
+        ? 'Choose service address'
+        : locationTitle(customerAddress, false);
+    final serviceFilters = customerProviderServiceFilters(providers);
+    final visibleProviders = filterCustomerProviders(
+      providers,
+      query: searchController.text,
+      serviceKey: selectedServiceKey,
+      favoriteProviderIds: favoriteProviderIds,
+      favoritesOnly: favoritesOnly,
+      sort: sort,
+    );
+
+    return ColoredBox(
+      color: context.handsColors.canvas,
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            CustomerAddressBar(
+              address: addressLabel,
+              profileLabel: profileLabel,
+              onTap: openCustomerLocationSelector,
+              onProfileTap: widget.onOpenMore,
             ),
-            const SizedBox(height: 16),
-          ],
-          FilledButton.icon(
-            onPressed: auth == null ? signInAndLoad : loadProviders,
-            icon: const Icon(Icons.search),
-            label:
-                Text(auth == null ? 'Demo customer login' : 'Refresh partners'),
-          ),
-          if (loading) ...[
-            const SizedBox(height: 12),
-            const LinearProgressIndicator(),
-          ],
-          if (error != null) ...[
-            const SizedBox(height: 12),
-            ErrorPanel(text: error!),
-          ],
-          if (notice != null) ...[
-            const SizedBox(height: 12),
-            InfoBanner(text: notice!),
-          ],
-          const SizedBox(height: 16),
-          if (auth == null)
-            const EmptyPanel(text: 'Login first to load nearby partner cards.')
-          else if (providers.isEmpty)
-            const EmptyPanel(
-                text:
-                    'No nearby partners loaded yet. Refresh to fetch the latest queue.')
-          else ...[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: SizedBox(
-                height: 220,
-                child: NearbyProvidersMap(
-                  customerPoint: customerLat == null || customerLng == null
-                      ? null
-                      : LatLng(customerLat!, customerLng!),
-                  providers:
-                      providers.whereType<Map<String, dynamic>>().toList(),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: auth == null ? () async {} : loadProviders,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(
+                    CustomerSpacing.page,
+                    26,
+                    CustomerSpacing.page,
+                    32,
+                  ),
+                  children: [
+                    CustomerPageHeader(
+                      title: 'Choose a partner',
+                      subtitle: 'Nearest first from your service address.',
+                      trailing: IconButton(
+                        onPressed: auth == null ? null : loadProviders,
+                        tooltip: 'Refresh partners',
+                        icon: const Icon(Icons.refresh_rounded),
+                      ),
+                    ),
+                    if (loading) ...[
+                      const SizedBox(height: 14),
+                      const LinearProgressIndicator(minHeight: 2),
+                    ],
+                    if (error != null) ...[
+                      const SizedBox(height: 14),
+                      ErrorPanel(text: error!),
+                    ],
+                    if (notice != null) ...[
+                      const SizedBox(height: 14),
+                      InfoBanner(text: notice!),
+                    ],
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: searchController,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        hintText: 'Search partner or service',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        suffixIcon: searchController.text.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'Clear search',
+                                onPressed: () {
+                                  searchController.clear();
+                                  setState(() {});
+                                },
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          ChoiceChip(
+                            label: const Text('Near me'),
+                            selected: sort == CustomerProviderSort.nearest,
+                            onSelected: (_) => setState(
+                                () => sort = CustomerProviderSort.nearest),
+                          ),
+                          const SizedBox(width: 8),
+                          ChoiceChip(
+                            label: const Text('Top booked'),
+                            selected: sort == CustomerProviderSort.mostBooked,
+                            onSelected: (_) => setState(
+                                () => sort = CustomerProviderSort.mostBooked),
+                          ),
+                          const SizedBox(width: 8),
+                          FilterChip(
+                            label: const Text('Favorites'),
+                            selected: favoritesOnly,
+                            onSelected: (value) =>
+                                setState(() => favoritesOnly = value),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (serviceFilters.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String?>(
+                        initialValue: selectedServiceKey,
+                        decoration:
+                            const InputDecoration(labelText: 'Service type'),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                              value: null, child: Text('All services')),
+                          for (final option in serviceFilters.entries)
+                            DropdownMenuItem<String?>(
+                                value: option.key, child: Text(option.value)),
+                        ],
+                        onChanged: (value) =>
+                            setState(() => selectedServiceKey = value),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    if (auth == null)
+                      const EmptyPanel(
+                        text: 'Sign in on Home to find nearby partners.',
+                      )
+                    else if (providers.isEmpty)
+                      const EmptyPanel(
+                        text:
+                            'No available partners nearby. Pull down to refresh.',
+                      )
+                    else if (visibleProviders.isEmpty)
+                      const EmptyPanel(text: 'No partners match these filters.')
+                    else
+                      for (final provider in visibleProviders)
+                        ProviderListCard(
+                          provider: provider,
+                          onTap: () => openProviderDetail(provider),
+                        ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            for (final item in providers)
-              Builder(
-                builder: (context) {
-                  final provider = item as Map<String, dynamic>;
-                  return ProviderListCard(
-                    provider: provider,
-                    onTap: () => openProviderDetail(provider),
-                  );
-                },
-              ),
           ],
-        ],
+        ),
       ),
     );
   }

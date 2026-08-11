@@ -103,10 +103,10 @@ describe('partner operation row', () => {
     expect(row.checklist.map((item) => item.label)).not.toContain('Withdrawal bank');
     expect(row.checklist.map((item) => item.label)).not.toContain('Legacy tax');
     expect(row.matchingFlow.map((item) => [item.label, item.status])).toEqual([
-      ['First-pick', '1 record(s)'],
-      ['Marketplace', '1 participation record(s)'],
+      ['First-pick', '1 record'],
+      ['Marketplace', '1 participation record'],
       ['Customer choice', '1 selected'],
-      ['Chat', '1 room(s)'],
+      ['Chat', '1 room'],
     ]);
     expect(row.nextAction.status).toBe('CASH DEBT');
   });
@@ -144,10 +144,10 @@ describe('partner operation row', () => {
     );
 
     expect(row.matchingFlow.map((item) => [item.label, item.status])).toEqual([
-      ['First-pick', '4 record(s)'],
-      ['Marketplace', '5 participation record(s)'],
+      ['First-pick', '4 records'],
+      ['Marketplace', '5 participation records'],
       ['Customer choice', '3 selected'],
-      ['Chat', '2 room(s)'],
+      ['Chat', '2 rooms'],
     ]);
   });
 
@@ -184,6 +184,6 @@ describe('partner operation row', () => {
         }),
         DEFAULT_PROVIDER_OPS_POLICY,
       ),
-    ).toContain('Held by: KYC REJECTED, identity documents, status OFFLINE');
+    ).toContain('Blocked by: KYC REJECTED, identity documents, status OFFLINE');
   });
 });

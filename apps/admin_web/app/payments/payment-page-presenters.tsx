@@ -1,58 +1,68 @@
-import type { AdminPayment } from '../../lib/admin-api';
-import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
-import { AdminInlineForm } from '../../components/admin-inline-action-form';
-import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
-import { AdminDisclosure, AdminNotePanel } from '../../components/admin-surface';
-import { DateTimeText } from '../../components/date-time-text';
-import { AdminSignal, StatusBadge } from '../../components/status-badge';
-import { formatMoney as money, shortId } from '../../lib/admin-format';
-import { capturePayment, refundPayment, releasePayment, settleCashDebt, syncPayment } from './actions';
-import type { PaymentConfirmationAction } from './payment-action-confirmation';
-import { paymentActionConfirmHref } from './payment-action-confirmation';
-import { paymentActionExecutionMap } from './payment-action-execution-map';
-import type { PaymentOperationsTableRow } from './payment-operations-table-section';
-import {
-  paymentCallbackMeta,
-  paymentCallbackNeedsReview,
-  paymentCashDebtNeedsSettlement,
-  paymentOpsHint,
-  paymentRecordDate,
-  paymentStateLabel,
-  paymentStatusIsTerminal,
-} from './payment-page-rules';
+import type { ReactNode } from 'react';
 
-export function buildPaymentOperationsTableRows(payments: readonly AdminPayment[]): PaymentOperationsTableRow[] {
+import { AdminTextLink } from '../../components/admin-text-link';
+import type { StatusBadgeTone } from '../../components/status-badge';
+import type {
+  AdminPayment,
+  AdminPaymentActionDecision,
+  AdminPaymentEvidenceSummary,
+} from '../../lib/admin-api';
+import { shortId } from '../../lib/admin-format';
+import { capturePayment, refundPayment, releasePayment, syncPayment } from './actions';
+import {
+  paymentActionConfirmHref,
+  type PaymentConfirmationAction,
+} from './payment-action-confirmation';
+import type { PaymentOperationsTableRow } from './payment-operations-table-section';
+
+export function buildPaymentOperationsTableRows(
+  payments: readonly AdminPayment[],
+  returnTo = '/payments',
+): PaymentOperationsTableRow[] {
   return payments.map((payment) => {
-    const firstRefundId = payment.refunds?.at(0)?.id ?? null;
-    const cashDebtLabel = paymentCashDebtNeedsSettlement(payment)
-      ? `Cash fee debt ${money(Math.abs(payment.booking?.earning?.netAmount ?? 0), payment.currency)}`
-      : null;
+    const primaryDecision = payment.primaryAction ?? payment.actionDecisions?.find(
+      (decision) => decision.recommended && decision.state !== 'BLOCKED',
+    ) ?? null;
+    const history = payment.primaryQueue?.startsWith('history-') ?? false;
+    const primaryAction = primaryDecision
+      ? decisionLink(payment.id, primaryDecision, returnTo)
+      : payment.primaryQueue === 'cash-debt' && payment.booking?.earning?.id
+        ? <AdminTextLink href={cashSettlementHref(payment.booking.earning.id)}>Review cash evidence</AdminTextLink>
+        : history
+          ? <span className="muted">No action</span>
+          : <AdminTextLink href={paymentDetailHref(payment.id, returnTo)}>Review evidence</AdminTextLink>;
+    const evidence = paymentEvidenceDisplay(payment, history);
 
     return {
-      actionLabel: `Payment actions for ${shortId(payment.id)}`,
-      actions: paymentActionMenuItems(payment),
       amount: payment.amount,
+      bookingCreatedAt: payment.booking?.createdAt ?? null,
       bookingHref: `/bookings/${payment.bookingId}`,
+      bookingId: payment.bookingId,
       bookingIdLabel: shortId(payment.bookingId),
       bookingStatus: payment.booking?.status ?? 'UNKNOWN',
-      callbackEvidence: <PaymentCallbackEvidence payment={payment} />,
-      cashDebtLabel,
-      cashDebtSettlementForm:
-        paymentCashDebtNeedsSettlement(payment) && payment.booking?.earning?.id ? (
-          <CashDebtSettlementForm payment={payment} />
-        ) : null,
       currency: payment.currency,
-      customerPhone: payment.booking?.customerProfile?.user?.phone ?? 'No customer phone',
-      earningHref: payment.booking?.earning?.id ? `/earnings#earning-${payment.booking.earning.id}` : null,
-      executionRows: paymentActionExecutionMap(payment),
+      customerLabel:
+        payment.booking?.customerProfile?.user?.fullName ||
+        payment.booking?.customerProfile?.user?.phone ||
+        'Unknown customer',
+      bookingUpdatedAt: payment.booking?.updatedAt ?? payment.booking?.createdAt ?? null,
+      decisionLabel: history
+        ? 'No action · History'
+        : primaryDecision ? actionLabel(primaryDecision.action) : primaryQueueLabel(payment.primaryQueue),
+      decisionReason: primaryDecision?.reason ?? primaryQueueReason(payment.primaryQueue),
+      decisionTone: history ? 'neutral' : primaryDecision ? decisionTone(primaryDecision) : queueTone(payment.primaryQueue),
+      evidenceLabel: evidence.label,
+      evidenceReason: evidence.reason,
+      evidenceTone: evidence.tone,
       id: payment.id,
       method: payment.method,
-      opsHint: paymentOpsHint(payment),
-      opsSignal: paymentOpsSignal(payment),
-      providerRef: payment.providerRef ?? 'NONE',
-      recordDate: paymentRecordDate(payment),
-      refundHref: firstRefundId ? `/refunds#refund-${firstRefundId}` : null,
-      stateLabel: paymentStateLabel(payment),
+      partnerLabel:
+        payment.booking?.selectedProvider?.displayName ||
+        'No Partner selected',
+      paymentHref: paymentDetailHref(payment.id, returnTo),
+      paymentIdLabel: shortId(payment.id),
+      primaryAction,
+      providerRef: payment.providerRef ?? 'No gateway reference',
       status: payment.status,
     };
   });
@@ -60,163 +70,95 @@ export function buildPaymentOperationsTableRows(payments: readonly AdminPayment[
 
 export function paymentConfirmationAction(action: PaymentConfirmationAction) {
   switch (action) {
-    case 'capture':
-      return capturePayment;
-    case 'refund':
-      return refundPayment;
-    case 'release':
-      return releasePayment;
-    case 'sync':
-      return syncPayment;
+    case 'capture': return capturePayment;
+    case 'refund': return refundPayment;
+    case 'release': return releasePayment;
+    case 'sync': return syncPayment;
   }
 }
 
-function paymentActionMenuItems(payment: AdminPayment) {
-  const terminalPayment = paymentStatusIsTerminal(payment.status);
-  return [
-    {
-      description: 'Open payment detail, callback timeline, and linked booking evidence.',
-      href: `/payments/${payment.id}`,
-      kind: 'link' as const,
-      label: 'Open detail',
-      tone: 'info' as const,
-    },
-    {
-      description: payment.providerRef ? 'Confirm gateway sync before running it.' : 'Gateway reference is missing.',
-      disabled: !payment.providerRef,
-      href: paymentActionConfirmHref(payment.id, 'sync'),
-      kind: 'link' as const,
-      label: 'Sync',
-      tone: 'info' as const,
-    },
-    {
-      description: terminalPayment ? 'Terminal payments cannot be captured again.' : 'Review before capturing funds.',
-      disabled: terminalPayment,
-      href: paymentActionConfirmHref(payment.id, 'capture'),
-      kind: 'link' as const,
-      label: 'Capture',
-      tone: 'warning' as const,
-    },
-    {
-      description: terminalPayment ? 'Terminal payments cannot be released again.' : 'Review before releasing the hold.',
-      disabled: terminalPayment,
-      href: paymentActionConfirmHref(payment.id, 'release'),
-      kind: 'link' as const,
-      label: 'Release',
-      tone: 'warning' as const,
-    },
-    {
-      description:
-        payment.status === 'REFUNDED' || payment.status === 'RELEASED'
-          ? 'This payment cannot enter a new refund action.'
-          : 'Review evidence before starting a refund.',
-      disabled: payment.status === 'REFUNDED' || payment.status === 'RELEASED',
-      href: paymentActionConfirmHref(payment.id, 'refund'),
-      kind: 'link' as const,
-      label: 'Refund',
-      tone: 'danger' as const,
-    },
-  ];
-}
-
-function paymentOpsSignal(payment: AdminPayment) {
-  if (paymentCallbackNeedsReview(payment)) {
-    return <AdminSignal tone="warn">Callback check</AdminSignal>;
-  }
-  if (paymentCashDebtNeedsSettlement(payment)) {
-    return <AdminSignal tone="warn">Cash fee debt</AdminSignal>;
-  }
-  if (payment.status === 'AUTHORIZED') {
-    return <AdminSignal tone="warn">Capture after service</AdminSignal>;
-  }
-  if (payment.method === 'CASH' && payment.status === 'PENDING') {
-    return <AdminSignal tone="info">Cash collection</AdminSignal>;
-  }
-  if (payment.status === 'REFUNDED') {
-    return <AdminSignal tone="warn">Refund in motion</AdminSignal>;
-  }
-  if (payment.status === 'CAPTURED' || payment.status === 'RELEASED') {
-    return <AdminSignal tone="ok">Settled</AdminSignal>;
-  }
-  return <AdminSignal tone="info">Monitor payment</AdminSignal>;
-}
-
-function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }) {
-  const callback = paymentCallbackMeta(payment);
-  if (!callback.receivedAt) {
-    return (
-      <AdminNotePanel className="admin-mt-8">
-        <StatusBadge tone="neutral">No callback</StatusBadge>
-        <p className="muted admin-mt-6">
-          No gateway callback has been stored yet.
-        </p>
-      </AdminNotePanel>
-    );
-  }
-
-  const callbackLabel = callback.verified ? 'Verified callback' : 'Review callback';
-
+function decisionLink(paymentId: string, decision: AdminPaymentActionDecision, returnTo: string): ReactNode {
+  const action = decisionAction(decision.action);
   return (
-    <AdminNotePanel className="admin-mt-8">
-      <StatusBadge tone={callback.verified ? 'success' : 'warning'}>{callbackLabel}</StatusBadge>
-      <AdminStageList className="admin-mt-8">
-        <AdminStageItem>
-          <StatusBadge tone="info">Received</StatusBadge>
-          <div>
-            <strong>
-              <DateTimeText value={callback.receivedAt} />
-            </strong>
-            <p className="muted">Verification mode: {callback.mode ?? 'unknown'}</p>
-          </div>
-        </AdminStageItem>
-        <AdminStageItem>
-          <StatusBadge tone="neutral">Gateway</StatusBadge>
-          <div>
-            <strong>{callback.providerStatus ?? 'No status code'}</strong>
-            <p className="muted">
-              Transaction: {callback.gatewayTransactionId ?? 'none'} / Amount:{' '}
-              {callback.callbackAmount !== null ? money(callback.callbackAmount, payment.currency) : 'unknown'}
-            </p>
-          </div>
-        </AdminStageItem>
-      </AdminStageList>
-      {callback.rawKeys.length ? (
-        <AdminDisclosure className="admin-mt-8">
-          <summary>Callback payload keys</summary>
-          <p className="muted">{callback.rawKeys.join(', ')}</p>
-        </AdminDisclosure>
-      ) : null}
-    </AdminNotePanel>
+    <AdminTextLink href={paymentActionConfirmHref(paymentId, action, returnTo)}>
+      {actionLabel(decision.action)}
+    </AdminTextLink>
   );
 }
 
-function CashDebtSettlementForm({ payment }: { readonly payment: AdminPayment }) {
-  const earning = payment.booking?.earning;
-  if (!earning) {
-    return null;
-  }
+function decisionAction(action: AdminPaymentActionDecision['action']): PaymentConfirmationAction {
+  if (action === 'CAPTURE') return 'capture';
+  if (action === 'RELEASE') return 'release';
+  if (action === 'REQUEST_REFUND') return 'refund';
+  return 'sync';
+}
 
-  const debtAmount = Math.abs(earning.netAmount);
-  const settlementRef = `HANDS-CASH-${shortId(payment.bookingId).toUpperCase()}`;
-  return (
-    <AdminInlineForm action={settleCashDebt} className="admin-mt-8">
-      <input name="earningId" type="hidden" value={earning.id} />
-      <input name="settlementMethod" type="hidden" value="PARTNER_DEPOSIT" />
-      <AdminFormInput
-        defaultValue={settlementRef}
-        label="Cash debt settlement reference"
-        name="settlementRef"
-        placeholder={settlementRef}
-      />
-      <AdminFormInput
-        defaultValue={`Partner deposited ${money(debtAmount, earning.currency)} with ${settlementRef}`}
-        label="Cash debt settlement notes"
-        name="settlementNotes"
-        placeholder={`Partner deposited ${money(debtAmount, earning.currency)}`}
-      />
-      <AdminFormControlButton className="button-primary" type="submit">
-        Settle cash debt
-      </AdminFormControlButton>
-    </AdminInlineForm>
-  );
+function actionLabel(action: AdminPaymentActionDecision['action']) {
+  if (action === 'CAPTURE') return 'Capture payment';
+  if (action === 'RELEASE') return 'Release authorization';
+  if (action === 'REQUEST_REFUND') return 'Request refund review';
+  return 'Sync gateway status';
+}
+
+function decisionTone(decision: AdminPaymentActionDecision): StatusBadgeTone {
+  if (decision.action === 'REQUEST_REFUND') return 'danger';
+  if (decision.action === 'SYNC') return 'info';
+  return decision.recommended ? 'warning' : 'neutral';
+}
+
+function evidenceTone(state: AdminPaymentEvidenceSummary['state'] | undefined): StatusBadgeTone {
+  if (state === 'VERIFIED') return 'success';
+  if (state === 'CONFLICT') return 'danger';
+  if (state === 'MISSING') return 'warning';
+  return 'neutral';
+}
+
+function paymentEvidenceDisplay(payment: AdminPayment, history: boolean) {
+  if (history && (!payment.evidence || ['MISSING', 'NOT_APPLICABLE'].includes(payment.evidence.state))) {
+    return {
+      label: 'Not recorded',
+      reason: 'No current money action depends on this historical evidence field.',
+      tone: 'neutral' as const,
+    };
+  }
+  return {
+    label: payment.evidence?.label ?? 'Unavailable',
+    reason: payment.evidence?.reason ?? 'Payment evidence was not returned by the API.',
+    tone: evidenceTone(payment.evidence?.state),
+  };
+}
+
+function primaryQueueLabel(queue: AdminPayment['primaryQueue']) {
+  if (queue === 'evidence-conflict') return 'Review evidence conflict';
+  if (queue === 'missing-gateway-evidence') return 'Gateway evidence required';
+  if (queue === 'terminal-cash-cleanup') return 'Review terminal cash record';
+  if (queue === 'completed-authorization-blocked') return 'Capture blocked';
+  if (queue === 'failed-active') return 'Review failed active payment';
+  if (queue === 'cash-debt') return 'Review cash debt evidence';
+  if (queue === 'active-cash') return 'Monitor active cash';
+  return 'Review payment';
+}
+
+function primaryQueueReason(queue: AdminPayment['primaryQueue']) {
+  if (queue === 'evidence-conflict') return 'Gateway signature, outcome, or amount evidence conflicts.';
+  if (queue === 'terminal-cash-cleanup') return 'The booking is terminal but the cash payment record is still pending.';
+  if (queue === 'completed-authorization-blocked') return 'The booking completed, but retained evidence does not permit capture.';
+  if (queue === 'cash-debt') return 'Use Cash Settlements and retained bank deposit evidence; Payments cannot mark debt paid.';
+  return 'Open the payment detail to review the current server decision.';
+}
+
+function queueTone(queue: AdminPayment['primaryQueue']): StatusBadgeTone {
+  if (queue === 'evidence-conflict' || queue === 'failed-active') return 'danger';
+  if (queue === 'missing-gateway-evidence' || queue === 'terminal-cash-cleanup' || queue === 'completed-authorization-blocked' || queue === 'cash-debt') return 'warning';
+  if (queue === 'active-cash') return 'info';
+  return 'neutral';
+}
+
+function cashSettlementHref(earningId: string) {
+  const encoded = encodeURIComponent(earningId);
+  return `/cash-settlements?review=${encoded}&q=${encoded}`;
+}
+
+function paymentDetailHref(paymentId: string, returnTo: string) {
+  return `/payments/${encodeURIComponent(paymentId)}?returnTo=${encodeURIComponent(returnTo)}`;
 }

@@ -47,8 +47,8 @@ export function BookingCloseoutSections({
             <AdminTextLink href="/bookings?view=manual-decision">
               Manual decision queue
             </AdminTextLink>
-            <AdminTextLink href="/finance-closeout">
-              Finance closeout
+            <AdminTextLink href="/finance-tax/booking-settlement-audit?review=open">
+              Settlement records
             </AdminTextLink>
           </div>
         }

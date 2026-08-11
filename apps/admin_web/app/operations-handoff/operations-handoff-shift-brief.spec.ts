@@ -15,28 +15,33 @@ describe('operations history period brief model', () => {
       expect.objectContaining({
         owner: 'Dispatch',
         title: '5 matching wait',
-        detail: '4 active booking(s) need status continuity in this period.',
+        detail: '4 active bookings need status continuity in this period.',
         className: 'signal signal-warn',
+        status: 'Needs review',
       }),
       expect.objectContaining({
         owner: 'Partner Ops',
         title: '6 Partner facts to check',
         className: 'signal signal-warn',
+        status: 'Review',
       }),
       expect.objectContaining({
         owner: 'Finance',
-        title: '2 cash wallet gate(s)',
+        title: '2 cash wallet gates',
         className: 'signal signal-danger',
+        status: 'Settle',
       }),
       expect.objectContaining({
         owner: 'Support',
-        title: '3 recent customer record(s)',
+        title: '3 recent customer records',
         className: 'signal signal-info',
+        status: 'Reference',
       }),
       expect.objectContaining({
         owner: 'Alerts',
-        title: '1 failed delivery row(s)',
+        title: '1 failed delivery row',
         className: 'signal signal-warn',
+        status: 'Retry/check',
       }),
     ]);
   });

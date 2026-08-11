@@ -3,7 +3,12 @@ import type { ReactNode } from 'react';
 import { ActionMenuDropdownForm, ActionMenuDropdownSurface } from '../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
-import { AdminFormControlButton, AdminFormInput, AdminFormSelect } from '../../components/admin-form-controls';
+import {
+  AdminFormCheckbox,
+  AdminFormControlButton,
+  AdminFormInput,
+  AdminFormSelect,
+} from '../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
@@ -28,13 +33,14 @@ import {
   referralRewardCreditState,
   referralRewardDecisionLabel,
 } from '../../lib/referral-reward-credit-state';
-import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
+import { referralShareUrl, referralStoreSetupState, type ReferralAudienceSlug } from '../../lib/referral-links';
 import type { FinanceApproverOption } from '../finance-tax/finance-approver-options';
 import {
   approveReferralRewardCashout,
   creditReferralReward,
   holdReferralReward,
   markReferralRewardCashoutPaid,
+  releaseHeldReferralReward,
   requireReferralRewardTaxReview,
   reverseReferralReward,
 } from './actions';
@@ -44,15 +50,26 @@ type ReferralParentDetailPageProps =
   | {
       readonly audience: 'customer';
       readonly canViewDeveloperSetup?: boolean;
+      readonly actionNotice?: ReferralDetailNotice;
+      readonly actionReason?: string;
       readonly financeApproverOptions?: readonly FinanceApproverOption[];
+      readonly highlightRewardId?: string;
       readonly row: AdminCustomerReferralParent;
     }
   | {
       readonly audience: 'partner';
       readonly canViewDeveloperSetup?: boolean;
+      readonly actionNotice?: ReferralDetailNotice;
+      readonly actionReason?: string;
       readonly financeApproverOptions?: readonly FinanceApproverOption[];
+      readonly highlightRewardId?: string;
       readonly row: AdminPartnerReferralParent;
     };
+
+type ReferralDetailNotice = {
+  readonly message: string;
+  readonly tone: 'danger' | 'success' | 'warning';
+};
 
 type ReferralRewardRow = {
   readonly attributionId: string;
@@ -97,13 +114,14 @@ export function referralParentDetailHref(audience: ReferralAudienceSlug, id: str
 
 export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
   const isPartner = props.audience === 'partner';
-  const title = isPartner ? 'Partner Referral Detail' : 'Customer Referral Detail';
   const parentLabel = isPartner
     ? props.row.referrer.displayName ?? userLabel(props.row.referrer.user, 'Unknown Partner')
     : userLabel(props.row.referrer.user, 'Unknown customer');
+  const title = isPartner ? `Partner referral · ${parentLabel}` : `Customer referral · ${parentLabel}`;
   const profileHref = isPartner ? `/partners/${props.row.referrer.id}` : `/customers/${props.row.referrer.id}`;
   const rewardRows = referralRewardRows(props);
   const reviewSummary = referralRewardReviewSummary(rewardRows);
+  const shareSetupReady = referralStoreSetupReady(props.audience);
   const metrics: AdminPageMetric[] = [
     {
       label: 'Referral sign-ups',
@@ -113,7 +131,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
     {
       label: 'Reward records',
       value: numberOrZero(props.row.totals.rewardCount),
-      helper: 'Pending, available, held, reversed, or cancelled rewards.',
+      helper: 'Pending, available, on-hold, reversed, or cancelled rewards.',
     },
     {
       label: 'Available rewards',
@@ -126,7 +144,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
       helper: 'Rewards already posted to wallet credit records.',
     },
     {
-      label: 'Pending / held',
+      label: 'Pending / on hold',
       value: (
         <>
           <MoneyText amount={numberOrZero(props.row.totals.pendingRewardAmount)} fallback="0 VND" />
@@ -134,7 +152,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
           <MoneyText amount={numberOrZero(props.row.totals.heldRewardAmount)} fallback="0 VND" />
         </>
       ),
-      helper: 'Amounts still blocked by policy, fraud, or completion checks.',
+      helper: 'Amounts still blocked by policy, integrity, or completion checks.',
     },
   ];
 
@@ -154,9 +172,14 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
       metrics={metrics}
       title={title}
     >
+      {props.actionNotice ? (
+        <AdminInlineNotice className="admin-mt-16" role="status" tone={props.actionNotice.tone}>
+          {props.actionNotice.message}
+        </AdminInlineNotice>
+      ) : null}
       <AdminSection
         className="referral-parent-account-panel admin-mt-16"
-        statusLabel={`${props.row.totals.referralCount} referral(s)`}
+        statusLabel={formatCount(props.row.totals.referralCount, 'referral')}
         statusTone="info"
         title="Parent account"
       >
@@ -194,13 +217,15 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
             {
               key: 'share-link',
               label: 'Share link',
-              value: props.row.referralCode ? 'Available' : 'Not ready',
+              value: props.row.referralCode ? (shareSetupReady ? 'Available' : 'Setup blocked') : 'Not ready',
               detail: 'Public link routes to the correct app store.',
               action: props.row.referralCode ? (
                 <>
-                  <AdminTextLink href={referralShareUrl(props.audience, props.row.referralCode.code)}>
-                    Open referral link
-                  </AdminTextLink>
+                  {shareSetupReady ? (
+                    <AdminTextLink href={referralShareUrl(props.audience, props.row.referralCode.code)}>
+                      Open referral link
+                    </AdminTextLink>
+                  ) : null}
                   <ReferralStoreSetupStatus
                     audience={props.audience}
                     canViewDeveloperSetup={props.canViewDeveloperSetup ?? false}
@@ -227,11 +252,11 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
       <ReferralRewardDecisionTimeline referrals={props.row.referrals} summary={reviewSummary} />
 
       <AdminTablePanel
-        resultLabel={`${props.row.referrals.length} attribution(s)`}
+        resultLabel={formatCount(props.row.referrals.length, 'attribution')}
         resultTone="info"
         title="Referral attributions"
       >
-        <AdminTableScroll>
+        <AdminTableScroll ariaLabel="Referral attribution records">
           <AdminDataTable
             className="vuexy-booking-table"
             emptyMessage="No referral attribution records for this parent."
@@ -247,9 +272,9 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                   <td>{referred}</td>
                   <td>
                     <AdminFilterChipGroup>
-                      <StatusBadge tone={referralStatusTone(referral.status)}>{referral.status}</StatusBadge>
+                      <StatusBadge tone={referralStatusTone(referral.status)}>{referralStatusLabel(referral.status)}</StatusBadge>
                       <StatusBadge tone={referral.fraudReviewStatus === 'CLEAR' ? 'success' : 'warning'}>
-                        {referral.fraudReviewStatus}
+                        {fraudReviewStatusLabel(referral.fraudReviewStatus)}
                       </StatusBadge>
                     </AdminFilterChipGroup>
                   </td>
@@ -277,13 +302,13 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
       </AdminTablePanel>
 
       <AdminTablePanel
-        resultLabel={`${rewardRows.length} reward(s)`}
+        resultLabel={formatCount(rewardRows.length, 'reward')}
         resultTone="info"
         title="Reward ledger"
       >
-        <AdminTableScroll>
+        <AdminTableScroll ariaLabel="Referral reward ledger" className="referral-reward-ledger-scroll">
           <AdminDataTable
-            className="vuexy-booking-table"
+            className="vuexy-booking-table referral-reward-ledger-table"
             emptyMessage="No referral reward records for this parent."
             headers={['Referred', 'Reward', 'Status', 'Booking', 'Credit State', 'Created', 'Actions']}
             rowCount={rewardRows.length}
@@ -308,13 +333,13 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                   </strong>
                   {reward.availableAt ? (
                     <p className="muted">
-                      Available <DateTimeText value={reward.availableAt} />
+                      Eligible since <DateTimeText value={reward.availableAt} />
                     </p>
                   ) : null}
                   <ReferralRewardCalculationSnapshot reward={reward} />
                 </td>
                 <td>
-                  <StatusBadge tone={rewardStatusTone(reward.status)}>{reward.status}</StatusBadge>
+                  <StatusBadge tone={rewardStatusTone(reward.status)}>{rewardStatusLabel(reward.status)}</StatusBadge>
                 </td>
                 <td>
                   <ReferralQualifyingBookingCell bookingId={reward.qualifyingBookingId} />
@@ -329,6 +354,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                 </td>
                 <td>
                   <ReferralRewardActions
+                    actionReason={props.highlightRewardId === reward.id ? props.actionReason : undefined}
                     audience={props.audience}
                     financeApproverOptions={props.financeApproverOptions ?? []}
                     parentId={props.row.referrer.id}
@@ -357,7 +383,7 @@ function ReferralRewardDecisionTimeline({
   return (
     <AdminSection
       className="referral-reward-decision-timeline-panel admin-mt-16"
-      statusLabel={`${summary.ready.count + summary.held.count + summary.pending.count} open reward(s)`}
+      statusLabel={formatCount(summary.ready.count + summary.held.count + summary.pending.count, 'open reward')}
       statusTone={summary.held.count > 0 || reviewCount > 0 ? 'warning' : summary.ready.count > 0 ? 'success' : 'info'}
       title="Reward decision timeline"
     >
@@ -400,7 +426,7 @@ function referralRewardDecisionTimelineItems({
         { label: 'Qualified', value: `${qualifiedCount}` },
         { label: 'Needs review', value: `${reviewCount}` },
       ],
-      title: 'Qualification and fraud check',
+      title: 'Qualification and integrity check',
       tone: reviewCount > 0 ? 'warning' : 'success',
       value: `${qualifiedCount} qualified · ${reviewCount} review`,
     },
@@ -408,19 +434,19 @@ function referralRewardDecisionTimelineItems({
       detail: (
         <>
           <MoneyText amount={summary.ready.amount} fallback="0 VND" /> ready ·{' '}
-          <MoneyText amount={summary.held.amount} fallback="0 VND" /> held ·{' '}
+          <MoneyText amount={summary.held.amount} fallback="0 VND" /> on hold ·{' '}
           <MoneyText amount={summary.pending.amount} fallback="0 VND" /> pending
         </>
       ),
       id: 'reward-queue',
       meta: [
         { label: 'Ready', value: `${summary.ready.count}` },
-        { label: 'Held', value: `${summary.held.count}` },
+        { label: 'On hold', value: `${summary.held.count}` },
         { label: 'Pending', value: `${summary.pending.count}` },
       ],
       title: 'Reward queue',
       tone: summary.held.count > 0 ? 'warning' : summary.ready.count > 0 ? 'success' : 'info',
-      value: `${summary.ready.count} ready · ${summary.held.count} held · ${summary.pending.count} pending`,
+      value: `${summary.ready.count} ready · ${summary.held.count} on hold · ${summary.pending.count} pending`,
     },
     {
       detail: 'Use row actions for wallet credit, hold, or reversal.',
@@ -458,11 +484,11 @@ function ReferralAttributionRewardCell({
     <AdminFilterChipGroup>
       {summary.ready.count > 0 ? <StatusBadge tone="success">Ready {summary.ready.count}</StatusBadge> : null}
       {summary.pending.count > 0 ? <StatusBadge tone="warning">Pending {summary.pending.count}</StatusBadge> : null}
-      {summary.held.count > 0 ? <StatusBadge tone="warning">Held {summary.held.count}</StatusBadge> : null}
+      {summary.held.count > 0 ? <StatusBadge tone="warning">On hold {summary.held.count}</StatusBadge> : null}
       {summary.credited.count > 0 ? <StatusBadge tone="success">Credited {summary.credited.count}</StatusBadge> : null}
       {summary.closed.count > 0 ? <StatusBadge tone="neutral">Closed {summary.closed.count}</StatusBadge> : null}
       <p className="muted">
-        {rewardCount} reward(s) / <MoneyText amount={totalAmount} fallback="0 VND" />
+        {formatCount(rewardCount, 'reward')} / <MoneyText amount={totalAmount} fallback="0 VND" />
       </p>
     </AdminFilterChipGroup>
   );
@@ -480,7 +506,7 @@ function ReferralOperationsBoard({
   return (
     <AdminSection
       className="referral-operations-board-panel admin-mt-16"
-      statusLabel={`${summary.ready.count} ready / ${summary.held.count} held`}
+      statusLabel={`${summary.ready.count} ready / ${summary.held.count} on hold`}
       statusTone={summary.ready.count > 0 ? 'success' : summary.held.count > 0 ? 'warning' : 'info'}
       title="Referral operations board"
     >
@@ -494,7 +520,7 @@ function ReferralOperationsBoard({
           },
           referralRewardReviewMetric('ready-to-credit', 'Ready to credit', summary.ready),
           referralRewardReviewMetric('pending-checks', 'Pending checks', summary.pending),
-          referralRewardReviewMetric('held-for-review', 'Held for review', summary.held),
+          referralRewardReviewMetric('held-for-review', 'On hold for review', summary.held),
           referralRewardReviewMetric('ledger-posted', 'Ledger posted', summary.credited),
           referralRewardReviewMetric('closed-rewards', 'Closed rewards', summary.closed),
           {
@@ -513,17 +539,19 @@ function referralRewardReviewMetric(key: string, label: string, summary: Referra
   return {
     key,
     label,
-    value: `${summary.count} reward(s)`,
+    value: formatCount(summary.count, 'reward'),
     detail: <MoneyText amount={summary.amount} fallback="0 VND" />,
   };
 }
 
 function ReferralRewardActions({
+  actionReason,
   audience,
   financeApproverOptions,
   parentId,
   reward,
 }: {
+  readonly actionReason?: string;
   readonly audience: ReferralAudienceSlug;
   readonly financeApproverOptions: readonly FinanceApproverOption[];
   readonly parentId: string;
@@ -534,14 +562,15 @@ function ReferralRewardActions({
   const canRequireTaxReview = reward.status === 'CASHOUT_REQUESTED' || reward.status === 'CASHOUT_APPROVED';
   const paidApprovalUnavailable = canMarkCashoutPaid && financeApproverOptions.length === 0;
 
-  if (reward.walletLedgerReference && !canApproveCashout && !canMarkCashoutPaid && !canRequireTaxReview) {
-    return <span className="muted">Ledger posted</span>;
-  }
-
-  const canHold = reward.status === 'PENDING' || reward.status === 'AVAILABLE';
-  const canCredit = reward.status === 'AVAILABLE';
-  const canReverse = reward.status === 'PENDING' || reward.status === 'AVAILABLE' || reward.status === 'HELD';
-  if (!canHold && !canCredit && !canReverse && !canApproveCashout && !canMarkCashoutPaid && !canRequireTaxReview) {
+  const hasWalletLedger = Boolean(reward.walletLedgerReference);
+  const canHold = !hasWalletLedger && (reward.status === 'PENDING' || reward.status === 'AVAILABLE');
+  const canCredit = !hasWalletLedger && reward.status === 'AVAILABLE';
+  const canReleaseHold = !hasWalletLedger && reward.status === 'HELD';
+  const canReverse =
+    (hasWalletLedger && reward.status === 'CREDITED') ||
+    (!hasWalletLedger &&
+      (reward.status === 'PENDING' || reward.status === 'AVAILABLE' || reward.status === 'HELD'));
+  if (!canHold && !canCredit && !canReleaseHold && !canReverse && !canApproveCashout && !canMarkCashoutPaid && !canRequireTaxReview) {
     return <AdminInlineFallback>No action</AdminInlineFallback>;
   }
 
@@ -550,11 +579,14 @@ function ReferralRewardActions({
     canCredit,
     canHold,
     canMarkCashoutPaid,
+    canReleaseHold,
     canRequireTaxReview,
     canReverse,
   });
   const hiddenInputs = referralRewardHiddenInputs({
     audience,
+    expectedStatus: reward.status,
+    expectedUpdatedAt: reward.updatedAt,
     parentId,
     rewardId: reward.id,
   });
@@ -574,11 +606,30 @@ function ReferralRewardActions({
           <span>Reason</span>
           <AdminFormInput
             className="referral-reward-action-reason-input"
+            defaultValue={actionReason}
             label="Reward decision reason"
+            maxLength={500}
+            minLength={12}
             name="reason"
-            placeholder="Operator decision reason"
+            placeholder="12-500 characters describing the evidence and decision"
+            required
           />
         </div>
+        <div className="referral-reward-action-evidence" aria-label="Reward decision evidence">
+          <strong>Decision evidence</strong>
+          <span>Current state: {rewardStatusLabel(reward.status)}</span>
+          <span>Amount: <MoneyText amount={reward.amount} currency={reward.currency} fallback="0 VND" /></span>
+          <span>{reward.qualifyingBookingId ? `Booking: ${reward.qualifyingBookingId}` : 'Booking evidence unavailable'}</span>
+          <span>{referralRewardActionImpact(reward)}</span>
+        </div>
+        <AdminFormCheckbox
+          label="Confirm reward decision"
+          name="confirmation"
+          required
+          value="confirmed"
+        >
+          I reviewed the current state, booking evidence, reason, and wallet impact.
+        </AdminFormCheckbox>
         {canMarkCashoutPaid ? (
           <>
             <div className="referral-reward-action-reason">
@@ -634,6 +685,7 @@ function referralRewardActionItems({
   canCredit,
   canHold,
   canMarkCashoutPaid,
+  canReleaseHold,
   canRequireTaxReview,
   canReverse,
 }: {
@@ -641,6 +693,7 @@ function referralRewardActionItems({
   readonly canCredit: boolean;
   readonly canHold: boolean;
   readonly canMarkCashoutPaid: boolean;
+  readonly canReleaseHold: boolean;
   readonly canRequireTaxReview: boolean;
   readonly canReverse: boolean;
 }): ReferralRewardActionForm[] {
@@ -676,6 +729,13 @@ function referralRewardActionItems({
     });
   }
 
+  if (canReleaseHold) {
+    actions.push({
+      action: releaseHeldReferralReward,
+      label: 'Release hold',
+    });
+  }
+
   if (canHold) {
     actions.push({
       action: holdReferralReward,
@@ -703,10 +763,14 @@ export function referralParentNeedsFinanceApprover(
 
 function referralRewardHiddenInputs({
   audience,
+  expectedStatus,
+  expectedUpdatedAt,
   parentId,
   rewardId,
 }: {
   readonly audience: ReferralAudienceSlug;
+  readonly expectedStatus: string;
+  readonly expectedUpdatedAt: string;
   readonly parentId: string;
   readonly rewardId: string;
 }) {
@@ -714,7 +778,22 @@ function referralRewardHiddenInputs({
     { name: 'rewardId', value: rewardId },
     { name: 'audience', value: audience },
     { name: 'parentId', value: parentId },
+    { name: 'expectedStatus', value: expectedStatus },
+    { name: 'expectedUpdatedAt', value: expectedUpdatedAt },
   ] as const;
+}
+
+function referralRewardActionImpact(reward: AdminReferralReward) {
+  if (reward.status === 'AVAILABLE') return 'Credit posts wallet liability; hold or reverse does not post a wallet credit.';
+  if (reward.status === 'HELD') return 'Release returns the reward to AVAILABLE; reverse closes it without wallet credit.';
+  if (reward.status === 'CREDITED') return 'Reverse creates compensating wallet ledger evidence; it does not delete history.';
+  if (reward.status.startsWith('CASHOUT_')) return 'Cashout actions change payout state and require finance evidence.';
+  return 'This state change does not post wallet value unless a later credit succeeds.';
+}
+
+function referralStoreSetupReady(audience: ReferralAudienceSlug) {
+  const setup = referralStoreSetupState(audience);
+  return setup.publicBase && setup.android && setup.ios;
 }
 
 function ReferralCreditStateCell({ reward }: { readonly reward: AdminReferralReward }) {
@@ -802,7 +881,7 @@ function referralRewardDecisionSummary(reward: AdminReferralReward) {
   if (reward.availableAt) {
     return (
       <>
-        Available <DateTimeText value={reward.availableAt} />
+        Eligible since <DateTimeText value={reward.availableAt} />
       </>
     );
   }
@@ -830,7 +909,7 @@ function referralRewardDecisionEvidence(reward: AdminReferralReward) {
       id: 'available-at',
       node: (
         <>
-          Available <DateTimeText value={reward.availableAt} />
+          Eligible since <DateTimeText value={reward.availableAt} />
         </>
       ),
     });
@@ -959,8 +1038,8 @@ function addReferralRewardReviewAmount(bucket: { amount: number; count: number }
 
 function referralRewardNextOperatorAction(summary: ReferralRewardReviewSummary) {
   if (summary.ready.count > 0) return 'Credit ready rewards or hold suspicious rows.';
-  if (summary.held.count > 0) return 'Review held rewards before release or reversal.';
-  if (summary.pending.count > 0) return 'Wait for booking, hold-period, and fraud checks.';
+  if (summary.held.count > 0) return 'Review rewards on hold before release or reversal.';
+  if (summary.pending.count > 0) return 'Wait for booking, hold-period, and integrity checks.';
   if (summary.closed.count > 0) return 'No wallet action needed for closed rewards.';
   return 'No referral reward action needed.';
 }
@@ -1042,6 +1121,50 @@ function rewardStatusTone(status: string): StatusBadgeTone {
   }
   if (status === 'REVERSED' || status === 'CANCELLED') return 'danger';
   return 'neutral';
+}
+
+function referralStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    BLOCKED: 'Blocked',
+    CANCELLED: 'Cancelled',
+    PENDING: 'Pending checks',
+    QUALIFIED: 'Qualified',
+    REWARDED: 'Rewarded',
+  };
+  return labels[status] ?? status.replaceAll('_', ' ').toLowerCase().replace(/^./, (letter) => letter.toUpperCase());
+}
+
+function fraudReviewStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    CLEAR: 'Integrity clear',
+    HELD: 'Integrity hold',
+    REVIEW: 'Integrity review',
+  };
+  return labels[status] ?? `Integrity ${status.replaceAll('_', ' ').toLowerCase()}`;
+}
+
+function rewardStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    AVAILABLE: 'Ready to credit',
+    CANCELLED: 'Cancelled',
+    CASHOUT_APPROVED: 'Cashout approved',
+    CASHOUT_REQUESTED: 'Cashout requested',
+    CREDITED: 'Credited',
+    HELD: 'On hold',
+    LOCKED: 'Processing',
+    OFFSET: 'Offset',
+    PAID: 'Paid',
+    PENDING: 'Pending checks',
+    REVERSED: 'Reversed',
+    REWARDED: 'Rewarded',
+    TAX_REVIEW_REQUIRED: 'Tax review required',
+    USED_FOR_SERVICE: 'Used for service',
+  };
+  return labels[status] ?? status.replaceAll('_', ' ').toLowerCase().replace(/^./, (letter) => letter.toUpperCase());
+}
+
+function formatCount(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`;
 }
 
 function userLabel(user: AdminReferralUserSummary | null | undefined, fallback: string) {

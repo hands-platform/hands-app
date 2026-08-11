@@ -1,9 +1,7 @@
 import type { ReactNode } from 'react';
 
-import Link from 'next/link';
-import { ChevronDown } from 'lucide-react';
-
 import { ActionMenu } from '../../components/action-menu';
+import { ClientActionDropdown } from '../../components/client-action-dropdown';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import type { TaxFinanceWorkflowLink } from './tax-settlement-page-model';
 
@@ -21,47 +19,20 @@ export function TaxFinanceWorkflowActions({
 
     return (
       <div className="tax-finance-workflow-actions">
-        {children ? (
-          <details className="tax-finance-workflow-dropdown tax-finance-workflow-export-dropdown">
-            <summary
-              aria-label="Finance export actions"
-              className="admin-form-control-summary button-secondary tax-finance-workflow-dropdown-trigger"
-            >
-              <span>Export CSV</span>
-              <ChevronDown aria-hidden="true" size={16} />
-            </summary>
-            <div className="admin-action-menu tax-finance-workflow-dropdown-menu tax-finance-workflow-export-menu" role="menu">
-              {children}
-            </div>
-          </details>
-        ) : null}
+        {children}
         {primaryLink ? (
           <AdminFormControlLink className="button-secondary" href={primaryLink.href}>
             {primaryLink.label}
           </AdminFormControlLink>
         ) : null}
-        <details className="tax-finance-workflow-dropdown">
-          <summary
-            aria-label="More finance workflow actions"
-            className="admin-form-control-summary button-secondary tax-finance-workflow-dropdown-trigger"
-          >
-            <span>More finance pages</span>
-            <ChevronDown aria-hidden="true" size={16} />
-          </summary>
-          <div className="admin-action-menu tax-finance-workflow-dropdown-menu" role="menu">
-            {secondaryLinks.map((link) => (
-              <Link
-                className="admin-action-item tax-finance-workflow-dropdown-link"
-                href={link.href}
-                key={link.key}
-                prefetch={false}
-                role="menuitem"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-        </details>
+        <ClientActionDropdown
+          actions={secondaryLinks.map((link) => ({ href: link.href, label: link.label }))}
+          className="tax-finance-workflow-dropdown"
+          itemClassName="tax-finance-workflow-dropdown-link"
+          label="More finance pages"
+          menuClassName="tax-finance-workflow-dropdown-menu"
+          triggerClassName="button-secondary tax-finance-workflow-dropdown-trigger"
+        />
       </div>
     );
   }

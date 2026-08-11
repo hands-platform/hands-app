@@ -249,6 +249,61 @@ void main() {
 
     await server.close(force: true);
   });
+
+  test('loads and updates the seven-day partner working-hours contract',
+      () async {
+    Map<String, dynamic>? updateBody;
+    final requests = <String>[];
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final workingHours = List.generate(
+      7,
+      (index) => <String, dynamic>{
+        'weekday': index + 1,
+        'enabled': index < 5,
+        'startMinute': 540,
+        'endMinute': 1080,
+      },
+    );
+
+    unawaited(
+      server.forEach((request) async {
+        requests.add('${request.method} ${request.uri.path}');
+        request.response.headers.contentType = ContentType.json;
+        if (request.method == 'PUT') {
+          updateBody = jsonDecode(await utf8.decoder.bind(request).join())
+              as Map<String, dynamic>;
+        }
+        request.response.write(jsonEncode({
+          'availabilityIntent': 'AVAILABLE',
+          'workingHours': workingHours,
+        }));
+        await request.response.close();
+      }),
+    );
+
+    final repository = ProviderProfileRepositoryImpl(
+      api: ApiClient(
+        baseUrl: 'http://${server.address.host}:${server.port}',
+        tokenRefreshMode: TokenRefreshMode.disabled,
+      ),
+      socket: RealtimeSocket(baseUrl: 'http://localhost:3000'),
+      locationDataSource: _NoLocationDataSource(),
+      deviceIdentityDataSource: const _FakeDeviceIdentityDataSource(),
+    );
+
+    final current = await repository.availability();
+    final updated = await repository.updateWorkingHours(workingHours);
+
+    expect(current['availabilityIntent'], 'AVAILABLE');
+    expect(updated['workingHours'], hasLength(7));
+    expect(updateBody, {'workingHours': workingHours});
+    expect(requests, [
+      'GET /partner/availability',
+      'PUT /partner/availability',
+    ]);
+
+    await server.close(force: true);
+  });
 }
 
 class _NoLocationDataSource extends ProviderDeviceLocationDataSource {

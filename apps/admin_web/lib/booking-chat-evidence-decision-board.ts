@@ -74,17 +74,20 @@ export function bookingChatEvidenceDecisionBoard(
   const noteCount = input.operatorNoteLines.length;
   const hasContextEvidence =
     input.messageCount > 0 || input.hasLatestLocation || input.alertCount > 0 || noteCount > 0;
+  const hasDecisionEvidence = input.messageCount > 0 && noteCount > 0;
   const mobileHidden = TERMINAL_BOOKING_STATUSES.has(input.bookingStatus) && input.hasChatRoom;
   const chatArchiveHref = `/chat-archive?q=${encodeURIComponent(input.bookingId)}`;
   const status = input.hasChatRoom
-    ? hasContextEvidence
-      ? 'Chat evidence ready'
-      : 'Chat room quiet'
+    ? input.messageCount === 0
+      ? 'Retained room · no messages'
+      : hasDecisionEvidence
+        ? 'Chat evidence ready'
+        : 'Chat evidence partial'
     : chatRequired
       ? 'Chat repair needed'
       : 'Chat locked until match';
   const tone: BoardTone = input.hasChatRoom
-    ? hasContextEvidence
+    ? hasDecisionEvidence
       ? 'pill-success'
       : 'pill-warn'
     : chatRequired
@@ -176,8 +179,8 @@ export function bookingChatEvidenceDecisionBoard(
       {
         lane: 'Retained review context',
         scope: 'Alerts, audit rows, and operator notes preserve support context after mobile chat closes.',
-        state: hasContextEvidence ? 'Context loaded' : 'Needs operator note',
-        tone: hasContextEvidence ? 'pill-success' : 'pill-warn',
+        state: hasDecisionEvidence ? 'Evidence ready' : hasContextEvidence ? 'Partial context' : 'Needs operator note',
+        tone: hasDecisionEvidence ? 'pill-success' : 'pill-warn',
         record: `${input.alertCount} notification row(s), ${input.auditLogCount} audit row(s), ${noteCount} note(s).`,
         operatorUse: 'Add a factual note when chat is quiet, missing, or insufficient for an outcome change.',
         href: '#operator-notes',

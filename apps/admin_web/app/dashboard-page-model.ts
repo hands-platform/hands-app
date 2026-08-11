@@ -74,11 +74,13 @@ const DASHBOARD_OPERATIONAL_POLICY_HREF = `/admin/operational-policy?${new URLSe
 }).toString()}`;
 
 export function buildDashboardViewMode(params: DashboardParams): DashboardViewMode {
+  // Start Shift is intentionally summary-only. Historical diagnostics live in their
+  // dedicated operational, finance, audit, and Developer/System workspaces.
   const detailsMode = normalizeDashboardDetailsMode(readSearchParam(params.details));
   return {
     detailsMode,
-    operationsMode: normalizeDashboardOperationsMode(readSearchParam(params.operations)),
-    shouldRenderFullDashboard: detailsMode === 'booking' || detailsMode === 'operations',
+    operationsMode: 'live',
+    shouldRenderFullDashboard: false,
   };
 }
 
@@ -148,9 +150,10 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
 }
 
 function dashboardListDataRequirements(
-  viewMode: DashboardViewMode,
+  _viewMode: DashboardViewMode,
 ): DashboardListDataRequirements {
-  const none: DashboardListDataRequirements = {
+  void _viewMode;
+  return {
     appSessions: false,
     audit: false,
     earnings: false,
@@ -160,51 +163,6 @@ function dashboardListDataRequirements(
     payments: false,
     payoutBatches: false,
     refunds: false,
-  };
-
-  if (viewMode.detailsMode === 'booking') {
-    return {
-      ...none,
-      audit: true,
-      operationalPolicy: true,
-      partners: true,
-      payments: true,
-    };
-  }
-
-  if (viewMode.detailsMode !== 'operations') {
-    return none;
-  }
-
-  if (viewMode.operationsMode === 'analysis') {
-    return {
-      ...none,
-      operationalPolicy: true,
-      partners: true,
-      payments: true,
-    };
-  }
-
-  if (viewMode.operationsMode === 'partner') {
-    return {
-      ...none,
-      appSessions: true,
-      earnings: true,
-      operationalPolicy: true,
-      partners: true,
-    };
-  }
-
-  return {
-    ...none,
-    audit: true,
-    earnings: true,
-    notifications: true,
-    operationalPolicy: true,
-    partners: true,
-    payments: true,
-    payoutBatches: true,
-    refunds: true,
   };
 }
 
@@ -228,24 +186,22 @@ function dashboardDataLimits(viewMode: DashboardViewMode) {
 
 export function buildDashboardRange(params: DashboardParams) {
   const rangeParam = readSearchParam(params.range);
-  return rangeParam ? normalizeDateRange(rangeParam) : 'today';
+  const range = rangeParam ? normalizeDateRange(rangeParam) : 'today';
+  return range === 'all' || range === '90d' ? '30d' : range;
 }
 
-export function buildDashboardDetailsHref(detailsMode: DashboardDetailsMode, params: DashboardParams) {
+export function buildDashboardDetailsHref(_detailsMode: DashboardDetailsMode, params: DashboardParams) {
   const query = new URLSearchParams();
   const range = readSearchParam(params.range);
   if (range) {
     query.set('range', range);
-  }
-  if (detailsMode !== 'summary') {
-    query.set('details', detailsMode);
   }
   const value = query.toString();
   return value ? `/?${value}` : '/';
 }
 
 export function buildDashboardOperationsHref(
-  operationsMode: DashboardOperationsMode,
+  _operationsMode: DashboardOperationsMode,
   params: DashboardParams,
 ) {
   const query = new URLSearchParams();
@@ -253,19 +209,13 @@ export function buildDashboardOperationsHref(
   if (range) {
     query.set('range', range);
   }
-  query.set('details', 'operations');
-  if (operationsMode !== 'live') {
-    query.set('operations', operationsMode);
-  }
-  return `/?${query.toString()}`;
+  const value = query.toString();
+  return value ? `/?${value}` : '/';
 }
 
-function normalizeDashboardDetailsMode(value: string): DashboardDetailsMode {
-  return value === 'all' || value === 'booking' || value === 'operations' ? value : 'summary';
-}
-
-function normalizeDashboardOperationsMode(value: string): DashboardOperationsMode {
-  return value === 'analysis' || value === 'partner' || value === 'closeout' ? value : 'live';
+function normalizeDashboardDetailsMode(_value: string): DashboardDetailsMode {
+  void _value;
+  return 'summary';
 }
 
 function buildDashboardDateScopedHref(

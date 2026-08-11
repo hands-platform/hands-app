@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import { AdminTraceSummary } from '../components/admin-overview-card';
+import { DateTimeText } from '../components/date-time-text';
+import { StatusBadge } from '../components/status-badge';
 
 const DASHBOARD_SUMMARY_STALE_MS = 5 * 60_000;
 
@@ -16,6 +18,14 @@ export type DashboardTraceSummaryMetric = {
 };
 
 export type DashboardSourceState = 'available' | 'stale' | 'unavailable';
+export type DashboardDataScope = 'all-open' | 'current-shift' | 'historical' | 'today';
+
+const DASHBOARD_DATA_SCOPE_LABELS: Record<DashboardDataScope, string> = {
+  'all-open': 'All open',
+  'current-shift': 'Today so far',
+  historical: 'Historical',
+  today: 'Today',
+};
 
 export function dashboardSourceState(
   value: unknown,
@@ -59,6 +69,101 @@ export function combinedDashboardSourceState(
     return 'unavailable';
   }
   return states.includes('stale') ? 'stale' : 'available';
+}
+
+export function DashboardDataScopeStatus({
+  dataClass,
+  generatedAt,
+  partialSourceCount = 0,
+  refreshSeconds,
+  scope,
+  scopeEnd,
+  scopeStart,
+  sourceState,
+  testDataLabel,
+}: {
+  readonly dataClass?: 'live' | 'backlog' | 'anomaly' | 'test';
+  readonly generatedAt?: string | null;
+  readonly partialSourceCount?: number;
+  readonly refreshSeconds?: number;
+  readonly scope: DashboardDataScope;
+  readonly scopeEnd?: string | null;
+  readonly scopeStart?: string | null;
+  readonly sourceState: DashboardSourceState;
+  readonly testDataLabel?: string;
+}) {
+  const isPartial = sourceState !== 'unavailable' && partialSourceCount > 0;
+  const tone = sourceState === 'unavailable'
+    ? 'danger'
+    : isPartial || sourceState === 'stale'
+      ? 'warning'
+      : 'success';
+  const scopeDurationHours =
+    scopeStart && scopeEnd ? (Date.parse(scopeEnd) - Date.parse(scopeStart)) / 3_600_000 : Number.NaN;
+  const boundedScopeLabel =
+    Number.isFinite(scopeDurationHours) && scopeDurationHours >= 23.9 && scopeDurationHours <= 24.1
+      ? '24h live window'
+      : 'Selected window';
+
+  if (scope === 'current-shift') {
+    const healthLabel = sourceState === 'unavailable'
+      ? 'Source unavailable'
+      : isPartial
+        ? `${partialSourceCount} source${partialSourceCount === 1 ? '' : 's'} unavailable`
+        : sourceState === 'stale'
+          ? 'Source delayed'
+          : 'All sources healthy';
+
+    return (
+      <>
+        <StatusBadge tone={tone}>
+          Today so far · {sourceState === 'unavailable' ? null : (
+            <>
+              Updated <DateTimeText fallback="Unavailable" value={generatedAt} /> ICT ·
+              {' '}
+            </>
+          )}{healthLabel}
+        </StatusBadge>
+        <small className="start-shift-scope-helper">
+          {testDataLabel ?? (dataClass === 'test' ? 'Test data' : 'Test data excluded')}
+          {refreshSeconds ? ` · Refresh every ${refreshSeconds}s` : ''}
+        </small>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <StatusBadge tone="info">{DASHBOARD_DATA_SCOPE_LABELS[scope]}</StatusBadge>
+      {dataClass ? (
+        <StatusBadge tone={dataClass === 'anomaly' ? 'warning' : dataClass === 'test' ? 'danger' : 'neutral'}>
+          {testDataLabel ??
+            (dataClass === 'test'
+              ? 'Test data'
+              : `${boundedScopeLabel} · Vietnam time · Test data excluded`)}
+        </StatusBadge>
+      ) : null}
+      <StatusBadge tone={tone}>
+        {sourceState === 'unavailable' ? (
+          'Source unavailable'
+        ) : (
+          <>
+            {isPartial
+              ? `Partial data · ${partialSourceCount} source${partialSourceCount === 1 ? '' : 's'} unavailable · updated `
+              : sourceState === 'stale'
+                ? 'Source delayed · updated '
+                : scope === 'historical'
+                  ? 'Snapshot · updated '
+                  : 'Live · updated '}
+            <DateTimeText fallback="Unavailable" value={generatedAt} />
+          </>
+        )}
+      </StatusBadge>
+      {refreshSeconds && sourceState === 'available' && !isPartial ? (
+        <StatusBadge tone="neutral">Refresh every {refreshSeconds}s</StatusBadge>
+      ) : null}
+    </>
+  );
 }
 
 export function DashboardTraceSummary({

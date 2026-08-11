@@ -79,7 +79,7 @@ describe('bookingCloseoutChecklistRows', () => {
     expect(rows[2]).toMatchObject({
       title: 'Chat record',
       status: 'Repair needed',
-      href: '/chat-archive?status=missing-room',
+      href: '/bookings?view=chat-repair',
     });
   });
 

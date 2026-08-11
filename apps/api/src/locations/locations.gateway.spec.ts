@@ -114,6 +114,34 @@ describe('LocationsGateway provider location updates', () => {
     expect(emit).not.toHaveBeenCalled();
   });
 
+  it('broadcasts a recently persisted booking location without writing it twice', async () => {
+    const { gateway, redisState, emit, to } = createGateway();
+    redisState.getProviderLocation.mockResolvedValue({
+      lat: 10.7769,
+      lng: 106.7009,
+      recordedAt: new Date().toISOString(),
+    });
+
+    const result = await gateway.updateProviderLocation({} as never, {
+      bookingId: 'booking-1',
+      lat: 10.7769,
+      lng: 106.7009,
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(redisState.setProviderLocation).not.toHaveBeenCalled();
+    expect(to).toHaveBeenCalledWith(SOCKET_ROOMS.booking('booking-1'));
+    expect(emit).toHaveBeenCalledWith(
+      'provider.location.updated',
+      expect.objectContaining({
+        bookingId: 'booking-1',
+        providerProfileId: 'provider-profile-1',
+        lat: 10.7769,
+        lng: 106.7009,
+      }),
+    );
+  });
+
   it('does not write booking-specific location updates after the booking is closed', async () => {
     const { gateway, redisState, prisma, emit } = createGateway();
     prisma.booking.findFirst.mockResolvedValue({ id: 'booking-1', status: BookingStatus.COMPLETED });

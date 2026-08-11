@@ -30,6 +30,69 @@ describe('MatchingGateway admin booking realtime', () => {
     expect(emit).toHaveBeenCalledWith('booking.matched', payload);
   });
 
+  it('notifies the booking room when the Partner arrives', () => {
+    const gateway = new MatchingGateway({} as never, {} as never);
+    const emit = vi.fn();
+    const to = vi.fn().mockReturnValue({ emit });
+    gateway.server = { to } as never;
+    const payload = { id: 'booking-1', status: 'ARRIVED' };
+
+    gateway.emitProviderArrived('booking-1', payload);
+
+    expect(to).toHaveBeenCalledWith(SOCKET_ROOMS.booking('booking-1'));
+    expect(to).toHaveBeenCalledWith(SOCKET_ROOMS.adminBookings());
+    expect(emit).toHaveBeenCalledWith('provider.arrived', payload);
+  });
+
+  it.each([
+    ['matched', 'booking.matched', 'MATCHED', (gateway: MatchingGateway, payload: unknown) =>
+      gateway.emitBookingMatched('booking-1', payload)],
+    ['expired', 'booking.expired', 'EXPIRED', (gateway: MatchingGateway, payload: unknown) =>
+      gateway.emitBookingExpired('booking-1', payload)],
+  ])('notifies the provider request queue when a booking is %s', (_, eventName, status, emitEvent) => {
+    const gateway = new MatchingGateway({} as never, {} as never);
+    const emit = vi.fn();
+    const to = vi.fn().mockReturnValue({ emit });
+    gateway.server = { to } as never;
+    const payload = { bookingId: 'booking-1', customerPhone: 'private-phone' };
+
+    emitEvent(gateway, payload);
+
+    expect(to).toHaveBeenCalledWith(SOCKET_ROOMS.providers());
+    expect(emit).toHaveBeenCalledWith(eventName, {
+      bookingId: 'booking-1',
+      event: eventName,
+      status,
+    });
+    expect(JSON.stringify(emit.mock.calls.at(-1))).not.toContain('private-phone');
+  });
+
+  it('does not expose booking details in provider booking-opened signals', () => {
+    const gateway = new MatchingGateway({} as never, {} as never);
+    const emit = vi.fn();
+    const to = vi.fn().mockReturnValue({ emit });
+    gateway.server = { to } as never;
+    const payload = {
+      input: {
+        booking: {
+          customer: { phone: '0865907184' },
+          addressSnapshot: { latitude: 10.7769, longitude: 106.7009 },
+        },
+      },
+    };
+
+    gateway.emitBookingOpened('booking-1', payload);
+
+    expect(emit).toHaveBeenCalledWith('booking.opened', {
+      bookingId: 'booking-1',
+      event: 'booking.opened',
+      status: 'OPEN_MATCHING',
+    });
+    const providerCall = emit.mock.calls.at(-1);
+    expect(JSON.stringify(providerCall)).not.toContain('0865907184');
+    expect(JSON.stringify(providerCall)).not.toContain('10.7769');
+  });
+
   it('does not join customer sockets to bookings they do not own', async () => {
     const prisma = {
       customerProfile: {

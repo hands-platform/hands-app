@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/local_demo_access.dart';
+
 const double demoCustomerLat = 10.7769;
 const double demoCustomerLng = 106.7009;
 const String demoCustomerCity = 'Ho Chi Minh City';
@@ -55,6 +57,11 @@ class CustomerLocationSnapshot {
 }
 
 CustomerLocationSnapshot defaultVietnamDiscoveryLocation() {
+  if (!localDemoAccessEnabled) {
+    throw StateError(
+      'Choose a Vietnam service location before browsing nearby partners.',
+    );
+  }
   return const CustomerLocationSnapshot(
     latitude: demoCustomerLat,
     longitude: demoCustomerLng,

@@ -1,0 +1,715 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    },
+    {
+      "source": "/provider-risk",
+      "destination": "/partner-controls",
+      "statusCode": 307,
+      "regex": "^(?!/_next)/provider-risk(?:/)?$"
+    },
+    {
+      "source": "/partner-risk",
+      "destination": "/partner-controls",
+      "statusCode": 307,
+      "regex": "^(?!/_next)/partner-risk(?:/)?$"
+    }
+  ],
+  "headers": [],
+  "onMatchHeaders": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/api/admin/bank-reconciliation/import-batches/[batchImportId]/export",
+      "regex": "^/api/admin/bank\\-reconciliation/import\\-batches/([^/]+?)/export(?:/)?$",
+      "routeKeys": {
+        "nxtPbatchImportId": "nxtPbatchImportId"
+      },
+      "namedRegex": "^/api/admin/bank\\-reconciliation/import\\-batches/(?<nxtPbatchImportId>[^/]+?)/export(?:/)?$"
+    },
+    {
+      "page": "/api/admin/bookings/[id]/chat-messages",
+      "regex": "^/api/admin/bookings/([^/]+?)/chat\\-messages(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/bookings/(?<nxtPid>[^/]+?)/chat\\-messages(?:/)?$"
+    },
+    {
+      "page": "/api/admin/calendar-events/[id]",
+      "regex": "^/api/admin/calendar\\-events/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/calendar\\-events/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/customers/[id]/activity/export",
+      "regex": "^/api/admin/customers/([^/]+?)/activity/export(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/customers/(?<nxtPid>[^/]+?)/activity/export(?:/)?$"
+    },
+    {
+      "page": "/api/admin/geoapify-tiles/[z]/[x]/[y]",
+      "regex": "^/api/admin/geoapify\\-tiles/([^/]+?)/([^/]+?)/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPz": "nxtPz",
+        "nxtPx": "nxtPx",
+        "nxtPy": "nxtPy"
+      },
+      "namedRegex": "^/api/admin/geoapify\\-tiles/(?<nxtPz>[^/]+?)/(?<nxtPx>[^/]+?)/(?<nxtPy>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/maptiler-tiles/[z]/[x]/[y]",
+      "regex": "^/api/admin/maptiler\\-tiles/([^/]+?)/([^/]+?)/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPz": "nxtPz",
+        "nxtPx": "nxtPx",
+        "nxtPy": "nxtPy"
+      },
+      "namedRegex": "^/api/admin/maptiler\\-tiles/(?<nxtPz>[^/]+?)/(?<nxtPx>[^/]+?)/(?<nxtPy>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/background-jobs/incidents/[id]",
+      "regex": "^/background\\-jobs/incidents/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/background\\-jobs/incidents/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/bookings/[id]",
+      "regex": "^/bookings/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/bookings/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/customers/[id]",
+      "regex": "^/customers/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/customers/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/files/[id]/open",
+      "regex": "^/files/([^/]+?)/open(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/files/(?<nxtPid>[^/]+?)/open(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/bank-reconciliation/import-batches/[batchImportId]",
+      "regex": "^/finance\\-tax/bank\\-reconciliation/import\\-batches/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPbatchImportId": "nxtPbatchImportId"
+      },
+      "namedRegex": "^/finance\\-tax/bank\\-reconciliation/import\\-batches/(?<nxtPbatchImportId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/bank-reconciliation/[id]",
+      "regex": "^/finance\\-tax/bank\\-reconciliation/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/finance\\-tax/bank\\-reconciliation/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/booking-settlement-audit/[id]",
+      "regex": "^/finance\\-tax/booking\\-settlement\\-audit/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/finance\\-tax/booking\\-settlement\\-audit/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/general-ledger/[id]",
+      "regex": "^/finance\\-tax/general\\-ledger/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/finance\\-tax/general\\-ledger/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/partner-bank-deposits/[id]",
+      "regex": "^/finance\\-tax/partner\\-bank\\-deposits/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/finance\\-tax/partner\\-bank\\-deposits/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/payment-clearing/[id]",
+      "regex": "^/finance\\-tax/payment\\-clearing/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/finance\\-tax/payment\\-clearing/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/settlement-reversals/[id]",
+      "regex": "^/finance\\-tax/settlement\\-reversals/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/finance\\-tax/settlement\\-reversals/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/partners/[id]",
+      "regex": "^/partners/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/partners/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/payments/[id]",
+      "regex": "^/payments/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/payments/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/providers/[id]",
+      "regex": "^/providers/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/providers/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/r/[audience]/[code]",
+      "regex": "^/r/([^/]+?)/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPaudience": "nxtPaudience",
+        "nxtPcode": "nxtPcode"
+      },
+      "namedRegex": "^/r/(?<nxtPaudience>[^/]+?)/(?<nxtPcode>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/referrals/customers/[id]",
+      "regex": "^/referrals/customers/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/referrals/customers/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/referrals/partners/[id]",
+      "regex": "^/referrals/partners/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/referrals/partners/(?<nxtPid>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/admin-operators",
+      "regex": "^/admin\\-operators(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin\\-operators(?:/)?$"
+    },
+    {
+      "page": "/api/admin/bank-reconciliation/batch-import",
+      "regex": "^/api/admin/bank\\-reconciliation/batch\\-import(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/bank\\-reconciliation/batch\\-import(?:/)?$"
+    },
+    {
+      "page": "/api/admin/bank-reconciliation/batch-preview",
+      "regex": "^/api/admin/bank\\-reconciliation/batch\\-preview(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/bank\\-reconciliation/batch\\-preview(?:/)?$"
+    },
+    {
+      "page": "/api/admin/calendar-events",
+      "regex": "^/api/admin/calendar\\-events(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/calendar\\-events(?:/)?$"
+    },
+    {
+      "page": "/api/admin/customers/export",
+      "regex": "^/api/admin/customers/export(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/customers/export(?:/)?$"
+    },
+    {
+      "page": "/api/admin/finance-tax/booking-settlement-audit/export",
+      "regex": "^/api/admin/finance\\-tax/booking\\-settlement\\-audit/export(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/finance\\-tax/booking\\-settlement\\-audit/export(?:/)?$"
+    },
+    {
+      "page": "/api/admin/finance-tax/coupon-finance/export",
+      "regex": "^/api/admin/finance\\-tax/coupon\\-finance/export(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/finance\\-tax/coupon\\-finance/export(?:/)?$"
+    },
+    {
+      "page": "/api/admin/finance-tax/monthly-tax-closing/export",
+      "regex": "^/api/admin/finance\\-tax/monthly\\-tax\\-closing/export(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/finance\\-tax/monthly\\-tax\\-closing/export(?:/)?$"
+    },
+    {
+      "page": "/api/admin/finance-tax/partner-withholding-tax/export",
+      "regex": "^/api/admin/finance\\-tax/partner\\-withholding\\-tax/export(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/finance\\-tax/partner\\-withholding\\-tax/export(?:/)?$"
+    },
+    {
+      "page": "/api/admin/finance-tax/payment-fees/export",
+      "regex": "^/api/admin/finance\\-tax/payment\\-fees/export(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/finance\\-tax/payment\\-fees/export(?:/)?$"
+    },
+    {
+      "page": "/api/admin/finance-tax/platform-vat/export",
+      "regex": "^/api/admin/finance\\-tax/platform\\-vat/export(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/finance\\-tax/platform\\-vat/export(?:/)?$"
+    },
+    {
+      "page": "/api/admin/partners/export",
+      "regex": "^/api/admin/partners/export(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/partners/export(?:/)?$"
+    },
+    {
+      "page": "/api/admin/realtime-token",
+      "regex": "^/api/admin/realtime\\-token(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/realtime\\-token(?:/)?$"
+    },
+    {
+      "page": "/api/admin/session/login",
+      "regex": "^/api/admin/session/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/session/login(?:/)?$"
+    },
+    {
+      "page": "/api/admin/session/logout",
+      "regex": "^/api/admin/session/logout(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/session/logout(?:/)?$"
+    },
+    {
+      "page": "/api/admin/session/me",
+      "regex": "^/api/admin/session/me(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/session/me(?:/)?$"
+    },
+    {
+      "page": "/app-sessions",
+      "regex": "^/app\\-sessions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/app\\-sessions(?:/)?$"
+    },
+    {
+      "page": "/audit-log",
+      "regex": "^/audit\\-log(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/audit\\-log(?:/)?$"
+    },
+    {
+      "page": "/background-jobs",
+      "regex": "^/background\\-jobs(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/background\\-jobs(?:/)?$"
+    },
+    {
+      "page": "/bookings",
+      "regex": "^/bookings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/bookings(?:/)?$"
+    },
+    {
+      "page": "/bookings/completed",
+      "regex": "^/bookings/completed(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/bookings/completed(?:/)?$"
+    },
+    {
+      "page": "/bookings/post-match-cancellations",
+      "regex": "^/bookings/post\\-match\\-cancellations(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/bookings/post\\-match\\-cancellations(?:/)?$"
+    },
+    {
+      "page": "/calendar",
+      "regex": "^/calendar(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/calendar(?:/)?$"
+    },
+    {
+      "page": "/cash-settlements",
+      "regex": "^/cash\\-settlements(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/cash\\-settlements(?:/)?$"
+    },
+    {
+      "page": "/chat-archive",
+      "regex": "^/chat\\-archive(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/chat\\-archive(?:/)?$"
+    },
+    {
+      "page": "/coupons",
+      "regex": "^/coupons(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/coupons(?:/)?$"
+    },
+    {
+      "page": "/customers",
+      "regex": "^/customers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/customers(?:/)?$"
+    },
+    {
+      "page": "/earnings",
+      "regex": "^/earnings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/earnings(?:/)?$"
+    },
+    {
+      "page": "/files",
+      "regex": "^/files(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/files(?:/)?$"
+    },
+    {
+      "page": "/finance-closeout",
+      "regex": "^/finance\\-closeout(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-closeout(?:/)?$"
+    },
+    {
+      "page": "/finance-overview",
+      "regex": "^/finance\\-overview(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-overview(?:/)?$"
+    },
+    {
+      "page": "/finance-tax",
+      "regex": "^/finance\\-tax(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-tax(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/approval-queue",
+      "regex": "^/finance\\-tax/approval\\-queue(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-tax/approval\\-queue(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/bank-reconciliation",
+      "regex": "^/finance\\-tax/bank\\-reconciliation(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-tax/bank\\-reconciliation(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/booking-settlement-audit",
+      "regex": "^/finance\\-tax/booking\\-settlement\\-audit(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-tax/booking\\-settlement\\-audit(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/company-bank-accounts",
+      "regex": "^/finance\\-tax/company\\-bank\\-accounts(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-tax/company\\-bank\\-accounts(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/coupon-finance",
+      "regex": "^/finance\\-tax/coupon\\-finance(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-tax/coupon\\-finance(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/finance-approvers",
+      "regex": "^/finance\\-tax/finance\\-approvers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-tax/finance\\-approvers(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/general-ledger",
+      "regex": "^/finance\\-tax/general\\-ledger(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-tax/general\\-ledger(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/monthly-tax-closing",
+      "regex": "^/finance\\-tax/monthly\\-tax\\-closing(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-tax/monthly\\-tax\\-closing(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/partner-bank-deposits",
+      "regex": "^/finance\\-tax/partner\\-bank\\-deposits(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-tax/partner\\-bank\\-deposits(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/partner-withholding-tax",
+      "regex": "^/finance\\-tax/partner\\-withholding\\-tax(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-tax/partner\\-withholding\\-tax(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/payment-clearing",
+      "regex": "^/finance\\-tax/payment\\-clearing(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-tax/payment\\-clearing(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/payment-fees",
+      "regex": "^/finance\\-tax/payment\\-fees(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-tax/payment\\-fees(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/platform-vat",
+      "regex": "^/finance\\-tax/platform\\-vat(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-tax/platform\\-vat(?:/)?$"
+    },
+    {
+      "page": "/finance-tax/settlement-reversals",
+      "regex": "^/finance\\-tax/settlement\\-reversals(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finance\\-tax/settlement\\-reversals(?:/)?$"
+    },
+    {
+      "page": "/icon.svg",
+      "regex": "^/icon\\.svg(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/icon\\.svg(?:/)?$"
+    },
+    {
+      "page": "/login",
+      "regex": "^/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/marketing-analytics",
+      "regex": "^/marketing\\-analytics(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/marketing\\-analytics(?:/)?$"
+    },
+    {
+      "page": "/notifications",
+      "regex": "^/notifications(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/notifications(?:/)?$"
+    },
+    {
+      "page": "/notifications/push-send",
+      "regex": "^/notifications/push\\-send(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/notifications/push\\-send(?:/)?$"
+    },
+    {
+      "page": "/notifications/templates",
+      "regex": "^/notifications/templates(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/notifications/templates(?:/)?$"
+    },
+    {
+      "page": "/operations-handoff",
+      "regex": "^/operations\\-handoff(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/operations\\-handoff(?:/)?$"
+    },
+    {
+      "page": "/operations-policy",
+      "regex": "^/operations\\-policy(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/operations\\-policy(?:/)?$"
+    },
+    {
+      "page": "/partner-controls",
+      "regex": "^/partner\\-controls(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/partner\\-controls(?:/)?$"
+    },
+    {
+      "page": "/partners",
+      "regex": "^/partners(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/partners(?:/)?$"
+    },
+    {
+      "page": "/partners/overview",
+      "regex": "^/partners/overview(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/partners/overview(?:/)?$"
+    },
+    {
+      "page": "/payments",
+      "regex": "^/payments(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/payments(?:/)?$"
+    },
+    {
+      "page": "/payouts",
+      "regex": "^/payouts(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/payouts(?:/)?$"
+    },
+    {
+      "page": "/providers",
+      "regex": "^/providers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/providers(?:/)?$"
+    },
+    {
+      "page": "/referrals",
+      "regex": "^/referrals(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/referrals(?:/)?$"
+    },
+    {
+      "page": "/referrals/cashouts",
+      "regex": "^/referrals/cashouts(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/referrals/cashouts(?:/)?$"
+    },
+    {
+      "page": "/referrals/customers",
+      "regex": "^/referrals/customers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/referrals/customers(?:/)?$"
+    },
+    {
+      "page": "/referrals/partners",
+      "regex": "^/referrals/partners(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/referrals/partners(?:/)?$"
+    },
+    {
+      "page": "/refunds",
+      "regex": "^/refunds(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/refunds(?:/)?$"
+    },
+    {
+      "page": "/reviews",
+      "regex": "^/reviews(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/reviews(?:/)?$"
+    },
+    {
+      "page": "/reviews/export",
+      "regex": "^/reviews/export(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/reviews/export(?:/)?$"
+    },
+    {
+      "page": "/reviews/partner-customer-evaluations",
+      "regex": "^/reviews/partner\\-customer\\-evaluations(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/reviews/partner\\-customer\\-evaluations(?:/)?$"
+    },
+    {
+      "page": "/services",
+      "regex": "^/services(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/services(?:/)?$"
+    },
+    {
+      "page": "/setup",
+      "regex": "^/setup(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/setup(?:/)?$"
+    },
+    {
+      "page": "/tax-policy",
+      "regex": "^/tax\\-policy(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tax\\-policy(?:/)?$"
+    },
+    {
+      "page": "/usage-overview",
+      "regex": "^/usage\\-overview(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/usage\\-overview(?:/)?$"
+    },
+    {
+      "page": "/vietnam-overview",
+      "regex": "^/vietnam\\-overview(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vietnam\\-overview(?:/)?$"
+    },
+    {
+      "page": "/wallet-adjustments",
+      "regex": "^/wallet\\-adjustments(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/wallet\\-adjustments(?:/)?$"
+    },
+    {
+      "page": "/website-content",
+      "regex": "^/website\\-content(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/website\\-content(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

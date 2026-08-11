@@ -25,6 +25,20 @@ export const adminRefundListSelect = {
       amount: true,
       currency: true,
       providerRef: true,
+      callbackAttempts: {
+        orderBy: { createdAt: 'desc' },
+        take: 3,
+        select: {
+          id: true,
+          outcome: true,
+          signatureVerified: true,
+          providerStatus: true,
+          gatewayTransactionId: true,
+          errorCode: true,
+          errorMessage: true,
+          createdAt: true,
+        },
+      },
     },
   },
   booking: {
@@ -50,6 +64,11 @@ export const adminPaymentSummarySelect = {
     take: 5,
     select: adminRefundSummarySelect,
   },
+} satisfies Prisma.PaymentSelect;
+
+export const adminPaymentEvidenceSelect = {
+  ...adminPaymentSummarySelect,
+  rawMeta: true,
 } satisfies Prisma.PaymentSelect;
 
 export const adminPaymentCallbackAttemptSummarySelect = {
@@ -187,6 +206,9 @@ export const adminEarningListSelect = {
   currency: true,
   status: true,
   createdAt: true,
+  platformFeeLogs: adminRecentPlatformFeeLogsSelect(1),
+  taxLogs: adminRecentProviderTaxLogsSelect(1),
+  walletLedgerEntries: adminRecentProviderWalletLedgerEntriesSelect(1),
 } satisfies Prisma.ProviderEarningSelect;
 
 export const adminEarningDetailSelect = {

@@ -84,7 +84,14 @@ If using the Supabase dashboard SQL editor, paste `hands-core-schema.sql` first,
 - `hands-private` for provider verification and private moderation files.
 - owner/admin RLS policies for direct client access in a later migration phase.
 
-Private files are read through `GET /api/files/:id/read-url`, which checks that the requester is an admin or the owning provider before returning a short-lived signed GET URL.
+Private files are read through `GET /api/files/:id/read-url`, which checks that the requester is an
+admin, the file owner, or the provider who owns the linked verification record before returning a
+short-lived signed GET URL.
+
+Chat messages store only validated `FileAsset` IDs. The sender must own an uploaded private
+`CHAT_ATTACHMENT`; arbitrary URLs and client-defined attachment metadata are rejected. The other
+customer/Partner participant in the same booking chat can request the signed read URL after the
+attachment is linked to a persisted message.
 
 Run a real storage upload/read smoke after setting S3-compatible credentials:
 
@@ -95,4 +102,6 @@ npm.cmd run storage:smoke
 
 The smoke creates a provider verification upload contract, uploads a tiny PNG through the presigned PUT URL, marks the file `UPLOADED`, and confirms the admin signed GET URL can read the same bytes back.
 
-If storage variables are missing, the API deliberately falls back to placeholder URLs so local MVP flows remain usable.
+If storage variables are missing, the API deliberately falls back to placeholder URLs only outside
+production so local MVP flows remain usable. Production upload, private read, completion, and
+deletion operations fail closed when S3-compatible storage is not configured.

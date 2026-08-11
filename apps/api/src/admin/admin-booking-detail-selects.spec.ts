@@ -28,6 +28,7 @@ describe('admin booking detail selects', () => {
         }),
       },
       participants: { take: 20 },
+      providerRequestEvents: { take: 50 },
       refunds: { take: 10 },
       opsTasks: { take: 10 },
       snapshots: { take: 10 },

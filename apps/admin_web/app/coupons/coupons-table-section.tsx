@@ -1,34 +1,28 @@
-import { Eye } from 'lucide-react';
+import { Eye, Pencil, PauseCircle, PlayCircle, Trash2 } from 'lucide-react';
 
+import { ActionMenu } from '../../components/action-menu';
 import {
   AdminDataTable,
   AdminTablePaginationFooter,
   AdminTableScroll,
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminMiniMetricStrip } from '../../components/admin-overview-card';
-import {
-  AdminFormCheckbox,
-  AdminFormControlButton,
-  AdminFormDateTime,
-  AdminFormShell,
-  AdminFormInput,
-} from '../../components/admin-form-controls';
-import { AdminCard, AdminCardHeader, AdminDisclosure, AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
+import { AdminSection } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { CouponWindowState } from './coupon-page-model';
-import { couponDeleteConfirmHref } from './coupon-action-confirmation';
 
 export type CouponUsageBookingRow = {
-  readonly amount: number;
+  readonly amount: number | null;
   readonly bookingHref: string;
   readonly bookingLabel: string;
   readonly currency: string;
   readonly customerLabel: string;
+  readonly discountAmount: number | null;
   readonly discountLabel: string;
   readonly partnerLabel: string;
+  readonly paymentLabel: string;
   readonly requestTimeLabel: string;
   readonly reversalStatusLabel: string;
   readonly serviceLabel: string;
@@ -42,196 +36,147 @@ export type CouponTableRow = {
   readonly description: string;
   readonly discountLabel: string;
   readonly endsAtInputValue: string;
+  readonly endsAtIso: string;
   readonly id: string;
   readonly lowerCode: string;
   readonly opsHint: string;
   readonly percentValue: string;
   readonly startsAtInputValue: string;
+  readonly startsAtIso: string;
   readonly statusClassName: string;
   readonly statusLabel: string;
   readonly usageBookingCount: number;
   readonly usageBookings: readonly CouponUsageBookingRow[];
+  readonly usageCountKnown: boolean;
   readonly windowLabel: string;
   readonly windowSignal: string;
   readonly windowState: CouponWindowState;
 };
 
 type CouponsTableSectionProps = {
-  readonly editCouponId?: string;
+  readonly actionsEnabled?: boolean;
+  readonly deleteHrefForCoupon: (couponId: string) => string;
   readonly editHrefForCoupon: (couponId: string) => string;
+  readonly listLoaded?: boolean;
   readonly rows: readonly CouponTableRow[];
-  readonly updateAction: (formData: FormData) => Promise<void>;
-  readonly usageCouponId?: string;
-  readonly usageHrefForPage: (couponId: string, page: number) => string;
-  readonly usagePage: number;
+  readonly toggleHrefForCoupon: (couponId: string) => string;
+  readonly usageHrefForCoupon: (couponId: string) => string;
 };
 
-type CouponSection = {
-  readonly className: string;
-  readonly description: string;
-  readonly rows: readonly CouponTableRow[];
-  readonly scopeLabel: string;
-  readonly title: string;
-};
-
+const couponHeaders = ['Coupon', 'Discount', 'Checkout window (ICT)', 'Status', 'Usage', 'Actions'];
+const usageHeaders = [
+  'Booking / request time',
+  'Customer',
+  'Partner',
+  'Services',
+  'Payment',
+  'Customer paid',
+  'Discount',
+  'Booking state',
+  'Reversal',
+];
 const COUPON_USAGE_PAGE_SIZE = 10;
-const usageHeaders = ['Request Time', 'Customer', 'Partner', 'Service Type', 'Amount', 'Discount', 'State', 'Reversal'];
 
 export function CouponsTableSection({
-  editCouponId,
+  actionsEnabled = true,
+  deleteHrefForCoupon,
   editHrefForCoupon,
+  listLoaded = true,
   rows,
-  updateAction,
-  usageCouponId,
-  usageHrefForPage,
-  usagePage,
+  toggleHrefForCoupon,
+  usageHrefForCoupon,
 }: CouponsTableSectionProps) {
-  const sections = couponSections(rows);
-
   return (
-    <div className="coupons-management-stack">
-      {sections.map((section) => (
-        <AdminSection
-          className={`coupons-status-section ${section.className}`}
-          description={section.description}
-          key={section.title}
-          statusLabel={`${section.scopeLabel}: ${section.rows.length} coupon(s)`}
-          title={section.title}
-        >
-          <div className="coupons-status-section-body">
-            {section.rows.length > 0 ? (
-              section.rows.map((row) => (
-                <CouponManagementCard
-                  editHref={editHrefForCoupon(row.id)}
-                  editShouldOpen={editCouponId === row.id}
-                  key={row.id}
-                  row={row}
-                  updateAction={updateAction}
-                  usageHrefForPage={usageHrefForPage}
-                  usagePage={usageCouponId === row.id ? usagePage : 1}
-                  usageShouldOpen={usageCouponId === row.id}
-                />
-              ))
-            ) : (
-              <AdminEmptyState framed message="No coupons in this state." />
-            )}
-          </div>
-        </AdminSection>
-      ))}
-    </div>
+    <AdminSection
+      className="coupons-list-section"
+      description="Compare checkout availability, campaign windows, and operator actions without opening each coupon."
+      statusLabel={listLoaded ? `${rows.length} shown` : 'Unavailable'}
+      statusTone={listLoaded ? 'neutral' : 'danger'}
+      title="Coupon list"
+    >
+      {listLoaded ? (
+        <AdminTableScroll ariaLabel="Coupon operations table" className="coupon-table-scroll">
+          <AdminDataTable
+            className="coupon-operations-table"
+            emptyMessage="No coupons match the current view and search."
+            headers={couponHeaders}
+            rowCount={rows.length}
+          >
+            {rows.map((row) => (
+              <tr key={row.id}>
+                <th className="coupon-table-identity" scope="row">
+                  <strong>{row.code}</strong>
+                  <span className="muted">{row.description}</span>
+                </th>
+                <td>
+                  <strong>{row.discountLabel}</strong>
+                </td>
+                <td className="coupon-table-window">
+                  <span>{row.windowLabel}</span>
+                  <small className="muted">{row.windowSignal}</small>
+                </td>
+                <td>
+                  <div className="coupon-table-status-stack">
+                    <StatusBadgeFromPillClass pillClass={row.statusClassName}>
+                      {row.statusLabel}
+                    </StatusBadgeFromPillClass>
+                    <small className="muted">{row.checkoutHint}</small>
+                  </div>
+                </td>
+                <td>
+                  <AdminTextLink href={usageHrefForCoupon(row.id)}>
+                    <Eye aria-hidden="true" size={14} />
+                    {row.usageCountKnown ? `${row.usageBookingCount} bookings` : 'View usage'}
+                  </AdminTextLink>
+                </td>
+                <td>
+                  {actionsEnabled ? (
+                    <div className="coupon-table-actions">
+                      <AdminTextLink href={toggleHrefForCoupon(row.id)}>
+                        {row.active ? (
+                          <PauseCircle aria-hidden="true" size={14} />
+                        ) : (
+                          <PlayCircle aria-hidden="true" size={14} />
+                        )}
+                        {row.active ? 'Pause' : 'Activate'}
+                      </AdminTextLink>
+                      <AdminTextLink href={editHrefForCoupon(row.id)}>
+                        <Pencil aria-hidden="true" size={14} />
+                        Edit
+                      </AdminTextLink>
+                      <ActionMenu
+                        actions={[
+                          {
+                            href: deleteHrefForCoupon(row.id),
+                            icon: Trash2,
+                            kind: 'link',
+                            label: 'Delete coupon',
+                            tone: 'danger',
+                          },
+                        ]}
+                        label={`More actions for ${row.code}`}
+                      />
+                    </div>
+                  ) : (
+                    <StatusBadge tone="neutral">Actions unavailable</StatusBadge>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
+      ) : (
+        <AdminEmptyState
+          framed
+          message="Coupon records could not be loaded. Retry before changing campaign state."
+          title="Coupon list unavailable"
+        />
+      )}
+    </AdminSection>
   );
 }
 
-function CouponManagementCard({
-  editHref,
-  editShouldOpen,
-  row,
-  updateAction,
-  usageHrefForPage,
-  usagePage,
-  usageShouldOpen,
-}: {
-  readonly editHref: string;
-  readonly editShouldOpen: boolean;
-  readonly row: CouponTableRow;
-  readonly updateAction: (formData: FormData) => Promise<void>;
-  readonly usageHrefForPage: (couponId: string, page: number) => string;
-  readonly usagePage: number;
-  readonly usageShouldOpen: boolean;
-}) {
-  const usageCount = row.usageBookingCount;
-
-  return (
-    <AdminCard className={`coupon-management-section coupon-management-section-${row.windowState}`}>
-      <AdminCardHeader
-        actions={
-          <AdminMiniMetricStrip
-            ariaLabel={`${row.code} discount window summary`}
-            className="coupon-discount-summary"
-            metrics={[
-              {
-                key: 'discount-window',
-                label: row.windowSignal,
-                value: row.discountLabel,
-              },
-            ]}
-          />
-        }
-        title={
-          <span className="coupon-code-line">
-            <strong>{row.code}</strong>
-            <span className="coupon-window-title">{row.windowLabel}</span>
-            <StatusBadgeFromPillClass pillClass={row.statusClassName}>{row.statusLabel}</StatusBadgeFromPillClass>
-          </span>
-        }
-      />
-
-      <p className="coupon-window-copy">{row.checkoutHint}</p>
-
-      <div className="coupon-section-footer">
-        <span>{usageCount > 0 ? `Used ${usageCount} booking(s)` : 'Booking usage loads on demand'}</span>
-        <span>{row.opsHint}</span>
-        <AdminTextLink href={editHref}>
-          Edit coupon
-        </AdminTextLink>
-        <AdminTextLink href={usageHrefForPage(row.id, 1)}>
-          View usage
-        </AdminTextLink>
-        <AdminTextLink className="coupon-delete-link" href={couponDeleteConfirmHref(row.id)}>
-          Delete
-        </AdminTextLink>
-      </div>
-
-      {editShouldOpen ? (
-        <AdminDisclosure className="coupon-section-disclosure" open>
-          <summary>Edit coupon</summary>
-          <AdminFormShell action={updateAction} className="coupon-edit-form">
-            <input name="couponId" type="hidden" value={row.id} />
-            <AdminFormInput defaultValue={row.percentValue} label="Discount %" max="100" min="1" name="percent" type="number" />
-            <AdminFormDateTime
-              className="admin-form-control-fluid"
-              defaultValue={row.startsAtInputValue}
-              label="Starts"
-              labelVisibility="visible"
-              name="startsAt"
-            />
-            <AdminFormDateTime
-              className="admin-form-control-fluid"
-              defaultValue={row.endsAtInputValue}
-              label="Ends"
-              labelVisibility="visible"
-              name="endsAt"
-            />
-            <AdminFormCheckbox
-              defaultChecked={row.active}
-              label={`${row.code} active`}
-              name="active"
-            >
-              <span>Active</span>
-            </AdminFormCheckbox>
-            <AdminFormControlButton className="button-primary" type="submit">
-              Save
-            </AdminFormControlButton>
-          </AdminFormShell>
-        </AdminDisclosure>
-      ) : null}
-
-      {usageShouldOpen ? (
-        <AdminDisclosure className="coupon-section-disclosure" open>
-          <summary>Booking usage</summary>
-          <CouponUsageBookingTable
-            hrefForPage={(page) => usageHrefForPage(row.id, page)}
-            page={usagePage}
-            rows={row.usageBookings}
-            totalCount={row.usageBookingCount}
-          />
-        </AdminDisclosure>
-      ) : null}
-    </AdminCard>
-  );
-}
-
-function CouponUsageBookingTable({
+export function CouponUsageBookingTable({
   hrefForPage,
   page,
   rows,
@@ -242,37 +187,51 @@ function CouponUsageBookingTable({
   readonly rows: readonly CouponUsageBookingRow[];
   readonly totalCount: number;
 }) {
+  if (totalCount === 0) {
+    return (
+      <AdminEmptyState
+        framed
+        message="No booking or payment evidence is linked to this coupon."
+        title="No coupon usage"
+      />
+    );
+  }
+
   const totalPages = Math.max(1, Math.ceil(totalCount / COUPON_USAGE_PAGE_SIZE));
   const activePage = Math.min(Math.max(1, page), totalPages);
   const pageStartIndex = (activePage - 1) * COUPON_USAGE_PAGE_SIZE;
-  const visibleRows = rows;
-  const pageFrom = totalCount === 0 ? 0 : pageStartIndex + 1;
-  const pageTo = Math.min(totalCount, pageStartIndex + visibleRows.length);
+  const pageFrom = pageStartIndex + 1;
+  const pageTo = Math.min(totalCount, pageStartIndex + rows.length);
 
   return (
     <div className="coupon-usage-list booking-monitor">
-      <AdminTableScroll>
+      <AdminTableScroll ariaLabel="Coupon booking usage evidence" className="coupon-usage-table-scroll">
         <AdminDataTable
           className="vuexy-booking-table coupon-booking-usage-table"
-          emptyMessage="No bookings used this coupon recently."
+          emptyMessage={null}
           headers={usageHeaders}
-          rowCount={visibleRows.length}
+          rowCount={rows.length}
         >
-          {visibleRows.map((booking) => (
+          {rows.map((booking) => (
             <tr key={booking.bookingHref}>
               <td>
-                <div className="vuexy-booking-id-line">
-                  <AdminTextLink href={booking.bookingHref} title="Open booking detail">
-                    <Eye aria-hidden="true" size={14} />
-                    {booking.bookingLabel}
-                  </AdminTextLink>
-                </div>
+                <AdminTextLink href={booking.bookingHref} title="Open booking detail">
+                  <Eye aria-hidden="true" size={14} />
+                  {booking.bookingLabel}
+                </AdminTextLink>
                 <div className="muted">{booking.requestTimeLabel}</div>
               </td>
               <td>{booking.customerLabel}</td>
               <td>{booking.partnerLabel}</td>
               <td>{booking.serviceLabel}</td>
-              <td><MoneyText amount={booking.amount} currency={booking.currency} /></td>
+              <td>{booking.paymentLabel}</td>
+              <td>
+                {booking.amount === null ? (
+                  <span className="muted">Not recorded</span>
+                ) : (
+                  <MoneyText amount={booking.amount} currency={booking.currency} />
+                )}
+              </td>
               <td>{booking.discountLabel}</td>
               <td>
                 <StatusBadge tone="neutral">{booking.statusLabel}</StatusBadge>
@@ -298,30 +257,4 @@ function CouponUsageBookingTable({
       />
     </div>
   );
-}
-
-function couponSections(rows: readonly CouponTableRow[]): CouponSection[] {
-  return [
-    {
-      className: 'coupons-status-section-running',
-      description: 'Live now: coupons customers can use during booking checkout.',
-      rows: rows.filter((row) => row.active && row.windowState === 'live'),
-      scopeLabel: 'Live now',
-      title: 'Live checkout coupons',
-    },
-    {
-      className: 'coupons-status-section-upcoming',
-      description: 'Pending launch: active coupons waiting for their start date.',
-      rows: rows.filter((row) => row.active && row.windowState === 'scheduled'),
-      scopeLabel: 'Pending launch',
-      title: 'Upcoming coupon launches',
-    },
-    {
-      className: 'coupons-status-section-expired',
-      description: 'Records: expired, paused, or draft coupons kept out of customer checkout.',
-      rows: rows.filter((row) => !row.active || row.windowState === 'expired' || row.windowState === 'draft'),
-      scopeLabel: 'Records',
-      title: 'Coupon records',
-    },
-  ];
 }

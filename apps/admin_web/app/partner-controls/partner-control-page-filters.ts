@@ -1,11 +1,14 @@
 import { readSearchParam } from '../../lib/date-range';
+import { partnerControlHref } from './partner-control-page-load-plan';
 
 export type PartnerControlPageFilters = {
+  readonly controlType: string;
   readonly q: string;
   readonly review: string;
   readonly sanction: string;
   readonly severity: string;
   readonly status: string;
+  readonly sort: string;
 };
 
 export type PartnerControlActiveFilter = {
@@ -17,13 +20,17 @@ export type PartnerControlActiveFilter = {
 
 type PartnerControlSearchParams = Record<string, string | string[] | undefined>;
 
-export function buildPartnerControlFilters(params: PartnerControlSearchParams = {}): PartnerControlPageFilters {
+export function buildPartnerControlFilters(
+  params: PartnerControlSearchParams = {},
+): PartnerControlPageFilters {
   return {
+    controlType: readPartnerControlParam(params.controlType),
     q: readPartnerControlParam(params.q).trim().toLowerCase(),
     review: readPartnerControlParam(params.review),
     status: readPartnerControlParam(params.status),
     severity: readPartnerControlParam(params.severity),
     sanction: readPartnerControlParam(params.sanction),
+    sort: readPartnerControlParam(params.sort),
   };
 }
 
@@ -76,26 +83,10 @@ export function buildPartnerControlActiveFilters(
 
 export function partnerControlListHref(
   params: PartnerControlSearchParams,
-  pageParam: 'reportPage' | 'sanctionPage',
+  pageParam: 'blockerPage' | 'reportPage' | 'sanctionPage',
   page: number,
 ) {
-  const searchParams = new URLSearchParams();
-
-  for (const key of ['details', 'q', 'review', 'status', 'severity', 'sanction', 'reportPage', 'sanctionPage'] as const) {
-    const value = readPartnerControlParam(params[key]);
-    if (value) {
-      searchParams.set(key, value);
-    }
-  }
-
-  if (page > 1) {
-    searchParams.set(pageParam, String(page));
-  } else {
-    searchParams.delete(pageParam);
-  }
-
-  const query = searchParams.toString();
-  return query ? `/partner-controls?${query}` : '/partner-controls';
+  return partnerControlHref(params, { [pageParam]: page > 1 ? String(page) : undefined });
 }
 
 export function isPartnerControlCashDebtReview(filters: PartnerControlPageFilters) {

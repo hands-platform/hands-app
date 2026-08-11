@@ -312,7 +312,7 @@ export function BookingFinanceCommandCenterSection({
       }
       className="ops-watch admin-mb-16"
       description="Booking finance summary and required checks."
-      id="finance"
+      id="booking-finance-command-center"
       title="Finance command center"
     >
       <AdminMetricGrid className="admin-mt-12" metrics={financeSummaryCards} />

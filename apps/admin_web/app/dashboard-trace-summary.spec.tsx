@@ -1,5 +1,7 @@
+import { renderToStaticMarkup } from 'react-dom/server';
 import {
   combinedDashboardSourceState,
+  DashboardDataScopeStatus,
   dashboardMetricWithSourceState,
   dashboardSourceState,
 } from './dashboard-trace-summary';
@@ -40,5 +42,43 @@ describe('dashboard trace summary model', () => {
       scope: 'Data unavailable',
       value: 'Unavailable',
     });
+  });
+
+  it('uses one scope and freshness vocabulary across dashboard consumers', () => {
+    const generatedAt = '2026-07-15T02:59:00.000Z';
+    const freshMarkup = renderToStaticMarkup(
+      <DashboardDataScopeStatus
+        generatedAt={generatedAt}
+        refreshSeconds={60}
+        scope="current-shift"
+        sourceState="available"
+      />,
+    );
+    const partialMarkup = renderToStaticMarkup(
+      <DashboardDataScopeStatus
+        generatedAt={generatedAt}
+        partialSourceCount={2}
+        scope="today"
+        sourceState="available"
+      />,
+    );
+    const staleMarkup = renderToStaticMarkup(
+      <DashboardDataScopeStatus generatedAt={generatedAt} scope="historical" sourceState="stale" />,
+    );
+    const unavailableMarkup = renderToStaticMarkup(
+      <DashboardDataScopeStatus scope="all-open" sourceState="unavailable" />,
+    );
+
+    expect(freshMarkup).toContain('Today so far');
+    expect(freshMarkup).toContain('Updated');
+    expect(freshMarkup).toContain('ICT · All sources healthy');
+    expect(freshMarkup).toContain('Test data excluded');
+    expect(freshMarkup).toContain('Refresh every 60s');
+    expect(partialMarkup).toContain('Today');
+    expect(partialMarkup).toContain('Partial data · 2 sources unavailable · updated');
+    expect(staleMarkup).toContain('Historical');
+    expect(staleMarkup).toContain('Source delayed · updated');
+    expect(unavailableMarkup).toContain('All open');
+    expect(unavailableMarkup).toContain('Source unavailable');
   });
 });

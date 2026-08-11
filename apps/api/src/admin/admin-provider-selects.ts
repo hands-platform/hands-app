@@ -50,6 +50,7 @@ export const adminProviderPublicMediaSelect = {
   reviewReason: true,
   uploadedAt: true,
   sizeBytes: true,
+  sortOrder: true,
   createdAt: true,
 } satisfies Prisma.FileAssetSelect;
 
@@ -132,8 +133,8 @@ export const adminProviderDetailUserSelect = {
       visibility: FileVisibility.PUBLIC,
       uploadStatus: FileUploadStatus.UPLOADED,
     },
-    orderBy: { createdAt: 'desc' },
-    take: 8,
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    take: 12,
     select: adminProviderPublicMediaSelect,
   },
 } satisfies Prisma.UserSelect;
@@ -151,7 +152,7 @@ export const adminProviderOverviewUserSelect = {
       visibility: FileVisibility.PUBLIC,
       uploadStatus: FileUploadStatus.UPLOADED,
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     take: 3,
     select: adminProviderPublicMediaSelect,
   },
@@ -252,6 +253,7 @@ export const adminProviderSanctionSummarySelect = {
   startsAt: true,
   expiresAt: true,
   liftedAt: true,
+  metadata: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.ProviderSanctionSelect;

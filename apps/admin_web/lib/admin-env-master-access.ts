@@ -6,8 +6,12 @@ export function resolveEnvMasterAdminAccess(
 ): AdminOperatorAccess | null {
   const configuredEmail = process.env.ADMIN_WEB_LOGIN_EMAIL?.trim().toLowerCase();
   const normalizedIdentity = identity.trim().toLowerCase();
+  const normalizedAccessEmail = access?.email?.trim().toLowerCase();
 
-  if (!configuredEmail || normalizedIdentity !== configuredEmail) {
+  if (
+    !configuredEmail ||
+    (normalizedIdentity !== configuredEmail && normalizedAccessEmail !== configuredEmail)
+  ) {
     return access;
   }
 

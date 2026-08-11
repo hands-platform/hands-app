@@ -1,4 +1,4 @@
-import { Download, Eye, Star, X } from 'lucide-react';
+import { Download, Star, X } from 'lucide-react';
 import {
   AdminDataTable,
   AdminTablePaginationFooter,
@@ -6,10 +6,12 @@ import {
 } from '../../components/admin-data-table';
 import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminTextLink } from '../../components/admin-text-link';
-import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
+import type { AdminReviewSummary } from '../../lib/admin-api';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -27,10 +29,9 @@ import type { ReviewFilters, ReviewPagination } from './review-page-model';
 import {
   REVIEW_DATE_RANGE_OPTIONS,
   REVIEW_PAGE_SIZE_OPTIONS,
-  REVIEW_SORT_OPTIONS,
   buildReviewListHref,
   reviewDateRangeLabel,
-  reviewFilterDescription,
+  reviewEmptyState,
   reviewSortLabel,
 } from './review-page-model';
 import { ReviewRowActions } from './review-row-actions';
@@ -48,19 +49,18 @@ export type ReviewTableRow = {
   readonly customerHref: string | null;
   readonly customerInitials: string;
   readonly customerLabel: string;
-  readonly customerAvatarStatus: AdminAvatarStatus;
-  readonly customerPhone: string;
+  readonly isAdminCreated: boolean;
   readonly id: string;
-  readonly partnerAvatarStatus: AdminAvatarStatus;
   readonly partnerHref: string | null;
-  readonly partnerHint: string;
   readonly partnerInitials: string;
   readonly partnerLabel: string;
   readonly rating: number;
   readonly ratingLabel: string;
-  readonly reportReasonValue: string;
   readonly reportReasonLabel: string;
+  readonly reportReasonValue: string;
+  readonly reviewIdLabel: string;
   readonly serviceLabel: string;
+  readonly showBookingRequestTime: boolean;
   readonly status: string;
   readonly statusClassName: string;
   readonly statusLabel: string;
@@ -68,49 +68,64 @@ export type ReviewTableRow = {
 
 type ReviewsTableSectionProps = {
   readonly csvHref: string;
-  readonly emptyMessage: string;
+  readonly dateError?: string;
   readonly filters: ReviewFilters;
+  readonly matchingCount: number;
   readonly pagination: ReviewPagination<ReviewTableRow>;
   readonly rows: readonly ReviewTableRow[];
-  readonly totalReviewCount: number;
+  readonly summary: AdminReviewSummary;
 };
 
 export function ReviewsTableSection({
   csvHref,
-  emptyMessage,
+  dateError = '',
   filters,
+  matchingCount,
   pagination,
   rows,
-  totalReviewCount,
+  summary,
 }: ReviewsTableSectionProps) {
   const activeFilterLabels = reviewActiveFilterLabels(filters);
+  const emptyCopy = reviewEmptyState(filters);
+  const clearFiltersHref = buildReviewListHref(filters, {
+    dateFrom: '',
+    dateRange: 'all',
+    dateTo: '',
+    q: '',
+    review: '',
+    sort: 'newest',
+  });
+  const emptyState = rows.length === 0 ? (
+    <div className="admin-empty-state-actions">
+      <AdminEmptyState
+        message={emptyCopy.message}
+        title={emptyCopy.title}
+      />
+      <div className="actions admin-mt-8">
+        {activeFilterLabels.length > 0 ? <AdminTextLink href={clearFiltersHref}>View all reviews</AdminTextLink> : null}
+      </div>
+    </div>
+  ) : null;
 
   return (
     <>
       <AdminFilterPanel
         className="vuexy-review-filter-card admin-mb-16"
         id="customer-review-controls"
-        resultLabel={`Showing ${pagination.totalRows} of ${totalReviewCount}`}
-        resultTone={activeFilterLabels.length > 0 ? 'warning' : 'info'}
-        title="Review operation filters"
-        description="Customer-written reviews are published by default. Operators can hold visibility, mark follow-up, or correct rating and review copy."
+        resultLabel={dateError ? 'Invalid date range' : undefined}
+        resultTone={dateError ? 'danger' : filters.review === 'reported' ? 'warning' : 'info'}
+        title="Review controls"
         footer={
           <AdminFilterSummary
             ariaLabel="Active review filters"
             className="vuexy-review-filter-summary"
             labels={activeFilterLabels}
+            tone={filters.review === 'reported' ? 'warning' : 'info'}
           >
             {activeFilterLabels.length > 0 ? (
               <AdminFormControlLink
                 className="admin-directory-filter-button is-ghost"
-                href={buildReviewListHref(filters, {
-                  dateFrom: '',
-                  dateRange: 'all',
-                  dateTo: '',
-                  q: '',
-                  review: '',
-                  sort: 'newest',
-                })}
+                href={clearFiltersHref}
               >
                 <X aria-hidden="true" size={14} />
                 Clear filters
@@ -120,29 +135,59 @@ export function ReviewsTableSection({
         }
       >
         <div className="booking-date-filter-bar vuexy-review-filter-bar" aria-label="Review list filters">
-          <AdminSegmentedControl
-            activeValue={filters.review}
-            ariaLabel="Review status"
-            options={reviewStatusButtonOptions.map((option) => ({
-              href: buildReviewListHref(filters, { review: option.value }),
-              label: option.label,
-              value: option.value,
-            }))}
-          />
-          <AdminSegmentedControl
-            activeValue={filters.dateRange}
-            ariaLabel="Review request date"
-            className="vuexy-review-date-buttons"
-            options={reviewDateButtonOptions.map((option) => ({
-              href: buildReviewListHref(filters, {
-                dateFrom: '',
-                dateRange: option.value,
-                dateTo: '',
-              }),
-              label: option.label,
-              value: option.value,
-            }))}
-          />
+          <div className="reviews-filter-group">
+            <strong>Status</strong>
+            <AdminSegmentedControl
+              activeValue={filters.review}
+              ariaLabel="Review status"
+              options={reviewStatusButtonOptions(summary).map((option) => ({
+                href: buildReviewListHref(filters, { review: option.value }),
+                label: option.label,
+                value: option.value,
+              }))}
+            />
+          </div>
+          <AdminFormGrid action="/reviews" className="vuexy-review-controls">
+            <input name="review" type="hidden" value={filters.review} />
+            <input name="dateFrom" type="hidden" value={filters.dateFrom} />
+            <input name="dateTo" type="hidden" value={filters.dateTo} />
+            <AdminFormSearch
+              className="admin-directory-filter-search"
+              defaultValue={filters.q}
+              label="Search reviews"
+              name="q"
+              placeholder="Search customer, partner, booking, or review"
+            />
+            <AdminFormSelect
+              className="admin-directory-filter-select"
+              defaultValue={filters.dateRange}
+              label="Submitted date"
+              labelVisibility="visible"
+              name="dateRange"
+              options={reviewDateButtonOptions}
+            />
+            <AdminFormSelect
+              className="admin-directory-filter-select"
+              defaultValue={filters.sort}
+              label="Sort"
+              labelVisibility="visible"
+              name="sort"
+              options={reviewSortControlOptions}
+            />
+            <AdminFormSelect
+              className="admin-directory-filter-select"
+              defaultValue={String(filters.pageSize)}
+              label="Rows"
+              labelVisibility="visible"
+              name="pageSize"
+              options={reviewPageSizeOptions}
+            />
+            <AdminFormControlButton className="admin-directory-filter-button">Update list</AdminFormControlButton>
+            <AdminFormControlLink className="admin-directory-filter-export" href={csvHref}>
+              <Download aria-hidden="true" size={16} />
+              Export
+            </AdminFormControlLink>
+          </AdminFormGrid>
           {filters.dateRange === 'custom' ? (
             <AdminFormShell action="/reviews" className="booking-custom-date-grid vuexy-review-custom-date-grid">
               <input name="review" type="hidden" value={filters.review} />
@@ -150,114 +195,69 @@ export function ReviewsTableSection({
               <input name="pageSize" type="hidden" value={filters.pageSize} />
               <input name="sort" type="hidden" value={filters.sort} />
               <input name="dateRange" type="hidden" value="custom" />
-              <AdminFormDate defaultValue={filters.dateFrom} label="Date from" name="dateFrom" />
-              <AdminFormDate defaultValue={filters.dateTo} label="Date to" name="dateTo" />
+              <AdminFormDate
+                ariaDescribedBy={dateError ? 'review-date-error' : undefined}
+                ariaInvalid={Boolean(dateError)}
+                autoFocus={Boolean(dateError)}
+                defaultValue={filters.dateFrom}
+                label="From"
+                labelVisibility="visible"
+                name="dateFrom"
+                native={true}
+              />
+              <AdminFormDate
+                ariaDescribedBy={dateError ? 'review-date-error' : undefined}
+                ariaInvalid={Boolean(dateError)}
+                defaultValue={filters.dateTo}
+                label="To"
+                labelVisibility="visible"
+                name="dateTo"
+                native={true}
+              />
               <AdminFormControlButton className="button-primary booking-date-apply-button">
                 Apply dates
               </AdminFormControlButton>
+              {dateError ? (
+                <AdminInlineNotice className="admin-grid-span-2" id="review-date-error" role="alert" tone="danger">
+                  {dateError}
+                </AdminInlineNotice>
+              ) : null}
             </AdminFormShell>
           ) : null}
-          <AdminSegmentedControl
-            activeValue={filters.sort}
-            ariaLabel="Review sort"
-            className="vuexy-review-sort-buttons"
-            options={REVIEW_SORT_OPTIONS.map((option) => ({
-              href: buildReviewListHref(filters, { sort: option.value }),
-              label: option.label,
-              value: option.value,
-            }))}
-          />
-          <AdminFormGrid action="/reviews" className="vuexy-review-controls">
-            <input name="review" type="hidden" value={filters.review} />
-            <input name="dateRange" type="hidden" value={filters.dateRange} />
-            <input name="dateFrom" type="hidden" value={filters.dateFrom} />
-            <input name="dateTo" type="hidden" value={filters.dateTo} />
-            <input name="sort" type="hidden" value={filters.sort} />
-            <AdminFormSearch
-              className="admin-directory-filter-search"
-              defaultValue={filters.q}
-              label="Search Review"
-              name="q"
-              placeholder="Search Review"
-            />
-            <AdminFormSelect
-              className="admin-directory-filter-select"
-              defaultValue={String(filters.pageSize)}
-              label="Rows per page"
-              name="pageSize"
-              options={reviewPageSizeOptions}
-            />
-            <AdminFormControlButton className="admin-directory-filter-button">Apply</AdminFormControlButton>
-            <AdminFormControlLink
-              className="admin-directory-filter-export"
-              download="hands-customer-reviews.csv"
-              href={csvHref}
-            >
-              <Download aria-hidden="true" size={16} />
-              Export
-            </AdminFormControlLink>
-          </AdminFormGrid>
         </div>
       </AdminFilterPanel>
 
-      <AdminTablePanel
+      {dateError ? null : <AdminTablePanel
         className="vuexy-review-card"
-        description="Review rows use the same table card, rounded pagination, avatars, and operator action pattern as bookings."
         id="customer-review-table"
-        resultLabel={`${pagination.totalRows} review(s)`}
-        resultTone={activeFilterLabels.length > 0 ? 'warning' : 'neutral'}
-        title="Customer review list"
+        resultLabel={`${matchingCount} matching`}
+        resultTone={filters.review === 'reported' ? 'warning' : 'info'}
+        title="Review queue"
       >
-        <AdminTableScroll>
+        {rows.length === 0 ? emptyState : <AdminTableScroll ariaLabel="Customer reviews table">
           <AdminDataTable
             className="vuexy-booking-table vuexy-review-table"
-            emptyMessage={emptyMessage}
-            headers={['Request Time', 'Partner', 'Customer', 'Review', 'Visibility', 'Actions']}
+            emptyMessage={emptyState}
+            headers={['Submitted', 'Review', 'Parties', 'State', 'Actions']}
             rowCount={rows.length}
           >
             {rows.map((row) => (
               <tr key={row.id}>
                 <td>
-                  <div className="vuexy-booking-id-line">
+                  <DateTimeText fallback="No submitted date" value={row.createdAt} />
+                  <div className="muted vuexy-review-submitted-line">Review {row.reviewIdLabel}</div>
+                  <div className="vuexy-booking-id-line vuexy-review-booking-line">
                     {row.bookingHref ? (
                       <AdminTextLink href={row.bookingHref} title="Open booking detail">
-                        <Eye aria-hidden="true" size={14} />
-                        {row.bookingLabel}
+                        Booking {row.bookingLabel}
                       </AdminTextLink>
                     ) : (
                       <span className="muted">{row.bookingLabel}</span>
                     )}
                   </div>
-                  <div className="muted">{row.bookingRequestTimeLabel}</div>
-                  <div className="muted vuexy-review-submitted-line">
-                    Review submitted <DateTimeText fallback="No date" value={row.createdAt} />
-                  </div>
-                </td>
-                <td>
-                  <AdminPersonCell
-                    avatarClassName="vuexy-booking-avatar is-partner"
-                    avatarStatus={row.partnerAvatarStatus}
-                    className="vuexy-booking-person"
-                    copyClassName="vuexy-booking-person-copy"
-                    helper={row.partnerHint}
-                    href={row.partnerHref}
-                    initials={row.partnerInitials}
-                    label={row.partnerLabel}
-                    linkClassName="vuexy-booking-person-link"
-                  />
-                </td>
-                <td>
-                  <AdminPersonCell
-                    avatarClassName="vuexy-booking-avatar"
-                    avatarStatus={row.customerAvatarStatus}
-                    className="vuexy-booking-person"
-                    copyClassName="vuexy-booking-person-copy"
-                    helper={row.customerPhone}
-                    href={row.customerHref}
-                    initials={row.customerInitials}
-                    label={row.customerLabel}
-                    linkClassName="vuexy-booking-person-link"
-                  />
+                  {row.showBookingRequestTime ? (
+                    <div className="muted vuexy-review-requested-line">Requested {row.bookingRequestTimeLabel}</div>
+                  ) : null}
                 </td>
                 <td className="vuexy-review-copy-cell">
                   <div aria-label={`Rating ${row.ratingLabel}`} className="vuexy-review-stars">
@@ -269,10 +269,32 @@ export function ReviewsTableSection({
                         size={18}
                       />
                     ))}
+                    <span className="vuexy-review-rating-value">{row.ratingLabel}</span>
                   </div>
                   <p>{row.commentLabel}</p>
                   <span>{row.serviceLabel}</span>
+                  {row.isAdminCreated ? <span>Admin-created review</span> : null}
                   {row.reportReasonLabel ? <span>{row.reportReasonLabel}</span> : null}
+                </td>
+                <td className="vuexy-review-parties-cell">
+                  <AdminPersonCell
+                    avatarClassName="vuexy-booking-avatar is-partner"
+                    className="vuexy-booking-person"
+                    copyClassName="vuexy-booking-person-copy"
+                    href={row.partnerHref}
+                    initials={row.partnerInitials}
+                    label={row.partnerLabel}
+                    linkClassName="vuexy-booking-person-link"
+                  />
+                  <AdminPersonCell
+                    avatarClassName="vuexy-booking-avatar"
+                    className="vuexy-booking-person"
+                    copyClassName="vuexy-booking-person-copy"
+                    href={row.customerHref}
+                    initials={row.customerInitials}
+                    label={row.customerLabel}
+                    linkClassName="vuexy-booking-person-link"
+                  />
                 </td>
                 <td className="vuexy-review-visibility-cell">
                   <StatusBadgeFromPillClass pillClass={row.statusClassName}>{row.statusLabel}</StatusBadgeFromPillClass>
@@ -283,6 +305,7 @@ export function ReviewsTableSection({
                     <ReviewRowActions
                       actions={row.actions}
                       editReview={{
+                        canEdit: row.isAdminCreated,
                         commentLabel: row.commentLabel,
                         commentValue: row.commentValue,
                         rating: row.rating,
@@ -298,7 +321,7 @@ export function ReviewsTableSection({
               </tr>
             ))}
           </AdminDataTable>
-        </AdminTableScroll>
+        </AdminTableScroll>}
 
         <AdminTablePaginationFooter
           activePage={pagination.page}
@@ -312,7 +335,7 @@ export function ReviewsTableSection({
           totalPages={pagination.totalPages}
           totalRows={pagination.totalRows}
         />
-      </AdminTablePanel>
+      </AdminTablePanel>}
 
     </>
   );
@@ -324,7 +347,7 @@ function reviewActiveFilterLabels(filters: ReviewFilters) {
     labels.push(`Search: ${filters.q}`);
   }
   if (filters.review) {
-    labels.push(reviewFilterDescription(filters.review));
+    labels.push(reviewStatusFilterLabel(filters.review));
   }
   const dateRange = reviewDateRangeLabel(filters);
   if (dateRange) {
@@ -341,12 +364,27 @@ const reviewPageSizeOptions = REVIEW_PAGE_SIZE_OPTIONS.map((option) => ({
   value: String(option),
 }));
 
-const reviewStatusButtonOptions = [
-  { label: 'All', value: '' },
-  { label: 'Published', value: 'published' },
-  { label: 'Held', value: 'held' },
-  { label: 'Follow-up', value: 'follow-up' },
-  { label: 'Reported', value: 'reported' },
+const reviewSortControlOptions = [
+  { label: 'Newest', value: 'newest' },
+  { label: 'Oldest', value: 'oldest' },
+  { label: 'Highest rating', value: 'rating-desc' },
+  { label: 'Lowest rating', value: 'rating-asc' },
 ] as const;
 
+function reviewStatusButtonOptions(summary: AdminReviewSummary) {
+  return [
+    { label: `All ${summary.totalCount}`, value: '' },
+    { label: `Visible ${summary.published ?? 0}`, value: 'published' },
+    { label: `Needs review ${summary.reported ?? 0}`, value: 'reported' },
+    { label: `Hidden ${summary.held ?? 0}`, value: 'held' },
+  ] as const;
+}
+
 const reviewDateButtonOptions = REVIEW_DATE_RANGE_OPTIONS;
+
+function reviewStatusFilterLabel(review: string) {
+  if (review === 'published') return 'Visible';
+  if (review === 'reported') return 'Needs review';
+  if (review === 'held') return 'Hidden';
+  return 'All';
+}

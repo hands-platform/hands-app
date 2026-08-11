@@ -107,7 +107,7 @@ describe('operations handoff signal models', () => {
     expect(rows[0]).toMatchObject({
       id: 'customer-new',
       completedCount: 1,
-      detail: '1 booking(s), 150.000 VND payment total, 1 saved location(s).',
+      detail: '1 booking, 150.000 VND payment total, 1 saved location.',
       name: 'Customer Mai',
     });
   });
@@ -226,7 +226,7 @@ describe('operations handoff signal models', () => {
     );
 
     expect(signals.rows[0]).toMatchObject({
-      detail: expect.stringContaining('7 completed booking(s)'),
+      detail: expect.stringContaining('7 completed bookings'),
       id: 'partner-summary',
     });
   });

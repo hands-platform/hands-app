@@ -1,0 +1,727 @@
+- generic [active] [ref=f6e1]:
+  - generic [ref=f6e3]:
+    - complementary [ref=f6e4]:
+      - strong [ref=f6e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=f6e7]:
+        - link "Shift Command" [ref=f6e8] [cursor=pointer]:
+          - /url: /
+        - group [ref=f6e14]:
+          - generic "Booking Operations" [ref=f6e15] [cursor=pointer]
+        - group [ref=f6e24]:
+          - generic "Customer Support" [ref=f6e25] [cursor=pointer]
+        - group [ref=f6e34]:
+          - generic "Partner Operations" [ref=f6e35] [cursor=pointer]
+          - generic [ref=f6e1089]:
+            - link "Partner Directory" [ref=f6e1090] [cursor=pointer]:
+              - /url: /partners
+            - link "Partner Control Queue" [ref=f6e1094] [cursor=pointer]:
+              - /url: /partner-controls
+            - link "Partner Operations Overview" [ref=f6e1108] [cursor=pointer]:
+              - /url: /partners/overview
+        - group [ref=f6e42]:
+          - generic "Finance Operations" [ref=f6e43] [cursor=pointer]
+        - group [ref=f6e51]:
+          - generic "Finance Records & Close" [ref=f6e52] [cursor=pointer]
+        - group [ref=f6e91]:
+          - generic "Growth & Communications" [ref=f6e92] [cursor=pointer]
+        - group [ref=f6e99]:
+          - generic "Administration & Settings" [ref=f6e100] [cursor=pointer]
+    - main [ref=f6e108]:
+      - generic "Admin workspace" [ref=f6e109]:
+        - navigation "Breadcrumb" [ref=f6e111]:
+          - link "HANDS" [ref=f6e112] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f6e115]: Partner Operations
+          - generic [ref=f6e121]: Partner Directory
+        - generic "Workspace actions" [ref=f6e122]:
+          - button "Search Ctrl K" [ref=f6e124] [cursor=pointer]:
+            - generic [ref=f6e125]: Search
+            - generic [ref=f6e129]: Ctrl K
+          - button "Switch to dark mode" [ref=f6e131] [cursor=pointer]
+          - link "Operations Policy" [ref=f6e134] [cursor=pointer]:
+            - /url: /operations-policy
+          - button "Open operation alerts" [ref=f6e139] [cursor=pointer]
+          - button "Sign out" [ref=f6e144] [cursor=pointer]
+      - generic [ref=f6e154]:
+        - generic [ref=f6e1143]:
+          - generic [ref=f6e1144]:
+            - heading "Partner directory" [level=1] [ref=f6e1145]
+            - paragraph [ref=f6e1146]: Search by partner name, phone, or ID, then open a profile to review status and restrictions.
+          - generic "Page actions" [ref=f6e1147]:
+            - generic [ref=f6e1148]:
+              - text: Updated
+              - time [ref=f6e1149]: 8 Aug 2026, 15:09
+            - link "Refresh" [ref=f6e1150] [cursor=pointer]:
+              - /url: /partners
+        - generic [ref=f6e1151]:
+          - generic "Partner list pages" [ref=f6e1152]:
+            - link "Directory" [ref=f6e1153] [cursor=pointer]:
+              - /url: /partners
+            - link "Approvals" [ref=f6e1154] [cursor=pointer]:
+              - /url: /partners?review=approval-pending&sort=oldest
+            - link "Onboarding blockers" [ref=f6e1155] [cursor=pointer]:
+              - /url: /partners?review=unapproved
+            - link "Wallet debt" [ref=f6e1156] [cursor=pointer]:
+              - /url: /partners?review=unsettled
+          - region [ref=f6e1157]:
+            - generic [ref=f6e1158]:
+              - heading "Partner directory filters" [level=2] [ref=f6e1160]
+              - generic [ref=f6e1161]: 10 on this page / 1392 total
+            - generic [ref=f6e1164]:
+              - generic [ref=f6e1165]:
+                - generic "Partner list filters" [ref=f6e1166]:
+                  - generic [ref=f6e1167]:
+                    - generic [ref=f6e1171]: Search Partner
+                    - searchbox "Search Partner" [ref=f6e1172]
+                  - generic [ref=f6e1173] [cursor=pointer]:
+                    - generic [ref=f6e1174]: State
+                    - combobox "State" [ref=f6e1175]:
+                      - option "All states" [selected]
+                      - option "Online available"
+                      - option "Online busy"
+                      - option "Available soon"
+                      - option "Offline"
+                  - generic [ref=f6e1176] [cursor=pointer]:
+                    - generic [ref=f6e1177]: App activity
+                    - combobox "App activity" [ref=f6e1178]:
+                      - option "All activity" [selected]
+                      - option "App active 7D"
+                      - option "App inactive 7D+"
+                      - option "App not tracked"
+                      - option "No factual activity 7D"
+                      - option "No factual activity 30D"
+                      - option "No recorded session"
+                  - generic [ref=f6e1179] [cursor=pointer]:
+                    - generic [ref=f6e1180]: Verification
+                    - combobox "Verification" [ref=f6e1181]:
+                      - option "All verification" [selected]
+                      - option "Approved"
+                      - option "Submitted"
+                      - option "Pending"
+                      - option "Rejected"
+                      - option "Blocked"
+                  - generic [ref=f6e1182] [cursor=pointer]:
+                    - generic [ref=f6e1183]: KYC
+                    - combobox "KYC" [ref=f6e1184]:
+                      - option "All KYC" [selected]
+                      - option "Approved"
+                      - option "Pending"
+                      - option "Rejected"
+                      - option "Draft"
+                      - option "Missing"
+                  - generic [ref=f6e1185] [cursor=pointer]:
+                    - generic [ref=f6e1186]: Booking flow
+                    - combobox "Booking flow" [ref=f6e1187]:
+                      - option "All booking flows" [selected]
+                      - option "Has active booking"
+                      - option "First-pick booking"
+                      - option "Marketplace participant"
+                      - option "Customer final choice"
+                      - option "Chat room opened"
+                      - option "Matched but chat missing"
+                      - option "Completed work"
+                      - option "No completed work"
+                - generic "Partner filter actions" [ref=f6e1188]:
+                  - link "Export current page (10)" [ref=f6e1189] [cursor=pointer]:
+                    - /url: /api/admin/partners/export
+                  - button "Apply" [ref=f6e1193] [cursor=pointer]
+              - generic "Partner sort filters" [ref=f6e1195]:
+                - generic [ref=f6e1196]: Sort
+                - generic "Partner sort" [ref=f6e1197]:
+                  - link "Newest" [ref=f6e1198] [cursor=pointer]:
+                    - /url: /partners
+                  - link "Oldest" [ref=f6e1199] [cursor=pointer]:
+                    - /url: /partners?sort=oldest
+                  - link "Name" [ref=f6e1200] [cursor=pointer]:
+                    - /url: /partners?sort=name
+              - generic "Partner filter status" [ref=f6e1201]:
+                - generic [ref=f6e1202]: Showing 10 of 1392 matching partners under the active filters - sorted by newest first
+                - generic [ref=f6e1204]:
+                  - 'link "Location freshness: 90m" [ref=f6e1205] [cursor=pointer]':
+                    - /url: /operations-policy
+                  - link "Clear filters" [ref=f6e1207] [cursor=pointer]:
+                    - /url: /partners
+          - region [ref=f6e1208]:
+            - generic [ref=f6e1209]:
+              - generic [ref=f6e1210]:
+                - heading "Partner directory" [level=2] [ref=f6e1211]
+                - paragraph [ref=f6e1212]: Search by partner name, phone, or ID, then open a profile to review status and restrictions.
+              - generic [ref=f6e1213]: 1392 matching Partners
+            - generic [ref=f6e1215]:
+              - region "Partner directory records" [ref=f6e1216]:
+                - table [ref=f6e1217]:
+                  - rowgroup [ref=f6e1218]:
+                    - row [ref=f6e1219]:
+                      - columnheader "Partner" [ref=f6e1220]
+                      - columnheader "Availability" [ref=f6e1221]
+                      - columnheader "Onboarding" [ref=f6e1222]
+                      - columnheader "Activity" [ref=f6e1223]
+                      - columnheader "Wallet" [ref=f6e1224]
+                      - columnheader "Account / action" [ref=f6e1225]
+                  - rowgroup [ref=f6e1226]:
+                    - row [ref=f6e1227]:
+                      - cell "App offline Audit Cancellation Partner Partner ID _profile · Phone saved" [ref=f6e1228]:
+                        - generic [ref=f6e1229]:
+                          - generic [ref=f6e1230]:
+                            - generic [ref=f6e1231]: AC
+                            - img "App offline"
+                          - generic [ref=f6e1232]:
+                            - link "Audit Cancellation Partner" [ref=f6e1233] [cursor=pointer]:
+                              - /url: /partners/audit_post_match_provider_profile
+                            - generic [ref=f6e1234]: Partner ID _profile · Phone saved
+                      - cell "Offline Unknown platform No location Partner app has not shared a location." [ref=f6e1237]:
+                        - generic [ref=f6e1238]:
+                          - generic [ref=f6e1239]:
+                            - generic [ref=f6e1240]: Offline
+                            - generic [ref=f6e1241]: Unknown platform
+                          - generic [ref=f6e1242]:
+                            - strong [ref=f6e1243]: No location
+                            - generic [ref=f6e1244]: Partner app has not shared a location.
+                      - cell "Level 1 signup KYC Profile draft verification review KYC MISSING +7 more" [ref=f6e1245]:
+                        - generic [ref=f6e1246]:
+                          - generic [ref=f6e1247]:
+                            - strong [ref=f6e1248]: Level 1 signup
+                            - generic [ref=f6e1249]: KYC Profile draft
+                          - generic [ref=f6e1250]:
+                            - generic [ref=f6e1251]: verification review
+                            - generic [ref=f6e1252]: KYC MISSING
+                            - generic [ref=f6e1253]: +7 more
+                      - cell "App not tracked App not tracked Session not recorded 6 total 0 completed / 6 closed 0 no-shows / 0 reviews" [ref=f6e1254]:
+                        - generic [ref=f6e1255]:
+                          - generic [ref=f6e1256]:
+                            - generic [ref=f6e1257]: App not tracked
+                            - generic [ref=f6e1258]:
+                              - text: App
+                              - generic [ref=f6e1259]: not tracked
+                            - generic [ref=f6e1260]:
+                              - text: Session
+                              - generic [ref=f6e1261]: not recorded
+                          - generic [ref=f6e1262]:
+                            - strong [ref=f6e1263]: 6 total
+                            - generic [ref=f6e1264]: 0 completed / 6 closed
+                            - generic [ref=f6e1265]: 0 no-shows / 0 reviews
+                      - cell "30.000 VND No negative balance Pending -120.000 VND / available 0 VND" [ref=f6e1266]:
+                        - generic [ref=f6e1267]:
+                          - strong [ref=f6e1268]: 30.000 VND
+                          - generic [ref=f6e1269]: No negative balance
+                          - generic [ref=f6e1270]: Pending -120.000 VND / available 0 VND
+                      - cell "Account clear Normal account 0 memos or events Open profile" [ref=f6e1271]:
+                        - generic [ref=f6e1272]:
+                          - generic [ref=f6e1273]:
+                            - generic [ref=f6e1274]: Account clear
+                            - generic [ref=f6e1275]: Normal account
+                            - generic [ref=f6e1276]: 0 memos or events
+                          - link "Open profile" [ref=f6e1277] [cursor=pointer]:
+                            - /url: /partners/audit_post_match_provider_profile
+                    - row [ref=f6e1278]:
+                      - cell "App offline Smoke Cancellation Partner Partner ID _profile · Phone saved" [ref=f6e1279]:
+                        - generic [ref=f6e1280]:
+                          - generic [ref=f6e1281]:
+                            - generic [ref=f6e1282]: SC
+                            - img "App offline"
+                          - generic [ref=f6e1283]:
+                            - link "Smoke Cancellation Partner" [ref=f6e1284] [cursor=pointer]:
+                              - /url: /partners/smoke_post_match_provider_profile
+                            - generic [ref=f6e1285]: Partner ID _profile · Phone saved
+                      - cell "Offline Unknown platform No location Partner app has not shared a location." [ref=f6e1288]:
+                        - generic [ref=f6e1289]:
+                          - generic [ref=f6e1290]:
+                            - generic [ref=f6e1291]: Offline
+                            - generic [ref=f6e1292]: Unknown platform
+                          - generic [ref=f6e1293]:
+                            - strong [ref=f6e1294]: No location
+                            - generic [ref=f6e1295]: Partner app has not shared a location.
+                      - cell "Level 1 signup KYC Profile draft verification review KYC MISSING +7 more" [ref=f6e1296]:
+                        - generic [ref=f6e1297]:
+                          - generic [ref=f6e1298]:
+                            - strong [ref=f6e1299]: Level 1 signup
+                            - generic [ref=f6e1300]: KYC Profile draft
+                          - generic [ref=f6e1301]:
+                            - generic [ref=f6e1302]: verification review
+                            - generic [ref=f6e1303]: KYC MISSING
+                            - generic [ref=f6e1304]: +7 more
+                      - cell "App not tracked App not tracked Session not recorded 6 total 0 completed / 6 closed 0 no-shows / 0 reviews" [ref=f6e1305]:
+                        - generic [ref=f6e1306]:
+                          - generic [ref=f6e1307]:
+                            - generic [ref=f6e1308]: App not tracked
+                            - generic [ref=f6e1309]:
+                              - text: App
+                              - generic [ref=f6e1310]: not tracked
+                            - generic [ref=f6e1311]:
+                              - text: Session
+                              - generic [ref=f6e1312]: not recorded
+                          - generic [ref=f6e1313]:
+                            - strong [ref=f6e1314]: 6 total
+                            - generic [ref=f6e1315]: 0 completed / 6 closed
+                            - generic [ref=f6e1316]: 0 no-shows / 0 reviews
+                      - cell "0 VND No negative balance Pending -150.000 VND / available 0 VND" [ref=f6e1317]:
+                        - generic [ref=f6e1318]:
+                          - strong [ref=f6e1319]: 0 VND
+                          - generic [ref=f6e1320]: No negative balance
+                          - generic [ref=f6e1321]: Pending -150.000 VND / available 0 VND
+                      - cell "Account clear Normal account 0 memos or events Open profile" [ref=f6e1322]:
+                        - generic [ref=f6e1323]:
+                          - generic [ref=f6e1324]:
+                            - generic [ref=f6e1325]: Account clear
+                            - generic [ref=f6e1326]: Normal account
+                            - generic [ref=f6e1327]: 0 memos or events
+                          - link "Open profile" [ref=f6e1328] [cursor=pointer]:
+                            - /url: /partners/smoke_post_match_provider_profile
+                    - row [ref=f6e1329]:
+                      - cell "App offline Partner 9002 Partner ID zwcx6yxc · Phone saved" [ref=f6e1330]:
+                        - generic [ref=f6e1331]:
+                          - generic [ref=f6e1332]:
+                            - generic [ref=f6e1333]: P9
+                            - img "App offline"
+                          - generic [ref=f6e1334]:
+                            - link "Partner 9002" [ref=f6e1335] [cursor=pointer]:
+                              - /url: /partners/cmsiv8xyv001yvy1szwcx6yxc
+                            - generic [ref=f6e1336]: Partner ID zwcx6yxc · Phone saved
+                      - cell "Offline Unknown platform No location Partner app has not shared a location." [ref=f6e1339]:
+                        - generic [ref=f6e1340]:
+                          - generic [ref=f6e1341]:
+                            - generic [ref=f6e1342]: Offline
+                            - generic [ref=f6e1343]: Unknown platform
+                          - generic [ref=f6e1344]:
+                            - strong [ref=f6e1345]: No location
+                            - generic [ref=f6e1346]: Partner app has not shared a location.
+                      - cell "Level 1 signup KYC Profile draft verification review KYC MISSING +4 more" [ref=f6e1347]:
+                        - generic [ref=f6e1348]:
+                          - generic [ref=f6e1349]:
+                            - strong [ref=f6e1350]: Level 1 signup
+                            - generic [ref=f6e1351]: KYC Profile draft
+                          - generic [ref=f6e1352]:
+                            - generic [ref=f6e1353]: verification review
+                            - generic [ref=f6e1354]: KYC MISSING
+                            - generic [ref=f6e1355]: +4 more
+                      - cell "App not tracked App not tracked Session not recorded 0 total 0 completed / 0 closed 0 no-shows / 0 reviews" [ref=f6e1356]:
+                        - generic [ref=f6e1357]:
+                          - generic [ref=f6e1358]:
+                            - generic [ref=f6e1359]: App not tracked
+                            - generic [ref=f6e1360]:
+                              - text: App
+                              - generic [ref=f6e1361]: not tracked
+                            - generic [ref=f6e1362]:
+                              - text: Session
+                              - generic [ref=f6e1363]: not recorded
+                          - generic [ref=f6e1364]:
+                            - strong [ref=f6e1365]: 0 total
+                            - generic [ref=f6e1366]: 0 completed / 0 closed
+                            - generic [ref=f6e1367]: 0 no-shows / 0 reviews
+                      - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f6e1368]:
+                        - generic [ref=f6e1369]:
+                          - strong [ref=f6e1370]: 0 VND
+                          - generic [ref=f6e1371]: No negative balance
+                          - generic [ref=f6e1372]: Pending 0 VND / available 0 VND
+                      - cell "Account clear Normal account 0 memos or events Open profile" [ref=f6e1373]:
+                        - generic [ref=f6e1374]:
+                          - generic [ref=f6e1375]:
+                            - generic [ref=f6e1376]: Account clear
+                            - generic [ref=f6e1377]: Normal account
+                            - generic [ref=f6e1378]: 0 memos or events
+                          - link "Open profile" [ref=f6e1379] [cursor=pointer]:
+                            - /url: /partners/cmsiv8xyv001yvy1szwcx6yxc
+                    - row [ref=f6e1380]:
+                      - cell "App offline Partner 7216 Partner ID yy5ouoph · Phone saved" [ref=f6e1381]:
+                        - generic [ref=f6e1382]:
+                          - generic [ref=f6e1383]:
+                            - generic [ref=f6e1384]: P7
+                            - img "App offline"
+                          - generic [ref=f6e1385]:
+                            - link "Partner 7216" [ref=f6e1386] [cursor=pointer]:
+                              - /url: /partners/cmsiv8x85001mvy1syy5ouoph
+                            - generic [ref=f6e1387]: Partner ID yy5ouoph · Phone saved
+                      - cell "Offline Unknown platform No location Partner app has not shared a location." [ref=f6e1390]:
+                        - generic [ref=f6e1391]:
+                          - generic [ref=f6e1392]:
+                            - generic [ref=f6e1393]: Offline
+                            - generic [ref=f6e1394]: Unknown platform
+                          - generic [ref=f6e1395]:
+                            - strong [ref=f6e1396]: No location
+                            - generic [ref=f6e1397]: Partner app has not shared a location.
+                      - cell "Level 1 signup KYC Profile draft verification review KYC MISSING +5 more" [ref=f6e1398]:
+                        - generic [ref=f6e1399]:
+                          - generic [ref=f6e1400]:
+                            - strong [ref=f6e1401]: Level 1 signup
+                            - generic [ref=f6e1402]: KYC Profile draft
+                          - generic [ref=f6e1403]:
+                            - generic [ref=f6e1404]: verification review
+                            - generic [ref=f6e1405]: KYC MISSING
+                            - generic [ref=f6e1406]: +5 more
+                      - cell "App not tracked App not tracked Session not recorded 0 total 0 completed / 0 closed 0 no-shows / 0 reviews" [ref=f6e1407]:
+                        - generic [ref=f6e1408]:
+                          - generic [ref=f6e1409]:
+                            - generic [ref=f6e1410]: App not tracked
+                            - generic [ref=f6e1411]:
+                              - text: App
+                              - generic [ref=f6e1412]: not tracked
+                            - generic [ref=f6e1413]:
+                              - text: Session
+                              - generic [ref=f6e1414]: not recorded
+                          - generic [ref=f6e1415]:
+                            - strong [ref=f6e1416]: 0 total
+                            - generic [ref=f6e1417]: 0 completed / 0 closed
+                            - generic [ref=f6e1418]: 0 no-shows / 0 reviews
+                      - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f6e1419]:
+                        - generic [ref=f6e1420]:
+                          - strong [ref=f6e1421]: 0 VND
+                          - generic [ref=f6e1422]: No negative balance
+                          - generic [ref=f6e1423]: Pending 0 VND / available 0 VND
+                      - cell "Account clear Normal account 0 memos or events Open profile" [ref=f6e1424]:
+                        - generic [ref=f6e1425]:
+                          - generic [ref=f6e1426]:
+                            - generic [ref=f6e1427]: Account clear
+                            - generic [ref=f6e1428]: Normal account
+                            - generic [ref=f6e1429]: 0 memos or events
+                          - link "Open profile" [ref=f6e1430] [cursor=pointer]:
+                            - /url: /partners/cmsiv8x85001mvy1syy5ouoph
+                    - row [ref=f6e1431]:
+                      - cell "App offline Partner 8215 Partner ID b5vv1ic8 · Phone saved" [ref=f6e1432]:
+                        - generic [ref=f6e1433]:
+                          - generic [ref=f6e1434]:
+                            - generic [ref=f6e1435]: P8
+                            - img "App offline"
+                          - generic [ref=f6e1436]:
+                            - link "Partner 8215" [ref=f6e1437] [cursor=pointer]:
+                              - /url: /partners/cmsiv8x7n001hvy1sb5vv1ic8
+                            - generic [ref=f6e1438]: Partner ID b5vv1ic8 · Phone saved
+                      - cell "Offline Unknown platform No location Partner app has not shared a location." [ref=f6e1441]:
+                        - generic [ref=f6e1442]:
+                          - generic [ref=f6e1443]:
+                            - generic [ref=f6e1444]: Offline
+                            - generic [ref=f6e1445]: Unknown platform
+                          - generic [ref=f6e1446]:
+                            - strong [ref=f6e1447]: No location
+                            - generic [ref=f6e1448]: Partner app has not shared a location.
+                      - cell "Level 1 signup KYC Profile draft verification review KYC MISSING +5 more" [ref=f6e1449]:
+                        - generic [ref=f6e1450]:
+                          - generic [ref=f6e1451]:
+                            - strong [ref=f6e1452]: Level 1 signup
+                            - generic [ref=f6e1453]: KYC Profile draft
+                          - generic [ref=f6e1454]:
+                            - generic [ref=f6e1455]: verification review
+                            - generic [ref=f6e1456]: KYC MISSING
+                            - generic [ref=f6e1457]: +5 more
+                      - cell "App not tracked App not tracked Session not recorded 0 total 0 completed / 0 closed 0 no-shows / 0 reviews" [ref=f6e1458]:
+                        - generic [ref=f6e1459]:
+                          - generic [ref=f6e1460]:
+                            - generic [ref=f6e1461]: App not tracked
+                            - generic [ref=f6e1462]:
+                              - text: App
+                              - generic [ref=f6e1463]: not tracked
+                            - generic [ref=f6e1464]:
+                              - text: Session
+                              - generic [ref=f6e1465]: not recorded
+                          - generic [ref=f6e1466]:
+                            - strong [ref=f6e1467]: 0 total
+                            - generic [ref=f6e1468]: 0 completed / 0 closed
+                            - generic [ref=f6e1469]: 0 no-shows / 0 reviews
+                      - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f6e1470]:
+                        - generic [ref=f6e1471]:
+                          - strong [ref=f6e1472]: 0 VND
+                          - generic [ref=f6e1473]: No negative balance
+                          - generic [ref=f6e1474]: Pending 0 VND / available 0 VND
+                      - cell "Account clear Normal account 0 memos or events Open profile" [ref=f6e1475]:
+                        - generic [ref=f6e1476]:
+                          - generic [ref=f6e1477]:
+                            - generic [ref=f6e1478]: Account clear
+                            - generic [ref=f6e1479]: Normal account
+                            - generic [ref=f6e1480]: 0 memos or events
+                          - link "Open profile" [ref=f6e1481] [cursor=pointer]:
+                            - /url: /partners/cmsiv8x7n001hvy1sb5vv1ic8
+                    - row [ref=f6e1482]:
+                      - cell "App offline Partner 0214 Partner ID 97k35ftj · Phone saved" [ref=f6e1483]:
+                        - generic [ref=f6e1484]:
+                          - generic [ref=f6e1485]:
+                            - generic [ref=f6e1486]: P0
+                            - img "App offline"
+                          - generic [ref=f6e1487]:
+                            - link "Partner 0214" [ref=f6e1488] [cursor=pointer]:
+                              - /url: /partners/cmsiv8x74001cvy1s97k35ftj
+                            - generic [ref=f6e1489]: Partner ID 97k35ftj · Phone saved
+                      - cell "Offline Unknown platform No location Partner app has not shared a location." [ref=f6e1492]:
+                        - generic [ref=f6e1493]:
+                          - generic [ref=f6e1494]:
+                            - generic [ref=f6e1495]: Offline
+                            - generic [ref=f6e1496]: Unknown platform
+                          - generic [ref=f6e1497]:
+                            - strong [ref=f6e1498]: No location
+                            - generic [ref=f6e1499]: Partner app has not shared a location.
+                      - cell "Level 1 signup KYC Profile draft verification review KYC MISSING +5 more" [ref=f6e1500]:
+                        - generic [ref=f6e1501]:
+                          - generic [ref=f6e1502]:
+                            - strong [ref=f6e1503]: Level 1 signup
+                            - generic [ref=f6e1504]: KYC Profile draft
+                          - generic [ref=f6e1505]:
+                            - generic [ref=f6e1506]: verification review
+                            - generic [ref=f6e1507]: KYC MISSING
+                            - generic [ref=f6e1508]: +5 more
+                      - cell "App not tracked App not tracked Session not recorded 0 total 0 completed / 0 closed 0 no-shows / 0 reviews" [ref=f6e1509]:
+                        - generic [ref=f6e1510]:
+                          - generic [ref=f6e1511]:
+                            - generic [ref=f6e1512]: App not tracked
+                            - generic [ref=f6e1513]:
+                              - text: App
+                              - generic [ref=f6e1514]: not tracked
+                            - generic [ref=f6e1515]:
+                              - text: Session
+                              - generic [ref=f6e1516]: not recorded
+                          - generic [ref=f6e1517]:
+                            - strong [ref=f6e1518]: 0 total
+                            - generic [ref=f6e1519]: 0 completed / 0 closed
+                            - generic [ref=f6e1520]: 0 no-shows / 0 reviews
+                      - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f6e1521]:
+                        - generic [ref=f6e1522]:
+                          - strong [ref=f6e1523]: 0 VND
+                          - generic [ref=f6e1524]: No negative balance
+                          - generic [ref=f6e1525]: Pending 0 VND / available 0 VND
+                      - cell "Account clear Normal account 0 memos or events Open profile" [ref=f6e1526]:
+                        - generic [ref=f6e1527]:
+                          - generic [ref=f6e1528]:
+                            - generic [ref=f6e1529]: Account clear
+                            - generic [ref=f6e1530]: Normal account
+                            - generic [ref=f6e1531]: 0 memos or events
+                          - link "Open profile" [ref=f6e1532] [cursor=pointer]:
+                            - /url: /partners/cmsiv8x74001cvy1s97k35ftj
+                    - row [ref=f6e1533]:
+                      - cell "App offline Partner 4213 Partner ID ff8k5t6m · Phone saved" [ref=f6e1534]:
+                        - generic [ref=f6e1535]:
+                          - generic [ref=f6e1536]:
+                            - generic [ref=f6e1537]: P4
+                            - img "App offline"
+                          - generic [ref=f6e1538]:
+                            - link "Partner 4213" [ref=f6e1539] [cursor=pointer]:
+                              - /url: /partners/cmsiv8x6p0017vy1sff8k5t6m
+                            - generic [ref=f6e1540]: Partner ID ff8k5t6m · Phone saved
+                      - cell "Offline Unknown platform No location Partner app has not shared a location." [ref=f6e1543]:
+                        - generic [ref=f6e1544]:
+                          - generic [ref=f6e1545]:
+                            - generic [ref=f6e1546]: Offline
+                            - generic [ref=f6e1547]: Unknown platform
+                          - generic [ref=f6e1548]:
+                            - strong [ref=f6e1549]: No location
+                            - generic [ref=f6e1550]: Partner app has not shared a location.
+                      - cell "Level 1 signup KYC Profile draft verification review KYC MISSING +5 more" [ref=f6e1551]:
+                        - generic [ref=f6e1552]:
+                          - generic [ref=f6e1553]:
+                            - strong [ref=f6e1554]: Level 1 signup
+                            - generic [ref=f6e1555]: KYC Profile draft
+                          - generic [ref=f6e1556]:
+                            - generic [ref=f6e1557]: verification review
+                            - generic [ref=f6e1558]: KYC MISSING
+                            - generic [ref=f6e1559]: +5 more
+                      - cell "App not tracked App not tracked Session not recorded 0 total 0 completed / 0 closed 0 no-shows / 0 reviews" [ref=f6e1560]:
+                        - generic [ref=f6e1561]:
+                          - generic [ref=f6e1562]:
+                            - generic [ref=f6e1563]: App not tracked
+                            - generic [ref=f6e1564]:
+                              - text: App
+                              - generic [ref=f6e1565]: not tracked
+                            - generic [ref=f6e1566]:
+                              - text: Session
+                              - generic [ref=f6e1567]: not recorded
+                          - generic [ref=f6e1568]:
+                            - strong [ref=f6e1569]: 0 total
+                            - generic [ref=f6e1570]: 0 completed / 0 closed
+                            - generic [ref=f6e1571]: 0 no-shows / 0 reviews
+                      - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f6e1572]:
+                        - generic [ref=f6e1573]:
+                          - strong [ref=f6e1574]: 0 VND
+                          - generic [ref=f6e1575]: No negative balance
+                          - generic [ref=f6e1576]: Pending 0 VND / available 0 VND
+                      - cell "Account clear Normal account 0 memos or events Open profile" [ref=f6e1577]:
+                        - generic [ref=f6e1578]:
+                          - generic [ref=f6e1579]:
+                            - generic [ref=f6e1580]: Account clear
+                            - generic [ref=f6e1581]: Normal account
+                            - generic [ref=f6e1582]: 0 memos or events
+                          - link "Open profile" [ref=f6e1583] [cursor=pointer]:
+                            - /url: /partners/cmsiv8x6p0017vy1sff8k5t6m
+                    - row [ref=f6e1584]:
+                      - cell "App offline Partner 7212 Partner ID leb8s33w · Phone saved" [ref=f6e1585]:
+                        - generic [ref=f6e1586]:
+                          - generic [ref=f6e1587]:
+                            - generic [ref=f6e1588]: P7
+                            - img "App offline"
+                          - generic [ref=f6e1589]:
+                            - link "Partner 7212" [ref=f6e1590] [cursor=pointer]:
+                              - /url: /partners/cmsiv8x680012vy1sleb8s33w
+                            - generic [ref=f6e1591]: Partner ID leb8s33w · Phone saved
+                      - cell "Offline Unknown platform No location Partner app has not shared a location." [ref=f6e1594]:
+                        - generic [ref=f6e1595]:
+                          - generic [ref=f6e1596]:
+                            - generic [ref=f6e1597]: Offline
+                            - generic [ref=f6e1598]: Unknown platform
+                          - generic [ref=f6e1599]:
+                            - strong [ref=f6e1600]: No location
+                            - generic [ref=f6e1601]: Partner app has not shared a location.
+                      - cell "Level 1 signup KYC Profile draft verification review KYC MISSING +5 more" [ref=f6e1602]:
+                        - generic [ref=f6e1603]:
+                          - generic [ref=f6e1604]:
+                            - strong [ref=f6e1605]: Level 1 signup
+                            - generic [ref=f6e1606]: KYC Profile draft
+                          - generic [ref=f6e1607]:
+                            - generic [ref=f6e1608]: verification review
+                            - generic [ref=f6e1609]: KYC MISSING
+                            - generic [ref=f6e1610]: +5 more
+                      - cell "App not tracked App not tracked Session not recorded 0 total 0 completed / 0 closed 0 no-shows / 0 reviews" [ref=f6e1611]:
+                        - generic [ref=f6e1612]:
+                          - generic [ref=f6e1613]:
+                            - generic [ref=f6e1614]: App not tracked
+                            - generic [ref=f6e1615]:
+                              - text: App
+                              - generic [ref=f6e1616]: not tracked
+                            - generic [ref=f6e1617]:
+                              - text: Session
+                              - generic [ref=f6e1618]: not recorded
+                          - generic [ref=f6e1619]:
+                            - strong [ref=f6e1620]: 0 total
+                            - generic [ref=f6e1621]: 0 completed / 0 closed
+                            - generic [ref=f6e1622]: 0 no-shows / 0 reviews
+                      - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f6e1623]:
+                        - generic [ref=f6e1624]:
+                          - strong [ref=f6e1625]: 0 VND
+                          - generic [ref=f6e1626]: No negative balance
+                          - generic [ref=f6e1627]: Pending 0 VND / available 0 VND
+                      - cell "Account clear Normal account 0 memos or events Open profile" [ref=f6e1628]:
+                        - generic [ref=f6e1629]:
+                          - generic [ref=f6e1630]:
+                            - generic [ref=f6e1631]: Account clear
+                            - generic [ref=f6e1632]: Normal account
+                            - generic [ref=f6e1633]: 0 memos or events
+                          - link "Open profile" [ref=f6e1634] [cursor=pointer]:
+                            - /url: /partners/cmsiv8x680012vy1sleb8s33w
+                    - row [ref=f6e1635]:
+                      - cell "App offline Partner 1211 Partner ID x50eul5b · Phone saved" [ref=f6e1636]:
+                        - generic [ref=f6e1637]:
+                          - generic [ref=f6e1638]:
+                            - generic [ref=f6e1639]: P1
+                            - img "App offline"
+                          - generic [ref=f6e1640]:
+                            - link "Partner 1211" [ref=f6e1641] [cursor=pointer]:
+                              - /url: /partners/cmsiv8x5s000xvy1sx50eul5b
+                            - generic [ref=f6e1642]: Partner ID x50eul5b · Phone saved
+                      - cell "Offline Unknown platform No location Partner app has not shared a location." [ref=f6e1645]:
+                        - generic [ref=f6e1646]:
+                          - generic [ref=f6e1647]:
+                            - generic [ref=f6e1648]: Offline
+                            - generic [ref=f6e1649]: Unknown platform
+                          - generic [ref=f6e1650]:
+                            - strong [ref=f6e1651]: No location
+                            - generic [ref=f6e1652]: Partner app has not shared a location.
+                      - cell "Level 1 signup KYC Profile draft verification review KYC MISSING +5 more" [ref=f6e1653]:
+                        - generic [ref=f6e1654]:
+                          - generic [ref=f6e1655]:
+                            - strong [ref=f6e1656]: Level 1 signup
+                            - generic [ref=f6e1657]: KYC Profile draft
+                          - generic [ref=f6e1658]:
+                            - generic [ref=f6e1659]: verification review
+                            - generic [ref=f6e1660]: KYC MISSING
+                            - generic [ref=f6e1661]: +5 more
+                      - cell "App not tracked App not tracked Session not recorded 0 total 0 completed / 0 closed 0 no-shows / 0 reviews" [ref=f6e1662]:
+                        - generic [ref=f6e1663]:
+                          - generic [ref=f6e1664]:
+                            - generic [ref=f6e1665]: App not tracked
+                            - generic [ref=f6e1666]:
+                              - text: App
+                              - generic [ref=f6e1667]: not tracked
+                            - generic [ref=f6e1668]:
+                              - text: Session
+                              - generic [ref=f6e1669]: not recorded
+                          - generic [ref=f6e1670]:
+                            - strong [ref=f6e1671]: 0 total
+                            - generic [ref=f6e1672]: 0 completed / 0 closed
+                            - generic [ref=f6e1673]: 0 no-shows / 0 reviews
+                      - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f6e1674]:
+                        - generic [ref=f6e1675]:
+                          - strong [ref=f6e1676]: 0 VND
+                          - generic [ref=f6e1677]: No negative balance
+                          - generic [ref=f6e1678]: Pending 0 VND / available 0 VND
+                      - cell "Account clear Normal account 0 memos or events Open profile" [ref=f6e1679]:
+                        - generic [ref=f6e1680]:
+                          - generic [ref=f6e1681]:
+                            - generic [ref=f6e1682]: Account clear
+                            - generic [ref=f6e1683]: Normal account
+                            - generic [ref=f6e1684]: 0 memos or events
+                          - link "Open profile" [ref=f6e1685] [cursor=pointer]:
+                            - /url: /partners/cmsiv8x5s000xvy1sx50eul5b
+                    - row [ref=f6e1686]:
+                      - cell "App offline Partner 6210 Partner ID br7i1vws · Phone saved" [ref=f6e1687]:
+                        - generic [ref=f6e1688]:
+                          - generic [ref=f6e1689]:
+                            - generic [ref=f6e1690]: P6
+                            - img "App offline"
+                          - generic [ref=f6e1691]:
+                            - link "Partner 6210" [ref=f6e1692] [cursor=pointer]:
+                              - /url: /partners/cmsiv8x54000svy1sbr7i1vws
+                            - generic [ref=f6e1693]: Partner ID br7i1vws · Phone saved
+                      - cell "Offline Unknown platform No location Partner app has not shared a location." [ref=f6e1696]:
+                        - generic [ref=f6e1697]:
+                          - generic [ref=f6e1698]:
+                            - generic [ref=f6e1699]: Offline
+                            - generic [ref=f6e1700]: Unknown platform
+                          - generic [ref=f6e1701]:
+                            - strong [ref=f6e1702]: No location
+                            - generic [ref=f6e1703]: Partner app has not shared a location.
+                      - cell "Level 1 signup KYC Profile draft verification review KYC MISSING +5 more" [ref=f6e1704]:
+                        - generic [ref=f6e1705]:
+                          - generic [ref=f6e1706]:
+                            - strong [ref=f6e1707]: Level 1 signup
+                            - generic [ref=f6e1708]: KYC Profile draft
+                          - generic [ref=f6e1709]:
+                            - generic [ref=f6e1710]: verification review
+                            - generic [ref=f6e1711]: KYC MISSING
+                            - generic [ref=f6e1712]: +5 more
+                      - cell "App not tracked App not tracked Session not recorded 0 total 0 completed / 0 closed 0 no-shows / 0 reviews" [ref=f6e1713]:
+                        - generic [ref=f6e1714]:
+                          - generic [ref=f6e1715]:
+                            - generic [ref=f6e1716]: App not tracked
+                            - generic [ref=f6e1717]:
+                              - text: App
+                              - generic [ref=f6e1718]: not tracked
+                            - generic [ref=f6e1719]:
+                              - text: Session
+                              - generic [ref=f6e1720]: not recorded
+                          - generic [ref=f6e1721]:
+                            - strong [ref=f6e1722]: 0 total
+                            - generic [ref=f6e1723]: 0 completed / 0 closed
+                            - generic [ref=f6e1724]: 0 no-shows / 0 reviews
+                      - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f6e1725]:
+                        - generic [ref=f6e1726]:
+                          - strong [ref=f6e1727]: 0 VND
+                          - generic [ref=f6e1728]: No negative balance
+                          - generic [ref=f6e1729]: Pending 0 VND / available 0 VND
+                      - cell "Account clear Normal account 0 memos or events Open profile" [ref=f6e1730]:
+                        - generic [ref=f6e1731]:
+                          - generic [ref=f6e1732]:
+                            - generic [ref=f6e1733]: Account clear
+                            - generic [ref=f6e1734]: Normal account
+                            - generic [ref=f6e1735]: 0 memos or events
+                          - link "Open profile" [ref=f6e1736] [cursor=pointer]:
+                            - /url: /partners/cmsiv8x54000svy1sbr7i1vws
+              - generic [ref=f6e1737]:
+                - generic [ref=f6e1738]: Showing 1 to 10 of 1392 entries
+                - navigation "Partner directory pages" [ref=f6e1739]:
+                  - generic "First page"
+                  - generic "Previous page"
+                  - link "Page 1" [ref=f6e1740] [cursor=pointer]:
+                    - /url: /partners
+                    - text: "1"
+                  - link "Page 2" [ref=f6e1741] [cursor=pointer]:
+                    - /url: /partners?page=2
+                    - text: "2"
+                  - link "Page 3" [ref=f6e1742] [cursor=pointer]:
+                    - /url: /partners?page=3
+                    - text: "3"
+                  - link "Page 4" [ref=f6e1743] [cursor=pointer]:
+                    - /url: /partners?page=4
+                    - text: "4"
+                  - link "Page 5" [ref=f6e1744] [cursor=pointer]:
+                    - /url: /partners?page=5
+                    - text: "5"
+                  - link "Next page" [ref=f6e1745] [cursor=pointer]:
+                    - /url: /partners?page=2
+                  - link "Last page" [ref=f6e1748] [cursor=pointer]:
+                    - /url: /partners?page=140
+  - button "Open Next.js Dev Tools" [ref=f6e1045] [cursor=pointer]
+  - alert [ref=f6e1080]: Partner directory

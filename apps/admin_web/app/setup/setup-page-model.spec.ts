@@ -6,6 +6,7 @@ import {
   buildExternalRegistrationPlan,
   buildGroupStatuses,
   buildNextOperatorActions,
+  buildOperationalHealthRows,
   buildSetupGroupDetails,
   buildSummary,
   isReadinessUnavailable,
@@ -134,6 +135,55 @@ describe('setup page model', () => {
         { name: 'WALLET_NEGATIVE_BALANCE_GATE', className: 'pill pill-success' },
       ]),
     });
+    const operationalRows = buildOperationalHealthRows(readiness, registrationPlanFixture);
+    expect(operationalRows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          affectedWork: 'Booking matching, wallet gates, and operational controls.',
+          name: 'Dispatch policy',
+          nextAction: 'Review blocked policy settings before relying on booking operations.',
+          owner: 'Operations team, Platform team',
+          status: 'Blocked',
+        }),
+        expect.objectContaining({
+          name: 'Gateway sandbox',
+          status: 'Limited',
+        }),
+      ]),
+    );
+    expect(JSON.stringify(operationalRows)).not.toMatch(/\bE2E\b|repository path|dispatch smoke/i);
+  });
+
+  it('keeps build and source-code checks out of operator system health', () => {
+    const readiness = readinessFixture({
+      checks: [
+        {
+          category: 'mobile-release',
+          name: 'Android release signing',
+          status: 'BLOCKED',
+          configured: [],
+          missing: ['ANDROID_KEYSTORE_PATH'],
+          detail: 'Release signing is missing.',
+          scope: 'DEFERRED',
+        },
+        {
+          category: 'maps',
+          name: 'Maps and geocoding',
+          status: 'READY',
+          configured: ['MAPS_API_KEY'],
+          missing: [],
+          detail: 'Maps are configured.',
+          scope: 'CURRENT_STAGE',
+        },
+      ],
+    });
+
+    expect(buildOperationalHealthRows(readiness, registrationPlanFixture)).toEqual([
+      expect.objectContaining({
+        affectedWork: 'Address search, location confirmation, and nearby Partner discovery.',
+        name: 'Maps and geocoding',
+      }),
+    ]);
   });
 
   it('builds registration plan display state and API-unavailable fallback', () => {
@@ -152,6 +202,13 @@ describe('setup page model', () => {
     expect(buildExternalRegistrationPlan(unavailable, registrationPlanFixture, true)).toEqual([
       expect.objectContaining({ id: 'ops-policy', status: 'Not checked', statusClass: 'pill-warn' }),
       expect.objectContaining({ id: 'source-control', status: 'Account ready', statusClass: 'pill-success' }),
+    ]);
+    expect(buildOperationalHealthRows(unavailable, registrationPlanFixture, true)).toEqual([
+      expect.objectContaining({
+        lastCheckedAt: null,
+        owner: 'Owner unavailable',
+        status: 'Unavailable',
+      }),
     ]);
   });
 });

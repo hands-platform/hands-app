@@ -108,6 +108,11 @@ bool customerProviderServiceIsBookable(
     return false;
   }
 
+  final serverBookable = providerService['bookable'];
+  if (serverBookable is bool) {
+    return serverBookable;
+  }
+
   final price = customerServicePrice(service);
   final basePrice = asNum(nestedService['basePrice'])?.toInt() ?? 0;
   final priceStep = asNum(nestedService['priceStep'])?.toInt() ?? 100000;

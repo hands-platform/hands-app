@@ -1,5 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { BookingStatus } from '@prisma/client';
+import { AppUsageEventType, AppUsageOrigin, BookingStatus, Role } from '@prisma/client';
 
 import { CustomersService } from './customers.service';
 
@@ -262,6 +262,170 @@ describe('CustomersService favorite partners', () => {
   });
 });
 
+describe('CustomersService customer home summary', () => {
+  it('returns the customer wallet and public partner shortcuts ordered by distance', async () => {
+    const partner = (
+      id: string,
+      displayName: string,
+      currentLat: number,
+      currentLng: number,
+      profileImageUrl: string | null = null,
+    ) => ({
+      id,
+      displayName,
+      status: 'OFFLINE',
+      ratingAvg: 4.8,
+      reviewCount: 12,
+      currentLat,
+      currentLng,
+      user: {
+        fullName: `${displayName} Legal`,
+        fileAssets: profileImageUrl ? [{ purpose: 'PROFILE_IMAGE', url: profileImageUrl }] : [],
+      },
+    });
+    const nearPartner = partner(
+      'partner-near',
+      'Near partner',
+      10.777,
+      106.701,
+      'https://cdn.example.com/near.jpg',
+    );
+    const farPartner = partner('partner-far', 'Far partner', 10.85, 106.8);
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      customerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 350000 } }),
+      },
+      customerFavoriteProvider: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ providerProfile: farPartner }, { providerProfile: nearPartner }]),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            closedAt: new Date('2026-07-20T10:00:00.000Z'),
+            updatedAt: new Date('2026-07-20T10:00:00.000Z'),
+            selectedProvider: farPartner,
+          },
+          {
+            closedAt: new Date('2026-07-18T10:00:00.000Z'),
+            updatedAt: new Date('2026-07-18T10:00:00.000Z'),
+            selectedProvider: nearPartner,
+          },
+          {
+            closedAt: new Date('2026-07-10T10:00:00.000Z'),
+            updatedAt: new Date('2026-07-10T10:00:00.000Z'),
+            selectedProvider: nearPartner,
+          },
+        ]),
+      },
+    };
+
+    const service = new CustomersService(prisma as never);
+    const summary = await service.getHomeSummary('user-1', 10.7769, 106.7009);
+
+    expect(summary.wallet).toEqual({ balance: 350000, currency: 'VND' });
+    expect(summary.favoritePartners.map((item) => item.id)).toEqual(['partner-near', 'partner-far']);
+    expect(summary.completedPartners.map((item) => item.id)).toEqual(['partner-near', 'partner-far']);
+    expect(summary.completedPartners).toHaveLength(2);
+    expect(summary.favoritePartners[0]).toMatchObject({
+      displayName: 'Near partner',
+      profileImageUrl: 'https://cdn.example.com/near.jpg',
+    });
+    expect(summary.favoritePartners[0]).not.toHaveProperty('currentLat');
+    expect(summary.favoritePartners[0]).not.toHaveProperty('currentLng');
+    expect(summary.favoritePartners[0]).not.toHaveProperty('user');
+    expect(summary.completedPartners[0]).toHaveProperty('lastCompletedAt', '2026-07-18T10:00:00.000Z');
+  });
+
+  it('returns a zero VND balance and empty rows when the customer has no history', async () => {
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      customerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: null } }),
+      },
+      customerFavoriteProvider: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+
+    const service = new CustomersService(prisma as never);
+
+    await expect(service.getHomeSummary('user-1', 10.7769, 106.7009)).resolves.toEqual({
+      wallet: { balance: 0, currency: 'VND' },
+      favoritePartners: [],
+      completedPartners: [],
+    });
+  });
+});
+
+describe('CustomersService customer wallet', () => {
+  it('returns only the authenticated customer balance and recent safe ledger fields', async () => {
+    const createdAt = new Date('2026-07-28T03:00:00.000Z');
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      customerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 170000 } }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'wallet-entry-1',
+            bookingId: null,
+            referralRewardId: 'reward-1',
+            type: 'REFERRAL_REWARD',
+            amount: 70000,
+            currency: 'VND',
+            reference: 'Referral reward',
+            createdAt,
+          },
+        ]),
+      },
+    };
+    const service = new CustomersService(prisma as never);
+
+    await expect(service.getWallet('user-1')).resolves.toEqual({
+      balance: 170000,
+      currency: 'VND',
+      entries: [
+        {
+          id: 'wallet-entry-1',
+          bookingId: null,
+          referralRewardId: 'reward-1',
+          type: 'REFERRAL_REWARD',
+          amount: 70000,
+          currency: 'VND',
+          reference: 'Referral reward',
+          createdAt: '2026-07-28T03:00:00.000Z',
+        },
+      ],
+    });
+    expect(prisma.customerWalletLedgerEntry.findMany).toHaveBeenCalledWith({
+      where: { customerProfileId: 'customer-1' },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      select: {
+        id: true,
+        bookingId: true,
+        referralRewardId: true,
+        type: true,
+        amount: true,
+        currency: true,
+        reference: true,
+        createdAt: true,
+      },
+    });
+  });
+});
+
 describe('CustomersService viewed partners', () => {
   it('lists recently viewed partners for the authenticated customer', async () => {
     const prisma = {
@@ -301,14 +465,17 @@ describe('CustomersService viewed partners', () => {
   it('records a partner profile view with an idempotent count update', async () => {
     const now = new Date('2026-06-22T09:30:00.000Z');
     vi.useFakeTimers().setSystemTime(now);
-    const prisma = {
-      customerProfile: {
-        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
+    const transaction = {
+      appUsageDailyAggregate: {
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+        upsert: vi.fn().mockResolvedValue({ id: 'daily-1' }),
       },
-      providerProfile: {
-        findFirst: vi.fn().mockResolvedValue({ id: 'partner-1' }),
+      appUsageEvent: {
+        create: vi.fn().mockResolvedValue({ id: 'event-1' }),
+        findUnique: vi.fn().mockResolvedValue(null),
       },
       customerProviderProfileView: {
+        findUniqueOrThrow: vi.fn(),
         upsert: vi.fn().mockResolvedValue({
           id: 'view-1',
           providerProfileId: 'partner-1',
@@ -317,10 +484,23 @@ describe('CustomersService viewed partners', () => {
         }),
       },
     };
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1', userId: 'user-1' }),
+      },
+      providerProfile: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'partner-1' }),
+      },
+      $transaction: vi.fn(async (callback: (client: typeof transaction) => Promise<unknown>) =>
+        callback(transaction),
+      ),
+    };
 
     const service = new CustomersService(prisma as never);
 
-    await expect(service.recordProviderProfileView('user-1', 'partner-1')).resolves.toMatchObject({
+    await expect(
+      service.recordProviderProfileView('user-1', 'partner-1', 'profile-view-1'),
+    ).resolves.toMatchObject({
       id: 'view-1',
       providerProfileId: 'partner-1',
       viewCount: 3,
@@ -334,7 +514,7 @@ describe('CustomersService viewed partners', () => {
       },
       select: { id: true },
     });
-    expect(prisma.customerProviderProfileView.upsert).toHaveBeenCalledWith(
+    expect(transaction.customerProviderProfileView.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
           customerProfileId_providerProfileId: {
@@ -355,7 +535,72 @@ describe('CustomersService viewed partners', () => {
         },
       }),
     );
+    expect(transaction.appUsageEvent.create).toHaveBeenCalledWith({
+      data: {
+        clientEventId: 'profile-view-1',
+        eventType: AppUsageEventType.PROVIDER_PROFILE_VIEW,
+        occurredAt: now,
+        origin: AppUsageOrigin.PRODUCTION,
+        role: Role.CUSTOMER,
+        subjectId: 'partner-1',
+        subjectType: 'PROVIDER_PROFILE',
+        userId: 'user-1',
+      },
+      select: { id: true },
+    });
+    expect(transaction.appUsageDailyAggregate.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          providerProfileViewCount: 1,
+          totalEventCount: 1,
+          userId: 'user-1',
+        }),
+      }),
+    );
+    expect(transaction.appUsageDailyAggregate.updateMany).toHaveBeenCalledTimes(2);
 
     vi.useRealTimers();
+  });
+
+  it('does not increment the profile aggregate again when the same view event is retried', async () => {
+    const existingView = {
+      id: 'view-1',
+      providerProfileId: 'partner-1',
+      viewCount: 3,
+    };
+    const transaction = {
+      appUsageDailyAggregate: { updateMany: vi.fn(), upsert: vi.fn() },
+      appUsageEvent: {
+        create: vi.fn(),
+        findUnique: vi.fn().mockResolvedValue({
+          eventType: AppUsageEventType.PROVIDER_PROFILE_VIEW,
+          userId: 'user-1',
+        }),
+      },
+      customerProviderProfileView: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue(existingView),
+        upsert: vi.fn(),
+      },
+    };
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1', userId: 'user-1' }),
+      },
+      providerProfile: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'partner-1' }),
+      },
+      $transaction: vi.fn(async (callback: (client: typeof transaction) => Promise<unknown>) =>
+        callback(transaction),
+      ),
+    };
+    const service = new CustomersService(prisma as never);
+
+    await expect(service.recordProviderProfileView('user-1', 'partner-1', 'profile-view-1')).resolves.toBe(
+      existingView,
+    );
+
+    expect(transaction.customerProviderProfileView.upsert).not.toHaveBeenCalled();
+    expect(transaction.appUsageEvent.create).not.toHaveBeenCalled();
+    expect(transaction.appUsageDailyAggregate.upsert).not.toHaveBeenCalled();
   });
 });

@@ -11,7 +11,7 @@ class RequestFlowBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final steps = ['Online', 'Request', 'Accept', 'Chat'];
+    final steps = ['Trực tuyến', 'Yêu cầu', 'Chấp nhận', 'Trò chuyện'];
     return Row(
       children: [
         for (var index = 0; index < steps.length; index++)
@@ -60,16 +60,16 @@ class RequestQueueSummary extends StatelessWidget {
           children: [
             Expanded(
               child: RequestSummaryCard(
-                label: 'Queue',
-                value: '$totalRequests active',
+                label: 'Hàng chờ',
+                value: '$totalRequests đang mở',
                 tone: const Color(0xFFEAF2FF),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: RequestSummaryCard(
-                label: 'Direct',
-                value: '$preferredRequests first-pick',
+                label: 'Trực tiếp',
+                value: '$preferredRequests yêu cầu',
                 tone: const Color(0xFFEAF5E3),
               ),
             ),
@@ -80,16 +80,16 @@ class RequestQueueSummary extends StatelessWidget {
           children: [
             Expanded(
               child: RequestSummaryCard(
-                label: 'Marketplace',
-                value: '$marketplaceRequests marketplace',
+                label: 'Công khai',
+                value: '$marketplaceRequests yêu cầu',
                 tone: const Color(0xFFFBF0DE),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: RequestSummaryCard(
-                label: 'Chat',
-                value: '$chatReady ready',
+                label: 'Trò chuyện',
+                value: '$chatReady sẵn sàng',
                 tone: const Color(0xFFF2EAFE),
               ),
             ),
@@ -134,7 +134,7 @@ class ProviderWalletGateCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Checking wallet settlement before marketplace participation.',
+                  'Đang kiểm tra thanh toán ví trước khi tham gia đặt lịch công khai.',
                   style: theme.textTheme.bodyMedium,
                 ),
               ),
@@ -167,8 +167,8 @@ class ProviderWalletGateCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     settlementView.blocked
-                        ? 'Wallet settlement required'
-                        : 'Wallet clear',
+                        ? 'Cần thanh toán ví'
+                        : 'Ví đã thanh toán',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -196,12 +196,12 @@ class ProviderWalletGateCard extends StatelessWidget {
             Text(
               settlementView.blocked
                   ? settlementView.reasonLabel
-                  : 'You can participate in marketplace requests and receive direct booking requests.',
+                  : 'Bạn có thể tham gia yêu cầu công khai và nhận yêu cầu trực tiếp.',
             ),
             if (settlementView.blocked) ...[
               const SizedBox(height: 8),
               Text(
-                'Amount to settle: ${settlementView.amountLabel}',
+                'Số tiền cần thanh toán: ${settlementView.amountLabel}',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
@@ -221,13 +221,13 @@ class ProviderWalletGateCard extends StatelessWidget {
               FilledButton.tonalIcon(
                 onPressed: onRefresh,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Refresh wallet status'),
+                label: const Text('Làm mới trạng thái ví'),
               ),
             ],
             if (error != null) ...[
               const SizedBox(height: 8),
               Text(
-                'Wallet status could not be refreshed. Booking actions will still show the server decision.',
+                'Không thể làm mới trạng thái ví. Thao tác đặt lịch vẫn hiển thị quyết định từ máy chủ.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),

@@ -82,6 +82,8 @@ describe('coupon page model', () => {
             customerName: 'Demo Customer',
             discountAmount: 30000,
             partnerName: 'Smoke Partner',
+            paymentMethod: 'MOMO',
+            paymentStatus: 'REFUNDED',
             requestTime: '2026-06-12T09:00:00.000Z',
             reversalStatus: 'REVERSED',
             serviceName: 'Massage / 60 min',
@@ -93,7 +95,7 @@ describe('coupon page model', () => {
 
     expect(rows[0]).toMatchObject({
       active: true,
-      checkoutHint: 'Checkout preview and booking payment authorization should apply this discount.',
+      checkoutHint: 'Available at checkout now.',
       code: 'WELCOME10',
       description: 'Welcome campaign',
       discountLabel: '10% off',
@@ -106,12 +108,15 @@ describe('coupon page model', () => {
           currency: 'VND',
           bookingHref: '/bookings/booking-1',
           customerLabel: 'Demo Customer',
+          discountAmount: 30000,
           discountLabel: '30.000 VND',
           partnerLabel: 'Smoke Partner',
+          paymentLabel: 'MOMO / REFUNDED',
           reversalStatusLabel: 'REVERSED',
           statusLabel: 'REFUNDED',
         }),
       ],
+      usageCountKnown: false,
     });
   });
 
@@ -176,6 +181,10 @@ describe('coupon page model', () => {
     expect(buildCouponCreateNotice({ notice: 'delete-failed' })).toMatchObject({
       title: 'Coupon deletion failed',
       tone: 'danger',
+    });
+    expect(buildCouponCreateNotice({ notice: 'delete-used' })).toMatchObject({
+      title: 'Used coupon cannot be deleted',
+      tone: 'warning',
     });
     expect(buildCouponCreateNotice({ notice: 'unknown' })).toBeNull();
   });

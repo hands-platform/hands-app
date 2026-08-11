@@ -30,6 +30,14 @@ describe('PaymentFeesPage', () => {
   });
 
   it('keeps the period filter on shared AdminForm atoms', async () => {
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      id: 'policy-admin',
+      email: 'policy@example.test',
+      fullName: 'Policy Admin',
+      phone: null,
+      roles: ['ADMIN'],
+      categories: ['SYSTEM_POLICY'],
+    });
     const page = await PaymentFeesPage({
       searchParams: Promise.resolve({ period: '2026-06' }),
     });
@@ -40,16 +48,18 @@ describe('PaymentFeesPage', () => {
     expect(markup).toContain('Period: 2026-06');
     expect(markup).toContain('Currency: VND');
     expect(markup).toContain('Fee command board');
-    expect(markup).toContain('Processing fee');
-    expect(markup).toContain('Customer paid');
+    expect(markup).toContain('Net processing fee');
+    expect(markup).toContain('Effective fee rate');
     expect(markup).toContain('Evidence review');
-    expect(markup).toContain('Historical remediation preview');
-    expect(markup).toContain('Active payment fee policy');
-    expect(markup).toContain('Payment fee policy drafts');
-    expect(markup).toContain('Payment fee policy history');
-    expect(markup).toContain('Create draft');
+    expect(markup).toContain('Payment fee evidence by method');
+    expect(markup).toContain('Fee accounting classification');
+    expect(markup).toContain('Applicable period policy');
+    expect(markup).not.toContain('Payment fee policy drafts');
+    expect(markup).not.toContain('Payment fee policy history');
+    expect(markup).not.toContain('Create draft');
+    expect(markup).toContain('Open policy settings');
     expect(markup).toContain('No active policy');
-    expect(markup).toContain('Active policy missing');
+    expect(markup).toContain('Period policy missing');
     expect(markup).toContain('card admin-filter-panel admin-mb-16');
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
@@ -59,7 +69,7 @@ describe('PaymentFeesPage', () => {
     expect(markup).toContain('admin-form-control-button');
     expect(markup).not.toContain('card admin-card-scroll');
     expect(markup).not.toContain('class="form-input"');
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/payment-fee-policies?take=20', []);
+    expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/payment-fee-policies?take=20', []);
     expect(mockedAdminGet).not.toHaveBeenCalledWith(
       expect.stringContaining('finance-approver-directory'),
       expect.anything(),
@@ -84,6 +94,7 @@ describe('PaymentFeesPage', () => {
           customerPaymentAmountTotal: 1000,
           paymentFeePayer: 'HANDS',
           paymentProcessingFeeTotal: 30,
+          reversalCount: 0,
           settlementCount: 1,
         },
       ],
@@ -92,6 +103,7 @@ describe('PaymentFeesPage', () => {
           customerPaymentAmountTotal: 1000,
           paymentMethod: 'CARD',
           paymentProcessingFeeTotal: 30,
+          reversalCount: 0,
           settlementCount: 1,
           evidenceReviewCount: 1,
           evidenceCustomerPaymentAmountTotal: 1000,
@@ -105,6 +117,7 @@ describe('PaymentFeesPage', () => {
           customerPaymentAmountTotal: 1000,
           paymentFeeTreatment: 'OPERATING_EXPENSE',
           paymentProcessingFeeTotal: 30,
+          reversalCount: 0,
           settlementCount: 1,
         },
       ],
@@ -150,6 +163,7 @@ describe('PaymentFeesPage', () => {
         expectedFeeTotal: null,
         delta: null,
       },
+      reversalCount: 0,
       settlementCount: 1,
     };
     mockedAdminGet.mockImplementation(async (href, fallback) =>
@@ -163,14 +177,14 @@ describe('PaymentFeesPage', () => {
 
     expect(markup).toContain('1.000 USD');
     expect(markup).toContain('30 USD');
-    expect(markup).toContain('Effective rate');
+    expect(markup).toContain('Effective fee rate');
     expect(markup).toContain('3%');
-    expect(markup).toContain('Active payment fee policy');
+    expect(markup).toContain('Applicable period policy');
     expect(markup).toContain('HANDS payment fee policy');
     expect(markup).toContain('Method rules missing');
     expect(markup).toContain('MOMO, VNPAY, CASH, BANK_TRANSFER, CUSTOMER_WALLET, MANUAL');
     expect(markup).toContain('Example rates in tests are not production policy');
-    expect(markup).toContain('Historical remediation preview');
+    expect(markup).toContain('Payment fee evidence by method');
     expect(markup).toContain('Preview blocked');
     expect(markup).toContain('Policy required');
     expect(markup).toContain('1 review');
@@ -180,6 +194,14 @@ describe('PaymentFeesPage', () => {
   });
 
   it('renders a governed draft editor with full method coverage and separate approval', async () => {
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      id: 'maker-admin',
+      email: 'maker@example.test',
+      fullName: 'Policy Maker',
+      phone: null,
+      roles: ['ADMIN'],
+      categories: ['SYSTEM_POLICY'],
+    });
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href === '/admin/payment-fee-policies?take=20') {
         return [
@@ -252,6 +274,7 @@ describe('PaymentFeesPage', () => {
     const page = await PaymentFeesPage({
       searchParams: Promise.resolve({
         period: '2026-06',
+        settings: 'policy',
         policyId: 'payment-fee-policy-draft',
         method: 'CARD',
       }),
@@ -289,7 +312,7 @@ describe('PaymentFeesPage', () => {
       fullName: 'Finance Approver',
       phone: null,
       roles: ['ADMIN', 'FINANCE_APPROVER'],
-      categories: ['FINANCE'],
+      categories: ['FINANCE', 'SYSTEM_POLICY'],
     });
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href === '/admin/payment-fee-policies?take=20') {
@@ -358,6 +381,7 @@ describe('PaymentFeesPage', () => {
       searchParams: Promise.resolve({
         confirm: 'activate',
         period: '2026-07',
+        settings: 'policy',
         policyId: 'payment-fee-policy-draft',
       }),
     });
@@ -380,11 +404,12 @@ describe('PaymentFeesPage', () => {
       fullName: 'Policy Maker',
       phone: null,
       roles: ['ADMIN', 'FINANCE_APPROVER'],
-      categories: ['FINANCE'],
+      categories: ['FINANCE', 'SYSTEM_POLICY'],
     });
     const makerPage = await PaymentFeesPage({
       searchParams: Promise.resolve({
         period: '2026-07',
+        settings: 'policy',
         policyId: 'payment-fee-policy-draft',
       }),
     });
@@ -408,6 +433,7 @@ describe('PaymentFeesPage', () => {
     const rejectedPage = await PaymentFeesPage({
       searchParams: Promise.resolve({
         period: '2026-07',
+        settings: 'policy',
         policyId: 'payment-fee-policy-draft',
       }),
     });

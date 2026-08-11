@@ -1,29 +1,25 @@
 import type { ReactNode } from 'react';
-import { Download, Filter, Save, X } from 'lucide-react';
+import { Download, Gift, Megaphone, Phone, RefreshCw, Save, WalletCards } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import {
   AdminDataTable,
   AdminTablePaginationFooter,
   AdminTableScroll,
+  AdminTableSubstack,
 } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { AdminFilterSummary } from '../../../components/admin-filter-summary';
 import {
   AdminReviewRecordsSection,
   reviewRecordsForCustomer,
 } from '../../../components/admin-review-records-section';
-import { AdminManualWalletAdjustmentHistory } from '../../../components/admin-manual-wallet-adjustment-history';
-import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { MoneyText } from '../../../components/money-text';
 import { DateTimeText } from '../../../components/date-time-text';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
-  AdminFormDate,
   AdminFormGrid,
-  AdminFormShell,
+  AdminFormInput,
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
@@ -34,45 +30,40 @@ import {
 } from '../../../components/admin-chat-window';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminStageItem, AdminStageList } from '../../../components/admin-stage-item';
-import { AdminCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
+import {
+  AdminErrorState,
+  AdminNotePanel,
+  AdminSection,
+  AdminSurfaceBlock,
+} from '../../../components/admin-surface';
+import { AdminDetails } from '../../../components/admin-details';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { canViewAdminDeveloperSystem } from '../../../components/admin-developer-system-section';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
-  AdminAppSession,
   AdminAuditLog,
   AdminBookingDetail,
   AdminChatMessage,
+  AdminCustomerWalletLedgerPage,
   AdminCustomerDetail,
-  AdminManualWalletAdjustmentRow,
-  AdminNotification,
-  adminGet,
+  AdminManualWalletAdjustmentOpenPeriod,
+  adminGetResult,
 } from '../../../lib/admin-api';
+import { bookingLatestActivityAt, bookingRequestOpenedAt } from '../../../lib/admin-booking-time';
 import {
-  bookingLatestActivityAt,
-  bookingRequestOpenedAt,
-} from '../../../lib/admin-booking-time';
-import { marketplaceDisplayText as displayMarketplaceText } from '../../../lib/admin-copy';
+  adminCountLabel,
+  marketplaceDisplayText as displayMarketplaceText,
+} from '../../../lib/admin-copy';
 import {
   bookingCreateGateFilterLabel,
   bookingCreateGateReasonFilter,
   bookingCreateGateReasonLabel,
 } from '../../../lib/booking-create-gate-reasons';
 import { customerWalletSummary } from '../../../lib/customer-wallet-summary';
-import {
-  type DetailDateFilters,
-  detailDateRangeOptions,
-  isWithinDetailDateFilter,
-  readDetailDateFilters,
-} from '../../../lib/detail-date-filter';
-import {
-  detailActivityTypeLabel,
-  readDetailActivityType,
-} from '../../../lib/detail-activity-filter';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
-import { readAddressText, serviceAddressAreaLabel } from '../../bookings/booking-address-readers';
-import { addCustomerOpsNote } from './actions';
+import { hasAdminOperatorCategory } from '../../../lib/admin-operator-access-model';
+import { addCustomerOpsNote, sendCustomerPushMessage } from './actions';
 import {
   bookingPartnerDisplayName,
   compactJson,
@@ -85,36 +76,28 @@ import {
   readString,
   shortId,
 } from './customer-detail-format';
-import {
-  CUSTOMER_ACTIVITY_TYPE_OPTIONS,
-  DETAIL_ACTIVITY_ORDER_OPTIONS,
-  activityOrderLabel,
-  readDetailActivityOrder,
-} from './customer-detail-filters';
 import { customerSelectedLocationDetail } from './customer-detail-location-copy';
 import {
   CustomerBookingOperationBoard,
-  CUSTOMER_BOOKING_OPERATION_PAGE_SIZE,
   type CustomerBookingOperationGroup,
   type CustomerBookingOperationMetric,
   type CustomerBookingOperationRow,
 } from './customer-booking-operation-board';
 import {
+  CustomerDetailBehaviorContext,
   CustomerDetailOverviewShell,
   type CustomerDetailOverviewFact,
-  type CustomerDetailOverviewHighlight,
   type CustomerDetailPartnerAvatar,
   type CustomerDetailPartnerRail,
-  type CustomerDetailUsageSummary,
 } from './customer-detail-overview-shell';
 import { CustomerDetailSectionBand } from './customer-detail-section-shell';
+import { CustomerWalletAdjustmentPanel } from './customer-wallet-adjustment-panel';
+import { safeCustomerReturnTo } from '../customer-filters';
 
 type PageProps = {
   params: Promise<{ id: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
-
-type CustomerDetailView = 'operations' | 'account' | 'records';
 
 const ACTIVE_STATUSES = [
   'CREATED',
@@ -129,43 +112,120 @@ const WORKING_AVATAR_STATUSES = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRI
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 const CUSTOMER_CHAT_HISTORY_PAGE_SIZE = 3;
 const CUSTOMER_BOOKING_GATE_PREVIEW_LIMIT = 8;
-const CUSTOMER_NOTIFICATION_PREVIEW_LIMIT = 10;
 const CUSTOMER_AUDIT_TRAIL_PREVIEW_LIMIT = 10;
-const CUSTOMER_MANUAL_ADJUSTMENT_HISTORY_LIMIT = 5;
+const CUSTOMER_WALLET_LEDGER_PAGE_SIZE = 10;
 const CUSTOMER_OVERVIEW_PARTNER_PREVIEW_LIMIT = 4;
-const CUSTOMER_NOTIFICATION_HEADERS = ['Notification', 'Type', 'Created', 'Delivery'] as const;
-const CUSTOMER_AUDIT_TRAIL_HEADERS = ['Action', 'Actor', 'Created', 'Metadata'] as const;
+const CUSTOMER_OPERATOR_NOTE_HEADERS = ['Date', 'Operator', 'Memo'] as const;
+const CUSTOMER_SYSTEM_AUDIT_HEADERS = ['Action', 'Actor', 'Created', 'Metadata'] as const;
+const CUSTOMER_REFERRAL_HEADERS = [
+  'Referred customer',
+  'Registered',
+  'Status',
+  'Reward booking',
+  'Customer reward',
+] as const;
+const CUSTOMER_OPERATOR_NOTE_PRESETS = [
+  'Customer contacted; waiting for reply.',
+  'Address confirmed with customer.',
+  'Payment record checked.',
+  'Chat archive reviewed.',
+  'Booking completion confirmed.',
+  'Customer asked to update saved address.',
+] as const;
+const CUSTOMER_REFERRAL_CREDITED_STATUSES = new Set([
+  'CREDITED',
+  'REWARDED',
+  'USED_FOR_SERVICE',
+  'OFFSET',
+  'CASHOUT_REQUESTED',
+  'CASHOUT_APPROVED',
+  'PAID',
+  'TAX_REVIEW_REQUIRED',
+]);
+const CUSTOMER_REFERRAL_REVERSED_STATUSES = new Set(['CANCELLED', 'REVERSED']);
+type CustomerDetailAction = 'wallet' | 'message' | 'note';
 
 export default async function CustomerDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const detailSearchParams = searchParams ? await searchParams : {};
-  const dateFilters = readDetailDateFilters(detailSearchParams);
-  const activityType = readDetailActivityType(detailSearchParams, CUSTOMER_ACTIVITY_TYPE_OPTIONS);
-  const activityOrder = readDetailActivityOrder(detailSearchParams);
-  const recordArchiveMode = readCustomerRecordArchiveMode(detailSearchParams);
-  const requestedDetailView = readCustomerDetailView(detailSearchParams);
-  const detailView = recordArchiveMode === 'all' ? 'records' : requestedDetailView;
-  const shouldRenderRecordArchive = detailView === 'records' && recordArchiveMode === 'all';
-  const shouldLoadManualAdjustments = detailView === 'account';
-  const canLoadCustomerDiagnostics = canViewAdminDeveloperSystem(await getCurrentAdminOperatorAccess());
-  const [customer, customerManualAdjustmentRows] = await Promise.all([
-    adminGet<AdminCustomerDetail | null>(
+  const rawDetailSearchParams = searchParams ? await searchParams : {};
+  const detailSearchParams = withoutLegacyCustomerDetailView(rawDetailSearchParams);
+  const returnTo = safeCustomerReturnTo(detailSearchParams.returnTo);
+  const customerAction = readCustomerDetailAction(detailSearchParams.action);
+  const walletAdjustmentNotice = readCustomerDetailSearchParam(detailSearchParams.walletAdjustmentNotice);
+  const notificationNotice = readCustomerDetailSearchParam(detailSearchParams.notificationNotice);
+  const noteNotice = readCustomerDetailSearchParam(detailSearchParams.noteNotice);
+  const operatorAccess = await getCurrentAdminOperatorAccess();
+  const canViewCustomerDiagnostics = canViewAdminDeveloperSystem(operatorAccess);
+  const canLoadCustomerDiagnostics =
+    canViewCustomerDiagnostics &&
+    readCustomerDetailSearchParam(detailSearchParams.diagnostics) === 'developer';
+  const canCreateCustomerWalletAdjustmentRequest = hasAdminOperatorCategory(
+    operatorAccess,
+    'FINANCE_WALLET_ADJUSTMENTS',
+  );
+  const walletPage = readCustomerBookingOperationPage(detailSearchParams, 'walletPage');
+  const walletSkip = (walletPage - 1) * CUSTOMER_WALLET_LEDGER_PAGE_SIZE;
+  const shouldLoadWalletAdjustmentPeriods =
+    customerAction === 'wallet' || Boolean(walletAdjustmentNotice);
+  const [customerResult, customerWalletLedgerResult, walletAdjustmentPeriodsResult] = await Promise.all([
+    adminGetResult<AdminCustomerDetail | null>(
       `/admin/customers/${id}?includeDiagnostics=${canLoadCustomerDiagnostics ? 'true' : 'false'}`,
       null,
     ),
-    shouldLoadManualAdjustments
-      ? adminGet<AdminManualWalletAdjustmentRow[]>(
-          `/admin/wallet-adjustments?ownerType=CUSTOMER&ownerId=${encodeURIComponent(
-            id,
-          )}&take=${CUSTOMER_MANUAL_ADJUSTMENT_HISTORY_LIMIT}`,
+    adminGetResult<AdminCustomerWalletLedgerPage>(
+      `/admin/customers/${encodeURIComponent(
+        id,
+      )}/wallet-ledger?take=${CUSTOMER_WALLET_LEDGER_PAGE_SIZE}&skip=${walletSkip}`,
+      {
+        pagination: { skip: walletSkip, take: CUSTOMER_WALLET_LEDGER_PAGE_SIZE },
+        rows: [],
+        summary: { balance: 0, currency: 'VND', moneyIn: 0, moneyOut: 0, totalCount: 0 },
+      },
+    ),
+    shouldLoadWalletAdjustmentPeriods
+      ? adminGetResult<AdminManualWalletAdjustmentOpenPeriod[]>(
+          '/admin/wallet-adjustments/open-periods',
           [],
         )
-      : Promise.resolve<AdminManualWalletAdjustmentRow[]>([]),
+      : Promise.resolve({ data: [] as AdminManualWalletAdjustmentOpenPeriod[], ok: true, status: 200 }),
   ]);
 
+  if (!customerResult.ok) {
+    if (customerResult.status === 404) {
+      notFound();
+    }
+
+    const permissionError = customerResult.status === 401 || customerResult.status === 403;
+    return (
+      <AdminPageTemplate
+        actions={<AdminFormControlLink href={returnTo}>Back to search results</AdminFormControlLink>}
+        description="Current exceptions, account money, profile details, and retained support records."
+        title="Customer detail"
+      >
+        <AdminErrorState
+          action={
+            <AdminFormControlLink href={`/customers/${encodeURIComponent(id)}`}>
+              <RefreshCw aria-hidden="true" size={16} /> Refresh
+            </AdminFormControlLink>
+          }
+          message={
+            permissionError
+              ? 'Your current operator role cannot load this customer record.'
+              : 'Customer data could not be loaded. Refresh before making an operational decision.'
+          }
+          title={permissionError ? 'Customer access restricted' : 'Customer detail unavailable'}
+        />
+      </AdminPageTemplate>
+    );
+  }
+
+  const customer = customerResult.data;
   if (!customer) {
     notFound();
   }
+  const customerWalletLedger = customerWalletLedgerResult.ok
+    ? customerWalletLedgerResult.data
+    : null;
 
   const currentTimeMs = new Date().getTime();
   const customerReviewRecords = reviewRecordsForCustomer(
@@ -177,166 +237,151 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     customerReviewRecords.customerReviews.length + customerReviewRecords.partnerEvaluations.length > 0;
   const bookings = customer.bookings ?? [];
   const wallet = customerWalletSummary(bookings);
-  const customerWalletAdjustmentHref = `/wallet-adjustments?ownerType=CUSTOMER&ownerId=${encodeURIComponent(customer.id)}`;
   const bookingStats = buildBookingStats(bookings);
+  const allTimeActivity = buildCustomerAllTimeActivity(customer, bookingStats, wallet);
   const addresses = buildAddressRows(customer);
-  const latestBooking = bookings[0];
-  const activeBooking = bookings.find((booking) => ACTIVE_STATUSES.includes(booking.status));
-  const lastCompletedBooking = bookings.find((booking) => booking.status === 'COMPLETED');
+  const activeBooking = customer.activeBooking ?? bookings.find((booking) => ACTIVE_STATUSES.includes(booking.status));
   const appSessions = customer.user?.appSessions ?? [];
-  const latestSession = appSessions[0];
+  const safeSessionSummary = customer.sessionSummary ?? null;
+  const latestSession = canLoadCustomerDiagnostics ? appSessions[0] : safeSessionSummary;
   const pushDevices = customer.user?.pushDevices ?? [];
+  const activeCustomerPushDevices = pushDevices.filter(
+    (device) => device.enabled && (!device.role || device.role === 'CUSTOMER'),
+  );
+  const canSendCustomerPush = hasAdminOperatorCategory(operatorAccess, 'NOTIFICATIONS_DELIVERY');
+  const customerActionLabel = customer.user?.fullName?.trim() || `Customer ${shortId(customer.id)}`;
+  const customerActionContact = customer.user?.phone ?? customer.user?.email ?? 'No contact loaded';
+  const customerAuditHref = `/audit-log?q=${encodeURIComponent(customer.id)}`;
+  const customerDetailBasePath = `/customers/${encodeURIComponent(customer.id)}`;
+  const walletActionHref = buildCustomerDetailActionHref(
+    customerDetailBasePath,
+    detailSearchParams,
+    'wallet',
+    'customer-wallet-adjustment-request',
+  );
+  const messageActionHref = buildCustomerDetailActionHref(
+    customerDetailBasePath,
+    detailSearchParams,
+    'message',
+    'customer-app-notifications',
+  );
+  const noteActionHref = buildCustomerDetailActionHref(
+    customerDetailBasePath,
+    detailSearchParams,
+    'note',
+    'customer-operator-notes',
+  );
+  const closeWalletActionHref = buildCustomerDetailActionHref(
+    customerDetailBasePath,
+    detailSearchParams,
+    null,
+    'customer-wallet-adjustment-request',
+  );
+  const closeMessageActionHref = buildCustomerDetailActionHref(
+    customerDetailBasePath,
+    detailSearchParams,
+    null,
+    'customer-app-notifications',
+  );
+  const closeNoteActionHref = buildCustomerDetailActionHref(
+    customerDetailBasePath,
+    detailSearchParams,
+    null,
+    'customer-operator-notes',
+  );
+  const customerPushAvailable = canSendCustomerPush && activeCustomerPushDevices.length > 0;
+  const showCustomerMessageAction =
+    customerPushAvailable && (customerAction === 'message' || notificationNotice === 'failed');
+  const showCustomerNoteAction = customerAction === 'note' || noteNotice === 'failed';
   const customerAvatarStatus = adminAvatarStatusFromSignals({
     devices: pushDevices,
     matching: Boolean(activeBooking && MATCHING_AVATAR_STATUSES.has(activeBooking.status)),
-    sessions: appSessions,
+    sessions: canLoadCustomerDiagnostics
+      ? appSessions
+      : safeSessionSummary
+        ? [safeSessionSummary]
+        : [],
     working: Boolean(activeBooking && WORKING_AVATAR_STATUSES.has(activeBooking.status)),
   });
   const notifications = customer.user?.notifications ?? [];
-  const activityPlan = buildCustomerActivityPlan(bookings, wallet, bookingStats, addresses);
   const recentAuditLogs = customer.auditLogs ?? [];
-  const filteredBookings = bookings.filter((booking) =>
-    isWithinDetailDateFilter(bookingLatestActivityAt(booking), dateFilters),
-  );
-  const customerBookingOperationBuckets = buildCustomerBookingOperationBuckets(filteredBookings);
-  const allCustomerBookingOperationBuckets = buildCustomerBookingOperationBuckets(bookings);
+  const operatorNotes = customer.operatorNotes ?? [];
+  const customerBookingOperationBuckets = buildCustomerBookingOperationBuckets(bookings);
   const customerBookingOperationMetrics = buildCustomerBookingOperationMetrics(
     bookings,
-    allCustomerBookingOperationBuckets,
+    customerBookingOperationBuckets,
   );
   const customerBookingOperationGroups = buildCustomerBookingOperationGroups(
     customerBookingOperationBuckets,
-    detailSearchParams,
   );
-  const filteredChatBookings = shouldRenderRecordArchive
-    ? buildCustomerChatArchiveBookings(bookings, dateFilters)
-    : buildCustomerChatArchiveSummaryBookings(bookings, dateFilters);
+  const recordChatBookings = buildCustomerChatArchiveBookings(bookings);
   const chatHistoryPage = readCustomerBookingOperationPage(detailSearchParams, 'chatHistoryPage');
   const chatHistoryTotalPages = Math.max(
     1,
-    Math.ceil(filteredChatBookings.length / CUSTOMER_CHAT_HISTORY_PAGE_SIZE),
+    Math.ceil(recordChatBookings.length / CUSTOMER_CHAT_HISTORY_PAGE_SIZE),
   );
   const chatHistoryActivePage = Math.min(chatHistoryPage, chatHistoryTotalPages);
   const chatHistoryStartIndex = (chatHistoryActivePage - 1) * CUSTOMER_CHAT_HISTORY_PAGE_SIZE;
-  const visibleChatBookings = filteredChatBookings.slice(
+  const visibleChatBookings = recordChatBookings.slice(
     chatHistoryStartIndex,
     chatHistoryStartIndex + CUSTOMER_CHAT_HISTORY_PAGE_SIZE,
   );
-  const chatHistoryPageFrom = filteredChatBookings.length === 0 ? 0 : chatHistoryStartIndex + 1;
+  const chatHistoryPageFrom = recordChatBookings.length === 0 ? 0 : chatHistoryStartIndex + 1;
   const chatHistoryPageTo = Math.min(
-    filteredChatBookings.length,
+    recordChatBookings.length,
     chatHistoryStartIndex + visibleChatBookings.length,
   );
-  const filteredNotifications = notifications.filter((notification) =>
-    isWithinDetailDateFilter(notification.createdAt, dateFilters),
-  );
-  const filteredAuditLogs = recentAuditLogs.filter((log) =>
-    isWithinDetailDateFilter(log.createdAt, dateFilters),
-  );
-  const visibleNotifications = filteredNotifications.slice(0, CUSTOMER_NOTIFICATION_PREVIEW_LIMIT);
-  const visibleAuditLogs = filteredAuditLogs.slice(0, CUSTOMER_AUDIT_TRAIL_PREVIEW_LIMIT);
-  const recordArchiveHref = buildCustomerDetailModeHref(
-    `/customers/${id}`,
-    detailSearchParams,
-    'records',
-    'all',
-    'chat-history',
-  );
+  const recordNotifications = notifications;
+  const recordOperatorNotes = operatorNotes;
+  const systemAuditLogs = recentAuditLogs.filter((log) => log.action !== 'customer.ops_note.add');
+  const visibleAuditLogs = systemAuditLogs.slice(0, CUSTOMER_AUDIT_TRAIL_PREVIEW_LIMIT);
   const bookingCreateGateAttempts = buildCustomerBookingGateAttemptRows(recentAuditLogs, customer.id);
-  const filteredBookingCreateGateAttempts = buildCustomerBookingGateAttemptRows(
-    filteredAuditLogs,
-    customer.id,
-  );
   const shouldRenderBookingCreateGateAttempts = bookingCreateGateAttempts.length > 0;
-  const customerCountry = customerCountryDisplay(readCustomerDeviceLanguageLabel(appSessions));
-  const accountFacts = buildCustomerAccountFacts({
-    addresses,
-    bookings,
-    customer,
-    diagnosticsLoaded: canLoadCustomerDiagnostics,
-    notificationCount: notifications.length,
-    pushDevices,
-  });
+  const customerLanguage = readCustomerDeviceLanguageLabel(safeSessionSummary?.deviceLanguage);
+  const customerCountry = customerCountryDisplay(customerLanguage);
   const customerOperatorCommandQueue = buildCustomerOperatorCommandQueue({
     customer,
-    bookings,
-    addresses,
-    latestSession,
-    diagnosticsLoaded: canLoadCustomerDiagnostics,
-    pushDevices,
-    notifications,
+    bookings: uniqueCustomerBookings([activeBooking, ...bookings]),
+    activitySummary: allTimeActivity,
+    bookingCreateGateAttempts,
     currentTimeMs,
   });
-  const filteredActivityCsvHref = buildCustomerActivityExportHref(customer.id, detailSearchParams);
+  const customerHistorySignals = customerBookingOperationBuckets.partnerCancelled.length >= 2 ? 1 : 0;
+  const operatorLabel =
+    operatorAccess?.fullName ?? operatorAccess?.email ?? operatorAccess?.phone ?? 'Current operator';
+  const requestedNoteBookingId = readCustomerDetailSearchParam(detailSearchParams.bookingId);
+  const noteBookingOptions = uniqueCustomerBookings([activeBooking, ...bookings]);
+  const defaultNoteBookingId = noteBookingOptions.some(
+    (booking) => booking.id === requestedNoteBookingId,
+  )
+    ? requestedNoteBookingId
+    : '';
+  const defaultNotePreset = readCustomerDetailSearchParam(detailSearchParams.preset);
+  const customerActivityCsvHref = buildCustomerActivityExportHref(customer.id, {});
   const overviewPartnerRails = buildCustomerPartnerRails(
     bookings,
     customer.favoriteProviders ?? [],
     customer.viewedProviders ?? [],
   );
-  const overviewUsageSummary = buildCustomerUsageSummary({
-    appSessions,
-    bookings,
-    customer,
-    diagnosticsLoaded: canLoadCustomerDiagnostics,
-    favoriteProviders: customer.favoriteProviders ?? [],
-    viewedProviders: customer.viewedProviders ?? [],
-  });
+  const visibleOverviewPartnerRails = overviewPartnerRails.filter(
+    (rail) => (rail.totalCount ?? rail.partners.length) > 0,
+  );
+  const customerReferralCode = customer.referralCodes?.[0] ?? null;
+  const receivedReferral = customer.referralsReceived?.[0] ?? null;
+  const madeReferrals = customer.referralsMade ?? [];
+  const ownedReferralRewards = madeReferrals.flatMap((attribution) =>
+    attribution.rewards.filter((reward) => reward.walletOwnerCustomerProfileId === customer.id),
+  );
+  const referralRewardTotals = summarizeCustomerReferralRewards(ownedReferralRewards);
+  const hasReferralContext = Boolean(customerReferralCode || receivedReferral || madeReferrals.length > 0);
   const overviewStatusBadges = [
     activeBooking ? 'Active booking' : 'No live booking',
-    ...(canLoadCustomerDiagnostics
-      ? [
-          pushDevices.some((device) => device.enabled) ? 'Push ready' : 'No push device',
-          latestSession
-            ? currentTimeMs - dateMs(latestSession.lastSeenAt) <= 30 * 60_000
-              ? 'In app now'
-              : 'Recent session saved'
-            : 'No app session',
-        ]
-      : []),
-  ];
-  const overviewHighlights: CustomerDetailOverviewHighlight[] = [
-    {
-      label: 'Current booking',
-      value: activeBooking ? activeBooking.status : 'None',
-      helper: activeBooking
-        ? `${bookingServiceLabel(activeBooking)} / ${shortId(activeBooking.id)}`
-        : `${bookingStats.active} active / ${bookings.length} total`,
-    },
-    {
-      label: 'Wallet amount',
-      value: <MoneyText amount={wallet.customerBalance} />,
-      helper: (
-        <>
-          Captured <MoneyText amount={wallet.capturedSpend} /> / refunded{' '}
-          <MoneyText amount={wallet.refundAmount} />
-        </>
-      ),
-    },
-    {
-      label: 'Completed work',
-      value: `${bookingStats.completed}`,
-      helper: lastCompletedBooking ? (
-        <>
-          Latest <DateTimeText value={bookingLatestActivityAt(lastCompletedBooking)} />
-        </>
-      ) : (
-        'No completed service record yet.'
-      ),
-    },
-    {
-      label: 'Saved addresses',
-      value: `${addresses.length}`,
-      helper: addresses[0]?.value ? compactText(addresses[0].value, 72) : 'No saved address loaded yet.',
-    },
+    activeCustomerPushDevices.length > 0 ? 'Push ready' : 'No active device',
+    customerSessionRecencyLabel(latestSession?.lastSeenAt, currentTimeMs),
   ];
   const overviewFacts: CustomerDetailOverviewFact[] = [
     {
-      label: 'Gender',
-      value: readCustomerGenderLabel(customer),
-      helper: 'Customer profile gender value from admin API when available.',
-    },
-    {
-      label: 'Sign-up Date',
+      label: 'Sign-up date',
       value: 'Unknown',
       valueDateTimeFallback: 'Unknown',
       valueDateTimeValue: customer.user?.createdAt,
@@ -348,535 +393,792 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         'No account update timestamp loaded.'
       ),
     },
-    ...(canLoadCustomerDiagnostics
-      ? [
-          {
-            label: 'Country',
-            value: customerCountry.fullLabel,
-            helper:
-              customerCountry.sourceLabel === 'Unknown'
-                ? 'No device language loaded.'
-                : customerCountry.sourceLabel,
-          },
-          {
-            label: 'Last Login Date',
-            value: 'No session',
-            valueDateTimeFallback: 'No session',
-            valueDateTimeValue: latestSession?.lastSeenAt,
-            helper: latestSession
-              ? `${latestSession.platform ?? 'Unknown platform'} / ${
-                  latestSession.appVersion ?? 'No app version'
-                }`
-              : 'No app session loaded.',
-          },
-          {
-            label: 'Last Login Address',
-            value: latestSession?.lastLoginAddress ?? latestSession?.ipAddress ?? 'No login address loaded',
-            helper: latestSession?.ipAddress
-              ? `IP ${latestSession.ipAddress}`
-              : 'No login location evidence loaded.',
-          },
-        ]
-      : []),
     {
-      label: 'Total Work Completed',
-      value: `${bookingStats.completed}`,
-      helper: lastCompletedBooking
-        ? `Latest completed booking ${shortId(lastCompletedBooking.id)}`
-        : 'No completed service record yet.',
+      label: 'Language and profile',
+      value: `${customerLanguage} / ${readCustomerGenderLabel(customer)}`,
+      helper: customerCountry.fullLabel,
     },
     {
-      label: 'Saved Address List',
-      value: buildSavedAddressListValue(addresses),
-      helper: `${addresses.length} saved address row(s) loaded.`,
-    },
-    {
-      label: 'Latest Reservation',
-      value: latestBooking ? shortId(latestBooking.id) : 'None',
-      helper: latestBooking ? (
+      label: 'App reachability',
+      value: activeCustomerPushDevices.length > 0 ? 'Push available' : 'No active device',
+      helper: latestSession?.lastSeenAt ? (
         <>
-          {latestBooking.status} / <DateTimeText value={bookingLatestActivityAt(latestBooking)} />
+          Last seen <DateTimeText value={latestSession.lastSeenAt} />
         </>
       ) : (
-        'No booking has been created for this customer.'
+        'App activity not recorded.'
       ),
     },
+  ];
+  const profileContactFacts: CustomerDetailOverviewFact[] = [
     {
-      label: 'Wallet Amount',
-      value: <MoneyText amount={wallet.customerBalance} />,
-      helper: (
-        <>
-          {wallet.refundCount} refund row(s) / captured spend <MoneyText amount={wallet.capturedSpend} />
-        </>
-      ),
+      label: 'Customer ID',
+      value: shortId(customer.id),
+      helper: customer.id,
     },
+    ...overviewFacts,
   ];
   return (
     <AdminPageTemplate
       actions={
-        <>
-          <AdminFormControlLink href="/customers">Back to customers</AdminFormControlLink>
-          {latestBooking?.id && (
-            <AdminTextLink href={`/bookings/${latestBooking.id}`}>Open latest booking</AdminTextLink>
-          )}
-          <AdminTextLink href={`/payments?customer=${customer.id}`}>Payment view</AdminTextLink>
-          <AdminTextLink href={`/chat-archive?q=${encodeURIComponent(customer.id)}`}>
-            All customer chats
-          </AdminTextLink>
-        </>
+        <AdminFormControlLink href={returnTo}>Back to search results</AdminFormControlLink>
       }
       contentClassName="customer-detail-page"
-      description={`${customer.user?.fullName ?? 'Unnamed customer'} / ${customer.user?.phone ?? 'No phone'}`}
+      description="Current exceptions, account money, profile details, and retained support records."
       title="Customer detail"
     >
       <AdminSection
-        description="Keep current support decisions, account money, and retained activity records in separate workspaces."
-        id="customer-workspace-selector"
-        title="Customer workspace view"
+        actions={
+          <>
+            <AdminFormControlLink className="button-primary" href={noteActionHref}>
+              <Save aria-hidden="true" size={16} /> Add note
+            </AdminFormControlLink>
+            {customer.user?.phone ? (
+              <AdminFormControlLink className="button-secondary" href={`tel:${customer.user.phone}`}>
+                <Phone aria-hidden="true" size={16} /> Contact customer
+              </AdminFormControlLink>
+            ) : (
+              <AdminFormControlLink className="button-secondary" href={noteActionHref}>
+                <Phone aria-hidden="true" size={16} /> Add contact note
+              </AdminFormControlLink>
+            )}
+            {customerWalletLedger ? (
+              <AdminFormControlLink className="button-secondary" href={walletActionHref}>
+                <WalletCards aria-hidden="true" size={16} /> Financial adjustment
+              </AdminFormControlLink>
+            ) : null}
+          </>
+        }
+        className="admin-mb-16 customer-command-header"
+        description={`${customerActionContact} / Customer ${customerRecordLabel(customer.id)}`}
+        id="customer-operator-command-queue"
+        status={
+          <>
+            <StatusBadgeFromPillClass pillClass={customerSupportPillClass(customerOperatorCommandQueue.tone)}>
+              {customerOperatorCommandQueue.actionCount > 0
+                ? `${customerOperatorCommandQueue.actionCount} open actions`
+                : 'No open action'}
+            </StatusBadgeFromPillClass>
+            <StatusBadge tone={customerHistorySignals > 0 ? 'warning' : 'neutral'}>
+              {customerHistorySignals} history signals
+            </StatusBadge>
+          </>
+        }
+        title={customerActionLabel}
       >
-        <AdminFilterChipGroup ariaLabel="Customer detail workspaces">
-          <AdminFormControlLink
-            aria-current={detailView === 'operations' ? 'page' : undefined}
-            href={`/customers/${customer.id}`}
-          >
-            Operations
-          </AdminFormControlLink>
-          <AdminFormControlLink
-            aria-current={detailView === 'account' ? 'page' : undefined}
-            href={`/customers/${customer.id}?view=account`}
-          >
-            Account &amp; money
-          </AdminFormControlLink>
-          <AdminFormControlLink
-            aria-current={detailView === 'records' ? 'page' : undefined}
-            href={`/customers/${customer.id}?view=records`}
-          >
-            Activity records
-          </AdminFormControlLink>
-        </AdminFilterChipGroup>
+        {activeBooking ? (
+          <AdminNotePanel className="ops-task-warning customer-command-current-booking">
+            <div className="ops-row">
+              <div>
+                <strong>Active booking</strong>
+                <p className="muted">
+                  {customerBookingOptionLabel(activeBooking)}
+                </p>
+              </div>
+              <AdminTextLink href={`/bookings/${activeBooking.id}`}>Open active booking</AdminTextLink>
+            </div>
+          </AdminNotePanel>
+        ) : null}
+        {customerOperatorCommandQueue.actionCount > 0 ? (
+          <AdminStageList className="admin-mt-12">
+            {customerOperatorCommandQueue.commands.map((command) => (
+              <AdminNotePanel className={`ops-task-${command.tone}`} key={command.id}>
+                <div className="ops-row">
+                  <div>
+                    <StatusBadgeFromPillClass pillClass={customerSupportPillClass(command.tone)}>
+                      {command.label}
+                    </StatusBadgeFromPillClass>
+                    <strong>{command.title}</strong>
+                    <p className="muted">{command.detailNode ?? command.detail}</p>
+                    <small className="muted">Owner: {command.owner}</small>
+                  </div>
+                  <CustomerOperatorCommandAction command={command} customerId={customer.id} />
+                </div>
+              </AdminNotePanel>
+            ))}
+          </AdminStageList>
+        ) : (
+          <p className="muted admin-mt-10">
+            No failed payment, open refund, reported review, referral review, booking block, chat gap,
+            or delivery failure requires action now.
+          </p>
+        )}
+        {customerHistorySignals > 0 ? (
+          <p className="customer-command-history-signal admin-mt-10">
+            <strong>History signal</strong> / {customerBookingOperationBuckets.partnerCancelled.length} of the
+            latest {bookings.length} bookings were cancelled by a Partner. This is a review signal, not an
+            automatic restriction.
+          </p>
+        ) : null}
+        <small className="muted customer-command-checked-at">
+          Checked at <DateTimeText value={new Date().toISOString()} /> / payments, refunds, reviews,
+          notifications
+          {!customerWalletLedger ? ' / wallet check incomplete' : ''}
+        </small>
       </AdminSection>
 
-      {detailView === 'operations' ? (
       <CustomerDetailSectionBand
-        eyebrow="Operations"
-        title="Customer operating picture"
-        description="Above-fold decision support for the desk: what is live now, what is blocked, what evidence exists, and which linked records matter next."
-        status={<StatusBadge tone="info">Operator flow</StatusBadge>}
+        eyebrow="Now"
+        title="Current status"
+        description="Identity, contact details, account status, and saved addresses for the current support decision."
+        status={
+          <StatusBadge tone={activeBooking ? 'warning' : 'success'}>
+            {activeBooking ? 'Live booking' : 'No live booking'}
+          </StatusBadge>
+        }
       >
         <CustomerDetailOverviewShell
           avatarStatus={customerAvatarStatus}
-          facts={overviewFacts}
-          highlights={overviewHighlights}
-          name={customer.user?.fullName ?? customer.user?.phone ?? 'Unnamed customer'}
-          partnerRails={overviewPartnerRails}
+          contactRows={addresses.map((address) => ({
+            id: address.key,
+            label: address.labelNode ?? address.label,
+            value: address.value,
+          }))}
+          facts={profileContactFacts}
+          name={customerActionLabel}
           statusBadges={overviewStatusBadges}
           subtitle={`${customer.user?.phone ?? 'No phone'} / ${customer.user?.email ?? 'No email'}`}
-          usageSummary={overviewUsageSummary}
         />
       </CustomerDetailSectionBand>
-      ) : null}
 
-      {detailView === 'operations' ? (
       <CustomerBookingOperationBoard
         basePath={`/customers/${id}`}
         groups={customerBookingOperationGroups}
         metrics={customerBookingOperationMetrics}
         searchParams={detailSearchParams}
       />
-      ) : null}
 
-      {detailView === 'records' && shouldRenderReviewRecords ? (
-        <AdminReviewRecordsSection
-          basePath={`/customers/${id}`}
-          customerReviews={customerReviewRecords.customerReviews}
-          description="Customer review records and Partner-written internal evaluations connected to this customer."
-          id="customer-review-records"
-          partnerEvaluations={customerReviewRecords.partnerEvaluations}
-          searchParams={detailSearchParams}
-          title="Customer review records"
-        />
-      ) : null}
-
-      {detailView === 'operations' && shouldRenderBookingCreateGateAttempts ? (
-        <AdminSection
-          actions={
-            <>
-              <StatusBadge tone={filteredBookingCreateGateAttempts.length > 0 ? 'warning' : 'neutral'}>
-                {filteredBookingCreateGateAttempts.length} filtered
-              </StatusBadge>
-              <StatusBadge tone="neutral">{bookingCreateGateAttempts.length} total</StatusBadge>
-              <AdminTextLink href="/bookings?view=blocked-create">Open gate queue</AdminTextLink>
-            </>
-          }
-          className="admin-mb-16"
-          description="Booking creation attempts stopped before payment and matching. These rows show factual gate evidence for customer support checks."
-          id="customer-booking-create-gates"
-          title="Customer blocked create attempts"
-        >
-          {filteredBookingCreateGateAttempts.length === 0 ? (
-            <p className="muted admin-mt-12">No booking create gate attempt matched this date filter.</p>
-          ) : (
-            <AdminStageList className="admin-mt-14">
-              {filteredBookingCreateGateAttempts
-                .slice(0, CUSTOMER_BOOKING_GATE_PREVIEW_LIMIT)
-                .map((attempt) => (
-                  <AdminStageItem key={attempt.id}>
-                    <span>{attempt.gateLabel}</span>
-                    <div>
-                      <AdminTextLink href={attempt.bookingMonitorHref}>
-                        <strong>{attempt.reasonLabel}</strong>
-                      </AdminTextLink>
-                      <p className="muted">{attempt.detail}</p>
-                      <AdminFilterChipGroup className="admin-mt-8">
-                        <StatusBadgeFromPillClass pillClass={attempt.tone}>
-                          {attempt.gateLabel}
-                        </StatusBadgeFromPillClass>
-                        <StatusBadge tone="neutral">{attempt.addressLabel}</StatusBadge>
-                        <StatusBadge tone="neutral">{attempt.distanceLabel}</StatusBadge>
-                      </AdminFilterChipGroup>
-                      <AdminFilterChipGroup className="admin-mt-8">
-                        <AdminTextLink href={attempt.bookingMonitorHref}>Booking gate queue</AdminTextLink>
-                        <AdminTextLink href={attempt.auditHref}>Audit evidence</AdminTextLink>
-                      </AdminFilterChipGroup>
-                    </div>
-                    <small>
-                      <DateTimeText value={attempt.at} />
-                    </small>
-                  </AdminStageItem>
-                ))}
-            </AdminStageList>
-          )}
-        </AdminSection>
-      ) : null}
-
-      {detailView === 'operations' ? (
-      <AdminSection
-        className="admin-mb-16"
-        description="Next factual actions for the customer desk. This queue only points operators to live bookings, chat archives, payment rows, saved locations, devices, and staff notes that may need follow-up."
-        id="customer-operator-command-queue"
-        status={
-          <StatusBadgeFromPillClass pillClass={customerSupportPillClass(customerOperatorCommandQueue.tone)}>
-            {customerOperatorCommandQueue.status}
-          </StatusBadgeFromPillClass>
-        }
-        title="Customer operator command queue"
-      >
-        <AdminStageList className="admin-mt-14">
-          {customerOperatorCommandQueue.commands.map((command) => (
-            <AdminNotePanel className={`ops-task-${command.tone}`} key={command.id}>
-              <div className="ops-row">
-                <div>
-                  <StatusBadgeFromPillClass pillClass={customerSupportPillClass(command.tone)}>
-                    {command.label}
-                  </StatusBadgeFromPillClass>
-                  <h3>{command.title}</h3>
-                  <p className="muted">{command.detailNode ?? command.detail}</p>
-                  <small className="muted">Owner: {command.owner}</small>
-                </div>
-                <CustomerOperatorCommandAction command={command} customerId={customer.id} />
-              </div>
-            </AdminNotePanel>
-          ))}
-        </AdminStageList>
-      </AdminSection>
-      ) : null}
-
-      {detailView === 'records' ? (
-      <AdminFilterPanel
-        actions={
-          <>
-            <StatusBadge tone="info">{dateFilters.label}</StatusBadge>
-            <StatusBadge tone="neutral">
-              {detailActivityTypeLabel(activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS)}
-            </StatusBadge>
-            <StatusBadge tone="neutral">{activityOrderLabel(activityOrder)}</StatusBadge>
-          </>
-        }
-        className="customer-record-date-filter-panel admin-mb-16"
-        description="Narrow booking, chat, notification, audit, and activity records without changing the saved customer data."
-        id="record-date-filter"
-        title="Record date filter"
-      >
-        <AdminFormGrid className="admin-mt-14" action={`/customers/${customer.id}`}>
-          <input name="view" type="hidden" value="records" />
-          <AdminFormSelect
-            className="admin-directory-filter-select"
-            defaultValue={dateFilters.range}
-            label="Preset"
-            name="range"
-            options={detailDateRangeOptions}
-          />
-          <AdminFormSelect
-            className="admin-directory-filter-select"
-            defaultValue={activityType}
-            label="Record type"
-            name="type"
-            options={CUSTOMER_ACTIVITY_TYPE_OPTIONS}
-          />
-          <AdminFormSelect
-            className="admin-directory-filter-select"
-            defaultValue={activityOrder}
-            label="Sort order"
-            name="order"
-            options={DETAIL_ACTIVITY_ORDER_OPTIONS}
-          />
-          <AdminFormDate
-            className="admin-form-control-fluid"
-            defaultValue={dateFilters.from}
-            label="From"
-            name="from"
-          />
-          <AdminFormDate
-            className="admin-form-control-fluid"
-            defaultValue={dateFilters.to}
-            label="To"
-            name="to"
-          />
-          <div className="actions">
-            <AdminFormControlButton className="admin-directory-filter-button">
-              <Filter aria-hidden="true" size={16} />
-              Apply filter
-            </AdminFormControlButton>
-            <AdminFormControlLink
-              className="admin-directory-filter-export"
-              download={`hands-customer-${shortId(customer.id)}-activity.csv`}
-              href={filteredActivityCsvHref}
-              title="Exports filtered activity rows from the protected server route"
-            >
-              <Download aria-hidden="true" size={16} />
-              Export activity CSV
-            </AdminFormControlLink>
-            <AdminFormControlLink
-              className="admin-directory-filter-button is-ghost"
-              href={`/customers/${customer.id}?view=records`}
-            >
-              <X aria-hidden="true" size={16} />
-              Clear
-            </AdminFormControlLink>
-          </div>
-        </AdminFormGrid>
-        <AdminFilterSummary
-          ariaLabel="Active customer record filters"
-          labels={[
-            `Range: ${dateFilters.label}`,
-            `Type: ${detailActivityTypeLabel(activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS)}`,
-            `Sort: ${activityOrderLabel(activityOrder)}`,
-            ...(dateFilters.from ? [`From: ${dateFilters.from}`] : []),
-            ...(dateFilters.to ? [`To: ${dateFilters.to}`] : []),
-          ]}
-          tone="info"
-        />
-      </AdminFilterPanel>
-      ) : null}
-
-      {detailView === 'records' ? (
-      <AdminSection
-        className="admin-mb-16"
-        description="Facts-only operator view for booking progress, completed work, archived chats, payment records, addresses, and customer contact."
-        status={
-          <StatusBadgeFromPillClass pillClass={customerSupportPillClass(activityPlan.tone)}>
-            {activityPlan.status}
-          </StatusBadgeFromPillClass>
-        }
-        title="Customer activity action panel"
-      >
-        <AdminNotePanel className="ops-task-pending admin-mt-14">
-          <div className="ops-row">
-            <div>
-              <strong>{activityPlan.headline}</strong>
-              <p className="muted">{activityPlan.detail}</p>
-              <AdminFilterChipGroup className="admin-mt-8">
-                {activityPlan.badges.map((badge) => (
-                  <StatusBadgeFromPillClass
-                    key={badge.label}
-                    pillClass={customerSupportPillClass(badge.tone)}
-                  >
-                    {badge.label}
-                  </StatusBadgeFromPillClass>
-                ))}
-              </AdminFilterChipGroup>
-            </div>
-            <AdminTextLink href={activityPlan.primaryHref}>{activityPlan.primaryAction}</AdminTextLink>
-          </div>
-        </AdminNotePanel>
-        <AdminFormGrid action={addCustomerOpsNote} className="compact-form admin-mt-14">
-          <input type="hidden" name="customerId" value={customer.id} />
-          <AdminFormSelect
-            className="customer-note-preset"
-            defaultValue=""
-            label="Quick note preset"
-            name="preset"
-            options={[
-              { label: 'Manual note only', value: '' },
-              ...activityPlan.presets.map((preset) => ({ label: preset, value: preset })),
-            ]}
-          />
-          <AdminFormSelect
-            className="customer-note-booking"
-            defaultValue={latestBooking?.id ?? ''}
-            label="Related booking"
-            name="bookingId"
-            options={[
-              { label: 'No booking link', value: '' },
-              ...bookings.slice(0, 20).map((booking) => ({
-                label: `${shortId(booking.id)} / ${booking.status} / ${bookingServiceLabel(booking)}`,
-                value: booking.id,
-              })),
-            ]}
-          />
-          <AdminFormTextarea
-            className="customer-note-textarea full-span"
-            label="Activity note"
-            name="note"
-            placeholder="Example: Customer contacted by phone, address confirmed, chat archive reviewed."
-          />
-          <AdminFormControlButton className="customer-note-submit">
-            <Save aria-hidden="true" size={16} />
-            Save customer activity note
-          </AdminFormControlButton>
-        </AdminFormGrid>
-      </AdminSection>
-      ) : null}
-
-      {detailView === 'account' ? (
       <CustomerDetailSectionBand
-        eyebrow="Account"
-        title="Customer account and balance"
-        description="Identity, saved contact facts, wallet readout, and location evidence grouped together so support can answer profile questions without scanning the full ledger."
-        status={<StatusBadge tone="info">Profile and wallet</StatusBadge>}
+        eyebrow="Money"
+        title="Payment & wallet"
+        description="Customer payment position, wallet liability, and the complete wallet transaction flow in one place."
+        status={<StatusBadge tone="info">Customer account</StatusBadge>}
       >
         <AdminSection
-          actions={
-            <>
-              <StatusBadge tone="info">{accountFacts.length} field(s)</StatusBadge>
-              {canLoadCustomerDiagnostics ? (
-                <StatusBadge tone={pushDevices.some((device) => device.enabled) ? 'success' : 'neutral'}>
-                  {pushDevices.some((device) => device.enabled) ? 'Push reachable' : 'No push device'}
-                </StatusBadge>
-              ) : null}
-            </>
-          }
+          actions={<AdminTextLink href={`/payments?customer=${customer.id}`}>Open payments</AdminTextLink>}
           className="admin-mb-16"
-          description="Contact, booking, payment, and support evidence that is not already repeated in the profile overview. Missing values are shown plainly instead of guessed."
-          id="customer-account-evidence"
-          title="Customer contact and evidence"
-        >
-          <AdminTraceSummary
-            className="admin-mt-12"
-            metrics={accountFacts.map((fact) => ({
-              detail: fact.helper,
-              label: fact.label,
-              value: fact.value,
-            }))}
-          />
-        </AdminSection>
-
-        <AdminSection
-          actions={
-            <>
-              <StatusBadge tone="info">
-                <MoneyText amount={wallet.customerBalance} />
-              </StatusBadge>
-              <StatusBadge tone="neutral">{addresses.length} saved address(es)</StatusBadge>
-              <AdminTextLink href={customerWalletAdjustmentHref}>Review or create adjustment</AdminTextLink>
-            </>
-          }
-          className="admin-mb-16"
-          description="Payment ledger and saved address evidence in one operator readout. Partner cash-fee debt is never carried on the customer account."
+          description={`Lifetime captured payments and wallet ledger balance are separated from the latest ${bookings.length} booking records. Manual wallet movement never becomes platform revenue.`}
           id="customer-account-operations"
-          title="Customer account operations"
+          title="Payment and wallet summary"
         >
           <AdminStageList className="admin-mt-12">
             <AdminNotePanel className="ops-task-info">
               <AdminSectionHeader
-                actions={
-                  <StatusBadge tone="info">
-                    <MoneyText amount={wallet.customerBalance} />
+                actions={customerWalletLedger ? (
+                  <StatusBadge tone={customerWalletLedger.summary.balance < 0 ? 'warning' : 'info'}>
+                    Current balance <MoneyText amount={customerWalletLedger.summary.balance} />
                   </StatusBadge>
-                }
-                description={wallet.operatorNote}
-                title="Payment ledger"
+                ) : null}
+                description="The wallet balance is a customer liability sourced from wallet ledger entries."
+                title="Money position"
               />
               <div className="ops-row">
-                <strong>Captured payments</strong>
-                <MoneyText amount={wallet.capturedSpend} />
+                <strong>Total captured payments</strong>
+                <MoneyText amount={allTimeActivity.capturedSpend} />
               </div>
               <div className="ops-row">
-                <strong>Authorized / pending</strong>
+                <strong>Recent authorized / pending</strong>
                 <MoneyText amount={wallet.pendingPaymentAmount} />
               </div>
               <div className="ops-row">
-                <strong>Refund exposure</strong>
+                <strong>Open refund requests</strong>
+                <span>{allTimeActivity.refundRequestCount}</span>
+              </div>
+              <div className="ops-row">
+                <strong>Recent refund records</strong>
                 <MoneyText amount={wallet.refundAmount} />
               </div>
               <div className="ops-row">
-                <strong>Cash bookings</strong>
+                <strong>Recent cash bookings</strong>
                 <MoneyText amount={wallet.cashBookingAmount} />
               </div>
-              <div className="ops-row">
-                <strong>Customer balance</strong>
-                <MoneyText amount={wallet.customerBalance} />
-              </div>
-            </AdminNotePanel>
-            <AdminNotePanel className="ops-task-info" id="addresses">
-              <AdminSectionHeader
-                actions={<StatusBadge tone="neutral">{addresses.length} row(s)</StatusBadge>}
-                description="Profile addresses and map pins selected in the customer app."
-                title="Saved addresses"
-              />
-              {addresses.length > 0 ? (
-                addresses.slice(0, 6).map((address) => (
-                  <div className="ops-row" key={address.key}>
-                    <strong>{address.labelNode ?? address.label}</strong>
-                    <span>{address.value}</span>
-                  </div>
-                ))
-              ) : (
-                <AdminEmptyState framed message="No saved address yet." title={null} />
-              )}
             </AdminNotePanel>
           </AdminStageList>
         </AdminSection>
-        <AdminManualWalletAdjustmentHistory
-          rows={customerManualAdjustmentRows}
-          walletAdjustmentsHref={customerWalletAdjustmentHref}
-        />
+        {customerWalletLedger ? (
+          <CustomerWalletAdjustmentPanel
+            actionHref={walletActionHref}
+            actionOpen={customerAction === 'wallet'}
+            auditHref={customerAuditHref}
+            closeHref={closeWalletActionHref}
+            currentBalance={customerWalletLedger.summary.balance}
+            customerId={customer.id}
+            customerLabel={`${customerActionLabel} / ${customerActionContact}`}
+            canCreateRequest={canCreateCustomerWalletAdjustmentRequest}
+            notice={walletAdjustmentNotice}
+            operatorLabel={operatorLabel}
+            openPeriods={walletAdjustmentPeriodsResult.ok ? walletAdjustmentPeriodsResult.data : []}
+            walletLedger={customerWalletLedger}
+            walletPage={walletPage}
+          />
+        ) : (
+          <AdminErrorState
+            action={
+              <AdminFormControlLink href={`${customerDetailBasePath}#customer-account-operations`}>
+                <RefreshCw aria-hidden="true" size={16} /> Retry wallet check
+              </AdminFormControlLink>
+            }
+            message="Wallet balance and ledger could not be loaded. Do not treat this as a zero balance."
+            title="Wallet data unavailable"
+          />
+        )}
       </CustomerDetailSectionBand>
+
+      {visibleOverviewPartnerRails.length > 0 ? (
+        <AdminSection
+          className="admin-mb-16"
+          description="Partner profiles viewed, saved, or connected to completed bookings."
+          id="customer-behavior-context"
+          status={
+            <StatusBadge tone="neutral">
+              {visibleOverviewPartnerRails.reduce(
+                (total, rail) => total + (rail.totalCount ?? rail.partners.length),
+                0,
+              )}{' '}
+              signals
+            </StatusBadge>
+          }
+          title="Customer behavior"
+        >
+          <CustomerDetailBehaviorContext partnerRails={visibleOverviewPartnerRails} />
+        </AdminSection>
       ) : null}
 
-      {detailView === 'records' ? (
-      <CustomerDetailSectionBand
-        eyebrow="Records"
-        title="Chat and audit record"
-        description="Retained chat history, customer notification delivery, and audit trail in one archive block."
-        status={<StatusBadge tone="info">Historical archive</StatusBadge>}
-      >
-        {shouldRenderRecordArchive ? (
+      <AdminSection
+        actions={
           <>
+            <StatusBadge tone="info">{madeReferrals.length} referred</StatusBadge>
+            <StatusBadge tone="success">
+              Credited <MoneyText amount={referralRewardTotals.credited} />
+            </StatusBadge>
+            {referralRewardTotals.pending > 0 ? (
+              <StatusBadge tone="warning">
+                Pending <MoneyText amount={referralRewardTotals.pending} />
+              </StatusBadge>
+            ) : null}
+            {referralRewardTotals.reversed > 0 ? (
+              <StatusBadge tone="neutral">
+                Reversed <MoneyText amount={referralRewardTotals.reversed} />
+              </StatusBadge>
+            ) : null}
+          </>
+        }
+        className="admin-mb-16"
+        description="Customer referral code, inviter attribution, referred customers, and rewards credited to this customer."
+        id="customer-referral-context"
+        title="Referral activity"
+      >
+        {hasReferralContext ? (
+          <>
+            <AdminStageList className="admin-mt-12">
+              <AdminNotePanel className="ops-task-info">
+                <div className="ops-row">
+                  <div>
+                    <strong>Customer referral code</strong>
+                    <p className="muted">{customerReferralCode?.code ?? 'No referral code issued'}</p>
+                  </div>
+                  <StatusBadge tone={customerReferralCode?.active ? 'success' : 'neutral'}>
+                    {customerReferralCode
+                      ? customerReferralCode.active
+                        ? 'Active'
+                        : 'Disabled'
+                      : 'Not issued'}
+                  </StatusBadge>
+                </div>
+              </AdminNotePanel>
+              <AdminNotePanel className="ops-task-info">
+                <div className="ops-row">
+                  <div>
+                    <strong>Invited by</strong>
+                    <p className="muted">
+                      {receivedReferral?.referrerCustomerProfile ? (
+                        <AdminTextLink href={`/customers/${receivedReferral.referrerCustomerProfile.id}`}>
+                          {customerReferralPersonLabel(receivedReferral.referrerCustomerProfile)}
+                        </AdminTextLink>
+                      ) : (
+                        'No inbound customer referral attribution'
+                      )}
+                    </p>
+                  </div>
+                  <StatusBadge tone={receivedReferral ? 'info' : 'neutral'}>
+                    {receivedReferral
+                      ? `${receivedReferral.referralCode.code} / ${receivedReferral.status}`
+                      : 'Direct signup'}
+                  </StatusBadge>
+                </div>
+              </AdminNotePanel>
+            </AdminStageList>
+
+            {madeReferrals.length > 0 ? (
+              <>
+                <AdminSectionHeader
+                  actions={
+                    <AdminTextLink href={`/referrals/customers/${customer.id}`}>
+                      Open referral records
+                    </AdminTextLink>
+                  }
+                  className="admin-mt-16"
+                  description="Latest customers attributed to this customer code and rewards owned by this customer."
+                  title="Referred customers"
+                />
+                <AdminTableScroll>
+                  <AdminDataTable
+                    emptyMessage={null}
+                    headers={CUSTOMER_REFERRAL_HEADERS}
+                    rowCount={madeReferrals.length}
+                  >
+                    {madeReferrals.map((attribution) => {
+                      const customerOwnedRewards = attribution.rewards.filter(
+                        (reward) => reward.walletOwnerCustomerProfileId === customer.id,
+                      );
+                      const customerOwnedAmount = customerOwnedRewards
+                        .reduce((sum, reward) => sum + reward.amount, 0);
+                      return (
+                        <tr key={attribution.id}>
+                          <td>
+                            {attribution.referredCustomerProfile ? (
+                              <AdminTextLink href={`/customers/${attribution.referredCustomerProfile.id}`}>
+                                {customerReferralPersonLabel(attribution.referredCustomerProfile)}
+                              </AdminTextLink>
+                            ) : (
+                              'Customer record unavailable'
+                            )}
+                          </td>
+                          <td>
+                            <DateTimeText value={attribution.createdAt} />
+                          </td>
+                          <td>
+                            <StatusBadge tone={referralAttributionTone(attribution.status)}>
+                              {attribution.status}
+                            </StatusBadge>
+                          </td>
+                          <td>
+                            <AdminTableSubstack>
+                              {customerOwnedRewards.length > 0 ? (
+                                customerOwnedRewards.map((reward) =>
+                                  reward.qualifyingBookingId ? (
+                                    <AdminTextLink
+                                      href={`/bookings/${reward.qualifyingBookingId}`}
+                                      key={reward.id}
+                                    >
+                                      Booking {shortId(reward.qualifyingBookingId)}
+                                    </AdminTextLink>
+                                  ) : (
+                                    <span className="muted" key={reward.id}>
+                                      No booking reference
+                                    </span>
+                                  ),
+                                )
+                              ) : (
+                                <span className="muted">No qualifying booking</span>
+                              )}
+                            </AdminTableSubstack>
+                          </td>
+                          <td>
+                            <AdminTableSubstack>
+                              {customerOwnedRewards.length > 0 ? (
+                                customerOwnedRewards.map((reward) => (
+                                  <span key={reward.id}>
+                                    <MoneyText amount={reward.amount} />{' '}
+                                    <StatusBadge tone={referralRewardTone(reward.status)}>
+                                      {reward.status}
+                                    </StatusBadge>
+                                  </span>
+                                ))
+                              ) : (
+                                <MoneyText amount={customerOwnedAmount} />
+                              )}
+                            </AdminTableSubstack>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </AdminDataTable>
+                </AdminTableScroll>
+              </>
+            ) : null}
+          </>
+        ) : (
+          <p className="muted">No customer referral activity is recorded.</p>
+        )}
+      </AdminSection>
+
+      <AdminSection
+        actions={
+          <>
+            <StatusBadge tone={customerPushAvailable ? 'success' : 'warning'}>
+              {!canSendCustomerPush
+                ? 'Push restricted / permission required'
+                : activeCustomerPushDevices.length > 0
+                  ? 'Push ready'
+                  : 'Push unavailable / no active device'}
+            </StatusBadge>
+            <StatusBadge tone="info">{recordNotifications.length} messages</StatusBadge>
+            {customerPushAvailable ? (
+              <AdminFormControlLink
+                className={showCustomerMessageAction ? 'button-secondary' : undefined}
+                href={showCustomerMessageAction ? closeMessageActionHref : messageActionHref}
+              >
+                {showCustomerMessageAction ? 'Close' : 'Send message'}
+              </AdminFormControlLink>
+            ) : (
+              <AdminFormControlLink
+                className="button-secondary"
+                href={customer.user?.phone ? `tel:${customer.user.phone}` : noteActionHref}
+              >
+                {customer.user?.phone ? 'Contact customer' : 'Add contact note'}
+              </AdminFormControlLink>
+            )}
+          </>
+        }
+        className="admin-mb-16 customer-app-notification-section"
+        description="The same referral credits, manual wallet changes, and Admin messages shown in the customer app. Booking wallet payments are excluded."
+        id="customer-app-notifications"
+        title="Customer app notifications"
+      >
+        {notificationNotice === 'sent' ? (
+          <AdminNotePanel className="ops-task-success admin-mb-16">
+            <strong>Push message sent</strong>
+            <p className="muted">The message was saved in this customer notification history.</p>
+            <AdminTextLink href={customerAuditHref}>Open audit event</AdminTextLink>
+          </AdminNotePanel>
+        ) : null}
+        {notificationNotice === 'failed' ? (
+          <AdminNotePanel className="ops-task-danger admin-mb-16">
+            <strong>Push message was not sent</strong>
+            <p className="muted">
+              Check notification permission and confirm that the customer has an active push device.
+            </p>
+          </AdminNotePanel>
+        ) : null}
+
+        {showCustomerMessageAction ? (
+          <div
+            aria-label="Send customer message"
+            className="customer-inline-action-disclosure-body"
+            role="region"
+          >
+            <div className="ops-row admin-mb-14">
+              <div>
+                <strong>Message target</strong>
+                <p className="muted">
+                  {customerActionLabel} / {customerActionContact} / {activeCustomerPushDevices.length}{' '}
+                  active {activeCustomerPushDevices.length === 1 ? 'device' : 'devices'}
+                </p>
+              </div>
+              <StatusBadge tone={activeCustomerPushDevices.length > 0 ? 'success' : 'warning'}>
+                {activeCustomerPushDevices.length > 0 ? 'Available' : 'Unavailable'}
+              </StatusBadge>
+            </div>
+            <AdminFormGrid action={sendCustomerPushMessage} className="compact-form customer-push-form">
+              <input name="customerId" type="hidden" value={customer.id} />
+              <input name="targetUserId" type="hidden" value={customer.user?.id ?? customer.userId} />
+              <AdminFormInput
+                className="full-span"
+                disabled={!canSendCustomerPush || activeCustomerPushDevices.length === 0}
+                label="Title"
+                labelVisibility="visible"
+                maxLength={120}
+                name="title"
+                required
+              />
+              <AdminFormTextarea
+                className="full-span"
+                disabled={!canSendCustomerPush || activeCustomerPushDevices.length === 0}
+                label="Message"
+                labelVisibility="visible"
+                maxLength={500}
+                name="body"
+                required
+                rows={3}
+              />
+              <AdminFormControlButton
+                disabled={!canSendCustomerPush || activeCustomerPushDevices.length === 0}
+              >
+                <Megaphone aria-hidden="true" size={16} />
+                Send to customer
+              </AdminFormControlButton>
+              <AdminFormControlLink className="button-secondary" href={closeMessageActionHref}>
+                Cancel
+              </AdminFormControlLink>
+            </AdminFormGrid>
+            {!canSendCustomerPush ? (
+              <p className="muted admin-mt-8">Notification delivery permission is required.</p>
+            ) : activeCustomerPushDevices.length === 0 ? (
+              <p className="muted admin-mt-8">This customer does not have an active push device.</p>
+            ) : null}
+          </div>
+        ) : null}
+
+        <AdminSectionHeader
+          actions={
+            <>
+              <StatusBadge tone="info">{recordNotifications.length} messages</StatusBadge>
+              <AdminTextLink href={`/notifications?user=${encodeURIComponent(customer.user?.id ?? customer.userId)}`}>
+                Open delivery records
+              </AdminTextLink>
+            </>
+          }
+          className="admin-mt-16"
+          description="Newest customer app messages appear first."
+          title="Notification history"
+        />
+        <AdminStageList className="customer-app-notification-list admin-mt-12">
+          {recordNotifications.length > 0 ? (
+            recordNotifications.map((notification) => (
+              <AdminStageItem className="customer-app-notification-row" key={notification.id}>
+                <span className="customer-app-notification-icon" aria-hidden="true">
+                  <CustomerNotificationIcon type={notification.type} />
+                </span>
+                <div className="customer-app-notification-copy">
+                  <div className="ops-row">
+                    <strong>{displayMarketplaceText(notification.title)}</strong>
+                    <StatusBadge tone={notification.readAt ? 'neutral' : 'info'}>
+                      {notification.readAt ? 'Read' : 'Unread'}
+                    </StatusBadge>
+                  </div>
+                  <p>{displayMarketplaceText(notification.body)}</p>
+                  <small className="muted">
+                    <DateTimeText value={notification.createdAt} /> /{' '}
+                    {notification.deliveries?.[0]?.status ?? 'In-app only'}
+                  </small>
+                </div>
+              </AdminStageItem>
+            ))
+          ) : (
+            <p className="muted">No referral credit, manual wallet change, or Admin push message is recorded.</p>
+          )}
+        </AdminStageList>
+      </AdminSection>
+
+      <CustomerDetailSectionBand
+        eyebrow="History"
+        id="audit-records"
+        title="Audit records"
+        description="Operator notes, reviews, chat, and system evidence retained for this customer."
+        status={
+          <>
+            <StatusBadge tone="info">Historical records</StatusBadge>
+            <AdminFormControlLink
+              className="button-secondary"
+              download={`hands-customer-${shortId(customer.id)}-activity.csv`}
+              href={customerActivityCsvHref}
+              title="Export retained customer activity from the protected server route"
+            >
+              <Download aria-hidden="true" size={16} />
+              Export retained customer activity CSV
+            </AdminFormControlLink>
+          </>
+        }
+      >
+        <AdminSection
+          actions={
+            <>
+              <StatusBadge tone="neutral">{adminCountLabel(recordOperatorNotes.length, 'note')}</StatusBadge>
+              <AdminFormControlLink
+                className={showCustomerNoteAction ? 'button-secondary' : undefined}
+                href={showCustomerNoteAction ? closeNoteActionHref : noteActionHref}
+              >
+                {showCustomerNoteAction ? 'Close' : 'Add note'}
+              </AdminFormControlLink>
+            </>
+          }
+          className="admin-mb-16"
+          description="Add a factual operator note to the retained customer record. This does not change booking or payment state."
+          id="customer-operator-notes"
+          title="Add customer activity note"
+        >
+          {noteNotice === 'saved' ? (
+            <AdminNotePanel className="ops-task-success admin-mb-16">
+              <strong>Operator note saved</strong>
+              <p className="muted">The note is retained in this customer history.</p>
+              <AdminTextLink href={customerAuditHref}>Open audit event</AdminTextLink>
+            </AdminNotePanel>
+          ) : null}
+          {noteNotice === 'failed' ? (
+            <AdminNotePanel className="ops-task-danger admin-mb-16">
+              <strong>Operator note was not saved</strong>
+              <p className="muted">No customer record was changed. Review the note and try again.</p>
+            </AdminNotePanel>
+          ) : null}
+          {showCustomerNoteAction ? (
+            <div
+              aria-label="Add customer operator note"
+              className="customer-inline-action-disclosure-body"
+              role="region"
+            >
+              <div className="ops-row admin-mb-14">
+                <div>
+                  <strong>Note target</strong>
+                  <p className="muted">
+                    {customerActionLabel} / {customerActionContact}
+                  </p>
+                </div>
+                <StatusBadge tone="neutral">Customer record</StatusBadge>
+              </div>
+              <AdminFormGrid action={addCustomerOpsNote} className="compact-form admin-mt-14">
+                <input type="hidden" name="customerId" value={customer.id} />
+                <AdminFormSelect
+                  className="customer-note-preset"
+                  defaultValue={defaultNotePreset}
+                  label="Quick note preset"
+                  labelVisibility="visible"
+                  name="preset"
+                  options={[
+                    { label: 'Manual note only', value: '' },
+                    ...CUSTOMER_OPERATOR_NOTE_PRESETS.map((preset) => ({ label: preset, value: preset })),
+                  ]}
+                />
+                <AdminFormSelect
+                  className="customer-note-booking"
+                  defaultValue={defaultNoteBookingId}
+                  label="Related booking"
+                  labelVisibility="visible"
+                  name="bookingId"
+                  options={[
+                    { label: 'No booking link', value: '' },
+                    ...noteBookingOptions.slice(0, 20).map((booking) => ({
+                      label: customerBookingOptionLabel(booking),
+                      value: booking.id,
+                    })),
+                  ]}
+                />
+                <AdminFormTextarea
+                  className="customer-note-textarea full-span"
+                  label="Activity note"
+                  labelVisibility="visible"
+                  minLength={3}
+                  name="note"
+                  placeholder="Example: Customer contacted by phone, address confirmed, chat archive reviewed."
+                  required
+                  rows={3}
+                />
+                <AdminFormControlButton className="customer-note-submit">
+                  <Save aria-hidden="true" size={16} />
+                  Save customer activity note
+                </AdminFormControlButton>
+                <AdminFormControlLink className="button-secondary" href={closeNoteActionHref}>
+                  Cancel
+                </AdminFormControlLink>
+              </AdminFormGrid>
+            </div>
+          ) : null}
+          <AdminSectionHeader
+            actions={<StatusBadge tone="neutral">{adminCountLabel(recordOperatorNotes.length, 'note')}</StatusBadge>}
+            className="admin-mt-16"
+            description="Retained operator notes for this customer."
+            title="Operator note history"
+          />
+          {recordOperatorNotes.length > 0 ? (
+            <AdminTableScroll>
+              <AdminDataTable
+                emptyMessage="No operator note has been added yet."
+                headers={CUSTOMER_OPERATOR_NOTE_HEADERS}
+                rowCount={recordOperatorNotes.length}
+              >
+                {recordOperatorNotes.map((log) => (
+                  <tr key={log.id}>
+                    <td>
+                      <DateTimeText value={log.createdAt} />
+                    </td>
+                    <td>{customerOperatorLabel(log)}</td>
+                    <td>{customerOperatorNoteMemo(log)}</td>
+                  </tr>
+                ))}
+              </AdminDataTable>
+            </AdminTableScroll>
+          ) : (
+            <p className="muted admin-mt-12">No customer activity note has been added.</p>
+          )}
+        </AdminSection>
+
+        {shouldRenderReviewRecords ? (
+          <AdminSurfaceBlock className="customer-record-group admin-mb-16" id="customer-review-evaluation-records">
+            <AdminSectionHeader
+              description="Customer reviews and Partner-written internal evaluations."
+              status={
+                <StatusBadge tone="neutral">
+                  {customerReviewRecords.customerReviews.length +
+                    customerReviewRecords.partnerEvaluations.length}{' '}
+                  records
+                </StatusBadge>
+              }
+              title="Reviews and evaluations"
+              titleId="customer-review-evaluation-records-title"
+            />
+            <AdminReviewRecordsSection
+              basePath={`/customers/${id}`}
+              customerReviews={customerReviewRecords.customerReviews}
+              description="Customer review records and Partner-written internal evaluations connected to this customer."
+              hideCustomerColumn
+              id="customer-review-records"
+              partnerEvaluations={customerReviewRecords.partnerEvaluations}
+              searchParams={detailSearchParams}
+              separatePanels
+              title="Customer review records"
+            />
+          </AdminSurfaceBlock>
+        ) : null}
+
+        {shouldRenderBookingCreateGateAttempts ? (
+          <CustomerBookingCreateGateRecords attempts={bookingCreateGateAttempts} />
+        ) : null}
+
+        <AdminSurfaceBlock className="customer-record-group" id="customer-chat-system-evidence">
+          <AdminSectionHeader
+            description={
+              canLoadCustomerDiagnostics
+                ? 'Retained support evidence and explicitly loaded Developer/System diagnostics.'
+                : 'Retained customer and Partner chat evidence connected to this customer.'
+            }
+            status={
+              <>
+                <StatusBadge tone="neutral">{recordChatBookings.length} chats</StatusBadge>
+                {canLoadCustomerDiagnostics ? (
+                  <StatusBadge tone="neutral">{systemAuditLogs.length} system logs</StatusBadge>
+                ) : null}
+                {canViewCustomerDiagnostics ? (
+                  <AdminTextLink
+                    href={
+                      canLoadCustomerDiagnostics
+                        ? `/customers/${id}#customer-chat-system-evidence`
+                        : `/customers/${id}?diagnostics=developer#customer-system-diagnostics`
+                    }
+                  >
+                    {canLoadCustomerDiagnostics
+                      ? 'Hide developer/system evidence'
+                      : 'Load developer/system evidence'}
+                  </AdminTextLink>
+                ) : null}
+              </>
+            }
+            title={canLoadCustomerDiagnostics ? 'Chat and system evidence' : 'Chat evidence'}
+            titleId="customer-chat-system-evidence-title"
+          />
             <AdminSection
-              className="customer-chat-history-section"
+              className="customer-chat-history-section admin-mb-16"
               description={
                 <>
-                  Admin archive for every matched booking. Customer and Partner apps hide the chat after
-                  completion, but operations keeps the full message history here.
+                  Chat evidence from the latest {bookings.length} bookings. Customer and Partner apps hide
+                  chat after completion, while retained messages remain available to operations.
                 </>
               }
               id="chat-history"
-              statusLabel={`${filteredChatBookings.length} rooms`}
+              statusLabel={`${recordChatBookings.length} rooms`}
               statusTone="info"
               title="Chat history"
             >
               <AdminStageList className="customer-chat-history-list">
                 {visibleChatBookings.length > 0 ? (
                   visibleChatBookings.map((booking) => (
-                    <CustomerChatHistoryRoomCard
-                      booking={booking}
-                      dateFilters={dateFilters}
-                      key={booking.id}
-                    />
+                    <CustomerChatHistoryRoomCard booking={booking} key={booking.id} />
                   ))
                 ) : (
-                  <AdminEmptyState framed message="No chat rooms matched this date filter." title={null} />
+                  <AdminEmptyState
+                    framed
+                    message="No retained customer chat rooms are available."
+                    title={null}
+                  />
                 )}
               </AdminStageList>
               <AdminTablePaginationFooter
@@ -896,163 +1198,168 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                 itemLabel="rooms"
                 to={chatHistoryPageTo}
                 totalPages={chatHistoryTotalPages}
-                totalRows={filteredChatBookings.length}
+                totalRows={recordChatBookings.length}
               />
             </AdminSection>
 
-            <AdminSection
-              actions={
-                <>
-                  <StatusBadge tone="info">{filteredNotifications.length} notification row(s)</StatusBadge>
-                  <StatusBadge tone="info">{filteredAuditLogs.length} audit log(s)</StatusBadge>
-                </>
-              }
-              description="Customer notification delivery and audit rows for support review."
-              id="notifications"
-              title="Notification and audit records"
-            >
-              <AdminSectionHeader
-                actions={<StatusBadge tone="info">{filteredNotifications.length} rows</StatusBadge>}
-                className="admin-mt-16"
-                description="Delivery status for missed booking, payment, and chat updates."
-                title="Recent customer notifications"
-              />
-              <AdminTableScroll>
-                <AdminDataTable
-                  emptyMessage={null}
-                  headers={CUSTOMER_NOTIFICATION_HEADERS}
-                  rowCount={visibleNotifications.length}
-                >
-                  {visibleNotifications.map((notification) => (
-                    <tr key={notification.id}>
-                      <td>
-                        <strong>{displayMarketplaceText(notification.title)}</strong>
-                        <p className="muted">{displayMarketplaceText(notification.body)}</p>
-                      </td>
-                      <td>{displayMarketplaceText(notification.type)}</td>
-                      <td>
-                        <DateTimeText value={notification.createdAt} />
-                      </td>
-                      <td>{notification.deliveries?.[0]?.status ?? 'No delivery'}</td>
-                    </tr>
-                  ))}
-                </AdminDataTable>
-              </AdminTableScroll>
-              <AdminSectionHeader
-                actions={<StatusBadge tone="info">{filteredAuditLogs.length} logs</StatusBadge>}
-                className="admin-mt-16"
-                description="Recent operator notes and system actions attached to this customer."
-                title="Customer audit trail"
-                titleId="audit-trail"
-              />
-              <AdminTableScroll>
-                <AdminDataTable
-                  emptyMessage={null}
-                  headers={CUSTOMER_AUDIT_TRAIL_HEADERS}
-                  rowCount={visibleAuditLogs.length}
-                >
-                  {visibleAuditLogs.map((log) => (
-                    <tr key={log.id}>
-                      <td>{log.action}</td>
-                      <td>{log.actor?.fullName ?? log.actor?.phone ?? 'System'}</td>
-                      <td>
-                        <DateTimeText value={log.createdAt} />
-                      </td>
-                      <td>
-                        <code>{compactJson(log.metadata)}</code>
-                      </td>
-                    </tr>
-                  ))}
-                </AdminDataTable>
-              </AdminTableScroll>
-            </AdminSection>
-          </>
-        ) : (
-          <AdminSection
-            actions={
-              <>
-                <StatusBadge tone="info">{filteredChatBookings.length} chat room(s)</StatusBadge>
-                <StatusBadge tone="info">{filteredNotifications.length} notification row(s)</StatusBadge>
-                <StatusBadge tone="info">{filteredAuditLogs.length} audit log(s)</StatusBadge>
-              </>
-            }
-            description="Chat, notification, and audit rows stay available on this customer detail page, but the default view keeps the record archive collapsed."
-            id="customer-record-archive-summary"
-            title="Record archive summary"
-          >
-            <AdminTraceSummary
-              className="admin-mt-12"
-              defaultKind="record"
-              defaultScope={dateFilters.label}
-              metrics={[
-                {
-                  label: 'Chat rooms',
-                  value: filteredChatBookings.length,
-                  detail: 'Matched booking chat archives retained for admin evidence.',
-                },
-                {
-                  label: 'Notifications',
-                  value: filteredNotifications.length,
-                  detail: 'Customer notification delivery rows in the selected date range.',
-                },
-                {
-                  label: 'Audit logs',
-                  value: filteredAuditLogs.length,
-                  detail: 'Customer operator and system audit records in the selected date range.',
-                },
-              ]}
-            />
-            <AdminFormControlLink className="button-secondary admin-mt-12" href={recordArchiveHref}>
-              Load record archive
-            </AdminFormControlLink>
-          </AdminSection>
-        )}
+            {canLoadCustomerDiagnostics ? (
+              <AdminSection
+                actions={<StatusBadge tone="info">{adminCountLabel(systemAuditLogs.length, 'system log')}</StatusBadge>}
+                description="Developer/System audit data loaded only for this explicit review."
+                id="customer-system-diagnostics"
+                title="System audit records"
+              >
+                <AdminSectionHeader
+                  actions={<StatusBadge tone="info">{systemAuditLogs.length} logs</StatusBadge>}
+                  className="admin-mt-16"
+                  description="System actions attached to this customer. Operator notes are shown with the note form above."
+                  title="System audit evidence"
+                  titleId="audit-trail"
+                />
+                <AdminTableScroll>
+                  <AdminDataTable
+                    emptyMessage={null}
+                    headers={CUSTOMER_SYSTEM_AUDIT_HEADERS}
+                    rowCount={visibleAuditLogs.length}
+                  >
+                    {visibleAuditLogs.map((log) => (
+                      <tr key={log.id}>
+                        <td>{log.action}</td>
+                        <td>{log.actor?.fullName ?? log.actor?.phone ?? 'System'}</td>
+                        <td>
+                          <DateTimeText value={log.createdAt} />
+                        </td>
+                        <td>
+                          <code>{compactJson(log.metadata)}</code>
+                        </td>
+                      </tr>
+                    ))}
+                  </AdminDataTable>
+                </AdminTableScroll>
+              </AdminSection>
+            ) : null}
+        </AdminSurfaceBlock>
       </CustomerDetailSectionBand>
-      ) : null}
     </AdminPageTemplate>
   );
 }
 
-function CustomerChatHistoryRoomCard({
-  booking,
-  dateFilters,
+function CustomerNotificationIcon({ type }: { readonly type: string }) {
+  if (type === 'customer.referral.reward_credited') {
+    return <Gift size={20} />;
+  }
+  if (type === 'customer.wallet.manual_adjustment') {
+    return <WalletCards size={20} />;
+  }
+  return <Megaphone size={20} />;
+}
+
+function CustomerBookingCreateGateRecords({
+  attempts,
 }: {
-  readonly booking: AdminBookingDetail;
-  readonly dateFilters: DetailDateFilters;
+  readonly attempts: readonly CustomerBookingGateAttemptRow[];
 }) {
-  const filteredMessages = readChatMessages(booking).filter((message) =>
-    isWithinDetailDateFilter(message.createdAt, dateFilters),
+  return (
+    <AdminSection
+      actions={
+        <>
+          <StatusBadge tone={attempts.length > 0 ? 'warning' : 'neutral'}>
+            {attempts.length} retained
+          </StatusBadge>
+          <AdminTextLink href="/bookings?view=blocked-create">Open gate queue</AdminTextLink>
+        </>
+      }
+      className="admin-mb-16"
+      description="Retained booking creation attempts stopped before payment and matching. Use the live gate queue for current investigation."
+      id="customer-booking-create-gates"
+      title="Booking block evidence"
+    >
+      {attempts.length === 0 ? (
+        <AdminEmptyState
+          framed
+          message="No blocked booking attempt is retained for this customer."
+          title={null}
+        />
+      ) : (
+        <AdminStageList className="admin-mt-14">
+          {attempts.slice(0, CUSTOMER_BOOKING_GATE_PREVIEW_LIMIT).map((attempt) => (
+            <AdminStageItem key={attempt.id}>
+              <span>{attempt.gateLabel}</span>
+              <div>
+                <AdminTextLink href={attempt.bookingMonitorHref}>
+                  <strong>{attempt.reasonLabel}</strong>
+                </AdminTextLink>
+                <p className="muted">{attempt.detail}</p>
+                <AdminFilterChipGroup className="admin-mt-8">
+                  <StatusBadgeFromPillClass pillClass={attempt.tone}>
+                    {attempt.gateLabel}
+                  </StatusBadgeFromPillClass>
+                  <StatusBadge tone="neutral">{attempt.addressLabel}</StatusBadge>
+                  <StatusBadge tone="neutral">{attempt.distanceLabel}</StatusBadge>
+                </AdminFilterChipGroup>
+                <AdminFilterChipGroup className="admin-mt-8">
+                  <AdminTextLink href={attempt.bookingMonitorHref}>Booking gate queue</AdminTextLink>
+                  <AdminTextLink href={attempt.auditHref}>Audit evidence</AdminTextLink>
+                </AdminFilterChipGroup>
+              </div>
+              <small>
+                <DateTimeText value={attempt.at} />
+              </small>
+            </AdminStageItem>
+          ))}
+        </AdminStageList>
+      )}
+    </AdminSection>
   );
-  const chatMessages = filteredMessages.map(customerChatWindowMessage);
+}
+
+function CustomerChatHistoryRoomCard({ booking }: { readonly booking: AdminBookingDetail }) {
+  const retainedMessages = readChatMessages(booking);
+  const chatMessages = retainedMessages.map(customerChatWindowMessage);
+  const lastMessage = retainedMessages.at(-1);
   const customerName =
     booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer';
   const partnerName = bookingPartnerDisplayName(booking);
+  const bookingLabel = customerRecordLabel(booking.id);
 
   return (
-    <AdminCard className="customer-chat-history-room-card">
-      <AdminSectionHeader
-        actions={
-          <div className="customer-chat-history-actions">
-            <AdminTextLink href={`/bookings/${booking.id}`}>Open booking</AdminTextLink>
-            {booking.chatRoom ? (
-              <AdminTextLink href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}>
-                Open full chat archive
-              </AdminTextLink>
-            ) : null}
-          </div>
-        }
-        description={`${booking.status} / Room ${booking.chatRoom?.id}`}
-        title={`${shortId(booking.id)} / ${bookingServiceLabel(booking)}`}
-      />
-      <AdminChatWindow
-        avatarLabel={customerName}
-        className="admin-mt-12"
-        emptyMessage="No messages in this date filter, but the room belongs to this period."
-        messages={chatMessages}
-        subtitle={`${partnerName} / ${booking.status}`}
-        title={`${customerName} chat evidence`}
-      />
-    </AdminCard>
+    <AdminDetails className="customer-chat-history-room-card customer-chat-history-disclosure" name="customer-chat-history">
+      <summary>
+        <span>
+          <strong>{bookingLabel} / {bookingServiceLabel(booking)}</strong>
+          <small>
+            {customerBookingPaymentTypeLabel(booking)} / {customerBookingStateLabel(booking)}
+          </small>
+        </span>
+        <span className="customer-chat-history-summary-meta">
+          <StatusBadge tone="neutral">{retainedMessages.length} messages</StatusBadge>
+          <small>
+            {lastMessage ? <>Last message <DateTimeText value={lastMessage.createdAt} /></> : 'No messages'}
+          </small>
+        </span>
+      </summary>
+      <div className="customer-chat-history-disclosure-body">
+        <div className="customer-chat-history-actions">
+          <AdminTextLink href={`/bookings/${booking.id}`}>
+            Open booking {bookingLabel}
+          </AdminTextLink>
+          {booking.chatRoom ? (
+            <AdminTextLink href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}>
+              Open full chat archive {bookingLabel}
+            </AdminTextLink>
+          ) : null}
+        </div>
+        {booking.chatRoom?.id ? <small className="muted">Room {booking.chatRoom.id}</small> : null}
+        <AdminChatWindow
+          avatarLabel={customerName}
+          className="admin-mt-12"
+          emptyMessage="No retained messages are available in this chat room."
+          messages={chatMessages}
+          subtitle={`${partnerName} / ${customerBookingStateLabel(booking)}`}
+          title={`${customerName} chat evidence`}
+        />
+      </div>
+    </AdminDetails>
   );
 }
 
@@ -1097,7 +1404,6 @@ type CustomerOperatorCommand = {
     | { type: 'note'; preset: string; label: string; bookingId?: string };
 };
 
-type CustomerPushDevice = NonNullable<NonNullable<AdminCustomerDetail['user']>['pushDevices']>[number];
 type CustomerAddressRow = {
   key: string;
   label: string;
@@ -1130,14 +1436,28 @@ function CustomerOperatorCommandAction({
     return <AdminTextLink href={command.action.href}>{command.action.label}</AdminTextLink>;
   }
 
+  const noteParams = new URLSearchParams({ action: 'note', preset: command.action.preset });
+  if (command.action.bookingId) noteParams.set('bookingId', command.action.bookingId);
+
   return (
-    <AdminFormShell action={addCustomerOpsNote} className="compact-form">
-      <input type="hidden" name="customerId" value={customerId} />
-      <input type="hidden" name="preset" value={command.action.preset} />
-      <input type="hidden" name="bookingId" value={command.action.bookingId ?? ''} />
-      <AdminFormControlButton type="submit">{command.action.label}</AdminFormControlButton>
-    </AdminFormShell>
+    <AdminTextLink href={`/customers/${encodeURIComponent(customerId)}?${noteParams}#customer-operator-notes`}>
+      {command.action.label}
+    </AdminTextLink>
   );
+}
+
+function customerRecordLabel(value: string) {
+  return value.length <= 12 ? value : `...${value.slice(-10)}`;
+}
+
+function customerBookingOptionLabel(booking: AdminBookingDetail) {
+  return `${customerRecordLabel(booking.id)} / ${formatDate(bookingRequestOpenedAt(booking))} / ${customerBookingPaymentTypeLabel(booking)} / ${customerBookingStateLabel(booking)}`;
+}
+
+function uniqueCustomerBookings(
+  bookings: readonly (AdminBookingDetail | null | undefined)[],
+): AdminBookingDetail[] {
+  return [...new Map(bookings.filter(Boolean).map((booking) => [booking!.id, booking!] as const)).values()];
 }
 
 function buildBookingStats(bookings: AdminBookingDetail[]) {
@@ -1152,6 +1472,45 @@ function buildBookingStats(bookings: AdminBookingDetail[]) {
     adminClosed: closedBookings.filter((booking) => booking.closedByRole === 'ADMIN').length,
     partnerClosed: closedBookings.filter((booking) => booking.closedByRole === 'PROVIDER').length,
     noShow: bookings.filter((booking) => booking.status === 'NO_SHOW').length,
+  };
+}
+
+type CustomerAllTimeActivity = {
+  readonly activeBookingCount: number;
+  readonly bookingCount: number;
+  readonly capturedSpend: number;
+  readonly completedBookingCount: number;
+  readonly paymentIssueCount: number;
+  readonly refundRequestCount: number;
+  readonly reportedReviewCount: number;
+};
+
+function buildCustomerAllTimeActivity(
+  customer: AdminCustomerDetail,
+  recentBookingStats: ReturnType<typeof buildBookingStats>,
+  recentWallet: ReturnType<typeof customerWalletSummary>,
+): CustomerAllTimeActivity {
+  const summary = customer.activitySummary;
+
+  return {
+    activeBookingCount: summary?.activeBookingCount ?? recentBookingStats.active,
+    bookingCount: summary?.bookingCount ?? customer.bookings?.length ?? 0,
+    capturedSpend: summary?.capturedSpend ?? recentWallet.capturedSpend,
+    completedBookingCount: summary?.completedBookingCount ?? recentBookingStats.completed,
+    paymentIssueCount:
+      summary?.paymentIssueCount ??
+      (customer.bookings ?? []).filter((booking) => booking.payment?.status === 'FAILED').length,
+    refundRequestCount:
+      summary?.refundRequestCount ??
+      (customer.bookings ?? []).reduce(
+        (count, booking) =>
+          count +
+          [...(booking.payment?.refunds ?? []), ...(booking.refunds ?? [])].filter(
+            (refund) => refund.status === 'REQUESTED',
+          ).length,
+        0,
+      ),
+    reportedReviewCount: summary?.reportedReviewCount ?? 0,
   };
 }
 
@@ -1195,25 +1554,25 @@ function buildCustomerBookingOperationMetrics(
       ) : (
         'No booking activity loaded.'
       ),
-      label: 'Total bookings',
+      label: `Latest ${bookings.length} bookings`,
       tone: 'pill-info',
       value: String(bookings.length),
     },
     {
-      helper: `${buckets.live.length} booking(s) currently visible at the top of this board.`,
-      label: 'Current work',
+      helper: `${adminCountLabel(buckets.live.length, 'live booking')} in the newest records.`,
+      label: 'Live now',
       tone: buckets.live.length ? 'pill-warn' : 'pill-neutral',
       value: String(buckets.live.length),
     },
     {
-      helper: 'Completed service rows retained for customer support.',
-      label: 'Completed work',
+      helper: 'Completed service rows among the newest records.',
+      label: `Completed in latest ${bookings.length}`,
       tone: 'pill-success',
       value: String(buckets.completed.length),
     },
     {
       helper: `${buckets.preMatchCancelled.length} pre-match / ${buckets.partnerCancelled.length} Partner cancel`,
-      label: 'Cancellation split',
+      label: `Cancellations in latest ${bookings.length}`,
       tone: cancellationCount ? 'pill-warn' : 'pill-neutral',
       value: String(cancellationCount),
     },
@@ -1222,89 +1581,33 @@ function buildCustomerBookingOperationMetrics(
 
 function buildCustomerBookingOperationGroups(
   buckets: CustomerBookingOperationBuckets,
-  searchParams: Record<string, string | string[] | undefined>,
 ): CustomerBookingOperationGroup[] {
-  const livePage = readCustomerBookingOperationPage(searchParams, 'liveBookingsPage');
-  const completedPage = readCustomerBookingOperationPage(searchParams, 'completedBookingsPage');
-  const preMatchCancelledPage = readCustomerBookingOperationPage(searchParams, 'preMatchCancelledBookingsPage');
-  const partnerCancelledPage = readCustomerBookingOperationPage(searchParams, 'partnerCancelledBookingsPage');
-  const liveRows = buildPaginatedCustomerBookingOperationRows(buckets.live, livePage);
-  const completedRows = buildPaginatedCustomerBookingOperationRows(buckets.completed, completedPage);
-  const preMatchCancelledRows = buildPaginatedCustomerBookingOperationRows(
-    buckets.preMatchCancelled,
-    preMatchCancelledPage,
-  );
-  const partnerCancelledRows = buildPaginatedCustomerBookingOperationRows(
-    buckets.partnerCancelled,
-    partnerCancelledPage,
-  );
-
   return [
     {
-      countTone: buckets.live.length ? 'pill-warn' : 'pill-neutral',
-      description: 'Bookings still waiting for matching, matched, on the way, arrived, or in service.',
-      emptyMessage: 'No current or in-progress booking matched this filter.',
       key: 'live',
-      page: liveRows.page,
-      pageParam: 'liveBookingsPage',
-      rows: liveRows.rows,
+      rows: buildCustomerBookingOperationRows(buckets.live),
       title: 'Current / In Progress',
-      totalRows: liveRows.totalRows,
+      totalRows: buckets.live.length,
     },
     {
-      countTone: 'pill-success',
-      description: 'Completed service rows with service price, Partner, address, and state timestamp.',
-      emptyMessage: 'No completed booking matched this filter.',
       key: 'completed',
-      page: completedRows.page,
-      pageParam: 'completedBookingsPage',
-      rows: completedRows.rows,
+      rows: buildCustomerBookingOperationRows(buckets.completed),
       title: 'Completed',
-      totalRows: completedRows.totalRows,
+      totalRows: buckets.completed.length,
     },
     {
-      countTone: buckets.preMatchCancelled.length ? 'pill-warn' : 'pill-neutral',
-      description: 'Bookings closed before a final matched Partner signal was recorded.',
-      emptyMessage: 'No pre-match cancellation matched this filter.',
       key: 'pre-match-cancelled',
-      page: preMatchCancelledRows.page,
-      pageParam: 'preMatchCancelledBookingsPage',
-      rows: preMatchCancelledRows.rows,
+      rows: buildCustomerBookingOperationRows(buckets.preMatchCancelled),
       title: 'Pre-match Cancellations',
-      totalRows: preMatchCancelledRows.totalRows,
+      totalRows: buckets.preMatchCancelled.length,
     },
     {
-      countTone: buckets.partnerCancelled.length ? 'pill-danger' : 'pill-neutral',
-      description: 'Partner-side post-match cancellations and no-show style rows for admin review history.',
-      emptyMessage: 'No Partner cancellation matched this filter.',
       key: 'partner-cancelled',
-      page: partnerCancelledRows.page,
-      pageParam: 'partnerCancelledBookingsPage',
-      rows: partnerCancelledRows.rows,
+      rows: buildCustomerBookingOperationRows(buckets.partnerCancelled),
       title: 'Partner Cancellations',
-      totalRows: partnerCancelledRows.totalRows,
+      totalRows: buckets.partnerCancelled.length,
     },
   ];
-}
-
-function buildPaginatedCustomerBookingOperationRows(
-  bookings: readonly AdminBookingDetail[],
-  requestedPage: number,
-) {
-  const totalRows = bookings.length;
-  const totalPages = Math.max(1, Math.ceil(totalRows / CUSTOMER_BOOKING_OPERATION_PAGE_SIZE));
-  const page = Math.min(Math.max(1, requestedPage), totalPages);
-  const pageStartIndex = (page - 1) * CUSTOMER_BOOKING_OPERATION_PAGE_SIZE;
-  const visibleBookings = bookings.slice(
-    pageStartIndex,
-    pageStartIndex + CUSTOMER_BOOKING_OPERATION_PAGE_SIZE,
-  );
-
-  return {
-    page,
-    rows: buildCustomerBookingOperationRows(visibleBookings),
-    totalRows,
-  };
 }
 
 function buildCustomerBookingOperationRows(
@@ -1318,16 +1621,17 @@ function buildCustomerBookingOperationRows(
     const preferredPartner =
       !selectedPartner && Boolean(booking.preferredProviderId ?? booking.preferredProvider);
     const stateAt = booking.statusChangedAt ?? booking.closedAt ?? bookingLatestActivityAt(booking);
+    const hasServiceSnapshot = (booking.services?.length ?? 0) > 0;
 
     return {
       addressLabel: compactText(customerBookingAddressListLabel(booking), 84),
       bookingHelper: (
         <>
-          {booking.status} / State <DateTimeText value={stateAt} />
+          Requested <DateTimeText value={bookingRequestOpenedAt(booking)} />
         </>
       ),
       bookingHref: `/bookings/${booking.id}`,
-      bookingLabel: shortId(booking.id),
+      bookingLabel: customerRecordLabel(booking.id),
       id: booking.id,
       partnerAvatarStatus: customerBookingPartnerAvatarStatus(booking),
       partnerHelper: customerBookingPartnerHelper(selectedPartner, preferredPartner, participantCount),
@@ -1336,10 +1640,15 @@ function buildCustomerBookingOperationRows(
       paymentDetailLabel: customerBookingPaymentDetailLabel(booking),
       paymentTypeLabel: customerBookingPaymentTypeLabel(booking),
       requestTimeLabel: <DateTimeText value={bookingRequestOpenedAt(booking)} />,
-      serviceLabel: bookingServiceLabel(booking),
-      servicePriceAmount: bookingTotal(booking),
+      serviceLabel: hasServiceSnapshot ? bookingServiceLabel(booking) : 'Service snapshot unavailable',
+      servicePriceAmount: hasServiceSnapshot ? bookingTotal(booking) : null,
       servicePriceCurrency: 'VND',
-      stateDetail: <DateTimeText value={stateAt} />,
+      sortAtMs: dateMs(stateAt),
+      stateDetail: (
+        <>
+          {customerBookingStateTimeVerb(booking)} <DateTimeText value={stateAt} />
+        </>
+      ),
       stateLabel: customerBookingStateLabel(booking),
       stateTone: bookingStatusPillClass(booking.status),
     };
@@ -1370,11 +1679,36 @@ function customerBookingPaymentDetailLabel(booking: AdminBookingDetail) {
   }
 
   return (
-    <>
-      {booking.payment.status} /{' '}
+    <span title={`Payment status: ${booking.payment.status}`}>
+      {customerPaymentStatusLabel(booking.payment.status)} /{' '}
       <MoneyText amount={Number(booking.payment.amount ?? 0)} currency={booking.payment.currency ?? 'VND'} />
-    </>
+    </span>
   );
+}
+
+function customerPaymentStatusLabel(status: string) {
+  switch (status) {
+    case 'RELEASED':
+      return 'Funds released';
+    case 'CAPTURED':
+      return 'Payment captured';
+    case 'AUTHORIZED':
+      return 'Authorized';
+    case 'PENDING':
+      return 'Pending';
+    case 'REFUNDED':
+      return 'Refunded';
+    case 'FAILED':
+      return 'Failed';
+    default:
+      return displayMarketplaceText(status);
+  }
+}
+
+function customerBookingStateTimeVerb(booking: AdminBookingDetail) {
+  if (booking.status === 'COMPLETED') return 'Completed at';
+  if (['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'].includes(booking.status)) return 'Closed at';
+  return 'Updated at';
 }
 
 function readCustomerBookingOperationPage(
@@ -1387,15 +1721,43 @@ function readCustomerBookingOperationPage(
   return Number.isInteger(page) && page > 0 ? page : 1;
 }
 
-function readCustomerRecordArchiveMode(searchParams: Record<string, string | string[] | undefined>) {
-  return readCustomerDetailSearchParam(searchParams.records) === 'all' ? 'all' : 'summary';
+function withoutLegacyCustomerDetailView(searchParams: Record<string, string | string[] | undefined>) {
+  const canonicalSearchParams = { ...searchParams };
+  delete canonicalSearchParams.view;
+  delete canonicalSearchParams.range;
+  delete canonicalSearchParams.type;
+  delete canonicalSearchParams.activityOrder;
+  delete canonicalSearchParams.from;
+  delete canonicalSearchParams.to;
+  return canonicalSearchParams;
 }
 
-function readCustomerDetailView(
+function buildCustomerDetailActionHref(
+  basePath: string,
   searchParams: Record<string, string | string[] | undefined>,
-): CustomerDetailView {
-  const view = readCustomerDetailSearchParam(searchParams.view);
-  return view === 'account' || view === 'records' ? view : 'operations';
+  action: CustomerDetailAction | null,
+  sectionId: string,
+) {
+  const params = new URLSearchParams();
+  const transientKeys = new Set([
+    'action',
+    'noteNotice',
+    'notificationNotice',
+    'walletAdjustmentNotice',
+  ]);
+
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (transientKeys.has(key) || value === undefined) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) params.append(key, item);
+    } else {
+      params.set(key, value);
+    }
+  }
+
+  if (action) params.set('action', action);
+  const query = params.toString();
+  return `${basePath}${query ? `?${query}` : ''}#${sectionId}`;
 }
 
 function buildCustomerDetailPageHref(
@@ -1408,7 +1770,7 @@ function buildCustomerDetailPageHref(
   const params = new URLSearchParams();
 
   for (const [key, value] of Object.entries(searchParams)) {
-    if (key === pageParam || value === undefined) continue;
+    if (key === pageParam || key === 'view' || value === undefined) continue;
     if (Array.isArray(value)) {
       for (const item of value) {
         params.append(key, item);
@@ -1422,31 +1784,6 @@ function buildCustomerDetailPageHref(
     params.set(pageParam, String(page));
   }
 
-  const query = params.toString();
-  return `${basePath}${query ? `?${query}` : ''}#${sectionId}`;
-}
-
-function buildCustomerDetailModeHref(
-  basePath: string,
-  searchParams: Record<string, string | string[] | undefined>,
-  modeParam: string,
-  modeValue: string,
-  sectionId: string,
-) {
-  const params = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(searchParams)) {
-    if (key === modeParam || value === undefined) continue;
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        params.append(key, item);
-      }
-    } else {
-      params.set(key, value);
-    }
-  }
-
-  params.set(modeParam, modeValue);
   const query = params.toString();
   return `${basePath}${query ? `?${query}` : ''}#${sectionId}`;
 }
@@ -1473,8 +1810,71 @@ function buildCustomerActivityExportHref(
   return `/api/admin/customers/${encodeURIComponent(customerId)}/activity/export${query ? `?${query}` : ''}`;
 }
 
+function customerOperatorLabel(log: AdminAuditLog) {
+  return log.actor?.fullName ?? log.actor?.email ?? log.actor?.phone ?? 'System';
+}
+
+function customerOperatorNoteMemo(log: AdminAuditLog) {
+  const metadata = readMetadataObject(log.metadata);
+  return readString(metadata.note) ?? readString(metadata.preset) ?? 'No memo';
+}
+
+function customerReferralPersonLabel(profile: {
+  readonly id: string;
+  readonly user?: { readonly fullName?: string | null; readonly phone?: string | null } | null;
+}) {
+  return profile.user?.fullName ?? profile.user?.phone ?? shortId(profile.id);
+}
+
+function summarizeCustomerReferralRewards(
+  rewards: readonly { readonly amount: number; readonly status: string }[],
+) {
+  return rewards.reduce(
+    (totals, reward) => {
+      if (CUSTOMER_REFERRAL_CREDITED_STATUSES.has(reward.status)) {
+        totals.credited += reward.amount;
+      } else if (CUSTOMER_REFERRAL_REVERSED_STATUSES.has(reward.status)) {
+        totals.reversed += reward.amount;
+      } else {
+        totals.pending += reward.amount;
+      }
+      return totals;
+    },
+    { credited: 0, pending: 0, reversed: 0 },
+  );
+}
+
+function customerSessionRecencyLabel(lastSeenAt: string | null | undefined, nowMs: number) {
+  if (!lastSeenAt) return 'No app activity recorded';
+  const lastSeenMs = dateMs(lastSeenAt);
+  if (!lastSeenMs) return 'No app activity recorded';
+  const ageMs = Math.max(0, nowMs - lastSeenMs);
+  if (ageMs <= 30 * 60_000) return 'In app now';
+  if (ageMs <= 24 * 60 * 60_000) return 'Active today';
+  if (ageMs >= 7 * 24 * 60 * 60_000) return 'Inactive 7+ days';
+  return 'Active in last 7 days';
+}
+
+function referralAttributionTone(status: string) {
+  if (status === 'REWARDED' || status === 'QUALIFIED') return 'success' as const;
+  if (status === 'BLOCKED' || status === 'CANCELLED') return 'danger' as const;
+  return 'info' as const;
+}
+
+function referralRewardTone(status: string) {
+  if (['CREDITED', 'PAID', 'REWARDED', 'USED_FOR_SERVICE'].includes(status)) return 'success' as const;
+  if (['CANCELLED', 'REVERSED', 'TAX_REVIEW_REQUIRED'].includes(status)) return 'danger' as const;
+  if (status === 'HELD') return 'warning' as const;
+  return 'info' as const;
+}
+
 function readCustomerDetailSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
+}
+
+function readCustomerDetailAction(value: string | string[] | undefined): CustomerDetailAction | null {
+  const action = readCustomerDetailSearchParam(value);
+  return action === 'wallet' || action === 'message' || action === 'note' ? action : null;
 }
 
 function isCustomerPreMatchCancellation(booking: AdminBookingDetail) {
@@ -1548,59 +1948,35 @@ function customerBookingStateLabel(booking: AdminBookingDetail) {
 function buildCustomerOperatorCommandQueue({
   customer,
   bookings,
-  addresses,
-  latestSession,
-  diagnosticsLoaded,
-  pushDevices,
-  notifications,
+  activitySummary,
+  bookingCreateGateAttempts,
   currentTimeMs,
 }: {
   customer: AdminCustomerDetail;
   bookings: AdminBookingDetail[];
-  addresses: CustomerAddressRow[];
-  latestSession?: AdminAppSession;
-  diagnosticsLoaded: boolean;
-  pushDevices: CustomerPushDevice[];
-  notifications: AdminNotification[];
+  activitySummary: CustomerAllTimeActivity;
+  bookingCreateGateAttempts: readonly CustomerBookingGateAttemptRow[];
   currentTimeMs: number;
 }) {
   const activeBookings = bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status));
-  const activeBooking = activeBookings[0];
   const matchedWithoutChat = activeBookings.filter(
     (booking) =>
       ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status) &&
       !booking.chatRoom,
   );
-  const quietChatBooking = activeBookings.find(
-    (booking) => booking.chatRoom && readChatMessages(booking).length === 0,
+  const recentGateAttempts = bookingCreateGateAttempts.filter(
+    (attempt) => currentTimeMs - dateMs(attempt.at) <= 24 * 60 * 60_000,
   );
-  const paymentIssueBooking = bookings.find(
-    (booking) =>
-      booking.payment && !['AUTHORIZED', 'CAPTURED', 'REFUNDED', 'RELEASED'].includes(booking.payment.status),
-  );
-  const refundBooking = bookings.find(
-    (booking) => (booking.payment?.refunds?.length ?? 0) > 0 || (booking.refunds?.length ?? 0) > 0,
-  );
-  const enabledPushDevices = pushDevices?.filter((device) => device.enabled) ?? [];
-  const unreadNotifications = notifications?.filter((notification) => !notification.readAt) ?? [];
-  const lastSeenMs = latestSession ? dateMs(latestSession.lastSeenAt) : 0;
-  const staleSession = !latestSession || currentTimeMs - lastSeenMs > 1000 * 60 * 60 * 24 * 7;
-  const missingAddress = addresses.length === 0;
+  const referralReviewCount = [
+    ...(customer.referralsMade ?? []),
+    ...(customer.referralsReceived ?? []),
+  ].filter((attribution) =>
+    ['FLAGGED', 'HELD', 'REVIEW_REQUIRED'].includes(attribution.fraudReviewStatus),
+  ).length;
+  const failedNotificationCount = (customer.user?.notifications ?? []).filter(
+    (notification) => notification.deliveries?.[0]?.status === 'FAILED',
+  ).length;
   const commands: CustomerOperatorCommand[] = [];
-
-  if (activeBooking) {
-    commands.push({
-      id: `active-${activeBooking.id}`,
-      label: 'Live booking',
-      title: 'Open the current customer booking',
-      detail: `${activeBooking.status} / ${bookingServiceLabel(
-        activeBooking,
-      )}. Check Partner, payment, location, and chat records from the booking detail page.`,
-      owner: 'Dispatch / Customer desk',
-      tone: 'info',
-      action: { type: 'link', href: `/bookings/${activeBooking.id}`, label: 'Open booking' },
-    });
-  }
 
   if (matchedWithoutChat.length > 0) {
     const booking = matchedWithoutChat[0];
@@ -1616,347 +1992,87 @@ function buildCustomerOperatorCommandQueue({
     });
   }
 
-  if (quietChatBooking) {
+  if (activitySummary.paymentIssueCount > 0) {
     commands.push({
-      id: `chat-quiet-${quietChatBooking.id}`,
-      label: 'Chat quiet',
-      title: 'Chat exists but no messages are archived yet',
+      id: 'payment-failures',
+      label: 'Payment failed',
+      title: `${adminCountLabel(activitySummary.paymentIssueCount, 'failed payment')} ${activitySummary.paymentIssueCount === 1 ? 'requires' : 'require'} review`,
       detail:
-        'The room is open. Leave a factual note if staff confirms the customer and Partner are communicating outside chat.',
-      owner: 'Customer desk',
-      tone: 'info',
-      action: {
-        type: 'note',
-        label: 'Add chat note',
-        bookingId: quietChatBooking.id,
-        preset:
-          'Chat room exists but no messages are archived yet; operator should verify customer contact if needed.',
-      },
-    });
-  }
-
-  if (paymentIssueBooking) {
-    const paymentStatus = paymentIssueBooking.payment?.status ?? 'Unknown';
-    const paymentMethod = paymentIssueBooking.payment?.method ?? 'No method';
-    const paymentCurrency = paymentIssueBooking.payment?.currency ?? 'VND';
-
-    commands.push({
-      id: `payment-${paymentIssueBooking.id}`,
-      label: 'Payment row',
-      title: 'Review the latest non-captured payment status',
-      detail: `${paymentStatus} / ${paymentMethod} / ${paymentCurrency} payment amount`,
-      detailNode: (
-        <>
-          {paymentStatus} / {paymentMethod} /{' '}
-          <MoneyText amount={Number(paymentIssueBooking.payment?.amount ?? 0)} currency={paymentCurrency} />
-        </>
-      ),
+        'Confirm the latest payment attempt before asking the customer to retry or changing booking state.',
       owner: 'Payments',
       tone: 'warn',
       action: { type: 'link', href: `/payments?customer=${customer.id}`, label: 'Open payments' },
     });
   }
 
-  if (refundBooking) {
+  if (activitySummary.refundRequestCount > 0) {
     commands.push({
-      id: `refund-${refundBooking.id}`,
-      label: 'Refund record',
-      title: 'Refund or release history exists',
-      detail:
-        'Open the refund desk before answering customer payment questions. Refund records are factual history only.',
+      id: 'refund-requests',
+      label: 'Refund requested',
+      title: `${adminCountLabel(activitySummary.refundRequestCount, 'refund request')} ${activitySummary.refundRequestCount === 1 ? 'is' : 'are'} still open`,
+      detail: 'Review the refund request and payment evidence before approval or rejection.',
       owner: 'Payments',
-      tone: 'info',
+      tone: 'warn',
       action: { type: 'link', href: '/refunds', label: 'Open refunds' },
     });
   }
 
-  if (missingAddress) {
+  if (activitySummary.reportedReviewCount > 0) {
     commands.push({
-      id: 'address-missing',
-      label: 'Address',
-      title: 'No saved service address is loaded',
-      detail:
-        'Ask the customer to confirm a map pin or saved address before dispatch so Partner distance and service location stay clear.',
-      owner: 'Customer desk',
+      id: 'reported-reviews',
+      label: 'Review reported',
+      title: `${adminCountLabel(activitySummary.reportedReviewCount, 'reported review')} ${activitySummary.reportedReviewCount === 1 ? 'requires' : 'require'} moderation`,
+      detail: 'Open the review queue and compare the customer, Partner, and booking evidence.',
+      owner: 'Trust & Safety',
       tone: 'warn',
-      action: {
-        type: 'note',
-        label: 'Add address note',
-        preset:
-          'Customer has no saved service address loaded; ask customer to confirm the service location before dispatch.',
-      },
+      action: { type: 'link', href: '/reviews', label: 'Open reviews' },
     });
   }
 
-  if (diagnosticsLoaded && enabledPushDevices.length === 0) {
+  if (recentGateAttempts.length > 0) {
     commands.push({
-      id: 'push-unreachable',
-      label: 'App reachability',
-      title: 'No enabled customer push device',
-      detail:
-        'Use phone or in-app session records for contact until the customer registers an enabled push device.',
-      owner: 'Customer desk',
+      id: 'recent-booking-gates',
+      label: 'Booking blocked',
+      title: `${adminCountLabel(recentGateAttempts.length, 'create attempt')} blocked in the last 24 hours`,
+      detail: 'Check distance, service-area, and first-pick evidence before advising the customer to retry.',
+      owner: 'Booking operations',
       tone: 'warn',
-      action: { type: 'link', href: `/notifications?user=${customer.userId}`, label: 'Open notices' },
+      action: { type: 'link', href: '/bookings?view=blocked-create', label: 'Open blocked queue' },
     });
   }
 
-  if (diagnosticsLoaded && staleSession) {
+  if (referralReviewCount > 0) {
     commands.push({
-      id: 'session-stale',
-      label: 'App session',
-      title: latestSession ? 'Customer app session is older than 7 days' : 'No customer app session recorded',
-      detail: latestSession
-        ? 'Customer app session is older than 7 days.'
-        : 'No mobile session row is loaded for this customer.',
-      detailNode: latestSession ? (
-        <>
-          Last seen <DateTimeText value={latestSession.lastSeenAt} /> on{' '}
-          {latestSession.platform ?? 'unknown platform'}.
-        </>
-      ) : undefined,
-      owner: 'Customer desk',
-      tone: 'info',
-      action: {
-        type: 'note',
-        label: 'Add session note',
-        preset: latestSession
-          ? 'Customer app session is older than 7 days; verify contact path if support is needed.'
-          : 'No customer app session is loaded; verify contact path if support is needed.',
-      },
+      id: 'referral-review',
+      label: 'Referral review',
+      title: `${adminCountLabel(referralReviewCount, 'referral attribution')} ${referralReviewCount === 1 ? 'requires' : 'require'} review`,
+      detail: 'Check the attribution, qualifying booking, fraud status, and reward ownership before release.',
+      owner: 'Growth operations',
+      tone: 'warn',
+      action: { type: 'link', href: `/referrals/customers/${customer.id}`, label: 'Review referrals' },
     });
   }
 
-  if (diagnosticsLoaded && unreadNotifications.length > 0) {
+  if (failedNotificationCount > 0) {
     commands.push({
-      id: 'unread-notifications',
-      label: 'Notifications',
-      title: `${unreadNotifications.length} unread notification row(s)`,
-      detail:
-        'Review recent notifications and delivery rows before sending duplicate customer communication.',
-      owner: 'Customer desk',
-      tone: 'info',
-      action: { type: 'link', href: `/notifications?user=${customer.userId}`, label: 'Open notifications' },
+      id: 'notification-failures',
+      label: 'Delivery failed',
+      title: `${adminCountLabel(failedNotificationCount, 'customer notification')} ${failedNotificationCount === 1 ? 'has' : 'have'} failed delivery`,
+      detail: 'Check the latest delivery result and active push device before sending another message.',
+      owner: 'Customer communications',
+      tone: 'warn',
+      action: { type: 'link', href: '#customer-app-notifications', label: 'Review messages' },
     });
   }
 
-  if (commands.length === 0) {
-    commands.push({
-      id: 'steady-state',
-      label: 'Steady state',
-      title: 'No immediate customer desk action detected',
-      detail:
-        'Booking, payment, chat, address, app session, and notification records are loaded for normal monitoring.',
-      owner: 'Customer desk',
-      tone: 'success',
-      action: {
-        type: 'note',
-        label: 'Add monitoring note',
-        preset: 'Customer record reviewed; no immediate customer desk action detected.',
-      },
-    });
-  }
+  const actionCount = commands.length;
 
-  const blocking = commands.some((command) => command.tone === 'danger' || command.tone === 'warn');
   return {
-    status: blocking ? 'Follow-up queued' : activeBooking ? 'Live monitoring' : 'Record ready',
-    tone: blocking ? ('warn' as const) : activeBooking ? ('info' as const) : ('success' as const),
+    actionCount,
+    status: actionCount > 0 ? `${actionCount} open` : 'No action needed',
+    tone: actionCount > 0 ? ('warn' as const) : ('success' as const),
     commands: commands.slice(0, 8),
   };
-}
-
-function buildCustomerAccountFacts({
-  addresses,
-  bookings,
-  customer,
-  diagnosticsLoaded,
-  notificationCount,
-  pushDevices,
-}: {
-  addresses: CustomerAddressRow[];
-  bookings: AdminBookingDetail[];
-  customer: AdminCustomerDetail;
-  diagnosticsLoaded: boolean;
-  notificationCount: number;
-  pushDevices: CustomerPushDevice[];
-}) {
-  const sessions = customer.user?.appSessions ?? [];
-  const refunds = bookings.flatMap((booking) => [
-    ...(booking.payment?.refunds ?? []),
-    ...(booking.refunds ?? []),
-  ]);
-  const activeBookings = bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status)).length;
-  const completedBookings = bookings.filter((booking) => booking.status === 'COMPLETED').length;
-  const cancelledBookings = bookings.filter((booking) =>
-    ['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status),
-  ).length;
-  const notes = (customer.auditLogs ?? []).filter((log) => log.action === 'customer.ops_note.add');
-  const latestPaymentBooking = bookings.find((booking) => booking.payment);
-  const refundAmount = refunds.reduce((sum, refund) => sum + Number(refund.amount ?? 0), 0);
-  const frequentService = mostCommonLabel(bookings.map((booking) => bookingServiceLabel(booking)));
-  const frequentPartner = mostCommonLabel(
-    bookings.map((booking) => bookingPartnerDisplayName(booking)).filter(Boolean) as string[],
-  );
-
-  return [
-    {
-      label: 'Customer ID',
-      value: customer.id,
-      helper: 'Internal admin identifier',
-    },
-    {
-      label: 'Name',
-      value: customer.user?.fullName ?? 'Not saved',
-      helper: 'Customer profile name',
-    },
-    {
-      label: 'Phone',
-      value: customer.user?.phone ?? 'Not saved',
-      helper: customer.user?.phone ? 'Phone OTP identity' : 'Phone login is not saved',
-    },
-    {
-      label: 'Email',
-      value: customer.user?.email ?? 'Not saved',
-      helper: 'Optional contact field',
-    },
-    {
-      label: 'Login method',
-      value: customer.user?.phone ? 'Phone OTP' : 'Not captured',
-      helper: 'Phone auth remains the primary customer login method',
-    },
-    ...(diagnosticsLoaded
-      ? [
-          {
-            label: 'Devices',
-            value: `${sessions.length} session(s) / ${pushDevices.length} push device(s)`,
-            helper: `${pushDevices.filter((device) => device.enabled).length} enabled push device(s)`,
-          },
-        ]
-      : []),
-    {
-      label: 'Bookings',
-      value: `${bookings.length} total`,
-      helper: `${activeBookings} active / ${completedBookings} completed / ${cancelledBookings} cancelled`,
-    },
-    {
-      label: 'Frequently used service',
-      value: frequentService ?? 'Not enough bookings',
-      helper: 'Calculated from loaded booking history only',
-    },
-    {
-      label: 'Preferred Partner',
-      value: frequentPartner ?? 'Not enough bookings',
-      helper: 'Most repeated selected or preferred Partner in this archive',
-    },
-    {
-      label: 'Last payment',
-      value: latestPaymentBooking?.payment?.method ?? 'No payment',
-      helper: latestPaymentBooking?.payment ? (
-        <>
-          {latestPaymentBooking.payment.status} /{' '}
-          <MoneyText
-            amount={Number(latestPaymentBooking.payment.amount ?? 0)}
-            currency={latestPaymentBooking.payment.currency ?? 'VND'}
-          />
-        </>
-      ) : (
-        'No payment row loaded'
-      ),
-    },
-    {
-      label: 'Refund records',
-      value: refunds.length.toString(),
-      helper: <MoneyText amount={refundAmount} />,
-    },
-    {
-      label: 'Saved addresses',
-      value: addresses.length.toString(),
-      helper: addresses[0]?.value ?? 'No saved customer address',
-    },
-    {
-      label: 'CS / admin notes',
-      value: notes.length.toString(),
-      helper: notes[0]?.createdAt ? (
-        <>
-          Latest <DateTimeText value={notes[0].createdAt} />
-        </>
-      ) : (
-        'No support note saved'
-      ),
-    },
-    {
-      label: 'Notifications',
-      value: notificationCount.toString(),
-      helper: 'Recent in-app notification rows',
-    },
-  ];
-}
-
-function buildCustomerActivityPlan(
-  bookings: AdminBookingDetail[],
-  wallet: ReturnType<typeof customerWalletSummary>,
-  bookingStats: ReturnType<typeof buildBookingStats>,
-  addresses: CustomerAddressRow[],
-) {
-  const latestBooking = bookings[0];
-  const paymentIssueCount = bookings.filter((booking) => {
-    return booking.payment && !['AUTHORIZED', 'CAPTURED'].includes(booking.payment.status);
-  }).length;
-  const chatArchiveCount = bookings.filter((booking) => booking.chatRoom).length;
-  const missingAddress = addresses.length === 0;
-  const activityFacts = [
-    bookingStats.active > 0 ? `${bookingStats.active} active booking(s)` : null,
-    bookingStats.completed > 0 ? `${bookingStats.completed} completed work record(s)` : null,
-    paymentIssueCount > 0 ? `${paymentIssueCount} payment status row(s)` : null,
-    wallet.refundAmount > 0 ? (
-      <>
-        <MoneyText amount={wallet.refundAmount} /> refund record(s)
-      </>
-    ) : null,
-    chatArchiveCount > 0 ? `${chatArchiveCount} archived chat room(s)` : null,
-    missingAddress ? 'No saved address' : null,
-  ].filter(Boolean) as ReactNode[];
-  const tone: 'success' | 'info' = latestBooking ? 'info' : 'success';
-  const primaryHref = latestBooking?.id ? `/bookings/${latestBooking.id}` : '/customers';
-  const primaryAction = latestBooking?.id ? 'Open latest booking' : 'Back to customers';
-  return {
-    tone,
-    status: latestBooking ? 'Activity recorded' : 'No bookings yet',
-    headline:
-      activityFacts.length > 0
-        ? joinCustomerActivityFacts(activityFacts)
-        : 'No customer booking activity yet.',
-    detail:
-      activityFacts.length > 0
-        ? 'Use this panel to leave factual notes for the next operator.'
-        : 'When this customer books, the profile, booking, payment, chat archive, and address records will appear here.',
-    primaryHref,
-    primaryAction,
-    badges: [
-      {
-        label: bookingStats.active ? 'Live booking' : 'No live booking',
-        tone: bookingStats.active ? 'warn' : 'success',
-      },
-      { label: `${bookingStats.completed} completed`, tone: 'success' },
-      { label: `${chatArchiveCount} chat archive(s)`, tone: 'info' },
-      {
-        label: missingAddress ? 'Address not saved' : 'Address saved',
-        tone: missingAddress ? 'warn' : 'success',
-      },
-    ],
-    presets: [
-      'Customer contacted; waiting for reply.',
-      'Address confirmed with customer.',
-      'Payment record checked.',
-      'Chat archive reviewed.',
-      'Booking completion confirmed.',
-      'Customer asked to update saved address.',
-    ],
-  };
-}
-
-function joinCustomerActivityFacts(activityFacts: ReactNode[]): ReactNode {
-  return activityFacts.flatMap((fact, index) => (index === 0 ? [fact] : [' / ', fact]));
 }
 
 function buildAddressRows(customer: AdminCustomerDetail) {
@@ -1991,23 +2107,22 @@ function buildAddressRows(customer: AdminCustomerDetail) {
   return rows;
 }
 
-function readCustomerDeviceLanguageLabel(appSessions: readonly AdminAppSession[]) {
-  const language = appSessions.find((session) => session.deviceLanguage)?.deviceLanguage;
-  return language ?? 'Unknown';
+function readCustomerDeviceLanguageLabel(deviceLanguage: string | null | undefined) {
+  return deviceLanguage?.trim() || 'Not recorded';
 }
 
 function customerCountryDisplay(label: string) {
-  const sourceLabel = label.trim() || 'Unknown';
+  const sourceLabel = label.trim() || 'Not recorded';
   const region = customerCountryRegion(sourceLabel);
 
   return {
-    fullLabel: region ? customerCountryName(region) : 'Unknown',
+    fullLabel: region ? customerCountryName(region) : 'Country not recorded',
     sourceLabel,
   };
 }
 
 function customerCountryRegion(label: string) {
-  if (!label || label === 'Unknown') {
+  if (!label || label === 'Not recorded') {
     return null;
   }
 
@@ -2084,162 +2199,6 @@ function normalizeCustomerGenderLabel(value: string) {
   if (['female', 'f', 'woman', 'women'].includes(normalized)) return 'Female';
   if (['male', 'm', 'man', 'men'].includes(normalized)) return 'Male';
   return value.trim();
-}
-
-function buildSavedAddressListValue(addresses: CustomerAddressRow[]) {
-  if (addresses.length === 0) {
-    return 'No saved address';
-  }
-
-  return compactText(
-    addresses
-      .slice(0, 3)
-      .map((address) => address.value)
-      .join(' / '),
-    132,
-  );
-}
-
-type CustomerUsageSummaryInput = {
-  readonly appSessions: readonly AdminAppSession[];
-  readonly bookings: readonly AdminBookingDetail[];
-  readonly customer: AdminCustomerDetail;
-  readonly diagnosticsLoaded: boolean;
-  readonly favoriteProviders: NonNullable<AdminCustomerDetail['favoriteProviders']>;
-  readonly viewedProviders: NonNullable<AdminCustomerDetail['viewedProviders']>;
-};
-
-type CustomerBookingRegionCount = {
-  readonly count: number;
-  readonly label: string;
-  readonly latestAt: string | null;
-};
-
-function buildCustomerUsageSummary({
-  appSessions,
-  bookings,
-  customer,
-  diagnosticsLoaded,
-  favoriteProviders,
-  viewedProviders,
-}: CustomerUsageSummaryInput): CustomerDetailUsageSummary {
-  const latestSession = appSessions[0];
-  const bookingRegions = buildCustomerBookingRegionRows(bookings);
-  const primaryRegion = bookingRegions[0];
-  const addressSnapshotCount = bookings.filter((booking) => customerStoredBookingAddressText(booking)).length;
-  const selectedLocationCount = (customer.selectedLocations ?? []).filter((location) =>
-    readAddressText(location.addressText),
-  ).length;
-  const favoriteCount = countCustomerFavoritePartners(favoriteProviders);
-  const viewedCount = countCustomerViewedPartners(viewedProviders);
-  const completedPartnerCount = countCustomerCompletedPartners([...bookings]);
-
-  return {
-    title: 'Usage and region summary',
-    helper: 'Built from stored sessions, service addresses, and Partner links. No live GPS polling.',
-    items: [
-      ...(diagnosticsLoaded
-        ? [
-            {
-              helper: latestSession ? (
-                <>
-                  Latest <DateTimeText value={latestSession.lastSeenAt} /> /{' '}
-                  {latestSession.platform ?? 'Unknown platform'}
-                </>
-              ) : (
-                'No app session loaded.'
-              ),
-              label: 'App sessions',
-              value: String(appSessions.length),
-            },
-          ]
-        : []),
-      {
-        helper: primaryRegion ? (
-          <>
-            {primaryRegion.count} booking row(s) / latest <DateTimeText value={primaryRegion.latestAt} />
-          </>
-        ) : (
-          'Stored booking service addresses will populate this.'
-        ),
-        label: 'Primary booking region',
-        value: primaryRegion?.label ?? 'No booking region',
-      },
-      {
-        helper: `${selectedLocationCount} saved selected location row(s).`,
-        label: 'Saved service addresses',
-        value: `${addressSnapshotCount}/${bookings.length}`,
-      },
-      {
-        helper: `${completedPartnerCount} completed Partner link(s).`,
-        label: 'Partner engagement',
-        value: `${favoriteCount} saved / ${viewedCount} viewed`,
-      },
-    ],
-    regionRows:
-      bookingRegions.length > 0
-        ? bookingRegions.slice(0, 3).map((region) => ({
-            helper: (
-              <>
-                Latest <DateTimeText value={region.latestAt} />
-              </>
-            ),
-            label: region.label,
-            value: `${region.count}`,
-          }))
-        : [
-            {
-              helper: 'No stored booking service address has been captured for this customer yet.',
-              label: 'No booking region',
-              value: '0',
-            },
-          ],
-  };
-}
-
-function buildCustomerBookingRegionRows(
-  bookings: readonly AdminBookingDetail[],
-): CustomerBookingRegionCount[] {
-  const regionCounts = new Map<string, { count: number; latestAt: string | null }>();
-
-  for (const booking of bookings) {
-    const addressText = customerStoredBookingAddressText(booking);
-    if (!addressText) continue;
-
-    const regionLabel = serviceAddressAreaLabel(addressText);
-    if (!regionLabel || (regionLabel === addressText && /^no\s+/i.test(regionLabel))) continue;
-
-    const latestAt = bookingLatestActivityAt(booking);
-    const current = regionCounts.get(regionLabel);
-    if (!current) {
-      regionCounts.set(regionLabel, { count: 1, latestAt });
-      continue;
-    }
-
-    regionCounts.set(regionLabel, {
-      count: current.count + 1,
-      latestAt: dateMs(latestAt) > dateMs(current.latestAt) ? latestAt : current.latestAt,
-    });
-  }
-
-  return [...regionCounts.entries()]
-    .map(([label, value]) => ({ label, ...value }))
-    .sort((left, right) => {
-      if (right.count !== left.count) {
-        return right.count - left.count;
-      }
-
-      return dateMs(right.latestAt) - dateMs(left.latestAt);
-    });
-}
-
-function customerStoredBookingAddressText(booking: AdminBookingDetail) {
-  return (
-    readAddressText(booking.serviceAddressText) ??
-    readAddressText(booking.addressSnapshot?.addressText) ??
-    readAddressText(booking.addressSnapshot?.address) ??
-    readAddressText(booking.address)
-  );
 }
 
 function buildCustomerPartnerRails(
@@ -2400,26 +2359,8 @@ function partnerAvatarStatusFromProviderStatus(
   return 'offline';
 }
 
-function buildCustomerChatArchiveSummaryBookings(
-  bookings: AdminBookingDetail[],
-  dateFilters: DetailDateFilters,
-) {
-  return bookings.filter((booking) => {
-    return Boolean(booking.chatRoom) && isWithinDetailDateFilter(bookingLatestActivityAt(booking), dateFilters);
-  });
-}
-
-function buildCustomerChatArchiveBookings(
-  bookings: AdminBookingDetail[],
-  dateFilters: DetailDateFilters,
-) {
-  return bookings.filter((booking) => {
-    if (!booking.chatRoom) return false;
-    return (
-      isWithinDetailDateFilter(bookingLatestActivityAt(booking), dateFilters) ||
-      readChatMessages(booking).some((message) => isWithinDetailDateFilter(message.createdAt, dateFilters))
-    );
-  });
+function buildCustomerChatArchiveBookings(bookings: AdminBookingDetail[]) {
+  return bookings.filter((booking) => Boolean(booking.chatRoom));
 }
 
 function readChatMessages(booking: AdminBookingDetail): AdminChatMessage[] {
@@ -2494,15 +2435,6 @@ function bookingServiceLabel(booking: AdminBookingDetail) {
   const first = booking.services?.[0];
   if (!first?.service) return 'No service';
   return `${first.service.name ?? 'Service'} / ${first.service.durationMin ?? '?'} min`;
-}
-
-function mostCommonLabel(values: string[]) {
-  const counts = new Map<string, number>();
-  for (const value of values) {
-    if (!value || value === 'No service') continue;
-    counts.set(value, (counts.get(value) ?? 0) + 1);
-  }
-  return [...counts.entries()].sort((left, right) => right[1] - left[1])[0]?.[0] ?? null;
 }
 
 function bookingStatusPillClass(status: string) {

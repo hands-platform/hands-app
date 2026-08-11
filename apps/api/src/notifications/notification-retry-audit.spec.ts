@@ -32,7 +32,7 @@ describe('notification retry audit metadata', () => {
         id: 'delivery-1',
         provider: 'FCM',
         pushDeviceEnabled: true,
-        pushDeviceId: 'push-device-1',
+        pushDeviceId: 'push...ce-1',
         pushDeviceLastSeenAt: '2026-06-13T10:22:00.000Z',
         pushDevicePlatform: 'android',
         status: 'SENT',

@@ -5,7 +5,6 @@ import { vi } from 'vitest';
 import type {
   AdminCashSettlementSummary,
   AdminDashboardSummary,
-  AdminEarning,
   AdminEarningSummary,
   AdminExternalReadiness,
   AdminNotificationBoardSummary,
@@ -36,6 +35,165 @@ const globalCss = readFileSync('app/globals.css', 'utf8');
 function startShiftSummaryFixture(): AdminStartShiftSummary {
   const generatedAt = new Date().toISOString();
   return {
+    analytics: {
+      buckets: [
+        {
+          bookingRequests: 5,
+          cashFeeDebtAmount: 25000,
+          cancelled: 1,
+          companyOutputVat: 10000,
+          completed: 3,
+          customerPaymentAmount: 500000,
+          failedPaymentAmount: 0,
+          grossAmount: 500000,
+          isFuture: false,
+          key: '2026-07-18T09:00',
+          label: '09:00',
+          matchRate: 80,
+          matched: 4,
+          medianMatchMinutes: 4.2,
+          noShow: 0,
+          partnerNetAmount: 350000,
+          partnerPayoutAmount: 350000,
+          partnerWithholdingTotal: 15000,
+          paymentProcessingFee: 5000,
+          platformFee: 100000,
+          platformNetRevenue: 90000,
+          previousRequests: 4,
+          refundAmount: 50000,
+          serviceStarted: 3,
+        },
+      ],
+      comparison: {
+        completedByNow: 3,
+        completedPreviousDay: 2,
+        grossByNow: 500000,
+        grossPreviousDay: 400000,
+        matchedByNow: 4,
+        matchedPreviousDay: 3,
+        requestsByNow: 5,
+        requestsPreviousDay: 4,
+      },
+      customerPulse: {
+        activeCustomerRecords: 4,
+        appOpenEvents: 2,
+        bookingCustomers: 4,
+        completedBookings: 3,
+        failedPaymentCustomers: 0,
+        firstBookingCustomers: 2,
+        highIntentNoBookingCustomers: 1,
+        matchingFailureCustomers: 1,
+        openMatchAverageWaitMinutes: 4.2,
+        preferredRequests: 2,
+        providerProfileViews: 6,
+        recentActiveCustomers: 3,
+        repeatCustomers: 1,
+        sessionStartEvents: 1,
+      },
+      customerRankings: {
+        highestValue: [],
+        mostActive: [],
+        mostCompleted: [],
+        needsAttention: [],
+      },
+      demandSupply: { failureRegions: [], services: [] },
+      generatedAt,
+      granularity: 'hour',
+      needsAction: [
+        {
+          ageing: { fourToTwentyFourHours: 0, oneToFourHours: 0, overTwentyFourHours: 2, underOneHour: 0 },
+          amount: 750_000,
+          count: 2,
+          href: '/payments?range=all&review=authorized&sort=oldest',
+          key: 'payment-holds',
+          label: 'Payment holds',
+          nextCases: {
+            current: [],
+            legacy: ['booking-payment-hold-1', 'booking-payment-hold-2'],
+            overdue: [],
+          },
+          oldestAt: generatedAt,
+          operatorAction: 'Capture completed services or release invalid authorization holds.',
+          overdueCount: 2,
+          slaMinutes: 60,
+        },
+        {
+          ageing: { fourToTwentyFourHours: 0, oneToFourHours: 0, overTwentyFourHours: 0, underOneHour: 1 },
+          amount: 0,
+          count: 1,
+          href: '/bookings?view=matching-delays&sort=oldest',
+          key: 'matching-delays',
+          label: 'Matching delays',
+          oldestAt: generatedAt,
+          operatorAction: 'Re-invite available Partners or contact the waiting customer.',
+          slaMinutes: 15,
+        },
+        {
+          ageing: { fourToTwentyFourHours: 0, oneToFourHours: 0, overTwentyFourHours: 0, underOneHour: 0 },
+          amount: 0,
+          count: 0,
+          href: '/bookings/post-match-cancellations?view=manual-decision&dateRange=all&sort=oldest',
+          key: 'cancellation-review',
+          label: 'Cancellation review',
+          oldestAt: null,
+          operatorAction: 'Decide the fee outcome and close the cancellation evidence.',
+          slaMinutes: 120,
+        },
+        {
+          ageing: { fourToTwentyFourHours: 0, oneToFourHours: 0, overTwentyFourHours: 0, underOneHour: 0 },
+          amount: 0,
+          count: 0,
+          href: '/refunds?range=all&review=open&sort=oldest',
+          key: 'refund-review',
+          label: 'Refund review',
+          oldestAt: null,
+          operatorAction: 'Confirm eligibility and complete the payment reversal or rejection.',
+          slaMinutes: 240,
+        },
+        {
+          ageing: { fourToTwentyFourHours: 0, oneToFourHours: 0, overTwentyFourHours: 0, underOneHour: 0 },
+          amount: 0,
+          count: 0,
+          href: '/partners?review=approval-pending&sort=oldest',
+          key: 'partner-approvals',
+          label: 'Partner approvals',
+          oldestAt: null,
+          operatorAction: 'Approve submitted KYC or return it with a clear reason.',
+          slaMinutes: 1_440,
+        },
+        {
+          ageing: { fourToTwentyFourHours: 0, oneToFourHours: 0, overTwentyFourHours: 0, underOneHour: 0 },
+          amount: 0,
+          count: 0,
+          href: '/cash-settlements?range=all&sort=oldest',
+          key: 'cash-reconciliation',
+          label: 'Cash reconciliation',
+          oldestAt: null,
+          operatorAction: 'Recover open HANDS fee and tax debt from cash bookings.',
+          slaMinutes: 1_440,
+        },
+        {
+          ageing: { fourToTwentyFourHours: 0, oneToFourHours: 0, overTwentyFourHours: 0, underOneHour: 0 },
+          amount: 0,
+          count: 0,
+          href: '/notifications?range=all&review=unresolved-failed&sort=oldest',
+          key: 'notification-failures',
+          label: 'Notification failures',
+          oldestAt: null,
+          operatorAction: 'Repair the destination device or retry unresolved delivery failures.',
+          slaMinutes: 60,
+        },
+      ],
+      partnerRankings: {
+        fastestResponse: [],
+        highestRated: [],
+        mostActive: [],
+        mostCompleted: [],
+        needsAttention: [],
+      },
+      range: 'today',
+      timezone: 'Asia/Ho_Chi_Minh',
+    },
     cashSettlements: {
       cashPaymentRowCount: 0,
       currency: 'VND',
@@ -65,6 +223,52 @@ function startShiftSummaryFixture(): AdminStartShiftSummary {
       platformFee: 0,
       withholdingAmount: 0,
     },
+    financeReviewWorkload: {
+      bankReconciliation: {
+        currency: 'VND',
+        openAmount: 0,
+        openCount: 0,
+        owners: [],
+        unassigned: {
+          oldestOccurredAt: null,
+          openAmount: 0,
+          openCount: 0,
+          over48hAmount: 0,
+          over48hCount: 0,
+        },
+      },
+      companyBankAccounts: {
+        oldestRequestedAt: null,
+        over48hCount: 0,
+        pendingCount: 0,
+      },
+      partnerBankDeposits: {
+        currency: 'VND',
+        openAmount: 0,
+        openCount: 0,
+        owners: [],
+        unassigned: {
+          oldestOccurredAt: null,
+          openAmount: 0,
+          openCount: 0,
+          over48hAmount: 0,
+          over48hCount: 0,
+        },
+      },
+      paymentClearing: {
+        currency: 'VND',
+        openAmount: 0,
+        openCount: 0,
+        owners: [],
+        unassigned: {
+          oldestOccurredAt: null,
+          openAmount: 0,
+          openCount: 0,
+          over48hAmount: 0,
+          over48hCount: 0,
+        },
+      },
+    },
     generatedAt,
     notifications: { generatedAt, totalCount: 0 },
     operations: {
@@ -89,6 +293,7 @@ function startShiftSummaryFixture(): AdminStartShiftSummary {
         firstRevenue: 0,
         kycApproved: 0,
         level2Active: 0,
+        approvalPending: 0,
         liveSessions: 0,
         noLocation: 0,
         offline: 0,
@@ -104,16 +309,21 @@ function startShiftSummaryFixture(): AdminStartShiftSummary {
       },
     },
     payments: {
+      activeCashCollection: 0,
       authorized: 0,
       callbackReview: 0,
       callbackVerified: 0,
+      captureReady: 0,
       captured: 0,
       cashDebt: 0,
+      evidenceConflicts: 0,
       generatedAt,
       linkedRefunds: 0,
       needsAction: 0,
       pendingCash: 0,
+      releaseRecommended: 0,
       refunded: 0,
+      staleMismatch: 0,
       totalCount: 0,
     },
     payoutBatches: {
@@ -160,9 +370,8 @@ describe('DashboardPage', () => {
     expect(dashboardTraceSummarySource).toContain('readonly defaultScope?: ReactNode;');
     expect(dashboardTraceSummarySource).toContain('kind: metric.kind ?? defaultKind');
     expect(dashboardTraceSummarySource).toContain('scope: metric.scope ?? defaultScope');
-    expect(dashboardSource).toContain('defaultScope={selectedRangeLabel}');
-    expect(dashboardSource).toContain('defaultScope="Live"');
-    expect(dashboardSource).toContain('defaultKind="risk"');
+    expect(dashboardSource).toContain('defaultScope="Pending"');
+    expect(dashboardSource).toContain('defaultKind="action"');
   });
 
   it('keeps dashboard trace summary groups scoped unless metrics carry their own scope', () => {
@@ -178,19 +387,28 @@ describe('DashboardPage', () => {
     expect(untypedTags).toEqual([]);
   });
 
+  it('keeps the current Start Shift snapshot visible and refreshable', () => {
+    expect(dashboardSource).toContain('StartShiftRefreshButton');
+    expect(dashboardSource).toContain('DashboardDataScopeStatus');
+    expect(dashboardSource).toContain('generatedAt={startShiftSummaryResponse?.generatedAt}');
+    expect(dashboardSource).toContain('refreshSeconds={60}');
+    expect(dashboardSource).toContain('scope="current-shift"');
+    expect(dashboardSource).toContain('sourceState={startShiftScopeSourceState}');
+    expect(dashboardSource).toContain('href="/operations-handoff"');
+  });
+
   it('does not use vague current view copy in operator-facing dashboard messages', () => {
     expect(dashboardSource).not.toContain('current view');
   });
 
-  it('uses the shared DateTimeText atom for dashboard booking evidence sample dates', () => {
-    expect(dashboardSource).toContain('DateTimeText');
-    expect(dashboardSource).toContain('<DateTimeText fallback="unknown" value={bookingRequestOpenedAt(booking)} />');
-    expect(dashboardSource).not.toContain('function dashboardDateLabel');
-    expect(dashboardSource).not.toContain('return formatDateTime(value, \'unknown\');');
-    expect(dashboardSource).not.toContain('opened ${dashboardDateLabel(');
+  it('delegates Start Shift timestamp and freshness copy to the shared scope status', () => {
+    expect(dashboardSource).toContain('DashboardDataScopeStatus');
+    expect(dashboardTraceSummarySource).toContain('DateTimeText');
+    expect(dashboardTraceSummarySource).toContain("'Source delayed · updated '");
+    expect(dashboardTraceSummarySource).toContain("'Source unavailable'");
   });
 
-  it('renders server-scoped dashboard finance rows without applying a second local date filter', async () => {
+  it('renders server-scoped dashboard finance summaries without loading diagnostic lists', async () => {
     const earningSummary: AdminEarningSummary = {
       availableNetAmount: 120000,
       count: 1,
@@ -228,56 +446,30 @@ describe('DashboardPage', () => {
       openCount: 11,
       outcomeLinkedCount: 7,
     };
-    const oldServerScopedEarning = {
-      bookingId: 'server-dashboard-booking',
-      createdAt: '2020-01-01T00:00:00.000Z',
-      currency: 'VND',
-      grossAmount: 300000,
-      id: 'server-dashboard-earning',
-      netAmount: 120000,
-      platformFee: 150000,
-      providerProfileId: 'server-provider-row',
-      status: 'AVAILABLE',
-      withholdingAmount: 30000,
-    } as AdminEarning;
-
     mockedApiGet.mockResolvedValue({
       checks: [],
       ok: true,
       timestamp: '2026-06-28T00:00:00.000Z',
     } as AdminExternalReadiness);
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/earnings/summary?range=today') {
-        return earningSummary;
-      }
-      if (href === '/admin/cash-settlement-summary?range=today') {
-        return cashSettlementSummary;
-      }
-      if (href === '/admin/refunds/summary?range=today') {
-        return refundSummary;
-      }
-      if (typeof href === 'string' && href.startsWith('/admin/earnings?')) {
-        return [oldServerScopedEarning];
-      }
-      return fallback;
-    });
+    const aggregate = startShiftSummaryFixture();
+    aggregate.earnings = earningSummary;
+    aggregate.cashSettlements = cashSettlementSummary;
+    aggregate.refunds = refundSummary;
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href === '/admin/dashboard/start-shift-summary?dateRange=today' ? aggregate : fallback,
+    );
 
     const page = await DashboardPage({
       searchParams: Promise.resolve({ details: 'operations', range: 'today' }),
     });
     const markup = renderToStaticMarkup(page);
-    const bookingPage = await DashboardPage({
-      searchParams: Promise.resolve({ details: 'booking', range: 'today' }),
-    });
-    const bookingMarkup = renderToStaticMarkup(bookingPage);
-
-    expect(markup).toContain('<span>Gross</span><strong>300.000 VND</strong>');
-    expect(bookingMarkup).toContain('<span>Refund evidence</span><strong>42</strong>');
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/earnings/summary?range=today', null);
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/refunds/summary?range=today', null);
+    expect(markup).toContain('<h2 id="dashboard-money-status-title">Money status</h2>');
+    expect(markup).toContain('Finance work is prioritized in Next action and Open queues above.');
+    expect(mockedAdminGet).toHaveBeenCalledTimes(1);
     expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/cash-settlement-summary?range=today',
+      '/admin/dashboard/start-shift-summary?dateRange=today',
       null,
+      expect.objectContaining({ freshness: 'aggregate' }),
     );
   });
 
@@ -299,9 +491,10 @@ describe('DashboardPage', () => {
     expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('<h3>Dashboard data</h3>');
     expect(markup).toContain('Data unavailable');
-    expect(markup).toContain('<span>Ready Partners</span><strong>Unavailable</strong>');
-    expect(markup).not.toContain('<span>Ready Partners</span><strong>0</strong>');
-    expect(hrefs).toContain('/admin/dashboard/summary?dateRange=today');
+    expect(markup).toContain('<span>Customer matching wait</span><strong>Unavailable</strong>');
+    expect(markup).toContain('<span>Unassigned</span><strong>Unavailable</strong>');
+    expect(markup).not.toContain('Current clear');
+    expect(hrefs).toEqual(['/admin/dashboard/start-shift-summary?dateRange=today']);
     expect(hrefs).not.toContain('/admin/users');
     expect(hrefs).not.toContain('/admin/partners?view=list');
     expect(hrefs).not.toContain('/admin/app-sessions?role=PROVIDER&take=5');
@@ -324,8 +517,190 @@ describe('DashboardPage', () => {
     const markup = renderToStaticMarkup(page);
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
-    expect(markup).toContain('<h2 id="dashboard-live-now-title">Live now</h2>');
+    expect(markup).toContain('<h2 id="dashboard-needs-action-now-title">Next action</h2>');
+    const liveSection = markup.slice(
+      markup.indexOf('id="dashboard-needs-action-now"'),
+      markup.indexOf('id="dashboard-open-queues"'),
+    );
+    const resultSection = markup.slice(
+      markup.indexOf('id="dashboard-today-result"'),
+      markup.indexOf('id="dashboard-performance-leaders"'),
+    );
+    expect(liveSection).toContain('Current live operations');
+    expect(liveSection).not.toContain('Operational events');
+    expect(resultSection).toContain('Operational events');
+    expect(resultSection).toContain('Period event totals');
+    expect(markup).toContain('Operational events');
+    expect(markup).toContain('Period event totals');
+    expect(markup).not.toContain('Request-to-completion');
+    expect(markup).toContain('Money flow');
+    expect(markup).toContain('Customer activity');
+    expect(markup).toContain('Open queues');
+    expect(markup).not.toContain('Finance review ownership');
+    expect(markup).not.toContain('Finance review queues clear');
+    expect(markup).toContain('<h3>Payment holds</h3>');
+    expect(markup).toContain('<strong class="ops-task-card-value">2 cases</strong>');
+    expect(markup).toContain('750.000 VND authorized');
+    expect(markup).toContain('<dt>Team</dt><dd>Finance</dd>');
+    expect(markup).toContain('<dt>Impact</dt><dd>750.000 VND authorized</dd>');
+    expect(markup).toContain('Historical backlog (24h+)');
+    expect(markup).toContain('2 cases');
+    expect(markup).toContain('Booking booking-...');
+    expect(markup).toContain('href="/bookings/booking-payment-hold-1"');
+    expect(markup).toContain(
+      'href="/payments?range=all&amp;review=authorized&amp;sort=oldest&amp;sla=critical"',
+    );
+    expect(markup).not.toContain('<h3>Notification failures</h3>');
+    expect(markup).not.toContain('operating queues clear');
+    expect(markup).toContain('Review payment holds');
+    expect(markup).not.toContain('Resolve overdue');
+    expect(markup).not.toContain('Open top priority');
+    expect(markup).toContain('Oldest');
     expect(hrefs).toEqual(['/admin/dashboard/start-shift-summary?dateRange=today']);
+  });
+
+  it('opens owner and SLA-filtered Finance review queues from the global command flow', async () => {
+    const aggregate = startShiftSummaryFixture();
+    aggregate.financeReviewWorkload.bankReconciliation = {
+      currency: 'VND',
+      openAmount: 800_000,
+      openCount: 2,
+      owners: [],
+      unassigned: {
+        oldestOccurredAt: '2026-07-20T00:00:00.000Z',
+        openAmount: 800_000,
+        openCount: 2,
+        over48hAmount: 800_000,
+        over48hCount: 2,
+      },
+    };
+    aggregate.financeReviewWorkload.companyBankAccounts = {
+      oldestRequestedAt: '2026-07-19T00:00:00.000Z',
+      over48hCount: 1,
+      pendingCount: 1,
+    };
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href === '/admin/dashboard/start-shift-summary?dateRange=today' ? aggregate : fallback,
+    );
+
+    const page = await DashboardPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+    const commandSection = markup.slice(
+      markup.indexOf('id="dashboard-needs-action-now"'),
+      markup.indexOf('id="dashboard-money-status"'),
+    );
+    const nextActionSection = commandSection.slice(0, commandSection.indexOf('id="dashboard-open-queues"'));
+
+    expect(nextActionSection).toContain('<h3>Bank account approvals</h3>');
+    expect(nextActionSection).toContain('href="/finance-tax/approval-queue?view=bank-accounts"');
+    expect(nextActionSection.match(/Review oldest bank account approvals/g)).toHaveLength(1);
+    expect(commandSection).toContain('<h3>Bank reconciliation</h3>');
+    expect(commandSection).toContain('<h3>Bank account approvals</h3>');
+    expect(commandSection).toContain('1 bank account change request await independent Finance approval.');
+    expect(commandSection).toContain('<dt>Assignee</dt><dd>Unassigned</dd>');
+    expect(commandSection).toContain('Unassigned 2');
+    expect(commandSection).toContain('48h+ 2');
+    expect(commandSection).toContain(
+      'href="/finance-tax/bank-reconciliation?range=all&amp;review=unmatched&amp;age=48h"',
+    );
+    expect(commandSection).toContain(
+      'href="/finance-tax/bank-reconciliation?range=all&amp;review=unmatched&amp;owner=unassigned"',
+    );
+    expect(commandSection).toContain('href="/finance-tax/approval-queue?view=bank-accounts"');
+    expect(markup).toContain('3 overdue · 2 unassigned · 2 backlog · 1.550.000 VND exposed');
+  });
+
+  it('does not repeat Needs action queues in Additional work', async () => {
+    const aggregate = startShiftSummaryFixture();
+    aggregate.analytics!.needsAction = aggregate.analytics!.needsAction.map((item) =>
+      item.key === 'partner-approvals'
+        ? { ...item, count: 3, oldestAt: aggregate.generatedAt }
+        : item.key === 'notification-failures'
+          ? { ...item, count: 5, oldestAt: aggregate.generatedAt }
+          : item,
+    );
+    aggregate.operations!.partnerSupply.approvalPending = 3;
+    aggregate.notifications = { ...aggregate.notifications!, failed: 5 };
+    mockedApiGet.mockResolvedValue({
+      checks: [],
+      ok: true,
+      timestamp: aggregate.generatedAt,
+    } as AdminExternalReadiness);
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href === '/admin/dashboard/start-shift-summary?dateRange=today' ? aggregate : fallback,
+    );
+
+    const page = await DashboardPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+    const commandSection = markup.slice(
+      markup.indexOf('id="dashboard-needs-action-now"'),
+      markup.indexOf('id="dashboard-historical-backlog"'),
+    );
+    const additionalSection = markup.slice(
+      markup.indexOf('id="dashboard-today-work"'),
+      markup.indexOf('id="dashboard-today-result"'),
+    );
+
+    expect(commandSection).toContain('<h3>Partner approvals</h3>');
+    expect(commandSection).toContain('<h3>Notification failures</h3>');
+    expect(additionalSection).not.toContain('Partner approvals');
+    expect(additionalSection).not.toContain('Failed notifications');
+  });
+
+  it('uses the factual Partner approval queue instead of subtracting every non-Level-2 Partner', () => {
+    expect(dashboardSource).toContain('partnerSupply.approvalPending');
+    expect(dashboardSource).toContain('/partners?review=approval-pending&sort=oldest');
+    expect(dashboardSource).not.toContain('partnerSupply.total - partnerSupply.level2Active');
+    expect(dashboardSource).not.toContain("label: 'Level 2 review'");
+  });
+
+  it('shows one global next action, then the remaining open queues and historical backlog', async () => {
+    const aggregate = startShiftSummaryFixture();
+    aggregate.analytics!.needsAction = aggregate.analytics!.needsAction.map((item, index) => ({
+      ...item,
+      count: index + 1,
+      oldestAt:
+        item.key === 'partner-approvals'
+          ? '2026-07-15T00:00:00.000Z'
+          : item.key === 'payment-holds'
+            ? '2026-07-19T04:30:00.000Z'
+            : null,
+      overdueCount: item.key === 'partner-approvals' || item.key === 'payment-holds' ? index + 1 : 0,
+    }));
+    mockedApiGet.mockResolvedValue({
+      checks: [],
+      ok: true,
+      timestamp: aggregate.generatedAt,
+    } as AdminExternalReadiness);
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href === '/admin/dashboard/start-shift-summary?dateRange=today' ? aggregate : fallback,
+    );
+
+    const page = await DashboardPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Next action');
+    expect(markup).toContain('Open queues');
+    expect(markup).toContain('Overdue operational');
+    expect(markup).toContain('Current operational');
+    expect(markup).toContain('Historical backlog');
+    expect(markup).toContain('start-shift-action-item ops-task-pending');
+    expect(markup).toContain('start-shift-action-item ops-task-blocked');
+    expect(markup).toContain(
+      'href="/partners?review=approval-pending&amp;sort=oldest&amp;sla=overdue-under-24h"',
+    );
+    expect(markup).toContain(
+      'href="/payments?range=all&amp;review=authorized&amp;sort=oldest&amp;sla=critical"',
+    );
+    expect(markup).toContain('5 cases');
+    expect(markup).toContain('1 case');
+    expect(markup).not.toContain('Clear queues');
+    expect(markup.indexOf('id="dashboard-needs-action-now"')).toBeLessThan(
+      markup.indexOf('id="dashboard-open-queues"'),
+    );
+    expect(markup.indexOf('id="dashboard-open-queues"')).toBeLessThan(
+      markup.indexOf('id="dashboard-historical-backlog"'),
+    );
   });
 
   it('uses payout batch summary for default dashboard payout counters', async () => {
@@ -348,21 +723,20 @@ describe('DashboardPage', () => {
       ok: true,
       timestamp: '2026-06-28T00:00:00.000Z',
     } as AdminExternalReadiness);
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/payout-batches/summary?range=today') {
-        return payoutSummary;
-      }
-      return fallback;
-    });
+    const aggregate = startShiftSummaryFixture();
+    aggregate.payoutBatches = payoutSummary;
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href === '/admin/dashboard/start-shift-summary?dateRange=today' ? aggregate : fallback,
+    );
 
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('<span>Payout waiting</span><strong>7</strong>');
     expect(markup).toContain('<h2 id="dashboard-money-status-title">Money status</h2>');
-    expect(markup).toContain('Data unavailable');
+    expect(markup).toContain('Use the prioritized finance queues');
+    expect(mockedAdminGet).toHaveBeenCalledTimes(1);
   });
 
   it('uses notification summary for default dashboard failed notification counters', async () => {
@@ -388,6 +762,7 @@ describe('DashboardPage', () => {
         firstRevenue: 1,
         kycApproved: 1,
         level2Active: 1,
+        approvalPending: 0,
         liveSessions: 1,
         noLocation: 0,
         offline: 0,
@@ -413,28 +788,26 @@ describe('DashboardPage', () => {
       ok: true,
       timestamp: '2026-06-28T00:00:00.000Z',
     } as AdminExternalReadiness);
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/dashboard/summary?dateRange=today') {
-        return dashboardSummary;
-      }
-      if (typeof href === 'string' && href.startsWith('/admin/notifications/summary?')) {
-        return notificationSummary;
-      }
-      return fallback;
-    });
+    const aggregate = startShiftSummaryFixture();
+    aggregate.operations = dashboardSummary;
+    aggregate.notifications = notificationSummary;
+    aggregate.analytics!.needsAction = aggregate.analytics!.needsAction.map((item) =>
+      item.key === 'notification-failures' ? { ...item, count: 19 } : item,
+    );
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href === '/admin/dashboard/start-shift-summary?dateRange=today' ? aggregate : fallback,
+    );
 
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(mockedAdminGet).toHaveBeenCalledWith(
-      expect.stringMatching(/^\/admin\/notifications\/summary\?/),
-      null,
-    );
-    expect(markup).toContain('<h3>Notifications</h3><strong class="ops-task-card-value">19 failed</strong>');
-    expect(markup).toContain('Data unavailable');
-    expect(markup).toContain('href="/notifications?review=failed"');
+    expect(mockedAdminGet).toHaveBeenCalledTimes(1);
+    expect(markup).toContain('<h3>Notification failures</h3>');
+    expect(markup).toContain('<strong class="ops-task-card-value">19 cases</strong>');
+    expect(markup).toContain('Repair the destination device or retry unresolved delivery failures.');
+    expect(markup).toContain('href="/notifications?range=all&amp;review=unresolved-failed');
   });
 
   it('routes unavailable Partner supply to the Partner Overview availability queue', async () => {
@@ -479,6 +852,7 @@ describe('DashboardPage', () => {
         firstRevenue: 1,
         kycApproved: 3,
         level2Active: 3,
+        approvalPending: 0,
         liveSessions: 0,
         noLocation: 0,
         offline: 3,
@@ -499,12 +873,12 @@ describe('DashboardPage', () => {
       ok: true,
       timestamp: '2026-06-28T00:00:00.000Z',
     } as AdminExternalReadiness);
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/dashboard/summary?dateRange=today') {
-        return dashboardSummary;
-      }
-      return fallback;
-    });
+    const aggregate = startShiftSummaryFixture();
+    aggregate.operations = dashboardSummary;
+    aggregate.analytics = null;
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href === '/admin/dashboard/start-shift-summary?dateRange=today' ? aggregate : fallback,
+    );
 
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
@@ -515,12 +889,11 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       'href="/partners/overview?range=7d&amp;selectionIssue=availability&amp;selectionSort=response"',
     );
-    expect(markup).toContain('<span>Waiting for Partner</span><strong>12</strong>');
-    expect(markup).toContain('<span>Customer choice</span><strong>5</strong>');
+    expect(markup).toContain('<span>Customer matching wait</span><strong>12</strong>');
     expect(markup).toContain('<span>In service</span><strong>3</strong>');
-    expect(markup).toContain('<span>Booking requests</span><strong>25</strong>');
-    expect(markup).toContain('<span>Completed</span><strong>8</strong>');
-    expect(markup).toContain('<span class="metric-card-scope is-risk">Stale</span>');
+    expect(markup).toContain('Analytics unavailable');
+    expect(markup).not.toContain('<span>Booking requests</span><strong>25</strong>');
+    expect(markup).toContain('<span class="pill pill-warn">Stale</span>');
   });
 
   it('marks stale Partner supply as a refresh lane instead of available', async () => {
@@ -546,6 +919,7 @@ describe('DashboardPage', () => {
         firstRevenue: 10,
         kycApproved: 10,
         level2Active: 10,
+        approvalPending: 0,
         liveSessions: 10,
         noLocation: 1,
         offline: 0,
@@ -566,12 +940,12 @@ describe('DashboardPage', () => {
       ok: true,
       timestamp: '2026-06-28T00:00:00.000Z',
     } as AdminExternalReadiness);
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/dashboard/summary?dateRange=today') {
-        return dashboardSummary;
-      }
-      return fallback;
-    });
+    const aggregate = startShiftSummaryFixture();
+    aggregate.operations = dashboardSummary;
+    aggregate.analytics = null;
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href === '/admin/dashboard/start-shift-summary?dateRange=today' ? aggregate : fallback,
+    );
 
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
@@ -580,21 +954,26 @@ describe('DashboardPage', () => {
 
     expect(markup).toContain('<h3>Partner supply</h3>');
     expect(markup).toContain('<span class="pill pill-warn">Refresh</span>');
-    expect(markup).toContain('href="/partners?review=location"');
-    expect(markup).not.toContain('3 location pin(s) need refresh before dispatch.');
+    expect(markup).toContain('href="/partners?review=available-blocked-location"');
+    expect(markup).toContain('3 location pins need refresh before dispatch.');
   });
 
   it('uses payment summary for default dashboard payment hold counters', async () => {
     const paymentSummary: AdminPaymentSummary = {
+      activeCashCollection: 0,
       authorized: 13,
       callbackReview: 0,
       callbackVerified: 0,
+      captureReady: 0,
       captured: 0,
       cashDebt: 0,
+      evidenceConflicts: 0,
       linkedRefunds: 0,
       needsAction: 13,
       pendingCash: 0,
+      releaseRecommended: 0,
       refunded: 0,
+      staleMismatch: 0,
       totalCount: 30,
     };
 
@@ -603,20 +982,19 @@ describe('DashboardPage', () => {
       ok: true,
       timestamp: '2026-06-28T00:00:00.000Z',
     } as AdminExternalReadiness);
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/payments/summary?range=today') {
-        return paymentSummary;
-      }
-      return fallback;
-    });
+    const aggregate = startShiftSummaryFixture();
+    aggregate.payments = paymentSummary;
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href === '/admin/dashboard/start-shift-summary?dateRange=today' ? aggregate : fallback,
+    );
 
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/payments/summary?range=today', null);
-    expect(markup).toContain('<span>Payment holds</span><strong>13</strong>');
+    expect(mockedAdminGet).toHaveBeenCalledTimes(1);
+    expect(markup).toContain('Payment holds');
   });
 
   it('renders exact database action queues when bounded booking samples are empty', async () => {
@@ -651,6 +1029,7 @@ describe('DashboardPage', () => {
         firstRevenue: 0,
         kycApproved: 0,
         level2Active: 0,
+        approvalPending: 0,
         liveSessions: 0,
         noLocation: 0,
         offline: 0,
@@ -671,12 +1050,12 @@ describe('DashboardPage', () => {
       ok: true,
       timestamp: new Date().toISOString(),
     } as AdminExternalReadiness);
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/dashboard/summary?dateRange=today') {
-        return dashboardSummary;
-      }
-      return fallback;
-    });
+    const aggregate = startShiftSummaryFixture();
+    aggregate.operations = dashboardSummary;
+    aggregate.analytics = null;
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href === '/admin/dashboard/start-shift-summary?dateRange=today' ? aggregate : fallback,
+    );
 
     const page = await DashboardPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
@@ -685,14 +1064,17 @@ describe('DashboardPage', () => {
     expect(markup).toContain('<strong class="ops-task-card-value">5 expired / 7 no Partner</strong>');
     expect(markup).toContain('href="/bookings?view=attention"');
     expect(markup).toContain('<h3>Customer choice</h3>');
-    expect(markup).toContain('<strong class="ops-task-card-value">3 booking(s)</strong>');
+    expect(markup).toContain('<strong class="ops-task-card-value">3 bookings</strong>');
     expect(markup).toContain('href="/bookings?view=customer-choice"');
     expect(markup).toContain('<h3>Completed closeout</h3>');
     expect(markup).toContain('<strong class="ops-task-card-value">2 hold / 3 recent</strong>');
     expect(markup).toContain('href="/bookings?view=closeout"');
-    expect(markup).toContain('<span>Settlement gaps</span><strong>4</strong>');
     expect(markup).toContain('<h2 id="dashboard-money-status-title">Money status</h2>');
-    expect(markup).toContain('<span>Settlement backlog</span><strong>1</strong>');
+    const additionalWorkSection = markup.slice(
+      markup.indexOf('id="dashboard-today-work"'),
+      markup.indexOf('id="dashboard-today-result"'),
+    );
+    expect(additionalWorkSection).not.toContain('Settlement backlog');
   });
 
   it('renders primary command panels with the shared Vuexy admin section shell', async () => {
@@ -708,47 +1090,37 @@ describe('DashboardPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('<h1>Start Shift</h1>');
+    expect(markup).toContain('<h1>Shift Command</h1>');
+    expect(markup).toContain('aria-label="Shift context"');
+    expect(markup).toContain('Today so far');
+    expect(markup).toContain('Open handoff');
+    expect(markup).not.toContain('href="/?range=all"');
     expect(markup).not.toContain('Live start-of-shift workspace');
     expect(markup).not.toContain('Current priorities, live service, money risk');
     expect(markup).not.toContain('<h1>HANDS Operations</h1>');
     expect(markup).not.toContain('Daily command center');
-    expect(markup).toContain('href="/notifications"');
+    expect(markup).not.toContain('More actions');
     expect(markup).not.toContain('href="/partner-controls"');
     expect(markup).not.toContain('href="/tax-policy"');
     expect(markup).not.toContain('href="/audit-log"');
-    expect(markup).toContain('Operations History');
     expect(markup).toContain('href="/operations-handoff"');
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-needs-action-now"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-needs-action-now-title">Needs action now</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-live-now"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-live-now-title">Live now</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-money-status"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-money-status-title">Money status</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-today-work"',
-    );
-    expect(markup).toContain('<h2 id="dashboard-today-work-title">Today work</h2>');
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-today-result"',
-    );
+    expect(markup).toContain('class="card admin-section admin-mt-20" id="dashboard-needs-action-now"');
+    expect(markup).toContain('<h2 id="dashboard-needs-action-now-title">Next action</h2>');
+    expect(markup).toContain('class="admin-form-control-link button button-primary"');
+    expect(markup).toContain('class="card admin-section admin-mt-20" id="dashboard-open-queues"');
+    expect(markup).toContain('<h2 id="dashboard-open-queues-title">Open queues</h2>');
+    expect(markup).toContain('class="card admin-section admin-mt-20" id="dashboard-money-status"');
+    expect(markup).toContain('<h2 id="dashboard-money-status-title">Money status</h2>');
+    expect(markup).toContain('No money queue needs action.');
+    expect(markup).not.toContain('<h3>Available payout</h3>');
+    expect(markup).toContain('class="card admin-section admin-mt-20" id="dashboard-today-work"');
+    expect(markup).toContain('<h2 id="dashboard-today-work-title">Additional work</h2>');
+    expect(markup).toContain('class="card admin-section admin-mt-20" id="dashboard-today-result"');
     expect(markup).toContain('<h2 id="dashboard-today-result-title">Today result</h2>');
     expect(markup.indexOf('id="dashboard-needs-action-now"')).toBeLessThan(
-      markup.indexOf('id="dashboard-live-now"'),
+      markup.indexOf('id="dashboard-open-queues"'),
     );
-    expect(markup.indexOf('id="dashboard-live-now"')).toBeLessThan(
+    expect(markup.indexOf('id="dashboard-open-queues"')).toBeLessThan(
       markup.indexOf('id="dashboard-money-status"'),
     );
     expect(markup.indexOf('id="dashboard-money-status"')).toBeLessThan(
@@ -768,15 +1140,11 @@ describe('DashboardPage', () => {
     expect(markup).not.toContain('id="dashboard-date-range"');
     expect(markup).not.toContain('operating handoff');
     expect(markup).not.toContain('finance handoff');
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20 start-shift-diagnostics-entry" id="dashboard-on-demand-detail"',
-    );
-    expect(markup).toContain('<h2 id="dashboard-on-demand-detail-title">Diagnostics</h2>');
-    expect(markup).toContain('href="/?details=booking"');
-    expect(markup).toContain('href="/?details=operations"');
-    expect(markup).toContain('Booking records');
-    expect(markup).toContain('Partner records');
-    expect(markup).toContain('Finance records');
+    expect(markup).not.toContain('id="dashboard-performance-leaders"');
+    expect(markup).not.toContain('id="dashboard-demand-supply"');
+    expect(markup).not.toContain('id="dashboard-on-demand-detail"');
+    expect(markup).not.toContain('href="/?details=booking"');
+    expect(markup).not.toContain('href="/?details=operations"');
     expect(markup).not.toContain('Detailed dashboard loaded on demand');
     expect(markup).not.toContain('API source:');
     expect(markup).not.toContain('setup readiness');
@@ -827,8 +1195,12 @@ describe('DashboardPage', () => {
     expect(dashboardSource).not.toContain('className="ops-task-note"\n                  framed');
     expect(dashboardSource).not.toContain('<strong>No same-shift queue item is visible.</strong>');
     expect(dashboardSource).not.toContain('<strong>No Partner blocker is currently visible.</strong>');
-    expect(dashboardSource).not.toContain('<p className="muted">No open matching booking is waiting right now.</p>');
-    expect(dashboardSource).not.toContain('<p className="muted">No policy setting was changed in the last 7 days.</p>');
+    expect(dashboardSource).not.toContain(
+      '<p className="muted">No open matching booking is waiting right now.</p>',
+    );
+    expect(dashboardSource).not.toContain(
+      '<p className="muted">No policy setting was changed in the last 7 days.</p>',
+    );
     expect(dashboardSource).not.toContain('<p className="muted">No service demand loaded yet.</p>');
     expect(dashboardSource).not.toContain('<p className="muted">No payment method data loaded yet.</p>');
     expect(dashboardSource).not.toContain('<p className="muted">No booking address data loaded yet.</p>');
@@ -840,15 +1212,13 @@ describe('DashboardPage', () => {
   it('uses shared Vuexy status badge atoms instead of raw dashboard pill markup', () => {
     expect(dashboardSource).toContain("from '../components/status-badge'");
     expect(dashboardSource).toContain('AdminFilterChipGroup');
-    expect(dashboardSource).toContain('AdminSectionHeader');
+    expect(dashboardSource).not.toContain('AdminSectionHeader');
     expect(dashboardSource).toContain('StatusBadge');
     expect(dashboardSource).toContain('StatusBadgeFromPillClass');
-    expect(dashboardSource).toContain('StatusBadgeLinkFromPillClass');
     expect(dashboardSource).not.toContain('statusBadgeToneFromPillClass');
     expect(dashboardSource).not.toContain('PillClassBadge');
     expect(dashboardSource).not.toContain('function DashboardStatusBadge');
     expect(dashboardSource).not.toContain('function DashboardStatusBadgeLink');
-    expect(dashboardSource).toContain('AdminSignal');
     expect(dashboardSource).toContain('StatusBadgeLink');
     expect(dashboardSource).not.toContain('<span className="pill');
     expect(dashboardSource).not.toContain('<span className={`pill');
@@ -872,10 +1242,9 @@ describe('DashboardPage', () => {
 
   it('uses shared Vuexy task card surfaces instead of raw dashboard ops task card markup', () => {
     expect(dashboardSource).toContain('AdminActionCard');
-    expect(dashboardSource).toContain('AdminTaskBreakdown');
-    expect(dashboardSource).toContain('AdminTaskCard');
     expect(dashboardSource).toContain('AdminTaskGrid');
-    expect(dashboardSource).toContain('AdminNotePanel');
+    expect(dashboardSource).not.toContain('StartShiftClearQueues');
+    expect(dashboardSource).toContain('AdminDisclosure');
     expect(dashboardSource).not.toContain('<div className="ops-task-breakdown">');
     expect(dashboardSource).not.toContain('<div className="ops-task-grid">');
     expect(dashboardSource).not.toContain('<div className="ops-task-grid admin-grid-single admin-mt-12">');
@@ -894,13 +1263,20 @@ describe('DashboardPage', () => {
     expect(globalCss).not.toContain('.dashboard-page .ops-section-header > div');
   });
 
-  it('uses the shared detail grid surface for dashboard multi-panel groups', () => {
-    expect(dashboardSource).toContain('AdminDetailGrid');
+  it('stacks Start Shift action evidence before the 1024px desktop boundary collapses', () => {
+    expect(globalCss).toContain('@media (max-width: 1100px) {');
+    expect(globalCss).toContain('.dashboard-page .start-shift-action-item > .admin-queue-meta {');
+    expect(globalCss).toContain('grid-column: 1 / -1;');
+    expect(globalCss).toContain('.dashboard-page .start-shift-action-item > :is(a, small):last-child {');
+  });
+
+  it('does not restore retired diagnostic detail grids to Start Shift', () => {
+    expect(dashboardSource).not.toContain('AdminDetailGrid');
     expect(dashboardSource).not.toContain('<section className="detail-grid');
     expect(dashboardSource).not.toContain('<div className="detail-grid');
   });
 
-  it('renders full dashboard briefing panels with the shared Vuexy admin section shell', async () => {
+  it('ignores retired diagnostic query modes and keeps Start Shift on the operator summary', async () => {
     mockedApiGet.mockResolvedValue({
       checks: [],
       ok: true,
@@ -908,133 +1284,27 @@ describe('DashboardPage', () => {
     } as AdminExternalReadiness);
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
 
-    const bookingPage = await DashboardPage({
-      searchParams: Promise.resolve({ details: 'booking' }),
-    });
-    const bookingMarkup = renderToStaticMarkup(bookingPage);
-    const livePage = await DashboardPage({
-      searchParams: Promise.resolve({ details: 'operations' }),
-    });
-    const analysisPage = await DashboardPage({
+    const page = await DashboardPage({
       searchParams: Promise.resolve({ details: 'operations', operations: 'analysis' }),
     });
-    const partnerPage = await DashboardPage({
-      searchParams: Promise.resolve({ details: 'operations', operations: 'partner' }),
-    });
-    const closeoutPage = await DashboardPage({
-      searchParams: Promise.resolve({ details: 'operations', operations: 'closeout' }),
-    });
-    const liveMarkup = renderToStaticMarkup(livePage);
-    const analysisMarkup = renderToStaticMarkup(analysisPage);
-    const partnerMarkup = renderToStaticMarkup(partnerPage);
-    const closeoutMarkup = renderToStaticMarkup(closeoutPage);
+    const markup = renderToStaticMarkup(page);
 
-    expect(bookingMarkup).toContain(
-      'aria-label="Booking diagnostics" class="card admin-card admin-disclosure start-shift-diagnostics" id="dashboard-booking-diagnostics"',
+    expect(markup).toContain('<h1>Shift Command</h1>');
+    expect(markup).toContain('id="dashboard-needs-action-now"');
+    expect(markup).toContain('id="dashboard-open-queues"');
+    expect(markup).not.toContain('id="dashboard-booking-diagnostics"');
+    expect(markup).not.toContain('id="dashboard-full-diagnostics"');
+    expect(mockedAdminGet).not.toHaveBeenCalledWith(
+      expect.stringContaining('/admin/operational-policy'),
+      expect.anything(),
     );
-    expect(bookingMarkup).toContain('<strong>Booking diagnostics</strong>');
-    expect(liveMarkup).toContain(
-      'aria-label="Full operating diagnostics" class="card admin-card admin-disclosure start-shift-diagnostics" id="dashboard-full-diagnostics"',
-    );
-    expect(liveMarkup).toContain('<strong>Full diagnostics</strong>');
-    expect(bookingMarkup).not.toContain('id="dashboard-booking-diagnostics" open=""');
-    expect(liveMarkup).not.toContain('id="dashboard-full-diagnostics" open=""');
-    expect(bookingMarkup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-booking-participant-flow"',
-    );
-    expect(bookingMarkup).toContain(
-      '<h2 id="dashboard-booking-participant-flow-title">Dispatch evidence map</h2>',
-    );
-    expect(bookingMarkup).toContain('Read this as one dispatch evidence group');
-    expect(bookingMarkup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-evidence-drilldown"',
-    );
-    expect(bookingMarkup).toContain(
-      '<h2 id="dashboard-evidence-drilldown-title">Retained evidence signals</h2>',
-    );
-    expect(bookingMarkup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-booking-evidence-command-queue"',
-    );
-    expect(bookingMarkup).toContain(
-      '<h2 id="dashboard-booking-evidence-command-queue-title">Evidence queue shortcuts</h2>',
-    );
-    expect(liveMarkup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-full-detail-review-order"',
-    );
-    expect(liveMarkup).toContain(
-      '<h2 id="dashboard-full-detail-review-order-title">Operations diagnostics workspace</h2>',
-    );
-    expect(liveMarkup).toContain(
-      'aria-current="page" class="admin-form-control-link button button-secondary" href="/?details=operations"',
-    );
-    expect(liveMarkup).toContain('href="/?details=operations&amp;operations=analysis"');
-    expect(liveMarkup).toContain('href="/?details=operations&amp;operations=partner"');
-    expect(liveMarkup).toContain('href="/?details=operations&amp;operations=closeout"');
-
-    for (const sectionId of [
-      'dashboard-live-operations-radar',
-      'dashboard-shift-command-briefing',
-      'dashboard-opening-shift-checklist',
-      'dashboard-matching-control-room',
-    ]) {
-      expect(liveMarkup).toContain(`id="${sectionId}"`);
-    }
-    for (const sectionId of [
-      'dashboard-policy-outcome-pulse',
-      'dashboard-booking-attention-cockpit',
-      'dashboard-partner-supply-status',
-      'dashboard-today-command-lanes',
-    ]) {
-      expect(liveMarkup).not.toContain(`id="${sectionId}"`);
-    }
-
-    for (const sectionId of [
-      'dashboard-policy-outcome-pulse',
-      'dashboard-operations-policy-status',
-      'dashboard-booking-attention-cockpit',
-      'dashboard-service-payment-mix',
-      'dashboard-booking-status-control',
-      'dashboard-customer-app-presence',
-      'dashboard-hourly-booking-demand',
-      'dashboard-regional-booking-demand',
-    ]) {
-      expect(analysisMarkup).toContain(`id="${sectionId}"`);
-    }
-    expect(analysisMarkup).not.toContain('id="dashboard-live-operations-radar"');
-    expect(analysisMarkup).not.toContain('id="dashboard-partner-supply-status"');
-    expect(analysisMarkup).not.toContain('id="dashboard-finance-closeout-status"');
-
-    for (const sectionId of [
-      'dashboard-partner-supply-status',
-      'dashboard-partner-approval-funnel',
-      'dashboard-partner-dispatch-control',
-      'dashboard-marketplace-unblock-quick-order',
-    ]) {
-      expect(partnerMarkup).toContain(`id="${sectionId}"`);
-    }
-    expect(partnerMarkup).not.toContain('id="dashboard-live-operations-radar"');
-    expect(partnerMarkup).not.toContain('id="dashboard-hourly-booking-demand"');
-    expect(partnerMarkup).not.toContain('id="dashboard-finance-closeout-status"');
-
-    for (const sectionId of [
-      'dashboard-today-command-lanes',
-      'dashboard-operations-checklist-queue',
-      'dashboard-finance-closeout-status',
-    ]) {
-      expect(closeoutMarkup).toContain(`id="${sectionId}"`);
-    }
-    expect(closeoutMarkup).not.toContain('id="dashboard-live-operations-radar"');
-    expect(closeoutMarkup).not.toContain('id="dashboard-policy-outcome-pulse"');
-    expect(closeoutMarkup).not.toContain('id="dashboard-partner-supply-status"');
-
-    expect(liveMarkup).not.toContain('dashboard-external-setup-readiness');
-    expect(liveMarkup).not.toContain('External setup readiness');
-    expect(liveMarkup).not.toContain('dashboard-realtime-flow-health');
-    expect(liveMarkup).not.toContain('Realtime flow health');
-    expect(liveMarkup).not.toContain('Generated from the latest admin API snapshot');
-    expect(liveMarkup).not.toContain('API source:');
-    expect(liveMarkup.indexOf('id="dashboard-full-detail-review-order"')).toBeLessThan(
-      liveMarkup.indexOf('id="dashboard-live-operations-radar"'),
+    expect(mockedAdminGet).not.toHaveBeenCalledWith(
+      expect.stringContaining('/admin/app-sessions'),
+      expect.anything(),
     );
   });
 });
+
+vi.mock('../components/start-shift-refresh-button', () => ({
+  StartShiftRefreshButton: () => <button type="button">Refresh</button>,
+}));

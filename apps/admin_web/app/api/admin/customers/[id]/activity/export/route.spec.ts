@@ -75,7 +75,9 @@ describe('customer activity export route', () => {
     } as unknown as AdminCustomerDetail);
 
     const response = await GET(
-      new NextRequest('http://localhost/api/admin/customers/customer-1/activity/export?range=7d&type=BOOKING'),
+      new NextRequest(
+        'http://localhost/api/admin/customers/customer-1/activity/export?from=2026-07-01&to=2026-07-31&type=booking_work',
+      ),
       { params: Promise.resolve({ id: 'customer-1' }) },
     );
     const body = await response.text();

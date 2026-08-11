@@ -59,6 +59,7 @@ describe('payment fees export route', () => {
           customerPaymentAmountTotal: 1000,
           paymentMethod: 'CARD',
           paymentProcessingFeeTotal: 30,
+          reversalCount: 1,
           settlementCount: 1,
           evidenceReviewCount: 1,
           evidenceCustomerPaymentAmountTotal: 1000,
@@ -82,6 +83,7 @@ describe('payment fees export route', () => {
         expectedFeeTotal: null,
         delta: null,
       },
+      reversalCount: 1,
       settlementCount: 1,
     });
 
@@ -95,6 +97,7 @@ describe('payment fees export route', () => {
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(response.headers.get('content-disposition')).toContain('hands-payment-fees-2026-06.csv');
     expect(body).toContain('"method_breakdown"');
+    expect(body).toContain('"reversal_count"');
     expect(body).toContain('"CARD"');
     expect(body).not.toContain('data:text/csv');
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/payment-fees/summary?period=2026-06', expect.anything());

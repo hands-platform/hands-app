@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import { normalizedText } from './booking-section-test-utils';
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
+import { bookingCustomDateRangeError } from './booking-date-range-filter';
 
 describe('BookingMonitorFiltersSection', () => {
   const viewOptions = [
@@ -65,16 +66,13 @@ describe('BookingMonitorFiltersSection', () => {
     });
     const rendered = normalizedText(renderToStaticMarkup(section));
 
-    expect(rendered).toContain('Booking workspace filters');
-    expect(rendered).toContain('Current workspace:');
-    expect(rendered).toContain('Active bookings');
-    expect(rendered).toContain('Current active bookings.');
-    expect(rendered).toContain('Showing 3 of 7');
-    expect(rendered).toContain('Queue: Active bookings');
-    expect(rendered).toContain('Period: Last 7 days');
-    expect(rendered).toContain('Showing: 3/7');
-    expect(rendered).toContain('Workspace: Live / Today');
-    expect(rendered).toContain('1 empty lanes hidden');
+    expect(rendered).toContain('Booking queues');
+    expect(rendered).not.toContain('Current workspace:');
+    expect(rendered).toContain('Active bookings 3');
+    expect(rendered).toContain('Start with active bookings.');
+    expect(rendered).not.toContain('View: Active bookings');
+    expect(rendered).not.toContain('Period: Last 7 days');
+    expect(rendered).not.toContain('Total: 7');
     expect(rendered).toContain('Today');
     expect(rendered).toContain('Previous day');
     expect(rendered).toContain('Last 7 days');
@@ -84,25 +82,24 @@ describe('BookingMonitorFiltersSection', () => {
     expect(rendered).not.toContain('All statuses');
     expect(rendered).not.toContain('Payment method');
     expect(rendered).not.toContain('Evidence filter');
-    expect(rendered).not.toContain('Search booking/customer/Partner');
-    expect(rendered).not.toContain('Clear list filters');
-    expect(rendered).toContain('Active bookings · 3');
-    expect(rendered).toContain('Recent records · 7');
-    expect(rendered).toContain('Live / Today');
-    expect(rendered).toContain('3 shown');
-    expect(rendered).toContain('Closeout / Today');
-    expect(rendered).toContain('Closeout ops · 2');
-    expect(rendered).toContain('Cancellation Review');
-    expect(rendered).toContain('Post-match cancellations · 1');
-    expect(rendered).not.toContain('No-show · 0');
-    expect(rendered).toContain('Start with active bookings.');
+    expect(rendered).toContain('Search bookings');
+    expect(rendered).toContain('Booking ID, customer, Partner, or address');
+    expect(rendered).toContain('Requested');
+    expect(rendered).toContain('Active bookings');
+    expect(rendered).toContain('Recent records');
+    expect(rendered).toContain('Additional queues');
+    expect(rendered).not.toContain('shown');
+    expect(rendered).toContain('Closeout ops');
+    expect(rendered).toContain('Post-match cancellations');
+    expect(rendered).not.toContain('No-show');
     expect(renderToStaticMarkup(section)).toContain('aria-current="page"');
-    expect(renderToStaticMarkup(section)).toContain('<fieldset class="booking-monitor-view-category">');
-    expect(renderToStaticMarkup(section)).toContain('<legend class="booking-monitor-view-category-heading">');
+    expect(renderToStaticMarkup(section)).toContain('aria-label="Primary booking queues"');
+    expect(renderToStaticMarkup(section)).toContain('aria-label="Additional booking queues"');
+    expect(renderToStaticMarkup(section)).toContain('<details aria-label="Additional booking queues"');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
-        'booking-date-filter-bar admin-mb-14',
+        'booking-date-filter-bar admin-mt-14',
         'booking-date-filter-buttons',
         'booking-date-filter-button is-active',
       ]),
@@ -130,10 +127,10 @@ describe('BookingMonitorFiltersSection', () => {
       ),
     );
 
-    expect(rendered).toContain('No-show · 0');
-    expect(rendered).toContain('Recent records · 7');
-    expect(rendered).toContain('Cancellation Review');
-    expect(rendered).not.toContain('Post-match cancellations · 0');
+    expect(rendered).toContain('No-show');
+    expect(rendered).toContain('Recent records');
+    expect(rendered).toContain('Additional queues');
+    expect(rendered).not.toContain('Post-match cancellations');
   });
 
   it('renders custom date inputs when the custom list period is selected', () => {
@@ -150,21 +147,141 @@ describe('BookingMonitorFiltersSection', () => {
       onViewChange: vi.fn(),
       view: 'all',
       viewCounts: new Map(),
-      viewOptions,
+      viewOptions: [
+        viewOptions[1],
+        {
+          description: 'Cancelled before matching.',
+          label: 'Pre-match cancelled',
+          operatorHint: 'Review pre-match cancellation records.',
+          view: 'pre-match-cancelled',
+        },
+        {
+          description: 'Preferred Partner rejected.',
+          label: 'Preferred rejected',
+          operatorHint: 'Review preferred rejection records.',
+          view: 'preferred-rejected',
+        },
+        {
+          description: 'Preferred Partner did not respond.',
+          label: 'Preferred no response',
+          operatorHint: 'Review preferred no-response records.',
+          view: 'preferred-no-response',
+        },
+      ],
       visibleBookingCount: 7,
     });
     const markup = renderToStaticMarkup(section);
     const rendered = normalizedText(markup);
 
     expect(rendered).toContain('Custom dates');
-    expect(rendered).toContain('Period: 2026-06-01 to 2026-06-19');
+    expect(rendered).not.toContain('Period: 2026-06-01 to 2026-06-19');
     expect(markup).toContain('name="dateFrom"');
     expect(markup).toContain('name="dateTo"');
     expect(markup).toContain('value="2026-06-01"');
     expect(markup).toContain('value="2026-06-19"');
     expect(rendered).toContain('Apply dates');
     expect(markup).toContain('admin-form-control-button button button-primary booking-date-apply-button');
-    expect(rendered).toContain('Showing 7 of 7');
+    expect(rendered).toContain('All records 0');
+    expect(rendered.indexOf('All records 0')).toBeLessThan(rendered.indexOf('Pre-match cancelled 0'));
+    expect(rendered).toContain(
+      'Historical · 2026-06-01 to 2026-06-19 · 7 records · Audit fixtures excluded',
+    );
+    expect(rendered).toContain('Back to live bookings');
+    expect(rendered).toContain('Report period');
+    expect(rendered).toContain('Order');
+    expect(rendered).not.toContain('Requested');
+  });
+
+  it('validates custom dates and keeps the current query until dates are applied', () => {
+    expect(bookingCustomDateRangeError('', '')).toBe('Choose a valid start date and end date.');
+    expect(bookingCustomDateRangeError('2026-06-02', '2026-06-01')).toBe(
+      'Start date must be on or before end date.',
+    );
+    expect(bookingCustomDateRangeError('2026-01-01', '2026-04-01')).toBe(
+      'Custom date range cannot exceed 90 days.',
+    );
+    expect(bookingCustomDateRangeError('2026-01-01', '2026-03-31')).toBeNull();
+
+    const markup = renderToStaticMarkup(
+      BookingMonitorFiltersSection({
+        activeView: viewOptions[1],
+        baseVisibleBookingCount: 7,
+        customDateError: 'Choose a valid start date and end date.',
+        dateRangeFilter: 'custom',
+        dateRangeFilterOptions: [{ label: 'Custom dates', value: 'custom' }],
+        dateRangeHiddenInputs: [
+          ['view', 'all'],
+          ['q', 'customer'],
+          ['sort', 'oldest'],
+          ['page', '3'],
+        ],
+        onViewChange: vi.fn(),
+        view: 'all',
+        viewCounts: new Map(),
+        viewOptions,
+        visibleBookingCount: 7,
+      }),
+    );
+
+    expect(markup).toContain('aria-describedby="booking-custom-date-error"');
+    expect(markup).toContain('aria-invalid="true"');
+    expect(markup).toContain('aria-label="Start date"');
+    expect(markup).toContain('aria-label="End date"');
+    expect(markup).toContain('role="alert"');
+    expect(markup).toContain('name="view" value="all"');
+    expect(markup).toContain('name="q"');
+    expect(markup).toContain('name="sort" value="oldest"');
+    expect(markup).not.toContain('name="page" value="3"');
+  });
+
+  it('separates completed action queues from history and hides inactive checks', () => {
+    const completedOptions = [
+      ['payment', 'All payment exceptions'],
+      ['cash-debt', 'Cash commission'],
+      ['closeout', 'Closeout records'],
+      ['pricing', 'Pricing'],
+      ['refund-review', 'Refund mismatch'],
+      ['expired', 'Expired records'],
+      ['all', 'Terminal records'],
+    ].map(([view, label]) => ({
+      description: `${label} description`,
+      label,
+      operatorHint: `${label} hint`,
+      view: view as Parameters<typeof BookingMonitorFiltersSection>[0]['view'],
+    }));
+    const rendered = normalizedText(
+      renderToStaticMarkup(
+        BookingMonitorFiltersSection({
+          activeView: completedOptions[0],
+          baseVisibleBookingCount: 5,
+          dateRangeFormAction: '/bookings/completed',
+          onViewChange: vi.fn(),
+          showEmptyViewOptions: true,
+          view: 'payment',
+          viewCounts: new Map([
+            ['payment', 5],
+            ['cash-debt', 1],
+            ['refund-review', 2],
+            ['closeout', 0],
+            ['pricing', 0],
+            ['expired', 3],
+            ['all', 9],
+          ]),
+          viewOptions: completedOptions,
+          visibleBookingCount: 5,
+        }),
+      ),
+    );
+
+    expect(rendered).toContain('Needs action');
+    expect(rendered).toContain('History');
+    expect(rendered).toContain('Show 2 empty checks');
+    expect(rendered).toContain(
+      'Counts overlap: All payment exceptions includes the cash and refund queues.',
+    );
+    expect(rendered.indexOf('Refund mismatch 2')).toBeLessThan(rendered.indexOf('Expired records 3'));
+    expect(rendered.match(/Counts overlap:/g)).toHaveLength(1);
+    expect(rendered).not.toContain('Additional queues');
   });
 
   it('renders only the provided route workspace categories', () => {
@@ -187,8 +304,7 @@ describe('BookingMonitorFiltersSection', () => {
       ),
     );
 
-    expect(rendered).toContain('Closeout / Today');
-    expect(rendered).toContain('Closeout ops · 2');
+    expect(rendered).toContain('Closeout ops');
     expect(rendered).not.toContain('Live / Today');
     expect(rendered).not.toContain('Cancellation Review');
     expect(rendered).not.toContain('Recent records');
@@ -213,18 +329,22 @@ describe('BookingMonitorFiltersSection', () => {
 
     expect(source).not.toContain('<button\n                  key={option.view}');
     expect(source).not.toContain('AdminFilterChipGroup');
-    expect(source).toContain('AdminFilterSummary');
+    expect(source).not.toContain('AdminFilterSummary');
     expect(source).toContain('AdminSegmentedControl');
     expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<section className="booking-monitor-view-category"');
-    expect(source).toContain('<fieldset className="booking-monitor-view-category"');
-    expect(source).toContain('<legend className="booking-monitor-view-category-heading">');
-    expect(markup).toContain('booking-date-filter-buttons booking-monitor-view-options');
+    expect(source).toContain('AdminDisclosure');
+    expect(source).not.toContain('<fieldset className="booking-monitor-view-category"');
+    expect(source).not.toContain('<legend className="booking-monitor-view-category-heading">');
+    expect(markup).toContain(
+      'booking-date-filter-buttons booking-monitor-view-options booking-monitor-primary-queues',
+    );
+    expect(markup).toContain('aria-label="Additional booking queues"');
     expect(markup).toContain('booking-date-filter-button is-active');
     expect(markup).toContain('href="?view=active"');
   });
 
-  it('uses the unique active booking count instead of summing overlapping live queues', () => {
+  it('shows existing queue counts without a duplicate result summary', () => {
     const markup = renderToStaticMarkup(
       BookingMonitorFiltersSection({
         activeView: viewOptions[0],
@@ -250,12 +370,12 @@ describe('BookingMonitorFiltersSection', () => {
       }),
     );
 
-    expect(markup).toContain(
-      '<span>Live / Today</span><span class="booking-monitor-view-category-count">3 shown</span>',
-    );
-    expect(markup).not.toContain(
-      '<span>Live / Today</span><span class="booking-monitor-view-category-count">6 shown</span>',
-    );
+    expect(markup).toContain('aria-label="Primary booking queues"');
+    expect(markup).toContain('Active bookings 3');
+    expect(markup).toContain('Matching ops 3');
+    expect(markup).toContain('aria-label="Additional booking queues"');
+    expect(markup).not.toContain('booking-monitor-view-category-count');
+    expect(markup).not.toContain('6 shown');
   });
 
   it('uses the shared Vuexy table panel wrapper for the filter card', () => {
@@ -286,8 +406,42 @@ describe('BookingMonitorFiltersSection', () => {
       ),
     );
 
-    expect(rendered).toContain('Closeout ops · 2');
-    expect(rendered).toContain('Post-match cancellations · 0');
+    expect(rendered).toContain('Closeout ops');
+    expect(rendered).toContain('Post-match cancellations');
+    expect(rendered).toContain('Closeout ops 2');
+    expect(rendered).toContain('Post-match cancellations 0');
+    expect(rendered).toContain('Show empty queues');
+  });
+
+  it('renders the structured cancellation reason filter only when configured', () => {
+    const markup = renderToStaticMarkup(
+      BookingMonitorFiltersSection({
+        activeView: viewOptions[3],
+        baseVisibleBookingCount: 4,
+        cancellationReasonFilter: 'CUSTOMER_NOT_FOUND',
+        cancellationReasonFilterOptions: [
+          { label: 'All cancellation reasons', value: 'all' },
+          { label: 'Could not meet customer', value: 'CUSTOMER_NOT_FOUND' },
+        ],
+        dateRangeHiddenInputs: [
+          ['view', 'post-match-cancellations'],
+          ['cancellationReason', 'CUSTOMER_NOT_FOUND'],
+        ],
+        onViewChange: vi.fn(),
+        view: 'post-match-cancellations',
+        viewCounts: new Map([['post-match-cancellations', 4]]),
+        viewOptions: [viewOptions[3]],
+        visibleBookingCount: 4,
+      }),
+    );
+    const rendered = normalizedText(markup);
+
+    expect(rendered).toContain('Cancellation reason');
+    expect(rendered).toContain('Could not meet customer');
+    expect(rendered).not.toContain('Reason: Could not meet customer');
+    expect(rendered).toContain('Apply filters');
+    expect(markup.match(/name="cancellationReason"/g)).toHaveLength(1);
+    expect(markup).toContain('value="CUSTOMER_NOT_FOUND" selected=""');
   });
 });
 

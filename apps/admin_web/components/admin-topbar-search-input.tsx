@@ -1,9 +1,10 @@
-import type { ChangeEventHandler } from 'react';
+import type { ChangeEventHandler, Ref } from 'react';
 
 import { AdminFormSearch } from './admin-form-controls';
 
 type AdminTopbarSearchInputProps = {
   readonly autoFocus?: boolean;
+  readonly inputRef?: Ref<HTMLInputElement>;
   readonly label: string;
   readonly onChange: ChangeEventHandler<HTMLInputElement>;
   readonly placeholder?: string;
@@ -12,6 +13,7 @@ type AdminTopbarSearchInputProps = {
 
 export function AdminTopbarSearchInput({
   autoFocus,
+  inputRef,
   label,
   onChange,
   placeholder = 'Search pages',
@@ -21,6 +23,7 @@ export function AdminTopbarSearchInput({
     <AdminFormSearch
       autoFocus={autoFocus}
       className="topbar-dropdown-header"
+      inputRef={inputRef}
       label={label}
       onChange={onChange}
       placeholder={placeholder}

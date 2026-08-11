@@ -5,6 +5,8 @@ import { AdminFormControlLink } from './admin-form-controls';
 import { AdminErrorState } from './admin-surface';
 import type { AdminOperatorAccess } from '../lib/admin-api';
 import { getAdminOperatorPageAccess } from '../lib/admin-operator-access';
+import { adminOperatorPermissionCategoryDefinitions } from '../lib/admin-operator-permissions';
+import { safeCustomerReturnTo } from '../app/customers/customer-filters';
 
 const PUBLIC_PATH_PREFIXES = ['/api/', '/files/', '/login', '/r/'];
 
@@ -24,25 +26,44 @@ export async function AdminOperatorAccessGate({ children, operatorAccess }: Admi
     return <>{children}</>;
   }
 
-  const description = access.category
-    ? `This operator does not have ${access.category.toLowerCase()} category access. Ask a Master Admin to grant the matching category before opening this page.`
-    : 'This page is not mapped to an operator category yet. Ask a Master Admin to review the route policy before opening this page.';
-  const categoryLabel = access.category ?? 'UNMAPPED_PAGE';
+  const permissionLabel =
+    adminOperatorPermissionCategoryDefinitions.find((definition) => definition.key === access.category)
+      ?.label ?? 'this page';
+  const customerDetailDenied = access.category === 'CUSTOMERS_DETAIL';
+  const description = customerDetailDenied
+    ? 'You can search the customer directory, but this account cannot open customer profiles. Ask a Master Admin for Customer detail access.'
+    : access.category
+      ? `This operator does not have ${permissionLabel} access. Ask a Master Admin to grant the matching category before opening this page.`
+      : 'This page is not mapped to an operator category yet. Ask a Master Admin to review the route policy before opening this page.';
+  const backHref = customerDetailDenied ? customerReturnTo(pathname) : '/';
 
   return (
-    <main className="admin-content admin-operator-access-denied-shell">
-      <AdminErrorState
-        action={
-          <AdminFormControlLink href="/">
-            Back to command center
-          </AdminFormControlLink>
-        }
-        className="admin-operator-access-denied-card"
-        message={`${categoryLabel}: ${description} Page content is hidden. The denied page visit was recorded in the operator audit log.`}
-        title="Access restricted"
-      />
-    </main>
+    <>
+      <title>Access restricted | HANDS Admin</title>
+      <main className="admin-content admin-operator-access-denied-shell">
+        <AdminErrorState
+          action={
+            <AdminFormControlLink href={backHref}>
+              {customerDetailDenied ? 'Back to customers' : 'Back to command center'}
+            </AdminFormControlLink>
+          }
+          className="admin-operator-access-denied-card"
+          message={`${description} Page content is hidden. The denied page visit was recorded in the operator audit log.`}
+          title={customerDetailDenied ? 'Customer detail access required' : 'Access restricted'}
+        />
+      </main>
+    </>
   );
+}
+
+function customerReturnTo(pathname: string) {
+  try {
+    return safeCustomerReturnTo(
+      new URL(pathname, 'http://admin.local').searchParams.get('returnTo') ?? undefined,
+    );
+  } catch {
+    return '/customers';
+  }
 }
 
 async function currentRequestPathname() {

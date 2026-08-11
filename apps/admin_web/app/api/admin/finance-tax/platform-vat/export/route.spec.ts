@@ -55,6 +55,7 @@ describe('platform VAT export route', () => {
     mockedAdminGet.mockResolvedValue({
       companyOutputVatTotal: 10000,
       currency: 'VND',
+      manualReviewCount: 0,
       netRevenueDelta: 0,
       period: '2026-06',
       platformFeeGrossTotal: 100000,
@@ -66,9 +67,11 @@ describe('platform VAT export route', () => {
           platformFeeGrossTotal: 100000,
           platformFeeNetRevenueTotal: 90000,
           platformVatRateBps: 1000,
+          reversalCount: 1,
           settlementCount: 4,
         },
       ],
+      reversalCount: 1,
       settlementCount: 4,
     });
 

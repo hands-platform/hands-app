@@ -4,16 +4,16 @@ import { join } from 'node:path';
 import { vi } from 'vitest';
 
 import type { AdminPaymentDetail } from '../../../lib/admin-api';
-import { adminGet } from '../../../lib/admin-api';
+import { adminGetResult } from '../../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
-import PaymentDetailPage from './page';
+import PaymentDetailPage, { generateMetadata } from './page';
 
 vi.mock('../../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../../lib/admin-api')>('../../../lib/admin-api');
 
   return {
     ...actual,
-    adminGet: vi.fn(),
+    adminGetResult: vi.fn(),
   };
 });
 
@@ -21,18 +21,23 @@ vi.mock('../../../lib/admin-operator-access', () => ({
   getCurrentAdminOperatorAccess: vi.fn(),
 }));
 
-const mockedAdminGet = vi.mocked(adminGet);
+const mockedAdminGetResult = vi.mocked(adminGetResult);
 const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAccess);
 
 describe('PaymentDetailPage', () => {
   beforeEach(() => {
-    mockedAdminGet.mockReset();
+    mockedAdminGetResult.mockReset();
     mockedGetCurrentAdminOperatorAccess.mockReset();
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue({ id: 'operator-current', roles: ['ADMIN'] } as never);
   });
 
+  it('sets a non-empty payment-specific document title', async () => {
+    await expect(generateMetadata({ params: Promise.resolve({ id: 'payment-1234567890' }) }))
+      .resolves.toMatchObject({ title: { absolute: 'Payment payment- | HANDS Admin' } });
+  });
+
   it('renders payment evidence sections with Vuexy operation panels', async () => {
-    mockedAdminGet.mockResolvedValue(paymentDetail());
+    mockedAdminGetResult.mockResolvedValue({ data: paymentDetail(), ok: true, status: 200 });
 
     const page = await PaymentDetailPage({
       params: Promise.resolve({ id: 'payment-1' }),
@@ -138,7 +143,7 @@ describe('PaymentDetailPage', () => {
   });
 
   it('uses shared grid wrappers for payment metrics and evidence panels', async () => {
-    mockedAdminGet.mockResolvedValue(paymentDetail());
+    mockedAdminGetResult.mockResolvedValue({ data: paymentDetail(), ok: true, status: 200 });
 
     const page = await PaymentDetailPage({
       params: Promise.resolve({ id: 'payment-1' }),
@@ -161,28 +166,75 @@ describe('PaymentDetailPage', () => {
     expect(source).not.toContain('<span className="muted">No payload saved.</span>');
   });
 
-  it('offers only a separate Finance approver for refund execution', async () => {
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/payments/payment-1') return paymentDetail();
-      if (href === '/admin/users?take=50&role=ADMIN&view=finance-approver-directory') {
-        return [
-          {
-            email: 'current@example.com',
-            fullName: 'Current Operator',
-            id: 'operator-current',
-            phone: '',
-            roles: ['ADMIN', 'FINANCE_APPROVER'],
-          },
-          {
-            email: 'approver@example.com',
-            fullName: 'Refund Approver',
-            id: 'approver-2',
-            phone: '',
-            roles: ['ADMIN', 'FINANCE_APPROVER'],
-          },
-        ] as never;
-      }
-      return fallback;
+  it('submits a refund request for independent review without selecting an approver', async () => {
+    mockedAdminGetResult.mockResolvedValue({ data: paymentDetail(), ok: true, status: 200 });
+
+    const page = await PaymentDetailPage({
+      params: Promise.resolve({ id: 'payment-1' }),
+      searchParams: Promise.resolve({ confirm: 'refund' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Request refund review for payment');
+    expect(markup).toContain('Finance Approval Queue');
+    expect(markup).toContain('Operator reason');
+    expect(markup).toContain('admin-payment-actions-v1');
+    expect(markup).toContain('idempotencyKey');
+    expect(markup).not.toContain('Separate Finance approver');
+    expect(markup).not.toContain('approvalAdminId');
+    expect(mockedAdminGetResult).not.toHaveBeenCalledWith(
+      '/admin/users?take=50&role=ADMIN&view=finance-approver-directory',
+      [],
+    );
+  });
+
+  it('renders non-cash fee settlement as not applicable', async () => {
+    mockedAdminGetResult.mockResolvedValue({
+      data: { ...paymentDetail(), method: 'VNPAY' },
+      ok: true,
+      status: 200,
+    });
+
+    const page = await PaymentDetailPage({
+      params: Promise.resolve({ id: 'payment-1' }),
+      searchParams: Promise.resolve({}),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Cash fee gate: </span>N/A');
+    expect(markup).toContain('Cash collection and Partner fee settlement do not apply to this payment method.');
+  });
+
+  it('fails closed when payment detail cannot be loaded', async () => {
+    mockedAdminGetResult.mockResolvedValue({ data: null, ok: false, status: 503 });
+
+    const page = await PaymentDetailPage({
+      params: Promise.resolve({ id: 'payment-1' }),
+      searchParams: Promise.resolve({ confirm: 'capture' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Payment detail unavailable');
+    expect(markup).toContain('No payment action is available from fallback data.');
+    expect(markup).not.toContain('Capture payment');
+  });
+
+  it('replaces a duplicate refund request action with the active refund case', async () => {
+    mockedAdminGetResult.mockResolvedValue({
+      data: {
+        ...paymentDetail(),
+        refunds: [{
+          amount: 300000,
+          bookingId: 'booking-1',
+          createdAt: '2026-08-09T08:00:00.000Z',
+          currency: 'VND',
+          id: 'refund-active-1',
+          paymentId: 'payment-1',
+          status: 'REQUESTED',
+        }],
+      },
+      ok: true,
+      status: 200,
     });
 
     const page = await PaymentDetailPage({
@@ -191,19 +243,29 @@ describe('PaymentDetailPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Separate Finance approver');
-    expect(markup).toContain('Refund Approver · approver@example.com');
-    expect(markup).not.toContain('Current Operator · current@example.com');
-    expect(markup).not.toContain('Different admin user id');
-    expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/users?take=50&role=ADMIN&view=finance-approver-directory',
-      [],
-    );
+    expect(markup).toContain('Refund review pending');
+    expect(markup).toContain('Open active refund');
+    expect(markup).toContain('refund-active-1');
+    expect(markup).toContain('/refunds?q=refund-active-1&amp;range=all&amp;review=open&amp;sort=oldest#refund-refund-active-1');
+    expect(markup).not.toContain('Request refund review');
+    expect(markup).not.toContain('payment-detail-refund-payment-1');
   });
 });
 
 function paymentDetail(): AdminPaymentDetail {
   return {
+    actionDecisions: [
+      {
+        action: 'REQUEST_REFUND',
+        policyVersion: 'admin-payment-actions-v1',
+        reason: 'Captured funds require Finance Approval Queue review before refund execution.',
+        reasonCode: 'REFUND_REVIEW_REQUIRED',
+        recommended: true,
+        requiredEvidence: ['operator reason', 'booking evidence'],
+        state: 'REVIEW_REQUIRED',
+        verifiedAt: '2026-06-09T10:11:00.000Z',
+      },
+    ],
     amount: 300000,
     auditLogs: [
       {
@@ -218,6 +280,12 @@ function paymentDetail(): AdminPaymentDetail {
     bookingId: 'booking-1',
     callbackAttempts: [],
     currency: 'VND',
+    evidence: {
+      label: 'Cash collection evidence',
+      reason: 'Cash collection does not use a gateway callback.',
+      state: 'NOT_APPLICABLE',
+      verifiedAt: null,
+    },
     id: 'payment-1',
     method: 'CASH',
     providerRef: 'gateway-ref-1',

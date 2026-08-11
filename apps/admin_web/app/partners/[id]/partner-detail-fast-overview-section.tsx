@@ -1,138 +1,188 @@
 import type { ReactNode } from 'react';
+import { MessageCircle, Phone } from 'lucide-react';
 
-import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
+import { ActionMenu } from '../../../components/action-menu';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
-import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
-import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminDetailGrid, AdminSection } from '../../../components/admin-surface';
-import { AdminTextLink } from '../../../components/admin-text-link';
-import { StatusBadgeLink } from '../../../components/status-badge';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminSection } from '../../../components/admin-surface';
+import { StatusBadgeFromPillClass } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 
-export type PartnerDetailFastOverviewCard = {
+export type PartnerDetailFastActionItem = {
+  readonly area: string;
+  readonly completion: string;
+  readonly href?: string;
+  readonly id: string;
+  readonly impact: string;
+  readonly nextAction: string;
+  readonly problem: string;
+  readonly status: string;
+  readonly tone: string;
+};
+
+export type PartnerDetailFastWorkItem = {
   readonly detail: ReactNode;
   readonly href: string;
   readonly label: string;
+  readonly status: 'Blocked' | 'Needs review' | 'No data' | 'Ready';
   readonly tone: string;
-  readonly value: ReactNode;
-  readonly valueDateTimeFallback?: string;
-  readonly valueDateTimeValue?: string | null;
 };
 
-export type PartnerDetailFastOverviewInfoLine = {
+export type PartnerDetailFastActivityItem = {
+  readonly at?: ReactNode;
+  readonly detail: ReactNode;
   readonly label: string;
-  readonly value?: string | null;
-  readonly valueNode?: ReactNode;
 };
 
 export type PartnerDetailFastOverviewLink = {
+  readonly detail: string;
   readonly href: string;
   readonly label: string;
+  readonly status: string;
+  readonly tone: string;
 };
 
 type PartnerDetailFastOverviewSectionProps = {
   readonly accountControlsHref: string;
-  readonly bookingCommandRows: readonly PartnerDetailFastOverviewInfoLine[];
+  readonly actionItems: readonly PartnerDetailFastActionItem[];
+  readonly activityItems: readonly PartnerDetailFastActivityItem[];
+  readonly chatHref: string;
+  readonly currentStatus: string;
   readonly fullHref: string;
-  readonly identityRows: readonly PartnerDetailFastOverviewInfoLine[];
-  readonly nextOperatorActionLinks: readonly PartnerDetailFastOverviewLink[];
-  readonly nextOperatorActionNotes: readonly string[];
-  readonly overviewCards: readonly PartnerDetailFastOverviewCard[];
   readonly partnerName: string;
-  readonly payoutReadinessRows: readonly PartnerDetailFastOverviewInfoLine[];
+  readonly phone?: string | null;
   readonly subtitle: string;
+  readonly workItems: readonly PartnerDetailFastWorkItem[];
+  readonly workspaceLinks: readonly PartnerDetailFastOverviewLink[];
 };
 
 export function PartnerDetailFastOverviewSection({
   accountControlsHref,
-  bookingCommandRows,
+  actionItems,
+  activityItems,
+  chatHref,
+  currentStatus,
   fullHref,
-  identityRows,
-  nextOperatorActionLinks,
-  nextOperatorActionNotes,
-  overviewCards,
   partnerName,
-  payoutReadinessRows,
+  phone,
   subtitle,
+  workItems,
+  workspaceLinks,
 }: PartnerDetailFastOverviewSectionProps) {
   return (
     <AdminPageTemplate
       actions={
         <>
-          <AdminFormControlLink href="/partners">
-            Back to partners
+          {phone ? (
+            <AdminFormControlLink href={`tel:${phone}`}>
+              <Phone aria-hidden="true" size={16} />
+              Contact Partner
+            </AdminFormControlLink>
+          ) : null}
+          <AdminFormControlLink href={chatHref}>
+            <MessageCircle aria-hidden="true" size={16} />
+            Open chat
           </AdminFormControlLink>
-          <AdminTextLink href={fullHref}>
-            Open full dossier
-          </AdminTextLink>
-          <AdminTextLink href={accountControlsHref}>
-            Account controls
-          </AdminTextLink>
+          <ActionMenu
+            actions={[
+              { href: '/partners', kind: 'link', label: 'Back to partners' },
+              { href: fullHref, kind: 'link', label: 'View partner work areas' },
+              { href: accountControlsHref, kind: 'link', label: 'Account controls' },
+            ]}
+            label={`More actions for ${partnerName}`}
+            variant="dropdown"
+          />
         </>
       }
-      description={marketplaceDisplayText(subtitle)}
+      contentClassName="partners-page partner-detail-page partner-fast-overview-page"
+      description={`${marketplaceDisplayText(currentStatus)} / ${marketplaceDisplayText(subtitle)}`}
       title={partnerName}
     >
-      <AdminMetricGrid
-        className="admin-mb-16"
-        metrics={overviewCards.map((card) => ({
-          helper: card.detail,
-          href: card.href,
-          label: card.label,
-          value: card.value,
-          valueDateTimeFallback: card.valueDateTimeFallback,
-          valueDateTimeValue: card.valueDateTimeValue,
-        }))}
-      />
-
-      <AdminDetailGrid>
-        <OverviewDetailCard title="Identity" rows={identityRows} />
-        <OverviewDetailCard title="Booking command" rows={bookingCommandRows} />
-        <OverviewDetailCard title="Payout readiness" rows={payoutReadinessRows} />
-
-        <AdminSection className="partner-fast-overview-panel" title="Next operator action">
-          {nextOperatorActionNotes.map((note) => (
-            <p className="muted" key={note}>
-              {marketplaceDisplayText(note)}
-            </p>
-          ))}
-          <AdminFilterChipGroup ariaLabel="Next operator action links">
-            {nextOperatorActionLinks.map((link) => (
-              <StatusBadgeLink href={link.href} key={link.href} tone="info">
-                {link.label}
-              </StatusBadgeLink>
+      <AdminSection
+        actions={
+          <StatusBadgeFromPillClass pillClass={actionItems.some((item) => item.tone === 'pill-danger') ? 'pill-danger' : actionItems.length ? 'pill-warn' : 'pill-success'}>
+            {actionItems.length ? `${actionItems.length} open` : 'No action'}
+          </StatusBadgeFromPillClass>
+        }
+        className="partner-fast-command-section"
+        description="Only unresolved issues that have an operator path are shown. The list is capped at five items without an internal vertical scroll."
+        id="partner-action-required"
+        title="Action required"
+      >
+        {actionItems.length ? (
+          <div className="partner-fast-action-list">
+            {actionItems.map((item) => (
+              <div className="partner-fast-action-row" key={item.id}>
+                <div className="partner-fast-action-title">
+                  <span>{item.area}</span>
+                  <strong>{item.problem}</strong>
+                  <StatusBadgeFromPillClass pillClass={item.tone}>{item.status}</StatusBadgeFromPillClass>
+                </div>
+                <div>
+                  <span>Operational impact</span>
+                  <p>{item.impact}</p>
+                </div>
+                <div>
+                  <span>Completion</span>
+                  <p>{item.completion}</p>
+                </div>
+                <div className="partner-fast-action-next">
+                  <span>Next action</span>
+                  {item.href ? <AdminFormControlLink href={item.href}>{item.nextAction}</AdminFormControlLink> : <strong>{item.nextAction}</strong>}
+                </div>
+              </div>
             ))}
-          </AdminFilterChipGroup>
+          </div>
+        ) : (
+          <AdminEmptyState framed message="No Partner issue needs operator action." title={null} />
+        )}
+      </AdminSection>
+
+      <AdminSection
+        className="partner-fast-command-section"
+        description="Approval, service, availability, and wallet gates used for the current booking decision."
+        id="partner-can-work-now"
+        title="Can work now?"
+      >
+        <div className="partner-fast-work-grid">
+          {workItems.map((item) => (
+            <a className="partner-fast-work-card" href={item.href} key={item.label}>
+              <span>{item.label}</span>
+              <StatusBadgeFromPillClass pillClass={item.tone}>{item.status}</StatusBadgeFromPillClass>
+              <p>{item.detail}</p>
+            </a>
+          ))}
+        </div>
+      </AdminSection>
+
+      <div className="partner-fast-secondary-grid">
+        <AdminSection className="partner-fast-overview-panel" title="Recent activity">
+          <div className="partner-fast-activity-list">
+            {activityItems.map((item) => (
+              <div key={item.label}>
+                <span>{item.label}</span>
+                <strong>{item.detail}</strong>
+                {item.at ? <small>{item.at}</small> : null}
+              </div>
+            ))}
+          </div>
         </AdminSection>
-      </AdminDetailGrid>
+
+        <AdminSection className="partner-fast-overview-panel" title="Partner work areas">
+          <div className="partner-fast-workspace-list">
+            {workspaceLinks.map((link) => (
+              <a href={link.href} key={link.href}>
+                <span>
+                  <strong>{link.label}</strong>
+                  <small>{link.detail}</small>
+                </span>
+                <StatusBadgeFromPillClass pillClass={link.tone}>{link.status}</StatusBadgeFromPillClass>
+              </a>
+            ))}
+          </div>
+        </AdminSection>
+      </div>
     </AdminPageTemplate>
   );
-}
-
-function OverviewDetailCard({
-  rows,
-  title,
-}: {
-  readonly rows: readonly PartnerDetailFastOverviewInfoLine[];
-  readonly title: string;
-}) {
-  return (
-    <AdminSection className="partner-fast-overview-panel" title={title}>
-      {rows.map((row) => (
-        <InfoLine key={row.label} label={row.label} value={row.value} valueNode={row.valueNode} />
-      ))}
-    </AdminSection>
-  );
-}
-
-function InfoLine({ label, value, valueNode }: PartnerDetailFastOverviewInfoLine) {
-  return (
-    <p className="muted">
-      <strong>{label}:</strong> {valueNode ?? renderInfoLineValue(value)}
-    </p>
-  );
-}
-
-function renderInfoLineValue(value?: string | null) {
-  return value && value.trim() ? marketplaceDisplayText(value) : <AdminInlineFallback>Missing</AdminInlineFallback>;
 }

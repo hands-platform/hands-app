@@ -1,0 +1,843 @@
+{
+  "generatedAt": "2026-08-10T18:44:40.957Z",
+  "readOnly": true,
+  "summary": {
+    "active": 83,
+    "activeOpenEnded": 83,
+    "expired": 0,
+    "total": 83,
+    "withUsage": 64
+  },
+  "rows": [
+    {
+      "active": true,
+      "code": "SMOKE1782981597626",
+      "createdAt": "2026-07-02T08:39:57.636Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr397hkt009kvyjg1a987071",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1782981799991",
+      "createdAt": "2026-07-02T08:43:20.000Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr39btq201j8vyjg2csgorei",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1782981937064",
+      "createdAt": "2026-07-02T08:45:37.073Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr39erho03aavyjg6w1vqw43",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1782982214978",
+      "createdAt": "2026-07-02T08:50:14.987Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr39kpxh04fgvyjgkz3z90us",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1782982341850",
+      "createdAt": "2026-07-02T08:52:21.860Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr39nftp05oavyjgapgxjdiy",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1782982533575",
+      "createdAt": "2026-07-02T08:55:33.594Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr39rjrg073cvyjgduaqp3ov",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1782982603286",
+      "createdAt": "2026-07-02T08:56:43.296Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr39t1ju09zqvyjgi9w5j8a1",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1782982684714",
+      "createdAt": "2026-07-02T08:58:04.725Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr39usdq0cn6vyjgha8wv4ye",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1782982872863",
+      "createdAt": "2026-07-02T09:01:12.872Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr39ytk20ifuvyjgq012b5ap",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1782982973221",
+      "createdAt": "2026-07-02T09:02:53.230Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3a0yzs0ld6vyjgkx5l4ocq",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1782983053817",
+      "createdAt": "2026-07-02T09:04:13.824Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3a2p6j0oaevyjg7jj2rpto",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1782983487918",
+      "createdAt": "2026-07-02T09:11:27.930Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3ac04y006ovy20t52w0mty",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1782983936658",
+      "createdAt": "2026-07-02T09:18:56.666Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3almdx0370vy20wd0rwjk2",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1782984015158",
+      "createdAt": "2026-07-02T09:20:15.167Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3anayh064ivy20odb89q3i",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783002607762",
+      "createdAt": "2026-07-02T14:30:07.774Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3lpt3q00havy7k48qqziw9",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783014371104",
+      "createdAt": "2026-07-02T17:46:11.115Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3spxr70058vyhwiku1q9dn",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783018343608",
+      "createdAt": "2026-07-02T18:52:23.619Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3v32yk005kvy5cu29c7mfp",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783018718593",
+      "createdAt": "2026-07-02T18:58:38.603Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3vb4as004gvy8cb52f0inh",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783019313731",
+      "createdAt": "2026-07-02T19:08:33.740Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3vnvie01zovy8c87sxy0f7",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783019490254",
+      "createdAt": "2026-07-02T19:11:30.265Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3vrnpu004gvyz0g7owrnw1",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783019540122",
+      "createdAt": "2026-07-02T19:12:20.132Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3vsq72026xvyz0hqzecndr",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783019725645",
+      "createdAt": "2026-07-02T19:15:25.655Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3vwpch004gvy5gsx33l245",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783019861293",
+      "createdAt": "2026-07-02T19:17:41.303Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3vzm0g0304vy5gboeimrn6",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783020443160",
+      "createdAt": "2026-07-02T19:27:23.170Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3wc2zf004gvyzgqedpc7ql",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783021799767",
+      "createdAt": "2026-07-02T19:49:59.778Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3x55r000a2vygs4ve053n0",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783022001645",
+      "createdAt": "2026-07-02T19:53:21.654Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3x9hio0228vygswomqr13i",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783022248957",
+      "createdAt": "2026-07-02T19:57:28.966Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3xescg004gvyach193vijp",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783024736105",
+      "createdAt": "2026-07-02T20:38:56.114Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3yw3fw006avyfwfconok1u",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783024981370",
+      "createdAt": "2026-07-02T20:43:01.380Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3z1cou01p2vyfw27el3e59",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783025248341",
+      "createdAt": "2026-07-02T20:47:28.349Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3z72oo03h8vyfw490vd7iz",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783025689398",
+      "createdAt": "2026-07-02T20:54:49.408Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3zgj0905muvyfwp7edniif",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783025725703",
+      "createdAt": "2026-07-02T20:55:25.713Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3zhb0r06kjvyfw91y6fkb1",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783026004617",
+      "createdAt": "2026-07-02T21:00:04.627Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3zna8c096kvyfwzdzwyjqs",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783026279557",
+      "createdAt": "2026-07-02T21:04:39.567Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr3zt6dl0c25vyfwnp81dfw2",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783026801902",
+      "createdAt": "2026-07-02T21:13:21.912Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr404df60f3lvyfwnviuwg4f",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1783031918277",
+      "createdAt": "2026-07-02T22:38:38.285Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmr43618o007nvypsa8nkx1xe",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1784037621901",
+      "createdAt": "2026-07-14T14:00:21.914Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmrkpxr4i0058vy3g0pqcew02",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1784037730733",
+      "createdAt": "2026-07-14T14:02:10.743Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmrkq033k004vvyp415vo8l9r",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1784037808125",
+      "createdAt": "2026-07-14T14:03:28.133Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmrkq1qtc00vuvyp4fkckw9nw",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1784038305383",
+      "createdAt": "2026-07-14T14:11:45.393Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmrkqcei3004vvyw43yovztno",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1784038357986",
+      "createdAt": "2026-07-14T14:12:37.996Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmrkqdj390233vyw4ilqztxzv",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1784144528828",
+      "createdAt": "2026-07-15T19:42:08.840Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmrmhl51c00ajvyko33tcofwm",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1784144584191",
+      "createdAt": "2026-07-15T19:43:04.201Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmrmhmbr80057vy2wczoaoitl",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1784201637350",
+      "createdAt": "2026-07-16T11:33:57.368Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmrnfl695006tvyiw5odzh3pl",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1784201940716",
+      "createdAt": "2026-07-16T11:39:00.725Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmrnfrobz0057vymownvetyll",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1784202017545",
+      "createdAt": "2026-07-16T11:40:17.554Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmrnftbm501opvymo74eswc8d",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1784408782442",
+      "createdAt": "2026-07-18T21:06:22.450Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmrqux0fh0059vyowohdm21xw",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1784408985680",
+      "createdAt": "2026-07-18T21:09:45.688Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmrqv1d9000cfvyowbmvty0yb",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785260449133",
+      "createdAt": "2026-07-28T17:40:49.145Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cms4xz6nl0059vyx0056dez2f",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785260587716",
+      "createdAt": "2026-07-28T17:43:07.725Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cms4y25l400alvyx0rzqkjpvw",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785260623975",
+      "createdAt": "2026-07-28T17:43:43.984Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cms4y2xka01gxvyx0vhvoci68",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785260663247",
+      "createdAt": "2026-07-28T17:44:23.255Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cms4y3rv502w7vyx0674leh1q",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785260736435",
+      "createdAt": "2026-07-28T17:45:36.443Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cms4y5cc604myvyx0s4npx3vq",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785260876948",
+      "createdAt": "2026-07-28T17:47:56.958Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cms4y8crc0057vyvswv6sur2q",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785262663676",
+      "createdAt": "2026-07-28T18:17:43.684Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cms4zanen0057vywo3g5xqsca",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785262820916",
+      "createdAt": "2026-07-28T18:20:20.924Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cms4ze0qf031ovywoiz24yl9h",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785262859735",
+      "createdAt": "2026-07-28T18:20:59.743Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cms4zeuoq05qkvywor13d07mp",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785262980594",
+      "createdAt": "2026-07-28T18:23:00.602Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cms4zhfxx08gevywoazlipmwv",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785263101831",
+      "createdAt": "2026-07-28T18:25:01.841Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cms4zk1hm0057vyikuljnqz0z",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785264600965",
+      "createdAt": "2026-07-28T18:50:00.974Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cms50g6880057vyswd9vokwof",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785265783312",
+      "createdAt": "2026-07-28T19:09:43.320Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cms515ij70057vyu8twmnv08m",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785267075005",
+      "createdAt": "2026-07-28T19:31:15.013Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cms51x77k0059vy5wyjofd5s5",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785755354922",
+      "createdAt": "2026-08-03T11:09:14.935Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd4mqeo00emvy204gzxvysl",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785755493846",
+      "createdAt": "2026-08-03T11:11:33.856Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd4ppln0111vy20dykbjxhq",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785755573124",
+      "createdAt": "2026-08-03T11:12:53.135Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd4reru01qevy200uxxptzw",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785755725560",
+      "createdAt": "2026-08-03T11:15:25.572Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd4uoe602hhvy204htxbxn6",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785755937687",
+      "createdAt": "2026-08-03T11:18:57.698Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd4z82l03c3vy20s6nuto1o",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785756145596",
+      "createdAt": "2026-08-03T11:22:25.609Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd53ohw0057vyegbmip10zn",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785756278923",
+      "createdAt": "2026-08-03T11:24:38.933Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd56jdd0171vyeg0siv05c5",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785756357680",
+      "createdAt": "2026-08-03T11:25:57.692Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd5885302o2vyegwdpre0wd",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785756420654",
+      "createdAt": "2026-08-03T11:27:00.666Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd59kqd04e8vyegyb9k8f7o",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785756618996",
+      "createdAt": "2026-08-03T11:30:19.009Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd5dtrv0057vyyg0ny42v2y",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785756698401",
+      "createdAt": "2026-08-03T11:31:38.414Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd5fj1l02p1vyygp1di32gc",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785756880425",
+      "createdAt": "2026-08-03T11:34:40.436Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd5jfhr05ahvyygx1bifuh7",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785756990924",
+      "createdAt": "2026-08-03T11:36:30.936Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd5lsr707x9vyyglk8ditxh",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785757115223",
+      "createdAt": "2026-08-03T11:38:35.236Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd5ogny0apmvyyg2g9utkjc",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785758289973",
+      "createdAt": "2026-08-03T11:58:09.985Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd6dn3v0055vys08kwagni1",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785758400009",
+      "createdAt": "2026-08-03T12:00:00.021Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd6g00f0057vyqkir6qcyat",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785759905908",
+      "createdAt": "2026-08-03T12:25:05.919Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsd7c9yy005bvy0o4idqrfz2",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785764934056",
+      "createdAt": "2026-08-03T13:48:54.070Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsdac1pq005rvyr4lc2ll8br",
+      "startsAt": null,
+      "usageCount": 0
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785765141174",
+      "createdAt": "2026-08-03T13:52:21.188Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsdaghj20057vy2sa3hv03ai",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785766964294",
+      "createdAt": "2026-08-03T14:22:44.304Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsdbjk960057vyto7gchzhcc",
+      "startsAt": null,
+      "usageCount": 1
+    },
+    {
+      "active": true,
+      "code": "SMOKE1785768300902",
+      "createdAt": "2026-08-03T14:45:00.914Z",
+      "createdBy": "Demo Admin",
+      "endsAt": null,
+      "id": "cmsdcc7l80057vy8wneuo909x",
+      "startsAt": null,
+      "usageCount": 1
+    }
+  ]
+}

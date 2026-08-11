@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffBookingQueueSection } from './operations-handoff-booking-queue-section';
@@ -81,6 +82,42 @@ describe('OperationsHandoffBookingQueueSection', () => {
     const rendered = textContent(OperationsHandoffBookingQueueSection({ bookings: [], pagination: pagination(0) }));
 
     expect(rendered).toContain('No booking history rows.');
+  });
+
+  it('renders the server-provided page without slicing it a second time', () => {
+    const section = OperationsHandoffBookingQueueSection({
+      bookings: [
+        {
+          chatClass: 'pill pill-info',
+          chatLabel: 'No chat',
+          createdAt: '2026-06-14T00:00:00.000Z',
+          customerAvatarStatus: 'offline',
+          customerHref: '/customers/customer-4',
+          customerName: 'Customer 4',
+          customerPhone: '+84900000004',
+          id: 'booking-page-two',
+          nextAction: 'Open booking detail.',
+          partnerAvatarStatus: 'offline',
+          partnerDetail: 'No Partner selected',
+          partnerHref: '/partners',
+          partnerName: 'Unassigned',
+          paymentLabel: 'No payment',
+          reviewReason: 'Historical record.',
+          status: 'COMPLETED',
+          statusClass: 'pill pill-success',
+          updatedAt: '2026-06-14T00:10:00.000Z',
+          walletLabel: 'No wallet effect',
+        },
+      ],
+      pagination: {
+        ...pagination(12),
+        activePage: 2,
+      },
+    });
+    const markup = renderToStaticMarkup(section);
+
+    expect(markup).toContain('Customer 4');
+    expect(markup).toContain('Showing 4 to 4 of 12 booking rows');
   });
 });
 

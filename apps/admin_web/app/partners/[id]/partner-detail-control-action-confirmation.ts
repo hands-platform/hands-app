@@ -23,7 +23,8 @@ export function partnerControlActionConfirmHref(providerId: string, sanctionId: 
   const params = new URLSearchParams({
     controlAction: 'lift-control',
     sanctionId,
-    section: 'full',
+    control: 'records',
+    section: 'control',
   });
 
   return `/partners/${encodeURIComponent(providerId)}?${params.toString()}#reports`;
@@ -59,7 +60,7 @@ function buildLiftControlConfirmation(
 
   return {
     action: 'lift-control',
-    cancelHref: `/partners/${provider.id}?section=full#reports`,
+    cancelHref: `/partners/${provider.id}?section=control&control=records#reports`,
     confirmLabel: 'Lift control',
     description:
       disabledReason ||
@@ -73,7 +74,7 @@ function buildLiftControlConfirmation(
     ],
     providerId: provider.id,
     sanctionId: sanction.id,
-    title: `Lift control ${shortId(sanction.id)}?`,
+    title: `Lift control for ${partnerLabel(provider)}?`,
     tone: disabled ? 'neutral' : 'warning',
   };
 }

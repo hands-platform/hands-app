@@ -1,0 +1,24 @@
+
+> test
+> vitest run --config vitest.config.mts src/wallet-adjustments src/admin/admin.service.spec.ts
+
+
+ RUN  v4.1.9 C:/dev/massage-on-demand-vn/apps/api
+
+[Nest] 25184  - 2026. 08. 10. 오후 1:15:28   ERROR [AdminService] Notification retry enqueue failed
+[Nest] 25184  - 2026. 08. 10. 오후 1:15:28   ERROR [AdminService] Object(2) {
+  correlationId: '69822b0b-ac7a-43bb-b86f-830a4d8d1b21',
+  notificationId: 'notification-1'
+}
+[Nest] 25184  - 2026. 08. 10. 오후 1:15:28   ERROR [AdminService] Notification retry queued but outcome audit is pending
+[Nest] 25184  - 2026. 08. 10. 오후 1:15:28   ERROR [AdminService] Object(3) {
+  correlationId: '76b64ebd-aba5-4b5a-b147-504bdab057f4',
+  notificationId: 'notification-1',
+  queuedJobId: 'queued-retry-job-1'
+}
+
+ Test Files  3 passed (3)
+      Tests  667 passed (667)
+   Start at  13:15:22
+   Duration  6.22s (transform 3.19s, setup 0ms, import 4.61s, tests 2.58s, environment 0ms)
+

@@ -182,8 +182,8 @@ describe('BookingRecordDetailSections', () => {
     const markup = renderSections();
 
     expect(markup).toContain('Actual marketplace participant ledger');
-    expect(markup).toContain('class="card admin-section" id="flow"');
-    expect(markup).toContain('class="card admin-section" id="participants"');
+    expect(markup).toContain('class="card admin-section" id="booking-record-flow"');
+    expect(markup).toContain('class="card admin-section" id="booking-record-participants"');
     expect(markup).toContain('class="ops-section-header admin-section-header"');
     expect(markup).toContain('Partner participation rows');
     expect(markup).toContain('Partner One');
@@ -208,6 +208,19 @@ describe('BookingRecordDetailSections', () => {
     expect(markup).toContain('Booking action record');
     expect(markup).toContain('District 1, Ho Chi Minh City');
     expect(markup).toContain('Pin 10.1, 106.1');
+  });
+
+  it('can hide the duplicated booking overview records while retaining finance evidence', () => {
+    const markup = renderSections({ showOverviewSections: false });
+
+    expect(markup).not.toContain('id="booking-record-flow"');
+    expect(markup).not.toContain('id="booking-record-customer"');
+    expect(markup).not.toContain('id="booking-record-service"');
+    expect(markup).not.toContain('id="booking-record-handoff"');
+    expect(markup).toContain('id="booking-record-payment"');
+    expect(markup).toContain('id="booking-record-finance"');
+    expect(markup).toContain('id="booking-record-chat"');
+    expect(markup).toContain('id="booking-record-location"');
   });
 
   it('renders empty participant and handoff states', () => {

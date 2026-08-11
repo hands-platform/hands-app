@@ -37,6 +37,7 @@ export function PartnerDetailSummaryRailSection({
     >
       <AdminTraceSummary
         className="partner-detail-summary-rail-grid"
+        inferScope={false}
         metrics={items.map((item) => ({
           detail: item.detail,
           href: item.href,
@@ -85,7 +86,10 @@ function usageSummaryDetail(region: PartnerDetailUsageRegionSummary['regionRows'
     return (
       <small>
         {region.detailDateTimePrefix}
-        <DateTimeText fallback={region.detailDateTimeFallback ?? region.detail} value={region.detailDateTimeValue} />
+        <DateTimeText
+          fallback={region.detailDateTimeFallback ?? region.detail}
+          value={region.detailDateTimeValue}
+        />
         {region.detailDateTimeSuffix}
       </small>
     );

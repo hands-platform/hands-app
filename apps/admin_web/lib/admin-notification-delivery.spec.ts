@@ -3,6 +3,7 @@ import {
   formatFcmSentDeliveryDetail,
   humanizeNotificationType,
   latestFcmSentNotificationDelivery,
+  notificationDeliveryDisposition,
 } from './admin-notification-delivery';
 
 describe('admin notification delivery helpers', () => {
@@ -49,6 +50,62 @@ describe('admin notification delivery helpers', () => {
 
   it('humanizes notification types consistently for FCM summaries', () => {
     expect(humanizeNotificationType('booking.backup_available')).toBe('Booking Marketplace Available');
+  });
+
+  it('treats a later success on the same device as fully delivered', () => {
+    const notification = notificationFixture({
+      id: 'recovered-notification',
+      attemptedAt: '2026-06-13T09:05:00.000Z',
+      phone: '+84900000002',
+      role: 'PROVIDER',
+    });
+    notification.deliveries = [
+      {
+        ...notification.deliveries?.[0],
+        attemptedAt: '2026-06-13T09:04:00.000Z',
+        id: 'failed-attempt',
+        provider: 'FCM',
+        status: 'FAILED',
+      },
+      {
+        ...notification.deliveries?.[0],
+        attemptedAt: '2026-06-13T09:05:00.000Z',
+        id: 'sent-attempt',
+        provider: 'FCM',
+        status: 'SENT',
+      },
+    ];
+
+    expect(notificationDeliveryDisposition(notification)).toBe('delivered');
+  });
+
+  it('keeps unresolved failures on a second device visible as partial delivery', () => {
+    const notification = notificationFixture({
+      id: 'partial-notification',
+      attemptedAt: '2026-06-13T09:05:00.000Z',
+      phone: '+84900000002',
+      role: 'PROVIDER',
+    });
+    notification.deliveries = [
+      {
+        ...notification.deliveries?.[0],
+        attemptedAt: '2026-06-13T09:04:00.000Z',
+        id: 'failed-device-attempt',
+        provider: 'FCM',
+        pushDevice: { enabled: true, id: 'failed-device', platform: 'ios', role: 'PROVIDER' },
+        status: 'FAILED',
+      },
+      {
+        ...notification.deliveries?.[0],
+        attemptedAt: '2026-06-13T09:05:00.000Z',
+        id: 'sent-device-attempt',
+        provider: 'FCM',
+        pushDevice: { enabled: true, id: 'sent-device', platform: 'android', role: 'PROVIDER' },
+        status: 'SENT',
+      },
+    ];
+
+    expect(notificationDeliveryDisposition(notification)).toBe('partial');
   });
 });
 

@@ -18,7 +18,7 @@ export function BookingMonitorToolbarSection({
   return (
     <AdminFormControlButton className="button-secondary" type="button" onClick={onToggleLiveUpdates}>
       <LiveUpdatesIcon aria-hidden="true" size={16} />
-      {liveUpdates ? 'Pause live' : 'Resume live'}
+      {liveUpdates ? 'Stop auto-refresh' : 'Start auto-refresh'}
     </AdminFormControlButton>
   );
 }

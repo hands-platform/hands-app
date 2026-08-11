@@ -1,7 +1,20 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { FilePurpose, FileUploadStatus, FileVisibility, Prisma, Role } from '@prisma/client';
+import {
+  AppUsageEventType,
+  AppUsageOrigin,
+  FilePurpose,
+  FileUploadStatus,
+  FileVisibility,
+  Prisma,
+  Role,
+} from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
+import {
+  appUsageDailyAggregateBoundsUpdates,
+  appUsageDailyAggregateUpsert,
+} from '../app-usage/app-usage-daily-aggregate';
 import { PrismaService } from '../prisma/prisma.service';
+import { customerAppSessionMetadata } from './customer-marketing-attribution';
 
 @Injectable()
 export class UsersService {
@@ -17,7 +30,11 @@ export class UsersService {
       include: {
         customerProfile: true,
         providerProfile: {
-          include: { verification: { include: { files: true } }, services: { include: { service: true } } },
+          include: {
+            verification: { include: { files: true } },
+            services: { include: { service: true } },
+            workingHours: { orderBy: { weekday: 'asc' } },
+          },
         },
         fileAssets: {
           where: {
@@ -25,7 +42,7 @@ export class UsersService {
             uploadStatus: FileUploadStatus.UPLOADED,
             purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
           take: 12,
         },
       },
@@ -56,6 +73,8 @@ export class UsersService {
       deviceLanguage?: string;
       lastLoginAddress?: string;
       metadata?: Record<string, unknown>;
+      eventType?: AppUsageEventType;
+      clientEventId?: string;
     },
     ipAddress?: string,
   ) {
@@ -75,41 +94,129 @@ export class UsersService {
 
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 5 * 60_000);
-    const metadata = input.metadata as Prisma.InputJsonValue | undefined;
+    const clientEventId = normalizeOptionalText(input.clientEventId);
 
-    return this.prisma.appSession.upsert({
-      where: {
+    return this.prisma.$transaction(async (transaction) => {
+      const sessionWhere = {
         userId_role_deviceId: {
           userId: user.id,
           role,
           deviceId,
         },
-      },
-      update: {
-        platform: normalizeOptionalText(input.platform),
-        appVersion: normalizeOptionalText(input.appVersion),
-        deviceLanguage: normalizeOptionalText(input.deviceLanguage),
-        lastLoginAddress: normalizeOptionalText(input.lastLoginAddress),
-        ipAddress: normalizeOptionalText(ipAddress),
-        active: true,
-        lastSeenAt: now,
-        expiresAt,
-        metadata,
-      },
-      create: {
-        userId: user.id,
-        role,
-        deviceId,
-        platform: normalizeOptionalText(input.platform),
-        appVersion: normalizeOptionalText(input.appVersion),
-        deviceLanguage: normalizeOptionalText(input.deviceLanguage),
-        lastLoginAddress: normalizeOptionalText(input.lastLoginAddress),
-        ipAddress: normalizeOptionalText(ipAddress),
-        active: true,
-        lastSeenAt: now,
-        expiresAt,
-        metadata,
-      },
+      } as const;
+      const hasCustomerMarketingAttribution =
+        role === Role.CUSTOMER &&
+        input.metadata &&
+        Object.prototype.hasOwnProperty.call(input.metadata, 'marketingAttribution');
+      const existingSession = hasCustomerMarketingAttribution
+        ? await transaction.appSession.findUnique({
+            where: sessionWhere,
+            select: { metadata: true },
+          })
+        : null;
+      const metadata = hasCustomerMarketingAttribution
+        ? customerAppSessionMetadata(existingSession?.metadata, input.metadata)
+        : (input.metadata as Prisma.InputJsonValue | undefined);
+      const session = await transaction.appSession.upsert({
+        where: sessionWhere,
+        update: {
+          platform: normalizeOptionalText(input.platform),
+          appVersion: normalizeOptionalText(input.appVersion),
+          deviceLanguage: normalizeOptionalText(input.deviceLanguage),
+          lastLoginAddress: normalizeOptionalText(input.lastLoginAddress),
+          ipAddress: normalizeOptionalText(ipAddress),
+          active: true,
+          lastSeenAt: now,
+          expiresAt,
+          metadata,
+        },
+        create: {
+          userId: user.id,
+          role,
+          deviceId,
+          platform: normalizeOptionalText(input.platform),
+          appVersion: normalizeOptionalText(input.appVersion),
+          deviceLanguage: normalizeOptionalText(input.deviceLanguage),
+          lastLoginAddress: normalizeOptionalText(input.lastLoginAddress),
+          ipAddress: normalizeOptionalText(ipAddress),
+          active: true,
+          lastSeenAt: now,
+          expiresAt,
+          metadata,
+        },
+      });
+
+      if (input.eventType) {
+        const existingEvent = clientEventId
+          ? await transaction.appUsageEvent.findUnique({
+              where: { clientEventId },
+              select: { eventType: true, userId: true },
+            })
+          : null;
+
+        if (
+          existingEvent &&
+          (existingEvent.userId !== user.id || existingEvent.eventType !== input.eventType)
+        ) {
+          throw new BadRequestException('clientEventId is already assigned to another app event');
+        }
+
+        if (!existingEvent) {
+          await transaction.appUsageEvent.create({
+            data: {
+              clientEventId,
+              userId: user.id,
+              role,
+              eventType: input.eventType,
+              origin: AppUsageOrigin.PRODUCTION,
+              deviceId,
+              occurredAt: now,
+              metadata,
+            },
+            select: { id: true },
+          });
+          const aggregateInput = {
+            eventType: input.eventType,
+            occurredAt: now,
+            origin: AppUsageOrigin.PRODUCTION,
+            role,
+            userId: user.id,
+          };
+          await transaction.appUsageDailyAggregate.upsert(appUsageDailyAggregateUpsert(aggregateInput));
+          for (const boundsUpdate of appUsageDailyAggregateBoundsUpdates(aggregateInput)) {
+            await transaction.appUsageDailyAggregate.updateMany(boundsUpdate);
+          }
+        }
+      }
+
+      return session;
+    });
+  }
+
+  async updateCustomerMe(
+    userId: string | undefined,
+    input: { fullName?: string; email?: string; gender?: string; nationality?: string },
+  ) {
+    if (!userId) {
+      throw new BadRequestException('Authenticated user is required');
+    }
+
+    return this.prisma.$transaction(async (transaction) => {
+      await transaction.customerProfile.update({
+        where: { userId },
+        data: {
+          gender: input.gender,
+          nationality: nullableText(input.nationality),
+        },
+      });
+      return transaction.user.update({
+        where: { id: userId },
+        data: {
+          fullName: input.fullName,
+          email: input.email,
+        },
+        include: { customerProfile: true },
+      });
     });
   }
 }
@@ -117,4 +224,9 @@ export class UsersService {
 function normalizeOptionalText(value: string | undefined) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function nullableText(value: string | undefined) {
+  if (value === undefined) return undefined;
+  return value.trim() || null;
 }

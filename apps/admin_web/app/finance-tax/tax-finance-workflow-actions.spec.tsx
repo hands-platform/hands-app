@@ -35,6 +35,7 @@ describe('TaxFinanceWorkflowActions', () => {
   });
 
   it('collapses long finance workflow lists so page headers keep title space', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/tax-finance-workflow-actions.tsx'), 'utf8');
     const markup = renderToStaticMarkup(
       <TaxFinanceWorkflowActions
         links={[
@@ -54,13 +55,12 @@ describe('TaxFinanceWorkflowActions', () => {
     expect(markup).toContain('tax-finance-workflow-actions');
     expect(markup).toContain('Tax overview');
     expect(markup).toContain('More finance pages');
-    expect(markup).toContain('tax-finance-workflow-dropdown-menu');
-    expect(markup).toContain('Booking settlement audit');
-    expect(markup).toContain('Payment clearing');
+    expect(source).toContain('ClientActionDropdown');
+    expect(source).not.toContain('<details');
     expect(markup).not.toContain('action-menu action-menu-button-list');
   });
 
-  it('keeps export links inside a dropdown when the workflow list is long', () => {
+  it('keeps the primary export visible when the workflow list is long', () => {
     const markup = renderToStaticMarkup(
       <TaxFinanceWorkflowActions
         links={[
@@ -77,9 +77,7 @@ describe('TaxFinanceWorkflowActions', () => {
       </TaxFinanceWorkflowActions>,
     );
 
-    expect(markup).toContain('tax-finance-workflow-export-dropdown');
-    expect(markup).toContain('Finance export actions');
     expect(markup).toContain('Export visible CSV');
-    expect(markup).toContain('tax-finance-workflow-export-menu');
+    expect(markup).not.toContain('Finance export actions');
   });
 });

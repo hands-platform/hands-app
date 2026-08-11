@@ -48,6 +48,14 @@ granted to current objects:
 C:\dev\massage-on-demand-vn\infra\supabase\patches\2026-07-14-restrict-default-postgrest-privileges.sql
 ```
 
+Existing projects must also restrict public review reads to `PUBLISHED` rows
+and remove direct browser Storage writes. File uploads remain server-mediated
+through the NestJS presigned upload flow:
+
+```text
+C:\dev\massage-on-demand-vn\infra\supabase\patches\2026-07-29-restrict-review-and-storage-writes.sql
+```
+
 ## After Applying SQL
 
 Set these values in the API environment:

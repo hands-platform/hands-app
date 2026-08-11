@@ -36,7 +36,7 @@ export class UsersController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: UpdateUserProfileDto,
   ) {
-    return this.users.updateMe(user.id, body);
+    return this.users.updateCustomerMe(user.id, body);
   }
 
   @Get(['partner/me', 'provider/me'])

@@ -118,8 +118,8 @@ describe('PartnerDetailOperatorCommandQueueSection', () => {
       expect.arrayContaining([
         '#wallet',
         '#partner-approval-evidence-summary',
-        '/partners/partner-1?section=full&providerId=partner-1&reviewAction=approve-kyc',
-        '/partners/partner-1?section=full&confirm=block&providerId=partner-1',
+        '/partners/partner-1?section=control&control=work&providerId=partner-1&reviewAction=approve-kyc',
+        '/partners/partner-1?section=control&control=work&confirm=block&providerId=partner-1',
       ]),
     );
     expect(classNamesIn(section)).toEqual(

@@ -113,7 +113,7 @@ describe('booking customer wait panel', () => {
     expect(marketplaceCard).toMatchObject({
       action: 'Saved policy holds marketplace visibility while first-pick is deciding.',
       detail: 'Marketplace participation is not currently open for this saved policy.',
-      status: 'Held',
+      status: 'Waiting',
     });
     expect(JSON.stringify(marketplaceCard)).not.toMatch(/snapshot/i);
   });

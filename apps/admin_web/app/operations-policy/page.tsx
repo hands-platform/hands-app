@@ -1,15 +1,18 @@
 import { Settings } from 'lucide-react';
 import { canViewAdminDeveloperSystem } from '../../components/admin-developer-system-section';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import {
-  AdminDetailGrid,
   AdminNotePanel,
   AdminNoticeCard,
   AdminSection,
 } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
 import {
   AdminAuditLog,
@@ -19,6 +22,8 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
+import { readSearchParam } from '../../lib/date-range';
+import { operationalPolicyAnchor } from '../../lib/operations-policy';
 import { buildActionGatePolicyChecklist } from './action-gate-policy-checklist';
 import { buildBookingAcceptanceMatrix } from './booking-acceptance-matrix';
 import { buildBookingCreateGateReview } from './booking-create-gate-review';
@@ -54,6 +59,8 @@ import { buildOwnerDecisionPressure } from './owner-decision-pressure';
 import { operationalPolicyAuditRows } from './policy-audit-rows';
 import { operationsPolicyNotice } from './policy-notice';
 import { policyDisplayByKey } from './policy-value-display';
+import { policyDisplayValue } from './policy-value-display';
+import { policyImpactDetails } from './policy-impact-details';
 import {
   buildOperationsPolicyDecisionHref,
   buildOperationsPolicyDetailsHref,
@@ -118,6 +125,8 @@ export default async function OperationsPolicyPage({
   const matchingSettings = settings.filter((setting) => setting.category === 'Matching');
   const decisionSettings = settings.filter((setting) => setting.category === 'Decision');
   const savedCount = settings.filter((setting) => setting.updatedAt).length;
+  const selectedPolicyKey = readSearchParam(params.edit);
+  const selectedSetting = settings.find((setting) => setting.key === selectedPolicyKey) ?? null;
   const notice = operationsPolicyNotice(params);
   const matchingPlaybook = shouldRenderMatchingReview && loadPlan.matchingMode === 'policy'
     ? buildMatchingPlaybook((key) => policyDisplayByKey(settings, key))
@@ -167,7 +176,7 @@ export default async function OperationsPolicyPage({
   return (
     <AdminPageTemplate
       contentClassName="operations-policy-page"
-      description="Change live matching details from Admin instead of editing code. Decision cards capture product choices that should be approved before deeper app-flow work."
+      description="Compare active operating rules and change one policy at a time with a recorded reason and effective time."
       title="Operations Policy"
     >
 
@@ -186,6 +195,70 @@ export default async function OperationsPolicyPage({
       ) : null}
 
       {shouldRenderPolicyOverview ? (
+        <AdminTablePanel
+          className="admin-mb-16"
+          description="Current and recommended values are read-only here. Open one controlled change panel from the selected row."
+          resultLabel={`${settings.length} policies`}
+          resultTone="info"
+          title="Policy comparison"
+        >
+          <AdminTableScroll>
+            <AdminDataTable
+              emptyMessage="No operational policies are available."
+              headers={[
+                'Policy',
+                'Current value',
+                'Recommended value',
+                'Scope',
+                'Operating impact',
+                'Last changed by',
+                'Last changed at',
+                'Change',
+              ]}
+              rowCount={settings.length}
+            >
+              {settings.map((setting) => {
+                const impact = policyImpactDetails(setting.key);
+                const isEditing = selectedSetting?.key === setting.key;
+                return (
+                  <tr key={setting.key}>
+                    <td>
+                      <strong>{setting.label}</strong>
+                      <p className="muted">{setting.description}</p>
+                    </td>
+                    <td><strong>{policyDisplayValue(setting)}</strong></td>
+                    <td>{policyDisplayValue(setting, true)}</td>
+                    <td>
+                      <strong>{setting.category}</strong>
+                      <p className="muted">{setting.enforced ? 'Live operating rule' : 'Decision record'}</p>
+                    </td>
+                    <td>
+                      <strong>{impact.title}</strong>
+                      <p className="muted">{impact.detail}</p>
+                    </td>
+                    <td>{setting.updatedBy?.fullName ?? setting.updatedBy?.phone ?? 'Default policy'}</td>
+                    <td>{setting.updatedAt ? <DateTimeText value={setting.updatedAt} /> : 'Not changed'}</td>
+                    <td>
+                      <AdminTextLink
+                        aria-current={isEditing ? 'page' : undefined}
+                        href={operationsPolicyEditHref(setting.key)}
+                      >
+                        {isEditing ? 'Editing' : 'Open change'}
+                      </AdminTextLink>
+                    </td>
+                  </tr>
+                );
+              })}
+            </AdminDataTable>
+          </AdminTableScroll>
+        </AdminTablePanel>
+      ) : null}
+
+      {shouldRenderPolicyOverview && selectedSetting ? (
+        <OperationsPolicyForm setting={selectedSetting} />
+      ) : null}
+
+      {shouldRenderPolicyOverview ? (
         <>
           <OperationsPolicyAuthorityBaselineSection />
 
@@ -200,7 +273,7 @@ export default async function OperationsPolicyPage({
       {shouldRenderMatchingReview ? (
         <AdminSection
           className="admin-mb-16"
-          description="Edit matching policy separately from the heavier Partner supply sample and booking simulation."
+          description="Review matching controls separately from supply evidence and booking simulation."
           statusLabel={
             shouldRenderMatchingSupply
               ? 'Supply evidence'
@@ -259,30 +332,31 @@ export default async function OperationsPolicyPage({
         title="Live matching policy"
       >
         {shouldRenderMatchingEditor ? (
-          <AdminDetailGrid>
-            {matchingSettings.map((setting) => (
-              <OperationsPolicyForm
-                key={setting.key}
-                setting={setting}
-                bookings={bookings}
-                diagnosticsMode="summary"
+          matchingSettings.length === 0 ? (
+            <AdminNotePanel className="admin-m-0">
+              <AdminEmptyState
+                message="Seed operational policies before changing live matching rules. Every policy update requires a reason and creates an audit record."
+                title="No matching policies loaded"
               />
-            ))}
-            {matchingSettings.length === 0 ? (
-              <AdminNotePanel className="admin-m-0">
-                <AdminEmptyState
-                  message="Seed operational policies before editing live matching rules. Each policy update will require a Change reason so operators can audit why the value changed."
-                  title="No matching policies loaded"
-                />
-                {canLoadFullDiagnostics ? (
-                  <AdminFormControlLink className="button-secondary" href="/setup">
-                    <Settings size={16} aria-hidden="true" />
-                    Open setup checks
-                  </AdminFormControlLink>
-                ) : null}
-              </AdminNotePanel>
-            ) : null}
-          </AdminDetailGrid>
+              {canLoadFullDiagnostics ? (
+                <AdminFormControlLink className="button-secondary" href="/setup">
+                  <Settings size={16} aria-hidden="true" />
+                  Open setup checks
+                </AdminFormControlLink>
+              ) : null}
+            </AdminNotePanel>
+          ) : (
+            <AdminNotePanel className="admin-m-0">
+              <AdminSectionHeader
+                description="Use the policy comparison to inspect current and recommended values, then open exactly one change panel."
+                status={<StatusBadge tone="info">{matchingSettings.length} matching policy item(s)</StatusBadge>}
+                title="Matching policy changes"
+              />
+              <AdminFormControlLink className="button-secondary admin-mt-12" href="/operations-policy">
+                Open policy comparison
+              </AdminFormControlLink>
+            </AdminNotePanel>
+          )
         ) : (
           <AdminNotePanel className="admin-m-0">
             <AdminSectionHeader
@@ -361,7 +435,7 @@ export default async function OperationsPolicyPage({
       {shouldRenderDecisionReview ? (
         <AdminSection
           className="admin-mb-16"
-          description="Edit owner-approved policy choices separately from the heavier live booking and Partner evidence sample."
+          description="Review owner-approved choices separately from the live booking and Partner evidence sample."
           statusLabel={shouldRenderDecisionEvidence ? 'Live evidence' : 'Decision editor'}
           statusTone={shouldRenderDecisionEvidence ? 'warning' : 'info'}
           title="Decision workspace"
@@ -398,20 +472,20 @@ export default async function OperationsPolicyPage({
         title="Operator decisions"
       >
         {shouldRenderDecisionEditor ? (
-          <AdminDetailGrid>
-            {decisionSettings.map((setting) => (
-              <OperationsPolicyForm
-                key={setting.key}
-                setting={setting}
-                bookings={bookings}
-                diagnosticsMode="summary"
-              />
-            ))}
-          </AdminDetailGrid>
+          <AdminNotePanel className="admin-m-0">
+            <AdminSectionHeader
+              description="Use the policy comparison to review current and recommended choices, then open one change panel."
+              status={<StatusBadge tone="info">{decisionSettings.length} decision item(s)</StatusBadge>}
+              title="Decision policy changes"
+            />
+            <AdminFormControlLink className="button-secondary admin-mt-12" href="/operations-policy">
+              Open policy comparison
+            </AdminFormControlLink>
+          </AdminNotePanel>
         ) : shouldRenderDecisionEvidence ? (
           <AdminNotePanel className="admin-m-0">
             <AdminSectionHeader
-              description="This workspace keeps the heavier live sample separate from policy editing. Return to the editor to change an owner-approved decision."
+              description="This workspace keeps the live evidence sample separate from policy changes. Return to the comparison to change an owner-approved decision."
               status={<StatusBadge tone="warning">Evidence sample</StatusBadge>}
               title="Decision policy editor"
             />
@@ -458,4 +532,8 @@ export default async function OperationsPolicyPage({
       ) : null}
     </AdminPageTemplate>
   );
+}
+
+function operationsPolicyEditHref(key: string) {
+  return `/operations-policy?edit=${encodeURIComponent(key)}#${operationalPolicyAnchor(key)}`;
 }

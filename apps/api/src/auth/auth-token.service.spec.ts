@@ -27,12 +27,95 @@ describe('AuthTokenService Supabase roles', () => {
       user_metadata: { roles: [Role.CUSTOMER] },
     });
 
-    await expect(service.authenticateSupabaseBearerToken('supabase-token', [Role.PROVIDER])).resolves.toMatchObject({
+    await expect(
+      service.authenticateSupabaseBearerToken('supabase-token', [Role.PROVIDER]),
+    ).resolves.toMatchObject({
       activeRole: Role.PROVIDER,
       roles: [Role.PROVIDER],
       authProvider: 'supabase',
       externalUserId: 'supabase-user-2',
     });
+  });
+
+  it('does not accept an admin role injected through Supabase app metadata', async () => {
+    const { prisma, service } = createService({
+      sub: 'supabase-admin-injection',
+      aud: 'authenticated',
+      phone: '+84900000005',
+      app_metadata: { roles: [Role.ADMIN, Role.MASTER_ADMIN] },
+    });
+
+    await expect(service.authenticateSupabaseBearerToken('supabase-token', [Role.ADMIN])).rejects.toThrow(
+      'Supabase token is not allowed for the requested role',
+    );
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects a Supabase identity already linked to a local Admin operator', async () => {
+    const { prisma, service } = createService({
+      sub: 'supabase-local-admin',
+      aud: 'authenticated',
+      phone: '+84900000006',
+      app_metadata: { role: Role.CUSTOMER },
+    });
+    prisma.user.findUnique.mockResolvedValueOnce({
+      id: 'local-admin-user',
+      roles: [Role.ADMIN, Role.PROVIDER],
+      customerProfile: null,
+      providerProfile: {},
+    });
+
+    await expect(service.authenticateSupabaseBearerToken('supabase-token', [Role.CUSTOMER])).rejects.toThrow(
+      'Supabase mobile identity cannot use an Admin operator account',
+    );
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects automatic phone linking from Supabase to a local Admin operator', async () => {
+    const { prisma, service } = createService({
+      sub: 'supabase-phone-collision',
+      aud: 'authenticated',
+      phone: '+84900000008',
+      app_metadata: { role: Role.CUSTOMER },
+    });
+    prisma.user.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      id: 'local-admin-phone-owner',
+      roles: [Role.ADMIN],
+      customerProfile: null,
+      providerProfile: null,
+    });
+
+    await expect(service.authenticateSupabaseBearerToken('supabase-token', [Role.CUSTOMER])).rejects.toThrow(
+      'Supabase mobile identity cannot use an Admin operator account',
+    );
+    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it('replaces stale provider membership when Supabase demotes the user to customer', async () => {
+    const { prisma, service } = createService({
+      sub: 'supabase-provider-demotion',
+      aud: 'authenticated',
+      phone: '+84900000007',
+      app_metadata: { role: Role.CUSTOMER },
+    });
+    prisma.user.findUnique.mockResolvedValueOnce({
+      id: 'demoted-provider-user',
+      roles: [Role.PROVIDER],
+      customerProfile: {},
+      providerProfile: {},
+    });
+
+    await service.authenticateSupabaseBearerToken('supabase-token', [Role.CUSTOMER]);
+
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          roles: { set: [Role.CUSTOMER] },
+        }),
+      }),
+    );
   });
 
   it('rejects unexpected Supabase audiences before syncing user records', async () => {
@@ -188,13 +271,25 @@ describe('AuthTokenService Supabase roles', () => {
 
 describe('AuthTokenService admin realtime socket tokens', () => {
   it('accepts a short-lived admin realtime token for socket auth only', async () => {
-    const { service, token } = createAdminRealtimeServiceAndToken();
+    const { prisma, service, token } = createAdminRealtimeServiceAndToken();
 
     await expect(service.authenticateSocketToken(token)).resolves.toMatchObject({
-      id: 'admin-web',
+      id: 'operator-user-1',
       activeRole: Role.ADMIN,
       roles: [Role.ADMIN],
       authProvider: 'admin-realtime',
+    });
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: {
+        roles: { has: Role.ADMIN },
+        OR: [
+          { id: 'operator@hands.vn' },
+          { email: 'operator@hands.vn' },
+          { phone: 'operator@hands.vn' },
+          { adminOperatorCredential: { is: { email: 'operator@hands.vn' } } },
+        ],
+      },
+      select: { id: true, roles: true },
     });
   });
 
@@ -229,12 +324,27 @@ describe('AuthTokenService admin realtime socket tokens', () => {
     await expect(service.authenticateBearerToken(token)).rejects.toThrow(UnauthorizedException);
   });
 
+  it('does not accept an Admin Web REST token for socket authentication', async () => {
+    const { service, token } = createAdminWebApiServiceAndToken();
+
+    await expect(service.authenticateSocketToken(token)).rejects.toThrow(
+      'Admin sockets require an admin realtime token',
+    );
+  });
+
   it('rejects admin realtime tokens signed with the wrong secret', async () => {
     const { service, signAdminRealtimeToken } = createAdminRealtimeServiceAndToken();
 
     await expect(
       service.authenticateSocketToken(signAdminRealtimeToken({}, 'wrong-admin-realtime-secret')),
     ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('rejects a validly signed realtime token after the operator loses Admin access', async () => {
+    const { prisma, service, token } = createAdminRealtimeServiceAndToken();
+    prisma.user.findFirst.mockResolvedValue(null);
+
+    await expect(service.authenticateSocketToken(token)).rejects.toThrow(UnauthorizedException);
   });
 
   it('keeps normal Nest customer and partner socket JWT authentication working', async () => {
@@ -304,7 +414,9 @@ describe('AuthTokenService Admin Web API tokens', () => {
   ])('rejects an Admin Web API token with %s', async (_label, overrides) => {
     const { service, signToken } = createAdminWebApiServiceAndToken();
 
-    await expect(service.authenticateBearerToken(signToken(overrides))).rejects.toThrow(UnauthorizedException);
+    await expect(service.authenticateBearerToken(signToken(overrides))).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('rejects a signed token when the operator no longer has Admin access', async () => {
@@ -375,14 +487,18 @@ function createAdminRealtimeServiceAndToken() {
       return undefined;
     }),
   };
-  const prisma = { user: {} };
+  const prisma = {
+    user: {
+      findFirst: vi.fn().mockResolvedValue({ id: 'operator-user-1', roles: [Role.ADMIN] }),
+    },
+  };
   const service = new AuthTokenService(jwt, config as never, prisma as never);
   const signAdminRealtimeToken = (
     overrides: Record<string, unknown> = {},
     secret = 'test-admin-realtime-secret',
   ) => {
     const payload = {
-      sub: 'admin-web',
+      sub: 'operator@hands.vn',
       typ: 'admin-realtime',
       aud: 'hands-socket',
       scope: 'admin:realtime',
@@ -390,17 +506,13 @@ function createAdminRealtimeServiceAndToken() {
       jti: 'test-jti',
       ...overrides,
     };
-    return jwt.sign(
-      payload,
-      'exp' in payload
-        ? { secret }
-        : { secret, expiresIn: '2m' },
-    );
+    return jwt.sign(payload, 'exp' in payload ? { secret } : { secret, expiresIn: '2m' });
   };
   const signNestToken = (payload: Record<string, unknown>) =>
     jwt.sign(payload, { secret: 'test-jwt-access-secret', expiresIn: '15m' });
 
   return {
+    prisma,
     service,
     token: signAdminRealtimeToken(),
     signAdminRealtimeToken,

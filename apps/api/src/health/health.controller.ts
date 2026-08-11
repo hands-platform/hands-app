@@ -1,4 +1,8 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Role } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 import { HealthService } from './health.service';
 
 @Controller()
@@ -16,6 +20,8 @@ export class HealthController {
   }
 
   @Get('health/external')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   externalReadiness() {
     return this.health.externalReadiness();
   }

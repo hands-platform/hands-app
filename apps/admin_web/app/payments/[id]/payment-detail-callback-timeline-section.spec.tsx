@@ -72,7 +72,8 @@ describe('PaymentDetailCallbackTimelineSection', () => {
     const section = PaymentDetailCallbackTimelineSection({ reviewCount: 0, rows: [] });
 
     expect(textContent(section)).toContain('No gateway callback attempts have been captured for this payment yet.');
-    expect(textContent(section)).toContain('Trace ready');
+    expect(textContent(section)).toContain('No callback attempts recorded');
+    expect(textContent(section)).not.toContain('Trace ready');
   });
 
   it('does not duplicate the base pill class for detail callback badges', () => {

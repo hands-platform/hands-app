@@ -62,12 +62,12 @@ describe('BookingDetailPostMatchDecisionSection', () => {
     expect(rendered).toContain('1 note');
     expect(rendered).toContain('Closeout status');
     expect(rendered).toContain('Ready');
-    expect(rendered).toContain('Approve restores the eligible Partner fee impact.');
-    expect(rendered).toContain('Hold keeps the existing Partner fee deduction');
-    expect(rendered).toContain('Approve cancellation');
-    expect(rendered).toContain('Restore eligible fee impact');
-    expect(rendered).toContain('Hold fee deduction');
-    expect(rendered).toContain('Keep existing deduction');
+    expect(rendered).toContain('This booking is already cancelled.');
+    expect(rendered).toContain('Choose an outcome');
+    expect(markup).toContain('Approve, release wallet hold &amp; waive Partner fee');
+    expect(rendered).toContain('Apply the customer closeout and restore the Partner fee impact.');
+    expect(markup).toContain('Release wallet hold &amp; keep Partner fee');
+    expect(rendered).toContain('Apply the same customer closeout and keep the existing Partner fee deduction.');
     expect(markup).toContain('href="#chat"');
     expect(markup).toContain('href="#operator-notes"');
     expect(markup).toContain('name="bookingId" value="booking-1"');
@@ -76,6 +76,70 @@ describe('BookingDetailPostMatchDecisionSection', () => {
     expect(markup).toContain('card admin-card admin-summary-card booking-post-match-detail-evidence-card');
     expect(markup).toContain('card admin-card booking-outcome-decision-panel');
     expect(markup).toContain('booking-outcome-decision-main');
+  });
+
+  it('orders structured reason, evidence, money, and admin decision context', () => {
+    const markup = renderToStaticMarkup(
+      <BookingDetailPostMatchDecisionSection
+        bookingId="booking-1"
+        outcomeReview={outcomeReview({
+          postMatchContext: {
+            reason: {
+              helper: 'Arrived at the saved address and called twice.',
+              href: '#booking-post-match-cancellation-decision',
+              label: 'Cancellation reason',
+              tone: 'pill-warn',
+              value: 'Could not meet customer',
+            },
+            evidence: [
+              {
+                helper: 'Open the retained transcript.',
+                href: '#chat',
+                label: 'Chat evidence',
+                tone: 'pill-success',
+                value: '3 messages',
+              },
+              {
+                helper: 'Cau Giay / Approx. 120 m from booking address',
+                href: '#location',
+                label: 'Location evidence',
+                tone: 'pill-success',
+                value: 'Cancellation location saved',
+              },
+            ],
+            money: [
+              {
+                helper: '400,000 VND / CUSTOMER_WALLET / AUTHORIZED',
+                href: '#payment',
+                label: 'Customer money',
+                tone: 'pill-warn',
+                value: 'Wallet amount still held',
+              },
+              {
+                helper: 'No Partner earning was created.',
+                href: '#payment',
+                label: 'Partner fee',
+                tone: 'pill-success',
+                value: 'No Partner payable',
+              },
+            ],
+          },
+        })}
+      />,
+    );
+    const rendered = normalizedText(markup);
+
+    expect(rendered.indexOf('1. Why cancelled')).toBeLessThan(rendered.indexOf('2. Evidence available'));
+    expect(rendered.indexOf('2. Evidence available')).toBeLessThan(rendered.indexOf('3. Current money state'));
+    expect(rendered.indexOf('3. Current money state')).toBeLessThan(rendered.indexOf('4. Resolve review'));
+    expect(rendered).toContain('Could not meet customer');
+    expect(rendered).toContain('Arrived at the saved address and called twice.');
+    expect(rendered).toContain('Cancellation location saved');
+    expect(rendered).toContain('Wallet amount still held');
+    expect(rendered).toContain('No Partner payable');
+    expect(markup).toContain('href="#chat"');
+    expect(markup).toContain('href="#location"');
+    expect(markup).toContain('href="#payment"');
   });
 
   it('renders outcome timestamps through the shared date atom', () => {
@@ -125,8 +189,9 @@ describe('BookingDetailPostMatchDecisionSection', () => {
     expect(rendered).toContain('Approved');
     expect(rendered).toContain('Fee restored');
     expect(rendered).toContain('This cancellation decision is already closed.');
-    expect(rendered).not.toContain('Approve cancellation');
-    expect(rendered).not.toContain('Hold fee deduction');
+    expect(rendered).toContain('Reason: not recorded.');
+    expect(rendered).not.toContain('Waive Partner fee deduction');
+    expect(rendered).not.toContain('Keep Partner fee deduction');
   });
 
   it('renders nothing when no post-match decision is visible', () => {
@@ -150,19 +215,38 @@ function outcomeReview(input: Partial<BookingOutcomeReviewPanel> = {}): BookingO
   return {
     helper: 'Use retained chat before final confirmation.',
     postMatchDecision: {
-      approveNote: 'Approved after admin chat evidence review.',
+      actions: [
+        {
+          decision: 'approve',
+          helper: 'Apply the customer closeout and restore the Partner fee impact.',
+          label: 'Approve, release wallet hold & waive Partner fee',
+          tone: 'primary',
+        },
+        {
+          decision: 'hold',
+          helper: 'Apply the same customer closeout and keep the existing Partner fee deduction.',
+          label: 'Release wallet hold & keep Partner fee',
+          tone: 'secondary',
+        },
+      ],
       canResolve: true,
+      customerMoneyAfter: '400,000 VND wallet hold released',
+      customerMoneyBefore: '400,000 VND wallet hold',
       feeLabel: 'Fee held',
       feeTone: 'pill-danger',
-      holdNote: 'Held after admin chat evidence review.',
+      partnerFeeApproveAfter: '40,000 VND deduction waived · Partner wallet restored',
+      partnerFeeBefore: '40,000 VND Partner fee deduction pending',
+      partnerFeeHoldAfter: '40,000 VND Partner fee deduction kept',
+      reviewAfter: 'Resolved by Admin',
+      reviewBefore: 'Open decision',
       resolutionLabel: 'Pending admin decision',
       resolutionTone: 'pill-warn',
       timingLabel: '16m after match',
       timingTone: 'pill-warn',
       visible: true,
     },
-    primaryHref: '/bookings/post-match-cancellations?view=post-match-cancellations#booking-booking-1',
-    primaryLabel: 'Open review queue',
+    primaryHref: '/bookings/post-match-cancellations?view=manual-decision#booking-booking-1',
+    primaryLabel: 'Back to Needs decision',
     rows: [
       {
         helper: 'Open the retained chat before confirming cancellation.',

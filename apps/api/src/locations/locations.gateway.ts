@@ -115,21 +115,29 @@ export class LocationsGateway implements OnGatewayConnection {
     }
 
     const recordedAt = new Date().toISOString();
+    const previousLocation = await this.redisState.getProviderLocation(provider.id);
     const decision = providerLocationUpdateDecision({
-      previous: await this.redisState.getProviderLocation(provider.id),
+      previous: previousLocation,
       next: { lat: parsedPayload.lat, lng: parsedPayload.lng },
       now: new Date(recordedAt),
       hasActiveBookingContext,
     });
-    if (!decision.allowed) {
+    const relaysPersistedBookingLocation =
+      !decision.allowed &&
+      decision.reason === 'TOO_FREQUENT_ACTIVE_BOOKING_LOCATION_UPDATE' &&
+      hasActiveBookingContext &&
+      sameCoordinates(previousLocation, parsedPayload);
+    if (!decision.allowed && !relaysPersistedBookingLocation) {
       return { ok: false, error: decision.reason };
     }
 
-    await this.redisState.setProviderLocation(provider.id, {
-      lat: parsedPayload.lat,
-      lng: parsedPayload.lng,
-      recordedAt,
-    });
+    if (decision.allowed) {
+      await this.redisState.setProviderLocation(provider.id, {
+        lat: parsedPayload.lat,
+        lng: parsedPayload.lng,
+        recordedAt,
+      });
+    }
 
     if (parsedPayload.bookingId) {
       this.server.to(SOCKET_ROOMS.booking(parsedPayload.bookingId)).emit('provider.location.updated', {
@@ -142,4 +150,14 @@ export class LocationsGateway implements OnGatewayConnection {
     }
     return { ok: true };
   }
+}
+
+function sameCoordinates(
+  previous: { lat: number; lng: number } | null | undefined,
+  next: { lat: number; lng: number },
+) {
+  if (!previous) {
+    return false;
+  }
+  return Math.abs(previous.lat - next.lat) < 0.0000001 && Math.abs(previous.lng - next.lng) < 0.0000001;
 }

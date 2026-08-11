@@ -72,7 +72,7 @@ class ProviderOnboardingField extends StatelessWidget {
         validator: validator ??
             (value) {
               if (required && (value == null || value.trim().isEmpty)) {
-                return '$label is required.';
+                return 'Vui lòng nhập $label.';
               }
               return null;
             },

@@ -19,10 +19,11 @@ FROM node:22-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=build /app/package*.json ./
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/apps/api ./apps/api
-COPY --from=build /app/packages ./packages
+COPY --chown=node:node --from=build /app/package*.json ./
+COPY --chown=node:node --from=build /app/node_modules ./node_modules
+COPY --chown=node:node --from=build /app/apps/api ./apps/api
+COPY --chown=node:node --from=build /app/packages ./packages
 
 EXPOSE 3000
+USER node
 CMD ["npm", "run", "start", "--workspace", "@massage-vn/api"]

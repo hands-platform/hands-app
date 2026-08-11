@@ -1,4 +1,11 @@
-import { Injectable, Logger, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { createHash, randomInt, randomUUID } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -7,7 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { AuthTokenService } from './auth-token.service';
 import { verifyAdminOperatorPassword } from './admin-operator-credential';
-import { jwtRefreshSecretFromConfig } from './jwt-secrets';
+import { jwtAccessSecretFromConfig, jwtRefreshSecretFromConfig } from './jwt-secrets';
 import { OtpDeliveryService } from './otp-delivery.service';
 import { normalizeVietnamPhoneIdentifier } from './phone-number';
 
@@ -21,12 +28,16 @@ type RefreshPayload = {
 };
 
 const MOBILE_EXCHANGE_ROLES = [Role.CUSTOMER, Role.PROVIDER] as const;
+const OTP_MAX_VERIFY_ATTEMPTS = 5;
+const OTP_SEND_COOLDOWN_MS = 60_000;
 type MobileExchangeRole = (typeof MOBILE_EXCHANGE_ROLES)[number];
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private readonly fallbackOtps = new Map<string, { otp: string; expiresAt: number }>();
+  private readonly fallbackOtpAttempts = new Map<string, number>();
+  private readonly fallbackOtpSendCooldowns = new Map<string, number>();
   private readonly fallbackRevokedRefreshTokens = new Map<string, number>();
 
   constructor(
@@ -41,6 +52,7 @@ export class AuthService {
   async requestOtp(input: { phone: string; role?: Role }) {
     const role = this.assertMobileAuthRole(input.role ?? Role.CUSTOMER);
     const phone = normalizeVietnamPhoneIdentifier(input.phone);
+    await this.reserveOtpSend(phone);
     const isProduction = this.isProduction();
     const otp = isProduction ? this.generateOtp() : this.devOtp();
     await this.storeOtp(phone, otp);
@@ -63,6 +75,7 @@ export class AuthService {
       where: { phone },
       include: { customerProfile: true, providerProfile: true },
     });
+    this.assertMobileIdentityBoundary(existing?.roles ?? []);
 
     const roles = Array.from(new Set([...(existing?.roles ?? []), role]));
     const user = await this.prisma.user.upsert({
@@ -97,10 +110,11 @@ export class AuthService {
       include: { customerProfile: true, providerProfile: true },
     });
 
-    const { accessToken, refreshToken } = this.signSessionTokens(user, role);
+    const sessionUser = { ...user, roles: [role] };
+    const { accessToken, refreshToken } = this.signSessionTokens(sessionUser, role);
 
     return {
-      user,
+      user: sessionUser,
       otpAccepted: true,
       accessToken,
       refreshToken,
@@ -115,6 +129,7 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Refresh token subject no longer exists');
     }
+    this.assertMobileIdentityBoundary(user.roles);
 
     const activeRole = this.resolveRefreshActiveRole(payload, user.roles);
 
@@ -148,7 +163,10 @@ export class AuthService {
         },
       },
     });
-    if (!credential?.user.roles.includes(Role.ADMIN) || !verifyAdminOperatorPassword(input.password, credential)) {
+    if (
+      !credential?.user.roles.includes(Role.ADMIN) ||
+      !verifyAdminOperatorPassword(input.password, credential)
+    ) {
       throw new UnauthorizedException('Invalid admin operator credentials');
     }
 
@@ -167,13 +185,15 @@ export class AuthService {
       where: { id: authenticated.id },
       include: { customerProfile: true, providerProfile: true },
     });
+    this.assertMobileIdentityBoundary(user.roles);
 
-    const { accessToken, refreshToken } = this.signSessionTokens(user, role, {
+    const sessionUser = { ...user, roles: [role] };
+    const { accessToken, refreshToken } = this.signSessionTokens(sessionUser, role, {
       authProvider: 'supabase',
     });
 
     return {
-      user,
+      user: sessionUser,
       accessToken,
       refreshToken,
       exchangedFrom: 'supabase',
@@ -194,20 +214,31 @@ export class AuthService {
     return role as MobileExchangeRole;
   }
 
+  private assertMobileIdentityBoundary(roles: Role[]) {
+    if (roles.some((role) => !this.isMobileExchangeRole(role))) {
+      throw new UnauthorizedException('Mobile authentication cannot use an Admin operator account');
+    }
+  }
+
   private signSessionTokens(
     user: { id: string; roles: Role[] },
     activeRole: Role | undefined,
     extraPayload: { authProvider?: 'supabase'; refreshed?: boolean } = {},
   ) {
+    const sessionRoles = activeRole
+      ? [activeRole]
+      : user.roles.filter((role): role is MobileExchangeRole => this.isMobileExchangeRole(role));
     const sessionPayload = {
       sub: user.id,
-      roles: user.roles,
+      roles: sessionRoles,
       ...(activeRole ? { activeRole } : {}),
       ...extraPayload,
     };
 
     return {
-      accessToken: this.jwt.sign(sessionPayload),
+      accessToken: this.jwt.sign(sessionPayload, {
+        secret: jwtAccessSecretFromConfig(this.config),
+      }),
       refreshToken: this.jwt.sign(
         {
           sub: user.id,
@@ -243,6 +274,10 @@ export class AuthService {
     const devFallbackAllowed = !isProduction && otp === this.devOtp();
 
     if (storedOtp ? otp !== storedOtp : !devFallbackAllowed) {
+      const failedAttempts = await this.recordFailedOtpAttempt(phone);
+      if (failedAttempts >= OTP_MAX_VERIFY_ATTEMPTS) {
+        await this.consumeOtp(phone);
+      }
       throw new UnauthorizedException('Invalid OTP');
     }
 
@@ -259,6 +294,47 @@ export class AuthService {
       }
       this.logger.warn('Redis OTP store unavailable; using in-memory OTP fallback.');
       this.fallbackOtps.set(phone, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+    }
+  }
+
+  private async reserveOtpSend(phone: string) {
+    try {
+      const reserved = await this.redisState.reserveOtpSend(phone);
+      if (!reserved) {
+        throw new HttpException('Please wait before requesting another OTP', HttpStatus.TOO_MANY_REQUESTS);
+      }
+      return;
+    } catch (error) {
+      if (error instanceof HttpException && error.getStatus() === HttpStatus.TOO_MANY_REQUESTS) {
+        throw error;
+      }
+      if (this.isProduction()) {
+        this.logger.warn('Redis OTP send limiter unavailable.');
+        throw new ServiceUnavailableException('OTP service is temporarily unavailable');
+      }
+      this.logger.warn('Redis OTP send limiter unavailable; using in-memory OTP cooldown.');
+    }
+
+    const now = Date.now();
+    const cooldownUntil = this.fallbackOtpSendCooldowns.get(phone) ?? 0;
+    if (cooldownUntil > now) {
+      throw new HttpException('Please wait before requesting another OTP', HttpStatus.TOO_MANY_REQUESTS);
+    }
+    this.fallbackOtpSendCooldowns.set(phone, now + OTP_SEND_COOLDOWN_MS);
+  }
+
+  private async recordFailedOtpAttempt(phone: string) {
+    try {
+      return await this.redisState.incrementOtpAttempts(phone);
+    } catch {
+      if (this.isProduction()) {
+        this.logger.warn('Redis OTP attempt limiter unavailable.');
+        throw new ServiceUnavailableException('OTP service is temporarily unavailable');
+      }
+      this.logger.warn('Redis OTP attempt limiter unavailable; using in-memory OTP attempts.');
+      const count = (this.fallbackOtpAttempts.get(phone) ?? 0) + 1;
+      this.fallbackOtpAttempts.set(phone, count);
+      return count;
     }
   }
 
@@ -289,6 +365,7 @@ export class AuthService {
 
   private async consumeOtp(phone: string) {
     this.fallbackOtps.delete(phone);
+    this.fallbackOtpAttempts.delete(phone);
     try {
       await this.redisState.consumeOtp(phone);
     } catch {

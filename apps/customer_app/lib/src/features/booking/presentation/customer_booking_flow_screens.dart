@@ -3,9 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app_state.dart';
+import '../../../core/app_config.dart';
+import '../../../core/customer_design_system.dart';
 import '../../../core/customer_value_helpers.dart';
+import '../../../core/local_demo_access.dart';
 import '../../../core/realtime_socket.dart';
 import '../../../core/widgets/customer_feedback_panels.dart';
 import '../../chat/presentation/customer_chat_screen.dart';
@@ -40,9 +44,15 @@ class BookingConfirmationPage extends ConsumerStatefulWidget {
 
 class _BookingConfirmationPageState
     extends ConsumerState<BookingConfirmationPage> {
-  final nameController = TextEditingController(text: 'Demo Customer');
-  final phoneController = TextEditingController(text: '0865907184');
-  final addressController = TextEditingController(text: demoCustomerAddress);
+  final nameController = TextEditingController(
+    text: localDemoAccessEnabled ? 'Demo Customer' : '',
+  );
+  final phoneController = TextEditingController(
+    text: localDemoAccessEnabled ? '0865907184' : '',
+  );
+  final addressController = TextEditingController(
+    text: localDemoAccessEnabled ? demoCustomerAddress : '',
+  );
   final couponController = TextEditingController();
   double? customerLat;
   double? customerLng;
@@ -57,6 +67,9 @@ class _BookingConfirmationPageState
   bool submitting = false;
   bool locationConfirmed = false;
   bool loadingPaymentMethods = true;
+  bool loadingWalletBalance = true;
+  int? walletBalance;
+  String walletCurrency = 'VND';
   List<CustomerPaymentMethodOption> paymentMethods = const [
     CustomerPaymentMethodOption.cash,
   ];
@@ -66,6 +79,16 @@ class _BookingConfirmationPageState
   @override
   void initState() {
     super.initState();
+    final account = ref.read(authControllerProvider)?.user;
+    final accountName =
+        (account?['fullName'] ?? account?['displayName'])?.toString().trim();
+    final accountPhone = account?['phone']?.toString().trim();
+    if (accountName != null && accountName.isNotEmpty) {
+      nameController.text = accountName;
+    }
+    if (accountPhone != null && accountPhone.isNotEmpty) {
+      phoneController.text = accountPhone;
+    }
     customerLat = widget.initialCustomerLat;
     customerLng = widget.initialCustomerLng;
     final initialAddress = widget.initialCustomerAddress?.trim();
@@ -84,6 +107,7 @@ class _BookingConfirmationPageState
           'Choose the exact Vietnam service location before booking.';
     }
     unawaited(loadPaymentMethods());
+    unawaited(loadWalletBalance());
   }
 
   Future<void> loadPaymentMethods() async {
@@ -114,6 +138,42 @@ class _BookingConfirmationPageState
     }
   }
 
+  Future<void> loadWalletBalance() async {
+    try {
+      final wallet = await ref.read(customerRepositoryProvider).getWallet();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        walletBalance = asNum(wallet['balance'])?.toInt();
+        walletCurrency = wallet['currency'] as String? ?? 'VND';
+        loadingWalletBalance = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        walletBalance = null;
+        loadingWalletBalance = false;
+      });
+    }
+  }
+
+  int get totalAmount {
+    final rawAmount =
+        customerServicePrice(widget.selectedService) - couponDiscountAmount;
+    return rawAmount < 0 ? 0 : rawAmount;
+  }
+
+  bool get selectedPaymentUsesWallet =>
+      selectedPaymentMethod.contains('WALLET');
+
+  bool get walletHasInsufficientBalance =>
+      selectedPaymentUsesWallet &&
+      walletBalance != null &&
+      walletBalance! < totalAmount;
+
   @override
   void dispose() {
     nameController.dispose();
@@ -132,6 +192,7 @@ class _BookingConfirmationPageState
           initialAddress: addressController.text.trim().isEmpty
               ? demoCustomerAddress
               : addressController.text.trim(),
+          initialLocationRequiresConfirmation: !locationConfirmed,
         ),
       ),
     );
@@ -182,6 +243,13 @@ class _BookingConfirmationPageState
       setState(() {
         error =
             'Please confirm the service location on the map before booking.';
+      });
+      return;
+    }
+    if (walletHasInsufficientBalance) {
+      setState(() {
+        error =
+            'Your HANDS Wallet balance is not enough for this booking. Choose another payment method or add funds.';
       });
       return;
     }
@@ -277,7 +345,7 @@ class _BookingConfirmationPageState
       setState(() {
         appliedCouponCode = null;
         couponDiscountAmount = 0;
-        couponMessage = '$exception';
+        couponMessage = customerBookingErrorMessage(exception);
       });
     } finally {
       if (mounted) {
@@ -288,113 +356,123 @@ class _BookingConfirmationPageState
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.handsColors;
     final service = widget.selectedService;
     final provider = widget.providerDetail;
     final distanceMeters = asDouble(provider['distanceMeters']);
     final servicePrice = customerServicePrice(service);
-    final basePrice = asNum(service['basePrice'])?.toInt() ?? servicePrice;
-    final hasProviderPrice = servicePrice != basePrice;
     final providerName = provider['displayName'] as String? ?? 'Partner';
     final serviceName = customerServiceName(service);
     final durationLabel = customerServiceDurationLabel(service);
-    final serviceCount = 1;
-    final rawTotalAmount = servicePrice - couponDiscountAmount;
-    final totalAmount = rawTotalAmount < 0 ? 0 : rawTotalAmount;
+    final totalAmount = this.totalAmount;
     final couponApplied = appliedCouponCode != null && couponDiscountAmount > 0;
+    final selectedMethod = paymentMethods.firstWhere(
+      (method) => method.method == selectedPaymentMethod,
+      orElse: () => CustomerPaymentMethodOption.cash,
+    );
+    final walletInsufficient = walletHasInsufficientBalance;
     final customerPoint = customerLat == null || customerLng == null
         ? null
         : LatLng(customerLat!, customerLng!);
     final providerPoint = deriveProviderLatLng(provider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Booking information')),
+      appBar: AppBar(title: const Text('Review booking')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          padding: const EdgeInsets.fromLTRB(
+            CustomerSpacing.page,
+            CustomerSpacing.page,
+            CustomerSpacing.page,
+            28,
+          ),
           children: [
             BookingSectionCard(
-              title: 'Request summary',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: const [
-                      ServiceTag(label: 'Direct request'),
-                      ServiceTag(label: 'Marketplace matching if needed'),
-                      ServiceTag(label: 'Chat after match'),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  BookingSummaryRow(
-                    label: 'Partner',
-                    value: providerName,
-                  ),
-                  const SizedBox(height: 10),
-                  BookingSummaryRow(
-                    label: 'Service',
-                    value: serviceName,
-                  ),
-                  const SizedBox(height: 10),
-                  BookingSummaryRow(
-                    label: 'Duration',
-                    value: durationLabel,
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 14),
-                    child: Divider(height: 1),
-                  ),
-                  BookingSummaryRow(
-                    label: 'Amount to pay',
-                    value: '${formatCurrency(totalAmount)} VND',
-                    emphasized: true,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            BookingSectionCard(
-              title: 'My address',
+              title: 'Your service',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
+                      ProviderThumbnail(
+                        name: providerName,
+                        size: 58,
+                        imageUrl: providerProfileImageUrl(provider),
+                      ),
+                      const SizedBox(width: 14),
                       Expanded(
-                        child: TextField(
-                          controller: nameController,
-                          decoration: const InputDecoration(labelText: 'Name'),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              providerName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 5),
+                            Wrap(
+                              spacing: 14,
+                              runSpacing: 4,
+                              children: [
+                                _BookingInlineFact(
+                                  icon: Icons.star_rounded,
+                                  iconColor: colors.primary,
+                                  label:
+                                      '${providerAverageRating(provider).toStringAsFixed(1)} (${providerReviewCount(provider)})',
+                                ),
+                                _BookingInlineFact(
+                                  icon: Icons.location_on_outlined,
+                                  label: formatDistance(distanceMeters),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Divider(height: 1),
+                  ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _BookingIconBadge(icon: Icons.spa_outlined),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              serviceName,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              durationLabel,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(color: colors.inkMuted),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: phoneController,
-                          decoration: const InputDecoration(labelText: 'Phone'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: addressController,
-                    decoration: const InputDecoration(labelText: 'Address'),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(Icons.call_outlined,
-                          size: 18, color: Colors.black54),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          phoneController.text,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(color: Colors.black54),
-                        ),
+                      Text(
+                        '${formatCurrency(servicePrice)} VND',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: colors.primary,
+                                  fontWeight: FontWeight.w800,
+                                ),
                       ),
                     ],
                   ),
@@ -408,144 +486,114 @@ class _BookingConfirmationPageState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(CustomerRadii.control),
                     child: SizedBox(
-                      height: 180,
+                      height: 142,
                       child: LocationMapSurface(
                         customerPoint: customerPoint,
                         providerPoint: providerPoint,
-                        customerLabel: 'Customer',
+                        customerLabel: 'Service address',
                         providerLabel: 'Partner area',
                         fallbackShowProviderMarker: true,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.location_on_outlined,
-                          size: 20, color: Colors.grey),
-                      const SizedBox(width: 6),
-                      Expanded(child: Text(addressController.text)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Service pin: ${formatCoordinate(customerLat)}, ${formatCoordinate(customerLng)}',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: Colors.black54),
-                  ),
-                  if (locationMessage != null) ...[
-                    const SizedBox(height: 8),
-                    InfoBanner(text: locationMessage!),
-                  ],
-                  const SizedBox(height: 4),
-                  Text(
-                    'Partner distance: ${formatDistance(distanceMeters)}',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: Colors.black54),
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton.tonalIcon(
-                    onPressed: openLocationSelector,
-                    icon: const Icon(Icons.pin_drop_outlined),
-                    label: const Text('Choose on map'),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            BookingSectionCard(
-              title: 'Selected service',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      ProviderThumbnail(
-                          name: providerName,
-                          size: 72,
-                          imageUrl: providerProfileImageUrl(provider)),
-                      const SizedBox(width: 14),
+                      Icon(
+                        locationConfirmed
+                            ? Icons.check_circle
+                            : Icons.location_on_outlined,
+                        color:
+                            locationConfirmed ? colors.success : colors.primary,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              providerName,
-                              style: Theme.of(context).textTheme.titleLarge,
+                              locationConfirmed
+                                  ? 'Location confirmed'
+                                  : 'Choose a service location',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 3),
                             Text(
-                              '${providerAverageRating(provider).toStringAsFixed(1)} (${providerReviewCount(provider)} reviews)',
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              formatDistance(distanceMeters),
+                              addressController.text.trim().isEmpty
+                                  ? 'No address selected'
+                                  : addressController.text.trim(),
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium
-                                  ?.copyWith(color: Colors.black54),
+                                  ?.copyWith(color: colors.inkMuted),
                             ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8F5EC),
-                      borderRadius: BorderRadius.circular(18),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: submitting ? null : openLocationSelector,
+                    icon: const Icon(Icons.map_outlined),
+                    label: Text(
+                      locationConfirmed ? 'Change location' : 'Choose on map',
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          serviceName,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          durationLabel,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(color: Colors.black54),
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            ServiceTag(label: durationLabel),
-                            ServiceTag(
-                                label: '${formatCurrency(servicePrice)} VND'),
-                            if (hasProviderPrice)
-                              ServiceTag(
-                                  label:
-                                      'Minimum ${formatCurrency(basePrice)} VND'),
-                            const ServiceTag(label: '1 partner'),
-                          ],
-                        ),
-                      ],
+                  ),
+                  if (locationMessage != null) ...[
+                    const SizedBox(height: 12),
+                    InfoBanner(text: locationMessage!),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            BookingSectionCard(
+              title: 'Contact details',
+              child: Column(
+                children: [
+                  TextField(
+                    controller: nameController,
+                    readOnly: true,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Name',
+                      prefixIcon: Icon(Icons.person_outline),
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: phoneController,
+                    readOnly: true,
+                    keyboardType: TextInputType.phone,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone',
+                      prefixIcon: Icon(Icons.phone_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: addressController,
+                    decoration: const InputDecoration(
+                      labelText: 'Service address details',
+                      prefixIcon: Icon(Icons.home_outlined),
+                    ),
+                    maxLines: 2,
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 14),
             BookingSectionCard(
-              title: 'Payment method',
+              title: 'How you will pay',
               child: loadingPaymentMethods
                   ? const Row(
                       children: [
@@ -558,34 +606,44 @@ class _BookingConfirmationPageState
                         Text('Checking available payment methods...'),
                       ],
                     )
-                  : paymentMethods.length == 1
-                      ? _PaymentMethodSummary(method: paymentMethods.first)
-                      : DropdownButtonFormField<String>(
-                          initialValue: selectedPaymentMethod,
-                          decoration: const InputDecoration(
-                            labelText: 'Payment method',
+                  : Column(
+                      children: [
+                        for (var index = 0;
+                            index < paymentMethods.length;
+                            index++) ...[
+                          _PaymentMethodOptionTile(
+                            method: paymentMethods[index],
+                            selected: selectedPaymentMethod ==
+                                paymentMethods[index].method,
+                            walletBalance: walletBalance,
+                            walletCurrency: walletCurrency,
+                            walletLoading: loadingWalletBalance,
+                            insufficientBalance: paymentMethods[index]
+                                    .method
+                                    .contains('WALLET') &&
+                                walletBalance != null &&
+                                walletBalance! < totalAmount,
+                            onPressed: submitting ||
+                                    (paymentMethods[index]
+                                            .method
+                                            .contains('WALLET') &&
+                                        walletBalance != null &&
+                                        walletBalance! < totalAmount)
+                                ? null
+                                : () => setState(
+                                      () => selectedPaymentMethod =
+                                          paymentMethods[index].method,
+                                    ),
                           ),
-                          items: paymentMethods
-                              .map(
-                                (method) => DropdownMenuItem<String>(
-                                  value: method.method,
-                                  child: Text(method.label),
-                                ),
-                              )
-                              .toList(growable: false),
-                          onChanged: submitting
-                              ? null
-                              : (value) {
-                                  if (value != null) {
-                                    setState(
-                                        () => selectedPaymentMethod = value);
-                                  }
-                                },
-                        ),
+                          if (index < paymentMethods.length - 1)
+                            const SizedBox(height: 10),
+                        ],
+                      ],
+                    ),
             ),
             const SizedBox(height: 14),
             BookingSectionCard(
-              title: 'Discount code',
+              title: 'Coupon',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -600,7 +658,7 @@ class _BookingConfirmationPageState
                         ),
                       ),
                       const SizedBox(width: 10),
-                      TextButton(
+                      OutlinedButton(
                         onPressed: applyingCoupon ? null : applyCoupon,
                         child: Text(applyingCoupon ? 'Checking...' : 'Apply'),
                       ),
@@ -608,49 +666,59 @@ class _BookingConfirmationPageState
                   ),
                   if (couponMessage != null) ...[
                     const SizedBox(height: 10),
-                    Text(
-                      couponMessage!,
-                      style: TextStyle(
-                        color: appliedCouponCode != null
-                            ? const Color(0xFF5E8E4A)
-                            : const Color(0xFFB3261E),
-                        fontWeight: FontWeight.w600,
+                    Builder(
+                      builder: (context) => Text(
+                        couponMessage!,
+                        style: TextStyle(
+                          color: appliedCouponCode != null
+                              ? context.handsColors.success
+                              : context.handsColors.error,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
                   if (couponApplied) ...[
                     const SizedBox(height: 14),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F8E9),
-                        border: Border.all(color: const Color(0xFFCBE7BB)),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Discount applied',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
-                                ?.copyWith(
-                                  color: const Color(0xFF3F6F2D),
-                                  fontWeight: FontWeight.w800,
-                                ),
+                    Builder(
+                      builder: (context) {
+                        final colors = context.handsColors;
+                        return Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: colors.success.withValues(alpha: 0.10),
+                            border: Border.all(
+                              color: colors.success.withValues(alpha: 0.35),
+                            ),
+                            borderRadius:
+                                BorderRadius.circular(HandsShapes.medium),
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '$appliedCouponCode saves ${formatCurrency(couponDiscountAmount)} VND. Final payment amount is ${formatCurrency(totalAmount)} VND.',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(color: const Color(0xFF3F6F2D)),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Discount applied',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(
+                                      color: colors.success,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '$appliedCouponCode saves ${formatCurrency(couponDiscountAmount)} VND. Final payment amount is ${formatCurrency(totalAmount)} VND.',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: colors.success),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                   ],
                 ],
@@ -658,24 +726,9 @@ class _BookingConfirmationPageState
             ),
             const SizedBox(height: 14),
             BookingSectionCard(
-              title: 'Payment summary',
+              title: 'Total',
               child: Column(
                 children: [
-                  BookingSummaryRow(
-                    label: 'Services',
-                    value: '$serviceCount item',
-                  ),
-                  const SizedBox(height: 10),
-                  BookingSummaryRow(
-                    label: 'Service type',
-                    value: serviceName,
-                  ),
-                  const SizedBox(height: 10),
-                  BookingSummaryRow(
-                    label: 'Duration',
-                    value: durationLabel,
-                  ),
-                  const SizedBox(height: 10),
                   BookingSummaryRow(
                     label: 'Service price',
                     value: '${formatCurrency(servicePrice)} VND',
@@ -687,6 +740,11 @@ class _BookingConfirmationPageState
                         ? 'Not applied'
                         : '-${formatCurrency(couponDiscountAmount)} VND ($appliedCouponCode)',
                     highlighted: appliedCouponCode != null,
+                  ),
+                  const SizedBox(height: 10),
+                  BookingSummaryRow(
+                    label: 'Payment method',
+                    value: selectedMethod.label,
                   ),
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 14),
@@ -707,21 +765,195 @@ class _BookingConfirmationPageState
           ],
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: FilledButton(
-          onPressed: submitting ? null : confirmBooking,
-          style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF5E8E4A),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 18),
+      bottomNavigationBar: _BookingConfirmationBar(
+        amount: totalAmount,
+        locationConfirmed: locationConfirmed,
+        submitting: submitting,
+        paymentMethod: selectedPaymentMethod,
+        paymentBlocked: walletInsufficient,
+        onPressed: submitting || walletInsufficient
+            ? null
+            : locationConfirmed
+                ? confirmBooking
+                : openLocationSelector,
+      ),
+    );
+  }
+}
+
+class _BookingInlineFact extends StatelessWidget {
+  const _BookingInlineFact({
+    required this.icon,
+    required this.label,
+    this.iconColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color? iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.handsColors;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 17, color: iconColor ?? colors.inkMuted),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: colors.inkMuted),
+        ),
+      ],
+    );
+  }
+}
+
+class _BookingIconBadge extends StatelessWidget {
+  const _BookingIconBadge({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.handsColors;
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: colors.primarySoft,
+        borderRadius: BorderRadius.circular(HandsShapes.medium),
+      ),
+      child: Icon(icon, color: colors.primary, size: 22),
+    );
+  }
+}
+
+class _PaymentMethodOptionTile extends StatelessWidget {
+  const _PaymentMethodOptionTile({
+    required this.method,
+    required this.selected,
+    required this.onPressed,
+    required this.walletBalance,
+    required this.walletCurrency,
+    required this.walletLoading,
+    required this.insufficientBalance,
+  });
+
+  final CustomerPaymentMethodOption method;
+  final bool selected;
+  final VoidCallback? onPressed;
+  final int? walletBalance;
+  final String walletCurrency;
+  final bool walletLoading;
+  final bool insufficientBalance;
+
+  IconData get icon {
+    if (method.method == 'CASH') {
+      return Icons.payments_outlined;
+    }
+    if (method.method.contains('WALLET')) {
+      return Icons.account_balance_wallet_outlined;
+    }
+    return Icons.credit_card_outlined;
+  }
+
+  String get description {
+    if (method.method == 'CASH') {
+      return 'Pay the partner after the service. Nothing is charged now.';
+    }
+    if (method.method.contains('WALLET')) {
+      return 'Reserved when you request the booking and restored if it is cancelled before service.';
+    }
+    if (method.requiresRedirect) {
+      return 'Payment authorization is required before partner matching starts.';
+    }
+    return 'Pay securely with ${method.label}.';
+  }
+
+  String? get walletBalanceLabel {
+    if (!method.method.contains('WALLET')) {
+      return null;
+    }
+    if (walletLoading) {
+      return 'Checking wallet balance...';
+    }
+    if (walletBalance == null) {
+      return 'Wallet balance unavailable';
+    }
+    return 'Balance: ${formatCurrency(walletBalance)} $walletCurrency';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.handsColors;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '${method.label} payment method',
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(CustomerRadii.control),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: selected ? colors.primarySoft : colors.surface,
+            borderRadius: BorderRadius.circular(CustomerRadii.control),
+            border: Border.all(
+              color: selected ? colors.primary : colors.outline,
+              width: selected ? 1.5 : 1,
+            ),
           ),
-          child: Text(
-            submitting
-                ? 'Creating booking...'
-                : !locationConfirmed
-                    ? 'Confirm location before booking'
-                    : 'Send booking request - ${formatCurrency(totalAmount)} VND',
+          child: Row(
+            children: [
+              _BookingIconBadge(icon: icon),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      method.label,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      description,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: colors.inkMuted),
+                    ),
+                    if (walletBalanceLabel != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        insufficientBalance
+                            ? '${walletBalanceLabel!} · Insufficient'
+                            : walletBalanceLabel!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: insufficientBalance
+                                  ? colors.error
+                                  : colors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Icon(
+                selected ? Icons.check_circle : Icons.radio_button_unchecked,
+                color: selected ? colors.primary : colors.inkMuted,
+              ),
+            ],
           ),
         ),
       ),
@@ -729,46 +961,93 @@ class _BookingConfirmationPageState
   }
 }
 
-class _PaymentMethodSummary extends StatelessWidget {
-  const _PaymentMethodSummary({required this.method});
+class _BookingConfirmationBar extends StatelessWidget {
+  const _BookingConfirmationBar({
+    required this.amount,
+    required this.locationConfirmed,
+    required this.submitting,
+    required this.paymentMethod,
+    required this.paymentBlocked,
+    required this.onPressed,
+  });
 
-  final CustomerPaymentMethodOption method;
+  final int amount;
+  final bool locationConfirmed;
+  final bool submitting;
+  final String paymentMethod;
+  final bool paymentBlocked;
+  final VoidCallback? onPressed;
+
+  String get buttonLabel {
+    if (submitting) {
+      return 'Booking...';
+    }
+    if (!locationConfirmed) {
+      return 'Choose location';
+    }
+    if (paymentBlocked) {
+      return 'Insufficient wallet';
+    }
+    if (paymentMethod == 'CASH') {
+      return 'Request booking';
+    }
+    if (paymentMethod.contains('WALLET')) {
+      return 'Pay with wallet';
+    }
+    return 'Confirm booking';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          method.method == 'CASH'
-              ? Icons.payments_outlined
-              : Icons.account_balance_wallet_outlined,
+    final colors = context.handsColors;
+    return Material(
+      color: colors.surface,
+      child: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(
+          CustomerSpacing.page,
+          12,
+          CustomerSpacing.page,
+          14,
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                method.label,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Total',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: colors.inkMuted),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${formatCurrency(amount)} VND',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: colors.primary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 2),
-              Text(
-                method.method == 'CASH'
-                    ? 'Pay the partner when the service starts.'
-                    : 'Continue to secure payment after the booking request.',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: Colors.black54),
+            ),
+            const SizedBox(width: 16),
+            FilledButton(
+              onPressed: onPressed,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(152, 54),
+                padding: const EdgeInsets.symmetric(horizontal: 22),
               ),
-            ],
-          ),
+              child: Text(
+                buttonLabel,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -789,6 +1068,7 @@ class BookingSummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.handsColors;
     final labelStyle = emphasized
         ? Theme.of(context)
             .textTheme
@@ -801,7 +1081,7 @@ class BookingSummaryRow extends StatelessWidget {
             .titleLarge
             ?.copyWith(fontWeight: FontWeight.w800)
         : Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: highlighted ? const Color(0xFF5E8E4A) : null,
+              color: highlighted ? colors.primary : null,
               fontWeight: highlighted ? FontWeight.w700 : FontWeight.w500,
             );
 
@@ -836,7 +1116,8 @@ class BookingWaitingPage extends ConsumerStatefulWidget {
   ConsumerState<BookingWaitingPage> createState() => _BookingWaitingPageState();
 }
 
-class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
+class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage>
+    with WidgetsBindingObserver {
   Timer? timer;
   Map<String, dynamic>? booking;
   late final RealtimeSocket _socket;
@@ -844,11 +1125,17 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
   String? statusMessage;
   String? error;
   bool loading = false;
+  bool refreshInFlight = false;
   bool reviewSubmitting = false;
+  bool candidateNoticeShown = false;
+  int timerTicks = 0;
+  final GlobalKey _candidateListKey = GlobalKey();
+  final List<void Function()> _realtimeDisposers = [];
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _socket = ref.read(realtimeSocketProvider);
     booking = widget.initialBooking;
     latestProviderLocation = bookingLatestProviderLocation(booking);
@@ -857,20 +1144,47 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
       ref.read(customerRepositoryProvider).joinBookingRoom(bookingId);
     }
     attachRealtimeListeners();
-    timer = Timer.periodic(
-        const Duration(seconds: 5), (_) => refreshBooking(showLoading: false));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_showCandidateNoticeIfNeeded(widget.initialBooking));
+    });
+    timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final currentBooking = booking;
+      if (!mounted ||
+          currentBooking == null ||
+          isCustomerClosedBooking(currentBooking)) {
+        return;
+      }
+      setState(() {});
+      timerTicks += 1;
+      if (timerTicks % 5 == 0) {
+        unawaited(refreshBooking(showLoading: false));
+      }
+    });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     timer?.cancel();
+    final bookingId = booking?['id']?.toString();
+    if (bookingId != null) {
+      _socket.leaveBooking(bookingId);
+    }
     detachRealtimeListeners();
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(refreshBooking(showLoading: false));
+    }
+  }
+
   void attachRealtimeListeners() {
     detachRealtimeListeners();
-    _socket.onEvent('provider.location.updated', (payload) {
+    _realtimeDisposers
+        .add(_socket.onEvent('provider.location.updated', (payload) {
       final activeBookingId = booking?['id'];
       if (!mounted ||
           payload is! Map ||
@@ -881,15 +1195,17 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
         latestProviderLocation =
             Map<String, dynamic>.from(payload.cast<String, dynamic>());
       });
-    });
+    }));
 
     final eventMessages = <String, String>{
-      'provider.joined': 'A marketplace partner joined this request.',
+      'provider.joined': 'Another partner is available for this request.',
       'provider.accepted':
-          'A partner accepted. Confirm this partner or choose another available option.',
+          'A partner is available. Keep waiting or choose the available option.',
       'provider.rejected':
           'A partner declined. We will keep showing available options.',
-      'booking.matched': 'Your partner confirmed the booking.',
+      'provider.arrived': 'Your partner has arrived at the service address.',
+      'booking.matched':
+          'Your partner confirmed. Chat and service are now active.',
       'booking.opened': 'The request is still open for partner responses.',
       'booking.expired': 'This booking expired or was cancelled.',
       'service.started': 'Service started. Matched chat remains available.',
@@ -897,37 +1213,43 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
     };
 
     for (final entry in eventMessages.entries) {
-      _socket.onEvent(entry.key, (payload) {
-        if (!mounted) {
+      _realtimeDisposers.add(_socket.onEvent(entry.key, (payload) {
+        if (!mounted || !_eventBelongsToActiveBooking(payload)) {
           return;
         }
         setState(() => statusMessage = entry.value);
         unawaited(refreshBooking(showLoading: false));
-      });
+      }));
     }
   }
 
   void detachRealtimeListeners() {
-    for (final event in [
-      'provider.location.updated',
-      'provider.joined',
-      'provider.accepted',
-      'provider.rejected',
-      'booking.matched',
-      'booking.opened',
-      'booking.expired',
-      'service.started',
-      'service.completed',
-    ]) {
-      _socket.offEvent(event);
+    for (final disposeListener in _realtimeDisposers) {
+      disposeListener();
     }
+    _realtimeDisposers.clear();
+  }
+
+  bool _eventBelongsToActiveBooking(dynamic payload) {
+    if (payload is! Map) {
+      return true;
+    }
+    final payloadBooking = asMap(payload['booking']);
+    final payloadBookingId = payload['bookingId']?.toString() ??
+        payload['id']?.toString() ??
+        payloadBooking?['id']?.toString();
+    final activeBookingId = booking?['id']?.toString();
+    return payloadBookingId == null ||
+        activeBookingId == null ||
+        payloadBookingId == activeBookingId;
   }
 
   Future<void> refreshBooking({bool showLoading = true}) async {
     final bookingId = booking?['id'] as String?;
-    if (bookingId == null) {
+    if (bookingId == null || refreshInFlight) {
       return;
     }
+    refreshInFlight = true;
     if (showLoading) {
       setState(() {
         loading = true;
@@ -948,14 +1270,68 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
         }
       });
       widget.onBookingUpdated(updated);
+      unawaited(_showCandidateNoticeIfNeeded(updated));
     } catch (exception) {
       if (mounted) {
-        setState(() => error = '$exception');
+        setState(() => error = customerBookingErrorMessage(exception));
       }
     } finally {
+      refreshInFlight = false;
       if (mounted && showLoading) {
         setState(() => loading = false);
       }
+    }
+  }
+
+  Future<void> openPaymentCheckout() async {
+    final bookingId = booking?['id']?.toString();
+    if (bookingId == null) {
+      return;
+    }
+    setState(() {
+      loading = true;
+      error = null;
+    });
+    try {
+      final action = await ref
+          .read(customerPaymentActionRepositoryProvider)
+          .getForBooking(bookingId);
+      final opened = await launchUrl(
+        action.checkoutUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened) {
+        throw StateError('Payment checkout could not be opened.');
+      }
+      if (mounted) {
+        setState(() {
+          statusMessage =
+              'Complete the payment, then return to HANDS. This booking will refresh automatically.';
+        });
+      }
+    } catch (exception) {
+      if (mounted) {
+        setState(() => error = customerBookingErrorMessage(exception));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => loading = false);
+      }
+    }
+  }
+
+  Future<void> openBookingSupport() async {
+    final bookingId = booking?['id']?.toString() ?? '';
+    final opened = await launchUrl(
+      Uri(
+        scheme: 'mailto',
+        path: AppConfig.supportEmail,
+        queryParameters: {'subject': 'HANDS booking support: $bookingId'},
+      ),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!opened && mounted) {
+      setState(() => error = 'HANDS support could not be opened.');
     }
   }
 
@@ -989,7 +1365,9 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
       widget.onBookingUpdated(updated);
       Navigator.of(context).pop();
     } catch (exception) {
-      setState(() => error = '$exception');
+      if (!_applyLatestBookingFromException(exception)) {
+        setState(() => error = customerBookingErrorMessage(exception));
+      }
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -997,9 +1375,34 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
     }
   }
 
+  Future<void> confirmCancellation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cancel booking request?'),
+        content: const Text(
+          'This booking has not been matched yet. Cancelling ends every partner request for this booking.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Keep waiting'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Cancel request'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await cancelBooking();
+    }
+  }
+
   Future<void> selectProvider(Map<String, dynamic> participant) async {
     final bookingId = booking?['id'] as String?;
-    final providerId = participant['providerProfileId'] as String?;
+    final providerId = customerParticipantPartnerId(participant);
     if (bookingId == null || providerId == null) {
       return;
     }
@@ -1017,10 +1420,77 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
       setState(() => booking = updated);
       widget.onBookingUpdated(updated);
     } catch (exception) {
-      setState(() => error = '$exception');
+      if (!_applyLatestBookingFromException(exception)) {
+        setState(() => error = customerBookingErrorMessage(exception));
+      }
     } finally {
       if (mounted) {
         setState(() => loading = false);
+      }
+    }
+  }
+
+  bool _applyLatestBookingFromException(Object exception) {
+    final latest = customerLatestBookingFromError(exception);
+    if (latest == null || !mounted) {
+      return false;
+    }
+    setState(() {
+      booking = latest;
+      error = latest['status'] != 'CREATED' &&
+              latest['status'] != 'OPEN_MATCHING' &&
+              isCustomerActiveBooking(latest)
+          ? 'This booking is already matched. Use chat or HANDS support if you need help.'
+          : customerBookingErrorMessage(exception);
+    });
+    widget.onBookingUpdated(latest);
+    return true;
+  }
+
+  Future<void> _showCandidateNoticeIfNeeded(
+      Map<String, dynamic> updated) async {
+    if (!mounted ||
+        candidateNoticeShown ||
+        updated['status'] != 'OPEN_MATCHING') {
+      return;
+    }
+    final preferredProvider = asMap(updated['preferredProvider']);
+    final candidates = customerSelectableMarketplaceParticipants(
+      asList(updated['participants']),
+      preferredProviderId: preferredProvider?['id']?.toString(),
+    );
+    if (candidates.isEmpty) {
+      return;
+    }
+    candidateNoticeShown = true;
+    final viewCandidates = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+            '${candidates.length} more partner${candidates.length == 1 ? '' : 's'} available'),
+        content: const Text(
+          'You can keep waiting for your preferred partner or choose another available partner. The original matching time continues.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Keep waiting'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('View partners'),
+          ),
+        ],
+      ),
+    );
+    if (viewCandidates == true && mounted) {
+      final candidateContext = _candidateListKey.currentContext;
+      if (candidateContext != null && candidateContext.mounted) {
+        await Scrollable.ensureVisible(
+          candidateContext,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
     }
   }
@@ -1056,7 +1526,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
       });
     } catch (exception) {
       if (mounted) {
-        setState(() => error = '$exception');
+        setState(() => error = customerBookingErrorMessage(exception));
       }
     } finally {
       if (mounted) {
@@ -1101,348 +1571,310 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
     final providerPoint = deriveRealtimeLatLng(latestProviderLocation);
     final chatRoom = asMap(currentBooking?['chatRoom']);
     final chatRoomId = chatRoom?['id']?.toString();
-    final matchingPolicy = bookingMatchingPolicy(currentBooking);
     final timeLeft = formatRemainingTime(expiresAt);
     final action = waitingCustomerAction(
       status: status,
       fallbackCount: fallbackCount,
       hasChatRoom: chatRoomId != null,
-      matchingPolicy: matchingPolicy,
+      cancellationReasonCode:
+          asMap(currentBooking?['cancellation'])?['reasonCode']?.toString(),
     );
-    final waitingHeadline = status == 'OPEN_MATCHING'
-        ? '${providerDisplayName(currentBooking)} confirmation pending'
-        : status == 'MATCHED'
-            ? '${providerDisplayName(currentBooking)} confirmed'
-            : status == 'IN_SERVICE'
-                ? 'Service in progress'
-                : 'Booking update';
-    final waitingText = status == 'OPEN_MATCHING'
-        ? (preferredProvider == null
-            ? 'Waiting for nearby partners to respond...'
-            : 'Waiting for ${preferredProvider['displayName'] ?? 'your partner'} to confirm. Marketplace partners may join too.')
-        : status == 'MATCHED'
-            ? 'Partner confirmed. Chat is ready for coordination...'
-            : status == 'IN_SERVICE'
-                ? 'Service started. Continue in Chat.'
-                : 'Status: $status';
+    final addressSnapshot = asMap(currentBooking?['addressSnapshot']);
+    final addressText = addressSnapshot?['addressText']?.toString().trim();
+    final payment = asMap(currentBooking?['payment']);
+    final cancellation = asMap(currentBooking?['cancellation']);
+    final paymentMethod = payment?['method']?.toString() ??
+        currentBooking?['paymentMethod']?.toString();
+    final canOpenPaymentCheckout = status == 'CREATED' &&
+        const {'MOMO', 'VNPAY', 'CARD'}.contains(paymentMethod?.toUpperCase());
+    final visibleProvider = finalizedProvider ?? preferredProvider;
+    final providerLocationLabel = isClosed
+        ? 'Service location'
+        : latestProviderLocation == null
+            ? 'Location will appear when shared'
+            : 'Location updated ${formatLastLocation(latestProviderLocation?['recordedAt'])}';
+    final partnerBadgeLabel = isMatching
+        ? 'Requested'
+        : isClosed
+            ? 'Booking closed'
+            : 'Confirmed';
+    final partnerSubtitle = isMatching
+        ? 'Waiting for this partner to confirm'
+        : isClosed
+            ? 'This booking is closed'
+            : providerLocationLabel;
+    final showLiveMap = const {
+          'PROVIDER_ON_THE_WAY',
+          'ARRIVED',
+          'IN_SERVICE',
+        }.contains(status) &&
+        providerPoint != null;
+    final bookingContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        BookingProgressStatusCard(
+          status: status,
+          title: action.title,
+          body: action.body,
+          timeLeft: isMatching && timeLeft != '--' ? timeLeft : null,
+        ),
+        if (loading) ...[
+          const SizedBox(height: 12),
+          const LinearProgressIndicator(),
+        ],
+        if (error != null) ...[
+          const SizedBox(height: 12),
+          ErrorPanel(text: error!),
+        ],
+        if (statusMessage != null) ...[
+          const SizedBox(height: 12),
+          InfoBanner(text: statusMessage!),
+        ],
+        if (canOpenPaymentCheckout) ...[
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: loading ? null : openPaymentCheckout,
+              icon: const Icon(Icons.open_in_new_rounded),
+              label: const Text('Continue to payment'),
+            ),
+          ),
+        ],
+        if (visibleProvider != null) ...[
+          const SizedBox(height: 16),
+          PartnerDisplayCard(
+            provider: visibleProvider,
+            badgeLabel: partnerBadgeLabel,
+            subtitle: partnerSubtitle,
+          ),
+        ],
+        const SizedBox(height: 16),
+        BookingSectionCard(
+          title: 'Your booking',
+          child: Column(
+            children: [
+              BookingProgressDetailRow(
+                icon: Icons.spa_outlined,
+                label: 'Service',
+                value: service == null
+                    ? 'Service details unavailable'
+                    : customerServiceOptionPriceLabel(service),
+              ),
+              const Divider(height: 25),
+              BookingProgressDetailRow(
+                icon: Icons.location_on_outlined,
+                label: 'Service address',
+                value: addressText == null || addressText.isEmpty
+                    ? 'Address unavailable'
+                    : addressText,
+              ),
+              const Divider(height: 25),
+              BookingProgressDetailRow(
+                icon: _bookingPaymentIcon(paymentMethod),
+                label: 'Payment',
+                value: _bookingPaymentLabel(paymentMethod),
+              ),
+              const Divider(height: 25),
+              BookingProgressDetailRow(
+                icon: Icons.receipt_long_outlined,
+                label: 'Reference',
+                value: '#${shortCode(currentBooking?['id'])}',
+              ),
+            ],
+          ),
+        ),
+        if (isClosed && cancellation != null) ...[
+          const SizedBox(height: 16),
+          BookingSectionCard(
+            title: 'Cancellation result',
+            child: Column(
+              children: [
+                BookingProgressDetailRow(
+                  icon: Icons.info_outline_rounded,
+                  label: 'Reason',
+                  value: cancellation['reason']?.toString().trim().isNotEmpty ==
+                          true
+                      ? cancellation['reason'].toString()
+                      : 'This booking was cancelled.',
+                ),
+                const Divider(height: 25),
+                BookingProgressDetailRow(
+                  icon: Icons.payments_outlined,
+                  label: 'Payment result',
+                  value: _cancellationPaymentOutcomeLabel(
+                    cancellation['paymentOutcome']?.toString(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (alternativeParticipants.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          KeyedSubtree(
+            key: _candidateListKey,
+            child: Text(
+              '$fallbackCount available partner${fallbackCount == 1 ? '' : 's'}',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Keep waiting for your selected partner or choose one of these nearby partners.',
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: context.handsColors.inkMuted),
+          ),
+          const SizedBox(height: 12),
+          for (final item in alternativeParticipants)
+            PartnerSelectionCard(
+              participant: item,
+              onSelect: () => selectProvider(item),
+            ),
+        ],
+        if (chatRoomId != null && isCustomerAppChatVisible(currentBooking)) ...[
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: loading ? null : () => openChatRoom(chatRoomId),
+              icon: const Icon(Icons.chat_bubble_outline_rounded),
+              label: Text(chatActionLabel(status)),
+            ),
+          ),
+        ] else if (needsOpsReview) ...[
+          const SizedBox(height: 16),
+          const InfoBanner(
+            text:
+                'This booking can no longer be cancelled in the app. Contact HANDS support if you need help.',
+          ),
+        ],
+        if (isCompleted && currentBooking?['review'] == null) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: reviewSubmitting ? null : submitReview,
+              icon: const Icon(Icons.star_outline_rounded),
+              label: Text(
+                  reviewSubmitting ? 'Submitting review...' : 'Leave a review'),
+            ),
+          ),
+        ] else if (isCompleted) ...[
+          const SizedBox(height: 12),
+          InfoBanner(
+            text:
+                'Review submitted: ${asNum(asMap(currentBooking?['review'])?['rating'])?.toInt() ?? '-'} / 5',
+          ),
+        ],
+        if (isClosed) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () =>
+                  Navigator.of(context).popUntil((route) => route.isFirst),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Book again'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: openBookingSupport,
+              icon: const Icon(Icons.support_agent_outlined),
+              label: const Text('Contact HANDS support'),
+            ),
+          ),
+        ],
+        if (canDirectCancel) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: loading ? null : confirmCancellation,
+              icon: const Icon(Icons.close_rounded),
+              label: const Text('Cancel booking request'),
+            ),
+          ),
+        ],
+      ],
+    );
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Booking'),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh booking',
+            onPressed: loading ? null : () => refreshBooking(),
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Stack(
+        child: showLiveMap
+            ? Stack(
                 children: [
                   LocationMapSurface(
                     customerPoint: customerPoint,
                     providerPoint: providerPoint,
                     customerLabel: 'You',
-                    providerLabel:
-                        latestProviderLocation == null ? 'Waiting' : 'Partner',
-                    fallbackShowProviderMarker: latestProviderLocation != null,
+                    providerLabel: 'Partner',
+                    fallbackShowProviderMarker: true,
                   ),
                   Positioned(
                     top: 18,
                     left: 18,
-                    child: const CircleAvatar(
-                      radius: 24,
-                      backgroundColor: Colors.white,
-                      child: BackButton(),
+                    child: BookingMapStatusBadge(
+                      label: providerLocationLabel,
+                      active: true,
                     ),
-                  ),
-                  Positioned(
-                    top: 18,
-                    right: 18,
-                    child: canDirectCancel
-                        ? FilledButton(
-                            onPressed: loading ? null : cancelBooking,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFFE84B4B),
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text('Cancel request'),
-                          )
-                        : needsOpsReview
-                            ? Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(999),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Color(0x22000000),
-                                      blurRadius: 12,
-                                      offset: Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: const Text('Chat evidence'),
-                              )
-                            : const SizedBox.shrink(),
                   ),
                   Positioned(
                     left: 0,
                     right: 0,
                     bottom: 0,
                     child: Container(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.sizeOf(context).height * 0.67,
+                      ),
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         borderRadius:
                             BorderRadius.vertical(top: Radius.circular(24)),
                       ),
                       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            waitingHeadline,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.w800),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(waitingText,
-                              style: Theme.of(context).textTheme.bodyLarge),
-                          if (isMatching) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                                'This request closes automatically at ${formatExpiry(expiresAt)}'),
-                          ],
-                          const SizedBox(height: 16),
-                          if (loading) const LinearProgressIndicator(),
-                          if (error != null) ...[
-                            const SizedBox(height: 12),
-                            ErrorPanel(text: error!),
-                          ],
-                          if (statusMessage != null) ...[
-                            const SizedBox(height: 12),
-                            InfoBanner(text: statusMessage!),
-                          ],
-                          const SizedBox(height: 12),
-                          if (service != null)
-                            Text(
-                              customerServiceOptionPriceLabel(service),
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          if (!isClosed) ...[
-                            const SizedBox(height: 16),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                BookingTimelineChip(
-                                  icon: Icons.tag_rounded,
-                                  label:
-                                      'Booking ${shortCode(currentBooking?['id'])}',
-                                ),
-                                BookingTimelineChip(
-                                  icon: Icons.timer_outlined,
-                                  label: isMatching
-                                      ? timeLeft
-                                      : waitingStepLabel(status),
-                                ),
-                                if (isMatching)
-                                  BookingTimelineChip(
-                                    icon: Icons.groups_rounded,
-                                    label: fallbackCount == 0
-                                        ? 'No marketplace option yet'
-                                        : '$fallbackCount marketplace ready',
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            LinearProgressIndicator(
-                              value: bookingProgress(status),
-                              minHeight: 8,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ],
-                          if (isMatching) ...[
-                            const SizedBox(height: 18),
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                final cardWidth =
-                                    (constraints.maxWidth - 12) / 2;
-                                return Wrap(
-                                  spacing: 12,
-                                  runSpacing: 12,
-                                  children: [
-                                    SizedBox(
-                                      width: cardWidth,
-                                      child: WaitingStatCard(
-                                        label: 'Current step',
-                                        value: waitingStepLabel(status),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: cardWidth,
-                                      child: WaitingStatCard(
-                                        label: 'Marketplace partners',
-                                        value: fallbackCount.toString(),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: cardWidth,
-                                      child: WaitingStatCard(
-                                        label: 'Time left',
-                                        value: timeLeft,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: cardWidth,
-                                      child: WaitingStatCard(
-                                        label: 'Signal',
-                                        value: waitingSignalLabel(
-                                            status, fallbackCount),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            WaitingStagePanel(
-                              status: status,
-                              fallbackCount: fallbackCount,
-                              preferredProviderName:
-                                  preferredProvider?['displayName'] as String?,
-                              expiresAt: expiresAt,
-                              matchingPolicy: matchingPolicy,
-                            ),
-                          ],
-                          const SizedBox(height: 12),
-                          WaitingInfoBanner(
-                            title: action.title,
-                            body: action.body,
-                          ),
-                          if (chatRoomId != null &&
-                              isCustomerAppChatVisible(currentBooking)) ...[
-                            const SizedBox(height: 12),
-                            FilledButton.icon(
-                              onPressed: loading
-                                  ? null
-                                  : () => openChatRoom(chatRoomId),
-                              icon: const Icon(Icons.chat_bubble_outline),
-                              label: Text(chatActionLabel(status)),
-                            ),
-                          ],
-                          if (!isClosed) ...[
-                            const SizedBox(height: 18),
-                            BookingSectionCard(
-                              title: 'Partner location',
-                              child: LiveLocationDetails(
-                                customerPoint: customerPoint,
-                                providerLocation: latestProviderLocation,
-                                emptyText:
-                                    'The partner\'s last shared pin will appear here after they share location.',
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 18),
-                          if (preferredProvider != null) ...[
-                            Text('Chosen partner',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(fontWeight: FontWeight.w700)),
-                            const SizedBox(height: 12),
-                            PartnerDisplayCard(
-                              provider: preferredProvider,
-                              badgeLabel: 'Chosen first',
-                              detail: directRequestDetail(matchingPolicy),
-                              subtitle: fallbackCount == 0
-                                  ? 'Checking availability - $timeLeft'
-                                  : 'Checking availability - $timeLeft with ${marketplaceParticipationLabel(matchingPolicy)}',
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                          if (alternativeParticipants.isNotEmpty) ...[
-                            Text('Marketplace partners',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(fontWeight: FontWeight.w700)),
-                            const SizedBox(height: 4),
-                            Text(
-                              '$fallbackCount partner(s) can take this request now. You can keep waiting or switch.',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: Colors.black54),
-                            ),
-                            const SizedBox(height: 12),
-                            for (final item in alternativeParticipants)
-                              PartnerSelectionCard(
-                                participant: item,
-                                onSelect: () => selectProvider(item),
-                              ),
-                          ] else if (finalizedProvider != null) ...[
-                            Text('Confirmed partner',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(fontWeight: FontWeight.w700)),
-                            const SizedBox(height: 12),
-                            PartnerDisplayCard(
-                              provider: finalizedProvider,
-                              badgeLabel: 'Confirmed',
-                              detail:
-                                  'Your booking is now locked to this partner.',
-                            ),
-                          ] else if (isMatching) ...[
-                            const EmptyPanel(
-                                text:
-                                    'Waiting for a partner response. Marketplace options can appear here if the first partner is slow to confirm.'),
-                          ],
-                          if (isCompleted &&
-                              currentBooking?['review'] == null) ...[
-                            const SizedBox(height: 12),
-                            FilledButton.icon(
-                              onPressed: reviewSubmitting ? null : submitReview,
-                              icon: const Icon(Icons.star_outline_rounded),
-                              label: Text(reviewSubmitting
-                                  ? 'Submitting review...'
-                                  : 'Leave a review'),
-                            ),
-                          ] else if (isCompleted) ...[
-                            const SizedBox(height: 12),
-                            InfoBanner(
-                              text:
-                                  'Review submitted: ${asNum(asMap(currentBooking?['review'])?['rating'])?.toInt() ?? '-'} / 5',
-                            ),
-                          ],
-                          if (isClosed) ...[
-                            const SizedBox(height: 12),
-                            FilledButton.tonalIcon(
-                              onPressed: () => Navigator.of(context).pop(),
-                              icon: const Icon(Icons.receipt_long_outlined),
-                              label: const Text('Close booking record'),
-                            ),
-                          ],
-                          const SizedBox(height: 10),
-                          if (!isClosed)
-                            FilledButton.tonalIcon(
-                              onPressed:
-                                  loading ? null : () => refreshBooking(),
-                              icon: const Icon(Icons.refresh),
-                              label: const Text('Check latest status'),
-                            ),
-                        ],
-                      ),
+                      child: SingleChildScrollView(child: bookingContent),
                     ),
                   ),
                 ],
+              )
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                children: [bookingContent],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
 }
+
+String _cancellationPaymentOutcomeLabel(String? outcome) => switch (outcome) {
+      'NO_CHARGE' => 'No payment was charged.',
+      'RELEASED' => 'The payment hold was released.',
+      'REFUND_REQUESTED' => 'A full refund was requested.',
+      'REFUNDED' => 'The full refund is complete.',
+      'UNDER_REVIEW' => 'HANDS is reviewing the payment and refund.',
+      _ => 'Payment cancellation is processing.',
+    };
 
 class CustomerReviewInput {
   const CustomerReviewInput({
@@ -1473,6 +1905,7 @@ class _CustomerReviewDialogState extends State<CustomerReviewDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.handsColors;
     return AlertDialog(
       title: const Text('Review your service'),
       content: SingleChildScrollView(
@@ -1493,7 +1926,7 @@ class _CustomerReviewDialogState extends State<CustomerReviewDialog> {
                       value <= rating
                           ? Icons.star_rounded
                           : Icons.star_outline_rounded,
-                      color: const Color(0xFFF4A340),
+                      color: colors.primary,
                     ),
                   ),
               ],
@@ -1546,6 +1979,7 @@ class PartnerSelectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.handsColors;
     final provider =
         asMap(participant['providerProfile']) ?? <String, dynamic>{};
     final providerName = provider['displayName']?.toString() ?? 'Partner';
@@ -1576,29 +2010,30 @@ class PartnerSelectionCard extends StatelessWidget {
                       style: titleStyle,
                     ),
                     const SizedBox(height: 8),
-                    const Wrap(
+                    Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
                         PartnerRoleTag(
-                          label: 'Marketplace ready',
-                          backgroundColor: Color(0xFFF8ECD4),
-                          foregroundColor: Color(0xFF8A5B12),
+                          label: 'Available now',
+                          backgroundColor:
+                              colors.success.withValues(alpha: 0.12),
+                          foregroundColor: colors.success,
                         ),
                       ],
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '${participant['status'] ?? 'JOINED'} - $distance',
+                      distance,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'You can choose this partner as your final partner if this option works better.',
+                      'Choose this partner without starting a new booking.',
                       style: Theme.of(context)
                           .textTheme
                           .bodyMedium
-                          ?.copyWith(color: Colors.black54),
+                          ?.copyWith(color: colors.inkMuted),
                     ),
                   ],
                 );
@@ -1608,7 +2043,10 @@ class PartnerSelectionCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ProviderThumbnail(
-                          name: providerName, size: thumbnailSize),
+                        name: providerName,
+                        size: thumbnailSize,
+                        imageUrl: providerProfileImageUrl(provider),
+                      ),
                       const SizedBox(height: 10),
                       details,
                     ],
@@ -1618,7 +2056,11 @@ class PartnerSelectionCard extends StatelessWidget {
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ProviderThumbnail(name: providerName, size: thumbnailSize),
+                    ProviderThumbnail(
+                      name: providerName,
+                      size: thumbnailSize,
+                      imageUrl: providerProfileImageUrl(provider),
+                    ),
                     const SizedBox(width: 12),
                     Expanded(child: details),
                   ],
@@ -1631,10 +2073,10 @@ class PartnerSelectionCard extends StatelessWidget {
               child: FilledButton(
                 onPressed: onSelect,
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF5E8E4A),
-                  foregroundColor: Colors.white,
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.onPrimary,
                 ),
-                child: const Text('Switch to this partner'),
+                child: const Text('Choose partner'),
               ),
             ),
           ],
@@ -1660,6 +2102,7 @@ class PartnerDisplayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.handsColors;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -1667,8 +2110,10 @@ class PartnerDisplayCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ProviderThumbnail(
-                name: provider['displayName'] as String? ?? 'Partner',
-                size: 84),
+              name: provider['displayName'] as String? ?? 'Partner',
+              size: 72,
+              imageUrl: providerProfileImageUrl(provider),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -1688,12 +2133,9 @@ class PartnerDisplayCard extends StatelessWidget {
                       if (badgeLabel != null)
                         PartnerRoleTag(
                           label: badgeLabel!,
-                          backgroundColor: badgeLabel == 'Final'
-                              ? const Color(0xFFE8F4E3)
-                              : const Color(0xFFE7F2DE),
-                          foregroundColor: badgeLabel == 'Final'
-                              ? const Color(0xFF2E6A2B)
-                              : const Color(0xFF446B2A),
+                          backgroundColor:
+                              colors.success.withValues(alpha: 0.12),
+                          foregroundColor: colors.success,
                         ),
                     ],
                   ),
@@ -1706,7 +2148,7 @@ class PartnerDisplayCard extends StatelessWidget {
                       style: Theme.of(context)
                           .textTheme
                           .bodyMedium
-                          ?.copyWith(color: Colors.black54),
+                          ?.copyWith(color: colors.inkMuted),
                     ),
                   ],
                 ],
@@ -1750,252 +2192,229 @@ class PartnerRoleTag extends StatelessWidget {
   }
 }
 
-class WaitingStatCard extends StatelessWidget {
-  const WaitingStatCard({
+class BookingProgressStatusCard extends StatelessWidget {
+  const BookingProgressStatusCard({
     super.key,
+    required this.status,
+    required this.title,
+    required this.body,
+    this.timeLeft,
+  });
+
+  final String status;
+  final String title;
+  final String body;
+  final String? timeLeft;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.handsColors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: colors.surfaceMuted,
+        borderRadius: BorderRadius.circular(HandsShapes.medium),
+        border: Border.all(color: colors.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _bookingStatusIcon(status),
+                  color: colors.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  waitingStepLabel(status),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: colors.primary,
+                      ),
+                ),
+              ),
+              if (timeLeft != null)
+                Text(
+                  timeLeft!,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: colors.primary,
+                      ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: Theme.of(context)
+                .textTheme
+                .headlineSmall
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(body, style: Theme.of(context).textTheme.bodyLarge),
+          if (!_bookingProgressIsClosed(status)) ...[
+            const SizedBox(height: 16),
+            LinearProgressIndicator(
+              value: bookingProgress(status),
+              minHeight: 6,
+              borderRadius: BorderRadius.circular(999),
+              backgroundColor: colors.surface,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class BookingMapStatusBadge extends StatelessWidget {
+  const BookingMapStatusBadge({
+    super.key,
+    required this.label,
+    required this.active,
+  });
+
+  final String label;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.handsColors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(CustomerRadii.control),
+        border: Border.all(color: colors.outline),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: active ? colors.success : colors.inkMuted,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colors.ink,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class BookingProgressDetailRow extends StatelessWidget {
+  const BookingProgressDetailRow({
+    super.key,
+    required this.icon,
     required this.label,
     required this.value,
   });
 
+  final IconData icon;
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F5EC),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.black54)),
-          const SizedBox(height: 8),
-          Text(value,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w800)),
-        ],
-      ),
-    );
-  }
-}
-
-class BookingTimelineChip extends StatelessWidget {
-  const BookingTimelineChip({
-    super.key,
-    required this.icon,
-    required this.label,
-  });
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7F4EA),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFE4DDCA)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: const Color(0xFF5E8E4A)),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w700),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class WaitingStagePanel extends StatelessWidget {
-  const WaitingStagePanel({
-    super.key,
-    required this.status,
-    required this.fallbackCount,
-    required this.preferredProviderName,
-    required this.expiresAt,
-    this.matchingPolicy = const {},
-  });
-
-  final String status;
-  final int fallbackCount;
-  final String? preferredProviderName;
-  final String? expiresAt;
-  final Map<String, dynamic> matchingPolicy;
-
-  @override
-  Widget build(BuildContext context) {
-    final stageItems = [
-      WaitingStageItem(
-        title: preferredProviderName == null
-            ? 'Finding a partner'
-            : 'Chosen partner first',
-        body: preferredProviderName == null
-            ? 'Nearby partners are being checked now.'
-            : '$preferredProviderName gets ${responseWindowLabel(matchingPolicy)} while ${marketplaceWindowDescription(matchingPolicy)}.',
-        accent: const Color(0xFF5E8E4A),
-        caption: preferredProviderName == null
-            ? 'Stage 1'
-            : 'Stage 1 - direct request',
-      ),
-      WaitingStageItem(
-        title: fallbackCount == 0
-            ? 'No marketplace option yet'
-            : '$fallbackCount marketplace option(s) ready',
-        body: fallbackCount == 0
-            ? marketplaceStandbyDescription(matchingPolicy)
-            : 'You can switch to another available partner below without restarting the booking.',
-        accent: const Color(0xFFB9852F),
-        caption: fallbackCount == 0
-            ? 'Stage 2 - standby'
-            : 'Stage 2 - alternatives ready',
-      ),
-      WaitingStageItem(
-        title: status == 'MATCHED' ? 'Confirmed' : 'Auto-close timer',
-        body: status == 'MATCHED'
-            ? 'The partner is confirmed. Chat is ready while service start is coordinated.'
-            : 'This request closes automatically at ${formatExpiry(expiresAt)} if no partner is selected.',
-        accent: const Color(0xFF2563EB),
-        caption: status == 'MATCHED'
-            ? 'Stage 3 - locked in'
-            : 'Stage 3 - timeout protection',
-      ),
-    ];
-
-    return Column(
+    final colors = context.handsColors;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (var index = 0; index < stageItems.length; index++) ...[
-          stageItems[index],
-          if (index != stageItems.length - 1) const SizedBox(height: 10),
-        ],
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: colors.primarySoft,
+            borderRadius: BorderRadius.circular(CustomerRadii.control),
+          ),
+          child: Icon(icon, size: 20, color: colors.primary),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 3),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 }
 
-class WaitingStageItem extends StatelessWidget {
-  const WaitingStageItem({
-    super.key,
-    required this.title,
-    required this.body,
-    required this.accent,
-    required this.caption,
-  });
-
-  final String title;
-  final String body;
-  final Color accent;
-  final String caption;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: 0.18)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 12,
-            height: 12,
-            margin: const EdgeInsets.only(top: 4),
-            decoration: BoxDecoration(
-              color: accent,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  caption,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: accent,
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  title,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  body,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(color: Colors.black54),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+bool _bookingProgressIsClosed(String status) {
+  return const {
+    'COMPLETED',
+    'CANCELLED',
+    'EXPIRED',
+    'NO_SHOW',
+  }.contains(status);
 }
 
-class WaitingInfoBanner extends StatelessWidget {
-  const WaitingInfoBanner({
-    super.key,
-    required this.title,
-    required this.body,
-  });
+IconData _bookingStatusIcon(String status) {
+  return switch (status) {
+    'OPEN_MATCHING' => Icons.search_rounded,
+    'MATCHED' => Icons.check_circle_outline_rounded,
+    'PROVIDER_ON_THE_WAY' => Icons.directions_bike_outlined,
+    'ARRIVED' => Icons.location_on_outlined,
+    'IN_SERVICE' => Icons.spa_outlined,
+    'COMPLETED' => Icons.verified_outlined,
+    'CANCELLED' => Icons.cancel_outlined,
+    'EXPIRED' => Icons.timer_off_outlined,
+    _ => Icons.receipt_long_outlined,
+  };
+}
 
-  final String title;
-  final String body;
+IconData _bookingPaymentIcon(String? method) {
+  return switch (method?.toUpperCase()) {
+    'CASH' => Icons.payments_outlined,
+    'CUSTOMER_WALLET' => Icons.account_balance_wallet_outlined,
+    'MOMO' || 'VNPAY' => Icons.phone_android_outlined,
+    'CARD' => Icons.credit_card_outlined,
+    _ => Icons.payment_outlined,
+  };
+}
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F7EC),
-        border: Border.all(color: const Color(0xFFD2E1C5)),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 6),
-          Text(body, style: Theme.of(context).textTheme.bodyMedium),
-        ],
-      ),
-    );
-  }
+String _bookingPaymentLabel(String? method) {
+  return switch (method?.toUpperCase()) {
+    'CASH' => 'Cash',
+    'CUSTOMER_WALLET' => 'Wallet',
+    'MOMO' => 'MoMo',
+    'VNPAY' => 'VNPay',
+    'CARD' => 'Card',
+    null || '' => 'Payment method',
+    final value => value.replaceAll('_', ' '),
+  };
 }

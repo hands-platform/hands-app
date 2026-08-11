@@ -31,7 +31,6 @@ export class HealthService {
       ok: true,
       service: 'hands-api',
       timestamp: new Date().toISOString(),
-      environment: this.config.get<string>('NODE_ENV') ?? 'development',
     };
   }
 
@@ -46,7 +45,7 @@ export class HealthService {
       checks: {
         database,
         redis,
-        storage,
+        storage: { ok: storage.ok },
       },
     };
   }
@@ -155,17 +154,17 @@ export class HealthService {
     try {
       await this.prisma.$queryRaw`SELECT 1`;
       return { ok: true };
-    } catch (error) {
-      return { ok: false, error: errorMessage(error) };
+    } catch {
+      return { ok: false };
     }
   }
 
   private async redisStatus() {
     try {
       const pong = await this.redis.ping();
-      return { ok: pong === 'PONG', response: pong };
-    } catch (error) {
-      return { ok: false, error: errorMessage(error) };
+      return { ok: pong === 'PONG' };
+    } catch {
+      return { ok: false };
     }
   }
 
@@ -540,10 +539,6 @@ type ExternalReadinessResult = {
   timestamp: string;
   checks: ExternalReadinessCheck[];
 };
-
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
-}
 
 function isHttpsUrl(value: string) {
   try {

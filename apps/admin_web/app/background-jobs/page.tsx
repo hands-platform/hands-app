@@ -26,6 +26,7 @@ import {
   type AdminBackgroundJobReference,
   type AdminBackgroundJobReviewStatus,
 } from '../../lib/admin-api';
+import { adminWorkflowStatusLabel } from '../../lib/admin-copy';
 import {
   acknowledgeBackgroundJobFailure,
   resolveBackgroundJobFailure,
@@ -267,48 +268,30 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
                 className="background-job-queue-table"
                 emptyMessage="No monitored queues were returned."
                 headers={[
+                  'State',
                   'Queue',
-                  'Status',
-                  'Workers',
                   'Waiting',
                   'Active',
-                  'Delayed',
-                  'Queue timing',
-                  'SLA',
                   'Failed',
-                  'Last run',
-                  'Next scheduled',
-                  'Workflow',
+                  'SLA / delay',
+                  'Action',
                 ]}
                 rowCount={health.queues.length}
               >
                 {health.queues.map((queue) => (
                   <tr key={queue.name}>
                     <td>
-                      <strong>{queue.label}</strong>
-                      <span className="muted">{queue.name}</span>
-                    </td>
-                    <td>
                       <StatusBadge tone={queueStatusTone(queue.status)}>{queue.status}</StatusBadge>
                     </td>
-                    <td>{queue.workers}</td>
+                    <td>
+                      <strong>{queue.label}</strong>
+                    </td>
                     <td>{queue.counts.waiting}</td>
                     <td>{queue.counts.active}</td>
-                    <td>{queue.counts.delayed}</td>
-                    <td>{backgroundQueueTiming(queue)}</td>
-                    <td>{formatQueueDuration(queue.staleAfterMs)}</td>
                     <td>{queue.counts.failed}</td>
                     <td>
-                      <DateTimeText
-                        fallback={queue.lastFailedAt ? 'Last run failed' : 'No retained run'}
-                        value={queue.lastCompletedAt ?? queue.lastFailedAt}
-                      />
-                    </td>
-                    <td>
-                      <DateTimeText
-                        fallback={queue.expectedSchedulerId ? 'Scheduler missing' : 'On demand'}
-                        value={queue.nextScheduledAt}
-                      />
+                      {backgroundQueueTiming(queue)}
+                      <span className="muted">SLA {formatQueueDuration(queue.staleAfterMs)}</span>
                     </td>
                     <td>{backgroundJobWorkflowLink(queue.name)}</td>
                   </tr>
@@ -316,6 +299,38 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
               </AdminDataTable>
             </AdminTableScroll>
             <AdminBoundedTableFooter rowCount={health.queues.length} />
+            <AdminDisclosure>
+              <summary>Technical evidence</summary>
+              <AdminTableScroll>
+                <AdminDataTable
+                  className="background-job-technical-table"
+                  emptyMessage="No queue technical evidence was returned."
+                  headers={['Queue ID', 'Workers', 'Delayed', 'Last run', 'Next scheduled', 'Scheduler']}
+                  rowCount={health.queues.length}
+                >
+                  {health.queues.map((queue) => (
+                    <tr key={queue.name}>
+                      <td>{queue.name}</td>
+                      <td>{queue.workers}</td>
+                      <td>{queue.counts.delayed}</td>
+                      <td>
+                        <DateTimeText
+                          fallback={queue.lastFailedAt ? 'Last run failed' : 'No retained run'}
+                          value={queue.lastCompletedAt ?? queue.lastFailedAt}
+                        />
+                      </td>
+                      <td>
+                        <DateTimeText
+                          fallback={queue.expectedSchedulerId ? 'Scheduler missing' : 'On demand'}
+                          value={queue.nextScheduledAt}
+                        />
+                      </td>
+                      <td>{queue.expectedSchedulerId ?? 'On demand'} · {queue.schedulerCount}</td>
+                    </tr>
+                  ))}
+                </AdminDataTable>
+              </AdminTableScroll>
+            </AdminDisclosure>
           </AdminTableSection>
 
           <AdminTableSection
@@ -349,7 +364,7 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
                   <tr key={incident.id}>
                     <td>
                       <StatusBadge tone={incident.status === 'OPEN' ? 'danger' : 'success'}>
-                        {incident.status}
+                        {adminWorkflowStatusLabel(incident.status)}
                       </StatusBadge>
                     </td>
                     <td>
@@ -503,12 +518,6 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
                       <td>{job.queueName}</td>
                       <td>
                         <strong>{job.name}</strong>
-                        <span className="muted">{job.id ?? 'No job id'}</span>
-                        {job.reference ? (
-                          <span className="muted">
-                            {job.reference.kind}: {job.reference.id}
-                          </span>
-                        ) : null}
                       </td>
                       <td>
                         <AdminDisclosure className="background-job-attempt-disclosure">
@@ -525,6 +534,10 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
                             <DateTimeText fallback="Not retained" value={job.execution.lastStartedAt} />
                             <span>Final failure</span>
                             <DateTimeText fallback="Not retained" value={job.execution.failedAt} />
+                            <span>Job ID</span>
+                            <span>{job.id ?? 'Not retained'}</span>
+                            <span>Reference</span>
+                            <span>{job.reference ? `${job.reference.kind}: ${job.reference.id}` : 'Not retained'}</span>
                           </div>
                           <p className="muted background-job-attempt-note">
                             BullMQ does not retain a timestamp for every retry. Only retained queue timing is shown.
@@ -593,7 +606,7 @@ const BACKGROUND_JOB_QUEUE_OPTIONS = [
   { label: 'Bank statement escalation', value: 'bank-statement-escalation' },
   { label: 'Booking timeout', value: 'booking-timeouts' },
   { label: 'Notification delivery', value: 'notification-retry' },
-  { label: 'Provider refund status', value: 'payment-refund-status' },
+  { label: 'Payment provider refund status', value: 'payment-refund-status' },
   { label: 'Payment status check', value: 'payment-status-check' },
 ] as const;
 const BACKGROUND_JOB_REVIEW_OPTIONS = [

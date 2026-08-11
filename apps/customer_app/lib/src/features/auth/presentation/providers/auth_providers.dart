@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../../../core/app_config.dart';
 import '../../../../core/app_session_reporter.dart';
+import '../../../../core/customer_marketing_attribution.dart';
 import '../../../../core/providers.dart';
 import '../../data/datasources/auth_local_datasource.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
@@ -48,6 +49,9 @@ final appSessionReporterProvider = Provider<AppSessionReporter>((ref) {
     storage: const FlutterSecureStorage(),
     role: 'CUSTOMER',
     storageKey: 'hands.customer.app_session_device_id.v1',
+    marketingAttributionStore: CustomerMarketingAttributionStore(
+      storage: FlutterSecureStorage(),
+    ),
   );
 });
 

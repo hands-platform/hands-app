@@ -290,7 +290,7 @@ export function BookingMonitorMatchingEscalationSection({
                   </td>
                   <td>
                     <AdminTextLink href={item.href}>
-                      Open queue
+                      Review {item.title}
                     </AdminTextLink>
                   </td>
                 </tr>

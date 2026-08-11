@@ -5,7 +5,9 @@ import { FinanceListFilterLinks, financeListFilterLinkClassName } from './financ
 
 describe('FinanceListFilterLinks', () => {
   it('normalizes active and inactive pill classes through the shared badge helper', () => {
-    expect(financeListFilterLinkClassName({ active: true, activePillClassName: 'pill-info' })).toBe('pill pill-info');
+    expect(financeListFilterLinkClassName({ active: true, activePillClassName: 'pill-info' })).toBe(
+      'pill pill-info',
+    );
     expect(financeListFilterLinkClassName({ active: false, activePillClassName: 'pill-info' })).toBe(
       'pill pill-neutral',
     );
@@ -58,6 +60,18 @@ describe('FinanceListFilterLinks', () => {
               },
             ],
           },
+          {
+            id: 'evidence-source',
+            links: [
+              {
+                active: true,
+                activePillClassName: 'pill-info',
+                href: '/finance-tax/bank-reconciliation?source=PAYMENT_CLEARING',
+                id: 'PAYMENT_CLEARING',
+                label: 'Payment clearing',
+              },
+            ],
+          },
         ]}
       />,
     );
@@ -69,7 +83,84 @@ describe('FinanceListFilterLinks', () => {
     expect(markup).toContain('class="booking-date-filter-button"');
     expect(markup).toContain('Active finance list filters');
     expect(markup).toContain('Range: Today');
+    expect(markup).toContain('class="finance-list-filter-group-label">Evidence source</span>');
+    expect(markup).toContain('Evidence source: Payment clearing');
     expect(markup).toContain('aria-current="page"');
     expect(markup).toContain('href="/finance-tax/payment-clearing?range=today"');
+  });
+
+  it('keeps primary bank filters visible and summarizes only non-default compact filters', () => {
+    const markup = renderToStaticMarkup(
+      <FinanceListFilterLinks
+        compact
+        groups={[
+          {
+            defaultId: 'all',
+            id: 'direction',
+            links: [
+              {
+                active: true,
+                activePillClassName: 'pill-info',
+                href: '/finance-tax/bank-reconciliation?range=all&review=unmatched',
+                id: 'all',
+                label: 'All',
+              },
+            ],
+          },
+          {
+            defaultId: 'unmatched',
+            id: 'review',
+            links: [
+              {
+                active: true,
+                activePillClassName: 'pill-warn',
+                href: '/finance-tax/bank-reconciliation?range=all&review=unmatched',
+                id: 'unmatched',
+                label: 'Needs action',
+              },
+            ],
+          },
+          {
+            defaultId: 'all',
+            id: 'range',
+            links: [
+              {
+                active: true,
+                activePillClassName: 'pill-info',
+                href: '/finance-tax/bank-reconciliation?range=all&review=unmatched',
+                id: 'all',
+                label: 'All dates',
+              },
+            ],
+          },
+          {
+            defaultId: 'all',
+            id: 'review-owner',
+            links: [
+              {
+                active: false,
+                activePillClassName: 'pill-info',
+                href: '/finance-tax/bank-reconciliation?range=all&review=unmatched',
+                id: 'all',
+                label: 'All owners',
+              },
+              {
+                active: true,
+                activePillClassName: 'pill-warn',
+                href: '/finance-tax/bank-reconciliation?range=all&review=unmatched&owner=mine',
+                id: 'mine',
+                label: 'My reviews',
+              },
+            ],
+          },
+        ]}
+      />,
+    );
+
+    expect(markup).toContain('More filters');
+    expect(markup).toContain('Review owner: My reviews');
+    expect(markup).not.toContain('direction: All');
+    expect(markup).not.toContain('Queue: Needs action</span>');
+    expect(markup).not.toContain('Range: All dates</span>');
   });
 });

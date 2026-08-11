@@ -72,6 +72,7 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
       'AdminMetricGrid',
       'AdminKpiCard',
       'AdminPersonCell',
+      'AdminQueueMeta',
       'AdminSection',
       'AdminTableSection',
       'AdminTaskGrid',

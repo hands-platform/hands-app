@@ -1,7 +1,6 @@
 import { Prisma } from '@prisma/client';
 
 const adminChatArchiveUserSelect = {
-  phone: true,
   fullName: true,
 } satisfies Prisma.UserSelect;
 
@@ -11,53 +10,48 @@ const adminChatArchiveProviderSelect = {
   user: { select: adminChatArchiveUserSelect },
 } satisfies Prisma.ProviderProfileSelect;
 
-export const adminChatArchiveBookingSelect = {
+export const adminChatArchiveMessageSelect = {
   id: true,
-  customerProfileId: true,
-  status: true,
+  body: true,
+  attachments: true,
   createdAt: true,
-  updatedAt: true,
-  customerProfile: {
+  sender: {
     select: {
       id: true,
-      user: { select: adminChatArchiveUserSelect },
-    },
-  },
-  preferredProvider: { select: adminChatArchiveProviderSelect },
-  selectedProvider: { select: adminChatArchiveProviderSelect },
-  services: {
-    orderBy: { id: 'asc' },
-    take: 1,
-    select: {
-      service: {
-        select: {
-          name: true,
-          durationMin: true,
-        },
-      },
+      fullName: true,
+      roles: true,
     },
   },
   chatRoom: {
     select: {
       id: true,
-      _count: { select: { messages: true } },
-      messages: {
-        orderBy: { createdAt: 'desc' },
-        take: 1,
+      booking: {
         select: {
           id: true,
-          body: true,
-          createdAt: true,
-          sender: {
+          customerProfileId: true,
+          status: true,
+          customerProfile: {
             select: {
               id: true,
-              phone: true,
-              fullName: true,
-              roles: true,
+              user: { select: adminChatArchiveUserSelect },
+            },
+          },
+          preferredProvider: { select: adminChatArchiveProviderSelect },
+          selectedProvider: { select: adminChatArchiveProviderSelect },
+          services: {
+            orderBy: { id: 'asc' },
+            take: 1,
+            select: {
+              service: {
+                select: {
+                  name: true,
+                  durationMin: true,
+                },
+              },
             },
           },
         },
       },
     },
   },
-} satisfies Prisma.BookingSelect;
+} satisfies Prisma.ChatMessageSelect;

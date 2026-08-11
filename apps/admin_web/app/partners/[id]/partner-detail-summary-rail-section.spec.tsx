@@ -9,6 +9,11 @@ import type {
 
 const modelSource = readFileSync('app/partners/[id]/partner-detail-summary-rail-model.ts', 'utf8');
 const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+const overviewSource = readFileSync('app/partners/[id]/partner-detail-fast-overview.tsx', 'utf8');
+const payoutModelSource = readFileSync(
+  'app/partners/[id]/partner-detail-payout-security-model.tsx',
+  'utf8',
+);
 
 describe('PartnerDetailSummaryRailSection', () => {
   it('uses the shared Vuexy trace summary atom for summary rail links', () => {
@@ -80,26 +85,27 @@ describe('PartnerDetailSummaryRailSection', () => {
     expect(modelSource).toContain('readonly value: ReactNode;');
     expect(modelSource).toContain('readonly detail: ReactNode;');
     expect(modelSource).not.toContain('readonly cashDebtLabel: string;');
-    expect(pageSource).toContain('cashDebtLabel: <MoneyText amount={cashFeeDebtTotal} />');
-    expect(pageSource).not.toContain('cashDebtLabel: formatCurrency(cashFeeDebtTotal)');
+    expect(pageSource).toContain('openDebtLabel={<MoneyText amount={cashFeeDebtTotal} />}');
+    expect(pageSource).not.toContain('openDebtLabel={formatCurrency(cashFeeDebtTotal)}');
   });
 
   it('keeps payout unpaid net detail money on the shared MoneyText atom', () => {
     expect(modelSource).toContain('readonly unpaidNetDetail?: ReactNode;');
-    expect(pageSource).toContain(
-      "unpaidNetDetail: payoutOps.cards.find((card) => card.title === 'Unpaid net')?.detailNode",
-    );
-    expect(pageSource).not.toContain(
-      "unpaidNetDetail: payoutOps.cards.find((card) => card.title === 'Unpaid net')?.detail,",
-    );
+    expect(payoutModelSource).toContain('detailNode: <MoneyText amount={unpaidNetAmount} />');
+    expect(payoutModelSource).not.toContain('detailNode: formatCurrency(unpaidNetAmount)');
   });
 
   it('keeps operator first-read dates on the shared DateTimeText atom', () => {
     expect(modelSource).toContain('readonly joinedAtLabel: ReactNode;');
     expect(modelSource).toContain('readonly latestStaffNoteDetail?: ReactNode;');
     expect(modelSource).toContain('readonly locationRecordedAtLabel?: ReactNode;');
-    expect(pageSource).toContain('joinedAtLabel: <DateTimeText fallback="Missing" value={provider.user?.createdAt} />');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={partnerOpsNotes[0].createdAt} />');
+    expect(overviewSource).toContain(
+      'latestBooking ? <DateTimeText fallback="Missing" value={latestBooking.updatedAt ?? latestBooking.createdAt} /> : undefined',
+    );
+    expect(pageSource).toContain('Last Partner app activity');
+    expect(pageSource).toContain(
+      '<DateTimeText fallback="Missing" value={provider.appActivitySummary.lastActiveAt} />.',
+    );
     expect(pageSource).toContain('<DateTimeText fallback="Missing" value={provider.currentLocationUpdatedAt} />');
     expect(pageSource).not.toContain('joinedAtLabel: formatDate(provider.user?.createdAt)');
     expect(pageSource).not.toContain('locationRecordedAtLabel: provider.currentLocationUpdatedAt\\n      ? formatDate(provider.currentLocationUpdatedAt)');

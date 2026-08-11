@@ -2,22 +2,26 @@
 
 import { usePathname, useSearchParams } from 'next/navigation';
 import { CheckCircle2, EyeOff, Flag, Pencil, Save, Star, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
+import { useFormStatus } from 'react-dom';
 
 import { ClientActionDropdown, type ClientActionDropdownItem } from '../../components/client-action-dropdown';
 import {
   AdminDrawerActionFooter,
   AdminDrawerFormGrid,
   AdminFormControlButton,
+  AdminFormInput,
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminDrawerBackdropButton } from '../../components/admin-drawer-backdrop-button';
 import { AdminCard, AdminDrawerSurface } from '../../components/admin-surface';
+import { useAdminModalFocus } from '../../components/use-admin-modal-focus';
 import { moderateReview } from './actions';
 import type { ReviewActionItem } from './review-page-actions';
 
 type ReviewEditModel = {
+  readonly canEdit: boolean;
   readonly commentLabel: string;
   readonly commentValue: string;
   readonly rating: number;
@@ -34,8 +38,8 @@ type ReviewRowActionsProps = {
 };
 
 const actionIcons = {
-  'Follow-up': Flag,
-  Hold: EyeOff,
+  'Needs review': Flag,
+  Hide: EyeOff,
   Publish: CheckCircle2,
 } as const;
 
@@ -49,8 +53,16 @@ export function ReviewRowActions({ actions, editReview, label }: ReviewRowAction
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const search = searchParams.toString();
-  const returnTo = `${pathname}${search ? `?${search}` : ''}`;
-  const visibleActions = reviewRowActionDropdownItems(visibleReviewActionItems(actions), () => setEditing(true));
+  const returnTo = reviewListReturnTo(pathname, search);
+  const contextualActions = visibleReviewActionItems(actions).map((action) => ({
+    ...action,
+    href: reviewActionHrefWithReturnTo(action.href, returnTo),
+  }));
+  const visibleActions = reviewRowActionDropdownItems(
+    contextualActions,
+    editReview.canEdit,
+    () => setEditing(true),
+  );
 
   return (
     <>
@@ -64,7 +76,11 @@ export function ReviewRowActions({ actions, editReview, label }: ReviewRowAction
       />
 
       {editing ? (
-        <ReviewEditDrawer editReview={editReview} onClose={() => setEditing(false)} returnTo={returnTo} />
+        <ReviewEditDrawer
+          editReview={editReview}
+          onClose={() => setEditing(false)}
+          returnTo={returnTo}
+        />
       ) : null}
     </>
   );
@@ -76,16 +92,19 @@ export function visibleReviewActionItems(actions: readonly ReviewActionItem[]) {
 
 function reviewRowActionDropdownItems(
   actions: readonly ReviewActionItem[],
+  canEdit: boolean,
   onEdit: () => void,
 ): readonly ClientActionDropdownItem[] {
   return [
-    {
-      description: 'Edit retained review copy and rating.',
-      icon: Pencil,
-      label: 'Edit Review',
-      onSelect: onEdit,
-      tone: 'info',
-    },
+    ...(canEdit
+      ? [{
+          description: 'Edit this admin-created review copy and rating.',
+          icon: Pencil,
+          label: 'Edit Review',
+          onSelect: onEdit,
+          tone: 'info' as const,
+        }]
+      : []),
     ...actions.map((action) => ({
       description: action.description,
       href: action.href,
@@ -115,16 +134,8 @@ function ReviewEditDrawer({
   readonly onClose: () => void;
   readonly returnTo: string;
 }) {
-  useEffect(() => {
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    }
-
-    document.addEventListener('keydown', closeOnEscape);
-    return () => document.removeEventListener('keydown', closeOnEscape);
-  }, [onClose]);
+  const drawerRef = useRef<HTMLElement>(null);
+  useAdminModalFocus(drawerRef, onClose);
 
   const titleId = `review-edit-title-${editReview.reviewId}`;
 
@@ -141,6 +152,8 @@ function ReviewEditDrawer({
         ariaModal={true}
         className="calendar-drawer review-edit-drawer"
         role="dialog"
+        surfaceRef={drawerRef}
+        tabIndex={-1}
       >
         <div className="calendar-drawer-header">
           <div>
@@ -206,12 +219,19 @@ function ReviewEditDrawer({
                 placeholder="Write the review copy that should be shown across the admin and app surfaces."
                 rows={7}
               />
+              <AdminFormInput
+                className="admin-form-control-fluid admin-grid-span-2"
+                label="Edit reason"
+                labelVisibility="visible"
+                maxLength={1000}
+                minLength={3}
+                name="reason"
+                placeholder="Explain why this admin-created review is being changed."
+                required={true}
+              />
             </AdminCard>
             <AdminDrawerActionFooter className="review-edit-drawer-footer">
-              <AdminFormControlButton className="button-primary" type="submit">
-                <Save aria-hidden="true" size={16} />
-                Save review
-              </AdminFormControlButton>
+              <ReviewEditSubmitButton />
               <AdminFormControlButton className="button-secondary" onClick={onClose} type="button">
                 Cancel
               </AdminFormControlButton>
@@ -221,4 +241,29 @@ function ReviewEditDrawer({
       </AdminDrawerSurface>
     </>
   );
+}
+
+function ReviewEditSubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <AdminFormControlButton className="button-primary" disabled={pending} type="submit">
+      <Save aria-hidden="true" size={16} />
+      {pending ? 'Saving...' : 'Save admin-created review'}
+    </AdminFormControlButton>
+  );
+}
+
+export function reviewListReturnTo(pathname: string, search: string) {
+  const params = new URLSearchParams(search);
+  for (const key of ['confirm', 'notice', 'reportReason', 'returnTo', 'reviewId', 'status']) {
+    params.delete(key);
+  }
+  const query = params.toString();
+  return `${pathname === '/reviews' ? pathname : '/reviews'}${query ? `?${query}` : ''}`;
+}
+
+export function reviewActionHrefWithReturnTo(href: string, returnTo: string) {
+  const url = new URL(href, 'http://admin.local');
+  url.searchParams.set('returnTo', returnTo);
+  return `${url.pathname}${url.search}`;
 }

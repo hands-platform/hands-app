@@ -123,7 +123,7 @@ describe('BookingOperatorQueueSections', () => {
         'pill pill-success',
       ]),
     );
-    expect(classNamesIn(section).filter((className) => className === 'card admin-section admin-mb-16')).toHaveLength(2);
+    expect(classNamesIn(section).filter((className) => className === 'card admin-section admin-mb-16')).toHaveLength(1);
   });
 
   it('renders operations command center with the shared Vuexy admin section surface', () => {

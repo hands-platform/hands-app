@@ -14,6 +14,24 @@ export const bookingDateRangeFilterOptions: readonly {
   { value: 'custom', label: 'Custom dates' },
 ];
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export function bookingCustomDateRangeError(dateFrom: string, dateTo: string) {
+  const fromMs = parseDateInput(dateFrom);
+  const toMs = parseDateInput(dateTo);
+
+  if (fromMs === null || toMs === null) {
+    return 'Choose a valid start date and end date.';
+  }
+  if (fromMs > toMs) {
+    return 'Start date must be on or before end date.';
+  }
+  if (toMs - fromMs > 89 * DAY_MS) {
+    return 'Custom date range cannot exceed 90 days.';
+  }
+  return null;
+}
+
 export function bookingMatchesDateRangeFilter(
   booking: AdminBooking,
   input: {
@@ -94,9 +112,16 @@ function parseDateInput(value?: string) {
   }
 
   const [, year, month, day] = match;
-  const date = new Date(Number(year), Number(month) - 1, Number(day));
-  const timestamp = date.getTime();
-  return Number.isFinite(timestamp) ? timestamp : null;
+  const yearNumber = Number(year);
+  const monthNumber = Number(month);
+  const dayNumber = Number(day);
+  const timestamp = Date.UTC(yearNumber, monthNumber - 1, dayNumber);
+  const date = new Date(timestamp);
+  return date.getUTCFullYear() === yearNumber &&
+    date.getUTCMonth() === monthNumber - 1 &&
+    date.getUTCDate() === dayNumber
+    ? timestamp
+    : null;
 }
 
 function safeDateTimestamp(value: string | null | undefined) {

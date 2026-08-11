@@ -1,0 +1,17 @@
+{
+  "node": {
+    "40cc183c29a09666be571f999e01cee08ec1581482": {
+      "workers": {
+        "app/operations-policy/page": {
+          "moduleId": 396563,
+          "async": false,
+          "exportedName": "updateOperationalPolicy",
+          "filename": "apps/admin_web/app/operations-policy/actions.ts"
+        }
+      },
+      "exportedName": "updateOperationalPolicy",
+      "filename": "apps/admin_web/app/operations-policy/actions.ts"
+    }
+  },
+  "edge": {}
+}

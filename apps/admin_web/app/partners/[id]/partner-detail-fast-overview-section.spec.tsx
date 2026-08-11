@@ -1,166 +1,82 @@
-import { PartnerDetailFastOverviewSection } from './partner-detail-fast-overview-section';
 import { readFileSync } from 'node:fs';
 
-import { DateTimeText } from '../../../components/date-time-text';
+import { PartnerDetailFastOverviewSection } from './partner-detail-fast-overview-section';
 
 describe('PartnerDetailFastOverviewSection', () => {
-  it('renders the fast overview with Vuexy KPI cards and shared admin panels', () => {
+  it('renders a bounded command view instead of inferred KPI cards', () => {
     const section = PartnerDetailFastOverviewSection({
-      accountControlsHref: '/partners/partner-1?section=account-controls',
-      bookingCommandRows: [{ label: 'Latest booking', value: 'Completed today' }],
+      accountControlsHref: '/partner-controls?details=sanctions&q=partner-1',
+      actionItems: [{
+        area: 'Approval',
+        completion: 'KYC is approved.',
+        href: '/partners/partner-1?section=dossier&dossier=approval',
+        id: 'kyc-approval',
+        impact: 'Partner cannot accept a booking.',
+        nextAction: 'Review KYC',
+        problem: 'KYC approval',
+        status: 'KYC not submitted',
+        tone: 'pill-warn',
+      }],
+      activityItems: [{ detail: 'No linked booking record.', label: 'Latest booking' }],
+      chatHref: '/chat-archive?q=partner-1',
+      currentStatus: 'Partner set offline',
       fullHref: '/partners/partner-1?section=full',
-      identityRows: [
-        { label: 'KYC', value: 'Approved' },
-        { label: 'Joined', valueNode: <DateTimeText value="2026-06-01T00:00:00.000Z" /> },
-      ],
-      nextOperatorActionLinks: [{ href: '#kyc', label: 'Review KYC' }],
-      nextOperatorActionNotes: ['Check today readiness before approving new work.'],
-      overviewCards: [
-        {
-          detail: 'Can receive marketplace jobs.',
-          href: '#booking-gates',
-          label: 'Marketplace',
-          tone: 'pill-success',
-          value: 'Ready',
-        },
-        {
-          detail: 'Wallet is clear.',
-          href: '#wallet',
-          label: 'Finance',
-          tone: 'pill-success',
-          value: 'Clear',
-        },
-        {
-          detail: 'Latest app session is loaded.',
-          href: '#app-activity',
-          label: 'App access',
-          tone: 'pill-info',
-          value: <DateTimeText value="2026-06-02T00:00:00.000Z" />,
-        },
-      ],
       partnerName: 'Partner One',
-      payoutReadinessRows: [{ label: 'Bank', value: 'Verified' }],
-      subtitle: 'Marketplace ready',
+      phone: '+84900000000',
+      subtitle: '+84900000000 / Ho Chi Minh City',
+      workItems: [{
+        detail: 'KYC review is incomplete.',
+        href: '/partners/partner-1?section=dossier&dossier=approval',
+        label: 'Approval',
+        status: 'Needs review',
+        tone: 'pill-warn',
+      }],
+      workspaceLinks: [{
+        detail: 'One unresolved issue.',
+        href: '/partners/partner-1?section=dossier&dossier=approval',
+        label: 'Approval & profile',
+        status: '1 open',
+        tone: 'pill-warn',
+      }],
     });
 
-    const classNames = classNamesIn(section);
-
-    expect(classNames).toContain('admin-page-header admin-page-header-toolbar');
     expect(normalizedText(section)).toContain('Partner One');
-    expect(normalizedText(section)).toContain('Marketplace ready');
-    expect(normalizedText(section)).toContain('Joined : 1 Jun 2026, 07:00');
-    expect(normalizedText(section)).toContain('App access 2 Jun 2026, 07:00');
-    expect(hrefsIn(section)).toEqual(
-      expect.arrayContaining([
-        '/partners',
-        '/partners/partner-1?section=full',
-        '#booking-gates',
-        '#wallet',
-        '#app-activity',
-        '#kyc',
-      ]),
-    );
-    expect(classNames.filter((className) => className === 'metric-card')).toHaveLength(3);
-    expect(classNames).toContain('admin-metric-grid admin-mb-16');
-    expect(classNames).toContain('detail-grid');
-    expect(
-      classNames.filter(
-        (className) => className.split(' ').includes('card') && className.includes('partner-fast-overview-panel'),
-      ),
-    ).toHaveLength(4);
-    const source = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
+    expect(normalizedText(section)).toContain('Action required');
+    expect(normalizedText(section)).toContain('Can work now?');
+    expect(normalizedText(section)).toContain('Partner work areas');
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining([
+      'tel:+84900000000',
+      '/chat-archive?q=partner-1',
+      '/partners/partner-1?section=full',
+      '/partners/partner-1?section=dossier&dossier=approval',
+    ]));
 
-    expect(source).toContain('AdminMetricGrid');
-    expect(source).toContain('AdminDetailGrid');
-    expect(source).not.toContain('<section className="grid admin-mb-16">');
-    expect(source).not.toContain('<section className="detail-grid">');
+    const source = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
+    expect(source).not.toContain('AdminMetricGrid');
+    expect(source).not.toContain('AdminDetailGrid');
+    expect(source).toContain('actionItems.map');
+    expect(source).toContain('workspaceLinks.map');
   });
 
-  it('uses shared badge link atoms for next action pill links', () => {
-    const source = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
-
-    expect(source).toContain('AdminFilterChipGroup');
-    expect(source).toContain('StatusBadgeLink');
-    expect(source).not.toContain('<div className="participant-list');
-    expect(source).not.toContain('<Link className="pill pill-info" href={link.href} key={link.href}>');
-  });
-
-  it('uses the shared inline fallback atom for empty fast overview values', () => {
-    const source = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
-
-    expect(source).toContain('AdminInlineFallback');
-    expect(source).toContain('renderInfoLineValue');
-    expect(source).not.toContain("value && value.trim() ? marketplaceDisplayText(value) : 'Missing'");
-  });
-
-  it('uses the shared Vuexy form control link for button-style overview actions', () => {
-    const source = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
-
-    expect(source).toContain('AdminFormControlLink');
-    expect(source).not.toContain('<Link className="button button-secondary"');
-  });
-
-  it('uses the shared Vuexy text-link atom for text overview actions', () => {
-    const source = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
-
-    expect(source).toContain('AdminTextLink');
-    expect(source).not.toContain('className="text-link"');
-  });
-
-  it('keeps date values renderable through shared DateTimeText nodes from the detail page', () => {
+  it('keeps shared controls and ReactNode money/date values', () => {
     const sectionSource = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
-    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+    const overviewSource = readFileSync('app/partners/[id]/partner-detail-fast-overview.tsx', 'utf8');
 
-    expect(sectionSource).toContain('valueNode');
-    expect(sectionSource).toContain('readonly valueDateTimeFallback?: string;');
-    expect(sectionSource).toContain('readonly valueDateTimeValue?: string | null;');
-    expect(sectionSource).toContain('valueDateTimeFallback: card.valueDateTimeFallback');
-    expect(sectionSource).toContain('valueDateTimeValue: card.valueDateTimeValue');
-    expect(pageSource).toContain('DateTimeText');
-    expect(pageSource).toContain(
-      "valueDateTimeFallback: 'No access'",
-    );
-    expect(pageSource).toContain('valueDateTimeValue: latestAccessAt');
-    expect(pageSource).not.toContain(
-      "value: latestAccessAt ? <DateTimeText fallback=\"No access\" value={latestAccessAt} /> : 'No access'",
-    );
-    expect(pageSource).toContain('valueNode: <DateTimeText fallback="Missing" value={provider.user?.createdAt} />');
-    expect(pageSource).toContain('valueNode: <DateTimeText fallback="Missing" value={latestAccessAt} />');
-    expect(pageSource).not.toContain("value: latestAccessAt ? formatDate(latestAccessAt) : 'No access'");
-    expect(pageSource).not.toContain(
-      "{ label: 'Joined', value: provider.user?.createdAt ? formatDate(provider.user.createdAt) : null }",
-    );
-    expect(pageSource).not.toContain("{ label: 'Last access', value: latestAccessAt ? formatDate(latestAccessAt) : null }");
-  });
-
-  it('keeps fast overview cash-debt money values on the shared MoneyText atom', () => {
-    const sectionSource = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
-    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
-
+    expect(sectionSource).toContain('AdminFormControlLink');
+    expect(sectionSource).toContain('ActionMenu');
     expect(sectionSource).toContain('readonly detail: ReactNode;');
-    expect(pageSource).toContain("import { MoneyText } from '../../../components/money-text';");
-    expect(pageSource).toContain('<MoneyText amount={cashDebt} /> company fee debt');
-    expect(pageSource).toContain("valueNode: cashDebt > 0 ? <MoneyText amount={cashDebt} /> : undefined");
-    expect(pageSource).not.toContain('${formatCurrency(cashDebt)} company fee debt');
-    expect(pageSource).not.toContain("{ label: 'Cash fee debt', value: cashDebt > 0 ? formatCurrency(cashDebt) : 'Clear' }");
+    expect(overviewSource).toContain("import { MoneyText } from '../../../components/money-text';");
+    expect(overviewSource).toContain('<MoneyText amount={cashDebt} /> owed by Partner.');
+    expect(overviewSource).toContain('DateTimeText');
   });
 });
 
 function textContent(value: unknown): string {
   value = resolveElement(value);
-  if (value === null || value === undefined || typeof value === 'boolean') {
-    return '';
-  }
-  if (typeof value === 'string' || typeof value === 'number') {
-    return String(value);
-  }
-  if (Array.isArray(value)) {
-    return value.map(textContent).join(' ');
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  return textContent(props?.children);
+  if (value === null || value === undefined || typeof value === 'boolean') return '';
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (Array.isArray(value)) return value.map(textContent).join(' ');
+  return textContent(readRecord(readRecord(value)?.props)?.children);
 }
 
 function normalizedText(value: unknown): string {
@@ -169,32 +85,10 @@ function normalizedText(value: unknown): string {
 
 function hrefsIn(value: unknown): string[] {
   value = resolveElement(value);
-  if (value === null || value === undefined || typeof value !== 'object') {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap(hrefsIn);
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  const href = typeof props?.href === 'string' ? [props.href] : [];
-  return [...href, ...hrefsIn(props?.children)];
-}
-
-function classNamesIn(value: unknown): string[] {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value !== 'object') {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap(classNamesIn);
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  const className = typeof props?.className === 'string' ? [props.className] : [];
-  return [...className, ...classNamesIn(props?.children)];
+  if (value === null || value === undefined || typeof value !== 'object') return [];
+  if (Array.isArray(value)) return value.flatMap(hrefsIn);
+  const props = readRecord(readRecord(value)?.props);
+  return [...(typeof props?.href === 'string' ? [props.href] : []), ...hrefsIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {
@@ -204,8 +98,7 @@ function resolveElement(value: unknown): unknown {
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return null;
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
 }

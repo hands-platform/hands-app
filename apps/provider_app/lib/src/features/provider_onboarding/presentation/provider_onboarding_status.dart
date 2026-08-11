@@ -1,7 +1,7 @@
 import 'widgets/provider_document_upload_slots.dart';
 
 const partnerBankCorrectionDefaultReason =
-    'Withdrawal bank information is incorrect, so the payout cannot be sent.';
+    'Thông tin ngân hàng nhận tiền không chính xác nên chưa thể chuyển khoản.';
 
 class ProviderOnboardingPriority {
   const ProviderOnboardingPriority({
@@ -97,119 +97,118 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
 
   if (nextActions.contains('BASIC_PROFILE')) {
     return const ProviderOnboardingPriority(
-      title: 'Start with your public profile',
+      title: 'Hoàn thiện hồ sơ công khai',
       detail:
-          'Add your legal name, public display name, birthday, and service area before taking requests. Tax address can wait until first earning.',
+          'Thêm họ tên pháp lý, tên hiển thị, ngày sinh và khu vực phục vụ trước khi nhận yêu cầu.',
       tone: 'warning',
       actionKey: 'BASIC_PROFILE',
-      buttonLabel: 'Complete profile',
+      buttonLabel: 'Hoàn thiện hồ sơ',
     );
   }
 
   if (nextActions.contains('KYC_REVIEW')) {
     if (kycStatus == 'REJECTED') {
       return const ProviderOnboardingPriority(
-        title: 'Fix rejected KYC',
+        title: 'Cập nhật hồ sơ KYC bị từ chối',
         detail:
-            'Review the rejection message, upload clearer CCCD and selfie photos, then resubmit.',
+            'Xem lý do từ chối, tải lại ảnh CCCD và ảnh chân dung rõ hơn rồi gửi lại.',
         tone: 'warning',
         actionKey: 'KYC_REVIEW',
-        buttonLabel: 'Resubmit KYC',
+        buttonLabel: 'Gửi lại KYC',
       );
     }
     if (kycDocumentsReady) {
       return const ProviderOnboardingPriority(
-        title: 'Submit KYC for admin review',
+        title: 'Gửi KYC để xét duyệt',
         detail:
-            'All required identity photos are attached. Submit them so admin can unlock Level 2.',
+            'Đã đủ ảnh định danh bắt buộc. Gửi hồ sơ để HANDS xét duyệt quyền nhận việc.',
         tone: 'info',
         actionKey: 'KYC_REVIEW',
-        buttonLabel: 'Submit KYC',
+        buttonLabel: 'Gửi KYC',
       );
     }
     return ProviderOnboardingPriority(
-      title: 'Upload identity photos',
+      title: 'Tải ảnh định danh',
       detail:
-          '$submittedKycRequiredCount of ${requiredKycTypes.length} required KYC photos are ready. Upload the missing photos below.',
+          'Đã có $submittedKycRequiredCount/${requiredKycTypes.length} ảnh KYC bắt buộc. Hãy tải các ảnh còn thiếu bên dưới.',
       tone: 'warning',
       actionKey: 'KYC_REVIEW',
-      buttonLabel: 'Open KYC checklist',
+      buttonLabel: 'Mở danh sách KYC',
     );
   }
 
   if (nextActions.contains('BANK_ACCOUNT_REVIEW')) {
     return ProviderOnboardingPriority(
       title: bankStatus == 'REJECTED'
-          ? 'Fix wallet bank details'
-          : 'Add wallet bank details',
+          ? 'Sửa thông tin ngân hàng'
+          : 'Thêm thông tin ngân hàng',
       detail: bankStatus == 'REJECTED'
           ? providerBankAccountStepDetail(
               status: bankStatus,
               rejectionReason: bankRejectionReason,
             )
-          : 'Bank details are used for manual wallet withdrawal/deposit checks when money movement is requested.',
+          : 'Thông tin ngân hàng được dùng khi yêu cầu rút tiền hoặc xác nhận nộp tiền.',
       tone: 'warning',
       actionKey: 'BANK_ACCOUNT_REVIEW',
       buttonLabel: bankStatus == 'REJECTED'
-          ? 'Resubmit bank details'
-          : 'Add bank details',
+          ? 'Gửi lại thông tin ngân hàng'
+          : 'Thêm thông tin ngân hàng',
     );
   }
 
   if (nextActions.contains('BANK_ACCOUNT_CORRECTION')) {
     return ProviderOnboardingPriority(
-      title: 'Fix wallet bank details',
+      title: 'Sửa thông tin ngân hàng',
       detail: providerBankCorrectionStepDetail(bankCorrectionRequest),
       tone: 'warning',
       actionKey: 'BANK_ACCOUNT_CORRECTION',
-      buttonLabel: 'Resubmit bank details',
+      buttonLabel: 'Gửi lại thông tin ngân hàng',
     );
   }
 
   if (nextActions.contains('RESIDENTIAL_ADDRESS')) {
     return const ProviderOnboardingPriority(
-      title: 'Confirm wallet contact address',
+      title: 'Xác nhận địa chỉ liên hệ',
       detail:
-          'First earning is recorded. Save an operations contact address before wallet review continues.',
+          'Đã ghi nhận thu nhập đầu tiên. Hãy lưu địa chỉ liên hệ để tiếp tục xét duyệt ví.',
       tone: 'warning',
       actionKey: 'RESIDENTIAL_ADDRESS',
-      buttonLabel: 'Update address',
+      buttonLabel: 'Cập nhật địa chỉ',
     );
   }
 
   if (nextActions.contains('AGREEMENTS')) {
     return ProviderOnboardingPriority(
-      title: 'Accept wallet agreements',
+      title: 'Chấp nhận thỏa thuận ví',
       detail:
-          '$missingAgreementCount wallet agreement(s) still need acceptance before withdrawal review.',
+          'Còn $missingAgreementCount thỏa thuận cần chấp nhận trước khi xét duyệt rút tiền.',
       tone: 'warning',
       actionKey: 'AGREEMENTS',
-      buttonLabel: 'Review agreements',
+      buttonLabel: 'Xem thỏa thuận',
     );
   }
 
   if (canWithdraw) {
     return const ProviderOnboardingPriority(
-      title: 'Wallet operations are ready',
-      detail:
-          'This partner can receive bookings and request wallet support when earnings are available.',
+      title: 'Ví đã sẵn sàng',
+      detail: 'Bạn có thể nhận đặt lịch và yêu cầu hỗ trợ ví khi có thu nhập.',
       tone: 'success',
     );
   }
 
   if (completedBookingCount == 0) {
     return const ProviderOnboardingPriority(
-      title: 'Ready for the first booking',
+      title: 'Sẵn sàng nhận đặt lịch đầu tiên',
       detail:
-          'Core setup is clear. Keep the app online so customers can send direct requests.',
+          'Thiết lập chính đã hoàn tất. Hãy bật trạng thái trực tuyến để nhận yêu cầu trực tiếp.',
       tone: 'success',
     );
   }
 
   return const ProviderOnboardingPriority(
-    title: 'Wallet review continues from Earnings',
+    title: 'Tiếp tục thiết lập ví trong Thu nhập',
     detail:
-        'Bank details and payout agreements are checked when withdrawal or deposit support is requested. Tax profile is not required for Vietnam MVP.',
+        'Thông tin ngân hàng và thỏa thuận thanh toán sẽ được kiểm tra khi bạn yêu cầu rút tiền hoặc hỗ trợ nộp tiền.',
     tone: 'info',
   );
 }
@@ -235,20 +234,20 @@ List<ProviderOnboardingLevelMilestone> providerLevelMilestonesFromSnapshot(
   return [
     ProviderOnboardingLevelMilestone(
       level: 'LEVEL_1_SIGNUP',
-      title: 'Level 1 - signup ready',
+      title: 'Cấp 1 - hoàn tất đăng ký',
       detail: basicProfileComplete
-          ? 'Phone login and public/basic profile are ready.'
-          : 'Complete phone login and basic public profile first.',
+          ? 'Đăng nhập bằng số điện thoại và hồ sơ cơ bản đã hoàn tất.'
+          : 'Hãy hoàn tất đăng nhập và hồ sơ công khai cơ bản.',
       complete:
           completedByLevelOrCondition('LEVEL_1_SIGNUP', basicProfileComplete),
       current: currentLevel == 'LEVEL_1_SIGNUP',
     ),
     ProviderOnboardingLevelMilestone(
       level: 'LEVEL_2_ACTIVE',
-      title: 'Level 2 - can receive work',
+      title: 'Cấp 2 - có thể nhận việc',
       detail: kycApproved && basicProfileComplete
-          ? 'Profile, KYC, and required documents are approved. This partner can receive bookings.'
-          : 'Requires approved profile, CCCD/selfie KYC, and service-ready details. Bank setup is handled later from wallet operations.',
+          ? 'Hồ sơ, KYC và giấy tờ bắt buộc đã được duyệt. Bạn có thể nhận đặt lịch.'
+          : 'Cần hồ sơ, CCCD, ảnh chân dung và thông tin dịch vụ được duyệt.',
       complete: completedByLevelOrCondition(
           'LEVEL_2_ACTIVE', kycApproved && basicProfileComplete),
       current: currentLevel == 'LEVEL_2_ACTIVE',
@@ -294,33 +293,32 @@ List<ProviderKycDecisionItem> providerKycDecisionChecklistFromSnapshot(
 
   return [
     ProviderKycDecisionItem(
-      label: 'KYC request submitted',
+      label: 'Đã gửi yêu cầu KYC',
       detail: kycStatus == null
-          ? 'Upload identity photos, then submit KYC for HANDS review.'
-          : 'Current review status: $kycStatus.',
+          ? 'Tải ảnh định danh rồi gửi KYC để HANDS xét duyệt.'
+          : 'Trạng thái xét duyệt hiện tại: $kycStatus.',
       complete: kycStatus != null,
     ),
     ProviderKycDecisionItem(
-      label: 'Legal name captured',
-      detail: legalName ?? 'Add the legal name exactly as shown on CCCD/CMND.',
+      label: 'Họ tên pháp lý',
+      detail: legalName ?? 'Nhập đúng họ tên trên CCCD/CMND.',
       complete: legalName != null,
     ),
     ProviderKycDecisionItem(
-      label: 'CCCD/CMND number captured',
+      label: 'Số CCCD/CMND',
       detail: identityNumber ??
-          'Add the Vietnamese identity number before admin approval.',
+          'Nhập số giấy tờ định danh Việt Nam trước khi xét duyệt.',
       complete: identityNumber != null,
     ),
     ProviderKycDecisionItem(
-      label: 'Required identity photos approved',
-      detail:
-          '$approvedCount of ${requiredTypes.length} required photo(s) approved.',
+      label: 'Ảnh định danh bắt buộc đã duyệt',
+      detail: 'Đã duyệt $approvedCount/${requiredTypes.length} ảnh bắt buộc.',
       complete: approvedCount >= requiredTypes.length,
     ),
     ProviderKycDecisionItem(
-      label: 'Rejected evidence resolved',
+      label: 'Đã xử lý ảnh bị từ chối',
       detail: rejectedRequiredSummaries.isEmpty
-          ? 'No rejected required KYC photo needs replacement.'
+          ? 'Không có ảnh KYC bắt buộc nào cần thay thế.'
           : rejectedRequiredSummaries.join('; '),
       complete: rejectedRequiredSummaries.isEmpty,
     ),
@@ -349,38 +347,38 @@ List<ProviderOnboardingGateItem> providerPayoutGateItemsFromSnapshot(
       (requiredAgreements.length - missingAgreements.length)
           .clamp(0, requiredAgreements.length);
   final bankDetail = !payoutSetupStarted
-      ? 'Wallet bank details are requested from Earnings when withdrawal/deposit support is needed.'
+      ? 'Thông tin ngân hàng được yêu cầu trong mục Thu nhập khi cần rút hoặc nộp tiền.'
       : bankCorrectionRequest != null
           ? providerBankCorrectionStepDetail(bankCorrectionRequest)
           : bankStatus == 'APPROVED'
-              ? 'Bank details are approved for manual wallet operations.'
+              ? 'Thông tin ngân hàng đã được duyệt cho giao dịch ví.'
               : bankStatus == 'PENDING_REVIEW'
-                  ? 'Bank details are waiting for admin wallet review.'
+                  ? 'Thông tin ngân hàng đang chờ xét duyệt.'
                   : bankStatus == 'REJECTED'
-                      ? 'Bank details need correction before withdrawal/deposit support can continue.'
-                      : 'Use Earnings withdrawal or deposit actions to add bank details when needed.';
+                      ? 'Cần sửa thông tin ngân hàng trước khi tiếp tục rút hoặc nộp tiền.'
+                      : 'Thêm thông tin ngân hàng trong mục Thu nhập khi cần rút hoặc nộp tiền.';
 
   return [
     ProviderOnboardingGateItem(
-      label: 'First completed service',
+      label: 'Dịch vụ hoàn tất đầu tiên',
       detail: completedBookingCount > 0
-          ? '$completedBookingCount completed service(s) recorded.'
-          : 'Complete the first customer booking before wallet withdrawal/deposit review starts.',
+          ? 'Đã ghi nhận $completedBookingCount dịch vụ hoàn tất.'
+          : 'Hoàn tất đặt lịch đầu tiên trước khi bắt đầu xét duyệt rút hoặc nộp tiền.',
       complete: payoutMissing['firstCompletedService'] != true &&
           completedBookingCount > 0,
     ),
     ProviderOnboardingGateItem(
-      label: 'Wallet bank details',
+      label: 'Thông tin ngân hàng',
       detail: bankDetail,
       complete: payoutSetupStarted && bankStatus == 'APPROVED',
     ),
     ProviderOnboardingGateItem(
-      label: 'Wallet agreements',
+      label: 'Thỏa thuận ví',
       detail: !payoutSetupStarted
-          ? 'Wallet payout agreements are deferred until first earned revenue.'
+          ? 'Thỏa thuận thanh toán sẽ được yêu cầu sau khi có thu nhập đầu tiên.'
           : missingAgreements.isEmpty
-              ? 'All required agreements are accepted.'
-              : '$acceptedAgreementCount of ${requiredAgreements.length} accepted. Missing: ${missingAgreements.map(_agreementLabel).join(', ')}.',
+              ? 'Đã chấp nhận tất cả thỏa thuận bắt buộc.'
+              : 'Đã chấp nhận $acceptedAgreementCount/${requiredAgreements.length}. Còn thiếu: ${missingAgreements.map(_agreementLabel).join(', ')}.',
       complete: payoutSetupStarted && missingAgreements.isEmpty,
     ),
   ];
@@ -397,48 +395,57 @@ bool providerFirstRevenuePayoutSetupActiveFromSnapshot(
 String providerLogActionLabel(String value) {
   switch (value) {
     case 'basic_profile.update':
-      return 'Basic profile updated';
+      return 'Đã cập nhật hồ sơ cơ bản';
     case 'kyc.submit':
-      return 'KYC submitted';
+      return 'Đã gửi KYC';
     case 'kyc.approved':
-      return 'KYC approved';
+      return 'KYC đã được duyệt';
     case 'kyc.rejected':
-      return 'KYC rejected';
+      return 'KYC bị từ chối';
     case 'document.approved':
-      return 'Document approved';
+      return 'Giấy tờ đã được duyệt';
     case 'document.rejected':
-      return 'Document rejected';
+      return 'Giấy tờ bị từ chối';
     case 'bank_account.submit':
-      return 'Bank account submitted';
+      return 'Đã gửi tài khoản ngân hàng';
     case 'bank_account.approved':
-      return 'Bank account approved';
+      return 'Tài khoản ngân hàng đã được duyệt';
     case 'bank_account.rejected':
-      return 'Bank account rejected';
+      return 'Tài khoản ngân hàng bị từ chối';
     case 'tax_profile.submit':
-      return 'Tax profile submitted';
+      return 'Đã gửi thông tin thuế';
     case 'tax_profile.approved':
-      return 'Tax profile approved';
+      return 'Thông tin thuế đã được duyệt';
     case 'tax_profile.rejected':
-      return 'Tax profile rejected';
+      return 'Thông tin thuế bị từ chối';
     case 'agreement.accept':
-      return 'Agreement accepted';
+      return 'Đã chấp nhận thỏa thuận';
     default:
-      return _readableAction(value.replaceAll('.', '_'));
+      return 'Hoạt động tài khoản';
   }
 }
+
+String providerOnboardingReviewStatusLabel(Object? value) => switch (value) {
+      'DRAFT' => 'Bản nháp',
+      'SUBMITTED' || 'PENDING_REVIEW' => 'Đang chờ xét duyệt',
+      'APPROVED' => 'Đã duyệt',
+      'REJECTED' => 'Bị từ chối',
+      null => 'Chưa gửi',
+      _ => 'Chưa xác định',
+    };
 
 String _agreementLabel(String value) {
   switch (value) {
     case 'TERMS':
-      return 'Service terms';
+      return 'Điều khoản dịch vụ';
     case 'PRIVACY':
-      return 'Privacy';
+      return 'Quyền riêng tư';
     case 'LOCATION':
-      return 'Location';
+      return 'Vị trí';
     case 'PAYOUT':
-      return 'Payout';
+      return 'Thanh toán';
     case 'TAX':
-      return 'Tax';
+      return 'Thuế';
     default:
       return _readableAction(value);
   }
@@ -454,22 +461,22 @@ String providerBankAccountStepDetail({
   String? rejectionReason,
 }) {
   if (status == null) {
-    return 'Bank details are requested from Earnings when withdrawal or deposit support is needed.';
+    return 'Thông tin ngân hàng được yêu cầu trong mục Thu nhập khi cần rút hoặc nộp tiền.';
   }
   if (status == 'REJECTED') {
     final reason = rejectionReason?.trim();
     final prefix = reason == null || reason.isEmpty
         ? partnerBankCorrectionDefaultReason
-        : 'Rejected: $reason.';
-    return '$prefix Update the bank details and submit again.';
+        : 'Bị từ chối: $reason.';
+    return '$prefix Hãy cập nhật thông tin ngân hàng và gửi lại.';
   }
   if (status == 'PENDING_REVIEW') {
-    return 'Submitted. Waiting for admin approval before wallet withdrawal/deposit processing.';
+    return 'Đã gửi. Đang chờ duyệt trước khi xử lý rút hoặc nộp tiền.';
   }
   if (status == 'APPROVED') {
-    return 'Approved for manual wallet operations.';
+    return 'Đã được duyệt cho giao dịch ví.';
   }
-  return 'Review status: $status.';
+  return 'Trạng thái xét duyệt: $status.';
 }
 
 Map<String, dynamic>? providerBankCorrectionRequestFromSnapshot(
@@ -490,7 +497,7 @@ String providerBankCorrectionStepDetail(Map<String, dynamic>? correction) {
       : message != null && message.isNotEmpty
           ? message
           : partnerBankCorrectionDefaultReason;
-  return '$detail Update the bank details and submit again.';
+  return '$detail Hãy cập nhật thông tin ngân hàng và gửi lại.';
 }
 
 String providerTaxProfileStepDetail({
@@ -500,22 +507,22 @@ String providerTaxProfileStepDetail({
   required int missingAgreementCount,
 }) {
   if (completedBookingCount == 0) {
-    return 'Tax profile is not required for Vietnam MVP.';
+    return 'Hiện chưa yêu cầu hồ sơ thuế.';
   }
   if (status == 'REJECTED') {
     final reason = rejectionReason?.trim();
     final prefix = reason == null || reason.isEmpty
-        ? 'Legacy tax profile was rejected.'
-        : 'Legacy tax profile was rejected: $reason.';
-    return '$prefix Tax profile is not required for Vietnam MVP.';
+        ? 'Hồ sơ thuế cũ đã bị từ chối.'
+        : 'Hồ sơ thuế cũ đã bị từ chối: $reason.';
+    return '$prefix Hiện chưa yêu cầu hồ sơ thuế.';
   }
   if (status == 'PENDING_REVIEW') {
-    return 'Legacy tax profile is waiting for admin review. It does not block Level 2 matching.';
+    return 'Hồ sơ thuế cũ đang chờ xét duyệt và không chặn quyền nhận việc.';
   }
   if (status == 'APPROVED') {
-    return 'Legacy tax profile is saved. It does not change partner level.';
+    return 'Hồ sơ thuế cũ đã được lưu và không làm thay đổi cấp tài khoản.';
   }
-  return 'Tax profile is not required for Vietnam MVP.';
+  return 'Hiện chưa yêu cầu hồ sơ thuế.';
 }
 
 List<String> requiredKycDocumentTypesFromSnapshot(
@@ -543,7 +550,7 @@ List<String> requiredPayoutAgreementTypesFromSnapshot(
 String providerAgreementVersionFromSnapshot(Map<String, dynamic> snapshot) {
   final requirements = _asMap(snapshot['requirements']);
   final version = requirements?['agreementVersion']?.toString().trim();
-  return version == null || version.isEmpty ? 'current' : version;
+  return version == null || version.isEmpty ? 'hiện tại' : version;
 }
 
 String _readableAction(String value) {

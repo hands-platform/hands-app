@@ -3,16 +3,22 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
 import type { AdminProvider } from '../../lib/admin-api';
-import { adminGet } from '../../lib/admin-api';
+import { adminGet, adminGetResult } from '../../lib/admin-api';
 import { buildPartnerOperationRow } from './partner-operation-row';
 import ProvidersPage from './page';
 
 vi.mock('../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
+  const adminGet = vi.fn();
 
   return {
     ...actual,
-    adminGet: vi.fn(),
+    adminGet,
+    adminGetResult: vi.fn(async (href, fallback) => ({
+      data: await adminGet(href, fallback),
+      ok: true,
+      status: 200,
+    })),
   };
 });
 
@@ -26,19 +32,46 @@ vi.mock('./partner-operation-row', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedAdminGetResult = vi.mocked(adminGetResult);
 const mockedBuildPartnerOperationRow = vi.mocked(buildPartnerOperationRow);
 
 describe('ProvidersPage', () => {
   beforeEach(() => {
     mockedAdminGet.mockReset();
+    mockedAdminGetResult.mockReset();
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => ({
+      data: await mockedAdminGet(href, fallback),
+      ok: true,
+      status: 200,
+    }));
     mockedBuildPartnerOperationRow.mockClear();
+  });
+
+  it('renders an explicit recovery state instead of zero rows when directory reads fail', async () => {
+    mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({
+      data: fallback,
+      ok: false,
+      status: 503,
+    }));
+
+    const page = await ProvidersPage({ searchParams: Promise.resolve({ review: 'unsettled' }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Unable to load Partners');
+    expect(markup).toContain(
+      'Partner data could not be loaded. Refresh before using this directory for an operational decision.',
+    );
+    expect(markup).toContain('href="/partners?review=unsettled"');
+    expect(markup).not.toContain('0 matching Partners');
   });
 
   it('uses the shared Vuexy badge atom for the active sort summary', () => {
     const source = readFileSync('app/partners/page.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
-    expect(source).not.toContain('actions={<span className="pill pill-info">{partnerSortLabel(filters.sort)}</span>}');
+    expect(source).not.toContain(
+      'actions={<span className="pill pill-info">{partnerSortLabel(filters.sort)}</span>}',
+    );
   });
 
   it('uses the shared Vuexy trace summary atom for the active filter summary', () => {
@@ -93,9 +126,11 @@ describe('ProvidersPage', () => {
     expect(markup).toContain('Server Trusted Partner');
     expect(markup).toContain('Showing 1 to 1 of 120 entries');
     expect(mockedBuildPartnerOperationRow).not.toHaveBeenCalled();
-    const policyHref = mockedAdminGet.mock.calls.map(([href]) => href).find((href) => {
-      return href.startsWith('/admin/operational-policy?keys=');
-    });
+    const policyHref = mockedAdminGet.mock.calls
+      .map(([href]) => href)
+      .find((href) => {
+        return href.startsWith('/admin/operational-policy?keys=');
+      });
     expect(policyHref).toBeDefined();
     const policyUrl = new URL(policyHref ?? '', 'http://admin.local');
     expect(policyUrl.searchParams.get('keys')?.split(',')).toEqual([
@@ -163,7 +198,80 @@ describe('ProvidersPage', () => {
     expect(markup).not.toContain('Partner operations list');
   });
 
-  it('keeps marketplace-ready drilldowns on the compact partner list shell', async () => {
+  it('renders approval-pending Partners as a dedicated oldest-first decision queue', async () => {
+    const approvalRow = {
+      displayName: 'Pending Linh',
+      id: 'partner-approval-pending',
+      kyc: {
+        id: 'kyc-pending',
+        status: 'PENDING',
+        submittedAt: '2026-07-18T04:00:00.000Z',
+      },
+      status: 'OFFLINE',
+      user: {
+        createdAt: '2026-07-17T00:00:00.000Z',
+        fullName: 'Pending Linh Legal',
+        id: 'user-approval-pending',
+        phone: '+84900003333',
+      },
+      userId: 'user-approval-pending',
+      verification: {
+        id: 'verification-submitted',
+        status: 'SUBMITTED',
+        submittedAt: '2026-07-18T03:00:00.000Z',
+      },
+    } as AdminProvider;
+
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/partners/list-providers/summary')) {
+        return { generatedAt: '2026-07-19T00:00:00.000Z', totalCount: 1 };
+      }
+      if (href.startsWith('/admin/partners/list-providers')) return [approvalRow];
+      if (href.startsWith('/admin/operational-policy?keys=')) return [];
+      return fallback;
+    });
+
+    const page = await ProvidersPage({
+      searchParams: Promise.resolve({ review: 'approval-pending', sort: 'oldest' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Partner approvals');
+    expect(markup).toContain('Submitted / Age');
+    expect(markup).toContain('Verification Submitted for review');
+    expect(markup).toContain('KYC Review pending');
+    expect(markup).toContain('identity docs 3/3 missing');
+    expect(markup).toContain('href="/partners/partner-approval-pending"');
+    expect(markup).not.toContain('Load operations analysis');
+    expect(markup).not.toContain('<th>Wallet</th>');
+  });
+
+  it('shows approval recovery destinations instead of filters and export when the queue is empty', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/partners/list-providers/summary')) {
+        return { generatedAt: '2026-07-19T00:00:00.000Z', totalCount: 0 };
+      }
+      if (href.startsWith('/admin/partners/list-providers')) return [];
+      if (href.startsWith('/admin/operational-policy?keys=')) return [];
+      return fallback;
+    });
+
+    const page = await ProvidersPage({
+      searchParams: Promise.resolve({ review: 'approval-pending', sort: 'oldest' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Approval queue is clear');
+    expect(markup).toContain('View onboarding blockers');
+    expect(markup).toContain('Open partner directory');
+    expect(markup).not.toContain('Approval queue filters');
+    expect(markup).not.toContain('Export');
+    expect(markup).not.toContain('Bookings');
+    expect(markup).not.toContain('Revenue');
+    expect(markup).toContain('href="/partners?review=unsettled"');
+  });
+
+  it('normalizes marketplace-ready drilldowns to the server-backed ready-now list', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href.startsWith('/admin/partners/list-providers/summary')) {
         return { generatedAt: '2026-06-28T00:00:00.000Z', totalCount: 0 };
@@ -186,10 +294,10 @@ describe('ProvidersPage', () => {
     expect(markup).not.toContain('Partner action snapshot');
     expect(markup).not.toContain('partner-deep-summary-grid');
     expect(markup).not.toContain('Partner operations list');
-    expect(markup).toContain('Marketplace ready');
+    expect(markup).toContain('Review: Ready now');
   });
 
-  it('links partner export to a protected CSV route instead of embedding CSV data in the page payload', async () => {
+  it('does not offer a CSV export when the current page has no rows', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href.startsWith('/admin/partners/list-providers/summary')) {
         return { generatedAt: '2026-06-28T00:00:00.000Z', totalCount: 0 };
@@ -206,10 +314,13 @@ describe('ProvidersPage', () => {
       return fallback;
     });
 
-    const page = await ProvidersPage({ searchParams: Promise.resolve({ page: '2', pageSize: '25', q: 'linh' }) });
+    const page = await ProvidersPage({
+      searchParams: Promise.resolve({ page: '2', pageSize: '25', q: 'linh' }),
+    });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('href="/api/admin/partners/export?page=2&amp;pageSize=25&amp;q=linh"');
+    expect(markup).toContain('No records to export');
+    expect(markup).not.toContain('href="/api/admin/partners/export?page=2&amp;pageSize=25&amp;q=linh"');
     expect(markup).not.toContain('data:text/csv');
   });
 });

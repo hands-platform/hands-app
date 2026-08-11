@@ -158,13 +158,18 @@ describe('PartnerDetailBookingGateEvidenceSection', () => {
     });
     const rendered = normalizeSpaces(textContent(section));
     const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-evidence-section.tsx', 'utf8');
-    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+    const gateRowsModelSource = readFileSync(
+      'app/partners/[id]/partner-detail-booking-gate-rows-model.tsx',
+      'utf8',
+    );
 
     expect(rendered).toContain('Shared GPS evidence date marker');
     expect(rendered).not.toContain('Fallback GPS evidence date');
     expect(source).toContain('readonly detailNode?: ReactNode;');
     expect(source).toContain('attempt.detailNode ?? attempt.detail');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={currentLocationRecordedAt} />');
+    expect(gateRowsModelSource).toContain(
+      '<DateTimeText fallback="Missing" value={currentLocationRecordedAt} />',
+    );
   });
 });
 

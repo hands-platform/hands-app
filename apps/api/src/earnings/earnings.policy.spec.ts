@@ -59,6 +59,7 @@ describe('earnings policy', () => {
       platformFeeNetRevenue: 118519,
       companyOutputVat: 9481,
       partnerTaxPayable: 42000,
+      partnerCouponSubsidyPayable: 0,
       totalPartnerDueToCompany: 170000,
       walletDeductionCompanyOutputVat: 9481,
       walletDeductionPartnerTaxPayable: 42000,
@@ -75,6 +76,7 @@ describe('earnings policy', () => {
       companyCouponExpense: 60000,
       companyOutputVat: 9481,
       partnerTaxPayable: 42000,
+      partnerCouponSubsidyPayable: 0,
       platformFeeGross: 128000,
       platformFeeNetRevenue: 118519,
       platformFeeVatRateBps: 800,
@@ -83,6 +85,29 @@ describe('earnings policy', () => {
       walletDeductionPartnerTaxPayable: 42000,
       walletDeductionPlatformFeeNetRevenue: 58519,
     });
+  });
+
+  it('creates a Partner payable when a company CASH coupon exceeds fees and withholding', () => {
+    expect(
+      calculateCashBookingPartnerDue(128000, 800, 42000, {
+        companyCouponExpense: 300000,
+      }),
+    ).toMatchObject({
+      partnerCouponSubsidyPayable: 130000,
+      totalPartnerDueToCompany: 0,
+      walletDeductionCompanyOutputVat: 0,
+      walletDeductionPartnerTaxPayable: 0,
+      walletDeductionPlatformFeeNetRevenue: 0,
+    });
+    expect(
+      calculateProviderWalletDelta({
+        paymentMethod: PaymentMethod.CASH,
+        grossAmount: 600000,
+        platformFee: 128000,
+        withholdingAmount: 42000,
+        companyCouponExpense: 300000,
+      }),
+    ).toBe(130000);
   });
 
   it('allocates partner bank deposit to negative wallet first and liability second', () => {
@@ -305,6 +330,16 @@ describe('earnings policy', () => {
         nextTransferRef: null,
       }),
     ).toThrow('Transfer reference is required before marking a payout batch paid');
+  });
+
+  it('requires a transfer reference before processing a payout batch', () => {
+    expect(() =>
+      normalizePayoutBatchUpdateStatus({
+        currentStatus: PayoutBatchStatus.DRAFT,
+        requestedStatus: PayoutBatchStatus.PROCESSING,
+        nextTransferRef: null,
+      }),
+    ).toThrow('Transfer reference is required before processing a payout batch');
   });
 
   it('normalizes omitted payout batch status updates as metadata-only updates', () => {

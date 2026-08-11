@@ -9,6 +9,7 @@ export function BookingOperatorNotesEditor() {
       labelVisibility="visible"
       name="note"
       placeholder="Add a short operator note."
+      required
       rows={3}
       textareaClassName="ops-note-textarea"
     />

@@ -1,4 +1,4 @@
-import { BookingStatus, PaymentMethod, PaymentStatus, Role } from '@prisma/client';
+import { BookingStatus, ParticipantStatus, PaymentMethod, PaymentStatus, Role } from '@prisma/client';
 import {
   bookingAddressSnapshotCreate,
   bookingCancellationResultWithReleasedPayment,
@@ -24,6 +24,24 @@ describe('booking payload helpers', () => {
     });
     expect(normalizeBookingAddress(undefined, 'District 1')).toEqual({
       addressText: 'District 1',
+    });
+  });
+
+  it('uses the authenticated customer contact instead of client-supplied contact fields', () => {
+    expect(
+      normalizeBookingAddress(
+        {
+          addressText: 'Client address',
+          name: 'Forged name',
+          phone: '0000000000',
+        },
+        'District 1, Ho Chi Minh City, Vietnam',
+        { name: 'Nguyen An', phone: '0865907184' },
+      ),
+    ).toEqual({
+      addressText: 'District 1, Ho Chi Minh City, Vietnam',
+      name: 'Nguyen An',
+      phone: '0865907184',
     });
   });
 
@@ -100,11 +118,16 @@ describe('booking payload helpers', () => {
 
     expect(customerCancellationCloseData(now)).toEqual({
       status: BookingStatus.CANCELLED,
-      expiresAt: now,
       closedAt: now,
       closedByRole: Role.CUSTOMER,
       closedReason: 'customer_cancelled',
       closedNote: 'Customer cancelled before partner commitment.',
+      participants: {
+        updateMany: {
+          where: { status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] } },
+          data: { status: ParticipantStatus.EXPIRED, respondedAt: now },
+        },
+      },
     });
   });
 
@@ -120,8 +143,8 @@ describe('booking payload helpers', () => {
   });
 
   it('dedupes provider user ids for cancellation notifications', () => {
-    expect(
-      [...bookingCancellationProviderUserIds({
+    expect([
+      ...bookingCancellationProviderUserIds({
         preferredProvider: { userId: 'provider-user-1' },
         selectedProvider: { userId: 'provider-user-2' },
         participants: [
@@ -129,7 +152,7 @@ describe('booking payload helpers', () => {
           { providerProfile: { userId: 'provider-user-3' } },
           { providerProfile: { userId: null } },
         ],
-      })],
-    ).toEqual(['provider-user-1', 'provider-user-2', 'provider-user-3']);
+      }),
+    ]).toEqual(['provider-user-1', 'provider-user-2', 'provider-user-3']);
   });
 });

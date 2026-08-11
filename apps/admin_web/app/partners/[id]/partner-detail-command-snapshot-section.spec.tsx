@@ -75,16 +75,18 @@ describe('PartnerDetailCommandSnapshotSection', () => {
     });
     const rendered = normalizedText(section);
     const source = readFileSync('app/partners/[id]/partner-detail-command-snapshot-section.tsx', 'utf8');
-    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+    const modelSource = readFileSync('app/partners/[id]/partner-detail-record-summary-model.tsx', 'utf8');
 
     expect(rendered).toContain('Shared command helper date marker');
     expect(rendered).not.toContain('Fallback command helper date');
     expect(source).toContain('readonly helperNode?: ReactNode;');
     expect(source).toContain('item.helperNode ?? item.helper');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={latestEvent.at} />');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={bookingLatestActivityAt(latestCompletedBooking)} />');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={latestAccessAt} />');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={latestStaffRecord.at} />');
+    expect(modelSource).toContain('<DateTimeText fallback="Missing" value={latestEvent.at} />');
+    expect(modelSource).toContain(
+      '<DateTimeText fallback="Missing" value={bookingLatestActivityAt(latestCompletedBooking)} />',
+    );
+    expect(modelSource).toContain('<DateTimeText fallback="Missing" value={latestAccessAt} />');
+    expect(modelSource).toContain('<DateTimeText fallback="Missing" value={latestStaffRecord.at} />');
   });
 });
 

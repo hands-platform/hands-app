@@ -1,4 +1,5 @@
 import {
+  financeBankReconciliationStatusModel,
   financeBankReconciliationStatusPill,
   financeBankReconciliationStatusTone,
   financeEvidenceTonePill,
@@ -38,6 +39,25 @@ describe('finance status badge model', () => {
     expect(financeBankReconciliationStatusTone('PARTIALLY_MATCHED')).toBe('info');
     expect(financeBankReconciliationStatusTone('REVERSED')).toBe('danger');
     expect(financeBankReconciliationStatusTone('UNMATCHED')).toBe('warning');
+  });
+
+  it('keeps ignored and reversed reconciliation records closed without exposing match actions', () => {
+    expect(financeBankReconciliationStatusModel('IGNORED')).toEqual({
+      closed: true,
+      closeoutLabel: 'Closed - no matching required',
+      label: 'Ignored',
+      nextAction: 'No action required',
+    });
+    expect(financeBankReconciliationStatusModel('REVERSED')).toEqual({
+      closed: true,
+      closeoutLabel: 'Closed - reversed evidence',
+      label: 'Reversed',
+      nextAction: 'Review audit history',
+    });
+    expect(financeBankReconciliationStatusModel('PARTIALLY_MATCHED')).toMatchObject({
+      closed: false,
+      nextAction: 'Match remaining amount',
+    });
   });
 
   it('maps journal, monthly close, reversal, and evidence tones', () => {

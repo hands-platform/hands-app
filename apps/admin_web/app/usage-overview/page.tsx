@@ -1,1113 +1,755 @@
 import {
   Activity,
   AlertTriangle,
-  BadgePercent,
   CalendarCheck,
-  ChevronRight,
-  CreditCard,
   Eye,
-  MapPinned,
   MousePointerClick,
   Repeat2,
-  Search,
   Trophy,
-  UserPlus,
   Users,
-  WalletCards,
 } from 'lucide-react';
+
 import {
-  AdminUsageOverview,
-  AdminUsageOverviewHourlyActivityRow,
-  AdminUsageOverviewPartnerDiscoveryRow,
-  AdminUsageOverviewPlatformRow,
-  AdminUsageOverviewPopularServiceRow,
-  AdminUsageOverviewRegionRow,
-  AdminUsageOverviewRankRow,
+  type AdminUsageOverview,
+  type AdminUsageOverviewCustomerRankingRow,
+  type AdminUsageOverviewPartnerRankingRow,
   adminGet,
 } from '../../lib/admin-api';
-import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
+import { AdminFormControlButton, AdminFormDate } from '../../components/admin-form-controls';
 import {
   AdminMiniMetricStrip,
   AdminOverviewCommandCard,
   AdminOverviewCommandGrid,
   AdminOverviewGrid,
-  AdminOverviewGroup,
 } from '../../components/admin-overview-card';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
-import { AdminCard, AdminCardGrid, AdminKpiCard, AdminSection } from '../../components/admin-surface';
+import {
+  AdminCard,
+  AdminDisclosure,
+  AdminErrorState,
+  AdminKpiCard,
+  AdminSection,
+} from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
-import {
-  formatCurrencyAmount as money,
-  formatPercentLabel,
-  formatWholeNumber as formatNumber,
-} from '../../lib/admin-format';
+import { formatCurrencyAmount as money, formatWholeNumber as number } from '../../lib/admin-format';
 import {
   buildUsageActionPriorities,
-  emptyUsageOverview,
   normalizeUsageOverviewRange,
-  type UsageActionPriority,
+  usageOverviewRangeOptions,
   usageOverviewWithDefaults,
   usageOverviewHref,
-  usageOverviewRangeOptions,
+  validateUsageCustomRange,
 } from './usage-overview-model';
-
-export const dynamic = 'force-dynamic';
+import { UsageOverviewTrendChart } from './usage-overview-trend-chart';
+import { UsageOverviewRefreshButton } from './usage-overview-refresh-button';
 
 type UsageOverviewPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function UsageOverviewPage({
   searchParams,
 }: {
-  searchParams?: UsageOverviewPageSearchParams;
+  readonly searchParams?: UsageOverviewPageSearchParams;
 }) {
   const params = await searchParams;
   const range = normalizeUsageOverviewRange(params?.range);
-  const rawOverview = await adminGet<AdminUsageOverview>(
-    `/admin/usage-overview?range=${range}`,
-    emptyUsageOverview(range),
-  );
-  const overview = usageOverviewWithDefaults(rawOverview, range);
-  const funnelSteps = buildUsageFunnelSteps(overview);
-  const usageHealthCards: UsageCommandCardConfig[] = [
-    {
-      label: 'App sessions',
-      value: formatNumber(overview.totals.customerSessionCount),
-      detail: `${formatNumber(overview.customerUsage.mostActiveCustomers.length)} active customer ranks`,
-      icon: Activity,
-      tone: 'info',
-    },
-    {
-      label: 'Partner discovery',
-      value: formatNumber(overview.totals.partnerProfileViewCount),
-      detail: `${formatPercent(overview.totals.partnerBookingRequestCount, overview.totals.partnerProfileViewCount)} view-to-request`,
-      icon: Eye,
-      tone: 'primary',
-    },
-    {
-      label: 'Booking intent',
-      value: formatNumber(overview.totals.partnerBookingRequestCount),
-      detail: `${formatPercent(overview.totals.completedBookingCount, overview.totals.partnerBookingRequestCount)} request-to-complete`,
-      icon: MousePointerClick,
-      tone: 'warning',
-    },
-    {
-      label: 'Completed work',
-      value: formatNumber(overview.totals.completedBookingCount),
-      detail: `${formatNumber(overview.customerUsage.completedBookingCustomers.length)} customer ranks closed`,
-      icon: CalendarCheck,
-      tone: 'success',
-    },
-  ];
-  const usageSegmentCards: UsageCommandCardConfig[] = [
-    {
-      label: 'New customers',
-      value: formatNumber(overview.customerLifecycle.newCustomerCount),
-      detail: 'Customer accounts created in this range',
-      icon: UserPlus,
-      tone: overview.customerLifecycle.newCustomerCount > 0 ? 'info' : 'neutral',
-    },
-    {
-      label: 'Never booked',
-      value: formatNumber(overview.customerLifecycle.neverBookedCustomerCount),
-      detail: 'Customers who still have no booking record',
-      icon: Search,
-      tone: overview.customerLifecycle.neverBookedCustomerCount > 0 ? 'warning' : 'neutral',
-    },
-    {
-      label: 'Churn risk',
-      value: formatNumber(overview.customerLifecycle.churnRiskCustomerCount),
-      detail: 'Completed before, no app session in 30 days',
-      icon: AlertTriangle,
-      tone: overview.customerLifecycle.churnRiskCustomerCount > 0 ? 'danger' : 'success',
-    },
-    {
-      label: 'Repeat customers',
-      value: formatNumber(overview.customerLifecycle.repeatCustomerCount),
-      detail: 'Customers with 2+ completed bookings in range',
-      icon: Repeat2,
-      tone: overview.customerLifecycle.repeatCustomerCount > 0 ? 'success' : 'neutral',
-    },
-  ];
+  const from = stringParam(params?.from);
+  const to = stringParam(params?.to);
+  const today = vietnamDateInput(new Date());
+  const validationError = range === 'custom' ? validateUsageCustomRange(from, to, today) : null;
+  const query = new URLSearchParams({ range });
+  if (range === 'custom' && from) query.set('from', from);
+  if (range === 'custom' && to) query.set('to', to);
+  const requestHref = `/usage-overview?${query.toString()}`;
+  const rawOverview = validationError
+    ? null
+    : await adminGet<AdminUsageOverview | null>(`/admin/usage-overview?${query.toString()}`, null, {
+        freshness: 'live',
+      });
+  const overview = rawOverview ? usageOverviewWithDefaults(rawOverview, range) : null;
 
   return (
     <AdminPageTemplate
-      contentClassName="usage-overview-page"
-      description="Customer app frequency, Partner discovery, booking intent, and completed-work flow from stored usage events."
-      title="Usage Overview"
+      contentClassName="usage-overview-page usage-overview-v2"
+      description="Customer reach, booking outcomes, and the records that need an operator decision."
+      title="Customer Usage"
     >
+      <UsageRangePanel
+        from={from}
+        overview={overview}
+        range={range}
+        to={to}
+        validationError={validationError}
+      />
 
-      <AdminFilterPanel
-        actions={
-          <>
-            <StatusBadge tone="success">Vietnam only</StatusBadge>
-            <StatusBadge tone="info">
-              Generated <DateTimeText value={overview.generatedAt} />
-            </StatusBadge>
-          </>
-        }
-        className="usage-overview-filter-panel"
-        description="Use bounded date windows so operators can compare app activity without broad page fetches."
-        resultLabel={overview.rangeLabel}
-        title="Usage range"
-      >
-        <AdminSegmentedControl
-          activeValue={range}
-          ariaLabel="Usage overview range"
-          className="usage-overview-range-buttons"
-          options={usageOverviewRangeOptions.map((option) => ({
-            href: usageOverviewHref(option.value),
-            label: option.label,
-            value: option.value,
-          }))}
+      {validationError ? (
+        <AdminErrorState
+          message={`${validationError} The requested period was not changed or loaded.`}
+          title="Custom period not applied"
         />
-        <AdminFilterSummary
-          ariaLabel="Active usage overview filters"
-          labels={[`Range: ${overview.rangeLabel}`]}
-          tone="info"
+      ) : !overview ? (
+        <AdminErrorState
+          action={<AdminTextLink href={requestHref}>Retry usage report</AdminTextLink>}
+          message="The usage API did not return a report. No zero values are shown until the source becomes available."
+          title="Usage data unavailable"
         />
-      </AdminFilterPanel>
-
-      <AdminOverviewCommandGrid ariaLabel="Usage command summary">
-        {usageHealthCards.map(({ label, value, detail, icon: Icon, tone }) => (
-          <UsageCommandCard
-            key={label}
-            detail={detail}
-            icon={Icon}
-            label={label}
-            rangeLabel={overview.rangeLabel}
-            tone={tone}
-            value={value}
-          />
-        ))}
-      </AdminOverviewCommandGrid>
-
-      <AdminSection
-        bodyClassName="usage-overview-funnel-steps"
-        className="usage-overview-funnel-card"
-        description="Stored flow from app activity to Partner discovery, preferred request, and completed work."
-        statusLabel={overview.rangeLabel}
-        title="Customer app-to-booking funnel"
-      >
-        {funnelSteps.map((step, index) => (
-          <AdminCard key={step.label} className={`usage-overview-funnel-step is-${step.tone}`}>
-            <div className="usage-overview-funnel-step-header">
-              <span>{step.label}</span>
-              <strong>{formatNumber(step.value)}</strong>
-            </div>
-            <div className="usage-overview-funnel-bar" aria-hidden="true">
-              <i style={{ width: `${step.widthPercent}%` }} />
-            </div>
-            <small>{step.detail}</small>
-            {index < funnelSteps.length - 1 ? (
-              <ChevronRight className="usage-overview-funnel-arrow" size={18} aria-hidden="true" />
-            ) : null}
-          </AdminCard>
-        ))}
-      </AdminSection>
-
-      <AdminOverviewGrid ariaLabel="Customer usage segments" variant="segment">
-        {usageSegmentCards.map(({ label, value, detail, icon: Icon, tone }) => (
-          <UsageCommandCard
-            key={label}
-            detail={detail}
-            icon={Icon}
-            label={label}
-            rangeLabel={overview.rangeLabel}
-            tone={tone}
-            value={value}
-          />
-        ))}
-      </AdminOverviewGrid>
-
-      <AdminOverviewGrid ariaLabel="Customers overview" variant="insight">
-        <UsageInsightCard
-          title="Customer lifecycle"
-          description="Account, activity, first booking, repeat, and churn-risk counts from stored records."
-          icon={Users}
-          rows={[
-            { label: 'New', value: overview.customerLifecycle.newCustomerCount, tone: 'info' },
-            { label: 'Active in range', value: overview.customerLifecycle.activeCustomerCount, tone: 'primary' },
-            { label: 'Completed customers', value: overview.customerLifecycle.completedCustomerCount, tone: 'success' },
-            { label: 'Repeat customers', value: overview.customerLifecycle.repeatCustomerCount, tone: 'success' },
-            { label: 'Churn risk', value: overview.customerLifecycle.churnRiskCustomerCount, tone: 'danger' },
-            { label: 'Never booked', value: overview.customerLifecycle.neverBookedCustomerCount, tone: 'warning' },
-          ]}
-        />
-        <UsageInsightCard
-          title="Retention pulse"
-          description="Recency counts are fixed windows, independent from the selected report range."
-          icon={Repeat2}
-          rows={[
-            { label: 'D1 active', value: overview.customerLifecycle.activeTodayCustomerCount, tone: 'info' },
-            { label: 'D7 active', value: overview.customerLifecycle.active7dCustomerCount, tone: 'primary' },
-            { label: 'D30 active', value: overview.customerLifecycle.active30dCustomerCount, tone: 'success' },
-          ]}
-        />
-        <UsageInsightCard
-          title="Booking quality"
-          description="Booking creation, completion, cancellation, and refund signals for the selected range."
-          icon={CalendarCheck}
-          rows={[
-            { label: 'Created', value: overview.bookingQuality.createdBookingCount, tone: 'primary' },
-            { label: 'Completed', value: overview.totals.completedBookingCount, tone: 'success' },
-            { label: 'Cancelled / expired', value: overview.bookingQuality.cancellationCount, tone: 'warning' },
-            { label: 'Refunded', value: overview.bookingQuality.refundCount, tone: 'danger' },
-            { label: 'Low reviews', value: overview.bookingQuality.lowReviewCount, tone: 'danger' },
-          ]}
-        />
-        <PaymentCouponInsightCard
-          couponBookingCount={overview.paymentAndCoupon.couponBookingCount}
-          paymentFailureCount={overview.paymentAndCoupon.paymentFailureCount}
-          refundAmount={overview.paymentAndCoupon.refundAmount}
-          rows={overview.paymentAndCoupon.paymentMethodMix}
-        />
-      </AdminOverviewGrid>
-
-      <AdminOverviewGrid ariaLabel="Customer behavior patterns" variant="behavior">
-        <PopularServicesCard rows={overview.behavior.popularServices} />
-        <HourlyActivityCard rows={overview.behavior.hourlyActivity} />
-      </AdminOverviewGrid>
-
-      <PlatformUsageCard rows={overview.platformUsage} />
-
-      <PartnerDiscoveryConversionCard rows={overview.partnerUsage.discoveryConversion} />
-
-      <CustomerSegmentsBoard overview={overview} rangeLabel={overview.rangeLabel} />
-
-      <ActionPrioritiesBoard overview={overview} rangeLabel={overview.rangeLabel} />
-
-      <AdminOverviewGrid ariaLabel="Customer and Partner usage rankings" variant="content">
-        <AdminOverviewGroup
-          eyebrow="Customer behavior"
-          title="Who is active and who completed work"
-        >
-          <UsageRankingCard
-            title="Most active customers"
-            description="Customers with the most app-session activity in the selected range."
-            emptyMessage="No customer app-session activity loaded."
-            rows={overview.customerUsage.mostActiveCustomers}
-            valueHeading="Sessions"
-          />
-          <UsageRankingCard
-            title="Customers by completed work"
-            description="Customers listed by completed booking count in the selected range."
-            emptyMessage="No completed customer bookings loaded."
-            rows={overview.customerUsage.completedBookingCustomers}
-            valueHeading="Completed"
-          />
-          <UsageRankingCard
-            title="Problem signal customers"
-            description="Customers with cancellation, no-show, expiry, or refund signals in the selected range."
-            emptyMessage="No problem customer signals loaded."
-            rows={overview.customerUsage.qualityRiskCustomers}
-            valueHeading="Signals"
-          />
-          <UsageRankingCard
-            title="Low review customers"
-            description="Customers who left 1-2 star published reviews in the selected range."
-            emptyMessage="No low customer reviews loaded."
-            rows={overview.customerUsage.lowReviewCustomers}
-            valueHeading="Low reviews"
-          />
-        </AdminOverviewGroup>
-        <AdminOverviewGroup
-          eyebrow="Partner discovery"
-          title="Who customers look at, request, and complete with"
-        >
-          <UsageRankingCard
-            title="Most viewed Partners"
-            description="Partner profile views from stored customer interactions."
-            emptyMessage="No Partner profile views loaded."
-            rows={overview.partnerUsage.mostViewedPartners}
-            valueHeading="Views"
-          />
-          <UsageRankingCard
-            title="Most requested Partners"
-            description="Preferred Partner booking requests in the selected range."
-            emptyMessage="No Partner requests loaded."
-            rows={overview.partnerUsage.requestedPartners}
-            valueHeading="Requests"
-          />
-          <UsageRankingCard
-            title="Completed Partner ranking"
-            description="Partners listed by completed bookings in the selected range."
-            emptyMessage="No completed Partner bookings loaded."
-            rows={overview.partnerUsage.completedPartners}
-            valueHeading="Completed"
-          />
-        </AdminOverviewGroup>
-        <RegionUsageCard rows={overview.regionUsage} />
-      </AdminOverviewGrid>
+      ) : (
+        <UsageOverviewContent overview={overview} />
+      )}
     </AdminPageTemplate>
   );
 }
 
-function CustomerSegmentsBoard({
+function UsageRangePanel({
+  from,
   overview,
-  rangeLabel,
+  range,
+  to,
+  validationError,
 }: {
-  readonly overview: AdminUsageOverview;
-  readonly rangeLabel: string;
+  readonly from: string | null;
+  readonly overview: AdminUsageOverview | null;
+  readonly range: ReturnType<typeof normalizeUsageOverviewRange>;
+  readonly to: string | null;
+  readonly validationError: string | null;
 }) {
-  const rows = [
-    {
-      detail: 'New accounts in range with no booking yet',
-      icon: Search,
-      label: 'New unbooked',
-      percent: formatPercent(
-        overview.customerSegments.newUnbookedCustomerCount,
-        overview.customerLifecycle.newCustomerCount,
-      ),
-      tone: 'warning',
-      value: overview.customerSegments.newUnbookedCustomerCount,
-    },
-    {
-      detail: 'Customers with exactly one completed booking',
-      icon: CalendarCheck,
-      label: 'First completed',
-      percent: formatPercent(
-        overview.customerSegments.firstCompletedCustomerCount,
-        overview.customerLifecycle.completedCustomerCount,
-      ),
-      tone: 'info',
-      value: overview.customerSegments.firstCompletedCustomerCount,
-    },
-    {
-      detail: 'Customers with 2+ completed bookings',
-      icon: Repeat2,
-      label: 'Repeat customers',
-      percent: formatPercent(
-        overview.customerSegments.repeatCustomerCount,
-        overview.customerLifecycle.completedCustomerCount,
-      ),
-      tone: 'success',
-      value: overview.customerSegments.repeatCustomerCount,
-    },
-    {
-      detail: 'Customers with 3+ completed bookings',
-      icon: Trophy,
-      label: 'High value customers',
-      percent: formatPercent(
-        overview.customerSegments.vipCustomerCount,
-        overview.customerLifecycle.completedCustomerCount,
-      ),
-      tone: 'primary',
-      value: overview.customerSegments.vipCustomerCount,
-    },
-    {
-      detail: 'Completed before, no app session in 30 days',
-      icon: AlertTriangle,
-      label: 'Churn risk',
-      percent: formatPercent(
-        overview.customerSegments.churnRiskCustomerCount,
-        overview.customerLifecycle.completedCustomerCount,
-      ),
-      tone: 'danger',
-      value: overview.customerSegments.churnRiskCustomerCount,
-    },
-    {
-      detail: 'Customers with cancellation, no-show, expiry, or refund signal',
-      icon: AlertTriangle,
-      label: 'Problem signal',
-      percent: formatPercent(
-        overview.customerSegments.issueCustomerCount,
-        overview.customerLifecycle.activeCustomerCount,
-      ),
-      tone: 'warning',
-      value: overview.customerSegments.issueCustomerCount,
-    },
-  ] satisfies Array<{
-    detail: string;
-    icon: UsageCardIcon;
-    label: string;
-    percent: string;
-    tone: UsageCardTone;
-    value: number;
-  }>;
+  const today = vietnamDateInput(new Date());
+  const applied = overview?.appliedRange;
+  const periodLabel =
+    applied?.fromDate && applied.toDate
+      ? `${applied.fromDate} – ${applied.toDate} · ${applied.dayCount} ${applied.dayCount === 1 ? 'day' : 'days'} · Vietnam time`
+      : (overview?.rangeLabel ?? 'Unavailable');
+  const scopeLabels = overview
+    ? [
+        periodLabel,
+        applied?.granularity === 'hourly' ? 'Hourly' : 'Daily',
+        overview.comparison.fromDate && overview.comparison.toDate
+          ? `Compared with ${overview.comparison.fromDate} – ${overview.comparison.toDate}`
+          : 'Comparison unavailable',
+        `Report generated ${formatUsageDateTime(overview.freshness.reportGeneratedAt)} ICT`,
+        overview.freshness.usageAggregatedThroughAt
+          ? `Usage signals through ${formatUsageDateTime(overview.freshness.usageAggregatedThroughAt)} ICT`
+          : 'Usage signal time unavailable',
+      ]
+    : [validationError ? 'Report not loaded · correct the dates' : 'Report not loaded'];
 
   return (
-    <AdminSection
-      actions={<Users size={18} aria-hidden="true" />}
-      bodyClassName="usage-overview-segment-board-grid"
-      className="usage-overview-segment-board-card"
-      description="Operational customer groups for follow-up, retention, priority handling, and issue review."
-      title="Customer segments"
+    <AdminFilterPanel
+      actions={
+        overview ? <UsageOverviewRefreshButton /> : undefined
+      }
+      className="usage-overview-filter-panel"
+      description="Applied dates use Asia/Ho_Chi_Minh. Presets compare with the immediately preceding period of equal length."
+      resultLabel={periodLabel}
+      title="Reporting period"
     >
-      {rows.map(({ detail, icon: Icon, label, percent, tone, value }) => (
-        <CustomerSegmentItem
-          detail={detail}
-          icon={Icon}
-          key={label}
-          label={label}
-          percent={percent}
-          rangeLabel={rangeLabel}
-          tone={tone}
-          value={value}
-        />
-      ))}
-    </AdminSection>
+      <AdminSegmentedControl
+        activeValue={range}
+        ariaLabel="Usage overview range"
+        className="usage-overview-range-buttons"
+        options={usageOverviewRangeOptions.map((option) => ({
+          href: usageOverviewHref(option.value),
+          label: option.label,
+          value: option.value,
+        }))}
+      />
+      {range === 'custom' ? (
+        <form action="/usage-overview" className="usage-overview-custom-range" method="get">
+          <input name="range" type="hidden" value="custom" />
+          <AdminFormDate
+            ariaDescribedBy={validationError ? 'usage-custom-range-error' : undefined}
+            ariaInvalid={Boolean(validationError)}
+            defaultValue={from ?? today}
+            label="From"
+            labelVisibility="visible"
+            name="from"
+            required
+          />
+          <AdminFormDate
+            ariaDescribedBy={validationError ? 'usage-custom-range-error' : undefined}
+            ariaInvalid={Boolean(validationError)}
+            defaultValue={to ?? today}
+            label="To"
+            labelVisibility="visible"
+            name="to"
+            required
+          />
+          <AdminFormControlButton type="submit">Apply period</AdminFormControlButton>
+          {validationError ? (
+            <small id="usage-custom-range-error" role="alert">
+              {validationError}
+            </small>
+          ) : null}
+        </form>
+      ) : null}
+      <AdminFilterSummary
+        ariaLabel="Applied usage report scope"
+        className="usage-overview-scope-summary"
+        labels={scopeLabels}
+        tone="info"
+      />
+      <UsageDataTrustNotice overview={overview} />
+    </AdminFilterPanel>
   );
 }
 
-function CustomerSegmentItem({
-  detail,
-  icon: Icon,
-  label,
-  percent,
-  rangeLabel,
-  tone,
-  value,
-}: {
-  readonly detail: string;
-  readonly icon: UsageCardIcon;
-  readonly label: string;
-  readonly percent: string;
-  readonly rangeLabel: string;
-  readonly tone: UsageCardTone;
-  readonly value: number;
-}) {
-  const meta = usageSegmentCardMeta(label, rangeLabel, tone);
+function UsageDataTrustNotice({ overview }: { readonly overview: AdminUsageOverview | null }) {
+  if (!overview) {
+    return (
+      <div className="usage-overview-trust-notice is-neutral" role="status">
+        <strong>Provenance not evaluated</strong>
+        <span>The report was not loaded, so no production-data claim is shown.</span>
+      </div>
+    );
+  }
+
+  const provenanceGuaranteed = overview.provenance.usageFixtures === 'guaranteed';
+  const usageTime = overview.freshness.usageAggregatedThroughAt;
+  const usageDelayed = overview.freshness.usageStatus === 'delayed';
+  const usageUnknown = overview.freshness.usageStatus === 'unknown';
 
   return (
-    <AdminOverviewCommandCard
-      baseClassName="usage-overview-segment-board-item"
-      className={`is-${tone}`}
-      detail={detail}
-      icon={<Icon size={17} aria-hidden="true" />}
-      iconClassName="usage-overview-command-icon"
-      kind={meta.kind}
-      label={label}
-      scope={meta.scope}
-      trailing={<em>{percent}</em>}
-      value={formatNumber(value)}
-    />
+    <div className="usage-overview-trust-stack">
+      <div
+        className={`usage-overview-trust-notice ${provenanceGuaranteed ? 'is-success' : 'is-warning'}`}
+        role={provenanceGuaranteed ? 'status' : 'alert'}
+      >
+        <strong>{provenanceGuaranteed ? 'Synthetic usage excluded' : 'Usage provenance is incomplete'}</strong>
+        <span>
+          {provenanceGuaranteed
+            ? 'Every usage total on this report reads only server-owned production aggregates.'
+            : overview.provenance.unknownAggregateCount > 0
+              ? `${number(overview.provenance.unknownAggregateCount)} unknown aggregate ${overview.provenance.unknownAggregateCount === 1 ? 'row is' : 'rows are'} excluded. Do not use the missing historical usage as a production total.`
+              : 'Legacy aggregate provenance has not been verified. Do not use these totals for production decisions.'}
+        </span>
+      </div>
+      {usageDelayed || usageUnknown ? (
+        <div className="usage-overview-trust-notice is-warning" role="alert">
+          <strong>{usageDelayed ? 'Production usage signals may be delayed' : 'Production usage freshness is unknown'}</strong>
+          <span>
+            {usageTime
+              ? `The latest production usage signal is ${formatUsageDateTime(usageTime)} ICT, beyond the named 48-hour threshold for this period.`
+              : 'No production usage aggregate timestamp is available for this period.'}
+          </span>
+        </div>
+      ) : null}
+      <AdminDisclosure ariaLabel="Source activity times" className="usage-overview-source-times">
+        <summary>Source activity times</summary>
+        <dl>
+          <div><dt>Booking activity</dt><dd>{formatOptionalUsageDateTime(overview.freshness.bookingActivityThroughAt)}</dd></div>
+          <div><dt>Review activity</dt><dd>{formatOptionalUsageDateTime(overview.freshness.reviewActivityThroughAt)}</dd></div>
+          <div><dt>Refund activity</dt><dd>{formatOptionalUsageDateTime(overview.freshness.refundActivityThroughAt)}</dd></div>
+        </dl>
+      </AdminDisclosure>
+    </div>
   );
 }
 
-function ActionPrioritiesBoard({
-  overview,
-  rangeLabel,
-}: {
-  readonly overview: AdminUsageOverview;
-  readonly rangeLabel: string;
-}) {
-  const priorities = buildUsageActionPriorities(overview);
+function UsageOverviewContent({ overview }: { readonly overview: AdminUsageOverview }) {
+  const previous = overview.comparison.totals;
+  const kpis = [
+    [
+      'active-customers',
+      'Active unique customers',
+      overview.totals.activeCustomerCount,
+      previous.activeCustomerCount,
+      Users,
+      'primary',
+    ],
+    [
+      'partner-views',
+      'Partner view events',
+      overview.totals.partnerProfileViewCount,
+      previous.partnerProfileViewCount,
+      Eye,
+      'info',
+    ],
+    [
+      'created-bookings',
+      'Booking records created',
+      overview.bookingQuality.createdBookingCount,
+      previous.createdBookingCount,
+      CalendarCheck,
+      'warning',
+    ],
+    [
+      'unresolved-bookings',
+      'Unresolved booking records',
+      overview.bookingQuality.unresolvedCount,
+      previous.unresolvedCount,
+      AlertTriangle,
+      'danger',
+    ],
+  ] as const;
 
+  const report = (
+    <>
+      <ActionPriorities overview={overview} />
+
+      <AdminOverviewCommandGrid ariaLabel="Period health">
+        {kpis.map(([key, label, current, previousValue, Icon, tone]) => (
+          <AdminKpiCard
+            className={`usage-overview-kpi-card is-${tone}`}
+            helper={`${periodDelta(current, previousValue).label} vs previous equal period`}
+            icon={Icon}
+            iconSize={18}
+            key={key}
+            kind="period"
+            label={label}
+            scope={overview.rangeLabel}
+            value={number(current)}
+          />
+        ))}
+      </AdminOverviewCommandGrid>
+
+      <UniqueCustomerReach overview={overview} />
+      <BookingOutcomes overview={overview} />
+
+      <AdminSection
+        actions={<Activity aria-hidden="true" size={18} />}
+        className="usage-overview-trend-card"
+        description={`${overview.appliedRange.granularity === 'hourly' ? 'Hourly' : 'Daily'} activity in Vietnam time. Customer and booking scales are separated.`}
+        statusLabel={overview.rangeLabel}
+        title="Activity trends"
+      >
+        <UsageOverviewTrendChart rows={overview.behavior.trend} />
+      </AdminSection>
+
+      <AdminOverviewGrid ariaLabel="Customer period and current base" variant="insight">
+        <PeriodCustomers overview={overview} />
+        <RetentionCard overview={overview} />
+        <CurrentCustomerBase overview={overview} />
+      </AdminOverviewGrid>
+
+      <CustomerRankingTable rows={overview.customerRankings.slice(0, 5)} />
+      <PartnerRankingTable rows={overview.partnerRankings.slice(0, 5)} />
+
+      <AdminOverviewGrid ariaLabel="Demand and service patterns" variant="behavior">
+        <PopularServices overview={overview} />
+        <RegionTopFive overview={overview} />
+      </AdminOverviewGrid>
+    </>
+  );
+
+  if (hasTrackedUsage(overview)) return report;
+
+  return (
+    <>
+      <AdminSection
+        actions={
+          <>
+            <AdminTextLink href="/usage-overview?range=7d">Use last 7 days</AdminTextLink>
+          </>
+        }
+        description="No stored app usage or booking event was recorded in the selected reporting period. Check the range, event collection, and aggregate freshness before treating this as zero demand."
+        statusLabel="No data"
+        statusTone="neutral"
+        title="No tracked usage in this period"
+      >
+        <p className="muted">
+          Possible causes: no app activity, delayed daily aggregation, or a period before usage tracking
+          began.
+        </p>
+      </AdminSection>
+      <AdminDisclosure className="admin-mt-16 usage-overview-empty-report">
+        <summary>Show empty report</summary>
+        {report}
+      </AdminDisclosure>
+    </>
+  );
+}
+
+function hasTrackedUsage(overview: AdminUsageOverview) {
+  return [
+    overview.totals.totalEventCount,
+    overview.totals.activeCustomerCount,
+    overview.totals.partnerProfileViewCount,
+    overview.totals.partnerBookingRequestCount,
+    overview.totals.completedBookingCount,
+    overview.bookingQuality.createdBookingCount,
+    overview.bookingQuality.cancellationCount,
+    overview.bookingQuality.noShowCount,
+    overview.bookingQuality.expiredCount,
+    overview.bookingQuality.refundCount,
+    overview.customerLifecycle.newCustomerCount,
+  ].some((value) => value > 0);
+}
+
+function formatUsageDateTime(value: string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).format(new Date(value));
+}
+
+function formatOptionalUsageDateTime(value: string | null) {
+  return value ? `${formatUsageDateTime(value)} ICT` : 'No qualifying activity in this period';
+}
+
+function ActionPriorities({ overview }: { readonly overview: AdminUsageOverview }) {
+  const priorities = buildUsageActionPriorities(overview);
   return (
     <AdminSection
-      actions={<AlertTriangle size={18} aria-hidden="true" />}
+      actions={<AlertTriangle aria-hidden="true" size={18} />}
       bodyClassName="usage-overview-action-list"
       className="usage-overview-action-card"
-      description="Follow-up signals calculated from the current usage range. These are counts and rates only, not full customer lists."
-      title="Action priorities"
+      description="Counts and filters use the same reporting-period contract as their destination lists."
+      statusLabel={
+        priorities.length > 0
+          ? `${priorities.length} ${priorities.length === 1 ? 'queue' : 'queues'}`
+          : 'No issue'
+      }
+      title="Needs attention"
     >
-      {priorities.map((priority) => (
-        <ActionPriorityItem key={priority.key} priority={priority} rangeLabel={rangeLabel} />
+      {priorities.length === 0 ? (
+        <div className="usage-overview-no-alerts" role="status">
+          <strong>No usage alerts in this period</strong>
+          <span>There are no new unbooked customers or unresolved booking records to review.</span>
+        </div>
+      ) : (
+        priorities.map((priority) => (
+          <AdminOverviewCommandCard
+            baseClassName="usage-overview-action-item"
+            className={`is-${priority.tone}`}
+            detail={priority.detail}
+            href={priority.href}
+            icon={
+              priority.key === 'unresolved-bookings' ? (
+                <CalendarCheck aria-hidden="true" size={17} />
+              ) : (
+                <Users aria-hidden="true" size={17} />
+              )
+            }
+            iconClassName="usage-overview-command-icon"
+            key={priority.key}
+            kind={priority.tone === 'danger' ? 'risk' : 'action'}
+            label={priority.label}
+            scope="Review now"
+            trailing={<span>{`Review ${number(priority.value)} ${priority.valueLabel} →`}</span>}
+            value={number(priority.value)}
+          />
+        ))
+      )}
+    </AdminSection>
+  );
+}
+
+function UniqueCustomerReach({ overview }: { readonly overview: AdminUsageOverview }) {
+  return (
+    <AdminSection
+      actions={<MousePointerClick aria-hidden="true" size={18} />}
+      bodyClassName="usage-overview-funnel-grid"
+      className="usage-overview-funnel-card"
+      description="Unique customers who reached each state in the period. This does not claim event order or event-lineage conversion."
+      statusLabel="Unique customers"
+      title="Unique-customer reach"
+    >
+      {overview.funnel.map((step, index) => (
+        <AdminCard className="usage-overview-funnel-step" key={step.key}>
+          <span>{step.label}</span>
+          <strong>{number(step.count)}</strong>
+          <small>
+            {index === 0
+              ? 'unique customers'
+              : step.conversionRate === null
+                ? 'N/A · no previous-step customers'
+                : `${number(step.conversionRate)}% of previous reached set`}
+          </small>
+        </AdminCard>
       ))}
     </AdminSection>
   );
 }
 
-function PlatformUsageCard({ rows }: { readonly rows: readonly AdminUsageOverviewPlatformRow[] }) {
-  const maxSessions = Math.max(1, ...rows.map((row) => row.sessionCount));
-
+function BookingOutcomes({ overview }: { readonly overview: AdminUsageOverview }) {
+  const outcomes = overview.bookingQuality;
+  const reconciled =
+    overview.totals.completedBookingCount +
+      outcomes.cancellationCount +
+      outcomes.noShowCount +
+      outcomes.expiredCount +
+      outcomes.refundCount +
+      outcomes.unresolvedCount ===
+    outcomes.createdBookingCount;
   return (
     <AdminSection
-      actions={<Activity size={18} aria-hidden="true" />}
-      bodyClassName={rows.length > 0 ? 'usage-overview-platform-list' : 'usage-overview-empty-state'}
-      className="usage-overview-platform-card"
-      description="Customer app sessions by platform in this range. Use this to spot Android/iOS/Web usage imbalance before checking acquisition or product issues."
-      title="Platform usage"
+      actions={<CalendarCheck aria-hidden="true" size={18} />}
+      className="usage-overview-outcomes-card"
+      description="Mutually exclusive current status as of report generation for booking records created in the reporting period."
+      statusLabel={reconciled ? 'Cohort reconciled' : 'Source mismatch'}
+      title="Booking outcomes"
     >
-      {rows.length > 0 ? (
-        rows.map((row) => {
-          const widthPercent = Math.max(6, Math.round((row.sessionCount / maxSessions) * 100));
-
-          return (
-            <AdminCard key={row.platform} className="usage-overview-platform-row">
-              <div className="usage-overview-platform-main">
-                <span className={`usage-overview-platform-dot is-${row.platform}`} aria-hidden="true" />
-                <div>
-                  <strong>{platformLabel(row.platform)}</strong>
-                  <small>
-                    Last active <DateTimeText fallback="No last activity" value={row.lastActivityAt} />
-                  </small>
-                </div>
-              </div>
-              <div className="usage-overview-platform-value">
-                <strong>{formatNumber(row.sessionCount)}</strong>
-                <span>sessions</span>
-              </div>
-              <div className="usage-overview-region-bar" aria-hidden="true">
-                <i style={{ width: `${widthPercent}%` }} />
-              </div>
-            </AdminCard>
-          );
-        })
-      ) : (
-        <UsageOverviewEmptyState
-          icon={Activity}
-          message="Try another range after customer app sessions exist."
-          title="No platform session pattern loaded."
-        />
-      )}
+      <AdminMiniMetricStrip
+        className="usage-overview-booking-outcome-list"
+        metrics={[
+          { label: 'Created in period', tone: 'primary', value: number(outcomes.createdBookingCount) },
+          { label: 'Completed', tone: 'success', value: number(overview.totals.completedBookingCount) },
+          { label: 'Cancelled', tone: 'warning', value: number(outcomes.cancellationCount) },
+          { label: 'No-show', tone: 'danger', value: number(outcomes.noShowCount) },
+          { label: 'Expired', tone: 'warning', value: number(outcomes.expiredCount) },
+          { label: 'Refunded', tone: 'danger', value: number(outcomes.refundCount) },
+          {
+            label: 'Still open / unresolved',
+            tone: outcomes.unresolvedCount > 0 ? 'danger' : 'success',
+            value: number(outcomes.unresolvedCount),
+          },
+        ]}
+      />
     </AdminSection>
   );
 }
 
-function PartnerDiscoveryConversionCard({
-  rows,
-}: {
-  readonly rows: readonly AdminUsageOverviewPartnerDiscoveryRow[];
-}) {
+function PeriodCustomers({ overview }: { readonly overview: AdminUsageOverview }) {
   return (
-    <AdminSection
-      actions={<Eye size={18} aria-hidden="true" />}
-      bodyClassName={rows.length > 0 ? 'usage-overview-discovery-list' : 'usage-overview-empty-state'}
-      className="usage-overview-discovery-card"
-      description="Partner profile views, preferred requests, and completed-work conversion in this range."
-      title="Partner discovery conversion"
-    >
-      {rows.length > 0 ? (
-        rows.map((row) => (
-          <AdminCard key={row.id} className="usage-overview-discovery-row">
-            <span className="usage-overview-rank">#{row.rank}</span>
-            <div className="usage-overview-name-cell">
-              <span className="usage-overview-avatar">
-                <Users size={15} aria-hidden="true" />
-              </span>
-              <div>
-                {row.href ? <AdminTextLink href={row.href}>{row.label}</AdminTextLink> : <strong>{row.label}</strong>}
-                {row.secondary ? <small>{row.secondary}</small> : null}
-              </div>
-            </div>
-            <AdminMiniMetricStrip
-              className="usage-overview-discovery-metrics"
-              metrics={[
-                { label: 'Views', value: formatNumber(row.viewCount) },
-                { label: 'Requests', value: formatNumber(row.requestCount) },
-                { label: 'Done', value: formatNumber(row.completedCount) },
-              ]}
-            />
-            <div className="usage-overview-discovery-rates">
-              <span>{formatNumber(row.viewToRequestRate)}% view to request</span>
-              <span>{formatNumber(row.requestToCompleteRate)}% request to done</span>
-            </div>
-            <DateTimeText fallback="No date" value={row.lastActivityAt} />
-          </AdminCard>
-        ))
-      ) : (
-        <UsageOverviewEmptyState
-          icon={Eye}
-          message="Try another range after Partner profile views or requests exist."
-          title="No Partner discovery conversion loaded."
-        />
-      )}
-    </AdminSection>
-  );
-}
-
-function ActionPriorityItem({
-  priority,
-  rangeLabel,
-}: {
-  readonly priority: UsageActionPriority;
-  readonly rangeLabel: string;
-}) {
-  const Icon = usageActionPriorityIcons[priority.key] ?? CalendarCheck;
-  const value = priority.valueLabel.includes('to-')
-    ? `${formatNumber(priority.value)}%`
-    : formatNumber(priority.value);
-  const meta = usageActionPriorityMeta(priority, rangeLabel);
-
-  return (
-    <AdminOverviewCommandCard
-      baseClassName="usage-overview-action-item"
-      className={`is-${priority.tone}`}
-      detail={priority.detail}
-      icon={<Icon size={17} aria-hidden="true" />}
-      iconClassName="usage-overview-command-icon"
-      kind={meta.kind}
-      label={priority.label}
-      scope={meta.scope}
-      trailing={<em>{priority.valueLabel}</em>}
-      value={value}
+    <MetricSection
+      icon={Users}
+      metrics={[
+        ['New customers', overview.customerLifecycle.newCustomerCount, 'info'],
+        ['Customers with completed work', overview.customerLifecycle.completedCustomerCount, 'success'],
+        ['2+ completions in period', overview.customerLifecycle.repeatCustomerCount, 'success'],
+      ]}
+      title="Period customers"
     />
   );
 }
 
-function usageSegmentCardMeta(label: string, rangeLabel: string, tone: UsageCardTone) {
-  if (label === 'Churn risk' || label === 'Problem signal' || tone === 'danger') {
-    return { kind: 'risk', scope: rangeLabel } as const;
-  }
-
-  if (label === 'New unbooked' || tone === 'warning') {
-    return { kind: 'action', scope: rangeLabel } as const;
-  }
-
-  return { kind: 'period', scope: rangeLabel } as const;
-}
-
-function usageActionPriorityMeta(priority: UsageActionPriority, rangeLabel: string) {
-  if (priority.tone === 'danger') {
-    return { kind: 'risk', scope: 'Needs action' } as const;
-  }
-
-  if (priority.tone === 'warning') {
-    return { kind: 'action', scope: 'Pending' } as const;
-  }
-
-  return { kind: 'period', scope: rangeLabel } as const;
-}
-
-function PopularServicesCard({ rows }: { readonly rows: readonly AdminUsageOverviewPopularServiceRow[] }) {
-  const maxBookings = Math.max(1, ...rows.map((row) => row.bookingCount));
-
+function CurrentCustomerBase({ overview }: { readonly overview: AdminUsageOverview }) {
+  const usageThrough = overview.freshness.usageAggregatedThroughAt;
   return (
-    <AdminSection
-      actions={<Trophy size={18} aria-hidden="true" />}
-      bodyClassName={rows.length > 0 ? 'usage-overview-service-list' : 'usage-overview-empty-state'}
-      className="usage-overview-behavior-card"
-      description="Service choices from bookings created in this usage range."
-      title="Popular services"
-    >
-      {rows.length > 0 ? (
-        rows.map((row) => {
-          const widthPercent = Math.max(6, Math.round((row.bookingCount / maxBookings) * 100));
-
-          return (
-            <AdminCard key={row.id} className="usage-overview-service-row">
-              <div className="usage-overview-service-main">
-                <span className="usage-overview-rank">#{row.rank}</span>
-                <div>
-                  <strong>{row.label}</strong>
-                  {row.secondary ? <small>{row.secondary}</small> : null}
-                </div>
-              </div>
-              <AdminMiniMetricStrip
-                className="usage-overview-service-metrics"
-                metrics={[
-                  { label: 'bookings', value: formatNumber(row.bookingCount) },
-                  { label: 'quantity', value: formatNumber(row.quantity) },
-                  { label: 'booked value', value: money(row.amount) },
-                ]}
-              />
-              <div className="usage-overview-region-bar" aria-hidden="true">
-                <i style={{ width: `${widthPercent}%` }} />
-              </div>
-            </AdminCard>
-          );
-        })
-      ) : (
-        <UsageOverviewEmptyState
-          icon={Trophy}
-          message="Try another range after bookings exist."
-          title="No service booking pattern loaded."
-        />
-      )}
-    </AdminSection>
-  );
-}
-
-function HourlyActivityCard({ rows }: { readonly rows: readonly AdminUsageOverviewHourlyActivityRow[] }) {
-  const activeRows = [...rows]
-    .filter((row) => row.totalActivityCount > 0)
-    .sort((left, right) => right.totalActivityCount - left.totalActivityCount)
-    .slice(0, 8);
-  const maxActivity = Math.max(1, ...activeRows.map((row) => row.totalActivityCount));
-
-  return (
-    <AdminSection
-      actions={<Activity size={18} aria-hidden="true" />}
-      bodyClassName={activeRows.length > 0 ? 'usage-overview-hour-list' : 'usage-overview-empty-state'}
-      className="usage-overview-behavior-card"
-      description="Busiest hours from customer sessions and preferred-Partner requests."
-      title="Hourly activity"
-    >
-      {activeRows.length > 0 ? (
-        activeRows.map((row) => {
-          const widthPercent = Math.max(6, Math.round((row.totalActivityCount / maxActivity) * 100));
-
-          return (
-            <AdminCard key={row.hour} className="usage-overview-hour-row">
-              <div>
-                <strong>{row.label}</strong>
-                <span>{formatNumber(row.totalActivityCount)} signals</span>
-              </div>
-              <div className="usage-overview-region-bar" aria-hidden="true">
-                <i style={{ width: `${widthPercent}%` }} />
-              </div>
-              <AdminMiniMetricStrip
-                className="usage-overview-hour-metrics"
-                metrics={[
-                  { label: 'sessions', value: formatNumber(row.customerSessionCount) },
-                  { label: 'requests', value: formatNumber(row.bookingRequestCount) },
-                ]}
-              />
-            </AdminCard>
-          );
-        })
-      ) : (
-        <UsageOverviewEmptyState
-          icon={Activity}
-          message="Try another range after customer app activity exists."
-          title="No hourly usage pattern loaded."
-        />
-      )}
-    </AdminSection>
-  );
-}
-
-type UsageCardTone = 'neutral' | 'primary' | 'info' | 'success' | 'warning' | 'danger';
-type UsageCardIcon = typeof Activity;
-const usageActionPriorityIcons: Record<string, UsageCardIcon> = {
-  'issue-signal': AlertTriangle,
-  'churn-risk': AlertTriangle,
-  'new-unbooked': Search,
-  'discovery-dropoff': Eye,
-  'completion-dropoff': CalendarCheck,
-};
-type UsageCommandCardConfig = {
-  readonly detail: string;
-  readonly icon: UsageCardIcon;
-  readonly label: string;
-  readonly tone: UsageCardTone;
-  readonly value: string;
-};
-
-function UsageCommandCard({
-  detail,
-  icon: Icon,
-  label,
-  rangeLabel,
-  tone,
-  value,
-}: {
-  readonly detail: string;
-  readonly icon: UsageCardIcon;
-  readonly label: string;
-  readonly rangeLabel: string;
-  readonly tone: UsageCardTone;
-  readonly value: string;
-}) {
-  return (
-    <AdminKpiCard
-      className={`usage-overview-kpi-card is-${tone}`}
-      helper={detail}
-      icon={Icon}
-      iconSize={18}
-      kind={usageCommandCardKind(label, tone)}
-      label={label}
-      scope={rangeLabel}
-      value={value}
+    <MetricSection
+      description="Usage-derived snapshot. Reporting-period comparison does not apply."
+      icon={Users}
+      metrics={[
+        ['Never booked', overview.customerLifecycle.neverBookedCustomerCount, 'warning'],
+        ['Inactive 30d', overview.customerLifecycle.churnRiskCustomerCount, 'danger'],
+        ['Seen today', overview.customerLifecycle.activeTodayCustomerCount, 'info'],
+        ['Seen in 7d', overview.customerLifecycle.active7dCustomerCount, 'primary'],
+        ['Seen in 30d', overview.customerLifecycle.active30dCustomerCount, 'primary'],
+      ]}
+      title={`Current customer base · ${usageThrough ? `As of usage data through ${formatUsageDateTime(usageThrough)} ICT` : 'Usage data time unavailable'}`}
     />
   );
 }
 
-function usageCommandCardKind(label: string, tone: UsageCardTone) {
-  if (label === 'Churn risk' || tone === 'danger') return 'risk' as const;
-  if (label === 'Never booked' || tone === 'warning') return 'action' as const;
-
-  return 'period' as const;
+function RetentionCard({ overview }: { readonly overview: AdminUsageOverview }) {
+  return (
+    <AdminSection
+      actions={<Repeat2 aria-hidden="true" size={18} />}
+      bodyClassName="usage-overview-retention-list"
+      className="usage-overview-insight-card"
+      description="Customers who returned on the exact milestone day after signup."
+      title="Cohort retention"
+    >
+      {overview.retention.map((row) => (
+        <AdminCard className="usage-overview-retention-row" key={row.milestone}>
+          <span>D{row.milestone}</span>
+          <strong>{row.rate === null ? 'N/A' : `${number(row.rate)}%`}</strong>
+          <small>
+            {row.eligibleCustomerCount === 0
+              ? 'No eligible cohort'
+              : `${number(row.returnedCustomerCount)} of ${number(row.eligibleCustomerCount)} eligible`}
+          </small>
+        </AdminCard>
+      ))}
+    </AdminSection>
+  );
 }
 
-type UsageInsightRow = {
-  readonly label: string;
-  readonly tone: UsageCardTone;
-  readonly value: number;
-};
-
-function UsageInsightCard({
+function MetricSection({
   description,
   icon: Icon,
-  rows,
+  metrics,
   title,
 }: {
-  readonly description: string;
-  readonly icon: UsageCardIcon;
-  readonly rows: readonly UsageInsightRow[];
+  readonly description?: string;
+  readonly icon: typeof Users;
+  readonly metrics: ReadonlyArray<readonly [string, number, string]>;
   readonly title: string;
 }) {
   return (
     <AdminSection
-      actions={<Icon size={18} aria-hidden="true" />}
-      bodyClassName="usage-overview-mini-metric-list"
+      actions={<Icon aria-hidden="true" size={18} />}
       className="usage-overview-insight-card"
       description={description}
       title={title}
     >
       <AdminMiniMetricStrip
         className="usage-overview-mini-metric-list"
-        itemClassName="usage-overview-mini-metric"
-        metrics={rows.map((row) => ({
-          label: row.label,
-          tone: row.tone,
-          value: formatNumber(row.value),
-        }))}
+        metrics={metrics.map(([label, value, tone]) => ({ label, tone, value: number(value) }))}
       />
     </AdminSection>
   );
 }
 
-function PaymentCouponInsightCard({
-  couponBookingCount,
-  paymentFailureCount,
-  refundAmount,
-  rows,
-}: {
-  readonly couponBookingCount: number;
-  readonly paymentFailureCount: number;
-  readonly refundAmount: number;
-  readonly rows: readonly { amount: number; bookingCount: number; method: string }[];
-}) {
-  const maxAmount = Math.max(1, ...rows.map((row) => row.amount));
-
+function CustomerRankingTable({ rows }: { readonly rows: readonly AdminUsageOverviewCustomerRankingRow[] }) {
   return (
     <AdminSection
-      actions={<WalletCards size={18} aria-hidden="true" />}
-      bodyClassName="usage-overview-payment-card-body"
-      className="usage-overview-insight-card"
-      description="Completed-booking payment mix and coupon usage signal."
-      title="Payment & coupon"
-    >
-      <AdminMiniMetricStrip
-        className="usage-overview-payment-summary"
-        itemClassName="usage-overview-mini-metric"
-        metrics={[
-          { label: 'Coupon bookings', tone: 'info', value: formatNumber(couponBookingCount) },
-          { label: 'Failed payments', tone: 'danger', value: formatNumber(paymentFailureCount) },
-          { label: 'Refund amount', tone: 'warning', value: money(refundAmount) },
-          { label: 'Methods', tone: 'primary', value: formatNumber(rows.length) },
-        ]}
-      />
-      {rows.length > 0 ? (
-        <AdminCardGrid ariaLabel="Payment method mix" className="usage-overview-payment-mix">
-          {rows.map((row) => {
-            const widthPercent = Math.max(6, Math.round((row.amount / maxAmount) * 100));
-
-            return (
-              <AdminCard key={row.method} className="usage-overview-payment-row">
-                <div>
-                  <span>
-                    <CreditCard size={14} aria-hidden="true" />
-                    {paymentMethodLabel(row.method)}
-                  </span>
-                  <strong>{money(row.amount)}</strong>
-                </div>
-                <div className="usage-overview-region-bar" aria-hidden="true">
-                  <i style={{ width: `${widthPercent}%` }} />
-                </div>
-                <small>{formatNumber(row.bookingCount)} completed bookings</small>
-              </AdminCard>
-            );
-          })}
-        </AdminCardGrid>
-      ) : (
-        <UsageOverviewEmptyState
-          icon={BadgePercent}
-          message="Try another usage range after completed payments exist."
-          title="No completed payment mix loaded."
-        />
-      )}
-    </AdminSection>
-  );
-}
-
-function RegionUsageCard({ rows }: { rows: readonly AdminUsageOverviewRegionRow[] }) {
-  const activeRows = rows.filter(
-    (row) =>
-      row.customerSessionCount > 0 || row.bookingRequestCount > 0 || row.completedBookingCount > 0,
-  );
-  const maxRegionActivity = Math.max(
-    1,
-    ...activeRows.map(
-      (row) => row.customerSessionCount + row.bookingRequestCount + row.completedBookingCount,
-    ),
-  );
-
-  return (
-    <AdminSection
-      actions={<MapPinned size={18} aria-hidden="true" />}
-      bodyClassName={activeRows.length > 0 ? 'usage-overview-region-list' : 'usage-overview-empty-state'}
-      className="usage-overview-ranking-card usage-overview-region-card"
-      description="Regional usage from saved customer addresses and booking service addresses. Individual location points stay out of this overview."
-      title="Region usage"
-    >
-      {activeRows.length > 0 ? (
-        activeRows.map((row) => {
-          const activity = row.customerSessionCount + row.bookingRequestCount + row.completedBookingCount;
-          const widthPercent = Math.max(6, Math.round((activity / maxRegionActivity) * 100));
-
-          return (
-            <AdminCard key={row.regionCode} className="usage-overview-region-row">
-              <div className="vietnam-region-name">
-                <span>{row.shortName}</span>
-                <strong>{row.regionName}</strong>
-              </div>
-              <AdminMiniMetricStrip
-                className="usage-overview-region-metrics"
-                metrics={[
-                  { label: 'Sessions', value: formatNumber(row.customerSessionCount) },
-                  { label: 'Requests', value: formatNumber(row.bookingRequestCount) },
-                  { label: 'Completed', value: formatNumber(row.completedBookingCount) },
-                ]}
-              />
-              <div className="usage-overview-region-bar" aria-hidden="true">
-                <i style={{ width: `${widthPercent}%` }} />
-              </div>
-            </AdminCard>
-          );
-        })
-      ) : (
-        <UsageOverviewEmptyState
-          icon={MapPinned}
-          message="Try another stored usage range."
-          title="No region usage loaded."
-        />
-      )}
-    </AdminSection>
-  );
-}
-
-function UsageRankingCard({
-  description,
-  emptyMessage,
-  rows,
-  title,
-  valueHeading,
-}: {
-  description: string;
-  emptyMessage: string;
-  rows: readonly AdminUsageOverviewRankRow[];
-  title: string;
-  valueHeading: string;
-}) {
-  return (
-    <AdminSection
-      actions={<Trophy size={18} aria-hidden="true" />}
-      bodyClassName={rows.length > 0 ? 'usage-overview-ranking-list' : 'usage-overview-empty-state'}
+      actions={<AdminTextLink href="/customers?view=all">View all customers</AdminTextLink>}
       className="usage-overview-ranking-card"
-      description={description}
-      title={title}
+      description="Top five customers by production usage events. Closed issue outcomes use closedAt in the selected period and include cancelled, no-show, expired, and refunded records; they are separate from the created-cohort outcomes above. Phone numbers are masked by the API."
+      title="Customer activity · Top 5"
     >
-      {rows.length > 0 ? (
-        rows.map((row) => (
-          <AdminCard key={`${title}-${row.id}`} className="usage-overview-ranking-row">
-            <span className="usage-overview-rank">#{row.rank}</span>
-            <div className="usage-overview-name-cell">
-              <span className="usage-overview-avatar">
-                <Users size={15} aria-hidden="true" />
-              </span>
-              <div>
-                {row.href ? <AdminTextLink href={row.href}>{row.label}</AdminTextLink> : <strong>{row.label}</strong>}
-                {row.secondary ? <small>{row.secondary}</small> : null}
-              </div>
+      <AdminTableScroll ariaLabel="Customer activity top five table">
+        <AdminDataTable
+          emptyMessage="No customer activity in this period."
+          headers={['Customer', 'Events', 'App opens', 'Partner views', 'Completed', 'Closed issue outcomes', 'Last active']}
+          rowCount={rows.length}
+        >
+          {rows.map((row) => (
+            <tr key={row.id}>
+              <th>
+                <AdminTextLink href={row.href}>
+                  #{row.rank} {row.label}
+                </AdminTextLink>
+                <small>{row.secondary}</small>
+              </th>
+              <td>{number(row.totalEventCount)}</td>
+              <td>{number(row.appOpenCount)}</td>
+              <td>{number(row.providerProfileViewCount)}</td>
+              <td>{number(row.completedBookingCount)}</td>
+              <td>
+                <StatusBadge tone={row.issueCount > 0 ? 'danger' : 'success'}>
+                  {number(row.issueCount)}
+                </StatusBadge>
+              </td>
+              <td>
+                <DateTimeText fallback="No activity" value={row.lastActivityAt} />
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
+    </AdminSection>
+  );
+}
+
+function PartnerRankingTable({ rows }: { readonly rows: readonly AdminUsageOverviewPartnerRankingRow[] }) {
+  return (
+    <AdminSection
+      actions={<AdminTextLink href="/partners">View all Partners</AdminTextLink>}
+      className="usage-overview-ranking-card"
+      description="Top five Partner discovery signals. Views, preferred requests, and completed work are independent counts."
+      title="Partner discovery · Top 5"
+    >
+      <AdminTableScroll ariaLabel="Partner discovery top five table">
+        <AdminDataTable
+          emptyMessage="No Partner discovery activity in this period."
+          headers={['Partner', 'Views', 'Preferred requests', 'Completed', 'Last active']}
+          rowCount={rows.length}
+        >
+          {rows.map((row) => (
+            <tr key={row.id}>
+              <th>
+                <AdminTextLink href={row.href}>
+                  #{row.rank} {row.label}
+                </AdminTextLink>
+                <small>{row.secondary}</small>
+              </th>
+              <td>{number(row.viewCount)}</td>
+              <td>{number(row.requestCount)}</td>
+              <td>{number(row.completedCount)}</td>
+              <td>
+                <DateTimeText fallback="No activity" value={row.lastActivityAt} />
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
+    </AdminSection>
+  );
+}
+
+function PopularServices({ overview }: { readonly overview: AdminUsageOverview }) {
+  return (
+    <AdminSection
+      actions={<Trophy aria-hidden="true" size={18} />}
+      bodyClassName="usage-overview-compact-list"
+      className="usage-overview-behavior-card"
+      title="Popular services"
+    >
+      {overview.behavior.popularServices.length > 0 ? (
+        overview.behavior.popularServices.slice(0, 5).map((row) => (
+          <div className="usage-overview-service-row" key={row.id}>
+            <span className="usage-overview-row-rank">#{row.rank}</span>
+            <div className="usage-overview-row-identity">
+              <strong>{row.label}</strong>
+              <small>{row.secondary}</small>
             </div>
-            <div className="usage-overview-row-value">
-              <strong>{formatNumber(row.value)}</strong>
-              <span>{valueHeading}</span>
+            <div className="usage-overview-service-values">
+              <strong>{number(row.bookingCount)} bookings</strong>
+              <small>{money(row.amount)}</small>
             </div>
-            <DateTimeText fallback="No date" value={row.lastActivityAt} />
-          </AdminCard>
+          </div>
         ))
       ) : (
-        <UsageOverviewEmptyState
-          icon={MapPinned}
-          message="Try another stored usage range."
-          title={emptyMessage}
-        />
+        <span className="muted">No service demand in this period.</span>
       )}
     </AdminSection>
   );
 }
 
-function UsageOverviewEmptyState({
-  icon: Icon,
-  message,
-  title,
-}: {
-  readonly icon: UsageCardIcon;
-  readonly message: string;
-  readonly title: string;
-}) {
+function RegionTopFive({ overview }: { readonly overview: AdminUsageOverview }) {
+  const vietnamRange = ['today', 'yesterday', '7d', '30d'].includes(overview.range) ? overview.range : null;
   return (
-    <>
-      <Icon size={20} aria-hidden="true" />
-      <AdminEmptyState message={message} title={title} />
-    </>
+    <AdminSection
+      actions={
+        vietnamRange ? (
+          <AdminTextLink href={`/vietnam-overview?view=period&range=${vietnamRange}`}>
+            Open Vietnam Overview
+          </AdminTextLink>
+        ) : undefined
+      }
+      bodyClassName="usage-overview-compact-list"
+      className="usage-overview-behavior-card"
+      description="Created booking demand and current cohort outcomes for the top five regions."
+      title="Top regions"
+    >
+      {overview.regionUsage.length > 0 ? (
+        overview.regionUsage.slice(0, 5).map((row) => (
+          <div className="usage-overview-region-row-v2" key={row.regionCode}>
+            <div className="usage-overview-region-identity">
+              <span>{row.shortName}</span>
+              <strong>{row.regionName}</strong>
+            </div>
+            <div className="usage-overview-region-values">
+              <span><strong>{number(row.bookingRequestCount)}</strong> created</span>
+              <span><strong>{number(row.completedBookingCount)}</strong> completed</span>
+              <span><strong>{number(row.cancellationCount + row.noShowCount + row.expiredCount)}</strong> non-completed</span>
+              <span><strong>{number(row.unresolvedCount)}</strong> unresolved</span>
+            </div>
+          </div>
+        ))
+      ) : (
+        <span className="muted">No regional booking demand in this period.</span>
+      )}
+    </AdminSection>
   );
 }
 
-function buildUsageFunnelSteps(overview: AdminUsageOverview) {
-  const counts = [
-    {
-      label: 'App sessions',
-      value: overview.totals.customerSessionCount,
-      detail: 'Customer app activity',
-      tone: 'info',
-    },
-    {
-      label: 'Partner views',
-      value: overview.totals.partnerProfileViewCount,
-      detail: 'Partner detail/profile discovery',
-      tone: 'primary',
-    },
-    {
-      label: 'Partner requests',
-      value: overview.totals.partnerBookingRequestCount,
-      detail: 'Preferred Partner booking intent',
-      tone: 'warning',
-    },
-    {
-      label: 'Completed',
-      value: overview.totals.completedBookingCount,
-      detail: 'Closed completed booking work',
-      tone: 'success',
-    },
-  ] satisfies Array<{
-    detail: string;
-    label: string;
-    tone: UsageCardTone;
-    value: number;
-  }>;
-  const maxValue = Math.max(1, ...counts.map((step) => step.value));
-
-  return counts.map((step, index) => {
-    const previousValue = index > 0 ? counts[index - 1]?.value ?? 0 : 0;
-    const conversionDetail = index === 0
-      ? step.detail
-      : `${formatPercent(step.value, previousValue)} from previous step`;
-
-    return {
-      ...step,
-      detail: conversionDetail,
-      widthPercent: Math.max(step.value > 0 ? 6 : 0, Math.round((step.value / maxValue) * 100)),
-    };
-  });
+function periodDelta(current: number, previous: number) {
+  if (previous === 0) return { label: current === 0 ? 'No change' : 'New activity' };
+  const value = Math.round(((current - previous) / previous) * 100);
+  return { label: `${value > 0 ? '+' : ''}${number(value)}%` };
 }
 
-function paymentMethodLabel(value: string) {
-  return value
-    .toLowerCase()
-    .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
+function stringParam(value: string | string[] | undefined) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return typeof candidate === 'string' && candidate.length > 0 ? candidate : null;
 }
 
-function platformLabel(value: string) {
-  if (value === 'ios') return 'iOS';
-  if (value === 'android') return 'Android';
-  if (value === 'web') return 'Web';
-
-  return 'Unknown';
-}
-
-function formatPercent(numerator: number, denominator: number) {
-  if (denominator <= 0) return '0%';
-  return formatPercentLabel(Math.round((numerator / denominator) * 100));
+function vietnamDateInput(value: Date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+  }).formatToParts(value);
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
 }

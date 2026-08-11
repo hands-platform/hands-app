@@ -10,6 +10,18 @@ const adminPolicySource = readFileSync(adminPolicyPath, 'utf8');
 
 const adminPolicyKeysSource = readConstObjectSource(adminPolicySource, 'OPERATIONAL_POLICY_KEYS');
 const adminDefaultsSource = readConstObjectSource(adminPolicySource, 'ADMIN_OPERATIONS_POLICY_DEFAULTS');
+const apiStartShiftPolicyKeysSource = readConstObjectSource(
+  apiPolicySource,
+  'START_SHIFT_ACTION_SLA_POLICY_KEYS',
+);
+const apiStartShiftDefaultsSource = readConstObjectSource(
+  apiPolicySource,
+  'DEFAULT_START_SHIFT_ACTION_SLA_MINUTES',
+);
+const adminStartShiftDefaultsSource = readConstObjectSource(
+  adminPolicySource,
+  'ADMIN_START_SHIFT_ACTION_SLA_DEFAULTS',
+);
 
 const requiredPolicies = [
   {
@@ -110,21 +122,56 @@ const requiredPolicies = [
     adminKeyProp: 'payoutBatchCycle',
     adminDefaultProp: 'payoutBatchCycle',
   },
+  ...[
+    ['matching delay review SLA', 'matchingDelays', 'startShiftMatchingDelaysSlaMinutes'],
+    ['payment hold review SLA', 'paymentHolds', 'startShiftPaymentHoldsSlaMinutes'],
+    ['cancellation review SLA', 'cancellationReview', 'startShiftCancellationReviewSlaMinutes'],
+    ['refund review SLA', 'refundReview', 'startShiftRefundReviewSlaMinutes'],
+    [
+      'notification failure review SLA',
+      'notificationFailures',
+      'startShiftNotificationFailuresSlaMinutes',
+    ],
+    [
+      'cash reconciliation SLA',
+      'cashReconciliation',
+      'startShiftCashReconciliationSlaMinutes',
+    ],
+    ['partner approval SLA', 'partnerApprovals', 'startShiftPartnerApprovalsSlaMinutes'],
+  ].map(([label, apiObjectProp, adminKeyProp]) => ({
+    label,
+    apiKeyObjectProp: apiObjectProp,
+    apiDefaultObjectProp: apiObjectProp,
+    adminKeyProp,
+    adminDefaultProp: apiObjectProp,
+    adminDefaultSource: adminStartShiftDefaultsSource,
+  })),
 ];
 
 const checks = requiredPolicies.map((policy) => {
-  const apiKey = readExportedLiteral(apiPolicySource, policy.apiKeyConst);
-  const apiDefault = readExportedLiteral(apiPolicySource, policy.apiDefaultConst);
+  const apiKey = policy.apiKeyConst
+    ? readExportedLiteral(apiPolicySource, policy.apiKeyConst)
+    : readObjectLiteral(apiStartShiftPolicyKeysSource, policy.apiKeyObjectProp);
+  const apiDefault = policy.apiDefaultConst
+    ? readExportedLiteral(apiPolicySource, policy.apiDefaultConst)
+    : readObjectLiteral(apiStartShiftDefaultsSource, policy.apiDefaultObjectProp);
   const adminKey = readObjectLiteral(adminPolicyKeysSource, policy.adminKeyProp);
-  const adminDefault = readObjectLiteral(adminDefaultsSource, policy.adminDefaultProp);
-  const definedInApiMetadata = apiPolicySource.includes(`key: ${policy.apiKeyConst}`);
+  const adminDefault = readObjectLiteral(
+    policy.adminDefaultSource ?? adminDefaultsSource,
+    policy.adminDefaultProp,
+  );
+  const apiKeyReference = policy.apiKeyConst
+    ?? `START_SHIFT_ACTION_SLA_POLICY_KEYS.${policy.apiKeyObjectProp}`;
+  const apiDefaultReference = policy.apiDefaultConst
+    ?? `DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.${policy.apiDefaultObjectProp}`;
+  const definedInApiMetadata = apiPolicySource.includes(`key: ${apiKeyReference}`);
 
   const problems = [];
   if (apiKey === undefined) {
-    problems.push(`Missing API key constant ${policy.apiKeyConst}`);
+    problems.push(`Missing API key ${apiKeyReference}`);
   }
   if (apiDefault === undefined) {
-    problems.push(`Missing API default constant ${policy.apiDefaultConst}`);
+    problems.push(`Missing API default ${apiDefaultReference}`);
   }
   if (adminKey === undefined) {
     problems.push(`Missing Admin key property ${policy.adminKeyProp}`);
@@ -139,7 +186,7 @@ const checks = requiredPolicies.map((policy) => {
     problems.push(`Admin default ${adminDefault} does not match API default ${apiDefault}`);
   }
   if (!definedInApiMetadata) {
-    problems.push(`API operational metadata does not expose ${policy.apiKeyConst}`);
+    problems.push(`API operational metadata does not expose ${apiKeyReference}`);
   }
 
   return {

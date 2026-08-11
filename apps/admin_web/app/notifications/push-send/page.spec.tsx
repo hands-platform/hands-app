@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
 import { vi } from 'vitest';
 
-import { adminGet, adminPost } from '../../../lib/admin-api';
+import { adminGet, adminGetResult, adminPost } from '../../../lib/admin-api';
 import PushSendPage from './page';
 
 vi.mock('../../../lib/admin-api', async () => {
@@ -13,11 +13,13 @@ vi.mock('../../../lib/admin-api', async () => {
   return {
     ...actual,
     adminGet: vi.fn(),
+    adminGetResult: vi.fn(),
     adminPost: vi.fn(),
   };
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedAdminGetResult = vi.mocked(adminGetResult);
 const mockedAdminPost = vi.mocked(adminPost);
 const pageSource = readFileSync('app/notifications/push-send/page.tsx', 'utf8');
 const globalCss = readFileSync('app/globals.css', 'utf8');
@@ -25,8 +27,10 @@ const globalCss = readFileSync('app/globals.css', 'utf8');
 describe('PushSendPage', () => {
   beforeEach(() => {
     mockedAdminGet.mockReset();
+    mockedAdminGetResult.mockReset();
     mockedAdminPost.mockReset();
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+    mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({ data: fallback, ok: true, status: 200 }));
     mockedAdminPost.mockImplementation(async (_href, _body, fallback) => fallback);
   });
 
@@ -75,13 +79,108 @@ describe('PushSendPage', () => {
     expect(markup).not.toContain('<div class="admin-form-input"><span>Language</span>');
   });
 
-  it('renders page actions through the shared Vuexy link atom', async () => {
+  it('keeps Messaging navigation in the local workspace instead of duplicating page actions', async () => {
     const page = await PushSendPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('admin-form-control-link button button-secondary');
-    expect(markup).toContain('href="/notifications"');
-    expect(markup).toContain('href="/notifications/templates"');
+    expect(markup).not.toContain('href="/notifications/templates"');
+    expect(markup).not.toContain('>Templates<');
+    expect(markup).not.toContain('>Delivery board<');
+  });
+
+  it('starts with name or phone account search and no raw user id field', async () => {
+    const markup = renderToStaticMarkup(await PushSendPage({ searchParams: Promise.resolve({}) }));
+
+    expect(markup).toContain('Find account by name or phone');
+    expect(markup).toContain('Search accounts');
+    expect(markup).toContain('Enter at least 2 characters to search.');
+    expect(markup).not.toContain('Specific user id');
+    expect(markup).not.toContain('FCM deliveries');
+  });
+
+  it('renders account search results with masked phone, status, selection, and clear action', async () => {
+    mockedAdminGetResult.mockResolvedValue({
+      data: [{
+        id: 'customer-profile-1',
+        selectedLocationCount: 0,
+        user: { id: 'user-secret-1', fullName: 'Mai Nguyen', phone: '+84912345678' },
+      }],
+      ok: true,
+      status: 200,
+    });
+
+    const markup = renderToStaticMarkup(await PushSendPage({
+      searchParams: Promise.resolve({
+        recipientSearch: 'Mai',
+        targetRole: 'CUSTOMER',
+        targetUserId: 'user-secret-1',
+      }),
+    }));
+
+    expect(mockedAdminGetResult).toHaveBeenCalledWith('/admin/customers?q=Mai&take=8&skip=0', []);
+    expect(markup).toContain('Mai Nguyen');
+    expect(markup).toContain('+84******678');
+    expect(markup).toContain('Customer account');
+    expect(markup).toContain('Selected account');
+    expect(markup).toContain('Clear account');
+    expect(markup).not.toContain('>user-secret-1<');
+  });
+
+  it('distinguishes account search empty and error states', async () => {
+    const emptyMarkup = renderToStaticMarkup(await PushSendPage({
+      searchParams: Promise.resolve({ recipientSearch: 'Nobody', targetRole: 'PROVIDER' }),
+    }));
+    expect(emptyMarkup).toContain('No Partner accounts match');
+
+    mockedAdminGetResult.mockResolvedValue({ data: [], ok: false, status: 503 });
+    const errorMarkup = renderToStaticMarkup(await PushSendPage({
+      searchParams: Promise.resolve({ recipientSearch: 'Mai', targetRole: 'CUSTOMER' }),
+    }));
+    expect(errorMarkup).toContain('Account search unavailable');
+    expect(errorMarkup).toContain('Retry account search');
+  });
+
+  it('keeps preview-first delivery and shows role, language, destination, and exclusions', async () => {
+    mockedAdminGetResult.mockResolvedValue({
+      data: [{
+        id: 'customer-profile-1',
+        selectedLocationCount: 0,
+        user: { id: 'user-1', fullName: 'Mai Nguyen', phone: '+84912345678' },
+      }],
+      ok: true,
+      status: 200,
+    });
+    mockedAdminPost.mockResolvedValue({
+      appDestination: 'booking',
+      capped: true,
+      recipientCount: 12,
+      sampleRecipients: [],
+      sendLimit: 10,
+      targetRole: 'CUSTOMER',
+      targetSegment: 'all',
+      targetUserId: 'user-1',
+      willSendCount: 10,
+    });
+
+    const markup = renderToStaticMarkup(await PushSendPage({
+      searchParams: Promise.resolve({
+        appDestination: 'booking',
+        body: 'Open slots',
+        locale: 'ko',
+        preview: '1',
+        recipientSearch: 'Mai',
+        targetRole: 'CUSTOMER',
+        targetUserId: 'user-1',
+        title: 'Today',
+      }),
+    }));
+
+    expect(markup).toContain('Target role');
+    expect(markup).toContain('Korean');
+    expect(markup).toContain('Bookings');
+    expect(markup).toContain('Excluded by send limit');
+    expect(markup).toContain('>2<');
+    expect(markup).toContain('Send push');
   });
 
   it('uses the shared Vuexy notice card atom for send results', () => {

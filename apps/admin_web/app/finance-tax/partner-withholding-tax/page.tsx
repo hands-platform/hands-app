@@ -1,4 +1,4 @@
-import { Landmark, ReceiptText, ShieldCheck, UsersRound, WalletCards } from 'lucide-react';
+import { Landmark, ReceiptText, ShieldCheck, UsersRound } from 'lucide-react';
 
 import type {
   AdminMonthlyTaxClosingSummary,
@@ -20,6 +20,7 @@ import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildMonthlyTaxClosingSummaryApiHref,
+  buildMonthlyTaxCloseoutCommandState,
   buildPartnerWithholdingTaxApiHref,
   buildPartnerWithholdingTaxExportHref,
   buildPartnerWithholdingTaxSummaryApiHref,
@@ -57,6 +58,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
   const tableRows = pagination.rows;
   const csvHref = buildPartnerWithholdingTaxExportHref(filters);
   const periodScope = `Period ${filters.period}`;
+  const closeoutState = buildMonthlyTaxCloseoutCommandState(monthlyClosingSummary);
 
   return (
     <AdminPageTemplate
@@ -74,25 +76,43 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
             href={csvHref}
             tone="success"
           >
-            Export partner tax CSV
+            Export current page CSV
           </StatusBadgeLink>
         </TaxFinanceWorkflowActions>
       }
-      description="Monthly Partner VAT/PIT withholding totals grouped by Partner from posted booking settlement records."
+      description="Monthly Partner VAT/PIT withholding totals grouped by Partner from posted settlements and closed-period reversal entries."
       title="Partner Withholding Tax"
     >
       <FinanceListCommandBoard ariaLabel="Withholding command board">
         <FinanceListCommandCard
-          detail="Partner VAT plus PIT withholding payable for the selected month."
+          detail={closeoutState.detail}
+          href={`/finance-tax/monthly-tax-closing?period=${encodeURIComponent(filters.period)}`}
+          icon={ShieldCheck}
+          label="Tax closeout"
+          scope={closeoutState.scope}
+          tone={closeoutState.tone}
+          value={closeoutState.value}
+        />
+        <FinanceListCommandCard
+          detail={`${summary.postedSettlementCount ?? summary.taxableBookingCount} posted settlement(s) and ${summary.reversalCount ?? 0} reversal(s) are netted into this payable.`}
           href={`/finance-tax/partner-withholding-tax?period=${encodeURIComponent(filters.period)}`}
           icon={ReceiptText}
-          label="Partner tax payable"
+          label="Withholding payable"
           scope={periodScope}
           tone={summary.totalPartnerTaxWithheld > 0 ? 'warning' : 'neutral'}
           value={<MoneyText amount={summary.totalPartnerTaxWithheld} currency={summary.currency} />}
         />
         <FinanceListCommandCard
-          detail="Partners with taxable completed booking revenue in this period."
+          detail={`PIT withheld: ${formatMoneyForDetail(summary.partnerPitWithheldTotal, summary.currency)}.`}
+          href={partnerWithholdingTaxHref({ ...filters, page: 1 })}
+          icon={Landmark}
+          label="VAT withheld"
+          scope={periodScope}
+          tone={summary.partnerVatWithheldTotal > 0 ? 'primary' : 'neutral'}
+          value={<MoneyText amount={summary.partnerVatWithheldTotal} currency={summary.currency} />}
+        />
+        <FinanceListCommandCard
+          detail={`${summary.taxableBookingCount} net taxable booking record(s) across the selected partners.`}
           href={partnerWithholdingTaxHref({ ...filters, page: 1 })}
           icon={UsersRound}
           label="Taxable partners"
@@ -100,38 +120,11 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
           tone={summary.partnerCountWithRevenue > 0 ? 'info' : 'neutral'}
           value={String(summary.partnerCountWithRevenue)}
         />
-        <FinanceListCommandCard
-          detail="Completed booking settlement rows included in withholding totals."
-          href="/finance-tax/booking-settlement-audit"
-          icon={Landmark}
-          label="Taxable bookings"
-          scope={periodScope}
-          tone={summary.taxableBookingCount > 0 ? 'primary' : 'neutral'}
-          value={String(summary.taxableBookingCount)}
-        />
-        <FinanceListCommandCard
-          detail="Partner payout total before payout batch execution."
-          href="/earnings"
-          icon={WalletCards}
-          label="Partner payout base"
-          scope={periodScope}
-          tone={summary.partnerPayoutTotal > 0 ? 'success' : 'neutral'}
-          value={<MoneyText amount={summary.partnerPayoutTotal} currency={summary.currency} />}
-        />
-        <FinanceListCommandCard
-          detail={withholdingRemittanceDetail(monthlyClosingSummary)}
-          href={`/finance-tax/monthly-tax-closing?period=${encodeURIComponent(filters.period)}`}
-          icon={ShieldCheck}
-          label="Remittance status"
-          scope={periodScope}
-          tone={withholdingRemittanceTone(monthlyClosingSummary.status)}
-          value={monthlyClosingSummary.status}
-        />
       </FinanceListCommandBoard>
 
       <AdminFilterPanel
         className="admin-mb-16"
-        description={`Period ${filters.period}. Showing page ${pagination.page} of ${pagination.totalPages} from the monthly group API.`}
+        description="Choose the tax month and page size. Active posted settlements and closed-period reversal entries are netted by Partner."
         resultLabel={`${pagination.pageSize} per page`}
         resultTone="success"
         title="Withholding tax period"
@@ -146,48 +139,54 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
 
       <FinanceTablePanel
         grouped
-        description="Use this list for monthly tax declaration preparation. Booking-level evidence stays in Booking Settlement Audit."
+        description="Review each Partner's net taxable revenue and VAT/PIT withholding before declaration. Posted and reversal counts stay visible so a refund cannot silently disappear from the register."
         resultLabel={`${pagination.totalRows} row(s)`}
         resultTone="info"
-        title="Partner monthly withholding rows"
+        title="Partner withholding register"
       >
         <FinanceDataTable
-            emptyMessage="No Partner withholding tax rows exist for this period."
-            headers={['Partner', 'Period', 'Bookings', 'Gross revenue', 'Partner payout', 'VAT / PIT', 'Total withheld']}
-            rowCount={tableRows.length}
-          >
-            {tableRows.map((row) => (
-              <tr key={`${row.providerProfileId}-${row.period}`}>
-                <td>
-                  <AdminTextLink href={`/partners/${row.providerProfileId}?section=full`}>
-                    {row.partnerName}
-                  </AdminTextLink>
-                  <div className="muted">{row.partnerPhone ?? '-'}</div>
-                </td>
-                <td>{row.period}</td>
-                <td>{row.completedBookingCount}</td>
-                <td>
-                  <MoneyText amount={row.grossServiceRevenue} currency={row.currency} />
-                </td>
-                <td>
-                  <MoneyText amount={row.partnerPayoutTotal} currency={row.currency} />
-                </td>
-                <td>
-                  <strong>
-                    <MoneyText amount={row.partnerVatWithheldTotal} currency={row.currency} />
-                  </strong>
-                  <div className="muted">
-                    PIT <MoneyText amount={row.partnerPitWithheldTotal} currency={row.currency} />
-                  </div>
-                </td>
-                <td>
-                  <strong>
-                    <MoneyText amount={row.totalPartnerTaxWithheld} currency={row.currency} />
-                  </strong>
-                </td>
-              </tr>
-            ))}
-          </FinanceDataTable>
+          emptyMessage="No Partner withholding tax rows exist for this period."
+          headers={[
+            'Partner',
+            'Posted',
+            'Reversals',
+            'Net records',
+            'Partner taxable revenue',
+            'VAT withheld',
+            'PIT withheld',
+            'Total withheld',
+            'Effective rate',
+          ]}
+          rowCount={tableRows.length}
+        >
+          {tableRows.map((row) => (
+            <tr key={`${row.providerProfileId}-${row.period}`}>
+              <td>
+                <AdminTextLink href={`/partners/${row.providerProfileId}?section=full`}>
+                  {row.partnerName}
+                </AdminTextLink>
+              </td>
+              <td>{row.postedSettlementCount ?? row.completedBookingCount}</td>
+              <td>{row.reversalCount ?? 0}</td>
+              <td>{row.completedBookingCount}</td>
+              <td>
+                <MoneyText amount={row.grossServiceRevenue} currency={row.currency} />
+              </td>
+              <td>
+                <MoneyText amount={row.partnerVatWithheldTotal} currency={row.currency} />
+              </td>
+              <td>
+                <MoneyText amount={row.partnerPitWithheldTotal} currency={row.currency} />
+              </td>
+              <td>
+                <strong>
+                  <MoneyText amount={row.totalPartnerTaxWithheld} currency={row.currency} />
+                </strong>
+              </td>
+              <td>{withholdingEffectiveRate(row)}%</td>
+            </tr>
+          ))}
+        </FinanceDataTable>
         <FinanceTablePaginationFooter
           ariaLabel="Partner withholding tax pages"
           hrefForPage={(page) => partnerWithholdingTaxHref({ ...filters, page })}
@@ -198,35 +197,13 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
   );
 }
 
-function withholdingRemittanceTone(status: string): 'danger' | 'neutral' | 'success' | 'warning' {
-  if (status === 'PAID' || status === 'CLOSED') {
-    return 'success';
+function withholdingEffectiveRate(row: AdminPartnerWithholdingTaxRow) {
+  if (row.grossServiceRevenue <= 0) {
+    return '0';
   }
-  if (status === 'DECLARED' || status === 'REVIEWED') {
-    return 'warning';
-  }
-  if (status === 'REVERSED') {
-    return 'danger';
-  }
-  return 'neutral';
+  return (Math.round((row.totalPartnerTaxWithheld / row.grossServiceRevenue) * 1000) / 10).toFixed(1);
 }
 
-function withholdingRemittanceDetail(summary: AdminMonthlyTaxClosingSummary) {
-  const transferRef = summary.remittanceMetadata?.transferRef;
-
-  if (summary.status === 'PAID' || summary.status === 'CLOSED') {
-    return transferRef
-      ? `Tax payment evidence retained under ${transferRef}.`
-      : 'Tax payment evidence is recorded for this monthly closing.';
-  }
-  if (summary.status === 'DECLARED') {
-    return 'Tax declaration is submitted; payment evidence still needs to be recorded.';
-  }
-  if (summary.status === 'REVIEWED') {
-    return 'Monthly totals are reviewed; declare and remit withholding before closeout.';
-  }
-  if (summary.status === 'REVERSED') {
-    return 'This monthly closing was reversed. Review reversal evidence before remittance action.';
-  }
-  return 'Monthly withholding totals are still in draft preview.';
+function formatMoneyForDetail(amount: number, currency: string) {
+  return `${new Intl.NumberFormat('vi-VN').format(amount)} ${currency}`;
 }

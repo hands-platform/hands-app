@@ -1,52 +1,47 @@
-import {
-  CalendarClock,
-  CheckCircle2,
-  MapPinned,
-  ShieldCheck,
-  UserCheck,
-  Users,
-  WalletCards,
-  XCircle,
-} from 'lucide-react';
+import { CheckCircle2, MapPinned, RefreshCw, ShieldCheck, WalletCards, XCircle } from 'lucide-react';
 import dynamicComponent from 'next/dynamic';
-import type { ReactNode } from 'react';
+
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDetails } from '../../components/admin-details';
+import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
+import { AdminErrorState, AdminKpiCard, AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
+import { DateTimeText } from '../../components/date-time-text';
+import { MoneyText } from '../../components/money-text';
+import { StatusBadge } from '../../components/status-badge';
+import { formatWholeNumber as formatNumber } from '../../lib/admin-format';
 import {
-  type AdminVietnamOverview,
-  AdminVietnamOverviewSummary,
-  AdminVietnamOverviewRealtimePointFeed,
-  adminGet,
+  type AdminVietnamOverviewRealtimePointFeed,
+  type AdminVietnamOverviewRegion,
+  type AdminVietnamOverviewSummary,
+  adminGetResult,
 } from '../../lib/admin-api';
+import type { VietnamOverviewLiveMapProps } from './vietnam-overview-live-map';
 import {
   normalizeVietnamOverviewRange,
   type VietnamOverviewMetricDotKey,
-  vietnamOverviewRealtimeMetricDotLegend,
-  vietnamOverviewRealtimeMapPoints,
-  vietnamOverviewRealtimePointsApiHref,
-  vietnamOverviewRealtimePointCounts,
+  vietnamOverviewMappedSignalScope,
   vietnamOverviewRangeOptions,
+  vietnamOverviewRealtimeMapPoints,
+  vietnamOverviewRealtimeMetricDotLegend,
+  vietnamOverviewRealtimePointCounts,
+  vietnamOverviewRealtimePointsApiHref,
 } from './vietnam-overview-model';
-import type { VietnamOverviewLiveMapProps } from './vietnam-overview-live-map';
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminOverviewGrid, AdminSummaryCardGrid } from '../../components/admin-overview-card';
-import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminSegmentedControl } from '../../components/admin-segmented-control';
-import { AdminCard, AdminCardGrid, AdminKpiCard, AdminRowLink, AdminSection } from '../../components/admin-surface';
-import { DateTimeText } from '../../components/date-time-text';
-import { MoneyText } from '../../components/money-text';
-import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
-import { formatWholeNumber as formatNumber } from '../../lib/admin-format';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Vietnam Overview | HANDS Admin' };
 
 const VietnamOverviewLiveMap = dynamicComponent<VietnamOverviewLiveMapProps>(
-  () => import('./vietnam-overview-live-map').then((mod) => mod.VietnamOverviewLiveMap),
+  () => import('./vietnam-overview-live-map').then((module) => module.VietnamOverviewLiveMap),
   {
     loading: () => (
       <div
-        aria-label="Vietnam overview map loading"
+        aria-label="Vietnam operations map loading"
         className="vietnam-maplibre-shell is-loading"
+        role="status"
       />
     ),
   },
@@ -55,51 +50,87 @@ const VietnamOverviewLiveMap = dynamicComponent<VietnamOverviewLiveMapProps>(
 type VietnamOverviewPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type VietnamOverviewView = 'live' | 'period';
 
+const defaultLiveSignals: readonly VietnamOverviewMetricDotKey[] = ['needs-supply', 'online'];
+const liveSignalKeys = new Set<VietnamOverviewMetricDotKey>([
+  'customers',
+  'active',
+  'online',
+  'busy-partners',
+  'offline-partners',
+  'stale-partners',
+  'needs-supply',
+  'assigned-bookings',
+  'stale-bookings',
+]);
+
+const emptyTotals = {
+  customerCount: 0,
+  activeCustomerCount: 0,
+  customersSeenIn30DaysCount: 0,
+  partnerCount: 0,
+  onlinePartnerCount: 0,
+  readyPartnerCount: 0,
+  busyPartnerCount: 0,
+  offlinePartnerCount: 0,
+  stalePartnerCount: 0,
+  activeBookingCount: 0,
+  needsSupplyNowCount: 0,
+  assignedOrInServiceCount: 0,
+  staleActiveRecordCount: 0,
+  supplyShortageCount: 0,
+  completedBookingCount: 0,
+  cancellationCount: 0,
+  revenueAmount: 0,
+  paidVolumeAvailable: false,
+  currency: 'VND',
+};
+
+const emptySample = {
+  limitPerSource: 50,
+  sources: [],
+};
+
 const emptyVietnamOverview: AdminVietnamOverviewSummary = {
   generatedAt: new Date(0).toISOString(),
-  refreshSeconds: 60,
+  refreshMode: 'manual',
+  refreshSeconds: 0,
   source: 'stored-address-aggregates',
+  timeZone: 'Asia/Ho_Chi_Minh',
   range: 'today',
   rangeLabel: 'Today',
   windowStartAt: null,
   windowEndAt: null,
   regionalSampleLimit: 50,
-  totals: {
-    customerCount: 0,
-    activeCustomerCount: 0,
-    partnerCount: 0,
-    onlinePartnerCount: 0,
-    activeBookingCount: 0,
-    completedBookingCount: 0,
-    cancellationCount: 0,
-    revenueAmount: 0,
-    currency: 'VND',
-  },
+  partnerLocationFreshnessMinutes: 15,
+  sample: emptySample,
+  totals: emptyTotals,
   regions: [],
 };
 
 const emptyVietnamOverviewRealtimePointFeed: AdminVietnamOverviewRealtimePointFeed = {
   generatedAt: new Date(0).toISOString(),
-  refreshSeconds: 60,
+  refreshMode: 'manual',
+  refreshSeconds: 0,
   source: 'stored-address-aggregates',
+  timeZone: 'Asia/Ho_Chi_Minh',
   range: 'today',
   rangeLabel: 'Today',
   windowStartAt: null,
   windowEndAt: null,
+  partnerLocationFreshnessMinutes: 15,
+  sample: emptySample,
+  totals: emptyTotals,
+  regions: [],
   realtimePoints: [],
 };
 
-const VIETNAM_REGION_HEADERS = [
+const periodHeaders = [
   'Region',
-  'Load',
-  'Customers',
-  'Active',
-  'Partners',
-  'Ready',
-  'Bookings',
-  'Done',
-  'Cancel',
+  'Completed',
+  'Canceled',
+  'Cancellation share',
   'Paid volume',
+  'View report',
 ] as const;
 
 export default async function VietnamOverviewPage({
@@ -110,930 +141,528 @@ export default async function VietnamOverviewPage({
   const params = await searchParams;
   const view = normalizeVietnamOverviewView(params?.view);
   const range = normalizeVietnamOverviewRange(params?.range);
-  const activeSignalKeys = normalizeVietnamOverviewSignalFilters(params?.signals);
-  const activeSignalSet = new Set<VietnamOverviewMetricDotKey>(activeSignalKeys);
-  const [overview, realtimePointFeed] = await Promise.all([
-    adminGet<AdminVietnamOverviewSummary>(
-      `/admin/vietnam-overview/summary?range=${range}`,
-      emptyVietnamOverview,
-    ),
-    view === 'live'
-      ? adminGet<AdminVietnamOverviewRealtimePointFeed>(
-          vietnamOverviewRealtimePointsApiHref(),
-          emptyVietnamOverviewRealtimePointFeed,
-        )
-      : Promise.resolve(emptyVietnamOverviewRealtimePointFeed),
-  ]);
+  const signalKeys = normalizeVietnamOverviewSignalFilters(params?.signals);
+  const result = view === 'live'
+    ? await adminGetResult<AdminVietnamOverviewRealtimePointFeed>(
+        vietnamOverviewRealtimePointsApiHref(),
+        emptyVietnamOverviewRealtimePointFeed,
+      )
+    : await adminGetResult<AdminVietnamOverviewSummary>(
+        `/admin/vietnam-overview/summary?range=${range}`,
+        emptyVietnamOverview,
+      );
+  const overview = result.data;
   const regions = overview.regions;
-  const regionalSampleLimit = overview.regionalSampleLimit ?? 50;
   const activeRegion = normalizeVietnamOverviewRegionFilter(params?.region, regions);
   const activeRegionCode = activeRegion?.regionCode ?? null;
-  const realtimePointSource = realtimePointFeed.realtimePoints;
-  const allRealtimeMapPoints = vietnamOverviewRealtimeMapPoints(realtimePointSource);
-  const regionalRealtimeMapPoints = activeRegionCode
-    ? allRealtimeMapPoints.filter((point) => point.regionCode === activeRegionCode)
-    : allRealtimeMapPoints;
-  const mapPoints = regionalRealtimeMapPoints.filter((point) => activeSignalSet.has(point.kind));
-  const allMapPointCounts = vietnamOverviewRealtimePointCounts(regionalRealtimeMapPoints);
-  const visibleRegions = activeRegion
-    ? [activeRegion]
-    : [...regions].sort(
-        (left, right) => vietnamRegionOperatingScore(right) - vietnamRegionOperatingScore(left),
-      );
-  const maxRegionOperatingScore = Math.max(1, ...visibleRegions.map(vietnamRegionOperatingScore));
-  const regionFocusHrefs = vietnamOverviewRegionFocusHrefs(range, activeSignalKeys, regions, view);
-  const clearRegionHref = vietnamOverviewHrefWithState({ range, signalKeys: activeSignalKeys, view });
-  const metricTotals = activeRegion ?? overview.totals;
-  const customerMetricScopeLabel = activeRegion ? `${activeRegion.shortName} customers` : 'stored customers';
-  const periodClosedWorkCount = metricTotals.completedBookingCount + metricTotals.cancellationCount;
-  const periodWorkVolume =
-    metricTotals.activeBookingCount + metricTotals.completedBookingCount + metricTotals.cancellationCount;
-  const periodCompletionRate = percentage(metricTotals.completedBookingCount, periodClosedWorkCount);
-  const periodCancellationRate = percentage(metricTotals.cancellationCount, periodClosedWorkCount);
-  const partnerReadyRate = percentage(metricTotals.onlinePartnerCount, metricTotals.partnerCount);
-  const activeCustomerRate = percentage(metricTotals.activeCustomerCount, metricTotals.customerCount);
-  const activeBookingShare = percentage(metricTotals.activeBookingCount, periodWorkVolume);
-  const periodWindowLabel: ReactNode = overview.windowStartAt && overview.windowEndAt
-    ? (
-        <>
-          <DateTimeText fallback="pending" value={overview.windowStartAt} />
-          {' - '}
-          <DateTimeText fallback="pending" value={overview.windowEndAt} />
-        </>
-      )
-    : 'All stored period data';
-  const regionRealtimeSummary = [
-    { label: 'All customers', value: formatNumber(allMapPointCounts.customers), tone: 'primary' },
-    { label: 'Active customers', value: formatNumber(allMapPointCounts.active), tone: 'info' },
-    { label: 'Ready Partners', value: formatNumber(allMapPointCounts.online), tone: 'success' },
-    { label: '7d inactive Partners', value: formatNumber(allMapPointCounts['stale-partners']), tone: 'danger' },
-    { label: 'Offline Partners', value: formatNumber(allMapPointCounts['offline-partners']), tone: 'neutral' },
-    { label: 'Active bookings', value: formatNumber(allMapPointCounts.bookings), tone: 'warning' },
-  ];
-  const regionPeriodSummary = [
-    { label: 'Customers', value: formatNumber(metricTotals.customerCount) },
-    { label: 'Partners', value: formatNumber(metricTotals.partnerCount) },
-    { label: 'Completed', value: formatNumber(metricTotals.completedBookingCount) },
-    { label: 'Canceled', value: formatNumber(metricTotals.cancellationCount) },
-    {
-      label: 'Paid volume',
-      value: <MoneyText amount={metricTotals.revenueAmount} currency={metricTotals.currency} />,
-    },
-  ];
-  const periodFilterSummary = [
-    {
-      label: 'Window',
-      value: overview.rangeLabel,
-      detail: periodWindowLabel,
-      tone: 'info',
-    },
-    {
-      label: 'Focus',
-      value: activeRegion ? activeRegion.regionName : 'All Vietnam',
-      detail: activeRegion
-        ? `${activeRegion.shortName} period report and map focus`
-        : `${formatNumber(regions.length)} regions included`,
-      tone: 'primary',
-    },
-    {
-      label: 'Work volume',
-      value: formatNumber(periodWorkVolume),
-      detail: `${formatNumber(metricTotals.activeBookingCount)} active - ${formatNumber(metricTotals.completedBookingCount)} done - ${formatNumber(metricTotals.cancellationCount)} cancel`,
-      tone: periodWorkVolume > 0 ? 'warning' : 'neutral',
-    },
-    {
-      label: 'Completion rate',
-      value: formatPercent(periodCompletionRate),
-      detail: periodClosedWorkCount > 0
-        ? `${formatNumber(metricTotals.completedBookingCount)} completed of ${formatNumber(periodClosedWorkCount)} closed`
-        : (
-            <>
-              Generated <DateTimeText fallback="pending" value={overview.generatedAt} />
-            </>
-          ),
-      tone: periodClosedWorkCount > 0 ? 'success' : 'neutral',
-    },
-  ];
-  const realtimeSignalTotal = vietnamOverviewRealtimeMetricDotLegend.reduce(
-    (total, item) => total + allMapPointCounts[item.key],
-    0,
-  );
-  const maxRealtimeSignalCount = Math.max(
-    1,
-    ...vietnamOverviewRealtimeMetricDotLegend.map((item) => allMapPointCounts[item.key]),
-  );
-  const realtimeSignalRows = vietnamOverviewRealtimeMetricDotLegend.map((item) => ({
-    ...item,
-    value: allMapPointCounts[item.key],
-    percent: Math.max(6, Math.round((allMapPointCounts[item.key] / maxRealtimeSignalCount) * 100)),
-  }));
-  const realtimeRegionCandidates = activeRegion ? [activeRegion] : regions;
-  const realtimeRegionRows = [...realtimeRegionCandidates]
-    .map((region) => {
-      const regionPointCounts = vietnamOverviewRealtimePointCounts(
-        regionalRealtimeMapPoints.filter((point) => point.regionCode === region.regionCode),
-      );
-      const load = vietnamRegionRealtimePointScore(regionPointCounts);
-
-      return {
-        counts: regionPointCounts,
-        href: regionFocusHrefs[region.regionCode],
-        load,
-        region,
-      };
-    })
-    .filter(({ load }) => load > 0)
-    .sort((left, right) => right.load - left.load);
-  const topRealtimeRegionRows = realtimeRegionRows.slice(0, 5);
-  const realtimeHotRegion = realtimeRegionRows[0] ?? null;
-  const maxRealtimeRegionLoad = Math.max(1, ...topRealtimeRegionRows.map((item) => item.load));
-  const partnerCoverageGap = allMapPointCounts.online - allMapPointCounts.bookings;
-  const partnerCoveragePercent = allMapPointCounts.bookings > 0
-    ? Math.min(100, Math.round((allMapPointCounts.online / allMapPointCounts.bookings) * 100))
-    : allMapPointCounts.online > 0
-      ? 100
-      : 0;
-  const partnerCoverageLabel = allMapPointCounts.bookings === 0
-    ? 'No active booking pressure'
-    : partnerCoverageGap >= 0
-      ? `${formatSignedNumber(partnerCoverageGap)} Partner coverage`
-      : `${formatNumber(Math.abs(partnerCoverageGap))} booking coverage gap`;
-  const activeSignalLabel = activeSignalKeys.length === vietnamOverviewAllSignalKeys.length
-    ? 'All realtime signals'
-    : vietnamOverviewRealtimeMetricDotLegend
-      .filter((item) => activeSignalKeys.includes(item.key))
-      .map((item) => item.label)
-      .join(', ');
-  const realtimeOperatorCards = [
-    {
-      label: 'Live demand',
-      value: formatNumber(allMapPointCounts.bookings),
-      detail: `${formatNumber(allMapPointCounts.active)} active / ${formatNumber(allMapPointCounts.customers)} saved customers`,
-      icon: CalendarClock,
-      tone: 'warning',
-      progress: Math.max(6, Math.round((allMapPointCounts.bookings / maxRealtimeSignalCount) * 100)),
-    },
-    {
-      label: 'Ready partners',
-      value: formatNumber(allMapPointCounts.online),
-      detail: `${partnerCoverageLabel} · ${formatNumber(allMapPointCounts['stale-partners'])} stale / ${formatNumber(allMapPointCounts['offline-partners'])} offline`,
-      icon: UserCheck,
-      tone: partnerCoverageGap < 0 ? 'danger' : 'success',
-      progress: Math.max(6, partnerCoveragePercent),
-    },
-    {
-      label: 'Realtime focus',
-      value: realtimeHotRegion?.region.shortName ?? '-',
-      detail: realtimeHotRegion
-        ? `${realtimeHotRegion.region.regionName} · ${formatNumber(realtimeHotRegion.load)} live load`
-        : 'No active live dots now',
-      icon: MapPinned,
-      tone: 'primary',
-      progress: realtimeHotRegion
-        ? Math.max(6, Math.round((realtimeHotRegion.load / maxRealtimeRegionLoad) * 100))
-        : 0,
-    },
-    {
-      label: 'Map signal sample',
-      value: `${formatNumber(mapPoints.length)}/${formatNumber(regionalRealtimeMapPoints.length)}`,
-      detail: activeSignalLabel,
-      icon: ShieldCheck,
-      tone: mapPoints.length > 0 ? 'info' : 'neutral',
-      progress: regionalRealtimeMapPoints.length > 0
-        ? Math.max(6, Math.round((mapPoints.length / regionalRealtimeMapPoints.length) * 100))
-        : 0,
-    },
-  ];
-  const metrics = [
-    {
-      label: 'Customers',
-      value: formatNumber(metricTotals.customerCount),
-      detail: `${formatNumber(metricTotals.activeCustomerCount)} active sessions - ${formatPercent(activeCustomerRate)} of ${customerMetricScopeLabel}`,
-      icon: Users,
-      tone: 'info',
-    },
-    {
-      label: 'Partners',
-      value: formatNumber(metricTotals.partnerCount),
-      detail: `${formatNumber(metricTotals.onlinePartnerCount)} ready - ${formatPercent(partnerReadyRate)} of listed Partners`,
-      icon: UserCheck,
-      tone: 'success',
-    },
-    {
-      label: 'Active bookings',
-      value: formatNumber(metricTotals.activeBookingCount),
-      detail: periodWorkVolume > 0
-        ? `${formatPercent(activeBookingShare)} of period work volume still open`
-        : 'No active booking pressure in this period',
-      icon: CalendarClock,
-      tone: 'warning',
-    },
-    {
-      label: 'Completed',
-      value: formatNumber(metricTotals.completedBookingCount),
-      detail: periodClosedWorkCount > 0
-        ? `${formatPercent(periodCompletionRate)} of closed work`
-        : 'No closed work in this period',
-      icon: CheckCircle2,
-      tone: 'success',
-    },
-    {
-      label: 'Cancellations',
-      value: formatNumber(metricTotals.cancellationCount),
-      detail: periodClosedWorkCount > 0
-        ? `${formatPercent(periodCancellationRate)} of closed work needs review`
-        : 'No cancellation pressure in this period',
-      icon: XCircle,
-      tone: 'danger',
-    },
-    {
-      label: 'Paid volume',
-      value: <MoneyText amount={metricTotals.revenueAmount} currency={metricTotals.currency} />,
-      detail: 'Captured/released customer payment amount, not net platform revenue',
-      icon: WalletCards,
-      tone: 'primary',
-    },
-  ];
-  const periodRegionDemandLeaders = [...visibleRegions].sort(
-    (left, right) => vietnamRegionOperatingScore(right) - vietnamRegionOperatingScore(left),
-  );
-  const busiestRegion = periodRegionDemandLeaders[0] ?? null;
-  const completionLeader = [...visibleRegions].sort(
-    (left, right) => right.completedBookingCount - left.completedBookingCount,
-  )[0] ?? null;
-  const cancellationWatchRegion = [...visibleRegions].sort(
-    (left, right) => right.cancellationCount - left.cancellationCount,
-  )[0] ?? null;
-  const visibleRegionPartnerCount = visibleRegions.reduce((total, region) => total + region.partnerCount, 0);
-  const visibleRegionReadyPartnerCount = visibleRegions.reduce(
-    (total, region) => total + region.onlinePartnerCount,
-    0,
-  );
-  const visibleRegionReadyRate = percentage(visibleRegionReadyPartnerCount, visibleRegionPartnerCount);
-  const periodRegionalInsights = [
-    {
-      label: 'Busiest region',
-      value: busiestRegion?.shortName ?? '-',
-      detail: busiestRegion
-        ? `${formatNumber(vietnamRegionOperatingScore(busiestRegion))} demand load`
-        : 'No period demand loaded',
-      tone: busiestRegion && vietnamRegionOperatingScore(busiestRegion) > 0 ? 'warning' : 'neutral',
-    },
-    {
-      label: 'Ready supply',
-      value: formatNumber(visibleRegionReadyPartnerCount),
-      detail: `${formatPercent(visibleRegionReadyRate)} of ${formatNumber(visibleRegionPartnerCount)} Partners ready`,
-      tone: visibleRegionReadyPartnerCount > 0 ? 'success' : 'neutral',
-    },
-    {
-      label: 'Completion leader',
-      value: completionLeader?.shortName ?? '-',
-      detail: completionLeader && completionLeader.completedBookingCount > 0
-        ? `${formatNumber(completionLeader.completedBookingCount)} completed bookings`
-        : 'No completed bookings in range',
-      tone: completionLeader && completionLeader.completedBookingCount > 0 ? 'success' : 'neutral',
-    },
-    {
-      label: 'Cancellation watch',
-      value: cancellationWatchRegion?.shortName ?? '-',
-      detail: cancellationWatchRegion && cancellationWatchRegion.cancellationCount > 0
-        ? `${formatNumber(cancellationWatchRegion.cancellationCount)} cancellation records`
-        : 'No cancellation pressure in range',
-      tone: cancellationWatchRegion && cancellationWatchRegion.cancellationCount > 0 ? 'danger' : 'neutral',
-    },
-  ];
+  const currentHref = vietnamOverviewHrefWithState({
+    range,
+    regionCode: activeRegionCode,
+    signalKeys,
+    view,
+  });
+  const refreshHref = currentHref;
 
   return (
     <AdminPageTemplate
       actions={
-        <AdminSegmentedControl
-          activeValue={view}
-          ariaLabel="Vietnam overview workspace"
-          options={[
-            {
-              href: vietnamOverviewHrefWithState({
-                range,
-                regionCode: activeRegionCode,
-                signalKeys: activeSignalKeys,
-                view: 'live',
-              }),
-              label: 'Live map',
-              value: 'live',
-            },
-            {
-              href: vietnamOverviewHrefWithState({
-                range,
-                regionCode: activeRegionCode,
-                signalKeys: activeSignalKeys,
-                view: 'period',
-              }),
-              label: 'Period report',
-              value: 'period',
-            },
-          ]}
-        />
+        <div className="vietnam-overview-header-actions">
+          <AdminSegmentedControl
+            activeValue={view}
+            ariaLabel="Vietnam overview mode"
+            options={[
+              {
+                href: vietnamOverviewHrefWithState({
+                  range,
+                  regionCode: activeRegionCode,
+                  signalKeys,
+                  view: 'live',
+                }),
+                label: 'Live operations',
+                value: 'live',
+              },
+              {
+                href: vietnamOverviewHrefWithState({
+                  range,
+                  regionCode: activeRegionCode,
+                  signalKeys,
+                  view: 'period',
+                }),
+                label: 'Period outcomes',
+                value: 'period',
+              },
+            ]}
+          />
+          <a className="button secondary" href={refreshHref}>
+            <RefreshCw aria-hidden="true" size={16} />
+            Refresh
+          </a>
+        </div>
       }
-      contentClassName="vietnam-overview-page"
-      description={
-        view === 'live'
-          ? 'Current saved customer locations, Partner readiness, offline supply, and active booking service addresses.'
-          : 'Exact national period totals with a bounded regional location sample for trend and closeout review.'
-      }
+      contentClassName="vietnam-overview-workspace"
+      description="Current demand, assignable Partner coverage, and Vietnam-time booking outcomes."
       title="Vietnam Overview"
     >
-      {view === 'live' ? (
-      <>
-      <AdminOverviewGrid
-        ariaLabel="Realtime Vietnam operations dashboard"
-        baseClassName="vietnam-realtime-dashboard"
-        variant="content"
-      >
-        <AdminCardGrid ariaLabel="Realtime Vietnam signal widgets" className="vietnam-realtime-widget-grid">
-          {realtimeOperatorCards.map(({ label, value, detail, icon: Icon, tone, progress }) => (
-            <AdminCard key={label} className={`vietnam-realtime-widget is-${tone}`}>
-              <div className="vietnam-realtime-widget-icon">
-                <Icon size={22} aria-hidden="true" />
-              </div>
-              <div className="vietnam-realtime-widget-copy">
-                <span>{label}</span>
-                <strong>{value}</strong>
-                <small>{detail}</small>
-              </div>
-              <div className="vietnam-realtime-widget-meter" aria-hidden="true">
-                <i style={{ width: `${progress}%` }} />
-              </div>
-            </AdminCard>
-          ))}
-        </AdminCardGrid>
-
-        <AdminCardGrid ariaLabel="Realtime Vietnam analytics cards" className="vietnam-realtime-analytics-grid">
-          <AdminSection
-            actions={<strong>{formatNumber(realtimeSignalTotal)}</strong>}
-            bodyClassName="vietnam-realtime-signal-bars"
-            className="vietnam-realtime-chart-card"
-            description="Current dots only, separate from period totals."
-            title="Realtime signal mix"
-          >
-            {realtimeSignalRows.map((item) => (
-              <div key={item.key} className={`vietnam-realtime-signal-row is-${item.key}`}>
-                <div className="vietnam-realtime-signal-label">
-                  <i aria-hidden="true" />
-                  <span>{item.label}</span>
-                  <strong>{formatNumber(item.value)}</strong>
-                </div>
-                <div className="vietnam-realtime-signal-track" aria-hidden="true">
-                  <i style={{ width: `${item.percent}%` }} />
-                </div>
-              </div>
-            ))}
-          </AdminSection>
-
-          <AdminSection
-            actions={<span>{activeRegion ? 'Focused map below' : 'Top 5'}</span>}
-            bodyClassName="vietnam-realtime-region-bars"
-            className="vietnam-realtime-chart-card"
-            description="Regions ordered by bookings, active customers, ready Partners, and offline supply."
-            title="Regional live load"
-          >
-            {topRealtimeRegionRows.map(({ counts, region, load, href }) => {
-              const loadPercent = Math.max(6, Math.round((load / maxRealtimeRegionLoad) * 100));
-
-              return (
-                <AdminRowLink key={region.regionCode} className="vietnam-realtime-region-row" href={href}>
-                  <span>{region.shortName}</span>
-                  <div>
-                    <strong>{region.regionName}</strong>
-                    <small>
-                      {formatNumber(counts.bookings)} bookings ·{' '}
-                      {formatNumber(counts.active)} active ·{' '}
-                      {formatNumber(counts.online)} ready ·{' '}
-                      {formatNumber(counts['stale-partners'] + counts['offline-partners'])} off
-                    </small>
-                    <i aria-hidden="true">
-                      <b style={{ width: `${loadPercent}%` }} />
-                    </i>
-                  </div>
-                  <em>{formatNumber(load)}</em>
-                </AdminRowLink>
-              );
-            })}
-            {topRealtimeRegionRows.length === 0 ? (
-              <AdminEmptyState
-                className="vietnam-realtime-empty"
-                framed
-                message="Live regional load appears when current map dots are available."
-                title="No realtime regional load yet"
-              />
-            ) : null}
-          </AdminSection>
-        </AdminCardGrid>
-      </AdminOverviewGrid>
-
-      <AdminSection
-        actions={
+      <span id="vietnam-overview-top" />
+      <div aria-live="polite" className="vietnam-overview-freshness" role="status">
+        {result.ok ? (
           <>
-            <StatusBadge tone="success">Vietnam only</StatusBadge>
-            {activeRegion ? (
-              <StatusBadge tone="primary">Focused: {activeRegion.regionName}</StatusBadge>
-            ) : null}
-            <StatusBadge tone="info">Refreshes every {overview.refreshSeconds}s</StatusBadge>
-            <StatusBadge tone="info">
-              Generated <DateTimeText fallback="pending" value={overview.generatedAt} />
-            </StatusBadge>
+            Generated <DateTimeText fallback="Unknown" value={overview.generatedAt} />
+            <span>Manual refresh</span>
+            <span>{overview.timeZone}</span>
           </>
-        }
-        bodyClassName="vietnam-overview-map-layout"
-        className="vietnam-overview-map-card"
-        title="Realtime Vietnam operating map"
-      >
-          <div className="vietnam-region-map vietnam-map-canvas" aria-label="Vietnam operating map">
-            <VietnamOverviewLiveMap
-              clearRegionHref={activeRegion ? clearRegionHref : null}
-              focusRegionCode={activeRegionCode}
-              focusRegionName={activeRegion?.regionName ?? null}
-              focusRegionShortName={activeRegion?.shortName ?? null}
-              points={mapPoints}
-              signalFilters={vietnamOverviewRealtimeMetricDotLegend.map((item) => ({
-                count: allMapPointCounts[item.key],
-                href: vietnamOverviewSignalHref(range, item.key, activeSignalKeys, activeRegionCode),
-                isActive: activeSignalSet.has(item.key),
-                key: item.key,
-                label: item.label,
-              }))}
-              totalPointCount={regionalRealtimeMapPoints.length}
-            />
-          </div>
-      </AdminSection>
+        ) : (
+          <span>Latest successful generation time unavailable</span>
+        )}
+      </div>
 
-      </>
-      ) : null}
-
-      {view === 'period' ? (
-      <>
-      <AdminFilterPanel
-        actions={
-          <>
-            {activeRegion ? (
-              <StatusBadgeLink
-                className="vietnam-overview-clear-focus"
-                href={clearRegionHref}
-                tone="primary"
-              >
-                Clear {activeRegion.shortName}
-              </StatusBadgeLink>
-            ) : null}
-            <StatusBadge tone="info">{overview.rangeLabel}</StatusBadge>
-          </>
-        }
-        bodyClassName="vietnam-overview-filter-body"
-        className="vietnam-overview-filter-panel"
-        description="Select the period used by numeric cards and regional tables. Realtime map dots stay current."
-        title="Period metrics range"
-      >
-          <AdminSegmentedControl
-            activeValue={range}
-            ariaLabel="Period metric range"
-            className="vietnam-overview-range-buttons"
-            options={vietnamOverviewRangeOptions.map((option) => ({
-              href: vietnamOverviewHrefWithState({
-                range: option.value,
-                regionCode: activeRegionCode,
-                signalKeys: activeSignalKeys,
-                view,
-              }),
-              label: option.label,
-              value: option.value,
-            }))}
-          />
-          <AdminSummaryCardGrid
-            ariaLabel="Selected Vietnam overview filters"
-            className="vietnam-overview-filter-summary-grid"
-            itemClassName="vietnam-overview-filter-summary-card"
-            items={periodFilterSummary}
-          />
-      </AdminFilterPanel>
-
-      {activeRegion ? (
-        <AdminSection
-          actions={<StatusBadge tone="primary">{activeRegion.shortName}</StatusBadge>}
-          bodyClassName="vietnam-region-focus-summary-grid"
-          className="vietnam-region-focus-summary-card"
-          description={`Focused operating readout for realtime signals and ${overview.rangeLabel} totals.`}
-          title={activeRegion.regionName}
-        >
-            <div className="vietnam-region-focus-summary-group">
-              <div className="vietnam-region-focus-summary-group-label">
-                <strong>Realtime map signals</strong>
-                <span>Current operating dots only</span>
-              </div>
-              <AdminSummaryCardGrid
-                className="vietnam-region-focus-summary-items is-realtime"
-                itemClassName="vietnam-region-focus-summary-item"
-                items={regionRealtimeSummary.map((item) => ({
-                  ...item,
-                  overline: 'Realtime',
-                }))}
-              />
-            </div>
-            <div className="vietnam-region-focus-summary-group">
-              <div className="vietnam-region-focus-summary-group-label">
-                <strong>Period totals</strong>
-                <span>{overview.rangeLabel} stored event totals</span>
-              </div>
-              <AdminSummaryCardGrid
-                className="vietnam-region-focus-summary-items is-period"
-                itemClassName="vietnam-region-focus-summary-item"
-                items={regionPeriodSummary.map((item) => ({
-                  ...item,
-                  overline: overview.rangeLabel,
-                }))}
-              />
-            </div>
-        </AdminSection>
-      ) : null}
-
-      <AdminSection
-        actions={
-          <>
-            <StatusBadge tone="info">{overview.rangeLabel}</StatusBadge>
-            <StatusBadge tone="success">Stored totals</StatusBadge>
-          </>
-        }
-        bodyClassName="vietnam-overview-metric-grid"
-        className="vietnam-overview-period-report-card vietnam-overview-report-band"
-        description={
-          <>
-            Stored customer, Partner, booking, cancellation, and paid volume totals for {overview.rangeLabel}.
-            Paid volume is gross captured/released payment amount, not company net revenue.
-          </>
-        }
-        headerClassName="vietnam-overview-report-header"
-        title={activeRegion ? `${activeRegion.regionName} period report` : 'Vietnam period report'}
-      >
-        {metrics.map(({ label, value, detail, icon: Icon, tone }) => (
-          <AdminKpiCard
-            className={`vietnam-overview-metric is-${tone}`}
-            helper={detail}
-            icon={Icon}
-            iconSize={18}
-            key={label}
-            kind={vietnamOverviewMetricKind(tone)}
-            label={label}
-            scope={overview.rangeLabel}
-            value={value}
-          />
-        ))}
-      </AdminSection>
-
-      <AdminSection
-        actions={
-          <div className="actions vietnam-overview-region-actions">
-            <StatusBadge tone="info">{overview.rangeLabel}</StatusBadge>
-            <StatusBadge tone={activeRegion ? 'primary' : 'neutral'}>
-              {activeRegion ? `Map focus: ${activeRegion.shortName}` : `${visibleRegions.length} regions`}
-            </StatusBadge>
-            <StatusBadge tone="warning">Latest {formatNumber(regionalSampleLimit)}/source</StatusBadge>
-          </div>
-        }
-        bodyClassName="vietnam-overview-region-card-body"
-        className="vietnam-overview-region-card"
-        description={
-          activeRegion
-            ? `Focused location sample for the selected region, bounded to the latest ${formatNumber(regionalSampleLimit)} records per source.`
-            : `Compare the latest ${formatNumber(regionalSampleLimit)} location-bearing records per source by region. National KPI cards above use exact aggregate queries.`
-        }
-        title={activeRegion ? `${activeRegion.regionName} metrics` : 'Period regional metrics'}
-      >
-        <AdminSummaryCardGrid
-          ariaLabel="Regional operations highlights"
-          className="vietnam-overview-region-insight-grid"
-          itemClassName="vietnam-overview-region-insight-card"
-          items={periodRegionalInsights}
+      {!result.ok ? (
+        <AdminErrorState
+          action={<AdminTextLink href={refreshHref}>Retry</AdminTextLink>}
+          message={
+            view === 'live'
+              ? 'Live Vietnam signals could not be loaded. Retry before using this view for coverage decisions.'
+              : 'Period outcomes could not be loaded. Retry before using this report.'
+          }
+          title={view === 'live' ? 'Live operations unavailable' : 'Period outcomes unavailable'}
         />
-        <AdminTableScroll className="vietnam-overview-table-wrap">
-          <AdminDataTable
-            className="vietnam-overview-table"
-            emptyMessage={
-              <AdminEmptyState
-                message="Check API availability or seed stored address records."
-                title="No regional aggregates loaded"
-              />
-            }
-            headers={VIETNAM_REGION_HEADERS}
-            rowCount={visibleRegions.length}
-          >
-              {visibleRegions.map((region) => {
-                const operatingScore = vietnamRegionOperatingScore(region);
-                const loadLevel = vietnamRegionLoadLevel(operatingScore, maxRegionOperatingScore);
-                const loadPercent = Math.round((operatingScore / maxRegionOperatingScore) * 100);
-                const isFocusedRegion = region.regionCode === activeRegionCode;
-
-                return (
-                  <tr
-                    key={region.regionCode}
-                    aria-current={isFocusedRegion ? 'true' : undefined}
-                    className={isFocusedRegion ? 'is-focused-region' : ''}
-                  >
-                    <td>
-                      <div className="vietnam-region-name">
-                        <span>{region.shortName}</span>
-                        <div>
-                          <strong>{region.regionName}</strong>
-                          {isFocusedRegion ? (
-                            <span className="vietnam-region-focus-status">Selected on map</span>
-                          ) : null}
-                          <div
-                            className="vietnam-region-signal-row"
-                            aria-label={`${region.regionName} realtime signals`}
-                          >
-                            <span className="is-active">
-                              <i aria-hidden="true" />
-                              <strong>{formatNumber(region.activeCustomerCount)}</strong>
-                              {' '}
-                              <small>Active</small>
-                            </span>
-                            <span className="is-online">
-                              <i aria-hidden="true" />
-                              <strong>{formatNumber(region.onlinePartnerCount)}</strong>
-                              {' '}
-                              <small>Ready</small>
-                            </span>
-                            <span className="is-bookings">
-                              <i aria-hidden="true" />
-                              <strong>{formatNumber(region.activeBookingCount)}</strong>
-                              {' '}
-                              <small>Bookings</small>
-                            </span>
-                          </div>
-                          <a
-                            className="vietnam-region-focus-link"
-                            href={
-                              isFocusedRegion
-                                ? clearRegionHref
-                                : regionFocusHrefs[region.regionCode]
-                            }
-                          >
-                            {isFocusedRegion ? 'Clear focus' : 'Focus region'}
-                          </a>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div className={`vietnam-region-load is-${loadLevel}`}>
-                        <div className="vietnam-region-load-header">
-                          <span>{vietnamRegionLoadLabel(loadLevel)}</span>
-                          <strong>{formatNumber(operatingScore)}</strong>
-                        </div>
-                        <div className="vietnam-region-load-bar" aria-hidden="true">
-                          <i style={{ width: `${loadPercent}%` }} />
-                        </div>
-                      </div>
-                    </td>
-                    <td className="vietnam-region-numeric-cell">
-                      <VietnamRegionMetricCell value={formatNumber(region.customerCount)} />
-                    </td>
-                    <td className="vietnam-region-numeric-cell">
-                      <VietnamRegionMetricCell
-                        value={formatNumber(region.activeCustomerCount)}
-                        tone="info"
-                      />
-                    </td>
-                    <td className="vietnam-region-numeric-cell">
-                      <VietnamRegionMetricCell
-                        value={formatNumber(region.partnerCount)}
-                        tone="primary"
-                      />
-                    </td>
-                    <td className="vietnam-region-numeric-cell">
-                      <VietnamRegionMetricCell
-                        value={formatNumber(region.onlinePartnerCount)}
-                        tone="success"
-                      />
-                    </td>
-                    <td className="vietnam-region-numeric-cell">
-                      <VietnamRegionMetricCell
-                        value={formatNumber(region.activeBookingCount)}
-                        tone="warning"
-                      />
-                    </td>
-                    <td className="vietnam-region-numeric-cell">
-                      <VietnamRegionMetricCell
-                        value={formatNumber(region.completedBookingCount)}
-                        tone="success"
-                      />
-                    </td>
-                    <td className="vietnam-region-numeric-cell">
-                      <VietnamRegionMetricCell
-                        value={formatNumber(region.cancellationCount)}
-                        tone="danger"
-                      />
-                    </td>
-                    <td className="vietnam-region-numeric-cell">
-                      <VietnamRegionMetricCell
-                        value={<MoneyText amount={region.revenueAmount} currency={region.currency} />}
-                        tone="primary"
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-          </AdminDataTable>
-        </AdminTableScroll>
-      </AdminSection>
-      </>
-      ) : null}
+      ) : view === 'live' ? (
+        <LiveOperations
+          activeRegion={activeRegion}
+          feed={overview as AdminVietnamOverviewRealtimePointFeed}
+          range={range}
+          signalKeys={signalKeys}
+        />
+      ) : (
+        <PeriodOutcomes
+          activeRegion={activeRegion}
+          overview={overview as AdminVietnamOverviewSummary}
+          range={range}
+        />
+      )}
     </AdminPageTemplate>
   );
 }
 
-function vietnamOverviewMetricKind(tone: string) {
-  if (tone === 'danger') return 'risk' as const;
-  if (tone === 'warning') return 'action' as const;
-
-  return 'period' as const;
-}
-
-type VietnamRegionMetricTone = 'neutral' | 'primary' | 'info' | 'success' | 'warning' | 'danger';
-
-function VietnamRegionMetricCell({
-  value,
-  tone = 'neutral',
+function LiveOperations({
+  activeRegion,
+  feed,
+  range,
+  signalKeys,
 }: {
-  readonly value: ReactNode;
-  readonly tone?: VietnamRegionMetricTone;
+  readonly activeRegion: AdminVietnamOverviewRegion | null;
+  readonly feed: AdminVietnamOverviewRealtimePointFeed;
+  readonly range: AdminVietnamOverviewSummary['range'];
+  readonly signalKeys: readonly VietnamOverviewMetricDotKey[];
 }) {
+  const activeSignalSet = new Set(signalKeys);
+  const allPoints = vietnamOverviewRealtimeMapPoints(feed.realtimePoints);
+  const regionPoints = activeRegion
+    ? allPoints.filter((point) => point.regionCode === activeRegion.regionCode)
+    : allPoints;
+  const visiblePoints = regionPoints.filter((point) => activeSignalSet.has(point.kind));
+  const pointCounts = vietnamOverviewRealtimePointCounts(regionPoints);
+  const totals = feed.totals;
+  const returnHref = `${vietnamOverviewHrefWithState({
+    range,
+    regionCode: activeRegion?.regionCode,
+    signalKeys,
+    view: 'live',
+  })}#vietnam-operating-map`;
+  const clearRegionHref = activeRegion
+    ? `${vietnamOverviewHrefWithState({ range, signalKeys, view: 'live' })}#vietnam-operating-map`
+    : null;
+  const resetLayersHref = `${vietnamOverviewHrefWithState({
+    range,
+    regionCode: activeRegion?.regionCode,
+    signalKeys: defaultLiveSignals,
+    view: 'live',
+    omitDefaultSignals: true,
+  })}#vietnam-operating-map`;
+  const sampleScope = vietnamOverviewMappedSignalScope(feed.sample);
+  const signalFilters = vietnamOverviewRealtimeMetricDotLegend.map((item) => ({
+    count: pointCounts[item.key] ?? 0,
+    href: `${vietnamOverviewHrefWithState({
+      range,
+      regionCode: activeRegion?.regionCode,
+      signalKeys: toggleSignal(signalKeys, item.key),
+      view: 'live',
+    })}#vietnam-operating-map`,
+    isActive: activeSignalSet.has(item.key),
+    key: item.key,
+    label: item.label,
+  }));
+  const sampledRegions = activeRegion ? [activeRegion] : feed.regions;
+  const visibleRegions = sampledRegions
+    .filter((region) =>
+      region.needsSupplyNowCount +
+        region.assignedOrInServiceCount +
+        region.staleActiveRecordCount +
+        region.readyPartnerCount >
+      0,
+    )
+    .sort(
+      (left, right) =>
+        right.supplyShortageCount - left.supplyShortageCount ||
+        right.needsSupplyNowCount - left.needsSupplyNowCount,
+    );
+  const hiddenRegionCount = Math.max(0, sampledRegions.length - visibleRegions.length);
+
   return (
-    <span className={`vietnam-region-number-cell is-${tone}`}>
-      <strong>{value}</strong>
-    </span>
+    <>
+      <section aria-label="Current Vietnam coverage" className="vietnam-overview-coverage-strip">
+        <AdminKpiCard
+          helper="Valid matching records that still need Partner supply."
+          href={totals.needsSupplyNowCount > 0 ? '/bookings?view=matching' : undefined}
+          icon={MapPinned}
+          kind="live"
+          label="Needs supply now"
+          scope="Live"
+          value={formatNumber(totals.needsSupplyNowCount)}
+        />
+        <AdminKpiCard
+          helper={`Assignable now using the matching freshness policy (${formatNumber(feed.partnerLocationFreshnessMinutes)} min).`}
+          icon={ShieldCheck}
+          kind="live"
+          label="Ready Partners"
+          scope="Live"
+          value={formatNumber(totals.readyPartnerCount)}
+        />
+        <AdminKpiCard
+          helper={totals.supplyShortageCount > 0 ? `${totals.supplyShortageCount} valid matching booking(s) exceed ready supply.` : 'Ready supply covers valid matching demand.'}
+          href={totals.supplyShortageCount > 0 ? '/bookings?view=matching' : undefined}
+          icon={totals.supplyShortageCount > 0 ? XCircle : CheckCircle2}
+          kind={totals.supplyShortageCount > 0 ? 'risk' : 'live'}
+          label="Supply shortage"
+          scope="Live"
+          value={formatNumber(totals.supplyShortageCount)}
+        />
+      </section>
+
+      <div className="vietnam-overview-live-status-strip">
+        <span>
+          Matched / in service <strong>{formatNumber(totals.assignedOrInServiceCount)}</strong>
+        </span>
+        <span className={totals.staleActiveRecordCount > 0 ? 'is-warning' : undefined}>
+          Stale active records <strong>{formatNumber(totals.staleActiveRecordCount)}</strong>
+        </span>
+        {totals.staleActiveRecordCount > 0 ? (
+          <>
+            <AdminTextLink href="/bookings?view=matching-delays&sla=overdue&sort=oldest">
+              Matching delays
+            </AdminTextLink>
+            <AdminTextLink href="/bookings?view=data-anomaly">Data anomalies</AdminTextLink>
+          </>
+        ) : null}
+      </div>
+
+      <AdminSection
+        actions={
+          <div className="actions">
+            <StatusBadge tone="success">Generated <DateTimeText fallback="Unknown" value={feed.generatedAt} /></StatusBadge>
+            {feed.sample?.sources?.some((source) => source.truncated) ? (
+              <StatusBadge tone="warning">Partial sample</StatusBadge>
+            ) : null}
+          </div>
+        }
+        className="vietnam-overview-map-section"
+        description="Monitor current booking demand and assignable Partner coverage by region. Secondary saved and stale locations are off by default."
+        id="vietnam-operating-map"
+        title="Operating map"
+      >
+        <VietnamOverviewLiveMap
+            clearRegionHref={clearRegionHref}
+            focusRegionCode={activeRegion?.regionCode ?? null}
+            focusRegionName={activeRegion?.regionName ?? null}
+            focusRegionShortName={activeRegion?.shortName ?? null}
+            points={visiblePoints}
+            resetLayersHref={resetLayersHref}
+            returnHref={returnHref}
+            sampleCopy={sampleScope.copy}
+            signalFilters={signalFilters}
+            totalPointCount={regionPoints.length}
+        />
+      </AdminSection>
+
+      <AdminSection
+        actions={<StatusBadge tone="warning">Sample · up to {formatNumber(feed.sample?.limitPerSource ?? 50)}/source</StatusBadge>}
+        className="vietnam-overview-region-card"
+        description="Regional rows use recent mapped records and are not complete regional totals. Open the source records before staffing decisions."
+        title="Regional location sample"
+      >
+        <AdminTableScroll ariaLabel="Regional location sample table" className="vietnam-overview-table-wrap">
+          <AdminDataTable
+            className="vietnam-overview-live-region-table"
+            emptyMessage={<AdminEmptyState message="No mapped regional records are available." title="No regional sample" />}
+            headers={['Region', 'Needs supply', 'Ready Partners', 'Shortage', 'Matched / service', 'Stale', 'Action']}
+            rowCount={visibleRegions.length}
+          >
+            {visibleRegions.map((region) => {
+              const potentialGap = region.supplyShortageCount > 0;
+              return (
+                <tr key={region.regionCode}>
+                  <td><strong>{region.regionName}</strong></td>
+                  <td>{formatNumber(region.needsSupplyNowCount)}</td>
+                  <td>{formatNumber(region.readyPartnerCount)}</td>
+                  <td>
+                    <StatusBadge tone={potentialGap ? 'warning' : 'neutral'}>
+                      {potentialGap ? formatNumber(region.supplyShortageCount) : 'No sampled shortage'}
+                    </StatusBadge>
+                  </td>
+                  <td>{formatNumber(region.assignedOrInServiceCount)}</td>
+                  <td>
+                    {region.staleActiveRecordCount > 0 ? (
+                      <StatusBadge tone="warning">{formatNumber(region.staleActiveRecordCount)}</StatusBadge>
+                    ) : '0'}
+                  </td>
+                  <td>
+                    <AdminTextLink
+                      href={`${vietnamOverviewHrefWithState({
+                        range,
+                        regionCode: region.regionCode,
+                        signalKeys,
+                        view: 'live',
+                      })}#vietnam-operating-map`}
+                    >
+                      Focus on map
+                    </AdminTextLink>
+                  </td>
+                </tr>
+              );
+            })}
+          </AdminDataTable>
+        </AdminTableScroll>
+        {hiddenRegionCount > 0 ? (
+          <AdminDetails className="vietnam-overview-empty-regions">
+            <summary>Show {formatNumber(hiddenRegionCount)} regions with no sampled live records</summary>
+            <p>A zero sample does not mean the region has no customers or Partners.</p>
+          </AdminDetails>
+        ) : null}
+      </AdminSection>
+    </>
   );
 }
 
-const vietnamOverviewAllSignalKeys = vietnamOverviewRealtimeMetricDotLegend.map((item) => item.key);
+function PeriodOutcomes({
+  activeRegion,
+  overview,
+  range,
+}: {
+  readonly activeRegion: AdminVietnamOverviewRegion | null;
+  readonly overview: AdminVietnamOverviewSummary;
+  readonly range: AdminVietnamOverviewSummary['range'];
+}) {
+  const metrics = activeRegion ?? overview.totals;
+  const closedCount = metrics.completedBookingCount + metrics.cancellationCount;
+  const cancellationShare = percentage(metrics.cancellationCount, closedCount);
+  const visibleRegions = activeRegion ? [activeRegion] : overview.regions;
+
+  return (
+    <>
+      <AdminFilterPanel
+        bodyClassName="vietnam-overview-period-filter-body"
+        description={windowLabel(overview)}
+        resultLabel={overview.rangeLabel}
+        title="Report period"
+      >
+        <AdminSegmentedControl
+          activeValue={range}
+          ariaLabel="Vietnam report period"
+          options={vietnamOverviewRangeOptions.map((option) => ({
+            href: vietnamOverviewHrefWithState({
+              range: option.value,
+              regionCode: activeRegion?.regionCode,
+              signalKeys: defaultLiveSignals,
+              view: 'period',
+            }),
+            label: option.label,
+            value: option.value,
+          }))}
+        />
+        {activeRegion ? (
+          <div className="vietnam-overview-report-focus">
+            <span>Report focus: <strong>{activeRegion.regionName}</strong></span>
+            <AdminTextLink href={vietnamOverviewHrefWithState({ range, signalKeys: defaultLiveSignals, view: 'period' })}>
+              All regions
+            </AdminTextLink>
+          </div>
+        ) : null}
+      </AdminFilterPanel>
+
+      <section aria-label="Vietnam period outcomes" className="vietnam-overview-period-metrics">
+        <AdminKpiCard
+          helper="Bookings completed using the verified closed timestamp."
+          icon={CheckCircle2}
+          kind="period"
+          label="Completed"
+          scope={null}
+          value={formatNumber(metrics.completedBookingCount)}
+        />
+        <AdminKpiCard
+          helper={`${formatNumber(metrics.cancellationCount)} of ${formatNumber(closedCount)} closed bookings were canceled.`}
+          icon={XCircle}
+          kind="period"
+          label="Canceled"
+          scope={null}
+          value={formatNumber(metrics.cancellationCount)}
+        />
+        <AdminKpiCard
+          helper="Canceled bookings divided by completed plus canceled bookings."
+          icon={MapPinned}
+          kind="period"
+          label="Cancellation share"
+          scope={null}
+          value={closedCount > 0 ? formatPercent(cancellationShare) : '—'}
+        />
+        <AdminKpiCard
+          helper={
+            metrics.paidVolumeAvailable
+              ? 'Captured or released payment volume across the unbounded record set.'
+              : 'Unavailable for bounded periods because payments do not store a captured or released timestamp.'
+          }
+          icon={WalletCards}
+          kind="period"
+          label="Paid volume"
+          scope={null}
+          value={
+            metrics.paidVolumeAvailable
+              ? <MoneyText amount={metrics.revenueAmount} currency={metrics.currency} />
+              : 'Unavailable'
+          }
+        />
+      </section>
+
+      <AdminSection
+        actions={<StatusBadge tone="warning">Outcome sample · up to {formatNumber(overview.sample?.limitPerSource ?? overview.regionalSampleLimit)}/source</StatusBadge>}
+        className="vietnam-overview-region-card"
+        description="National KPI cards use exact aggregate queries. Regional rows are a bounded location sample and must not be used as national totals."
+        title={activeRegion ? `${activeRegion.regionName} period outcomes` : 'Regional outcome sample'}
+      >
+        <AdminTableScroll ariaLabel="Regional period outcome sample table" className="vietnam-overview-table-wrap">
+          <AdminDataTable
+            className="vietnam-overview-table"
+            emptyMessage={<AdminEmptyState message="No closed booking outcomes were mapped for this period." title="No regional outcomes" />}
+            headers={periodHeaders}
+            rowCount={visibleRegions.length}
+          >
+            {visibleRegions.map((region) => {
+              const regionClosed = region.completedBookingCount + region.cancellationCount;
+              return (
+                <tr key={region.regionCode}>
+                  <td><strong>{region.regionName}</strong></td>
+                  <td>{formatNumber(region.completedBookingCount)}</td>
+                  <td>{formatNumber(region.cancellationCount)}</td>
+                  <td>{regionClosed > 0 ? formatPercent(percentage(region.cancellationCount, regionClosed)) : '—'}</td>
+                  <td>
+                    {region.paidVolumeAvailable
+                      ? <MoneyText amount={region.revenueAmount} currency={region.currency} />
+                      : 'Unavailable'}
+                  </td>
+                  <td>
+                    <AdminTextLink
+                      href={vietnamOverviewHrefWithState({
+                        range,
+                        regionCode: region.regionCode,
+                        signalKeys: defaultLiveSignals,
+                        view: 'period',
+                      })}
+                    >
+                      View region report
+                    </AdminTextLink>
+                  </td>
+                </tr>
+              );
+            })}
+          </AdminDataTable>
+        </AdminTableScroll>
+      </AdminSection>
+    </>
+  );
+}
 
 function normalizeVietnamOverviewView(value: string | string[] | undefined): VietnamOverviewView {
   const candidate = Array.isArray(value) ? value[0] : value;
   return candidate === 'period' ? 'period' : 'live';
 }
 
-function normalizeVietnamOverviewSignalFilters(
-  value: string | string[] | undefined,
-): VietnamOverviewMetricDotKey[] {
-  const rawValue = Array.isArray(value) ? value.join(',') : value;
-  const requestedKeys = new Set(
-    rawValue
-      ?.split(',')
-      .map((item) => item.trim())
-      .filter(Boolean),
-  );
-  const activeKeys = vietnamOverviewAllSignalKeys.filter((key) => requestedKeys.has(key));
+function normalizeVietnamOverviewSignalFilters(value: string | string[] | undefined) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  if (candidate === 'none') return [];
+  if (!candidate) return [...defaultLiveSignals];
 
-  return activeKeys.length > 0 ? activeKeys : vietnamOverviewAllSignalKeys;
+  const selected = candidate
+    .split(',')
+    .map((item) => item.trim())
+    .flatMap((item) => item === 'bookings' ? ['needs-supply', 'assigned-bookings'] : [item])
+    .filter((item): item is VietnamOverviewMetricDotKey => liveSignalKeys.has(item as VietnamOverviewMetricDotKey));
+
+  return [...new Set(selected)];
 }
 
 function normalizeVietnamOverviewRegionFilter(
   value: string | string[] | undefined,
-  regions: readonly AdminVietnamOverview['regions'][number][],
+  regions: readonly AdminVietnamOverviewRegion[],
 ) {
   const candidate = Array.isArray(value) ? value[0] : value;
-
-  if (!candidate) {
-    return null;
-  }
-
   return regions.find((region) => region.regionCode === candidate) ?? null;
 }
 
-function vietnamOverviewRegionFocusHrefs(
-  range: ReturnType<typeof normalizeVietnamOverviewRange>,
-  signalKeys: readonly VietnamOverviewMetricDotKey[],
-  regions: readonly AdminVietnamOverview['regions'][number][],
-  view: VietnamOverviewView,
-) {
-  return regions.reduce(
-    (hrefs, region) => ({
-      ...hrefs,
-      [region.regionCode]: vietnamOverviewHrefWithState({
-        range,
-        regionCode: region.regionCode,
-        signalKeys,
-        view,
-      }),
-    }),
-    {} as Record<string, string>,
-  );
-}
-
 function vietnamOverviewHrefWithState({
+  omitDefaultSignals = false,
   range,
   regionCode,
   signalKeys,
-  view = 'live',
+  view,
 }: {
-  readonly range: ReturnType<typeof normalizeVietnamOverviewRange>;
+  readonly omitDefaultSignals?: boolean;
+  readonly range: AdminVietnamOverviewSummary['range'];
   readonly regionCode?: string | null;
   readonly signalKeys: readonly VietnamOverviewMetricDotKey[];
-  readonly view?: VietnamOverviewView;
+  readonly view: VietnamOverviewView;
 }) {
-  const params = new URLSearchParams({ range });
-
-  if (view === 'period') {
-    params.set('view', 'period');
-  }
-
-  if (regionCode) {
-    params.set('region', regionCode);
-  }
-
-  const normalizedSignalKeys = vietnamOverviewAllSignalKeys.filter((key) => signalKeys.includes(key));
-
-  if (
-    normalizedSignalKeys.length > 0 &&
-    normalizedSignalKeys.length < vietnamOverviewAllSignalKeys.length
-  ) {
-    params.set('signals', normalizedSignalKeys.join(','));
-  }
-
-  return `/vietnam-overview?${params.toString()}`;
+  const params = new URLSearchParams();
+  params.set('view', view);
+  if (view === 'period' || range !== 'today') params.set('range', range);
+  if (regionCode) params.set('region', regionCode);
+  const usingDefault = sameSignals(signalKeys, defaultLiveSignals);
+  if (signalKeys.length === 0) params.set('signals', 'none');
+  else if (!(omitDefaultSignals && usingDefault) && !usingDefault) params.set('signals', signalKeys.join(','));
+  const query = params.toString();
+  return query ? `/vietnam-overview?${query}` : '/vietnam-overview';
 }
 
-function vietnamOverviewSignalHref(
-  range: ReturnType<typeof normalizeVietnamOverviewRange>,
-  signalKey: VietnamOverviewMetricDotKey,
-  activeSignalKeys: readonly VietnamOverviewMetricDotKey[],
-  regionCode?: string | null,
-) {
-  const nextSignalKeys = new Set(activeSignalKeys);
-
-  if (nextSignalKeys.has(signalKey)) {
-    nextSignalKeys.delete(signalKey);
-  } else {
-    nextSignalKeys.add(signalKey);
-  }
-
-  const normalizedNextSignalKeys = vietnamOverviewAllSignalKeys.filter((key) => nextSignalKeys.has(key));
-
-  return vietnamOverviewHrefWithState({
-    range,
-    regionCode,
-    signalKeys: normalizedNextSignalKeys,
-    view: 'live',
-  });
+function sameSignals(left: readonly VietnamOverviewMetricDotKey[], right: readonly VietnamOverviewMetricDotKey[]) {
+  return left.length === right.length && left.every((key) => right.includes(key));
 }
 
-function vietnamRegionOperatingScore(region: AdminVietnamOverview['regions'][number]) {
-  return (
-    region.activeBookingCount * 5 +
-    region.completedBookingCount * 2 +
-    region.cancellationCount * 2 +
-    region.activeCustomerCount
-  );
+function toggleSignal(signalKeys: readonly VietnamOverviewMetricDotKey[], key: VietnamOverviewMetricDotKey) {
+  return signalKeys.includes(key) ? signalKeys.filter((item) => item !== key) : [...signalKeys, key];
 }
 
-function vietnamRegionRealtimePointScore(counts: Record<VietnamOverviewMetricDotKey, number>) {
-  return (
-    counts.bookings * 5 +
-    counts.active * 3 +
-    counts.online * 2 +
-    counts.customers +
-    counts['offline-partners'] +
-    counts['stale-partners']
-  );
-}
-
-function vietnamRegionLoadLevel(loadValue: number, maxLoadValue: number) {
-  const ratio = maxLoadValue > 0 ? loadValue / maxLoadValue : 0;
-
-  if (ratio >= 0.66) return 'high';
-  if (ratio >= 0.33) return 'medium';
-  if (loadValue > 0) return 'low';
-  return 'quiet';
-}
-
-function vietnamRegionLoadLabel(level: ReturnType<typeof vietnamRegionLoadLevel>) {
-  switch (level) {
-    case 'high':
-      return 'High load';
-    case 'medium':
-      return 'Medium load';
-    case 'low':
-      return 'Low load';
-    default:
-      return 'Quiet';
-  }
-}
-
-function formatSignedNumber(value: number) {
-  const formattedValue = formatNumber(value);
-
-  return value > 0 ? `+${formattedValue}` : formattedValue;
-}
-
-function percentage(numerator: number, denominator: number) {
-  if (denominator <= 0) return 0;
-  return Math.round((numerator / denominator) * 100);
+function percentage(part: number, total: number) {
+  return total > 0 ? (part / total) * 100 : 0;
 }
 
 function formatPercent(value: number) {
-  return `${formatNumber(value)}%`;
+  return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(value)}%`;
+}
+
+function windowLabel(overview: AdminVietnamOverviewSummary) {
+  if (!overview.windowStartAt || !overview.windowEndAt) {
+    return 'All stored outcomes · unbounded period.';
+  }
+
+  return `From ${formatVietnamBoundary(overview.windowStartAt)} to before ${formatVietnamBoundary(overview.windowEndAt)} · ${overview.timeZone}.`;
+}
+
+function formatVietnamBoundary(value: string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    hour: '2-digit',
+    hour12: false,
+    minute: '2-digit',
+    month: 'short',
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+  }).format(new Date(value));
 }

@@ -8,6 +8,7 @@ import { ROLES_KEY } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import type { AdminBackgroundJobsService } from './admin-background-jobs.service';
+import { AdminOperatorCategoryGuard } from './admin-operator-category.guard';
 import { AdminSystemController } from './admin-system.controller';
 
 describe('AdminSystemController', () => {
@@ -30,6 +31,7 @@ describe('AdminSystemController', () => {
     expect(Reflect.getMetadata(GUARDS_METADATA, AdminSystemController)).toEqual([
       JwtAuthGuard,
       RolesGuard,
+      AdminOperatorCategoryGuard,
     ]);
     expect(Reflect.getMetadata(ROLES_KEY, AdminSystemController)).toEqual([Role.ADMIN]);
 

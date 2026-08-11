@@ -70,6 +70,7 @@ describe('admin provider profile selects', () => {
     expect(adminProviderDirectoryUserSelect).not.toHaveProperty('email');
     expect(adminProviderDirectoryUserSelect).not.toHaveProperty('roles');
     expect(adminProviderDirectorySelect).not.toHaveProperty('dateOfBirth');
+    expect(adminProviderDirectorySelect).toHaveProperty('userId', true);
     expect(adminProviderDirectorySelect).not.toHaveProperty('facebookId');
     expect(adminProviderDirectorySelect).not.toHaveProperty('bio');
     expect(adminProviderDirectorySelect).not.toHaveProperty('serviceArea');

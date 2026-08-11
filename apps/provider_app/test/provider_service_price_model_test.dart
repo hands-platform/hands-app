@@ -94,8 +94,7 @@ void main() {
     expect(service.payoutRuleConfigured, isTrue);
   });
 
-  test('update service handles numeric strings from the service API',
-      () async {
+  test('update service handles numeric strings from the service API', () async {
     final repository = ProviderServicePriceRepositoryImpl(_FakeApiClient(
       patchResponse: {
         'id': 'provider-service-1',
@@ -138,7 +137,7 @@ void main() {
         {
           'key': 'foot_massage',
           'name': 'Foot Massage',
-          'durationSummary': '60 min, 90 min',
+          'durationSummary': '60 phút, 90 phút',
           'options': [
             {
               'id': 'svc-foot-60',
@@ -220,7 +219,7 @@ void main() {
     expect(groups, hasLength(2));
     expect(groups.first.key, 'foot_massage');
     expect(groups.first.name, 'Foot Massage');
-    expect(groups.first.durationSummary, '60 min, 90 min');
+    expect(groups.first.durationSummary, '60 phút, 90 phút');
     expect(groups.first.options.map((option) => option.durationMin), [60, 90]);
     expect(groups.first.allStandardDurationsReady, isFalse);
     expect(groups.first.payoutReadyOptionCount, 2);

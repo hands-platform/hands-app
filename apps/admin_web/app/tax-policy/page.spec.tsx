@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { adminGet, type AdminTaxPolicyVersion } from '../../lib/admin-api';
+import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
 import TaxPolicyPage from './page';
 
 vi.mock('../../lib/admin-api', async () => {
@@ -14,7 +15,12 @@ vi.mock('../../lib/admin-api', async () => {
   };
 });
 
+vi.mock('../../lib/admin-operator-access', () => ({
+  getCurrentAdminOperatorAccess: vi.fn(),
+}));
+
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAccess);
 const pageSource = readFileSync('app/tax-policy/page.tsx', 'utf8');
 const globalCss = readFileSync('app/globals.css', 'utf8');
 
@@ -22,30 +28,34 @@ describe('TaxPolicyPage', () => {
   beforeEach(() => {
     mockedAdminGet.mockReset();
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      id: 'admin-current',
+      roles: ['ADMIN'],
+    } as never);
   });
 
-  it('keeps the default tax policy summary bounded and skips evidence queries', async () => {
+  it('loads the unified tax policy page from bounded data sources', async () => {
     await TaxPolicyPage({
       searchParams: Promise.resolve({}),
     });
 
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
-    expect(hrefs).toEqual(['/admin/tax-policy-versions?take=20']);
+    expect(hrefs).toEqual([
+      '/admin/tax-policy-versions?take=20',
+      '/admin/audit-logs?q=tax_&take=8',
+      '/admin/earnings?range=30d&take=8',
+      '/admin/users?take=50&role=ADMIN&view=finance-approver-directory',
+    ]);
   });
 
-  it('loads audit and settlement evidence only in their explicit workspaces', async () => {
+  it('keeps legacy workspace URLs compatible with the unified data plan', async () => {
     await TaxPolicyPage({ searchParams: Promise.resolve({ details: 'audit' }) });
     expect(mockedAdminGet.mock.calls.map(([href]) => href)).toEqual([
       '/admin/tax-policy-versions?take=20',
       '/admin/audit-logs?q=tax_&take=8',
-    ]);
-
-    mockedAdminGet.mockClear();
-    await TaxPolicyPage({ searchParams: Promise.resolve({ details: 'records' }) });
-    expect(mockedAdminGet.mock.calls.map(([href]) => href)).toEqual([
-      '/admin/tax-policy-versions?take=20',
       '/admin/earnings?range=30d&take=8',
+      '/admin/users?take=50&role=ADMIN&view=finance-approver-directory',
     ]);
   });
 
@@ -58,6 +68,8 @@ describe('TaxPolicyPage', () => {
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');
     expect(markup).toContain('admin-form-control-button');
+    expect(markup).toContain('Separate Finance approver');
+    expect(markup).toContain('Approval evidence');
     expect(markup).toContain('admin-form-input admin-form-control-labeled admin-form-control-fluid');
     expect(markup).toContain('admin-form-select admin-form-control-labeled admin-form-control-fluid');
     expect(markup).toContain('admin-form-input admin-form-control-labeled admin-form-control-fluid admin-grid-span-2');
@@ -122,12 +134,12 @@ describe('TaxPolicyPage', () => {
 
     expect(defaultMarkup).toContain('Previous withholding policy');
     expect(defaultMarkup.match(/Update policy/g)).toHaveLength(1);
-    expect(defaultMarkup).toContain('/tax-policy?details=editor&amp;policyId=tax-policy-2');
+    expect(defaultMarkup).toContain('/tax-policy?policyId=tax-policy-2#tax-policy-editor');
     expect(inactiveMarkup.match(/Update policy/g)).toHaveLength(1);
     expect(inactiveMarkup).toContain('Editing');
   });
 
-  it('renders each tax policy workspace on shared Vuexy admin surfaces', async () => {
+  it('renders the complete tax policy operation surface on the default route', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href.startsWith('/admin/tax-policy-versions')) {
         return [taxPolicyFixture()];
@@ -138,29 +150,16 @@ describe('TaxPolicyPage', () => {
     const summaryMarkup = renderToStaticMarkup(
       await TaxPolicyPage({ searchParams: Promise.resolve({}) }),
     );
-    const editorMarkup = renderToStaticMarkup(
-      await TaxPolicyPage({ searchParams: Promise.resolve({ details: 'editor' }) }),
-    );
-    const auditMarkup = renderToStaticMarkup(
-      await TaxPolicyPage({ searchParams: Promise.resolve({ details: 'audit' }) }),
-    );
-    const recordsMarkup = renderToStaticMarkup(
-      await TaxPolicyPage({ searchParams: Promise.resolve({ details: 'records' }) }),
-    );
-
     expect(summaryMarkup).toContain('admin-page-header admin-page-header-toolbar');
     expect(summaryMarkup).toContain('card admin-section admin-mb-16 tax-policy-checklist-card');
     expect(summaryMarkup).toContain('card admin-section admin-mb-16 tax-policy-withholding-preview-card');
-    expect(summaryMarkup).toContain('tax-policy-workspace-index-card');
-    expect(summaryMarkup).not.toContain('tax-policy-create-policy-card');
-    expect(summaryMarkup).not.toContain('tax-policy-audit-summary-card');
-    expect(summaryMarkup).not.toContain('tax-policy-snapshot-consistency-card');
-
-    expect(editorMarkup).toContain('card admin-section admin-mb-16 tax-policy-create-policy-card');
-    expect(editorMarkup).toContain('card admin-card tax-policy-version-card');
-    expect(editorMarkup).not.toContain('tax-policy-audit-summary-card');
-    expect(auditMarkup).toContain('card admin-section admin-mt-16 tax-policy-audit-summary-card');
-    expect(recordsMarkup).toContain('card admin-section admin-mt-16 tax-policy-snapshot-consistency-card');
+    expect(summaryMarkup).not.toContain('tax-policy-workspace-index-card');
+    expect(summaryMarkup).toContain('card admin-section admin-mb-16 tax-policy-create-policy-card');
+    expect(summaryMarkup).toContain('card admin-card tax-policy-version-card');
+    expect(summaryMarkup).toContain('card admin-section admin-mt-16 tax-policy-audit-summary-card');
+    expect(summaryMarkup).toContain('card admin-section admin-mt-16 tax-policy-snapshot-consistency-card');
+    expect(summaryMarkup).toContain('Open monthly close');
+    expect(summaryMarkup).toContain('Open withholding');
     expect(summaryMarkup).toContain('ops-section-header');
     expect(summaryMarkup).not.toContain('toolbar admin-mb-12');
   });

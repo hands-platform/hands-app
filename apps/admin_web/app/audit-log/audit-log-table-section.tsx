@@ -1,6 +1,7 @@
 import { ActionMenu } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import { AdminDisclosure } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
 import {
   AdminSignal,
@@ -42,7 +43,7 @@ export function AuditLogTableSection({ emptyMessage, rows }: AuditLogTableSectio
   return (
     <AdminDataTable
       emptyMessage={emptyMessage}
-      headers={['When', 'Action', 'Actor', 'Target', 'Related board', 'Ops record', 'Metadata']}
+      headers={['When', 'Result', 'Action', 'Actor', 'Target', 'Related board / route']}
       rowCount={rows.length}
     >
       {rows.map((row) => (
@@ -54,6 +55,10 @@ export function AuditLogTableSection({ emptyMessage, rows }: AuditLogTableSectio
             <div className="muted">{row.relativeTimeLabel}</div>
           </td>
           <td>
+            <StatusBadge tone="neutral">Recorded</StatusBadge>
+            <div className="muted admin-mt-6">{row.priorityLabel}</div>
+          </td>
+          <td>
             <div className="admin-mb-6">{row.actionLabel}</div>
             <AdminSignal className={row.bucketClassName} tone={adminSignalToneFromClassName(row.bucketClassName)}>
               {row.bucketLabel}
@@ -62,7 +67,6 @@ export function AuditLogTableSection({ emptyMessage, rows }: AuditLogTableSectio
           <td>{row.actorLabel}</td>
           <td>
             <div>{row.shortTargetLabel}</div>
-            <div className="muted">{row.targetLabel}</div>
           </td>
           <td>
             <ActionMenu
@@ -76,23 +80,22 @@ export function AuditLogTableSection({ emptyMessage, rows }: AuditLogTableSectio
               ]}
               label={`${row.id} related board actions`}
             />
-            <div className="muted admin-mt-6">{row.priorityLabel}</div>
-          </td>
-          <td>
-            <div>{row.opsHint}</div>
-            <div className="muted admin-mt-6">{row.opsDetail}</div>
-          </td>
-          <td>
-            {row.metadataHighlights.length > 0 ? (
-              <AdminFilterChipGroup ariaLabel={`${row.id} metadata highlights`} className="admin-mb-8">
-                {row.metadataHighlights.map((item, index) => (
-                  <StatusBadge tone={item.tone} key={`${item.label}-${index}`}>
-                    {item.label}
-                  </StatusBadge>
-                ))}
-              </AdminFilterChipGroup>
-            ) : null}
-            <pre className="admin-pre-wrap">{row.metadataPreview}</pre>
+            <AdminDisclosure className="admin-mt-6">
+              <summary>Technical evidence</summary>
+              <div>{row.opsHint}</div>
+              <div className="muted admin-mt-6">{row.opsDetail}</div>
+              <div className="muted admin-mt-6">{row.targetLabel}</div>
+              {row.metadataHighlights.length > 0 ? (
+                <AdminFilterChipGroup ariaLabel={`${row.id} metadata highlights`} className="admin-mt-8 admin-mb-8">
+                  {row.metadataHighlights.map((item, index) => (
+                    <StatusBadge tone={item.tone} key={`${item.label}-${index}`}>
+                      {item.label}
+                    </StatusBadge>
+                  ))}
+                </AdminFilterChipGroup>
+              ) : null}
+              <pre className="admin-pre-wrap">{row.metadataPreview}</pre>
+            </AdminDisclosure>
           </td>
         </tr>
       ))}

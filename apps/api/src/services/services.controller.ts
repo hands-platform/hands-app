@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
+import { AdminOperatorCategoryGuard } from '../admin/admin-operator-category.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
@@ -21,7 +22,7 @@ export class ServicesController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, AdminOperatorCategoryGuard)
   @Roles(Role.ADMIN)
   create(
     @Body() body: CreateServiceDto,

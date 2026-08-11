@@ -36,7 +36,7 @@ void main() {
       'LOCATION',
       'PAYOUT',
     ]);
-    expect(providerAgreementVersionFromSnapshot({}), 'current');
+    expect(providerAgreementVersionFromSnapshot({}), 'hiện tại');
   });
 
   test('normalizes rejected review reasons', () {
@@ -54,15 +54,15 @@ void main() {
         status: 'REJECTED',
         rejectionReason: 'Account holder does not match CCCD',
       ),
-      'Rejected: Account holder does not match CCCD. Update the bank details and submit again.',
+      'Bị từ chối: Account holder does not match CCCD. Hãy cập nhật thông tin ngân hàng và gửi lại.',
     );
     expect(
       providerBankAccountStepDetail(status: 'REJECTED'),
-      'Withdrawal bank information is incorrect, so the payout cannot be sent. Update the bank details and submit again.',
+      'Thông tin ngân hàng nhận tiền không chính xác nên chưa thể chuyển khoản. Hãy cập nhật thông tin ngân hàng và gửi lại.',
     );
     expect(
       providerBankAccountStepDetail(status: 'PENDING_REVIEW'),
-      'Submitted. Waiting for admin approval before wallet withdrawal/deposit processing.',
+      'Đã gửi. Đang chờ duyệt trước khi xử lý rút hoặc nộp tiền.',
     );
     expect(
       providerTaxProfileStepDetail(
@@ -71,7 +71,7 @@ void main() {
         rejectionReason: 'MST is invalid',
         missingAgreementCount: 1,
       ),
-      'Legacy tax profile was rejected: MST is invalid. Tax profile is not required for Vietnam MVP.',
+      'Hồ sơ thuế cũ đã bị từ chối: MST is invalid. Hiện chưa yêu cầu hồ sơ thuế.',
     );
     expect(
       providerTaxProfileStepDetail(
@@ -79,7 +79,7 @@ void main() {
         status: null,
         missingAgreementCount: 5,
       ),
-      'Tax profile is not required for Vietnam MVP.',
+      'Hiện chưa yêu cầu hồ sơ thuế.',
     );
   });
 
@@ -102,10 +102,9 @@ void main() {
 
     expect(lockedItems, hasLength(3));
     expect(lockedItems.where((item) => item.complete), isEmpty);
-    expect(lockedItems[1].label, 'Wallet bank details');
-    expect(lockedItems[1].detail, contains('requested from Earnings'));
-    expect(lockedItems.last.detail,
-        contains('deferred until first earned revenue'));
+    expect(lockedItems[1].label, 'Thông tin ngân hàng');
+    expect(lockedItems[1].detail, contains('được yêu cầu trong mục Thu nhập'));
+    expect(lockedItems.last.detail, contains('sau khi có thu nhập đầu tiên'));
 
     final readyItems = providerPayoutGateItemsFromSnapshot({
       'completedBookingCount': 2,
@@ -121,8 +120,7 @@ void main() {
     });
 
     expect(readyItems.every((item) => item.complete), isTrue);
-    expect(readyItems[1].detail,
-        contains('approved for manual wallet operations'));
+    expect(readyItems[1].detail, contains('đã được duyệt cho giao dịch ví'));
   });
 
   test('builds KYC decision checklist from onboarding snapshot', () {
@@ -142,8 +140,8 @@ void main() {
     expect(missingItems, hasLength(5));
     expect(missingItems[0].complete, isTrue);
     expect(missingItems[1].complete, isFalse);
-    expect(missingItems[2].detail, contains('Vietnamese identity number'));
-    expect(missingItems[3].detail, '1 of 3 required photo(s) approved.');
+    expect(missingItems[2].detail, contains('giấy tờ định danh Việt Nam'));
+    expect(missingItems[3].detail, 'Đã duyệt 1/3 ảnh bắt buộc.');
     expect(missingItems[4].detail, contains('Back side is blurry'));
 
     final readyItems = providerKycDecisionChecklistFromSnapshot({
@@ -204,7 +202,7 @@ void main() {
     expect(milestones[0].complete, isTrue);
     expect(milestones[1].current, isTrue);
     expect(milestones[1].complete, isTrue);
-    expect(milestones[1].detail, contains('can receive bookings'));
+    expect(milestones[1].detail, contains('có thể nhận đặt lịch'));
 
     final trusted = providerLevelMilestonesFromSnapshot({
       'level': 'LEVEL_4_TRUSTED',
@@ -221,45 +219,45 @@ void main() {
         status: 'REJECTED',
         rejectionReason: 'Bank number is wrong',
       ),
-      contains('Correct the Vietnamese bank account details'),
+      contains('sửa thông tin tài khoản ngân hàng Việt Nam'),
     );
     expect(
       bankAccountFormDescription(status: 'REJECTED'),
       startsWith(
-          'Withdrawal bank information is incorrect, so the payout cannot be sent.'),
+          'Thông tin ngân hàng nhận tiền không chính xác nên chưa thể chuyển khoản.'),
     );
     expect(
       taxProfileFormDescription(
         status: 'REJECTED',
         rejectionReason: 'Tax code is not valid',
       ),
-      contains('Correct MST'),
+      contains('sửa MST'),
     );
     expect(
       bankAccountFormDescription(status: 'APPROVED'),
-      contains('approved for payout'),
+      contains('đã được duyệt'),
     );
     expect(
       taxProfileFormDescription(status: 'PENDING_REVIEW'),
-      contains('waiting for admin review'),
+      contains('đang chờ xét duyệt'),
     );
   });
 
   test('labels partner onboarding history actions', () {
     expect(providerLogActionLabel('basic_profile.update'),
-        'Basic profile updated');
+        'Đã cập nhật hồ sơ cơ bản');
     expect(providerLogActionLabel('bank_account.submit'),
-        'Bank account submitted');
-    expect(providerLogActionLabel('unknown.custom_action'),
-        'Unknown Custom Action');
+        'Đã gửi tài khoản ngân hàng');
+    expect(
+        providerLogActionLabel('unknown.custom_action'), 'Hoạt động tài khoản');
   });
 
   test('describes partner verification document slots', () {
-    expect(providerDocumentTypeLabel('CCCD_FRONT'), 'CCCD front side');
-    expect(providerDocumentTypeStep('CCCD_BACK'), 'Step 2');
+    expect(providerDocumentTypeLabel('CCCD_FRONT'), 'Mặt trước CCCD');
+    expect(providerDocumentTypeStep('CCCD_BACK'), 'Bước 2');
     expect(
       providerDocumentTypeDescription('SELFIE'),
-      contains('match the ID document'),
+      contains('khớp với giấy tờ định danh'),
     );
     expect(optionalProviderDocumentTypes, [
       'PROFILE_PHOTO',
@@ -268,7 +266,7 @@ void main() {
     ]);
     expect(
       providerDocumentStatusLabel('REJECTED'),
-      'Rejected. Upload a clearer replacement image.',
+      'Bị từ chối. Hãy tải ảnh thay thế rõ hơn.',
     );
     expect(
       providerDocumentSlotStatusLabel(
@@ -276,13 +274,13 @@ void main() {
         uploaded: true,
         submittedDocument: const {'status': 'REJECTED'},
       ),
-      'Replacement attached. Submit KYC to send it for review.',
+      'Đã đính kèm ảnh thay thế. Hãy gửi KYC để xét duyệt.',
     );
     expect(
       providerDocumentSlotActionHint(uploaded: false, status: 'REJECTED'),
-      'Next: tap Replace and upload a clearer photo.',
+      'Tiếp theo: nhấn Thay ảnh và tải ảnh rõ hơn.',
     );
-    expect(providerDocumentTypeStep('BANK_QR'), 'Optional');
+    expect(providerDocumentTypeStep('BANK_QR'), 'Không bắt buộc');
   });
 
   test('ignores rejected KYC documents when checking readiness', () {
@@ -334,7 +332,7 @@ void main() {
       uploadedDocumentIds: const {},
     );
 
-    expect(summaries, ['CCCD front side: Text is blurry']);
+    expect(summaries, ['Mặt trước CCCD: Text is blurry']);
   });
 
   test('does not summarize rejected KYC document after replacement upload', () {
@@ -358,7 +356,7 @@ void main() {
     });
 
     expect(priority.actionKey, 'BASIC_PROFILE');
-    expect(priority.buttonLabel, 'Complete profile');
+    expect(priority.buttonLabel, 'Hoàn thiện hồ sơ');
     expect(priority.tone, 'warning');
   });
 
@@ -373,8 +371,8 @@ void main() {
     });
 
     expect(priority.actionKey, 'KYC_REVIEW');
-    expect(priority.title, 'Submit KYC for admin review');
-    expect(priority.buttonLabel, 'Submit KYC');
+    expect(priority.title, 'Gửi KYC để xét duyệt');
+    expect(priority.buttonLabel, 'Gửi KYC');
   });
 
   test('does not prioritize KYC submit when only rejected documents exist', () {
@@ -387,8 +385,8 @@ void main() {
       ],
     });
 
-    expect(priority.title, 'Upload identity photos');
-    expect(priority.buttonLabel, 'Open KYC checklist');
+    expect(priority.title, 'Tải ảnh định danh');
+    expect(priority.buttonLabel, 'Mở danh sách KYC');
   });
 
   test('prioritizes rejected wallet bank records with the admin reason', () {
@@ -402,9 +400,9 @@ void main() {
       ],
     });
 
-    expect(bankPriority.title, 'Fix wallet bank details');
+    expect(bankPriority.title, 'Sửa thông tin ngân hàng');
     expect(bankPriority.detail, contains('Account holder does not match CCCD'));
-    expect(bankPriority.buttonLabel, 'Resubmit bank details');
+    expect(bankPriority.buttonLabel, 'Gửi lại thông tin ngân hàng');
   });
 
   test('prioritizes bank correction requests from the payout gate payload', () {
@@ -420,10 +418,10 @@ void main() {
     });
 
     expect(bankPriority.actionKey, 'BANK_ACCOUNT_CORRECTION');
-    expect(bankPriority.title, 'Fix wallet bank details');
+    expect(bankPriority.title, 'Sửa thông tin ngân hàng');
     expect(bankPriority.detail,
         contains('Account holder name does not match KYC'));
-    expect(bankPriority.buttonLabel, 'Resubmit bank details');
+    expect(bankPriority.buttonLabel, 'Gửi lại thông tin ngân hàng');
   });
 
   test('does not treat legacy tax review as a partner level gate', () {
@@ -436,8 +434,8 @@ void main() {
       },
     });
 
-    expect(taxPriority.title, 'Wallet review continues from Earnings');
-    expect(taxPriority.detail, contains('Tax profile is not required'));
+    expect(taxPriority.title, 'Tiếp tục thiết lập ví trong Thu nhập');
+    expect(taxPriority.detail, contains('thỏa thuận thanh toán'));
     expect(taxPriority.buttonLabel, isNull);
   });
 
@@ -455,9 +453,9 @@ void main() {
     });
 
     expect(priority.actionKey, 'RESIDENTIAL_ADDRESS');
-    expect(priority.title, 'Confirm wallet contact address');
-    expect(priority.detail, contains('operations contact'));
-    expect(priority.buttonLabel, 'Update address');
+    expect(priority.title, 'Xác nhận địa chỉ liên hệ');
+    expect(priority.detail, contains('địa chỉ liên hệ'));
+    expect(priority.buttonLabel, 'Cập nhật địa chỉ');
   });
 
   test('shows ready state after core setup before first booking', () {
@@ -468,7 +466,7 @@ void main() {
     });
 
     expect(priority.actionKey, isNull);
-    expect(priority.title, 'Ready for the first booking');
+    expect(priority.title, 'Sẵn sàng nhận đặt lịch đầu tiên');
     expect(priority.tone, 'success');
   });
 }

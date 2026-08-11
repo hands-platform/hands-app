@@ -85,7 +85,38 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
     );
   });
 
-  it('requires a separate Finance approver before paid closeout from partner detail', () => {
+  it('normalizes legacy Provider wording in visible bank account data', () => {
+    const section = PartnerDetailWalletWithdrawalRequestSection({
+      requests: [
+        {
+          amount: 120000,
+          bankAccount: {
+            accountHolderName: 'HANDS Smoke Provider',
+            accountNumberMasked: '****7711',
+            bankName: 'Provider Test Bank',
+            id: 'bank-provider-copy',
+            isPrimary: true,
+            status: 'APPROVED',
+          },
+          bankAccountId: 'bank-provider-copy',
+          createdAt: '2026-07-19T04:09:00.000Z',
+          currency: 'VND',
+          id: 'withdrawal-provider-copy',
+          providerProfileId: 'partner-provider-copy',
+          status: 'PAID',
+        },
+      ] satisfies AdminProviderWalletWithdrawalRequest[],
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Partner Test Bank');
+    expect(rendered).toContain('HANDS Smoke Partner');
+    expect(rendered).not.toContain('Provider');
+  });
+
+  it('collects transfer evidence before a separate Finance approver performs paid closeout', () => {
     const request = {
       amount: 650000,
       bankAccount: null,
@@ -97,17 +128,16 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
       status: 'APPROVED',
     } satisfies AdminProviderWalletWithdrawalRequest;
     const section = PartnerDetailWalletWithdrawalRequestSection({
-      financeApproverOptions: [{ label: 'Finance Approver', value: 'finance-approver-2' }],
       requests: [request],
       updateWithdrawalRequestAction: async () => undefined,
     });
 
     const rendered = normalizeSpaces(textContent(section));
 
-    expect(rendered).toContain('Separate Finance approver for withdrawal withdrawal-approved');
-    expect(rendered).toContain('Finance Approver');
-    expect(sectionSource).toContain('name="approvalAdminId"');
-    expect(sectionSource).toContain('disabled={financeApproverOptions.length === 0}');
+    expect(rendered).toContain('Submit transfer for approval');
+    expect(rendered).toContain('Transfer reference');
+    expect(sectionSource).toContain('value="BANK_TRANSFER_PENDING"');
+    expect(sectionSource).not.toContain('name="approvalAdminId"');
   });
 
   it('shows bank correction requests as partner-pending instead of finance-approvable', () => {

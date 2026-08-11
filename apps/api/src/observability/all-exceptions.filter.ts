@@ -1,4 +1,5 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 type RequestWithId = {
   requestId?: string;
@@ -19,18 +20,27 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = context.getRequest<RequestWithId>();
     const path = requestPathWithoutQuery(request);
     const isHttpException = exception instanceof HttpException;
-    const status = isHttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+    const isPrismaNotFound =
+      exception instanceof Prisma.PrismaClientKnownRequestError && exception.code === 'P2025';
+    const status = isHttpException
+      ? exception.getStatus()
+      : isPrismaNotFound
+        ? HttpStatus.NOT_FOUND
+        : HttpStatus.INTERNAL_SERVER_ERROR;
     const exceptionResponse = isHttpException ? exception.getResponse() : undefined;
     const exceptionBody =
       typeof exceptionResponse === 'object' && exceptionResponse !== null && !Array.isArray(exceptionResponse)
         ? (exceptionResponse as Record<string, unknown>)
         : {};
-    const message =
-      !isHttpException
+    const message = isPrismaNotFound
+      ? 'Not found'
+      : !isHttpException
         ? 'Internal server error'
-        : typeof exceptionResponse === 'object' && exceptionResponse !== null && 'message' in exceptionResponse
-        ? (exceptionResponse as { message: unknown }).message
-        : 'Internal server error';
+        : typeof exceptionResponse === 'object' &&
+            exceptionResponse !== null &&
+            'message' in exceptionResponse
+          ? (exceptionResponse as { message: unknown }).message
+          : 'Internal server error';
 
     const body = {
       ...exceptionBody,
@@ -49,7 +59,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
         method: request.method,
         path,
         statusCode: status,
-        error: isHttpException && exception instanceof Error ? exception.message : 'Internal server error',
+        error:
+          isHttpException && exception instanceof Error
+            ? exception.message
+            : isPrismaNotFound
+              ? 'Not found'
+              : 'Internal server error',
       }),
     );
 

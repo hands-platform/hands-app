@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { BookingStatus, ParticipantStatus, Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -11,7 +11,9 @@ import {
   CreateCustomerBookingDto,
   CreateProviderCustomerReviewDto,
   RecordProviderBookingDetailViewDto,
+  RejectPreferredProviderBookingDto,
   SelectBookingProviderDto,
+  UpdateProviderBookingAlertPreferencesDto,
 } from './bookings.dto';
 import { BookingsService } from './bookings.service';
 
@@ -32,8 +34,12 @@ export class BookingsController {
   @Get('customer/bookings')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CUSTOMER)
-  listCustomerBookings(@CurrentUser() user: AuthenticatedUser) {
-    return this.bookings.listCustomerBookings(user.id);
+  listCustomerBookings(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('take') take?: string,
+    @Query('cursor') cursor?: string,
+  ) {
+    return this.bookings.listCustomerBookings(user.id, { cursor, take });
   }
 
   @Get('customer/bookings/:id')
@@ -72,11 +78,33 @@ export class BookingsController {
     return this.bookings.getOpenBookings(user.id, { cursor, take });
   }
 
+  @Get(['partner/booking-alert-preferences', 'provider/booking-alert-preferences'])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROVIDER)
+  getBookingAlertPreferences(@CurrentUser() user: AuthenticatedUser) {
+    return this.bookings.getProviderBookingAlertPreferences(user.id);
+  }
+
+  @Patch(['partner/booking-alert-preferences', 'provider/booking-alert-preferences'])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROVIDER)
+  updateBookingAlertPreferences(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: UpdateProviderBookingAlertPreferencesDto,
+  ) {
+    return this.bookings.updateProviderBookingAlertPreferences(user.id, body);
+  }
+
   @Get(['partner/bookings', 'provider/bookings'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
-  listProviderBookings(@CurrentUser() user: AuthenticatedUser) {
-    return this.bookings.listProviderBookings(user.id);
+  listProviderBookings(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('scope') scope?: string,
+    @Query('take') take?: string,
+    @Query('cursor') cursor?: string,
+  ) {
+    return this.bookings.listProviderBookings(user.id, { cursor, scope, take });
   }
 
   @Get(['partner/bookings/:id', 'provider/bookings/:id'])
@@ -114,8 +142,17 @@ export class BookingsController {
   @Post(['partner/bookings/:id/reject', 'provider/bookings/:id/reject'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
-  reject(@CurrentUser() user: AuthenticatedUser, @Param('id') bookingId: string) {
-    return this.bookings.updateParticipant(bookingId, user.id, ParticipantStatus.REJECTED);
+  reject(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') bookingId: string,
+    @Body() body: RejectPreferredProviderBookingDto,
+  ) {
+    return this.bookings.updateParticipant(
+      bookingId,
+      user.id,
+      ParticipantStatus.REJECTED,
+      body,
+    );
   }
 
   @Post(['partner/bookings/:id/arrived', 'provider/bookings/:id/arrived'])

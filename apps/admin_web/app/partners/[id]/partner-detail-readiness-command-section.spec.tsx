@@ -106,12 +106,15 @@ describe('partner detail readiness command sections', () => {
       new URL('./partner-detail-readiness-command-section.tsx', import.meta.url),
       'utf8',
     );
-    const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
+    const acceptanceModelSource = readFileSync(
+      new URL('./partner-detail-acceptance-model.tsx', import.meta.url),
+      'utf8',
+    );
 
     expect(source).toContain('readonly detailNode?: ReactNode;');
     expect(source).toContain('{badge.detailNode ? <span className="sr-only">{badge.detailNode}</span> : null}');
-    expect(pageSource).toContain('Partner owes HANDS <MoneyText amount={cashDebt} />');
-    expect(pageSource).toContain('detailNode:');
+    expect(acceptanceModelSource).toContain('Partner owes HANDS <MoneyText amount={cashDebt} />');
+    expect(acceptanceModelSource).toContain('detailNode:');
   });
 
   it('renders dispatch repair steps as a Vuexy command table', () => {

@@ -29,7 +29,7 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: readonly DefaultNotificationTemplat
     audience: Role.PROVIDER,
     channel: 'BOTH',
     description: 'Direct first-pick booking request sent to a Partner.',
-    variables: ['bookingId', 'customerProfileId'],
+    variables: ['bookingId'],
     title: 'New direct booking request',
     body: 'A customer requested one of your services.',
   },

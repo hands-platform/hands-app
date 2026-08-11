@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { ProviderStatus, Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -8,6 +8,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import {
   RecordProviderDeviceSessionDto,
   SubmitProviderVerificationDto,
+  UpdateProviderAvailabilityDto,
   UpdateProviderLocationDto,
   UpdateProviderProfileDto,
   UpdateProviderServicePriceDto,
@@ -23,7 +24,17 @@ export class ProvidersController {
     return this.providers.findNearby(Number(lat), Number(lng), { take });
   }
 
-  @Get(['customer/partners/:id', 'customer/providers/:id'])
+  @Get('public/partners')
+  publicDirectory(
+    @Query('city') city?: string,
+    @Query('district') district?: string,
+    @Query('page') page?: string,
+    @Query('take') take?: string,
+  ) {
+    return this.providers.listPublicDirectory({ city, district, page, take });
+  }
+
+  @Get(['customer/partners/:id', 'customer/providers/:id', 'public/partners/:id'])
   detail(@Param('id') id: string) {
     return this.providers.getDetail(id);
   }
@@ -36,6 +47,23 @@ export class ProvidersController {
     @Body() body: UpdateProviderProfileDto,
   ) {
     return this.providers.updateProfile(user.id, body);
+  }
+
+  @Get(['partner/availability', 'provider/availability'])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROVIDER)
+  availability(@CurrentUser() user: AuthenticatedUser) {
+    return this.providers.getAvailability(user.id);
+  }
+
+  @Put(['partner/availability', 'provider/availability'])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROVIDER)
+  updateAvailability(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: UpdateProviderAvailabilityDto,
+  ) {
+    return this.providers.updateAvailability(user.id, body);
   }
 
   @Post(['partner/online', 'provider/online'])

@@ -124,7 +124,7 @@ describe('PartnerDetailOperationsDigestSection', () => {
     expect(sectionSource).toContain('row.detailNode ?? row.detail');
     expect(modelSource).toContain('readonly detailNode?: ReactNode;');
     expect(pageSource).toContain(
-      '<DateTimeText fallback="Missing" value={partnerOperationsDigestLatestAccessAt} />',
+      '<DateTimeText fallback="Missing" value={partnerLatestAccessAt} />',
     );
   });
 });

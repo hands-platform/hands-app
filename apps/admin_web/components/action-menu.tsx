@@ -4,6 +4,7 @@ import type { FormHTMLAttributes, ReactNode } from 'react';
 import { MoreVertical, type LucideIcon } from 'lucide-react';
 
 import { AdminFormControlButton, AdminFormControlLink } from './admin-form-controls';
+import { ClientActionDropdownSurface } from './client-action-dropdown';
 import type { StatusBadgeTone } from './status-badge';
 import { StatusBadge, StatusBadgeButton, StatusBadgeLink, statusBadgeClassName } from './status-badge';
 
@@ -41,6 +42,7 @@ type ActionMenuProps = {
   readonly className?: string;
   readonly itemClassName?: string;
   readonly label: string;
+  readonly managedDropdown?: boolean;
   readonly menuClassName?: string;
   readonly title?: ReactNode;
   readonly triggerClassName?: string;
@@ -65,20 +67,37 @@ export function ActionMenu({
   className,
   itemClassName,
   label,
+  managedDropdown = false,
   menuClassName,
   title,
   triggerClassName,
   variant = 'pill-list',
 }: ActionMenuProps) {
   if (variant === 'dropdown') {
+    const children = actions.map((item, itemIndex) => (
+      <ActionMenuDropdownControl
+        item={item}
+        itemClassName={itemClassName}
+        key={`${item.kind}:${item.label}:${itemIndex}`}
+      />
+    ));
+
+    if (managedDropdown) {
+      return (
+        <ClientActionDropdownSurface
+          className={className ?? 'action-menu-dropdown'}
+          label={label}
+          menuClassName={menuClassName ?? 'action-menu-panel'}
+          title={title}
+          triggerClassName={triggerClassName ?? 'action-menu-trigger'}
+        >
+          {children}
+        </ClientActionDropdownSurface>
+      );
+    }
+
     return ActionMenuDropdownSurface({
-      children: actions.map((item, itemIndex) => (
-        <ActionMenuDropdownControl
-          item={item}
-          itemClassName={itemClassName}
-          key={`${item.kind}:${item.label}:${itemIndex}`}
-        />
-      )),
+      children,
       className: className ?? 'action-menu-dropdown',
       label,
       menuClassName: menuClassName ?? 'action-menu-panel',

@@ -141,9 +141,6 @@ if (!health.ok || !ready.ok) {
   fail(`API is not ready: ${JSON.stringify({ health, ready })}`);
 }
 
-const external = await request('/health/external');
-const pushCheck = external.checks?.find((check) => check.category === 'push');
-
 const auth = await request('/auth/verify-otp', {
   method: 'POST',
   body: JSON.stringify({ phone, otp, role }),
@@ -152,6 +149,10 @@ const adminAuth = await request('/auth/verify-otp', {
   method: 'POST',
   body: JSON.stringify({ phone: adminPhone, otp: adminOtp, role: 'ADMIN' }),
 });
+const external = await request('/health/external', {
+  headers: { authorization: `Bearer ${adminAuth.accessToken}` },
+});
+const pushCheck = external.checks?.find((check) => check.category === 'push');
 
 const registeredDevicePreflight = await findRegisteredDevicePreflight(adminAuth.accessToken);
 const adminNotifications = await listAdminNotifications(adminAuth.accessToken);

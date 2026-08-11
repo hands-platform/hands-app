@@ -1,0 +1,89 @@
+{
+  "node": {
+    "4034f2b4cb9ef22baf4411e38472ad38bd39034e2c": {
+      "workers": {
+        "app/partner-controls/page": {
+          "moduleId": 31530,
+          "async": false,
+          "exportedName": "updateProviderReport",
+          "filename": "apps/admin_web/app/partner-controls/actions.ts"
+        }
+      },
+      "exportedName": "updateProviderReport",
+      "filename": "apps/admin_web/app/partner-controls/actions.ts"
+    },
+    "406647c8a699fd06cdd1a79c75ecc9a40b236d4545": {
+      "workers": {
+        "app/partner-controls/page": {
+          "moduleId": 31530,
+          "async": false,
+          "exportedName": "createProviderSanction",
+          "filename": "apps/admin_web/app/partner-controls/actions.ts"
+        }
+      },
+      "exportedName": "createProviderSanction",
+      "filename": "apps/admin_web/app/partner-controls/actions.ts"
+    },
+    "406ef5ae2a8937700442b10292bad4d3adc690e916": {
+      "workers": {
+        "app/partner-controls/page": {
+          "moduleId": 31530,
+          "async": false,
+          "exportedName": "liftProviderSanction",
+          "filename": "apps/admin_web/app/partner-controls/actions.ts"
+        }
+      },
+      "exportedName": "liftProviderSanction",
+      "filename": "apps/admin_web/app/partner-controls/actions.ts"
+    },
+    "40cc0934308d8d3a6aa9e973145cb834bb3b259ef6": {
+      "workers": {
+        "app/partner-controls/page": {
+          "moduleId": 31530,
+          "async": false,
+          "exportedName": "createProviderReport",
+          "filename": "apps/admin_web/app/partner-controls/actions.ts"
+        }
+      },
+      "exportedName": "createProviderReport",
+      "filename": "apps/admin_web/app/partner-controls/actions.ts"
+    },
+    "602b53cec98986ab46f2ef2d0394fc54927d1b6047": {
+      "workers": {
+        "app/partner-controls/page": {
+          "moduleId": 31530,
+          "async": false,
+          "exportedName": "createProviderSanctionWithState",
+          "filename": "apps/admin_web/app/partner-controls/actions.ts"
+        }
+      },
+      "exportedName": "createProviderSanctionWithState",
+      "filename": "apps/admin_web/app/partner-controls/actions.ts"
+    },
+    "605b7645ba367494b55fc8b18c76c85c4a0b24a80e": {
+      "workers": {
+        "app/partner-controls/page": {
+          "moduleId": 31530,
+          "async": false,
+          "exportedName": "updateProviderReportWithState",
+          "filename": "apps/admin_web/app/partner-controls/actions.ts"
+        }
+      },
+      "exportedName": "updateProviderReportWithState",
+      "filename": "apps/admin_web/app/partner-controls/actions.ts"
+    },
+    "608fe04e1d8ad6042ba75af84bcef298bf2dde49b1": {
+      "workers": {
+        "app/partner-controls/page": {
+          "moduleId": 31530,
+          "async": false,
+          "exportedName": "createProviderReportWithState",
+          "filename": "apps/admin_web/app/partner-controls/actions.ts"
+        }
+      },
+      "exportedName": "createProviderReportWithState",
+      "filename": "apps/admin_web/app/partner-controls/actions.ts"
+    }
+  },
+  "edge": {}
+}

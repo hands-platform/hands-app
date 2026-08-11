@@ -46,17 +46,36 @@ describe('API smoke contract', () => {
     const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
 
     expect(scriptSource).toContain('const financeApproverAuth = await createSmokeAdminAuth');
-    expect(scriptSource).toContain('approvalAdminId: financeApproverAuth.user.id');
+    expect(scriptSource).toContain(
+      'financeApproverAuth.accessToken,',
+    );
+    expect(scriptSource).toContain("status: 'PROCESSING'");
     expect(scriptSource).toContain("status: 'PAID'");
-    expect(scriptSource).toContain('transferRef: payoutBatchUpdate.transferRef');
+    expect(scriptSource).toContain('Payout batch paid closeout rejects same-admin approval');
     expect(scriptSource).toContain("entry.type === 'PAYOUT_PAID' && entry.metadata?.payoutBatchId === payoutBatch.id");
   });
 
   it('uses a separate finance approver for admin payment refund smoke', () => {
     const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
 
-    expect(scriptSource).toContain("postJson(`/admin/payments/${payment.id}/refund`, adminAuth.accessToken");
+    expect(scriptSource).toContain(
+      "postJson(`/admin/payments/${payment.id}/refund-request`, adminAuth.accessToken",
+    );
+    expect(scriptSource).toContain(
+      "postJson(`/admin/payments/${payment.id}/refund`, financeApproverAuth.accessToken, {})",
+    );
+  });
+
+  it('uses separate finance approval evidence for tax policy and rule smoke writes', () => {
+    const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
+
+    expect(scriptSource).toContain('const taxPolicyApproval = {');
     expect(scriptSource).toContain('approvalAdminId: financeApproverAuth.user.id');
+    expect(scriptSource).toContain(
+      "operatorReason: 'API smoke verified tax policy dual-control evidence.'",
+    );
+    expect(scriptSource).toContain("postJson('/admin/tax-policy-versions', adminAuth.accessToken, {");
+    expect(scriptSource).toContain('...taxPolicyApproval');
   });
 
   it('asserts finance dual approval and role separation guards in live smoke', () => {
@@ -86,7 +105,29 @@ describe('API smoke contract', () => {
     expect(scriptSource).toContain(
       "operatorReason: 'Reviewed repeatable API smoke bank evidence before import.'",
     );
+    const createStart = scriptSource.indexOf('const smokeBankTransaction =');
+    const assignmentStart = scriptSource.indexOf(
+      'const smokeBankReconciliationAssignment =',
+      createStart,
+    );
+    const bankImportSource = scriptSource.slice(createStart, assignmentStart);
+    expect(createStart).toBeGreaterThan(-1);
+    expect(assignmentStart).toBeGreaterThan(createStart);
+    expect(bankImportSource).not.toContain('approvalAdminId');
+    expect(scriptSource).toContain(
+      '`/admin/bank-reconciliation/${smokeBankTransaction.id}/review-assignment`',
+    );
+    expect(scriptSource).toContain('assigneeAdminId: adminAuth.user.id');
     expect(scriptSource).toContain('`/admin/bank-reconciliation/${smokeBankTransaction.id}/matches`');
+    expect(scriptSource).toContain(
+      '`/admin/bank-reconciliation/${smokeBankTransaction.id}/matches`,\n  financeApproverAuth.accessToken',
+    );
+    const matchStart = scriptSource.indexOf('const smokeBankReconciliationMatch =');
+    const reverseStart = scriptSource.indexOf('const smokeBankReconciliationReverse =');
+    const reconciliationActionSource = scriptSource.slice(matchStart, reverseStart + 700);
+    expect(matchStart).toBeGreaterThan(-1);
+    expect(reverseStart).toBeGreaterThan(matchStart);
+    expect(reconciliationActionSource).not.toContain('approvalAdminId');
     expect(scriptSource).toContain("paymentClearingEntry?.status !== 'CLEARED'");
     expect(scriptSource).toContain('smokeBankReconciliationMatch.match?.amount !== completedPaymentClearingEntry.amount');
     expect(scriptSource).toContain('smokeBankReconciliationMatch.match?.currency !== completedPaymentClearingCurrency');
@@ -98,6 +139,45 @@ describe('API smoke contract', () => {
     expect(scriptSource).toContain('bankReconciliationMatchCurrency');
     expect(scriptSource).toContain('bankReconciliationTransactionId');
     expect(scriptSource).toContain('bankReconciliationPaymentClearingReopened');
+    expect(scriptSource).toContain(
+      "'/admin/bank-reconciliation/transactions/batch-preview'",
+    );
+    expect(scriptSource).toContain(
+      "'/admin/bank-reconciliation/transactions/batch-import'",
+    );
+    expect(scriptSource).toContain('smokeBankBatchDetail.creationEvidence?.importedByAdminId');
+    expect(scriptSource).toContain('smokeBankBatchDetail.creationEvidence?.approvalAdminId');
+    expect(scriptSource).toContain('smokeBankBatchIgnore.bankTransaction?.status !==');
+    const batchImportStart = scriptSource.indexOf('const smokeBankBatchImport =');
+    const batchAssignmentStart = scriptSource.indexOf(
+      '`/admin/bank-reconciliation/${smokeBankBatchTransactionId}/review-assignment`',
+      batchImportStart,
+    );
+    const batchImportSource = scriptSource.slice(batchImportStart, batchAssignmentStart);
+    expect(batchImportStart).toBeGreaterThan(-1);
+    expect(batchAssignmentStart).toBeGreaterThan(batchImportStart);
+    expect(batchImportSource).not.toContain('approvalAdminId:');
+  });
+
+  it('covers staged company bank account create, update, and status approval', () => {
+    const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
+
+    const lifecycleStart = scriptSource.indexOf('const companyBankAccountLifecycleSeed =');
+    const reconciliationStart = scriptSource.indexOf(
+      'const smokeCompanyBankAccount = await ensureSmokeCompanyBankAccount();',
+      lifecycleStart,
+    );
+    const lifecycleSource = scriptSource.slice(lifecycleStart, reconciliationStart);
+
+    expect(lifecycleStart).toBeGreaterThan(-1);
+    expect(reconciliationStart).toBeGreaterThan(lifecycleStart);
+    expect(lifecycleSource).toContain("'/admin/company-bank-accounts'");
+    expect(lifecycleSource).toContain('/approval-decision');
+    expect(lifecycleSource).toContain("decision: 'APPROVE'");
+    expect(lifecycleSource).toContain('requires a different Finance approver');
+    expect(lifecycleSource).toContain("status: 'INACTIVE'");
+    expect(lifecycleSource).not.toContain('approvalAdminId');
+    expect(scriptSource).toContain('companyBankAccountStagedApprovalReady');
   });
 
   it('asserts completed booking settlement journal revenue, VAT, and payment fee lines in smoke', () => {
@@ -168,8 +248,15 @@ describe('API smoke contract', () => {
     expect(scriptSource).toContain(
       'Provider wallet withdrawal paid closeout requires approval from a finance approver',
     );
-    expect(scriptSource).toContain('Transfer reference is required before marking a withdrawal request paid');
-    expect(scriptSource).toContain('Bank transfer evidence is required before marking a withdrawal request paid');
+    expect(scriptSource).toContain(
+      'Provider wallet withdrawal bank transfer request requires a transfer reference',
+    );
+    expect(scriptSource).toContain(
+      'Provider wallet withdrawal bank transfer request requires attached bank evidence',
+    );
+    expect(scriptSource).toContain(
+      'providerWalletWithdrawalPaid.metadata?.bankPayout?.preparedByAdminId !== adminAuth.user.id',
+    );
     expect(scriptSource).toContain('PARTNER_WALLET_WITHDRAWAL_PAID');
     expect(scriptSource).toContain('`partner-wallet-withdrawal:${providerWalletWithdrawalRequest.id}:paid`');
     expect(scriptSource).toContain('providerWalletWithdrawalLedger');
@@ -185,5 +272,17 @@ describe('API smoke contract', () => {
     expect(scriptSource).toContain('marketplaceInvitationLimitBeforeFcmSmoke');
     expect(scriptSource).toContain("'matching.marketplace_partner_invitation_limit', 1");
     expect(scriptSource).toContain('fcmPolicyNotificationCandidate');
+  });
+
+  it('reuses stable Supabase auth smoke subjects instead of accumulating analytics users', () => {
+    const scriptSource = readFileSync(resolve(root, 'infra/scripts/supabase-auth-smoke.mjs'), 'utf8');
+
+    expect(scriptSource).toContain("customer: 'smoke-supabase-auth-customer'");
+    expect(scriptSource).toContain("provider: 'smoke-supabase-auth-provider'");
+    expect(scriptSource).toContain("escalation: 'smoke-supabase-auth-role-escalation'");
+    expect(scriptSource).toContain(
+      "userMetadataEscalation: 'smoke-supabase-auth-user-metadata-escalation'",
+    );
+    expect(scriptSource).not.toContain('randomUUID');
   });
 });

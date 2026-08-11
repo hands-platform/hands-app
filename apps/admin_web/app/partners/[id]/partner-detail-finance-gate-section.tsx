@@ -6,7 +6,7 @@ import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminBasicTimeline, type AdminBasicTimelineItem } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
-import { marketplaceDisplayText } from '../../../lib/admin-copy';
+import { marketplaceDisplayText, partnerOperatingStatusLabel } from '../../../lib/admin-copy';
 import {
   PartnerDetailVuexyTableFooter,
   PartnerDetailVuexyTablePanel,
@@ -61,7 +61,7 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
     <PartnerDetailVuexyTablePanel
       description="Manual wallet withdrawal/deposit evidence for operator checks. This does not gate Level 2 matching."
       id="bank"
-      resultLabel={bank?.status ?? 'ON_REQUEST'}
+      resultLabel={partnerOperatingStatusLabel(bank?.status ?? 'ON_REQUEST')}
       resultTone={financeEvidenceStatusBadgeTone(bank?.status)}
       title="Withdrawal details"
     >
@@ -93,7 +93,9 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
                 <EvidenceLine label="Updated" value={<DateTimeText fallback="Missing" value={bank.updatedAt} />} />
               </td>
               <td>
-                <StatusBadge tone={financeEvidenceStatusBadgeTone(bank.status)}>{bank.status}</StatusBadge>
+                <StatusBadge tone={financeEvidenceStatusBadgeTone(bank.status)}>
+                  {partnerOperatingStatusLabel(bank.status)}
+                </StatusBadge>
                 {bank.reviewStateLabel ? (
                   <div className="admin-mt-8">
                     <StatusBadge tone={financeEvidenceStatusBadgeTone(bank.status)}>
@@ -121,9 +123,9 @@ export function PartnerDetailTaxProfileCard({ taxProfile }: PartnerDetailTaxProf
 
   return (
     <PartnerDetailVuexyTablePanel
-      description="Optional tax profile evidence does not gate Vietnam MVP approval, matching, work, payout, or wallet withdrawal."
+      description="Tax profile registration is not required for Vietnam MVP partner approval, matching, work, payout, or wallet withdrawal."
       id="tax"
-      resultLabel={taxProfile?.status ?? 'DEFERRED'}
+      resultLabel={partnerOperatingStatusLabel(taxProfile?.status ?? 'DEFERRED')}
       resultTone={financeEvidenceStatusBadgeTone(taxProfile?.status)}
       title="Tax profile optional"
     >
@@ -150,7 +152,7 @@ export function PartnerDetailTaxProfileCard({ taxProfile }: PartnerDetailTaxProf
               </td>
               <td>
                 <StatusBadge tone={financeEvidenceStatusBadgeTone(taxProfile.status)}>
-                  {taxProfile.status}
+                  {partnerOperatingStatusLabel(taxProfile.status)}
                 </StatusBadge>
               </td>
               <td>

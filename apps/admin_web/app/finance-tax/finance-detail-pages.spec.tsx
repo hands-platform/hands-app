@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
-import { adminGet } from '../../lib/admin-api';
+import { adminGet, adminGetResult } from '../../lib/admin-api';
 import BankReconciliationDetailPage from './bank-reconciliation/[id]/page';
 import BookingSettlementAuditDetailPage from './booking-settlement-audit/[id]/page';
 import GeneralLedgerDetailPage from './general-ledger/[id]/page';
@@ -17,14 +17,21 @@ vi.mock('../../lib/admin-api', async () => {
   return {
     ...actual,
     adminGet: vi.fn(),
+    adminGetResult: vi.fn(),
   };
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedAdminGetResult = vi.mocked(adminGetResult);
 
 describe('finance detail pages', () => {
   beforeEach(() => {
     mockedAdminGet.mockReset();
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => ({
+      data: await mockedAdminGet(href, fallback),
+      ok: true,
+      status: 200,
+    }));
   });
 
   it('scopes finance operating path typography to direct path-node children', () => {
@@ -45,6 +52,7 @@ describe('finance detail pages', () => {
           id: 'journal-batch-1',
           postedAt: '2026-06-20T10:06:00.000Z',
           sourceKey: 'journal:settlement:1',
+          sourceType: 'BOOKING_SETTLEMENT',
           status: 'POSTED',
           totalCredit: 600000,
           totalDebit: 600000,
@@ -74,7 +82,7 @@ describe('finance detail pages', () => {
         couponCodeSnapshot: 'WELCOME10',
         couponDiscountAmount: 60000,
         couponFundingSourceSnapshot: 'COMPANY',
-        couponSettlementBasePolicySnapshot: 'PRE_COUPON_SERVICE_AMOUNT',
+        settlementBasePolicySnapshot: 'PRE_COUPON_SERVICE_AMOUNT',
       },
       monthlyPeriod: '2026-06',
       partnerPayoutAmount: 430000,
@@ -91,6 +99,15 @@ describe('finance detail pages', () => {
           sourceKey: 'clearing:settlement:1',
           status: 'CLEARED',
           type: 'SETTLEMENT_POSTED',
+        },
+        {
+          amount: -600000,
+          currency: 'VND',
+          id: 'reversal-clearing-1',
+          occurredAt: '2026-07-01T11:00:00.000Z',
+          sourceKey: 'clearing:reversal:1',
+          status: 'OPEN',
+          type: 'REFUND_REVERSAL',
         },
       ],
       paymentId: 'payment-1',
@@ -115,6 +132,59 @@ describe('finance detail pages', () => {
         user: { fullName: 'Demo Partner', id: 'user-partner-1', phone: '+84900000002' },
       },
       providerProfileId: 'provider-1',
+      settlementAuditHealth: {
+        allocation: {
+          companyCouponExpense: 60000,
+          customerPaymentAmount: 600000,
+          delta: 0,
+          partnerPayoutAmount: 430000,
+          partnerWithholdingTotal: 42000,
+          platformFeeGross: 128000,
+        },
+        blockers: [
+          {
+            code: 'REVERSAL_CLEARING_OPEN',
+            nextAction: 'Resolve reversal clearing before closeout.',
+            ownerTeam: 'Payment Operations',
+            severity: 'BLOCKER',
+          },
+        ],
+        checkedAt: '2026-07-01T11:05:00.000Z',
+        checks: {
+          allocation: 'PASS',
+          bankMatch: 'PASS',
+          canonicalClearing: 'PASS',
+          canonicalJournal: 'PASS',
+          couponPolicy: 'PASS',
+          paymentFeePolicy: 'PASS',
+          reversal: 'FAIL',
+          taxPeriod: 'FAIL',
+        },
+        evidence: {
+          canonicalClearing: {
+            count: 1,
+            ids: ['clearing-1'],
+            matchedAmount: 600000,
+            required: true,
+            state: 'PASS',
+            unmatchedAmount: 0,
+          },
+          canonicalJournal: { count: 1, ids: ['journal-batch-1'], state: 'PASS' },
+          reversal: {
+            clearingCount: 1,
+            count: 1,
+            ids: ['reversal-1'],
+            journalCount: 1,
+            lifecycle: 'CLOSED_PERIOD',
+            reason: 'Refund after payout',
+            reversedAt: '2026-07-01T11:00:00.000Z',
+            reversalPeriod: '2026-07',
+            state: 'FAIL',
+          },
+        },
+        formulaVersion: 'CUSTOMER_PLUS_COMPANY_COUPON_V1',
+        state: 'ACTION_REQUIRED',
+      },
       reversalEntries: [
         {
           accountingJournalBatches: [
@@ -153,17 +223,17 @@ describe('finance detail pages', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/booking-settlement-snapshots/settlement-1', null);
+    expect(mockedAdminGetResult).toHaveBeenCalledWith('/admin/booking-settlement-snapshots/settlement-1', null);
     expect(markup).toContain('Booking Settlement Audit Detail');
-    expect(markup).toContain('Settlement record overview');
-    expect(markup).toContain('Settlement evidence hub');
+    expect(markup).toContain('Action checklist');
+    expect(markup).toContain('Identity');
     expect(markup).toContain('Booking settlement operating path');
     expect(markup).toContain('Customer payment');
     expect(markup).toContain('Settlement split');
-    expect(markup).toContain('Journal / clearing');
-    expect(markup).toContain('Tax closeout');
-    expect(markup).toContain('Resolve reversal clearing');
-    expect(markup).toContain('Accounting amount breakdown');
+    expect(markup).toContain('Canonical evidence');
+    expect(markup).toContain('Reversal lifecycle');
+    expect(markup).toContain('Resolve reversal clearing before closeout.');
+    expect(markup).toContain('Allocation equation');
     expect(markup).toContain('Payment fee policy evidence');
     expect(markup).toContain('Card processing fee');
     expect(markup).toContain('Policy version');
@@ -173,17 +243,17 @@ describe('finance detail pages', () => {
     expect(markup).toContain('1.000 VND');
     expect(markup).toContain('Payer / treatment');
     expect(markup).toContain('HANDS / OPERATING_EXPENSE');
-    expect(markup).toContain('Allocation check');
-    expect(markup).toContain('Balanced');
+    expect(markup).toContain('Allocation delta');
+    expect(markup).toContain('Allocation verified');
     expect(markup).toContain('Delta');
     expect(markup).toContain('0 VND');
     expect(markup).toContain('Coupon and policy record');
-    expect(markup).toContain('Settlement journal');
-    expect(markup).toContain('Payment clearing');
-    expect(markup).toContain('Refund after payout reversal');
-    expect(markup).toContain('Journal POSTED');
-    expect(markup).toContain('Clearing CLEARED');
-    expect(markup).toContain('Clearing OPEN');
+    expect(markup).toContain('Canonical settlement journal');
+    expect(markup).toContain('Canonical payment clearing');
+    expect(markup).toContain('Reversal evidence');
+    expect(markup).toContain('Journal posted');
+    expect(markup).toContain('Clearing complete');
+    expect(markup).toContain('Clearing open');
     expect(markup).toContain('/finance-tax/general-ledger/journal-batch-1');
     expect(markup).toContain('/finance-tax/payment-clearing/clearing-1');
     expect(markup).toContain('/finance-tax/settlement-reversals/reversal-1');
@@ -235,7 +305,12 @@ describe('finance detail pages', () => {
         postedAt: '2026-06-20T10:05:00.000Z',
         settlementStatus: 'POSTED',
         taxStatus: 'PAID',
-        booking: { closedAt: '2026-06-20T10:00:00.000Z', createdAt: '2026-06-20T09:00:00.000Z', id: 'booking-1', status: 'COMPLETED' },
+        booking: {
+          closedAt: '2026-06-20T10:00:00.000Z',
+          createdAt: '2026-06-20T09:00:00.000Z',
+          id: 'booking-1',
+          status: 'COMPLETED',
+        },
         customerProfile: {
           id: 'customer-1',
           user: { fullName: 'Demo Customer', id: 'user-customer-1', phone: '+84900000001' },
@@ -488,7 +563,9 @@ describe('finance detail pages', () => {
     expect(markup).toContain('/finance-tax/general-ledger/journal-batch-1');
     expect(markup).toContain('Bank reconciliation matches');
     expect(markup).toContain('finance-detail-info-item');
-    expect(markup).toContain('card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card');
+    expect(markup).toContain(
+      'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
+    );
     expect(markup).not.toContain('<div class="detail-grid admin-mt-16"><div class="card">');
     expect(markup).not.toContain('<section class="card admin-mb-16">');
     expect(markup).toContain('vuexy-booking-table-card');
@@ -587,6 +664,24 @@ describe('finance detail pages', () => {
         },
       ],
       id: 'journal-batch-1',
+      integrity: {
+        blockerCodes: ['FORMULA_DELTA'],
+        checkedAt: '2026-08-09T00:00:00.000Z',
+        checks: {
+          entriesBalanced: 'PASS',
+          formula: 'FAIL',
+          headerBalanced: 'PASS',
+          headerMatchesEntries: 'PASS',
+          monthlyPeriod: 'PASS',
+          postedEntries: 'PASS',
+        },
+        discrepancyAmount: 42000,
+        entryCount: 2,
+        entryCredit: 650000,
+        entryDebit: 650000,
+        formulaDelta: 42000,
+        state: 'BLOCKED',
+      },
       metadata: { reconciliationDelta: 42000 },
       monthlyPeriod: '2026-06',
       payment: {
@@ -639,16 +734,16 @@ describe('finance detail pages', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/accounting-journal-batches/journal-batch-1', null);
-    expect(markup).toContain('General Ledger Detail');
+    expect(markup).toContain('Journal Batch Detail');
     expect(markup).toContain('Journal batch overview');
     expect(markup).toContain('Journal evidence hub');
-    expect(markup).toContain('General ledger operating path');
+    expect(markup).toContain('Journal batch operating path');
     expect(markup).toContain('Finance record');
     expect(markup).not.toContain('Finance source');
     expect(markup).toContain('Journal batch');
     expect(markup).toContain('Double-entry');
     expect(markup).toContain('Monthly close');
-    expect(markup).toContain('Resolve formula delta');
+    expect(markup).toContain('Resolve recorded integrity blockers');
     expect(markup).toContain('Finance record');
     expect(markup).not.toContain('Source record');
     expect(markup).toContain('Linked settlement');
@@ -658,9 +753,9 @@ describe('finance detail pages', () => {
     expect(markup).toContain('1.000 VND');
     expect(markup).toContain('HANDS / OPERATING_EXPENSE');
     expect(markup).toContain('Bank reconciliation evidence');
-    expect(markup).toContain('Double-entry check');
-    expect(markup).toContain('Balanced');
-    expect(markup).toContain('Monthly close blocker');
+    expect(markup).toContain('Integrity result');
+    expect(markup).toContain('BLOCKED');
+    expect(markup).toContain('Closeout blockers');
     expect(markup).toContain('Formula delta');
     expect(markup).toContain('42.000 VND');
     expect(markup).toContain('Monthly close status');
@@ -668,22 +763,153 @@ describe('finance detail pages', () => {
     expect(markup).not.toContain('Settlement trace');
     expect(markup).not.toContain('linked trace(s)');
     expect(markup).not.toContain('Source key');
-    expect(markup).toContain('Resolve formula delta before monthly close');
-    expect(markup).toContain('Debit total');
-    expect(markup).toContain('Credit total');
-    expect(markup).toContain('Balance delta');
-    expect(markup).toContain('0 VND');
-    expect(markup).toContain('Journal entries');
+    expect(markup).toContain('Blocked until integrity discrepancies are resolved');
+    expect(markup).toContain('Header debit');
+    expect(markup).toContain('Entry debit');
+    expect(markup).toContain('Maximum discrepancy');
+    expect(markup).toContain('Journal batch entries');
     expect(markup).toContain('/bookings/booking-1');
     expect(markup).toContain('/finance-tax/booking-settlement-audit/settlement-1');
     expect(markup).toContain('/finance-tax/bank-reconciliation/bank-transaction-1');
     expect(markup).toContain('/finance-tax/payment-clearing/clearing-1');
     expect(markup).toContain('finance-detail-info-item');
-    expect(markup).toContain('card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card');
+    expect(markup).toContain(
+      'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
+    );
     expect(markup).not.toContain('<div class="detail-grid admin-mt-16"><div class="card">');
     expect(markup).not.toContain('<section class="card admin-mb-16">');
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
+  });
+
+  it('renders paid-disbursement reversal evidence without exposing raw metadata', async () => {
+    mockedAdminGet.mockResolvedValue({
+      bookingId: null,
+      currency: 'VND',
+      entries: [
+        {
+          accountCode: 'company_bank_cash',
+          accountName: 'Company bank cash',
+          amount: 120000,
+          bankReconciliationMatches: [],
+          createdAt: '2026-07-16T10:00:00.000Z',
+          currency: 'VND',
+          id: 'journal-entry-reversal-1',
+          memo: 'Reversal of paid withdrawal',
+          side: 'DEBIT',
+          sourceId: 'withdrawal-1',
+          sourceType: 'PROVIDER_WITHDRAWAL',
+        },
+        {
+          accountCode: 'partner_wallet_liability',
+          accountName: 'Partner wallet liability',
+          amount: 120000,
+          bankReconciliationMatches: [],
+          createdAt: '2026-07-16T10:00:00.000Z',
+          currency: 'VND',
+          id: 'journal-entry-reversal-2',
+          memo: 'Reversal of withdrawal lock',
+          side: 'CREDIT',
+          sourceId: 'withdrawal-1',
+          sourceType: 'PROVIDER_WITHDRAWAL',
+        },
+      ],
+      id: 'journal-withdrawal-reversal-1',
+      integrity: {
+        blockerCodes: [],
+        checkedAt: '2026-08-09T00:00:00.000Z',
+        checks: {
+          entriesBalanced: 'PASS',
+          formula: 'NOT_APPLICABLE',
+          headerBalanced: 'PASS',
+          headerMatchesEntries: 'PASS',
+          monthlyPeriod: 'PASS',
+          postedEntries: 'PASS',
+        },
+        discrepancyAmount: 0,
+        entryCount: 2,
+        entryCredit: 120000,
+        entryDebit: 120000,
+        formulaDelta: null,
+        state: 'CLEAR',
+      },
+      monthlyPeriod: '2026-07',
+      payment: null,
+      postedAt: '2026-07-16T10:00:00.000Z',
+      settlementReversalEntry: {
+        companyOutputVat: 0,
+        createdById: 'finance-operator-2',
+        currency: 'VND',
+        customerPaymentAmount: 120000,
+        id: 'settlement-reversal-1',
+        monthlyPeriod: '2026-07',
+        occurredAt: '2026-07-16T10:00:00.000Z',
+        originalMonthlyClosingId: 'monthly-close-2026-07',
+        originalMonthlyPeriod: '2026-07',
+        originalSettlementSnapshotId: 'settlement-original-1',
+        partnerPayoutAmount: 100000,
+        partnerWithholdingTotal: 0,
+        paymentMethod: 'CARD',
+        paymentProcessingFee: 0,
+        platformFeeNetRevenue: 20000,
+        reason: 'The receiving bank returned the transfer.',
+        settlementStatus: 'REVERSED',
+        taxStatus: 'OPEN',
+      },
+      settlementSnapshot: null,
+      sourceId: 'withdrawal-1',
+      sourceKey: 'accounting-journal:provider-withdrawal:withdrawal-1:reversal',
+      sourceType: 'PROVIDER_WITHDRAWAL',
+      status: 'POSTED',
+      totalCredit: 120000,
+      totalDebit: 120000,
+      updatedAt: '2026-07-16T10:00:00.000Z',
+    });
+
+    const page = await GeneralLedgerDetailPage({
+      params: Promise.resolve({ id: 'journal-withdrawal-reversal-1' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Original settlement');
+    expect(markup).toContain('/finance-tax/booking-settlement-audit/settlement-original-1');
+    expect(markup).toContain('Reversal reason');
+    expect(markup).toContain('The receiving bank returned the transfer.');
+    expect(markup).toContain('Reversal posted');
+    expect(markup).toContain('Reversal recorded by');
+    expect(markup).toContain('finance-operator-2');
+    expect(markup).toContain('No canonical approval field is recorded on this reversal.');
+    expect(markup).not.toContain('BANK-RETURN-501');
+  });
+
+  it('separates an unavailable journal detail API from a missing journal batch', async () => {
+    mockedAdminGetResult.mockResolvedValueOnce({ data: null, ok: false, status: 503 });
+
+    const unavailablePage = await GeneralLedgerDetailPage({
+      params: Promise.resolve({ id: 'journal-unavailable' }),
+    });
+    const unavailableMarkup = renderToStaticMarkup(unavailablePage);
+
+    expect(unavailableMarkup).toContain('Journal batch unavailable');
+    expect(unavailableMarkup).toContain('No integrity or zero-balance assumption has been made.');
+
+    mockedAdminGetResult.mockResolvedValueOnce({ data: null, ok: false, status: 404 });
+    await expect(
+      GeneralLedgerDetailPage({ params: Promise.resolve({ id: 'journal-missing' }) }),
+    ).rejects.toThrow('NEXT_HTTP_ERROR_FALLBACK;404');
+  });
+
+  it('renders journal detail permission failures without treating them as missing records', async () => {
+    mockedAdminGetResult.mockResolvedValueOnce({ data: null, ok: false, status: 403 });
+
+    const page = await GeneralLedgerDetailPage({
+      params: Promise.resolve({ id: 'journal-forbidden' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Journal batch permission required');
+    expect(markup).toContain('does not have permission');
+    expect(markup).not.toContain('Journal batch unavailable');
   });
 
   it('renders bank reconciliation detail and locks manual match controls for fully matched rows', async () => {
@@ -752,14 +978,17 @@ describe('finance detail pages', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/bank-reconciliation/bank-transaction-1', null);
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/bank-reconciliation/bank-transaction-1?candidatePage=1&candidateTake=25',
+      null,
+    );
     expect(markup).toContain('Bank Reconciliation Detail');
     expect(markup).toContain('Bank transaction overview');
     expect(markup).toContain('Bank evidence hub');
     expect(markup).toContain('Bank reconciliation operating path');
     expect(markup).toContain('Finance source');
     expect(markup).toContain('Ledger evidence');
-    expect(markup).toContain('Ready for closeout');
+    expect(markup).toContain('No action required');
     expect(markup).toContain('Matched finance source');
     expect(markup).toContain('Payment clearing evidence');
     expect(markup).toContain('Journal evidence');
@@ -771,8 +1000,9 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Matched amount');
     expect(markup).toContain('Remaining amount');
     expect(markup).toContain('0 VND');
-    expect(markup).toContain('Manual reconciliation match');
-    expect(markup).toContain('card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card');
+    expect(markup).toContain(
+      'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
+    );
     expect(markup).toContain('/finance-tax/general-ledger/journal-batch-1');
     expect(markup).toContain('/finance-tax/payment-clearing/clearing-1');
     expect(markup).toContain('finance-reconciliation-source-cell');
@@ -780,8 +1010,7 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Review match reversal');
     expect(markup).toContain('Confirm reversal');
     expect(markup).toContain('Reversal reason');
-    expect(markup).toContain('Manual reconciliation match');
-    expect(markup).toContain('This bank transaction is already fully reconciled.');
+    expect(markup).not.toContain('Manual reconciliation match');
     expect(markup).not.toContain('Create match');
     expect(markup).toContain('finance-detail-info-item');
     expect(markup).not.toContain('<div class="detail-grid admin-mt-16"><div class="card">');
@@ -792,7 +1021,7 @@ describe('finance detail pages', () => {
 
   it('renders manual match controls for unmatched bank reconciliation rows', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/bank-reconciliation/bank-transaction-1') {
+      if (href === '/admin/bank-reconciliation/bank-transaction-1?candidatePage=1&candidateTake=25') {
         return {
           amount: 650000,
           bankAccount: {
@@ -810,6 +1039,57 @@ describe('finance detail pages', () => {
           description: 'Card payout clearing',
           id: 'bank-transaction-1',
           occurredAt: '2026-06-20T10:00:00.000Z',
+          paymentClearingCandidates: [
+            {
+              amount: 650000,
+              amountDelta: 0,
+              bookingId: 'booking-exact',
+              bookingStatus: 'OPEN_MATCHING',
+              confidence: 'STRONG',
+              currency: 'VND',
+              customerLabel: 'Demo Customer',
+              dateDeltaDays: 0,
+              eligible: true,
+              exactAmount: true,
+              exclusionReasons: [],
+              id: 'clearing-exact',
+              occurredAt: '2026-06-20T09:10:00.000Z',
+              paymentMethod: 'CARD',
+              paymentProviderRef: 'BANK-IN-001',
+              paymentStatus: 'CAPTURED',
+              reasons: [
+                'Transfer reference matches the payment provider reference',
+                'Remaining clearing amount matches exactly',
+              ],
+              remainingAmount: 650000,
+              sourceKey: 'payment:payment-exact:capture',
+              transferRefMatch: true,
+              type: 'CUSTOMER_PAYMENT_CAPTURED',
+            },
+            {
+              amount: 600000,
+              amountDelta: 50000,
+              bookingId: 'booking-review',
+              bookingStatus: 'OPEN_MATCHING',
+              confidence: 'REVIEW',
+              currency: 'VND',
+              customerLabel: 'Review Customer',
+              dateDeltaDays: 2,
+              eligible: true,
+              exactAmount: false,
+              exclusionReasons: [],
+              id: 'clearing-review',
+              occurredAt: '2026-06-18T09:10:00.000Z',
+              paymentMethod: 'CARD',
+              paymentProviderRef: null,
+              paymentStatus: 'CAPTURED',
+              reasons: ['50000 VND amount gap', '2 day date gap'],
+              remainingAmount: 600000,
+              sourceKey: 'payment:payment-review:capture',
+              transferRefMatch: false,
+              type: 'SETTLEMENT_POSTED',
+            },
+          ],
           reconciliationMatches: [],
           sourceKey: 'bank:transaction:1',
           status: 'UNMATCHED',
@@ -818,46 +1098,6 @@ describe('finance detail pages', () => {
           updatedAt: '2026-06-20T10:05:00.000Z',
           valueDate: '2026-06-20T00:00:00.000Z',
         };
-      }
-      if (href === '/admin/booking-payment-clearing?range=30d&take=50&review=open') {
-        return [
-          {
-            amount: 400000,
-            bookingId: 'booking-mismatch',
-            currency: 'VND',
-            id: 'clearing-mismatch',
-            occurredAt: '2026-06-20T09:15:00.000Z',
-            payment: {
-              amount: 400000,
-              currency: 'VND',
-              id: 'payment-mismatch',
-              method: 'CARD',
-              status: 'CAPTURED',
-            },
-            paymentId: 'payment-mismatch',
-            sourceKey: 'payment:payment-mismatch:capture',
-            status: 'OPEN',
-            type: 'SETTLEMENT_POSTED',
-          },
-          {
-            amount: 650000,
-            bookingId: 'booking-exact',
-            currency: 'VND',
-            id: 'clearing-exact',
-            occurredAt: '2026-06-20T09:10:00.000Z',
-            payment: {
-              amount: 650000,
-              currency: 'VND',
-              id: 'payment-exact',
-              method: 'CARD',
-              status: 'CAPTURED',
-            },
-            paymentId: 'payment-exact',
-            sourceKey: 'payment:payment-exact:capture',
-            status: 'OPEN',
-            type: 'CUSTOMER_PAYMENT_CAPTURED',
-          },
-        ];
       }
       return fallback;
     });
@@ -868,17 +1108,18 @@ describe('finance detail pages', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/booking-payment-clearing?range=30d&take=50&review=open', []);
+    expect(mockedAdminGet).not.toHaveBeenCalledWith(
+      '/admin/booking-payment-clearing?range=30d&take=50&review=open',
+      [],
+    );
     expect(markup).toContain('Manual reconciliation match');
     expect(markup).toContain('finance-reconciliation-match-board');
     expect(markup).toContain('Recommended payment clearing match');
     expect(markup).toContain('Payment clearing candidate');
-    expect(markup).toContain('Create explicit match');
+    expect(markup).toContain('Review evidence and match');
     expect(markup).toContain('Pending journal evidence');
-    expect(markup).toContain('Exact amount - CUSTOMER_PAYMENT_CAPTURED - 650.000 VND - booking');
-    expect(markup.indexOf('Exact amount - CUSTOMER_PAYMENT_CAPTURED')).toBeLessThan(
-      markup.indexOf('SETTLEMENT_POSTED - 400.000 VND'),
-    );
+    expect(markup).toContain('Reference match - Demo Customer - 650.000 VND - booking');
+    expect(markup).toContain('Select a payment clearing candidate');
     expect(markup).toContain('type="hidden" name="sourceType" value="payment-clearing"');
     expect(markup).toContain('name="sourceId"');
     expect(markup).toContain('Review payment clearing match');
@@ -892,7 +1133,7 @@ describe('finance detail pages', () => {
 
   it('separates active bank reconciliation evidence from reversed match history', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/bank-reconciliation/bank-transaction-1') {
+      if (href === '/admin/bank-reconciliation/bank-transaction-1?candidatePage=1&candidateTake=25') {
         return {
           amount: 650000,
           bankAccount: {
@@ -910,6 +1151,31 @@ describe('finance detail pages', () => {
           description: 'Card payout clearing',
           id: 'bank-transaction-1',
           occurredAt: '2026-06-20T10:00:00.000Z',
+          paymentClearingCandidates: [
+            {
+              amount: 650000,
+              amountDelta: 0,
+              bookingId: 'booking-1',
+              bookingStatus: 'OPEN_MATCHING',
+              confidence: 'STRONG',
+              currency: 'VND',
+              customerLabel: 'Demo Customer',
+              dateDeltaDays: 0,
+              eligible: true,
+              exactAmount: true,
+              exclusionReasons: [],
+              id: 'clearing-1',
+              occurredAt: '2026-06-20T09:10:00.000Z',
+              paymentMethod: 'CARD',
+              paymentProviderRef: 'BANK-IN-001',
+              paymentStatus: 'CAPTURED',
+              reasons: ['Remaining clearing amount matches exactly'],
+              remainingAmount: 650000,
+              sourceKey: 'payment:payment-1:capture',
+              transferRefMatch: true,
+              type: 'CUSTOMER_PAYMENT_CAPTURED',
+            },
+          ],
           reconciliationMatches: [
             {
               amount: 650000,
@@ -939,20 +1205,6 @@ describe('finance detail pages', () => {
           updatedAt: '2026-06-20T10:05:00.000Z',
           valueDate: '2026-06-20T00:00:00.000Z',
         };
-      }
-      if (href === '/admin/booking-payment-clearing?range=30d&take=50&review=open') {
-        return [
-          {
-            amount: 650000,
-            bookingId: 'booking-1',
-            currency: 'VND',
-            id: 'clearing-1',
-            occurredAt: '2026-06-20T09:10:00.000Z',
-            sourceKey: 'payment:payment-1:capture',
-            status: 'OPEN',
-            type: 'CUSTOMER_PAYMENT_CAPTURED',
-          },
-        ];
       }
       return fallback;
     });
@@ -1031,10 +1283,7 @@ describe('finance detail pages', () => {
   });
 
   it('uses shared money atoms for general ledger detail entry amounts', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/finance-tax/general-ledger/[id]/page.tsx'),
-      'utf8',
-    );
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/general-ledger/[id]/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
     expect(source).not.toContain('<strong>{formatMoney(entry.amount, entry.currency)}</strong>');
@@ -1078,14 +1327,17 @@ describe('finance detail pages', () => {
       'app/finance-tax/settlement-reversals/[id]/page.tsx',
       ['formatDateTime(reversal.occurredAt)', 'formatDateTime(originalSettlement.postedAt)'],
     ],
-  ] as const)('uses shared date time atoms for %s visible date values', (_name, sourcePath, directFormatCalls) => {
-    const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
+  ] as const)(
+    'uses shared date time atoms for %s visible date values',
+    (_name, sourcePath, directFormatCalls) => {
+      const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
 
-    expect(source).toContain('DateTimeText');
-    for (const directFormatCall of directFormatCalls) {
-      expect(source).not.toContain(directFormatCall);
-    }
-  });
+      expect(source).toContain('DateTimeText');
+      for (const directFormatCall of directFormatCalls) {
+        expect(source).not.toContain(directFormatCall);
+      }
+    },
+  );
 
   it('uses the shared Vuexy detail grid shell for finance detail facts', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-detail-info-item.tsx'), 'utf8');
@@ -1117,8 +1369,10 @@ describe('finance detail pages', () => {
     expect(source).toContain('AdminInlineFallback');
     expect(source).not.toContain('<span className="muted">No payment record</span>');
     expect(source).not.toContain('<span className="muted">-</span>');
-    expect(source).not.toContain("<div className=\"muted\">{match.bankTransaction?.type ?? '-'}</div>");
-    expect(source).not.toContain("<div className=\"muted\">{match.accountingJournalEntry?.accountName ?? 'No journal link'}</div>");
+    expect(source).not.toContain('<div className="muted">{match.bankTransaction?.type ?? \'-\'}</div>');
+    expect(source).not.toContain(
+      '<div className="muted">{match.accountingJournalEntry?.accountName ?? \'No journal link\'}</div>',
+    );
     expect(source).not.toContain("<td>{match.bankTransaction?.counterpartyName ?? '-'}</td>");
   });
 

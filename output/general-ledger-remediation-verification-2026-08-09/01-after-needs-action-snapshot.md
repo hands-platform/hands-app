@@ -1,0 +1,180 @@
+- generic [active] [ref=f103e1] [box=0,0,1440,1456]:
+  - generic [ref=f103e3] [box=0,0,1440,1456]:
+    - link "Skip to main content" [ref=f103e4] [cursor=pointer] [box=16,-54,157,41]:
+      - /url: "#admin-main-content"
+    - complementary [ref=f103e5] [box=0,0,260,900]:
+      - strong [ref=f103e7] [box=26,24,155,24]: HANDS Admin
+      - navigation "Admin navigation" [ref=f103e8] [box=14,76,231,668]:
+        - link "Shift Command" [ref=f103e9] [cursor=pointer] [box=14,76,231,36]:
+          - /url: /
+        - group [ref=f103e15] [box=14,120,231,42]:
+          - generic "Booking Operations" [ref=f103e16] [cursor=pointer] [box=14,120,231,38]
+        - group [ref=f103e25] [box=14,170,231,42]:
+          - generic "Customer Support" [ref=f103e26] [cursor=pointer] [box=14,170,231,38]
+        - group [ref=f103e35] [box=14,220,231,42]:
+          - generic "Partner Operations" [ref=f103e36] [cursor=pointer] [box=14,220,231,38]
+        - group [ref=f103e43] [box=14,270,231,42]:
+          - generic "Finance Operations" [ref=f103e44] [cursor=pointer] [box=14,270,231,38]
+        - group [ref=f103e52] [box=14,320,231,296]:
+          - generic "Finance Records & Close" [ref=f103e53] [cursor=pointer] [box=14,320,231,52]
+          - generic [ref=f103e61] [box=14,376,231,240]:
+            - link "Payments" [ref=f103e62] [cursor=pointer] [box=40,379,205,36]:
+              - /url: /payments
+            - link "Partner Money" [ref=f103e66] [cursor=pointer] [box=40,418,205,36]:
+              - /url: /payouts
+            - link "Wallet Adjustments" [ref=f103e72] [cursor=pointer] [box=40,457,205,36]:
+              - /url: /wallet-adjustments
+            - link "Journal Batches" [ref=f103e77] [cursor=pointer] [box=40,496,205,36]:
+              - /url: /finance-tax/general-ledger
+            - link "Settlement Records" [ref=f103e82] [cursor=pointer] [box=40,535,205,36]:
+              - /url: /finance-tax/booking-settlement-audit
+            - link "Tax & Period Close" [ref=f103e88] [cursor=pointer] [box=40,574,205,36]:
+              - /url: /finance-tax
+        - group [ref=f103e92] [box=14,624,231,56]:
+          - generic "Growth & Communications" [ref=f103e93] [cursor=pointer] [box=14,624,231,52]
+        - group [ref=f103e100] [box=14,688,231,56]:
+          - generic "Administration & Settings" [ref=f103e101] [cursor=pointer] [box=14,688,231,52]
+    - main [ref=f103e109] [box=260,0,1180,1456]:
+      - generic "Admin workspace" [ref=f103e110] [box=284,24,1132,70]:
+        - navigation "Breadcrumb" [ref=f103e112] [box=301,50,352,18]:
+          - link "HANDS" [ref=f103e113] [cursor=pointer] [box=301,50,47,18]:
+            - /url: /
+          - generic [ref=f103e116] [box=374,50,153,18]: Finance Records & Close
+          - generic [ref=f103e119] [box=553,50,100,18]: Journal Batches
+        - generic "Workspace actions" [ref=f103e120] [box=1043,36,356,46]:
+          - button "Search Ctrl K" [ref=f103e122] [cursor=pointer] [box=1043,41,164,36]:
+            - generic [ref=f103e123] [box=1056,49,68,19]: Search
+            - generic [ref=f103e127] [box=1151,49,43,21]: Ctrl K
+          - button "Switch to dark mode" [ref=f103e129] [cursor=pointer] [box=1219,40,38,38]
+          - link "Operations Policy" [ref=f103e132] [cursor=pointer] [box=1269,40,38,38]:
+            - /url: /operations-policy
+          - button "Operation alerts, 0" [ref=f103e137] [cursor=pointer] [box=1315,40,38,38]
+          - button "Sign out" [ref=f103e142] [cursor=pointer] [box=1361,40,38,38]
+      - generic [ref=f103e146] [box=284,112,1132,1320]:
+        - generic [ref=f103e147] [box=284,112,1132,145]:
+          - generic [ref=f103e148] [box=309,137,506,95]:
+            - heading "Journal Batches" [level=1] [ref=f103e149] [box=309,137,506,31]
+            - paragraph [ref=f103e150] [box=309,176,506,42]: Review bounded accounting journal batches and their server-verified header, entry, formula, and period integrity evidence.
+          - generic "Page actions" [ref=f103e151] [box=831,137,560,38]:
+            - generic [ref=f103e152] [box=1049,137,342,38]:
+              - link "Export filtered records" [ref=f103e153] [cursor=pointer] [box=1049,144,161,24]:
+                - /url: /api/admin/finance-tax/general-ledger/export?range=today&review=needs-action
+              - link "Tax overview" [ref=f103e154] [cursor=pointer] [box=1218,137,127,38]:
+                - /url: /finance-tax
+              - button "More finance pages" [ref=f103e156] [cursor=pointer] [box=1353,137,38,38]
+        - region "Journal batch integrity queues" [ref=f103e161] [box=284,289,1132,220]:
+          - 'link "Today (Vietnam) Needs action Needs action: 0 0 blocked, 0 with incomplete evidence, and 0 draft batch(es)." [ref=f103e162] [cursor=pointer] [box=284,289,271,220]':
+            - /url: /finance-tax/general-ledger?range=today&review=needs-action
+            - generic [ref=f103e167] [box=367,314,163,136]:
+              - generic [ref=f103e168] [box=367,314,107,21]: Today (Vietnam)
+              - paragraph [ref=f103e169] [box=367,341,163,19]: Needs action
+              - generic [ref=f103e170] [box=367,365,163,30]:
+                - generic [ref=f103e171] [box=366,364,1,1]: "Needs action:"
+                - text: "0"
+              - generic [ref=f103e172] [box=367,399,163,51]: 0 blocked, 0 with incomplete evidence, and 0 draft batch(es).
+          - 'link "Today (Vietnam) Blocked integrity Blocked integrity: 0 0 VND total maximum discrepancy across blocked batches." [ref=f103e173] [cursor=pointer] [box=571,289,271,220]':
+            - /url: /finance-tax/general-ledger?range=today&review=unbalanced
+            - generic [ref=f103e178] [box=654,314,163,136]:
+              - generic [ref=f103e179] [box=654,314,107,21]: Today (Vietnam)
+              - paragraph [ref=f103e180] [box=654,341,163,19]: Blocked integrity
+              - generic [ref=f103e181] [box=654,365,163,30]:
+                - generic [ref=f103e182] [box=653,364,1,1]: "Blocked integrity:"
+                - text: "0"
+              - generic [ref=f103e183] [box=654,399,163,51]: 0 VND total maximum discrepancy across blocked batches.
+          - 'link "Today (Vietnam) Evidence unknown Evidence unknown: 0 Required settlement formula or linked accounting-period evidence is missing. Do not interpret these records as zero discrepancy." [ref=f103e184] [cursor=pointer] [box=858,289,271,220]':
+            - /url: /finance-tax/general-ledger?range=today&review=needs-action
+            - generic [ref=f103e190] [box=941,314,163,170]:
+              - generic [ref=f103e191] [box=941,314,107,21]: Today (Vietnam)
+              - paragraph [ref=f103e192] [box=941,341,163,19]: Evidence unknown
+              - generic [ref=f103e193] [box=941,365,163,30]:
+                - generic [ref=f103e194] [box=940,364,1,1]: "Evidence unknown:"
+                - text: "0"
+              - generic [ref=f103e195] [box=941,399,163,85]: Required settlement formula or linked accounting-period evidence is missing. Do not interpret these records as zero discrepancy.
+          - 'link "Today (Vietnam) Draft batches Draft batches: 0 0 batch(es) are not posted and need Finance review before closeout." [ref=f103e196] [cursor=pointer] [box=1145,289,271,220]':
+            - /url: /finance-tax/general-ledger?range=today&review=draft
+            - generic [ref=f103e204] [box=1228,314,163,136]:
+              - generic [ref=f103e205] [box=1228,314,107,21]: Today (Vietnam)
+              - paragraph [ref=f103e206] [box=1228,341,163,19]: Draft batches
+              - generic [ref=f103e207] [box=1228,365,163,30]:
+                - generic [ref=f103e208] [box=1227,364,1,1]: "Draft batches:"
+                - text: "0"
+              - generic [ref=f103e209] [box=1228,399,163,51]: 0 batch(es) are not posted and need Finance review before closeout.
+        - paragraph [ref=f103e210] [box=284,555,1132,21]:
+          - text: Integrity checked
+          - time [ref=f103e211] [box=403,558,126,18]: 10 Aug 2026, 15:28
+          - text: . Overview totals use the selected range and ignore search text; queue links clear search to preserve the displayed scope.
+        - generic [ref=f103e212] [box=284,608,1132,454]:
+          - generic [ref=f103e213] [box=309,633,1082,84]:
+            - generic [ref=f103e214] [box=309,633,449,84]:
+              - heading "Journal batch scope" [level=2] [ref=f103e215] [box=309,633,449,29]
+              - paragraph [ref=f103e216] [box=309,682,449,21]: "Showing page 1 of 1. Queue: Needs action. Range: Today (Vietnam)."
+            - generic [ref=f103e217] [box=1237,633,154,24]: 0 matching batch(es)
+          - generic [ref=f103e220] [box=309,731,1082,306]:
+            - generic [ref=f103e221] [box=309,731,1082,40]:
+              - generic [ref=f103e225] [box=323,751,1,1]: Search journal batches
+              - searchbox "Search journal batches" [ref=f103e226] [box=352,732,1024,38]
+            - generic [ref=f103e227] [cursor=pointer] [box=309,771,1082,38]:
+              - generic [ref=f103e228] [box=309,790,1,1]: Integrity queue
+              - combobox "Integrity queue" [ref=f103e229] [box=310,772,1080,36]:
+                - option "Needs action" [selected] [box=0,0,0,0]
+                - option "Blocked integrity" [box=0,0,0,0]
+                - option "Draft batches" [box=0,0,0,0]
+                - option "Posted records" [box=0,0,0,0]
+                - option "Reversed records" [box=0,0,0,0]
+                - option "All records" [box=0,0,0,0]
+            - generic [ref=f103e230] [cursor=pointer] [box=309,809,1082,38]:
+              - generic [ref=f103e231] [box=309,828,1,1]: Posted range
+              - combobox "Posted range" [ref=f103e232] [box=310,810,1080,36]:
+                - option "Today" [selected] [box=0,0,0,0]
+                - option "Last 7 days" [box=0,0,0,0]
+                - option "Last 30 days" [box=0,0,0,0]
+                - option "Last 90 days" [box=0,0,0,0]
+                - option "All time" [box=0,0,0,0]
+            - generic [ref=f103e233] [cursor=pointer] [box=309,847,1082,38]:
+              - generic [ref=f103e234] [box=309,866,1,1]: Source type
+              - combobox "Source type" [ref=f103e235] [box=310,848,1080,36]:
+                - option "All sources" [selected] [box=0,0,0,0]
+                - option "Booking settlement" [box=0,0,0,0]
+                - option "Settlement reversal" [box=0,0,0,0]
+                - option "Manual wallet adjustment" [box=0,0,0,0]
+                - option "Partner withdrawal" [box=0,0,0,0]
+                - option "Payout batch" [box=0,0,0,0]
+                - option "Partner bank deposit" [box=0,0,0,0]
+                - option "Referral reward" [box=0,0,0,0]
+                - option "Refund" [box=0,0,0,0]
+                - option "Payment callback" [box=0,0,0,0]
+                - option "Bank reconciliation adjustment" [box=0,0,0,0]
+                - option "Withholding remittance" [box=0,0,0,0]
+            - generic [ref=f103e238] [box=309,885,1082,38]:
+              - generic [ref=f103e239] [box=308,884,1,1]: Accounting period
+              - textbox "Accounting period" [ref=f103e240] [cursor=pointer] [box=309,885,1082,38]
+            - generic [ref=f103e241] [cursor=pointer] [box=309,923,1082,38]:
+              - generic [ref=f103e242] [box=309,942,1,1]: Sort
+              - combobox "Sort" [ref=f103e243] [box=310,924,1080,36]:
+                - option "Oldest first" [selected] [box=0,0,0,0]
+                - option "Newest first" [box=0,0,0,0]
+                - option "Largest discrepancy" [box=0,0,0,0]
+            - generic [ref=f103e244] [cursor=pointer] [box=309,961,1082,38]:
+              - generic [ref=f103e245] [box=309,980,1,1]: Rows
+              - combobox "Rows" [ref=f103e246] [box=310,962,1080,36]:
+                - option "10" [selected] [box=0,0,0,0]
+                - option "25" [box=0,0,0,0]
+                - option "50" [box=0,0,0,0]
+                - option "100" [box=0,0,0,0]
+            - generic [ref=f103e247] [box=309,999,1082,38]:
+              - button "Apply" [ref=f103e248] [cursor=pointer] [box=1228,999,77,38]
+              - link "Reset" [ref=f103e249] [cursor=pointer] [box=1315,999,76,38]:
+                - /url: /finance-tax/general-ledger?range=today&review=needs-action
+        - generic [ref=f103e250] [box=284,1110,1132,322]:
+          - generic [ref=f103e251] [box=309,1135,1082,84]:
+            - generic [ref=f103e252] [box=309,1135,744,84]:
+              - heading "Needs action" [level=2] [ref=f103e253] [box=309,1135,744,29]
+              - paragraph [ref=f103e254] [box=309,1184,744,21]: Oldest draft or integrity-blocked journal batches appear first. Resolve the source evidence before monthly close.
+            - generic [ref=f103e255] [box=1298,1135,93,24]: 0 batch(es)
+          - region "Journal batch results" [ref=f103e258] [box=309,1247,1082,160]:
+            - table [ref=f103e259] [box=310,1248,1065,158]:
+              - rowgroup [ref=f103e260] [box=310,1248,1065,56]:
+                - row "Journal batch Related context Period Header / entries Integrity" [ref=f103e261] [box=310,1248,1065,56]
+              - rowgroup [ref=f103e267] [box=310,1304,1065,102]:
+                - row [ref=f103e268] [box=310,1304,1065,102]
+  - alert [ref=f103e272] [box=-1,1455,1,1]

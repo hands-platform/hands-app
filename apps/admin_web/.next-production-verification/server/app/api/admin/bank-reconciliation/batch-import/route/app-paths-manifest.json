@@ -1,0 +1,3 @@
+{
+  "/api/admin/bank-reconciliation/batch-import/route": "app/api/admin/bank-reconciliation/batch-import/route.js"
+}

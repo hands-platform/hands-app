@@ -1,0 +1,1949 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e3]:
+    - complementary [ref=f2e4]:
+      - strong [ref=f2e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=f2e7]:
+        - group [ref=f2e8]:
+          - generic "Shift Operations" [ref=f2e9] [cursor=pointer]
+          - generic [ref=f2e16]:
+            - link "Start Shift" [ref=f2e17] [cursor=pointer]:
+              - /url: /
+            - link "Calendar" [ref=f2e22] [cursor=pointer]:
+              - /url: /calendar
+            - link "Operations History" [ref=f2e26] [cursor=pointer]:
+              - /url: /operations-handoff
+        - group [ref=f2e30]:
+          - generic "Bookings" [ref=f2e31] [cursor=pointer]
+        - group [ref=f2e40]:
+          - generic "Customers" [ref=f2e41] [cursor=pointer]
+        - group [ref=f2e50]:
+          - generic "Partners" [ref=f2e51] [cursor=pointer]
+        - group [ref=f2e58]:
+          - generic "Analytics" [ref=f2e59] [cursor=pointer]
+          - generic [ref=f2e66]:
+            - link "Vietnam Overview" [ref=f2e67] [cursor=pointer]:
+              - /url: /vietnam-overview
+            - link "Usage Overview" [ref=f2e73] [cursor=pointer]:
+              - /url: /usage-overview
+            - link "Partner Overview" [ref=f2e77] [cursor=pointer]:
+              - /url: /partners/overview
+            - link "Finance Overview" [ref=f2e81] [cursor=pointer]:
+              - /url: /finance-overview
+            - link "Marketing Analytics" [ref=f2e85] [cursor=pointer]:
+              - /url: /marketing-analytics
+        - group [ref=f2e89]:
+          - generic "Growth & Communications" [ref=f2e90] [cursor=pointer]
+        - group [ref=f2e100]:
+          - generic "Finance" [ref=f2e101] [cursor=pointer]
+        - group [ref=f2e108]:
+          - generic "Tax & Accounting" [ref=f2e109] [cursor=pointer]
+        - group [ref=f2e116]:
+          - generic "Policies" [ref=f2e117] [cursor=pointer]
+        - group [ref=f2e125]:
+          - generic "Admin Control" [ref=f2e126] [cursor=pointer]
+        - group [ref=f2e143]:
+          - generic "Developer / System" [ref=f2e144] [cursor=pointer]
+    - main [ref=f2e152]:
+      - generic "Admin workspace" [ref=f2e153]:
+        - generic [ref=f2e154]:
+          - navigation "Breadcrumb" [ref=f2e155]:
+            - link "HANDS" [ref=f2e156] [cursor=pointer]:
+              - /url: /
+            - generic [ref=f2e159]: Analytics
+            - generic [ref=f2e162]: Partner Overview
+          - strong [ref=f2e163]: Partner Overview
+        - generic "Workspace actions" [ref=f2e164]:
+          - button "Search Ctrl K" [ref=f2e166] [cursor=pointer]:
+            - generic [ref=f2e167]: Search
+            - generic [ref=f2e171]: Ctrl K
+          - group "Theme mode" [ref=f2e172]:
+            - button "Light mode" [pressed] [ref=f2e173] [cursor=pointer]
+            - button "Dark mode" [ref=f2e180] [cursor=pointer]
+          - link "Help" [ref=f2e183] [cursor=pointer]:
+            - /url: /operations-policy
+          - button [ref=f2e188] [cursor=pointer]
+          - generic [ref=f2e192]: Vietnam Operations
+          - generic [ref=f2e197]: Live Workspace
+          - button "Sign out" [ref=f2e202] [cursor=pointer]
+      - generic [ref=f2e206]:
+        - generic [ref=f2e208]:
+          - heading "Partner Overview" [level=1] [ref=f2e209]
+          - paragraph [ref=f2e210]: Current Partner supply, action queues, period performance, and operational risk in Vietnam time.
+        - generic [ref=f2e211]:
+          - generic [ref=f2e212]:
+            - generic [ref=f2e213]:
+              - generic [ref=f2e214]:
+                - heading "Partner supply range" [level=2] [ref=f2e215]
+                - paragraph [ref=f2e216]: Default view stays focused on current supply and bounded operating windows.
+              - generic [ref=f2e217]:
+                - generic [ref=f2e218]: Last 7 days
+                - generic [ref=f2e219]: Vietnam time
+                - generic [ref=f2e220]:
+                  - text: Updated
+                  - time [ref=f2e221]: 20 Jul 2026, 14:02
+            - generic [ref=f2e222]:
+              - generic "Partner overview range" [ref=f2e223]:
+                - link "Today" [ref=f2e224] [cursor=pointer]:
+                  - /url: /partners/overview?range=today
+                - link "7 days" [ref=f2e225] [cursor=pointer]:
+                  - /url: /partners/overview?range=7d
+                - link "30 days" [ref=f2e226] [cursor=pointer]:
+                  - /url: /partners/overview?range=30d
+                - link "90 days" [ref=f2e227] [cursor=pointer]:
+                  - /url: /partners/overview?range=90d
+              - generic [ref=f2e228]:
+                - generic [ref=f2e229]:
+                  - generic [ref=f2e230]: City / area
+                  - textbox "City / area" [ref=f2e231]:
+                    - /placeholder: hcm, hanoi, cau giay
+                - generic [ref=f2e232]:
+                  - generic [ref=f2e233]: Service
+                  - combobox "Service" [ref=f2e234] [cursor=pointer]:
+                    - option "All services" [selected]
+                    - option "Foot Massage · 45 min"
+                    - option "Foot Massage · 60 min"
+                    - option "Foot Massage · 90 min"
+                    - option "Foot Massage · 120 min"
+                    - option "Swedish Massage · 60 min"
+                    - option "Swedish Massage · 90 min"
+                    - option "Swedish Massage · 120 min"
+                    - option "Deep Tissue Massage · 60 min"
+                    - option "Deep Tissue Massage · 90 min"
+                    - option "Deep Tissue Massage · 120 min"
+                - generic [ref=f2e235]:
+                  - generic [ref=f2e236]: Verification
+                  - combobox "Verification" [ref=f2e237] [cursor=pointer]:
+                    - option "All" [selected]
+                    - option "Submitted"
+                    - option "Approved"
+                    - option "Rejected"
+                    - option "Draft"
+                - generic [ref=f2e238]:
+                  - generic [ref=f2e239]: Online status
+                  - combobox "Online status" [ref=f2e240] [cursor=pointer]:
+                    - option "All" [selected]
+                    - option "Online"
+                    - option "Available"
+                    - option "Busy"
+                    - option "Offline"
+                - generic [ref=f2e241]:
+                  - generic [ref=f2e242]: Wallet
+                  - combobox "Wallet" [ref=f2e243] [cursor=pointer]:
+                    - option "All" [selected]
+                    - option "Negative"
+                    - option "Positive"
+                    - option "Zero"
+                - generic [ref=f2e244]:
+                  - generic [ref=f2e245]: Risk
+                  - combobox "Risk" [ref=f2e246] [cursor=pointer]:
+                    - option "All" [selected]
+                    - option "Critical"
+                    - option "High"
+                    - option "Medium"
+                    - option "Low"
+                - button "Apply filters" [ref=f2e247] [cursor=pointer]
+          - generic [ref=f2e248]:
+            - generic [ref=f2e249]:
+              - generic [ref=f2e250]:
+                - heading "Partner operations priority" [level=2] [ref=f2e251]
+                - paragraph [ref=f2e252]: The shortest route from supply signal to the next operator action.
+              - generic [ref=f2e253]: 4 actions
+            - generic [ref=f2e255]:
+              - link "Ready supply, 0 partners. Open ready list" [ref=f2e256] [cursor=pointer]:
+                - /url: /partners?review=ready-now
+                - generic [ref=f2e262]:
+                  - generic [ref=f2e263]: Pending
+                  - generic [ref=f2e264]: Ready supply
+                  - strong [ref=f2e265]: 0 partners
+                  - generic [ref=f2e266]: Approved, online, fresh location, active services, and wallet eligible
+                  - emphasis [ref=f2e267]: Open ready list
+              - link "Selection drop-off, 1 issue. Review friction" [ref=f2e270] [cursor=pointer]:
+                - /url: /partners/overview?range=7d&selectionIssue=availability&selectionSort=response
+                - generic [ref=f2e278]:
+                  - generic [ref=f2e279]: Pending
+                  - generic [ref=f2e280]: Selection drop-off
+                  - strong [ref=f2e281]: 1 issue
+                  - generic [ref=f2e282]: Viewed or favorited Partners who are not converting into selected bookings.
+                  - emphasis [ref=f2e283]: Review friction
+              - link "Wallet risk, 85 partners. Review wallet" [ref=f2e286] [cursor=pointer]:
+                - /url: /partners?review=unsettled
+                - generic [ref=f2e292]:
+                  - generic [ref=f2e293]: Needs action
+                  - generic [ref=f2e294]: Wallet risk
+                  - strong [ref=f2e295]: 85 partners
+                  - generic [ref=f2e296]: Negative wallet Partners can still join requests, but final booking acceptance may be blocked by wallet policy.
+                  - emphasis [ref=f2e297]: Review wallet
+              - link "Quality risk, 307 partners. Review quality" [ref=f2e300] [cursor=pointer]:
+                - /url: /partners?review=quality-all&qualityRange=7d
+                - generic [ref=f2e304]:
+                  - generic [ref=f2e305]: Needs action
+                  - generic [ref=f2e306]: Quality risk
+                  - strong [ref=f2e307]: 307 partners
+                  - generic [ref=f2e308]: Cancellation, no-show, low-review, and service-quality follow-up queue.
+                  - emphasis [ref=f2e309]: Review quality
+          - generic [ref=f2e312]:
+            - generic [ref=f2e313]:
+              - generic [ref=f2e314]:
+                - heading "Partner operating status" [level=2] [ref=f2e315]
+                - paragraph [ref=f2e316]: Separates ready supply from busy, soon-online, offline, and inactive Partners.
+              - generic [ref=f2e317]: Location <= 90m
+            - generic [ref=f2e319]:
+              - link "Ready now, 0 Partners. Open filtered Partners list" [ref=f2e320] [cursor=pointer]:
+                - /url: /partners?review=ready-now
+                - generic [ref=f2e326]:
+                  - generic [ref=f2e327]: Live
+                  - text: Ready now
+                  - strong [ref=f2e328]: "0"
+                  - text: Approved, online, fresh location, active services, and wallet eligible
+                  - emphasis [ref=f2e329]: Open filtered list
+              - link "Available but blocked, 98 Partners. Open filtered Partners list" [ref=f2e332] [cursor=pointer]:
+                - /url: /partners?review=available-blocked
+                - generic [ref=f2e336]:
+                  - generic [ref=f2e337]: Needs action
+                  - text: Available but blocked
+                  - strong [ref=f2e338]: "98"
+                  - text: Online available, but location, service, account, or wallet gates prevent booking
+                  - emphasis [ref=f2e339]: Open filtered list
+              - link "Available soon, 0 Partners. Open filtered Partners list" [ref=f2e342] [cursor=pointer]:
+                - /url: /partners?verification=APPROVED&kyc=APPROVED&providerStatus=ONLINE_AVAILABLE_SOON
+                - generic [ref=f2e347]:
+                  - generic [ref=f2e348]: Live
+                  - text: Available soon
+                  - strong [ref=f2e349]: "0"
+                  - text: Partner marked available soon instead of ready now
+                  - emphasis [ref=f2e350]: Open filtered list
+              - link "Busy / in service, 1 Partners. Open filtered Partners list" [ref=f2e353] [cursor=pointer]:
+                - /url: /partners?verification=APPROVED&kyc=APPROVED&providerStatus=ONLINE_BUSY
+                - generic [ref=f2e362]:
+                  - generic [ref=f2e363]: Current queue
+                  - text: Busy / in service
+                  - strong [ref=f2e364]: "1"
+                  - text: Booked, dispatch-locked, or otherwise cannot accept another request
+                  - emphasis [ref=f2e365]: Open filtered list
+              - link "Offline, 758 Partners. Open filtered Partners list" [ref=f2e368] [cursor=pointer]:
+                - /url: /partners?verification=APPROVED&kyc=APPROVED&providerStatus=OFFLINE
+                - generic [ref=f2e373]:
+                  - generic [ref=f2e374]: Needs action
+                  - text: Offline
+                  - strong [ref=f2e375]: "758"
+                  - text: Manual off, outside schedule, app off, blocked, or not ready
+                  - emphasis [ref=f2e376]: Open filtered list
+              - link "Inactive 7D, 502 Partners. Open filtered Partners list" [ref=f2e379] [cursor=pointer]:
+                - /url: /partners?verification=APPROVED&kyc=APPROVED&activity=inactive-7d
+                - generic [ref=f2e386]:
+                  - generic [ref=f2e387]: Needs action
+                  - text: Inactive 7D
+                  - strong [ref=f2e388]: "502"
+                  - text: Auto-offline follow-up queue for approved partners
+                  - emphasis [ref=f2e389]: Open filtered list
+              - generic "Customer App Partner visibility" [ref=f2e392]:
+                - generic [ref=f2e393]:
+                  - strong [ref=f2e394]: "Customer App visible now: 0"
+                  - generic [ref=f2e395]: Fresh public profiles · blocker counts can overlap
+                - link "Stale location No saved location in the last 90 minutes 98" [ref=f2e396] [cursor=pointer]:
+                  - /url: /partners?review=available-blocked-location
+                  - generic [ref=f2e397]:
+                    - strong [ref=f2e398]: Stale location
+                    - generic [ref=f2e399]: No saved location in the last 90 minutes
+                  - generic [ref=f2e400]: "98"
+                - link "Bank approval missing No approved payout bank account 86" [ref=f2e403] [cursor=pointer]:
+                  - /url: /partners?review=approval-pending&sort=oldest
+                  - generic [ref=f2e404]:
+                    - strong [ref=f2e405]: Bank approval missing
+                    - generic [ref=f2e406]: No approved payout bank account
+                  - generic [ref=f2e407]: "86"
+                - link "Documents missing Required identity documents are not all approved 0" [ref=f2e410] [cursor=pointer]:
+                  - /url: /partners?review=documents&sort=oldest
+                  - generic [ref=f2e411]:
+                    - strong [ref=f2e412]: Documents missing
+                    - generic [ref=f2e413]: Required identity documents are not all approved
+                  - generic [ref=f2e414]: "0"
+                - link "No bookable service Profile can be approved but cannot take a reservation 11" [ref=f2e417] [cursor=pointer]:
+                  - /url: /partners?review=available-blocked-service
+                  - generic [ref=f2e418]:
+                    - strong [ref=f2e419]: No bookable service
+                    - generic [ref=f2e420]: Profile can be approved but cannot take a reservation
+                  - generic [ref=f2e421]: "11"
+              - generic "Available Partner blocking signals" [ref=f2e424]:
+                - generic [ref=f2e425]:
+                  - strong [ref=f2e426]: Blocking signals
+                  - generic [ref=f2e427]: Signals can overlap
+                - link "Stale location No location update in the last 90 minutes 98" [ref=f2e428] [cursor=pointer]:
+                  - /url: /partners?review=available-blocked-location
+                  - generic [ref=f2e429]:
+                    - strong [ref=f2e430]: Stale location
+                    - generic [ref=f2e431]: No location update in the last 90 minutes
+                  - generic [ref=f2e432]: "98"
+                - link "No active service No active service can be offered to customers 11" [ref=f2e435] [cursor=pointer]:
+                  - /url: /partners?review=available-blocked-service
+                  - generic [ref=f2e436]:
+                    - strong [ref=f2e437]: No active service
+                    - generic [ref=f2e438]: No active service can be offered to customers
+                  - generic [ref=f2e439]: "11"
+                - link "Negative wallet Partner receivable blocks booking acceptance 12" [ref=f2e442] [cursor=pointer]:
+                  - /url: /partners?review=available-blocked-wallet
+                  - generic [ref=f2e443]:
+                    - strong [ref=f2e444]: Negative wallet
+                    - generic [ref=f2e445]: Partner receivable blocks booking acceptance
+                  - generic [ref=f2e446]: "12"
+                - link "Account blocked An active account block prevents dispatch 0" [ref=f2e449] [cursor=pointer]:
+                  - /url: /partners?review=available-blocked-account
+                  - generic [ref=f2e450]:
+                    - strong [ref=f2e451]: Account blocked
+                    - generic [ref=f2e452]: An active account block prevents dispatch
+                  - generic [ref=f2e453]: "0"
+          - region "Partner period performance" [ref=f2e456]:
+            - generic [ref=f2e465]:
+              - generic [ref=f2e466]: Last 7 days
+              - paragraph [ref=f2e467]: Average Response Time
+              - heading "4s" [level=2] [ref=f2e468]
+              - generic [ref=f2e469]: Joined/response proxy
+            - generic [ref=f2e476]:
+              - generic [ref=f2e477]: Last 7 days
+              - paragraph [ref=f2e478]: Average Rating
+              - heading "4.75" [level=2] [ref=f2e479]
+              - generic [ref=f2e480]: 8 published reviews
+            - generic [ref=f2e488]:
+              - generic [ref=f2e489]: Last 7 days
+              - paragraph [ref=f2e490]: Completion Rate
+              - heading "0%" [level=2] [ref=f2e491]
+              - generic [ref=f2e492]: Completed / completed + cancelled bookings
+            - generic [ref=f2e503]:
+              - generic [ref=f2e504]: Last 7 days
+              - paragraph [ref=f2e505]: Partner Cancellation Rate
+              - heading "100%" [level=2] [ref=f2e506]
+              - generic [ref=f2e507]: Cancelled / completed + cancelled
+          - region "Supply status" [ref=f2e508]:
+            - generic [ref=f2e509]:
+              - generic [ref=f2e511]:
+                - heading "Area supply status" [level=2] [ref=f2e512]
+                - paragraph [ref=f2e513]: Partner coverage and open demand by area · Last 7 days
+              - table [ref=f2e516]:
+                - rowgroup [ref=f2e517]:
+                  - row [ref=f2e518]:
+                    - columnheader "Area" [ref=f2e519]
+                    - columnheader "Partners" [ref=f2e520]
+                    - columnheader "Ready now" [ref=f2e521]
+                    - columnheader "Fresh location" [ref=f2e522]
+                    - columnheader "Eligible" [ref=f2e523]
+                    - columnheader "Open" [ref=f2e524]
+                    - columnheader "Failed" [ref=f2e525]
+                    - columnheader "Failure" [ref=f2e526]
+                    - columnheader "Response" [ref=f2e527]
+                    - columnheader "Status" [ref=f2e528]
+                - rowgroup [ref=f2e529]:
+                  - row [ref=f2e530]:
+                    - cell "Ha Noi" [ref=f2e531]
+                    - cell "0" [ref=f2e532]
+                    - cell "0" [ref=f2e533]
+                    - cell "0" [ref=f2e534]
+                    - cell "0" [ref=f2e535]
+                    - cell "0" [ref=f2e536]
+                    - cell "0" [ref=f2e537]
+                    - cell "0%" [ref=f2e538]
+                    - cell "Needs event" [ref=f2e539]
+                    - cell "Low Supply" [ref=f2e541]
+                  - row [ref=f2e543]:
+                    - cell "Ho Chi Minh City" [ref=f2e544]
+                    - cell "457" [ref=f2e545]
+                    - cell "1" [ref=f2e546]
+                    - cell "0" [ref=f2e547]
+                    - cell "0" [ref=f2e548]
+                    - cell "0" [ref=f2e549]
+                    - cell "150" [ref=f2e550]
+                    - cell "100%" [ref=f2e551]
+                    - cell "4s" [ref=f2e552]
+                    - cell "No Fresh Location" [ref=f2e554]
+                  - row [ref=f2e556]:
+                    - cell "Da Nang" [ref=f2e557]
+                    - cell "0" [ref=f2e558]
+                    - cell "0" [ref=f2e559]
+                    - cell "0" [ref=f2e560]
+                    - cell "0" [ref=f2e561]
+                    - cell "0" [ref=f2e562]
+                    - cell "0" [ref=f2e563]
+                    - cell "0%" [ref=f2e564]
+                    - cell "Needs event" [ref=f2e565]
+                    - cell "Low Supply" [ref=f2e567]
+                  - row [ref=f2e569]:
+                    - cell "Vung Tau" [ref=f2e570]
+                    - cell "0" [ref=f2e571]
+                    - cell "0" [ref=f2e572]
+                    - cell "0" [ref=f2e573]
+                    - cell "0" [ref=f2e574]
+                    - cell "0" [ref=f2e575]
+                    - cell "0" [ref=f2e576]
+                    - cell "0%" [ref=f2e577]
+                    - cell "Needs event" [ref=f2e578]
+                    - cell "Low Supply" [ref=f2e580]
+                  - row [ref=f2e582]:
+                    - cell "Nha Trang" [ref=f2e583]
+                    - cell "0" [ref=f2e584]
+                    - cell "0" [ref=f2e585]
+                    - cell "0" [ref=f2e586]
+                    - cell "0" [ref=f2e587]
+                    - cell "0" [ref=f2e588]
+                    - cell "0" [ref=f2e589]
+                    - cell "0%" [ref=f2e590]
+                    - cell "Needs event" [ref=f2e591]
+                    - cell "Low Supply" [ref=f2e593]
+            - generic [ref=f2e595]:
+              - generic [ref=f2e597]:
+                - heading "Service supply status" [level=2] [ref=f2e598]
+                - paragraph [ref=f2e599]: Supply by service duration and open work · Last 7 days
+              - table [ref=f2e602]:
+                - rowgroup [ref=f2e603]:
+                  - row [ref=f2e604]:
+                    - columnheader "Service" [ref=f2e605]
+                    - columnheader "Offering" [ref=f2e606]
+                    - columnheader "Ready now" [ref=f2e607]
+                    - columnheader "Eligible" [ref=f2e608]
+                    - columnheader "Open" [ref=f2e609]
+                    - columnheader "Done" [ref=f2e610]
+                    - columnheader "Completion" [ref=f2e611]
+                    - columnheader "Avg rating" [ref=f2e612]
+                    - columnheader "Status" [ref=f2e613]
+                - rowgroup [ref=f2e614]:
+                  - row [ref=f2e615]:
+                    - cell "Foot Massage · 45 min" [ref=f2e616]
+                    - cell "439" [ref=f2e617]
+                    - cell "1" [ref=f2e618]
+                    - cell "0" [ref=f2e619]
+                    - cell "0" [ref=f2e620]
+                    - cell "0" [ref=f2e621]
+                    - cell "0%" [ref=f2e622]
+                    - cell "5.00" [ref=f2e623]
+                    - cell "Healthy" [ref=f2e624]
+                  - row [ref=f2e626]:
+                    - cell "Foot Massage · 60 min" [ref=f2e627]
+                    - cell "1" [ref=f2e628]
+                    - cell "1" [ref=f2e629]
+                    - cell "0" [ref=f2e630]
+                    - cell "0" [ref=f2e631]
+                    - cell "0" [ref=f2e632]
+                    - cell "0%" [ref=f2e633]
+                    - cell "5.00" [ref=f2e634]
+                    - cell "Healthy" [ref=f2e635]
+                  - row [ref=f2e637]:
+                    - cell "Foot Massage · 90 min" [ref=f2e638]
+                    - cell "1" [ref=f2e639]
+                    - cell "1" [ref=f2e640]
+                    - cell "0" [ref=f2e641]
+                    - cell "0" [ref=f2e642]
+                    - cell "0" [ref=f2e643]
+                    - cell "0%" [ref=f2e644]
+                    - cell "5.00" [ref=f2e645]
+                    - cell "Healthy" [ref=f2e646]
+                  - row [ref=f2e648]:
+                    - cell "Foot Massage · 120 min" [ref=f2e649]
+                    - cell "1" [ref=f2e650]
+                    - cell "1" [ref=f2e651]
+                    - cell "0" [ref=f2e652]
+                    - cell "0" [ref=f2e653]
+                    - cell "0" [ref=f2e654]
+                    - cell "0%" [ref=f2e655]
+                    - cell "5.00" [ref=f2e656]
+                    - cell "Healthy" [ref=f2e657]
+                  - row [ref=f2e659]:
+                    - cell "Swedish Massage · 60 min" [ref=f2e660]
+                    - cell "1" [ref=f2e661]
+                    - cell "1" [ref=f2e662]
+                    - cell "0" [ref=f2e663]
+                    - cell "0" [ref=f2e664]
+                    - cell "0" [ref=f2e665]
+                    - cell "0%" [ref=f2e666]
+                    - cell "5.00" [ref=f2e667]
+                    - cell "Healthy" [ref=f2e668]
+          - generic [ref=f2e670]:
+            - generic [ref=f2e671]:
+              - generic [ref=f2e672]:
+                - heading "Partner readiness funnel" [level=2] [ref=f2e673]
+                - paragraph [ref=f2e674]: A linked subset from registered Partners to approved supply and Partners ready to accept now.
+              - generic [ref=f2e675]: Last 7 days
+            - generic [ref=f2e677]:
+              - generic [ref=f2e678]:
+                - generic [ref=f2e679]:
+                  - generic [ref=f2e680]: Registered
+                  - strong [ref=f2e681]: "932"
+                - generic [ref=f2e684]: 100% from signup · 0% drop
+              - generic [ref=f2e685]:
+                - generic [ref=f2e686]:
+                  - generic [ref=f2e687]: Approved
+                  - strong [ref=f2e688]: "860"
+                - generic [ref=f2e691]: 92% from signup · 8% drop
+              - generic [ref=f2e692]:
+                - generic [ref=f2e693]:
+                  - generic [ref=f2e694]: Ready Now
+                  - strong [ref=f2e695]: "0"
+                - generic [ref=f2e698]: 0% from signup · 100% drop
+          - generic [ref=f2e699]:
+            - generic [ref=f2e700]:
+              - generic [ref=f2e701]:
+                - heading "Partner app activity" [level=2] [ref=f2e702]
+                - paragraph [ref=f2e703]: Actual Partner App opens and authenticated session starts, kept separate from booking performance.
+              - generic [ref=f2e704]:
+                - generic [ref=f2e705]: Last 7 days
+                - link "Inactive 7D+" [ref=f2e706] [cursor=pointer]:
+                  - /url: /partners?activity=app-inactive-7d
+                - link "Not tracked" [ref=f2e707] [cursor=pointer]:
+                  - /url: /partners?activity=app-not-tracked
+            - generic [ref=f2e709]:
+              - generic [ref=f2e710]:
+                - generic [ref=f2e711]: App-active Partners
+                - strong [ref=f2e712]: "0"
+              - generic [ref=f2e713]:
+                - generic [ref=f2e714]: App Opens
+                - strong [ref=f2e715]: "0"
+              - generic [ref=f2e716]:
+                - generic [ref=f2e717]: Session Starts
+                - strong [ref=f2e718]: "0"
+              - generic [ref=f2e719]:
+                - generic [ref=f2e720]: Inactive 7D+
+                - strong [ref=f2e721]: "0"
+              - generic [ref=f2e722]:
+                - generic [ref=f2e723]: Not Tracked Yet
+                - strong [ref=f2e724]: "857"
+          - region "Partner app activity lists" [ref=f2e725]:
+            - generic [ref=f2e726]:
+              - heading "Most active" [level=2] [ref=f2e729]
+              - table [ref=f2e732]:
+                - rowgroup [ref=f2e733]:
+                  - row [ref=f2e734]:
+                    - columnheader "Partner" [ref=f2e735]
+                    - columnheader "Last active" [ref=f2e736]
+                    - columnheader "Usage" [ref=f2e737]
+                    - columnheader "Status" [ref=f2e738]
+                - rowgroup [ref=f2e739]:
+                  - row [ref=f2e740]:
+                    - cell [ref=f2e741]:
+                      - status [ref=f2e742]:
+                        - paragraph [ref=f2e743]: No Partner app activity was recorded in this range.
+            - generic [ref=f2e744]:
+              - heading "Inactive 7D+ / not tracked" [level=2] [ref=f2e747]
+              - table [ref=f2e750]:
+                - rowgroup [ref=f2e751]:
+                  - row [ref=f2e752]:
+                    - columnheader "Partner" [ref=f2e753]
+                    - columnheader "Last active" [ref=f2e754]
+                    - columnheader "Usage" [ref=f2e755]
+                    - columnheader "Status" [ref=f2e756]
+                - rowgroup [ref=f2e757]:
+                  - row [ref=f2e758]:
+                    - cell "Linh Wellness Ho Chi Minh City · Online available" [ref=f2e759]:
+                      - link "Linh Wellness" [ref=f2e760] [cursor=pointer]:
+                        - /url: /partners/cmpb9dvqx0003vyqsk8dk7ufd
+                      - generic [ref=f2e761]: Ho Chi Minh City · Online available
+                    - cell "Not tracked" [ref=f2e762]
+                    - cell "0 opens 0 sessions" [ref=f2e763]:
+                      - text: 0 opens
+                      - generic [ref=f2e764]: 0 sessions
+                    - cell "Not tracked" [ref=f2e765]
+                  - row [ref=f2e767]:
+                    - cell "Partner 7339 Ho Chi Minh City · Offline" [ref=f2e768]:
+                      - link "Partner 7339" [ref=f2e769] [cursor=pointer]:
+                        - /url: /partners/cmr435zxv0049vypsimxj5pp2
+                      - generic [ref=f2e770]: Ho Chi Minh City · Offline
+                    - cell "Not tracked" [ref=f2e771]
+                    - cell "0 opens 0 sessions" [ref=f2e772]:
+                      - text: 0 opens
+                      - generic [ref=f2e773]: 0 sessions
+                    - cell "Not tracked" [ref=f2e774]
+                  - row [ref=f2e776]:
+                    - cell "Partner 5338 Ho Chi Minh City · Offline" [ref=f2e777]:
+                      - link "Partner 5338" [ref=f2e778] [cursor=pointer]:
+                        - /url: /partners/cmr435zx90044vyps1fkagad5
+                      - generic [ref=f2e779]: Ho Chi Minh City · Offline
+                    - cell "Not tracked" [ref=f2e780]
+                    - cell "0 opens 0 sessions" [ref=f2e781]:
+                      - text: 0 opens
+                      - generic [ref=f2e782]: 0 sessions
+                    - cell "Not tracked" [ref=f2e783]
+                  - row [ref=f2e785]:
+                    - cell "Partner 3337 Ho Chi Minh City · Offline" [ref=f2e786]:
+                      - link "Partner 3337" [ref=f2e787] [cursor=pointer]:
+                        - /url: /partners/cmr435zwn003zvypszsfenpf1
+                      - generic [ref=f2e788]: Ho Chi Minh City · Offline
+                    - cell "Not tracked" [ref=f2e789]
+                    - cell "0 opens 0 sessions" [ref=f2e790]:
+                      - text: 0 opens
+                      - generic [ref=f2e791]: 0 sessions
+                    - cell "Not tracked" [ref=f2e792]
+                  - row [ref=f2e794]:
+                    - cell "Partner 2336 Ho Chi Minh City · Offline" [ref=f2e795]:
+                      - link "Partner 2336" [ref=f2e796] [cursor=pointer]:
+                        - /url: /partners/cmr435zw3003uvypsh9y7tdyg
+                      - generic [ref=f2e797]: Ho Chi Minh City · Offline
+                    - cell "Not tracked" [ref=f2e798]
+                    - cell "0 opens 0 sessions" [ref=f2e799]:
+                      - text: 0 opens
+                      - generic [ref=f2e800]: 0 sessions
+                    - cell "Not tracked" [ref=f2e801]
+                  - row [ref=f2e803]:
+                    - cell "Partner 3335 Ho Chi Minh City · Offline" [ref=f2e804]:
+                      - link "Partner 3335" [ref=f2e805] [cursor=pointer]:
+                        - /url: /partners/cmr435zvh003pvypshixflo10
+                      - generic [ref=f2e806]: Ho Chi Minh City · Offline
+                    - cell "Not tracked" [ref=f2e807]
+                    - cell "0 opens 0 sessions" [ref=f2e808]:
+                      - text: 0 opens
+                      - generic [ref=f2e809]: 0 sessions
+                    - cell "Not tracked" [ref=f2e810]
+                  - row [ref=f2e812]:
+                    - cell "Partner 9334 Ho Chi Minh City · Offline" [ref=f2e813]:
+                      - link "Partner 9334" [ref=f2e814] [cursor=pointer]:
+                        - /url: /partners/cmr435zuw003kvyps2rps1gdh
+                      - generic [ref=f2e815]: Ho Chi Minh City · Offline
+                    - cell "Not tracked" [ref=f2e816]
+                    - cell "0 opens 0 sessions" [ref=f2e817]:
+                      - text: 0 opens
+                      - generic [ref=f2e818]: 0 sessions
+                    - cell "Not tracked" [ref=f2e819]
+                  - row [ref=f2e821]:
+                    - cell "Partner 1333 Ho Chi Minh City · Offline" [ref=f2e822]:
+                      - link "Partner 1333" [ref=f2e823] [cursor=pointer]:
+                        - /url: /partners/cmr435zu6003fvypspyoevy2z
+                      - generic [ref=f2e824]: Ho Chi Minh City · Offline
+                    - cell "Not tracked" [ref=f2e825]
+                    - cell "0 opens 0 sessions" [ref=f2e826]:
+                      - text: 0 opens
+                      - generic [ref=f2e827]: 0 sessions
+                    - cell "Not tracked" [ref=f2e828]
+                  - row [ref=f2e830]:
+                    - cell "Partner 3332 Ho Chi Minh City · Offline" [ref=f2e831]:
+                      - link "Partner 3332" [ref=f2e832] [cursor=pointer]:
+                        - /url: /partners/cmr435ztd003avyps3becbwra
+                      - generic [ref=f2e833]: Ho Chi Minh City · Offline
+                    - cell "Not tracked" [ref=f2e834]
+                    - cell "0 opens 0 sessions" [ref=f2e835]:
+                      - text: 0 opens
+                      - generic [ref=f2e836]: 0 sessions
+                    - cell "Not tracked" [ref=f2e837]
+                  - row [ref=f2e839]:
+                    - cell "Partner 4331 Ho Chi Minh City · Offline" [ref=f2e840]:
+                      - link "Partner 4331" [ref=f2e841] [cursor=pointer]:
+                        - /url: /partners/cmr435zsl0035vypsl5i385sl
+                      - generic [ref=f2e842]: Ho Chi Minh City · Offline
+                    - cell "Not tracked" [ref=f2e843]
+                    - cell "0 opens 0 sessions" [ref=f2e844]:
+                      - text: 0 opens
+                      - generic [ref=f2e845]: 0 sessions
+                    - cell "Not tracked" [ref=f2e846]
+          - region "Partner quality and finance" [ref=f2e848]:
+            - generic [ref=f2e849]:
+              - generic [ref=f2e851]:
+                - heading "Booking quality risk" [level=2] [ref=f2e852]
+                - paragraph [ref=f2e853]: Cancellation, no-show, low review, and rating risk.
+              - generic [ref=f2e854]:
+                - generic [ref=f2e855]:
+                  - generic [ref=f2e856]:
+                    - generic [ref=f2e857]: Completion Rate
+                    - strong [ref=f2e858]: 0%
+                  - generic [ref=f2e859]:
+                    - generic [ref=f2e860]: Partner Cancellation Rate
+                    - strong [ref=f2e861]: 100%
+                  - generic [ref=f2e862]:
+                    - generic [ref=f2e863]: No-show Reports
+                    - strong [ref=f2e864]: "0"
+                  - generic [ref=f2e865]:
+                    - generic [ref=f2e866]: Low Rating Reviews
+                    - strong [ref=f2e867]: "0"
+                  - generic [ref=f2e868]:
+                    - generic [ref=f2e869]: Review Count
+                    - strong [ref=f2e870]: "8"
+                - table [ref=f2e872]:
+                  - rowgroup [ref=f2e873]:
+                    - row [ref=f2e874]:
+                      - columnheader "Partner" [ref=f2e875]
+                      - columnheader "Area" [ref=f2e876]
+                      - columnheader "Rating" [ref=f2e877]
+                      - columnheader "Done" [ref=f2e878]
+                      - columnheader "Cancel" [ref=f2e879]
+                      - columnheader "No-show" [ref=f2e880]
+                      - columnheader "Action" [ref=f2e881]
+                  - rowgroup [ref=f2e882]:
+                    - row [ref=f2e883]:
+                      - cell "Partner 7339 Offline · Negative wallet" [ref=f2e884]:
+                        - link "Partner 7339" [ref=f2e885] [cursor=pointer]:
+                          - /url: /partners/cmr435zxv0049vypsimxj5pp2?section=full
+                        - generic [ref=f2e886]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e887]
+                      - cell "-" [ref=f2e888]
+                      - cell "0" [ref=f2e889]
+                      - cell "100%" [ref=f2e890]
+                      - cell "0" [ref=f2e891]
+                      - cell [ref=f2e892]:
+                        - link "Review wallet receivable for Partner 7339" [ref=f2e893] [cursor=pointer]:
+                          - /url: /partners/cmr435zxv0049vypsimxj5pp2?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e894]:
+                      - cell "Partner 6051 Offline · Negative wallet" [ref=f2e895]:
+                        - link "Partner 6051" [ref=f2e896] [cursor=pointer]:
+                          - /url: /partners/cmr404cak0f07vyfw6bcu8ie2?section=full
+                        - generic [ref=f2e897]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e898]
+                      - cell "-" [ref=f2e899]
+                      - cell "0" [ref=f2e900]
+                      - cell "100%" [ref=f2e901]
+                      - cell "0" [ref=f2e902]
+                      - cell [ref=f2e903]:
+                        - link "Review wallet receivable for Partner 6051" [ref=f2e904] [cursor=pointer]:
+                          - /url: /partners/cmr404cak0f07vyfw6bcu8ie2?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e905]:
+                      - cell "Partner 2315 Offline · Negative wallet" [ref=f2e906]:
+                        - link "Partner 2315" [ref=f2e907] [cursor=pointer]:
+                          - /url: /partners/cmr3zt5gj0bz6vyfw57kswv2j?section=full
+                        - generic [ref=f2e908]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e909]
+                      - cell "-" [ref=f2e910]
+                      - cell "0" [ref=f2e911]
+                      - cell "100%" [ref=f2e912]
+                      - cell "0" [ref=f2e913]
+                      - cell [ref=f2e914]:
+                        - link "Review wallet receivable for Partner 2315" [ref=f2e915] [cursor=pointer]:
+                          - /url: /partners/cmr3zt5gj0bz6vyfw57kswv2j?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e916]:
+                      - cell "Partner 5719 Offline · Negative wallet" [ref=f2e917]:
+                        - link "Partner 5719" [ref=f2e918] [cursor=pointer]:
+                          - /url: /partners/cmr3zn980093lvyfwmmlkk864?section=full
+                        - generic [ref=f2e919]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e920]
+                      - cell "-" [ref=f2e921]
+                      - cell "0" [ref=f2e922]
+                      - cell "100%" [ref=f2e923]
+                      - cell "0" [ref=f2e924]
+                      - cell [ref=f2e925]:
+                        - link "Review wallet receivable for Partner 5719" [ref=f2e926] [cursor=pointer]:
+                          - /url: /partners/cmr3zn980093lvyfwmmlkk864?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e927]:
+                      - cell "Partner 7111 Offline · Negative wallet" [ref=f2e928]:
+                        - link "Partner 7111" [ref=f2e929] [cursor=pointer]:
+                          - /url: /partners/cmr3zha4s06hkvyfwpdfkav1z?section=full
+                        - generic [ref=f2e930]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e931]
+                      - cell "-" [ref=f2e932]
+                      - cell "0" [ref=f2e933]
+                      - cell "100%" [ref=f2e934]
+                      - cell "0" [ref=f2e935]
+                      - cell [ref=f2e936]:
+                        - link "Review wallet receivable for Partner 7111" [ref=f2e937] [cursor=pointer]:
+                          - /url: /partners/cmr3zha4s06hkvyfwpdfkav1z?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e938]:
+                      - cell "Partner 9987 Offline · Negative wallet" [ref=f2e939]:
+                        - link "Partner 9987" [ref=f2e940] [cursor=pointer]:
+                          - /url: /partners/cmr3z71s803e9vyfwp4hnn25r?section=full
+                        - generic [ref=f2e941]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e942]
+                      - cell "-" [ref=f2e943]
+                      - cell "0" [ref=f2e944]
+                      - cell "100%" [ref=f2e945]
+                      - cell "0" [ref=f2e946]
+                      - cell [ref=f2e947]:
+                        - link "Review wallet receivable for Partner 9987" [ref=f2e948] [cursor=pointer]:
+                          - /url: /partners/cmr3z71s803e9vyfwp4hnn25r?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e949]:
+                      - cell "Partner 8679 Offline · Negative wallet" [ref=f2e950]:
+                        - link "Partner 8679" [ref=f2e951] [cursor=pointer]:
+                          - /url: /partners/cmr3z1bs301m3vyfw8mesq9p8?section=full
+                        - generic [ref=f2e952]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e953]
+                      - cell "-" [ref=f2e954]
+                      - cell "0" [ref=f2e955]
+                      - cell "100%" [ref=f2e956]
+                      - cell "0" [ref=f2e957]
+                      - cell [ref=f2e958]:
+                        - link "Review wallet receivable for Partner 8679" [ref=f2e959] [cursor=pointer]:
+                          - /url: /partners/cmr3z1bs301m3vyfw8mesq9p8?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e960]:
+                      - cell "Partner 9327 Offline · Negative wallet" [ref=f2e961]:
+                        - link "Partner 9327" [ref=f2e962] [cursor=pointer]:
+                          - /url: /partners/cmr3yw2h5003bvyfw55j55ad2?section=full
+                        - generic [ref=f2e963]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e964]
+                      - cell "-" [ref=f2e965]
+                      - cell "0" [ref=f2e966]
+                      - cell "100%" [ref=f2e967]
+                      - cell "0" [ref=f2e968]
+                      - cell [ref=f2e969]:
+                        - link "Review wallet receivable for Partner 9327" [ref=f2e970] [cursor=pointer]:
+                          - /url: /partners/cmr3yw2h5003bvyfw55j55ad2?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e971]:
+                      - cell "Partner 5443 Offline · Negative wallet" [ref=f2e972]:
+                        - link "Partner 5443" [ref=f2e973] [cursor=pointer]:
+                          - /url: /partners/cmr3xerdu001hvyac8a23i6vz?section=full
+                        - generic [ref=f2e974]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e975]
+                      - cell "-" [ref=f2e976]
+                      - cell "0" [ref=f2e977]
+                      - cell "100%" [ref=f2e978]
+                      - cell "0" [ref=f2e979]
+                      - cell [ref=f2e980]:
+                        - link "Review wallet receivable for Partner 5443" [ref=f2e981] [cursor=pointer]:
+                          - /url: /partners/cmr3xerdu001hvyac8a23i6vz?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e982]:
+                      - cell "Partner 7499 Offline · Negative wallet" [ref=f2e983]:
+                        - link "Partner 7499" [ref=f2e984] [cursor=pointer]:
+                          - /url: /partners/cmr3x9gp401z9vygswl58vi5u?section=full
+                        - generic [ref=f2e985]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e986]
+                      - cell "-" [ref=f2e987]
+                      - cell "0" [ref=f2e988]
+                      - cell "100%" [ref=f2e989]
+                      - cell "0" [ref=f2e990]
+                      - cell [ref=f2e991]:
+                        - link "Review wallet receivable for Partner 7499" [ref=f2e992] [cursor=pointer]:
+                          - /url: /partners/cmr3x9gp401z9vygswl58vi5u?section=full
+                          - text: Review wallet receivable
+            - generic [ref=f2e993]:
+              - generic [ref=f2e995]:
+                - heading "Finance and wallet risk" [level=2] [ref=f2e996]
+                - paragraph [ref=f2e997]: Negative wallet Partners can still join requests, but final booking acceptance may be blocked by wallet policy.
+              - generic [ref=f2e998]:
+                - generic [ref=f2e999]:
+                  - generic [ref=f2e1000]:
+                    - generic [ref=f2e1001]: Partner Gross Booking Amount
+                    - strong [ref=f2e1002]: 9.500.000 VND
+                  - generic [ref=f2e1003]:
+                    - generic [ref=f2e1004]: Platform Fee
+                    - strong [ref=f2e1005]: 1.900.000 VND
+                  - generic [ref=f2e1006]:
+                    - generic [ref=f2e1007]: Partner Payout Pending
+                    - strong [ref=f2e1008]: "-175.000 VND"
+                  - generic [ref=f2e1009]:
+                    - generic [ref=f2e1010]: Partner Payout Completed
+                    - strong [ref=f2e1011]: 1.700.000 VND
+                  - generic [ref=f2e1012]:
+                    - generic [ref=f2e1013]: Partner Wallet Balance Total
+                    - strong [ref=f2e1014]: "-6.180.000 VND"
+                - table [ref=f2e1016]:
+                  - rowgroup [ref=f2e1017]:
+                    - row [ref=f2e1018]:
+                      - columnheader "Partner" [ref=f2e1019]
+                      - columnheader "Area" [ref=f2e1020]
+                      - columnheader "Rating" [ref=f2e1021]
+                      - columnheader "Done" [ref=f2e1022]
+                      - columnheader "Cancel" [ref=f2e1023]
+                      - columnheader "No-show" [ref=f2e1024]
+                      - columnheader "Wallet" [ref=f2e1025]
+                      - columnheader "Action" [ref=f2e1026]
+                  - rowgroup [ref=f2e1027]:
+                    - row [ref=f2e1028]:
+                      - cell "Smoke Partner Offline · Negative wallet" [ref=f2e1029]:
+                        - link "Smoke Partner" [ref=f2e1030] [cursor=pointer]:
+                          - /url: /partners/cmr435zr2002vvypsp40gi1jh?section=full
+                        - generic [ref=f2e1031]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e1032]
+                      - cell "5.0" [ref=f2e1033]
+                      - cell "0" [ref=f2e1034]
+                      - cell "0%" [ref=f2e1035]
+                      - cell "0" [ref=f2e1036]
+                      - cell "-225.000 VND" [ref=f2e1037]
+                      - cell [ref=f2e1038]:
+                        - link "Review wallet receivable for Smoke Partner" [ref=f2e1039] [cursor=pointer]:
+                          - /url: /partners/cmr435zr2002vvypsp40gi1jh?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e1040]:
+                      - cell "Smoke Partner Offline · Negative wallet" [ref=f2e1041]:
+                        - link "Smoke Partner" [ref=f2e1042] [cursor=pointer]:
+                          - /url: /partners/cmr404c4q0eytvyfwct3t2tst?section=full
+                        - generic [ref=f2e1043]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e1044]
+                      - cell "5.0" [ref=f2e1045]
+                      - cell "0" [ref=f2e1046]
+                      - cell "0%" [ref=f2e1047]
+                      - cell "0" [ref=f2e1048]
+                      - cell "-225.000 VND" [ref=f2e1049]
+                      - cell [ref=f2e1050]:
+                        - link "Review wallet receivable for Smoke Partner" [ref=f2e1051] [cursor=pointer]:
+                          - /url: /partners/cmr404c4q0eytvyfwct3t2tst?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e1052]:
+                      - cell "Smoke Partner Offline · Negative wallet" [ref=f2e1053]:
+                        - link "Smoke Partner" [ref=f2e1054] [cursor=pointer]:
+                          - /url: /partners/cmr3zt5aj0bxsvyfwh3agx4en?section=full
+                        - generic [ref=f2e1055]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e1056]
+                      - cell "5.0" [ref=f2e1057]
+                      - cell "0" [ref=f2e1058]
+                      - cell "0%" [ref=f2e1059]
+                      - cell "0" [ref=f2e1060]
+                      - cell "-225.000 VND" [ref=f2e1061]
+                      - cell [ref=f2e1062]:
+                        - link "Review wallet receivable for Smoke Partner" [ref=f2e1063] [cursor=pointer]:
+                          - /url: /partners/cmr3zt5aj0bxsvyfwh3agx4en?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e1064]:
+                      - cell "Smoke Partner Offline · Negative wallet" [ref=f2e1065]:
+                        - link "Smoke Partner" [ref=f2e1066] [cursor=pointer]:
+                          - /url: /partners/cmr3zn91u0927vyfw31no2ygh?section=full
+                        - generic [ref=f2e1067]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e1068]
+                      - cell "5.0" [ref=f2e1069]
+                      - cell "0" [ref=f2e1070]
+                      - cell "0%" [ref=f2e1071]
+                      - cell "0" [ref=f2e1072]
+                      - cell "-225.000 VND" [ref=f2e1073]
+                      - cell [ref=f2e1074]:
+                        - link "Review wallet receivable for Smoke Partner" [ref=f2e1075] [cursor=pointer]:
+                          - /url: /partners/cmr3zn91u0927vyfw31no2ygh?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e1076]:
+                      - cell "Smoke Partner Offline · Negative wallet" [ref=f2e1077]:
+                        - link "Smoke Partner" [ref=f2e1078] [cursor=pointer]:
+                          - /url: /partners/cmr3zh9yw06g6vyfwmw85vj03?section=full
+                        - generic [ref=f2e1079]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e1080]
+                      - cell "5.0" [ref=f2e1081]
+                      - cell "0" [ref=f2e1082]
+                      - cell "0%" [ref=f2e1083]
+                      - cell "0" [ref=f2e1084]
+                      - cell "-225.000 VND" [ref=f2e1085]
+                      - cell [ref=f2e1086]:
+                        - link "Review wallet receivable for Smoke Partner" [ref=f2e1087] [cursor=pointer]:
+                          - /url: /partners/cmr3zh9yw06g6vyfwmw85vj03?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e1088]:
+                      - cell "Smoke Partner Offline · Negative wallet" [ref=f2e1089]:
+                        - link "Smoke Partner" [ref=f2e1090] [cursor=pointer]:
+                          - /url: /partners/cmr3z71l903cvvyfwwkymm92s?section=full
+                        - generic [ref=f2e1091]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e1092]
+                      - cell "5.0" [ref=f2e1093]
+                      - cell "0" [ref=f2e1094]
+                      - cell "0%" [ref=f2e1095]
+                      - cell "0" [ref=f2e1096]
+                      - cell "-225.000 VND" [ref=f2e1097]
+                      - cell [ref=f2e1098]:
+                        - link "Review wallet receivable for Smoke Partner" [ref=f2e1099] [cursor=pointer]:
+                          - /url: /partners/cmr3z71l903cvvyfwwkymm92s?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e1100]:
+                      - cell "Smoke Partner Offline · Negative wallet" [ref=f2e1101]:
+                        - link "Smoke Partner" [ref=f2e1102] [cursor=pointer]:
+                          - /url: /partners/cmr3z1bm101kpvyfwjdvhcfrm?section=full
+                        - generic [ref=f2e1103]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e1104]
+                      - cell "5.0" [ref=f2e1105]
+                      - cell "0" [ref=f2e1106]
+                      - cell "0%" [ref=f2e1107]
+                      - cell "0" [ref=f2e1108]
+                      - cell "-225.000 VND" [ref=f2e1109]
+                      - cell [ref=f2e1110]:
+                        - link "Review wallet receivable for Smoke Partner" [ref=f2e1111] [cursor=pointer]:
+                          - /url: /partners/cmr3z1bm101kpvyfwjdvhcfrm?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e1112]:
+                      - cell "Smoke Partner Offline · Negative wallet" [ref=f2e1113]:
+                        - link "Smoke Partner" [ref=f2e1114] [cursor=pointer]:
+                          - /url: /partners/cmr3yw2ah001xvyfwikm079dv?section=full
+                        - generic [ref=f2e1115]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e1116]
+                      - cell "5.0" [ref=f2e1117]
+                      - cell "0" [ref=f2e1118]
+                      - cell "0%" [ref=f2e1119]
+                      - cell "0" [ref=f2e1120]
+                      - cell "-225.000 VND" [ref=f2e1121]
+                      - cell [ref=f2e1122]:
+                        - link "Review wallet receivable for Smoke Partner" [ref=f2e1123] [cursor=pointer]:
+                          - /url: /partners/cmr3yw2ah001xvyfwikm079dv?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e1124]:
+                      - cell "Smoke Partner Offline · Negative wallet" [ref=f2e1125]:
+                        - link "Smoke Partner" [ref=f2e1126] [cursor=pointer]:
+                          - /url: /partners/cmr3xer7g0003vyac5b2uqotd?section=full
+                        - generic [ref=f2e1127]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e1128]
+                      - cell "5.0" [ref=f2e1129]
+                      - cell "0" [ref=f2e1130]
+                      - cell "0%" [ref=f2e1131]
+                      - cell "0" [ref=f2e1132]
+                      - cell "-225.000 VND" [ref=f2e1133]
+                      - cell [ref=f2e1134]:
+                        - link "Review wallet receivable for Smoke Partner" [ref=f2e1135] [cursor=pointer]:
+                          - /url: /partners/cmr3xer7g0003vyac5b2uqotd?section=full
+                          - text: Review wallet receivable
+                    - row [ref=f2e1136]:
+                      - cell "Smoke Partner Offline · Negative wallet" [ref=f2e1137]:
+                        - link "Smoke Partner" [ref=f2e1138] [cursor=pointer]:
+                          - /url: /partners/cmr3x9gju01xvvygspoy6qwat?section=full
+                        - generic [ref=f2e1139]: Offline · Negative wallet
+                      - cell "Ho Chi Minh City" [ref=f2e1140]
+                      - cell "5.0" [ref=f2e1141]
+                      - cell "0" [ref=f2e1142]
+                      - cell "0%" [ref=f2e1143]
+                      - cell "0" [ref=f2e1144]
+                      - cell "-225.000 VND" [ref=f2e1145]
+                      - cell [ref=f2e1146]:
+                        - link "Review wallet receivable for Smoke Partner" [ref=f2e1147] [cursor=pointer]:
+                          - /url: /partners/cmr3x9gju01xvvygspoy6qwat?section=full
+                          - text: Review wallet receivable
+          - generic [ref=f2e1148]:
+            - generic [ref=f2e1150]:
+              - heading "Selection friction" [level=2] [ref=f2e1151]
+              - paragraph [ref=f2e1152]: Partners customers look at or favorite, but do not select or complete with.
+            - generic [ref=f2e1153]:
+              - generic [ref=f2e1154]:
+                - generic [ref=f2e1155]:
+                  - strong [ref=f2e1156]: Selection issue
+                  - generic "Partner selection issue" [ref=f2e1157]:
+                    - link "All (1)" [ref=f2e1158] [cursor=pointer]:
+                      - /url: /partners/overview?range=7d
+                    - link "Availability (0)" [ref=f2e1159] [cursor=pointer]:
+                      - /url: /partners/overview?range=7d&selectionIssue=availability
+                    - link "Profile (0)" [ref=f2e1160] [cursor=pointer]:
+                      - /url: /partners/overview?range=7d&selectionIssue=profile
+                    - link "Price (0)" [ref=f2e1161] [cursor=pointer]:
+                      - /url: /partners/overview?range=7d&selectionIssue=price
+                    - link "Response (0)" [ref=f2e1162] [cursor=pointer]:
+                      - /url: /partners/overview?range=7d&selectionIssue=response
+                    - link "Service (0)" [ref=f2e1163] [cursor=pointer]:
+                      - /url: /partners/overview?range=7d&selectionIssue=service
+                - generic [ref=f2e1164]:
+                  - generic [ref=f2e1165]:
+                    - generic [ref=f2e1166]: Sort selection rows
+                    - combobox "Sort selection rows" [ref=f2e1167] [cursor=pointer]:
+                      - option "Profile views" [selected]
+                      - option "Favorites"
+                      - option "Response time"
+                      - option "Highest price"
+                      - option "Availability risk"
+                  - button "Apply" [ref=f2e1168] [cursor=pointer]
+              - table [ref=f2e1170]:
+                - rowgroup [ref=f2e1171]:
+                  - row [ref=f2e1172]:
+                    - columnheader "Partner" [ref=f2e1173]
+                    - columnheader "Area" [ref=f2e1174]
+                    - columnheader "Views" [ref=f2e1175]
+                    - columnheader "Favorites" [ref=f2e1176]
+                    - columnheader "Price" [ref=f2e1177]
+                    - columnheader "Response" [ref=f2e1178]
+                    - columnheader "Availability" [ref=f2e1179]
+                    - columnheader "Profile" [ref=f2e1180]
+                    - columnheader "Done" [ref=f2e1181]
+                    - columnheader "Selected" [ref=f2e1182]
+                    - columnheader "Rating" [ref=f2e1183]
+                    - columnheader "Reason" [ref=f2e1184]
+                    - columnheader "Action" [ref=f2e1185]
+                - rowgroup [ref=f2e1186]:
+                  - row [ref=f2e1187]:
+                    - cell "Linh Wellness Online available" [ref=f2e1188]:
+                      - link "Linh Wellness" [ref=f2e1189] [cursor=pointer]:
+                        - /url: /partners/cmpb9dvqx0003vyqsk8dk7ufd?section=full
+                      - generic [ref=f2e1190]: Online available
+                    - cell "Ho Chi Minh City" [ref=f2e1191]
+                    - cell "1 views 1 customers" [ref=f2e1192]:
+                      - text: 1 views
+                      - generic [ref=f2e1193]: 1 customers
+                    - cell "0 favorites" [ref=f2e1194]
+                    - cell "400.000 VND - 900.000 VND" [ref=f2e1195]
+                    - cell "Needs event" [ref=f2e1196]
+                    - cell "Available now Next Not set" [ref=f2e1197]:
+                      - text: Available now
+                      - generic [ref=f2e1198]:
+                        - text: Next
+                        - generic [ref=f2e1199]: Not set
+                    - cell "Profile image ready 3 gallery · 10 services" [ref=f2e1200]:
+                      - text: Profile image ready
+                      - generic [ref=f2e1201]: 3 gallery · 10 services
+                    - cell "0" [ref=f2e1202]
+                    - cell "0% selected" [ref=f2e1203]
+                    - cell "5.0 (102)" [ref=f2e1204]
+                    - cell "Risk blocking conversion Not eligible now" [ref=f2e1205]:
+                      - generic [ref=f2e1206]: Risk blocking conversion
+                      - generic [ref=f2e1207]: Not eligible now
+                    - cell [ref=f2e1208]:
+                      - link "Resolve operational risk first for Linh Wellness" [ref=f2e1209] [cursor=pointer]:
+                        - /url: /partners/cmpb9dvqx0003vyqsk8dk7ufd?section=full
+                        - text: Resolve operational risk first
+          - generic [ref=f2e1210]:
+            - generic [ref=f2e1211]:
+              - generic [ref=f2e1212]:
+                - heading "Detailed action queues" [level=2] [ref=f2e1213]
+                - paragraph [ref=f2e1214]: Detailed queues behind the priorities above. Open a filtered list only when follow-up is needed.
+              - generic [ref=f2e1215]: 11 queues
+            - generic [ref=f2e1217]:
+              - generic [ref=f2e1218]:
+                - generic [ref=f2e1219]:
+                  - generic [ref=f2e1220]:
+                    - heading "Pending Verification" [level=3] [ref=f2e1221]
+                    - paragraph [ref=f2e1222]: 75 Partners
+                  - link "Open Pending Verification" [ref=f2e1224] [cursor=pointer]:
+                    - /url: /partners?review=approval-incomplete
+                    - text: Open
+                - generic "Pending Verification action rows" [ref=f2e1227]:
+                  - link "Smoke Referral Claim Partner, +84909100022, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 12:22, Verification incomplete, Finish KYC approval" [ref=f2e1228] [cursor=pointer]:
+                    - /url: /partners/smoke_referral_claim_partner_profile?section=full
+                    - generic [ref=f2e1229]:
+                      - strong [ref=f2e1230]: Smoke Referral Claim Partner
+                      - generic [ref=f2e1231]: +84909100022 · Ho Chi Minh City
+                      - generic [ref=f2e1232]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1233]: 20 Jul 2026, 12:22
+                    - generic [ref=f2e1234]:
+                      - generic [ref=f2e1235]: Verification incomplete
+                      - generic [ref=f2e1236]: Finish KYC approval
+                  - link "An Pham, +84909008003, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:47, Verification incomplete, Finish KYC approval" [ref=f2e1237] [cursor=pointer]:
+                    - /url: /partners/smoke_booking_list_resolved_provider_profile?section=full
+                    - generic [ref=f2e1238]:
+                      - strong [ref=f2e1239]: An Pham
+                      - generic [ref=f2e1240]: +84909008003 · Ho Chi Minh City
+                      - generic [ref=f2e1241]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1242]: 20 Jul 2026, 11:47
+                    - generic [ref=f2e1243]:
+                      - generic [ref=f2e1244]: Verification incomplete
+                      - generic [ref=f2e1245]: Finish KYC approval
+                  - link "Linh Tran, +84909008001, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:47, Verification incomplete, Finish KYC approval" [ref=f2e1246] [cursor=pointer]:
+                    - /url: /partners/smoke_booking_list_preferred_provider_profile?section=full
+                    - generic [ref=f2e1247]:
+                      - strong [ref=f2e1248]: Linh Tran
+                      - generic [ref=f2e1249]: +84909008001 · Ho Chi Minh City
+                      - generic [ref=f2e1250]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1251]: 20 Jul 2026, 11:47
+                    - generic [ref=f2e1252]:
+                      - generic [ref=f2e1253]: Verification incomplete
+                      - generic [ref=f2e1254]: Finish KYC approval
+                  - link "Partner 0340, +84016610340, Other Vietnam, Offline, last activity 20 Jul 2026, 11:45, Verification incomplete, Finish KYC approval" [ref=f2e1255] [cursor=pointer]:
+                    - /url: /partners/cmr435zyi004evyps84tx4qgs?section=full
+                    - generic [ref=f2e1256]:
+                      - strong [ref=f2e1257]: Partner 0340
+                      - generic [ref=f2e1258]: +84016610340 · Other Vietnam
+                      - generic [ref=f2e1259]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1260]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1261]:
+                      - generic [ref=f2e1262]: Verification incomplete
+                      - generic [ref=f2e1263]: Finish KYC approval
+                  - link "Partner 6052, +84000456052, Other Vietnam, Offline, last activity 20 Jul 2026, 11:45, Verification incomplete, Finish KYC approval" [ref=f2e1264] [cursor=pointer]:
+                    - /url: /partners/cmr404cb30f0cvyfwe2ma7v1c?section=full
+                    - generic [ref=f2e1265]:
+                      - strong [ref=f2e1266]: Partner 6052
+                      - generic [ref=f2e1267]: +84000456052 · Other Vietnam
+                      - generic [ref=f2e1268]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1269]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1270]:
+                      - generic [ref=f2e1271]: Verification incomplete
+                      - generic [ref=f2e1272]: Finish KYC approval
+                  - link "Partner 0199, +84137790199, Other Vietnam, Offline, last activity 20 Jul 2026, 11:41, Verification incomplete, Finish KYC approval" [ref=f2e1273] [cursor=pointer]:
+                    - /url: /partners/cmr3942920025vyjgo3yt6ycz?section=full
+                    - generic [ref=f2e1274]:
+                      - strong [ref=f2e1275]: Partner 0199
+                      - generic [ref=f2e1276]: +84137790199 · Other Vietnam
+                      - generic [ref=f2e1277]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1278]: 20 Jul 2026, 11:41
+                    - generic [ref=f2e1279]:
+                      - generic [ref=f2e1280]: Verification incomplete
+                      - generic [ref=f2e1281]: Finish KYC approval
+                  - link "Partner 9198, +84237769198, Other Vietnam, Offline, last activity 20 Jul 2026, 11:41, Verification incomplete, Finish KYC approval" [ref=f2e1282] [cursor=pointer]:
+                    - /url: /partners/cmr39428h0020vyjgp8dfsgfm?section=full
+                    - generic [ref=f2e1283]:
+                      - strong [ref=f2e1284]: Partner 9198
+                      - generic [ref=f2e1285]: +84237769198 · Other Vietnam
+                      - generic [ref=f2e1286]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1287]: 20 Jul 2026, 11:41
+                    - generic [ref=f2e1288]:
+                      - generic [ref=f2e1289]: Verification incomplete
+                      - generic [ref=f2e1290]: Finish KYC approval
+                  - link "Partner 6197, +84337746197, Other Vietnam, Offline, last activity 20 Jul 2026, 11:41, Verification incomplete, Finish KYC approval" [ref=f2e1291] [cursor=pointer]:
+                    - /url: /partners/cmr39427v001vvyjgb7sarsdy?section=full
+                    - generic [ref=f2e1292]:
+                      - strong [ref=f2e1293]: Partner 6197
+                      - generic [ref=f2e1294]: +84337746197 · Other Vietnam
+                      - generic [ref=f2e1295]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1296]: 20 Jul 2026, 11:41
+                    - generic [ref=f2e1297]:
+                      - generic [ref=f2e1298]: Verification incomplete
+                      - generic [ref=f2e1299]: Finish KYC approval
+                  - link "Partner 5196, +84437725196, Other Vietnam, Offline, last activity 20 Jul 2026, 11:41, Verification incomplete, Finish KYC approval" [ref=f2e1300] [cursor=pointer]:
+                    - /url: /partners/cmr39427a001qvyjg1xiydntl?section=full
+                    - generic [ref=f2e1301]:
+                      - strong [ref=f2e1302]: Partner 5196
+                      - generic [ref=f2e1303]: +84437725196 · Other Vietnam
+                      - generic [ref=f2e1304]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1305]: 20 Jul 2026, 11:41
+                    - generic [ref=f2e1306]:
+                      - generic [ref=f2e1307]: Verification incomplete
+                      - generic [ref=f2e1308]: Finish KYC approval
+                  - link "Partner 6195, +84537706195, Other Vietnam, Offline, last activity 20 Jul 2026, 11:41, Verification incomplete, Finish KYC approval" [ref=f2e1309] [cursor=pointer]:
+                    - /url: /partners/cmr39426p001lvyjgga0t00fm?section=full
+                    - generic [ref=f2e1310]:
+                      - strong [ref=f2e1311]: Partner 6195
+                      - generic [ref=f2e1312]: +84537706195 · Other Vietnam
+                      - generic [ref=f2e1313]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1314]: 20 Jul 2026, 11:41
+                    - generic [ref=f2e1315]:
+                      - generic [ref=f2e1316]: Verification incomplete
+                      - generic [ref=f2e1317]: Finish KYC approval
+              - generic [ref=f2e1318]:
+                - generic [ref=f2e1319]:
+                  - generic [ref=f2e1320]:
+                    - heading "Approved But Never Online" [level=3] [ref=f2e1321]
+                    - paragraph [ref=f2e1322]: 701 Partners
+                  - link "Open Approved But Never Online" [ref=f2e1324] [cursor=pointer]:
+                    - /url: /partners?verification=APPROVED&kyc=APPROVED&activity=never-online
+                    - text: Open
+                - generic "Approved But Never Online action rows" [ref=f2e1327]:
+                  - link "Partner 7339, +84116587339, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1328] [cursor=pointer]:
+                    - /url: /partners/cmr435zxv0049vypsimxj5pp2?section=full
+                    - generic [ref=f2e1329]:
+                      - strong [ref=f2e1330]: Partner 7339
+                      - generic [ref=f2e1331]: +84116587339 · Ho Chi Minh City
+                      - generic [ref=f2e1332]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1333]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1334]:
+                      - generic [ref=f2e1335]: Negative wallet
+                      - generic [ref=f2e1336]: Review wallet receivable
+                  - link "Partner 6051, +84100436051, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1337] [cursor=pointer]:
+                    - /url: /partners/cmr404cak0f07vyfw6bcu8ie2?section=full
+                    - generic [ref=f2e1338]:
+                      - strong [ref=f2e1339]: Partner 6051
+                      - generic [ref=f2e1340]: +84100436051 · Ho Chi Minh City
+                      - generic [ref=f2e1341]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1342]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1343]:
+                      - generic [ref=f2e1344]: Negative wallet
+                      - generic [ref=f2e1345]: Review wallet receivable
+                  - link "Partner 2315, +84178362315, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1346] [cursor=pointer]:
+                    - /url: /partners/cmr3zt5gj0bz6vyfw57kswv2j?section=full
+                    - generic [ref=f2e1347]:
+                      - strong [ref=f2e1348]: Partner 2315
+                      - generic [ref=f2e1349]: +84178362315 · Ho Chi Minh City
+                      - generic [ref=f2e1350]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1351]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1352]:
+                      - generic [ref=f2e1353]: Negative wallet
+                      - generic [ref=f2e1354]: Review wallet receivable
+                  - link "Partner 5719, +84103305719, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1355] [cursor=pointer]:
+                    - /url: /partners/cmr3zn980093lvyfwmmlkk864?section=full
+                    - generic [ref=f2e1356]:
+                      - strong [ref=f2e1357]: Partner 5719
+                      - generic [ref=f2e1358]: +84103305719 · Ho Chi Minh City
+                      - generic [ref=f2e1359]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1360]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1361]:
+                      - generic [ref=f2e1362]: Negative wallet
+                      - generic [ref=f2e1363]: Review wallet receivable
+                  - link "Partner 7111, +84124547111, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1364] [cursor=pointer]:
+                    - /url: /partners/cmr3zha4s06hkvyfwpdfkav1z?section=full
+                    - generic [ref=f2e1365]:
+                      - strong [ref=f2e1366]: Partner 7111
+                      - generic [ref=f2e1367]: +84124547111 · Ho Chi Minh City
+                      - generic [ref=f2e1368]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1369]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1370]:
+                      - generic [ref=f2e1371]: Negative wallet
+                      - generic [ref=f2e1372]: Review wallet receivable
+                  - link "Partner 9987, +84147169987, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1373] [cursor=pointer]:
+                    - /url: /partners/cmr3z71s803e9vyfwp4hnn25r?section=full
+                    - generic [ref=f2e1374]:
+                      - strong [ref=f2e1375]: Partner 9987
+                      - generic [ref=f2e1376]: +84147169987 · Ho Chi Minh City
+                      - generic [ref=f2e1377]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1378]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1379]:
+                      - generic [ref=f2e1380]: Negative wallet
+                      - generic [ref=f2e1381]: Review wallet receivable
+                  - link "Partner 8679, +84180188679, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1382] [cursor=pointer]:
+                    - /url: /partners/cmr3z1bs301m3vyfw8mesq9p8?section=full
+                    - generic [ref=f2e1383]:
+                      - strong [ref=f2e1384]: Partner 8679
+                      - generic [ref=f2e1385]: +84180188679 · Ho Chi Minh City
+                      - generic [ref=f2e1386]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1387]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1388]:
+                      - generic [ref=f2e1389]: Negative wallet
+                      - generic [ref=f2e1390]: Review wallet receivable
+                  - link "Partner 9327, +84134849327, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:44, Negative wallet, Review wallet receivable" [ref=f2e1391] [cursor=pointer]:
+                    - /url: /partners/cmr3yw2h5003bvyfw55j55ad2?section=full
+                    - generic [ref=f2e1392]:
+                      - strong [ref=f2e1393]: Partner 9327
+                      - generic [ref=f2e1394]: +84134849327 · Ho Chi Minh City
+                      - generic [ref=f2e1395]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1396]: 20 Jul 2026, 11:44
+                    - generic [ref=f2e1397]:
+                      - generic [ref=f2e1398]: Negative wallet
+                      - generic [ref=f2e1399]: Review wallet receivable
+                  - link "Partner 5443, +84147705443, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:44, Negative wallet, Review wallet receivable" [ref=f2e1400] [cursor=pointer]:
+                    - /url: /partners/cmr3xerdu001hvyac8a23i6vz?section=full
+                    - generic [ref=f2e1401]:
+                      - strong [ref=f2e1402]: Partner 5443
+                      - generic [ref=f2e1403]: +84147705443 · Ho Chi Minh City
+                      - generic [ref=f2e1404]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1405]: 20 Jul 2026, 11:44
+                    - generic [ref=f2e1406]:
+                      - generic [ref=f2e1407]: Negative wallet
+                      - generic [ref=f2e1408]: Review wallet receivable
+                  - link "Partner 7499, +84100577499, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:44, Negative wallet, Review wallet receivable" [ref=f2e1409] [cursor=pointer]:
+                    - /url: /partners/cmr3x9gp401z9vygswl58vi5u?section=full
+                    - generic [ref=f2e1410]:
+                      - strong [ref=f2e1411]: Partner 7499
+                      - generic [ref=f2e1412]: +84100577499 · Ho Chi Minh City
+                      - generic [ref=f2e1413]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1414]: 20 Jul 2026, 11:44
+                    - generic [ref=f2e1415]:
+                      - generic [ref=f2e1416]: Negative wallet
+                      - generic [ref=f2e1417]: Review wallet receivable
+              - generic [ref=f2e1418]:
+                - generic [ref=f2e1419]:
+                  - generic [ref=f2e1420]:
+                    - heading "Approved With No Completed Booking" [level=3] [ref=f2e1421]
+                    - paragraph [ref=f2e1422]: 684 Partners
+                  - link "Open Approved With No Completed Booking" [ref=f2e1424] [cursor=pointer]:
+                    - /url: /partners?verification=APPROVED&kyc=APPROVED&bookingFlow=no-work
+                    - text: Open
+                - generic "Approved With No Completed Booking action rows" [ref=f2e1427]:
+                  - link "Partner 7339, +84116587339, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1428] [cursor=pointer]:
+                    - /url: /partners/cmr435zxv0049vypsimxj5pp2?section=full
+                    - generic [ref=f2e1429]:
+                      - strong [ref=f2e1430]: Partner 7339
+                      - generic [ref=f2e1431]: +84116587339 · Ho Chi Minh City
+                      - generic [ref=f2e1432]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1433]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1434]:
+                      - generic [ref=f2e1435]: Negative wallet
+                      - generic [ref=f2e1436]: Review wallet receivable
+                  - link "Smoke Partner, +84916340329, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1437] [cursor=pointer]:
+                    - /url: /partners/cmr435zr2002vvypsp40gi1jh?section=full
+                    - generic [ref=f2e1438]:
+                      - strong [ref=f2e1439]: Smoke Partner
+                      - generic [ref=f2e1440]: +84916340329 · Ho Chi Minh City
+                      - generic [ref=f2e1441]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1442]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1443]:
+                      - generic [ref=f2e1444]: Negative wallet
+                      - generic [ref=f2e1445]: Review wallet receivable
+                  - link "Partner 6051, +84100436051, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1446] [cursor=pointer]:
+                    - /url: /partners/cmr404cak0f07vyfw6bcu8ie2?section=full
+                    - generic [ref=f2e1447]:
+                      - strong [ref=f2e1448]: Partner 6051
+                      - generic [ref=f2e1449]: +84100436051 · Ho Chi Minh City
+                      - generic [ref=f2e1450]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1451]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1452]:
+                      - generic [ref=f2e1453]: Negative wallet
+                      - generic [ref=f2e1454]: Review wallet receivable
+                  - link "Smoke Partner, +84900226041, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1455] [cursor=pointer]:
+                    - /url: /partners/cmr404c4q0eytvyfwct3t2tst?section=full
+                    - generic [ref=f2e1456]:
+                      - strong [ref=f2e1457]: Smoke Partner
+                      - generic [ref=f2e1458]: +84900226041 · Ho Chi Minh City
+                      - generic [ref=f2e1459]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1460]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1461]:
+                      - generic [ref=f2e1462]: Negative wallet
+                      - generic [ref=f2e1463]: Review wallet receivable
+                  - link "Partner 2315, +84178362315, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1464] [cursor=pointer]:
+                    - /url: /partners/cmr3zt5gj0bz6vyfw57kswv2j?section=full
+                    - generic [ref=f2e1465]:
+                      - strong [ref=f2e1466]: Partner 2315
+                      - generic [ref=f2e1467]: +84178362315 · Ho Chi Minh City
+                      - generic [ref=f2e1468]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1469]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1470]:
+                      - generic [ref=f2e1471]: Negative wallet
+                      - generic [ref=f2e1472]: Review wallet receivable
+                  - link "Smoke Partner, +84978147305, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1473] [cursor=pointer]:
+                    - /url: /partners/cmr3zt5aj0bxsvyfwh3agx4en?section=full
+                    - generic [ref=f2e1474]:
+                      - strong [ref=f2e1475]: Smoke Partner
+                      - generic [ref=f2e1476]: +84978147305 · Ho Chi Minh City
+                      - generic [ref=f2e1477]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1478]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1479]:
+                      - generic [ref=f2e1480]: Negative wallet
+                      - generic [ref=f2e1481]: Review wallet receivable
+                  - link "Partner 5719, +84103305719, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1482] [cursor=pointer]:
+                    - /url: /partners/cmr3zn980093lvyfwmmlkk864?section=full
+                    - generic [ref=f2e1483]:
+                      - strong [ref=f2e1484]: Partner 5719
+                      - generic [ref=f2e1485]: +84103305719 · Ho Chi Minh City
+                      - generic [ref=f2e1486]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1487]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1488]:
+                      - generic [ref=f2e1489]: Negative wallet
+                      - generic [ref=f2e1490]: Review wallet receivable
+                  - link "Smoke Partner, +84903081709, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1491] [cursor=pointer]:
+                    - /url: /partners/cmr3zn91u0927vyfw31no2ygh?section=full
+                    - generic [ref=f2e1492]:
+                      - strong [ref=f2e1493]: Smoke Partner
+                      - generic [ref=f2e1494]: +84903081709 · Ho Chi Minh City
+                      - generic [ref=f2e1495]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1496]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1497]:
+                      - generic [ref=f2e1498]: Negative wallet
+                      - generic [ref=f2e1499]: Review wallet receivable
+                  - link "Partner 7111, +84124547111, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1500] [cursor=pointer]:
+                    - /url: /partners/cmr3zha4s06hkvyfwpdfkav1z?section=full
+                    - generic [ref=f2e1501]:
+                      - strong [ref=f2e1502]: Partner 7111
+                      - generic [ref=f2e1503]: +84124547111 · Ho Chi Minh City
+                      - generic [ref=f2e1504]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1505]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1506]:
+                      - generic [ref=f2e1507]: Negative wallet
+                      - generic [ref=f2e1508]: Review wallet receivable
+                  - link "Smoke Partner, +84924335101, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1509] [cursor=pointer]:
+                    - /url: /partners/cmr3zh9yw06g6vyfwmw85vj03?section=full
+                    - generic [ref=f2e1510]:
+                      - strong [ref=f2e1511]: Smoke Partner
+                      - generic [ref=f2e1512]: +84924335101 · Ho Chi Minh City
+                      - generic [ref=f2e1513]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1514]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1515]:
+                      - generic [ref=f2e1516]: Negative wallet
+                      - generic [ref=f2e1517]: Review wallet receivable
+              - generic [ref=f2e1518]:
+                - generic [ref=f2e1519]:
+                  - generic [ref=f2e1520]:
+                    - heading "Inactive 7D" [level=3] [ref=f2e1521]
+                    - paragraph [ref=f2e1522]: 502 Partners
+                  - link "Open Inactive 7D" [ref=f2e1524] [cursor=pointer]:
+                    - /url: /partners?verification=APPROVED&kyc=APPROVED&activity=inactive-7d
+                    - text: Open
+                - generic "Inactive 7D action rows" [ref=f2e1527]:
+                  - status [ref=f2e1528]:
+                    - paragraph [ref=f2e1529]: No Partners need this action right now.
+              - generic [ref=f2e1530]:
+                - generic [ref=f2e1531]:
+                  - generic [ref=f2e1532]:
+                    - heading "Inactive 30D" [level=3] [ref=f2e1533]
+                    - paragraph [ref=f2e1534]: 183 Partners
+                  - link "Open Inactive 30D" [ref=f2e1536] [cursor=pointer]:
+                    - /url: /partners?verification=APPROVED&kyc=APPROVED&activity=inactive-30d
+                    - text: Open
+                - generic "Inactive 30D action rows" [ref=f2e1539]:
+                  - status [ref=f2e1540]:
+                    - paragraph [ref=f2e1541]: No Partners need this action right now.
+              - generic [ref=f2e1542]:
+                - generic [ref=f2e1543]:
+                  - generic [ref=f2e1544]:
+                    - heading "High Cancellation" [level=3] [ref=f2e1545]
+                    - paragraph [ref=f2e1546]: 307 Partners
+                  - link "Open High Cancellation" [ref=f2e1548] [cursor=pointer]:
+                    - /url: /partners?review=high-cancellation&qualityRange=7d
+                    - text: Open
+                - generic "High Cancellation action rows" [ref=f2e1551]:
+                  - link "Partner 7339, +84116587339, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1552] [cursor=pointer]:
+                    - /url: /partners/cmr435zxv0049vypsimxj5pp2?section=full
+                    - generic [ref=f2e1553]:
+                      - strong [ref=f2e1554]: Partner 7339
+                      - generic [ref=f2e1555]: +84116587339 · Ho Chi Minh City
+                      - generic [ref=f2e1556]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1557]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1558]:
+                      - generic [ref=f2e1559]: Negative wallet
+                      - generic [ref=f2e1560]: Review wallet receivable
+                  - link "Partner 6051, +84100436051, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1561] [cursor=pointer]:
+                    - /url: /partners/cmr404cak0f07vyfw6bcu8ie2?section=full
+                    - generic [ref=f2e1562]:
+                      - strong [ref=f2e1563]: Partner 6051
+                      - generic [ref=f2e1564]: +84100436051 · Ho Chi Minh City
+                      - generic [ref=f2e1565]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1566]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1567]:
+                      - generic [ref=f2e1568]: Negative wallet
+                      - generic [ref=f2e1569]: Review wallet receivable
+                  - link "Partner 2315, +84178362315, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1570] [cursor=pointer]:
+                    - /url: /partners/cmr3zt5gj0bz6vyfw57kswv2j?section=full
+                    - generic [ref=f2e1571]:
+                      - strong [ref=f2e1572]: Partner 2315
+                      - generic [ref=f2e1573]: +84178362315 · Ho Chi Minh City
+                      - generic [ref=f2e1574]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1575]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1576]:
+                      - generic [ref=f2e1577]: Negative wallet
+                      - generic [ref=f2e1578]: Review wallet receivable
+                  - link "Partner 5719, +84103305719, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1579] [cursor=pointer]:
+                    - /url: /partners/cmr3zn980093lvyfwmmlkk864?section=full
+                    - generic [ref=f2e1580]:
+                      - strong [ref=f2e1581]: Partner 5719
+                      - generic [ref=f2e1582]: +84103305719 · Ho Chi Minh City
+                      - generic [ref=f2e1583]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1584]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1585]:
+                      - generic [ref=f2e1586]: Negative wallet
+                      - generic [ref=f2e1587]: Review wallet receivable
+                  - link "Partner 7111, +84124547111, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1588] [cursor=pointer]:
+                    - /url: /partners/cmr3zha4s06hkvyfwpdfkav1z?section=full
+                    - generic [ref=f2e1589]:
+                      - strong [ref=f2e1590]: Partner 7111
+                      - generic [ref=f2e1591]: +84124547111 · Ho Chi Minh City
+                      - generic [ref=f2e1592]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1593]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1594]:
+                      - generic [ref=f2e1595]: Negative wallet
+                      - generic [ref=f2e1596]: Review wallet receivable
+                  - link "Partner 9987, +84147169987, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1597] [cursor=pointer]:
+                    - /url: /partners/cmr3z71s803e9vyfwp4hnn25r?section=full
+                    - generic [ref=f2e1598]:
+                      - strong [ref=f2e1599]: Partner 9987
+                      - generic [ref=f2e1600]: +84147169987 · Ho Chi Minh City
+                      - generic [ref=f2e1601]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1602]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1603]:
+                      - generic [ref=f2e1604]: Negative wallet
+                      - generic [ref=f2e1605]: Review wallet receivable
+                  - link "Partner 8679, +84180188679, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1606] [cursor=pointer]:
+                    - /url: /partners/cmr3z1bs301m3vyfw8mesq9p8?section=full
+                    - generic [ref=f2e1607]:
+                      - strong [ref=f2e1608]: Partner 8679
+                      - generic [ref=f2e1609]: +84180188679 · Ho Chi Minh City
+                      - generic [ref=f2e1610]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1611]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1612]:
+                      - generic [ref=f2e1613]: Negative wallet
+                      - generic [ref=f2e1614]: Review wallet receivable
+                  - link "Partner 9327, +84134849327, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:44, Negative wallet, Review wallet receivable" [ref=f2e1615] [cursor=pointer]:
+                    - /url: /partners/cmr3yw2h5003bvyfw55j55ad2?section=full
+                    - generic [ref=f2e1616]:
+                      - strong [ref=f2e1617]: Partner 9327
+                      - generic [ref=f2e1618]: +84134849327 · Ho Chi Minh City
+                      - generic [ref=f2e1619]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1620]: 20 Jul 2026, 11:44
+                    - generic [ref=f2e1621]:
+                      - generic [ref=f2e1622]: Negative wallet
+                      - generic [ref=f2e1623]: Review wallet receivable
+                  - link "Partner 5443, +84147705443, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:44, Negative wallet, Review wallet receivable" [ref=f2e1624] [cursor=pointer]:
+                    - /url: /partners/cmr3xerdu001hvyac8a23i6vz?section=full
+                    - generic [ref=f2e1625]:
+                      - strong [ref=f2e1626]: Partner 5443
+                      - generic [ref=f2e1627]: +84147705443 · Ho Chi Minh City
+                      - generic [ref=f2e1628]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1629]: 20 Jul 2026, 11:44
+                    - generic [ref=f2e1630]:
+                      - generic [ref=f2e1631]: Negative wallet
+                      - generic [ref=f2e1632]: Review wallet receivable
+                  - link "Partner 7499, +84100577499, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:44, Negative wallet, Review wallet receivable" [ref=f2e1633] [cursor=pointer]:
+                    - /url: /partners/cmr3x9gp401z9vygswl58vi5u?section=full
+                    - generic [ref=f2e1634]:
+                      - strong [ref=f2e1635]: Partner 7499
+                      - generic [ref=f2e1636]: +84100577499 · Ho Chi Minh City
+                      - generic [ref=f2e1637]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1638]: 20 Jul 2026, 11:44
+                    - generic [ref=f2e1639]:
+                      - generic [ref=f2e1640]: Negative wallet
+                      - generic [ref=f2e1641]: Review wallet receivable
+              - generic [ref=f2e1642]:
+                - generic [ref=f2e1643]:
+                  - generic [ref=f2e1644]:
+                    - heading "No-show Risk" [level=3] [ref=f2e1645]
+                    - paragraph [ref=f2e1646]: 0 Partners
+                  - link "Open No-show Risk" [ref=f2e1648] [cursor=pointer]:
+                    - /url: /partners?review=no-show-risk&qualityRange=7d
+                    - text: Open
+                - generic "No-show Risk action rows" [ref=f2e1651]:
+                  - status [ref=f2e1652]:
+                    - paragraph [ref=f2e1653]: No Partners need this action right now.
+              - generic [ref=f2e1654]:
+                - generic [ref=f2e1655]:
+                  - generic [ref=f2e1656]:
+                    - heading "Low Rating" [level=3] [ref=f2e1657]
+                    - paragraph [ref=f2e1658]: 0 Partners
+                  - link "Open Low Rating" [ref=f2e1660] [cursor=pointer]:
+                    - /url: /partners?review=quality-risk&qualityRange=7d
+                    - text: Open
+                - generic "Low Rating action rows" [ref=f2e1663]:
+                  - status [ref=f2e1664]:
+                    - paragraph [ref=f2e1665]: No Partners need this action right now.
+              - generic [ref=f2e1666]:
+                - generic [ref=f2e1667]:
+                  - generic [ref=f2e1668]:
+                    - heading "Negative Wallet" [level=3] [ref=f2e1669]
+                    - paragraph [ref=f2e1670]: 85 Partners
+                  - link "Open Negative Wallet" [ref=f2e1672] [cursor=pointer]:
+                    - /url: /partners?review=unsettled
+                    - text: Open
+                - generic "Negative Wallet action rows" [ref=f2e1675]:
+                  - link "Partner 7339, +84116587339, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1676] [cursor=pointer]:
+                    - /url: /partners/cmr435zxv0049vypsimxj5pp2?section=full
+                    - generic [ref=f2e1677]:
+                      - strong [ref=f2e1678]: Partner 7339
+                      - generic [ref=f2e1679]: +84116587339 · Ho Chi Minh City
+                      - generic [ref=f2e1680]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1681]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1682]:
+                      - generic [ref=f2e1683]: Negative wallet
+                      - generic [ref=f2e1684]: Review wallet receivable
+                  - link "Smoke Partner, +84916340329, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1685] [cursor=pointer]:
+                    - /url: /partners/cmr435zr2002vvypsp40gi1jh?section=full
+                    - generic [ref=f2e1686]:
+                      - strong [ref=f2e1687]: Smoke Partner
+                      - generic [ref=f2e1688]: +84916340329 · Ho Chi Minh City
+                      - generic [ref=f2e1689]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1690]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1691]:
+                      - generic [ref=f2e1692]: Negative wallet
+                      - generic [ref=f2e1693]: Review wallet receivable
+                  - link "Partner 6051, +84100436051, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1694] [cursor=pointer]:
+                    - /url: /partners/cmr404cak0f07vyfw6bcu8ie2?section=full
+                    - generic [ref=f2e1695]:
+                      - strong [ref=f2e1696]: Partner 6051
+                      - generic [ref=f2e1697]: +84100436051 · Ho Chi Minh City
+                      - generic [ref=f2e1698]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1699]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1700]:
+                      - generic [ref=f2e1701]: Negative wallet
+                      - generic [ref=f2e1702]: Review wallet receivable
+                  - link "Smoke Partner, +84900226041, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1703] [cursor=pointer]:
+                    - /url: /partners/cmr404c4q0eytvyfwct3t2tst?section=full
+                    - generic [ref=f2e1704]:
+                      - strong [ref=f2e1705]: Smoke Partner
+                      - generic [ref=f2e1706]: +84900226041 · Ho Chi Minh City
+                      - generic [ref=f2e1707]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1708]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1709]:
+                      - generic [ref=f2e1710]: Negative wallet
+                      - generic [ref=f2e1711]: Review wallet receivable
+                  - link "Partner 2315, +84178362315, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1712] [cursor=pointer]:
+                    - /url: /partners/cmr3zt5gj0bz6vyfw57kswv2j?section=full
+                    - generic [ref=f2e1713]:
+                      - strong [ref=f2e1714]: Partner 2315
+                      - generic [ref=f2e1715]: +84178362315 · Ho Chi Minh City
+                      - generic [ref=f2e1716]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1717]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1718]:
+                      - generic [ref=f2e1719]: Negative wallet
+                      - generic [ref=f2e1720]: Review wallet receivable
+                  - link "Smoke Partner, +84978147305, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1721] [cursor=pointer]:
+                    - /url: /partners/cmr3zt5aj0bxsvyfwh3agx4en?section=full
+                    - generic [ref=f2e1722]:
+                      - strong [ref=f2e1723]: Smoke Partner
+                      - generic [ref=f2e1724]: +84978147305 · Ho Chi Minh City
+                      - generic [ref=f2e1725]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1726]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1727]:
+                      - generic [ref=f2e1728]: Negative wallet
+                      - generic [ref=f2e1729]: Review wallet receivable
+                  - link "Partner 5719, +84103305719, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1730] [cursor=pointer]:
+                    - /url: /partners/cmr3zn980093lvyfwmmlkk864?section=full
+                    - generic [ref=f2e1731]:
+                      - strong [ref=f2e1732]: Partner 5719
+                      - generic [ref=f2e1733]: +84103305719 · Ho Chi Minh City
+                      - generic [ref=f2e1734]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1735]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1736]:
+                      - generic [ref=f2e1737]: Negative wallet
+                      - generic [ref=f2e1738]: Review wallet receivable
+                  - link "Smoke Partner, +84903081709, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1739] [cursor=pointer]:
+                    - /url: /partners/cmr3zn91u0927vyfw31no2ygh?section=full
+                    - generic [ref=f2e1740]:
+                      - strong [ref=f2e1741]: Smoke Partner
+                      - generic [ref=f2e1742]: +84903081709 · Ho Chi Minh City
+                      - generic [ref=f2e1743]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1744]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1745]:
+                      - generic [ref=f2e1746]: Negative wallet
+                      - generic [ref=f2e1747]: Review wallet receivable
+                  - link "Partner 7111, +84124547111, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1748] [cursor=pointer]:
+                    - /url: /partners/cmr3zha4s06hkvyfwpdfkav1z?section=full
+                    - generic [ref=f2e1749]:
+                      - strong [ref=f2e1750]: Partner 7111
+                      - generic [ref=f2e1751]: +84124547111 · Ho Chi Minh City
+                      - generic [ref=f2e1752]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1753]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1754]:
+                      - generic [ref=f2e1755]: Negative wallet
+                      - generic [ref=f2e1756]: Review wallet receivable
+                  - link "Smoke Partner, +84924335101, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1757] [cursor=pointer]:
+                    - /url: /partners/cmr3zh9yw06g6vyfwmw85vj03?section=full
+                    - generic [ref=f2e1758]:
+                      - strong [ref=f2e1759]: Smoke Partner
+                      - generic [ref=f2e1760]: +84924335101 · Ho Chi Minh City
+                      - generic [ref=f2e1761]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1762]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1763]:
+                      - generic [ref=f2e1764]: Negative wallet
+                      - generic [ref=f2e1765]: Review wallet receivable
+              - generic [ref=f2e1766]:
+                - generic [ref=f2e1767]:
+                  - generic [ref=f2e1768]:
+                    - heading "Payout Blocked" [level=3] [ref=f2e1769]
+                    - paragraph [ref=f2e1770]: 881 Partners
+                  - link "Open Payout Blocked" [ref=f2e1772] [cursor=pointer]:
+                    - /url: /partners?review=payout-blocked
+                    - text: Open
+                - generic "Payout Blocked action rows" [ref=f2e1775]:
+                  - link "Partner 7339, +84116587339, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1776] [cursor=pointer]:
+                    - /url: /partners/cmr435zxv0049vypsimxj5pp2?section=full
+                    - generic [ref=f2e1777]:
+                      - strong [ref=f2e1778]: Partner 7339
+                      - generic [ref=f2e1779]: +84116587339 · Ho Chi Minh City
+                      - generic [ref=f2e1780]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1781]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1782]:
+                      - generic [ref=f2e1783]: Negative wallet
+                      - generic [ref=f2e1784]: Review wallet receivable
+                  - link "Smoke Partner, +84916340329, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1785] [cursor=pointer]:
+                    - /url: /partners/cmr435zr2002vvypsp40gi1jh?section=full
+                    - generic [ref=f2e1786]:
+                      - strong [ref=f2e1787]: Smoke Partner
+                      - generic [ref=f2e1788]: +84916340329 · Ho Chi Minh City
+                      - generic [ref=f2e1789]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1790]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1791]:
+                      - generic [ref=f2e1792]: Negative wallet
+                      - generic [ref=f2e1793]: Review wallet receivable
+                  - link "Partner 6051, +84100436051, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1794] [cursor=pointer]:
+                    - /url: /partners/cmr404cak0f07vyfw6bcu8ie2?section=full
+                    - generic [ref=f2e1795]:
+                      - strong [ref=f2e1796]: Partner 6051
+                      - generic [ref=f2e1797]: +84100436051 · Ho Chi Minh City
+                      - generic [ref=f2e1798]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1799]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1800]:
+                      - generic [ref=f2e1801]: Negative wallet
+                      - generic [ref=f2e1802]: Review wallet receivable
+                  - link "Smoke Partner, +84900226041, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1803] [cursor=pointer]:
+                    - /url: /partners/cmr404c4q0eytvyfwct3t2tst?section=full
+                    - generic [ref=f2e1804]:
+                      - strong [ref=f2e1805]: Smoke Partner
+                      - generic [ref=f2e1806]: +84900226041 · Ho Chi Minh City
+                      - generic [ref=f2e1807]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1808]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1809]:
+                      - generic [ref=f2e1810]: Negative wallet
+                      - generic [ref=f2e1811]: Review wallet receivable
+                  - link "Partner 2315, +84178362315, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1812] [cursor=pointer]:
+                    - /url: /partners/cmr3zt5gj0bz6vyfw57kswv2j?section=full
+                    - generic [ref=f2e1813]:
+                      - strong [ref=f2e1814]: Partner 2315
+                      - generic [ref=f2e1815]: +84178362315 · Ho Chi Minh City
+                      - generic [ref=f2e1816]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1817]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1818]:
+                      - generic [ref=f2e1819]: Negative wallet
+                      - generic [ref=f2e1820]: Review wallet receivable
+                  - link "Smoke Partner, +84978147305, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1821] [cursor=pointer]:
+                    - /url: /partners/cmr3zt5aj0bxsvyfwh3agx4en?section=full
+                    - generic [ref=f2e1822]:
+                      - strong [ref=f2e1823]: Smoke Partner
+                      - generic [ref=f2e1824]: +84978147305 · Ho Chi Minh City
+                      - generic [ref=f2e1825]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1826]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1827]:
+                      - generic [ref=f2e1828]: Negative wallet
+                      - generic [ref=f2e1829]: Review wallet receivable
+                  - link "Partner 5719, +84103305719, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1830] [cursor=pointer]:
+                    - /url: /partners/cmr3zn980093lvyfwmmlkk864?section=full
+                    - generic [ref=f2e1831]:
+                      - strong [ref=f2e1832]: Partner 5719
+                      - generic [ref=f2e1833]: +84103305719 · Ho Chi Minh City
+                      - generic [ref=f2e1834]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1835]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1836]:
+                      - generic [ref=f2e1837]: Negative wallet
+                      - generic [ref=f2e1838]: Review wallet receivable
+                  - link "Smoke Partner, +84903081709, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1839] [cursor=pointer]:
+                    - /url: /partners/cmr3zn91u0927vyfw31no2ygh?section=full
+                    - generic [ref=f2e1840]:
+                      - strong [ref=f2e1841]: Smoke Partner
+                      - generic [ref=f2e1842]: +84903081709 · Ho Chi Minh City
+                      - generic [ref=f2e1843]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1844]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1845]:
+                      - generic [ref=f2e1846]: Negative wallet
+                      - generic [ref=f2e1847]: Review wallet receivable
+                  - link "Partner 7111, +84124547111, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1848] [cursor=pointer]:
+                    - /url: /partners/cmr3zha4s06hkvyfwpdfkav1z?section=full
+                    - generic [ref=f2e1849]:
+                      - strong [ref=f2e1850]: Partner 7111
+                      - generic [ref=f2e1851]: +84124547111 · Ho Chi Minh City
+                      - generic [ref=f2e1852]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1853]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1854]:
+                      - generic [ref=f2e1855]: Negative wallet
+                      - generic [ref=f2e1856]: Review wallet receivable
+                  - link "Smoke Partner, +84924335101, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1857] [cursor=pointer]:
+                    - /url: /partners/cmr3zh9yw06g6vyfwmw85vj03?section=full
+                    - generic [ref=f2e1858]:
+                      - strong [ref=f2e1859]: Smoke Partner
+                      - generic [ref=f2e1860]: +84924335101 · Ho Chi Minh City
+                      - generic [ref=f2e1861]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1862]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1863]:
+                      - generic [ref=f2e1864]: Negative wallet
+                      - generic [ref=f2e1865]: Review wallet receivable
+              - generic [ref=f2e1866]:
+                - generic [ref=f2e1867]:
+                  - generic [ref=f2e1868]:
+                    - heading "Tax Info Missing" [level=3] [ref=f2e1869]
+                    - paragraph [ref=f2e1870]: 854 Partners
+                  - link "Open Tax Info Missing" [ref=f2e1872] [cursor=pointer]:
+                    - /url: /partners?review=tax-info-missing
+                    - text: Open
+                - generic "Tax Info Missing action rows" [ref=f2e1875]:
+                  - link "Partner 7339, +84116587339, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1876] [cursor=pointer]:
+                    - /url: /partners/cmr435zxv0049vypsimxj5pp2?section=full
+                    - generic [ref=f2e1877]:
+                      - strong [ref=f2e1878]: Partner 7339
+                      - generic [ref=f2e1879]: +84116587339 · Ho Chi Minh City
+                      - generic [ref=f2e1880]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1881]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1882]:
+                      - generic [ref=f2e1883]: Negative wallet
+                      - generic [ref=f2e1884]: Review wallet receivable
+                  - link "Partner 6051, +84100436051, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1885] [cursor=pointer]:
+                    - /url: /partners/cmr404cak0f07vyfw6bcu8ie2?section=full
+                    - generic [ref=f2e1886]:
+                      - strong [ref=f2e1887]: Partner 6051
+                      - generic [ref=f2e1888]: +84100436051 · Ho Chi Minh City
+                      - generic [ref=f2e1889]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1890]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1891]:
+                      - generic [ref=f2e1892]: Negative wallet
+                      - generic [ref=f2e1893]: Review wallet receivable
+                  - link "Partner 2315, +84178362315, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1894] [cursor=pointer]:
+                    - /url: /partners/cmr3zt5gj0bz6vyfw57kswv2j?section=full
+                    - generic [ref=f2e1895]:
+                      - strong [ref=f2e1896]: Partner 2315
+                      - generic [ref=f2e1897]: +84178362315 · Ho Chi Minh City
+                      - generic [ref=f2e1898]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1899]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1900]:
+                      - generic [ref=f2e1901]: Negative wallet
+                      - generic [ref=f2e1902]: Review wallet receivable
+                  - link "Partner 5719, +84103305719, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1903] [cursor=pointer]:
+                    - /url: /partners/cmr3zn980093lvyfwmmlkk864?section=full
+                    - generic [ref=f2e1904]:
+                      - strong [ref=f2e1905]: Partner 5719
+                      - generic [ref=f2e1906]: +84103305719 · Ho Chi Minh City
+                      - generic [ref=f2e1907]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1908]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1909]:
+                      - generic [ref=f2e1910]: Negative wallet
+                      - generic [ref=f2e1911]: Review wallet receivable
+                  - link "Partner 7111, +84124547111, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1912] [cursor=pointer]:
+                    - /url: /partners/cmr3zha4s06hkvyfwpdfkav1z?section=full
+                    - generic [ref=f2e1913]:
+                      - strong [ref=f2e1914]: Partner 7111
+                      - generic [ref=f2e1915]: +84124547111 · Ho Chi Minh City
+                      - generic [ref=f2e1916]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1917]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1918]:
+                      - generic [ref=f2e1919]: Negative wallet
+                      - generic [ref=f2e1920]: Review wallet receivable
+                  - link "Partner 9987, +84147169987, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1921] [cursor=pointer]:
+                    - /url: /partners/cmr3z71s803e9vyfwp4hnn25r?section=full
+                    - generic [ref=f2e1922]:
+                      - strong [ref=f2e1923]: Partner 9987
+                      - generic [ref=f2e1924]: +84147169987 · Ho Chi Minh City
+                      - generic [ref=f2e1925]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1926]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1927]:
+                      - generic [ref=f2e1928]: Negative wallet
+                      - generic [ref=f2e1929]: Review wallet receivable
+                  - link "Partner 8679, +84180188679, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:45, Negative wallet, Review wallet receivable" [ref=f2e1930] [cursor=pointer]:
+                    - /url: /partners/cmr3z1bs301m3vyfw8mesq9p8?section=full
+                    - generic [ref=f2e1931]:
+                      - strong [ref=f2e1932]: Partner 8679
+                      - generic [ref=f2e1933]: +84180188679 · Ho Chi Minh City
+                      - generic [ref=f2e1934]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1935]: 20 Jul 2026, 11:45
+                    - generic [ref=f2e1936]:
+                      - generic [ref=f2e1937]: Negative wallet
+                      - generic [ref=f2e1938]: Review wallet receivable
+                  - link "Partner 9327, +84134849327, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:44, Negative wallet, Review wallet receivable" [ref=f2e1939] [cursor=pointer]:
+                    - /url: /partners/cmr3yw2h5003bvyfw55j55ad2?section=full
+                    - generic [ref=f2e1940]:
+                      - strong [ref=f2e1941]: Partner 9327
+                      - generic [ref=f2e1942]: +84134849327 · Ho Chi Minh City
+                      - generic [ref=f2e1943]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1944]: 20 Jul 2026, 11:44
+                    - generic [ref=f2e1945]:
+                      - generic [ref=f2e1946]: Negative wallet
+                      - generic [ref=f2e1947]: Review wallet receivable
+                  - link "Partner 5443, +84147705443, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:44, Negative wallet, Review wallet receivable" [ref=f2e1948] [cursor=pointer]:
+                    - /url: /partners/cmr3xerdu001hvyac8a23i6vz?section=full
+                    - generic [ref=f2e1949]:
+                      - strong [ref=f2e1950]: Partner 5443
+                      - generic [ref=f2e1951]: +84147705443 · Ho Chi Minh City
+                      - generic [ref=f2e1952]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1953]: 20 Jul 2026, 11:44
+                    - generic [ref=f2e1954]:
+                      - generic [ref=f2e1955]: Negative wallet
+                      - generic [ref=f2e1956]: Review wallet receivable
+                  - link "Partner 7499, +84100577499, Ho Chi Minh City, Offline, last activity 20 Jul 2026, 11:44, Negative wallet, Review wallet receivable" [ref=f2e1957] [cursor=pointer]:
+                    - /url: /partners/cmr3x9gp401z9vygswl58vi5u?section=full
+                    - generic [ref=f2e1958]:
+                      - strong [ref=f2e1959]: Partner 7499
+                      - generic [ref=f2e1960]: +84100577499 · Ho Chi Minh City
+                      - generic [ref=f2e1961]:
+                        - text: Offline · Last activity
+                        - time [ref=f2e1962]: 20 Jul 2026, 11:44
+                    - generic [ref=f2e1963]:
+                      - generic [ref=f2e1964]: Negative wallet
+                      - generic [ref=f2e1965]: Review wallet receivable
+  - alert [ref=f2e1966]

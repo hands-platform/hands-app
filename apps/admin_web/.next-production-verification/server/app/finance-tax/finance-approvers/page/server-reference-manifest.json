@@ -1,0 +1,17 @@
+{
+  "node": {
+    "407ff503b60b04097b2ac2fb0a384ffadc1994921f": {
+      "workers": {
+        "app/finance-tax/finance-approvers/page": {
+          "moduleId": 808406,
+          "async": false,
+          "exportedName": "updateFinanceApproverRole",
+          "filename": "apps/admin_web/app/finance-tax/finance-approvers/actions.ts"
+        }
+      },
+      "exportedName": "updateFinanceApproverRole",
+      "filename": "apps/admin_web/app/finance-tax/finance-approvers/actions.ts"
+    }
+  },
+  "edge": {}
+}

@@ -3,10 +3,12 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import {
+  AdminOperatorPermissionCategory,
   BookingOpsTaskStatus,
   BookingOpsTaskType,
   BookingSettlementStatus,
   BookingStatus,
+  CustomerWalletLedgerType,
   EarningStatus,
   FilePurpose,
   FileReviewStatus,
@@ -18,6 +20,7 @@ import {
   PrismaClient,
   ProviderDocumentStatus,
   ProviderDocumentType,
+  ProviderAvailabilityReason,
   ProviderKycStatus,
   ProviderStatus,
   ProviderWalletLedgerType,
@@ -25,6 +28,7 @@ import {
   VerificationStatus,
 } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import { io as createSocket } from 'socket.io-client';
 
 import { runAdminWebDirectSmoke } from './lib/admin-web-direct-smoke.mjs';
 import { loadMergedEnv } from './lib/env-file.mjs';
@@ -53,6 +57,10 @@ const ids = {
   service: `${runId}_service`,
   providerService: `${runId}_provider_service`,
   payoutRule: `${runId}_payout_rule`,
+  coupon: `${runId}_coupon`,
+  couponCode: `CASH10${String(Date.now()).slice(-8)}`,
+  subsidyCoupon: `${runId}_subsidy_coupon`,
+  subsidyCouponCode: `CASH60${String(Date.now()).slice(-8)}`,
 };
 const bankTransactionReference = `CASH-LIFECYCLE-DEPOSIT-${runId}`;
 const documentTypes = [
@@ -69,16 +77,23 @@ const userIds = [ids.actor, ids.approver, ids.customerUser, ids.providerUser];
 const prisma = new PrismaClient({ datasources: { db: { url: requiredEnv('DATABASE_URL') } } });
 let apiProcess;
 let apiErrorTail = '';
+let smokeStage = 'bootstrap';
 const createdBookingIds = [];
 
 assertLocalFixtureMode();
 assertCondition(Number.isInteger(port) && port > 0 && port < 65536, 'Invalid cash booking smoke port.');
-assertCondition(existsSync(apiEntry), 'API build is missing. Run the API build before cash booking lifecycle smoke.');
+assertCondition(
+  existsSync(apiEntry),
+  'API build is missing. Run the API build before cash booking lifecycle smoke.',
+);
 
 try {
   await assertPortIsFree();
+  smokeStage = 'cleanup-before-seed';
   await cleanup();
+  smokeStage = 'seed';
   await seed();
+  smokeStage = 'start-api';
   apiProcess = startApi();
   await waitForHealth();
 
@@ -88,146 +103,238 @@ try {
   const approverToken = accessToken(ids.approver, Role.ADMIN);
 
   if (pairedE2eMode) {
-    const pairedLifecycle = await runCustomerPartnerPairedE2e({ customerToken, providerToken });
-    console.log(JSON.stringify({ ok: true, mode: 'customer-partner-paired-e2e', checks: pairedLifecycle }, null, 2));
+    const pairedLifecycle = await runCustomerPartnerPairedE2e({
+      actorToken,
+      approverToken,
+      customerToken,
+      providerToken,
+    });
+    console.log(
+      JSON.stringify({ ok: true, mode: 'customer-partner-paired-e2e', checks: pairedLifecycle }, null, 2),
+    );
   } else {
-  const paymentCatalog = await request('/customer/payment-methods', { token: customerToken });
-  assertCondition(paymentCatalog.defaultMethod === PaymentMethod.CASH, 'CASH is not the default customer payment method.');
-  assertCondition(
-    Array.isArray(paymentCatalog.methods) &&
-      paymentCatalog.methods.length === 1 &&
-      paymentCatalog.methods[0]?.method === PaymentMethod.CASH,
-    'Local customer payment catalog must expose CASH only.',
-  );
+    smokeStage = 'provider-ready';
+    await request('/provider/online', { method: 'POST', token: providerToken });
+    await assertProviderAvailability({
+      expectedReason: ProviderAvailabilityReason.MANUAL_AVAILABLE,
+      expectedStatus: ProviderStatus.ONLINE_AVAILABLE,
+      message: 'Partner did not become ready before the cash lifecycle.',
+      providerToken,
+    });
 
-  const cancelledBookingId = await createCashBooking(customerToken);
-  await verifyOpenBooking(cancelledBookingId);
-  await request(`/customer/bookings/${cancelledBookingId}/cancel`, {
-    method: 'POST',
-    token: customerToken,
-  });
-  const cancellation = await verifyPreMatchCancellation(cancelledBookingId);
+    smokeStage = 'payment-catalog';
+    const paymentCatalog = await request('/customer/payment-methods', { token: customerToken });
+    assertCondition(
+      paymentCatalog.defaultMethod === PaymentMethod.CASH,
+      'CASH is not the default customer payment method.',
+    );
+    assertCondition(
+      Array.isArray(paymentCatalog.methods) &&
+        paymentCatalog.methods.map((method) => method.method).join(',') ===
+          `${PaymentMethod.CASH},${PaymentMethod.CUSTOMER_WALLET}`,
+      'Local customer payment catalog must expose CASH and CUSTOMER_WALLET only.',
+    );
 
-  const noShowBookingId = await createCashBooking(customerToken);
-  await verifyOpenBooking(noShowBookingId);
-  await acceptFirstPick(noShowBookingId, providerToken);
-  await request(`/admin/bookings/${noShowBookingId}/no-show`, {
-    method: 'POST',
-    token: actorToken,
-    body: { reason: 'Lifecycle smoke no-show evidence review' },
-  });
-  const noShow = await verifyNoShowReview(noShowBookingId);
+    smokeStage = 'cash-cancellation';
+    const cancelledBookingId = await createCashBooking(customerToken);
+    await verifyOpenBooking(cancelledBookingId);
+    await request(`/customer/bookings/${cancelledBookingId}/cancel`, {
+      method: 'POST',
+      token: customerToken,
+    });
+    const cancellation = await verifyPreMatchCancellation(cancelledBookingId);
 
-  const completedBookingId = await createCashBooking(customerToken);
-  await verifyOpenBooking(completedBookingId);
-  await acceptFirstPick(completedBookingId, providerToken);
-  await request(`/provider/bookings/${completedBookingId}/start`, {
-    method: 'POST',
-    token: providerToken,
-  });
-  await assertBookingState(
-    completedBookingId,
-    BookingStatus.IN_SERVICE,
-    'Partner could not start the matched booking.',
-  );
-  await request(`/provider/bookings/${completedBookingId}/complete`, {
-    method: 'POST',
-    token: providerToken,
-    body: { lat: 10.7769, lng: 106.7009, addressText: 'District 1, Ho Chi Minh City' },
-  });
+    smokeStage = 'cash-no-show';
+    const noShowBookingId = await createCashBooking(customerToken);
+    await verifyOpenBooking(noShowBookingId);
+    await acceptFirstPick(noShowBookingId, providerToken);
+    await request(`/admin/bookings/${noShowBookingId}/no-show`, {
+      method: 'POST',
+      token: actorToken,
+      body: { reason: 'Lifecycle smoke no-show evidence review' },
+    });
+    const noShow = await verifyNoShowReview(noShowBookingId);
 
-  const completion = await verifyCompletedLifecycle(completedBookingId, customerToken);
-  await request(`/admin/payments/${completion.paymentId}/refund`, {
-    method: 'POST',
-    token: actorToken,
-    body: { approvalAdminId: ids.approver },
-  });
-  const refund = await verifyRefundLifecycle(completedBookingId, completion);
+    smokeStage = 'cash-completion-refund';
+    const completedBookingId = await createCashBooking(customerToken);
+    await verifyOpenBooking(completedBookingId);
+    await acceptFirstPick(completedBookingId, providerToken);
+    await assertBookingState(
+      completedBookingId,
+      BookingStatus.IN_SERVICE,
+      'Partner acceptance did not start the matched booking.',
+    );
+    await request(`/provider/bookings/${completedBookingId}/complete`, {
+      method: 'POST',
+      token: providerToken,
+      body: { lat: 10.7769, lng: 106.7009, addressText: 'District 1, Ho Chi Minh City' },
+    });
 
-  const debtBookingId = await createCashBooking(customerToken);
-  await verifyOpenBooking(debtBookingId);
-  await acceptFirstPick(debtBookingId, providerToken);
-  await request(`/provider/bookings/${debtBookingId}/start`, {
-    method: 'POST',
-    token: providerToken,
-  });
-  await request(`/provider/bookings/${debtBookingId}/complete`, {
-    method: 'POST',
-    token: providerToken,
-    body: { lat: 10.7769, lng: 106.7009, addressText: 'District 1, Ho Chi Minh City' },
-  });
-  const debtCompletion = await verifyCompletedLifecycle(debtBookingId, customerToken);
-  if (previewMode) {
+    const completion = await verifyCompletedLifecycle(completedBookingId, customerToken);
+    await request(`/admin/payments/${completion.paymentId}/refund-request`, {
+      method: 'POST',
+      token: actorToken,
+      body: { reason: 'Cash lifecycle completed booking refund' },
+    });
+    await request(`/admin/payments/${completion.paymentId}/refund`, {
+      method: 'POST',
+      token: approverToken,
+      body: {},
+    });
+    const refund = await verifyRefundLifecycle(completedBookingId, completion);
+
+    smokeStage = 'cash-company-coupon';
+    const couponBookingId = await createCashBooking(customerToken, ids.couponCode);
+    await verifyOpenBooking(couponBookingId, 450_000);
+    await acceptFirstPick(couponBookingId, providerToken);
+    await request(`/provider/bookings/${couponBookingId}/complete`, {
+      method: 'POST',
+      token: providerToken,
+      body: { lat: 10.7769, lng: 106.7009, addressText: 'District 1, Ho Chi Minh City' },
+    });
+    const couponCompletion = await verifyCouponCompletedLifecycle(couponBookingId, completion);
+    await request(`/admin/payments/${couponCompletion.paymentId}/refund-request`, {
+      method: 'POST',
+      token: actorToken,
+      body: { reason: 'Cash lifecycle company coupon refund' },
+    });
+    await request(`/admin/payments/${couponCompletion.paymentId}/refund`, {
+      method: 'POST',
+      token: approverToken,
+      body: {},
+    });
+    const couponRefund = await verifyRefundLifecycle(couponBookingId, couponCompletion);
+    await verifyCouponRefundMetadata(couponBookingId);
+
+    smokeStage = 'cash-company-coupon-subsidy';
+    const subsidyCouponBookingId = await createCashBooking(customerToken, ids.subsidyCouponCode);
+    await verifyOpenBooking(subsidyCouponBookingId, 200_000);
+    await acceptFirstPick(subsidyCouponBookingId, providerToken);
+    await request(`/provider/bookings/${subsidyCouponBookingId}/complete`, {
+      method: 'POST',
+      token: providerToken,
+      body: { lat: 10.7769, lng: 106.7009, addressText: 'District 1, Ho Chi Minh City' },
+    });
+    const subsidyCouponCompletion = await verifyCouponSubsidyCompletedLifecycle(
+      subsidyCouponBookingId,
+      completion,
+    );
+    await request(`/admin/payments/${subsidyCouponCompletion.paymentId}/refund-request`, {
+      method: 'POST',
+      token: actorToken,
+      body: { reason: 'Cash lifecycle subsidy coupon refund' },
+    });
+    await request(`/admin/payments/${subsidyCouponCompletion.paymentId}/refund`, {
+      method: 'POST',
+      token: approverToken,
+      body: {},
+    });
+    const subsidyCouponRefund = await verifyRefundLifecycle(subsidyCouponBookingId, subsidyCouponCompletion);
+
+    smokeStage = 'customer-wallet-lifecycle';
+    const customerWallet = await verifyCustomerWalletLifecycle({
+      actorToken,
+      approverToken,
+      customerToken,
+      providerToken,
+    });
+
+    smokeStage = 'cash-debt-settlement';
+    const debtBookingId = await createCashBooking(customerToken);
+    await verifyOpenBooking(debtBookingId);
+    await acceptFirstPick(debtBookingId, providerToken);
+    await request(`/provider/bookings/${debtBookingId}/complete`, {
+      method: 'POST',
+      token: providerToken,
+      body: { lat: 10.7769, lng: 106.7009, addressText: 'District 1, Ho Chi Minh City' },
+    });
+    const debtCompletion = await verifyCompletedLifecycle(debtBookingId, customerToken);
+    if (previewMode) {
+      console.log(
+        JSON.stringify(
+          {
+            preview: {
+              runId,
+              stage: 'open-cash-debt',
+              routes: {
+                booking: `/bookings/${debtBookingId}`,
+                cashSettlements: `/cash-settlements?range=all&q=${encodeURIComponent(debtBookingId)}`,
+              },
+            },
+          },
+          null,
+          2,
+        ),
+      );
+      await holdPreviewFixtures('Press Enter after reviewing the open CASH debt to continue settlement.');
+    }
+    const debtSettlement = await settleCashBookingDebt({
+      actorToken,
+      approverToken,
+      bookingId: debtBookingId,
+      completion: debtCompletion,
+    });
+    const adminEvidence = adminEvidenceMode
+      ? await verifyAdminWebEvidence({
+          debtBookingId,
+          debtSettlement,
+          refund,
+          refundedBookingId: completedBookingId,
+        })
+      : undefined;
+
     console.log(
       JSON.stringify(
         {
-          preview: {
-            runId,
-            stage: 'open-cash-debt',
-            routes: {
-              booking: `/bookings/${debtBookingId}`,
-              cashSettlements: `/cash-settlements?range=all&q=${encodeURIComponent(debtBookingId)}`,
-            },
+          ok: true,
+          bookings: {
+            cancelled: cancelledBookingId,
+            noShow: noShowBookingId,
+            refunded: completedBookingId,
+            refundedCompanyCoupon: couponBookingId,
+            refundedCompanyCouponSubsidy: subsidyCouponBookingId,
+            customerWallet,
+            settledCashDebt: debtBookingId,
           },
+          checks: {
+            cancellation,
+            noShow,
+            completion,
+            refund,
+            couponCompletion,
+            couponRefund,
+            subsidyCouponCompletion,
+            subsidyCouponRefund,
+            debtSettlement,
+            adminEvidence,
+          },
+          ...(previewMode
+            ? {
+                preview: {
+                  runId,
+                  stage: 'reconciled-cash-debt',
+                  routes: {
+                    bankReconciliation: `/finance-tax/bank-reconciliation/${debtSettlement.bankTransactionId}`,
+                    booking: `/bookings/${debtBookingId}`,
+                    generalLedger: `/finance-tax/general-ledger/${debtSettlement.depositJournalBatchId}`,
+                    partnerBankDeposit: `/finance-tax/partner-bank-deposits/${debtSettlement.depositRequestId}`,
+                  },
+                },
+              }
+            : {}),
         },
         null,
         2,
       ),
     );
-    await holdPreviewFixtures('Press Enter after reviewing the open CASH debt to continue settlement.');
-  }
-  const debtSettlement = await settleCashBookingDebt({
-    actorToken,
-    approverToken,
-    bookingId: debtBookingId,
-    completion: debtCompletion,
-  });
-  const adminEvidence = adminEvidenceMode
-    ? await verifyAdminWebEvidence({
-        debtBookingId,
-        debtSettlement,
-        refund,
-        refundedBookingId: completedBookingId,
-      })
-    : undefined;
-
-  console.log(
-    JSON.stringify(
-      {
-        ok: true,
-        bookings: {
-          cancelled: cancelledBookingId,
-          noShow: noShowBookingId,
-          refunded: completedBookingId,
-          settledCashDebt: debtBookingId,
-        },
-        checks: { cancellation, noShow, completion, refund, debtSettlement, adminEvidence },
-        ...(previewMode
-          ? {
-              preview: {
-                runId,
-                stage: 'reconciled-cash-debt',
-                routes: {
-                  bankReconciliation: `/finance-tax/bank-reconciliation/${debtSettlement.bankTransactionId}`,
-                  booking: `/bookings/${debtBookingId}`,
-                  generalLedger: `/finance-tax/general-ledger/${debtSettlement.depositJournalBatchId}`,
-                  partnerBankDeposit: `/finance-tax/partner-bank-deposits/${debtSettlement.depositRequestId}`,
-                },
-              },
-            }
-          : {}),
-      },
-      null,
-      2,
-    ),
-  );
-  await holdPreviewFixtures('Press Enter after reviewing the reconciled evidence to remove every fixture.');
+    await holdPreviewFixtures('Press Enter after reviewing the reconciled evidence to remove every fixture.');
   }
 } catch (error) {
   console.error(
     JSON.stringify(
       {
         ok: false,
+        stage: smokeStage,
         error: error instanceof Error ? error.message : String(error),
         apiError: apiErrorTail.trim() || undefined,
       },
@@ -239,7 +346,9 @@ try {
 } finally {
   await stopApi();
   await cleanup().catch((error) => {
-    console.error(`Cash booking smoke cleanup failed: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `Cash booking smoke cleanup failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
     process.exitCode = 1;
   });
   await prisma.$disconnect();
@@ -247,8 +356,14 @@ try {
 
 function assertLocalFixtureMode() {
   assertCondition(env.NODE_ENV !== 'production', 'Cash booking lifecycle smoke cannot run in production.');
-  assertCondition(!enabled(env.MOMO_GATEWAY_ENABLED), 'Disable the real MoMo gateway before local booking smoke.');
-  assertCondition(!enabled(env.VNPAY_GATEWAY_ENABLED), 'Disable the real VNPay gateway before local booking smoke.');
+  assertCondition(
+    !enabled(env.MOMO_GATEWAY_ENABLED),
+    'Disable the real MoMo gateway before local booking smoke.',
+  );
+  assertCondition(
+    !enabled(env.VNPAY_GATEWAY_ENABLED),
+    'Disable the real VNPay gateway before local booking smoke.',
+  );
 }
 
 function startApi() {
@@ -347,8 +462,41 @@ async function seed() {
       },
     ],
   });
+  await prisma.adminOperatorPermission.createMany({
+    data: [
+      {
+        userId: ids.actor,
+        categories: [
+          AdminOperatorPermissionCategory.BOOKINGS_DETAIL,
+          AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+          AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING,
+          AdminOperatorPermissionCategory.FINANCE_WALLET_ADJUSTMENTS,
+        ],
+      },
+      {
+        userId: ids.approver,
+        categories: [
+          AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+          AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING,
+          AdminOperatorPermissionCategory.FINANCE_WALLET_ADJUSTMENTS,
+        ],
+      },
+    ],
+  });
   await prisma.customerProfile.create({
     data: { id: ids.customerProfile, userId: ids.customerUser },
+  });
+  await prisma.customerWalletLedgerEntry.create({
+    data: {
+      customerProfileId: ids.customerProfile,
+      type: CustomerWalletLedgerType.ADMIN_ADJUSTMENT,
+      sourceKey: `smoke:${runId}:customer-wallet-funding`,
+      amount: 500_000,
+      currency: 'VND',
+      reference: runId,
+      notes: 'Self-cleaning Customer wallet booking lifecycle smoke funding.',
+      metadata: { localSmoke: true, runId },
+    },
   });
   await prisma.customerSelectedLocation.create({
     data: {
@@ -454,9 +602,34 @@ async function seed() {
       metadata: { localSmoke: true, runId },
     },
   });
+  await prisma.coupon.createMany({
+    data: [
+      couponFixture(ids.coupon, ids.couponCode, 10, now),
+      couponFixture(ids.subsidyCoupon, ids.subsidyCouponCode, 60, now),
+    ],
+  });
 }
 
-async function createCashBooking(customerToken) {
+function couponFixture(id, code, value, now) {
+  return {
+    id,
+    code,
+    active: true,
+    startsAt: new Date(now.getTime() - 60_000),
+    endsAt: new Date(now.getTime() + 60 * 60_000),
+    discount: {
+      type: 'percent',
+      value,
+      fundingSource: 'COMPANY',
+      accountingTreatment: 'MARKETING_EXPENSE',
+      settlementBasePolicy: 'PRE_COUPON_SERVICE_AMOUNT',
+      partnerTaxBasePolicy: 'PRE_COUPON_SERVICE_AMOUNT',
+      platformFeeBasePolicy: 'PRE_COUPON_SERVICE_AMOUNT',
+    },
+  };
+}
+
+async function createCashBooking(customerToken, couponCode) {
   const created = await request('/customer/bookings', {
     method: 'POST',
     token: customerToken,
@@ -468,11 +641,210 @@ async function createCashBooking(customerToken) {
       currentLng: 106.7009,
       currentLocationUpdatedAt: new Date().toISOString(),
       paymentMethod: PaymentMethod.CASH,
+      ...(couponCode ? { couponCode } : {}),
     },
   });
   assertCondition(Boolean(created.id), 'Customer booking creation did not return an id.');
   createdBookingIds.push(created.id);
   return created.id;
+}
+
+async function createCustomerWalletBooking(customerToken) {
+  const created = await request('/customer/bookings', {
+    method: 'POST',
+    token: customerToken,
+    body: {
+      serviceId: ids.service,
+      providerId: ids.providerProfile,
+      selectedLocationId: ids.customerLocation,
+      currentLat: 10.7769,
+      currentLng: 106.7009,
+      currentLocationUpdatedAt: new Date().toISOString(),
+      paymentMethod: PaymentMethod.CUSTOMER_WALLET,
+    },
+  });
+  assertCondition(Boolean(created.id), 'Customer wallet booking creation did not return an id.');
+  createdBookingIds.push(created.id);
+  return created.id;
+}
+
+async function verifyCustomerWalletLifecycle({ actorToken, approverToken, customerToken, providerToken }) {
+  assertCondition((await customerWalletBalance()) === 500_000, 'Customer wallet smoke funding is incorrect.');
+
+  const cancelledBookingId = await createCustomerWalletBooking(customerToken);
+  assertCondition(
+    (await customerWalletBalance()) === 0,
+    'Customer wallet booking did not reserve the full service amount.',
+  );
+  await request(`/customer/bookings/${cancelledBookingId}/cancel`, {
+    method: 'POST',
+    token: customerToken,
+  });
+  await assertTerminalBookingVisibleInBothApps({
+    bookingId: cancelledBookingId,
+    customerToken,
+    providerToken,
+    status: BookingStatus.CANCELLED,
+  });
+  const cancelledEntries = await prisma.customerWalletLedgerEntry.findMany({
+    where: { bookingId: cancelledBookingId },
+    orderBy: { createdAt: 'asc' },
+  });
+  assertCondition(
+    cancelledEntries.length === 2 &&
+      cancelledEntries.reduce((sum, entry) => sum + entry.amount, 0) === 0 &&
+      cancelledEntries.some((entry) => entry.sourceKey.endsWith(':release') && entry.amount === 500_000),
+    'Customer wallet cancellation did not exactly release the reservation.',
+  );
+  assertCondition(
+    (await customerWalletBalance()) === 500_000,
+    'Customer wallet cancellation did not restore the original balance.',
+  );
+
+  const completedBookingId = await createCustomerWalletBooking(customerToken);
+  await acceptFirstPick(completedBookingId, providerToken);
+  await request(`/provider/bookings/${completedBookingId}/complete`, {
+    method: 'POST',
+    token: providerToken,
+    body: { lat: 10.7769, lng: 106.7009, addressText: 'District 1, Ho Chi Minh City' },
+  });
+  const [completedBooking, completedSnapshot, completedJournal, completedEntries, completedClearingCount] =
+    await Promise.all([
+      prisma.booking.findUnique({ where: { id: completedBookingId }, include: { payment: true } }),
+      prisma.bookingSettlementSnapshot.findUnique({ where: { bookingId: completedBookingId } }),
+      prisma.accountingJournalBatch.findUnique({
+        where: { sourceKey: `accounting-journal:booking-settlement:${completedBookingId}` },
+        include: { entries: true },
+      }),
+      prisma.customerWalletLedgerEntry.findMany({ where: { bookingId: completedBookingId } }),
+      prisma.bookingPaymentClearingEntry.count({ where: { bookingId: completedBookingId } }),
+    ]);
+  assertCondition(
+    completedBooking?.status === BookingStatus.COMPLETED &&
+      completedBooking.payment?.status === PaymentStatus.CAPTURED,
+    'Customer wallet booking did not complete with a captured payment.',
+  );
+  assertCondition(
+    completedSnapshot?.paymentMethod === PaymentMethod.CUSTOMER_WALLET,
+    'Customer wallet settlement snapshot lost its payment method.',
+  );
+  assertCondition(
+    completedEntries.length === 1 &&
+      completedEntries[0]?.amount === -500_000 &&
+      completedEntries[0]?.sourceKey === `customer-wallet-payment:${completedBookingId}:settlement`,
+    'Completion duplicated or changed the Customer wallet reservation debit.',
+  );
+  assertCondition(
+    completedJournal?.totalDebit === completedJournal?.totalCredit &&
+      completedJournal?.entries.some(
+        (entry) =>
+          entry.accountCode === 'customer_wallet_liability' &&
+          entry.side === 'DEBIT' &&
+          entry.amount === 500_000,
+      ),
+    'Customer wallet completion journal is missing or unbalanced.',
+  );
+  assertCondition(completedClearingCount === 0, 'Customer wallet completion created bank payment clearing.');
+  await assertTerminalBookingVisibleInBothApps({
+    bookingId: completedBookingId,
+    customerToken,
+    providerToken,
+    status: BookingStatus.COMPLETED,
+  });
+
+  await request(`/admin/payments/${completedBooking.payment.id}/refund-request`, {
+    method: 'POST',
+    token: actorToken,
+    body: { reason: 'Customer wallet lifecycle completed booking refund' },
+  });
+  await request(`/admin/payments/${completedBooking.payment.id}/refund`, {
+    method: 'POST',
+    token: approverToken,
+    body: {},
+  });
+  const [refundedBooking, refundedEntries, reversalJournal, refundedClearingCount] = await Promise.all([
+    prisma.booking.findUnique({ where: { id: completedBookingId }, include: { payment: true } }),
+    prisma.customerWalletLedgerEntry.findMany({ where: { bookingId: completedBookingId } }),
+    prisma.accountingJournalBatch.findUnique({
+      where: { sourceKey: `accounting-journal:booking-settlement-reversal:${completedSnapshot.id}` },
+    }),
+    prisma.bookingPaymentClearingEntry.count({ where: { bookingId: completedBookingId } }),
+  ]);
+  assertCondition(
+    refundedBooking?.status === BookingStatus.REFUNDED &&
+      refundedBooking.payment?.status === PaymentStatus.REFUNDED,
+    'Customer wallet refund did not update booking and payment state.',
+  );
+  assertCondition(
+    refundedEntries.length === 2 &&
+      refundedEntries.reduce((sum, entry) => sum + entry.amount, 0) === 0 &&
+      refundedEntries.some((entry) => entry.sourceKey.endsWith(':refund') && entry.amount === 500_000),
+    'Customer wallet refund did not exactly restore the completed payment debit.',
+  );
+  assertCondition(
+    reversalJournal?.totalDebit === reversalJournal?.totalCredit,
+    'Customer wallet refund reversal journal is missing or unbalanced.',
+  );
+  assertCondition(refundedClearingCount === 0, 'Customer wallet refund created bank payment clearing.');
+  assertCondition(
+    (await customerWalletBalance()) === 500_000,
+    'Customer wallet refund did not restore the balance.',
+  );
+  await assertTerminalBookingVisibleInBothApps({
+    bookingId: completedBookingId,
+    customerToken,
+    providerToken,
+    status: BookingStatus.REFUNDED,
+  });
+
+  const concurrentAttempts = await Promise.allSettled([
+    createCustomerWalletBooking(customerToken),
+    createCustomerWalletBooking(customerToken),
+  ]);
+  const successful = concurrentAttempts.filter((attempt) => attempt.status === 'fulfilled');
+  const rejected = concurrentAttempts.filter((attempt) => attempt.status === 'rejected');
+  assertCondition(
+    successful.length === 1 && rejected.length === 1,
+    'Concurrent Customer wallet bookings did not admit exactly one reservation.',
+  );
+  assertCondition(
+    String(rejected[0]?.reason).includes('Insufficient customer wallet balance'),
+    'Concurrent Customer wallet rejection was not caused by the locked balance check.',
+  );
+  const concurrentBookingId = successful[0].value;
+  await request(`/customer/bookings/${concurrentBookingId}/cancel`, {
+    method: 'POST',
+    token: customerToken,
+  });
+  assertCondition(
+    (await customerWalletBalance()) === 500_000,
+    'Concurrent booking cleanup did not restore the Customer wallet balance.',
+  );
+
+  const inbox = await request('/notifications/customer-inbox?take=50', { token: customerToken });
+  assertCondition(
+    !inbox.items?.some((notification) =>
+      [cancelledBookingId, completedBookingId, concurrentBookingId].includes(notification.data?.bookingId),
+    ),
+    'Customer wallet service payment appeared in the Customer app notification inbox.',
+  );
+
+  return {
+    cancellationRestoredBalance: true,
+    completionJournalBalanced: true,
+    concurrentReservationGuarded: true,
+    customerInboxExcludedServicePayments: true,
+    finalBalance: await customerWalletBalance(),
+    refundRestoredBalance: true,
+  };
+}
+
+async function customerWalletBalance() {
+  const wallet = await prisma.customerWalletLedgerEntry.aggregate({
+    where: { customerProfileId: ids.customerProfile, currency: 'VND' },
+    _sum: { amount: true },
+  });
+  return wallet._sum.amount ?? 0;
 }
 
 async function createMarketplaceCashBooking(customerToken) {
@@ -493,17 +865,127 @@ async function createMarketplaceCashBooking(customerToken) {
   return created.id;
 }
 
-async function runCustomerPartnerPairedE2e({ customerToken, providerToken }) {
+async function runCustomerPartnerPairedE2e({ actorToken, approverToken, customerToken, providerToken }) {
   const paymentCatalog = await request('/customer/payment-methods', { token: customerToken });
-  assertCondition(paymentCatalog.defaultMethod === PaymentMethod.CASH, 'Customer app payment catalog default is not CASH.');
+  assertCondition(
+    paymentCatalog.defaultMethod === PaymentMethod.CASH,
+    'Customer app payment catalog default is not CASH.',
+  );
+
+  await request('/provider/online', { method: 'POST', token: providerToken });
+  await assertProviderAvailability({
+    expectedReason: ProviderAvailabilityReason.MANUAL_AVAILABLE,
+    expectedStatus: ProviderStatus.ONLINE_AVAILABLE,
+    message: 'Partner did not become ready before the paired booking lifecycle.',
+    providerToken,
+  });
+
+  const customerWallet = await verifyCustomerWalletLifecycle({
+    actorToken,
+    approverToken,
+    customerToken,
+    providerToken,
+  });
+
+  const preMatchCancelledBookingId = await createCashBooking(customerToken);
+  await request(`/customer/bookings/${preMatchCancelledBookingId}/cancel`, {
+    method: 'POST',
+    token: customerToken,
+  });
+  await verifyPreMatchCancellation(preMatchCancelledBookingId);
+  await assertTerminalBookingVisibleInBothApps({
+    bookingId: preMatchCancelledBookingId,
+    customerToken,
+    providerToken,
+    status: BookingStatus.CANCELLED,
+  });
+
+  const preferredRejectedBookingId = await createCashBooking(customerToken);
+  await request(`/partner/bookings/${preferredRejectedBookingId}/reject`, {
+    method: 'POST',
+    token: providerToken,
+    body: {
+      reasonCode: 'SCHEDULE_CONFLICT',
+      reasonDetail: 'Paired E2E preferred request rejection.',
+    },
+  });
+  await verifyPreferredProviderRejection(preferredRejectedBookingId);
+  await assertTerminalBookingVisibleInBothApps({
+    bookingId: preferredRejectedBookingId,
+    customerToken,
+    providerToken,
+    status: BookingStatus.CANCELLED,
+  });
+
+  const autoCancelledBookingId = await createCashBooking(customerToken);
+  await acceptFirstPick(autoCancelledBookingId, providerToken);
+  const autoCancelled = await request(`/partner/bookings/${autoCancelledBookingId}/cancel`, {
+    method: 'POST',
+    token: providerToken,
+    body: {
+      reasonCode: 'CUSTOMER_REQUESTED',
+      note: 'Paired E2E customer requested cancellation in chat.',
+      lat: 10.7769,
+      lng: 106.7009,
+      addressText: 'District 1, Ho Chi Minh City',
+    },
+  });
+  assertCondition(
+    autoCancelled.postMatchCancellation?.autoApproved === true,
+    'Customer-requested post-match cancellation was not auto-approved.',
+  );
+  await verifyPostMatchCancellation(autoCancelledBookingId, {
+    paymentStatus: PaymentStatus.RELEASED,
+    reviewStatus: BookingOpsTaskStatus.DONE,
+  });
+  await assertTerminalBookingVisibleInBothApps({
+    bookingId: autoCancelledBookingId,
+    customerToken,
+    providerToken,
+    status: BookingStatus.CANCELLED,
+  });
+
+  const noShowReviewBookingId = await createCashBooking(customerToken);
+  await acceptFirstPick(noShowReviewBookingId, providerToken);
+  const noShowReview = await request(`/partner/bookings/${noShowReviewBookingId}/cancel`, {
+    method: 'POST',
+    token: providerToken,
+    body: {
+      reasonCode: 'CUSTOMER_NOT_FOUND',
+      note: 'Paired E2E partner could not meet the customer at the saved address.',
+      lat: 10.7769,
+      lng: 106.7009,
+      addressText: 'District 1, Ho Chi Minh City',
+    },
+  });
+  assertCondition(
+    noShowReview.postMatchCancellation?.adminReviewRequired === true,
+    'Customer-not-found cancellation did not enter admin review.',
+  );
+  await verifyPostMatchCancellation(noShowReviewBookingId, {
+    paymentStatus: PaymentStatus.PENDING,
+    reviewStatus: BookingOpsTaskStatus.PENDING,
+  });
+  await assertTerminalBookingVisibleInBothApps({
+    bookingId: noShowReviewBookingId,
+    customerToken,
+    providerToken,
+    status: BookingStatus.CANCELLED,
+  });
 
   const bookingId = await createMarketplaceCashBooking(customerToken);
   const openBooking = await prisma.booking.findUniqueOrThrow({
     where: { id: bookingId },
     include: { payment: true, addressSnapshot: true },
   });
-  assertCondition(openBooking.status === BookingStatus.OPEN_MATCHING, 'Customer booking did not enter open matching.');
-  assertCondition(openBooking.payment?.method === PaymentMethod.CASH, 'Customer booking payment method is not CASH.');
+  assertCondition(
+    openBooking.status === BookingStatus.OPEN_MATCHING,
+    'Customer booking did not enter open matching.',
+  );
+  assertCondition(
+    openBooking.payment?.method === PaymentMethod.CASH,
+    'Customer booking payment method is not CASH.',
+  );
   assertCondition(
     openBooking.addressSnapshot?.selectedLocationId === ids.customerLocation,
     'Customer booking did not retain the selected location snapshot.',
@@ -533,12 +1015,28 @@ async function runCustomerPartnerPairedE2e({ customerToken, providerToken }) {
   });
   const chatRoomId = matched?.booking?.chatRoom?.id;
   assertCondition(Boolean(chatRoomId), 'Customer final Partner selection did not create a chat room.');
-  await assertBookingState(bookingId, BookingStatus.MATCHED, 'Customer final Partner selection did not match the booking.');
+  await assertBookingState(
+    bookingId,
+    BookingStatus.IN_SERVICE,
+    'Customer final Partner selection did not start the service.',
+  );
+  await assertProviderAvailability({
+    expectedReason: ProviderAvailabilityReason.ACTIVE_BOOKING,
+    expectedStatus: ProviderStatus.ONLINE_BUSY,
+    message: 'Partner availability did not become busy immediately after final selection.',
+    providerToken,
+  });
 
   const customerMatchedDetail = await request(`/customer/bookings/${bookingId}`, { token: customerToken });
   const partnerMatchedDetail = await request(`/partner/bookings/${bookingId}`, { token: providerToken });
-  assertCondition(customerMatchedDetail.status === BookingStatus.MATCHED, 'Customer app detail is stale after matching.');
-  assertCondition(partnerMatchedDetail.status === BookingStatus.MATCHED, 'Partner app detail is stale after matching.');
+  assertCondition(
+    customerMatchedDetail.status === BookingStatus.IN_SERVICE,
+    'Customer app detail is stale after matching.',
+  );
+  assertCondition(
+    partnerMatchedDetail.status === BookingStatus.IN_SERVICE,
+    'Partner app detail is stale after matching.',
+  );
 
   const customerMessage = await request(`/chat/rooms/${chatRoomId}/messages`, {
     method: 'POST',
@@ -562,14 +1060,41 @@ async function runCustomerPartnerPairedE2e({ customerToken, providerToken }) {
     'Customer app could not read the Partner chat message.',
   );
 
-  await request(`/partner/bookings/${bookingId}/start`, { method: 'POST', token: providerToken });
-  await assertBookingState(bookingId, BookingStatus.IN_SERVICE, 'Partner app could not start the matched booking.');
-  await request(`/partner/bookings/${bookingId}/complete`, {
-    method: 'POST',
-    token: providerToken,
-    body: { lat: 10.7769, lng: 106.7009, addressText: 'District 1, Ho Chi Minh City' },
+  const customerSocket = createSocket(apiBaseUrl.replace(/\/api$/, ''), {
+    auth: { token: customerToken },
+    reconnection: false,
+    transports: ['websocket'],
   });
-  const completion = await verifyCompletedLifecycle(bookingId, customerToken);
+  let completion;
+  try {
+    await waitForSocketConnection(customerSocket);
+    const roomJoin = await customerSocket.timeout(5_000).emitWithAck('booking.join_room', { bookingId });
+    assertCondition(roomJoin?.ok === true, 'Customer Socket.IO client could not join its booking room.');
+    const serviceCompletedEventPromise = waitForBookingSocketEvent(
+      customerSocket,
+      'service.completed',
+      bookingId,
+    );
+    await request(`/partner/bookings/${bookingId}/complete`, {
+      method: 'POST',
+      token: providerToken,
+      body: { lat: 10.7769, lng: 106.7009, addressText: 'District 1, Ho Chi Minh City' },
+    });
+    const serviceCompletedEvent = await serviceCompletedEventPromise;
+    assertCondition(
+      serviceCompletedEvent?.status === BookingStatus.COMPLETED,
+      'Customer Socket.IO client did not receive the persisted service completion state.',
+    );
+    completion = await verifyCompletedLifecycle(bookingId, customerToken);
+  } finally {
+    customerSocket.disconnect();
+  }
+  await assertProviderAvailability({
+    expectedReason: ProviderAvailabilityReason.MANUAL_AVAILABLE,
+    expectedStatus: ProviderStatus.ONLINE_AVAILABLE,
+    message: 'Partner availability did not return to ready immediately after completion.',
+    providerToken,
+  });
 
   const [customerBookings, partnerBookings] = await Promise.all([
     request('/customer/bookings', { token: customerToken }),
@@ -577,52 +1102,383 @@ async function runCustomerPartnerPairedE2e({ customerToken, providerToken }) {
   ]);
   assertCondition(
     Array.isArray(customerBookings) &&
-      customerBookings.some((booking) => booking.id === bookingId && booking.status === BookingStatus.COMPLETED),
+      customerBookings.some(
+        (booking) => booking.id === bookingId && booking.status === BookingStatus.COMPLETED,
+      ),
     'Customer app booking history did not expose the completed booking.',
   );
   assertCondition(
     Array.isArray(partnerBookings) &&
-      partnerBookings.some((booking) => booking.id === bookingId && booking.status === BookingStatus.COMPLETED),
+      partnerBookings.some(
+        (booking) => booking.id === bookingId && booking.status === BookingStatus.COMPLETED,
+      ),
     'Partner app job history did not expose the completed booking.',
   );
 
   return {
     bookingId,
-    customer: { created: true, selectedPartner: true, chatReceived: true, completedVisible: true },
-    partner: { requestVisible: true, joined: true, accepted: true, chatReceived: true, completed: true },
+    exceptions: {
+      customerPreMatchCancellation: preMatchCancelledBookingId,
+      preferredProviderRejection: preferredRejectedBookingId,
+      customerRequestedPostMatchCancellation: autoCancelledBookingId,
+      customerNotFoundAdminReview: noShowReviewBookingId,
+    },
+    customer: {
+      created: true,
+      selectedPartner: true,
+      matchedInServiceVisible: true,
+      chatRoomActivated: true,
+      chatReceived: true,
+      serviceCompletedRealtimeReceived: true,
+      completedVisible: true,
+    },
+    partner: {
+      requestVisible: true,
+      joined: true,
+      accepted: true,
+      acceptedIntoService: true,
+      chatReceived: true,
+      completed: true,
+    },
+    availability: { readyBeforeMatch: true, busyAfterMatch: true, readyAfterCompletion: true },
     accounting: {
       journalBalanced: completion.accountingJournalBalanced,
       cashPaymentCaptured: completion.cashPaymentCaptured,
       settlementSnapshotPosted: completion.settlementSnapshotPosted,
     },
+    customerWallet,
   };
 }
 
-async function verifyOpenBooking(bookingId) {
+async function assertTerminalBookingVisibleInBothApps({
+  bookingId,
+  customerToken,
+  providerToken,
+  status,
+}) {
+  const [customerBooking, partnerBooking] = await Promise.all([
+    request(`/customer/bookings/${bookingId}`, { token: customerToken }),
+    request(`/partner/bookings/${bookingId}`, { token: providerToken }),
+  ]);
+  assertCondition(
+    customerBooking.status === status,
+    `Customer app detail did not expose ${status} for ${bookingId}.`,
+  );
+  assertCondition(
+    partnerBooking.status === status,
+    `Partner app detail did not expose ${status} for ${bookingId}.`,
+  );
+}
+
+function waitForSocketConnection(socket) {
+  if (socket.connected) {
+    return Promise.resolve();
+  }
+  return new Promise((resolveConnection, rejectConnection) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      rejectConnection(new Error('Customer Socket.IO connection timed out.'));
+    }, 5_000);
+    const cleanup = () => {
+      clearTimeout(timeout);
+      socket.off('connect', onConnect);
+      socket.off('connect_error', onError);
+    };
+    const onConnect = () => {
+      cleanup();
+      resolveConnection();
+    };
+    const onError = (error) => {
+      cleanup();
+      rejectConnection(error);
+    };
+    socket.on('connect', onConnect);
+    socket.on('connect_error', onError);
+  });
+}
+
+function waitForBookingSocketEvent(socket, eventName, bookingId) {
+  return new Promise((resolveEvent, rejectEvent) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      rejectEvent(new Error(`${eventName} was not received for booking ${bookingId}.`));
+    }, 5_000);
+    const cleanup = () => {
+      clearTimeout(timeout);
+      socket.off(eventName, onEvent);
+    };
+    const onEvent = (payload) => {
+      const payloadBookingId = payload?.bookingId ?? payload?.id ?? payload?.booking?.id;
+      if (payloadBookingId !== bookingId) {
+        return;
+      }
+      cleanup();
+      resolveEvent(payload);
+    };
+    socket.on(eventName, onEvent);
+  });
+}
+
+async function assertProviderAvailability({ expectedReason, expectedStatus, message, providerToken }) {
+  const [availability, persisted] = await Promise.all([
+    request('/provider/availability', { token: providerToken }),
+    prisma.providerProfile.findUnique({
+      where: { id: ids.providerProfile },
+      select: { availabilityReason: true, status: true },
+    }),
+  ]);
+  assertCondition(
+    availability.status === expectedStatus &&
+      availability.availabilityReason === expectedReason &&
+      persisted?.status === expectedStatus &&
+      persisted.availabilityReason === expectedReason,
+    `${message} API=${availability.status}/${availability.availabilityReason}; persisted=${persisted?.status}/${persisted?.availabilityReason}`,
+  );
+}
+
+async function verifyOpenBooking(bookingId, expectedPaymentAmount = 500_000) {
   const opened = await prisma.booking.findUniqueOrThrow({
     where: { id: bookingId },
     include: { payment: true, addressSnapshot: true, participants: true },
   });
   assertCondition(opened.status === BookingStatus.OPEN_MATCHING, 'CASH booking did not open matching.');
   assertCondition(opened.payment?.method === PaymentMethod.CASH, 'Booking payment method is not CASH.');
-  assertCondition(opened.payment?.status === PaymentStatus.PENDING, 'CASH payment must remain pending before completion.');
-  assertCondition(opened.payment?.amount === 500_000, 'CASH payment amount does not match the service price.');
-  assertCondition(opened.addressSnapshot?.selectedLocationId === ids.customerLocation, 'Booking address snapshot is missing.');
+  assertCondition(
+    opened.payment?.status === PaymentStatus.PENDING,
+    'CASH payment must remain pending before completion.',
+  );
+  assertCondition(
+    opened.payment?.amount === expectedPaymentAmount,
+    `CASH payment amount does not match the expected price. Expected ${expectedPaymentAmount}, got ${opened.payment?.amount}.`,
+  );
+  assertCondition(
+    opened.addressSnapshot?.selectedLocationId === ids.customerLocation,
+    'Booking address snapshot is missing.',
+  );
   assertCondition(
     opened.participants.some(
       (participant) =>
-        participant.providerProfileId === ids.providerProfile && participant.status === ParticipantStatus.JOINED,
+        participant.providerProfileId === ids.providerProfile &&
+        participant.status === ParticipantStatus.JOINED,
     ),
     'Preferred Partner was not registered as the first-pick participant.',
   );
+}
+
+async function verifyCouponCompletedLifecycle(bookingId, baselineCompletion) {
+  const [booking, earning, snapshot, baselineSnapshot, journal, walletEntries, clearingCount] =
+    await Promise.all([
+      prisma.booking.findUnique({ where: { id: bookingId }, include: { payment: true } }),
+      prisma.providerEarning.findUnique({ where: { bookingId } }),
+      prisma.bookingSettlementSnapshot.findUnique({ where: { bookingId } }),
+      prisma.bookingSettlementSnapshot.findUnique({ where: { id: baselineCompletion.settlementSnapshotId } }),
+      prisma.accountingJournalBatch.findUnique({
+        where: { sourceKey: `accounting-journal:booking-settlement:${bookingId}` },
+        include: { entries: true },
+      }),
+      prisma.providerWalletLedgerEntry.findMany({
+        where: { bookingId, providerProfileId: ids.providerProfile },
+      }),
+      prisma.bookingPaymentClearingEntry.count({ where: { bookingId } }),
+    ]);
+  const metadata = snapshot?.metadata ?? {};
+  const walletDelta = walletEntries.reduce((sum, entry) => sum + entry.amount, 0);
+  const partnerReceivable = journal?.entries.find(
+    (entry) => entry.side === 'DEBIT' && entry.accountCode === 'partner_receivable_negative_wallet',
+  );
+  const couponExpense = journal?.entries.find(
+    (entry) => entry.side === 'DEBIT' && entry.accountCode === 'customer_coupon_marketing_expense',
+  );
+  const reconciliationDelta = journal?.entries.find(
+    (entry) => entry.accountCode === 'settlement_reconciliation_delta',
+  );
+
+  assertCondition(
+    booking?.status === BookingStatus.COMPLETED,
+    'Company coupon CASH booking was not completed.',
+  );
+  assertCondition(
+    booking?.payment?.status === PaymentStatus.CAPTURED,
+    'Company coupon CASH payment was not captured.',
+  );
+  assertCondition(
+    booking?.payment?.amount === 450_000,
+    'Company coupon did not reduce the customer payment to 450,000 VND.',
+  );
+  assertCondition(
+    snapshot?.customerPaymentAmount === 450_000,
+    'Coupon settlement lost the actual customer payment.',
+  );
+  assertCondition(
+    snapshot?.partnerTaxableRevenue === 500_000,
+    'Coupon incorrectly reduced Partner taxable revenue.',
+  );
+  assertCondition(
+    snapshot?.partnerPayoutAmount === baselineSnapshot?.partnerPayoutAmount,
+    'Coupon changed Partner payout basis.',
+  );
+  assertCondition(
+    snapshot?.platformFeeGross === baselineSnapshot?.platformFeeGross,
+    'Coupon changed platform fee gross revenue.',
+  );
+  assertCondition(
+    snapshot?.companyOutputVat === baselineSnapshot?.companyOutputVat,
+    'Coupon changed company output VAT.',
+  );
+  assertCondition(
+    snapshot?.partnerWithholdingTotal === baselineSnapshot?.partnerWithholdingTotal,
+    'Coupon changed Partner withholding.',
+  );
+  assertCondition(
+    metadata.companyCouponExpense === 50_000 &&
+      metadata.couponDiscountAmount === 50_000 &&
+      metadata.couponFundingSourceSnapshot === 'COMPANY' &&
+      metadata.couponCodeSnapshot === ids.couponCode,
+    'Coupon settlement metadata is incomplete.',
+  );
+  assertCondition(
+    walletDelta === baselineCompletion.partnerWalletDelta + 50_000 && walletDelta === earning?.netAmount,
+    'Company coupon did not reduce the Partner CASH receivable by exactly its discount.',
+  );
+  assertCondition(
+    (journal?.totalDebit ?? 0) > 0 &&
+      journal?.totalDebit === journal?.totalCredit &&
+      partnerReceivable?.amount === Math.abs(walletDelta) &&
+      couponExpense?.amount === 50_000 &&
+      !reconciliationDelta,
+    'Company coupon CASH journal is unbalanced or contains a reconciliation delta.',
+  );
+  assertCondition(clearingCount === 0, 'Company coupon CASH booking created online payment clearing.');
+
+  return {
+    accountingJournalBalanced: true,
+    cashPaymentClearingRows: clearingCount,
+    companyCouponExpense: metadata.companyCouponExpense,
+    customerPaymentAmount: snapshot.customerPaymentAmount,
+    earningId: earning.id,
+    paymentId: booking.payment.id,
+    partnerPayoutBasisPreserved: true,
+    partnerWalletDelta: walletDelta,
+    reconciliationDelta: 0,
+    settlementSnapshotId: snapshot.id,
+  };
+}
+
+async function verifyCouponRefundMetadata(bookingId) {
+  const [snapshot, reversalJournal] = await Promise.all([
+    prisma.bookingSettlementSnapshot.findUnique({ where: { bookingId } }),
+    prisma.accountingJournalBatch.findFirst({
+      where: { bookingId, sourceType: 'BOOKING_SETTLEMENT_REVERSAL' },
+      orderBy: { createdAt: 'desc' },
+      include: { entries: true },
+    }),
+  ]);
+  assertCondition(
+    snapshot?.metadata?.couponReversalStatus === 'REVERSED' &&
+      snapshot.metadata.reversedCompanyCouponExpense === 50_000 &&
+      snapshot.metadata.reversedCouponDiscountAmount === 50_000,
+    'Coupon refund did not preserve reversal metadata.',
+  );
+  assertCondition(
+    reversalJournal?.entries.some(
+      (entry) =>
+        entry.accountCode === 'customer_coupon_marketing_expense' &&
+        entry.side === 'CREDIT' &&
+        entry.amount === 50_000,
+    ),
+    'Coupon refund journal did not reverse company marketing expense.',
+  );
+}
+
+async function verifyCouponSubsidyCompletedLifecycle(bookingId, baselineCompletion) {
+  const [booking, earning, snapshot, baselineSnapshot, journal, walletEntries, clearingCount] =
+    await Promise.all([
+      prisma.booking.findUnique({ where: { id: bookingId }, include: { payment: true } }),
+      prisma.providerEarning.findUnique({ where: { bookingId } }),
+      prisma.bookingSettlementSnapshot.findUnique({ where: { bookingId } }),
+      prisma.bookingSettlementSnapshot.findUnique({ where: { id: baselineCompletion.settlementSnapshotId } }),
+      prisma.accountingJournalBatch.findUnique({
+        where: { sourceKey: `accounting-journal:booking-settlement:${bookingId}` },
+        include: { entries: true },
+      }),
+      prisma.providerWalletLedgerEntry.findMany({
+        where: { bookingId, providerProfileId: ids.providerProfile },
+      }),
+      prisma.bookingPaymentClearingEntry.count({ where: { bookingId } }),
+    ]);
+  const walletDelta = walletEntries.reduce((sum, entry) => sum + entry.amount, 0);
+  const metadata = snapshot?.metadata ?? {};
+  const couponExpense = journal?.entries.find(
+    (entry) => entry.side === 'DEBIT' && entry.accountCode === 'customer_coupon_marketing_expense',
+  );
+  const partnerLiability = journal?.entries.find(
+    (entry) => entry.side === 'CREDIT' && entry.accountCode === 'partner_wallet_liability',
+  );
+
+  assertCondition(
+    booking?.payment?.amount === 200_000,
+    '60% company coupon did not reduce customer CASH payment.',
+  );
+  assertCondition(
+    snapshot?.partnerPayoutAmount === baselineSnapshot?.partnerPayoutAmount,
+    'Subsidy coupon changed Partner payout basis.',
+  );
+  assertCondition(
+    snapshot?.platformFeeGross === baselineSnapshot?.platformFeeGross,
+    'Subsidy coupon changed platform fee gross.',
+  );
+  assertCondition(
+    snapshot?.partnerWithholdingTotal === baselineSnapshot?.partnerWithholdingTotal,
+    'Subsidy coupon changed withholding.',
+  );
+  assertCondition(
+    metadata.companyCouponExpense === 300_000 &&
+      metadata.couponFundingSourceSnapshot === 'COMPANY' &&
+      metadata.couponCodeSnapshot === ids.subsidyCouponCode,
+    'Subsidy coupon metadata is incomplete.',
+  );
+  assertCondition(
+    walletDelta === 200_000 && earning?.netAmount === 200_000,
+    'Company coupon excess did not create the expected Partner wallet liability.',
+  );
+  assertCondition(
+    walletEntries.some(
+      (entry) =>
+        entry.sourceKey === `earning:${earning.id}:cash-company-coupon-subsidy` &&
+        entry.type === ProviderWalletLedgerType.BOOKING_EARNING &&
+        entry.amount === 200_000,
+    ),
+    'Partner coupon subsidy wallet ledger is missing.',
+  );
+  assertCondition(
+    (journal?.totalDebit ?? 0) > 0 &&
+      journal?.totalDebit === journal?.totalCredit &&
+      couponExpense?.amount === 300_000 &&
+      partnerLiability?.amount === 200_000 &&
+      !journal.entries.some((entry) => entry.accountCode === 'settlement_reconciliation_delta'),
+    'Subsidy coupon journal is unbalanced or contains a reconciliation delta.',
+  );
+  assertCondition(clearingCount === 0, 'Subsidy coupon CASH booking created online payment clearing.');
+
+  return {
+    accountingJournalBalanced: true,
+    companyCouponExpense: metadata.companyCouponExpense,
+    customerPaymentAmount: snapshot.customerPaymentAmount,
+    earningId: earning.id,
+    partnerWalletDelta: walletDelta,
+    partnerWalletLiabilityCreated: partnerLiability.amount,
+    paymentId: booking.payment.id,
+    reconciliationDelta: 0,
+    settlementSnapshotId: snapshot.id,
+  };
 }
 
 async function acceptFirstPick(bookingId, providerToken) {
   await request(`/provider/bookings/${bookingId}/accept`, { method: 'POST', token: providerToken });
   await assertBookingState(
     bookingId,
-    BookingStatus.MATCHED,
-    'Partner first-pick acceptance did not match the booking.',
+    BookingStatus.IN_SERVICE,
+    'Partner first-pick acceptance did not start the service.',
   );
 }
 
@@ -639,13 +1495,86 @@ async function verifyPreMatchCancellation(bookingId) {
     prisma.accountingJournalBatch.count({ where: { bookingId } }),
     prisma.providerWalletLedgerEntry.count({ where: { bookingId } }),
   ]);
-  assertCondition(booking?.status === BookingStatus.CANCELLED, 'Pre-match cancellation did not close the booking.');
-  assertCondition(booking?.payment?.status === PaymentStatus.RELEASED, 'Cancelled CASH payment was not released.');
+  assertCondition(
+    booking?.status === BookingStatus.CANCELLED,
+    'Pre-match cancellation did not close the booking.',
+  );
+  assertCondition(
+    booking?.payment?.status === PaymentStatus.RELEASED,
+    'Cancelled CASH payment was not released.',
+  );
   assertCondition(
     earningCount + snapshotCount + journalCount + walletCount === 0,
     'Pre-match cancellation must not create earnings or accounting records.',
   );
   return { accountingRows: 0, bookingStatus: booking.status, paymentStatus: booking.payment.status };
+}
+
+async function verifyPreferredProviderRejection(bookingId) {
+  await verifyPreMatchCancellation(bookingId);
+  const [booking, requestEvent, auditCount] = await Promise.all([
+    prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { participants: true },
+    }),
+    prisma.providerBookingRequestEvent.findFirst({
+      where: {
+        bookingId,
+        providerProfileId: ids.providerProfile,
+        eventType: 'PREFERRED_PROVIDER_REJECTED',
+      },
+    }),
+    prisma.adminAuditLog.count({
+      where: {
+        actorId: ids.providerUser,
+        action: 'booking.closed.preferred_provider_rejected',
+        target: `booking:${bookingId}`,
+      },
+    }),
+  ]);
+  assertCondition(
+    booking?.closedReason === 'preferred_provider_rejected' &&
+      booking.participants.some(
+        (participant) =>
+          participant.providerProfileId === ids.providerProfile &&
+          participant.status === ParticipantStatus.REJECTED,
+      ),
+    'Preferred Partner rejection did not retain its terminal state.',
+  );
+  assertCondition(
+    requestEvent?.metadata?.reasonCode === 'SCHEDULE_CONFLICT' && auditCount === 1,
+    'Preferred Partner rejection reason or audit evidence is missing.',
+  );
+}
+
+async function verifyPostMatchCancellation(bookingId, { paymentStatus, reviewStatus }) {
+  const [booking, opsTask, earningCount, snapshotCount, journalCount, walletCount, locationCount] =
+    await Promise.all([
+      prisma.booking.findUnique({ where: { id: bookingId }, include: { payment: true } }),
+      prisma.bookingOpsTask.findUnique({
+        where: { bookingId_type: { bookingId, type: BookingOpsTaskType.PAYMENT_REVIEWED } },
+      }),
+      prisma.providerEarning.count({ where: { bookingId } }),
+      prisma.bookingSettlementSnapshot.count({ where: { bookingId } }),
+      prisma.accountingJournalBatch.count({ where: { bookingId } }),
+      prisma.providerWalletLedgerEntry.count({ where: { bookingId } }),
+      prisma.locationSnapshot.count({
+        where: { bookingId, providerProfileId: ids.providerProfile },
+      }),
+    ]);
+  assertCondition(
+    booking?.status === BookingStatus.CANCELLED && booking.payment?.status === paymentStatus,
+    `Post-match cancellation did not retain ${paymentStatus} payment state.`,
+  );
+  assertCondition(
+    opsTask?.status === reviewStatus,
+    `Post-match cancellation review task did not enter ${reviewStatus}.`,
+  );
+  assertCondition(
+    earningCount + snapshotCount + journalCount + walletCount === 0,
+    'Post-match cancellation created settlement accounting before service completion.',
+  );
+  assertCondition(locationCount === 1, 'Post-match cancellation action location is missing.');
 }
 
 async function verifyNoShowReview(bookingId) {
@@ -661,8 +1590,14 @@ async function verifyNoShowReview(bookingId) {
     prisma.providerEarning.count({ where: { bookingId } }),
     prisma.accountingJournalBatch.count({ where: { bookingId } }),
   ]);
-  assertCondition(booking?.status === BookingStatus.NO_SHOW, 'Admin no-show action did not close the booking.');
-  assertCondition(payment?.status === PaymentStatus.PENDING, 'No-show review must not automatically refund CASH.');
+  assertCondition(
+    booking?.status === BookingStatus.NO_SHOW,
+    'Admin no-show action did not close the booking.',
+  );
+  assertCondition(
+    payment?.status === PaymentStatus.PENDING,
+    'No-show review must not automatically refund CASH.',
+  );
   assertCondition(
     opsTask?.status === BookingOpsTaskStatus.BLOCKED && opsTask.actorId === ids.actor,
     'No-show did not create the blocked payment-review task.',
@@ -692,13 +1627,28 @@ async function verifyCompletedLifecycle(bookingId, customerToken) {
   ]);
 
   assertCondition(booking?.status === BookingStatus.COMPLETED, 'Booking was not completed.');
-  assertCondition(booking?.payment?.status === PaymentStatus.CAPTURED, 'CASH payment was not captured on completion.');
+  assertCondition(
+    booking?.payment?.status === PaymentStatus.CAPTURED,
+    'CASH payment was not captured on completion.',
+  );
   assertCondition(Boolean(earning), 'Completed booking did not create Partner earnings.');
-  assertCondition((earning?.netAmount ?? 0) < 0, 'CASH booking must create Partner debt, not a wallet credit.');
+  assertCondition(
+    (earning?.netAmount ?? 0) < 0,
+    'CASH booking must create Partner debt, not a wallet credit.',
+  );
   assertCondition(Boolean(snapshot), 'Completed booking did not create a settlement snapshot.');
-  assertCondition(snapshot?.paymentMethod === PaymentMethod.CASH, 'Settlement snapshot lost the CASH payment method.');
-  assertCondition(snapshot?.customerPaymentAmount === 500_000, 'Settlement snapshot customer amount is incorrect.');
-  assertCondition(snapshot?.partnerPayoutAmount === 400_000, 'Settlement snapshot Partner payout is incorrect.');
+  assertCondition(
+    snapshot?.paymentMethod === PaymentMethod.CASH,
+    'Settlement snapshot lost the CASH payment method.',
+  );
+  assertCondition(
+    snapshot?.customerPaymentAmount === 500_000,
+    'Settlement snapshot customer amount is incorrect.',
+  );
+  assertCondition(
+    snapshot?.partnerPayoutAmount === 400_000,
+    'Settlement snapshot Partner payout is incorrect.',
+  );
   assertCondition(Boolean(journal), 'Completed booking did not create an accounting journal.');
   assertCondition(
     (journal?.totalDebit ?? 0) > 0 && journal?.totalDebit === journal?.totalCredit,
@@ -713,12 +1663,24 @@ async function verifyCompletedLifecycle(bookingId, customerToken) {
   });
   const walletDelta = walletEntries.reduce((sum, entry) => sum + entry.amount, 0);
   assertCondition(walletEntries.length >= 2, 'CASH settlement wallet components are incomplete.');
-  assertCondition(walletDelta === earning?.netAmount, 'Partner wallet ledger does not reconcile to earnings.');
+  assertCondition(
+    walletDelta === earning?.netAmount,
+    'Partner wallet ledger does not reconcile to earnings.',
+  );
   assertCondition(walletDelta < 0, 'CASH settlement wallet ledger must record money owed to HANDS.');
 
-  assertCondition(detail.status === BookingStatus.COMPLETED, 'Customer booking detail is not current after completion.');
-  assertCondition(detail.payment?.status === PaymentStatus.CAPTURED, 'Customer booking detail hides the captured payment state.');
-  assertCondition(!Object.hasOwn(detail.payment ?? {}, 'rawMeta'), 'Customer booking detail exposes private payment rawMeta.');
+  assertCondition(
+    detail.status === BookingStatus.COMPLETED,
+    'Customer booking detail is not current after completion.',
+  );
+  assertCondition(
+    detail.payment?.status === PaymentStatus.CAPTURED,
+    'Customer booking detail hides the captured payment state.',
+  );
+  assertCondition(
+    !Object.hasOwn(detail.payment ?? {}, 'rawMeta'),
+    'Customer booking detail exposes private payment rawMeta.',
+  );
 
   return {
     accountingJournalBalanced: true,
@@ -755,7 +1717,10 @@ async function verifyRefundLifecycle(bookingId, completion) {
       }),
     ]);
   assertCondition(booking?.status === BookingStatus.REFUNDED, 'Refund did not update the booking status.');
-  assertCondition(booking?.payment?.status === PaymentStatus.REFUNDED, 'Refund did not update the CASH payment.');
+  assertCondition(
+    booking?.payment?.status === PaymentStatus.REFUNDED,
+    'Refund did not update the CASH payment.',
+  );
   assertCondition(refund?.status === 'COMPLETED', 'Refund request was not finalized.');
   assertCondition(
     earning?.status === EarningStatus.CANCELLED && earning.netAmount === 0,
@@ -782,7 +1747,10 @@ async function verifyRefundLifecycle(bookingId, completion) {
     reversal?.amount === -completion.partnerWalletDelta,
     'Refund wallet reversal does not offset the original CASH debt.',
   );
-  assertCondition(finalWalletDelta === 0, 'Refund did not restore the Partner wallet to its pre-booking balance.');
+  assertCondition(
+    finalWalletDelta === 0,
+    'Refund did not restore the Partner wallet to its pre-booking balance.',
+  );
   return {
     bookingStatus: booking.status,
     cashPaymentClearingRows: clearingCount,
@@ -813,17 +1781,20 @@ async function settleCashBookingDebt({ actorToken, approverToken, bookingId, com
       notes: 'Actual CASH booking debt recovery lifecycle smoke.',
     },
   });
-  assertCondition(depositRequest.status === 'REQUESTED', 'Partner deposit request was not created as pending.');
+  assertCondition(
+    depositRequest.status === 'REQUESTED',
+    'Partner deposit request was not created as pending.',
+  );
   assertCondition(
     depositRequest.requestedByAdminId === ids.actor &&
       depositRequest.requestedReceivableRecovery === debtAmount,
     'Partner deposit request did not preserve maker or receivable evidence.',
   );
 
-  const approval = await request(
-    `/admin/provider-wallet/deposit-requests/${depositRequest.id}/approve`,
-    { method: 'POST', token: approverToken },
-  );
+  const approval = await request(`/admin/provider-wallet/deposit-requests/${depositRequest.id}/approve`, {
+    method: 'POST',
+    token: approverToken,
+  });
   assertCondition(
     approval.request?.status === 'EXECUTED' && approval.request?.approvedByAdminId === ids.approver,
     'Separate finance approver did not execute the Partner deposit.',
@@ -833,10 +1804,9 @@ async function settleCashBookingDebt({ actorToken, approverToken, bookingId, com
     'Approved deposit did not create the expected Partner wallet credit.',
   );
 
-  const approvedDetail = await request(
-    `/admin/provider-wallet/deposit-requests/${depositRequest.id}`,
-    { token: actorToken },
-  );
+  const approvedDetail = await request(`/admin/provider-wallet/deposit-requests/${depositRequest.id}`, {
+    token: actorToken,
+  });
   const journalDebit = journalSideTotal(approvedDetail.journal?.entries ?? [], 'DEBIT');
   const journalCredit = journalSideTotal(approvedDetail.journal?.entries ?? [], 'CREDIT');
   assertCondition(
@@ -846,7 +1816,10 @@ async function settleCashBookingDebt({ actorToken, approverToken, bookingId, com
   const bankCashJournalEntry = approvedDetail.journal.entries.find(
     (entry) => entry.side === 'DEBIT' && entry.accountCode === 'company_bank_cash',
   );
-  assertCondition(Boolean(bankCashJournalEntry), 'Partner deposit journal has no company bank cash evidence.');
+  assertCondition(
+    Boolean(bankCashJournalEntry),
+    'Partner deposit journal has no company bank cash evidence.',
+  );
 
   const bankTransaction = await request('/admin/bank-reconciliation/transactions', {
     method: 'POST',
@@ -858,28 +1831,37 @@ async function settleCashBookingDebt({ actorToken, approverToken, bookingId, com
       counterpartyName: 'Cash Booking Smoke Partner',
       currency: 'VND',
       description: 'Actual CASH booking Partner debt deposit evidence.',
+      operatorReason: 'Record cash booking debt deposit bank evidence.',
       occurredAt: new Date().toISOString(),
       transferRef: bankTransactionReference,
       type: 'INFLOW',
       valueDate: new Date().toISOString(),
     },
   });
-  assertCondition(bankTransaction.status === 'UNMATCHED', 'Bank deposit evidence was not opened for reconciliation.');
-
-  const reconciliation = await request(
-    `/admin/bank-reconciliation/${bankTransaction.id}/matches`,
-    {
-      method: 'POST',
-      token: actorToken,
-      body: {
-        approvalAdminId: ids.approver,
-        amount: debtAmount,
-        currency: 'VND',
-        notes: 'Link actual CASH booking debt deposit to approved journal evidence.',
-        partnerBankDepositRequestId: depositRequest.id,
-      },
-    },
+  assertCondition(
+    bankTransaction.status === 'UNMATCHED',
+    'Bank deposit evidence was not opened for reconciliation.',
   );
+  await request(`/admin/bank-reconciliation/${bankTransaction.id}/review-assignment`, {
+    method: 'POST',
+    token: actorToken,
+    body: {
+      assigneeAdminId: ids.actor,
+      reason: 'Assign cash booking debt reconciliation review.',
+    },
+  });
+
+  const reconciliation = await request(`/admin/bank-reconciliation/${bankTransaction.id}/matches`, {
+    method: 'POST',
+    token: approverToken,
+    body: {
+      approvalAdminId: ids.approver,
+      amount: debtAmount,
+      currency: 'VND',
+      notes: 'Link actual CASH booking debt deposit to approved journal evidence.',
+      partnerBankDepositRequestId: depositRequest.id,
+    },
+  });
   assertCondition(
     reconciliation.bankTransaction?.status === 'MATCHED' &&
       reconciliation.match?.accountingJournalEntryId === bankCashJournalEntry.id,
@@ -939,8 +1921,14 @@ async function settleCashBookingDebt({ actorToken, approverToken, bookingId, com
         },
       }),
     ]);
-  assertCondition((wallet._sum.amount ?? 0) === 0, 'Approved deposit did not restore the Partner wallet to zero.');
-  assertCondition(matchedBankTransaction?.status === 'MATCHED' && matchCount === 1, 'Bank reconciliation evidence is incomplete.');
+  assertCondition(
+    (wallet._sum.amount ?? 0) === 0,
+    'Approved deposit did not restore the Partner wallet to zero.',
+  );
+  assertCondition(
+    matchedBankTransaction?.status === 'MATCHED' && matchCount === 1,
+    'Bank reconciliation evidence is incomplete.',
+  );
   assertCondition(
     allocationAuditCount === 1 && executionAuditCount === 1,
     'Deposit execution or cash-debt allocation audit evidence is missing.',
@@ -963,7 +1951,10 @@ async function holdPreviewFixtures(message) {
   if (!previewMode) {
     return;
   }
-  assertCondition(process.stdin.isTTY, 'Preview mode requires an interactive terminal so fixture cleanup cannot be skipped.');
+  assertCondition(
+    process.stdin.isTTY,
+    'Preview mode requires an interactive terminal so fixture cleanup cannot be skipped.',
+  );
   console.log(`Preview fixtures are available. ${message}`);
   process.stdin.setEncoding('utf8');
   process.stdin.resume();
@@ -989,7 +1980,7 @@ async function verifyAdminWebEvidence({ debtBookingId, debtSettlement, refund, r
     {
       path: `/finance-tax/general-ledger/${debtSettlement.depositJournalBatchId}`,
       markers: [
-        'General Ledger Detail',
+        'Journal Batch Detail',
         'Journal batch overview',
         'Journal evidence hub',
         'Balanced',
@@ -1024,7 +2015,7 @@ async function verifyAdminWebEvidence({ debtBookingId, debtSettlement, refund, r
     {
       path: `/finance-tax/general-ledger/${refund.reversalJournalBatchId}`,
       markers: [
-        'General Ledger Detail',
+        'Journal Batch Detail',
         'Journal batch overview',
         'Journal evidence hub',
         'Balanced',
@@ -1062,7 +2053,9 @@ async function request(path, options = {}) {
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(`${options.method ?? 'GET'} ${path.split('?')[0]} failed with ${response.status}: ${JSON.stringify(body)}`);
+    throw new Error(
+      `${options.method ?? 'GET'} ${path.split('?')[0]} failed with ${response.status}: ${JSON.stringify(body)}`,
+    );
   }
   return body;
 }
@@ -1071,10 +2064,7 @@ async function cleanup() {
   const bookingIds = (
     await prisma.booking.findMany({
       where: {
-        OR: [
-          { id: { in: createdBookingIds } },
-          { customerProfileId: ids.customerProfile },
-        ],
+        OR: [{ id: { in: createdBookingIds } }, { customerProfileId: ids.customerProfile }],
       },
       select: { id: true },
     })
@@ -1119,10 +2109,13 @@ async function cleanup() {
   await prisma.accountingJournalBatch.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
   await prisma.bookingSettlementReversalEntry.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
   await prisma.bookingSettlementSnapshot.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.withholdingLog.deleteMany({ where: { providerTaxLog: { bookingId: { in: targetBookingIds } } } });
+  await prisma.withholdingLog.deleteMany({
+    where: { providerTaxLog: { bookingId: { in: targetBookingIds } } },
+  });
   await prisma.providerTaxLog.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
   await prisma.providerPlatformFeeLog.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
   await prisma.providerWalletLedgerEntry.deleteMany({ where: { providerProfileId: ids.providerProfile } });
+  await prisma.customerWalletLedgerEntry.deleteMany({ where: { customerProfileId: ids.customerProfile } });
   await prisma.providerEarning.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
   await prisma.locationSnapshot.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
   await prisma.chatMessage.deleteMany({ where: { chatRoom: { bookingId: { in: targetBookingIds } } } });
@@ -1139,11 +2132,16 @@ async function cleanup() {
   await prisma.providerService.deleteMany({ where: { id: ids.providerService } });
   await prisma.servicePayoutRule.deleteMany({ where: { id: ids.payoutRule } });
   await prisma.massageService.deleteMany({ where: { id: ids.service } });
-  await prisma.providerDocument.deleteMany({ where: { id: { in: documentFixtures.map((item) => item.documentId) } } });
-  await prisma.fileAsset.deleteMany({ where: { id: { in: documentFixtures.map((item) => item.fileAssetId) } } });
+  await prisma.providerDocument.deleteMany({
+    where: { id: { in: documentFixtures.map((item) => item.documentId) } },
+  });
+  await prisma.fileAsset.deleteMany({
+    where: { id: { in: documentFixtures.map((item) => item.fileAssetId) } },
+  });
   await prisma.providerKyc.deleteMany({ where: { id: ids.providerKyc } });
   await prisma.providerVerification.deleteMany({ where: { id: ids.providerVerification } });
   await prisma.companyBankAccount.deleteMany({ where: { id: ids.companyBankAccount } });
+  await prisma.coupon.deleteMany({ where: { id: { in: [ids.coupon, ids.subsidyCoupon] } } });
   await prisma.customerSelectedLocation.deleteMany({ where: { id: ids.customerLocation } });
   await prisma.customerProfile.deleteMany({ where: { id: ids.customerProfile } });
   await prisma.providerProfile.deleteMany({ where: { id: ids.providerProfile } });

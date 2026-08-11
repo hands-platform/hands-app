@@ -1,0 +1,234 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e3]:
+    - complementary [ref=f2e4]:
+      - strong [ref=f2e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=f2e7]:
+        - group [ref=f2e8]:
+          - generic "Shift command" [ref=f2e9] [cursor=pointer]
+          - link "Shift command" [ref=f2e27] [cursor=pointer]:
+            - /url: /
+        - group [ref=f2e31]:
+          - generic "Live Operations" [ref=f2e32] [cursor=pointer]
+          - generic [ref=f2e49]:
+            - link "Live Bookings" [ref=f2e50] [cursor=pointer]:
+              - /url: /bookings
+            - link "Calendar" [ref=f2e56] [cursor=pointer]:
+              - /url: /calendar
+            - link "Completed Bookings" [ref=f2e60] [cursor=pointer]:
+              - /url: /bookings/completed
+            - link "Post-match Cancellations" [ref=f2e64] [cursor=pointer]:
+              - /url: /bookings/post-match-cancellations
+            - link "Operations History" [ref=f2e71] [cursor=pointer]:
+              - /url: /operations-handoff
+            - link "Vietnam Overview" [ref=f2e75] [cursor=pointer]:
+              - /url: /vietnam-overview
+        - group [ref=f2e81]:
+          - generic "Customer Support" [ref=f2e82] [cursor=pointer]
+        - group [ref=f2e99]:
+          - generic "Partner Operations" [ref=f2e100] [cursor=pointer]
+        - group [ref=f2e117]:
+          - generic "Finance Today" [ref=f2e118] [cursor=pointer]
+        - group [ref=f2e125]:
+          - generic "Finance Records" [ref=f2e126] [cursor=pointer]
+        - group [ref=f2e143]:
+          - generic "Growth & Content" [ref=f2e144] [cursor=pointer]
+        - group [ref=f2e161]:
+          - generic "Tax & Monthly Close" [ref=f2e162] [cursor=pointer]
+        - group [ref=f2e169]:
+          - generic "Restricted Settings" [ref=f2e170] [cursor=pointer]
+        - group [ref=f2e177]:
+          - generic "Admin & System" [ref=f2e178] [cursor=pointer]
+        - group [ref=f2e195]:
+          - generic "Developer / System" [ref=f2e196] [cursor=pointer]
+    - main [ref=f2e204]:
+      - generic "Admin workspace" [ref=f2e205]:
+        - navigation "Breadcrumb" [ref=f2e207]:
+          - link "HANDS" [ref=f2e208] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f2e211]: Live Operations
+          - generic [ref=f2e214]: Live Bookings
+        - generic "Workspace actions" [ref=f2e215]:
+          - button "Search Ctrl K" [ref=f2e217] [cursor=pointer]:
+            - generic [ref=f2e218]: Search
+            - generic [ref=f2e222]: Ctrl K
+          - group "Theme mode" [ref=f2e223]:
+            - button "Light mode" [pressed] [ref=f2e224] [cursor=pointer]
+            - button "Dark mode" [ref=f2e231] [cursor=pointer]
+          - link "Operations Policy" [ref=f2e234] [cursor=pointer]:
+            - /url: /operations-policy
+          - button "Open operation alerts" [ref=f2e239] [cursor=pointer]
+          - button "Sign out" [ref=f2e244] [cursor=pointer]
+      - generic [ref=f2e248]:
+        - generic [ref=f2e249]:
+          - generic [ref=f2e250]:
+            - heading "Live bookings" [level=1] [ref=f2e251]
+            - paragraph [ref=f2e252]: Handle stalled bookings first, then monitor live matching and service progress.
+          - generic "Page actions" [ref=f2e253]:
+            - button "Pause live" [ref=f2e254] [cursor=pointer]
+        - generic [ref=f2e258]:
+          - generic "Booking data status" [ref=f2e259]:
+            - generic [ref=f2e260]: All open
+            - generic [ref=f2e261]: 24h live window · Vietnam time · Test data excluded
+            - generic [ref=f2e262]:
+              - text: Live · updated
+              - time [ref=f2e263]: 5 Aug 2026, 02:00
+          - generic [ref=f2e264]:
+            - 'link "Needs action Needs action Needs action: 0 Open and resolve stalled bookings." [ref=f2e265] [cursor=pointer]':
+              - /url: /bookings?view=attention
+              - generic [ref=f2e270]:
+                - generic [ref=f2e271]: Needs action
+                - paragraph [ref=f2e272]: Needs action
+                - generic [ref=f2e273]:
+                  - generic [ref=f2e274]: "Needs action:"
+                  - text: "0"
+                - generic [ref=f2e275]: Open and resolve stalled bookings.
+            - 'link "Live Live bookings Live bookings: 0 Matching, travel, arrival, and service." [ref=f2e276] [cursor=pointer]':
+              - /url: /bookings?view=active
+              - generic [ref=f2e281]:
+                - generic [ref=f2e282]: Live
+                - paragraph [ref=f2e283]: Live bookings
+                - generic [ref=f2e284]:
+                  - generic [ref=f2e285]: "Live bookings:"
+                  - text: "0"
+                - generic [ref=f2e286]: Matching, travel, arrival, and service.
+            - 'link "Live Matching now Matching now: 0 Waiting for a final Partner match." [ref=f2e287] [cursor=pointer]':
+              - /url: /bookings?view=matching
+              - generic [ref=f2e292]:
+                - generic [ref=f2e293]: Live
+                - paragraph [ref=f2e294]: Matching now
+                - generic [ref=f2e295]:
+                  - generic [ref=f2e296]: "Matching now:"
+                  - text: "0"
+                - generic [ref=f2e297]: Waiting for a final Partner match.
+            - generic [ref=f2e303]:
+              - generic [ref=f2e304]: Live
+              - paragraph [ref=f2e305]: Service in progress
+              - generic [ref=f2e306]:
+                - generic [ref=f2e307]: "Service in progress:"
+                - text: "0"
+              - generic [ref=f2e308]: Matched through active service.
+            - 'link "Older than 24h Data anomaly Data anomaly: 0 Open active records older than the 24-hour live window." [ref=f2e309] [cursor=pointer]':
+              - /url: /bookings?view=data-anomaly
+              - generic [ref=f2e314]:
+                - generic [ref=f2e315]: Older than 24h
+                - paragraph [ref=f2e316]: Data anomaly
+                - generic [ref=f2e317]:
+                  - generic [ref=f2e318]: "Data anomaly:"
+                  - text: "0"
+                - generic [ref=f2e319]: Open active records older than the 24-hour live window.
+            - 'link "Today Blocked today Blocked today: 0 Open rejected booking attempts." [ref=f2e320] [cursor=pointer]':
+              - /url: /bookings?view=blocked-create
+              - generic [ref=f2e326]:
+                - generic [ref=f2e327]: Today
+                - paragraph [ref=f2e328]: Blocked today
+                - generic [ref=f2e329]:
+                  - generic [ref=f2e330]: "Blocked today:"
+                  - text: "0"
+                - generic [ref=f2e331]: Open rejected booking attempts.
+          - status [ref=f2e332]:
+            - generic [ref=f2e333]: Realtime connecting
+            - generic [ref=f2e334]: Opening realtime socket
+            - generic [ref=f2e335]: Last refresh 02:00:51
+          - region [ref=f2e336]:
+            - generic [ref=f2e337]:
+              - generic [ref=f2e338]:
+                - heading "Booking workspace filters" [level=2] [ref=f2e339]
+                - paragraph [ref=f2e340]:
+                  - text: "Current workspace:"
+                  - strong [ref=f2e341]: Data anomaly
+                  - text: "- Active-state bookings not updated for more than 24 hours and excluded from Live now."
+              - generic [ref=f2e342]: 0 booking(s)
+            - generic [ref=f2e344]:
+              - generic "Primary booking queues" [ref=f2e345]:
+                - link "Live now · 0" [ref=f2e346] [cursor=pointer]:
+                  - /url: /bookings?view=active
+                - link "Needs action · 0" [ref=f2e347] [cursor=pointer]:
+                  - /url: /bookings?view=attention
+                - link "Matching now · 0" [ref=f2e348] [cursor=pointer]:
+                  - /url: /bookings?view=matching
+              - group "Advanced booking filters" [ref=f2e349]:
+                - generic "Advanced filters Search, period, age, SLA, sort, and additional queues" [ref=f2e350] [cursor=pointer]:
+                  - generic [ref=f2e351]: Advanced filters
+                  - generic [ref=f2e352]: Search, period, age, SLA, sort, and additional queues
+                - generic [ref=f2e353]:
+                  - generic "Active booking operation filters" [ref=f2e354]:
+                    - generic [ref=f2e355]: "View: Data anomaly"
+                    - generic [ref=f2e356]: "Scope: Live now"
+                    - generic [ref=f2e357]: "Total: 0"
+                  - generic [ref=f2e358]:
+                    - generic [ref=f2e359]:
+                      - generic [ref=f2e363]: Search bookings
+                      - searchbox "Search bookings" [ref=f2e364]
+                    - button "Search" [ref=f2e365] [cursor=pointer]
+                  - generic [ref=f2e366]:
+                    - generic [ref=f2e367]:
+                      - generic [ref=f2e368]: Age
+                      - generic "Queue age" [ref=f2e369]:
+                        - link "All ages (0)" [ref=f2e370] [cursor=pointer]:
+                          - /url: /bookings?view=data-anomaly
+                        - link "Under 1h (0)" [ref=f2e371] [cursor=pointer]:
+                          - /url: /bookings?view=data-anomaly&age=under-1h
+                        - link "1-4h (0)" [ref=f2e372] [cursor=pointer]:
+                          - /url: /bookings?view=data-anomaly&age=1-4h
+                        - link "4-24h (0)" [ref=f2e373] [cursor=pointer]:
+                          - /url: /bookings?view=data-anomaly&age=4-24h
+                        - link "24h+ (0)" [ref=f2e374] [cursor=pointer]:
+                          - /url: /bookings?view=data-anomaly&age=over-24h
+                    - generic [ref=f2e375]:
+                      - generic [ref=f2e376]: Order
+                      - generic "Queue sort order" [ref=f2e377]:
+                        - link "Oldest first" [ref=f2e378] [cursor=pointer]:
+                          - /url: /bookings?view=data-anomaly&sort=oldest
+                        - link "Newest first" [ref=f2e379] [cursor=pointer]:
+                          - /url: /bookings?view=data-anomaly
+                  - generic "Additional booking queues" [ref=f2e380]:
+                    - link "Data anomaly · 0" [ref=f2e381] [cursor=pointer]:
+                      - /url: /bookings?view=data-anomaly
+                    - link "Matching delays" [ref=f2e382] [cursor=pointer]:
+                      - /url: /bookings?view=matching-delays
+                    - link "Preferred pending" [ref=f2e383] [cursor=pointer]:
+                      - /url: /bookings?view=first-pick
+                    - link "Marketplace open" [ref=f2e384] [cursor=pointer]:
+                      - /url: /bookings?view=marketplace
+                    - link "Customer choice" [ref=f2e385] [cursor=pointer]:
+                      - /url: /bookings?view=customer-choice
+                    - link "Pre-match cancelled" [ref=f2e386] [cursor=pointer]:
+                      - /url: /bookings?view=pre-match-cancelled
+                    - link "Preferred rejected" [ref=f2e387] [cursor=pointer]:
+                      - /url: /bookings?view=preferred-rejected
+                    - link "Preferred no response" [ref=f2e388] [cursor=pointer]:
+                      - /url: /bookings?view=preferred-no-response
+                    - link "Matched now" [ref=f2e389] [cursor=pointer]:
+                      - /url: /bookings?view=matched
+                    - link "Handoff repair" [ref=f2e390] [cursor=pointer]:
+                      - /url: /bookings?view=handoff-repair
+                    - link "No supply" [ref=f2e391] [cursor=pointer]:
+                      - /url: /bookings?view=no-supply
+                    - link "Blocked today · 0" [ref=f2e392] [cursor=pointer]:
+                      - /url: /bookings?view=blocked-create
+                    - link "Records" [ref=f2e393] [cursor=pointer]:
+                      - /url: /bookings?view=all
+            - paragraph [ref=f2e395]: Confirm the retained evidence, then repair or close the stale state without deleting history.
+          - region [ref=f2e396]:
+            - generic [ref=f2e397]:
+              - generic [ref=f2e398]:
+                - heading "Data anomaly" [level=2] [ref=f2e399]
+                - paragraph [ref=f2e400]: Active-state records older than 24 hours, kept outside live operations for repair.
+              - generic [ref=f2e401]: 0 booking(s)
+            - table [ref=f2e405]:
+              - rowgroup [ref=f2e406]:
+                - row [ref=f2e407]:
+                  - columnheader "Status" [ref=f2e408]
+                  - columnheader "Next action" [ref=f2e409]
+                  - columnheader "Age" [ref=f2e410]
+                  - columnheader "Customer" [ref=f2e411]
+                  - columnheader "Partner" [ref=f2e412]
+                  - columnheader "Service" [ref=f2e413]
+                  - columnheader "Area" [ref=f2e414]
+                  - columnheader "Booking" [ref=f2e415]
+              - rowgroup [ref=f2e416]:
+                - row [ref=f2e417]:
+                  - cell [ref=f2e418]:
+                    - status [ref=f2e419]:
+                      - paragraph [ref=f2e420]: No bookings match the current filters.
+  - alert [ref=f2e421]

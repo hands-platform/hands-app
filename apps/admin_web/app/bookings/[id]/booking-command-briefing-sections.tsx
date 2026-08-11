@@ -1,11 +1,10 @@
-import { ArrowLeft, ExternalLink, MessageSquareText, User, Users } from 'lucide-react';
+import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminMetricGrid } from '../../../components/admin-page-template';
 import { AdminStageItem, AdminStageList } from '../../../components/admin-stage-item';
 import { AdminSection } from '../../../components/admin-surface';
-import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import type { BookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
@@ -83,6 +82,8 @@ const MVP_AUTHORITY_CONTRACT_HEADERS = [
 ] as const;
 
 export type BookingDetailToolbarProps = {
+  backHref?: string;
+  backLabel?: string;
   bookingId: string;
   serviceLabel: string;
   status: string;
@@ -95,6 +96,7 @@ export type BookingDetailToolbarProps = {
 
 export function BookingCommandDecisionStripSection({
   commandDecisionStrip,
+  decisionFacts = [],
 }: BookingCommandDecisionStripSectionProps) {
   return (
     <AdminSection
@@ -104,15 +106,36 @@ export function BookingCommandDecisionStripSection({
         </StatusBadgeFromPillClass>
       }
       className="admin-mb-16"
-      description="Primary booking command and four-lane operator strip for address, matching, chat, and finance."
+      description="Current operator decision for this booking."
       id="booking-command-decision-strip"
       title="Booking command decision strip"
     >
       <div className="booking-command-primary">
         <strong>Primary booking command</strong>
-        <p>{commandDecisionStrip.primaryAction}</p>
+        <p>
+          <AdminFormControlLink
+            className="button-secondary admin-inline-action"
+            href={commandDecisionStrip.primaryHref}
+          >
+            {commandDecisionStrip.primaryAction}
+          </AdminFormControlLink>
+        </p>
         <small>{commandDecisionStrip.primaryDetail}</small>
       </div>
+      {decisionFacts.length > 0 ? (
+        <AdminTraceSummary
+          ariaLabel="Current booking decision facts"
+          className="admin-mt-12 booking-decision-strip-facts"
+          inferScope={false}
+          itemClassName="booking-decision-fact"
+          metrics={decisionFacts.map((row) => ({
+            detail: row.helper,
+            key: row.label,
+            label: row.label,
+            value: row.value,
+          }))}
+        />
+      ) : null}
       <AdminTraceSummary
         className="admin-mt-12"
         metrics={commandDecisionStrip.rows.map((row) => ({
@@ -129,72 +152,23 @@ export function BookingCommandDecisionStripSection({
 
 export type BookingCommandDecisionStripSectionProps = {
   commandDecisionStrip: BookingCommandDecisionStrip;
+  decisionFacts?: readonly SummaryMetricRow[];
 };
 
 export function BookingDetailToolbar({
-  bookingId,
-  customerProfileId,
-  finalPartnerId,
-  chatRoomId,
-  paymentId,
-  refundId,
+  backHref = '/bookings',
+  backLabel = 'booking monitor',
+  serviceLabel,
 }: BookingDetailToolbarProps) {
   return (
-    <>
-      <AdminFormControlLink className="button-secondary admin-inline-action" href="/bookings">
-        <ArrowLeft aria-hidden="true" size={14} />
-        Back to booking monitor
-      </AdminFormControlLink>
-      {customerProfileId && (
-        <AdminFormControlLink className="button-secondary admin-inline-action" href={`/customers/${customerProfileId}`}>
-          <User aria-hidden="true" size={14} />
-          Open customer
-        </AdminFormControlLink>
-      )}
-      {customerProfileId && (
-        <AdminFormControlLink
-          className="button-secondary admin-inline-action"
-          href={`/chat-archive?q=${encodeURIComponent(customerProfileId)}`}
-        >
-          <MessageSquareText aria-hidden="true" size={14} />
-          All customer chats
-        </AdminFormControlLink>
-      )}
-      {finalPartnerId && (
-        <AdminFormControlLink className="button-secondary admin-inline-action" href={`/partners/${finalPartnerId}`}>
-          <Users aria-hidden="true" size={14} />
-          Open Partner
-        </AdminFormControlLink>
-      )}
-      {finalPartnerId && (
-        <AdminFormControlLink
-          className="button-secondary admin-inline-action"
-          href={`/chat-archive?q=${encodeURIComponent(finalPartnerId)}`}
-        >
-          <MessageSquareText aria-hidden="true" size={14} />
-          All Partner chats
-        </AdminFormControlLink>
-      )}
-      {chatRoomId && (
-        <AdminFormControlLink
-          className="button-secondary admin-inline-action"
-          href={`/chat-archive?q=${encodeURIComponent(bookingId)}`}
-        >
-          <MessageSquareText aria-hidden="true" size={14} />
-          Open chat record
-        </AdminFormControlLink>
-      )}
-      {paymentId && (
-        <AdminTextLink href={`/payments#payment-${paymentId}`}>
-          Open payment
-        </AdminTextLink>
-      )}
-      {refundId && (
-        <AdminTextLink href={`/refunds#refund-${refundId}`}>
-          Open refund
-        </AdminTextLink>
-      )}
-    </>
+    <AdminFormControlLink
+      aria-label={`Back to ${backLabel} from ${serviceLabel}`}
+      className="button-secondary admin-inline-action"
+      href={backHref}
+    >
+      <ArrowLeft aria-hidden="true" size={14} />
+      Back to {backLabel}
+    </AdminFormControlLink>
   );
 }
 
@@ -257,13 +231,15 @@ export function BookingMatchingRuleSnapshotSection({
       id="matching-rule-snapshot"
       title="Matching rule status"
     >
-      <p className="muted admin-mt-8">
-        {matchingRuleSnapshot.summary}
-      </p>
+      <p className="muted admin-mt-8">{matchingRuleSnapshot.summary}</p>
       <SummaryMetricGrid rows={matchingRuleSnapshot.rows} />
       <div className="actions admin-mt-12">
         {matchingRuleSnapshot.actions.map((action) => (
-          <AdminFormControlLink className="button-secondary admin-inline-action" href={action.href} key={action.label}>
+          <AdminFormControlLink
+            className="button-secondary admin-inline-action"
+            href={action.href}
+            key={action.label}
+          >
             <ExternalLink aria-hidden="true" size={14} />
             {action.label}
           </AdminFormControlLink>

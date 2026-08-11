@@ -1,165 +1,211 @@
-import { buildPayoutFilters, buildPayoutOperationsApiHrefs, payoutHref } from './payouts-page-model';
+import {
+  buildPayoutFilters,
+  buildPayoutOperationsApiHrefs,
+  payoutHref,
+  payoutWithdrawalClearSavedViewHref,
+} from './payouts-page-model';
 
 describe('payouts page model', () => {
-  it('defaults payout operations filters to today and bounded API hrefs', () => {
-    const defaultFilters = buildPayoutFilters({});
-    const rangeFilters = buildPayoutFilters({ details: 'all', range: '30d' });
-
-    expect(defaultFilters.details).toBe('operations');
-    expect(defaultFilters.range).toBe('today');
-    expect(defaultFilters.page).toBe(1);
-    expect(defaultFilters.pageSize).toBe(10);
-    expect(defaultFilters.withdrawalPage).toBe(1);
-    expect(defaultFilters.withdrawalPartnerId).toBeNull();
-    expect(defaultFilters.withdrawalReconciliation).toBeNull();
-    expect(defaultFilters.withdrawalStatus).toBe('REVIEW_REQUIRED');
-    expect(defaultFilters.workspace).toBe('operations');
-    expect(rangeFilters.workspace).toBe('policy');
-    expect(buildPayoutFilters({ range: 'all' }).range).toBe('all');
-    expect(buildPayoutOperationsApiHrefs(rangeFilters)).toEqual({
-      earningsHref: '/admin/earnings?range=30d&take=10',
-      operationalPolicyHref:
-        '/admin/operational-policy?keys=payout.batch_cycle_policy%2Ccash.settlement_clearance_policy%2Cwallet.negative_balance_gate%2Cmatching.marketplace_partner_radius_meters%2Cmatching.backup_provider_radius_meters',
-      payoutBatchesHref: '/admin/payout-batches?range=30d&take=10',
-      payoutBatchSummaryHref: '/admin/payout-batches/summary?range=30d',
+  it('defaults to the all-date payout batch workspace', () => {
+    const filters = buildPayoutFilters({});
+    expect(filters).toMatchObject({
+      page: 1,
+      pageSize: 20,
+      range: 'all',
+      queue: 'open',
+      sort: 'newest',
+      view: 'batches',
+      withdrawalStatus: null,
+    });
+    expect(buildPayoutOperationsApiHrefs(filters)).toMatchObject({
+      payoutBatchSummaryHref: '/admin/payout-batches/summary?range=all&queue=open',
+      payoutBatchesHref: '/admin/payout-batches?range=all&take=20&view=summary&queue=open',
       providerWalletWithdrawalRequestsHref: null,
-      providerWalletWithdrawalRequestSummaryHref: null,
+      providerWalletWithdrawalRequestGlobalSummaryHref:
+        '/admin/provider-wallet/withdrawal-requests/summary?range=all',
     });
   });
 
-  it('builds a separately paginated paid withdrawal reconciliation queue', () => {
-    const filters = buildPayoutFilters({
-      page: '4',
+  it('normalizes old record and audit bookmarks into the three supported views', () => {
+    expect(buildPayoutFilters({ view: 'records' }).view).toBe('withdrawals');
+    expect(buildPayoutFilters({ view: 'audit' }).view).toBe('reconciliation');
+    expect(buildPayoutFilters({ view: 'policy' }).view).toBe('batches');
+    expect(buildPayoutFilters({ withdrawalStatus: 'REVIEW_REQUIRED' }).view).toBe('withdrawals');
+  });
+
+  it('loads only active view row data', () => {
+    const batches = buildPayoutOperationsApiHrefs(buildPayoutFilters({ view: 'batches' }));
+    const withdrawals = buildPayoutOperationsApiHrefs(buildPayoutFilters({ view: 'withdrawals' }));
+    expect(batches.payoutBatchesHref).not.toBeNull();
+    expect(batches.providerWalletWithdrawalRequestsHref).toBeNull();
+    expect(withdrawals.payoutBatchesHref).toBeNull();
+    expect(withdrawals.providerWalletWithdrawalRequestsHref).toContain(
+      '/admin/provider-wallet/withdrawal-requests?',
+    );
+  });
+
+  it('keeps reconciliation overview aggregate-only and loads one selected repair dataset', () => {
+    const overview = buildPayoutOperationsApiHrefs(
+      buildPayoutFilters({ range: '30d', view: 'reconciliation' }),
+    );
+    expect(overview).toMatchObject({
+      payoutBatchesHref: null,
+      providerWalletWithdrawalRequestsHref: null,
+    });
+
+    const bankUnmatchedFilters = buildPayoutFilters({
       range: '30d',
-      withdrawalPage: '3',
-      withdrawalReconciliation: 'unmatched',
+      recon: 'bank-unmatched',
+      view: 'reconciliation',
     });
-
-    expect(filters).toMatchObject({
-      page: 4,
-      withdrawalPage: 3,
+    expect(bankUnmatchedFilters).toMatchObject({
+      recon: 'bank-unmatched',
       withdrawalReconciliation: 'unmatched',
       withdrawalStatus: 'PAID',
     });
-    expect(buildPayoutOperationsApiHrefs(filters)).toMatchObject({
-      payoutBatchesHref: '/admin/payout-batches?range=30d&take=10&skip=30',
+    expect(buildPayoutOperationsApiHrefs(bankUnmatchedFilters)).toMatchObject({
+      payoutBatchesHref: null,
       providerWalletWithdrawalRequestsHref:
-        '/admin/provider-wallet/withdrawal-requests?range=30d&take=10&skip=20&status=PAID&reconciliation=unmatched',
-    });
-  });
-
-  it('passes withdrawal status filters only to partner wallet withdrawal requests', () => {
-    const filters = buildPayoutFilters({
-      range: '7d',
-      withdrawalStatus: 'BANK_TRANSFER_PENDING',
+        '/admin/provider-wallet/withdrawal-requests?range=30d&take=20&status=PAID&reconciliation=unmatched',
     });
 
-    expect(filters).toMatchObject({
-      range: '7d',
-      withdrawalStatus: 'BANK_TRANSFER_PENDING',
-    });
-    expect(buildPayoutOperationsApiHrefs(filters)).toMatchObject({
-      earningsHref: null,
-      payoutBatchesHref: '/admin/payout-batches?range=7d&take=10',
-      providerWalletWithdrawalRequestsHref:
-        '/admin/provider-wallet/withdrawal-requests?range=7d&take=10&status=BANK_TRANSFER_PENDING',
-    });
-  });
-
-  it('scopes Partner withdrawal evidence without widening payout batch reads', () => {
-    const filters = buildPayoutFilters({
-      range: 'today',
-      withdrawalPartnerId: 'partner-profile-1',
-      withdrawalStatus: 'PAID',
-    });
-
-    expect(filters.withdrawalPartnerId).toBe('partner-profile-1');
-    expect(buildPayoutOperationsApiHrefs(filters)).toMatchObject({
-      payoutBatchesHref: '/admin/payout-batches?range=today&take=10',
-      providerWalletWithdrawalRequestsHref:
-        '/admin/provider-wallet/withdrawal-requests?range=today&take=10&status=PAID&providerProfileId=partner-profile-1',
-    });
-    expect(
-      payoutHref({
-        range: 'today',
-        withdrawalPartnerId: 'partner-profile-1',
-        withdrawalStatus: 'PAID',
+    const closeoutRepair = buildPayoutOperationsApiHrefs(
+      buildPayoutFilters({
+        range: '30d',
+        recon: 'payout-closeout-repair',
+        view: 'reconciliation',
       }),
-    ).toBe('/payouts?withdrawalStatus=PAID&withdrawalPartnerId=partner-profile-1');
-    expect(buildPayoutFilters({ withdrawalPartnerId: '../invalid' }).withdrawalPartnerId).toBeNull();
+    );
+    expect(closeoutRepair).toMatchObject({
+      payoutBatchesHref:
+        '/admin/payout-batches?range=30d&take=20&view=summary&queue=repair',
+      providerWalletWithdrawalRequestsHref: null,
+    });
   });
 
-  it('turns payout list page state into bounded API skip offsets', () => {
+  it('preserves explicit Finance batch scope instead of forcing the default open queue', () => {
     const filters = buildPayoutFilters({
-      details: 'all',
+      evidence: 'bank-match-incomplete',
+      period: '2026-07',
+      status: 'PAID',
+    });
+
+    expect(filters.queue).toBeNull();
+  });
+
+  it('passes bounded server search, queue, evidence, sort, and pagination', () => {
+    const filters = buildPayoutFilters({
+      evidence: 'missing-transfer-ref',
       page: '3',
       pageSize: '25',
-      range: '30d',
-      view: 'records',
-      withdrawalStatus: 'REVIEW_REQUIRED',
+      q: 'partner 01',
+      queue: 'review',
+      range: '7d',
+      sort: 'oldest',
+      status: 'DRAFT',
     });
+    const hrefs = buildPayoutOperationsApiHrefs(filters);
+    expect(hrefs.payoutBatchesHref).toBe(
+      '/admin/payout-batches?range=7d&take=25&view=summary&evidence=missing-transfer-ref&q=partner+01&queue=review&sort=oldest&status=DRAFT&skip=50',
+    );
+    expect(hrefs.payoutBatchSummaryHref).toBe(
+      '/admin/payout-batches/summary?range=7d&evidence=missing-transfer-ref&q=partner+01&queue=review&status=DRAFT',
+    );
+  });
+
+  it('preserves the exact monthly payout bank-evidence contract and safe Finance return', () => {
+    const filters = buildPayoutFilters({
+      evidence: 'bank-match-incomplete',
+      period: '2026-07',
+      returnTo: '/finance-overview?view=queues',
+      sort: 'oldest',
+      status: 'PAID',
+    });
+    const hrefs = buildPayoutOperationsApiHrefs(filters);
 
     expect(filters).toMatchObject({
-      page: 3,
-      pageSize: 25,
-      range: '30d',
-      withdrawalStatus: 'REVIEW_REQUIRED',
+      evidence: 'bank-match-incomplete',
+      period: '2026-07',
+      returnTo: '/finance-overview?view=queues',
     });
-    expect(buildPayoutOperationsApiHrefs(filters)).toMatchObject({
-      earningsHref: null,
-      payoutBatchesHref: '/admin/payout-batches?range=30d&take=25&skip=50',
-      providerWalletWithdrawalRequestsHref:
-        '/admin/provider-wallet/withdrawal-requests?range=30d&take=25&status=REVIEW_REQUIRED',
-    });
-  });
-
-  it('keeps evidence-only API reads and pagination links behind the full details mode', () => {
-    const operationsFilters = buildPayoutFilters({ range: 'today' });
-    const apiHrefs = buildPayoutOperationsApiHrefs(operationsFilters);
-
-    expect(apiHrefs.earningsHref).toBeNull();
-    expect(apiHrefs.operationalPolicyHref).toBeNull();
+    expect(hrefs.payoutBatchesHref).toBe(
+      '/admin/payout-batches?range=all&take=20&view=summary&evidence=bank-match-incomplete&period=2026-07&sort=oldest&status=PAID',
+    );
+    expect(hrefs.payoutBatchSummaryHref).toBe(
+      '/admin/payout-batches/summary?range=all&evidence=bank-match-incomplete&period=2026-07&status=PAID',
+    );
     expect(
       payoutHref({
-        details: 'all',
-        page: 2,
-        pageSize: 25,
-        range: '30d',
-        withdrawalPage: 3,
-        withdrawalStatus: 'PAID',
+        evidence: filters.evidence,
+        period: filters.period,
+        range: filters.range,
+        returnTo: filters.returnTo,
+        sort: filters.sort,
+        status: filters.status,
       }),
-    ).toBe('/payouts?details=all&range=30d&withdrawalStatus=PAID&withdrawalPage=3&pageSize=25&page=2');
+    ).toBe(
+      '/payouts?status=PAID&evidence=bank-match-incomplete&period=2026-07&returnTo=%2Ffinance-overview%3Fview%3Dqueues&sort=oldest',
+    );
   });
 
-  it('separates policy, audit, and record evidence reads', () => {
-    const policyFilters = buildPayoutFilters({ details: 'all', range: '30d' });
-    const auditFilters = buildPayoutFilters({ details: 'all', range: '30d', view: 'audit' });
-    const recordFilters = buildPayoutFilters({ details: 'all', range: '30d', view: 'records' });
+  it('uses the same withdrawal filters for rows and selected-scope totals', () => {
+    const hrefs = buildPayoutOperationsApiHrefs(
+      buildPayoutFilters({
+        q: 'VCB 123',
+        range: '30d',
+        view: 'withdrawals',
+        withdrawalReconciliation: 'unmatched',
+        withdrawalStatus: 'PAID',
+      }),
+    );
+    expect(hrefs.providerWalletWithdrawalRequestSummaryHref).toBe(
+      '/admin/provider-wallet/withdrawal-requests/summary?range=30d&q=VCB+123&reconciliation=unmatched&status=PAID',
+    );
+  });
 
-    expect(policyFilters.workspace).toBe('policy');
-    expect(auditFilters.workspace).toBe('audit');
-    expect(recordFilters.workspace).toBe('records');
-    expect(buildPayoutOperationsApiHrefs(policyFilters)).toMatchObject({
-      earningsHref: '/admin/earnings?range=30d&take=10',
-      operationalPolicyHref: expect.stringContaining('/admin/operational-policy?keys='),
-      providerWalletWithdrawalRequestsHref: null,
-    });
-    expect(buildPayoutOperationsApiHrefs(auditFilters)).toMatchObject({
-      earningsHref: '/admin/earnings?range=30d&take=10',
-      operationalPolicyHref: null,
-      providerWalletWithdrawalRequestsHref: null,
-    });
-    expect(buildPayoutOperationsApiHrefs(recordFilters)).toMatchObject({
-      earningsHref: null,
-      operationalPolicyHref: null,
-      providerWalletWithdrawalRequestsHref:
-        '/admin/provider-wallet/withdrawal-requests?range=30d&take=10&status=REVIEW_REQUIRED',
-    });
-    expect(payoutHref({ range: '30d', workspace: 'audit' })).toBe(
-      '/payouts?details=all&view=audit&range=30d',
+  it('preserves withdrawal context and opens one reversal dialog', () => {
+    expect(
+      payoutHref({
+        pageSize: 20,
+        range: '30d',
+        reverseWithdrawalRequestId: 'withdrawal-1',
+        view: 'withdrawals',
+        withdrawalReconciliation: 'unmatched',
+        withdrawalStatus: 'PAID',
+      }),
+    ).toBe(
+      '/payouts?view=withdrawals&range=30d&reverseWithdrawalRequestId=withdrawal-1&withdrawalStatus=PAID&withdrawalReconciliation=unmatched',
     );
-    expect(payoutHref({ range: '30d', workspace: 'records' })).toBe(
-      '/payouts?details=all&view=records&range=30d',
+  });
+
+  it('clears withdrawal filters without changing the current view or search', () => {
+    const filters = buildPayoutFilters({
+      q: 'VCB',
+      range: '30d',
+      view: 'withdrawals',
+      withdrawalStatus: 'REVIEW_REQUIRED',
+    });
+    expect(payoutWithdrawalClearSavedViewHref(filters)).toBe(
+      '/payouts?view=withdrawals&range=30d&q=VCB',
     );
+  });
+
+  it('rejects unsafe record ids and unknown filters', () => {
+    const filters = buildPayoutFilters({
+      editPayoutBatchId: '../bad',
+      evidence: 'raw-sql',
+      queue: 'anything',
+      period: '2026-13',
+      returnTo: 'https://evil.example/finance-overview',
+      reverseWithdrawalRequestId: '../bad',
+      sort: 'random',
+    });
+    expect(filters.editPayoutBatchId).toBeNull();
+    expect(filters.reverseWithdrawalRequestId).toBeNull();
+    expect(filters.evidence).toBeNull();
+    expect(filters.queue).toBeNull();
+    expect(filters.period).toBeNull();
+    expect(filters.returnTo).toBeNull();
+    expect(filters.sort).toBe('newest');
   });
 });

@@ -4,6 +4,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { ConfirmDialog, confirmDialogButtonClassName, confirmDialogButtonState } from './confirm-dialog';
 
 const source = readFileSync('components/confirm-dialog.tsx', 'utf8');
+const focusBoundarySource = readFileSync('components/confirm-dialog-focus-boundary.tsx', 'utf8');
+const modalFocusSource = readFileSync('components/use-admin-modal-focus.ts', 'utf8');
+const rootShellSource = readFileSync('components/admin-root-shell.tsx', 'utf8');
 
 describe('ConfirmDialog', () => {
   it('maps confirm tone to stable pill classes', () => {
@@ -50,26 +53,21 @@ describe('ConfirmDialog', () => {
       tone: 'warning',
     });
 
-    expect(dialog.type).toBe('section');
-    expect(dialog.props).toMatchObject({
-      'aria-describedby': 'booking-cancel-description',
-      'aria-labelledby': 'booking-cancel-title',
-      className: 'card admin-card admin-dialog-card',
-      role: 'alertdialog',
-    });
-    expect(dialog.props.children).toHaveLength(2);
-    expect(dialog.props.children[1].props.children[2][0].props).toMatchObject({
-      href: '/audit-log?q=booking-1',
-      title: 'Open the audit trail before confirming.',
-    });
-
     const markup = renderToStaticMarkup(dialog);
+    expect(markup).toContain('role="alertdialog"');
+    expect(markup).toContain('aria-modal="true"');
+    expect(markup).toContain('aria-describedby="booking-cancel-description"');
+    expect(markup).toContain('aria-labelledby="booking-cancel-title"');
     expect(markup).toContain('id="booking-cancel-title"');
-    expect(markup).toContain('id="booking-cancel-description"');
+    expect(markup).toContain('class="muted confirm-dialog-description" id="booking-cancel-description"');
+    expect(markup).toContain('href="/audit-log?q=booking-1"');
+    expect(markup).toContain('title="Open the audit trail before confirming."');
+    expect(markup).not.toContain('<p class="muted" id="booking-cancel-description"');
+    expect(markup.indexOf('href="/bookings/booking-1"')).toBeLessThan(markup.indexOf('<form'));
   });
 
-  it('uses the shared Vuexy dialog card surface', () => {
-    expect(source).toContain('AdminDialogCard');
+  it('uses the shared focus boundary and modal accessibility contract', () => {
+    expect(source).toContain('ConfirmDialogFocusBoundary');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeButton');
@@ -79,6 +77,22 @@ describe('ConfirmDialog', () => {
     expect(source).not.toContain('<Link className={statusBadgeClassName');
     expect(source).not.toContain('<button\\n            className={confirmDialogButtonClassName');
     expect(source).not.toContain('<div className="ops-section-header"');
+    expect(focusBoundarySource).toContain('useAdminModalFocus');
+    expect(focusBoundarySource).toContain('AdminDrawerBackdropButton');
+    expect(focusBoundarySource).toContain('confirm-dialog-backdrop');
+    expect(focusBoundarySource).toContain('ariaModal');
+    expect(focusBoundarySource).toContain("window.sessionStorage.getItem('hands-admin-confirmation-return-focus')");
+    expect(focusBoundarySource).toContain('window.history.back()');
+    expect(focusBoundarySource).toContain('onClickCapture={handleCancelClick}');
+    expect(focusBoundarySource).toContain('window.location.assign(cancelHref)');
+    expect(modalFocusSource).toContain("event.key === 'Escape'");
+    expect(modalFocusSource).toContain('disableModalBackground');
+    expect(modalFocusSource).toContain('sibling.inert = true');
+    expect(modalFocusSource).toContain('returnFocus?.focus()');
+    expect(rootShellSource).toContain('rememberConfirmationTrigger');
+    expect(rootShellSource).toContain(
+      "link?.closest('details')?.querySelector<HTMLElement>(':scope > summary')",
+    );
   });
 
   it('disables the confirm action while loading without changing the form action', () => {
@@ -94,24 +108,13 @@ describe('ConfirmDialog', () => {
       title: 'Delete Partner?',
     });
 
-    expect(dialog.props).toMatchObject({
-      'aria-busy': true,
-    });
-
-    const actions = dialog.props.children[1];
-    const form = actions.props.children[0];
-    const button = form.props.children[3];
-
-    expect(actions.props.className).toBe('actions confirm-dialog-actions');
-    expect(form.props.className).toBe('confirm-dialog-form');
-    expect(form.props.action).toBe('/partners/partner-1/delete');
-    expect(button.props).toMatchObject({
-      disabled: true,
-      tone: 'neutral',
-      type: 'submit',
-    });
-    expect(button.props.children).toBe('Deleting...');
-    expect(renderToStaticMarkup(dialog)).toContain('class="pill pill-neutral"');
+    const markup = renderToStaticMarkup(dialog);
+    expect(markup).toContain('aria-busy="true"');
+    expect(markup).toContain('class="confirm-dialog-form"');
+    expect(markup).toContain('action="/partners/partner-1/delete"');
+    expect(markup).toContain('disabled=""');
+    expect(markup).toContain('Deleting...');
+    expect(markup).toContain('class="pill pill-neutral"');
   });
 
   it('renders optional text inputs inside the confirm form', () => {
@@ -152,16 +155,18 @@ describe('ConfirmDialog', () => {
       confirmLabel: 'Reassign owner',
       description: 'The API validates Finance assignment authority.',
       id: 'finance-reassign',
-      selectInputs: [{
-        defaultValue: 'owner-2',
-        label: 'Review owner',
-        name: 'assigneeAdminId',
-        options: [
-          { label: 'Finance One', value: 'owner-1' },
-          { label: 'Finance Two', value: 'owner-2' },
-        ],
-        required: true,
-      }],
+      selectInputs: [
+        {
+          defaultValue: 'owner-2',
+          label: 'Review owner',
+          name: 'assigneeAdminId',
+          options: [
+            { label: 'Finance One', value: 'owner-1' },
+            { label: 'Finance Two', value: 'owner-2' },
+          ],
+          required: true,
+        },
+      ],
       title: 'Reassign Finance review?',
     });
 

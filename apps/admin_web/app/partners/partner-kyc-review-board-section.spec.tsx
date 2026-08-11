@@ -37,13 +37,13 @@ describe('PartnerKycReviewBoardSection', () => {
 
     expect(rendered).toContain('KYC review board');
     expect(rendered).toContain('Tracks identity records, CCCD front/back, and selfie evidence');
-    expect(rendered).toContain('4 KYC item(s)');
+    expect(rendered).toContain('4 KYC items');
     expect(rendered).toContain('2 ready to approve');
     expect(rendered).toContain('1 blocked by docs');
     expect(rendered).toContain('Ready to approve');
     expect(rendered).toContain('Decision needed');
     expect(rendered).toContain('Ready Partner');
-    expect(rendered).toContain('Review uploaded identity files first');
+    expect(rendered).toContain('Review submitted KYC evidence');
     expect(rendered).toContain('1ST');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners?review=kyc']));
     expect(classNamesIn(section)).toEqual(
@@ -63,7 +63,7 @@ function buildBoard(): PartnerKycReviewBoardSectionBoard {
     cards: [
       {
         count: 2,
-        detail: 'KYC record exists and all required evidence is already approved.',
+        detail: 'KYC record and all required evidence are submitted.',
         href: '/partners?review=kyc',
         operatorAction: 'Open partner detail and make the final decision.',
         samples: ['Ready Partner'],
@@ -86,11 +86,11 @@ function buildBoard(): PartnerKycReviewBoardSectionBoard {
     playbook: [
       {
         count: 1,
-        detail: 'CCCD front/back and selfie evidence should be reviewed first.',
-        href: '/partners?review=documents',
-        operatorAction: 'Check file type and image clarity.',
+        detail: 'CCCD front/back and selfie evidence are ready for one overall decision.',
+        href: '/partners?review=kyc',
+        operatorAction: 'Check file type and image clarity, then approve or hold.',
         status: '1ST',
-        title: 'Review uploaded identity files first',
+        title: 'Review submitted KYC evidence',
       },
     ],
     readyToApprove: 2,

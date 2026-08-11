@@ -2,6 +2,7 @@ import {
   buildPartnerBookingArchive,
   buildPartnerChatRetentionRows,
   buildPartnerChatRetentionSummary,
+  countDistinctActivePartnerBookings,
 } from './partner-detail-booking-model';
 
 describe('partner detail booking model', () => {
@@ -51,6 +52,21 @@ describe('partner detail booking model', () => {
       'booking-repeat:Preferred',
       'booking-repeat:Joined',
     ]);
+  });
+
+  it('counts one active job even when the booking appears in several partner relations', () => {
+    const activeBooking = booking({
+      createdAt: '2026-06-10T08:00:00.000Z',
+      id: 'booking-active',
+      status: 'IN_SERVICE',
+    });
+    const archive = buildPartnerBookingArchive({
+      participants: [{ booking: activeBooking, id: 'participant-1', status: 'JOINED' }],
+      preferredBookings: [activeBooking],
+      selectedBookings: [activeBooking],
+    });
+
+    expect(countDistinctActivePartnerBookings(archive)).toBe(1);
   });
 
   it('builds chat retention rows and summary for admin archive evidence', () => {

@@ -1,0 +1,17 @@
+{
+  "node": {
+    "4046433f65b3edad93ef958ed6b18add100713b516": {
+      "workers": {
+        "app/finance-tax/monthly-tax-closing/page": {
+          "moduleId": 865452,
+          "async": false,
+          "exportedName": "updateMonthlyTaxClosingStatus",
+          "filename": "apps/admin_web/app/finance-tax/monthly-tax-closing/actions.ts"
+        }
+      },
+      "exportedName": "updateMonthlyTaxClosingStatus",
+      "filename": "apps/admin_web/app/finance-tax/monthly-tax-closing/actions.ts"
+    }
+  },
+  "edge": {}
+}

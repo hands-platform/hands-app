@@ -8,6 +8,7 @@ import {
   AdminOverviewGrid,
   AdminOverviewGroup,
   AdminProfileOverviewCard,
+  AdminQueueMeta,
   AdminSummaryCardGrid,
   AdminTraceSummary,
 } from './admin-overview-card';
@@ -153,6 +154,26 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('<em>120.000 VND</em>');
   });
 
+  it('renders supported queue ownership metadata and an explicit action label', () => {
+    const markup = renderToStaticMarkup(
+      <AdminOverviewCommandCard
+        actionLabel="Open queue"
+        href="/finance-tax/payment-clearing"
+        icon={<svg aria-hidden="true" />}
+        label="Payment clearing"
+        value="3 open"
+      >
+        <AdminQueueMeta assignee="2 unassigned" impact="120.000 VND" oldest="4h ago" owner="Finance operations" />
+      </AdminOverviewCommandCard>,
+    );
+
+    expect(markup).toContain('<dt>Owner</dt><dd>Finance operations</dd>');
+    expect(markup).toContain('<dt>Assignee</dt><dd>2 unassigned</dd>');
+    expect(markup).toContain('<dt>Oldest</dt><dd>4h ago</dd>');
+    expect(markup).toContain('<dt>Impact</dt><dd>120.000 VND</dd>');
+    expect(markup).toContain('class="admin-overview-command-action">Open queue</small>');
+  });
+
   it('renders shared mini metric strips for overview cards', () => {
     const markup = renderToStaticMarkup(
       <AdminMiniMetricStrip
@@ -184,7 +205,7 @@ describe('AdminOverviewCommandCard', () => {
     expect(metricBlock).toContain('padding: 8px 10px;');
     expect(metricLabelBlock).toContain('color: var(--admin-muted);');
     expect(metricLabelBlock).toContain('font-size: 11px;');
-    expect(metricValueBlock).toContain('font-feature-settings: "tnum" 1;');
+    expect(metricValueBlock).toMatch(/font-feature-settings: ['"]tnum['"] 1;/);
     expect(metricValueBlock).toContain('font-variant-numeric: tabular-nums;');
     expect(cssRuleBlock(globals, '.admin-mini-metric span {')).toBe('');
     expect(cssRuleBlock(globals, '.admin-mini-metric strong {')).toBe('');
@@ -236,7 +257,7 @@ describe('AdminOverviewCommandCard', () => {
     expect(cardBlock).toContain('gap: 6px;');
     expect(cardBlock).toContain('min-width: 0;');
     expect(textBlock).toContain('.admin-summary-card > small');
-    expect(valueBlock).toContain('font-feature-settings: "tnum" 1;');
+    expect(valueBlock).toMatch(/font-feature-settings: ['"]tnum['"] 1;/);
     expect(valueBlock).toContain('font-variant-numeric: tabular-nums;');
     expect(globals).not.toContain('.admin-summary-card strong {');
     expect(globals).not.toContain('.admin-summary-card span,\n.admin-summary-card small {');
@@ -321,6 +342,19 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('<span class="metric-card-scope is-risk">Today</span>');
   });
 
+  it('can disable inferred scope labels for non-temporal readiness summaries', () => {
+    const markup = renderToStaticMarkup(
+      <AdminTraceSummary
+        inferScope={false}
+        metrics={[{ detail: 'Environment configuration check.', label: 'Setup status', value: 'Ready' }]}
+      />,
+    );
+
+    expect(markup).not.toContain('metric-card-scope');
+    expect(markup).toContain('<span>Setup status</span>');
+    expect(markup).toContain('<strong>Ready</strong>');
+  });
+
   it('keeps shared trace summaries on the Vuexy linked card token contract', () => {
     const globals = readFileSync('app/globals.css', 'utf8');
     const itemBlock = cssRuleBlock(globals, '.service-trace-summary > div,\n.service-trace-summary > a {');
@@ -328,11 +362,14 @@ describe('AdminOverviewCommandCard', () => {
     const valueBlock = cssRuleBlock(globals, '.service-trace-summary strong {');
 
     expect(itemBlock).toContain('min-width: 0;');
-    expect(itemBlock).toContain('transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;');
+    expect(itemBlock).toContain('transition:');
+    expect(itemBlock).toContain('border-color 0.16s ease,');
+    expect(itemBlock).toContain('box-shadow 0.16s ease,');
+    expect(itemBlock).toContain('transform 0.16s ease;');
     expect(hoverBlock).toContain('border-color: rgb(var(--admin-primary-channel) / 0.45);');
     expect(hoverBlock).toContain('box-shadow: var(--admin-shadow-md);');
     expect(hoverBlock).toContain('transform: translateY(-1px);');
-    expect(valueBlock).toContain('font-feature-settings: "tnum" 1;');
+    expect(valueBlock).toMatch(/font-feature-settings: ['"]tnum['"] 1;/);
     expect(valueBlock).toContain('font-variant-numeric: tabular-nums;');
   });
 

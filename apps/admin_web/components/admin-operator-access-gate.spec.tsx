@@ -36,13 +36,52 @@ describe('AdminOperatorAccessGate', () => {
     const gate = await AdminOperatorAccessGate({ children: <div>Hidden finance page</div> });
     const markup = renderToStaticMarkup(gate);
 
-    expect(markup).toContain('admin-state admin-error-state admin-state-danger admin-operator-access-denied-card');
+    expect(markup).toContain(
+      'admin-state admin-error-state admin-state-danger admin-operator-access-denied-card',
+    );
     expect(markup).not.toContain('card admin-section admin-operator-access-denied-card');
     expect(markup).not.toContain('card admin-filter-panel admin-operator-access-denied-card');
     expect(markup).toContain('Access restricted');
     expect(markup).toContain('Page content is hidden.');
-    expect(markup).toContain('FINANCE');
+    expect(markup).not.toContain('FINANCE');
     expect(markup).not.toContain('Hidden finance page');
+  });
+
+  it('uses the registry label and a safe customer return path for denied customer detail', async () => {
+    mockedHeaders.mockResolvedValue(
+      new Headers({
+        'x-admin-pathname': '/customers/customer-1?returnTo=%2Fcustomers%3Fview%3Dall%26sort%3Dname',
+      }),
+    );
+    mockedGetAccess.mockResolvedValue({
+      allowed: false,
+      access: null,
+      category: 'CUSTOMERS_DETAIL',
+    });
+
+    const markup = renderToStaticMarkup(
+      await AdminOperatorAccessGate({ children: <div>Hidden customer profile</div> }),
+    );
+
+    expect(markup).toContain('Customer detail access required');
+    expect(markup).toContain('Back to customers');
+    expect(markup).toContain('/customers?view=all&amp;sort=name');
+    expect(markup).toContain('<title>Access restricted | HANDS Admin</title>');
+    expect(markup).not.toContain('CUSTOMERS_DETAIL');
+  });
+
+  it('rejects an external customer return path', async () => {
+    mockedHeaders.mockResolvedValue(
+      new Headers({ 'x-admin-pathname': '/customers/customer-1?returnTo=https%3A%2F%2Fevil.example' }),
+    );
+    mockedGetAccess.mockResolvedValue({ allowed: false, access: null, category: 'CUSTOMERS_DETAIL' });
+
+    const markup = renderToStaticMarkup(
+      await AdminOperatorAccessGate({ children: <div>Hidden customer profile</div> }),
+    );
+
+    expect(markup).toContain('href="/customers"');
+    expect(markup).not.toContain('evil.example');
   });
 
   it('passes through public pages without an access lookup', async () => {

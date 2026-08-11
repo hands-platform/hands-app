@@ -9,7 +9,12 @@ describe('buildTaxPolicyAuditSummary', () => {
         actor: { fullName: 'Ops Lead', phone: '+84000000000' },
         createdAt: '2026-06-27T10:30:00.000Z',
         id: 'audit-policy',
-        metadata: { status: 'ACTIVE', deactivatedOtherActivePolicies: 1 },
+        metadata: {
+          approvalAdminId: 'finance-admin-2',
+          deactivatedOtherActivePolicies: 1,
+          operatorReason: 'Approved July withholding schedule.',
+          status: 'ACTIVE',
+        },
         target: 'tax_policy:policy-123456789',
       }),
       auditLog({
@@ -35,7 +40,8 @@ describe('buildTaxPolicyAuditSummary', () => {
         actionLabel: 'Policy updated',
         actorLabel: 'Ops Lead',
         createdAt: '2026-06-27T10:30:00.000Z',
-        detail: 'Status ACTIVE / 1 other active policy deactivated',
+        detail:
+          'Status ACTIVE / 1 other active policy deactivated / Finance approval finance-... / Evidence: Approved July withholding schedule.',
         id: 'audit-policy',
         targetLabel: 'tax_policy:policy-1...',
         toneClassName: 'pill-success',

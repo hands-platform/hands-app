@@ -2,16 +2,12 @@ import type { ReactNode } from 'react';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
-import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import {
   AdminFinanceOperatorEvidence,
   type AdminFinanceOperatorEvidenceLine,
 } from '../../components/admin-finance-operator-evidence';
-import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
-import { AdminActionsForm } from '../../components/admin-inline-action-form';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
-import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
-import { AdminNotePanel } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import {
@@ -21,8 +17,6 @@ import {
   StatusBadgeFromPillClass,
   StatusBadgeLink,
 } from '../../components/status-badge';
-
-type FormAction = (formData: FormData) => void | Promise<void>;
 
 export type PayoutBatchBlockingReason = {
   readonly detail: string;
@@ -54,6 +48,9 @@ export type PayoutBatchServiceEvidencePill = {
 export type PayoutBatchTableRow = {
   readonly actionExecutionItems: readonly PayoutBatchActionExecutionItem[];
   readonly actionMenuItems: readonly ActionMenuItem[];
+  readonly bankAccountDetail?: string;
+  readonly bankAccountLabel?: string;
+  readonly bankReconciliationRemainingAmount?: number;
   readonly blockingActionSummary: string;
   readonly blockingReasons: readonly PayoutBatchBlockingReason[];
   readonly checklist: readonly PayoutBatchChecklistItem[];
@@ -75,6 +72,10 @@ export type PayoutBatchTableRow = {
   readonly payoutHold: boolean;
   readonly phase: string;
   readonly readinessSummary: string;
+  readonly rawStatus?: string;
+  readonly reviewHref?: string;
+  readonly riskDetail?: string;
+  readonly riskLabel?: string;
   readonly serviceEvidencePills: readonly PayoutBatchServiceEvidencePill[];
   readonly shortId: string;
   readonly statusLabel: string;
@@ -87,28 +88,25 @@ export type PayoutBatchTableRow = {
 
 type PayoutBatchTableProps = {
   readonly rows: readonly PayoutBatchTableRow[];
-  readonly updateTransferRefAction: FormAction;
+  readonly showOperatorEvidence?: boolean;
 };
 
 const payoutBatchTableHeaders = [
-  'Batch',
-  'Partner',
-  'Status',
-  'Ops record',
-  'Blocking reasons',
-  'Transfer ref',
-  'Earnings',
-  'Checklist',
-  'Total',
-  'Tax withheld',
-  'Paid at',
-  'Actions',
+  'Partner / batch',
+  'Amount',
+  'Stage',
+  'Primary issue',
+  'Transfer evidence',
+  'Action',
 ] as const;
 
-export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchTableProps) {
+export function PayoutBatchTable({
+  rows,
+  showOperatorEvidence = false,
+}: PayoutBatchTableProps) {
   return (
     <AdminDataTable
-      className="vuexy-booking-table"
+      className="vuexy-booking-table payout-batch-compact-table"
       emptyMessage="No payout batches loaded."
       headers={payoutBatchTableHeaders}
       rowCount={rows.length}
@@ -116,12 +114,9 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
       {rows.map((row) => (
         <tr id={row.id} key={row.id}>
           <td>
-            <div>{row.shortId}</div>
-            <div className="muted">{row.updatedLabel}</div>
-          </td>
-          <td>
-            <div>{row.partnerLabel}</div>
+            <AdminTextLink href={row.partnerChecksHref}>{row.partnerLabel}</AdminTextLink>
             <div className="muted">{row.partnerPhone}</div>
+            <div className="muted admin-mt-6">{row.shortId} · {row.updatedLabel}</div>
             {row.payoutHold ? (
               <div className="admin-mt-6">
                 <StatusBadge tone="danger">Payout hold</StatusBadge>
@@ -129,113 +124,47 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
             ) : null}
           </td>
           <td>
-            <div>{row.statusLabel}</div>
+            <strong>
+              <MoneyText amount={row.totalAmount} currency={row.currency} />
+            </strong>
+            <div className="muted admin-mt-6">
+              Withholding <MoneyText amount={row.withholdingAmount} currency={row.currency} />
+            </div>
+          </td>
+          <td>
+            <strong>{row.statusLabel}</strong>
             <div className="muted">{row.phase}</div>
-            <AdminFinanceOperatorEvidence lines={row.operatorEvidence ?? []} />
-          </td>
-          <td>
-            <AdminSignal
-              className={row.opsSignalClassName}
-              tone={adminSignalToneFromClassName(row.opsSignalClassName)}
-            >
-              {row.opsSignal}
-            </AdminSignal>
-            <div className="muted admin-mt-6">
-              {row.opsHint}
+            <div className="admin-mt-6">
+              <AdminSignal
+                className={row.opsSignalClassName}
+                tone={adminSignalToneFromClassName(row.opsSignalClassName)}
+              >
+                {row.opsSignal}
+              </AdminSignal>
             </div>
           </td>
           <td>
-            <AdminFilterChipGroup ariaLabel={`Blocking reasons for ${row.shortId}`}>
-              {row.blockingReasons.length ? (
-                row.blockingReasons.map((reason) => (
-                  <StatusBadgeFromPillClass
-                    key={reason.label}
-                    title={reason.detail}
-                    pillClass={reason.pillClass}
-                  >
-                    {reason.label}
-                  </StatusBadgeFromPillClass>
-                ))
-              ) : (
-                <StatusBadge tone="success">Clear</StatusBadge>
-              )}
-            </AdminFilterChipGroup>
-            <div className="muted admin-mt-6">
-              {row.blockingActionSummary}
-            </div>
+            <PrimaryPayoutIssue row={row} showOperatorEvidence={showOperatorEvidence} />
           </td>
           <td>
-            <div>{row.transferRef || '-'}</div>
-            <div className="muted">{row.notes}</div>
+            <strong>{row.bankAccountLabel ?? 'Bank not linked'}</strong>
+            <div className="muted">{row.transferRef ? `Ref ${row.transferRef}` : 'Reference not recorded'}</div>
+            {row.notes ? <div className="muted admin-mt-6">{row.notes}</div> : null}
+            {row.paidAt ? (
+              <div className="muted admin-mt-6">
+                Paid <DateTimeText value={row.paidAt} />
+              </div>
+            ) : (
+              <div className="muted admin-mt-6">{row.paidAtRelativeLabel}</div>
+            )}
           </td>
           <td>
-            <div>{row.earningCount} item(s)</div>
-            <div className="muted">{row.earningsHint}</div>
-            <AdminFilterChipGroup ariaLabel={`Service evidence for ${row.shortId}`} className="admin-mt-8">
-              {row.serviceEvidencePills.map((item) => (
-                <StatusBadge key={`${row.id}-${item.key}`} tone="info">
-                  {item.label}: <MoneyText amount={item.amount} currency={item.currency} />
-                </StatusBadge>
-              ))}
-            </AdminFilterChipGroup>
-          </td>
-          <td>
-            <AdminFilterChipGroup ariaLabel={`Readiness checklist for ${row.shortId}`}>
-              {row.checklist.map((item) => (
-                <StatusBadge key={item.label} title={item.detail} tone={item.ok ? 'success' : 'warning'}>
-                  {item.label}
-                </StatusBadge>
-              ))}
-            </AdminFilterChipGroup>
-            <div className="muted admin-mt-6">
-              {row.readinessSummary}
-            </div>
-          </td>
-          <td>
-            <MoneyText amount={row.totalAmount} currency={row.currency} />
-          </td>
-          <td>
-            <div>
-              <MoneyText amount={row.withholdingAmount} currency={row.currency} />
-            </div>
-            <div className="muted">{row.taxLogCount} tax log(s)</div>
-          </td>
-          <td>
-            <DateTimeText fallback="-" value={row.paidAt} />
-            <div className="muted">{row.paidAtRelativeLabel}</div>
-          </td>
-          <td>
-            <AdminNotePanel className="admin-mb-10">
-              <strong>Payout action execution map</strong>
-              <AdminStageList className="admin-mt-8">
-                {row.actionExecutionItems.map((item) => (
-                  <AdminStageItem key={`${row.id}-${item.action}`}>
-                    <StatusBadgeFromPillClass pillClass={item.pillClass}>
-                      {item.status}
-                    </StatusBadgeFromPillClass>
-                    <div>
-                      <strong>{item.action}</strong>
-                      <p className="muted">{item.reason}</p>
-                      <small>{item.operatorRule}</small>
-                    </div>
-                  </AdminStageItem>
-                ))}
-              </AdminStageList>
-            </AdminNotePanel>
-            <AdminActionsForm action={updateTransferRefAction}>
-              <input type="hidden" name="payoutBatchId" value={row.id} />
-              <AdminFormInput
-                defaultValue={row.transferRef}
-                label="Transfer reference"
-                name="transferRef"
-                placeholder="Bank ref"
-              />
-              <AdminFormInput defaultValue={row.notes} label="Transfer notes" name="notes" placeholder="Notes" />
-              <AdminFormControlButton className="button-primary" type="submit">
-                Save
-              </AdminFormControlButton>
-            </AdminActionsForm>
-            <div className="actions admin-mt-8">
+            <div className="actions">
+              {row.reviewHref ? (
+                <StatusBadgeLink href={row.reviewHref} tone="info">
+                  {row.statusLabel === 'Paid' ? 'Repair transfer evidence' : 'Review transfer'}
+                </StatusBadgeLink>
+              ) : null}
               <ActionMenu actions={row.actionMenuItems} label={`Payout actions for ${row.shortId}`} />
               {row.payoutHold ? (
                 <StatusBadgeLink href={row.partnerChecksHref} tone="danger">
@@ -245,7 +174,8 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
               {row.paidBlockedByReleaseCheck ? (
                 <StatusBadge tone="warning">Resolve blockers before paid</StatusBadge>
               ) : null}
-              {row.statusLabel === 'Paid' || row.statusLabel === 'Cancelled' ? (
+              {(row.statusLabel === 'Paid' || row.statusLabel === 'Cancelled') &&
+              row.actionMenuItems.length === 0 ? (
                 <AdminInlineFallback>No status action</AdminInlineFallback>
               ) : null}
             </div>
@@ -253,5 +183,56 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
         </tr>
       ))}
     </AdminDataTable>
+  );
+}
+
+function PrimaryPayoutIssue({
+  row,
+  showOperatorEvidence,
+}: {
+  readonly row: PayoutBatchTableRow;
+  readonly showOperatorEvidence: boolean;
+}) {
+  const firstReason = row.blockingReasons[0];
+  const isPaid = row.statusLabel === 'Paid';
+  const issueLabel = firstReason?.label ??
+    (row.riskLabel && row.riskLabel !== 'Clear' ? row.riskLabel : isPaid ? 'Closeout evidence complete' : 'Ready for next finance action');
+  const issueDetail = firstReason?.detail ?? row.riskDetail ?? row.opsHint;
+  const tone = issueLabel.includes('complete') || issueLabel.includes('Ready') ? 'success' : 'warning';
+
+  return (
+    <div className="payout-batch-primary-issue">
+      {firstReason ? (
+        <StatusBadgeFromPillClass pillClass={firstReason.pillClass} title={firstReason.detail}>
+          {firstReason.label}
+        </StatusBadgeFromPillClass>
+      ) : (
+        <StatusBadge tone={tone}>{issueLabel}</StatusBadge>
+      )}
+      <p className="muted admin-mt-6">{issueDetail}</p>
+      <details
+        aria-label={`${isPaid ? 'Reconciliation findings' : 'Release checks'} for ${row.shortId}`}
+        className="payout-batch-row-details"
+      >
+        <summary>{isPaid ? 'Reconciliation findings' : 'Release checks'}</summary>
+        <div className="admin-mt-8">
+          <p>{row.opsHint}</p>
+          <p className="muted admin-mt-6">{row.blockingActionSummary}</p>
+          <p className="muted admin-mt-6">
+            {row.earningCount} linked {row.earningCount === 1 ? 'earning' : 'earnings'} · {row.taxLogCount}{' '}
+            payout deduction {row.taxLogCount === 1 ? 'record' : 'records'}
+          </p>
+          {row.bankReconciliationRemainingAmount !== undefined ? (
+            <p className="muted admin-mt-6">
+              Bank match remaining{' '}
+              <MoneyText amount={row.bankReconciliationRemainingAmount} currency={row.currency} />
+            </p>
+          ) : null}
+          {showOperatorEvidence ? (
+            <AdminFinanceOperatorEvidence lines={row.operatorEvidence ?? []} />
+          ) : null}
+        </div>
+      </details>
+    </div>
   );
 }

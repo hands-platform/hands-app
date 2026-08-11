@@ -51,7 +51,7 @@ describe('OperationsPolicyPage', () => {
     );
   });
 
-  it('keeps decision policy editors out of the compact summary payload', async () => {
+  it('shows every policy in the read-only comparison without opening an editor', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href === '/admin/operational-policy') {
         return [
@@ -83,12 +83,79 @@ describe('OperationsPolicyPage', () => {
     const page = await OperationsPolicyPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
 
+    expect(markup).toContain('Policy comparison');
     expect(markup).toContain('First-pick Partner response window');
-    expect(markup).not.toContain('First-pick acceptance contract');
+    expect(markup).toContain('First-pick acceptance contract');
+    expect(markup).toContain('Current value');
+    expect(markup).toContain('Recommended value');
+    expect(markup).toContain('Operating impact');
+    expect(markup).toContain('Last changed by');
+    expect(markup).toContain('Last changed at');
     expect(markup).not.toContain('Load decision editor');
     expect(markup).not.toContain('/operations-policy?details=all');
     expect(markup).not.toContain('Related booking records');
     expect(markup).not.toContain('Before saving this policy');
+    expect((markup.match(/<form/g) ?? []).length).toBe(0);
+  });
+
+  it('renders Start Shift queue SLA policies in the default operational workspace', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/operational-policy') {
+        return [
+          operationPolicySetting({
+            category: 'Command center',
+            key: 'command.start_shift.payment_holds_sla_minutes',
+            label: 'Payment hold review SLA',
+            unit: 'minutes',
+            value: 60,
+          }),
+        ] satisfies AdminOperationalPolicySetting[];
+      }
+
+      return fallback;
+    });
+
+    const page = await OperationsPolicyPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Policy comparison');
+    expect(markup).toContain('Payment hold review SLA');
+    expect(markup).toContain('60 min');
+    expect(markup).toContain('Command center');
+    expect((markup.match(/<form/g) ?? []).length).toBe(0);
+  });
+
+  it('opens exactly one policy change panel from the selected comparison row', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/operational-policy') {
+        return [
+          operationPolicySetting({
+            category: 'Matching',
+            key: 'matching.provider_response_window_minutes',
+            label: 'First-pick Partner response window',
+            value: 10,
+          }),
+          operationPolicySetting({
+            category: 'Matching',
+            key: 'matching.marketplace_partner_radius_meters',
+            label: 'Marketplace Partner radius',
+            value: 10000,
+          }),
+        ] satisfies AdminOperationalPolicySetting[];
+      }
+
+      return fallback;
+    });
+
+    const page = await OperationsPolicyPage({
+      searchParams: Promise.resolve({ edit: 'matching.provider_response_window_minutes' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Change First-pick Partner response window');
+    expect(markup).toContain('name="expectedValue" value="10"');
+    expect(markup).toContain('Immediately after save');
+    expect(markup).toContain('Additional approval');
     expect((markup.match(/<form/g) ?? []).length).toBe(1);
   });
 
@@ -120,7 +187,7 @@ describe('OperationsPolicyPage', () => {
     expect(markup).toContain('Open setup checks');
   });
 
-  it('renders decision policy editors only in the decision review workspace', async () => {
+  it('keeps the decision evidence workspace read-only and links back to policy comparison', async () => {
     mockedGetAccess.mockResolvedValue({
       categories: [],
       email: 'master@example.com',
@@ -162,8 +229,9 @@ describe('OperationsPolicyPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).not.toContain('First-pick Partner response window');
-    expect(markup).toContain('First-pick acceptance contract');
+    expect(markup).not.toContain('First-pick acceptance contract');
     expect(markup).toContain('Decision editor');
+    expect(markup).toContain('Open policy comparison');
     expect(markup).not.toContain('Owner decision backlog');
     expect(markup).not.toContain('Current decision pressure');
     expect(mockedAdminGet.mock.calls.map(([href]) => href)).not.toContain(
@@ -175,7 +243,7 @@ describe('OperationsPolicyPage', () => {
     expect(mockedAdminGet.mock.calls.map(([href]) => href)).not.toContain(
       '/admin/audit-logs?action=booking.create.rejected&take=3',
     );
-    expect((markup.match(/<form/g) ?? []).length).toBe(1);
+    expect((markup.match(/<form/g) ?? []).length).toBe(0);
   });
 
   it('loads the bounded Partner sample only in the decision evidence workspace', async () => {
@@ -315,9 +383,10 @@ describe('OperationsPolicyPage', () => {
     expect(pageSource).not.toContain('full diagnostics view');
   });
 
-  it('uses the shared Vuexy detail grid for policy form groups', () => {
-    expect(pageSource).toContain('AdminDetailGrid');
-    expect(pageSource).not.toContain('<div className="grid">');
+  it('uses the shared data table for policy comparison instead of repeated form grids', () => {
+    expect(pageSource).toContain('AdminDataTable');
+    expect(pageSource).toContain('AdminTablePanel');
+    expect(pageSource).not.toContain('AdminDetailGrid');
   });
 
   it('uses the shared empty-state atom for missing policy setup copy', () => {
@@ -351,7 +420,7 @@ function operationPolicySetting(
     min: null,
     options: overrides.options ?? null,
     recommendedValue: overrides.recommendedValue ?? overrides.value ?? 10,
-    unit: null,
+    unit: overrides.unit ?? null,
     updatedAt: null,
     updatedBy: null,
     value: overrides.value ?? 10,

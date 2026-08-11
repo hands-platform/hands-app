@@ -10,15 +10,17 @@ const financeListCommandBoardClassName = 'finance-list-command-board';
 export function FinanceListCommandBoard({
   ariaLabel,
   children,
+  className,
 }: {
   readonly ariaLabel: string;
   readonly children: ReactNode;
+  readonly className?: string;
 }) {
   return (
     <AdminOverviewCommandGrid
       ariaLabel={ariaLabel}
       baseClassName={financeListCommandBoardClassName}
-      className="admin-mb-16"
+      className={['admin-mb-16', className].filter(Boolean).join(' ')}
     >
       {children}
     </AdminOverviewCommandGrid>

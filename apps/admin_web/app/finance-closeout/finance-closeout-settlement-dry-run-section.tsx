@@ -21,9 +21,9 @@ export function FinanceCloseoutSettlementDryRunSection({
   if (!report) {
     return (
       <AdminTableSection
-        actions={<AdminTextLink href={runHref}>Run read-only dry-run</AdminTextLink>}
+        actions={<AdminTextLink href={runHref}>Run safety check</AdminTextLink>}
         description="Evaluate up to 100 historical paid-evidence gaps with the production settlement calculator and journal builder. This creates no snapshot, journal, clearing entry, or audit write."
-        title="Historical settlement dry-run"
+        title="Batch safety check (read-only)"
       >
         <p className="muted">
           Run this report after selecting a settlement month or payment method. Individual repairs remain separate
@@ -41,14 +41,14 @@ export function FinanceCloseoutSettlementDryRunSection({
     <AdminTableSection
       actions={
         <>
-          <AdminTextLink href={runHref}>Refresh dry-run</AdminTextLink>
+          <AdminTextLink href={runHref}>Run safety check again</AdminTextLink>
           <AdminTextLink href={clearHref}>Close report</AdminTextLink>
         </>
       }
       bodyClassName="admin-table-section-body"
       description="Read-only expected accounting for the current settlement month and payment-method filters. No finance record is written by this report."
       scrollable
-      title={`Historical settlement dry-run (${report.evaluated})`}
+      title={`Batch safety check (read-only) · ${report.evaluated} evaluated`}
     >
       <AdminDataTable
         emptyMessage="No historical settlement gaps matched this dry-run scope."
@@ -67,17 +67,20 @@ export function FinanceCloseoutSettlementDryRunSection({
               <td>
                 {report.truncated
                   ? 'The 100-record safety limit was reached. Narrow the settlement month or payment method.'
-                  : 'Every matching historical-ready gap was evaluated.'}
+                  : 'Every matching historical policy-review gap was evaluated.'}
               </td>
             </tr>
             <tr>
               <td>Repair eligibility</td>
               <td>
-                <StatusBadge tone={report.counts.blocked ? 'danger' : 'success'}>
-                  {report.counts.eligible} eligible · {report.counts.blocked} blocked
+                <StatusBadge
+                  tone={report.counts.blocked ? 'danger' : report.counts.reviewRequired ? 'warning' : 'success'}
+                >
+                  {report.counts.eligible} approved · {report.counts.reviewRequired ?? 0} review ·{' '}
+                  {report.counts.blocked} blocked
                 </StatusBadge>
               </td>
-              <td>{groupedCounts(report.blockerCodes, 'No preview blockers')}</td>
+              <td>{operatorGroupedCounts(report.blockerCodes, 'No preview blockers')}</td>
             </tr>
             <tr>
               <td>Finance policy gate</td>
@@ -89,7 +92,10 @@ export function FinanceCloseoutSettlementDryRunSection({
               <td>
                 {report.policyGate.issues.length
                   ? report.policyGate.issues
-                      .map((issue) => `${issue.code}: ${issue.count} · ${issue.message}`)
+                      .map(
+                        (issue) =>
+                          `${operatorCodeLabel(issue.code)}: ${issue.count} · ${issue.message}`,
+                      )
                       .join(' ')
                   : 'No accounting policy exception was detected.'}
               </td>
@@ -213,7 +219,8 @@ export function FinanceCloseoutSettlementDryRunSection({
                   {batch.recordCount} record(s)
                   <br />
                   <span className="muted">
-                    {batch.counts.eligible} eligible · {batch.counts.blocked} blocked
+                    {batch.counts.eligible} approved · {batch.counts.reviewRequired ?? 0} review ·{' '}
+                    {batch.counts.blocked} blocked
                   </span>
                 </td>
                 <td>
@@ -253,4 +260,34 @@ export function FinanceCloseoutSettlementDryRunSection({
 function groupedCounts(groups: Record<string, number>, emptyLabel: string) {
   const entries = Object.entries(groups).sort(([left], [right]) => left.localeCompare(right));
   return entries.length ? entries.map(([label, count]) => `${label}: ${count}`).join(' · ') : emptyLabel;
+}
+
+function operatorGroupedCounts(groups: Record<string, number>, emptyLabel: string) {
+  const entries = Object.entries(groups).sort(([left], [right]) => left.localeCompare(right));
+  return entries.length
+    ? entries.map(([label, count]) => `${operatorCodeLabel(label)}: ${count}`).join(' · ')
+    : emptyLabel;
+}
+
+function operatorCodeLabel(code: string) {
+  switch (code) {
+    case 'OPEN_OR_UNLINKED':
+      return 'Monthly close is open or not linked';
+    case 'PAYMENT_FEE_POLICY_DEFAULTED':
+      return 'Payment-fee policy evidence needs review';
+    case 'PREVIEW_BLOCKED':
+      return 'Missing evidence blocks one or more records';
+    case 'JOURNAL_RECONCILIATION_REVIEW':
+      return 'Journal reconciliation needs review';
+    case 'PLATFORM_VAT_EVIDENCE_UNEXPLAINED':
+      return 'Platform VAT evidence needs review';
+    case 'MONTHLY_PERIOD_FINALIZED':
+      return 'Monthly close is finalized';
+    default:
+      return code
+        .toLowerCase()
+        .split('_')
+        .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+        .join(' ');
+  }
 }

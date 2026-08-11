@@ -6,7 +6,9 @@ import {
   approveProviderTaxProfile,
   approvePublicProviderMedia,
   blockProviderAccount,
+  deletePartnerPublicMedia,
   enablePushDevice,
+  putProviderKycOnHold,
   rejectProvider,
   rejectProviderBankAccount,
   rejectProviderDocument,
@@ -57,6 +59,10 @@ export function partnerReviewServerAction(action: PartnerReviewConfirmationActio
       return rejectPublicProviderMedia;
     case 'reject-tax':
       return rejectProviderTaxProfile;
+    case 'delete-media':
+      return deletePartnerPublicMedia;
+    case 'hold-kyc':
+      return putProviderKycOnHold;
   }
 }
 

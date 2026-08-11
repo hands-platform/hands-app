@@ -5,20 +5,18 @@ import {
   adminWithdrawalOperatorEvidenceLines,
 } from '../../../components/admin-finance-operator-evidence';
 import { AdminInlineActionForm } from '../../../components/admin-inline-action-form';
-import { AdminInlineNotice } from '../../../components/admin-inline-notice';
 import {
   AdminFormControlButton,
   AdminFormDateTime,
   AdminFormInput,
-  AdminFormSelect,
 } from '../../../components/admin-form-controls';
 import { AdminWithdrawalAccountingPreview } from '../../../components/admin-withdrawal-accounting-preview';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 import type { AdminProviderWalletWithdrawalRequest } from '../../../lib/admin-api';
+import { adminWorkflowStatusLabel, marketplaceDisplayText } from '../../../lib/admin-copy';
 import { providerWalletWithdrawalStatusChangeView } from '../../../lib/provider-wallet-withdrawal-status-change';
-import type { FinanceApproverOption } from '../../finance-tax/finance-approver-options';
 import { shortRecordId } from './partner-detail-format';
 import {
   PartnerDetailVuexyTablePanel,
@@ -29,7 +27,6 @@ import {
 type FormAction = (formData: FormData) => void | Promise<void>;
 
 type PartnerDetailWalletWithdrawalRequestSectionProps = {
-  readonly financeApproverOptions?: readonly FinanceApproverOption[];
   readonly requests: readonly AdminProviderWalletWithdrawalRequest[];
   readonly updateWithdrawalRequestAction: FormAction;
 };
@@ -37,7 +34,6 @@ type PartnerDetailWalletWithdrawalRequestSectionProps = {
 const headers = ['Request', 'Amount', 'Bank account', 'Status', 'Finance action'] as const;
 
 export function PartnerDetailWalletWithdrawalRequestSection({
-  financeApproverOptions = [],
   requests,
   updateWithdrawalRequestAction,
 }: PartnerDetailWalletWithdrawalRequestSectionProps) {
@@ -75,7 +71,7 @@ export function PartnerDetailWalletWithdrawalRequestSection({
                 <AdminWithdrawalAccountingPreview request={request} />
               </td>
               <td>
-                <strong>{request.bankAccount?.bankName ?? 'Bank not linked'}</strong>
+                <strong>{marketplaceDisplayText(request.bankAccount?.bankName ?? 'Bank not linked')}</strong>
                 <p className="muted">{bankAccountLabel(request)}</p>
               </td>
               <td>
@@ -89,7 +85,6 @@ export function PartnerDetailWalletWithdrawalRequestSection({
               </td>
               <td>
                 <WithdrawalRequestActions
-                  financeApproverOptions={financeApproverOptions}
                   request={request}
                   updateWithdrawalRequestAction={updateWithdrawalRequestAction}
                 />
@@ -104,11 +99,9 @@ export function PartnerDetailWalletWithdrawalRequestSection({
 }
 
 function WithdrawalRequestActions({
-  financeApproverOptions,
   request,
   updateWithdrawalRequestAction,
 }: {
-  readonly financeApproverOptions: readonly FinanceApproverOption[];
   readonly request: AdminProviderWalletWithdrawalRequest;
   readonly updateWithdrawalRequestAction: FormAction;
 }) {
@@ -169,27 +162,6 @@ function WithdrawalRequestActions({
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="BANK_TRANSFER_PENDING" />
           <AdminFormInput
-            label={`Bank pending note for withdrawal ${request.id}`}
-            name="adminNote"
-            placeholder="Bank payout run note"
-            type="text"
-          />
-          <AdminFormControlButton className="button-sm button-info" type="submit">
-            Bank pending
-          </AdminFormControlButton>
-        </AdminInlineActionForm>
-      ) : null}
-
-      {request.status === 'BANK_TRANSFER_PENDING' ? (
-        <StatusBadge tone="info">Manual bank transfer pending</StatusBadge>
-      ) : null}
-
-      {request.status === 'APPROVED' || request.status === 'BANK_TRANSFER_PENDING' ? (
-        <AdminInlineActionForm action={updateWithdrawalRequestAction}>
-          <input name="providerId" type="hidden" value={request.providerProfileId} />
-          <input name="requestId" type="hidden" value={request.id} />
-          <input name="status" type="hidden" value="PAID" />
-          <AdminFormInput
             label={`Transfer reference for withdrawal ${request.id}`}
             name="transferRef"
             placeholder="Bank transfer ref"
@@ -204,28 +176,36 @@ function WithdrawalRequestActions({
           <AdminFormInput
             label={`Bank transfer evidence URL for withdrawal ${request.id}`}
             name="attachmentUrl"
-            placeholder="Evidence URL"
+            placeholder="Private evidence URL"
             required
             type="url"
           />
-          <AdminFormSelect
-            disabled={financeApproverOptions.length === 0}
-            label={`Separate Finance approver for withdrawal ${request.id}`}
-            name="approvalAdminId"
-            options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}
-            required
+          <AdminFormInput
+            label={`Transfer note for withdrawal ${request.id}`}
+            name="adminNote"
+            placeholder="Bank payout run note"
+            type="text"
           />
-          {financeApproverOptions.length === 0 ? (
-            <AdminInlineNotice role="alert" tone="warning">
-              No other Finance approver is available. Paid closeout remains disabled.
-            </AdminInlineNotice>
-          ) : null}
+          <AdminFormControlButton className="button-sm button-info" type="submit">
+            Submit transfer for approval
+          </AdminFormControlButton>
+        </AdminInlineActionForm>
+      ) : null}
+
+      {request.status === 'BANK_TRANSFER_PENDING' ? (
+        <StatusBadge tone="info">Paid closeout approval pending</StatusBadge>
+      ) : null}
+
+      {request.status === 'BANK_TRANSFER_PENDING' && request.preflight?.canMarkPaid ? (
+        <AdminInlineActionForm action={updateWithdrawalRequestAction}>
+          <input name="providerId" type="hidden" value={request.providerProfileId} />
+          <input name="requestId" type="hidden" value={request.id} />
+          <input name="status" type="hidden" value="PAID" />
           <AdminFormControlButton
             className="button-sm button-success"
-            disabled={financeApproverOptions.length === 0}
             type="submit"
           >
-            Mark paid
+            Approve paid closeout
           </AdminFormControlButton>
         </AdminInlineActionForm>
       ) : null}
@@ -288,17 +268,17 @@ function bankAccountLabel(request: AdminProviderWalletWithdrawalRequest) {
   const accountNumber =
     request.bankAccount.accountNumberMasked ??
     (request.bankAccount.accountNumberLast4 ? `****${request.bankAccount.accountNumberLast4}` : null);
-  return [request.bankAccount.accountHolderName, accountNumber, request.bankAccount.status]
+  return [
+    marketplaceDisplayText(request.bankAccount.accountHolderName),
+    accountNumber,
+    request.bankAccount.status,
+  ]
     .filter(Boolean)
     .join(' / ');
 }
 
 function statusLabel(status: AdminProviderWalletWithdrawalRequest['status']) {
-  return status
-    .toLowerCase()
-    .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
+  return adminWorkflowStatusLabel(status);
 }
 
 function statusPillClass(status: AdminProviderWalletWithdrawalRequest['status']) {

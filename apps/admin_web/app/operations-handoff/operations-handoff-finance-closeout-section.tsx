@@ -6,9 +6,9 @@ import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import { shortDisplayId } from '../../lib/admin-format';
 import type { FinanceHandoffRow } from './operations-handoff-finance-rows';
 import {
+  OPERATIONS_HANDOFF_DETAIL_PAGE_SIZE,
   OperationsHandoffPaginationFooter,
   type OperationsHandoffPagination,
-  paginateOperationsHandoffRows,
 } from './operations-handoff-pagination';
 
 type OperationsHandoffFinanceCloseoutSectionProps = {
@@ -31,7 +31,14 @@ export function OperationsHandoffFinanceCloseoutSection({
   pagination,
   rows,
 }: OperationsHandoffFinanceCloseoutSectionProps) {
-  const pagedRows = paginateOperationsHandoffRows(rows, pagination.activePage);
+  const visibleRows = rows.slice(0, OPERATIONS_HANDOFF_DETAIL_PAGE_SIZE);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(pagination.totalRows / OPERATIONS_HANDOFF_DETAIL_PAGE_SIZE),
+  );
+  const start = (pagination.activePage - 1) * OPERATIONS_HANDOFF_DETAIL_PAGE_SIZE;
+  const from = visibleRows.length === 0 ? 0 : start + 1;
+  const to = visibleRows.length === 0 ? 0 : start + visibleRows.length;
 
   return (
     <AdminSection
@@ -54,9 +61,9 @@ export function OperationsHandoffFinanceCloseoutSection({
         <AdminDataTable
           emptyMessage="No finance history rows."
           headers={FINANCE_CLOSEOUT_HEADERS}
-          rowCount={pagedRows.rows.length}
+          rowCount={visibleRows.length}
         >
-          {pagedRows.rows.map((row) => (
+          {visibleRows.map((row) => (
             <tr key={row.id}>
               <td>
                 <AdminTextLink href={`/partners/${row.providerId}`}>
@@ -90,10 +97,10 @@ export function OperationsHandoffFinanceCloseoutSection({
           ))}
         </AdminDataTable>
         <OperationsHandoffPaginationFooter
-          from={pagedRows.from}
+          from={from}
           pagination={pagination}
-          to={pagedRows.to}
-          totalPages={pagedRows.totalPages}
+          to={to}
+          totalPages={totalPages}
         />
       </AdminTableScroll>
     </AdminSection>

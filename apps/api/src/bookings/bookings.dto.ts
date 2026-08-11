@@ -1,5 +1,8 @@
 import {
   Allow,
+  ArrayMaxSize,
+  IsArray,
+  IsBoolean,
   IsDefined,
   IsEnum,
   IsIn,
@@ -16,6 +19,10 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { PaymentMethod, Prisma } from '@prisma/client';
+import {
+  providerCancellationReasonCodes,
+  type ProviderCancellationReasonCode,
+} from './provider-cancellation-reason';
 
 function trimString(value: unknown) {
   return typeof value === 'string' ? value.trim() : value;
@@ -30,6 +37,16 @@ function numberFromFormValue(value: unknown) {
 
 export const providerBookingDetailViewEventTypes = ['heartbeat', 'closed'] as const;
 export type ProviderBookingDetailViewEventType = (typeof providerBookingDetailViewEventTypes)[number];
+export const preferredProviderRejectionReasonCodes = [
+  'SCHEDULE_CONFLICT',
+  'TOO_FAR',
+  'SERVICE_UNSUPPORTED',
+  'LOCATION_ACCESS_ISSUE',
+  'SAFETY_OR_PERSONAL_REASON',
+  'OTHER',
+] as const;
+export type PreferredProviderRejectionReasonCode =
+  (typeof preferredProviderRejectionReasonCodes)[number];
 
 export class CreateCustomerBookingDto {
   @IsString()
@@ -86,6 +103,20 @@ export class SelectBookingProviderDto {
   providerId!: string;
 }
 
+export class RejectPreferredProviderBookingDto {
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsIn(preferredProviderRejectionReasonCodes)
+  reasonCode?: PreferredProviderRejectionReasonCode;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(1000)
+  reasonDetail?: string;
+}
+
 class ProviderBookingActionLocationDto {
   @IsNumber()
   lat!: number;
@@ -102,10 +133,15 @@ class ProviderBookingActionLocationDto {
 export class CompleteProviderBookingDto extends ProviderBookingActionLocationDto {}
 
 export class CancelProviderBookingDto extends ProviderBookingActionLocationDto {
-  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsIn(providerCancellationReasonCodes)
+  reasonCode!: ProviderCancellationReasonCode;
+
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(1000)
-  note?: string;
+  note!: string;
 }
 
 export class CreateProviderCustomerReviewDto {
@@ -127,4 +163,33 @@ export class RecordProviderBookingDetailViewDto {
   @Min(0)
   @Max(7200)
   durationSeconds?: number;
+}
+
+export class UpdateProviderBookingAlertPreferencesDto {
+  @IsBoolean()
+  enabled!: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => numberFromFormValue(value))
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  maxDistanceKm?: number | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(40)
+  customerGender?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(80)
+  customerNationality?: string | null;
+
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsString({ each: true })
+  serviceIds!: string[];
 }

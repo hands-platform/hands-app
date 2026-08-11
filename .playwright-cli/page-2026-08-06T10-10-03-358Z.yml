@@ -1,0 +1,154 @@
+- generic [active] [ref=f11e1]:
+  - generic [ref=f11e3]:
+    - complementary [ref=f11e4]:
+      - strong [ref=f11e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=f11e7]:
+        - group [ref=f11e8]:
+          - generic "Shift command" [ref=f11e9] [cursor=pointer]
+          - link "Shift command" [ref=f11e27] [cursor=pointer]:
+            - /url: /
+        - group [ref=f11e31]:
+          - generic "Live Operations" [ref=f11e32] [cursor=pointer]
+        - group [ref=f11e49]:
+          - generic "Customer Support" [ref=f11e50] [cursor=pointer]
+          - generic [ref=f11e67]:
+            - link "Customers" [ref=f11e68] [cursor=pointer]:
+              - /url: /customers
+            - link "Customer Reviews" [ref=f11e74] [cursor=pointer]:
+              - /url: /reviews
+            - link "Partner Notes" [ref=f11e78] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations
+            - link "Chat Evidence" [ref=f11e82] [cursor=pointer]:
+              - /url: /chat-archive
+            - link "Customer Notifications" [ref=f11e86] [cursor=pointer]:
+              - /url: /notifications
+            - link "Customer Usage" [ref=f11e90] [cursor=pointer]:
+              - /url: /usage-overview
+        - group [ref=f11e94]:
+          - generic "Partner Operations" [ref=f11e95] [cursor=pointer]
+        - group [ref=f11e112]:
+          - generic "Finance Today" [ref=f11e113] [cursor=pointer]
+        - group [ref=f11e120]:
+          - generic "Finance Records" [ref=f11e121] [cursor=pointer]
+        - group [ref=f11e138]:
+          - generic "Growth & Content" [ref=f11e139] [cursor=pointer]
+        - group [ref=f11e156]:
+          - generic "Tax & Monthly Close" [ref=f11e157] [cursor=pointer]
+        - group [ref=f11e164]:
+          - generic "Restricted Settings" [ref=f11e165] [cursor=pointer]
+        - group [ref=f11e172]:
+          - generic "Admin & System" [ref=f11e173] [cursor=pointer]
+        - group [ref=f11e190]:
+          - generic "Developer / System" [ref=f11e191] [cursor=pointer]
+    - main [ref=f11e199]:
+      - generic "Admin workspace" [ref=f11e200]:
+        - navigation "Breadcrumb" [ref=f11e202]:
+          - link "HANDS" [ref=f11e203] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f11e206]: Customer Support
+          - generic [ref=f11e209]: Partner Notes
+        - generic "Workspace actions" [ref=f11e210]:
+          - button "Search Ctrl K" [ref=f11e212] [cursor=pointer]:
+            - generic [ref=f11e213]: Search
+            - generic [ref=f11e217]: Ctrl K
+          - button "Switch to dark mode" [ref=f11e219] [cursor=pointer]
+          - link "Operations Policy" [ref=f11e222] [cursor=pointer]:
+            - /url: /operations-policy
+          - button "Open operation alerts" [ref=f11e227] [cursor=pointer]
+          - button "Sign out" [ref=f11e232] [cursor=pointer]
+      - generic [ref=f11e236]:
+        - generic [ref=f11e237]:
+          - generic [ref=f11e238]:
+            - heading "Partner Notes About Customers" [level=1] [ref=f11e239]
+            - paragraph [ref=f11e240]: Internal notes Partners submit about customers after completed bookings. These notes are not customer-visible.
+          - generic "Page actions" [ref=f11e241]: Internal · Not customer-visible
+        - generic [ref=f11e243]:
+          - region [ref=f11e244]:
+            - generic [ref=f11e245]:
+              - generic [ref=f11e246]:
+                - heading "Partner note search" [level=2] [ref=f11e247]
+                - paragraph [ref=f11e248]: Search immutable internal notes by submitted date, state, customer, Partner, or booking.
+              - generic [ref=f11e249]:
+                - generic [ref=f11e250]: 0 notes
+                - link "Clear filters" [ref=f11e251] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations
+            - generic "Partner note filters" [ref=f11e253]:
+              - generic "Submitted date" [ref=f11e254]:
+                - link "All dates" [ref=f11e255] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match
+                - link "Today" [ref=f11e256] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match&dateRange=today
+                - link "Previous day" [ref=f11e257] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match&dateRange=yesterday
+                - link "Last 7 days" [ref=f11e258] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match&dateRange=7d
+                - link "Last month" [ref=f11e259] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match&dateRange=30d
+                - link "Custom dates" [ref=f11e260] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match&dateRange=custom
+              - generic "Review state" [ref=f11e261]:
+                - link "All" [ref=f11e262] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match
+                - link "Retained" [ref=f11e263] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match&status=retained
+                - link "Needs review" [ref=f11e264] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match&status=needs-review
+                - link "Restricted" [ref=f11e265] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match&status=restricted
+              - generic "Submitted date sort" [ref=f11e266]:
+                - link "Most recently submitted" [ref=f11e267] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match
+                - link "Oldest submitted" [ref=f11e268] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match&sort=oldest
+              - generic [ref=f11e269]:
+                - generic [ref=f11e270]:
+                  - generic [ref=f11e274]: Search Partner notes
+                  - searchbox "Search Partner notes" [ref=f11e275]: guaranteed-no-partner-note-match
+                - generic [ref=f11e276] [cursor=pointer]:
+                  - generic [ref=f11e277]: Rows per page
+                  - combobox "Rows per page" [ref=f11e278]:
+                    - option "10" [selected]
+                    - option "25"
+                    - option "50"
+                - button "Apply" [ref=f11e279] [cursor=pointer]
+            - generic "Active Partner note filters" [ref=f11e281]: "Search: guaranteed-no-partner-note-match"
+          - navigation "Partner note summary and state filters" [ref=f11e283]:
+            - link "Total 0" [ref=f11e284] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match
+              - generic [ref=f11e285]: Total
+              - strong [ref=f11e286]: "0"
+            - link "Needs review 0" [ref=f11e287] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match&status=needs-review
+              - generic [ref=f11e288]: Needs review
+              - strong [ref=f11e289]: "0"
+            - link "Restricted 0" [ref=f11e290] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match&status=restricted
+              - generic [ref=f11e291]: Restricted
+              - strong [ref=f11e292]: "0"
+            - link "Retained 0" [ref=f11e293] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations?q=guaranteed-no-partner-note-match&status=retained
+              - generic [ref=f11e294]: Retained
+              - strong [ref=f11e295]: "0"
+          - region [ref=f11e296]:
+            - generic [ref=f11e297]:
+              - generic [ref=f11e298]:
+                - heading "Partner notes" [level=2] [ref=f11e299]
+                - paragraph [ref=f11e300]: The original Partner note is immutable. Review state and audit metadata are shown with each record.
+              - generic [ref=f11e301]: 0 notes
+            - region "Partner notes table" [ref=f11e304]:
+              - table [ref=f11e305]:
+                - rowgroup [ref=f11e306]:
+                  - row [ref=f11e307]:
+                    - columnheader "Submitted" [ref=f11e308]
+                    - columnheader "Partner note" [ref=f11e309]
+                    - columnheader "Customer" [ref=f11e310]
+                    - columnheader "Author / booking" [ref=f11e311]
+                    - columnheader "Review state / actions" [ref=f11e312]
+                - rowgroup [ref=f11e313]:
+                  - row [ref=f11e314]:
+                    - cell [ref=f11e315]:
+                      - status [ref=f11e316]:
+                        - strong [ref=f11e317]: No Partner notes match the current filters.
+                        - link "Clear filters" [ref=f11e318] [cursor=pointer]:
+                          - /url: /reviews/partner-customer-evaluations
+  - button "Open Next.js Dev Tools" [ref=f11e324] [cursor=pointer]

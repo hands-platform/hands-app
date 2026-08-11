@@ -110,6 +110,87 @@ describe('buildBookingActivityRecords', () => {
     );
   });
 
+  it('shows preferred rejection reasons and response timing in the operator timeline', () => {
+    const records = recordsFor({
+      booking: {
+        openedAt: '2026-06-19T01:00:00.000Z',
+        preferredProviderId: 'partner-1',
+        providerRequestEvents: [
+          {
+            bookingId: 'booking-action-location',
+            createdAt: '2026-06-19T01:02:00.000Z',
+            eventType: 'PREFERRED_PROVIDER_REJECTED',
+            id: 'request-event-1',
+            metadata: { reasonCode: 'TOO_FAR', reasonDetail: 'Traffic is too heavy.' },
+            providerProfile: { id: 'partner-1', displayName: 'Mai' },
+            providerProfileId: 'partner-1',
+          },
+        ],
+      },
+    });
+
+    expect(records).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          detail: 'Preferred request / reason TOO_FAR / Traffic is too heavy. / response 120s after opening',
+          title: 'Mai declined the preferred request',
+          type: 'REQUEST',
+        }),
+      ]),
+    );
+  });
+
+  it('uses operator-facing labels for marketplace participant statuses', () => {
+    const records = recordsFor({
+      booking: {
+        participants: [
+          {
+            id: 'participant-1',
+            joinedAt: '2026-06-19T01:01:00.000Z',
+            providerStatusAtJoin: 'ONLINE_AVAILABLE',
+            respondedAt: '2026-06-19T01:02:00.000Z',
+            status: 'SELECTED',
+          },
+        ],
+      },
+    });
+
+    expect(records).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ detail: 'Selected / No distance / Ready now' }),
+        expect.objectContaining({
+          detail: 'Selected / customer can select from participating or accepted Partners.',
+        }),
+      ]),
+    );
+    expect(JSON.stringify(records)).not.toContain('ONLINE_AVAILABLE');
+  });
+
+  it('shows pre-match customer cancellation deadline, participants, and payment outcome', () => {
+    const records = recordsFor({
+      booking: {
+        closedAt: '2026-06-19T01:04:00.000Z',
+        closedByRole: 'CUSTOMER',
+        closedReason: 'customer_cancelled',
+        expiresAt: '2026-06-19T01:10:00.000Z',
+        participants: [{ id: 'participant-1', status: 'EXPIRED' }],
+        payment: { amount: 120000, method: 'WALLET', status: 'RELEASED' },
+        status: 'CANCELLED',
+      },
+    });
+
+    expect(records).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          detail:
+            '360s remained / preferred request waiting / 1 marketplace participant(s) / payment RELEASED',
+          title: 'Customer cancelled before final match',
+          type: 'CANCELLATION',
+        }),
+      ]),
+    );
+  });
+
   it('keeps raw range timestamps for shared trace summary date atoms', () => {
     const summary = buildBookingActivitySummary([
       {
@@ -157,7 +238,9 @@ describe('buildBookingActivityRecords', () => {
       title: 'PAID CARD payment',
       type: 'PAYMENT',
     });
-    expect(renderToStaticMarkup(paymentRecord?.detailNode)).toContain('class="money-text money-text-positive"');
+    expect(renderToStaticMarkup(paymentRecord?.detailNode)).toContain(
+      'class="money-text money-text-positive"',
+    );
     expect(renderToStaticMarkup(paymentRecord?.detailNode)).toContain('120.000 VND');
   });
 });

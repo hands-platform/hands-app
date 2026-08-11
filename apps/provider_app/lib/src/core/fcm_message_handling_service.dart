@@ -10,7 +10,7 @@ import 'push_messaging_platform.dart';
 const handsFcmNotificationChannelId = 'hands_priority_alerts';
 const handsFcmNotificationChannelName = 'HANDS priority alerts';
 const handsFcmNotificationChannelDescription =
-    'Booking, payment, and account alerts from HANDS.';
+    'Thông báo đặt lịch, thanh toán và tài khoản từ HANDS.';
 const handsFcmNotificationIcon = 'ic_stat_hands_notification';
 
 FcmMessageHandlingService? _handsFcmMessageHandlingService;
@@ -80,29 +80,92 @@ class FcmNotificationOpen {
   final String? messageId;
 }
 
+class FcmNotificationOpenRelay {
+  static const _maxRememberedOpenKeys = 128;
+
+  final _pendingNotificationOpens = <FcmNotificationOpen>[];
+  final _seenOpenKeys = <String>{};
+  late final StreamController<FcmNotificationOpen> _notificationOpens =
+      StreamController<FcmNotificationOpen>.broadcast(
+    onListen: _flushPendingNotificationOpens,
+  );
+
+  Stream<FcmNotificationOpen> get notificationOpens =>
+      _notificationOpens.stream;
+
+  void add(FcmNotificationOpen notificationOpen) {
+    if (!_rememberOpen(notificationOpen)) {
+      return;
+    }
+
+    if (_notificationOpens.hasListener) {
+      _notificationOpens.add(notificationOpen);
+      return;
+    }
+
+    _pendingNotificationOpens.add(notificationOpen);
+  }
+
+  Future<void> dispose() {
+    _pendingNotificationOpens.clear();
+    _seenOpenKeys.clear();
+    return _notificationOpens.close();
+  }
+
+  void _flushPendingNotificationOpens() {
+    if (_pendingNotificationOpens.isEmpty) {
+      return;
+    }
+
+    final pending = List<FcmNotificationOpen>.from(_pendingNotificationOpens);
+    _pendingNotificationOpens.clear();
+    for (final notificationOpen in pending) {
+      _notificationOpens.add(notificationOpen);
+    }
+  }
+
+  bool _rememberOpen(FcmNotificationOpen notificationOpen) {
+    final notificationId = notificationOpen.data['notificationId']?.trim();
+    final messageId = notificationOpen.messageId?.trim();
+    final openKey = notificationId != null && notificationId.isNotEmpty
+        ? 'notification:$notificationId'
+        : messageId != null && messageId.isNotEmpty
+            ? 'message:$messageId'
+            : null;
+    if (openKey == null) {
+      return true;
+    }
+    if (!_seenOpenKeys.add(openKey)) {
+      return false;
+    }
+
+    while (_seenOpenKeys.length > _maxRememberedOpenKeys) {
+      _seenOpenKeys.remove(_seenOpenKeys.first);
+    }
+    return true;
+  }
+}
+
 class FcmMessageHandlingService {
   FcmMessageHandlingService({
     FirebaseMessaging? messaging,
     FlutterLocalNotificationsPlugin? localNotifications,
+    FcmNotificationOpenRelay? notificationOpenRelay,
   })  : _messaging = messaging ?? FirebaseMessaging.instance,
         _localNotifications =
-            localNotifications ?? FlutterLocalNotificationsPlugin();
+            localNotifications ?? FlutterLocalNotificationsPlugin(),
+        _notificationOpenRelay =
+            notificationOpenRelay ?? FcmNotificationOpenRelay();
 
   final FirebaseMessaging _messaging;
   final FlutterLocalNotificationsPlugin _localNotifications;
-  final _notificationOpens = StreamController<FcmNotificationOpen>.broadcast();
-  final _pendingNotificationOpens = <FcmNotificationOpen>[];
+  final FcmNotificationOpenRelay _notificationOpenRelay;
   StreamSubscription<RemoteMessage>? _foregroundSubscription;
   StreamSubscription<RemoteMessage>? _openedSubscription;
   bool _started = false;
 
-  Stream<FcmNotificationOpen> get notificationOpens async* {
-    for (final notificationOpen in _drainPendingNotificationOpens()) {
-      yield notificationOpen;
-    }
-
-    yield* _notificationOpens.stream;
-  }
+  Stream<FcmNotificationOpen> get notificationOpens =>
+      _notificationOpenRelay.notificationOpens;
 
   Future<void> start() async {
     if (!isNativeFcmPushPlatform || _started) {
@@ -144,7 +207,7 @@ class FcmMessageHandlingService {
   Future<void> dispose() async {
     await _foregroundSubscription?.cancel();
     await _openedSubscription?.cancel();
-    await _notificationOpens.close();
+    await _notificationOpenRelay.dispose();
   }
 
   Future<void> _setupLocalNotifications() async {
@@ -211,7 +274,11 @@ class FcmMessageHandlingService {
   }
 
   int _notificationId(RemoteMessage message) {
-    return (message.messageId ?? jsonEncode(message.data)).hashCode &
+    final notificationId = message.data['notificationId']?.trim();
+    return (notificationId != null && notificationId.isNotEmpty
+                ? notificationId
+                : message.messageId ?? jsonEncode(message.data))
+            .hashCode &
         0x7fffffff;
   }
 
@@ -222,18 +289,7 @@ class FcmMessageHandlingService {
     });
   }
 
-  List<FcmNotificationOpen> _drainPendingNotificationOpens() {
-    final pending = List<FcmNotificationOpen>.from(_pendingNotificationOpens);
-    _pendingNotificationOpens.clear();
-    return pending;
-  }
-
   void _addNotificationOpen(FcmNotificationOpen notificationOpen) {
-    if (_notificationOpens.hasListener) {
-      _notificationOpens.add(notificationOpen);
-      return;
-    }
-
-    _pendingNotificationOpens.add(notificationOpen);
+    _notificationOpenRelay.add(notificationOpen);
   }
 }

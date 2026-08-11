@@ -100,25 +100,26 @@ void main() {
 
     expect(
       service.validationMessageForPrice(null, active: true),
-      'Enter a valid VND amount.',
+      'Vui lòng nhập số tiền VND hợp lệ.',
     );
     expect(
       service.validationMessageForPrice(400000, active: true),
-      'Price must be at least the HANDS minimum.',
+      'Giá phải từ mức tối thiểu của HANDS.',
     );
     expect(
       service.validationMessageForPrice(550000, active: true),
-      'Price must follow the configured VND step.',
+      'Giá phải theo bước VND đã cấu hình.',
     );
     expect(
       service.validationMessageForPrice(600000, active: true),
-      'Active services require an exact admin payout rule for this price.',
+      'Dịch vụ đang bật cần quy tắc chi trả chính xác cho mức giá này.',
     );
     expect(service.validationMessageForPrice(600000, active: false), isNull);
     expect(service.canSavePrice(700000, active: true), isTrue);
   });
 
-  test('requires admin payout rule before activating a new duration option', () {
+  test('requires admin payout rule before activating a new duration option',
+      () {
     const service = ProviderServicePrice(
       id: 'svc-head-120',
       name: 'Head Massage',
@@ -133,7 +134,7 @@ void main() {
     expect(service.hasBookablePriceOptions, isFalse);
     expect(
       service.validationMessageForPrice(900000, active: true),
-      'Admin must create a payout rule before this service can be activated.',
+      'HANDS phải tạo quy tắc chi trả trước khi có thể bật dịch vụ này.',
     );
     expect(service.validationMessageForPrice(900000, active: false), isNull);
   });

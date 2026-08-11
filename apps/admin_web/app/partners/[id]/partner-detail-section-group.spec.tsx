@@ -35,7 +35,8 @@ describe('PartnerDetailSectionGroup', () => {
   it('builds partner section groups on the shared Vuexy AdminSection surface', () => {
     const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
 
-    expect(source).toContain("import { AdminCard, AdminDisclosure, AdminSection } from '../../../components/admin-surface';");
+    expect(source).toContain("import { AdminCard, AdminSection } from '../../../components/admin-surface';");
+    expect(source).not.toContain('AdminDisclosure');
     expect(source).toContain('<AdminSection');
     expect(source).toContain('bodyClassName="partner-detail-section-band-body partner-detail-section-group-body"');
     expect(source).toContain('headerClassName="partner-detail-section-band-header"');
@@ -55,7 +56,7 @@ describe('PartnerDetailSectionGroup', () => {
     expect(css).not.toContain('.partner-detail-dossier-cluster-header small');
   });
 
-  it('renders collapsible reference details for secondary summaries', () => {
+  it('renders reference details as always-visible cards', () => {
     const section = PartnerDetailReferenceDetails({
       children: <div>Reference ledger</div>,
       helper: 'Secondary facts stay available without competing with approval work.',
@@ -71,28 +72,19 @@ describe('PartnerDetailSectionGroup', () => {
     expect(rendered).toContain('Reference ledger');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'admin-disclosure partner-detail-reference-details',
+        'card admin-card partner-detail-reference-details',
+        'partner-detail-reference-details-header',
         'partner-detail-reference-details-body',
       ]),
     );
   });
 
-  it('can open urgent reference details by default', () => {
-    const section = PartnerDetailReferenceDetails({
-      children: <div>Open finance reference</div>,
-      defaultOpen: true,
-      helper: 'Open when a finance blocker needs same-shift attention.',
-      label: 'Finance-only evidence',
-      status: 'Open debt',
-    });
+  it('does not require a click or open state to reveal finance references', () => {
+    const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
 
-    const rendered = normalizedText(section);
-    const element = readRecord(resolveElement(section));
-    const props = readRecord(element?.props);
-
-    expect(rendered).toContain('Finance-only evidence');
-    expect(rendered).toContain('Open finance reference');
-    expect(props?.open).toBe(true);
+    expect(source).toContain('<AdminCard className="partner-detail-reference-details">');
+    expect(source).not.toContain('<summary>');
+    expect(source).not.toContain('defaultOpen');
   });
 
   it('accepts Vuexy atom nodes in reference detail status slots', () => {

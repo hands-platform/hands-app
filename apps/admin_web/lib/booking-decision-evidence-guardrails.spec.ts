@@ -122,6 +122,27 @@ describe('bookingDecisionEvidenceGuardrails', () => {
     });
   });
 
+  it('does not mark an empty retained room or one location row as ready evidence', () => {
+    const rows = bookingDecisionEvidenceGuardrails({
+      ...baseInput,
+      bookingStatus: 'CANCELLED',
+      hasChatRoom: true,
+      chatRoomShortId: 'room123',
+      hasLatestLocation: true,
+      latestLocationAtLabel: '07 Jun 2026 10:31',
+      latestLocationAtValue: '2026-06-07T03:31:00.000Z',
+    });
+
+    expect(rows[2]).toMatchObject({
+      status: 'Retained room · no messages',
+      tone: 'pill-warn',
+    });
+    expect(rows[3]).toMatchObject({
+      status: 'Partial context',
+      tone: 'pill-warn',
+    });
+  });
+
   it('keeps supporting location timestamps available for shared date rendering', () => {
     const rows = bookingDecisionEvidenceGuardrails({
       ...baseInput,

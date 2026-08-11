@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { AllExceptionsFilter } from './all-exceptions.filter';
 
@@ -75,5 +76,37 @@ describe('AllExceptionsFilter', () => {
     );
     expect(consoleError.mock.calls[0][0]).not.toContain('super-secret');
     expect(consoleError.mock.calls[0][0]).not.toContain('password=');
+  });
+
+  it('maps Prisma missing-record errors to a safe 404 response', () => {
+    const json = vi.fn();
+    const status = vi.fn(() => ({ json }));
+    const host = {
+      switchToHttp: () => ({
+        getRequest: () => ({
+          method: 'POST',
+          originalUrl: '/api/partner/bookings/stale-booking/detail-view',
+          requestId: 'request-3',
+        }),
+        getResponse: () => ({ status }),
+      }),
+    };
+    const error = new Prisma.PrismaClientKnownRequestError('Sensitive database detail', {
+      code: 'P2025',
+      clientVersion: 'test',
+    });
+
+    new AllExceptionsFilter().catch(error, host as never);
+
+    expect(status).toHaveBeenCalledWith(404);
+    expect(json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Not found',
+        path: '/api/partner/bookings/stale-booking/detail-view',
+        requestId: 'request-3',
+        statusCode: 404,
+      }),
+    );
+    expect(consoleError.mock.calls[0][0]).not.toContain('Sensitive database detail');
   });
 });

@@ -1,151 +1,103 @@
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 
-import {
-  PaymentFilterBoardSection,
-  type PaymentFilterLink,
-  type PaymentRangeLink,
-} from './payment-filter-board-section';
+import { PaymentFilterBoardSection } from './payment-filter-board-section';
 
 describe('PaymentFilterBoardSection', () => {
-  it('renders active payment queue, range links, and review links', () => {
+  it('renders one compact server-side directory form and preserves queue context', () => {
     const section = PaymentFilterBoardSection({
-      activeFilterDescription: 'authorized payments tied to completed services.',
-      activeFilterLabel: 'Capture review',
-      activeRange: '7d',
+      activeFilterDescription: 'completed bookings with verified payment evidence.',
+      activeFilterLabel: 'Capture ready',
+      activeRange: 'all',
+      bookingStatus: 'COMPLETED',
+      customerProfileId: 'customer-1',
+      evidence: 'verified',
       filteredCount: 4,
-      rangeLabel: 'Last 7 days',
-      rangeLinks: buildRangeLinks(),
-      review: 'capture',
-      reviewLinks: buildFilterLinks(),
+      pageSize: 10,
+      paymentMethod: 'VNPAY',
+      paymentStatus: 'AUTHORIZED',
+      q: 'booking-1',
+      rangeLabel: 'All dates',
+      review: 'capture-ready',
+      reviewLinks: [
+        { group: 'live', href: '/payments?review=capture-ready', label: 'Capture ready', review: 'capture-ready' },
+        { group: 'history', href: '/payments?review=all', label: 'All payments', review: 'all' },
+      ],
+      sort: 'oldest',
       totalCount: 12,
     });
-
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('Payment operation filters');
-    expect(rendered).toContain('Payment date range: Last 7 days');
-    expect(rendered).toContain('Active queue: Capture review - authorized payments tied to completed services.');
-    expect(rendered).toContain('Range: Last 7 days');
-    expect(rendered).toContain('Queue: Capture review');
+    expect(rendered).toContain('Payment queue');
     expect(rendered).toContain('Showing 4 of 12');
-    expect(rendered).toContain('Clear filters');
-    expect(rendered).toContain('Last 7 days');
-    expect(rendered).toContain('Capture review');
-    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/payments?range=all&review=all', '/payments?range=7d', '/payments?review=capture&range=7d']));
-    expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
-        'booking-date-filter-bar payment-filter-group admin-mb-12',
-        'payment-filter-group-label',
-        'booking-date-filter-buttons payment-filter-buttons',
-        'booking-date-filter-button is-active',
-        'pill pill-warn',
-      ]),
-    );
+    expect(rendered).toContain('Search payments');
+    expect(rendered).toContain('Queue: Capture ready');
+    expect(rendered).toContain('Evidence: verified');
+    expect(rendered).toContain('Booking: COMPLETED');
+    expect(rendered).toContain('Order: Oldest first');
+    expect(rendered).toContain('Capture ready 0');
+    expect(rendered).toContain('More queues Secondary and history');
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining([
+      '/payments?range=all&review=capture-ready&sort=oldest',
+      '/payments?review=capture-ready',
+      '/payments?review=all',
+    ]));
   });
 
-  it('renders an unfiltered state without clear filter affordance', () => {
+  it('uses shared form, disclosure, filter summary, and table panel components', () => {
+    const source = readFileSync('app/payments/payment-filter-board-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminDirectoryFilterForm');
+    expect(source).toContain('AdminFormSearch');
+    expect(source).toContain('AdminFormSelect');
+    expect(source).toContain('AdminFilterSummary');
+    expect(source).toContain('AdminDetails');
+    expect(source).toContain('AdminTablePanel');
+    expect(source).not.toContain('paymentRangeLinks');
+  });
+
+  it('does not render a false success state for an empty queue', () => {
     const section = PaymentFilterBoardSection({
       activeFilterDescription: null,
       activeFilterLabel: null,
       activeRange: 'all',
-      filteredCount: 12,
+      bookingStatus: '',
+      customerProfileId: '',
+      evidence: '',
+      filteredCount: 0,
+      pageSize: 10,
+      paymentMethod: '',
+      paymentStatus: '',
+      q: '',
       rangeLabel: 'All dates',
-      rangeLinks: buildRangeLinks(),
-      review: '',
-      reviewLinks: buildFilterLinks(),
-      totalCount: 12,
+      review: 'all',
+      reviewLinks: [{ group: 'history', href: '/payments?review=all', label: 'All payments', review: 'all' }],
+      totalCount: 0,
     });
 
-    const rendered = normalizedText(section);
-
-    expect(rendered).toContain('Showing 12 of 12');
-    expect(rendered).not.toContain('Clear filters');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success']));
-  });
-
-  it('uses shared badge link atoms for payment filter shortcuts', () => {
-    const source = readFileSync(join(process.cwd(), 'app/payments/payment-filter-board-section.tsx'), 'utf8');
-
-    expect(source).toContain('AdminSegmentedControl');
-    expect(source).toContain('AdminFilterSummary');
-    expect(source).toContain('AdminTablePanel');
-    expect(source).not.toContain('AdminFilterChipGroup');
-    expect(source).not.toContain('StatusBadgeLink');
-    expect(source).not.toContain('<div className="participant-list admin-mb-12">');
-    expect(source).not.toContain('<div className="participant-list">');
-    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
-    expect(source).not.toContain('import Link from');
-    expect(source).not.toContain('className={`pill ${activeRange === item.range');
-    expect(source).not.toContain('<Link className="pill pill-success" href="/payments?range=all&review=all">');
-    expect(source).not.toContain('className={`pill ${review === item.review');
+    expect(normalizedText(section)).toContain('Showing 0 of 0');
   });
 });
 
-function buildRangeLinks(): PaymentRangeLink[] {
-  return [
-    { href: '/payments', label: 'All dates', range: 'all' },
-    { href: '/payments?range=7d', label: 'Last 7 days', range: '7d' },
-  ];
-}
-
-function buildFilterLinks(): PaymentFilterLink[] {
-  return [
-    { href: '/payments?review=all', label: 'All payments', review: 'all' },
-    { href: '/payments?review=capture&range=7d', label: 'Capture review', review: 'capture' },
-  ];
-}
-
 function textContent(value: unknown): string {
   value = resolveElement(value);
-  if (value === null || value === undefined || typeof value === 'boolean') {
-    return '';
-  }
-  if (typeof value === 'string' || typeof value === 'number') {
-    return String(value);
-  }
-  if (Array.isArray(value)) {
-    return value.map(textContent).join(' ');
-  }
-
+  if (value === null || value === undefined || typeof value === 'boolean') return '';
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (Array.isArray(value)) return value.map(textContent).join(' ');
   const record = readRecord(value);
-  const props = readRecord(record?.props);
-  return textContent(props?.children);
+  return textContent(readRecord(record?.props)?.children);
 }
 
-function normalizedText(value: unknown): string {
+function normalizedText(value: unknown) {
   return textContent(value).replace(/\s+/g, ' ').trim();
 }
 
 function hrefsIn(value: unknown): string[] {
   value = resolveElement(value);
-  if (value === null || value === undefined || typeof value !== 'object') {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap(hrefsIn);
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
+  if (value === null || value === undefined || typeof value !== 'object') return [];
+  if (Array.isArray(value)) return value.flatMap(hrefsIn);
+  const props = readRecord(readRecord(value)?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
-}
-
-function classNamesIn(value: unknown): string[] {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value !== 'object') {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap(classNamesIn);
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  const className = typeof props?.className === 'string' ? [props.className] : [];
-  return [...className, ...classNamesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {
@@ -155,8 +107,7 @@ function resolveElement(value: unknown): unknown {
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return null;
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
 }

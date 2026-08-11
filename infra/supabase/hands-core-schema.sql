@@ -757,7 +757,7 @@ create policy "provider payout batches owner read"
 drop policy if exists "reviews public read" on public.reviews;
 create policy "reviews public read"
   on public.reviews for select
-  using (true);
+  using (status = 'PUBLISHED');
 
 drop policy if exists "notifications owner read" on public.notifications;
 create policy "notifications owner read"
@@ -1264,6 +1264,7 @@ grant usage, select on all sequences in schema public to service_role;
 
 revoke insert, update, delete on all tables in schema public from anon, authenticated;
 revoke usage, select on all sequences in schema public from anon, authenticated;
+revoke select on table public.providers, public.provider_locations from anon;
 
 grant select on table
   public.profiles,
@@ -1311,7 +1312,6 @@ to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
 
 grant select on table
-  public.providers,
   public.services,
   public.provider_services,
   public.reviews,

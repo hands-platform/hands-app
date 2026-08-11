@@ -80,6 +80,7 @@ export class PushDeliveryService {
 
     try {
       const { accessToken, projectId } = await this.fcmAccess();
+      const notificationDeduplicationId = fcmNotificationDeduplicationId(message.data);
       const response = await fetch(fcmSendUrl(projectId), {
         method: 'POST',
         headers: {
@@ -98,9 +99,13 @@ export class PushDeliveryService {
               priority: 'high',
               notification: {
                 channelId: FCM_ANDROID_NOTIFICATION_CHANNEL_ID,
+                ...(notificationDeduplicationId ? { tag: notificationDeduplicationId } : {}),
               },
             },
             apns: {
+              ...(notificationDeduplicationId
+                ? { headers: { 'apns-collapse-id': notificationDeduplicationId } }
+                : {}),
               payload: {
                 aps: {
                   sound: 'default',
@@ -231,6 +236,11 @@ function normalizeAccessToken(value: unknown) {
 
 function fcmSendUrl(projectId: string) {
   return `https://fcm.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/messages:send`;
+}
+
+function fcmNotificationDeduplicationId(data?: Record<string, string>) {
+  const notificationId = data?.notificationId?.trim();
+  return notificationId ? notificationId.slice(0, 64) : undefined;
 }
 
 async function fcmHttpError(response: Response) {

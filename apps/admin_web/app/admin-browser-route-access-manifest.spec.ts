@@ -7,7 +7,7 @@ const adminHelperRouteAllowlist: Record<string, string> = {
 };
 
 const adminHelperPattern =
-  /\b(?:adminGet|adminPost|adminPatch|adminDelete|adminPostOrThrow|adminPatchOrThrow|adminDeleteWithBodyOrThrow|getAdminAccessToken)\b/;
+  /\b(?:adminGet|adminGetResult|adminPost|adminPatch|adminDelete|adminPostOrThrow|adminPatchOrThrow|adminDeleteWithBodyOrThrow|getAdminAccessToken)\b/;
 
 describe('Admin Web browser route access manifest', () => {
   it('keeps browser-facing route handlers that use server admin helpers behind an Admin Web session check', () => {

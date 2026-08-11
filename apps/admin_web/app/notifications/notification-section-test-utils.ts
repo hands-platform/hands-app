@@ -85,10 +85,29 @@ function resolveElement(value: unknown): unknown {
   const record = readRecord(value);
   const props = readRecord(record?.props);
   const component = record?.type;
+  if (typeof component === 'function' && component.name === 'ClientActionDropdownSurface') {
+    return {
+      props: {
+        children: {
+          props: {
+            children: props?.children,
+            className: joinClassNames('admin-action-menu', props?.menuClassName),
+          },
+          type: 'div',
+        },
+        className: joinClassNames('admin-action-dropdown', props?.className),
+      },
+      type: 'div',
+    };
+  }
   if (typeof component !== 'function' || component.name === 'CommandCopyButton') {
     return value;
   }
   return resolveElement((component as RenderableComponent)(props ?? {}));
+}
+
+function joinClassNames(...values: unknown[]) {
+  return values.filter((value): value is string => typeof value === 'string' && value.length > 0).join(' ');
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {

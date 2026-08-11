@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'features/booking/domain/repositories/customer_booking_repository.dart';
@@ -55,6 +57,17 @@ class CustomerRepository {
     return _discoveryRepository.nearbyProviders(lat: lat, lng: lng);
   }
 
+  Future<Map<String, dynamic>> getHomeSummary({
+    required double lat,
+    required double lng,
+  }) async {
+    return _discoveryRepository.getHomeSummary(lat: lat, lng: lng);
+  }
+
+  Future<Map<String, dynamic>> getWallet() {
+    return _discoveryRepository.getWallet();
+  }
+
   Future<Map<String, dynamic>?> saveSelectedLocation({
     required double lat,
     required double lng,
@@ -67,19 +80,33 @@ class CustomerRepository {
     );
   }
 
+  Future<List<Map<String, dynamic>>> listSavedLocations() {
+    return _discoveryRepository.listSavedLocations();
+  }
+
+  Future<void> deleteSavedLocation(String locationId) {
+    return _discoveryRepository.deleteSavedLocation(locationId);
+  }
+
   Future<Map<String, dynamic>> getProviderDetail(String providerId) async {
     final detail = await _discoveryRepository.getProviderDetail(providerId);
-    try {
-      await _discoveryRepository.recordProviderProfileView(providerId);
-    } catch (_) {
-      // Partner profile viewing should stay available if optional analytics sync fails.
-    }
+    unawaited(
+      _discoveryRepository
+          .recordProviderProfileView(providerId)
+          .catchError((_) {
+        // Partner profile viewing should stay available if optional analytics sync fails.
+      }),
+    );
     return detail;
   }
 
   Future<bool> isFavoriteProvider(String providerId) async {
     final favorites = await _discoveryRepository.listFavoriteProviderIds();
     return favorites.contains(providerId);
+  }
+
+  Future<Set<String>> listFavoriteProviderIds() {
+    return _discoveryRepository.listFavoriteProviderIds();
   }
 
   Future<void> setFavoriteProvider({
@@ -100,8 +127,8 @@ class CustomerRepository {
     return _bookingRepository.getBooking(bookingId);
   }
 
-  Future<List<dynamic>> listBookings() async {
-    return _bookingRepository.listBookings();
+  Future<List<dynamic>> listBookings({String? cursor, int take = 20}) async {
+    return _bookingRepository.listBookings(cursor: cursor, take: take);
   }
 
   Future<List<CustomerPaymentMethodOption>> listPaymentMethods() async {
@@ -173,8 +200,27 @@ class CustomerRepository {
     _chatRepository.joinChat(chatRoomId);
   }
 
-  void sendChatMessage(String chatRoomId, String text) {
-    _chatRepository.sendChatMessage(chatRoomId, text);
+  Future<Map<String, dynamic>> sendChatMessage(
+    String chatRoomId,
+    String text,
+  ) {
+    return _chatRepository.sendChatMessage(chatRoomId, text);
+  }
+
+  Future<Map<String, dynamic>> sendChatAttachment(
+    String chatRoomId, {
+    required List<int> bytes,
+    required String contentType,
+  }) {
+    return _chatRepository.sendChatAttachment(
+      chatRoomId,
+      bytes: bytes,
+      contentType: contentType,
+    );
+  }
+
+  Future<Uri> getChatAttachmentUri(String fileId) {
+    return _chatRepository.getChatAttachmentUri(fileId);
   }
 
   Future<void> registerPushToken(String token) async {

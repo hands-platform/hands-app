@@ -33,6 +33,9 @@ export function financeBankReconciliationStatusPill(status: string) {
   if (status === 'PARTIALLY_MATCHED' || status === 'PARTIALLY_CLEARED') {
     return 'pill-info';
   }
+  if (status === 'IGNORED') {
+    return 'pill-neutral';
+  }
   if (status === 'REVERSED') {
     return 'pill-danger';
   }
@@ -46,10 +49,54 @@ export function financeBankReconciliationStatusTone(status: string): StatusBadge
   if (status === 'PARTIALLY_MATCHED' || status === 'PARTIALLY_CLEARED') {
     return 'info';
   }
+  if (status === 'IGNORED') {
+    return 'neutral';
+  }
   if (status === 'REVERSED') {
     return 'danger';
   }
   return 'warning';
+}
+
+export function financeBankReconciliationStatusModel(status: string) {
+  if (status === 'MATCHED') {
+    return {
+      closed: true,
+      closeoutLabel: 'Closed - fully matched',
+      label: 'Matched',
+      nextAction: 'No action required',
+    } as const;
+  }
+  if (status === 'IGNORED') {
+    return {
+      closed: true,
+      closeoutLabel: 'Closed - no matching required',
+      label: 'Ignored',
+      nextAction: 'No action required',
+    } as const;
+  }
+  if (status === 'REVERSED') {
+    return {
+      closed: true,
+      closeoutLabel: 'Closed - reversed evidence',
+      label: 'Reversed',
+      nextAction: 'Review audit history',
+    } as const;
+  }
+  if (status === 'PARTIALLY_MATCHED') {
+    return {
+      closed: false,
+      closeoutLabel: 'Open - partially matched',
+      label: 'Partially matched',
+      nextAction: 'Match remaining amount',
+    } as const;
+  }
+  return {
+    closed: false,
+    closeoutLabel: 'Open - unmatched',
+    label: 'Unmatched',
+    nextAction: 'Review evidence and match',
+  } as const;
 }
 
 export function financeJournalBatchStatusPill(status: string) {

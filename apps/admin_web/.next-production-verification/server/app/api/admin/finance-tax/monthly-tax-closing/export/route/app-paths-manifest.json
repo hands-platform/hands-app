@@ -1,0 +1,3 @@
+{
+  "/api/admin/finance-tax/monthly-tax-closing/export/route": "app/api/admin/finance-tax/monthly-tax-closing/export/route.js"
+}

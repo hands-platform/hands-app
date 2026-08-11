@@ -1,4 +1,11 @@
 import { readSearchParam } from '../../lib/date-range';
+import {
+  adminQueueSlaFilterLabel,
+  readAdminQueueAge,
+  readAdminQueueSlaFilter,
+  type AdminQueueAge,
+  type AdminQueueSlaFilter,
+} from '../../lib/admin-queue-list';
 
 export const DEFAULT_PARTNER_PAGE_SIZE = 10;
 export const PARTNER_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
@@ -12,10 +19,15 @@ export type ProviderSecurityState =
   | 'missing';
 
 export type ProviderFilters = {
+  age: AdminQueueAge;
   activity: string;
+  approvalMissing: string;
+  approvalRisk: string;
+  city?: string;
   page: number;
   pageSize: number;
   q: string;
+  qualityRange?: string;
   verification: string;
   providerStatus: string;
   kyc: string;
@@ -24,7 +36,10 @@ export type ProviderFilters = {
   readiness: string;
   bookingFlow: string;
   review: string;
+  serviceId?: string;
+  sla?: AdminQueueSlaFilter;
   sort: string;
+  walletStatus?: string;
 };
 
 export type PartnerDataHrefs = {
@@ -34,34 +49,62 @@ export type PartnerDataHrefs = {
   readonly summaryMatchesVisibleFilter: boolean;
 };
 
-export function buildProviderFilters(
-  params: Record<string, string | string[] | undefined>,
-): ProviderFilters {
+export function buildProviderFilters(params: Record<string, string | string[] | undefined>): ProviderFilters {
+  const requestedReview = normalizePartnerReviewFilter(readParam(params.review));
+  const legacyReadiness = requestedReview
+    ? ''
+    : normalizePartnerReadinessFilter(readParam(params.readiness));
+  const review =
+    requestedReview ||
+    ({
+      ready: 'ready-now',
+      'push-missing': 'push',
+      'needs-review': 'approval-incomplete',
+    }[legacyReadiness] ?? '');
+  const approvalQueue = review === 'approval-pending';
+  const onboardingQueue = review === 'unapproved';
+  const walletDebtQueue = review === 'unsettled';
+  const primaryTaskQueue = approvalQueue || onboardingQueue || walletDebtQueue;
+  const approvedOffline = legacyReadiness === 'approved-offline';
+  const requestedSort = readPartnerSort(readParam(params.sort));
+
   return {
-    activity: normalizePartnerActivityFilter(readParam(params.activity)),
+    age: onboardingQueue || walletDebtQueue ? 'all' : readAdminQueueAge(params.age),
+    activity:
+      approvalQueue || walletDebtQueue ? '' : normalizePartnerActivityFilter(readParam(params.activity)),
+    approvalMissing: approvalQueue ? normalizePartnerApprovalMissing(readParam(params.approvalMissing)) : '',
+    approvalRisk: approvalQueue ? normalizePartnerApprovalRisk(readParam(params.approvalRisk)) : '',
+    city: readParam(params.city),
     page: readPageNumber(params.page),
     pageSize: readPageSize(params.pageSize),
     q: readParam(params.q),
-    verification: readParam(params.verification),
-    providerStatus: readProviderStatusFilter(readParam(params.providerStatus), readParam(params.onlineStatus)),
-    kyc: readParam(params.kyc),
-    location: readParam(params.location),
-    security: normalizeProviderSecurityFilter(readParam(params.security)),
-    readiness: normalizePartnerReadinessFilter(readParam(params.readiness)),
-    bookingFlow: normalizePartnerBookingFlowFilter(readParam(params.bookingFlow)),
-    review: normalizePartnerReviewFilter(readParam(params.review)),
-    sort: readPartnerSort(readParam(params.sort)),
+    qualityRange: normalizePartnerQualityRange(readParam(params.qualityRange)),
+    verification:
+      approvalQueue || walletDebtQueue ? '' : approvedOffline ? 'APPROVED' : readParam(params.verification),
+    providerStatus: primaryTaskQueue
+      ? ''
+      : approvedOffline
+        ? 'OFFLINE'
+        : readProviderStatusFilter(readParam(params.providerStatus), readParam(params.onlineStatus)),
+    kyc: approvalQueue || walletDebtQueue ? '' : approvedOffline ? 'APPROVED' : readParam(params.kyc),
+    location: '',
+    security: '',
+    readiness: '',
+    bookingFlow: primaryTaskQueue ? '' : normalizePartnerBookingFlowFilter(readParam(params.bookingFlow)),
+    review,
+    serviceId: readParam(params.serviceId),
+    sla: review === 'approval-pending' ? readAdminQueueSlaFilter(params.sla) : 'all',
+    sort: approvalQueue ? 'oldest' : primaryTaskQueue && requestedSort === 'oldest' ? 'newest' : requestedSort,
+    walletStatus: normalizePartnerWalletStatus(readParam(params.walletStatus)),
   };
 }
 
 export function buildPartnerDataHrefs(filters: ProviderFilters): PartnerDataHrefs {
   const listParams = new URLSearchParams();
   const summaryParams = new URLSearchParams();
-  const listIsServerPaginated = canUsePartnerDirectoryServerPagination(filters);
-  const summaryMatchesVisibleFilter = !hasLocalOnlyPartnerFilters(filters);
-  const listTake = listIsServerPaginated
-    ? filters.pageSize
-    : PARTNER_LOCAL_FILTER_HYDRATION_LIMIT;
+  const listIsServerPaginated = true;
+  const summaryMatchesVisibleFilter = true;
+  const listTake = filters.pageSize;
 
   listParams.set('take', String(listTake));
   if (listIsServerPaginated) {
@@ -80,7 +123,28 @@ export function buildPartnerDataHrefs(filters: ProviderFilters): PartnerDataHref
   setPartnerDirectoryServerFilter(listParams, summaryParams, 'providerStatus', filters.providerStatus);
   setPartnerDirectoryServerFilter(listParams, summaryParams, 'kyc', filters.kyc);
   setPartnerDirectoryServerFilter(listParams, summaryParams, 'bookingFlow', filters.bookingFlow);
-  if (filters.sort === 'name') {
+  setPartnerDirectoryServerFilter(listParams, summaryParams, 'approvalMissing', filters.approvalMissing);
+  setPartnerDirectoryServerFilter(listParams, summaryParams, 'approvalRisk', filters.approvalRisk);
+  setPartnerDirectoryServerFilter(listParams, summaryParams, 'city', filters.city);
+  setPartnerDirectoryServerFilter(listParams, summaryParams, 'serviceId', filters.serviceId);
+  setPartnerDirectoryServerFilter(listParams, summaryParams, 'walletStatus', filters.walletStatus);
+  if (filters.qualityRange && isQualityReview(filters.review)) {
+    listParams.set('qualityRange', filters.qualityRange);
+    summaryParams.set('qualityRange', filters.qualityRange);
+  }
+  if (isServerPartnerActivityFilter(filters.activity)) {
+    listParams.set('activity', filters.activity);
+    summaryParams.set('activity', filters.activity);
+  }
+  if (filters.age !== 'all') {
+    listParams.set('age', filters.age);
+    summaryParams.set('age', filters.age);
+  }
+  if (filters.sla && filters.sla !== 'all') {
+    listParams.set('sla', filters.sla);
+    summaryParams.set('sla', filters.sla);
+  }
+  if (filters.sort === 'name' || filters.sort === 'oldest') {
     listParams.set('sort', filters.sort);
   }
 
@@ -92,9 +156,10 @@ export function buildPartnerDataHrefs(filters: ProviderFilters): PartnerDataHref
   return {
     listHref: `/admin/partners/list-providers?${listParams.toString()}`,
     listIsServerPaginated,
-    summaryHref: summaryMatchesVisibleFilter && summaryParams.toString()
-      ? `/admin/partners/list-providers/summary?${summaryParams.toString()}`
-      : '/admin/partners/list-providers/summary',
+    summaryHref:
+      summaryMatchesVisibleFilter && summaryParams.toString()
+        ? `/admin/partners/list-providers/summary?${summaryParams.toString()}`
+        : '/admin/partners/list-providers/summary',
     summaryMatchesVisibleFilter,
   };
 }
@@ -156,16 +221,25 @@ export function partnerRowsPagination<T>(
 }
 
 export function buildPartnerListHref(filters: ProviderFilters, overrides: Partial<ProviderFilters> = {}) {
-  const next: ProviderFilters = {
+  const merged: ProviderFilters = {
     ...filters,
     ...overrides,
     page: overrides.page ?? 1,
   };
+  const next = buildProviderFilters(
+    Object.fromEntries(Object.entries(merged).map(([key, value]) => [key, String(value ?? '')])),
+  );
   const params = new URLSearchParams();
 
   partnerFilterHrefParamKeys.forEach((key) => {
     const value = next[key];
-    if (value && !(key === 'sort' && value === 'ops-priority')) {
+    if (
+      value &&
+      !(key === 'age' && value === 'all') &&
+      !(key === 'sla' && value === 'all') &&
+      !(key === 'qualityRange' && !isQualityReview(next.review)) &&
+      !(key === 'sort' && value === 'newest')
+    ) {
       params.set(key, value);
     }
   });
@@ -188,12 +262,52 @@ export function buildPartnerExportHref(filters: ProviderFilters) {
 
 export function buildProviderActiveFilters(filters: ProviderFilters) {
   return [
+    filters.age !== 'all'
+      ? {
+          kind: 'age',
+          value: filters.age,
+          label: `Age: ${filters.age}`,
+          description: 'Partner approval work is narrowed by the active submission timestamp.',
+        }
+      : null,
+    filters.sla && filters.sla !== 'all'
+      ? {
+          kind: 'sla',
+          value: filters.sla,
+          label: `SLA: ${adminQueueSlaFilterLabel(filters.sla)}`,
+          description: 'Partner approval work is narrowed by the live operational SLA policy.',
+        }
+      : null,
     filters.q
       ? {
           kind: 'search',
           value: filters.q,
           label: `Search: ${filters.q}`,
           description: 'Partner list is narrowed by name, phone, location, service, report, or control text.',
+        }
+      : null,
+    filters.city
+      ? {
+          kind: 'city',
+          value: filters.city,
+          label: `City / area: ${filters.city}`,
+          description: 'Partner list is narrowed to the same city or area scope used by Partner Operations.',
+        }
+      : null,
+    filters.serviceId
+      ? {
+          kind: 'serviceId',
+          value: filters.serviceId,
+          label: `Service: ${filters.serviceId}`,
+          description: 'Partner list is narrowed to Partners with this active service.',
+        }
+      : null,
+    filters.walletStatus
+      ? {
+          kind: 'walletStatus',
+          value: filters.walletStatus,
+          label: `Wallet: ${filters.walletStatus}`,
+          description: 'Partner list uses the current canonical VND wallet balance state.',
         }
       : null,
     filters.verification
@@ -268,7 +382,31 @@ export function buildProviderActiveFilters(filters: ProviderFilters) {
           description: providerFilterDescription('review', filters.review),
         }
       : null,
-    filters.sort !== 'ops-priority'
+    filters.approvalMissing
+      ? {
+          kind: 'approvalMissing',
+          value: filters.approvalMissing,
+          label: `Missing: ${partnerApprovalMissingLabel(filters.approvalMissing)}`,
+          description: 'Partner approvals are narrowed by the evidence missing from the submitted dossier.',
+        }
+      : null,
+    filters.approvalRisk
+      ? {
+          kind: 'approvalRisk',
+          value: filters.approvalRisk,
+          label: `Risk: ${partnerApprovalRiskLabel(filters.approvalRisk)}`,
+          description: 'Partner approvals are narrowed by rejected evidence or prior correction context.',
+        }
+      : null,
+    filters.qualityRange && isQualityReview(filters.review)
+      ? {
+          kind: 'qualityRange',
+          value: filters.qualityRange,
+          label: `Quality range: ${partnerQualityRangeLabel(filters.qualityRange)}`,
+          description: 'Cancellation, no-show, and low-review evidence uses this Vietnam-time range.',
+        }
+      : null,
+    filters.sort !== 'newest' && !(filters.review === 'approval-pending' && filters.sort === 'oldest')
       ? {
           kind: 'sort',
           value: filters.sort,
@@ -312,6 +450,15 @@ export function providerFilterDescription(kind: string, value: string) {
   }
   if (kind === 'activity' && value === 'inactive-30d') {
     return 'Activity is narrowed to Partners without factual activity in the last 30 days.';
+  }
+  if (kind === 'activity' && value === 'app-active-7d') {
+    return 'Partner App telemetry shows an app open or authenticated session within the last 7 days.';
+  }
+  if (kind === 'activity' && value === 'app-inactive-7d') {
+    return 'Partner App telemetry exists, but the latest recorded app activity is at least 7 days old.';
+  }
+  if (kind === 'activity' && value === 'app-not-tracked') {
+    return 'No Partner App activity aggregate has been recorded for this account yet.';
   }
   if (kind === 'bookingFlow' && value === 'active-booking') {
     return 'Booking flow is narrowed to Partners with live or in-progress booking records.';
@@ -359,10 +506,67 @@ export function providerFilterDescription(kind: string, value: string) {
     return 'Tax profile optional highlights submitted legacy records only; tax profile registration is not required for Vietnam MVP.';
   }
   if (kind === 'review' && value === 'unapproved') {
-    return 'Unapproved Partners combines registration, KYC, required documents, public media, and hold items that need admin approval from the Partner detail page.';
+    return 'Onboarding blockers combines verification, KYC, required evidence, and account holds that need operator or Partner follow-up.';
+  }
+  if (kind === 'review' && value === 'approval-pending') {
+    return 'Submitted verification or KYC records that are waiting for an admin decision.';
+  }
+  if (kind === 'review' && value === 'approval-incomplete') {
+    return 'Partners whose verification or KYC approval is incomplete.';
+  }
+  if (kind === 'review' && value === 'ready-now') {
+    return 'Approved Partners who are online, location-fresh, service-ready, unblocked, and wallet eligible.';
+  }
+  if (kind === 'review' && value === 'available-blocked') {
+    return 'Approved Partners marked online available whose location, service, account, or wallet gate prevents booking acceptance.';
+  }
+  if (kind === 'review' && value === 'available-blocked-location') {
+    return 'Approved, online-available Partners whose saved location is missing or older than the current matching freshness policy.';
+  }
+  if (kind === 'review' && value === 'available-blocked-service') {
+    return 'Approved, online-available Partners who do not have an active customer-facing service.';
+  }
+  if (kind === 'review' && value === 'available-blocked-wallet') {
+    return 'Approved, online-available Partners whose negative VND wallet balance blocks booking acceptance.';
+  }
+  if (kind === 'review' && value === 'available-blocked-account') {
+    return 'Approved, online-available Partners with an active account block.';
+  }
+  if (kind === 'review' && value === 'customer-visible-now') {
+    return 'Partners currently visible in Customer App discovery because public identity, payout account, required documents, active service, and fresh location gates all pass.';
+  }
+  if (kind === 'review' && value === 'customer-visibility-location') {
+    return 'Approved Partners marked available now or soon who are hidden from the Customer App because saved coordinates are missing or stale.';
+  }
+  if (kind === 'review' && value === 'customer-visibility-service') {
+    return 'Approved Partners marked available now or soon who are hidden from the Customer App because no active customer-facing catalog service exists.';
+  }
+  if (kind === 'review' && value === 'customer-visibility-bank') {
+    return 'Approved Partners marked available now or soon who are hidden from the Customer App because no approved payout bank account exists.';
+  }
+  if (kind === 'review' && value === 'customer-visibility-documents') {
+    return 'Approved Partners marked available now or soon who are hidden from the Customer App because at least one required identity document is not approved.';
   }
   if (kind === 'review' && value === 'unsettled') {
-    return 'Unsettled Partners shows Partners whose wallet balance is negative and need settlement before final acceptance, service start, or payout release.';
+    return 'Wallet debt shows Partners whose canonical VND wallet balance is negative and need settlement before final acceptance, service start, or payout release.';
+  }
+  if (kind === 'review' && value === 'high-cancellation') {
+    return 'Partners whose cancellation share is at least 20% in the selected quality range.';
+  }
+  if (kind === 'review' && value === 'no-show-risk') {
+    return 'Partners with open no-show reports in the selected quality range.';
+  }
+  if (kind === 'review' && value === 'quality-risk') {
+    return 'Partners with a published low review in range or a current rating below 3.';
+  }
+  if (kind === 'review' && value === 'quality-all') {
+    return 'Partners with high cancellation, open no-show evidence, or low-rating evidence in range.';
+  }
+  if (kind === 'review' && value === 'payout-blocked') {
+    return 'Partners whose negative wallet or incomplete tax profile blocks payout review.';
+  }
+  if (kind === 'review' && value === 'tax-info-missing') {
+    return 'Partners whose tax profile is missing or not approved.';
   }
   if (kind === 'review' && value === 'acceptance-blocked') {
     return 'Direct request held highlights partners still waiting on account, identity, device, location, or alert gates before preferred direct requests.';
@@ -384,39 +588,47 @@ export function providerFilterDescription(kind: string, value: string) {
 
 export function emptyProviderMessage(activeFilters: Array<{ description: string }>) {
   if (activeFilters.length === 0) {
-    return 'No partners loaded. Start the API and seed data to populate this table.';
+    return 'No partner records are available yet.';
   }
   return 'No partners match the active filters. Clear filters or switch to another review lane.';
 }
 
 export function partnerHasAdvancedOperationalFilters(filters: ProviderFilters) {
   return Boolean(
-    filters.location ||
+    filters.bookingFlow ||
+      filters.city ||
+      filters.location ||
+      filters.serviceId ||
       filters.security ||
       filters.readiness ||
-      filters.activity ||
+      filters.walletStatus ||
       (filters.review && !isPrimaryPartnerReview(filters.review)),
   );
 }
 
 export function partnerSortLabel(sort: string) {
-  if (sort === 'last-work') return 'last completed work';
-  if (sort === 'booking-count') return 'booking count';
-  if (sort === 'completed-count') return 'completed work count';
-  if (sort === 'gross-revenue') return 'gross revenue';
-  if (sort === 'pending-payout') return 'pending payout';
-  if (sort === 'available-payout') return 'available payout';
-  if (sort === 'last-activity') return 'last app activity';
-  if (sort === 'location-freshness') return 'location freshness';
-  if (sort === 'wallet-debt') return 'wallet debt first';
   if (sort === 'name') return 'name';
-  return 'checklist order';
+  if (sort === 'oldest') return 'oldest first';
+  return 'newest first';
 }
 
 export function partnerReviewFilterLabel(review: string) {
   const labels: Record<string, string> = {
-    unapproved: 'Unapproved Partners',
-    unsettled: 'Unsettled Partners',
+    'approval-pending': 'Approval pending',
+    'approval-incomplete': 'Approval incomplete',
+    'ready-now': 'Ready now',
+    'available-blocked': 'Available but blocked',
+    'available-blocked-location': 'Stale location',
+    'available-blocked-service': 'No active service',
+    'available-blocked-wallet': 'Negative wallet while available',
+    'available-blocked-account': 'Account blocked while available',
+    'customer-visible-now': 'Customer App visible now',
+    'customer-visibility-location': 'Customer visibility: location',
+    'customer-visibility-service': 'Customer visibility: service',
+    'customer-visibility-bank': 'Customer visibility: bank',
+    'customer-visibility-documents': 'Customer visibility: documents',
+    unapproved: 'Onboarding blockers',
+    unsettled: 'Wallet debt',
     kyc: 'KYC updates',
     documents: 'Document review',
     'public-media': 'Public media review',
@@ -426,6 +638,12 @@ export function partnerReviewFilterLabel(review: string) {
     tax: 'Tax profile optional',
     security: 'Device/session check',
     reports: 'Reports/controls',
+    'high-cancellation': 'High cancellation',
+    'no-show-risk': 'No-show risk',
+    'quality-risk': 'Low rating',
+    'quality-all': 'All quality risks',
+    'payout-blocked': 'Payout blocked',
+    'tax-info-missing': 'Tax info missing',
     blocked: 'Account blocks',
     location: 'Location freshness',
     push: 'Push alert readiness',
@@ -435,6 +653,13 @@ export function partnerReviewFilterLabel(review: string) {
     'marketplace-blocked': 'Dispatch repair',
   };
   return labels[review] ?? review;
+}
+
+export function partnerQualityRangeLabel(range: string) {
+  if (range === 'today') return 'Today';
+  if (range === '7d') return 'Last 7 days';
+  if (range === '90d') return 'Last 90 days';
+  return 'Last 30 days';
 }
 
 export function partnerBookingFlowFilterLabel(flow: string) {
@@ -453,6 +678,9 @@ export function partnerBookingFlowFilterLabel(flow: string) {
 
 export function partnerActivityFilterLabel(activity: string) {
   const labels: Record<string, string> = {
+    'app-active-7d': 'App active 7D',
+    'app-inactive-7d': 'App inactive 7D+',
+    'app-not-tracked': 'App not tracked',
     'never-online': 'Never online',
     'inactive-7d': 'Inactive 7D',
     'inactive-30d': 'Inactive 30D',
@@ -493,6 +721,7 @@ export function buildPartnerExportSlug(filters: ProviderFilters) {
     filters.security ? `device-${filters.security}` : '',
     filters.readiness ? `readiness-${filters.readiness}` : '',
     filters.sort ? `sort-${filters.sort}` : '',
+    filters.age !== 'all' ? `age-${filters.age}` : '',
   ].filter(Boolean);
 
   return (parts.length > 0 ? parts.join('-') : 'all')
@@ -536,18 +765,46 @@ function readPositiveNumber(value: string | string[] | undefined) {
 }
 
 function normalizePartnerReviewFilter(value: string) {
-  if (value === 'backup-ready') return 'marketplace-ready';
-  if (value === 'backup-blocked') return 'marketplace-blocked';
-  return value;
-}
-
-function normalizeProviderSecurityFilter(value: string) {
-  if (value === 'suspicious') return 'session-check';
-  return value;
+  const aliases: Record<string, string> = {
+    'backup-ready': 'ready-now',
+    'backup-blocked': 'available-blocked',
+    'direct-ready': 'ready-now',
+    'marketplace-ready': 'ready-now',
+    'acceptance-blocked': 'available-blocked',
+    'marketplace-blocked': 'available-blocked',
+    location: 'available-blocked-location',
+  };
+  const normalized = aliases[value] ?? value;
+  return isPrimaryPartnerReview(normalized) ? normalized : '';
 }
 
 function normalizePartnerActivityFilter(value: string) {
-  return ['never-online', 'inactive-7d', 'inactive-30d'].includes(value) ? value : '';
+  return [
+    'app-active-7d',
+    'app-inactive-7d',
+    'app-not-tracked',
+    'never-online',
+    'inactive-7d',
+    'inactive-30d',
+  ].includes(value)
+    ? value
+    : '';
+}
+
+function normalizePartnerApprovalMissing(value: string) {
+  return ['identity-documents', 'public-media'].includes(value) ? value : '';
+}
+
+function normalizePartnerApprovalRisk(value: string) {
+  return ['rejected-evidence', 'previous-hold'].includes(value) ? value : '';
+}
+
+function partnerApprovalMissingLabel(value: string) {
+  return value === 'identity-documents' ? 'Identity documents' : 'Public profile media';
+}
+
+function partnerApprovalRiskLabel(value: string) {
+  return value === 'rejected-evidence' ? 'Rejected evidence' : 'Previous hold / correction';
 }
 
 function normalizePartnerReadinessFilter(value: string) {
@@ -587,40 +844,40 @@ function normalizePartnerBookingFlowFilter(value: string) {
   return allowed.includes(value) ? value : '';
 }
 
-function hasLocalOnlyPartnerFilters(filters: ProviderFilters) {
-  return Boolean(
-    filters.location ||
-      filters.security ||
-      filters.readiness ||
-      filters.activity ||
-      (filters.review && !isPrimaryPartnerReview(filters.review)),
-  );
+function normalizePartnerQualityRange(value: string) {
+  return ['today', '7d', '30d', '90d'].includes(value) ? value : '30d';
 }
 
-function canUsePartnerDirectoryServerPagination(filters: ProviderFilters) {
-  return !hasLocalOnlyPartnerFilters(filters) && ['ops-priority', 'name'].includes(filters.sort);
+function isServerPartnerActivityFilter(value: string) {
+  return [
+    'app-active-7d',
+    'app-inactive-7d',
+    'app-not-tracked',
+    'never-online',
+    'inactive-7d',
+    'inactive-30d',
+  ].includes(value);
 }
 
 function readPartnerSort(value: string) {
-  return [
-    'ops-priority',
-    'last-work',
-    'booking-count',
-    'completed-count',
-    'gross-revenue',
-    'pending-payout',
-    'available-payout',
-    'last-activity',
-    'location-freshness',
-    'wallet-debt',
-    'name',
-  ].includes(value)
-    ? value
-    : 'ops-priority';
+  return ['newest', 'name', 'oldest'].includes(value) ? value : 'newest';
 }
 
 function isPrimaryPartnerReview(value: string) {
   return [
+    'approval-pending',
+    'approval-incomplete',
+    'ready-now',
+    'available-blocked',
+    'available-blocked-location',
+    'available-blocked-service',
+    'available-blocked-wallet',
+    'available-blocked-account',
+    'customer-visible-now',
+    'customer-visibility-location',
+    'customer-visibility-service',
+    'customer-visibility-bank',
+    'customer-visibility-documents',
     'unapproved',
     'unsettled',
     'blocked',
@@ -629,14 +886,31 @@ function isPrimaryPartnerReview(value: string) {
     'bank',
     'tax',
     'reports',
+    'high-cancellation',
+    'no-show-risk',
+    'quality-risk',
+    'quality-all',
+    'payout-blocked',
+    'tax-info-missing',
     'kyc',
     'push',
     'cash-debt',
+    'security',
   ].includes(value);
 }
 
+function isQualityReview(value: string) {
+  return ['high-cancellation', 'no-show-risk', 'quality-risk', 'quality-all'].includes(value);
+}
+
 const partnerFilterHrefParamKeys = [
+  'age',
+  'sla',
   'q',
+  'approvalMissing',
+  'approvalRisk',
+  'city',
+  'qualityRange',
   'verification',
   'providerStatus',
   'kyc',
@@ -646,10 +920,10 @@ const partnerFilterHrefParamKeys = [
   'activity',
   'bookingFlow',
   'review',
+  'serviceId',
   'sort',
+  'walletStatus',
 ] as const satisfies readonly (keyof ProviderFilters)[];
-
-const PARTNER_LOCAL_FILTER_HYDRATION_LIMIT = 25;
 
 function partnerFilterSearchParams(filters: ProviderFilters) {
   const params = new URLSearchParams();
@@ -662,7 +936,13 @@ function partnerFilterSearchParams(filters: ProviderFilters) {
   }
   partnerFilterHrefParamKeys.forEach((key) => {
     const value = filters[key];
-    if (value && !(key === 'sort' && value === 'ops-priority')) {
+    if (
+      value &&
+      !(key === 'age' && value === 'all') &&
+      !(key === 'sla' && value === 'all') &&
+      !(key === 'qualityRange' && !isQualityReview(filters.review)) &&
+      !(key === 'sort' && value === 'newest')
+    ) {
       params.set(key, value);
     }
   });
@@ -673,8 +953,17 @@ function partnerFilterSearchParams(filters: ProviderFilters) {
 function setPartnerDirectoryServerFilter(
   listParams: URLSearchParams,
   summaryParams: URLSearchParams,
-  key: 'verification' | 'providerStatus' | 'kyc' | 'bookingFlow',
-  value: string,
+  key:
+    | 'verification'
+    | 'providerStatus'
+    | 'kyc'
+    | 'bookingFlow'
+    | 'approvalMissing'
+    | 'approvalRisk'
+    | 'city'
+    | 'serviceId'
+    | 'walletStatus',
+  value: string | undefined,
 ) {
   if (!value) {
     return;
@@ -682,4 +971,8 @@ function setPartnerDirectoryServerFilter(
 
   listParams.set(key, value);
   summaryParams.set(key, value);
+}
+
+function normalizePartnerWalletStatus(value: string) {
+  return value === 'negative' || value === 'positive' || value === 'zero' ? value : '';
 }

@@ -10,6 +10,8 @@ import '../../data/datasources/in_app_notification_token_datasource.dart';
 import '../../data/datasources/notification_remote_datasource.dart';
 import '../../data/datasources/push_token_datasource.dart';
 import '../../data/repositories/push_notification_repository_impl.dart';
+import '../../data/repositories/customer_notification_inbox_repository_impl.dart';
+import '../../domain/repositories/customer_notification_inbox_repository.dart';
 import '../../domain/repositories/push_notification_repository.dart';
 import '../../domain/usecases/register_current_device_push_token.dart';
 
@@ -34,10 +36,27 @@ final pushNotificationRepositoryProvider =
   );
 });
 
+final customerNotificationInboxRepositoryProvider =
+    Provider<CustomerNotificationInboxRepository>((ref) {
+  return CustomerNotificationInboxRepositoryImpl(
+    ref.read(notificationRemoteDataSourceProvider),
+  );
+});
+
 final registerCurrentDevicePushTokenProvider =
     Provider<RegisterCurrentDevicePushToken>((ref) {
   return RegisterCurrentDevicePushToken(
       ref.read(pushNotificationRepositoryProvider));
+});
+
+final unregisterCurrentDevicePushTokenProvider =
+    Provider<Future<void> Function()>((ref) {
+  final pushTokenDataSource = ref.read(pushTokenDataSourceProvider);
+  final remoteDataSource = ref.read(notificationRemoteDataSourceProvider);
+  return () => unregisterCurrentPushDevice(
+        pushTokenDataSource: pushTokenDataSource,
+        remoteDataSource: remoteDataSource,
+      );
 });
 
 final pushTokenRefreshRegistrationProvider = Provider<void>((ref) {

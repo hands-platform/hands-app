@@ -6,13 +6,9 @@ import {
 
 describe('admin hidden route policy', () => {
   it('keeps intentionally unlisted routes classified by operating purpose', () => {
-    expect(adminHiddenRoutePolicyDetails('/chat-archive')).toMatchObject({
-      kind: 'AUDIT_SEARCH',
-      primaryRoutes: ['/bookings/[id]', '/customers/[id]', '/partners/[id]'],
-    });
-    expect(adminHiddenRoutePolicyDetails('/partner-controls')).toMatchObject({
-      kind: 'DEEP_OPERATIONAL_EVIDENCE',
-      primaryRoutes: ['/partners/[id]', '/cash-settlements', '/payouts'],
+    expect(adminHiddenRoutePolicyDetails('/files')).toMatchObject({
+      kind: 'LEGACY_ALIAS',
+      primaryRoutes: ['/partners/[id]'],
     });
     expect(adminHiddenRoutePolicyDetails('/providers')).toMatchObject({
       kind: 'LEGACY_ALIAS',

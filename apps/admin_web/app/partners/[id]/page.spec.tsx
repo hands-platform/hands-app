@@ -4,7 +4,7 @@ import { vi } from 'vitest';
 
 import type { AdminProvider } from '../../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
-import { adminGet } from '../../../lib/admin-api';
+import { adminGet, adminGetResult } from '../../../lib/admin-api';
 import ProviderDetailPage from './page';
 
 vi.mock('next/navigation', () => ({
@@ -19,6 +19,7 @@ vi.mock('../../../lib/admin-api', async () => {
   return {
     ...actual,
     adminGet: vi.fn(),
+    adminGetResult: vi.fn(),
   };
 });
 
@@ -27,12 +28,19 @@ vi.mock('../../../lib/admin-operator-access', () => ({
 }));
 
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedAdminGetResult = vi.mocked(adminGetResult);
 const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAccess);
 const providerDetailSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
 describe('ProviderDetailPage data loading', () => {
   beforeEach(() => {
     mockedAdminGet.mockReset();
+    mockedAdminGetResult.mockReset();
+    mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({
+      data: fallback,
+      ok: true,
+      status: 200,
+    }));
     mockedGetCurrentAdminOperatorAccess.mockReset();
   });
 
@@ -52,7 +60,7 @@ describe('ProviderDetailPage data loading', () => {
     expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/operational-policy', []);
   });
 
-  it('renders the lightweight partner workspace index on the shared Vuexy page surface', async () => {
+  it('renders the full compatibility URL as a bounded workspace index', async () => {
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
       categories: [],
       email: 'master@example.com',
@@ -63,7 +71,7 @@ describe('ProviderDetailPage data loading', () => {
       updatedAt: null,
     });
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/partners/partner-1/overview') {
+      if (href === '/admin/partners/partner-1?includeDiagnostics=false') {
         return partnerDetail();
       }
       if (href.startsWith('/admin/operational-policy')) {
@@ -80,11 +88,51 @@ describe('ProviderDetailPage data loading', () => {
 
     expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('Partner One');
-    expect(markup).toContain('Partner detail workspaces');
-    expect(markup).toContain('Choose workspace');
+    expect(markup).toContain('Partner One work areas');
+    expect(markup).toContain('Partner work areas');
+    expect(markup).toContain('Approval &amp; profile');
+    expect(markup).toContain('Work readiness');
+    expect(markup).toContain('Booking evidence');
+    expect(markup).toContain('Money');
+    expect(markup).toContain('History &amp; controls');
+    expect(markup).toContain('Diagnostics');
+    expect(markup).toContain('/partners/partner-1?section=access&amp;access=diagnostics');
+    expect(markup).toContain('/partners/partner-1?section=dossier&amp;dossier=finance');
+    expect(markup).toContain('/partners/partner-1?section=control&amp;control=records');
     expect(markup).toContain('All Partner chats');
-    expect(markup).not.toContain('Partner control workspace');
+    expect(markup).not.toContain('Current partner status');
+    expect(markup).not.toContain('Partner registration dossier');
+    expect(markup).not.toContain('Partner booking journey');
+    expect(markup).not.toContain('Partner finance records');
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/partners/partner-1?includeDiagnostics=false', null);
     expect(mockedGetCurrentAdminOperatorAccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves the approval queue context in detail decisions and the back link', async () => {
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: [],
+      email: 'master@example.com',
+      fullName: 'Master Admin',
+      id: 'master-1',
+      phone: null,
+      roles: ['ADMIN', 'MASTER_ADMIN'],
+      updatedAt: null,
+    });
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/partners/partner-1?includeDiagnostics=false') return partnerDetail();
+      if (href.startsWith('/admin/operational-policy')) return [];
+      return fallback;
+    });
+
+    const page = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-1' }),
+      searchParams: Promise.resolve({ decisionQueue: 'approval-pending', section: 'full' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Back to Partner approvals');
+    expect(markup).toContain('/partners?review=approval-pending&amp;sort=oldest');
+    expect(markup).toContain('decisionQueue=approval-pending');
   });
 
   it('keeps operator record and control workspaces available while denying diagnostics', async () => {
@@ -204,27 +252,23 @@ describe('ProviderDetailPage data loading', () => {
       params: Promise.resolve({ id: 'partner-control' }),
       searchParams: Promise.resolve({ section: 'control' }),
     });
+    expect(mockedAdminGetResult.mock.calls.some(([href]) => href.startsWith('/admin/reviews?'))).toBe(false);
     expect(
-      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/reviews?')),
-    ).toBe(false);
-    expect(
-      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/partner-customer-reviews?')),
+      mockedAdminGetResult.mock.calls.some(([href]) => href.startsWith('/admin/partner-customer-reviews?')),
     ).toBe(false);
 
-    mockedAdminGet.mockClear();
+    mockedAdminGetResult.mockClear();
 
     const recordsPage = await ProviderDetailPage({
       params: Promise.resolve({ id: 'partner-control' }),
       searchParams: Promise.resolve({ control: 'records', section: 'control' }),
     });
+    expect(mockedAdminGetResult.mock.calls.some(([href]) => href.startsWith('/admin/reviews?'))).toBe(true);
     expect(
-      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/reviews?')),
-    ).toBe(true);
-    expect(
-      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/partner-customer-reviews?')),
+      mockedAdminGetResult.mock.calls.some(([href]) => href.startsWith('/admin/partner-customer-reviews?')),
     ).toBe(true);
 
-    mockedAdminGet.mockClear();
+    mockedAdminGetResult.mockClear();
 
     const referencePage = await ProviderDetailPage({
       params: Promise.resolve({ id: 'partner-control' }),
@@ -246,12 +290,88 @@ describe('ProviderDetailPage data loading', () => {
     expect(referenceMarkup).toContain('Partner operating ledger');
     expect(referenceMarkup).not.toContain('Partner operator command queue');
     expect(referenceMarkup).not.toContain('Partner review records');
+    expect(mockedAdminGetResult.mock.calls.some(([href]) => href.startsWith('/admin/reviews?'))).toBe(false);
     expect(
-      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/reviews?')),
+      mockedAdminGetResult.mock.calls.some(([href]) => href.startsWith('/admin/partner-customer-reviews?')),
     ).toBe(false);
-    expect(
-      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/partner-customer-reviews?')),
-    ).toBe(false);
+  });
+
+  it('distinguishes empty, restricted, and unavailable review records', async () => {
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: ['CUSTOMERS_REVIEWS', 'PARTNERS_DETAIL'],
+      email: 'ops@example.com',
+      fullName: 'Ops',
+      id: 'ops-1',
+      phone: null,
+      roles: ['ADMIN'],
+      updatedAt: null,
+    });
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/partners/partner-review-states?includeDiagnostics=false') {
+        return partnerDetail();
+      }
+      if (href.startsWith('/admin/operational-policy')) return [];
+      return fallback;
+    });
+
+    const renderRecords = async () => renderToStaticMarkup(await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-review-states' }),
+      searchParams: Promise.resolve({ control: 'records', section: 'control' }),
+    }));
+
+    const emptyMarkup = await renderRecords();
+    expect(emptyMarkup).toContain('No customer review connected to this record.');
+    expect(emptyMarkup).toContain('No Partner note connected to this record.');
+    expect(emptyMarkup).not.toContain('Review records unavailable');
+
+    mockedAdminGetResult.mockResolvedValue({ data: [], ok: false, status: 403 });
+    const restrictedMarkup = await renderRecords();
+    expect(restrictedMarkup).toContain('Review records restricted');
+    expect(restrictedMarkup).toContain('You do not have permission to view Partner review records.');
+    expect(restrictedMarkup).not.toContain('No customer review connected to this record.');
+
+    mockedAdminGetResult.mockResolvedValue({ data: [], ok: false, status: 500 });
+    const unavailableMarkup = await renderRecords();
+    expect(unavailableMarkup).toContain('Review records unavailable');
+    expect(unavailableMarkup).toContain('Partner review records could not be loaded.');
+  });
+
+  it('distinguishes restricted and unavailable financial records from a true empty result', async () => {
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: ['FINANCE_SETTLEMENTS', 'FINANCE_WALLET_ADJUSTMENTS', 'PARTNERS_DETAIL'],
+      email: 'finance@example.com',
+      fullName: 'Finance Ops',
+      id: 'finance-1',
+      phone: null,
+      roles: ['ADMIN'],
+      updatedAt: null,
+    });
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/partners/partner-finance-states?includeDiagnostics=false&view=finance') {
+        return partnerDetail();
+      }
+      return fallback;
+    });
+
+    const renderFinance = async () => renderToStaticMarkup(await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-finance-states' }),
+      searchParams: Promise.resolve({ dossier: 'finance', section: 'dossier' }),
+    }));
+
+    const emptyMarkup = await renderFinance();
+    expect(emptyMarkup).toContain('Partner finance records');
+    expect(emptyMarkup).not.toContain('Financial data restricted');
+    expect(emptyMarkup).not.toContain('Financial data unavailable');
+
+    mockedAdminGetResult.mockResolvedValue({ data: [], ok: false, status: 403 });
+    const restrictedMarkup = await renderFinance();
+    expect(restrictedMarkup).toContain('Financial data restricted');
+    expect(restrictedMarkup).toContain('You do not have permission to view this financial data.');
+
+    mockedAdminGetResult.mockResolvedValue({ data: [], ok: false, status: 500 });
+    const unavailableMarkup = await renderFinance();
+    expect(unavailableMarkup).toContain('Financial data unavailable');
+    expect(unavailableMarkup).toContain('Financial data could not be loaded.');
   });
 
   it('separates operator readiness from Developer device and session diagnostics', async () => {
@@ -323,7 +443,7 @@ describe('ProviderDetailPage data loading', () => {
 
   it('loads partner finance records only in the finance dossier workspace', async () => {
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
-      categories: ['PARTNERS_DETAIL'],
+      categories: ['FINANCE_SETTLEMENTS', 'FINANCE_WALLET_ADJUSTMENTS', 'PARTNERS_DETAIL'],
       email: 'ops@example.com',
       fullName: 'Ops',
       id: 'ops-1',
@@ -353,16 +473,19 @@ describe('ProviderDetailPage data loading', () => {
 
     expect(approvalMarkup).toContain('Partner approval decision');
     expect(approvalMarkup).toContain('Partner registration dossier');
-    expect(approvalMarkup).toContain('KYC decision');
+    expect(approvalMarkup).not.toContain('KYC decision');
+    expect(approvalMarkup).not.toContain('Partner level path');
     expect(approvalMarkup).not.toContain('Required approval evidence');
     expect(approvalMarkup).not.toContain('Review history');
     expect(approvalMarkup).not.toContain('Partner wallet detail');
     expect(
-      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/provider-wallet/withdrawal-requests')),
+      mockedAdminGetResult.mock.calls.some(([href]) =>
+        href.startsWith('/admin/provider-wallet/withdrawal-requests'),
+      ),
     ).toBe(false);
-    expect(
-      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/wallet-adjustments')),
-    ).toBe(false);
+    expect(mockedAdminGetResult.mock.calls.some(([href]) => href.startsWith('/admin/wallet-adjustments'))).toBe(
+      false,
+    );
 
     mockedAdminGet.mockClear();
     const evidencePage = await ProviderDetailPage({
@@ -381,15 +504,17 @@ describe('ProviderDetailPage data loading', () => {
       '/admin/partners/partner-dossier?includeDiagnostics=false&view=evidence',
       null,
     );
+    expect(mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/operational-policy'))).toBe(
+      false,
+    );
     expect(
-      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/operational-policy')),
+      mockedAdminGet.mock.calls.some(([href]) =>
+        href.startsWith('/admin/provider-wallet/withdrawal-requests'),
+      ),
     ).toBe(false);
-    expect(
-      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/provider-wallet/withdrawal-requests')),
-    ).toBe(false);
-    expect(
-      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/wallet-adjustments')),
-    ).toBe(false);
+    expect(mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/wallet-adjustments'))).toBe(
+      false,
+    );
 
     mockedAdminGet.mockClear();
     const financePage = await ProviderDetailPage({
@@ -401,19 +526,18 @@ describe('ProviderDetailPage data loading', () => {
     expect(financeMarkup).toContain('Partner finance records');
     expect(financeMarkup).toContain('Partner wallet detail');
     expect(financeMarkup).not.toContain('Partner registration dossier');
-    expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/partners/partner-dossier?includeDiagnostics=false&view=finance',
-      null,
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/partners/partner-dossier?includeDiagnostics=false&view=finance', null);
+    expect(mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/operational-policy'))).toBe(
+      false,
     );
     expect(
-      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/operational-policy')),
-    ).toBe(false);
-    expect(
-      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/provider-wallet/withdrawal-requests')),
+      mockedAdminGetResult.mock.calls.some(([href]) =>
+        href.startsWith('/admin/provider-wallet/withdrawal-requests'),
+      ),
     ).toBe(true);
-    expect(
-      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/wallet-adjustments')),
-    ).toBe(true);
+    expect(mockedAdminGetResult.mock.calls.some(([href]) => href.startsWith('/admin/wallet-adjustments'))).toBe(
+      true,
+    );
   });
 
   it('separates booking journey, retained evidence, and the Developer ledger', async () => {
@@ -493,7 +617,7 @@ describe('ProviderDetailPage data loading', () => {
     expect(ledgerMarkup).not.toContain('Partner chat retention ledger');
   });
 
-  it('keeps partner overview on the lightweight endpoint without diagnostics flags', async () => {
+  it('uses the lightweight partner overview as the default detail entry point', async () => {
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
       categories: ['PARTNERS_DETAIL'],
       email: 'ops@example.com',
@@ -503,15 +627,23 @@ describe('ProviderDetailPage data loading', () => {
       roles: ['ADMIN'],
       updatedAt: null,
     });
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/partners/partner-overview/overview') {
+        return partnerDetail();
+      }
+      if (href.startsWith('/admin/operational-policy')) {
+        return [];
+      }
+      return fallback;
+    });
 
-    await expect(
-      ProviderDetailPage({
-        params: Promise.resolve({ id: 'partner-overview' }),
-        searchParams: Promise.resolve({ section: 'overview' }),
-      }),
-    ).rejects.toThrow('NEXT_NOT_FOUND');
+    const page = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-overview' }),
+    });
+    const markup = renderToStaticMarkup(page);
 
+    expect(markup).toContain('View partner work areas');
+    expect(markup).toContain('/partners/partner-1?section=full');
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/partners/partner-overview/overview', null);
     expect(mockedAdminGet).not.toHaveBeenCalledWith(
       '/admin/partners/partner-overview?includeDiagnostics=false',
@@ -534,9 +666,7 @@ describe('ProviderDetailPage data loading', () => {
   });
 
   it('keeps finance-only evidence open debt status on the shared MoneyText atom', () => {
-    expect(providerDetailSource).toContain(
-      'status={hasCashFeeDebt ? <><MoneyText amount={cashFeeDebtTotal} /> open debt</> : \'Reference\'}',
-    );
+    expect(providerDetailSource).toContain('openDebtLabel={<MoneyText amount={cashFeeDebtTotal} />}');
     expect(providerDetailSource).not.toContain(
       "status={hasCashFeeDebt ? `${formatCurrency(cashFeeDebtTotal)} open debt` : 'Reference'}",
     );
@@ -549,34 +679,50 @@ describe('ProviderDetailPage data loading', () => {
       'const partnerCommandSnapshotDiagnosticSection = shouldLoadAccessDiagnostics ? (',
     );
     expect(providerDetailSource).toContain(
-      "canLoadPartnerDiagnostics && detailSection === 'control' && controlView === 'reference' ? (",
+      "detailSection === 'control' &&",
     );
+    expect(providerDetailSource).toContain("controlView === 'reference' ? (");
     expect(providerDetailSource).toContain(
-      "canLoadPartnerDiagnostics && detailSection === 'bookings' && bookingsView === 'ledger' ? (",
+      "detailSection === 'bookings' &&",
     );
+    expect(providerDetailSource).toContain("bookingsView === 'ledger' ? (");
     expect(providerDetailSource).toContain(
       'const partnerDeviceSessionDiagnosticSection = shouldLoadAccessDiagnostics ? (',
     );
-    expect(
-      providerDetailSource.indexOf('const partnerCommandSnapshotDiagnosticSection = shouldLoadAccessDiagnostics ? ('),
-    ).toBeLessThan(
-      providerDetailSource.indexOf('<PartnerDetailCommandSnapshotSection'),
+    expect(providerDetailSource).toContain(
+      "detailSection === 'access' &&",
+    );
+    expect(providerDetailSource).toContain(
+      "accessView === 'diagnostics';",
     );
     expect(
-      providerDetailSource.indexOf("canLoadPartnerDiagnostics && detailSection === 'control' && controlView === 'reference' ? ("),
-    ).toBeLessThan(
-      providerDetailSource.indexOf('<PartnerDetailFullRecordIndexSection'),
-    );
+      providerDetailSource.indexOf(
+        'const partnerCommandSnapshotDiagnosticSection = shouldLoadAccessDiagnostics ? (',
+      ),
+    ).toBeLessThan(providerDetailSource.indexOf('<PartnerDetailCommandSnapshotSection'));
     expect(
-      providerDetailSource.indexOf("canLoadPartnerDiagnostics && detailSection === 'control' && controlView === 'reference' ? ("),
-    ).toBeLessThan(
-      providerDetailSource.indexOf('<PartnerDetailOperatingLedgerSection'),
-    );
+      providerDetailSource.indexOf(
+        "detailSection === 'control' &&",
+      ),
+    ).toBeLessThan(providerDetailSource.indexOf('<PartnerDetailFullRecordIndexSection'));
     expect(
-      providerDetailSource.indexOf('const partnerDeviceSessionDiagnosticSection = shouldLoadAccessDiagnostics ? ('),
-    ).toBeLessThan(
-      providerDetailSource.indexOf('<PartnerDetailDeviceSessionActivitySection'),
-    );
+      providerDetailSource.indexOf(
+        "detailSection === 'control' &&",
+      ),
+    ).toBeLessThan(providerDetailSource.indexOf('<PartnerDetailOperatingLedgerSection'));
+    expect(
+      providerDetailSource.indexOf(
+        'const partnerDeviceSessionDiagnosticSection = shouldLoadAccessDiagnostics ? (',
+      ),
+    ).toBeLessThan(providerDetailSource.indexOf('<PartnerDetailDeviceSessionActivitySection'));
+  });
+
+  it('keeps the full compatibility URL as a bounded workspace index', () => {
+    expect(providerDetailSource).toContain('if (isFullPartnerDetail)');
+    expect(providerDetailSource).toContain('<PartnerDetailFullRecordIndexSection');
+    expect(providerDetailSource).not.toContain('PARTNER_DETAIL_DEFAULT_HISTORY_PREVIEW_LIMIT');
+    expect(providerDetailSource).not.toContain('partnerBookingEvidencePreviewRows');
+    expect(providerDetailSource).not.toContain("isFullPartnerDetail ||");
   });
 
   it('does not send ordinary partner detail repair actions to app session diagnostics', () => {
@@ -594,10 +740,19 @@ describe('ProviderDetailPage data loading', () => {
   });
 
   it('uses operator-facing record wording instead of diagnostic snapshot copy', () => {
-    expect(providerDetailSource).toContain("title: 'Location record'");
-    expect(providerDetailSource).toContain('Address record metadata missing');
-    expect(providerDetailSource).not.toContain("title: 'Location snapshot'");
-    expect(providerDetailSource).not.toContain('Address snapshot metadata missing');
+    const activityRecordSource = readFileSync(
+      'app/partners/[id]/partner-detail-activity-records-model.tsx',
+      'utf8',
+    );
+    const bookingGateSource = readFileSync(
+      'app/partners/[id]/partner-detail-booking-gate-rows-model.tsx',
+      'utf8',
+    );
+
+    expect(activityRecordSource).toContain("title: 'Location record'");
+    expect(bookingGateSource).toContain('Address record metadata missing');
+    expect(activityRecordSource).not.toContain("title: 'Location snapshot'");
+    expect(bookingGateSource).not.toContain('Address snapshot metadata missing');
   });
 });
 
@@ -630,6 +785,9 @@ function partnerDetail(): AdminProvider {
     documents: [],
     earnings: [],
     id: 'partner-1',
+    kyc: {
+      status: 'APPROVED',
+    },
     legalName: 'Partner One Legal',
     participants: [],
     payoutBatches: [],
@@ -649,6 +807,9 @@ function partnerDetail(): AdminProvider {
       pushDevices: [],
     },
     userId: 'user-1',
+    verification: {
+      status: 'APPROVED',
+    },
     verificationLogs: [],
     walletWithdrawalRequests: [],
   } as unknown as AdminProvider;

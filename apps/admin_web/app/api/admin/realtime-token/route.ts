@@ -18,7 +18,12 @@ export async function GET(request: Request) {
   }
 
   try {
-    const realtimeToken = createAdminRealtimeToken();
+    const subject =
+      access.session?.sub ??
+      process.env.ADMIN_WEB_LOGIN_EMAIL?.trim() ??
+      process.env.ADMIN_DEMO_PHONE?.trim() ??
+      'admin-web-dev';
+    const realtimeToken = createAdminRealtimeToken(subject);
     return NextResponse.json(
       {
         socketBaseUrl: adminRealtimeSocketBaseUrl(),

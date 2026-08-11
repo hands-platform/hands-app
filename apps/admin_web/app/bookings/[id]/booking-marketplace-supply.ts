@@ -1,22 +1,16 @@
-import { marketplaceDisplayText } from '../../../lib/admin-copy';
+import { marketplaceDisplayText, partnerOperatingStatusLabel } from '../../../lib/admin-copy';
 import type {
   AdminBookingDetail,
   AdminOperationalPolicySetting,
   AdminProvider,
 } from '../../../lib/admin-api';
 import { formatDistanceMeters } from '../../../lib/admin-format';
-import {
-  approximateDistanceMeters,
-  distanceLabel,
-} from './booking-formatters';
+import { approximateDistanceMeters, distanceLabel } from './booking-formatters';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { bookingPreferredProviderId } from './booking-participant-rules';
 import { readBookingMatchingPolicySnapshot } from './booking-policy-snapshots';
 import { readOptionalNumber } from './booking-readers';
-import {
-  providerLocationAgeMinutes,
-  STALE_LOCATION_MINUTES,
-} from './booking-status-location';
+import { providerLocationAgeMinutes, STALE_LOCATION_MINUTES } from './booking-status-location';
 import {
   OPERATIONAL_POLICY_KEYS,
   adminPartnerWalletBalance,
@@ -33,18 +27,20 @@ export function bookingMarketplacePartnerSupply(
 ) {
   const savedPolicy = readBookingMatchingPolicySnapshot(booking);
   const livePolicy = buildAdminLiveOperationsPolicy(settings);
-  const walletGateBlocksFinalGate = adminWalletGateBlocksFinalGate(
-    livePolicy.walletNegativeGate,
-  );
+  const walletGateBlocksFinalGate = adminWalletGateBlocksFinalGate(livePolicy.walletNegativeGate);
   const radiusMeters =
     savedPolicy.backupProviderRadiusMeters ??
-    readOptionalNumber(adminOperationalPolicySettingByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)?.value) ??
+    readOptionalNumber(
+      adminOperationalPolicySettingByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)?.value,
+    ) ??
     10000;
   const freshnessMinutes =
     savedPolicy.backupProviderLocationMaxAgeMinutes ??
     readOptionalNumber(
-      adminOperationalPolicySettingByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes)
-        ?.value,
+      adminOperationalPolicySettingByKey(
+        settings,
+        OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+      )?.value,
     ) ??
     STALE_LOCATION_MINUTES;
   const invitationLimit =
@@ -80,10 +76,12 @@ export function bookingMarketplacePartnerSupply(
             blockers.push('account blocked');
           }
           if (provider.verification?.status !== 'APPROVED') {
-            blockers.push(`verification ${provider.verification?.status ?? 'DRAFT'}`);
+            blockers.push(
+              `verification ${partnerOperatingStatusLabel(provider.verification?.status ?? 'DRAFT')}`,
+            );
           }
           if (provider.status !== 'ONLINE_AVAILABLE') {
-            blockers.push(`status ${provider.status}`);
+            blockers.push(`status ${partnerOperatingStatusLabel(provider.status)}`);
           }
           if (walletGateBlocksFinalGate && walletBalance < 0) {
             blockers.push('final gate settlement required');
@@ -114,7 +112,7 @@ export function bookingMarketplacePartnerSupply(
               provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
             ),
             role,
-            status: provider.status,
+            status: partnerOperatingStatusLabel(provider.status),
             eligible: blockers.length === 0,
             blockers,
             distanceMeters,
@@ -165,6 +163,7 @@ export function bookingMarketplacePartnerSupply(
   });
 
   return {
+    evaluatedAt: new Date().toISOString(),
     rows,
     topCandidates: eligibleRows.slice(0, 5),
     excludedGroups,
@@ -174,6 +173,7 @@ export function bookingMarketplacePartnerSupply(
     freshnessMinutes,
     invitationLimit,
     eligibleCount,
+    evaluatedCount: candidateRows.length,
     decisionStatus: hasCustomerPin ? (eligibleCount ? 'Supply available' : 'Supply low') : 'Missing pin',
     decisionTone: hasCustomerPin ? (eligibleCount ? 'pill-success' : 'pill-warn') : 'pill-danger',
     decisionTitle: hasCustomerPin
@@ -200,7 +200,8 @@ export function bookingMarketplacePartnerSupply(
       {
         label: 'Nearby excluded',
         value: nearbyExcluded.toString(),
-        helper: 'Inside radius but blocked by status, verification, location freshness, or final gate settlement.',
+        helper:
+          'Inside radius but blocked by status, verification, location freshness, or final gate settlement.',
       },
       {
         label: 'Out of radius',
@@ -303,13 +304,13 @@ function bookingMarketplacePartnerExcludedGroups(
     ),
     group(
       'Not online available',
-      '/partners?readiness=approved-offline',
+      '/partners?verification=APPROVED&providerStatus=OFFLINE&kyc=APPROVED',
       'Partner must open the app or become online available before they can be relied on.',
       (blocker) => blocker.startsWith('status'),
     ),
     group(
       'Location stale or missing',
-      '/partners?review=location',
+      '/partners?review=available-blocked-location',
       'Partner location should be refreshed before marketplace decisions are confirmed.',
       (blocker) => blocker.startsWith('location') || blocker === 'no current coordinates',
     ),
@@ -346,7 +347,7 @@ function bookingMarketplaceCandidateCommand(input: {
       tone: 'pill-success',
       title: 'This booking has usable marketplace Partner supply',
       detail: `${input.eligibleCount} Partner(s) can be nudged or exposed to the customer choice list under current policy.`,
-      href: '/partners?review=marketplace-ready',
+      href: '/partners?review=ready-now',
       action: 'Open marketplace-ready',
     };
   }
@@ -357,7 +358,7 @@ function bookingMarketplaceCandidateCommand(input: {
       title: 'Nearby Partners need supply repair',
       detail:
         'Prioritize app-open/location refresh, online status, and KYC before extending customer wait time.',
-      href: '/partners?review=marketplace-blocked',
+      href: '/partners?review=available-blocked',
       action: 'Review supply blockers',
     };
   }

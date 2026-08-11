@@ -1,5 +1,6 @@
 import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
+import { AdminDisclosure } from '../../components/admin-surface';
 
 export const FINANCE_LIST_DATE_RANGE_LINKS = [
   ['Today', 'today'],
@@ -18,8 +19,14 @@ export type FinanceListFilterLink = {
 
 export type FinanceListFilterLinkGroup = {
   readonly className?: string;
+  readonly defaultId?: string | number;
   readonly id: string;
   readonly links: readonly FinanceListFilterLink[];
+};
+
+type FinanceListFilterLinksProps = {
+  readonly compact?: boolean;
+  readonly groups: readonly FinanceListFilterLinkGroup[];
 };
 
 export function financeListFilterLinkClassName({
@@ -36,43 +43,76 @@ function financeListFilterLinkPillClassName({
   return active ? `pill ${activePillClassName}` : 'pill pill-neutral';
 }
 
-export function FinanceListFilterLinks({ groups }: { readonly groups: readonly FinanceListFilterLinkGroup[] }) {
+export function FinanceListFilterLinks({ compact = false, groups }: FinanceListFilterLinksProps) {
+  const primaryGroups = compact
+    ? groups.filter((group) => ['direction', 'review', 'review-owner', 'age'].includes(group.id))
+    : groups;
+  const secondaryGroups = compact
+    ? groups.filter((group) => !['direction', 'review', 'review-owner', 'age'].includes(group.id))
+    : [];
+  const activeLabels = financeListActiveFilterLabels(groups, compact);
+  const secondaryActiveCount = financeListActiveFilterLabels(secondaryGroups, true).length;
+  const secondaryDescription = secondaryGroups
+    .map((group) => financeListFilterGroupLabel(group.id))
+    .join(', ');
+
   return (
     <>
-      {groups.map((group, index) => (
-        <div
-          className={mergeClassNames(
-            'booking-date-filter-bar finance-list-filter-group',
-            group.className ?? (index > 0 ? 'admin-mt-10' : undefined),
-          )}
-          key={group.id}
-        >
-          <span className="finance-list-filter-group-label">{financeListFilterGroupLabel(group.id)}</span>
-          <AdminSegmentedControl
-            activeValue={String(group.links.find((link) => link.active)?.id ?? '')}
-            ariaLabel={`${group.id} finance filters`}
-            className="finance-list-filter-buttons"
-            options={group.links.map((link) => ({
-              href: link.href,
-              label: link.label,
-              value: String(link.id),
-            }))}
-          />
-        </div>
-      ))}
-      <AdminFilterSummary
-        ariaLabel="Active finance list filters"
-        className="admin-mt-10"
-        labels={financeListActiveFilterLabels(groups)}
-        tone="info"
-      />
+      <FinanceListFilterGroups groups={primaryGroups} />
+      {secondaryGroups.length > 0 ? (
+        <AdminDisclosure className="finance-reconciliation-import-disclosure finance-list-more-filters admin-mt-10">
+          <summary>
+            <span>More filters{secondaryActiveCount > 0 ? ` · ${secondaryActiveCount} active` : ''}</span>
+            <small>{secondaryDescription}</small>
+          </summary>
+          <div className="admin-mt-12">
+            <FinanceListFilterGroups groups={secondaryGroups} />
+          </div>
+        </AdminDisclosure>
+      ) : null}
+      {activeLabels.length > 0 ? (
+        <AdminFilterSummary
+          ariaLabel="Active finance list filters"
+          className="admin-mt-10"
+          labels={activeLabels}
+          tone="info"
+        />
+      ) : null}
     </>
   );
 }
 
-function financeListActiveFilterLabels(groups: readonly FinanceListFilterLinkGroup[]) {
+function FinanceListFilterGroups({ groups }: { readonly groups: readonly FinanceListFilterLinkGroup[] }) {
+  return groups.map((group, index) => (
+    <div
+      className={mergeClassNames(
+        'booking-date-filter-bar finance-list-filter-group',
+        group.className ?? (index > 0 ? 'admin-mt-10' : undefined),
+      )}
+      key={group.id}
+    >
+      <span className="finance-list-filter-group-label">{financeListFilterGroupLabel(group.id)}</span>
+      <AdminSegmentedControl
+        activeValue={String(group.links.find((link) => link.active)?.id ?? '')}
+        ariaLabel={`${group.id} finance filters`}
+        className="finance-list-filter-buttons"
+        options={group.links.map((link) => ({
+          href: link.href,
+          label: link.label,
+          value: String(link.id),
+        }))}
+      />
+    </div>
+  ));
+}
+
+function financeListActiveFilterLabels(
+  groups: readonly FinanceListFilterLinkGroup[],
+  nonDefaultOnly = false,
+) {
   return groups.flatMap((group) => {
     const active = group.links.find((link) => link.active);
+    if (nonDefaultOnly && active?.id === group.defaultId) return [];
     return active ? [`${financeListFilterGroupLabel(group.id)}: ${active.label}`] : [];
   });
 }
@@ -84,6 +124,7 @@ function financeListFilterGroupLabel(id: string) {
   if (id === 'review') return 'Queue';
   if (id === 'review-owner') return 'Review owner';
   if (id === 'take') return 'Rows';
+  if (id === 'evidence-source') return 'Evidence source';
   if (id === 'withdrawal-candidate') return 'Withdrawal candidates';
   return id;
 }

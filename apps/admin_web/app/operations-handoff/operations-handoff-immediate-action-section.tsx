@@ -1,7 +1,10 @@
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import { AdminQueueMeta } from '../../components/admin-overview-card';
 import { AdminActionCard, AdminSection, AdminTaskGrid } from '../../components/admin-surface';
-import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
+import { StatusBadge } from '../../components/status-badge';
+import { formatRelativeAge } from '../../lib/admin-format';
+import { adminCountLabel } from '../../lib/admin-copy';
 import type { ImmediateActionQueueRow } from './operations-handoff-immediate-actions';
 
 type OperationsHandoffImmediateActionSectionProps = {
@@ -17,7 +20,7 @@ export function OperationsHandoffImmediateActionSection({
     <AdminSection
       actions={
         <StatusBadge tone={visibleActions.length > 0 ? 'info' : 'success'}>
-          {visibleActions.length > 0 ? `${visibleActions.length} issue lane(s)` : 'No issue lanes'}
+          {visibleActions.length > 0 ? adminCountLabel(visibleActions.length, 'issue lane') : 'No issue lanes'}
         </StatusBadge>
       }
       bodyClassName={visibleActions.length > 0 ? undefined : 'admin-section-empty-body'}
@@ -30,18 +33,22 @@ export function OperationsHandoffImmediateActionSection({
         <AdminTaskGrid>
           {visibleActions.map((item) => (
             <AdminActionCard
-              actionLabel={item.nextAction}
-              detail={item.detail}
+              actionLabel={`Review ${item.title}`}
+              detail={item.nextAction}
               href={item.href}
               key={item.id}
               signalClassName={toSignalModifierClass(item.className)}
-              signalLabel={item.owner}
+              signalLabel={item.status}
               title={item.title}
               variant="ops-task"
             >
+              <AdminQueueMeta
+                impact={item.detail}
+                oldest={item.oldestOpenAt ? formatRelativeAge(item.oldestOpenAt) : undefined}
+                owner={item.owner}
+              />
               <AdminFilterChipGroup>
                 <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
-                <StatusBadgeFromPillClass pillClass={item.statusClass}>{item.status}</StatusBadgeFromPillClass>
               </AdminFilterChipGroup>
             </AdminActionCard>
           ))}

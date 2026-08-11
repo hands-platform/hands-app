@@ -15,12 +15,10 @@ import {
   AdminFormControlButton,
   AdminFormDateTime,
   AdminFormInput,
-  AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminSummaryCardGrid } from '../../components/admin-overview-card';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
-import { AdminWithdrawalAccountingPreview } from '../../components/admin-withdrawal-accounting-preview';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
@@ -30,47 +28,61 @@ import type {
   AdminProviderWalletWithdrawalRequestSummary,
   AdminProviderWalletWithdrawalRequestStatus,
 } from '../../lib/admin-api';
+import { adminWorkflowStatusLabel } from '../../lib/admin-copy';
 import { providerWalletWithdrawalStatusChangeView } from '../../lib/provider-wallet-withdrawal-status-change';
 import type { PayoutServerPagination } from './payouts-page-model';
-import type { FinanceApproverOption } from '../finance-tax/finance-approver-options';
 
 type FormAction = (formData: FormData) => void | Promise<void>;
 
 type PayoutWalletWithdrawalRequestSectionProps = {
   readonly activeReconciliation?: 'unmatched' | 'matched' | null;
   readonly activeStatus?: AdminProviderWalletWithdrawalRequestStatus | null;
-  readonly financeApproverOptions?: readonly FinanceApproverOption[];
   readonly pagination?: PayoutServerPagination<AdminProviderWalletWithdrawalRequest> | null;
   readonly paginationHrefForPage?: (page: number) => string;
   readonly range?: string;
+  readonly reconciliationHrefForView?: (reconciliation: 'unmatched' | 'matched') => string;
   readonly requests: readonly AdminProviderWalletWithdrawalRequest[];
+  readonly reverseHrefForRequest?: (requestId: string) => string;
   readonly summary?: AdminProviderWalletWithdrawalRequestSummary | null;
+  readonly savedView?: {
+    readonly clearHref: string;
+    readonly label: string;
+    readonly resultCount: number;
+  } | null;
+  readonly statusHrefForView?: (status: AdminProviderWalletWithdrawalRequestStatus) => string;
   readonly updateWithdrawalRequestAction: FormAction;
 };
 
-const headers = ['Partner', 'Amount', 'Bank account', 'Status', 'Requested', 'Action'] as const;
+const headers = ['Partner / bank', 'Amount', 'Status / age', 'Evidence', 'Action'] as const;
 
 export function PayoutWalletWithdrawalRequestSection({
   activeReconciliation = null,
   activeStatus = null,
-  financeApproverOptions = [],
   pagination = null,
   paginationHrefForPage,
   range = 'today',
+  reconciliationHrefForView,
   requests,
+  reverseHrefForRequest,
   summary: serverSummary = null,
+  savedView = null,
+  statusHrefForView,
   updateWithdrawalRequestAction,
 }: PayoutWalletWithdrawalRequestSectionProps) {
-  const reconciliationNeedsActionCount = requests.filter(
+  const visibleReconciliationNeedsActionCount = requests.filter(
     (request) => request.status === 'PAID' && request.reconciliationState === 'UNMATCHED',
   ).length;
-  const needsActionCount = requests.filter((request) => !isTerminalStatus(request.status)).length;
-  const hasPaidCloseoutAction = requests.some(
-    (request) => request.status === 'APPROVED' || request.status === 'BANK_TRANSFER_PENDING',
-  );
+  const reconciliationNeedsActionCount =
+    activeReconciliation === 'unmatched'
+      ? (serverSummary?.filteredTotal ?? visibleReconciliationNeedsActionCount)
+      : activeReconciliation === null
+        ? (serverSummary?.paidUnreconciled ?? visibleReconciliationNeedsActionCount)
+        : visibleReconciliationNeedsActionCount;
+  const needsActionCount = serverSummary
+    ? serverSummary.requested + serverSummary.reviewRequired + serverSummary.bankTransferPending
+    : requests.filter((request) => !isTerminalStatus(request.status)).length;
   const visibleSummary = buildWithdrawalRequestSummary(requests);
   const paidUnreconciled = serverSummary?.paidUnreconciled ?? 0;
-  const paidReconciled = serverSummary?.paidReconciled ?? 0;
 
   return (
     <AdminTablePanel
@@ -78,19 +90,38 @@ export function PayoutWalletWithdrawalRequestSection({
       description="Partner wallet withdrawal requests from the partner app. Finance can request bank correction, approve, reject, or mark paid after manual bank transfer."
       id="partner-wallet-withdrawal-requests"
       resultLabel={
-        reconciliationNeedsActionCount
+        savedView
+          ? requests.length === 0
+            ? 'No rows in selected filter'
+            : activeReconciliation === 'unmatched'
+              ? `${savedView.resultCount} bank match pending`
+              : `${savedView.resultCount} in selected filter`
+          : reconciliationNeedsActionCount
           ? `${reconciliationNeedsActionCount} bank match pending`
           : needsActionCount
             ? `${needsActionCount} needs action`
-            : 'Clear'
+            : 'No current withdrawal work'
       }
-      resultTone={reconciliationNeedsActionCount || needsActionCount ? 'warning' : 'success'}
+      resultTone={
+        savedView
+          ? activeReconciliation === 'unmatched' && savedView.resultCount > 0
+            ? 'warning'
+            : 'neutral'
+          : reconciliationNeedsActionCount || needsActionCount
+            ? 'warning'
+            : 'neutral'
+      }
       title="Partner wallet withdrawal requests"
     >
-      {hasPaidCloseoutAction && financeApproverOptions.length === 0 ? (
-        <AdminInlineNotice className="admin-mb-12" role="alert" tone="warning">
-          No other Finance approver is available. Paid closeout remains disabled until another operator has the FINANCE_APPROVER role.
-        </AdminInlineNotice>
+      {savedView ? (
+        <div aria-label="Saved withdrawal request view" className="payout-withdrawal-saved-view">
+          <span>Saved view</span>
+          <strong>{savedView.label}</strong>
+          <small>
+            {savedView.resultCount} {savedView.resultCount === 1 ? 'request' : 'requests'} in this view
+          </small>
+          <AdminTextLink href={savedView.clearHref}>Clear saved view</AdminTextLink>
+        </div>
       ) : null}
       <AdminSummaryCardGrid
         ariaLabel="Withdrawal request status summary"
@@ -98,62 +129,55 @@ export function PayoutWalletWithdrawalRequestSection({
         itemClassName="payout-wallet-withdrawal-summary-card"
         items={[
           {
+            ariaCurrent: activeReconciliation === 'unmatched' ? 'page' : undefined,
             className: activeReconciliation === 'unmatched' ? 'is-active' : undefined,
             detail: activeReconciliation === 'unmatched' ? 'Selected' : 'Open action queue',
-            href: withdrawalReconciliationHref(range, 'unmatched'),
+            href: reconciliationHrefForView?.('unmatched') ?? withdrawalReconciliationHref(range, 'unmatched'),
             label: 'Paid / bank match pending',
             tone: paidUnreconciled > 0 ? 'warning' : 'success',
             value: paidUnreconciled,
           },
           {
-            className: activeReconciliation === 'matched' ? 'is-active' : undefined,
-            detail: activeReconciliation === 'matched' ? 'Selected' : 'Open records',
-            href: withdrawalReconciliationHref(range, 'matched'),
-            label: 'Paid / reconciled',
-            tone: 'success',
-            value: paidReconciled,
-          },
-          {
+            ariaCurrent: activeStatus === 'REQUESTED' ? 'page' : undefined,
             className: activeStatus === 'REQUESTED' ? 'is-active' : undefined,
             detail: activeStatus === 'REQUESTED' ? 'Selected' : 'Open filter',
-            href: withdrawalStatusHref(range, 'REQUESTED'),
+            href: statusHrefForView?.('REQUESTED') ?? withdrawalStatusHref(range, 'REQUESTED'),
             label: 'Requested',
             tone: 'neutral',
-            value: visibleSummary.requested,
+            value: serverSummary?.requested ?? visibleSummary.requested,
           },
           {
+            ariaCurrent: activeStatus === 'REVIEW_REQUIRED' ? 'page' : undefined,
             className: activeStatus === 'REVIEW_REQUIRED' ? 'is-active' : undefined,
             detail: activeStatus === 'REVIEW_REQUIRED' ? 'Selected' : 'Open filter',
-            href: withdrawalStatusHref(range, 'REVIEW_REQUIRED'),
+            href: statusHrefForView?.('REVIEW_REQUIRED') ?? withdrawalStatusHref(range, 'REVIEW_REQUIRED'),
             label: 'Review required',
             tone: 'warning',
-            value: visibleSummary.reviewRequired,
+            value: serverSummary?.reviewRequired ?? visibleSummary.reviewRequired,
           },
           {
+            ariaCurrent: activeStatus === 'BANK_TRANSFER_PENDING' ? 'page' : undefined,
             className: activeStatus === 'BANK_TRANSFER_PENDING' ? 'is-active' : undefined,
             detail: activeStatus === 'BANK_TRANSFER_PENDING' ? 'Selected' : 'Open filter',
-            href: withdrawalStatusHref(range, 'BANK_TRANSFER_PENDING'),
+            href: statusHrefForView?.('BANK_TRANSFER_PENDING') ?? withdrawalStatusHref(range, 'BANK_TRANSFER_PENDING'),
             label: 'Bank transfer pending',
             tone: 'info',
-            value: visibleSummary.bankTransferPending,
-          },
-          {
-            detail: 'Audit evidence',
-            label: 'Lock released',
-            tone: 'audit',
-            value: visibleSummary.lockReleased,
+            value: serverSummary?.bankTransferPending ?? visibleSummary.bankTransferPending,
           },
         ]}
       >
         <span className="sr-only">Withdrawal request status summary</span>
       </AdminSummaryCardGrid>
-      <AdminTableScroll>
-        <AdminDataTable
-          className="vuexy-booking-table"
-          emptyMessage={<PayoutWalletWithdrawalRequestEmptyState />}
-          headers={headers}
-          rowCount={requests.length}
-        >
+      {requests.length === 0 ? (
+        <PayoutWalletWithdrawalRequestEmptyState />
+      ) : (
+        <AdminTableScroll ariaLabel="Partner wallet withdrawal requests table">
+          <AdminDataTable
+            className="vuexy-booking-table payout-withdrawal-compact-table"
+            emptyMessage="No withdrawal requests found."
+            headers={headers}
+            rowCount={requests.length}
+          >
           {requests.map((request) => (
             <tr key={request.id}>
               <td>
@@ -165,30 +189,20 @@ export function PayoutWalletWithdrawalRequestSection({
                 ) : (
                   <AdminInlineFallback className="admin-mt-6">No phone on file</AdminInlineFallback>
                 )}
+                <div className="admin-mt-8">
+                  <strong>{request.bankAccount?.bankName ?? 'Bank not linked'}</strong>
+                  <p className="muted">{bankAccountLabel(request)}</p>
+                </div>
               </td>
               <td>
                 <strong>
                   <MoneyText amount={request.amount} currency={request.currency} />
                 </strong>
                 <p className="muted">Request {shortRecordId(request.id)}</p>
-                <AdminWithdrawalAccountingPreview request={request} />
-              </td>
-              <td>
-                <strong>{request.bankAccount?.bankName ?? 'Bank not linked'}</strong>
-                <p className="muted">{bankAccountLabel(request)}</p>
               </td>
               <td>
                 <StatusBadge tone={statusBadgeTone(request.status)}>{statusLabel(request.status)}</StatusBadge>
-                {request.status === 'PAID' ? <WithdrawalReconciliationEvidence request={request} /> : null}
-                <AdminFinanceOperatorEvidence lines={adminWithdrawalOperatorEvidenceLines(request)} />
-                <WithdrawalStatusChangeEvidence request={request} />
-                {request.correctionReason ? <p className="muted">{request.correctionReason}</p> : null}
-                {request.transferRef ? <p className="muted">Ref {request.transferRef}</p> : null}
-              </td>
-              <td>
-                <span className="muted">
-                  <DateTimeText value={request.createdAt} />
-                </span>
+                <p className="muted admin-mt-6">Requested <DateTimeText value={request.createdAt} /></p>
                 {request.reviewedAt ? (
                   <p className="muted">
                     Reviewed <DateTimeText value={request.reviewedAt} />
@@ -196,16 +210,40 @@ export function PayoutWalletWithdrawalRequestSection({
                 ) : null}
               </td>
               <td>
-                <WithdrawalRequestActions
-                  financeApproverOptions={financeApproverOptions}
-                  request={request}
-                  updateWithdrawalRequestAction={updateWithdrawalRequestAction}
-                />
+                {request.status === 'PAID' ? <WithdrawalReconciliationEvidence request={request} /> : null}
+                <AdminFinanceOperatorEvidence lines={adminWithdrawalOperatorEvidenceLines(request)} />
+                <WithdrawalStatusChangeEvidence request={request} />
+                {request.correctionReason ? <p className="muted">{request.correctionReason}</p> : null}
+                {request.transferRef ? <p className="muted">Ref {request.transferRef}</p> : null}
+              </td>
+              <td>
+                {isTerminalStatus(request.status) ? (
+                  <WithdrawalRequestActions
+                    request={request}
+                    reverseHref={reverseHrefForRequest?.(request.id)}
+                    updateWithdrawalRequestAction={updateWithdrawalRequestAction}
+                  />
+                ) : (
+                  <details
+                    aria-label={`Review withdrawal ${shortRecordId(request.id)}`}
+                    className="payout-withdrawal-row-actions"
+                  >
+                    <summary>Review request</summary>
+                    <div className="admin-mt-8">
+                      <WithdrawalRequestActions
+                        request={request}
+                        reverseHref={reverseHrefForRequest?.(request.id)}
+                        updateWithdrawalRequestAction={updateWithdrawalRequestAction}
+                      />
+                    </div>
+                  </details>
+                )}
               </td>
             </tr>
           ))}
-        </AdminDataTable>
-      </AdminTableScroll>
+          </AdminDataTable>
+        </AdminTableScroll>
+      )}
       {pagination && paginationHrefForPage ? (
         <AdminTablePaginationFooter
           activePage={pagination.page}
@@ -250,7 +288,7 @@ function buildWithdrawalRequestSummary(requests: readonly AdminProviderWalletWit
 }
 
 function withdrawalStatusHref(range: string, status: AdminProviderWalletWithdrawalRequestStatus) {
-  return `/payouts?${new URLSearchParams({ range, withdrawalStatus: status }).toString()}`;
+  return `/payouts?${new URLSearchParams({ range, withdrawalStatus: status }).toString()}#partner-wallet-withdrawal-requests`;
 }
 
 function withdrawalReconciliationHref(range: string, reconciliation: 'unmatched' | 'matched') {
@@ -258,16 +296,16 @@ function withdrawalReconciliationHref(range: string, reconciliation: 'unmatched'
     range,
     withdrawalReconciliation: reconciliation,
     withdrawalStatus: 'PAID',
-  }).toString()}`;
+  }).toString()}#partner-wallet-withdrawal-requests`;
 }
 
 function WithdrawalRequestActions({
-  financeApproverOptions,
   request,
+  reverseHref,
   updateWithdrawalRequestAction,
 }: {
-  readonly financeApproverOptions: readonly FinanceApproverOption[];
   readonly request: AdminProviderWalletWithdrawalRequest;
+  readonly reverseHref?: string;
   readonly updateWithdrawalRequestAction: FormAction;
 }) {
   if (request.status === 'PAID') {
@@ -294,6 +332,9 @@ function WithdrawalRequestActions({
         >
           Open withdrawal journal
         </AdminTextLink>
+        {request.preflight?.canReversePaid && reverseHref ? (
+          <AdminTextLink href={reverseHref}>Review paid reversal</AdminTextLink>
+        ) : null}
       </div>
     );
   }
@@ -303,6 +344,26 @@ function WithdrawalRequestActions({
     request.status === 'FAILED' ||
     request.status === 'REVERSED'
   ) {
+    if (request.status === 'REVERSED') {
+      const reversal = withdrawalReversalEvidence(request.metadata);
+      return (
+        <div className="admin-inline-action-stack">
+          <StatusBadge tone="danger">Reversed to Partner wallet</StatusBadge>
+          {reversal?.reference ? <strong>{reversal.reference}</strong> : null}
+          {reversal?.reason ? <p className="muted">{reversal.reason}</p> : null}
+          {reversal?.occurredAt ? (
+            <span className="muted">
+              Reversed <DateTimeText value={reversal.occurredAt} />
+            </span>
+          ) : null}
+          <AdminTextLink
+            href={`/finance-tax/general-ledger?${new URLSearchParams({ q: request.id }).toString()}`}
+          >
+            Open reversal journal
+          </AdminTextLink>
+        </div>
+      );
+    }
     return <span className="muted">Closed</span>;
   }
   if (request.status === 'NEEDS_BANK_CORRECTION') {
@@ -317,6 +378,9 @@ function WithdrawalRequestActions({
   }
   return (
     <div className="admin-inline-action-stack">
+      {request.preflight ? (
+        <WithdrawalPreflightStatus request={request} />
+      ) : null}
       {request.status === 'HOLD' || request.status === 'REVIEW_REQUIRED' ? (
         <>
           <StatusBadge tone="warning">Finance review required before payout</StatusBadge>
@@ -324,7 +388,10 @@ function WithdrawalRequestActions({
         </>
       ) : null}
 
-      {request.status === 'REQUESTED' || request.status === 'HOLD' || request.status === 'REVIEW_REQUIRED' ? (
+      {(request.status === 'REQUESTED' ||
+        request.status === 'HOLD' ||
+        request.status === 'REVIEW_REQUIRED') &&
+      request.preflight?.canApprove !== false ? (
         <AdminInlineActionForm action={updateWithdrawalRequestAction}>
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="APPROVED" />
@@ -340,30 +407,11 @@ function WithdrawalRequestActions({
         </AdminInlineActionForm>
       ) : null}
 
-      {request.status === 'APPROVED' ? (
+      {request.status === 'APPROVED' &&
+      request.preflight?.canMarkBankTransferPending !== false ? (
         <AdminInlineActionForm action={updateWithdrawalRequestAction}>
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="BANK_TRANSFER_PENDING" />
-          <AdminFormInput
-            label={`Bank pending note for ${partnerLabel(request)}`}
-            name="adminNote"
-            placeholder="Bank payout run note"
-            type="text"
-          />
-          <AdminFormControlButton className="button-sm button-info" type="submit">
-            Bank pending
-          </AdminFormControlButton>
-        </AdminInlineActionForm>
-      ) : null}
-
-      {request.status === 'BANK_TRANSFER_PENDING' ? (
-        <StatusBadge tone="info">Manual bank transfer pending</StatusBadge>
-      ) : null}
-
-      {request.status === 'APPROVED' || request.status === 'BANK_TRANSFER_PENDING' ? (
-        <AdminInlineActionForm action={updateWithdrawalRequestAction}>
-          <input name="requestId" type="hidden" value={request.id} />
-          <input name="status" type="hidden" value="PAID" />
           <AdminFormInput
             label={`Transfer reference for ${partnerLabel(request)}`}
             name="transferRef"
@@ -379,23 +427,35 @@ function WithdrawalRequestActions({
           <AdminFormInput
             label={`Bank transfer evidence URL for ${partnerLabel(request)}`}
             name="attachmentUrl"
-            placeholder="Evidence URL"
+            placeholder="Private evidence URL"
             required
             type="url"
           />
-          <AdminFormSelect
-            disabled={financeApproverOptions.length === 0}
-            label={`Separate Finance approver for ${partnerLabel(request)}`}
-            name="approvalAdminId"
-            options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}
-            required
+          <AdminFormInput
+            label={`Transfer note for ${partnerLabel(request)}`}
+            name="adminNote"
+            placeholder="Bank payout run note"
+            type="text"
           />
+          <AdminFormControlButton className="button-sm button-info" type="submit">
+            Submit transfer for approval
+          </AdminFormControlButton>
+        </AdminInlineActionForm>
+      ) : null}
+
+      {request.status === 'BANK_TRANSFER_PENDING' ? (
+        <StatusBadge tone="info">Paid closeout approval pending</StatusBadge>
+      ) : null}
+
+      {request.status === 'BANK_TRANSFER_PENDING' && request.preflight?.canMarkPaid ? (
+        <AdminInlineActionForm action={updateWithdrawalRequestAction}>
+          <input name="requestId" type="hidden" value={request.id} />
+          <input name="status" type="hidden" value="PAID" />
           <AdminFormControlButton
             className="button-sm button-success"
-            disabled={financeApproverOptions.length === 0}
             type="submit"
           >
-            Mark paid
+            Approve paid closeout
           </AdminFormControlButton>
         </AdminInlineActionForm>
       ) : null}
@@ -417,11 +477,12 @@ function WithdrawalRequestActions({
         </AdminInlineActionForm>
       ) : null}
 
-      {request.status === 'REQUESTED' ||
-      request.status === 'APPROVED' ||
-      request.status === 'BANK_TRANSFER_PENDING' ||
-      request.status === 'HOLD' ||
-      request.status === 'REVIEW_REQUIRED' ? (
+      {(request.status === 'REQUESTED' ||
+        request.status === 'APPROVED' ||
+        request.status === 'BANK_TRANSFER_PENDING' ||
+        request.status === 'HOLD' ||
+        request.status === 'REVIEW_REQUIRED') &&
+      request.preflight?.canReject !== false ? (
         <AdminInlineActionForm action={updateWithdrawalRequestAction}>
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="REJECTED" />
@@ -438,6 +499,38 @@ function WithdrawalRequestActions({
       ) : null}
     </div>
   );
+}
+
+function WithdrawalPreflightStatus({
+  request,
+}: {
+  readonly request: AdminProviderWalletWithdrawalRequest;
+}) {
+  const preflight = request.preflight;
+  if (!preflight) return null;
+  const messages = preflight.blockers.length ? preflight.blockers : preflight.warnings;
+  if (messages.length === 0) {
+    return <StatusBadge tone="success">Server preflight ready</StatusBadge>;
+  }
+  return (
+    <AdminInlineNotice role="status" tone={preflight.blockers.length ? 'danger' : 'warning'}>
+      {messages.map((message) => message.message).join(' ')}
+    </AdminInlineNotice>
+  );
+}
+
+function withdrawalReversalEvidence(metadata: unknown) {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+  const reversal = Reflect.get(metadata, 'reversal');
+  if (!reversal || typeof reversal !== 'object' || Array.isArray(reversal)) return null;
+  const reference = Reflect.get(reversal, 'reversalReference');
+  const reason = Reflect.get(reversal, 'reason');
+  const occurredAt = Reflect.get(reversal, 'occurredAt');
+  return {
+    occurredAt: typeof occurredAt === 'string' ? occurredAt : null,
+    reason: typeof reason === 'string' ? reason : null,
+    reference: typeof reference === 'string' ? reference : null,
+  };
 }
 
 function withdrawalBankReconciliationHref(request: AdminProviderWalletWithdrawalRequest) {
@@ -501,11 +594,7 @@ function bankAccountLabel(request: AdminProviderWalletWithdrawalRequest) {
 }
 
 function statusLabel(status: AdminProviderWalletWithdrawalRequest['status']) {
-  return status
-    .toLowerCase()
-    .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
+  return adminWorkflowStatusLabel(status);
 }
 
 function statusBadgeTone(status: AdminProviderWalletWithdrawalRequest['status']): StatusBadgeTone {

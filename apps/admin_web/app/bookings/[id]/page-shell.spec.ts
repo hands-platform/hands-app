@@ -8,8 +8,8 @@ describe('BookingDetailPage shell', () => {
     expect(source).toContain('<AdminPageTemplate');
     expect(source).toContain('actions={<BookingDetailToolbar {...toolbarProps} />}');
     expect(source).toContain('contentClassName="booking-detail-page"');
-    expect(source).toContain('title={`Booking ${shortId(booking.id)}`}');
-    expect(source).toContain('description={`${toolbarProps.serviceLabel} - ${toolbarProps.status}`}');
+    expect(source).toContain('title={toolbarProps.serviceLabel}');
+    expect(source).toContain('description={`${unifiedDetail.statusLabel} · Booking ID ${booking.id}`}');
     expect(source).not.toContain('<div className="booking-detail-page">');
   });
 });

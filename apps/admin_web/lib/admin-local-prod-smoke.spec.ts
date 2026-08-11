@@ -8,10 +8,10 @@ describe('local production Admin smoke scripts', () => {
     const startScript = readFileSync('../../infra/scripts/start-hands-local.ps1', 'utf8');
 
     expect(rootPackage.scripts['local:start']).toBe(
-      'powershell -ExecutionPolicy Bypass -File infra/scripts/start-hands-local.ps1',
+      'powershell -ExecutionPolicy Bypass -File infra/scripts/start-hands-local.ps1 -AdminPort 3102',
     );
     expect(rootPackage.scripts['local:start:prod']).toBe(
-      'powershell -ExecutionPolicy Bypass -File infra/scripts/start-hands-local.ps1 -AdminProduction',
+      'powershell -ExecutionPolicy Bypass -File infra/scripts/start-hands-local.ps1 -AdminProduction -AdminPort 3101',
     );
     expect(startScript).toContain('[switch]$AdminProduction');
     expect(startScript).toContain('npm.cmd run build --workspace @massage-vn/admin-web');

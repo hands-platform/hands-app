@@ -1,50 +1,64 @@
-import type { AdminPayment, AdminPaymentCallbackAttempt, AdminPaymentSummary } from '../../lib/admin-api';
-import { shortId } from '../../lib/admin-format';
+import type { AdminPayment, AdminPaymentSummary } from '../../lib/admin-api';
 import {
   type AdminDateRange,
   dateRangeLabel,
-  isInDateRange,
   normalizeDateRange,
   readSearchParam,
 } from '../../lib/date-range';
-import type { PaymentCallbackAttemptLedgerRow } from './payment-callback-attempt-ledger-section';
+import {
+  readAdminQueueAge,
+  readAdminQueueSlaFilter,
+  readAdminQueueSort,
+  type AdminQueueAge,
+  type AdminQueueSort,
+  type AdminQueueSlaFilter,
+} from '../../lib/admin-queue-list';
 import type { PaymentFilterLink, PaymentRangeLink } from './payment-filter-board-section';
-import { paymentFilterLinks, paymentRangeLinks, withPaymentRange } from './payment-page-links';
+import { paymentFilterLinks, paymentRangeLinks } from './payment-page-links';
 import {
   paymentCallbackAttemptNeedsReview,
-  paymentCallbackAttemptPill,
   paymentCallbackAttemptVerified,
-  paymentCallbackNeedsReview,
-  paymentCallbackVerified,
   paymentCashDebtNeedsSettlement,
   paymentOpsState,
   paymentPriority,
-  paymentRecordDate,
 } from './payment-page-rules';
 
 export type PaymentFilters = {
+  readonly age: AdminQueueAge;
+  readonly bookingStatus: string;
+  readonly customerProfileId: string;
+  readonly evidence: string;
   readonly page: number;
   readonly pageSize: number;
+  readonly paymentMethod: string;
+  readonly paymentStatus: string;
+  readonly q: string;
   readonly range: AdminDateRange;
   readonly review: string;
+  readonly sla: AdminQueueSlaFilter;
+  readonly sort: AdminQueueSort;
 };
 
 export type PaymentMetrics = {
+  readonly activeCashCollection: number;
   readonly authorized: number;
+  readonly captureReady: number;
   readonly callbackReview: number;
   readonly callbackVerified: number;
   readonly captured: number;
   readonly cashDebt: number;
+  readonly evidenceConflicts: number;
   readonly linkedRefunds: number;
   readonly needsAction: number;
   readonly pendingCash: number;
   readonly refunded: number;
+  readonly releaseRecommended: number;
+  readonly staleMismatch: number;
 };
 
 export type PaymentPageModel = {
   readonly activeFilter: PaymentFilterLink | null;
   readonly allPayments: readonly AdminPayment[];
-  readonly callbackAttemptRows: readonly PaymentCallbackAttemptLedgerRow[];
   readonly dateRangeLabel: string;
   readonly filters: PaymentFilters;
   readonly metrics: PaymentMetrics;
@@ -52,53 +66,58 @@ export type PaymentPageModel = {
   readonly rangeLinks: readonly PaymentRangeLink[];
   readonly totalCount: number;
   readonly reviewLinks: readonly PaymentFilterLink[];
-  readonly visibleCallbackAttempts: readonly AdminPaymentCallbackAttempt[];
 };
 
 const PAYMENT_OPERATIONS_API_LIMIT = 10;
 const PAYMENT_OPERATIONS_API_MAX_LIMIT = 50;
-const DEFAULT_PAYMENT_REVIEW = 'needs-action';
+const DEFAULT_PAYMENT_REVIEW = 'capture-ready';
 
 export function buildPaymentPageModel({
-  callbackAttempts,
   params,
   paymentSummary,
   payments,
 }: {
-  readonly callbackAttempts: readonly AdminPaymentCallbackAttempt[];
   readonly params: Record<string, string | string[] | undefined>;
   readonly paymentSummary?: AdminPaymentSummary | null;
   readonly payments: readonly AdminPayment[];
 }): PaymentPageModel {
   const filters = buildPaymentFilters(params);
-  const allPayments = sortPayments(payments);
-  const sortedCallbackAttempts = sortPaymentCallbackAttempts(callbackAttempts);
-  const visiblePayments = filterPayments(allPayments, filters);
-  const visibleCallbackAttempts = filterPaymentCallbackAttempts(sortedCallbackAttempts, filters);
+  const allPayments = sortPayments(payments, filters.sort);
+  const visiblePayments = allPayments;
   const reviewLinks = paymentFilterLinks().map((item) => ({
     ...item,
-    href: withPaymentRange(item.href, filters.range),
+    href: buildPaymentPageHref({ ...filters, page: 1, review: item.review }),
+  }));
+  const rangeLinks = paymentRangeLinks(filters.review).map((item) => ({
+    ...item,
+    href: buildPaymentPageHref({ ...filters, page: 1, range: item.range }),
   }));
 
   return {
     activeFilter: paymentFilterLinks().find((item) => item.review === filters.review) ?? null,
     allPayments,
-    callbackAttemptRows: buildPaymentCallbackAttemptLedgerRows(visibleCallbackAttempts),
     dateRangeLabel: dateRangeLabel(filters.range),
     filters,
     metrics: paymentSummary
       ? paymentMetricsFromSummary(paymentSummary)
-      : buildPaymentMetrics(visiblePayments, visibleCallbackAttempts),
+      : buildPaymentMetrics(visiblePayments),
     payments: visiblePayments,
-    rangeLinks: paymentRangeLinks(filters.review),
+    rangeLinks,
     reviewLinks,
-    totalCount: paymentSummary?.totalCount ?? allPayments.length,
-    visibleCallbackAttempts,
+    totalCount: paymentSummary?.currentQueueTotal ?? paymentSummary?.totalCount ?? allPayments.length,
   };
 }
 
-export function sortPayments(payments: readonly AdminPayment[]): AdminPayment[] {
+export function sortPayments(
+  payments: readonly AdminPayment[],
+  sort: AdminQueueSort = 'newest',
+): AdminPayment[] {
   return [...payments].sort((left, right) => {
+    if (sort === 'oldest') {
+      const leftDate = Date.parse(left.booking?.updatedAt ?? left.booking?.createdAt ?? '');
+      const rightDate = Date.parse(right.booking?.updatedAt ?? right.booking?.createdAt ?? '');
+      return (Number.isFinite(leftDate) ? leftDate : 0) - (Number.isFinite(rightDate) ? rightDate : 0);
+    }
     const leftPriority = paymentPriority(left);
     const rightPriority = paymentPriority(right);
     if (leftPriority !== rightPriority) {
@@ -109,176 +128,121 @@ export function sortPayments(payments: readonly AdminPayment[]): AdminPayment[] 
   });
 }
 
-export function sortPaymentCallbackAttempts(
-  attempts: readonly AdminPaymentCallbackAttempt[],
-): AdminPaymentCallbackAttempt[] {
-  return [...attempts].sort((left, right) => {
-    const leftDate = Date.parse(left.createdAt || '');
-    const rightDate = Date.parse(right.createdAt || '');
-    return (Number.isFinite(rightDate) ? rightDate : 0) - (Number.isFinite(leftDate) ? leftDate : 0);
-  });
-}
-
-export function buildPaymentCallbackAttemptLedgerRows(
-  attempts: readonly AdminPaymentCallbackAttempt[],
-): PaymentCallbackAttemptLedgerRow[] {
-  return attempts.map((attempt) => ({
-    amount: attempt.callbackAmount ?? null,
-    bookingHref: attempt.payment?.bookingId ? `/bookings/${attempt.payment.bookingId}` : null,
-    createdAt: attempt.createdAt,
-    currency: attempt.payment?.currency ?? 'VND',
-    errorMessage: attempt.errorMessage ?? null,
-    gatewayTransactionId: attempt.gatewayTransactionId ?? 'No gateway transaction id',
-    id: attempt.id,
-    method: attempt.method,
-    outcome: attempt.outcome,
-    paymentIdLabel: attempt.paymentId ? shortId(attempt.paymentId) : null,
-    paymentStatus: attempt.payment?.status ?? null,
-    pillClass: paymentCallbackAttemptPill(attempt),
-    providerRef: attempt.providerRef ?? 'NONE',
-    providerStatus: attempt.providerStatus ?? 'No status code',
-    signatureLabel: attempt.signatureVerified === true ? 'Verified' : 'Not verified',
-    verificationMode: attempt.verificationMode ?? 'unknown',
-  }));
-}
-
 export function buildPaymentFilters(params: Record<string, string | string[] | undefined>): PaymentFilters {
+  const customerProfileId = readSearchParam(params.customerProfileId).trim();
   const rangeParam = readSearchParam(params.range);
   const reviewParam = readSearchParam(params.review);
 
+  const review = normalizePaymentReview(reviewParam || DEFAULT_PAYMENT_REVIEW);
+
   return {
+    age: readAdminQueueAge(params.age),
+    bookingStatus: readPaymentEnumFilter(params.bookingStatus),
+    customerProfileId,
+    evidence: readPaymentEvidenceFilter(params.evidence),
     page: readPaymentPage(params.page),
     pageSize: readPaymentPageSize(params.pageSize),
-    range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
-    review: reviewParam || DEFAULT_PAYMENT_REVIEW,
+    paymentMethod: readPaymentEnumFilter(params.paymentMethod),
+    paymentStatus: readPaymentEnumFilter(params.paymentStatus),
+    q: readSearchParam(params.q).trim().slice(0, 120),
+    range: rangeParam ? normalizeDateRange(rangeParam) : 'all',
+    review,
+    sla: review === 'authorized' ? readAdminQueueSlaFilter(params.sla) : 'all',
+    sort: readSearchParam(params.sort) ? readAdminQueueSort(params.sort) : 'oldest',
   };
+}
+
+function normalizePaymentReview(review: string) {
+  if (review === 'callback-review') return 'evidence-conflict';
+  if (review === 'stale-mismatch') return 'terminal-cash-cleanup';
+  if (review === 'capture') return 'capture-ready';
+  if (review === 'cash') return 'active-cash';
+  if (review === 'missing-ref') return 'missing-gateway-evidence';
+  return review;
 }
 
 export function buildPaymentOperationsApiHref(filters: PaymentFilters): string {
   return buildPaymentApiHref('/admin/payments', filters, { includePaging: true });
 }
 
-export function buildPaymentCallbackAttemptsApiHref(filters: PaymentFilters): string {
-  return buildPaymentApiHref('/admin/payment-callback-attempts', filters, {
-    review: paymentCallbackAttemptApiReview(filters.review),
-  });
-}
-
 export function buildPaymentSummaryApiHref(filters: PaymentFilters): string {
   const params = new URLSearchParams({ range: filters.range });
+  appendPaymentDirectoryParams(params, filters);
+  appendPaymentQueueParams(params, filters);
   if (shouldIncludePaymentApiReview(filters.review)) {
     params.set('review', filters.review);
+  }
+  if (filters.customerProfileId) {
+    params.set('customerProfileId', filters.customerProfileId);
   }
 
   return `/admin/payments/summary?${params.toString()}`;
 }
 
-export function filterPayments(payments: readonly AdminPayment[], filters: PaymentFilters): AdminPayment[] {
-  return payments.filter(
-    (payment) =>
-      isInDateRange(paymentRecordDate(payment), filters.range) &&
-      (!filters.review || paymentMatchesReview(payment, filters.review)),
-  );
-}
-
-export function filterPaymentCallbackAttempts(
-  attempts: readonly AdminPaymentCallbackAttempt[],
-  filters: PaymentFilters,
-): AdminPaymentCallbackAttempt[] {
-  return attempts.filter(
-    (attempt) =>
-      isInDateRange(attempt.createdAt, filters.range) &&
-      callbackAttemptMatchesReview(attempt, filters.review),
-  );
-}
-
-function paymentMatchesReview(payment: AdminPayment, review: string): boolean {
-  switch (review) {
-    case 'capture':
-      return payment.status === 'AUTHORIZED' && payment.booking?.status === 'COMPLETED';
-    case 'missing-ref':
-      return payment.status === 'AUTHORIZED' && !payment.providerRef;
-    case 'authorized':
-      return payment.status === 'AUTHORIZED';
-    case 'cash':
-      return payment.method === 'CASH' && payment.status === 'PENDING';
-    case 'cash-debt':
-      return paymentCashDebtNeedsSettlement(payment);
-    case 'needs-action':
-      return paymentOpsState(payment) !== 'settled';
-    case 'callback-review':
-      return (
-        (payment.callbackAttempts?.some(paymentCallbackAttemptNeedsReview) ?? false) ||
-        paymentCallbackNeedsReview(payment)
-      );
-    case 'callback-verified':
-      return (
-        (payment.callbackAttempts?.some(paymentCallbackAttemptVerified) ?? false) ||
-        paymentCallbackVerified(payment)
-      );
-    case 'refunded':
-      return payment.status === 'REFUNDED';
-    default:
-      return true;
-  }
-}
-
-function callbackAttemptMatchesReview(attempt: AdminPaymentCallbackAttempt, review: string): boolean {
-  if (!review) {
-    return true;
-  }
-  if (review === 'callback-review') {
-    return paymentCallbackAttemptNeedsReview(attempt);
-  }
-  if (review === 'needs-action') {
-    return paymentCallbackAttemptNeedsReview(attempt);
-  }
-  if (review === 'callback-verified') {
-    return paymentCallbackAttemptVerified(attempt);
-  }
-  return true;
-}
-
-function buildPaymentMetrics(
-  payments: readonly AdminPayment[],
-  callbackAttempts: readonly AdminPaymentCallbackAttempt[],
-): PaymentMetrics {
+function buildPaymentMetrics(payments: readonly AdminPayment[]): PaymentMetrics {
+  const callbackAttempts = payments.flatMap((payment) => payment.callbackAttempts ?? []);
   return {
+    activeCashCollection: payments.filter((payment) =>
+      payment.method === 'CASH' && payment.status === 'PENDING' &&
+      ['CREATED', 'OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']
+        .includes(payment.booking?.status ?? ''),
+    ).length,
     authorized: payments.filter((payment) => payment.status === 'AUTHORIZED').length,
+    captureReady: payments.filter((payment) =>
+      payment.actionDecisions?.some((decision) => decision.action === 'CAPTURE' && decision.state === 'AVAILABLE'),
+    ).length,
     callbackReview: callbackAttempts.filter(paymentCallbackAttemptNeedsReview).length,
     callbackVerified: callbackAttempts.filter(paymentCallbackAttemptVerified).length,
     captured: payments.filter((payment) => payment.status === 'CAPTURED').length,
     cashDebt: payments.filter(paymentCashDebtNeedsSettlement).length,
+    evidenceConflicts: payments.filter((payment) => payment.evidence?.state === 'CONFLICT').length,
     linkedRefunds: payments.reduce((total, payment) => total + (payment.refunds?.length ?? 0), 0),
     needsAction: payments.filter((payment) => paymentOpsState(payment) !== 'settled').length,
     pendingCash: payments.filter((payment) => payment.method === 'CASH' && payment.status === 'PENDING')
       .length,
     refunded: payments.filter((payment) => payment.status === 'REFUNDED').length,
+    releaseRecommended: payments.filter((payment) =>
+      payment.actionDecisions?.some((decision) => decision.action === 'RELEASE' && decision.state === 'AVAILABLE'),
+    ).length,
+    staleMismatch: payments.filter((payment) =>
+      payment.status === 'AUTHORIZED' && payment.booking?.status === 'COMPLETED' &&
+      !payment.actionDecisions?.some((decision) => decision.action === 'CAPTURE' && decision.state === 'AVAILABLE'),
+    ).length,
   };
 }
 
 function paymentMetricsFromSummary(summary: AdminPaymentSummary): PaymentMetrics {
   return {
+    activeCashCollection: summary.activeCashCollection ?? 0,
     authorized: summary.authorized,
+    captureReady: summary.captureReady ?? 0,
     callbackReview: summary.callbackReview,
     callbackVerified: summary.callbackVerified,
     captured: summary.captured,
     cashDebt: summary.cashDebt,
+    evidenceConflicts: summary.evidenceConflicts ?? 0,
     linkedRefunds: summary.linkedRefunds,
     needsAction: summary.needsAction,
     pendingCash: summary.pendingCash,
     refunded: summary.refunded,
+    releaseRecommended: summary.releaseRecommended ?? 0,
+    staleMismatch: summary.staleMismatch ?? 0,
   };
 }
 
 export function buildPaymentPageHref(filters: PaymentFilters, page?: number): string {
   const params = new URLSearchParams();
+  appendPaymentDirectoryParams(params, filters);
+  if (filters.customerProfileId) {
+    params.set('customerProfileId', filters.customerProfileId);
+  }
   if (filters.range !== 'all') {
     params.set('range', filters.range);
   }
   if (filters.review) {
     params.set('review', filters.review);
   }
+  appendPaymentQueueParams(params, filters);
   if (filters.pageSize !== PAYMENT_OPERATIONS_API_LIMIT) {
     params.set('pageSize', String(filters.pageSize));
   }
@@ -317,9 +281,14 @@ function buildPaymentApiHref(
   options: { readonly includePaging?: boolean; readonly review?: string | null } = {},
 ): string {
   const params = new URLSearchParams({ take: String(filters.pageSize), range: filters.range });
+  appendPaymentDirectoryParams(params, filters);
+  appendPaymentQueueParams(params, filters);
   const review = options.review === undefined ? filters.review : options.review;
   if (shouldIncludePaymentApiReview(review)) {
     params.set('review', review);
+  }
+  if (filters.customerProfileId) {
+    params.set('customerProfileId', filters.customerProfileId);
   }
   if (options.includePaging) {
     const skip = (filters.page - 1) * filters.pageSize;
@@ -331,18 +300,28 @@ function buildPaymentApiHref(
   return `${path}?${params.toString()}`;
 }
 
-function shouldIncludePaymentApiReview(review: string | null | undefined): review is string {
-  return Boolean(review && review !== 'all');
+function appendPaymentQueueParams(params: URLSearchParams, filters: PaymentFilters) {
+  if (filters.age !== 'all') {
+    params.set('age', filters.age);
+  }
+  if (filters.sort !== 'newest') {
+    params.set('sort', filters.sort);
+  }
+  if (filters.sla !== 'all') {
+    params.set('sla', filters.sla);
+  }
 }
 
-function paymentCallbackAttemptApiReview(review: string): string | null {
-  if (review === 'needs-action' || review === 'callback-review') {
-    return 'callback-review';
-  }
-  if (review === 'callback-verified') {
-    return 'callback-verified';
-  }
-  return null;
+function appendPaymentDirectoryParams(params: URLSearchParams, filters: PaymentFilters) {
+  if (filters.q) params.set('q', filters.q);
+  if (filters.paymentMethod) params.set('paymentMethod', filters.paymentMethod);
+  if (filters.paymentStatus) params.set('paymentStatus', filters.paymentStatus);
+  if (filters.bookingStatus) params.set('bookingStatus', filters.bookingStatus);
+  if (filters.evidence) params.set('evidence', filters.evidence);
+}
+
+function shouldIncludePaymentApiReview(review: string | null | undefined): review is string {
+  return Boolean(review && review !== 'all');
 }
 
 function readPaymentPage(value: string | string[] | undefined) {
@@ -356,4 +335,13 @@ function readPaymentPageSize(value: string | string[] | undefined) {
     return PAYMENT_OPERATIONS_API_LIMIT;
   }
   return Math.min(Math.trunc(pageSize), PAYMENT_OPERATIONS_API_MAX_LIMIT);
+}
+
+function readPaymentEnumFilter(value: string | string[] | undefined) {
+  return readSearchParam(value).trim().toUpperCase().replace(/[^A-Z_]/g, '');
+}
+
+function readPaymentEvidenceFilter(value: string | string[] | undefined) {
+  const evidence = readSearchParam(value).trim().toLowerCase();
+  return ['verified', 'missing', 'conflict', 'not-applicable'].includes(evidence) ? evidence : '';
 }

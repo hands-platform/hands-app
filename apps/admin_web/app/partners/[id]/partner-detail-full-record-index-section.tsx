@@ -1,65 +1,101 @@
-import type { ReactNode } from 'react';
-
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
+import { type PartnerDecisionQueue, withPartnerDecisionQueue } from '../partner-review-mode';
+import { buildPartnerDetailWorkspaceHref } from './partner-detail-workspace-model';
 
 type PartnerDetailFullRecordIndexSectionProps = {
-  readonly appActivityCount: number;
+  readonly approvalOpenCount: number;
   readonly bookingRecordCount: number;
-  readonly cashDebtLabel: ReactNode;
-  readonly dailyDigestCount: number;
-  readonly missingKycDocumentCount: number;
+  readonly canViewDiagnostics: boolean;
+  readonly decisionQueue?: PartnerDecisionQueue | null;
+  readonly financeOpenCount: number;
+  readonly partnerId: string;
+  readonly workOpenCount: number;
 };
 
 export function PartnerDetailFullRecordIndexSection({
-  appActivityCount,
+  approvalOpenCount,
   bookingRecordCount,
-  cashDebtLabel,
-  dailyDigestCount,
-  missingKycDocumentCount,
+  canViewDiagnostics,
+  decisionQueue = null,
+  financeOpenCount,
+  partnerId,
+  workOpenCount,
 }: PartnerDetailFullRecordIndexSectionProps) {
+  const openCount = approvalOpenCount + workOpenCount + financeOpenCount;
+
   return (
-    <AdminCard className="admin-mb-16" id="partner-full-record-index">
+    <AdminCard className="partner-workspace-index" id="partner-full-record-index">
       <AdminSectionHeader
-        actions={<StatusBadge tone="info">{bookingRecordCount} booking record(s)</StatusBadge>}
-        description="Factual partner record map for operators. Use these links to jump to identity, booking/chat, payout, documents, app activity, agreements, and review history inside this partner detail record."
-        title="Partner full record index"
+        actions={<StatusBadge tone={openCount ? 'warning' : 'success'}>{openCount ? `${openCount} open` : 'No action'}</StatusBadge>}
+        description="Choose the existing work area for this Partner. This compatibility URL no longer loads every record and form onto one page."
+        title="Partner work areas"
       />
       <AdminTraceSummary
-        className="admin-mt-12"
+        ariaLabel="Partner work areas"
+        className="admin-mt-12 partner-workspace-index-grid"
+        inferScope={false}
         metrics={[
           {
-            detail: 'Preferred, selected, and marketplace participation requests.',
-            href: '#booking-chat-records',
-            label: 'Booking and chat',
-            value: bookingRecordCount,
+            detail: 'Profile decision, KYC, submitted evidence, and public profile content.',
+            href: withPartnerDecisionQueue(
+              buildPartnerDetailWorkspaceHref(partnerId, 'dossier', 'approval'),
+              decisionQueue,
+            ),
+            label: 'Approval & profile',
+            value: approvalOpenCount ? `${approvalOpenCount} open` : 'Ready',
           },
           {
-            detail: 'Cash fee debt and payout status.',
-            href: '#payout',
-            label: 'Wallet and payout',
-            value: cashDebtLabel,
+            detail: 'Service, location, app reachability, schedule, and booking readiness.',
+            href: withPartnerDecisionQueue(
+              buildPartnerDetailWorkspaceHref(partnerId, 'access', 'readiness'),
+              decisionQueue,
+            ),
+            label: 'Work readiness',
+            value: workOpenCount ? `${workOpenCount} open` : 'Ready',
           },
           {
-            detail: 'CCCD front/back and selfie evidence.',
-            href: '#documents',
-            label: 'KYC documents',
-            value: `${missingKycDocumentCount} missing`,
+            detail: 'Booking journey, current participation, and retained evidence workspaces.',
+            href: withPartnerDecisionQueue(
+              buildPartnerDetailWorkspaceHref(partnerId, 'bookings', 'journey'),
+              decisionQueue,
+            ),
+            label: 'Booking evidence',
+            value: `${bookingRecordCount} records`,
           },
           {
-            detail: 'Sessions, devices, push, and location records.',
-            href: '#app-activity',
-            label: 'App activity',
-            value: appActivityCount,
+            detail: 'Partner wallet, receivable, withdrawal, and payout records.',
+            href: withPartnerDecisionQueue(
+              buildPartnerDetailWorkspaceHref(partnerId, 'dossier', 'finance'),
+              decisionQueue,
+            ),
+            label: 'Money',
+            value: financeOpenCount ? `${financeOpenCount} open` : 'No open issue',
           },
           {
-            detail: 'Date-grouped partner operations records.',
-            href: '#partner-daily-digest',
-            label: 'Daily digest',
-            value: dailyDigestCount,
+            detail: 'Reviews, operator notes, reports, account controls, and retained activity.',
+            href: withPartnerDecisionQueue(
+              buildPartnerDetailWorkspaceHref(partnerId, 'control', 'records'),
+              decisionQueue,
+            ),
+            label: 'History & controls',
+            value: 'Open workspace',
           },
+          ...(canViewDiagnostics
+            ? [
+                {
+                  detail: 'Developer-only device, session, and technical records.',
+                  href: withPartnerDecisionQueue(
+                    buildPartnerDetailWorkspaceHref(partnerId, 'access', 'diagnostics'),
+                    decisionQueue,
+                  ),
+                  label: 'Diagnostics',
+                  value: 'Developer only',
+                },
+              ]
+            : []),
         ]}
       />
     </AdminCard>

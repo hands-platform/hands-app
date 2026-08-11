@@ -27,6 +27,8 @@ const WALLET_WITHDRAWAL_ADMIN_ACTION_STATUSES = new Set(['REQUESTED', 'APPROVED'
 const WALLET_WITHDRAWAL_TERMINAL_STATUSES = new Set(['PAID', 'REJECTED', 'CANCELLED']);
 
 export type PartnerMasterRow = {
+  appActivityStatus: 'active' | 'inactive_7d' | 'never_tracked';
+  appLastActiveAt: string | null;
   avatarStatus: AdminAvatarStatus;
   provider: AdminProvider;
   initials: string;
@@ -68,6 +70,10 @@ export type PartnerMasterRow = {
   accountBlocked: boolean;
   accountNote: string;
   approvalIssues: readonly PartnerReviewIssue[];
+  approvalQueueIssues: readonly PartnerReviewIssue[];
+  approvalSubmittedAt: string | null;
+  approvalHoldReason: string | null;
+  verificationStatus: string;
 };
 
 export type PartnerMasterRowDeps = {
@@ -98,8 +104,11 @@ export function buildPartnerMasterRow(
       }
     : partnerBookingClosureCounts(bookingRows);
   const latestAuditLog = latestProviderAuditLog(provider);
+  const approvalIssues = providerReviewIssues(provider, opsPolicy);
 
   return {
+    appActivityStatus: provider.appActivitySummary?.activityStatus ?? 'never_tracked',
+    appLastActiveAt: provider.appActivitySummary?.lastActiveAt ?? null,
     provider,
     initials: partnerInitials(displayName),
     displayName,
@@ -145,9 +154,49 @@ export function buildPartnerMasterRow(
       : 'No partner memo or audit event saved yet',
     accountBlocked,
     accountNote: accountBlocked ? (provider.blockedReason ?? 'No block reason saved') : 'Normal account',
-    approvalIssues: providerReviewIssues(provider, opsPolicy),
+    approvalIssues,
+    approvalQueueIssues: partnerApprovalQueueIssues(approvalIssues),
+    approvalSubmittedAt: partnerApprovalSubmittedAt(provider),
+    approvalHoldReason: partnerApprovalHoldReason(provider),
+    verificationStatus: provider.verification?.status ?? 'MISSING',
     avatarStatus: partnerMasterAvatarStatus(provider, bookingRows),
   };
+}
+
+function partnerApprovalSubmittedAt(provider: AdminProvider) {
+  const pendingSubmissions = [
+    provider.verification?.status === 'SUBMITTED' ? provider.verification.submittedAt : null,
+    provider.kyc?.status === 'PENDING' ? provider.kyc.submittedAt : null,
+  ].filter((value): value is string => Boolean(value) && dateMs(value) > 0);
+
+  return pendingSubmissions.sort((left, right) => dateMs(left) - dateMs(right))[0] ?? null;
+}
+
+function partnerApprovalQueueIssues(issues: readonly PartnerReviewIssue[]) {
+  return issues.filter((issue) => {
+    const label = issue.label.toLowerCase();
+    return (
+      label === 'account blocked' ||
+      label.startsWith('identity docs ') ||
+      label.startsWith('document ') ||
+      label.startsWith('media ')
+    );
+  });
+}
+
+function partnerApprovalHoldReason(provider: AdminProvider) {
+  const rejectedDocumentReason = provider.documents?.find(
+    (document) => document.status === 'REJECTED' && document.rejectionReason?.trim(),
+  )?.rejectionReason;
+  const reasons = [
+    provider.blockedAt ? provider.blockedReason : null,
+    provider.verification?.rejectionReason,
+    provider.kyc?.rejectionReason,
+    rejectedDocumentReason,
+  ];
+
+  const reason = reasons.find((candidate): candidate is string => Boolean(candidate?.trim()));
+  return reason ? compactValue(reason.trim(), 120) : null;
 }
 
 function partnerWalletWithdrawalFacts(provider: AdminProvider) {

@@ -37,6 +37,7 @@ describe('security middleware', () => {
     });
     const req = {
       headers: { 'x-forwarded-for': '203.0.113.10, 10.0.0.1' },
+      ip: '203.0.113.10',
       method: 'POST',
       originalUrl: `/api/auth/verify-otp?attempt=${Date.now()}`,
     };
@@ -68,6 +69,7 @@ describe('security middleware', () => {
     });
     const req = (suffix: string) => ({
       headers: { 'x-forwarded-for': '198.51.100.22' },
+      ip: '198.51.100.22',
       method: 'POST',
       originalUrl: `/api/auth/verify-otp/${suffix}?attempt=${suffix}`,
     });

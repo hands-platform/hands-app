@@ -1,137 +1,103 @@
-import { readFileSync } from 'node:fs';
+import type { ComponentProps } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
-import { adminGet } from '../../lib/admin-api';
+import { adminGetResult } from '../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
 import OperationsHandoffPage from './page';
 
-vi.mock('../../lib/admin-api', async () => {
-  const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
-
-  return {
-    ...actual,
-    adminGet: vi.fn(),
-  };
-});
-
-vi.mock('../../lib/admin-operator-access', () => ({
-  getCurrentAdminOperatorAccess: vi.fn(),
+const { redirect } = vi.hoisted(() => ({
+  redirect: vi.fn(() => {
+    throw new Error('NEXT_REDIRECT');
+  }),
 }));
 
-const mockedAdminGet = vi.mocked(adminGet);
-const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAccess);
-const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
-const globalCss = readFileSync('app/globals.css', 'utf8');
+vi.mock('next/navigation', () => ({ redirect, useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
+vi.mock('next/link', () => ({
+  default: ({ children, prefetch, ...props }: ComponentProps<'a'> & { prefetch?: boolean }) => {
+    void prefetch;
+    return <a {...props}>{children}</a>;
+  },
+}));
+vi.mock('../../lib/admin-api', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
+  return { ...actual, adminGetResult: vi.fn() };
+});
+vi.mock('../../lib/admin-operator-access', () => ({ getCurrentAdminOperatorAccess: vi.fn() }));
+
+const mockedGet = vi.mocked(adminGetResult);
+const mockedAccess = vi.mocked(getCurrentAdminOperatorAccess);
+const emptyHandoffs = {
+  items: [],
+  openCount: 0,
+  pagination: { page: 1, pageSize: 25, totalPages: 1, totalRows: 0 },
+  totalCount: 0,
+};
 
 describe('OperationsHandoffPage', () => {
   beforeEach(() => {
-    mockedAdminGet.mockReset();
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
-    mockedGetCurrentAdminOperatorAccess.mockReset();
-    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+    redirect.mockClear();
+    mockedGet.mockReset();
+    mockedAccess.mockResolvedValue({
       categories: ['BOOKINGS_REALTIME'],
-      email: 'ops@example.com',
-      fullName: 'Ops',
-      id: 'ops-1',
+      email: 'operator@hands.test',
+      fullName: 'Current Operator',
+      id: 'admin-1',
       phone: null,
       roles: ['ADMIN'],
-      updatedAt: null,
     });
+    mockedGet.mockImplementation(async (_href, fallback) => ({ data: fallback, ok: true, status: 200 }));
   });
 
-  it('renders Operations History as a past-operations review page', async () => {
-    const page = await OperationsHandoffPage({
-      searchParams: Promise.resolve({}),
-    });
-    const markup = renderToStaticMarkup(page);
+  it('loads Current from the canonical bare route with independent exact queues', async () => {
+    const markup = renderToStaticMarkup(await OperationsHandoffPage({ searchParams: Promise.resolve({}) }));
+    const hrefs = mockedGet.mock.calls.map(([href]) => href);
 
-    expect(markup).toContain('admin-page-header admin-page-header-toolbar');
-    expect(markup).toContain('<h1>Operations History</h1>');
-    expect(markup).toContain('Review past operations');
-    expect(markup).toContain('href="/"');
-    expect(markup).toContain('Start Shift');
-    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=7d"');
-    expect(markup).toContain('Full history');
-    expect(markup).toContain('Open review checks');
-    expect(markup).toContain('Booking rows');
-    expect(markup).toContain('Failed alerts');
-    expect(markup).toContain('Cash debt partners');
-    expect(markup).toContain('Finance rows');
-    expect(markup).toContain('id="operations-handoff-review-order"');
-    expect(markup).toContain('Start with these history lanes before opening Full history tables.');
-    expect(markup.indexOf('id="operations-handoff-review-order"')).toBeLessThan(
-      markup.indexOf('id="operations-handoff-review-checklist"'),
+    expect(markup).toContain('<h1>Shift Handoff</h1>');
+    expect(markup).toContain('Current shift summary');
+    expect(markup).toContain('No open handoffs');
+    expect(markup).toContain('Create handoff');
+    expect(markup).toContain('Current Operator · Admin · operator@hands.test');
+    expect(hrefs).toEqual([
+      '/admin/operations-handoff/shift?page=1&pageSize=25&relationship=assigned&scope=current&status=open',
+      '/admin/operations-handoff/shift?page=1&pageSize=25&relationship=waiting&scope=current&status=open',
+      '/admin/operations-handoff/open-cases?age=all&page=1&pageSize=25&queue=all',
+      '/admin/operations-handoff/operators',
+    ]);
+    expect(mockedAccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads only the paged shift ledger in explicit History', async () => {
+    mockedGet.mockResolvedValueOnce({ data: emptyHandoffs, ok: true, status: 200 });
+    const markup = renderToStaticMarkup(
+      await OperationsHandoffPage({ searchParams: Promise.resolve({ view: 'history' }) }),
     );
-    expect(markup).toContain('href="/operations-handoff#operations-handoff-review-checklist"');
-    expect(markup).toContain('id="operations-handoff-review-checklist"');
-    expect(markup).toContain('Detailed history lists');
-    expect(markup).toContain('Full history opens these paginated review tables without loading them on the summary page.');
-    expect(markup).toContain('Activity stream');
-    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=7d#operations-handoff-activity-stream"');
-    expect(markup).toContain('Booking history');
-    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=7d#operations-handoff-booking-history"');
-    expect(markup).toContain('Customer and Partner signals');
-    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=7d#operations-handoff-customer-history"');
-    expect(markup).toContain('Finance closeout');
-    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=7d#operations-handoff-finance-closeout"');
-    expect(markup).toContain('card admin-section admin-mb-16 operations-handoff-full-details-card');
-    expect(markup).toContain('admin-form-control-link button button-secondary');
-    expect(markup).toContain('/operations-handoff?details=all');
-    expect(markup).not.toContain('href="/chat-archive"');
+
+    expect(markup).toContain('Handoff history filters');
+    expect(markup).toContain('No handoff history');
+    expect(markup).not.toContain('Create handoff');
+    expect(mockedGet).toHaveBeenCalledTimes(1);
+    expect(String(mockedGet.mock.calls[0]?.[0])).toContain('/admin/operations-handoff/shift?');
   });
 
-  it('lets operators return from full history details to the compact summary', async () => {
-    const page = await OperationsHandoffPage({
-      searchParams: Promise.resolve({ details: 'all', range: 'today' }),
-    });
-    const markup = renderToStaticMarkup(page);
+  it('redirects the legacy Current alias while preserving its query', async () => {
+    await expect(
+      OperationsHandoffPage({
+        searchParams: Promise.resolve({ age: 'over-24h', page: '2', q: 'refund', view: 'handoff' }),
+      }),
+    ).rejects.toThrow('NEXT_REDIRECT');
 
-    expect(markup).toContain('<h1>Operations History</h1>');
-    expect(markup).toContain('href="/operations-handoff?range=today"');
-    expect(markup).toContain('Summary view');
-    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=today#operations-handoff-review-checklist"');
-    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=today#operations-handoff-booking-history"');
-    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=today#operations-handoff-finance-closeout"');
-    expect(markup).toContain('Review order');
-    expect(markup).toContain('id="operations-handoff-review-order"');
-    expect(markup).toContain('Unified activity stream');
-    expect(markup).toContain('id="operations-handoff-activity-stream"');
-    expect(markup).toContain('Booking history queue');
-    expect(markup).toContain('id="operations-handoff-booking-history"');
-    expect(markup).toContain('Finance and chat closeout');
-    expect(markup).toContain('id="operations-handoff-finance-closeout"');
+    expect(redirect).toHaveBeenCalledWith('/operations-handoff?age=over-24h&page=2&q=refund');
+    expect(mockedGet).not.toHaveBeenCalled();
   });
 
-  it('keeps Start Shift live KPI metrics out of the handoff board', async () => {
-    const page = await OperationsHandoffPage({
-      searchParams: Promise.resolve({}),
-    });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('Operations review checklist');
-    expect(markup).toContain('Operations history notes');
-    expect(markup).not.toContain('Customer app online');
-    expect(markup).not.toContain('Partner app online');
-    expect(markup).not.toContain('Chat rooms');
-    expect(markup).not.toContain('Recent FCM sent');
-    expect(markup).not.toContain('/app-sessions');
-    expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/app-sessions/summary', null);
-  });
-
-  it('uses the shared Vuexy detail grid atom for brief and note panels', () => {
-    expect(pageSource).toContain('AdminDetailGrid');
-    expect(pageSource).toContain(
-      'paginateOperationsHandoffRows(activityStream, filters.detailPages.activity).rows',
+  it('does not present a History API failure as an empty ledger', async () => {
+    mockedGet.mockResolvedValueOnce({ data: emptyHandoffs, ok: false, status: 500 });
+    const markup = renderToStaticMarkup(
+      await OperationsHandoffPage({ searchParams: Promise.resolve({ view: 'history' }) }),
     );
-    expect(pageSource).not.toContain('<section className="detail-grid admin-mb-16"');
-  });
 
-  it('scopes handoff toolbar styling to direct page and detail grid cards', () => {
-    expect(globalCss).toContain('.operations-handoff-page > .card > .toolbar,');
-    expect(globalCss).toContain('.operations-handoff-page > .detail-grid > .card > .toolbar {');
-    expect(globalCss).toContain('.operations-handoff-page > .card > .toolbar h2,');
-    expect(globalCss).toContain('.operations-handoff-page > .detail-grid > .card > .toolbar h2 {');
-    expect(globalCss).not.toContain('.operations-handoff-page .card .toolbar');
+    expect(markup).toContain('Handoff history unavailable');
+    expect(markup).not.toContain('No handoff history');
   });
 });

@@ -1,0 +1,294 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - link "HANDS" [ref=e4] [cursor=pointer]:
+        - /url: /vi
+      - navigation "Đối tác HANDS, Tin mới, Đăng ký đối tác" [ref=e5]:
+        - link "Đối tác HANDS" [ref=e6] [cursor=pointer]:
+          - /url: /vi/partners
+        - link "Tin mới" [ref=e7] [cursor=pointer]:
+          - /url: /vi/news
+        - link "Đăng ký đối tác" [ref=e8] [cursor=pointer]:
+          - /url: https://join.hands.vn
+      - text: 
+      - generic [ref=e9]:
+        - group [ref=e10]:
+          - generic "Ngôn ngữ +" [ref=e11] [cursor=pointer]
+        - link "Tải ứng dụng" [ref=e12] [cursor=pointer]:
+          - /url: /vi/partners#download
+    - main [ref=e13]:
+      - generic [ref=e14]:
+        - generic "HANDS wellness" [ref=e15]
+        - generic [ref=e17]:
+          - paragraph [ref=e18]: HANDS · WELLNESS AT YOUR DOOR
+          - heading "Không gian wellness thoải mái nhất bắt đầu ngay nơi bạn đang ở." [level=1] [ref=e19]
+          - paragraph [ref=e20]: Tìm đối tác chuyên nghiệp gần bạn, chọn dịch vụ và tận hưởng tại nơi quen thuộc.
+          - generic [ref=e21]:
+            - link "Bắt đầu với HANDS" [ref=e22] [cursor=pointer]:
+              - /url: "#download"
+            - link "Xem đối tác ↗" [ref=e23] [cursor=pointer]:
+              - /url: /vi/partners
+        - button "Xem cách HANDS kết nối dịch vụ wellness 1:1 - 영상 보기" [ref=e25] [cursor=pointer]:
+          - generic [ref=e26]: PLAY
+          - generic [ref=e28]:
+            - strong [ref=e29]: Xem cách HANDS kết nối dịch vụ wellness 1:1
+            - generic [ref=e30]: Từ lựa chọn đối tác đến khi hoàn tất đặt lịch.
+      - generic [ref=e31]:
+        - paragraph [ref=e32]: A BETTER WAY TO FEEL BETTER
+        - heading "Tại nhà. Khi đi du lịch. Ngay khi bạn cần." [level=2] [ref=e33]
+        - generic [ref=e34]:
+          - article [ref=e35]:
+            - generic [ref=e36]: "01"
+            - heading "Đối tác gần bạn" [level=3] [ref=e37]
+            - paragraph [ref=e38]: So sánh đối tác đang hoạt động theo vị trí của bạn.
+          - article [ref=e39]:
+            - generic [ref=e40]: "02"
+            - heading "Lựa chọn minh bạch" [level=3] [ref=e41]
+            - paragraph [ref=e42]: Xem dịch vụ, giá và đánh giá trước khi lựa chọn.
+          - article [ref=e43]:
+            - generic [ref=e44]: "03"
+            - heading "Trải nghiệm liền mạch" [level=3] [ref=e45]
+            - paragraph [ref=e46]: Đặt lịch, trò chuyện, thanh toán và hỗ trợ trong một hành trình.
+      - region "HANDS service experience" [ref=e47]:
+        - generic [ref=e49]:
+          - article [ref=e50]:
+            - generic [ref=e52]:
+              - heading "나에게 맞는 마사지 테라피스트와 서비스를 한 번에 비교하세요." [level=2] [ref=e53]
+              - paragraph [ref=e54]: 프로필과 서비스, 가격, 리뷰를 비교하고 지금 필요한 웰니스 마사지 테라피스트를 선택할 수 있습니다.
+              - link "마사지 테라피스트 보기" [ref=e55] [cursor=pointer]:
+                - /url: "#partners"
+                - text: 마사지 테라피스트 보기
+                - generic [ref=e56]: ↗
+          - article [ref=e57]:
+            - generic [ref=e59]:
+              - heading "예약 이후의 모든 순간을 한 화면에서 확인하세요." [level=2] [ref=e60]
+              - paragraph [ref=e61]: 원하는 장소와 시간을 정하고 예약 상태와 채팅을 확인하며 서비스 시작을 기다릴 수 있습니다.
+              - link "이용 방법" [ref=e62] [cursor=pointer]:
+                - /url: "#how"
+                - text: 이용 방법
+                - generic [ref=e63]: ↗
+          - article [ref=e64]:
+            - generic [ref=e66]:
+              - heading "서비스가 끝날 때까지 HANDS가 연결을 이어갑니다." [level=2] [ref=e67]
+              - paragraph [ref=e68]: 예약 기록과 고객지원 흐름이 연결되어 도움이 필요한 순간에도 필요한 정보를 확인할 수 있습니다.
+              - link "안전과 신뢰" [ref=e69] [cursor=pointer]:
+                - /url: "#faq"
+                - text: 안전과 신뢰
+                - generic [ref=e70]: ↗
+      - region [ref=e71]:
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - paragraph [ref=e74]:
+              - generic [ref=e75]: ●
+              - text: HANDS METHOD
+            - heading "사람과 사람의 연결이 더 나은 웰니스를 만듭니다." [level=2] [ref=e76]
+            - paragraph [ref=e77]: 기술은 선택과 예약을 단순하게 만들고, 검증된 마사지 테라피스트는 고객이 원하는 장소에서 편안한 서비스를 완성합니다.
+          - generic [ref=e79]:
+            - strong [ref=e80]: 1:1
+            - paragraph [ref=e81]: 고객의 선택과 마사지 테라피스트의 전문성을 한 번의 예약으로 연결합니다.
+        - generic [ref=e82]:
+          - generic [ref=e83]:
+            - heading "웰니스가 필요한 순간을 위한 HANDS" [level=3] [ref=e84]
+            - paragraph [ref=e85]: 원하는 장소, 원하는 시간, 나에게 맞는 마사지 테라피스트.
+          - generic [ref=e87]:
+            - strong [ref=e88]: HANDS Partner
+            - generic [ref=e89]: Verified profile
+      - region [ref=e90]:
+        - generic [ref=e91]:
+          - strong [ref=e92]: "01"
+          - generic [ref=e93]:
+            - paragraph [ref=e94]: — Chọn địa chỉ
+            - heading "Chọn nơi nhận dịch vụ để xem các đối tác gần bạn trước." [level=2] [ref=e95]
+            - link "Bắt đầu với HANDS" [ref=e96] [cursor=pointer]:
+              - /url: "#download"
+            - generic [ref=e97]:
+              - generic [ref=e98]: 01/03
+              - group "HANDS 이용 단계" [ref=e99]:
+                - button "1. Chọn địa chỉ" [pressed] [ref=e100] [cursor=pointer]
+                - button "2. Chọn đối tác và dịch vụ" [ref=e102] [cursor=pointer]
+                - button "3. Đặt lịch và chờ thoải mái" [ref=e104] [cursor=pointer]
+      - region "Customer stories" [ref=e106]:
+        - paragraph [ref=e108]:
+          - generic [ref=e109]: ●
+          - text: CUSTOMER STORIES
+        - region "Sarah Mitchell customer stories" [ref=e110]:
+          - generic [ref=e111]:
+            - article [ref=e112]:
+              - generic [ref=e113]:
+                - heading "출장 중에도 편안한 선택" [level=3] [ref=e114]
+                - paragraph [ref=e115]: “ 낯선 지역에서도 후기와 가격을 비교하고 믿을 수 있는 마사지 테라피스트를 찾을 수 있었어요. ”
+              - generic [ref=e117]:
+                - strong [ref=e118]: Sarah Mitchell
+                - generic [ref=e119]: HANDS 고객 · 2026
+            - article [ref=e120]:
+              - generic [ref=e121]:
+                - heading "분명한 예약 과정" [level=3] [ref=e122]
+                - paragraph [ref=e123]: “ 마사지 테라피스트가 수락한 뒤 채팅과 상태가 연결되어 있어 기다리는 동안에도 안심됐어요. ”
+              - generic [ref=e125]:
+                - strong [ref=e126]: Elena Rossi
+                - generic [ref=e127]: HANDS 고객 · 2025
+            - article [ref=e128]:
+              - generic [ref=e129]:
+                - heading "나에게 맞는 마사지 테라피스트" [level=3] [ref=e130]
+                - paragraph [ref=e131]: “ 서비스와 리뷰를 한 번에 비교할 수 있어 원하는 스타일의 마사지 테라피스트를 고르기 쉬웠어요. ”
+              - generic [ref=e133]:
+                - strong [ref=e134]: Marcus Chen
+                - generic [ref=e135]: HANDS 고객 · 2026
+            - article [ref=e136]:
+              - generic [ref=e137]:
+                - heading [level=3] [ref=e138]: 출장 중에도 편안한 선택
+                - paragraph [ref=e139]: “ 낯선 지역에서도 후기와 가격을 비교하고 믿을 수 있는 마사지 테라피스트를 찾을 수 있었어요. ”
+              - generic [ref=e141]:
+                - strong [ref=e142]: Sarah Mitchell
+                - generic [ref=e143]: HANDS 고객 · 2026
+            - article [ref=e144]:
+              - generic [ref=e145]:
+                - heading [level=3] [ref=e146]: 분명한 예약 과정
+                - paragraph [ref=e147]: “ 마사지 테라피스트가 수락한 뒤 채팅과 상태가 연결되어 있어 기다리는 동안에도 안심됐어요. ”
+              - generic [ref=e149]:
+                - strong [ref=e150]: Elena Rossi
+                - generic [ref=e151]: HANDS 고객 · 2025
+            - article [ref=e152]:
+              - generic [ref=e153]:
+                - heading [level=3] [ref=e154]: 나에게 맞는 마사지 테라피스트
+                - paragraph [ref=e155]: “ 서비스와 리뷰를 한 번에 비교할 수 있어 원하는 스타일의 마사지 테라피스트를 고르기 쉬웠어요. ”
+              - generic [ref=e157]:
+                - strong [ref=e158]: Marcus Chen
+                - generic [ref=e159]: HANDS 고객 · 2026
+        - region "David Thompson customer stories" [ref=e160]:
+          - generic [ref=e161]:
+            - article [ref=e162]:
+              - generic [ref=e163]:
+                - heading "집에서 시작하는 휴식" [level=3] [ref=e164]
+                - paragraph [ref=e165]: “ 이동하지 않고 익숙한 공간에서 서비스를 받을 수 있다는 점이 가장 만족스러웠어요. ”
+              - generic [ref=e167]:
+                - strong [ref=e168]: David Thompson
+                - generic [ref=e169]: HANDS 고객 · 2026
+            - article [ref=e170]:
+              - generic [ref=e171]:
+                - heading "투명한 가격과 리뷰" [level=3] [ref=e172]
+                - paragraph [ref=e173]: “ 예약 전에 가격과 실제 후기를 확인할 수 있어 처음 이용할 때도 선택이 어렵지 않았어요. ”
+              - generic [ref=e175]:
+                - strong [ref=e176]: Sophia Williams
+                - generic [ref=e177]: HANDS 고객 · 2026
+            - article [ref=e178]:
+              - generic [ref=e179]:
+                - heading "필요한 순간의 웰니스" [level=3] [ref=e180]
+                - paragraph [ref=e181]: “ 바쁜 일정 사이에도 원하는 시간과 장소를 정해 서비스를 예약할 수 있어 편리했어요. ”
+              - generic [ref=e183]:
+                - strong [ref=e184]: James Peterson
+                - generic [ref=e185]: HANDS 고객 · 2026
+            - article [ref=e186]:
+              - generic [ref=e187]:
+                - heading [level=3] [ref=e188]: 집에서 시작하는 휴식
+                - paragraph [ref=e189]: “ 이동하지 않고 익숙한 공간에서 서비스를 받을 수 있다는 점이 가장 만족스러웠어요. ”
+              - generic [ref=e191]:
+                - strong [ref=e192]: David Thompson
+                - generic [ref=e193]: HANDS 고객 · 2026
+            - article [ref=e194]:
+              - generic [ref=e195]:
+                - heading [level=3] [ref=e196]: 투명한 가격과 리뷰
+                - paragraph [ref=e197]: “ 예약 전에 가격과 실제 후기를 확인할 수 있어 처음 이용할 때도 선택이 어렵지 않았어요. ”
+              - generic [ref=e199]:
+                - strong [ref=e200]: Sophia Williams
+                - generic [ref=e201]: HANDS 고객 · 2026
+            - article [ref=e202]:
+              - generic [ref=e203]:
+                - heading [level=3] [ref=e204]: 필요한 순간의 웰니스
+                - paragraph [ref=e205]: “ 바쁜 일정 사이에도 원하는 시간과 장소를 정해 서비스를 예약할 수 있어 편리했어요. ”
+              - generic [ref=e207]:
+                - strong [ref=e208]: James Peterson
+                - generic [ref=e209]: HANDS 고객 · 2026
+      - generic [ref=e211]:
+        - generic [ref=e212]:
+          - generic [ref=e213]:
+            - paragraph [ref=e214]: QUESTIONS, ANSWERED
+            - heading "Câu hỏi thường gặp" [level=2] [ref=e215]
+          - generic [ref=e216]:
+            - group [ref=e217]:
+              - generic "HANDS là dịch vụ gì? ×" [ref=e218] [cursor=pointer]
+              - paragraph [ref=e219]: HANDS giúp bạn tìm và đặt lịch với đối tác wellness đã được xác minh tại địa điểm và thời gian mong muốn.
+            - group [ref=e220]:
+              - generic "Tôi kiểm tra thông tin đối tác ở đâu? +" [ref=e221] [cursor=pointer]
+            - group [ref=e222]:
+              - generic "Sau khi đặt lịch sẽ diễn ra như thế nào? +" [ref=e223] [cursor=pointer]
+        - img "HANDS 웰니스 마사지 테라피스트" [ref=e224]:
+          - generic [ref=e225]:
+            - strong [ref=e226]: HANDS
+            - generic [ref=e227]: 예약부터 완료까지 연결된 고객지원
+      - region [ref=e228]:
+        - generic [ref=e229]:
+          - generic [ref=e230]:
+            - paragraph [ref=e231]: HANDS MASSAGE THERAPISTS
+            - heading "Massage therapist gần bạn" [level=2] [ref=e232]
+          - link "Xem tất cả ↗" [ref=e233] [cursor=pointer]:
+            - /url: /vi/partners
+        - generic [ref=e234]:
+          - link "Linh Wellness Linh Wellness District 1" [ref=e235] [cursor=pointer]:
+            - /url: /vi/partners/ho-chi-minh/district-1/linh-wellness--cmpb9dvqx0003vyqsk8dk7ufd
+            - img "Linh Wellness" [ref=e236]
+            - strong [ref=e237]: Linh Wellness
+            - generic [ref=e238]: District 1
+          - link "Smoke Partner Smoke Partner District 1" [ref=e239] [cursor=pointer]:
+            - /url: /vi/partners/ho-chi-minh/district-1/smoke-partner--cmqveehfy001ovyoc7vea1ht5
+            - img "Smoke Partner" [ref=e240]
+            - strong [ref=e241]: Smoke Partner
+            - generic [ref=e242]: District 1
+          - link "Smoke Partner Smoke Partner District 1" [ref=e243] [cursor=pointer]:
+            - /url: /vi/partners/ho-chi-minh/district-1/smoke-partner--cms4y5b0004huvyx0d67vbatl
+            - img "Smoke Partner" [ref=e244]
+            - strong [ref=e245]: Smoke Partner
+            - generic [ref=e246]: District 1
+          - link "Smoke Partner Smoke Partner District 1" [ref=e247] [cursor=pointer]:
+            - /url: /vi/partners/ho-chi-minh/district-1/smoke-partner--cmrqv1c1o007bvyow259y5lfr
+            - img "Smoke Partner" [ref=e248]
+            - strong [ref=e249]: Smoke Partner
+            - generic [ref=e250]: District 1
+          - link "Smoke Partner Smoke Partner District 1" [ref=e251] [cursor=pointer]:
+            - /url: /vi/partners/ho-chi-minh/district-1/smoke-partner--cmquo0mzn01hbvyu8ynwvjqhp
+            - img "Smoke Partner" [ref=e252]
+            - strong [ref=e253]: Smoke Partner
+            - generic [ref=e254]: District 1
+      - region [ref=e255]:
+        - generic [ref=e256]:
+          - heading "Tìm đối tác wellness phù hợp với nhịp sống của bạn." [level=2] [ref=e257]
+          - link "Tìm đối tác" [ref=e258] [cursor=pointer]:
+            - /url: /vi/partners
+            - text: Tìm đối tác
+            - generic [ref=e259]: ↗
+    - contentinfo [ref=e260]:
+      - generic [ref=e261]:
+        - link "HANDS" [ref=e262] [cursor=pointer]:
+          - /url: /vi
+        - paragraph [ref=e263]: Wellness, wherever you are.
+      - generic [ref=e264]:
+        - generic [ref=e265]:
+          - heading "HANDS" [level=3] [ref=e266]
+          - link "Giới thiệu" [ref=e267] [cursor=pointer]:
+            - /url: /vi/company
+          - link "Liên hệ" [ref=e268] [cursor=pointer]:
+            - /url: /vi/contact
+          - link "Giới thiệu bạn bè" [ref=e269] [cursor=pointer]:
+            - /url: /vi/referrals
+        - generic [ref=e270]:
+          - heading "Đối tác" [level=3] [ref=e271]
+          - link "Đăng ký đối tác" [ref=e272] [cursor=pointer]:
+            - /url: /vi/partner-support
+          - link "Chính sách hoạt động" [ref=e273] [cursor=pointer]:
+            - /url: /vi/partner-policy
+          - link "Điều khoản đối tác" [ref=e274] [cursor=pointer]:
+            - /url: /vi/legal/partner-terms
+        - generic [ref=e275]:
+          - heading "Pháp lý" [level=3] [ref=e276]
+          - link "Quyền riêng tư" [ref=e277] [cursor=pointer]:
+            - /url: /vi/legal/privacy
+          - link "Điều khoản dịch vụ" [ref=e278] [cursor=pointer]:
+            - /url: /vi/legal/terms
+          - link "Chính sách cookie" [ref=e279] [cursor=pointer]:
+            - /url: /vi/legal/cookies
+      - generic [ref=e280]:
+        - generic [ref=e281]: © 2026 HANDS
+        - generic [ref=e282]:
+          - generic [ref=e283]: "Người đại diện: sẽ cập nhật"
+          - generic [ref=e284]: "Địa chỉ doanh nghiệp: sẽ cập nhật"
+  - button "Open Next.js Dev Tools" [ref=e290] [cursor=pointer]

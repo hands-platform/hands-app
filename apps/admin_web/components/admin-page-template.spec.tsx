@@ -37,6 +37,17 @@ describe('AdminPageTemplate', () => {
     expect(header.props.children[1].props['data-empty']).toBe('true');
   });
 
+  it('allows an operational page to set a stable desktop metric layout', () => {
+    const template = AdminPageTemplate({
+      children: <section>Delivery records</section>,
+      metrics: [{ label: 'Needs retry', value: 3 }],
+      metricsClassName: 'notification-action-metric-grid',
+      title: 'Notifications',
+    });
+
+    expect(template.props.children[1].props.className).toBe('notification-action-metric-grid');
+  });
+
   it('deduplicates content wrapper classes when page sections migrate to the shared shell', () => {
     const template = AdminPageTemplate({
       children: <section>Finance rows</section>,
@@ -54,7 +65,9 @@ describe('AdminPageTemplate', () => {
     expect(css).toContain('.admin-page-header-copy > h1');
     expect(css).toContain('.admin-page-header-copy > p');
     expect(css).toContain('.admin-page-header-toolbar {');
+    expect(css).toContain('grid-template-columns: minmax(240px, 1fr) minmax(0, min(560px, 62%));');
     expect(css).toContain('.admin-page-header-actions {');
+    expect(css).toContain('justify-self: end;');
     expect(css).toContain('max-width: min(100%, 560px);');
     expect(css).toContain('.admin-page-header-actions .text-link {');
     expect(css).toContain(".admin-page-header-actions[data-empty='true']");
@@ -85,7 +98,7 @@ describe('AdminPageTemplate', () => {
       'Customers',
       'Customer Usage Overview',
       'Service Catalog',
-      'Developer Setup',
+      'Setup Readiness',
     ]);
   });
 

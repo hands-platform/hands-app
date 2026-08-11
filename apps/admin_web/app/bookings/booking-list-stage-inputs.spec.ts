@@ -71,7 +71,7 @@ describe('booking list stage inputs', () => {
       ),
     ).toMatchObject({
       key: 'first-pick',
-      label: 'Stage 1 first-pick',
+      label: 'Preferred pending',
       tone: 'danger',
     });
   });

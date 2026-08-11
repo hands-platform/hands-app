@@ -1,21 +1,38 @@
+import { headers } from 'next/headers';
+
 import { AdminFormControlLink } from '../components/admin-form-controls';
 import { AdminPageTemplate } from '../components/admin-page-template';
 import { AdminErrorState } from '../components/admin-surface';
 
-export default function NotFound() {
+const NOT_FOUND_AREAS = [
+  { backHref: '/customers', backLabel: 'Back to customers', message: 'This customer record does not exist or is no longer available.', prefix: '/customers/', title: 'Customer not found' },
+  { backHref: '/partners', backLabel: 'Back to partners', message: 'This partner record does not exist or is no longer available.', prefix: '/partners/', title: 'Partner not found' },
+  { backHref: '/bookings', backLabel: 'Back to bookings', message: 'This booking record does not exist or is no longer available.', prefix: '/bookings/', title: 'Booking not found' },
+  { backHref: '/payments', backLabel: 'Back to payments', message: 'This payment record does not exist or is no longer available.', prefix: '/payments/', title: 'Payment not found' },
+] as const;
+
+export default async function NotFound() {
+  const pathname = (await headers()).get('x-admin-pathname') ?? '';
+  const state = NOT_FOUND_AREAS.find((area) => pathname.startsWith(area.prefix)) ?? {
+    backHref: '/',
+    backLabel: 'Return to Shift command',
+    message: 'This page does not exist or is no longer available.',
+    title: 'Page not found',
+  };
+
   return (
     <AdminPageTemplate
-      description="The requested Admin workspace route is not available in the current navigation policy."
-      title="Page not found"
+      description={state.message}
+      title={state.title}
     >
       <AdminErrorState
         action={
-          <AdminFormControlLink className="button-primary" href="/">
-            Return to Start Shift
+          <AdminFormControlLink className="button-primary" href={state.backHref}>
+            {state.backLabel}
           </AdminFormControlLink>
         }
-        message="Use the sidebar or return to the command workspace to continue operation review."
-        title="Page not found"
+        message={state.message}
+        title={state.title}
       />
     </AdminPageTemplate>
   );

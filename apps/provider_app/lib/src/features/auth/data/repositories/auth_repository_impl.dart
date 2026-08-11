@@ -34,7 +34,31 @@ class AuthRepositoryImpl implements AuthRepository {
     if (session == null) {
       return null;
     }
-    _activateSession(session);
+    _prepareSession(session);
+    try {
+      final result = await _apiClient.getJson('/partner/me');
+      if (result is Map) {
+        final user = Map<String, dynamic>.from(result);
+        if (user['id']?.toString() == session.userId) {
+          final restored = AuthSessionModel(
+            userId: session.userId,
+            accessToken: _apiClient.accessToken ?? session.accessToken,
+            refreshToken: _apiClient.refreshToken ?? session.refreshToken,
+            user: {...session.user, ...user},
+          );
+          await _localDataSource.saveSession(restored);
+          _prepareSession(restored);
+          _connectAndRecordSession(restored);
+          return restored;
+        }
+      }
+    } on ApiException catch (error) {
+      if (error.statusCode == 401) {
+        await _clearLocalSession();
+        return null;
+      }
+    }
+    _connectAndRecordSession(session);
     return session;
   }
 
@@ -66,6 +90,10 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (_) {
       // Local sign-out must still complete when the API is unavailable.
     }
+    await _clearLocalSession();
+  }
+
+  Future<void> _clearLocalSession() async {
     await _localDataSource.clearSession();
     _activeSession = null;
     _apiClient.onTokensRefreshed = null;
@@ -75,16 +103,24 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   void _activateSession(AuthSession session) {
+    _prepareSession(session);
+    _connectAndRecordSession(session);
+  }
+
+  void _prepareSession(AuthSession session) {
     _activeSession = session;
     _apiClient.accessToken = session.accessToken;
     _apiClient.refreshToken = session.refreshToken;
     _apiClient.onTokensRefreshed = _persistRefreshedSession;
+  }
+
+  void _connectAndRecordSession(AuthSession session) {
     _realtimeSocket.connect(session.accessToken);
     _recordAppSession();
   }
 
   void _recordAppSession() {
-    _appSessionReporter.recordHeartbeat().catchError((_) {});
+    _appSessionReporter.recordSessionStart().catchError(reportAppUsageFailure);
   }
 
   Future<void> _persistRefreshedSession(

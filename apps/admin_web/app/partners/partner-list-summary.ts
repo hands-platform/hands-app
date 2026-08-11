@@ -1,5 +1,6 @@
 import type { AdminProvider } from '../../lib/admin-api';
 import { partnerCashDebtMarketplaceAccessCopy } from '../../lib/booking-wallet-copy';
+import { adminCountLabel } from '../../lib/admin-copy';
 import {
   hasApprovedBankAccount,
   hasHealthyPush,
@@ -114,20 +115,20 @@ export function buildPartnerFilterSummary(
       value: `${providers.length}/${allProviders.length}`,
       detail:
         activeFilterCount > 0
-          ? `${activeFilterCount} active filter(s) are narrowing the partner list`
+          ? `${adminCountLabel(activeFilterCount, 'active filter')} ${activeFilterCount === 1 ? 'is' : 'are'} narrowing the partner list`
           : 'No active filters, full partner list is available for export',
     },
     {
       label: 'Direct ready',
       value: directReady.toString(),
       detail: 'Can receive a direct customer request with current policy gates',
-      href: '/partners?review=direct-ready',
+      href: '/partners?review=ready-now',
     },
     {
       label: 'Marketplace ready',
       value: backupReady.toString(),
       detail: 'Can participate in open marketplace matching under current operating policy',
-      href: '/partners?review=marketplace-ready',
+      href: '/partners?review=ready-now',
     },
     {
       label: 'Approval review',
@@ -146,7 +147,7 @@ export function buildPartnerFilterSummary(
       label: 'Location refresh',
       value: locationNeedsRefresh.toString(),
       detail: `Location older than ${opsPolicy.staleLocationMinutes}m, expired, or missing`,
-      href: '/partners?review=location',
+      href: '/partners?review=available-blocked-location',
     },
     {
       label: 'Push reachable',
@@ -196,7 +197,7 @@ export function buildPartnerReviewQueue(
     {
       label: 'Direct request held',
       count: acceptanceBlocked,
-      href: '/partners?review=acceptance-blocked',
+      href: '/partners?review=available-blocked',
       detail:
         'Partners who cannot receive direct requests now because identity, device, location, push, or control gates are not satisfied.',
     },
@@ -235,7 +236,7 @@ export function buildPartnerReviewQueue(
     {
       label: 'First earning payout profile',
       count: payoutSetupNeedsReview,
-      href: '/partners?review=payout-setup',
+      href: '/notifications?review=payout-setup',
       detail:
         'Partners with first revenue who still need withdrawal address or payout profile follow-up.',
     },
@@ -267,7 +268,7 @@ export function buildPartnerReviewQueue(
     {
       label: 'Location freshness',
       count: locationNeedsReview,
-      href: '/partners?review=location',
+      href: '/partners?review=available-blocked-location',
       detail: `Partners with missing, expired, or older-than-${opsPolicy.staleLocationMinutes}m locations should reopen the Partner app before dispatch.`,
     },
     {
@@ -280,13 +281,13 @@ export function buildPartnerReviewQueue(
     {
       label: 'Direct request ready',
       count: directReady,
-      href: '/partners?review=direct-ready',
+      href: '/partners?review=ready-now',
       detail: 'Partners who can receive and accept a preferred direct booking right now.',
     },
     {
       label: 'Marketplace ready',
       count: backupReady,
-      href: '/partners?review=marketplace-ready',
+      href: '/partners?review=ready-now',
       detail:
         'Partners who can receive marketplace alerts and join customer choice lists under current policy.',
     },

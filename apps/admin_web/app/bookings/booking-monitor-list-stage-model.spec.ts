@@ -16,7 +16,7 @@ describe('buildBookingMonitorListStage', () => {
       ),
     ).toMatchObject({
       key: 'first-pick',
-      label: 'Stage 1 first-pick',
+      label: 'Preferred pending',
       tone: 'danger',
     });
   });
@@ -36,7 +36,7 @@ describe('buildBookingMonitorListStage', () => {
       ),
     ).toMatchObject({
       key: 'customer-choice',
-      label: 'Stage 3 choice',
+      label: 'Customer choice',
       tone: 'warn',
     });
   });

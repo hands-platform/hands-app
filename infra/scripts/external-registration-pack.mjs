@@ -182,7 +182,7 @@ const registrationItems = [
       ),
       envItem(
         'MATCHING_PREFERRED_ACCEPT_MODE',
-        'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+        'FIRST_PICK_MATCHES_ON_ACCEPT',
         hasValue(env.MATCHING_PREFERRED_ACCEPT_MODE),
       ),
       envItem(

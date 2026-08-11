@@ -1,8 +1,10 @@
 import { spawn } from 'node:child_process';
+import { createHmac, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import {
+  AdminOperatorPermissionCategory,
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
   BookingStatus,
@@ -65,26 +67,47 @@ try {
     jwtAccessSecret(),
     { expiresIn: '10m' },
   );
+  const approverToken = jwt.sign(
+    { sub: ids.approver, activeRole: Role.ADMIN, roles: [Role.ADMIN] },
+    jwtAccessSecret(),
+    { expiresIn: '10m' },
+  );
 
   await captureMomo();
   await captureVnpay();
   await captureCard(actorToken);
   await seedSettlementSnapshots();
+  const reversalReportingBaseline = await loadReversalReporting(actorToken);
 
   for (const fixture of fixtures) {
-    await request(`/admin/payments/${fixture.paymentId}/refund`, {
+    await request(`/admin/payments/${fixture.paymentId}/refund-request`, {
       method: 'POST',
       token: actorToken,
-      body: { approvalAdminId: ids.approver },
+      body: { reason: `Payment lifecycle smoke ${fixture.method} refund` },
+    });
+    await request(`/admin/payments/${fixture.paymentId}/refund`, {
+      method: 'POST',
+      token: approverToken,
+      body: {},
     });
   }
 
   const verification = await verifyResults();
+  const reversalReporting = await verifyClosedPeriodReversalReporting(
+    actorToken,
+    reversalReportingBaseline,
+  );
+  const withholdingCsv = await verifyPartnerWithholdingCsv(
+    reversalReporting.period,
+    reversalReporting.withholdingPage,
+  );
   const adminEvidence = adminEvidenceMode
     ? await verifyAdminWebEvidence(verification.evidence[PaymentMethod.CARD])
     : undefined;
   const checks = {
     ...verification.checks,
+    reversalReporting,
+    withholdingCsv,
     ...(adminEvidence ? { adminEvidence } : {}),
   };
   console.log(JSON.stringify({ ok: true, checks }, null, 2));
@@ -203,6 +226,21 @@ async function seed() {
       },
     ],
   });
+  await prisma.adminOperatorPermission.createMany({
+    data: [
+      {
+        userId: ids.actor,
+        categories: [
+          AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING,
+          AdminOperatorPermissionCategory.FINANCE_TAX,
+        ],
+      },
+      {
+        userId: ids.approver,
+        categories: [AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING],
+      },
+    ],
+  });
   await prisma.customerProfile.create({
     data: { id: ids.customerProfile, userId: ids.customerUser },
   });
@@ -295,8 +333,11 @@ async function seedSettlementSnapshots() {
         paymentId: fixture.paymentId,
         paymentMethod: fixture.method,
         customerPaymentAmount: 300000,
-        partnerPayoutAmount: 240000,
+        partnerPayoutAmount: 210000,
         partnerTaxableRevenue: 240000,
+        partnerVatAmount: 20000,
+        partnerPitAmount: 10000,
+        partnerWithholdingTotal: 30000,
         platformFeeGross: 60000,
         platformFeeNetRevenue: 60000,
         monthlyPeriod,
@@ -423,6 +464,129 @@ async function verifyResults() {
   return { checks, evidence };
 }
 
+async function loadReversalReporting(actorToken) {
+  const period = vietnamMonthlyPeriod(new Date());
+  const [monthlySummary, withholdingSummary] = await Promise.all([
+    request(`/admin/monthly-tax-closings/summary?period=${period}`, { token: actorToken }),
+    request(`/admin/partner-withholding-tax/summary?period=${period}`, { token: actorToken }),
+  ]);
+
+  return { monthlySummary, period, withholdingSummary };
+}
+
+async function findPartnerWithholdingRow(actorToken, period) {
+  const take = 100;
+  for (let page = 1; page <= 20; page += 1) {
+    const skip = (page - 1) * take;
+    const rows = await request(
+      `/admin/partner-withholding-tax?period=${period}&take=${take}&skip=${skip}`,
+      { token: actorToken },
+    );
+    const row = rows.find((candidate) => candidate.providerProfileId === ids.providerProfile);
+    if (row) {
+      return { page, row };
+    }
+    if (rows.length < take) {
+      break;
+    }
+  }
+
+  return { page: 1, row: null };
+}
+
+async function verifyClosedPeriodReversalReporting(actorToken, baseline) {
+  const { monthlySummary, period, withholdingSummary } = await loadReversalReporting(actorToken);
+  const { page: withholdingPage, row: partnerRow } = await findPartnerWithholdingRow(
+    actorToken,
+    period,
+  );
+
+  assertCondition(
+    monthlySummary.settlementCount - baseline.monthlySummary.settlementCount === -2,
+    'Reversal-period monthly close did not remove the two open-period reversed snapshots.',
+  );
+  assertCondition(
+    monthlySummary.reversalCount - baseline.monthlySummary.reversalCount === 1,
+    'Reversal-period monthly close did not count the closed-period reversal entry.',
+  );
+  assertCondition(
+    monthlySummary.customerPaymentAmountTotal - baseline.monthlySummary.customerPaymentAmountTotal ===
+      -900000 &&
+      monthlySummary.partnerPayoutTotal - baseline.monthlySummary.partnerPayoutTotal === -630000 &&
+      monthlySummary.partnerWithholdingTotal - baseline.monthlySummary.partnerWithholdingTotal ===
+        -90000 &&
+      monthlySummary.platformFeeGrossTotal - baseline.monthlySummary.platformFeeGrossTotal === -180000,
+    'Reversal-period monthly close totals did not net the closed-period reversal.',
+  );
+  assertCondition(
+    monthlySummary.reconciliationDelta === baseline.monthlySummary.reconciliationDelta &&
+      monthlySummary.netRevenueDelta === baseline.monthlySummary.netRevenueDelta,
+    'Reversal-period monthly close changed the existing reconciliation balance.',
+  );
+  assertCondition(
+    withholdingSummary.postedSettlementCount - baseline.withholdingSummary.postedSettlementCount ===
+      -2 &&
+      withholdingSummary.reversalCount - baseline.withholdingSummary.reversalCount === 1 &&
+      withholdingSummary.taxableBookingCount - baseline.withholdingSummary.taxableBookingCount === -3 &&
+      withholdingSummary.totalPartnerTaxWithheld -
+        baseline.withholdingSummary.totalPartnerTaxWithheld ===
+        -90000,
+    'Partner withholding summary did not net the closed-period reversal.',
+  );
+  assertCondition(
+    partnerRow?.postedSettlementCount === 0 &&
+      partnerRow.reversalCount === 1 &&
+      partnerRow.completedBookingCount === -1 &&
+      partnerRow.grossServiceRevenue === -240000 &&
+      partnerRow.totalPartnerTaxWithheld === -30000,
+    'Partner withholding register did not expose the reversal row.',
+  );
+
+  return {
+    monthlyCloseBalanced: true,
+    partnerRegisterNetted: true,
+    period,
+    reversalCount: monthlySummary.reversalCount,
+    withholdingPage,
+  };
+}
+
+async function verifyPartnerWithholdingCsv(period, page) {
+  const adminBaseUrl = (env.ADMIN_WEB_BASE_URL ?? 'http://localhost:3101').replace(/\/$/, '');
+  const cookieName = env.ADMIN_WEB_SESSION_COOKIE_NAME?.trim() || 'hands_admin_session';
+  const response = await fetch(
+    `${adminBaseUrl}/api/admin/finance-tax/partner-withholding-tax/export?period=${period}&take=100&page=${page}`,
+    {
+      headers: { cookie: `${cookieName}=${adminSessionCookie()}` },
+      signal: AbortSignal.timeout(10000),
+    },
+  );
+  const csv = await response.text();
+
+  assertCondition(response.status === 200, `Partner withholding CSV returned ${response.status}.`);
+  assertCondition(
+    response.headers.get('content-type')?.includes('text/csv'),
+    'Partner withholding export did not return CSV.',
+  );
+  assertCondition(
+    csv.includes('"posted_settlement_count","reversal_count"'),
+    'Partner withholding CSV is missing posted and reversal columns.',
+  );
+  assertCondition(
+    csv.includes(`"${ids.providerProfile}","${period}","VND"`),
+    `Partner withholding CSV page ${page} is missing the smoke partner row.`,
+  );
+  assertCondition(
+    csv.includes('"\'-1","0","1","\'-240000"'),
+    'Partner withholding CSV did not preserve formula-safe posted, reversal, and net values.',
+  );
+
+  return {
+    exported: true,
+    reversalColumnsPresent: true,
+  };
+}
+
 async function verifyAdminWebEvidence(evidence) {
   assertCondition(Boolean(evidence), 'CARD Admin evidence identifiers are missing.');
   const directPages = [
@@ -534,6 +698,24 @@ function smokePhone(suffix) {
 
 function jwtAccessSecret() {
   return env.JWT_ACCESS_SECRET?.trim() || 'dev-access-secret';
+}
+
+function adminSessionCookie() {
+  const now = Math.floor(Date.now() / 1000);
+  const payload = Buffer.from(
+    JSON.stringify({
+      exp: now + 300,
+      iat: now,
+      jti: randomUUID(),
+      role: 'ADMIN',
+      sessionVersion: 1,
+      sub: ids.actor,
+    }),
+  ).toString('base64url');
+  const signature = createHmac('sha256', requiredEnv('ADMIN_WEB_SESSION_COOKIE_SECRET'))
+    .update(payload)
+    .digest('base64url');
+  return `${payload}.${signature}`;
 }
 
 function requiredEnv(key) {

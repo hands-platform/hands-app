@@ -114,7 +114,7 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
         itemLabel: 'customer signals',
         totalRows: 12,
       },
-      customers: Array.from({ length: 12 }, (_, index) => customerSignal(index + 1)),
+      customers: Array.from({ length: 3 }, (_, index) => customerSignal(index + 4)),
       partnerPagination: {
         activePage: 2,
         ariaLabel: 'Partner signal pagination',
@@ -122,7 +122,7 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
         itemLabel: 'partner signals',
         totalRows: 12,
       },
-      partners: Array.from({ length: 12 }, (_, index) => partnerSignal(index + 1)),
+      partners: Array.from({ length: 3 }, (_, index) => partnerSignal(index + 4)),
     });
 
     const rendered = textContent(section);

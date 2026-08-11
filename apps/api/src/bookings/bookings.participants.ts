@@ -1,4 +1,4 @@
-import { BookingMatchSource, BookingStatus, ParticipantStatus, ProviderStatus } from '@prisma/client';
+import { BookingMatchSource, BookingStatus, ParticipantStatus, ProviderStatus, Role } from '@prisma/client';
 
 export function bookingParticipantCompoundKey(bookingId: string, providerProfileId: string) {
   return {
@@ -15,6 +15,13 @@ export function bookingSelectedParticipantUpdate(
     update: {
       where: bookingParticipantCompoundKey(bookingId, providerProfileId),
       data: { status: ParticipantStatus.SELECTED, respondedAt },
+    },
+    updateMany: {
+      where: {
+        providerProfileId: { not: providerProfileId },
+        status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
+      },
+      data: { status: ParticipantStatus.EXPIRED, respondedAt },
     },
   };
 }
@@ -34,13 +41,11 @@ export function bookingParticipantJoinUpsert(input: {
       distanceMeters: input.distanceMeters,
     },
     create: {
-      bookingId: input.bookingId,
       providerProfileId: input.providerProfileId,
       status: ParticipantStatus.JOINED,
       distanceMeters: input.distanceMeters,
       providerStatusAtJoin: input.providerStatusAtJoin,
     },
-    include: { providerProfile: true },
   };
 }
 
@@ -66,15 +71,16 @@ export function bookingMatchedUpdateData(input: {
   matchedAt?: Date;
   respondedAt?: Date;
 }) {
+  const respondedAt = input.respondedAt ?? new Date();
   return {
-    status: BookingStatus.MATCHED,
+    status: BookingStatus.IN_SERVICE,
     selectedProviderId: input.providerProfileId,
     matchedAt: input.matchedAt ?? new Date(),
     matchSource: input.matchSource,
     participants: bookingSelectedParticipantUpdate(
       input.bookingId,
       input.providerProfileId,
-      input.respondedAt,
+      respondedAt,
     ),
     chatRoom: { upsert: { create: {}, update: {} } },
   };
@@ -85,16 +91,27 @@ export function bookingFirstPickRejectedUpdateData(input: {
   providerProfileId: string;
   respondedAt?: Date;
 }) {
+  const respondedAt = input.respondedAt ?? new Date();
   return {
-    status: BookingStatus.OPEN_MATCHING,
+    status: BookingStatus.CANCELLED,
     selectedProviderId: null,
+    closedAt: respondedAt,
+    closedByRole: Role.PROVIDER,
+    closedReason: 'preferred_provider_rejected',
     participants: {
       update: {
         where: bookingParticipantCompoundKey(input.bookingId, input.providerProfileId),
         data: {
           status: ParticipantStatus.REJECTED,
-          respondedAt: input.respondedAt ?? new Date(),
+          respondedAt,
         },
+      },
+      updateMany: {
+        where: {
+          providerProfileId: { not: input.providerProfileId },
+          status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
+        },
+        data: { status: ParticipantStatus.EXPIRED, respondedAt },
       },
     },
   };

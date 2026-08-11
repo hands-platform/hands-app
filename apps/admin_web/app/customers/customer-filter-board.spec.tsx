@@ -7,139 +7,126 @@ import type { CustomerFilters } from './customer-filters';
 const globalCss = readFileSync('app/globals.css', 'utf8');
 
 describe('CustomerFilterBoard', () => {
-  it('uses the shared Vuexy filter summary atom for active filter chips', () => {
+  it('uses shared filter and disclosure atoms', () => {
     const source = readFileSync('app/customers/customer-filter-board.tsx', 'utf8');
 
     expect(source).toContain('AdminFilterSummary');
+    expect(source).toContain('AdminDisclosure');
+    expect(source).toContain('AdminSegmentedControl');
     expect(source).not.toContain('PillClassBadge');
-    expect(source).not.toContain('<span className="pill pill-warn" key={filter}>');
-    expect(source).not.toContain('<StatusBadge key={filter}');
   });
 
-  it('renders the shared filter panel with customer filters and active chips', () => {
-    const section = CustomerFilterBoard({
-      activeFilters: ['Search: linh', 'Last login date: Last month'],
-      csvHref: 'data:text/csv,customer',
-      filteredCount: 4,
-      filters: filters({ lastLoginRange: '30d', q: 'linh', sort: 'booking-count-asc' }),
-      totalCount: 9,
-    });
-    const rendered = renderToStaticMarkup(section);
+  it('renders compact operational views, search, segment, and advanced filters', () => {
+    const rendered = renderToStaticMarkup(
+      <CustomerFilterBoard
+        activeFilters={['Search: linh', 'Session activity period: Last 30 days']}
+        filters={filters({ dateRange: '30d', q: 'linh', view: 'needs-action' })}
+        viewCounts={{ activeToday: 2, all: 38, needsAction: 9, newToday: 3 }}
+      />,
+    );
 
-    expect(rendered).toContain('card admin-filter-panel vuexy-customer-filter-card admin-mb-16');
-    expect(rendered).toContain('Customer operations filters');
-    expect(rendered).toContain('Separate today activity, reservation risk, customer segments, and history without loading every record.');
-    expect(rendered).toContain('4 visible / 9 total');
-    expect(rendered).toContain('vuexy-customer-filter-grid');
-    expect(rendered).toContain('admin-directory-filter-grid');
-    expect(rendered).toContain('vuexy-customer-filter-group admin-directory-filter-group is-primary');
-    expect(rendered).toContain('admin-directory-filter-group is-primary');
-    expect(rendered).toContain('admin-directory-filter-search');
-    expect(rendered).toContain('admin-directory-filter-select');
-    expect(rendered).toContain('vuexy-customer-filter-actions');
-    expect(rendered).toContain('admin-directory-filter-actions');
-    expect(rendered).toContain('vuexy-customer-date-filter-grid');
-    expect(rendered).toContain('Search Customer');
-    expect(rendered).toContain('All countries');
-    expect(rendered).toContain('All genders');
-    expect(rendered).toContain('Sign-up records');
-    expect(rendered).toContain('All dates');
-    expect(rendered).toContain('Today');
-    expect(rendered).toContain('Previous day');
-    expect(rendered).toContain('Last month');
-    expect(rendered).toContain('Custom dates');
-    expect(rendered).toContain('Reservation risk / history');
-    expect(rendered).toContain('Today active / login history');
-    expect(rendered).toContain('Customer segments / history sort');
-    expect(rendered).toContain('Many first');
-    expect(rendered).toContain('Few first');
-    expect(rendered).toContain('Export');
-    expect(rendered).toContain('Apply');
+    expect(rendered).toContain('Customer filters');
+    expect(rendered).toContain('Current queue: Payment &amp; review.');
+    expect(rendered).toContain('Operational view');
+    expect(rendered).toContain('All customers 38');
+    expect(rendered).toContain('Payment &amp; review 9');
+    expect(rendered).toContain('view=all');
+    expect(rendered).toContain('aria-current="page"');
+    expect(rendered).toContain('New today 3');
+    expect(rendered).toContain('App seen today 2');
+    expect(rendered).toContain('Name, phone, email, customer ID');
+    expect(rendered).toContain('All customer segments');
+    expect(rendered).toContain('More filters (1)');
+    expect(rendered).toContain('Session activity period, recorded app language, and profile attributes');
+    expect(rendered).toContain('Session activity period');
+    expect(rendered).toContain('All app languages');
+    expect(rendered).toContain('Sort customers');
+    expect(rendered).toContain('Most bookings');
+    expect(rendered).toContain('Apply filters');
     expect(rendered).toContain('Search: linh');
-    expect(rendered).toContain('Last login date: Last month');
-    expect(rendered).toContain('class="admin-filter-summary vuexy-customer-active-filters"');
     expect(rendered).toContain('Clear filters');
-    expect(rendered).not.toContain('All bookings');
-    expect(rendered).not.toContain('All wallet');
-    expect(rendered).not.toContain('Min reservations');
+    expect(rendered).not.toContain('Sign-up records');
+    expect(rendered).not.toContain('Reservation risk / history');
+    expect(rendered).not.toContain('Customer segments / history sort');
+    expect(rendered).not.toContain('Export');
   });
 
-  it('keeps clear filters available when no filters are active', () => {
+  it('hides the clear action when no filters are active', () => {
     const rendered = renderToStaticMarkup(
-      CustomerFilterBoard({
-        activeFilters: [],
-        csvHref: 'data:text/csv,customer',
-        filteredCount: 9,
-        filters: filters(),
-        totalCount: 9,
-      }),
+      <CustomerFilterBoard
+        activeFilters={[]}
+        filters={filters()}
+        viewCounts={{ activeToday: 1, all: 9, needsAction: 2, newToday: 1 }}
+      />,
     );
 
-    expect(rendered).toContain('Clear filters');
-    expect(rendered).toContain('href="/customers"');
-    expect(rendered).toContain('admin-form-control-link button button-secondary admin-directory-filter-button is-ghost');
+    expect(rendered).not.toContain('Clear filters');
+    expect(rendered).toContain('More filters');
+    expect(rendered).not.toContain('More filters (');
   });
 
-  it('places custom date apply controls next to visible custom date fields', () => {
+  it('shows required native date controls for a valid custom activity period', () => {
     const rendered = renderToStaticMarkup(
-      CustomerFilterBoard({
-        activeFilters: ['Sign-up date: 2026-06-01 - 2026-06-07'],
-        csvHref: 'data:text/csv,customer',
-        filteredCount: 2,
-        filters: filters({
-          joinedFrom: '2026-06-01',
-          joinedRange: 'custom',
-          joinedTo: '2026-06-07',
-        }),
-        totalCount: 9,
-      }),
+      <CustomerFilterBoard
+        activeFilters={['Joined date: 2026-06-01 - 2026-06-07']}
+        filters={filters({
+          dateField: 'joined',
+          dateFrom: '2026-06-01',
+          dateRange: 'custom',
+          dateTo: '2026-06-07',
+        })}
+        viewCounts={{ activeToday: 1, all: 9, needsAction: 2, newToday: 1 }}
+      />,
     );
 
-    expect(rendered).toContain('booking-custom-date-grid vuexy-customer-custom-date-grid');
-    expect(rendered).toContain('name="joinedFrom"');
-    expect(rendered).toContain('name="joinedTo"');
-    expect(rendered).toContain('admin-form-control-button button button-primary booking-date-apply-button');
-    expect(rendered).toContain('Apply dates');
+    expect(rendered).toContain('vuexy-customer-custom-date-grid');
+    expect(rendered).toContain('name="dateFrom"');
+    expect(rendered).toContain('name="dateTo"');
+    expect(rendered).toContain('type="date"');
+    expect(rendered).toContain('required=""');
+    expect(rendered).not.toContain('calendar-datepicker-field');
   });
 
-  it('scopes customer and partner filter header typography to direct Vuexy panel copy slots', () => {
+  it('shows an accessible validation error and blocks Apply for incomplete custom dates', () => {
+    const rendered = renderToStaticMarkup(
+      <CustomerFilterBoard
+        activeFilters={[]}
+        filters={filters({ dateRange: 'custom' })}
+        viewCounts={{ activeToday: 1, all: 9, needsAction: 2, newToday: 1 }}
+      />,
+    );
+
+    expect(rendered).toContain('Choose a start and end date.');
+    expect(rendered).toContain('role="alert"');
+    expect(rendered).toContain('aria-invalid="true"');
+    expect(rendered).toContain('disabled=""');
+  });
+
+  it('keeps customer and partner header typography scoped to direct panel copy slots', () => {
     expect(globalCss).toContain(
       '.vuexy-customer-filter-card > .admin-filter-panel-header > .admin-filter-panel-copy > h2,',
     );
     expect(globalCss).toContain(
       '.vuexy-partner-filter-card > .admin-filter-panel-header > .admin-filter-panel-copy > h2,',
     );
-    expect(globalCss).toContain(
-      '.vuexy-customer-filter-card > .admin-filter-panel-header > .admin-filter-panel-copy > p,',
-    );
-    expect(globalCss).toContain(
-      '.vuexy-partner-filter-card > .admin-filter-panel-header > .admin-filter-panel-copy > p,',
-    );
-
     expect(globalCss).not.toContain('.vuexy-customer-filter-card .admin-filter-panel-header h2,');
-    expect(globalCss).not.toContain('.vuexy-partner-filter-card .admin-filter-panel-header h2,');
-    expect(globalCss).not.toContain('.vuexy-customer-filter-card .admin-filter-panel-header p,');
-    expect(globalCss).not.toContain('.vuexy-partner-filter-card .admin-filter-panel-header p,');
   });
 });
 
 function filters(input: Partial<CustomerFilters> = {}): CustomerFilters {
   return {
     country: '',
+    dateField: 'last-login',
+    dateFrom: '',
+    dateRange: '',
+    dateTo: '',
     gender: '',
-    joinedRange: '',
-    joinedFrom: '',
-    joinedTo: '',
-    lastBookingRange: '',
-    lastBookingFrom: '',
-    lastBookingTo: '',
-    lastLoginRange: '',
-    lastLoginFrom: '',
-    lastLoginTo: '',
     page: 1,
     pageSize: 10,
     q: '',
-    sort: 'last-booking',
+    segment: '',
+    sort: 'newest',
+    view: 'needs-action',
     ...input,
   };
 }

@@ -106,6 +106,7 @@ export function CalendarClient({ currentOperator, initialEvents, initialRange }:
   );
   const tagFilters = useMemo(() => buildCalendarTagFilters(events, currentDate), [events, currentDate]);
   const metrics = useMemo(() => buildCalendarMetrics(visibleEvents, new Date()), [visibleEvents]);
+  const hasCurrentCalendarMetrics = metrics.total > 0 || metrics.today > 0 || metrics.upcoming > 0;
   const calendarEvents = useMemo(() => visibleEvents.map(toCalendarEventInput), [visibleEvents]);
   const calendarPlugins = useMemo(
     () => [interactionPlugin, dayGridPlugin, ...lazyCalendarPlugins],
@@ -323,39 +324,45 @@ export function CalendarClient({ currentOperator, initialEvents, initialRange }:
 
   return (
     <div className="calendar-page">
-      <AdminMetricGrid
-        ariaLabel="Calendar summary metrics"
-        metrics={[
-          {
-            helper: 'Filtered across the active calendar categories.',
-            kind: 'live',
-            label: 'Visible events',
-            scope: 'Current + future',
-            value: metrics.total,
-          },
-          {
-            helper: 'Events scheduled for the current day.',
-            kind: 'period',
-            label: 'Today',
-            scope: 'Today',
-            value: metrics.today,
-          },
-          {
-            helper: 'Upcoming working blocks and operator reminders.',
-            kind: 'period',
-            label: 'Next 7 days',
-            scope: 'Next 7 days',
-            value: metrics.upcoming,
-          },
-          {
-            helper: 'The next visible event on the board.',
-            kind: 'action',
-            label: 'Next up',
-            scope: 'Next',
-            value: metrics.nextLabel,
-          },
-        ]}
-      />
+      {hasCurrentCalendarMetrics ? (
+        <AdminMetricGrid
+          ariaLabel="Calendar summary metrics"
+          metrics={[
+            {
+              helper: 'Filtered across the active calendar categories.',
+              kind: 'live',
+              label: 'Visible events',
+              scope: 'Current + future',
+              value: metrics.total,
+            },
+            {
+              helper: 'Events scheduled for the current day.',
+              kind: 'period',
+              label: 'Today',
+              scope: 'Today',
+              value: metrics.today,
+            },
+            {
+              helper: 'Upcoming working blocks and operator reminders.',
+              kind: 'period',
+              label: 'Next 7 days',
+              scope: 'Next 7 days',
+              value: metrics.upcoming,
+            },
+            {
+              helper: 'The next visible event on the board.',
+              kind: 'action',
+              label: 'Next up',
+              scope: 'Next',
+              value: metrics.nextLabel,
+            },
+          ]}
+        />
+      ) : (
+        <AdminInlineNotice role="status" tone="info">
+          No events today or in the next 7 days.
+        </AdminInlineNotice>
+      )}
 
       {mutationError ? (
         <AdminInlineNotice className="calendar-error-banner" role="alert" tone="danger">

@@ -17,7 +17,11 @@ describe('MetricCard', () => {
     const content = card.props.children.props.children[1].props.children.filter(Boolean);
     expect(content[0].props.children).toBe('All records');
     expect(content[1].props.children).toBe('Total');
-    expect(content[2].props.children).toBe(12);
+    expect(content[2].props.className).toBe('metric-card-value');
+    expect(content[2].props.children[0].props.className).toBe('sr-only');
+    expect(content[2].props.children[0].props.children).toEqual(['Total', ': ']);
+    expect(content[2].props.children[1]).toBe(12);
+    expect(content[2].type).toBe('div');
   });
 
   it('renders a linked metric card when an href is provided', () => {
@@ -105,5 +109,12 @@ describe('MetricCard', () => {
     const content = card.props.children.props.children[1].props.children;
 
     expect(content[0].props.children).toBe('Current filters');
+  });
+
+  it('omits the scope badge when a parent already labels the period', () => {
+    const card = MetricCard({ helper: 'Period outcome.', label: 'Completed', scope: null, value: 4 });
+    const content = card.props.children.props.children[1].props.children;
+
+    expect(content[0]).toBeNull();
   });
 });

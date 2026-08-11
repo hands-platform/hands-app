@@ -1,0 +1,419 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e3]:
+    - complementary [ref=f2e4]:
+      - strong [ref=f2e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=f2e7]:
+        - group [ref=f2e8]:
+          - generic "Shift command" [ref=f2e9] [cursor=pointer]
+          - link "Shift command" [ref=f2e27] [cursor=pointer]:
+            - /url: /
+        - group [ref=f2e31]:
+          - generic "Live Operations" [ref=f2e32] [cursor=pointer]
+        - group [ref=f2e49]:
+          - generic "Customer Support" [ref=f2e50] [cursor=pointer]
+        - group [ref=f2e67]:
+          - generic "Partner Operations" [ref=f2e68] [cursor=pointer]
+        - group [ref=f2e85]:
+          - generic "Finance Today" [ref=f2e86] [cursor=pointer]
+        - group [ref=f2e93]:
+          - generic "Finance Records" [ref=f2e94] [cursor=pointer]
+        - group [ref=f2e111]:
+          - generic "Growth & Content" [ref=f2e112] [cursor=pointer]
+        - group [ref=f2e129]:
+          - generic "Tax & Monthly Close" [ref=f2e130] [cursor=pointer]
+        - group [ref=f2e137]:
+          - generic "Restricted Settings" [ref=f2e138] [cursor=pointer]
+        - group [ref=f2e145]:
+          - generic "Admin & System" [ref=f2e146] [cursor=pointer]
+        - group [ref=f2e163]:
+          - generic "Developer / System" [ref=f2e164] [cursor=pointer]
+    - main [ref=f2e172]:
+      - generic "Admin workspace" [ref=f2e173]:
+        - navigation "Breadcrumb" [ref=f2e175]:
+          - link "HANDS" [ref=f2e176] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f2e179]: Shift command
+        - generic "Workspace actions" [ref=f2e180]:
+          - button "Search Ctrl K" [ref=f2e182] [cursor=pointer]:
+            - generic [ref=f2e183]: Search
+            - generic [ref=f2e187]: Ctrl K
+          - group "Theme mode" [ref=f2e188]:
+            - button "Light mode" [pressed] [ref=f2e189] [cursor=pointer]
+            - button "Dark mode" [ref=f2e196] [cursor=pointer]
+          - link "Operations Policy" [ref=f2e199] [cursor=pointer]:
+            - /url: /operations-policy
+          - button "Open operation alerts" [ref=f2e204] [cursor=pointer]
+          - button "Sign out" [ref=f2e209] [cursor=pointer]
+      - generic [ref=f2e213]:
+        - generic [ref=f2e214]:
+          - heading "Shift command" [level=1] [ref=f2e216]
+          - generic "Page actions" [ref=f2e217]:
+            - link "Booking monitor" [ref=f2e218] [cursor=pointer]:
+              - /url: /bookings
+            - button "Refresh Start Shift data" [ref=f2e223] [cursor=pointer]: Refresh
+            - group "More Shift command actions" [ref=f2e229]:
+              - generic "More Shift command actions" [ref=f2e230] [cursor=pointer]: More actions
+        - generic [ref=f2e232]:
+          - navigation "Shift command sections" [ref=f2e233]:
+            - generic [ref=f2e234]:
+              - generic [ref=f2e235]: Current shift
+              - generic [ref=f2e236]:
+                - text: Live · updated
+                - time [ref=f2e237]: 5 Aug 2026, 01:05
+              - generic [ref=f2e238]: Refresh every 60s
+            - generic [ref=f2e239]:
+              - generic [ref=f2e240]: Operations
+              - group "Current shift sections" [ref=f2e241]:
+                - link "Needs action · 6" [ref=f2e242] [cursor=pointer]:
+                  - /url: "#dashboard-needs-action-now"
+                - link "Live now" [ref=f2e243] [cursor=pointer]:
+                  - /url: "#dashboard-live-now"
+                - link "Money risk · 1" [ref=f2e244] [cursor=pointer]:
+                  - /url: "#dashboard-money-status"
+                - link "Additional work · 0" [ref=f2e245] [cursor=pointer]:
+                  - /url: "#dashboard-today-work"
+            - generic [ref=f2e246]:
+              - generic [ref=f2e247]: Selected period · Today (Vietnam)
+              - group "Selected period sections" [ref=f2e248]:
+                - link "Result" [ref=f2e249] [cursor=pointer]:
+                  - /url: "#dashboard-today-result"
+                - link "Leaders" [ref=f2e250] [cursor=pointer]:
+                  - /url: "#dashboard-performance-leaders"
+                - link "Demand and supply" [ref=f2e251] [cursor=pointer]:
+                  - /url: "#dashboard-demand-supply"
+          - region [ref=f2e252]:
+            - generic [ref=f2e253]:
+              - heading "Needs action now" [level=2] [ref=f2e255]
+              - generic [ref=f2e256]:
+                - generic [ref=f2e257]: 6 queues · 987 open items
+                - link "Review oldest refund" [ref=f2e258] [cursor=pointer]:
+                  - /url: /refunds?range=all&review=open&sort=oldest&sla=overdue
+            - generic [ref=f2e262]:
+              - generic [ref=f2e263]:
+                - generic [ref=f2e264]:
+                  - generic [ref=f2e265]: SLA overdue
+                  - heading "Refund review" [level=3] [ref=f2e266]
+                  - paragraph [ref=f2e267]: Confirm eligibility and complete the payment reversal or rejection.
+                  - strong [ref=f2e268]: 112 overdue / 112 total
+                  - generic [ref=f2e269]:
+                    - generic [ref=f2e270]:
+                      - term [ref=f2e271]: Owner
+                      - definition [ref=f2e272]: Finance
+                    - generic [ref=f2e273]:
+                      - term [ref=f2e274]: Oldest
+                      - definition [ref=f2e275]: 78d ago
+                    - generic [ref=f2e276]:
+                      - term [ref=f2e277]: Impact
+                      - definition [ref=f2e278]: 33.510.000 VND requested
+                  - group "Refund review ageing" [ref=f2e279]:
+                    - 'link "Open Refund review: 24h+ critical 112" [ref=f2e280] [cursor=pointer]':
+                      - /url: /refunds?range=all&review=open&sort=oldest&sla=critical
+                      - text: 24h+ critical 112
+                  - link "Review oldest refund" [ref=f2e281] [cursor=pointer]:
+                    - /url: /refunds?range=all&review=open&sort=oldest&sla=overdue
+                - generic [ref=f2e282]:
+                  - generic [ref=f2e283]: SLA overdue
+                  - heading "Notification failures" [level=3] [ref=f2e284]
+                  - paragraph [ref=f2e285]: Repair the destination device or retry unresolved delivery failures.
+                  - strong [ref=f2e286]: 410 overdue / 410 total
+                  - generic [ref=f2e287]:
+                    - generic [ref=f2e288]:
+                      - term [ref=f2e289]: Owner
+                      - definition [ref=f2e290]: Support
+                    - generic [ref=f2e291]:
+                      - term [ref=f2e292]: Oldest
+                      - definition [ref=f2e293]: 76d ago
+                  - group "Notification failures ageing" [ref=f2e294]:
+                    - 'link "Open Notification failures: Overdue 1" [ref=f2e295] [cursor=pointer]':
+                      - /url: /notifications?range=all&review=unresolved-failed&sort=oldest&sla=overdue-under-24h
+                      - text: Overdue 1
+                    - 'link "Open Notification failures: 24h+ critical 409" [ref=f2e296] [cursor=pointer]':
+                      - /url: /notifications?range=all&review=unresolved-failed&sort=oldest&sla=critical
+                      - text: 24h+ critical 409
+                  - link "Review oldest notification failures" [ref=f2e297] [cursor=pointer]:
+                    - /url: /notifications?range=all&review=unresolved-failed&sort=oldest&sla=overdue
+                - generic [ref=f2e298]:
+                  - generic [ref=f2e299]: SLA overdue
+                  - heading "Payment holds" [level=3] [ref=f2e300]
+                  - paragraph [ref=f2e301]: Capture completed services or release invalid authorization holds.
+                  - strong [ref=f2e302]: 371 overdue / 371 total
+                  - generic [ref=f2e303]:
+                    - generic [ref=f2e304]:
+                      - term [ref=f2e305]: Owner
+                      - definition [ref=f2e306]: Finance
+                    - generic [ref=f2e307]:
+                      - term [ref=f2e308]: Oldest
+                      - definition [ref=f2e309]: 75d ago
+                    - generic [ref=f2e310]:
+                      - term [ref=f2e311]: Impact
+                      - definition [ref=f2e312]: 138.500.000 VND authorized
+                  - group "Payment holds ageing" [ref=f2e313]:
+                    - 'link "Open Payment holds: 24h+ critical 371" [ref=f2e314] [cursor=pointer]':
+                      - /url: /payments?range=all&review=authorized&sort=oldest&sla=critical
+                      - text: 24h+ critical 371
+                  - link "Review oldest payment holds" [ref=f2e315] [cursor=pointer]:
+                    - /url: /payments?range=all&review=authorized&sort=oldest&sla=overdue
+              - group "Other open Shift command queues" [ref=f2e316]:
+                - generic "Other open queues Lower priority, still requires follow-up 3 queues" [ref=f2e317] [cursor=pointer]:
+                  - generic [ref=f2e318]:
+                    - strong [ref=f2e319]: Other open queues
+                    - generic [ref=f2e320]: Lower priority, still requires follow-up
+                  - generic [ref=f2e321]: 3 queues
+              - group "Clear Shift command queues" [ref=f2e322]:
+                - strong [ref=f2e324] [cursor=pointer]: 1 operating queues clear
+          - region [ref=f2e325]:
+            - generic [ref=f2e326]:
+              - heading "Live now" [level=2] [ref=f2e328]
+              - generic [ref=f2e329]:
+                - generic [ref=f2e330]: Live
+                - link "Booking monitor" [ref=f2e331] [cursor=pointer]:
+                  - /url: /bookings
+            - list "Current live operations" [ref=f2e337]:
+              - listitem [ref=f2e338] [cursor=pointer]:
+                - generic [ref=f2e339]: Matching now
+                - strong [ref=f2e340]: "0"
+              - listitem [ref=f2e341] [cursor=pointer]:
+                - generic [ref=f2e342]: Customer choice
+                - strong [ref=f2e343]: "0"
+              - listitem [ref=f2e344] [cursor=pointer]:
+                - generic [ref=f2e345]: In service
+                - strong [ref=f2e346]: "0"
+              - listitem [ref=f2e347] [cursor=pointer]:
+                - generic [ref=f2e348]: Ready Partners
+                - strong [ref=f2e349]: "274"
+              - listitem [ref=f2e350] [cursor=pointer]:
+                - generic [ref=f2e351]: Active customers 15m
+                - strong [ref=f2e352]: "0"
+              - listitem [ref=f2e353] [cursor=pointer]:
+                - generic [ref=f2e354]: Active match wait
+                - strong [ref=f2e355]: None
+          - region [ref=f2e356]:
+            - generic [ref=f2e357]:
+              - heading "Money status" [level=2] [ref=f2e359]
+              - generic [ref=f2e360]:
+                - generic [ref=f2e361]: 1 urgent
+                - link "Open finance" [ref=f2e362] [cursor=pointer]:
+                  - /url: /finance-overview
+            - generic [ref=f2e363]:
+              - link "Today (Vietnam) Available payout 0 VND" [ref=f2e365] [cursor=pointer]:
+                - /url: /earnings
+                - generic [ref=f2e366]: Today (Vietnam)
+                - generic [ref=f2e367]: Available payout
+                - strong [ref=f2e368]: 0 VND
+              - generic [ref=f2e369]:
+                - generic [ref=f2e370]:
+                  - generic [ref=f2e371]:
+                    - heading "Finance review ownership" [level=2] [ref=f2e372]
+                    - paragraph [ref=f2e373]: Open Finance reviews group owned reconciliation work and independent bank account approvals.
+                  - generic [ref=f2e374]: 3 queues · 180 total items · 146 over 48h
+                - generic [ref=f2e376]:
+                  - generic [ref=f2e377]:
+                    - generic [ref=f2e378]: SLA overdue
+                    - heading "Payment clearing" [level=3] [ref=f2e379]
+                    - paragraph [ref=f2e380]: Oldest 55d ago. 36.800.000 VND remains under review. Review and assign the queue.
+                    - strong [ref=f2e381]: 108 items
+                    - generic [ref=f2e383]:
+                      - term [ref=f2e384]: Owner
+                      - definition [ref=f2e385]: Finance
+                    - group "Payment clearing ageing" [ref=f2e386]:
+                      - 'link "Open Payment clearing: Unassigned 108" [ref=f2e387] [cursor=pointer]':
+                        - /url: /finance-tax/payment-clearing?range=all&review=open&owner=unassigned
+                        - text: Unassigned 108
+                      - 'link "Open Payment clearing: 48h+ 92" [ref=f2e388] [cursor=pointer]':
+                        - /url: /finance-tax/payment-clearing?range=all&review=open&age=48h
+                        - text: 48h+ 92
+                    - link "Review oldest payment clearing" [ref=f2e389] [cursor=pointer]:
+                      - /url: /finance-tax/payment-clearing?range=all&review=open&age=48h
+                  - generic [ref=f2e390]:
+                    - generic [ref=f2e391]: SLA overdue
+                    - heading "Bank reconciliation" [level=3] [ref=f2e392]
+                    - paragraph [ref=f2e393]: Oldest 33d ago. 13.400.000 VND remains under review. Review and assign the queue.
+                    - strong [ref=f2e394]: 44 items
+                    - generic [ref=f2e396]:
+                      - term [ref=f2e397]: Owner
+                      - definition [ref=f2e398]: Finance
+                    - group "Bank reconciliation ageing" [ref=f2e399]:
+                      - 'link "Open Bank reconciliation: Unassigned 24" [ref=f2e400] [cursor=pointer]':
+                        - /url: /finance-tax/bank-reconciliation?range=all&review=unmatched&owner=unassigned
+                        - text: Unassigned 24
+                      - 'link "Open Bank reconciliation: 48h+ 36" [ref=f2e401] [cursor=pointer]':
+                        - /url: /finance-tax/bank-reconciliation?range=all&review=unmatched&age=48h
+                        - text: 48h+ 36
+                    - link "Review oldest bank reconciliation" [ref=f2e402] [cursor=pointer]:
+                      - /url: /finance-tax/bank-reconciliation?range=all&review=unmatched&age=48h
+                  - generic [ref=f2e403]:
+                    - generic [ref=f2e404]: SLA overdue
+                    - heading "Partner deposit reconciliation" [level=3] [ref=f2e405]
+                    - paragraph [ref=f2e406]: Oldest 21d ago. 2.240.000 VND remains under review. Review and assign the queue.
+                    - strong [ref=f2e407]: 28 items
+                    - generic [ref=f2e409]:
+                      - term [ref=f2e410]: Owner
+                      - definition [ref=f2e411]: Finance
+                    - group "Partner deposit reconciliation ageing" [ref=f2e412]:
+                      - 'link "Open Partner deposit reconciliation: Unassigned 28" [ref=f2e413] [cursor=pointer]':
+                        - /url: /finance-tax/partner-bank-deposits?review=needs-reconciliation&owner=unassigned
+                        - text: Unassigned 28
+                      - 'link "Open Partner deposit reconciliation: 48h+ 18" [ref=f2e414] [cursor=pointer]':
+                        - /url: /finance-tax/partner-bank-deposits?review=needs-reconciliation&sla=escalate
+                        - text: 48h+ 18
+                    - link "Review oldest partner deposit reconciliation" [ref=f2e415] [cursor=pointer]:
+                      - /url: /finance-tax/partner-bank-deposits?review=needs-reconciliation&sla=escalate
+                - group "Clear Finance review queues" [ref=f2e416]:
+                  - strong [ref=f2e418] [cursor=pointer]: 1 Finance review queues clear
+              - group "Clear money queues" [ref=f2e419]:
+                - strong [ref=f2e421] [cursor=pointer]: 6 money queues clear
+          - region [ref=f2e422]:
+            - generic [ref=f2e423]:
+              - heading "Additional work" [level=2] [ref=f2e425]
+              - generic [ref=f2e426]:
+                - generic [ref=f2e427]: Clear
+                - link "Past records" [ref=f2e428] [cursor=pointer]:
+                  - /url: /operations-handoff
+            - status [ref=f2e435]:
+              - strong [ref=f2e436]: Clear
+              - paragraph [ref=f2e437]: No additional work queue is open.
+          - region [ref=f2e438]:
+            - generic [ref=f2e439]:
+              - heading "Today result" [level=2] [ref=f2e441]
+              - generic [ref=f2e442]:
+                - generic [ref=f2e443]: Today (Vietnam)
+                - group "Shift command analytics range" [ref=f2e444]:
+                  - link "Today" [ref=f2e445] [cursor=pointer]:
+                    - /url: /?range=today
+                  - link "Last 7 days" [ref=f2e446] [cursor=pointer]:
+                    - /url: /?range=7d
+                  - link "Last 30 days" [ref=f2e447] [cursor=pointer]:
+                    - /url: /?range=30d
+                - link "Open finance" [ref=f2e448] [cursor=pointer]:
+                  - /url: /finance-overview
+            - generic [ref=f2e450]:
+              - region "Booking flow" [ref=f2e451]:
+                - generic [ref=f2e452]:
+                  - generic [ref=f2e453]:
+                    - heading "Booking flow" [level=3] [ref=f2e454]
+                    - paragraph [ref=f2e455]: Requests move through matching, service start, and final outcome
+                  - generic [ref=f2e456]: Live hour
+                - paragraph [ref=f2e458]: +0 requests vs yesterday by now
+                - status [ref=f2e459]:
+                  - strong [ref=f2e460]: No activity
+                  - generic [ref=f2e461]: No activity in this period.
+              - region "Shift outcome" [ref=f2e462]:
+                - generic [ref=f2e463]:
+                  - generic [ref=f2e464]:
+                    - heading "Shift outcome" [level=3] [ref=f2e465]
+                    - paragraph [ref=f2e466]: How far requests moved through the operating flow
+                  - generic [ref=f2e467]: Today (Vietnam)
+                - status [ref=f2e469]:
+                  - strong [ref=f2e470]: No activity
+                  - generic [ref=f2e471]: No activity in this period.
+              - region "Money flow" [ref=f2e472]:
+                - generic [ref=f2e473]:
+                  - generic [ref=f2e474]:
+                    - heading "Money flow" [level=3] [ref=f2e475]
+                    - paragraph [ref=f2e476]: Customer money, HANDS revenue, Partner payout, and unresolved money risk
+                  - generic [ref=f2e477]: Today (Vietnam)
+                - generic [ref=f2e479]:
+                  - generic [ref=f2e480]:
+                    - generic [ref=f2e481]: Customer payments
+                    - strong [ref=f2e482]: 0 VND
+                  - generic [ref=f2e483]:
+                    - generic [ref=f2e484]: Platform net revenue
+                    - strong [ref=f2e485]: 0 VND
+                  - generic [ref=f2e486]:
+                    - generic [ref=f2e487]: Partner payout
+                    - strong [ref=f2e488]: 0 VND
+                  - generic [ref=f2e489]:
+                    - generic [ref=f2e490]: Refunds
+                    - strong [ref=f2e491]: Unavailable
+                  - generic [ref=f2e492]:
+                    - generic [ref=f2e493]: Cash fee debt
+                    - strong [ref=f2e494]: Unavailable
+                  - generic [ref=f2e495]:
+                    - generic [ref=f2e496]: Failed payments
+                    - strong [ref=f2e497]: Unavailable
+                - status [ref=f2e498]:
+                  - strong [ref=f2e499]: No activity
+                  - generic [ref=f2e500]: No activity in this period.
+              - region "Customer activity" [ref=f2e501]:
+                - generic [ref=f2e502]:
+                  - generic [ref=f2e503]:
+                    - heading "Customer activity" [level=3] [ref=f2e504]
+                    - paragraph [ref=f2e505]: Active customers, booking intent, repeat use, and failure signals
+                  - generic [ref=f2e506]: Today (Vietnam)
+                - status [ref=f2e508]:
+                  - strong [ref=f2e509]: No activity
+                  - generic [ref=f2e510]: No activity in this period.
+              - paragraph [ref=f2e511]: Generated 05 Aug, 01:05 · Vietnam time
+          - region [ref=f2e512]:
+            - generic [ref=f2e513]:
+              - heading "Customer and Partner leaders" [level=2] [ref=f2e515]
+              - generic [ref=f2e516]:
+                - generic [ref=f2e517]: Today (Vietnam)
+                - group "Performance directories" [ref=f2e518]:
+                  - link "Customers" [ref=f2e519] [cursor=pointer]:
+                    - /url: /customers
+                  - link "Partners" [ref=f2e520] [cursor=pointer]:
+                    - /url: /partners
+            - generic [ref=f2e522]:
+              - region "Top customers" [ref=f2e523]:
+                - generic [ref=f2e524]:
+                  - generic [ref=f2e525]:
+                    - heading "Top customers" [level=3] [ref=f2e526]
+                    - paragraph [ref=f2e527]: Ordered by sessionized app opens, then Partner profile views, authenticated session starts, and recent activity
+                  - generic [ref=f2e528]: Today (Vietnam)
+                - tablist "Customer ranking mode" [ref=f2e530]:
+                  - tab "Most active" [selected] [ref=f2e531] [cursor=pointer]
+                  - tab "Most completed" [ref=f2e532] [cursor=pointer]
+                  - tab "Highest value" [ref=f2e533] [cursor=pointer]
+                  - tab "Needs attention" [ref=f2e534] [cursor=pointer]
+                - strong [ref=f2e535]: No customer activity
+                - paragraph [ref=f2e536]: No customer records qualify for this view.
+              - region "Partner performance" [ref=f2e537]:
+                - generic [ref=f2e538]:
+                  - generic [ref=f2e539]:
+                    - heading "Partner performance" [level=3] [ref=f2e540]
+                    - paragraph [ref=f2e541]: Ordered by sessionized app opens, then authenticated session starts and recent activity
+                  - generic [ref=f2e542]: Today (Vietnam)
+                - tablist "Partner ranking mode" [ref=f2e544]:
+                  - tab "Most active" [selected] [ref=f2e545] [cursor=pointer]
+                  - tab "Most completed" [ref=f2e546] [cursor=pointer]
+                  - tab "Fastest response" [ref=f2e547] [cursor=pointer]
+                  - tab "Highest rated" [ref=f2e548] [cursor=pointer]
+                  - tab "Needs attention" [ref=f2e549] [cursor=pointer]
+                - strong [ref=f2e550]: No Partner records
+                - paragraph [ref=f2e551]: No Partner records qualify for this view.
+          - region [ref=f2e552]:
+            - generic [ref=f2e553]:
+              - heading "Demand and supply" [level=2] [ref=f2e555]
+              - generic [ref=f2e556]:
+                - generic [ref=f2e557]: 274 ready now
+                - group "Demand and supply workspaces" [ref=f2e558]:
+                  - link "Services" [ref=f2e559] [cursor=pointer]:
+                    - /url: /services
+                  - link "Vietnam Overview" [ref=f2e560] [cursor=pointer]:
+                    - /url: /vietnam-overview
+            - generic [ref=f2e562]:
+              - region "Service demand and supply" [ref=f2e563]:
+                - generic [ref=f2e564]:
+                  - generic [ref=f2e565]:
+                    - heading "Service demand and supply" [level=3] [ref=f2e566]
+                    - paragraph [ref=f2e567]: Bookings created in the selected period; current ready supply is shown as operating context
+                  - generic [ref=f2e568]: 274 ready now
+                - strong [ref=f2e570]: No service demand
+                - paragraph [ref=f2e571]: No service demand was recorded in this period.
+                - link "Open services" [ref=f2e572] [cursor=pointer]:
+                  - /url: /services
+              - region "Matching pressure" [ref=f2e573]:
+                - generic [ref=f2e575]:
+                  - heading "Matching pressure" [level=3] [ref=f2e576]
+                  - paragraph [ref=f2e577]: Unmatched requests by hour and area in the selected period
+                - generic [ref=f2e578]:
+                  - generic [ref=f2e579]:
+                    - heading "Hourly request gap" [level=4] [ref=f2e580]
+                    - paragraph [ref=f2e581]: No unmatched hourly gap.
+                  - generic [ref=f2e582]:
+                    - heading "Failed-match areas" [level=4] [ref=f2e583]
+                    - paragraph [ref=f2e584]: No failed-match area.
+                - link "Open Vietnam Overview" [ref=f2e585] [cursor=pointer]:
+                  - /url: /vietnam-overview
+  - alert [ref=f2e586]

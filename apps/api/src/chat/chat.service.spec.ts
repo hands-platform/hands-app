@@ -156,7 +156,11 @@ describe('ChatService message validation', () => {
       type: 'chat.message.created',
       title: 'New chat message',
       body: 'A new message is available in your booking chat.',
-      data: { bookingId: 'booking-1', chatRoomId: 'chat-room-1' },
+      data: {
+        destination: 'chat',
+        bookingId: 'booking-1',
+        chatRoomId: 'chat-room-1',
+      },
     });
   });
 
@@ -217,5 +221,124 @@ describe('ChatService message validation', () => {
     ).rejects.toThrow('Chat attachment metadata is too large');
 
     expect(prisma.chatMessage.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects client-defined attachment URLs and metadata', async () => {
+    const prisma = {
+      chatRoom: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'chat-room-1',
+          booking: {
+            customerProfileId: 'customer-1',
+            selectedProviderId: 'partner-1',
+          },
+        }),
+      },
+      chatMessage: {
+        create: vi.fn(),
+      },
+      fileAsset: {
+        findMany: vi.fn(),
+      },
+    };
+    const service = new ChatService(prisma as never);
+
+    await expect(
+      service.createMessage(
+        'chat-room-1',
+        { id: 'admin-user', roles: [Role.ADMIN] },
+        {
+          text: 'Please review this attachment',
+          attachments: [{ id: 'file-1', url: 'https://attacker.example/file' }],
+        },
+      ),
+    ).rejects.toThrow('Chat attachments may contain only a file id');
+
+    expect(prisma.fileAsset.findMany).not.toHaveBeenCalled();
+    expect(prisma.chatMessage.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects attachment references that are not uploaded private files owned by the sender', async () => {
+    const prisma = {
+      chatRoom: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'chat-room-1',
+          booking: {
+            customerProfileId: 'customer-1',
+            selectedProviderId: 'partner-1',
+          },
+        }),
+      },
+      chatMessage: {
+        create: vi.fn(),
+      },
+      fileAsset: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new ChatService(prisma as never);
+
+    await expect(
+      service.createMessage(
+        'chat-room-1',
+        { id: 'admin-user', roles: [Role.ADMIN] },
+        {
+          text: 'Please review this attachment',
+          attachments: [{ id: 'another-user-file' }],
+        },
+      ),
+    ).rejects.toThrow('Chat attachments must be uploaded private files owned by the sender');
+
+    expect(prisma.fileAsset.findMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: ['another-user-file'] },
+        ownerUserId: 'admin-user',
+        purpose: 'CHAT_ATTACHMENT',
+        uploadStatus: 'UPLOADED',
+        visibility: 'PRIVATE',
+      },
+      select: { id: true },
+    });
+    expect(prisma.chatMessage.create).not.toHaveBeenCalled();
+  });
+
+  it('stores only validated attachment file references', async () => {
+    const prisma = {
+      chatRoom: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'chat-room-1',
+          booking: {
+            customerProfileId: 'customer-1',
+            selectedProviderId: 'partner-1',
+          },
+        }),
+      },
+      chatMessage: {
+        create: vi.fn().mockResolvedValue({ id: 'message-1' }),
+      },
+      fileAsset: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'file-1' }]),
+      },
+    };
+    const service = new ChatService(prisma as never);
+
+    await expect(
+      service.createMessage(
+        'chat-room-1',
+        { id: 'admin-user', roles: [Role.ADMIN] },
+        {
+          text: 'Please review this attachment',
+          attachments: [{ id: 'file-1' }],
+        },
+      ),
+    ).resolves.toEqual({ id: 'message-1' });
+
+    expect(prisma.chatMessage.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          attachments: [{ id: 'file-1' }],
+        }),
+      }),
+    );
   });
 });

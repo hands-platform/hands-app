@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import {
   BookingStatus,
   FileUploadStatus,
@@ -10,6 +10,7 @@ import {
   ProviderDocumentType,
   ProviderKycStatus,
   ProviderLevel,
+  Role,
   ProviderTaxProfileStatus,
   TaxPolicyStatus,
   TaxRuleScope,
@@ -17,6 +18,7 @@ import {
 } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   OPTIONAL_PROVIDER_DOCUMENT_TYPES,
   PROVIDER_AGREEMENT_VERSION,
@@ -34,9 +36,17 @@ type AdminTaxPolicyVersionListOptions = {
   readonly take?: number | string | null;
 };
 
+type TaxPolicyFinanceApprovalInput = {
+  readonly approvalAdminId: string;
+  readonly operatorReason: string;
+};
+
 @Injectable()
 export class ProviderOnboardingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly notifications?: NotificationsService,
+  ) {}
 
   async getSnapshot(userId?: string) {
     const provider = await this.requireProvider(userId);
@@ -404,31 +414,57 @@ export class ProviderOnboardingService {
   }
 
   async reviewKyc(actorId: string, providerProfileId: string, status: ProviderKycStatus, reason?: string) {
-    const existing = await this.prisma.providerKyc.findUnique({
-      where: { providerProfileId },
-    });
+    const normalizedReason = normalizeString(reason);
+    if (status === ProviderKycStatus.BLOCKED && !normalizedReason) {
+      throw new BadRequestException('KYC hold reason is required');
+    }
+    const [existing, provider] = await Promise.all([
+      this.prisma.providerKyc.findUnique({ where: { providerProfileId } }),
+      this.prisma.providerProfile.findUniqueOrThrow({
+        where: { id: providerProfileId },
+        select: { displayName: true, userId: true },
+      }),
+    ]);
     if (status === ProviderKycStatus.APPROVED) {
-      const missingRequiredDocuments = await this.findMissingApprovedKycDocumentTypes(providerProfileId);
+      const missingRequiredDocuments = await this.findMissingSubmittedKycDocumentTypes(providerProfileId);
       if (missingRequiredDocuments.length > 0) {
         throw new BadRequestException(
-          `Cannot approve KYC before required documents are approved: ${missingRequiredDocuments.join(', ')}`,
+          `Cannot approve KYC before required documents are submitted: ${missingRequiredDocuments.join(', ')}`,
         );
       }
+      await this.prisma.providerDocument.updateMany({
+        where: {
+          providerProfileId,
+          type: { in: [...REQUIRED_KYC_DOCUMENT_TYPES] },
+          deletedAt: null,
+        },
+        data: {
+          status: ProviderDocumentStatus.APPROVED,
+          reviewedAt: new Date(),
+          rejectionReason: null,
+        },
+      });
     }
+    const verificationStatus =
+      status === ProviderKycStatus.APPROVED
+        ? VerificationStatus.APPROVED
+        : status === ProviderKycStatus.BLOCKED
+          ? VerificationStatus.SUBMITTED
+          : VerificationStatus.REJECTED;
     const kyc = await this.prisma.providerKyc.upsert({
       where: { providerProfileId },
       update: {
         status,
         reviewedAt: new Date(),
-        rejectionReason: status === ProviderKycStatus.APPROVED ? null : normalizeString(reason),
-        blockedAt: status === ProviderKycStatus.BLOCKED ? new Date() : undefined,
+        rejectionReason: status === ProviderKycStatus.APPROVED ? null : normalizedReason,
+        blockedAt: status === ProviderKycStatus.BLOCKED ? new Date() : null,
       },
       create: {
         providerProfileId,
         status,
         submittedAt: new Date(),
         reviewedAt: new Date(),
-        rejectionReason: status === ProviderKycStatus.APPROVED ? null : normalizeString(reason),
+        rejectionReason: status === ProviderKycStatus.APPROVED ? null : normalizedReason,
         blockedAt: status === ProviderKycStatus.BLOCKED ? new Date() : undefined,
       },
     });
@@ -436,16 +472,14 @@ export class ProviderOnboardingService {
     await this.prisma.providerVerification.upsert({
       where: { providerProfileId },
       update: {
-        status:
-          status === ProviderKycStatus.APPROVED ? VerificationStatus.APPROVED : VerificationStatus.REJECTED,
-        rejectionReason: status === ProviderKycStatus.APPROVED ? null : normalizeString(reason),
+        status: verificationStatus,
+        rejectionReason: status === ProviderKycStatus.APPROVED ? null : normalizedReason,
         reviewedAt: new Date(),
       },
       create: {
         providerProfileId,
-        status:
-          status === ProviderKycStatus.APPROVED ? VerificationStatus.APPROVED : VerificationStatus.REJECTED,
-        rejectionReason: status === ProviderKycStatus.APPROVED ? null : normalizeString(reason),
+        status: verificationStatus,
+        rejectionReason: status === ProviderKycStatus.APPROVED ? null : normalizedReason,
         submittedAt: new Date(),
         reviewedAt: new Date(),
       },
@@ -458,13 +492,21 @@ export class ProviderOnboardingService {
         action: `kyc.${status.toLowerCase()}`,
         fromStatus: existing?.status,
         toStatus: status,
-        metadata: toJson({ reason }),
+        metadata: toJson({ reason: normalizedReason }),
       },
     });
     await this.writeAudit(actorId, `provider_kyc.${status.toLowerCase()}`, `provider:${providerProfileId}`, {
       reason,
     });
     await this.refreshProviderLevel(providerProfileId);
+    await this.notifyProviderReviewResult({
+      userId: provider.userId,
+      providerProfileId,
+      kind: 'kyc',
+      label: 'Identity verification',
+      status,
+      reason: normalizedReason,
+    });
     return { ok: true, kyc };
   }
 
@@ -474,15 +516,17 @@ export class ProviderOnboardingService {
     status: ProviderDocumentStatus,
     reason?: string,
   ) {
+    const normalizedReason = normalizeString(reason);
     const existing = await this.prisma.providerDocument.findUniqueOrThrow({
       where: { id: documentId },
+      include: { providerProfile: { select: { userId: true } } },
     });
     const document = await this.prisma.providerDocument.update({
       where: { id: documentId },
       data: {
         status,
         reviewedAt: new Date(),
-        rejectionReason: status === ProviderDocumentStatus.APPROVED ? null : normalizeString(reason),
+        rejectionReason: status === ProviderDocumentStatus.APPROVED ? null : normalizedReason,
       },
       include: { fileAsset: true },
     });
@@ -513,7 +557,59 @@ export class ProviderOnboardingService {
       },
     );
     await this.refreshProviderLevel(document.providerProfileId);
+    await this.notifyProviderReviewResult({
+      userId: existing.providerProfile.userId,
+      providerProfileId: document.providerProfileId,
+      kind: 'document',
+      label: providerDocumentNotificationLabel(document.type),
+      status,
+      reason: normalizedReason,
+      documentId,
+    });
     return { ok: true, document };
+  }
+
+  private async notifyProviderReviewResult(input: {
+    readonly documentId?: string;
+    readonly kind: 'document' | 'kyc';
+    readonly label: string;
+    readonly providerProfileId: string;
+    readonly reason?: string;
+    readonly status: ProviderDocumentStatus | ProviderKycStatus;
+    readonly userId: string;
+  }) {
+    if (!this.notifications) return;
+
+    const approved = String(input.status) === 'APPROVED';
+    const onHold = String(input.status) === 'BLOCKED';
+    const reviewReason = normalizeString(input.reason);
+    const type = `provider.${input.kind}.${approved ? 'approved' : onHold ? 'on_hold' : 'rejected'}`;
+    const title = approved
+      ? `${input.label} approved`
+      : onHold
+        ? `${input.label} on hold`
+        : `${input.label} needs correction`;
+    const body = approved
+      ? `${input.label} has been approved. No further action is required.`
+      : onHold
+        ? `${input.label} is on hold${reviewReason ? `: ${reviewReason}` : '.'} Update the requested information and submit it again.`
+        : `${input.label} was not approved${reviewReason ? `: ${reviewReason}` : '.'} Update the requested information and submit it again.`;
+
+    await this.notifications.create({
+      userId: input.userId,
+      targetRole: Role.PROVIDER,
+      type,
+      title,
+      body,
+      resolveTemplate: false,
+      data: {
+        documentId: input.documentId,
+        providerProfileId: input.providerProfileId,
+        reviewReason,
+        reviewStatus: input.status,
+        resubmissionRequired: !approved,
+      },
+    });
   }
 
   async reviewBankAccount(
@@ -610,7 +706,7 @@ export class ProviderOnboardingService {
 
   async createTaxPolicyVersion(
     actorId: string,
-    input: {
+    input: TaxPolicyFinanceApprovalInput & {
       name: string;
       status?: TaxPolicyStatus;
       effectiveFrom: string;
@@ -624,6 +720,12 @@ export class ProviderOnboardingService {
     assertTaxPolicyEffectiveWindow(effectiveFrom, effectiveTo);
 
     const result = await this.prisma.$transaction(async (tx) => {
+      const approval = await requireTaxPolicyFinanceApproval(
+        tx,
+        actorId,
+        input,
+        'Tax policy version create',
+      );
       const policy = await tx.taxPolicyVersion.create({
         data: {
           name: requiredString(input.name, 'Policy name is required'),
@@ -636,10 +738,12 @@ export class ProviderOnboardingService {
         include: { rules: true },
       });
       const deactivated = await deactivateOtherActiveTaxPolicies(tx, policy.id, status);
-      return { policy, deactivatedCount: deactivated.count };
+      return { approval, policy, deactivatedCount: deactivated.count };
     });
     const { policy } = result;
     await this.writeAudit(actorId, 'tax_policy.create', `tax_policy:${policy.id}`, {
+      approvalAdminId: result.approval.approvalAdminId,
+      operatorReason: result.approval.operatorReason,
       status: policy.status,
       deactivatedOtherActivePolicies: result.deactivatedCount,
     });
@@ -649,7 +753,7 @@ export class ProviderOnboardingService {
   async updateTaxPolicyVersion(
     actorId: string,
     id: string,
-    input: {
+    input: TaxPolicyFinanceApprovalInput & {
       name?: string;
       status?: TaxPolicyStatus;
       effectiveFrom?: string;
@@ -664,8 +768,17 @@ export class ProviderOnboardingService {
       input.effectiveTo === undefined
         ? undefined
         : parseOptionalDate(input.effectiveTo, 'effectiveTo must be a valid date');
+    if (effectiveFrom && effectiveTo) {
+      assertTaxPolicyEffectiveWindow(effectiveFrom, effectiveTo);
+    }
 
     const result = await this.prisma.$transaction(async (tx) => {
+      const approval = await requireTaxPolicyFinanceApproval(
+        tx,
+        actorId,
+        input,
+        'Tax policy version update',
+      );
       const policy = await tx.taxPolicyVersion.update({
         where: { id },
         data: {
@@ -679,10 +792,12 @@ export class ProviderOnboardingService {
       });
       assertTaxPolicyEffectiveWindow(policy.effectiveFrom, policy.effectiveTo);
       const deactivated = await deactivateOtherActiveTaxPolicies(tx, policy.id, policy.status);
-      return { policy, deactivatedCount: deactivated.count };
+      return { approval, policy, deactivatedCount: deactivated.count };
     });
     const { policy } = result;
     await this.writeAudit(actorId, 'tax_policy.update', `tax_policy:${policy.id}`, {
+      approvalAdminId: result.approval.approvalAdminId,
+      operatorReason: result.approval.operatorReason,
       status: policy.status,
       deactivatedOtherActivePolicies: result.deactivatedCount,
     });
@@ -692,7 +807,7 @@ export class ProviderOnboardingService {
   async createTaxRule(
     actorId: string,
     policyVersionId: string,
-    input: {
+    input: TaxPolicyFinanceApprovalInput & {
       scope?: TaxRuleScope;
       serviceType?: string;
       minGrossAmount?: number;
@@ -704,8 +819,14 @@ export class ProviderOnboardingService {
   ) {
     const data = normalizeTaxRuleInput(input, true);
     const rule = await this.prisma.$transaction(async (tx) => {
+      const approval = await requireTaxPolicyFinanceApproval(
+        tx,
+        actorId,
+        input,
+        'Tax rule create',
+      );
       await assertTaxRuleDoesNotConflict(tx, policyVersionId, data);
-      return tx.taxRule.create({
+      const createdRule = await tx.taxRule.create({
         data: {
           policyVersionId,
           scope: data.scope,
@@ -717,19 +838,22 @@ export class ProviderOnboardingService {
           active: data.active,
         },
       });
+      return { approval, rule: createdRule };
     });
-    await this.writeAudit(actorId, 'tax_rule.create', `tax_rule:${rule.id}`, {
+    await this.writeAudit(actorId, 'tax_rule.create', `tax_rule:${rule.rule.id}`, {
+      approvalAdminId: rule.approval.approvalAdminId,
+      operatorReason: rule.approval.operatorReason,
       policyVersionId,
-      scope: rule.scope,
-      rateBps: rule.rateBps,
+      scope: rule.rule.scope,
+      rateBps: rule.rule.rateBps,
     });
-    return rule;
+    return rule.rule;
   }
 
   async updateTaxRule(
     actorId: string,
     id: string,
-    input: {
+    input: TaxPolicyFinanceApprovalInput & {
       scope?: TaxRuleScope;
       serviceType?: string | null;
       minGrossAmount?: number | null;
@@ -753,19 +877,28 @@ export class ProviderOnboardingService {
       false,
     );
     const rule = await this.prisma.$transaction(async (tx) => {
+      const approval = await requireTaxPolicyFinanceApproval(
+        tx,
+        actorId,
+        input,
+        'Tax rule update',
+      );
       await assertTaxRuleDoesNotConflict(tx, existing.policyVersionId, data, existing.id);
-      return tx.taxRule.update({
+      const updatedRule = await tx.taxRule.update({
         where: { id },
         data,
       });
+      return { approval, rule: updatedRule };
     });
-    await this.writeAudit(actorId, 'tax_rule.update', `tax_rule:${rule.id}`, {
-      policyVersionId: rule.policyVersionId,
-      scope: rule.scope,
-      rateBps: rule.rateBps,
-      active: rule.active,
+    await this.writeAudit(actorId, 'tax_rule.update', `tax_rule:${rule.rule.id}`, {
+      approvalAdminId: rule.approval.approvalAdminId,
+      operatorReason: rule.approval.operatorReason,
+      policyVersionId: rule.rule.policyVersionId,
+      scope: rule.rule.scope,
+      rateBps: rule.rule.rateBps,
+      active: rule.rule.active,
     });
-    return rule;
+    return rule.rule;
   }
 
   private async attachProviderDocument(
@@ -862,17 +995,18 @@ export class ProviderOnboardingService {
     });
   }
 
-  private async findMissingApprovedKycDocumentTypes(providerProfileId: string) {
-    const approvedDocuments = await this.prisma.providerDocument.findMany({
+  private async findMissingSubmittedKycDocumentTypes(providerProfileId: string) {
+    const submittedDocuments = await this.prisma.providerDocument.findMany({
       where: {
         providerProfileId,
         type: { in: [...REQUIRED_KYC_DOCUMENT_TYPES] },
-        status: ProviderDocumentStatus.APPROVED,
+        deletedAt: null,
+        fileAsset: { uploadStatus: FileUploadStatus.UPLOADED },
       },
       select: { type: true },
     });
-    const approvedTypes = new Set(approvedDocuments.map((document) => document.type));
-    return REQUIRED_KYC_DOCUMENT_TYPES.filter((type) => !approvedTypes.has(type));
+    const submittedTypes = new Set(submittedDocuments.map((document) => document.type));
+    return REQUIRED_KYC_DOCUMENT_TYPES.filter((type) => !submittedTypes.has(type));
   }
 
   private providerReadiness(
@@ -1030,6 +1164,42 @@ function requiredString(value: string | undefined, message: string) {
   return normalized;
 }
 
+async function requireTaxPolicyFinanceApproval(
+  tx: Prisma.TransactionClient,
+  actorId: string,
+  input: TaxPolicyFinanceApprovalInput,
+  actionLabel: string,
+) {
+  const approvalAdminId = requiredString(
+    input.approvalAdminId,
+    `${actionLabel} requires a Finance approver`,
+  );
+  if (approvalAdminId === actorId) {
+    throw new BadRequestException(`${actionLabel} requires a different Finance approver`);
+  }
+  const approver = await tx.user.findUnique({
+    where: { id: approvalAdminId },
+    select: { id: true, roles: true },
+  });
+  if (
+    !approver?.roles.includes(Role.ADMIN) ||
+    !approver.roles.includes(Role.FINANCE_APPROVER)
+  ) {
+    throw new BadRequestException(`${actionLabel} requires approval from a Finance approver`);
+  }
+  const operatorReason = requiredString(
+    input.operatorReason,
+    `${actionLabel} requires operator evidence`,
+  );
+  if (operatorReason.length < 10) {
+    throw new BadRequestException(`${actionLabel} requires at least 10 characters of operator evidence`);
+  }
+  return {
+    approvalAdminId,
+    operatorReason,
+  };
+}
+
 function normalizeString(value?: string | null) {
   const normalized = value?.trim();
   return normalized ? normalized : undefined;
@@ -1166,6 +1336,16 @@ function normalizeAdminTaxPolicyVersionSkip(value: number | string | null | unde
     return 0;
   }
   return Math.floor(parsed);
+}
+
+function providerDocumentNotificationLabel(type: ProviderDocumentType) {
+  const labels: Partial<Record<ProviderDocumentType, string>> = {
+    [ProviderDocumentType.CCCD_FRONT]: 'ID card front',
+    [ProviderDocumentType.CCCD_BACK]: 'ID card back',
+    [ProviderDocumentType.SELFIE]: 'Identity selfie',
+  };
+
+  return labels[type] ?? type.replaceAll('_', ' ').toLowerCase();
 }
 
 function normalizeTaxRuleInput(

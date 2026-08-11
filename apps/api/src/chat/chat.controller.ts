@@ -6,13 +6,17 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { CreateChatMessageDto } from './chat.dto';
+import { ChatGateway } from './chat.gateway';
 import { ChatService } from './chat.service';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.CUSTOMER, Role.PROVIDER, Role.ADMIN)
 export class ChatController {
-  constructor(private readonly chat: ChatService) {}
+  constructor(
+    private readonly chat: ChatService,
+    private readonly gateway: ChatGateway,
+  ) {}
 
   @Get('rooms/:id/messages')
   listMessages(@CurrentUser() user: AuthenticatedUser, @Param('id') chatRoomId: string) {
@@ -20,12 +24,14 @@ export class ChatController {
   }
 
   @Post('rooms/:id/messages')
-  createMessage(
+  async createMessage(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') chatRoomId: string,
     @Body() body: CreateChatMessageDto,
   ) {
-    return this.chat.createMessage(chatRoomId, user, body);
+    const message = await this.chat.createMessage(chatRoomId, user, body);
+    this.gateway.emitMessageCreated(chatRoomId, message);
+    return message;
   }
 }
 

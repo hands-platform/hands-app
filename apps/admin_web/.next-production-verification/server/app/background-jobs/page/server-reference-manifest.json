@@ -1,0 +1,29 @@
+{
+  "node": {
+    "4007932f8e60e2d5da9e3570737e160c31cb9e8e3a": {
+      "workers": {
+        "app/background-jobs/page": {
+          "moduleId": 743175,
+          "async": false,
+          "exportedName": "acknowledgeBackgroundJobFailure",
+          "filename": "apps/admin_web/app/background-jobs/actions.ts"
+        }
+      },
+      "exportedName": "acknowledgeBackgroundJobFailure",
+      "filename": "apps/admin_web/app/background-jobs/actions.ts"
+    },
+    "40f15521246c080eedb0141e295b96d9933a77cc38": {
+      "workers": {
+        "app/background-jobs/page": {
+          "moduleId": 743175,
+          "async": false,
+          "exportedName": "resolveBackgroundJobFailure",
+          "filename": "apps/admin_web/app/background-jobs/actions.ts"
+        }
+      },
+      "exportedName": "resolveBackgroundJobFailure",
+      "filename": "apps/admin_web/app/background-jobs/actions.ts"
+    }
+  },
+  "edge": {}
+}

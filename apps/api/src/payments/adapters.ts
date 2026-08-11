@@ -397,6 +397,52 @@ export class CashPaymentAdapter implements PaymentAdapter {
   }
 }
 
+export class CustomerWalletPaymentAdapter implements PaymentAdapter {
+  readonly method = PaymentMethod.CUSTOMER_WALLET;
+  readonly mode = 'INTERNAL' as const;
+
+  initialAuthorization(): PaymentAuthorization {
+    return {
+      method: PaymentMethod.CUSTOMER_WALLET,
+      status: PaymentStatus.AUTHORIZED,
+      providerRef: null,
+      rawMeta: { provider: 'CUSTOMER_WALLET', reservationState: 'HELD' },
+    };
+  }
+
+  async authorize() {
+    return this.initialAuthorization();
+  }
+
+  parseCallback(payload: unknown): PaymentCallbackResult {
+    return {
+      providerRef: isRecord(payload) ? String(payload.providerRef ?? '') : '',
+      status: PaymentStatus.CAPTURED,
+      rawMeta: isRecord(payload) ? payload : {},
+    };
+  }
+
+  async checkStatus() {
+    return { status: PaymentStatus.AUTHORIZED };
+  }
+
+  async capture() {
+    return { status: PaymentStatus.CAPTURED };
+  }
+
+  async release() {
+    return { status: PaymentStatus.RELEASED };
+  }
+
+  async refund() {
+    return { status: PaymentStatus.REFUNDED, providerFinalized: true };
+  }
+
+  async checkRefund() {
+    return { status: PaymentStatus.REFUNDED, providerFinalized: true };
+  }
+}
+
 function normalizeStatus(value: unknown) {
   if (value === 'CAPTURED' || value === 'SUCCESS' || value === '00' || value === '0' || value === 0) {
     return PaymentStatus.CAPTURED;

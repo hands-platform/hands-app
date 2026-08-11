@@ -84,17 +84,45 @@ describe('provider onboarding request DTO validation', () => {
     const pipe = new ValidationPipe({ whitelist: true, transform: true });
 
     const transformed = await pipe.transform(
-      { scope: 'AMOUNT_BAND', minGrossAmount: '500000', rateBps: '500', active: true, private: true },
+      {
+        active: true,
+        approvalAdminId: 'finance-admin-2',
+        minGrossAmount: '500000',
+        operatorReason: 'Approved against the current withholding schedule.',
+        private: true,
+        rateBps: '500',
+        scope: 'AMOUNT_BAND',
+      },
       { type: 'body', metatype: bodyMetatype('createTaxRule', 2) as never, data: '' },
     );
 
     expect(transformed).toHaveProperty('minGrossAmount', 500000);
+    expect(transformed).toHaveProperty('approvalAdminId', 'finance-admin-2');
     expect(transformed).not.toHaveProperty('private');
 
     await expect(
       pipe.transform(
-        { scope: 'AUTO', rateBps: 500 },
+        {
+          approvalAdminId: 'finance-admin-2',
+          operatorReason: 'Approved against the current withholding schedule.',
+          scope: 'AUTO',
+          rateBps: 500,
+        },
         { type: 'body', metatype: bodyMetatype('createTaxRule', 2) as never, data: '' },
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('requires separate finance approval evidence for tax policy writes', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    await expect(
+      pipe.transform(
+        {
+          effectiveFrom: '2026-07-01T00:00:00.000Z',
+          name: 'Vietnam withholding',
+        },
+        { type: 'body', metatype: bodyMetatype('createTaxPolicyVersion', 1) as never, data: '' },
       ),
     ).rejects.toThrow();
   });

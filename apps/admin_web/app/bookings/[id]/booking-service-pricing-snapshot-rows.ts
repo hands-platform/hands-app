@@ -4,6 +4,7 @@ type BookingServicePricingSnapshotInput = {
   adminMinimum: string;
   payoutRuleStatus: string;
   payoutRuleLine: string;
+  earningStatus: string | null;
   providerPayout: string;
   providerNet: string;
   platformFee: string;
@@ -33,7 +34,7 @@ export function bookingServicePricingSnapshotRows(input: BookingServicePricingSn
       helper: input.payoutRuleLine,
     },
     {
-      label: 'Partner payout',
+      label: input.earningStatus ? 'Partner payout' : 'Projected payout',
       value: input.providerPayout,
       helper: input.providerNet,
     },

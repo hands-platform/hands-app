@@ -17,17 +17,21 @@ describe('CouponFinancePage Vuexy links', () => {
     expect(source).not.toContain('buildBookingSettlementSnapshotRowsCsvHref');
   });
 
-  it('describes coupon KPI scope as an active bounded queue instead of a vague current queue', () => {
-    expect(source).toContain('Period coupon discount applied to customer payment.');
+  it('describes coupon totals as selected-range accounting values', () => {
+    expect(source).toContain('Coupon discount applied to the customer-facing price.');
     expect(source).not.toContain('current bounded queue');
   });
 
-  it('makes coupon finance KPI cards explicit about period, risk, and records scope', () => {
+  it('keeps action, period totals, filters, and records visible on one page', () => {
     expect(source).toContain('const couponRangeScope = dateRangeLabel(filters.range);');
-    expect(source).toContain('scope: couponRangeScope');
-    expect(source).toContain("scope: 'Needs action'");
-    expect(source).toContain("kind: 'risk'");
-    expect(source).toContain("scope: 'Reversal records'");
+    expect(source).toContain('<FinanceListCommandBoard ariaLabel="Coupon finance command board">');
+    expect(source).toContain('label="Coupon review flags"');
+    expect(source).toContain('title="Current filtered totals"');
+    expect(source).toContain('id="coupon-finance-records"');
+    expect(source).toContain('COUPON_FINANCE_REVIEW_LINKS');
+    expect(source).toContain('FINANCE_ACCOUNTING_PAGE_SIZE_LINKS');
+    expect(source).toContain('summary.reversedCompanyCouponExpense');
+    expect(source).not.toContain('metrics={[');
     expect(source).not.toContain('Coupon discount amount applied to customer payment in the active bounded queue.');
   });
 });

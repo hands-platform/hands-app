@@ -25,8 +25,9 @@ export async function createPaymentFeePolicyDraft(formData: FormData) {
   const effectiveFrom = requiredDate(formData, 'effectiveFrom');
   const effectiveTo = optionalDate(formData, 'effectiveTo');
   const notes = optionalText(formData, 'notes');
-  if (!name || !effectiveFrom || !validDateWindow(effectiveFrom, effectiveTo)) {
-    redirectWithNotice(returnTo, 'validation');
+  const reason = requiredText(formData, 'reason');
+  if (!name || !effectiveFrom || !validDateWindow(effectiveFrom, effectiveTo) || !validReason(reason)) {
+    return redirectWithNotice(returnTo, 'validation');
   }
 
   let policy: { id: string };
@@ -36,9 +37,10 @@ export async function createPaymentFeePolicyDraft(formData: FormData) {
       effectiveFrom,
       effectiveTo,
       notes,
+      reason,
     });
   } catch {
-    redirectWithNotice(returnTo, 'failed');
+    return redirectWithNotice(returnTo, 'failed');
   }
   revalidatePaymentFeePaths();
   redirectWithNotice(withPolicy(returnTo, policy.id), 'created');
@@ -51,8 +53,9 @@ export async function updatePaymentFeePolicyDraft(formData: FormData) {
   const effectiveFrom = requiredDate(formData, 'effectiveFrom');
   const effectiveTo = optionalDate(formData, 'effectiveTo');
   const notes = optionalText(formData, 'notes');
-  if (!policyId || !name || !effectiveFrom || !validDateWindow(effectiveFrom, effectiveTo)) {
-    redirectWithNotice(returnTo, 'validation');
+  const reason = requiredText(formData, 'reason');
+  if (!policyId || !name || !effectiveFrom || !validDateWindow(effectiveFrom, effectiveTo) || !validReason(reason)) {
+    return redirectWithNotice(returnTo, 'validation');
   }
 
   try {
@@ -61,9 +64,10 @@ export async function updatePaymentFeePolicyDraft(formData: FormData) {
       effectiveFrom,
       effectiveTo,
       notes,
+      reason,
     });
   } catch {
-    redirectWithNotice(returnTo, 'failed');
+    return redirectWithNotice(returnTo, 'failed');
   }
   revalidatePaymentFeePaths();
   redirectWithNotice(withPolicy(returnTo, policyId), 'updated');
@@ -78,14 +82,15 @@ export async function upsertPaymentFeePolicyRule(formData: FormData) {
   const treatment = enumValue(formData, 'treatment', PAYMENT_FEE_TREATMENTS);
   const rateBps = nonNegativeInteger(formData, 'rateBps');
   const fixedAmount = nonNegativeInteger(formData, 'fixedAmount');
+  const reason = requiredText(formData, 'reason');
   const invalidShape =
     rateBps < 0 ||
     fixedAmount < 0 ||
     (feeType === 'RATE' && fixedAmount !== 0) ||
     (feeType === 'FIXED' && rateBps !== 0) ||
     rateBps > 10000;
-  if (!policyId || !method || !feeType || !payer || !treatment || invalidShape) {
-    redirectWithNotice(returnTo, 'validation');
+  if (!policyId || !method || !feeType || !payer || !treatment || invalidShape || !validReason(reason)) {
+    return redirectWithNotice(returnTo, 'validation');
   }
 
   try {
@@ -96,9 +101,10 @@ export async function upsertPaymentFeePolicyRule(formData: FormData) {
       treatment,
       rateBps,
       fixedAmount,
+      reason,
     });
   } catch {
-    redirectWithNotice(returnTo, 'failed');
+    return redirectWithNotice(returnTo, 'failed');
   }
   revalidatePaymentFeePaths();
   redirectWithNotice(withPolicy(returnTo, policyId), 'rule-saved');
@@ -197,6 +203,10 @@ function confirmedPolicyChange(policyId: string, confirmationPolicyId: string, r
   );
 }
 
+function validReason(reason: string) {
+  return reason.length >= PAYMENT_FEE_DECISION_REASON_MIN_LENGTH;
+}
+
 function requiredText(formData: FormData, name: string) {
   return String(formData.get(name) ?? '').trim();
 }
@@ -248,6 +258,7 @@ function paymentFeeReturnTo(formData: FormData) {
       const item = url.searchParams.get(key);
       if (item) safe.searchParams.set(key, item);
     }
+    if (url.searchParams.get('settings') === 'policy') safe.searchParams.set('settings', 'policy');
     return `${safe.pathname}${safe.search}`;
   } catch {
     return '/finance-tax/payment-fees';

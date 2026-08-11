@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "functions": {
+    "/_middleware": {
+      "runtime": "nodejs",
+      "matchers": [
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!_next\\/static|_next\\/image|favicon.ico|robots.txt|.*\\.(?:png|jpg|jpeg|gif|svg|ico|css|js|map|txt|webmanifest)$).*))(\\.json|\\.rsc|\\.segments\\/.+\\.segment\\.rsc)?[\\/#\\?]?$",
+          "originalSource": "/((?!_next/static|_next/image|favicon.ico|robots.txt|.*\\.(?:png|jpg|jpeg|gif|svg|ico|css|js|map|txt|webmanifest)$).*)"
+        }
+      ]
+    },
+    "/api/admin/bank-reconciliation/batch-import": {},
+    "/api/admin/bank-reconciliation/batch-preview": {},
+    "/api/admin/bookings/[id]/chat-messages": {},
+    "/api/admin/calendar-events": {},
+    "/api/admin/calendar-events/[id]": {},
+    "/api/admin/geoapify-tiles/[z]/[x]/[y]": {},
+    "/api/admin/maptiler-tiles/[z]/[x]/[y]": {},
+    "/api/admin/realtime-token": {},
+    "/api/admin/session/login": {},
+    "/api/admin/session/logout": {},
+    "/api/admin/session/me": {},
+    "/r/[audience]/[code]": {}
+  }
+}

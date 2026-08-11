@@ -1,197 +1,100 @@
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import { RefundsTableSection, type RefundTableRow } from './refunds-table-section';
 
 describe('RefundsTableSection', () => {
-  it('reuses the shared Admin table pagination footer atom', () => {
-    const source = readFileSync('app/refunds/refunds-table-section.tsx', 'utf8');
-
-    expect(source).toContain('AdminNotePanel');
-    expect(source).toContain('AdminStageItem');
-    expect(source).toContain('AdminStageList');
-    expect(source).toContain('AdminTablePanel');
-    expect(source).toContain('AdminTablePaginationFooter');
-    expect(source).toContain('AdminTextLink');
-    expect(source).toContain('StatusBadgeFromPillClass');
-    expect(source).not.toContain('statusBadgeToneFromPillClass');
-    expect(source).not.toContain('className="text-link"');
-    expect(source).not.toContain('<div className="setup-stage-list admin-mt-8">');
-    expect(source).not.toContain('className="setup-stage-item"');
-    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
-    expect(source).not.toContain('PillClassBadge');
-    expect(source).not.toContain('<div className="ops-task-note admin-mt-10">');
-    expect(source).not.toContain('AdminRoundedPagination');
-    expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
-  });
-
-  it('uses the shared money atom for refund operation amounts', () => {
-    const source = readFileSync('app/refunds/refunds-table-section.tsx', 'utf8');
-
-    expect(source).toContain('MoneyText');
-    expect(source).not.toContain('readonly amountLabel: string;');
-    expect(source).not.toContain('<td>{row.amountLabel}</td>');
-  });
-
-  it('renders refund rows with links and action execution evidence', () => {
-    const section = RefundsTableSection({
-      emptyMessage: 'No refunds loaded.',
-      pagination: pagination([buildRow()], { totalRows: 12 }),
-    });
-
-    const rendered = normalizeText(textContent(section));
-
-    expect(rendered).toContain('ref-1');
-    expect(rendered).toContain('Showing 1 to 1 of 12 entries');
-    expect(rendered).toContain('Customer refund requested');
-    expect(rendered).toContain('Refund action execution map');
-    expect(rendered).toContain('Match payment ledger');
-    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/booking-1', '/payments#payment-payment-1']));
-    expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
-        'table vuexy-data-table vuexy-booking-table admin-data-table',
-      ]),
+  it('renders six operator columns, direct detail links, and a stateful checklist trigger', () => {
+    const markup = renderToStaticMarkup(
+      <RefundsTableSection emptyMessage="No cases" pagination={pagination([buildRow()])} />,
     );
+
+    expect(markup).toContain('Customer / booking');
+    expect(markup).toContain('Control readiness');
+    expect(markup).toContain('Owner / action');
+    expect(markup).toContain('Approval required');
+    expect(markup).toContain('/payments/payment-1');
+    expect(markup).not.toContain('/payments#payment-payment-1');
+    expect(markup).toContain('/finance-tax/approval-queue?view=refunds');
+    expect(markup).toContain('Review checklist');
+    expect(markup).toContain('aria-expanded="false"');
+    expect(markup).toContain('aria-controls="refund-review-refund-1"');
+    expect(markup).not.toContain('class="refund-review-row"');
+    expect(markup).not.toContain('colSpan="7"');
   });
 
-  it('renders empty state when no refunds exist', () => {
-    const section = RefundsTableSection({
-      emptyMessage: 'No refunds currently match this queue.',
-      pagination: pagination([]),
-    });
+  it('keeps only one checklist open and restores focus on Escape', () => {
+    const source = readFileSync('app/refunds/refund-rows-table.tsx', 'utf8');
 
-    expect(textContent(section)).toContain('No refunds currently match this queue.');
+    expect(source).toContain('const [openId, setOpenId]');
+    expect(source).toContain("event.key !== 'Escape'");
+    expect(source).toContain('document.getElementById(`refund-checklist-toggle-${openId}`)?.focus()');
+    expect(source).toContain('aria-expanded={isOpen}');
+    expect(source).toContain("event.key !== 'Enter' && event.key !== ' '");
+    expect(source).toContain('event.preventDefault()');
+    expect(source).toContain('{isOpen ? (');
+    expect(source).toContain('<td colSpan={6}>');
   });
 
-  it('does not duplicate the base pill class for refund execution badges', () => {
-    const row = buildRow();
-    const section = RefundsTableSection({
-      emptyMessage: 'No refunds loaded.',
-      pagination: pagination([
-        {
-          ...row,
-          executionRows: [
-            {
-              ...row.executionRows[0],
-              pillClass: 'pill pill-danger',
-            },
-          ],
-        },
-      ]),
-    });
+  it('keeps empty-state actions supplied by the page', () => {
+    const markup = renderToStaticMarkup(
+      <RefundsTableSection
+        emptyMessage={<div><strong>No cases in this view</strong><a href="/refunds?range=all">View all open refunds</a></div>}
+        pagination={pagination([])}
+      />,
+    );
 
-    expect(classNamesIn(section)).toContain('pill pill-danger');
-    expect(classNamesIn(section)).not.toContain('pill pill pill-danger');
+    expect(markup).toContain('No cases in this view');
+    expect(markup).toContain('View all open refunds');
   });
 });
 
-function pagination(
-  rows: readonly RefundTableRow[],
-  input: { page?: number; pageSize?: number; totalRows?: number } = {},
-) {
-  const page = input.page ?? 1;
-  const pageSize = input.pageSize ?? 10;
-  const totalRows = input.totalRows ?? rows.length;
-
+function pagination(rows: readonly RefundTableRow[]) {
   return {
-    from: rows.length === 0 ? 0 : (page - 1) * pageSize + 1,
-    hrefForPage: (nextPage: number) => `/refunds?page=${nextPage}`,
-    page,
+    from: rows.length ? 1 : 0,
+    hrefForPage: (page: number) => `/refunds?page=${page}`,
+    page: 1,
     rows,
-    to: rows.length === 0 ? 0 : (page - 1) * pageSize + rows.length,
-    totalPages: Math.max(1, Math.ceil(totalRows / pageSize)),
-    totalRows,
+    to: rows.length,
+    totalPages: 1,
+    totalRows: rows.length,
   };
 }
 
 function buildRow(): RefundTableRow {
   return {
+    ageLabel: '2h ago',
     amount: 250000,
     bookingHref: '/bookings/booking-1',
+    bookingId: 'booking-1',
     bookingIdLabel: 'bookin',
-    bookingStatus: 'REFUNDED',
-    currency: 'VND',
-    customerLabel: 'Customer One',
-    executionRows: [
-      {
-        action: 'Match payment ledger',
-        operatorRule: 'Do not close the refund case until payment ledger state and refund status match.',
-        pillClass: 'pill-danger',
-        reason: 'Refund status is REQUESTED, but payment status is CAPTURED.',
-        status: 'Update needed',
-      },
+    bookingStatus: 'CANCELLED',
+    checklistCompleted: 4,
+    checklistRows: [
+      { detail: 'Booking linked.', label: 'Booking record', pillClass: 'pill-success', status: 'Present' },
+      { detail: 'Payment linked.', label: 'Payment record', pillClass: 'pill-success', status: 'Present' },
+      { detail: 'Request linked.', label: 'Request context', pillClass: 'pill-success', status: 'Present' },
+      { detail: 'Gateway linked.', label: 'Gateway evidence', pillClass: 'pill-success', status: 'Present' },
+      { detail: 'Needs reconciliation.', label: 'State alignment', pillClass: 'pill-danger', status: 'Missing' },
     ],
+    createdAtLabel: '09 Aug 2026, 10:00',
+    currency: 'VND',
+    customerHref: '/customers/customer-1',
+    customerLabel: 'Customer One',
+    evidenceBlockerLabel: '1 blocker to resolve',
+    evidenceLabel: '4 of 5 checks complete',
     id: 'refund-1',
-    opsHint: 'Confirm the payment reversal path and notify the guest once the refund is complete.',
-    opsSignal: <span>Customer refund requested</span>,
-    partnerLabel: 'Partner One',
-    paymentHref: '/payments#payment-payment-1',
-    paymentLabel: 'CARD / CAPTURED',
+    opsHint: 'Review evidence and approve or reject',
+    opsTone: 'warn',
+    paymentHref: '/payments/payment-1',
+    paymentId: 'payment-1',
+    paymentLabel: 'CARD · CAPTURED',
+    primaryActionHref: '/finance-tax/approval-queue?view=refunds',
+    primaryActionLabel: 'Review decision',
+    reason: 'Customer request',
+    requestSource: 'Admin requested',
     shortId: 'ref-1',
-    status: 'REQUESTED',
+    stageLabel: 'Approval required',
+    workstreamLabel: 'Finance approval',
   };
-}
-
-function textContent(value: unknown): string {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value === 'boolean') {
-    return '';
-  }
-  if (typeof value === 'string' || typeof value === 'number') {
-    return String(value);
-  }
-  if (Array.isArray(value)) {
-    return value.map(textContent).join(' ');
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  return textContent(props?.children);
-}
-
-function normalizeText(value: string) {
-  return value.replace(/\s+/g, ' ').trim();
-}
-
-function hrefsIn(value: unknown): string[] {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value !== 'object') {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap(hrefsIn);
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  const href = typeof props?.href === 'string' ? [props.href] : [];
-  return [...href, ...hrefsIn(props?.children)];
-}
-
-function classNamesIn(value: unknown): string[] {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value !== 'object') {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap(classNamesIn);
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  const className = typeof props?.className === 'string' ? [props.className] : [];
-  return [...className, ...classNamesIn(props?.children)];
-}
-
-function resolveElement(value: unknown): unknown {
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
-}
-
-function readRecord(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return null;
 }

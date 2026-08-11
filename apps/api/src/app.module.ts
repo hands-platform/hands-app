@@ -20,6 +20,7 @@ import { ProvidersModule } from './providers/providers.module';
 import { RedisModule } from './redis/redis.module';
 import { ReferralsModule } from './referrals/referrals.module';
 import { ServicesModule } from './services/services.module';
+import { SiteContentModule } from './site-content/site-content.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -42,6 +43,7 @@ import { UsersModule } from './users/users.module';
     ProvidersModule,
     ProviderOnboardingModule,
     ServicesModule,
+    SiteContentModule,
     BookingsModule,
     MatchingModule,
     MobileModule,

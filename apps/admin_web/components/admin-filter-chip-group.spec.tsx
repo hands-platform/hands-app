@@ -30,7 +30,7 @@ describe('AdminFilterChipGroup', () => {
   });
 
   it('keeps chip groups on the Vuexy filter chip row rhythm', () => {
-    const groupIndex = globalsCss.indexOf('.admin-filter-chip-group {');
+    const groupIndex = globalsCss.lastIndexOf('.admin-filter-chip-group {');
     const groupBlock = cssRuleBlockAt(groupIndex);
     const pillIndex = globalsCss.indexOf('.admin-filter-chip-group .pill {');
     const pillBlock = cssRuleBlockAt(pillIndex);

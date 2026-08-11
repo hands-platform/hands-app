@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 
 import { AdminFormInput, AdminFormSelect } from './admin-form-controls';
 import { AdminSectionHeader } from './admin-page-template';
-import { AdminDialogCard } from './admin-surface';
+import { ConfirmDialogFocusBoundary } from './confirm-dialog-focus-boundary';
+import { ConfirmDialogValidSubmit } from './confirm-dialog-valid-submit';
 import type { StatusBadgeTone } from './status-badge';
 import { StatusBadge, StatusBadgeButton, StatusBadgeLink, statusBadgeClassName } from './status-badge';
 
@@ -48,6 +49,7 @@ type ConfirmDialogProps = {
   readonly id: string;
   readonly loading?: boolean;
   readonly loadingLabel?: string;
+  readonly requireValidForm?: boolean;
   readonly selectInputs?: readonly ConfirmDialogSelectInput[];
   readonly supportingLinks?: readonly ConfirmDialogSupportingLink[];
   readonly textInputs?: readonly ConfirmDialogTextInput[];
@@ -94,6 +96,7 @@ export function ConfirmDialog({
   id,
   loading = false,
   loadingLabel = 'Working...',
+  requireValidForm = false,
   selectInputs = [],
   supportingLinks = [],
   textInputs = [],
@@ -104,21 +107,26 @@ export function ConfirmDialog({
   const descriptionId = `${id}-description`;
   const confirmState = confirmDialogButtonState({ confirmLabel, disabled, loading, loadingLabel });
 
-  return AdminDialogCard({
-    ariaDescribedBy: descriptionId,
-    ariaLabelledBy: titleId,
-    className: 'admin-dialog-card',
-    loading,
-    children: [
-      <AdminSectionHeader
-        actions={<StatusBadge tone={tone}>Review</StatusBadge>}
-        description={description}
-        descriptionId={descriptionId}
-        key="header"
-        title={title}
-        titleId={titleId}
-      />,
-      <div className="actions confirm-dialog-actions" key="actions">
+  return (
+    <ConfirmDialogFocusBoundary
+      ariaDescribedBy={descriptionId}
+      ariaLabelledBy={titleId}
+      cancelHref={cancelHref}
+      id={id}
+      loading={loading}
+    >
+      <Fragment>
+        <AdminSectionHeader
+          actions={<StatusBadge tone={tone}>Review</StatusBadge>}
+          title={title}
+          titleId={titleId}
+        />
+        <div className="muted confirm-dialog-description" id={descriptionId}>{description}</div>
+      </Fragment>
+      <div className="actions confirm-dialog-actions">
+        <StatusBadgeLink href={cancelHref} tone="neutral">
+          {cancelLabel}
+        </StatusBadgeLink>
         <form action={action} className="confirm-dialog-form">
           {hiddenInputs.map((input) => (
             <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
@@ -149,17 +157,22 @@ export function ConfirmDialog({
               required={input.required}
             />
           ))}
-          <StatusBadgeButton
-            disabled={confirmState.disabled}
-            tone={disabled || loading ? 'neutral' : tone}
-            type="submit"
-          >
-            {confirmState.label}
-          </StatusBadgeButton>
+          {requireValidForm ? (
+            <ConfirmDialogValidSubmit
+              disabled={confirmState.disabled}
+              label={confirmState.label}
+              tone={tone}
+            />
+          ) : (
+            <StatusBadgeButton
+              disabled={confirmState.disabled}
+              tone={disabled || loading ? 'neutral' : tone}
+              type="submit"
+            >
+              {confirmState.label}
+            </StatusBadgeButton>
+          )}
         </form>
-        <StatusBadgeLink href={cancelHref} tone="neutral">
-          {cancelLabel}
-        </StatusBadgeLink>
         {supportingLinks.map((link) => (
           <StatusBadgeLink
             href={link.href}
@@ -170,7 +183,7 @@ export function ConfirmDialog({
             {link.label}
           </StatusBadgeLink>
         ))}
-      </div>,
-    ],
-  });
+      </div>
+    </ConfirmDialogFocusBoundary>
+  );
 }

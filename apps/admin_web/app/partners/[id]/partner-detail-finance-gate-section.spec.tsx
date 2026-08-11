@@ -66,7 +66,7 @@ describe('partner detail finance gate sections', () => {
     expect(rendered).toContain('Used by operators for manual wallet withdrawal/deposit checks.');
     expect(rendered).toContain('Vietcombank');
     expect(rendered).toContain('Linh Wellness');
-    expect(rendered).toContain('PENDING_REVIEW');
+    expect(rendered).toContain('Pending review');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1?reviewAction=approve-bank']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
@@ -85,7 +85,7 @@ describe('partner detail finance gate sections', () => {
     const rendered = normalizeSpaces(textContent(section));
 
     expect(rendered).toContain('Tax profile optional');
-    expect(rendered).toContain('DEFERRED');
+    expect(rendered).toContain('Review postponed');
     expect(rendered).toContain('No finance evidence found');
     expect(rendered).toContain('Tax profile is not required for Vietnam MVP operations.');
     expect(classNamesIn(section)).toEqual(
@@ -104,7 +104,7 @@ describe('partner detail finance gate sections', () => {
     const rendered = normalizeSpaces(textContent(section));
 
     expect(rendered).toContain('Withdrawal details');
-    expect(rendered).toContain('ON_REQUEST');
+    expect(rendered).toContain('Available on request');
     expect(rendered).toContain('No withdrawal details found');
     expect(rendered).toContain('Collect bank details when the Partner requests wallet withdrawal/deposit or manual settlement.');
     expect(rendered).not.toContain('MISSING');

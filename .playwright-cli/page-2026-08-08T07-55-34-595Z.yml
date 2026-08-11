@@ -1,0 +1,12 @@
+- main "HANDS Admin login" [ref=e4]:
+  - region "Operations control preview" [ref=e5]
+  - region "Admin sign in form" [ref=e7]:
+    - strong [ref=e9]: HANDS Admin
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]: Email
+        - textbox "Email" [ref=e13]
+      - generic [ref=e14]:
+        - generic [ref=e15]: Password
+        - textbox "Password" [ref=e16]
+      - button "Sign in" [ref=e17] [cursor=pointer]

@@ -6,6 +6,7 @@ import {
   ProviderTaxProfileStatus,
   Role,
 } from '@prisma/client';
+import { AdminOperatorCategoryGuard } from '../admin/admin-operator-category.guard';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -26,7 +27,7 @@ import {
 import { ProviderOnboardingService } from './provider-onboarding.service';
 
 @Controller()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, AdminOperatorCategoryGuard)
 export class ProviderOnboardingController {
   constructor(private readonly onboarding: ProviderOnboardingService) {}
 
@@ -160,6 +161,16 @@ export class ProviderOnboardingController {
     @Body() body: ProviderOnboardingReasonDto,
   ) {
     return this.onboarding.reviewKyc(user.id, providerProfileId, ProviderKycStatus.REJECTED, body.reason);
+  }
+
+  @Post(['admin/providers/:id/kyc/hold', 'admin/partners/:id/kyc/hold'])
+  @Roles(Role.ADMIN)
+  holdPartnerKyc(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') providerProfileId: string,
+    @Body() body: ProviderOnboardingReasonDto,
+  ) {
+    return this.onboarding.reviewKyc(user.id, providerProfileId, ProviderKycStatus.BLOCKED, body.reason);
   }
 
   @Post(['admin/provider-documents/:id/approve', 'admin/partner-documents/:id/approve'])

@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../../../core/customer_design_system.dart';
+import '../../../core/customer_error_message.dart';
 import '../../../core/customer_value_helpers.dart';
+import '../../../core/widgets/customer_app_chrome.dart';
 import '../../../core/widgets/customer_feedback_panels.dart';
 import '../../booking/presentation/customer_booking_ui_helpers.dart';
 import '../../map/presentation/customer_map_widgets.dart';
+import 'customer_discovery_widgets.dart';
 import 'customer_service_option_helpers.dart';
 
-class ProviderDetailPage extends StatelessWidget {
+class ProviderDetailPage extends StatefulWidget {
   const ProviderDetailPage({
     super.key,
     required this.providerPreview,
@@ -24,17 +29,55 @@ class ProviderDetailPage extends StatelessWidget {
       Map<String, dynamic> detail, Map<String, dynamic> service) onBookService;
 
   @override
+  State<ProviderDetailPage> createState() => _ProviderDetailPageState();
+}
+
+class _ProviderDetailPageState extends State<ProviderDetailPage> {
+  late Future<Map<String, dynamic>> _detailFuture;
+
+  Future<void> _copyShareLink() async {
+    final providerId = widget.providerPreview['id']?.toString();
+    if (providerId == null || providerId.isEmpty) return;
+    final locale = Localizations.localeOf(context).languageCode;
+    await Clipboard.setData(
+      ClipboardData(text: 'https://hands.vn/$locale/partners/$providerId'),
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Partner link copied.')),
+      );
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _detailFuture = widget.loader();
+  }
+
+  @override
+  void didUpdateWidget(covariant ProviderDetailPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.providerPreview['id'] != widget.providerPreview['id']) {
+      _detailFuture = widget.loader();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final colors = context.handsColors;
+    final portraitHeight =
+        (MediaQuery.sizeOf(context).width * 1.25).clamp(420.0, 520.0);
+    return HandsScaffold(
       body: FutureBuilder<Map<String, dynamic>>(
-        future: loader(),
+        future: _detailFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
           final detail = <String, dynamic>{
-            ...providerPreview,
+            ...widget.providerPreview,
             ...(snapshot.data ?? const <String, dynamic>{}),
           };
           final reviews = detail['reviews'] is List<dynamic>
@@ -50,289 +93,223 @@ class ProviderDetailPage extends StatelessWidget {
           final specialties = asStringList(detail['specialties']);
           final languages = asStringList(detail['languages']);
           final serviceStyle = detail['serviceStyle']?.toString().trim() ?? '';
-          final galleryImageUrls = asStringList(detail['galleryImageUrls']);
-          final photoCount =
-              galleryImageUrls.isEmpty ? 1 : galleryImageUrls.length;
+          final galleryImageUrls = _partnerMediaUrls(detail);
+          final availability = _partnerAvailability(detail);
+          final city = detail['city']?.toString().trim() ?? '';
+          final serviceGroups = customerServiceOptionGroups(services);
 
           return CustomScrollView(
             slivers: [
               SliverAppBar(
-                expandedHeight: 360,
+                expandedHeight: portraitHeight,
                 pinned: true,
-                leading: const BackButton(color: Colors.black),
-                backgroundColor: Colors.white,
-                actions: [
-                  ProviderFavoriteAction(
-                    loader: favoriteLoader,
-                    onChanged: onFavoriteChanged,
+                leading: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: IconButton.filledTonal(
+                    tooltip: 'Back',
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(Icons.arrow_back_rounded),
                   ),
-                  const SizedBox(width: 8),
-                  CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.share_outlined, color: Colors.black)),
+                ),
+                backgroundColor: colors.canvas,
+                surfaceTintColor: Colors.transparent,
+                actions: [
+                  IconButton.filledTonal(
+                    tooltip: 'Copy partner link',
+                    onPressed: _copyShareLink,
+                    icon: const Icon(Icons.ios_share_rounded),
+                  ),
+                  ProviderFavoriteAction(
+                    loader: widget.favoriteLoader,
+                    onChanged: widget.onFavoriteChanged,
+                  ),
                   const SizedBox(width: 12),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFFF7E8C8),
-                              Color(0xFFE9DCC7),
-                              Color(0xFFD6E2CF)
-                            ],
-                          ),
-                        ),
-                      ),
-                      Center(
-                        child: ProviderThumbnail(
-                          name: displayName,
-                          size: 210,
-                          imageUrl: providerProfileImageUrl(detail),
-                        ),
-                      ),
-                      Positioned(
-                        right: 20,
-                        bottom: 20,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.black54,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text('1 / $photoCount',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700)),
-                        ),
-                      ),
-                    ],
+                  background: PartnerHeroMedia(
+                    displayName: displayName,
+                    imageUrl: providerProfileImageUrl(detail),
                   ),
                 ),
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                  padding: const EdgeInsets.fromLTRB(
+                    CustomerSpacing.page,
+                    22,
+                    CustomerSpacing.page,
+                    40,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(displayName,
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineMedium
-                              ?.copyWith(fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 8),
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.location_on_outlined,
-                              size: 22, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          Text(formatDistance(
-                              asDouble(providerPreview['distanceMeters']))),
-                          const SizedBox(width: 14),
-                          const Icon(Icons.star_rounded,
-                              size: 22, color: Color(0xFFF59E0B)),
-                          const SizedBox(width: 4),
-                          Text(
-                              '${rating.toStringAsFixed(1)} ($reviewCount reviews)'),
+                          Expanded(
+                            child: Text(
+                              displayName,
+                              style: Theme.of(context).textTheme.headlineMedium,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          PartnerAvailabilityBadge(
+                            label: availability.label,
+                            availableNow: availability.availableNow,
+                          ),
                         ],
                       ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 14,
+                        runSpacing: 8,
+                        children: [
+                          PartnerMetaItem(
+                            icon: Icons.star_rounded,
+                            iconColor: colors.primary,
+                            label:
+                                '${rating.toStringAsFixed(1)} ($reviewCount)',
+                          ),
+                          PartnerMetaItem(
+                            icon: Icons.location_on_outlined,
+                            label: formatDistance(asDouble(
+                                widget.providerPreview['distanceMeters'])),
+                          ),
+                          if (city.isNotEmpty)
+                            PartnerMetaItem(
+                              icon: Icons.place_outlined,
+                              label: city,
+                            ),
+                          if (galleryImageUrls.length > 1)
+                            PartnerMetaItem(
+                              icon: Icons.photo_library_outlined,
+                              label: '${galleryImageUrls.length} photos',
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      const PartnerTrustStrip(),
+                      const SizedBox(height: 28),
+                      SectionHeader(
+                        title: 'Choose a service',
+                        trailing: serviceGroups.isEmpty
+                            ? null
+                            : Text(
+                                '${serviceGroups.length} type${serviceGroups.length == 1 ? '' : 's'}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (serviceGroups.isEmpty)
+                        const EmptyPanel(
+                          text:
+                              'This partner does not have an available service right now.',
+                        )
+                      else
+                        for (final group in serviceGroups)
+                          ServiceOptionGroupCard(
+                            group: group,
+                            onBook: (service) =>
+                                widget.onBookService(detail, service),
+                          ),
+                      const SizedBox(height: 28),
+                      const Divider(),
+                      const SizedBox(height: 26),
+                      const SectionHeader(title: 'About'),
+                      const SizedBox(height: 12),
+                      Text(
+                        _localizedPartnerBio(context, detail) ??
+                            'This partner has not added an introduction yet.',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      if (serviceStyle.isNotEmpty) ...[
+                        const SizedBox(height: 14),
+                        PartnerProfileNote(
+                          icon: Icons.spa_outlined,
+                          label: serviceStyle,
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: const [
-                          ServiceTag(label: 'Available soon'),
-                          ServiceTag(label: 'Direct request'),
-                          ServiceTag(label: 'Marketplace matching'),
+                        children: [
+                          if (experienceYears != null)
+                            DetailFactChip(
+                              icon: Icons.workspace_premium_outlined,
+                              label: '$experienceYears years',
+                            ),
+                          DetailFactChip(
+                            icon: Icons.room_service_outlined,
+                            label:
+                                '${serviceGroups.fold<int>(0, (sum, group) => sum + group.options.length)} options',
+                          ),
+                          if (languages.isNotEmpty)
+                            DetailFactChip(
+                              icon: Icons.translate_outlined,
+                              label: languages.take(3).join(', '),
+                            ),
                         ],
                       ),
-                      const SizedBox(height: 18),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFF8AA773)),
-                          borderRadius: BorderRadius.circular(18),
-                          color: const Color(0xFFF9FCF6),
-                        ),
-                        child: const Column(
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.verified_user_outlined,
-                                    color: Color(0xFF5E8E4A)),
-                                SizedBox(width: 10),
-                                Expanded(
-                                    child: Text(
-                                        'No required extra fee, no travel fee')),
-                              ],
-                            ),
-                            SizedBox(height: 10),
-                            Row(
-                              children: [
-                                Icon(Icons.shield_outlined,
-                                    color: Color(0xFF5E8E4A)),
-                                SizedBox(width: 10),
-                                Expanded(
-                                    child: Text(
-                                        'Protected when the assigned partner changes')),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      const SectionHeader(
-                        title: 'About me',
-                        subtitle:
-                            'Profile, service style, and guest expectations before booking.',
-                      ),
-                      const SizedBox(height: 12),
-                      DetailInfoCard(
-                        child: Text(
-                          (detail['bio'] as String?) ??
-                              'Experienced partner profile ready for booking.',
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                      ),
-                      if (serviceStyle.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        DetailInfoCard(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.room_service_outlined,
-                                  color: Color(0xFF5E8E4A)),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  serviceStyle,
-                                  style: Theme.of(context).textTheme.bodyLarge,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 16),
-                      DetailInfoCard(
-                        child: Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: [
-                            if (experienceYears != null)
-                              DetailFactChip(
-                                icon: Icons.workspace_premium_outlined,
-                                label: '$experienceYears year(s) experience',
-                              ),
-                            const DetailFactChip(
-                              icon: Icons.timer_outlined,
-                              label: 'Typical response within minutes',
-                            ),
-                            DetailFactChip(
-                              icon: Icons.spa_outlined,
-                              label: '${services.length} service option(s)',
-                            ),
-                            DetailFactChip(
-                              icon: Icons.star_outline_rounded,
-                              label: '$reviewCount verified review(s)',
-                            ),
-                            if (languages.isNotEmpty)
-                              DetailFactChip(
-                                icon: Icons.translate_outlined,
-                                label: languages.take(3).join(', '),
-                              ),
-                          ],
-                        ),
-                      ),
                       if (specialties.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        DetailInfoCard(
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              for (final specialty in specialties.take(8))
-                                ServiceTag(label: specialty),
-                            ],
-                          ),
+                        const SizedBox(height: 14),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final specialty in specialties.take(8))
+                              ServiceTag(label: specialty),
+                          ],
                         ),
                       ],
                       if (galleryImageUrls.isNotEmpty) ...[
-                        const SizedBox(height: 24),
-                        const SectionHeader(
+                        const SizedBox(height: 28),
+                        const Divider(),
+                        const SizedBox(height: 26),
+                        SectionHeader(
                           title: 'Photos',
-                          subtitle:
-                              'Public profile and work photos from this partner.',
+                          trailing: Text(
+                            '${galleryImageUrls.length}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
-                          height: 112,
+                          height: 118,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: galleryImageUrls.length,
                             separatorBuilder: (context, index) =>
-                                const SizedBox(width: 12),
-                            itemBuilder: (context, index) {
-                              return ProviderThumbnail(
-                                name: displayName,
-                                size: 112,
-                                imageUrl: galleryImageUrls[index],
-                              );
-                            },
+                                const SizedBox(width: 10),
+                            itemBuilder: (context, index) => HandsPortraitStage(
+                              name: displayName,
+                              imageUrl: galleryImageUrls[index],
+                              width: 94,
+                              height: 118,
+                            ),
                           ),
                         ),
                       ],
                       const SizedBox(height: 28),
-                      const SectionHeader(
-                        title: 'My services',
-                        subtitle:
-                            'Choose one service to open a booking request with this partner first.',
+                      const Divider(),
+                      const SizedBox(height: 26),
+                      SectionHeader(
+                        title: 'Reviews',
+                        trailing: Text(
+                          '$reviewCount total',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        ),
                       ),
                       const SizedBox(height: 12),
-                      Builder(
-                        builder: (context) {
-                          final serviceGroups =
-                              customerServiceOptionGroups(services);
-                          if (serviceGroups.isEmpty) {
-                            return const EmptyPanel(
-                              text:
-                                  'This partner has no bookable service options yet. HANDS requires an active partner price and an exact admin payout rule before booking.',
-                            );
-                          }
-                          return Column(
-                            children: [
-                              for (final group in serviceGroups)
-                                ServiceOptionGroupCard(
-                                  group: group,
-                                  onBook: (service) =>
-                                      onBookService(detail, service),
-                                ),
-                            ],
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 28),
-                      Row(
-                        children: [
-                          const Expanded(
-                            child: SectionHeader(
-                              title: 'Reviews',
-                              subtitle:
-                                  'Recent guest feedback and overall rating distribution.',
-                            ),
-                          ),
-                          TextButton(
-                              onPressed: () {}, child: const Text('View all')),
-                        ],
-                      ),
                       ReviewSummaryCard(
                         rating: rating,
                         reviewCount: reviewCount,
@@ -341,7 +318,7 @@ class ProviderDetailPage extends StatelessWidget {
                       if (reviews.isEmpty)
                         const EmptyPanel(text: 'No reviews yet.')
                       else
-                        for (final review in reviews.take(3))
+                        for (final review in reviews)
                           ReviewCard(review: review as Map<String, dynamic>),
                     ],
                   ),
@@ -353,6 +330,271 @@ class ProviderDetailPage extends StatelessWidget {
       ),
     );
   }
+}
+
+List<String> _partnerMediaUrls(Map<String, dynamic> detail) {
+  final urls = <String>[];
+  final profile = providerProfileImageUrl(detail);
+  if (profile != null && profile.isNotEmpty) {
+    urls.add(profile);
+  }
+  for (final url in asStringList(detail['galleryImageUrls'])) {
+    if (url.isNotEmpty && !urls.contains(url)) {
+      urls.add(url);
+    }
+  }
+  return urls;
+}
+
+PartnerAvailability _partnerAvailability(Map<String, dynamic> detail) {
+  switch (detail['status']?.toString()) {
+    case 'ONLINE_AVAILABLE':
+      return const PartnerAvailability(
+        label: 'Available now',
+        availableNow: true,
+      );
+    case 'ONLINE_AVAILABLE_SOON':
+      return const PartnerAvailability(
+        label: 'Available soon',
+        availableNow: false,
+      );
+    default:
+      return const PartnerAvailability(
+        label: 'Unavailable',
+        availableNow: false,
+      );
+  }
+}
+
+class PartnerAvailability {
+  const PartnerAvailability({
+    required this.label,
+    required this.availableNow,
+  });
+
+  final String label;
+  final bool availableNow;
+}
+
+class PartnerHeroMedia extends StatelessWidget {
+  const PartnerHeroMedia({
+    super.key,
+    required this.displayName,
+    required this.imageUrl,
+  });
+
+  final String displayName;
+  final String? imageUrl;
+  @override
+  Widget build(BuildContext context) {
+    return HandsPortraitStage(
+      name: displayName,
+      imageUrl: imageUrl,
+      borderRadius: const BorderRadius.vertical(
+        bottom: Radius.circular(HandsShapes.large),
+      ),
+    );
+  }
+}
+
+class PartnerAvailabilityBadge extends StatelessWidget {
+  const PartnerAvailabilityBadge({
+    super.key,
+    required this.label,
+    required this.availableNow,
+  });
+
+  final String label;
+  final bool availableNow;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.handsColors;
+    final color = availableNow ? colors.success : colors.inkMuted;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(HandsShapes.full),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PartnerMetaItem extends StatelessWidget {
+  const PartnerMetaItem({
+    super.key,
+    required this.icon,
+    required this.label,
+    this.iconColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color? iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.handsColors;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 18, color: iconColor ?? colors.inkMuted),
+        const SizedBox(width: 4),
+        Text(label, style: Theme.of(context).textTheme.bodyMedium),
+      ],
+    );
+  }
+}
+
+class PartnerTrustStrip extends StatelessWidget {
+  const PartnerTrustStrip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.handsColors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+      decoration: BoxDecoration(
+        color: colors.surfaceMuted,
+        border: Border.all(color: colors.outline),
+        borderRadius: BorderRadius.circular(HandsShapes.medium),
+      ),
+      child: const Row(
+        children: [
+          Expanded(
+            child: PartnerTrustItem(
+              icon: Icons.verified_user_outlined,
+              label: 'Verified',
+            ),
+          ),
+          PartnerTrustDivider(),
+          Expanded(
+            child: PartnerTrustItem(
+              icon: Icons.payments_outlined,
+              label: 'Upfront price',
+            ),
+          ),
+          PartnerTrustDivider(),
+          Expanded(
+            child: PartnerTrustItem(
+              icon: Icons.home_outlined,
+              label: 'At your place',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PartnerTrustDivider extends StatelessWidget {
+  const PartnerTrustDivider({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 34,
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      color: context.handsColors.outline,
+    );
+  }
+}
+
+class PartnerTrustItem extends StatelessWidget {
+  const PartnerTrustItem({
+    super.key,
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.handsColors;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 21, color: colors.primary),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colors.ink,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class PartnerProfileNote extends StatelessWidget {
+  const PartnerProfileNote({
+    super.key,
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.handsColors;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: colors.primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+        ),
+      ],
+    );
+  }
+}
+
+String? _localizedPartnerBio(
+  BuildContext context,
+  Map<String, dynamic> detail,
+) {
+  final translations = detail['bioTranslations'];
+  if (translations is Map) {
+    final languageCode =
+        Localizations.localeOf(context).languageCode.toLowerCase();
+    final translated = translations[languageCode]?.toString().trim();
+    if (translated != null && translated.isNotEmpty) {
+      return translated;
+    }
+  }
+
+  final vietnamese = detail['bio']?.toString().trim();
+  return vietnamese == null || vietnamese.isEmpty ? null : vietnamese;
 }
 
 class ProviderFavoriteAction extends StatefulWidget {
@@ -435,7 +677,14 @@ class _ProviderFavoriteActionState extends State<ProviderFavoriteAction> {
       }
       setState(() => _favorite = !next);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not update saved partner: $exception')),
+        SnackBar(
+          content: Text(
+            customerErrorMessage(
+              exception,
+              fallback: 'Saved partner could not be updated.',
+            ),
+          ),
+        ),
       );
     } finally {
       if (mounted) {
@@ -446,29 +695,24 @@ class _ProviderFavoriteActionState extends State<ProviderFavoriteAction> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.handsColors;
     final disabled = widget.onChanged == null || _loading;
-    return CircleAvatar(
-      radius: 18,
-      backgroundColor: Colors.white,
-      child: _loading
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.black,
-              ),
-            )
-          : IconButton(
-              padding: EdgeInsets.zero,
-              tooltip: _favorite ? 'Remove saved partner' : 'Save partner',
-              onPressed: disabled ? null : _toggleFavorite,
-              icon: Icon(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: IconButton.filledTonal(
+        tooltip: _favorite ? 'Remove saved partner' : 'Save partner',
+        onPressed: disabled ? null : _toggleFavorite,
+        icon: _loading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Icon(
                 _favorite ? Icons.favorite : Icons.favorite_border,
-                color: _favorite ? Colors.redAccent : Colors.black,
-                size: 20,
+                color: _favorite ? colors.error : colors.primary,
               ),
-            ),
+      ),
     );
   }
 }
@@ -485,39 +729,56 @@ class ServiceOptionGroupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    final colors = context.handsColors;
+    final description = group.options.isEmpty
+        ? ''
+        : group.options.first['description']?.toString().trim() ?? '';
+    return Container(
+      margin: const EdgeInsets.only(bottom: HandsSpacing.space16),
+      padding: const EdgeInsets.only(bottom: HandsSpacing.space16),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.outline)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(group.name,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 6),
-            Text(
-              'Choose a duration option. The selected partner gets the first response window, and marketplace partner options can open if needed.',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.black54),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DurationPill(label: customerServiceGroupDurationSummary(group)),
-                DurationPill(label: customerServiceGroupPriceRangeLabel(group)),
-                const DurationPill(label: 'First-pick request'),
-                const DurationPill(label: 'Marketplace matching'),
+                Expanded(
+                  child: Text(
+                    group.name,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  customerServiceGroupPriceRangeLabel(group),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: colors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
               ],
             ),
-            const SizedBox(height: 18),
+            if (description.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: colors.inkMuted),
+              ),
+            ],
+            const SizedBox(height: 14),
             for (final option in group.options) ...[
               ServiceDurationOptionTile(
                 service: option,
@@ -544,73 +805,61 @@ class ServiceDurationOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.handsColors;
     final duration = asNum(service['durationMin'])?.toInt();
     final price = customerServicePrice(service);
-    final basePrice = asNum(service['basePrice'])?.toInt();
-    final hasProviderPrice =
-        basePrice != null && basePrice > 0 && price != basePrice;
-    final policyLabel = customerServicePricePolicyLabel(service);
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(14, 13, 10, 13),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(18),
+        color: colors.surfaceMuted,
+        borderRadius: BorderRadius.circular(HandsShapes.medium),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              DurationPill(label: '${duration ?? '-'} min'),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  policyLabel,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF5E8E4A),
+          Container(
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(HandsShapes.small),
+            ),
+            child: Text(
+              '${duration ?? '-'}',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${duration ?? '-'} minutes',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${formatCurrency(price)} VND',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  '${formatCurrency(price)} VND',
-                  textAlign: TextAlign.right,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: onBook,
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF5E8E4A),
-                foregroundColor: Colors.white,
-              ),
-              child: Text('Reserve ${duration ?? '-'} min'),
+              ],
             ),
           ),
-          if (hasProviderPrice) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Partner price selected. Admin minimum ${formatCurrency(basePrice)} VND.',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: Colors.black54),
+          const SizedBox(width: 8),
+          FilledButton(
+            onPressed: onBook,
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(82, 42),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
             ),
-          ],
+            child: const Text('Select'),
+          ),
         ],
       ),
     );
@@ -624,14 +873,18 @@ class DurationPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.handsColors;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(24),
+        color: colors.surfaceMuted,
+        borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(label, style: Theme.of(context).textTheme.labelLarge),
+      child: Text(label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colors.ink,
+                fontWeight: FontWeight.w600,
+              )),
     );
   }
 }
@@ -640,55 +893,52 @@ class SectionHeader extends StatelessWidget {
   const SectionHeader({
     super.key,
     required this.title,
-    required this.subtitle,
+    this.subtitle,
+    this.trailing,
   });
 
   final String title;
-  final String subtitle;
+  final String? subtitle;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final colors = context.handsColors;
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: Theme.of(context)
-              .textTheme
-              .headlineSmall
-              ?.copyWith(fontWeight: FontWeight.w700),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              if (subtitle != null && subtitle!.isNotEmpty) ...[
+                const SizedBox(height: 5),
+                Text(
+                  subtitle!,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: colors.inkMuted),
+                ),
+              ],
+            ],
+          ),
         ),
-        const SizedBox(height: 6),
-        Text(
-          subtitle,
-          style: Theme.of(context)
-              .textTheme
-              .bodyMedium
-              ?.copyWith(color: Colors.black54),
-        ),
+        if (trailing != null) ...[
+          const SizedBox(width: 12),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: trailing,
+          ),
+        ],
       ],
-    );
-  }
-}
-
-class DetailInfoCard extends StatelessWidget {
-  const DetailInfoCard({
-    super.key,
-    required this.child,
-  });
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9F8F4),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: child,
     );
   }
 }
@@ -705,17 +955,18 @@ class DetailFactChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.handsColors;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfaceMuted,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFE6E0D2)),
+        border: Border.all(color: colors.outline),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF5E8E4A)),
+          Icon(icon, size: 16, color: colors.primary),
           const SizedBox(width: 6),
           Text(
             label,
@@ -742,65 +993,51 @@ class ReviewSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final colors = context.handsColors;
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surfaceMuted,
+        border: Border.all(color: colors.outline),
+        borderRadius: BorderRadius.circular(HandsShapes.medium),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
+            Container(
+              width: 58,
+              height: 58,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: colors.primarySoft,
+                borderRadius: BorderRadius.circular(HandsShapes.small),
+              ),
+              child: Icon(
+                Icons.star_rounded,
+                size: 30,
+                color: colors.primary,
+              ),
+            ),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${rating.toStringAsFixed(1)} / 5',
+                    rating.toStringAsFixed(1),
                     style: Theme.of(context)
                         .textTheme
                         .headlineMedium
                         ?.copyWith(fontWeight: FontWeight.w800),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: List.generate(
-                      5,
-                      (_) => const Icon(
-                        Icons.star_rounded,
-                        size: 20,
-                        color: Color(0xFFF59E0B),
-                      ),
-                    ),
+                  const SizedBox(height: 2),
+                  Text(
+                    reviewCount == 0
+                        ? 'No reviews yet'
+                        : 'Based on $reviewCount verified review${reviewCount == 1 ? '' : 's'}',
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
-                  const SizedBox(height: 4),
-                  Text('($reviewCount reviews)'),
                 ],
-              ),
-            ),
-            Expanded(
-              child: Column(
-                children: List.generate(
-                  5,
-                  (index) {
-                    final stars = 5 - index;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          Text('$stars'),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.star_rounded,
-                              size: 18, color: Color(0xFFF59E0B)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: LinearProgressIndicator(
-                              value: stars == 5 ? 1 : 0,
-                              minHeight: 8,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
               ),
             ),
           ],
@@ -817,8 +1054,12 @@ class ReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final colors = context.handsColors;
+    return Container(
       margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.outline)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -826,15 +1067,29 @@ class ReviewCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const CircleAvatar(child: Icon(Icons.person_outline)),
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: colors.primarySoft,
+                  child: Icon(
+                    Icons.person_outline,
+                    size: 18,
+                    color: colors.primary,
+                  ),
+                ),
                 const SizedBox(width: 12),
-                Text('Customer',
+                Text(
+                    review['managedByAdmin'] == true
+                        ? 'Customer review · HANDS entered'
+                        : 'Customer',
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
                         ?.copyWith(fontWeight: FontWeight.w700)),
                 const Spacer(),
-                Text(review['createdAt']?.toString().split('T').first ?? ''),
+                Text(
+                  review['createdAt']?.toString().split('T').first ?? '',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -846,7 +1101,7 @@ class ReviewCard extends StatelessWidget {
                       ? Icons.star_rounded
                       : Icons.star_outline_rounded,
                   size: 18,
-                  color: const Color(0xFFF59E0B),
+                  color: colors.primary,
                 ),
               ),
             ),

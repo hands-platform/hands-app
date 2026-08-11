@@ -91,7 +91,7 @@ const BOOKING_CREATE_GATE_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDeta
       {
         label: 'Partner location coverage',
         detail: 'Check whether partners have fresh last locations in the city before widening this limit.',
-        href: '/partners?review=location',
+        href: '/partners?review=available-blocked-location',
       },
     ],
   },
@@ -150,7 +150,7 @@ const MATCHING_MARKETPLACE_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDet
       {
         label: 'Marketplace ready',
         detail: 'Review partners that can actually receive and participate in marketplace requests.',
-        href: '/partners?review=marketplace-ready',
+        href: '/partners?review=ready-now',
       },
     ],
   },
@@ -363,9 +363,9 @@ const ACTION_CLOSEOUT_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails>
         href: '/bookings?view=no-show',
       },
       {
-        label: 'Chat archive repair',
+        label: 'Chat repair queue',
         detail: 'Check missing chat rooms before using chat as a required evidence source.',
-        href: '/chat-archive?status=missing-room',
+        href: '/bookings?view=chat-repair',
       },
     ],
   },

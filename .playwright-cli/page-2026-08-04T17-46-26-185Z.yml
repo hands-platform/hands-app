@@ -1,0 +1,192 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - strong [ref=e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=e7]:
+        - group [ref=e8]:
+          - generic "Shift command" [ref=e9] [cursor=pointer]
+          - link "Shift command" [ref=e27] [cursor=pointer]:
+            - /url: /
+        - group [ref=e31]:
+          - generic "Live Operations" [ref=e32] [cursor=pointer]
+        - group [ref=e49]:
+          - generic "Customer Support" [ref=e50] [cursor=pointer]
+        - group [ref=e67]:
+          - generic "Partner Operations" [ref=e68] [cursor=pointer]
+        - group [ref=e85]:
+          - generic "Finance Today" [ref=e86] [cursor=pointer]
+          - generic [ref=e93]:
+            - link "Finance Overview" [ref=e94] [cursor=pointer]:
+              - /url: /finance-overview
+            - link "Approval Queue" [ref=e98] [cursor=pointer]:
+              - /url: /finance-tax/approval-queue
+            - link "Refunds" [ref=e102] [cursor=pointer]:
+              - /url: /refunds
+            - link "Bank Reconciliation" [ref=e109] [cursor=pointer]:
+              - /url: /finance-tax/bank-reconciliation
+            - link "Cash Settlements" [ref=e113] [cursor=pointer]:
+              - /url: /cash-settlements
+            - link "Payment Clearing" [ref=e117] [cursor=pointer]:
+              - /url: /finance-tax/payment-clearing
+            - link "Finance Closeout" [ref=e121] [cursor=pointer]:
+              - /url: /finance-closeout
+            - link "Payout / Withdrawal Risk" [ref=e126] [cursor=pointer]:
+              - /url: /payouts?range=all&withdrawalStatus=REVIEW_REQUIRED
+            - link "Unmatched Bank Transactions" [ref=e130] [cursor=pointer]:
+              - /url: /finance-tax/bank-reconciliation?range=all&review=unmatched
+        - group [ref=e134]:
+          - generic "Finance Records" [ref=e135] [cursor=pointer]
+        - group [ref=e152]:
+          - generic "Growth & Content" [ref=e153] [cursor=pointer]
+        - group [ref=e170]:
+          - generic "Tax & Monthly Close" [ref=e171] [cursor=pointer]
+        - group [ref=e178]:
+          - generic "Restricted Settings" [ref=e179] [cursor=pointer]
+        - group [ref=e186]:
+          - generic "Admin & System" [ref=e187] [cursor=pointer]
+        - group [ref=e204]:
+          - generic "Developer / System" [ref=e205] [cursor=pointer]
+    - main [ref=e213]:
+      - generic "Admin workspace" [ref=e214]:
+        - navigation "Breadcrumb" [ref=e216]:
+          - link "HANDS" [ref=e217] [cursor=pointer]:
+            - /url: /
+          - generic [ref=e220]: Finance Today
+          - generic [ref=e223]: Refunds
+        - generic "Workspace actions" [ref=e224]:
+          - button "Search Ctrl K" [ref=e226] [cursor=pointer]:
+            - generic [ref=e227]: Search
+            - generic [ref=e231]: Ctrl K
+          - group "Theme mode" [ref=e232]:
+            - button "Light mode" [pressed] [ref=e233] [cursor=pointer]
+            - button "Dark mode" [ref=e240] [cursor=pointer]
+          - link "Operations Policy" [ref=e243] [cursor=pointer]:
+            - /url: /operations-policy
+          - button "Open operation alerts" [ref=e248] [cursor=pointer]
+          - button "Sign out" [ref=e253] [cursor=pointer]
+      - generic [ref=e257]:
+        - generic [ref=e259]:
+          - heading "Refunds" [level=1] [ref=e260]
+          - paragraph [ref=e261]: Refund operations for customer protection, payment ledger alignment, and finance handoff.
+        - generic [ref=e262]:
+          - generic [ref=e268]:
+            - generic [ref=e269]: Today (Vietnam)
+            - paragraph [ref=e270]: Open cases
+            - generic [ref=e271]:
+              - generic [ref=e272]: "Open cases:"
+              - text: "0"
+            - generic [ref=e273]: Includes refunds awaiting a decision and refunds still processing.
+          - generic [ref=e279]:
+            - generic [ref=e280]: Today (Vietnam)
+            - paragraph [ref=e281]: Awaiting decision
+            - generic [ref=e282]:
+              - generic [ref=e283]: "Awaiting decision:"
+              - text: "0"
+            - generic [ref=e284]: Customer refund requests waiting for approval or rejection.
+          - generic [ref=e291]:
+            - generic [ref=e292]: Today (Vietnam)
+            - paragraph [ref=e293]: Payment processing
+            - generic [ref=e294]:
+              - generic [ref=e295]: "Payment processing:"
+              - text: "0"
+            - generic [ref=e296]: Approved refunds still moving through payment completion.
+          - generic [ref=e302]:
+            - generic [ref=e303]: Today (Vietnam)
+            - paragraph [ref=e304]: State mismatch
+            - generic [ref=e305]:
+              - generic [ref=e306]: "State mismatch:"
+              - text: "0"
+            - generic [ref=e307]: Separate risk set; a mismatch may also be open or closed.
+        - generic [ref=e308]:
+          - generic [ref=e309]:
+            - generic [ref=e310]:
+              - heading "Refund operation filters" [level=2] [ref=e311]
+              - paragraph [ref=e312]: "Use these shortcuts from the dashboard to focus on the refund queue state. Refund date range: Today (Vietnam)."
+            - generic [ref=e313]: Showing 0 of 0
+          - generic [ref=e315]:
+            - paragraph [ref=e316]:
+              - text: "Active queue:"
+              - strong [ref=e317]: Open cases
+              - text: "- refunds awaiting a decision or payment completion."
+            - generic "Active refund filters" [ref=e318]:
+              - generic [ref=e319]: "Range: Today (Vietnam)"
+              - generic [ref=e320]: "Queue: Open cases"
+              - generic [ref=e321]: "Age: All ages"
+              - generic [ref=e322]: "Order: Newest first"
+            - generic [ref=e323]:
+              - generic [ref=e324]:
+                - generic [ref=e325]: Age
+                - generic "Queue age" [ref=e326]:
+                  - link "All ages (0)" [ref=e327] [cursor=pointer]:
+                    - /url: /refunds?range=today&review=open
+                  - link "Under 1h (0)" [ref=e328] [cursor=pointer]:
+                    - /url: /refunds?range=today&review=open&age=under-1h
+                  - link "1-4h (0)" [ref=e329] [cursor=pointer]:
+                    - /url: /refunds?range=today&review=open&age=1-4h
+                  - link "4-24h (0)" [ref=e330] [cursor=pointer]:
+                    - /url: /refunds?range=today&review=open&age=4-24h
+                  - link "24h+ (0)" [ref=e331] [cursor=pointer]:
+                    - /url: /refunds?range=today&review=open&age=over-24h
+              - generic [ref=e332]:
+                - generic [ref=e333]: Order
+                - generic "Queue sort order" [ref=e334]:
+                  - link "Oldest first" [ref=e335] [cursor=pointer]:
+                    - /url: /refunds?range=today&review=open&sort=oldest
+                  - link "Newest first" [ref=e336] [cursor=pointer]:
+                    - /url: /refunds?range=today&review=open
+              - generic "Queue SLA status" [ref=e337]:
+                - generic [ref=e338]: SLA
+                - generic [ref=e339]:
+                  - generic [ref=e340]: On time
+                  - generic [ref=e341]: Target 4h
+            - generic [ref=e342]:
+              - generic [ref=e343]: Range
+              - generic "Refund date range filters" [ref=e344]:
+                - link "All dates" [ref=e345] [cursor=pointer]:
+                  - /url: /refunds?review=open
+                - link "Today" [ref=e346] [cursor=pointer]:
+                  - /url: /refunds?range=today&review=open
+                - link "Last 7 days" [ref=e347] [cursor=pointer]:
+                  - /url: /refunds?range=7d&review=open
+                - link "Last 30 days" [ref=e348] [cursor=pointer]:
+                  - /url: /refunds?range=30d&review=open
+            - generic [ref=e349]:
+              - generic [ref=e350]: Queue
+              - generic "Refund review filters" [ref=e351]:
+                - link "Clear filters" [ref=e352] [cursor=pointer]:
+                  - /url: /refunds?range=all&review=all
+                - link "All records" [ref=e353] [cursor=pointer]:
+                  - /url: /refunds?review=all&range=today
+                - link "Open cases" [ref=e354] [cursor=pointer]:
+                  - /url: /refunds?review=open&range=today
+                - link "Awaiting decision" [ref=e355] [cursor=pointer]:
+                  - /url: /refunds?review=requested&range=today
+                - link "Payment processing" [ref=e356] [cursor=pointer]:
+                  - /url: /refunds?review=processing&range=today
+                - link "State mismatch" [ref=e357] [cursor=pointer]:
+                  - /url: /refunds?review=state-mismatch&range=today
+                - link "Closed refunds" [ref=e358] [cursor=pointer]:
+                  - /url: /refunds?review=completed&range=today
+        - generic [ref=e359]:
+          - generic [ref=e360]:
+            - generic [ref=e361]:
+              - heading "Refund operations" [level=2] [ref=e362]
+              - paragraph [ref=e363]: Refund cases ordered for decision, payment follow-up, and state reconciliation.
+            - generic [ref=e364]: 0 row(s)
+          - table [ref=e368]:
+            - rowgroup [ref=e369]:
+              - row [ref=e370]:
+                - columnheader "Age" [ref=e371]
+                - columnheader "Customer" [ref=e372]
+                - columnheader "Amount" [ref=e373]
+                - columnheader "Reason" [ref=e374]
+                - columnheader "Evidence" [ref=e375]
+                - columnheader "Payment" [ref=e376]
+                - columnheader "Owner" [ref=e377]
+                - columnheader "Next action" [ref=e378]
+            - rowgroup [ref=e379]:
+              - row [ref=e380]:
+                - cell [ref=e381]:
+                  - status [ref=e382]:
+                    - paragraph [ref=e383]: No refunds currently match this queue. refunds awaiting a decision or payment completion.
+  - alert [ref=e384]

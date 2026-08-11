@@ -70,4 +70,16 @@ describe('ClientActionDropdown', () => {
     expect(html).toContain('admin-icon-button admin-action-trigger customer-client-trigger');
     expect(html).not.toContain('role="menu"');
   });
+
+  it('supports standard keyboard menu navigation and returns focus on Escape', () => {
+    expect(source).toContain("['ArrowDown', 'ArrowUp', 'Home', 'End']");
+    expect(source).toContain("event.key === 'Escape'");
+    expect(source).toContain('internalTriggerRef.current?.focus()');
+    expect(source).toContain("querySelector<HTMLElement>('[role=\"menuitem\"]:not([aria-disabled=\"true\"])')?.focus()");
+    expect(source).toContain('aria-label={`${label} menu`}');
+    expect(source).toContain('role="menuitem"');
+    expect(source).toContain('aria-controls={menuId}');
+    expect(source).toContain("document.addEventListener('admin-action-dropdown-open'");
+    expect(source).toContain('usePathname()');
+  });
 });

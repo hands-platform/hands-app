@@ -72,6 +72,30 @@ class ProviderLocationHeartbeat {
   ProviderLocationHeartbeatSnapshot get snapshot => _snapshot;
   Stream<ProviderLocationHeartbeatSnapshot> get snapshots => _snapshots.stream;
 
+  Future<bool> syncForAvailability(
+    Map<String, dynamic> availability, {
+    bool runImmediately = true,
+  }) async {
+    if (!providerAvailabilityWantsLocationHeartbeat(availability)) {
+      stop();
+      return false;
+    }
+
+    if (_snapshot.active) {
+      if (runImmediately) {
+        await _runUpdate(
+          rethrowErrors: true,
+          interval: _snapshot.interval,
+          bookingId: _snapshot.bookingId,
+        );
+      }
+      return true;
+    }
+
+    await start(runImmediately: runImmediately);
+    return true;
+  }
+
   Future<void> start({
     bool runImmediately = true,
     Duration interval = ProviderLocationHeartbeat.interval,
@@ -186,4 +210,18 @@ class ProviderLocationHeartbeat {
       _snapshots.add(next);
     }
   }
+}
+
+bool providerAvailabilityWantsLocationHeartbeat(
+  Map<String, dynamic> availability,
+) {
+  return availability['availabilityIntent']?.toString() == 'AVAILABLE';
+}
+
+bool providerAvailabilityIsOnline(Map<String, dynamic> availability) {
+  return const {
+    'ONLINE_AVAILABLE',
+    'ONLINE_AVAILABLE_SOON',
+    'ONLINE_BUSY',
+  }.contains(availability['status']?.toString());
 }

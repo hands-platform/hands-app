@@ -35,20 +35,14 @@ import {
 } from '../../../lib/bank-statement-csv';
 import { bankReconciliationDetailHref } from '../tax-settlement-page-model';
 import { FinanceDataTable } from '../finance-data-table';
-import type { FinanceApproverOption } from '../finance-approver-options';
 import { BankReconciliationConfirmationDisclosure } from './bank-reconciliation-confirmation-disclosure';
 
 type BankStatementBatchImportProps = {
   readonly companyBankAccounts: AdminCompanyBankAccount[];
-  readonly financeApproverOptions: readonly FinanceApproverOption[];
 };
 
-export function BankStatementBatchImport({
-  companyBankAccounts,
-  financeApproverOptions,
-}: BankStatementBatchImportProps) {
+export function BankStatementBatchImport({ companyBankAccounts }: BankStatementBatchImportProps) {
   const router = useRouter();
-  const [approvalAdminId, setApprovalAdminId] = useState('');
   const [bankAccountId, setBankAccountId] = useState(companyBankAccounts[0]?.id ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -61,6 +55,11 @@ export function BankStatementBatchImport({
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [sourceFileSha256, setSourceFileSha256] = useState('');
   const [type, setType] = useState<'INFLOW' | 'OUTFLOW'>('INFLOW');
+  const selectedAccount = companyBankAccounts.find((account) => account.id === bankAccountId);
+  const normalizedPreviewRows = preview?.rows.filter((row) => row.normalized).map((row) => row.normalized!) ?? [];
+  const previewCurrencies = [...new Set(normalizedPreviewRows.map((row) => row.currency))];
+  const previewDates = normalizedPreviewRows.map((row) => row.occurredAt).sort();
+  const previewTotalAmount = normalizedPreviewRows.reduce((total, row) => total + row.amount, 0);
 
   async function previewFile() {
     if (!file || !bankAccountId) {
@@ -96,8 +95,8 @@ export function BankStatementBatchImport({
   }
 
   async function importReviewedRows() {
-    if (!preview || !file || !sourceFileSha256 || !approvalAdminId.trim() || operatorReason.trim().length < 12) {
-      setError('Select a separate Finance approver and enter at least 12 characters of import evidence.');
+    if (!preview || !file || !sourceFileSha256 || operatorReason.trim().length < 12) {
+      setError('Enter at least 12 characters of import evidence.');
       return;
     }
     const rows = inputRows
@@ -117,7 +116,6 @@ export function BankStatementBatchImport({
     try {
       const response = await fetch('/api/admin/bank-reconciliation/batch-import', {
         body: JSON.stringify({
-          approvalAdminId: approvalAdminId.trim(),
           mappingPreset: preset,
           operatorReason: operatorReason.trim(),
           rows,
@@ -267,6 +265,56 @@ export function BankStatementBatchImport({
 
       {preview ? (
         <div className="admin-mt-16">
+          <dl className="bank-statement-preview-facts" aria-label="Statement import preview facts">
+            <div>
+              <dt>Account</dt>
+              <dd>{selectedAccount?.name ?? 'Unknown account'}</dd>
+            </div>
+            <div>
+              <dt>Currency</dt>
+              <dd>{previewCurrencies.join(', ') || selectedAccount?.currency || 'Unknown'}</dd>
+            </div>
+            <div>
+              <dt>Statement period</dt>
+              <dd>
+                {previewDates.length > 0 ? (
+                  <><DateTimeText value={previewDates[0]} /> - <DateTimeText value={previewDates.at(-1)} /></>
+                ) : 'No valid dates'}
+              </dd>
+            </div>
+            <div>
+              <dt>Upload file</dt>
+              <dd>{file ? `${file.name} · ${formatFileSize(file.size)}` : 'No file'}</dd>
+            </div>
+            <div>
+              <dt>Statement rows</dt>
+              <dd>{preview.summary.total}</dd>
+            </div>
+            <div>
+              <dt>Total parsed amount</dt>
+              <dd>
+                {previewCurrencies.length === 1 ? (
+                  <MoneyText amount={previewTotalAmount} currency={previewCurrencies[0]} />
+                ) : `${previewTotalAmount.toLocaleString()} mixed currency`}
+              </dd>
+            </div>
+            <div>
+              <dt>Duplicate candidates</dt>
+              <dd>{preview.summary.potentialDuplicate + preview.summary.exactDuplicate}</dd>
+            </div>
+            <div>
+              <dt>Parsing errors</dt>
+              <dd>{preview.summary.invalid}</dd>
+            </div>
+            <div>
+              <dt>Expected creations</dt>
+              <dd>{selectedRows.size}</dd>
+            </div>
+            <div>
+              <dt>File fingerprint</dt>
+              <dd>{sourceFileSha256 ? `${sourceFileSha256.slice(0, 12)}...` : 'Unavailable'}</dd>
+            </div>
+          </dl>
           <div className="bank-statement-batch-summary" aria-label="Bank statement preview summary">
             <span>{preview.summary.new} New</span>
             <span>{preview.summary.potentialDuplicate} Potential duplicate</span>
@@ -361,16 +409,6 @@ export function BankStatementBatchImport({
             })}
           </FinanceDataTable>
           <AdminFormGridFields className="compact-form admin-mt-16">
-            <AdminFormSelect
-              disabled={busy || financeApproverOptions.length === 0}
-              label="Separate Finance approver"
-              labelVisibility="visible"
-              name="batchApprovalAdminId"
-              onChange={(event) => setApprovalAdminId(event.target.value)}
-              options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}
-              required
-              value={approvalAdminId}
-            />
             <AdminFormInput
               disabled={busy}
               label="Import evidence"
@@ -383,27 +421,20 @@ export function BankStatementBatchImport({
               value={operatorReason}
             />
             <BankReconciliationConfirmationDisclosure
-              auditDetail="Submitting records the file hash, mapping preset, selected row decisions, importing operator, independent approver, and import evidence."
+              auditDetail="Submitting records the file hash, mapping preset, selected row decisions, signed-in importing operator, and import evidence. A separate signed-in Finance approver is required later when a review owner resolves each row."
               buttonType="button"
               className="admin-grid-span-2"
               confirmLabel={busy ? 'Importing...' : `Confirm import of ${selectedRows.size} row(s)`}
               detail={`${file?.name ?? 'Selected CSV file'} · ${selectedRows.size} reviewed row(s) · ${bankStatementCsvPresetLabel(preset)} mapping. Exact duplicates and unselected rows remain blocked.`}
               disabled={
                 busy ||
-                financeApproverOptions.length === 0 ||
                 selectedRows.size === 0 ||
-                !approvalAdminId.trim() ||
                 operatorReason.trim().length < 12
               }
               onConfirm={importReviewedRows}
               title="Review bank statement batch import"
               tone="danger"
             />
-            {financeApproverOptions.length === 0 ? (
-              <AdminInlineNotice className="admin-grid-span-2" role="alert" tone="warning">
-                No other Finance approver is available. Assign the FINANCE_APPROVER role before importing a statement.
-              </AdminInlineNotice>
-            ) : null}
           </AdminFormGridFields>
         </div>
       ) : null}
@@ -460,4 +491,9 @@ function retryRowsForImport(
       .map((row) => row.rowNumber),
   );
   return inputRows.filter((row) => retryRowNumbers.has(row.rowNumber));
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  return `${(bytes / 1024).toFixed(1)} KB`;
 }

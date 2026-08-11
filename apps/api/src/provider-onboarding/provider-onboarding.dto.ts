@@ -12,6 +12,7 @@ import {
   Max,
   MaxLength,
   Min,
+  MinLength,
   ValidateNested,
 } from 'class-validator';
 import {
@@ -209,7 +210,21 @@ export class AcceptProviderAgreementDto {
   deviceId?: string;
 }
 
-export class CreateTaxPolicyVersionDto {
+class TaxPolicyFinanceApprovalDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(64)
+  approvalAdminId!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(10)
+  @MaxLength(500)
+  operatorReason!: string;
+}
+
+export class CreateTaxPolicyVersionDto extends TaxPolicyFinanceApprovalDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
@@ -236,7 +251,7 @@ export class CreateTaxPolicyVersionDto {
   notes?: string;
 }
 
-export class UpdateTaxPolicyVersionDto {
+export class UpdateTaxPolicyVersionDto extends TaxPolicyFinanceApprovalDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
@@ -264,7 +279,7 @@ export class UpdateTaxPolicyVersionDto {
   notes?: string | null;
 }
 
-export class CreateTaxRuleDto {
+export class CreateTaxRuleDto extends TaxPolicyFinanceApprovalDto {
   @IsOptional()
   @IsEnum(TaxRuleScope)
   scope?: TaxRuleScope;
@@ -305,7 +320,7 @@ export class CreateTaxRuleDto {
   active?: boolean;
 }
 
-export class UpdateTaxRuleDto {
+export class UpdateTaxRuleDto extends TaxPolicyFinanceApprovalDto {
   @IsOptional()
   @IsEnum(TaxRuleScope)
   scope?: TaxRuleScope;

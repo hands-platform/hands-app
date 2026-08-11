@@ -2,7 +2,7 @@ import type { AdminBookingSettlementSnapshot } from '../../lib/admin-api';
 
 type PaymentFeeEvidenceInput = Pick<
   AdminBookingSettlementSnapshot,
-  'paymentFeePolicyVersionId' | 'paymentFeeRuleSnapshot'
+  'paymentFeePolicyVersionId' | 'paymentFeeRuleSnapshot' | 'paymentMethod'
 >;
 
 export type PaymentFeeEvidenceState = {
@@ -15,6 +15,15 @@ export type PaymentFeeEvidenceState = {
 export function paymentFeeEvidenceState(snapshot: PaymentFeeEvidenceInput): PaymentFeeEvidenceState {
   const ruleSnapshot = jsonRecord(snapshot.paymentFeeRuleSnapshot);
   const reason = stringValue(ruleSnapshot?.reason);
+
+  if (!requiresExternalPaymentFeeEvidence(snapshot.paymentMethod)) {
+    return {
+      detail: `${paymentMethodLabel(snapshot.paymentMethod)} does not require CARD, MoMo, or VNPay processor fee evidence.`,
+      label: 'Not applicable',
+      reason: null,
+      tone: 'success',
+    };
+  }
 
   if (!snapshot.paymentFeePolicyVersionId) {
     return {
@@ -40,6 +49,16 @@ export function paymentFeeEvidenceState(snapshot: PaymentFeeEvidenceInput): Paym
     reason: null,
     tone: 'success',
   };
+}
+
+function requiresExternalPaymentFeeEvidence(paymentMethod: AdminBookingSettlementSnapshot['paymentMethod']) {
+  return paymentMethod === 'CARD' || paymentMethod === 'MOMO' || paymentMethod === 'VNPAY';
+}
+
+function paymentMethodLabel(paymentMethod: AdminBookingSettlementSnapshot['paymentMethod']) {
+  if (paymentMethod === 'CUSTOMER_WALLET') return 'Customer wallet';
+  if (paymentMethod === 'BANK_TRANSFER') return 'Bank transfer';
+  return paymentMethod.charAt(0) + paymentMethod.slice(1).toLowerCase();
 }
 
 function jsonRecord(value: unknown) {

@@ -23,6 +23,7 @@ describe('booking matching policy snapshot', () => {
       backupProviderLocationMaxAgeMinutes: 15,
       backupProviderInvitationLimit: 25,
       backupOpenMode: BACKUP_OPEN_IMMEDIATE,
+      preferredAcceptMode: 'FIRST_PICK_MATCHES_ON_ACCEPT',
     });
   });
 

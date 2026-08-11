@@ -36,17 +36,12 @@ describe('PartnerDetailKycDecisionSection', () => {
 
   it('uses the shared date time atom for evidence upload timestamps', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-kyc-decision-section.tsx', 'utf8');
-    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
     expect(source).toContain('DateTimeText');
     expect(source).toContain('readonly reviewedLabel: ReactNode;');
     expect(source).toContain('readonly submittedLabel: ReactNode;');
-    expect(pageSource).toContain('reviewedLabel={<DateTimeText fallback="Missing" value={provider.kyc?.reviewedAt} />}');
-    expect(pageSource).toContain('submittedLabel={<DateTimeText fallback="Missing" value={provider.kyc?.submittedAt} />}');
     expect(source).not.toContain("import { formatDate } from './partner-detail-format';");
     expect(source).not.toContain("{row.uploadedAt ? formatDate(row.uploadedAt) : 'Missing'}");
-    expect(pageSource).not.toContain('reviewedLabel={formatDate(provider.kyc?.reviewedAt)}');
-    expect(pageSource).not.toContain('submittedLabel={formatDate(provider.kyc?.submittedAt)}');
   });
 
   it('prefers shared detail nodes for checklist timestamps', () => {
@@ -74,13 +69,18 @@ describe('PartnerDetailKycDecisionSection', () => {
     });
     const rendered = normalizeSpaces(textContent(section));
     const source = readFileSync('app/partners/[id]/partner-detail-kyc-decision-section.tsx', 'utf8');
-    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+    const evidenceModelSource = readFileSync(
+      'app/partners/[id]/partner-detail-kyc-evidence-model.tsx',
+      'utf8',
+    );
 
     expect(rendered).toContain('Shared submitted date marker');
     expect(rendered).not.toContain('Fallback submitted date text');
     expect(source).toContain('readonly detailNode?: ReactNode;');
     expect(source).toContain('item.detailNode ?? item.detail');
-    expect(pageSource).toContain('Submitted <DateTimeText fallback="Missing" value={provider.kyc?.submittedAt} />.');
+    expect(evidenceModelSource).toContain(
+      'Submitted <DateTimeText fallback="Missing" value={provider.kyc?.submittedAt} />.',
+    );
   });
 
   it('renders KYC checklist and evidence as Vuexy tables', () => {
@@ -104,11 +104,13 @@ describe('PartnerDetailKycDecisionSection', () => {
         nextAction: 'Approve required evidence before final KYC decision.',
         rows: [
           {
+            fileHref: '/files/cccd-front/open',
             fileLabel: 'cccd-front.jpg',
             label: 'CCCD front',
             status: 'APPROVED',
             type: 'CCCD_FRONT',
             uploadedAt: '2026-06-20T09:00:00.000Z',
+            previewable: true,
           },
           {
             fileLabel: 'selfie.jpg',
@@ -152,7 +154,10 @@ describe('PartnerDetailKycDecisionSection', () => {
       'Reject KYC only when the Partner must resubmit. The reason appears in the Partner app correction checklist.',
     );
     expect(rendered).toContain('Approve required evidence before final KYC decision.');
-    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1?reviewAction=approve-kyc']));
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining([
+      '/files/cccd-front/open',
+      '/partners/partner-1?reviewAction=approve-kyc',
+    ]));
     expect(readRecord(resolveElement(section))?.props).toMatchObject({ id: 'kyc' });
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
@@ -163,6 +168,8 @@ describe('PartnerDetailKycDecisionSection', () => {
         'admin-action-dropdown action-menu-dropdown',
         'pill pill-success',
         'pill pill-danger',
+        'partner-evidence-preview',
+        'partner-evidence-preview-placeholder',
       ]),
     );
   });

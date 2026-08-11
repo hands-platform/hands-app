@@ -22,7 +22,7 @@ describe('booking post-match cancellation display', () => {
     expect(postMatchCancellationResolutionLabel('approved')).toBe('Approved');
     expect(postMatchCancellationResolutionLabel('approved', true)).toBe('Auto-approved');
     expect(postMatchCancellationResolutionTone('approved')).toBe('pill-success');
-    expect(postMatchCancellationResolutionLabel('held')).toBe('Held');
+    expect(postMatchCancellationResolutionLabel('held')).toBe('On hold');
     expect(postMatchCancellationResolutionTone('held')).toBe('pill-danger');
   });
 

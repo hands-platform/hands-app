@@ -69,6 +69,8 @@ function taxPolicyAuditDetail(log: AdminAuditLog) {
   const rateBps = readNumber(metadata.rateBps);
   const active = readBoolean(metadata.active);
   const deactivatedOtherActivePolicies = readNumber(metadata.deactivatedOtherActivePolicies);
+  const approvalAdminId = readString(metadata.approvalAdminId);
+  const operatorReason = readString(metadata.operatorReason);
 
   if (status) {
     parts.push(`Status ${status}`);
@@ -86,6 +88,12 @@ function taxPolicyAuditDetail(log: AdminAuditLog) {
     parts.push(
       `${deactivatedOtherActivePolicies} other active ${deactivatedOtherActivePolicies === 1 ? 'policy' : 'policies'} deactivated`,
     );
+  }
+  if (approvalAdminId) {
+    parts.push(`Finance approval ${shortDisplayId(approvalAdminId)}`);
+  }
+  if (operatorReason) {
+    parts.push(`Evidence: ${operatorReason}`);
   }
 
   return parts.length ? parts.join(' / ') : 'No metadata snapshot recorded';

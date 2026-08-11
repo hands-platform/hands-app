@@ -4,6 +4,7 @@ import {
   normalizeUsageOverviewRange,
   usageOverviewHref,
   usageOverviewRangeOptions,
+  validateUsageCustomRange,
 } from './usage-overview-model';
 
 describe('usage overview page model', () => {
@@ -12,14 +13,16 @@ describe('usage overview page model', () => {
       'today',
       'yesterday',
       '7d',
+      '30d',
       'month',
-      'all',
+      'custom',
     ]);
+    expect(usageOverviewRangeOptions.find((option) => option.value === 'month')?.label).toBe('This month');
   });
 
   it('builds stable range links without adding search or GPS parameters', () => {
     expect(usageOverviewHref('today')).toBe('/usage-overview?range=today');
-    expect(usageOverviewHref('all')).toBe('/usage-overview?range=all');
+    expect(usageOverviewRangeOptions.some((option) => option.value === ('all' as never))).toBe(false);
   });
 
   it('defaults usage overview to today for the initial operations view', () => {
@@ -31,7 +34,6 @@ describe('usage overview page model', () => {
     const overview = usageOverviewWithDefaults(
       {
         generatedAt: '2026-07-01T00:00:00.000Z',
-        refreshSeconds: 60,
         source: 'stored-usage-aggregates',
         range: '7d',
         rangeLabel: 'Last 7 days',
@@ -77,14 +79,19 @@ describe('usage overview page model', () => {
     expect(overview.totals.partnerProfileViewCount).toBe(8);
   });
 
-  it('builds operator action priorities from aggregate usage signals', () => {
+  it('builds only count-parity actions with exact target dates', () => {
     const overview = usageOverviewWithDefaults(
       {
         generatedAt: '2026-07-01T00:00:00.000Z',
-        refreshSeconds: 60,
         source: 'stored-usage-aggregates',
         range: '7d',
         rangeLabel: 'Last 7 days',
+        appliedRange: {
+          dayCount: 7,
+          fromDate: '2026-06-25',
+          granularity: 'daily',
+          toDate: '2026-07-01',
+        },
         totals: {
           customerSessionCount: 100,
           completedBookingCount: 8,
@@ -110,34 +117,59 @@ describe('usage overview page model', () => {
           churnRiskCustomerCount: 5,
           issueCustomerCount: 6,
         },
+        bookingQuality: {
+          unresolvedCount: 3,
+        },
       },
       '7d',
     );
 
     const priorities = buildUsageActionPriorities(overview);
 
-    expect(priorities.map((priority) => priority.key)).toEqual([
-      'issue-signal',
-      'churn-risk',
-      'new-unbooked',
-      'discovery-dropoff',
-      'completion-dropoff',
-    ]);
+    expect(priorities.map((priority) => priority.key)).toEqual(['new-unbooked', 'unresolved-bookings']);
     expect(priorities[0]).toMatchObject({
-      label: 'Review problem customers',
-      tone: 'danger',
-      value: 6,
+      label: 'New customers without a booking',
+      tone: 'warning',
+      value: 14,
       valueLabel: 'customers',
     });
-    expect(priorities[3]).toMatchObject({
-      label: 'Improve Partner discovery',
-      value: 13,
-      valueLabel: 'view-to-request',
+    expect(priorities[0]?.href).toBe(
+      '/customers?view=all&segment=usage-new-unbooked&dateField=joined&dateRange=custom&dateFrom=2026-06-25&dateTo=2026-07-01',
+    );
+    expect(priorities[1]).toMatchObject({
+      label: 'Unresolved booking records',
+      value: 3,
+      valueLabel: 'bookings',
     });
-    expect(priorities[4]).toMatchObject({
-      label: 'Watch booking completion',
-      value: 80,
-      valueLabel: 'request-to-complete',
-    });
+    expect(priorities[1]?.href).toBe(
+      '/bookings?dateFrom=2026-06-25&dateRange=custom&dateTo=2026-07-01&sort=oldest&view=usage-unresolved',
+    );
+    expect(JSON.stringify(priorities)).not.toContain('conversion');
+    expect(JSON.stringify(priorities)).not.toContain('segment=issue');
+    expect(JSON.stringify(priorities)).not.toContain('sort=profile-views');
+  });
+
+  it('uses singular action nouns for one record', () => {
+    const overview = usageOverviewWithDefaults({
+      bookingQuality: { unresolvedCount: 1 },
+      customerSegments: { newUnbookedCustomerCount: 1 },
+      generatedAt: '2026-07-01T00:00:00.000Z',
+      range: '7d',
+      rangeLabel: 'Last 7 days',
+      source: 'stored-usage-aggregates',
+    }, '7d');
+
+    expect(buildUsageActionPriorities(overview).map((item) => item.valueLabel)).toEqual([
+      'customer',
+      'booking',
+    ]);
+  });
+
+  it('rejects invalid custom ranges without silently changing them', () => {
+    expect(validateUsageCustomRange('2026-07-10', '2026-07-01', '2026-07-20')).toContain('on or before');
+    expect(validateUsageCustomRange('2026-07-01', '2026-07-21', '2026-07-20')).toContain('Future');
+    expect(validateUsageCustomRange('2026-01-01', '2026-07-01', '2026-07-20')).toContain('90 days');
+    expect(validateUsageCustomRange('not-a-date', '2026-07-01', '2026-07-20')).toContain('valid');
+    expect(validateUsageCustomRange('2026-07-01', '2026-07-01', '2026-07-20')).toBeNull();
   });
 });

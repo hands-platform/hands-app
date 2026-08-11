@@ -20,6 +20,48 @@ export function notificationFailureCodeLabel(failureCode: string) {
   return failureCode;
 }
 
+export function notificationFailureRunbook(failureCode: string) {
+  if (failureCode === 'messaging/mismatched-credential') {
+    return {
+      ownerLabel: 'Developer / System',
+      retryCondition: 'Retry only after the Firebase project credentials match the mobile app project.',
+      technicalAction: 'Validate the Firebase project and credentials before retrying.',
+    };
+  }
+  if (
+    failureCode === 'PUSH_PROVIDER_NOT_CONFIGURED' ||
+    failureCode.toLowerCase().includes('credential')
+  ) {
+    return {
+      ownerLabel: 'Developer / System',
+      retryCondition: 'Do not retry until provider setup and the notification worker are verified.',
+      technicalAction: 'Verify FCM credentials, provider setup, and the notification worker.',
+    };
+  }
+  if (failureCode === 'messaging/invalid-argument' || failureCode === 'INVALID_ARGUMENT') {
+    return {
+      ownerLabel: 'Developer / System',
+      retryCondition: 'Retry only after the target or template input is corrected.',
+      technicalAction: 'Inspect the latest provider response, template, and target fields.',
+    };
+  }
+  if (
+    failureCode === 'messaging/registration-token-not-registered' ||
+    failureCode === 'messaging/invalid-registration-token'
+  ) {
+    return {
+      ownerLabel: 'Customer Support',
+      retryCondition: 'Retry only after a new enabled push route is registered.',
+      technicalAction: 'Ask the recipient to reopen the app and register a new token.',
+    };
+  }
+  return {
+    ownerLabel: 'Developer / System',
+    retryCondition: 'Retry only after the failure is classified and the route is recovered.',
+    technicalAction: 'Inspect the provider response and Background Jobs before retrying.',
+  };
+}
+
 export function notificationFailureCodeClassName(failureCode: string) {
   return notificationFailureNeedsOperatorAction(failureCode) ? 'pill pill-warn' : 'pill pill-info';
 }

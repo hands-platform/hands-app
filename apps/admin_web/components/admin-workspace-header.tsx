@@ -1,21 +1,23 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bell,
   ChevronRight,
-  CircleHelp,
   LogOut,
-  MapPinned,
   Search,
   ShieldCheck,
 } from 'lucide-react';
 
-import type { AdminNavSection } from '../lib/admin-navigation';
-import { hrefMatchesPath } from '../lib/admin-nav-match';
+import {
+  adminNavSearchResults,
+  groupAdminNavSearchResults,
+  type AdminNavSection,
+} from '../lib/admin-navigation';
+import { adminBreadcrumbContext } from '../lib/admin-nav-match';
 import { AdminEmptyState } from './admin-empty-state';
 import { AdminFormShell } from './admin-form-controls';
 import { AdminIconButton } from './admin-icon-button';
@@ -30,22 +32,6 @@ type AdminWorkspaceHeaderProps = {
   readonly sections: readonly AdminNavSection[];
 };
 
-function titleFromPath(pathname: string) {
-  const segment = pathname
-    .split('/')
-    .filter(Boolean)
-    .at(-1);
-
-  if (!segment) {
-    return 'Start Shift';
-  }
-
-  return segment
-    .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
-
 export function AdminWorkspaceHeader({ navigationToggle, sections }: AdminWorkspaceHeaderProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -53,40 +39,141 @@ export function AdminWorkspaceHeader({ navigationToggle, sections }: AdminWorksp
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-
-  const activeSection = sections.find((section) =>
-    section.links.some((link) => hrefMatchesPath(link.href, pathname, search)),
+  const [showAllSearchResults, setShowAllSearchResults] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchResultsListRef = useRef<HTMLDivElement>(null);
+  const searchTriggerRef = useRef<HTMLButtonElement>(null);
+  const notificationContainerRef = useRef<HTMLDivElement>(null);
+  const notificationMenuRef = useRef<HTMLDivElement>(null);
+  const notificationTriggerRef = useRef<HTMLButtonElement>(null);
+  const breadcrumb = adminBreadcrumbContext(sections, pathname, search);
+  const searchResults = useMemo(
+    () => adminNavSearchResults(sections, searchQuery, showAllSearchResults ? Number.MAX_SAFE_INTEGER : 7),
+    [searchQuery, sections, showAllSearchResults],
   );
-  const activeLink = activeSection?.links.find((link) => hrefMatchesPath(link.href, pathname, search));
-  const pageTitle = activeLink?.label ?? titleFromPath(pathname);
-  const searchableLinks = useMemo(
-    () =>
-      sections.flatMap((section) =>
-        section.links.map((link) => ({
-          ...link,
-          sectionLabel: section.label,
-        })),
-      ),
-    [sections],
+  const searchResultGroups = useMemo(
+    () => showAllSearchResults
+      ? groupAdminNavSearchResults(searchResults.results)
+      : [{ entries: searchResults.results, sectionLabel: null }],
+    [searchResults.results, showAllSearchResults],
   );
-  const filteredLinks = searchableLinks
-    .filter((link) => {
-      const query = searchQuery.trim().toLowerCase();
-
-      if (!query) {
-        return true;
-      }
-
-      return [link.label, link.sectionLabel, link.description].some((value) =>
-        value.toLowerCase().includes(query),
-      );
-    })
-    .slice(0, 7);
   const attentionSections = sections.filter((section) => (section.attentionCount ?? 0) > 0);
   const totalAttentionCount = attentionSections.reduce(
     (sum, section) => sum + (section.attentionCount ?? 0),
     0,
   );
+  const hasOperationAlerts = attentionSections.length > 0;
+
+  const closeSearch = useCallback((returnFocus = false) => {
+    setSearchOpen(false);
+    setSearchQuery('');
+    setShowAllSearchResults(false);
+    if (returnFocus) {
+      window.setTimeout(() => searchTriggerRef.current?.focus(), 0);
+    }
+  }, [setSearchOpen, setSearchQuery, setShowAllSearchResults]);
+
+  const closeNotifications = useCallback((returnFocus = false) => {
+    setNotificationsOpen(false);
+    if (returnFocus) {
+      window.setTimeout(() => notificationTriggerRef.current?.focus(), 0);
+    }
+  }, [setNotificationsOpen]);
+
+  const openSearch = useCallback(() => {
+    closeNotifications();
+    setSearchOpen(true);
+    setShowAllSearchResults(false);
+  }, [closeNotifications, setSearchOpen, setShowAllSearchResults]);
+
+  useEffect(() => {
+    if (searchOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [searchOpen]);
+
+  useEffect(() => {
+    if (notificationsOpen && hasOperationAlerts) {
+      notificationMenuRef.current?.querySelector<HTMLAnchorElement>('[role="menuitem"]')?.focus();
+    }
+  }, [hasOperationAlerts, notificationsOpen]);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        if (searchOpen) closeSearch(true);
+        else openSearch();
+        return;
+      }
+
+      if (event.key === 'Escape') {
+        if (searchOpen) {
+          event.preventDefault();
+          closeSearch(true);
+        } else if (notificationsOpen) {
+          event.preventDefault();
+          closeNotifications(true);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [closeNotifications, closeSearch, notificationsOpen, openSearch, searchOpen]);
+
+  useEffect(() => {
+    if (!searchOpen && !notificationsOpen) return;
+    const handleOutsidePointer = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (searchOpen && !searchContainerRef.current?.contains(target)) {
+        closeSearch();
+      }
+      if (notificationsOpen && !notificationContainerRef.current?.contains(target)) {
+        closeNotifications();
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsidePointer);
+    return () => document.removeEventListener('pointerdown', handleOutsidePointer);
+  }, [closeNotifications, closeSearch, notificationsOpen, searchOpen]);
+
+  const handleSearchKeyboard = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const links = Array.from(
+      searchContainerRef.current?.querySelectorAll<HTMLAnchorElement>('.topbar-dropdown-link') ?? [],
+    );
+    if (event.key === 'Enter' && document.activeElement === searchInputRef.current && links[0]) {
+      event.preventDefault();
+      links[0].click();
+      return;
+    }
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+    if (links.length === 0) return;
+    event.preventDefault();
+    const activeIndex = links.findIndex((link) => link === document.activeElement);
+    const nextIndex = event.key === 'ArrowDown'
+      ? activeIndex < 0 || activeIndex === links.length - 1 ? 0 : activeIndex + 1
+      : activeIndex <= 0 ? links.length - 1 : activeIndex - 1;
+    links[nextIndex]?.focus();
+  };
+
+  const handleShowAllSearchResults = () => {
+    setShowAllSearchResults(true);
+    window.requestAnimationFrame(() => {
+      if (searchResultsListRef.current) searchResultsListRef.current.scrollTop = 0;
+      searchInputRef.current?.focus();
+    });
+  };
+
+  const handleNotificationKeyboard = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const links = Array.from(
+      notificationMenuRef.current?.querySelectorAll<HTMLAnchorElement>('[role="menuitem"]') ?? [],
+    );
+    const activeIndex = links.findIndex((link) => link === document.activeElement);
+    const targetIndex = operationAlertMenuTargetIndex(event.key, activeIndex, links.length);
+    if (targetIndex === null) return;
+    event.preventDefault();
+    links[targetIndex]?.focus();
+  };
 
   return (
     <header className="topbar vuexy-navbar" aria-label="Admin workspace">
@@ -94,28 +181,34 @@ export function AdminWorkspaceHeader({ navigationToggle, sections }: AdminWorksp
       <div className="workspace-heading">
         <nav className="workspace-breadcrumb" aria-label="Breadcrumb">
           <Link href="/" prefetch={false}>HANDS</Link>
-          {activeSection ? (
+          {breadcrumb.sectionLabel && breadcrumb.sectionLabel !== breadcrumb.pageLabel ? (
             <>
               <ChevronRight aria-hidden="true" size={14} />
-              <span>{activeSection.label}</span>
+              <span>{breadcrumb.sectionLabel}</span>
+            </>
+          ) : null}
+          {breadcrumb.workspace ? (
+            <>
+              <ChevronRight aria-hidden="true" size={14} />
+              <Link href={breadcrumb.workspace.href} prefetch={false}>{breadcrumb.workspace.label}</Link>
             </>
           ) : null}
           <ChevronRight aria-hidden="true" size={14} />
-          <span aria-current="page">{pageTitle}</span>
+          <span aria-current="page">{breadcrumb.pageLabel}</span>
         </nav>
-        <strong className="workspace-page-title">{pageTitle}</strong>
       </div>
 
       <div className="topbar-actions" aria-label="Workspace actions">
-        <div className="topbar-menu">
+        <div className="topbar-menu" ref={searchContainerRef}>
           <AdminTopbarButton
+            aria-controls="admin-page-search"
             aria-expanded={searchOpen}
-            aria-haspopup="dialog"
             className="topbar-search topbar-search-trigger"
             onClick={() => {
-              setSearchOpen((value) => !value);
-              setNotificationsOpen(false);
+              if (searchOpen) closeSearch(true);
+              else openSearch();
             }}
+            ref={searchTriggerRef}
             type="button"
           >
             <span>
@@ -125,84 +218,122 @@ export function AdminWorkspaceHeader({ navigationToggle, sections }: AdminWorksp
             <kbd>Ctrl K</kbd>
           </AdminTopbarButton>
           {searchOpen ? (
-            <div className="topbar-dropdown topbar-search-menu" role="dialog" aria-label="Search admin pages">
+            <div
+              aria-label="Search admin pages"
+              className="topbar-dropdown topbar-search-menu"
+              id="admin-page-search"
+              onKeyDown={handleSearchKeyboard}
+              role="search"
+            >
               <AdminTopbarSearchInput
                 autoFocus
+                inputRef={searchInputRef}
                 label="Search admin pages"
-                onChange={(event) => setSearchQuery(event.target.value)}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value);
+                  setShowAllSearchResults(false);
+                  if (searchResultsListRef.current) searchResultsListRef.current.scrollTop = 0;
+                }}
                 value={searchQuery}
               />
-              <div className="topbar-dropdown-list">
-                {filteredLinks.length > 0 ? (
-                  filteredLinks.map((link, linkIndex) => (
-                    <Link
-                      className="topbar-dropdown-link"
-                      href={link.href}
-                      key={`${link.sectionLabel}:${link.href}:${linkIndex}`}
-                      prefetch={false}
-                      onClick={() => setSearchOpen(false)}
-                    >
-                      <span className="topbar-dropdown-label">{link.label}</span>
-                      <span className="topbar-dropdown-meta">{link.sectionLabel}</span>
-                    </Link>
+              <div className="topbar-dropdown-list" ref={searchResultsListRef}>
+                {searchResults.results.length > 0 ? (
+                  searchResultGroups.map((group) => (
+                    <div className="topbar-search-result-group" key={group.sectionLabel ?? 'recommended'}>
+                      {group.sectionLabel ? (
+                        <strong className="topbar-search-result-group-label">{group.sectionLabel}</strong>
+                      ) : null}
+                      {group.entries.map((link) => (
+                        <Link
+                          className="topbar-dropdown-link"
+                          href={link.href}
+                          key={link.id}
+                          prefetch={false}
+                          onClick={() => closeSearch()}
+                        >
+                          <span className="topbar-dropdown-label">{link.label}</span>
+                          <span className="topbar-dropdown-meta">
+                            {link.workspaceLabel ?? link.sectionLabel}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
                   ))
                 ) : (
                   <AdminEmptyState className="topbar-empty" message="No matching admin pages" title={null} />
                 )}
+                {searchResults.total > searchResults.results.length ? (
+                  <AdminTopbarButton
+                    className="topbar-search-show-all"
+                    onClick={handleShowAllSearchResults}
+                    type="button"
+                  >
+                    Show all results ({searchResults.total})
+                  </AdminTopbarButton>
+                ) : null}
               </div>
             </div>
           ) : null}
         </div>
         <AdminThemeToggle />
-        <AdminIconLink className="topbar-icon-chip" aria-label="Help" href="/operations-policy">
-          <CircleHelp aria-hidden="true" size={18} />
+        <AdminIconLink
+          aria-label="Operations Policy"
+          className="topbar-icon-chip"
+          href="/operations-policy"
+          title="Operations Policy"
+        >
+          <ShieldCheck aria-hidden="true" size={18} />
         </AdminIconLink>
-        <div className="topbar-menu">
+        <div className="topbar-menu" ref={notificationContainerRef}>
           <AdminIconButton
+            aria-controls="admin-operation-alerts"
+            aria-label={`Operation alerts, ${totalAttentionCount}`}
             aria-expanded={notificationsOpen}
-            aria-haspopup="dialog"
+            aria-haspopup={hasOperationAlerts ? 'menu' : undefined}
             className="topbar-icon-chip topbar-icon-button"
             onClick={() => {
-              setNotificationsOpen((value) => !value);
-              setSearchOpen(false);
+              closeSearch();
+              if (notificationsOpen) closeNotifications();
+              else setNotificationsOpen(true);
             }}
+            ref={notificationTriggerRef}
             type="button"
           >
             <Bell aria-hidden="true" size={18} />
             {totalAttentionCount > 0 ? <AdminAttentionBadge>{totalAttentionCount}</AdminAttentionBadge> : null}
           </AdminIconButton>
           {notificationsOpen ? (
-            <div className="topbar-dropdown topbar-notification-menu" role="dialog" aria-label="Operation alerts">
+            <div
+              aria-label="Operation alerts"
+              className="topbar-dropdown topbar-notification-menu"
+              id="admin-operation-alerts"
+              onKeyDown={hasOperationAlerts ? handleNotificationKeyboard : undefined}
+              ref={notificationMenuRef}
+              role={hasOperationAlerts ? 'menu' : 'status'}
+            >
               <div className="topbar-dropdown-title">Operation alerts</div>
-              <div className="topbar-dropdown-list">
-                {attentionSections.length > 0 ? (
-                  attentionSections.map((section, sectionIndex) => (
+              {hasOperationAlerts ? (
+                <div className="topbar-dropdown-list">
+                  {attentionSections.map((section, sectionIndex) => (
                     <Link
                       className="topbar-dropdown-link"
-                      href={section.links[0]?.href ?? '/'}
-                      key={`${section.label}:${sectionIndex}`}
+                      href={section.href ?? section.links[0]?.href ?? '/'}
+                      key={`${section.id}:${sectionIndex}`}
                       prefetch={false}
-                      onClick={() => setNotificationsOpen(false)}
+                      onClick={() => closeNotifications()}
+                      role="menuitem"
                     >
                       <span className="topbar-dropdown-label">{section.label}</span>
                       <span className="topbar-dropdown-meta">{section.attentionCount} need review</span>
                     </Link>
-                  ))
-                ) : (
-                  <AdminEmptyState className="topbar-empty" message="No operation alerts" title={null} />
-                )}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="topbar-notification-empty">No operation alerts</p>
+              )}
             </div>
-          ) : null}
+            ) : null}
         </div>
-        <span className="topbar-chip">
-          <MapPinned aria-hidden="true" size={14} />
-          Vietnam Operations
-        </span>
-        <span className="topbar-chip topbar-chip-primary">
-          <ShieldCheck aria-hidden="true" size={14} />
-          Live Workspace
-        </span>
         <AdminFormShell action="/api/admin/session/logout" method="post">
           <AdminIconButton
             className="topbar-icon-chip topbar-icon-button"
@@ -216,4 +347,17 @@ export function AdminWorkspaceHeader({ navigationToggle, sections }: AdminWorksp
       </div>
     </header>
   );
+}
+
+export function operationAlertMenuTargetIndex(
+  key: string,
+  activeIndex: number,
+  itemCount: number,
+) {
+  if (itemCount <= 0) return null;
+  if (key === 'Home') return 0;
+  if (key === 'End') return itemCount - 1;
+  if (key === 'ArrowDown') return activeIndex < 0 || activeIndex === itemCount - 1 ? 0 : activeIndex + 1;
+  if (key === 'ArrowUp') return activeIndex <= 0 ? itemCount - 1 : activeIndex - 1;
+  return null;
 }

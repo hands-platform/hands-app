@@ -2,6 +2,10 @@ import { readFileSync } from 'node:fs';
 import { PartnerDetailAppActivitySection } from './partner-detail-app-activity-section';
 
 const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+const activityRecordsModelSource = readFileSync(
+  'app/partners/[id]/partner-detail-activity-records-model.tsx',
+  'utf8',
+);
 
 describe('PartnerDetailAppActivitySection', () => {
   it('uses the partner detail Vuexy table panel atom for the app activity shell', () => {
@@ -137,13 +141,19 @@ describe('PartnerDetailAppActivitySection', () => {
   });
 
   it('keeps sanction detail timestamps on shared DateTimeText nodes from the detail page', () => {
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={sanction.liftedAt} />');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={sanction.expiresAt} />');
+    expect(activityRecordsModelSource).toContain(
+      '<DateTimeText fallback="Missing" value={sanction.liftedAt} />',
+    );
+    expect(activityRecordsModelSource).toContain(
+      '<DateTimeText fallback="Missing" value={sanction.expiresAt} />',
+    );
   });
 
   it('propagates booking gate evidence detail nodes into activity timelines', () => {
-    expect(pageSource).toContain('detailNode: bookingGateAttempt ?');
-    expect(pageSource).toContain('{bookingGateAttempt.gateLabel} / {bookingGateAttempt.detailNode}');
+    expect(activityRecordsModelSource).toContain('detailNode: bookingGateAttempt ?');
+    expect(activityRecordsModelSource).toContain(
+      '{bookingGateAttempt.gateLabel} / {bookingGateAttempt.detailNode}',
+    );
   });
 });
 

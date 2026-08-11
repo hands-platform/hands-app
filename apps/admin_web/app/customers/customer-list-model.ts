@@ -1,6 +1,7 @@
 import { formatDateTime as formatDate } from '../../lib/admin-format';
 import type { AdminCustomerDirectoryRow } from '../../lib/admin-api';
 import { bookingLatestActivityAt } from '../../lib/admin-booking-time';
+import { adminCountLabel } from '../../lib/admin-copy';
 import type { CustomerFilters } from './customer-filters';
 
 const ACTIVE_STATUSES = [
@@ -37,12 +38,9 @@ export function filterCustomerRows(rows: CustomerRow[], filters: CustomerFilters
     }
     if (filters.country && row.deviceLanguageCountryCode !== filters.country) return false;
     if (filters.gender && row.gender !== filters.gender) return false;
-    if (filters.joinedFrom && !isOnOrAfterDate(row.joinedAt, filters.joinedFrom)) return false;
-    if (filters.joinedTo && !isOnOrBeforeDate(row.joinedAt, filters.joinedTo)) return false;
-    if (filters.lastBookingFrom && !isOnOrAfterDate(row.lastBookingAt, filters.lastBookingFrom)) return false;
-    if (filters.lastBookingTo && !isOnOrBeforeDate(row.lastBookingAt, filters.lastBookingTo)) return false;
-    if (filters.lastLoginFrom && !isOnOrAfterDate(row.lastSeenAt, filters.lastLoginFrom)) return false;
-    if (filters.lastLoginTo && !isOnOrBeforeDate(row.lastSeenAt, filters.lastLoginTo)) return false;
+    const activityDate = customerActivityDate(row, filters.dateField);
+    if (filters.dateFrom && !isOnOrAfterDate(activityDate, filters.dateFrom)) return false;
+    if (filters.dateTo && !isOnOrBeforeDate(activityDate, filters.dateTo)) return false;
     return true;
   });
 }
@@ -56,7 +54,9 @@ export function sortCustomerRows(rows: CustomerRow[], sort: string) {
       );
     }
     if (sort === 'booking-count-asc') {
-      return left.bookingCount - right.bookingCount || dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt);
+      return (
+        left.bookingCount - right.bookingCount || dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt)
+      );
     }
     return dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt);
   });
@@ -79,7 +79,8 @@ export function buildCustomerRow(customer: AdminCustomerDirectoryRow) {
     );
   }, 0);
   const activeBookings =
-    activitySummary?.activeBookingCount ?? bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status)).length;
+    activitySummary?.activeBookingCount ??
+    bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status)).length;
   const closedBookings = bookings.filter((booking) => CLOSED_STATUSES.includes(booking.status));
   const cancelledBookings = activitySummary?.closedBookingCount ?? closedBookings.length;
   const customerClosedBookings =
@@ -94,25 +95,38 @@ export function buildCustomerRow(customer: AdminCustomerDirectoryRow) {
   const noShowBookings =
     activitySummary?.noShowBookingCount ?? bookings.filter((booking) => booking.status === 'NO_SHOW').length;
   const completedBookings =
-    activitySummary?.completedBookingCount ?? bookings.filter((booking) => booking.status === 'COMPLETED').length;
-  const openMatchingBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length;
+    activitySummary?.completedBookingCount ??
+    bookings.filter((booking) => booking.status === 'COMPLETED').length;
+  const openMatchingBookings =
+    activitySummary?.openMatchingBookingCount ??
+    bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length;
   const firstPickBookings = bookings.filter(
     (booking) => booking.preferredProviderId && !booking.selectedProviderId,
   ).length;
   const customerChoiceBookings = bookings.filter((booking) => Boolean(booking.selectedProviderId)).length;
-  const serviceLiveBookings = bookings.filter((booking) =>
-    ['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
-  ).length;
+  const serviceLiveBookings =
+    activitySummary?.serviceLiveBookingCount ??
+    bookings.filter((booking) =>
+      ['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
+    ).length;
+  const currentBooking = bookings
+    .filter((booking) => ACTIVE_STATUSES.includes(booking.status))
+    .sort((left, right) => dateMs(bookingLatestActivityAt(right)) - dateMs(bookingLatestActivityAt(left)))[0];
   const chatMissingBookings = bookings.filter(
     (booking) => shouldHaveCustomerChatRoom(booking) && !booking.chatRoom,
   ).length;
   const addressSnapshotBookings = bookings.filter((booking) => Boolean(booking.addressSnapshot)).length;
-  const paymentIssues = payments.filter(
-    (payment) => payment && !['AUTHORIZED', 'CAPTURED'].includes(payment.status),
-  ).length;
-  const capturedSpend = payments
-    .filter((payment) => payment?.status === 'CAPTURED')
-    .reduce((sum, payment) => sum + Number(payment?.amount ?? 0), 0);
+  const paymentIssues =
+    activitySummary?.paymentIssueCount ??
+    payments.filter((payment) => payment && payment.status === 'FAILED').length;
+  const capturedSpend =
+    activitySummary?.capturedSpend ??
+    payments
+      .filter((payment) => payment?.status === 'CAPTURED')
+      .reduce((sum, payment) => sum + Number(payment?.amount ?? 0), 0);
+  const customerWalletBalance = activitySummary?.customerWalletBalance ?? 0;
+  const refundRequests = activitySummary?.refundRequestCount ?? requestedRefundCount(bookings);
+  const reportedReviews = activitySummary?.reportedReviewCount ?? 0;
   const addressCount = readAddressCount(customer.addresses) + customer.selectedLocationCount;
   const bookingCount = activitySummary?.bookingCount ?? bookings.length;
   const lastBookingAt =
@@ -143,11 +157,11 @@ export function buildCustomerRow(customer: AdminCustomerDirectoryRow) {
   const memoCount = customer.auditLogCount ?? customer.auditLogs?.length ?? 0;
   const activityLabel =
     activeBookings > 0
-      ? `${activeBookings} active booking(s)`
+      ? adminCountLabel(activeBookings, 'active booking')
       : completedBookings > 0
-        ? `${completedBookings} completed work record(s)`
+        ? adminCountLabel(completedBookings, 'completed work record')
         : bookingCount > 0
-          ? `${bookingCount} booking record(s)`
+          ? adminCountLabel(bookingCount, 'booking record')
           : 'No booking history yet';
 
   const deviceLanguage = readCustomerDeviceLanguage(customer);
@@ -155,7 +169,7 @@ export function buildCustomerRow(customer: AdminCustomerDirectoryRow) {
 
   return {
     id: customer.id,
-    name: customer.user?.fullName ?? customer.user?.phone ?? 'Unnamed customer',
+    name: customer.user?.fullName?.trim() || 'Unnamed customer',
     phone: customer.user?.phone ?? 'No phone',
     email: customer.user?.email ?? 'No email',
     joinedAt: customer.user?.createdAt,
@@ -176,8 +190,14 @@ export function buildCustomerRow(customer: AdminCustomerDirectoryRow) {
     paymentCount: payments.length,
     refundAmount,
     capturedSpend,
+    customerWalletBalance,
+    refundRequests,
+    reportedReviews,
     addressCount,
     lastBookingAt,
+    currentBookingUpdatedAt:
+      activitySummary?.currentBookingUpdatedAt ??
+      (currentBooking ? bookingLatestActivityAt(currentBooking) : undefined),
     lastCompletedAt,
     lastCompletedLabel: lastCompletedBooking
       ? bookingServiceLabel(lastCompletedBooking)
@@ -250,7 +270,7 @@ export function buildServerCustomerPagination<T>(
   const safeTotalRows = Math.max(0, Math.trunc(totalRows));
   const totalPages = Math.max(1, Math.ceil(safeTotalRows / filters.pageSize));
   const page = Math.min(filters.page, totalPages);
-  const start = (filters.page - 1) * filters.pageSize;
+  const start = (page - 1) * filters.pageSize;
 
   return {
     from: rows.length === 0 ? 0 : start + 1,
@@ -267,6 +287,8 @@ export function buildCustomerSummary(rows: CustomerRow[]) {
   const todayJoinedRows = rows.filter((row) => isToday(row.joinedAt));
   const todaySeenRows = rows.filter((row) => isToday(row.lastSeenAt));
   const monthSeenRows = rows.filter((row) => isWithinRecentDays(row.lastSeenAt, 30));
+
+  const paymentIssues = rows.reduce((sum, row) => sum + row.paymentIssues, 0);
 
   return {
     total: rows.length,
@@ -290,7 +312,8 @@ export function buildCustomerSummary(rows: CustomerRow[]) {
     pushReachable: rows.filter((row) => row.pushReachable).length,
     chatRooms: rows.reduce((sum, row) => sum + row.chatRooms, 0),
     missingAddress: rows.filter((row) => row.addressCount === 0).length,
-    paymentIssues: rows.reduce((sum, row) => sum + row.paymentIssues, 0),
+    paymentIssues,
+    needsAction: paymentIssues,
     latestBookingAt: rows
       .map((row) => row.lastBookingAt)
       .filter(Boolean)
@@ -300,6 +323,22 @@ export function buildCustomerSummary(rows: CustomerRow[]) {
       .filter(Boolean)
       .sort((left, right) => dateMs(right) - dateMs(left))[0],
   };
+}
+
+function customerActivityDate(row: CustomerRow, field: CustomerFilters['dateField']) {
+  if (field === 'joined') return row.joinedAt;
+  if (field === 'last-booking') return row.lastBookingAt;
+  return row.lastSeenAt;
+}
+
+function requestedRefundCount(bookings: NonNullable<AdminCustomerDirectoryRow['bookings']>) {
+  const refundIds = new Set<string>();
+  for (const booking of bookings) {
+    for (const refund of [...(booking.refunds ?? []), ...(booking.payment?.refunds ?? [])]) {
+      if (refund.status === 'REQUESTED') refundIds.add(refund.id);
+    }
+  }
+  return refundIds.size;
 }
 
 export function buildCustomerFilterSummary(
@@ -319,7 +358,7 @@ export function buildCustomerFilterSummary(
       value: `${rows.length}/${allRows.length}`,
       detail:
         activeFilterCount > 0
-          ? `${activeFilterCount} active filter(s) are narrowing the customer list`
+          ? `${adminCountLabel(activeFilterCount, 'active filter')} ${activeFilterCount === 1 ? 'is' : 'are'} narrowing the customer list`
           : 'No active filters, full customer list is loaded',
     },
     {
@@ -408,39 +447,21 @@ function customerDeviceLanguageCountryCode(label: string) {
     return 'UNKNOWN';
   }
 
-  const normalized = label.replace(/_/g, '-').trim();
-  const parts = normalized.split('-').filter(Boolean);
-  const lastPart = parts.at(-1);
-
-  if (lastPart && /^[a-z]{2}$/i.test(lastPart) && parts.length > 1) {
-    return lastPart.toUpperCase();
-  }
-
-  if (/^[a-z]{2}$/i.test(normalized) && normalized.toLowerCase() === 'vi') {
-    return 'VN';
-  }
-
-  return 'UNKNOWN';
+  const language = label.replace(/_/g, '-').trim().split('-')[0]?.toLowerCase();
+  const codes: Record<string, string> = { en: 'EN', ja: 'JA', ko: 'KO', vi: 'VI', zh: 'ZH' };
+  return codes[language ?? ''] ?? 'UNKNOWN';
 }
 
 function customerDeviceLanguageCountryLabel(label: string) {
   const names: Record<string, string> = {
-    CN: 'China',
-    JP: 'Japan',
-    KR: 'South Korea',
-    SG: 'Singapore',
-    VN: 'Vietnam',
+    EN: 'English',
+    JA: 'Japanese',
+    KO: 'Korean',
+    VI: 'Vietnamese',
+    ZH: 'Chinese',
   };
   const code = customerDeviceLanguageCountryCode(label);
-  return names[code] ?? (code === 'UNKNOWN' ? 'Unknown country' : displayCustomerRegionName(code));
-}
-
-function displayCustomerRegionName(region: string) {
-  try {
-    return new Intl.DisplayNames(['en'], { type: 'region' }).of(region) ?? region;
-  } catch {
-    return region;
-  }
+  return names[code] ?? 'Unknown language';
 }
 
 function readCustomerGender(customer: AdminCustomerDirectoryRow) {

@@ -10,22 +10,22 @@ String providerCashBookingSettlementHint(Map<String, dynamic> booking) {
   final payment = asMap(booking['payment']);
   final amount = payment?['amount'] ?? booking['totalAmount'];
   final amountText =
-      amount == null ? 'this request' : '${formatCurrency(amount)} VND';
-  return 'Cash payment: the customer pays you directly for $amountText. '
-      'After completion, HANDS fees and tax withholding can create wallet debt. '
-      'Keep your wallet settled so marketplace participation and payout release stay clear.';
+      amount == null ? 'yêu cầu này' : '${formatCurrency(amount)} VND';
+  return 'Thanh toán tiền mặt: khách hàng trả trực tiếp cho bạn $amountText. '
+      'Sau khi hoàn thành, phí HANDS và thuế khấu trừ có thể tạo số dư ví âm. '
+      'Hãy thanh toán đầy đủ để tiếp tục tham gia đặt lịch công khai và nhận chi trả.';
 }
 
 String providerServiceOptionLabel(Map<String, dynamic>? service) {
   final name = service?['name']?.toString().trim();
   final duration = asNum(service?['durationMin'])?.toInt();
   if (name == null || name.isEmpty) {
-    return 'Massage booking';
+    return 'Dịch vụ massage';
   }
   if (duration == null || duration <= 0) {
     return name;
   }
-  return '$name / $duration min';
+  return '$name / $duration phút';
 }
 
 String providerServiceOptionPriceLabel(
@@ -45,5 +45,5 @@ String providerServiceOptionPriceLabel(
 
 String providerServiceDurationLabel(Map<String, dynamic>? service) {
   final duration = asNum(service?['durationMin'])?.toInt();
-  return duration == null || duration <= 0 ? '- min' : '$duration min';
+  return duration == null || duration <= 0 ? '- phút' : '$duration phút';
 }

@@ -70,4 +70,36 @@ describe('booking marketplace supply', () => {
       helper: expect.stringContaining('stay visible'),
     });
   });
+
+  it('keeps internal Partner status values out of operator copy', () => {
+    const supply = bookingMarketplacePartnerSupply(
+      booking(),
+      [partner({ status: 'ONLINE_BUSY', verification: { status: 'DRAFT' } })],
+      [],
+    );
+
+    expect(supply.rows[0]).toMatchObject({
+      status: 'Busy with a booking',
+      blockers: expect.arrayContaining([
+        'verification Profile draft',
+        'status Busy with a booking',
+      ]),
+    });
+  });
+
+  it('reports the evaluated total while limiting detailed supply rows to eight', () => {
+    const partners = Array.from({ length: 40 }, (_, index) =>
+      partner({
+        displayName: `Partner ${index + 1}`,
+        id: `partner-${index + 1}`,
+        status: 'ONLINE_BUSY',
+      }),
+    );
+
+    const supply = bookingMarketplacePartnerSupply(booking(), partners, []);
+
+    expect(supply.evaluatedCount).toBe(40);
+    expect(supply.eligibleCount).toBe(0);
+    expect(supply.rows).toHaveLength(8);
+  });
 });

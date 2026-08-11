@@ -43,12 +43,6 @@ export function bookingCustomerWaitPanel(
     savedPolicy.backupOpenMode ??
     readOptionalString(adminOperationalPolicySettingByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode)?.value) ??
     'IMMEDIATE_WITHIN_WINDOW';
-  const customerConfirmMode =
-    (savedPolicy.preferredAcceptMode ??
-      readOptionalString(
-        adminOperationalPolicySettingByKey(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode)?.value,
-      )) ===
-    'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
   const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
   const rejectedParticipants = (booking.participants ?? []).filter(
     (participant) => participant.status === 'REJECTED',
@@ -68,7 +62,7 @@ export function bookingCustomerWaitPanel(
   const expired = booking.expiresAt ? Date.parse(booking.expiresAt) < Date.now() : false;
   const customerPinReady = Number.isFinite(Number(booking.lat)) && Number.isFinite(Number(booking.lng));
   const backupWindowOpen = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW' || firstPickRejected || expired;
-  const waitingForCustomerChoice = customerConfirmMode && customerChoiceCandidates.length > 0 && !selected;
+  const waitingForCustomerChoice = customerChoiceCandidates.length > 0 && !selected;
   const waitingForPartnerJoin = booking.status === 'OPEN_MATCHING' && customerChoiceCandidates.length === 0;
   const timer = matchingTimerStatus(booking.expiresAt, responseWindowMinutes);
 
@@ -103,14 +97,14 @@ export function bookingCustomerWaitPanel(
     headline = 'No fresh nearby Partner can currently join under policy.';
     detail =
       'Ask Partners to go online/refresh location, or review marketplace radius and location freshness policy.';
-    nextActionHref = '/partners?review=marketplace-blocked';
+    nextActionHref = '/partners?review=available-blocked';
     nextActionLabel = 'Review supply blockers';
   } else if (waitingForPartnerJoin && backupWindowOpen) {
     signalStatus = 'Nudge Partners';
     signalTone = 'pill-warn';
     headline = 'Customer is waiting and marketplace Partners can participate.';
     detail = `${marketplaceSupply.eligibleCount} nearby Partner(s) can be nudged into the customer shortlist.`;
-    nextActionHref = '/partners?review=marketplace-ready';
+    nextActionHref = '/partners?review=ready-now';
     nextActionLabel = 'Open marketplace-ready Partners';
   } else if (waitingForPartnerJoin) {
     signalStatus = 'First-pick wait';
@@ -148,9 +142,7 @@ export function bookingCustomerWaitPanel(
         : waitingForCustomerChoice
           ? `${customerChoiceCandidates.length} participating/accepted Partner(s) are ready for customer selection.`
           : 'No participating/accepted Partner is ready for final customer selection yet.',
-      action: customerConfirmMode
-        ? 'Customer final choice applies when first-pick does not validly match first.'
-        : 'Policy conflicts with HANDS matching flow; return to first-pick priority with customer fallback.',
+      action: 'Customer final choice applies when first-pick does not validly match first.',
       className: selected
         ? 'ops-task-done'
         : waitingForCustomerChoice
@@ -160,7 +152,7 @@ export function bookingCustomerWaitPanel(
     },
     {
       title: 'Marketplace participation',
-      status: backupWindowOpen ? 'Open' : 'Held',
+      status: backupWindowOpen ? 'Open now' : 'Waiting',
       detail: backupWindowOpen
         ? `${marketplaceSupply.eligibleCount} eligible marketplace Partner(s) can participate under current/saved policy.`
         : 'Marketplace participation is not currently open for this saved policy.',

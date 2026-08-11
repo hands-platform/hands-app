@@ -1,21 +1,14 @@
-import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 describe('Admin KPI scope guard', () => {
   it('keeps page-level KPI and trace metrics explicit about time/status scope', () => {
-    const repoRoot = execSync('git rev-parse --show-toplevel', { encoding: 'utf8' }).trim();
-    const files = execSync('git ls-files apps/admin_web/app/**/*.tsx', {
-      cwd: repoRoot,
-      encoding: 'utf8',
-    })
-      .trim()
-      .split(/\r?\n/)
-      .filter(Boolean);
+    const appRoot = join(process.cwd(), 'app');
+    const files = collectSourceFiles(appRoot);
     const offenders: string[] = [];
 
     for (const file of files) {
-      const source = readFileSync(join(repoRoot, file), 'utf8');
+      const source = readFileSync(file, 'utf8');
       let index = 0;
 
       while ((index = source.indexOf('metrics={[', index)) !== -1) {
@@ -41,7 +34,7 @@ describe('Admin KPI scope guard', () => {
         }
 
         if (!block.includes('scope:') || !block.includes('kind:')) {
-          offenders.push(`${file}:${line}`);
+          offenders.push(`${file.slice(appRoot.length + 1)}:${line}`);
         }
 
         index += 10;
@@ -51,3 +44,16 @@ describe('Admin KPI scope guard', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+function collectSourceFiles(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      return collectSourceFiles(path);
+    }
+    if (!entry.isFile() || !entry.name.endsWith('.tsx') || /\.(?:spec|test)\.tsx$/.test(entry.name)) {
+      return [];
+    }
+    return [path];
+  });
+}

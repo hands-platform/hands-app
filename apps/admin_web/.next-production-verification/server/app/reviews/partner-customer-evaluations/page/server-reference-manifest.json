@@ -1,0 +1,17 @@
+{
+  "node": {
+    "40da712e116efea1aa68a80466626c024618b9d499": {
+      "workers": {
+        "app/reviews/partner-customer-evaluations/page": {
+          "moduleId": 711076,
+          "async": false,
+          "exportedName": "moderatePartnerCustomerNote",
+          "filename": "apps/admin_web/app/reviews/partner-customer-evaluations/actions.ts"
+        }
+      },
+      "exportedName": "moderatePartnerCustomerNote",
+      "filename": "apps/admin_web/app/reviews/partner-customer-evaluations/actions.ts"
+    }
+  },
+  "edge": {}
+}

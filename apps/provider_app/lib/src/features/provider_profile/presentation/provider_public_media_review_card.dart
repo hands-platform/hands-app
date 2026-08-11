@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/provider_value_helpers.dart';
 import '../../provider_onboarding/presentation/provider_onboarding_status.dart';
+import 'provider_error_helpers.dart';
 import 'provider_feedback_cards.dart';
 import 'provider_public_media_review_helpers.dart';
 
@@ -50,7 +51,7 @@ class ProviderPublicMediaReviewCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Public media review',
+                    'Xét duyệt ảnh công khai',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -64,7 +65,7 @@ class ProviderPublicMediaReviewCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Customers only see profile photos and work photos after admin approval.',
+              'Khách hàng chỉ thấy ảnh hồ sơ và ảnh công việc sau khi được HANDS duyệt.',
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -72,17 +73,17 @@ class ProviderPublicMediaReviewCard extends StatelessWidget {
               runSpacing: 8,
               children: [
                 _PublicMediaReviewChip(
-                  label: 'Waiting',
+                  label: 'Đang chờ',
                   value: pendingCount,
                   color: Colors.orange.shade700,
                 ),
                 _PublicMediaReviewChip(
-                  label: 'Approved',
+                  label: 'Đã duyệt',
                   value: approvedCount,
                   color: Colors.green.shade700,
                 ),
                 _PublicMediaReviewChip(
-                  label: 'Needs changes',
+                  label: 'Cần chỉnh sửa',
                   value: rejectedCount,
                   color: Colors.red.shade700,
                 ),
@@ -91,15 +92,17 @@ class ProviderPublicMediaReviewCard extends StatelessWidget {
             if (error != null) ...[
               const SizedBox(height: 12),
               Text(
-                'Media review status could not be loaded: $error',
+                providerAppErrorMessage(
+                  error,
+                  fallback: 'Không thể tải trạng thái xét duyệt ảnh.',
+                ),
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ],
             const SizedBox(height: 12),
             if (media.isEmpty)
               const InfoCard(
-                text:
-                    'Upload a public profile image or work photo to start admin review.',
+                text: 'Tải ảnh hồ sơ hoặc ảnh công việc để bắt đầu xét duyệt.',
               )
             else
               ...media.take(6).map((item) => _PublicMediaReviewRow(item: item)),
@@ -107,7 +110,7 @@ class ProviderPublicMediaReviewCard extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRefresh,
               icon: const Icon(Icons.refresh_outlined),
-              label: const Text('Refresh media status'),
+              label: const Text('Làm mới trạng thái ảnh'),
             ),
           ],
         ),
@@ -154,7 +157,7 @@ class _PublicMediaReviewRow extends StatelessWidget {
     final reason = reviewReason(item);
     final uploadedAt = item['uploadedAt']?.toString() ??
         item['createdAt']?.toString() ??
-        'upload time pending';
+        'chưa có thời gian tải lên';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -186,7 +189,7 @@ class _PublicMediaReviewRow extends StatelessWidget {
                 ),
                 if (reason != null && reason.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text('Reason: $reason'),
+                  Text('Lý do: $reason'),
                 ],
                 const SizedBox(height: 4),
                 Text(

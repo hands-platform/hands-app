@@ -278,6 +278,14 @@ export const adminProviderOperationsHandoffSelect = {
       status: true,
     },
   },
+  walletBalanceSummaries: {
+    where: { currency: 'VND' },
+    take: 1,
+    select: {
+      balance: true,
+      currency: true,
+    },
+  },
   participants: {
     orderBy: { joinedAt: 'desc' },
     take: ADMIN_PROVIDER_OPERATIONS_HANDOFF_RELATION_LIMIT,
@@ -356,6 +364,15 @@ export const adminProviderControlSelect = {
       id: true,
       status: true,
       isPrimary: true,
+    },
+  },
+  walletBalanceSummaries: {
+    where: { currency: 'VND' },
+    take: 1,
+    select: {
+      balance: true,
+      currency: true,
+      updatedAt: true,
     },
   },
   reports: {
@@ -520,6 +537,10 @@ export const adminProviderListSelect = {
   serviceArea: true,
   level: true,
   status: true,
+  availabilityIntent: true,
+  availabilityReason: true,
+  availabilityChangedAt: true,
+  workingHoursTimezone: true,
   ratingAvg: true,
   reviewCount: true,
   currentLat: true,
@@ -599,10 +620,15 @@ export const adminProviderListSelect = {
     take: 3,
     select: adminProviderListDeviceSelect,
   },
+  workingHours: {
+    orderBy: { weekday: 'asc' },
+    select: { weekday: true, enabled: true, startMinute: true, endMinute: true },
+  },
 } satisfies Prisma.ProviderProfileSelect;
 
 export const adminProviderDirectorySelect = {
   id: true,
+  userId: true,
   displayName: true,
   legalName: true,
   gender: true,
@@ -653,6 +679,14 @@ export const adminProviderDirectorySelect = {
     orderBy: { createdAt: 'desc' },
     take: ADMIN_PROVIDER_COMPACT_WITHDRAWAL_RELATION_LIMIT,
     select: adminProviderListWalletWithdrawalRequestSelect,
+  },
+  walletBalanceSummaries: {
+    where: { currency: 'VND' },
+    take: 1,
+    select: {
+      balance: true,
+      currency: true,
+    },
   },
   sessions: {
     orderBy: { lastSeenAt: 'desc' },
@@ -777,6 +811,7 @@ export const adminProviderOverviewSelect = {
   facebookId: true,
   activityNickname: true,
   bio: true,
+  bioTranslations: true,
   experienceYears: true,
   specialties: true,
   languages: true,
@@ -786,6 +821,10 @@ export const adminProviderOverviewSelect = {
   serviceArea: true,
   level: true,
   status: true,
+  availabilityIntent: true,
+  availabilityReason: true,
+  availabilityChangedAt: true,
+  workingHoursTimezone: true,
   ratingAvg: true,
   reviewCount: true,
   currentLat: true,
@@ -862,6 +901,10 @@ export const adminProviderOverviewSelect = {
     take: 3,
     select: adminProviderDeviceSummarySelect,
   },
+  workingHours: {
+    orderBy: { weekday: 'asc' },
+    select: { weekday: true, enabled: true, startMinute: true, endMinute: true },
+  },
 } satisfies Prisma.ProviderProfileSelect;
 
 export const adminBookingDetailProviderSelect = {
@@ -886,6 +929,7 @@ export const adminProviderDetailSelect = {
   facebookId: true,
   activityNickname: true,
   bio: true,
+  bioTranslations: true,
   experienceYears: true,
   specialties: true,
   languages: true,
@@ -895,6 +939,10 @@ export const adminProviderDetailSelect = {
   serviceArea: true,
   level: true,
   status: true,
+  availabilityIntent: true,
+  availabilityReason: true,
+  availabilityChangedAt: true,
+  workingHoursTimezone: true,
   ratingAvg: true,
   reviewCount: true,
   currentLat: true,
@@ -991,6 +1039,10 @@ export const adminProviderDetailSelect = {
     take: ADMIN_PROVIDER_DETAIL_REVIEW_SIGNAL_LIMIT,
     select: adminProviderVerificationLogSummarySelect,
   },
+  workingHours: {
+    orderBy: { weekday: 'asc' },
+    select: { weekday: true, enabled: true, startMinute: true, endMinute: true },
+  },
 } satisfies Prisma.ProviderProfileSelect;
 
 export const adminProviderDetailWithoutDiagnosticsSelect = Object.fromEntries(
@@ -1003,6 +1055,10 @@ export const adminProviderFinanceDetailSelect = {
   displayName: true,
   legalName: true,
   status: true,
+  availabilityIntent: true,
+  availabilityReason: true,
+  availabilityChangedAt: true,
+  workingHoursTimezone: true,
   blockedAt: true,
   blockedReason: true,
   trustedAt: true,
@@ -1029,6 +1085,10 @@ export const adminProviderFinanceDetailSelect = {
     take: ADMIN_PROVIDER_DETAIL_REVIEW_SIGNAL_LIMIT,
     select: adminProviderVerificationLogSummarySelect,
   },
+  workingHours: {
+    orderBy: { weekday: 'asc' },
+    select: { weekday: true, enabled: true, startMinute: true, endMinute: true },
+  },
 } satisfies Prisma.ProviderProfileSelect;
 
 export const adminProviderEvidenceDetailSelect = {
@@ -1041,6 +1101,7 @@ export const adminProviderEvidenceDetailSelect = {
   facebookId: true,
   activityNickname: true,
   bio: true,
+  bioTranslations: true,
   experienceYears: true,
   specialties: true,
   languages: true,
@@ -1050,6 +1111,10 @@ export const adminProviderEvidenceDetailSelect = {
   serviceArea: true,
   level: true,
   status: true,
+  availabilityIntent: true,
+  availabilityReason: true,
+  availabilityChangedAt: true,
+  workingHoursTimezone: true,
   ratingAvg: true,
   reviewCount: true,
   currentLat: true,
@@ -1083,5 +1148,9 @@ export const adminProviderEvidenceDetailSelect = {
     orderBy: { createdAt: 'desc' },
     take: ADMIN_PROVIDER_DETAIL_REVIEW_SIGNAL_LIMIT,
     select: adminProviderVerificationLogSummarySelect,
+  },
+  workingHours: {
+    orderBy: { weekday: 'asc' },
+    select: { weekday: true, enabled: true, startMinute: true, endMinute: true },
   },
 } satisfies Prisma.ProviderProfileSelect;

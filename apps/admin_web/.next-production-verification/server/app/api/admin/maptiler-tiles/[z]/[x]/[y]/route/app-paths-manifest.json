@@ -1,0 +1,3 @@
+{
+  "/api/admin/maptiler-tiles/[z]/[x]/[y]/route": "app/api/admin/maptiler-tiles/[z]/[x]/[y]/route.js"
+}

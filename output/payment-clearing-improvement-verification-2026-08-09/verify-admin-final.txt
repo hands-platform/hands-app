@@ -1,0 +1,2118 @@
+
+> verify:scope
+> powershell -ExecutionPolicy Bypass -File infra/scripts/verify-scope.ps1 -Scope admin
+
+== HANDS Scope Verification ==
+Root: C:\dev\massage-on-demand-vn
+Scope: admin
+Running: git root
+C:/dev/massage-on-demand-vn
+Running: git branch
+develop
+Running: git status
+ M .env.example
+ M .github/workflows/ci.yml
+ M apps/admin_web/app/admin-browser-route-access-manifest.spec.ts
+ M apps/admin_web/app/admin-kpi-scope-guard.spec.ts
+ M apps/admin_web/app/admin-operators/admin-operator-permissions.spec.ts
+ M apps/admin_web/app/admin-page-shell-inventory.spec.ts
+ M apps/admin_web/app/api/admin/customers/[id]/activity/export/route.spec.ts
+ M apps/admin_web/app/api/admin/customers/export/route.spec.ts
+ M apps/admin_web/app/api/admin/finance-tax/booking-settlement-audit/export/route.spec.ts
+ M apps/admin_web/app/api/admin/finance-tax/booking-settlement-audit/export/route.ts
+ M apps/admin_web/app/api/admin/finance-tax/partner-withholding-tax/export/route.spec.ts
+ M apps/admin_web/app/api/admin/finance-tax/payment-fees/export/route.spec.ts
+ M apps/admin_web/app/api/admin/finance-tax/platform-vat/export/route.spec.ts
+ M apps/admin_web/app/api/admin/partners/export/route.spec.ts
+ M apps/admin_web/app/api/admin/partners/export/route.ts
+ M apps/admin_web/app/api/admin/realtime-token/route.spec.ts
+ M apps/admin_web/app/api/admin/realtime-token/route.ts
+ M apps/admin_web/app/app-sessions/page.spec.tsx
+ M apps/admin_web/app/app-sessions/page.tsx
+ M apps/admin_web/app/audit-log/audit-log-page-model.spec.ts
+ M apps/admin_web/app/audit-log/audit-log-table-section.spec.tsx
+ M apps/admin_web/app/audit-log/audit-log-table-section.tsx
+ M apps/admin_web/app/audit-log/page-content.tsx
+ M apps/admin_web/app/background-jobs/background-job-workflows.ts
+ M apps/admin_web/app/background-jobs/incidents/[id]/page.tsx
+ M apps/admin_web/app/background-jobs/page.spec.tsx
+ M apps/admin_web/app/background-jobs/page.tsx
+ M apps/admin_web/app/bookings/[id]/actions.spec.ts
+ M apps/admin_web/app/bookings/[id]/actions.ts
+ M apps/admin_web/app/bookings/[id]/booking-action-paths.spec.ts
+ M apps/admin_web/app/bookings/[id]/booking-action-status-sections.spec.tsx
+ M apps/admin_web/app/bookings/[id]/booking-action-status-sections.tsx
+ M apps/admin_web/app/bookings/[id]/booking-activity-records.spec.ts
+ M apps/admin_web/app/bookings/[id]/booking-activity-records.ts
+ D apps/admin_web/app/bookings/[id]/booking-chat-bubble.spec.tsx
+ D apps/admin_web/app/bookings/[id]/booking-chat-bubble.tsx
+ M apps/admin_web/app/bookings/[id]/booking-closeout-sections.spec.tsx
+ M apps/admin_web/app/bookings/[id]/booking-closeout-sections.tsx
+ M apps/admin_web/app/bookings/[id]/booking-command-briefing-sections.spec.tsx
+ M apps/admin_web/app/bookings/[id]/booking-command-briefing-sections.tsx
+ M apps/admin_web/app/bookings/[id]/booking-customer-wait-panel.spec.ts
+ M apps/admin_web/app/bookings/[id]/booking-customer-wait-panel.ts
+ M apps/admin_web/app/bookings/[id]/booking-detail-action-evidence-gate.ts
+ M apps/admin_web/app/bookings/[id]/booking-detail-closeout-checklist.spec.ts
+ M apps/admin_web/app/bookings/[id]/booking-detail-decision-readiness.ts
+ D apps/admin_web/app/bookings/[id]/booking-detail-disclosure-group.spec.tsx
+ D apps/admin_web/app/bookings/[id]/booking-detail-disclosure-group.tsx
+ M apps/admin_web/app/bookings/[id]/booking-detail-evidence-packet.ts
+ M apps/admin_web/app/bookings/[id]/booking-detail-lifecycle-list-section.spec.tsx
+ M apps/admin_web/app/bookings/[id]/booking-detail-lifecycle-list-section.tsx
+ D apps/admin_web/app/bookings/[id]/booking-detail-metric-cards.spec.ts
+ D apps/admin_web/app/bookings/[id]/booking-detail-metric-cards.ts
+ D apps/admin_web/app/bookings/[id]/booking-detail-operations-quick-rail.spec.ts
+ D apps/admin_web/app/bookings/[id]/booking-detail-operations-quick-rail.ts
+ M apps/admin_web/app/bookings/[id]/booking-detail-operator-action-matrix.ts
+ M apps/admin_web/app/bookings/[id]/booking-detail-operator-command-queue.spec.ts
+ M apps/admin_web/app/bookings/[id]/booking-detail-operator-command-queue.ts
+ D apps/admin_web/app/bookings/[id]/booking-detail-operator-first-read.spec.ts
+ D apps/admin_web/app/bookings/[id]/booking-detail-operator-first-read.ts
+ D apps/admin_web/app/bookings/[id]/booking-detail-operator-priority-briefing.spec.ts
+ D apps/admin_web/app/bookings/[id]/booking-detail-operator-priority-briefing.ts
+ M apps/admin_web/app/bookings/[id]/booking-detail-post-match-decision-section.spec.tsx
+ M apps/admin_web/app/bookings/[id]/booking-detail-post-match-decision-section.tsx
+ M apps/admin_web/app/bookings/[id]/booking-detail-section-visibility.spec.ts
+ M apps/admin_web/app/bookings/[id]/booking-detail-section-visibility.ts
+ M apps/admin_web/app/bookings/[id]/booking-evidence-sections.spec.tsx
+ M apps/admin_web/app/bookings/[id]/booking-evidence-sections.tsx
+ M apps/admin_web/app/bookings/[id]/booking-finance-trace-sections.tsx
+ M apps/admin_web/app/bookings/[id]/booking-marketplace-supply.spec.ts
+ M apps/admin_web/app/bookings/[id]/booking-marketplace-supply.ts
+ D apps/admin_web/app/bookings/[id]/booking-mvp-authority-contract.spec.ts
+ D apps/admin_web/app/bookings/[id]/booking-mvp-authority-contract.ts
+ M apps/admin_web/app/bookings/[id]/booking-operational-policy-snapshot.ts
+ M apps/admin_web/app/bookings/[id]/booking-operator-notes-editor.tsx
+ M apps/admin_web/app/bookings/[id]/booking-operator-sections.spec.tsx
+ M apps/admin_web/app/bookings/[id]/booking-operator-sections.tsx
+ M apps/admin_web/app/bookings/[id]/booking-outcome-review-panel.spec.ts
+ M apps/admin_web/app/bookings/[id]/booking-outcome-review-panel.ts
+ M apps/admin_web/app/bookings/[id]/booking-participant-rules.ts
+ M apps/admin_web/app/bookings/[id]/booking-payment-actions.spec.tsx
+ M apps/admin_web/app/bookings/[id]/booking-payment-actions.tsx
+ M apps/admin_web/app/bookings/[id]/booking-policy-supply-sections.spec.tsx
+ M apps/admin_web/app/bookings/[id]/booking-policy-supply-sections.tsx
+ M apps/admin_web/app/bookings/[id]/booking-record-detail-sections.spec.tsx
+ M apps/admin_web/app/bookings/[id]/booking-record-detail-sections.tsx
+ M apps/admin_web/app/bookings/[id]/booking-service-pricing-snapshot-rows.spec.ts
+ M apps/admin_web/app/bookings/[id]/booking-service-pricing-snapshot-rows.ts
+ M apps/admin_web/app/bookings/[id]/booking-stage-snapshot.ts
+ M apps/admin_web/app/bookings/[id]/booking-unified-detail-section.spec.tsx
+ M apps/admin_web/app/bookings/[id]/booking-unified-detail-section.tsx
+ M apps/admin_web/app/bookings/[id]/booking-unified-detail.ts
+ M apps/admin_web/app/bookings/[id]/page-shell.spec.ts
+ M apps/admin_web/app/bookings/[id]/page.spec.tsx
+ M apps/admin_web/app/bookings/[id]/page.tsx
+ D apps/admin_web/app/bookings/actions.spec.ts
+ D apps/admin_web/app/bookings/actions.ts
+ M apps/admin_web/app/bookings/booking-action-paths.ts
+ M apps/admin_web/app/bookings/booking-closure-list-signal.spec.ts
+ M apps/admin_web/app/bookings/booking-closure-list-signal.ts
+ M apps/admin_web/app/bookings/booking-command-decision-strip-inputs.spec.ts
+ M apps/admin_web/app/bookings/booking-command-decision-strip-inputs.ts
+ M apps/admin_web/app/bookings/booking-completed-closeout-section.spec.tsx
+ M apps/admin_web/app/bookings/booking-completed-closeout-section.tsx
+ M apps/admin_web/app/bookings/booking-date-range-filter.ts
+ M apps/admin_web/app/bookings/booking-dispatch-partner-shortcuts.ts
+ M apps/admin_web/app/bookings/booking-empty-message.spec.ts
+ M apps/admin_web/app/bookings/booking-empty-message.ts
+ M apps/admin_web/app/bookings/booking-gate-rejection-lane.ts
+ M apps/admin_web/app/bookings/booking-list-stage-inputs.spec.ts
+ M apps/admin_web/app/bookings/booking-list-time.spec.ts
+ M apps/admin_web/app/bookings/booking-list-time.ts
+ D apps/admin_web/app/bookings/booking-marketplace-coverage-inputs.spec.ts
+ D apps/admin_web/app/bookings/booking-marketplace-coverage-inputs.ts
+ D apps/admin_web/app/bookings/booking-marketplace-coverage-state.spec.ts
+ D apps/admin_web/app/bookings/booking-marketplace-coverage-state.ts
+ D apps/admin_web/app/bookings/booking-marketplace-operating-queue-inputs.spec.ts
+ D apps/admin_web/app/bookings/booking-marketplace-operating-queue-inputs.ts
+ D apps/admin_web/app/bookings/booking-marketplace-operations-card-inputs.spec.ts
+ D apps/admin_web/app/bookings/booking-marketplace-operations-card-inputs.ts
+ D apps/admin_web/app/bookings/booking-marketplace-participant-ledger-inputs.spec.ts
+ D apps/admin_web/app/bookings/booking-marketplace-participant-ledger-inputs.ts
+ D apps/admin_web/app/bookings/booking-marketplace-wallet-signal.spec.ts
+ D apps/admin_web/app/bookings/booking-marketplace-wallet-signal.ts
+ M apps/admin_web/app/bookings/booking-monitor-blocked-create-section.tsx
+ D apps/admin_web/app/bookings/booking-monitor-command-center-model.spec.ts
+ D apps/admin_web/app/bookings/booking-monitor-command-center-model.ts
+ D apps/admin_web/app/bookings/booking-monitor-command-center-section.spec.tsx
+ D apps/admin_web/app/bookings/booking-monitor-command-center-section.tsx
+ D apps/admin_web/app/bookings/booking-monitor-command-route-model.spec.ts
+ D apps/admin_web/app/bookings/booking-monitor-command-route-model.ts
+ D apps/admin_web/app/bookings/booking-monitor-command-route-sections.spec.tsx
+ D apps/admin_web/app/bookings/booking-monitor-command-route-sections.tsx
+ D apps/admin_web/app/bookings/booking-monitor-customer-protection-model.spec.ts
+ D apps/admin_web/app/bookings/booking-monitor-customer-protection-model.ts
+ D apps/admin_web/app/bookings/booking-monitor-customer-protection-section.spec.tsx
+ D apps/admin_web/app/bookings/booking-monitor-customer-protection-section.tsx
+ D apps/admin_web/app/bookings/booking-monitor-filter-options.spec.ts
+ D apps/admin_web/app/bookings/booking-monitor-filter-options.ts
+ M apps/admin_web/app/bookings/booking-monitor-filters-section.spec.tsx
+ M apps/admin_web/app/bookings/booking-monitor-filters-section.tsx
+ M apps/admin_web/app/bookings/booking-monitor-list-row-model.spec.ts
+ M apps/admin_web/app/bookings/booking-monitor-list-row-model.ts
+ M apps/admin_web/app/bookings/booking-monitor-list-section.spec.tsx
+ M apps/admin_web/app/bookings/booking-monitor-list-section.tsx
+ M apps/admin_web/app/bookings/booking-monitor-list-stage-model.spec.ts
+ M apps/admin_web/app/bookings/booking-monitor-live-status-section.spec.tsx
+ M apps/admin_web/app/bookings/booking-monitor-live-status-section.tsx
+ D apps/admin_web/app/bookings/booking-monitor-marketplace-coverage-section.spec.tsx
+ D apps/admin_web/app/bookings/booking-monitor-marketplace-coverage-section.tsx
+ D apps/admin_web/app/bookings/booking-monitor-marketplace-ledger-overview-section.spec.tsx
+ D apps/admin_web/app/bookings/booking-monitor-marketplace-ledger-overview-section.tsx
+ D apps/admin_web/app/bookings/booking-monitor-marketplace-model.spec.ts
+ D apps/admin_web/app/bookings/booking-monitor-marketplace-model.ts
+ D apps/admin_web/app/bookings/booking-monitor-marketplace-participant-ledger-section.spec.tsx
+ D apps/admin_web/app/bookings/booking-monitor-marketplace-participant-ledger-section.tsx
+ D apps/admin_web/app/bookings/booking-monitor-marketplace-section.spec.tsx
+ D apps/admin_web/app/bookings/booking-monitor-marketplace-section.tsx
+ M apps/admin_web/app/bookings/booking-monitor-matching-escalation-section.spec.tsx
+ M apps/admin_web/app/bookings/booking-monitor-matching-escalation-section.tsx
+ M apps/admin_web/app/bookings/booking-monitor-next-action-label.spec.ts
+ M apps/admin_web/app/bookings/booking-monitor-next-action-label.ts
+ D apps/admin_web/app/bookings/booking-monitor-next-actions-model.spec.ts
+ D apps/admin_web/app/bookings/booking-monitor-next-actions-model.ts
+ D apps/admin_web/app/bookings/booking-monitor-next-actions-section.spec.tsx
+ D apps/admin_web/app/bookings/booking-monitor-next-actions-section.tsx
+ M apps/admin_web/app/bookings/booking-monitor-options.spec.ts
+ M apps/admin_web/app/bookings/booking-monitor-options.ts
+ M apps/admin_web/app/bookings/booking-monitor-page.tsx
+ D apps/admin_web/app/bookings/booking-monitor-primary-command-queue-model.spec.ts
+ D apps/admin_web/app/bookings/booking-monitor-primary-command-queue-model.ts
+ M apps/admin_web/app/bookings/booking-monitor-realtime.ts
+ M apps/admin_web/app/bookings/booking-monitor-route-load-plan.spec.ts
+ M apps/admin_web/app/bookings/booking-monitor-route-load-plan.ts
+ M apps/admin_web/app/bookings/booking-monitor-shell.spec.ts
+ M apps/admin_web/app/bookings/booking-monitor-summary.spec.ts
+ M apps/admin_web/app/bookings/booking-monitor-summary.ts
+ M apps/admin_web/app/bookings/booking-monitor-toolbar-section.spec.tsx
+ M apps/admin_web/app/bookings/booking-monitor-toolbar-section.tsx
+ M apps/admin_web/app/bookings/booking-monitor-view-match.ts
+ M apps/admin_web/app/bookings/booking-monitor.tsx
+ D apps/admin_web/app/bookings/booking-next-action-order.spec.ts
+ D apps/admin_web/app/bookings/booking-next-action-order.ts
+ M apps/admin_web/app/bookings/booking-page-model.spec.ts
+ M apps/admin_web/app/bookings/booking-page-params.spec.ts
+ M apps/admin_web/app/bookings/booking-page-params.ts
+ D apps/admin_web/app/bookings/booking-participant-time-labels.spec.ts
+ D apps/admin_web/app/bookings/booking-participant-time-labels.ts
+ M apps/admin_web/app/bookings/booking-payment-closeout-facts.ts
+ M apps/admin_web/app/bookings/booking-post-match-cancellation-display.spec.ts
+ M apps/admin_web/app/bookings/booking-post-match-cancellation-display.ts
+ M apps/admin_web/app/bookings/booking-post-match-cancellations-model.spec.ts
+ M apps/admin_web/app/bookings/booking-post-match-cancellations-model.ts
+ M apps/admin_web/app/bookings/booking-post-match-cancellations-section.spec.tsx
+ M apps/admin_web/app/bookings/booking-post-match-cancellations-section.tsx
+ M apps/admin_web/app/bookings/booking-service-labels.spec.ts
+ M apps/admin_web/app/calendar/calendar-client.spec.tsx
+ M apps/admin_web/app/calendar/calendar-client.tsx
+ M apps/admin_web/app/calendar/calendar-event-drawer.spec.tsx
+ M apps/admin_web/app/calendar/calendar-event-drawer.tsx
+ M apps/admin_web/app/cash-settlements/actions.spec.ts
+ M apps/admin_web/app/cash-settlements/actions.ts
+ M apps/admin_web/app/cash-settlements/cash-settlement-board-sections.spec.tsx
+ M apps/admin_web/app/cash-settlements/cash-settlement-board-sections.tsx
+ M apps/admin_web/app/cash-settlements/cash-settlement-filter-section.spec.tsx
+ M apps/admin_web/app/cash-settlements/cash-settlement-filter-section.tsx
+ M apps/admin_web/app/cash-settlements/cash-settlement-open-debt-table-section.spec.tsx
+ M apps/admin_web/app/cash-settlements/cash-settlement-open-debt-table-section.tsx
+ M apps/admin_web/app/cash-settlements/cash-settlement-page-filters.ts
+ M apps/admin_web/app/cash-settlements/cash-settlement-page-helpers.ts
+ M apps/admin_web/app/cash-settlements/cash-settlement-page-model.spec.ts
+ M apps/admin_web/app/cash-settlements/cash-settlement-page-rows.ts
+ M apps/admin_web/app/cash-settlements/cash-settlement-page-types.ts
+ M apps/admin_web/app/cash-settlements/cash-settlement-page-workflow-cards.ts
+ M apps/admin_web/app/cash-settlements/cash-settlement-provider-groups-section.spec.tsx
+ M apps/admin_web/app/cash-settlements/cash-settlement-provider-groups-section.tsx
+ M apps/admin_web/app/cash-settlements/page.spec.tsx
+ M apps/admin_web/app/cash-settlements/page.tsx
+ M apps/admin_web/app/chat-archive/chat-archive-page-model.spec.ts
+ M apps/admin_web/app/chat-archive/chat-archive-page-model.ts
+ M apps/admin_web/app/chat-archive/page.spec.tsx
+ M apps/admin_web/app/chat-archive/page.tsx
+ M apps/admin_web/app/coupons/actions.spec.ts
+ M apps/admin_web/app/coupons/actions.ts
+ M apps/admin_web/app/coupons/coupon-action-confirmation.spec.ts
+ M apps/admin_web/app/coupons/coupon-action-confirmation.ts
+ M apps/admin_web/app/coupons/coupon-page-model.spec.ts
+ M apps/admin_web/app/coupons/coupon-page-model.ts
+ M apps/admin_web/app/coupons/coupons-table-section.spec.tsx
+ M apps/admin_web/app/coupons/coupons-table-section.tsx
+ M apps/admin_web/app/coupons/page.spec.tsx
+ M apps/admin_web/app/coupons/page.tsx
+ M apps/admin_web/app/customers/[id]/actions.ts
+ M apps/admin_web/app/customers/[id]/customer-booking-operation-board.spec.tsx
+ M apps/admin_web/app/customers/[id]/customer-booking-operation-board.tsx
+ M apps/admin_web/app/customers/[id]/customer-detail-overview-shell.spec.tsx
+ M apps/admin_web/app/customers/[id]/customer-detail-overview-shell.tsx
+ M apps/admin_web/app/customers/[id]/customer-detail-page-structure.spec.ts
+ M apps/admin_web/app/customers/[id]/page.spec.tsx
+ M apps/admin_web/app/customers/[id]/page.tsx
+ M apps/admin_web/app/customers/customer-filter-board.spec.tsx
+ M apps/admin_web/app/customers/customer-filter-board.tsx
+ M apps/admin_web/app/customers/customer-filters.spec.ts
+ M apps/admin_web/app/customers/customer-filters.ts
+ M apps/admin_web/app/customers/customer-list-model.spec.ts
+ M apps/admin_web/app/customers/customer-list-model.ts
+ M apps/admin_web/app/customers/customer-management-view-model.spec.ts
+ M apps/admin_web/app/customers/customer-management-view-model.ts
+ M apps/admin_web/app/customers/customers-table-section.spec.tsx
+ M apps/admin_web/app/customers/customers-table-section.tsx
+ M apps/admin_web/app/customers/page.spec.tsx
+ M apps/admin_web/app/customers/page.tsx
+ M apps/admin_web/app/dashboard-page-model.spec.ts
+ M apps/admin_web/app/dashboard-page-model.ts
+ M apps/admin_web/app/dashboard-trace-summary.spec.tsx
+ M apps/admin_web/app/dashboard-trace-summary.tsx
+ M apps/admin_web/app/earnings/page.tsx
+ D apps/admin_web/app/files/file-review-board.spec.ts
+ D apps/admin_web/app/files/file-review-board.ts
+ M apps/admin_web/app/files/page.spec.tsx
+ M apps/admin_web/app/files/page.tsx
+ M apps/admin_web/app/finance-closeout/page.spec.tsx
+ M apps/admin_web/app/finance-closeout/page.tsx
+ M apps/admin_web/app/finance-overview/finance-overview-model.spec.ts
+ M apps/admin_web/app/finance-overview/finance-overview-model.ts
+ M apps/admin_web/app/finance-overview/page.spec.tsx
+ M apps/admin_web/app/finance-overview/page.tsx
+ M apps/admin_web/app/finance-tax/approval-queue/actions.spec.ts
+ M apps/admin_web/app/finance-tax/approval-queue/actions.ts
+ M apps/admin_web/app/finance-tax/approval-queue/page.spec.tsx
+ M apps/admin_web/app/finance-tax/approval-queue/page.tsx
+ M apps/admin_web/app/finance-tax/bank-reconciliation/[id]/page.spec.tsx
+ M apps/admin_web/app/finance-tax/bank-reconciliation/[id]/page.tsx
+ M apps/admin_web/app/finance-tax/bank-reconciliation/bank-reconciliation-review-owner-model.spec.ts
+ M apps/admin_web/app/finance-tax/bank-reconciliation/bank-reconciliation-review-owner-model.ts
+ M apps/admin_web/app/finance-tax/bank-reconciliation/bank-statement-batch-import.tsx
+ M apps/admin_web/app/finance-tax/bank-reconciliation/import-batches/[batchImportId]/page.spec.tsx
+ M apps/admin_web/app/finance-tax/bank-reconciliation/import-batches/[batchImportId]/page.tsx
+ M apps/admin_web/app/finance-tax/bank-reconciliation/page.spec.tsx
+ M apps/admin_web/app/finance-tax/bank-reconciliation/page.tsx
+ M apps/admin_web/app/finance-tax/booking-settlement-audit/page.spec.tsx
+ M apps/admin_web/app/finance-tax/booking-settlement-audit/page.tsx
+ M apps/admin_web/app/finance-tax/company-bank-accounts/page.spec.tsx
+ M apps/admin_web/app/finance-tax/company-bank-accounts/page.tsx
+ M apps/admin_web/app/finance-tax/coupon-finance/page.spec.tsx
+ M apps/admin_web/app/finance-tax/coupon-finance/page.tsx
+ M apps/admin_web/app/finance-tax/finance-approvers/page.spec.tsx
+ M apps/admin_web/app/finance-tax/finance-approvers/page.tsx
+ M apps/admin_web/app/finance-tax/finance-data-table.tsx
+ M apps/admin_web/app/finance-tax/finance-detail-pages.spec.tsx
+ M apps/admin_web/app/finance-tax/finance-list-command-card.tsx
+ M apps/admin_web/app/finance-tax/finance-list-filter-links.spec.tsx
+ M apps/admin_web/app/finance-tax/finance-list-filter-links.tsx
+ M apps/admin_web/app/finance-tax/finance-list-pages.spec.tsx
+ M apps/admin_web/app/finance-tax/finance-overview-table-panel.tsx
+ M apps/admin_web/app/finance-tax/finance-smoke-contract.spec.ts
+ M apps/admin_web/app/finance-tax/finance-status-badge-model.spec.ts
+ M apps/admin_web/app/finance-tax/finance-status-badge-model.ts
+ M apps/admin_web/app/finance-tax/general-ledger/[id]/page.tsx
+ M apps/admin_web/app/finance-tax/general-ledger/page.spec.tsx
+ M apps/admin_web/app/finance-tax/general-ledger/page.tsx
+ M apps/admin_web/app/finance-tax/monthly-tax-closing/page.spec.tsx
+ M apps/admin_web/app/finance-tax/monthly-tax-closing/page.tsx
+ M apps/admin_web/app/finance-tax/page.spec.tsx
+ M apps/admin_web/app/finance-tax/page.tsx
+ M apps/admin_web/app/finance-tax/partner-bank-deposits/page.spec.tsx
+ M apps/admin_web/app/finance-tax/partner-bank-deposits/page.tsx
+ M apps/admin_web/app/finance-tax/partner-withholding-tax/page.spec.tsx
+ M apps/admin_web/app/finance-tax/partner-withholding-tax/page.tsx
+ M apps/admin_web/app/finance-tax/payment-clearing/[id]/page.spec.tsx
+ M apps/admin_web/app/finance-tax/payment-clearing/[id]/page.tsx
+ M apps/admin_web/app/finance-tax/payment-clearing/page.spec.tsx
+ M apps/admin_web/app/finance-tax/payment-clearing/page.tsx
+ M apps/admin_web/app/finance-tax/payment-fee-evidence-model.spec.ts
+ M apps/admin_web/app/finance-tax/payment-fee-evidence-model.ts
+ M apps/admin_web/app/finance-tax/payment-fees/actions.spec.ts
+ M apps/admin_web/app/finance-tax/payment-fees/actions.ts
+ M apps/admin_web/app/finance-tax/payment-fees/page.spec.tsx
+ M apps/admin_web/app/finance-tax/payment-fees/page.tsx
+ M apps/admin_web/app/finance-tax/payment-fees/payment-fee-policy-management.tsx
+ M apps/admin_web/app/finance-tax/platform-vat/page.spec.tsx
+ M apps/admin_web/app/finance-tax/platform-vat/page.tsx
+ M apps/admin_web/app/finance-tax/settlement-reversals/page.spec.tsx
+ M apps/admin_web/app/finance-tax/settlement-reversals/page.tsx
+ M apps/admin_web/app/finance-tax/tax-settlement-page-model.spec.ts
+ M apps/admin_web/app/finance-tax/tax-settlement-page-model.ts
+ M apps/admin_web/app/globals.css
+ M apps/admin_web/app/layout.tsx
+ M apps/admin_web/app/marketing-analytics/actions.spec.ts
+ M apps/admin_web/app/marketing-analytics/actions.ts
+ M apps/admin_web/app/marketing-analytics/marketing-analytics-model.spec.ts
+ M apps/admin_web/app/marketing-analytics/marketing-analytics-model.ts
+ M apps/admin_web/app/marketing-analytics/page.spec.tsx
+ M apps/admin_web/app/marketing-analytics/page.tsx
+ M apps/admin_web/app/not-found.spec.tsx
+ M apps/admin_web/app/not-found.tsx
+ M apps/admin_web/app/notifications/actions.spec.ts
+ M apps/admin_web/app/notifications/actions.ts
+ M apps/admin_web/app/notifications/fcm-smoke-commands.ts
+ M apps/admin_web/app/notifications/notification-action-confirmation.spec.ts
+ M apps/admin_web/app/notifications/notification-action-confirmation.ts
+ M apps/admin_web/app/notifications/notification-channel-policy-section.spec.tsx
+ M apps/admin_web/app/notifications/notification-channel-policy-section.tsx
+ D apps/admin_web/app/notifications/notification-command-header-section.spec.tsx
+ D apps/admin_web/app/notifications/notification-command-header-section.tsx
+ M apps/admin_web/app/notifications/notification-delivery-cell.tsx
+ M apps/admin_web/app/notifications/notification-delivery-ops-queue-section.spec.tsx
+ M apps/admin_web/app/notifications/notification-delivery-ops-queue-section.tsx
+ M apps/admin_web/app/notifications/notification-failure-copy.ts
+ M apps/admin_web/app/notifications/notification-filter-board-section.spec.tsx
+ M apps/admin_web/app/notifications/notification-filter-board-section.tsx
+ M apps/admin_web/app/notifications/notification-page-model.spec.ts
+ M apps/admin_web/app/notifications/notification-page-model.ts
+ M apps/admin_web/app/notifications/notification-review-runbook.ts
+ M apps/admin_web/app/notifications/notification-table-row.tsx
+ M apps/admin_web/app/notifications/notifications-table-section.spec.tsx
+ M apps/admin_web/app/notifications/notifications-table-section.tsx
+ M apps/admin_web/app/notifications/page.spec.tsx
+ M apps/admin_web/app/notifications/page.tsx
+ M apps/admin_web/app/notifications/push-send/page.spec.tsx
+ M apps/admin_web/app/notifications/push-send/page.tsx
+ M apps/admin_web/app/notifications/push-send/push-send-page-model.spec.ts
+ M apps/admin_web/app/notifications/push-send/push-send-page-model.ts
+ M apps/admin_web/app/notifications/templates/actions.ts
+ M apps/admin_web/app/notifications/templates/page.spec.tsx
+ M apps/admin_web/app/notifications/templates/page.tsx
+ M apps/admin_web/app/operations-handoff/actions.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-activity-stream-section.spec.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-activity-stream-section.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-activity-stream.spec.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-activity-stream.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-booking-queue-section.spec.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-booking-queue-section.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-booking-queue.spec.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-booking-queue.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-customer-partner-section.spec.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-customer-partner-section.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-date-range-section.spec.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-date-range-section.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-finance-action-section.spec.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-finance-action-section.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-finance-actions.spec.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-finance-actions.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-finance-closeout-section.spec.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-finance-closeout-section.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-immediate-action-section.spec.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-immediate-action-section.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-immediate-actions.spec.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-immediate-actions.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-operator-notes-section.spec.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-operator-notes-section.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-page-model.spec.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-page-model.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-pagination.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-readiness-checklist-section.spec.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-readiness-checklist-section.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-readiness-checklist.spec.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-readiness-checklist.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-review-order-section.spec.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-review-order-section.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-section-test-utils.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-shift-brief-section.spec.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-shift-brief-section.tsx
+ M apps/admin_web/app/operations-handoff/operations-handoff-shift-brief.spec.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-shift-brief.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-signals.spec.ts
+ M apps/admin_web/app/operations-handoff/operations-handoff-signals.ts
+ M apps/admin_web/app/operations-handoff/page.spec.tsx
+ M apps/admin_web/app/operations-handoff/page.tsx
+ M apps/admin_web/app/operations-policy/actions.ts
+ M apps/admin_web/app/operations-policy/booking-acceptance-matrix.ts
+ M apps/admin_web/app/operations-policy/operations-policy-form.spec.tsx
+ M apps/admin_web/app/operations-policy/operations-policy-form.tsx
+ M apps/admin_web/app/operations-policy/owner-decision-pressure.ts
+ M apps/admin_web/app/operations-policy/page.spec.tsx
+ M apps/admin_web/app/operations-policy/page.tsx
+ M apps/admin_web/app/operations-policy/policy-enforcement-trace.ts
+ M apps/admin_web/app/operations-policy/policy-impact-dashboard.ts
+ M apps/admin_web/app/operations-policy/policy-impact-details.spec.ts
+ M apps/admin_web/app/operations-policy/policy-impact-details.ts
+ M apps/admin_web/app/operations-policy/policy-simulation.ts
+ M apps/admin_web/app/page.spec.tsx
+ M apps/admin_web/app/page.tsx
+ M apps/admin_web/app/partner-controls/actions.ts
+ M apps/admin_web/app/partner-controls/page.spec.tsx
+ M apps/admin_web/app/partner-controls/page.tsx
+ M apps/admin_web/app/partner-controls/partner-control-desk-action-confirmation.spec.ts
+ M apps/admin_web/app/partner-controls/partner-control-desk-action-confirmation.ts
+ M apps/admin_web/app/partner-controls/partner-control-page-filters.spec.ts
+ M apps/admin_web/app/partner-controls/partner-control-page-filters.ts
+ M apps/admin_web/app/partner-controls/partner-control-page-load-plan.spec.ts
+ M apps/admin_web/app/partner-controls/partner-control-page-load-plan.ts
+ M apps/admin_web/app/partner-controls/partner-control-page-metrics.spec.ts
+ M apps/admin_web/app/partner-controls/partner-control-page-metrics.ts
+ M apps/admin_web/app/partner-controls/partner-control-page-structure.spec.ts
+ M apps/admin_web/app/partner-controls/partner-control-summary.spec.ts
+ M apps/admin_web/app/partner-controls/partner-control-summary.ts
+ M apps/admin_web/app/partners/[id]/page.spec.tsx
+ M apps/admin_web/app/partners/[id]/page.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-app-activity-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-booking-chat-records-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-booking-chat-records-section.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-booking-evidence-bundles-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-booking-evidence-bundles-section.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-booking-gate-evidence-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-booking-journey-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-booking-model.spec.ts
+ M apps/admin_web/app/partners/[id]/partner-detail-booking-model.ts
+ M apps/admin_web/app/partners/[id]/partner-detail-booking-ops-ledger-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-cash-debt-origin-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-cash-debt-origin-section.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-command-snapshot-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-control-action-confirmation.spec.ts
+ M apps/admin_web/app/partners/[id]/partner-detail-control-action-confirmation.ts
+ M apps/admin_web/app/partners/[id]/partner-detail-device-action-confirmation.spec.ts
+ M apps/admin_web/app/partners/[id]/partner-detail-device-action-confirmation.ts
+ M apps/admin_web/app/partners/[id]/partner-detail-document-media-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-document-media-section.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-fast-overview-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-fast-overview-section.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-finance-gate-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-finance-gate-section.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-full-record-index-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-full-record-index-section.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-kyc-decision-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-kyc-decision-section.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-master-facts-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-operating-checklist-section.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-operating-ledger-model.spec.ts
+ M apps/admin_web/app/partners/[id]/partner-detail-operating-ledger-model.ts
+ M apps/admin_web/app/partners/[id]/partner-detail-operations-digest-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-operator-command-action.spec.ts
+ M apps/admin_web/app/partners/[id]/partner-detail-operator-command-action.ts
+ M apps/admin_web/app/partners/[id]/partner-detail-operator-command-queue-section.spec.tsx
+ D apps/admin_web/app/partners/[id]/partner-detail-ops-command-center-section.spec.tsx
+ D apps/admin_web/app/partners/[id]/partner-detail-ops-command-center-section.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-payout-operations-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-payout-operations-section.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-readiness-command-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-registration-dossier-model.ts
+ M apps/admin_web/app/partners/[id]/partner-detail-review-progress-section.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-review-readiness-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-review-readiness-section.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-section-group.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-section-group.tsx
+ D apps/admin_web/app/partners/[id]/partner-detail-status-cards-section.spec.tsx
+ D apps/admin_web/app/partners/[id]/partner-detail-status-cards-section.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-summary-rail-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-summary-rail-section.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-wallet-withdrawal-request-section.spec.tsx
+ M apps/admin_web/app/partners/[id]/partner-detail-wallet-withdrawal-request-section.tsx
+ M apps/admin_web/app/partners/actions.spec.ts
+ M apps/admin_web/app/partners/actions.ts
+ M apps/admin_web/app/partners/overview/page.spec.tsx
+ M apps/admin_web/app/partners/overview/page.tsx
+ M apps/admin_web/app/partners/overview/partner-overview-model.spec.ts
+ M apps/admin_web/app/partners/overview/partner-overview-model.ts
+ M apps/admin_web/app/partners/page.spec.tsx
+ M apps/admin_web/app/partners/page.tsx
+ M apps/admin_web/app/partners/partner-acceptance-blocker-board.ts
+ M apps/admin_web/app/partners/partner-account-action-confirmation.spec.ts
+ M apps/admin_web/app/partners/partner-account-action-confirmation.ts
+ D apps/admin_web/app/partners/partner-action-menu-items.spec.ts
+ D apps/admin_web/app/partners/partner-action-menu-items.ts
+ D apps/admin_web/app/partners/partner-actions-cell.spec.tsx
+ D apps/admin_web/app/partners/partner-actions-cell.tsx
+ M apps/admin_web/app/partners/partner-command-center.ts
+ M apps/admin_web/app/partners/partner-dispatch-forecast-section.spec.tsx
+ M apps/admin_web/app/partners/partner-dispatch-forecast.ts
+ M apps/admin_web/app/partners/partner-dispatch-handoff-section.spec.tsx
+ M apps/admin_web/app/partners/partner-dispatch-handoff.spec.ts
+ M apps/admin_web/app/partners/partner-dispatch-handoff.ts
+ M apps/admin_web/app/partners/partner-export-rows.spec.ts
+ M apps/admin_web/app/partners/partner-export-rows.ts
+ D apps/admin_web/app/partners/partner-files-cell.spec.tsx
+ D apps/admin_web/app/partners/partner-files-cell.tsx
+ M apps/admin_web/app/partners/partner-filter-board.spec.tsx
+ M apps/admin_web/app/partners/partner-filter-board.tsx
+ M apps/admin_web/app/partners/partner-filters.spec.ts
+ M apps/admin_web/app/partners/partner-filters.ts
+ M apps/admin_web/app/partners/partner-kyc-facts.spec.ts
+ M apps/admin_web/app/partners/partner-kyc-facts.ts
+ M apps/admin_web/app/partners/partner-kyc-review-board-section.spec.tsx
+ M apps/admin_web/app/partners/partner-kyc-review-board-section.tsx
+ M apps/admin_web/app/partners/partner-kyc-review-board.spec.ts
+ M apps/admin_web/app/partners/partner-kyc-review-board.ts
+ D apps/admin_web/app/partners/partner-legacy-operations-table-section.spec.tsx
+ D apps/admin_web/app/partners/partner-legacy-operations-table-section.tsx
+ M apps/admin_web/app/partners/partner-list-query.spec.ts
+ M apps/admin_web/app/partners/partner-list-query.ts
+ M apps/admin_web/app/partners/partner-list-readiness.spec.ts
+ M apps/admin_web/app/partners/partner-list-readiness.ts
+ M apps/admin_web/app/partners/partner-list-summary.spec.ts
+ M apps/admin_web/app/partners/partner-list-summary.ts
+ D apps/admin_web/app/partners/partner-location-cell.spec.tsx
+ D apps/admin_web/app/partners/partner-location-cell.tsx
+ M apps/admin_web/app/partners/partner-master-list-section.spec.tsx
+ M apps/admin_web/app/partners/partner-master-list-section.tsx
+ M apps/admin_web/app/partners/partner-master-row.spec.ts
+ M apps/admin_web/app/partners/partner-master-row.ts
+ D apps/admin_web/app/partners/partner-onboarding-cell.spec.tsx
+ D apps/admin_web/app/partners/partner-onboarding-cell.tsx
+ M apps/admin_web/app/partners/partner-operation-row.spec.ts
+ M apps/admin_web/app/partners/partner-operation-row.ts
+ M apps/admin_web/app/partners/partner-operations-list-section.spec.tsx
+ M apps/admin_web/app/partners/partner-operations-list-section.tsx
+ D apps/admin_web/app/partners/partner-ops-badges.spec.ts
+ D apps/admin_web/app/partners/partner-ops-badges.ts
+ D apps/admin_web/app/partners/partner-ops-readiness-cell.spec.tsx
+ D apps/admin_web/app/partners/partner-ops-readiness-cell.tsx
+ M apps/admin_web/app/partners/partner-primary-list-tabs.spec.tsx
+ M apps/admin_web/app/partners/partner-primary-list-tabs.tsx
+ D apps/admin_web/app/partners/partner-push-devices-cell.spec.tsx
+ D apps/admin_web/app/partners/partner-push-devices-cell.tsx
+ M apps/admin_web/app/partners/partner-review-action-confirmation.spec.ts
+ M apps/admin_web/app/partners/partner-review-action-confirmation.ts
+ M apps/admin_web/app/partners/partner-review-mode.spec.ts
+ M apps/admin_web/app/partners/partner-review-mode.ts
+ M apps/admin_web/app/partners/partner-review-queue-section.spec.tsx
+ M apps/admin_web/app/partners/partner-review-queue-section.tsx
+ D apps/admin_web/app/partners/partner-security-cell.spec.tsx
+ D apps/admin_web/app/partners/partner-security-cell.tsx
+ M apps/admin_web/app/partners/partner-server-actions.ts
+ D apps/admin_web/app/partners/partner-services-cell.spec.tsx
+ D apps/admin_web/app/partners/partner-services-cell.tsx
+ M apps/admin_web/app/partners/partner-shift-handoff-section.spec.tsx
+ M apps/admin_web/app/partners/partner-shift-handoff.ts
+ M apps/admin_web/app/payments/[id]/page.spec.tsx
+ M apps/admin_web/app/payments/[id]/page.tsx
+ M apps/admin_web/app/payments/actions.ts
+ M apps/admin_web/app/payments/page.spec.tsx
+ M apps/admin_web/app/payments/page.tsx
+ M apps/admin_web/app/payments/payment-action-confirmation.ts
+ M apps/admin_web/app/payments/payment-filter-board-section.spec.tsx
+ M apps/admin_web/app/payments/payment-filter-board-section.tsx
+ M apps/admin_web/app/payments/payment-form-controls.spec.ts
+ M apps/admin_web/app/payments/payment-page-links.ts
+ M apps/admin_web/app/payments/payment-page-model.spec.ts
+ M apps/admin_web/app/payments/payment-page-model.ts
+ M apps/admin_web/app/payments/payment-page-presenters.spec.tsx
+ M apps/admin_web/app/payments/payment-page-presenters.tsx
+ M apps/admin_web/app/payouts/actions.spec.ts
+ M apps/admin_web/app/payouts/actions.ts
+ M apps/admin_web/app/payouts/page.spec.tsx
+ M apps/admin_web/app/payouts/page.tsx
+ M apps/admin_web/app/payouts/payout-action-confirmation.spec.ts
+ M apps/admin_web/app/payouts/payout-action-confirmation.ts
+ M apps/admin_web/app/payouts/payout-batch-list-section.tsx
+ M apps/admin_web/app/payouts/payout-batch-table.spec.tsx
+ M apps/admin_web/app/payouts/payout-batch-table.tsx
+ M apps/admin_web/app/payouts/payout-command-queue-section.spec.tsx
+ M apps/admin_web/app/payouts/payout-command-queue-section.tsx
+ M apps/admin_web/app/payouts/payout-wallet-withdrawal-request-section.spec.tsx
+ M apps/admin_web/app/payouts/payout-wallet-withdrawal-request-section.tsx
+ M apps/admin_web/app/payouts/payouts-page-model.spec.ts
+ M apps/admin_web/app/payouts/payouts-page-model.ts
+ M apps/admin_web/app/policy-copy-regression.spec.ts
+ M apps/admin_web/app/referrals/actions.spec.ts
+ M apps/admin_web/app/referrals/actions.ts
+ M apps/admin_web/app/referrals/customers/page.tsx
+ M apps/admin_web/app/referrals/partners/page.tsx
+ M apps/admin_web/app/referrals/referral-cashout-queue.spec.tsx
+ M apps/admin_web/app/referrals/referral-dashboard.spec.tsx
+ M apps/admin_web/app/referrals/referral-dashboard.tsx
+ M apps/admin_web/app/referrals/referral-detail.spec.tsx
+ M apps/admin_web/app/referrals/referral-detail.tsx
+ M apps/admin_web/app/refunds/page.spec.tsx
+ M apps/admin_web/app/refunds/page.tsx
+ M apps/admin_web/app/refunds/refund-command-board-section.spec.tsx
+ M apps/admin_web/app/refunds/refund-command-board-section.tsx
+ M apps/admin_web/app/refunds/refund-decision-checklist-section.tsx
+ M apps/admin_web/app/refunds/refund-filter-board-section.spec.tsx
+ M apps/admin_web/app/refunds/refund-filter-board-section.tsx
+ M apps/admin_web/app/refunds/refunds-table-section.spec.tsx
+ M apps/admin_web/app/refunds/refunds-table-section.tsx
+ M apps/admin_web/app/reviews/actions.spec.ts
+ M apps/admin_web/app/reviews/actions.ts
+ M apps/admin_web/app/reviews/export/route.spec.ts
+ M apps/admin_web/app/reviews/export/route.ts
+ M apps/admin_web/app/reviews/page.spec.tsx
+ M apps/admin_web/app/reviews/page.tsx
+ M apps/admin_web/app/reviews/partner-customer-evaluations-section.spec.tsx
+ M apps/admin_web/app/reviews/partner-customer-evaluations-section.tsx
+ M apps/admin_web/app/reviews/partner-customer-evaluations/page.spec.tsx
+ M apps/admin_web/app/reviews/partner-customer-evaluations/page.tsx
+ M apps/admin_web/app/reviews/review-action-confirmation.spec.ts
+ M apps/admin_web/app/reviews/review-action-confirmation.ts
+ M apps/admin_web/app/reviews/review-page-actions.spec.ts
+ M apps/admin_web/app/reviews/review-page-actions.ts
+ M apps/admin_web/app/reviews/review-page-model.spec.ts
+ M apps/admin_web/app/reviews/review-page-model.ts
+ M apps/admin_web/app/reviews/review-row-actions.spec.ts
+ M apps/admin_web/app/reviews/review-row-actions.spec.tsx
+ M apps/admin_web/app/reviews/review-row-actions.tsx
+ M apps/admin_web/app/reviews/reviews-table-section.spec.tsx
+ M apps/admin_web/app/reviews/reviews-table-section.tsx
+ M apps/admin_web/app/services/page.spec.tsx
+ M apps/admin_web/app/services/page.tsx
+ D apps/admin_web/app/services/service-booking-exposure-guard-section.spec.tsx
+ D apps/admin_web/app/services/service-booking-exposure-guard-section.tsx
+ D apps/admin_web/app/services/service-booking-finance-trace-section.spec.tsx
+ D apps/admin_web/app/services/service-booking-finance-trace-section.tsx
+ D apps/admin_web/app/services/service-booking-readiness-queue-section.spec.tsx
+ D apps/admin_web/app/services/service-booking-readiness-queue-section.tsx
+ D apps/admin_web/app/services/service-catalog-status-pills.spec.tsx
+ D apps/admin_web/app/services/service-catalog-status-pills.tsx
+ D apps/admin_web/app/services/service-duration-pricing-matrix-section.spec.tsx
+ D apps/admin_web/app/services/service-duration-pricing-matrix-section.tsx
+ D apps/admin_web/app/services/service-page-model.spec.ts
+ D apps/admin_web/app/services/service-page-model.ts
+ D apps/admin_web/app/services/service-payout-ledger-section.spec.tsx
+ D apps/admin_web/app/services/service-payout-ledger-section.tsx
+ D apps/admin_web/app/services/service-price-ladder-coverage-section.spec.tsx
+ D apps/admin_web/app/services/service-price-ladder-coverage-section.tsx
+ D apps/admin_web/app/services/service-price-policy-preview-section.spec.tsx
+ D apps/admin_web/app/services/service-price-policy-preview-section.tsx
+ D apps/admin_web/app/services/service-pricing-audit-trail-section.spec.tsx
+ D apps/admin_web/app/services/service-pricing-audit-trail-section.tsx
+ D apps/admin_web/app/services/service-pricing-health-section.spec.tsx
+ D apps/admin_web/app/services/service-pricing-health-section.tsx
+ D apps/admin_web/app/services/service-provider-price-impact.spec.tsx
+ D apps/admin_web/app/services/service-provider-price-impact.tsx
+ D apps/admin_web/app/services/service-type-coverage-board-section.spec.tsx
+ D apps/admin_web/app/services/service-type-coverage-board-section.tsx
+ M apps/admin_web/app/setup/page.spec.tsx
+ M apps/admin_web/app/setup/page.tsx
+ M apps/admin_web/app/setup/setup-overview-section.spec.tsx
+ M apps/admin_web/app/setup/setup-overview-section.tsx
+ M apps/admin_web/app/setup/setup-page-data.spec.ts
+ M apps/admin_web/app/setup/setup-page-model.spec.ts
+ M apps/admin_web/app/setup/setup-page-model.ts
+ M apps/admin_web/app/tax-policy/actions.spec.ts
+ M apps/admin_web/app/tax-policy/actions.ts
+ M apps/admin_web/app/tax-policy/page.spec.tsx
+ M apps/admin_web/app/tax-policy/page.tsx
+ M apps/admin_web/app/tax-policy/tax-policy-audit-summary.spec.ts
+ M apps/admin_web/app/tax-policy/tax-policy-audit-summary.ts
+ M apps/admin_web/app/tax-policy/tax-policy-page-model.spec.ts
+ M apps/admin_web/app/tax-policy/tax-policy-page-model.ts
+ M apps/admin_web/app/usage-overview/page.spec.tsx
+ M apps/admin_web/app/usage-overview/page.tsx
+ M apps/admin_web/app/usage-overview/usage-overview-model.spec.ts
+ M apps/admin_web/app/usage-overview/usage-overview-model.ts
+ M apps/admin_web/app/vietnam-overview/page.spec.tsx
+ M apps/admin_web/app/vietnam-overview/page.tsx
+ M apps/admin_web/app/vietnam-overview/vietnam-overview-live-map.spec.tsx
+ M apps/admin_web/app/vietnam-overview/vietnam-overview-live-map.tsx
+ D apps/admin_web/app/vietnam-overview/vietnam-overview-map-clusters.spec.tsx
+ D apps/admin_web/app/vietnam-overview/vietnam-overview-map-clusters.tsx
+ D apps/admin_web/app/vietnam-overview/vietnam-overview-map-zoom.spec.tsx
+ D apps/admin_web/app/vietnam-overview/vietnam-overview-map-zoom.tsx
+ M apps/admin_web/app/vietnam-overview/vietnam-overview-model.spec.ts
+ M apps/admin_web/app/vietnam-overview/vietnam-overview-model.ts
+ M apps/admin_web/app/wallet-adjustments/actions.spec.ts
+ M apps/admin_web/app/wallet-adjustments/actions.ts
+ M apps/admin_web/app/wallet-adjustments/page.spec.tsx
+ M apps/admin_web/app/wallet-adjustments/page.tsx
+ D apps/admin_web/components/action-dropdown.spec.tsx
+ D apps/admin_web/components/action-dropdown.tsx
+ M apps/admin_web/components/action-menu.spec.tsx
+ M apps/admin_web/components/action-menu.tsx
+ M apps/admin_web/components/admin-data-table-css.spec.tsx
+ M apps/admin_web/components/admin-data-table.spec.tsx
+ M apps/admin_web/components/admin-data-table.tsx
+ M apps/admin_web/components/admin-directory-filter-form.tsx
+ M apps/admin_web/components/admin-filter-chip-group.spec.tsx
+ M apps/admin_web/components/admin-form-controls-css.spec.tsx
+ M apps/admin_web/components/admin-form-controls.spec.tsx
+ M apps/admin_web/components/admin-form-controls.tsx
+ M apps/admin_web/components/admin-form-date-picker-field.tsx
+ M apps/admin_web/components/admin-icon-button.tsx
+ M apps/admin_web/components/admin-inline-notice.tsx
+ M apps/admin_web/components/admin-kpi-card-usage.spec.tsx
+ M apps/admin_web/components/admin-manual-wallet-adjustment-history.tsx
+ M apps/admin_web/components/admin-operator-access-gate.spec.tsx
+ M apps/admin_web/components/admin-operator-access-gate.tsx
+ M apps/admin_web/components/admin-overview-card.spec.tsx
+ M apps/admin_web/components/admin-overview-card.tsx
+ M apps/admin_web/components/admin-page-template.spec.tsx
+ M apps/admin_web/components/admin-page-template.tsx
+ M apps/admin_web/components/admin-person-cell.tsx
+ M apps/admin_web/components/admin-responsive-shell-css.spec.tsx
+ M apps/admin_web/components/admin-review-records-section.spec.tsx
+ M apps/admin_web/components/admin-review-records-section.tsx
+ M apps/admin_web/components/admin-root-shell.spec.tsx
+ M apps/admin_web/components/admin-root-shell.tsx
+ M apps/admin_web/components/admin-segmented-control.spec.tsx
+ M apps/admin_web/components/admin-segmented-control.tsx
+ M apps/admin_web/components/admin-shell-nav.spec.tsx
+ M apps/admin_web/components/admin-shell-nav.tsx
+ M apps/admin_web/components/admin-surface.spec.tsx
+ M apps/admin_web/components/admin-surface.tsx
+ M apps/admin_web/components/admin-theme-toggle.tsx
+ M apps/admin_web/components/admin-topbar-button.tsx
+ M apps/admin_web/components/admin-topbar-search-input.tsx
+ M apps/admin_web/components/admin-workspace-header-css.spec.tsx
+ M apps/admin_web/components/admin-workspace-header.tsx
+ M apps/admin_web/components/client-action-dropdown.spec.tsx
+ M apps/admin_web/components/client-action-dropdown.tsx
+ M apps/admin_web/components/confirm-dialog-css.spec.tsx
+ M apps/admin_web/components/confirm-dialog.spec.tsx
+ M apps/admin_web/components/confirm-dialog.tsx
+ M apps/admin_web/components/date-time-text.spec.tsx
+ D apps/admin_web/components/filter-bar.spec.tsx
+ D apps/admin_web/components/filter-bar.tsx
+ M apps/admin_web/components/metric-card-css.spec.tsx
+ M apps/admin_web/components/metric-card.spec.tsx
+ M apps/admin_web/components/metric-card.tsx
+ M apps/admin_web/components/money-text.spec.tsx
+ M apps/admin_web/lib/admin-api-contract.spec.ts
+ M apps/admin_web/lib/admin-api.ts
+ M apps/admin_web/lib/admin-copy.spec.ts
+ M apps/admin_web/lib/admin-copy.ts
+ M apps/admin_web/lib/admin-env-master-access.ts
+ M apps/admin_web/lib/admin-hidden-route-policy.spec.ts
+ M apps/admin_web/lib/admin-hidden-route-policy.ts
+ M apps/admin_web/lib/admin-local-prod-smoke.spec.ts
+ M apps/admin_web/lib/admin-nav-match.spec.ts
+ M apps/admin_web/lib/admin-nav-match.ts
+ M apps/admin_web/lib/admin-navigation.spec.ts
+ M apps/admin_web/lib/admin-navigation.ts
+ M apps/admin_web/lib/admin-notification-delivery.spec.ts
+ M apps/admin_web/lib/admin-notification-delivery.ts
+ M apps/admin_web/lib/admin-operator-access-model.spec.ts
+ M apps/admin_web/lib/admin-operator-access-model.ts
+ M apps/admin_web/lib/admin-operator-access.spec.ts
+ M apps/admin_web/lib/admin-operator-permissions.ts
+ M apps/admin_web/lib/admin-realtime-token.ts
+ D apps/admin_web/lib/admin-resource-client.spec.ts
+ D apps/admin_web/lib/admin-resource-client.ts
+ M apps/admin_web/lib/admin-web-middleware.spec.ts
+ M apps/admin_web/lib/booking-chat-evidence-decision-board.spec.ts
+ M apps/admin_web/lib/booking-chat-evidence-decision-board.ts
+ M apps/admin_web/lib/booking-check-level.spec.ts
+ M apps/admin_web/lib/booking-check-level.ts
+ M apps/admin_web/lib/booking-closeout-checklist-rows.spec.ts
+ M apps/admin_web/lib/booking-closeout-checklist-rows.ts
+ M apps/admin_web/lib/booking-command-decision-strip.spec.ts
+ M apps/admin_web/lib/booking-command-decision-strip.ts
+ D apps/admin_web/lib/booking-command-route-cards.spec.ts
+ D apps/admin_web/lib/booking-command-route-cards.ts
+ M apps/admin_web/lib/booking-decision-evidence-guardrails.spec.ts
+ M apps/admin_web/lib/booking-decision-evidence-guardrails.ts
+ M apps/admin_web/lib/booking-evidence-packet.spec.ts
+ M apps/admin_web/lib/booking-evidence-packet.ts
+ M apps/admin_web/lib/booking-list-stage.spec.ts
+ M apps/admin_web/lib/booking-list-stage.ts
+ M apps/admin_web/lib/booking-matching-flow-timeline.ts
+ M apps/admin_web/lib/booking-matching-rule-snapshot.spec.ts
+ M apps/admin_web/lib/booking-matching-rule-snapshot.ts
+ M apps/admin_web/lib/booking-operator-action-rules.spec.ts
+ M apps/admin_web/lib/booking-operator-action-rules.ts
+ D apps/admin_web/lib/booking-operator-priority-briefing.spec.ts
+ D apps/admin_web/lib/booking-operator-priority-briefing.ts
+ D apps/admin_web/lib/booking-primary-command-href.spec.ts
+ D apps/admin_web/lib/booking-primary-command-href.ts
+ D apps/admin_web/lib/booking-primary-command-summary.spec.ts
+ D apps/admin_web/lib/booking-primary-command-summary.ts
+ M apps/admin_web/lib/booking-service-list-labels.spec.ts
+ M apps/admin_web/lib/booking-service-list-labels.ts
+ D apps/admin_web/lib/dashboard-marketplace.spec.ts
+ D apps/admin_web/lib/dashboard-marketplace.ts
+ M apps/admin_web/lib/date-range.ts
+ M apps/admin_web/lib/finance-closeout.spec.ts
+ M apps/admin_web/lib/finance-closeout.ts
+ D apps/admin_web/lib/marketplace-booking-coverage.spec.ts
+ D apps/admin_web/lib/marketplace-booking-coverage.ts
+ D apps/admin_web/lib/marketplace-operating-queue.spec.ts
+ D apps/admin_web/lib/marketplace-operating-queue.ts
+ D apps/admin_web/lib/marketplace-operations-cards.spec.ts
+ D apps/admin_web/lib/marketplace-operations-cards.ts
+ D apps/admin_web/lib/marketplace-participant-ledger.spec.ts
+ D apps/admin_web/lib/marketplace-participant-ledger.ts
+ M apps/admin_web/lib/operations-policy.spec.ts
+ M apps/admin_web/lib/operations-policy.ts
+ D apps/admin_web/lib/provider-price-impact.spec.ts
+ D apps/admin_web/lib/provider-price-impact.ts
+ D apps/admin_web/lib/service-booking-readiness-queue.spec.ts
+ D apps/admin_web/lib/service-booking-readiness-queue.ts
+ D apps/admin_web/lib/service-booking-trace-rows.spec.ts
+ D apps/admin_web/lib/service-booking-trace-rows.ts
+ D apps/admin_web/lib/service-booking-trace-state.spec.ts
+ D apps/admin_web/lib/service-booking-trace-state.ts
+ D apps/admin_web/lib/service-booking-trace-summary.spec.ts
+ D apps/admin_web/lib/service-booking-trace-summary.ts
+ D apps/admin_web/lib/service-bulk-payout-rule-example.spec.ts
+ D apps/admin_web/lib/service-bulk-payout-rule-example.ts
+ D apps/admin_web/lib/service-duration-matrix.spec.ts
+ D apps/admin_web/lib/service-duration-matrix.ts
+ D apps/admin_web/lib/service-group-display.spec.ts
+ D apps/admin_web/lib/service-group-display.ts
+ D apps/admin_web/lib/service-payout-finance.spec.ts
+ D apps/admin_web/lib/service-payout-finance.ts
+ D apps/admin_web/lib/service-payout-ledger-action.spec.ts
+ D apps/admin_web/lib/service-payout-ledger-action.ts
+ D apps/admin_web/lib/service-payout-ledger-rows.spec.ts
+ D apps/admin_web/lib/service-payout-ledger-rows.ts
+ D apps/admin_web/lib/service-price-ladder-coverage.spec.ts
+ D apps/admin_web/lib/service-price-ladder-coverage.ts
+ D apps/admin_web/lib/service-price-policy-preview-rows.spec.ts
+ D apps/admin_web/lib/service-price-policy-preview-rows.ts
+ D apps/admin_web/lib/service-price-policy-preview-summary.spec.ts
+ D apps/admin_web/lib/service-price-policy-preview-summary.ts
+ D apps/admin_web/lib/service-pricing-audit-rows.spec.ts
+ D apps/admin_web/lib/service-pricing-audit-rows.ts
+ D apps/admin_web/lib/service-pricing-health.spec.ts
+ D apps/admin_web/lib/service-pricing-health.ts
+ D apps/admin_web/lib/service-type-coverage-rows.spec.ts
+ D apps/admin_web/lib/service-type-coverage-rows.ts
+ D apps/admin_web/lib/service-type-coverage-status.spec.ts
+ D apps/admin_web/lib/service-type-coverage-status.ts
+ D apps/admin_web/lib/service-type-coverage-summary.spec.ts
+ D apps/admin_web/lib/service-type-coverage-summary.ts
+ D apps/admin_web/middleware.ts
+ M apps/admin_web/next.config.ts
+ M apps/admin_web/package.json
+ M apps/admin_web/vitest.config.mts
+ M apps/api/package.json
+ M apps/api/prisma/schema.prisma
+ M apps/api/src/admin/admin-booking-detail-selects.spec.ts
+ M apps/api/src/admin/admin-booking-detail-selects.ts
+ M apps/api/src/admin/admin-booking-list-metadata.spec.ts
+ M apps/api/src/admin/admin-booking-list-metadata.ts
+ M apps/api/src/admin/admin-booking-list-query.spec.ts
+ M apps/api/src/admin/admin-booking-list-query.ts
+ M apps/api/src/admin/admin-chat-archive-selects.ts
+ M apps/api/src/admin/admin-customer-selects.spec.ts
+ M apps/api/src/admin/admin-customer-selects.ts
+ M apps/api/src/admin/admin-marketing-analytics.spec.ts
+ M apps/api/src/admin/admin-marketing-analytics.ts
+ M apps/api/src/admin/admin-payment-selects.spec.ts
+ M apps/api/src/admin/admin-payment-selects.ts
+ M apps/api/src/admin/admin-provider-control-helpers.spec.ts
+ M apps/api/src/admin/admin-provider-control-helpers.ts
+ M apps/api/src/admin/admin-provider-profile-selects.spec.ts
+ M apps/api/src/admin/admin-provider-profile-selects.ts
+ M apps/api/src/admin/admin-provider-selects.spec.ts
+ M apps/api/src/admin/admin-provider-selects.ts
+ M apps/api/src/admin/admin-route-guard-manifest.spec.ts
+ M apps/api/src/admin/admin-system.controller.spec.ts
+ M apps/api/src/admin/admin-system.controller.ts
+ M apps/api/src/admin/admin-usage-overview.spec.ts
+ M apps/api/src/admin/admin-usage-overview.ts
+ M apps/api/src/admin/admin-user-selects.spec.ts
+ M apps/api/src/admin/admin-user-selects.ts
+ M apps/api/src/admin/admin-vietnam-region-overview.spec.ts
+ M apps/api/src/admin/admin-vietnam-region-overview.ts
+ M apps/api/src/admin/admin.controller.spec.ts
+ M apps/api/src/admin/admin.controller.ts
+ M apps/api/src/admin/admin.dto.spec.ts
+ M apps/api/src/admin/admin.dto.ts
+ M apps/api/src/admin/admin.module.ts
+ M apps/api/src/admin/admin.service.spec.ts
+ M apps/api/src/admin/admin.service.ts
+ M apps/api/src/api-request.dto.spec.ts
+ M apps/api/src/api-smoke-contract.spec.ts
+ M apps/api/src/app.module.ts
+ M apps/api/src/auth/auth-token.service.spec.ts
+ M apps/api/src/auth/auth-token.service.ts
+ M apps/api/src/auth/auth.service.spec.ts
+ M apps/api/src/auth/auth.service.ts
+ M apps/api/src/bookings/bookings.controller.ts
+ M apps/api/src/bookings/bookings.dto.spec.ts
+ M apps/api/src/bookings/bookings.dto.ts
+ M apps/api/src/bookings/bookings.matching-policy.spec.ts
+ M apps/api/src/bookings/bookings.module.ts
+ M apps/api/src/bookings/bookings.notifications.spec.ts
+ M apps/api/src/bookings/bookings.notifications.ts
+ M apps/api/src/bookings/bookings.participants.spec.ts
+ M apps/api/src/bookings/bookings.participants.ts
+ M apps/api/src/bookings/bookings.payload.spec.ts
+ M apps/api/src/bookings/bookings.payload.ts
+ M apps/api/src/bookings/bookings.policy.spec.ts
+ M apps/api/src/bookings/bookings.policy.ts
+ M apps/api/src/bookings/bookings.provider-readiness.spec.ts
+ M apps/api/src/bookings/bookings.provider-readiness.ts
+ M apps/api/src/bookings/bookings.response.spec.ts
+ M apps/api/src/bookings/bookings.response.ts
+ M apps/api/src/bookings/bookings.service.spec.ts
+ M apps/api/src/bookings/bookings.service.ts
+ M apps/api/src/chat/chat.controller.ts
+ M apps/api/src/chat/chat.gateway.ts
+ M apps/api/src/chat/chat.policy.ts
+ M apps/api/src/chat/chat.service.spec.ts
+ M apps/api/src/chat/chat.service.ts
+ M apps/api/src/common/domain.ts
+ M apps/api/src/customers/customers.controller.ts
+ M apps/api/src/customers/customers.dto.ts
+ M apps/api/src/customers/customers.service.spec.ts
+ M apps/api/src/customers/customers.service.ts
+ M apps/api/src/earnings/earnings.policy.spec.ts
+ M apps/api/src/earnings/earnings.policy.ts
+ M apps/api/src/earnings/earnings.service.spec.ts
+ M apps/api/src/earnings/earnings.service.ts
+ M apps/api/src/files/files.service.spec.ts
+ M apps/api/src/files/files.service.ts
+ M apps/api/src/files/s3-presign.service.ts
+ M apps/api/src/health/health.controller.ts
+ M apps/api/src/health/health.service.spec.ts
+ M apps/api/src/health/health.service.ts
+ M apps/api/src/locations/locations.controller.ts
+ M apps/api/src/locations/locations.gateway.spec.ts
+ M apps/api/src/locations/locations.gateway.ts
+ M apps/api/src/locations/locations.service.ts
+ M apps/api/src/main.ts
+ M apps/api/src/matching/matching.gateway.spec.ts
+ M apps/api/src/matching/matching.gateway.ts
+ M apps/api/src/matching/matching.policy.spec.ts
+ M apps/api/src/matching/matching.policy.ts
+ M apps/api/src/matching/matching.processor.spec.ts
+ M apps/api/src/matching/matching.processor.ts
+ M apps/api/src/matching/matching.service.spec.ts
+ M apps/api/src/matching/matching.service.ts
+ M apps/api/src/notifications/notification-push-payload.spec.ts
+ M apps/api/src/notifications/notification-push-payload.ts
+ M apps/api/src/notifications/notification-retry-audit.spec.ts
+ M apps/api/src/notifications/notification-retry-audit.ts
+ M apps/api/src/notifications/notification-send.queue.spec.ts
+ M apps/api/src/notifications/notification-send.queue.ts
+ M apps/api/src/notifications/notification-target-role.ts
+ M apps/api/src/notifications/notification-template-catalog.ts
+ M apps/api/src/notifications/notifications.controller.ts
+ M apps/api/src/notifications/notifications.dto.spec.ts
+ M apps/api/src/notifications/notifications.dto.ts
+ M apps/api/src/notifications/notifications.processor.spec.ts
+ M apps/api/src/notifications/notifications.processor.ts
+ M apps/api/src/notifications/notifications.service.spec.ts
+ M apps/api/src/notifications/notifications.service.ts
+ M apps/api/src/notifications/push-delivery.service.spec.ts
+ M apps/api/src/notifications/push-delivery.service.ts
+ M apps/api/src/observability/all-exceptions.filter.spec.ts
+ M apps/api/src/observability/all-exceptions.filter.ts
+ M apps/api/src/payments/adapters.ts
+ M apps/api/src/payments/payment-admin-data.spec.ts
+ M apps/api/src/payments/payment-admin-data.ts
+ M apps/api/src/payments/payment-checkout-methods.spec.ts
+ M apps/api/src/payments/payment-checkout-methods.ts
+ M apps/api/src/payments/payments.controller.spec.ts
+ M apps/api/src/payments/payments.controller.ts
+ M apps/api/src/payments/payments.dto.ts
+ M apps/api/src/payments/payments.module.ts
+ M apps/api/src/payments/payments.service.spec.ts
+ M apps/api/src/payments/payments.service.ts
+ M apps/api/src/provider-onboarding/provider-onboarding.controller.ts
+ M apps/api/src/provider-onboarding/provider-onboarding.dto.spec.ts
+ M apps/api/src/provider-onboarding/provider-onboarding.dto.ts
+ M apps/api/src/provider-onboarding/provider-onboarding.module.ts
+ M apps/api/src/provider-onboarding/provider-onboarding.service.spec.ts
+ M apps/api/src/provider-onboarding/provider-onboarding.service.ts
+ M apps/api/src/provider-wallet/provider-wallet.policy.spec.ts
+ M apps/api/src/provider-wallet/provider-wallet.policy.ts
+ M apps/api/src/providers/providers.controller.ts
+ M apps/api/src/providers/providers.dto.ts
+ M apps/api/src/providers/providers.module.ts
+ M apps/api/src/providers/providers.service.spec.ts
+ M apps/api/src/providers/providers.service.ts
+ M apps/api/src/redis/redis-state.service.ts
+ M apps/api/src/referrals/referrals.controller.spec.ts
+ M apps/api/src/referrals/referrals.controller.ts
+ M apps/api/src/referrals/referrals.dto.ts
+ M apps/api/src/referrals/referrals.module.ts
+ M apps/api/src/referrals/referrals.service.spec.ts
+ M apps/api/src/referrals/referrals.service.ts
+ M apps/api/src/security/rate-limit.middleware.ts
+ M apps/api/src/security/security.middleware.spec.ts
+ M apps/api/src/services/services.controller.ts
+ M apps/api/src/settlements/settlement-journal.spec.ts
+ M apps/api/src/settlements/settlement-journal.ts
+ M apps/api/src/settlements/settlements.service.spec.ts
+ M apps/api/src/settlements/settlements.service.ts
+ M apps/api/src/users/users.controller.ts
+ M apps/api/src/users/users.dto.ts
+ M apps/api/src/users/users.service.ts
+ M apps/api/src/wallet-adjustments/wallet-adjustments.accounting.ts
+ M apps/customer_app/README.md
+ M apps/customer_app/android/app/src/main/AndroidManifest.xml
+ M apps/customer_app/lib/src/app_state.dart
+ M apps/customer_app/lib/src/bootstrap.dart
+ M apps/customer_app/lib/src/core/api_client.dart
+ M apps/customer_app/lib/src/core/app_config.dart
+ M apps/customer_app/lib/src/core/app_session_reporter.dart
+ M apps/customer_app/lib/src/core/fcm_message_handling_service.dart
+ M apps/customer_app/lib/src/core/realtime_socket.dart
+ M apps/customer_app/lib/src/core/widgets/customer_feedback_panels.dart
+ M apps/customer_app/lib/src/customer_app.dart
+ M apps/customer_app/lib/src/customer_shell.dart
+ M apps/customer_app/lib/src/features/auth/data/repositories/auth_repository_impl.dart
+ M apps/customer_app/lib/src/features/auth/domain/repositories/auth_repository.dart
+ M apps/customer_app/lib/src/features/auth/presentation/controllers/auth_controller.dart
+ M apps/customer_app/lib/src/features/auth/presentation/providers/auth_providers.dart
+ M apps/customer_app/lib/src/features/booking/data/repositories/customer_booking_repository_impl.dart
+ M apps/customer_app/lib/src/features/booking/domain/repositories/customer_booking_repository.dart
+ M apps/customer_app/lib/src/features/booking/presentation/customer_booking_error_messages.dart
+ M apps/customer_app/lib/src/features/booking/presentation/customer_booking_flow_screens.dart
+ M apps/customer_app/lib/src/features/booking/presentation/customer_booking_ui_helpers.dart
+ M apps/customer_app/lib/src/features/booking/presentation/customer_bookings_screen.dart
+ M apps/customer_app/lib/src/features/booking/presentation/providers/booking_providers.dart
+ M apps/customer_app/lib/src/features/chat/data/repositories/chat_repository_impl.dart
+ M apps/customer_app/lib/src/features/chat/domain/repositories/chat_repository.dart
+ M apps/customer_app/lib/src/features/chat/presentation/customer_chat_screen.dart
+ M apps/customer_app/lib/src/features/discovery/data/repositories/customer_discovery_repository_impl.dart
+ M apps/customer_app/lib/src/features/discovery/domain/repositories/customer_discovery_repository.dart
+ M apps/customer_app/lib/src/features/discovery/presentation/customer_discovery_widgets.dart
+ M apps/customer_app/lib/src/features/discovery/presentation/customer_home_screen.dart
+ M apps/customer_app/lib/src/features/discovery/presentation/customer_provider_detail_page.dart
+ M apps/customer_app/lib/src/features/discovery/presentation/customer_providers_screen.dart
+ M apps/customer_app/lib/src/features/discovery/presentation/customer_service_option_helpers.dart
+ M apps/customer_app/lib/src/features/map/data/datasources/geoapify_geocoding_datasource.dart
+ M apps/customer_app/lib/src/features/map/presentation/customer_location_helpers.dart
+ M apps/customer_app/lib/src/features/map/presentation/customer_map_widgets.dart
+ M apps/customer_app/lib/src/features/notification/data/datasources/notification_remote_datasource.dart
+ M apps/customer_app/lib/src/features/notification/data/repositories/push_notification_repository_impl.dart
+ M apps/customer_app/lib/src/features/notification/presentation/providers/notification_providers.dart
+ M apps/customer_app/lib/src/features/profile/presentation/customer_profile_screen.dart
+ M apps/customer_app/pubspec.lock
+ M apps/customer_app/pubspec.yaml
+ M apps/customer_app/test/customer_booking_confirmation_page_test.dart
+ M apps/customer_app/test/customer_booking_error_messages_test.dart
+ M apps/customer_app/test/customer_booking_repository_test.dart
+ M apps/customer_app/test/customer_booking_ui_helpers_test.dart
+ M apps/customer_app/test/customer_discovery_repository_test.dart
+ M apps/customer_app/test/customer_location_selection_page_test.dart
+ M apps/customer_app/test/fcm_message_handling_service_test.dart
+ M apps/customer_app/test/push_notification_repository_test.dart
+ M apps/customer_app/test/widget_test.dart
+ M apps/provider_app/android/app/src/main/AndroidManifest.xml
+ M apps/provider_app/lib/src/app_state.dart
+ M apps/provider_app/lib/src/bootstrap.dart
+ M apps/provider_app/lib/src/core/api_client.dart
+ M apps/provider_app/lib/src/core/app_config.dart
+ M apps/provider_app/lib/src/core/app_session_reporter.dart
+ M apps/provider_app/lib/src/core/fcm_message_handling_service.dart
+ M apps/provider_app/lib/src/core/realtime_socket.dart
+ M apps/provider_app/lib/src/features/auth/data/repositories/auth_repository_impl.dart
+ M apps/provider_app/lib/src/features/auth/presentation/controllers/auth_controller.dart
+ M apps/provider_app/lib/src/features/booking/data/repositories/provider_booking_repository_impl.dart
+ M apps/provider_app/lib/src/features/booking/domain/repositories/provider_booking_repository.dart
+ M apps/provider_app/lib/src/features/booking/presentation/partner_jobs_screen.dart
+ M apps/provider_app/lib/src/features/booking/presentation/provider_booking_service_helpers.dart
+ M apps/provider_app/lib/src/features/booking/presentation/provider_jobs_cards.dart
+ M apps/provider_app/lib/src/features/booking/presentation/provider_jobs_helpers.dart
+ M apps/provider_app/lib/src/features/booking/presentation/provider_marketplace_booking_card.dart
+ M apps/provider_app/lib/src/features/booking/presentation/provider_request_guidance_helpers.dart
+ M apps/provider_app/lib/src/features/booking/presentation/provider_request_panels.dart
+ M apps/provider_app/lib/src/features/booking/presentation/provider_request_summary_widgets.dart
+ M apps/provider_app/lib/src/features/booking/presentation/provider_requests_list_section.dart
+ M apps/provider_app/lib/src/features/booking/presentation/provider_requests_screen.dart
+ M apps/provider_app/lib/src/features/chat/data/repositories/chat_repository_impl.dart
+ M apps/provider_app/lib/src/features/chat/domain/repositories/chat_repository.dart
+ M apps/provider_app/lib/src/features/chat/presentation/provider_chat_screen.dart
+ M apps/provider_app/lib/src/features/earnings/data/repositories/provider_earnings_repository_impl.dart
+ M apps/provider_app/lib/src/features/earnings/domain/repositories/provider_earnings_repository.dart
+ M apps/provider_app/lib/src/features/earnings/presentation/provider_earnings_screen.dart
+ M apps/provider_app/lib/src/features/earnings/presentation/provider_wallet_gate_helpers.dart
+ M apps/provider_app/lib/src/features/earnings/presentation/provider_wallet_settlement_dialog.dart
+ M apps/provider_app/lib/src/features/earnings/presentation/provider_wallet_settlement_widgets.dart
+ M apps/provider_app/lib/src/features/map/domain/services/provider_location_heartbeat.dart
+ M apps/provider_app/lib/src/features/map/presentation/provider_location_preview.dart
+ M apps/provider_app/lib/src/features/notification/data/datasources/notification_remote_datasource.dart
+ M apps/provider_app/lib/src/features/notification/data/repositories/push_notification_repository_impl.dart
+ M apps/provider_app/lib/src/features/notification/domain/entities/push_notification_open_intent.dart
+ M apps/provider_app/lib/src/features/notification/presentation/providers/notification_providers.dart
+ M apps/provider_app/lib/src/features/provider_onboarding/presentation/provider_onboarding_status.dart
+ M apps/provider_app/lib/src/features/provider_onboarding/presentation/widgets/provider_document_upload_slots.dart
+ M apps/provider_app/lib/src/features/provider_onboarding/presentation/widgets/provider_onboarding_form_widgets.dart
+ M apps/provider_app/lib/src/features/provider_onboarding/presentation/widgets/provider_onboarding_forms.dart
+ M apps/provider_app/lib/src/features/provider_profile/data/repositories/provider_profile_repository_impl.dart
+ M apps/provider_app/lib/src/features/provider_profile/domain/repositories/provider_profile_repository.dart
+ M apps/provider_app/lib/src/features/provider_profile/presentation/provider_error_helpers.dart
+ M apps/provider_app/lib/src/features/provider_profile/presentation/provider_feedback_cards.dart
+ M apps/provider_app/lib/src/features/provider_profile/presentation/provider_onboarding_card.dart
+ M apps/provider_app/lib/src/features/provider_profile/presentation/provider_onboarding_support_widgets.dart
+ M apps/provider_app/lib/src/features/provider_profile/presentation/provider_profile_screen.dart
+ M apps/provider_app/lib/src/features/provider_profile/presentation/provider_public_media_review_card.dart
+ M apps/provider_app/lib/src/features/provider_profile/presentation/provider_public_media_review_helpers.dart
+ M apps/provider_app/lib/src/features/provider_profile/presentation/providers/provider_profile_providers.dart
+ M apps/provider_app/lib/src/features/provider_services/data/models/provider_service_price_model.dart
+ M apps/provider_app/lib/src/features/provider_services/domain/entities/provider_service_price.dart
+ M apps/provider_app/lib/src/features/provider_services/presentation/widgets/provider_service_price_sheet.dart
+ M apps/provider_app/lib/src/features/provider_services/presentation/widgets/provider_service_pricing_card.dart
+ M apps/provider_app/lib/src/provider_app.dart
+ M apps/provider_app/lib/src/provider_shell.dart
+ M apps/provider_app/pubspec.lock
+ M apps/provider_app/pubspec.yaml
+ M apps/provider_app/test/fcm_message_handling_service_test.dart
+ M apps/provider_app/test/partner_jobs_screen_test.dart
+ M apps/provider_app/test/provider_booking_repository_test.dart
+ M apps/provider_app/test/provider_jobs_helpers_test.dart
+ M apps/provider_app/test/provider_location_heartbeat_test.dart
+ M apps/provider_app/test/provider_onboarding_ui_helpers_test.dart
+ M apps/provider_app/test/provider_profile_repository_test.dart
+ M apps/provider_app/test/provider_public_media_review_helpers_test.dart
+ M apps/provider_app/test/provider_service_price_model_test.dart
+ M apps/provider_app/test/provider_service_price_test.dart
+ M apps/provider_app/test/provider_wallet_gate_test.dart
+ M apps/provider_app/test/push_notification_open_intent_test.dart
+ M apps/provider_app/test/push_notification_repository_test.dart
+ M apps/provider_app/test/widget_test.dart
+ M docker-compose.prod.yml
+ M docs/api/routes.md
+ M docs/architecture/auth-security.md
+ M docs/architecture/notifications.md
+ M docs/architecture/storage.md
+ M eslint.config.mjs
+ M infra/docker/admin_web.Dockerfile
+ M infra/docker/api.Dockerfile
+ M infra/env/hands-staging.env.example
+ M infra/nginx/nginx.conf
+ M infra/scripts/admin-api-read-budget.mjs
+ M infra/scripts/admin-api-read-budget.test.mjs
+ M infra/scripts/admin-web-smoke.mjs
+ M infra/scripts/api-smoke.mjs
+ M infra/scripts/booking-list-smoke-seed.mjs
+ M infra/scripts/cash-booking-lifecycle-smoke.mjs
+ M infra/scripts/check-admin-query-guards.mjs
+ M infra/scripts/check-admin-shared-format.mjs
+ M infra/scripts/check-admin-visible-copy.mjs
+ M infra/scripts/check-api-policy-coverage.mjs
+ M infra/scripts/check-docker-compose-contract.mjs
+ M infra/scripts/check-final-authority.mjs
+ M infra/scripts/check-flutter-architecture.mjs
+ M infra/scripts/check-git-monorepo-contract.mjs
+ M infra/scripts/check-mobile-visible-copy.mjs
+ M infra/scripts/check-operations-policy-consistency.mjs
+ M infra/scripts/check-supabase-schema.mjs
+ M infra/scripts/external-registration-pack.mjs
+ M infra/scripts/fcm-push-smoke.mjs
+ M infra/scripts/partner-bank-deposit-allocation-smoke.mjs
+ M infra/scripts/payment-lifecycle-smoke.mjs
+ M infra/scripts/post-match-cancellation-smoke.mjs
+ M infra/scripts/provider-wallet-withdrawal-lifecycle-smoke.mjs
+ M infra/scripts/realtime-smoke.mjs
+ M infra/scripts/referral-smoke-seed.mjs
+ M infra/scripts/referral-wallet-credit-readiness.mjs
+ M infra/scripts/supabase-auth-smoke.mjs
+ M infra/scripts/verify-local.ps1
+ M infra/scripts/verify-scope.ps1
+ M infra/supabase/README.md
+ M infra/supabase/hands-core-schema.sql
+ M infra/supabase/storage-schema.sql
+ M package-lock.json
+ M package.json
+ M packages/shared-types/src/index.ts
+?? .codex-audits/
+?? .impeccable/
+?? .playwright-cli/
+?? .tmp-customer-confirm.png
+?? apps/admin_web/.next-production-verification/
+?? apps/admin_web/app/bookings/[id]/booking-detail-page-params.ts
+?? apps/admin_web/app/bookings/[id]/booking-needs-action-section.spec.tsx
+?? apps/admin_web/app/bookings/[id]/booking-needs-action-section.tsx
+?? apps/admin_web/app/bookings/booking-monitor-operation-links.spec.ts
+?? apps/admin_web/app/bookings/booking-monitor-operation-links.ts
+?? apps/admin_web/app/bookings/booking-monitor-realtime.spec.ts
+?? apps/admin_web/app/bookings/booking-post-match-cancellation-reason.spec.ts
+?? apps/admin_web/app/bookings/booking-post-match-cancellation-reason.ts
+?? apps/admin_web/app/cash-settlements/cash-settlement-navigation.spec.ts
+?? apps/admin_web/app/cash-settlements/cash-settlement-review-drawer.tsx
+?? apps/admin_web/app/chat-archive/chat-archive-date-range-fields.spec.tsx
+?? apps/admin_web/app/chat-archive/chat-archive-date-range-fields.tsx
+?? apps/admin_web/app/coupons/coupon-filter-board.spec.tsx
+?? apps/admin_web/app/coupons/coupon-filter-board.tsx
+?? apps/admin_web/app/coupons/coupon-filters.spec.ts
+?? apps/admin_web/app/coupons/coupon-filters.ts
+?? apps/admin_web/app/customers/[id]/actions.spec.ts
+?? apps/admin_web/app/customers/[id]/customer-wallet-adjustment-form.tsx
+?? apps/admin_web/app/customers/[id]/customer-wallet-adjustment-panel.spec.tsx
+?? apps/admin_web/app/customers/[id]/customer-wallet-adjustment-panel.tsx
+?? apps/admin_web/app/files/files-page-model.ts
+?? apps/admin_web/app/finance-closeout/loading.tsx
+?? apps/admin_web/app/finance-overview/finance-overview-snapshot-control.spec.tsx
+?? apps/admin_web/app/finance-overview/finance-overview-snapshot-control.tsx
+?? apps/admin_web/app/finance-tax/approval-queue/finance-approval-snapshot-control.spec.ts
+?? apps/admin_web/app/finance-tax/approval-queue/finance-approval-snapshot-control.tsx
+?? apps/admin_web/app/finance-tax/bank-reconciliation/bank-reconciliation-selection-summary.spec.ts
+?? apps/admin_web/app/finance-tax/bank-reconciliation/bank-reconciliation-selection-summary.tsx
+?? apps/admin_web/app/finance-tax/finance-review-owner-workload-panel.tsx
+?? apps/admin_web/app/finance-tax/payment-clearing/payment-clearing-selection-controls.tsx
+?? apps/admin_web/app/loading.tsx
+?? apps/admin_web/app/marketing-analytics/loading.tsx
+?? apps/admin_web/app/marketing-analytics/marketing-analytics-trend-chart.tsx
+?? apps/admin_web/app/next-config-upload-contract.spec.ts
+?? apps/admin_web/app/notifications/loading.tsx
+?? apps/admin_web/app/notifications/notification-refresh-button.tsx
+?? apps/admin_web/app/notifications/templates/actions.spec.ts
+?? apps/admin_web/app/notifications/templates/notification-template-editor.tsx
+?? apps/admin_web/app/operations-handoff/actions.spec.ts
+?? apps/admin_web/app/operations-handoff/loading.tsx
+?? apps/admin_web/app/operations-handoff/operations-handoff-finance-decision-history-section.spec.tsx
+?? apps/admin_web/app/operations-handoff/operations-handoff-finance-decision-history-section.tsx
+?? apps/admin_web/app/operations-handoff/operations-handoff-finance-decisions.spec.ts
+?? apps/admin_web/app/operations-handoff/operations-handoff-finance-decisions.ts
+?? apps/admin_web/app/operations-handoff/operations-shift-handoff-form.spec.tsx
+?? apps/admin_web/app/operations-handoff/operations-shift-handoff-form.tsx
+?? apps/admin_web/app/operations-handoff/operations-shift-handoff-section.spec.tsx
+?? apps/admin_web/app/operations-handoff/operations-shift-handoff-section.tsx
+?? apps/admin_web/app/operations-policy/actions.spec.ts
+?? apps/admin_web/app/partner-controls/actions.spec.ts
+?? apps/admin_web/app/partner-controls/partner-control-policy.spec.ts
+?? apps/admin_web/app/partner-controls/partner-control-policy.ts
+?? apps/admin_web/app/partner-controls/partner-control-restriction-form.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-acceptance-model.spec.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-acceptance-model.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-action-menu-model.spec.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-action-menu-model.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-activity-records-model.spec.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-activity-records-model.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-approval-checklist-model.spec.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-approval-checklist-model.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-bank-tax-model.spec.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-bank-tax-model.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-booking-gate-rows-model.spec.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-booking-gate-rows-model.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-booking-rows-model.spec.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-booking-rows-model.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-command-model.spec.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-command-model.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-control-records-model.spec.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-control-records-model.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-fast-overview.spec.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-fast-overview.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-kyc-evidence-model.spec.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-kyc-evidence-model.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-operating-checklist-model.spec.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-operating-checklist-model.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-operational-status-model.spec.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-operational-status-model.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-operational-status-section.spec.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-operational-status-section.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-payout-rows-model.spec.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-payout-rows-model.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-payout-security-model.spec.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-payout-security-model.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-profile-media-model.spec.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-profile-media-model.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-profile-overview-card.spec.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-profile-overview-card.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-record-summary-model.spec.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-record-summary-model.tsx
+?? apps/admin_web/app/partners/[id]/partner-detail-types.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-workspace-model.spec.ts
+?? apps/admin_web/app/partners/[id]/partner-detail-workspace-model.ts
+?? apps/admin_web/app/partners/loading.tsx
+?? apps/admin_web/app/payments/actions.spec.ts
+?? apps/admin_web/app/refunds/loading.tsx
+?? apps/admin_web/app/reviews/partner-customer-evaluations/actions.spec.ts
+?? apps/admin_web/app/reviews/partner-customer-evaluations/actions.ts
+?? apps/admin_web/app/reviews/partner-customer-note-action-confirmation.spec.ts
+?? apps/admin_web/app/reviews/partner-customer-note-action-confirmation.ts
+?? apps/admin_web/app/start-shift-action-priority.spec.ts
+?? apps/admin_web/app/start-shift-action-priority.ts
+?? apps/admin_web/app/start-shift-booking-insights.spec.ts
+?? apps/admin_web/app/start-shift-booking-insights.ts
+?? apps/admin_web/app/start-shift-finance-review-workload.spec.ts
+?? apps/admin_web/app/start-shift-finance-review-workload.ts
+?? apps/admin_web/app/start-shift-matching-control.spec.ts
+?? apps/admin_web/app/start-shift-matching-control.ts
+?? apps/admin_web/app/start-shift-operations-command-board.spec.ts
+?? apps/admin_web/app/start-shift-operations-command-board.ts
+?? apps/admin_web/app/usage-overview/usage-overview-trend-chart.tsx
+?? apps/admin_web/app/website-content/
+?? apps/admin_web/components/admin-accessibility-tokens.spec.tsx
+?? apps/admin_web/components/admin-desktop-only-gate.spec.tsx
+?? apps/admin_web/components/admin-desktop-only-gate.tsx
+?? apps/admin_web/components/admin-details.spec.tsx
+?? apps/admin_web/components/admin-details.tsx
+?? apps/admin_web/components/admin-directory-filter-form.spec.tsx
+?? apps/admin_web/components/admin-queue-age-sort-controls.spec.tsx
+?? apps/admin_web/components/admin-queue-age-sort-controls.tsx
+?? apps/admin_web/components/admin-workspace-loading.spec.tsx
+?? apps/admin_web/components/admin-workspace-loading.tsx
+?? apps/admin_web/components/admin-workspace-local-nav.tsx
+?? apps/admin_web/components/confirm-dialog-focus-boundary.tsx
+?? apps/admin_web/components/start-shift-chart-widgets.spec.tsx
+?? apps/admin_web/components/start-shift-chart-widgets.tsx
+?? apps/admin_web/components/start-shift-ranking-widgets.spec.tsx
+?? apps/admin_web/components/start-shift-ranking-widgets.tsx
+?? apps/admin_web/components/start-shift-refresh-button.spec.tsx
+?? apps/admin_web/components/start-shift-refresh-button.tsx
+?? apps/admin_web/components/use-admin-modal-focus.spec.tsx
+?? apps/admin_web/components/use-admin-modal-focus.ts
+?? apps/admin_web/lib/admin-queue-list.spec.ts
+?? apps/admin_web/lib/admin-queue-list.ts
+?? apps/admin_web/proxy.ts
+?? apps/api/prisma/migrations/20260718090000_add_partner_bio_translations_and_media_order/
+?? apps/api/prisma/migrations/20260718233000_add_app_usage_events/
+?? apps/api/prisma/migrations/20260719013000_add_app_usage_daily_aggregates/
+?? apps/api/prisma/migrations/20260719033000_add_provider_availability_schedule/
+?? apps/api/prisma/migrations/20260719133000_add_provider_wallet_balance_summary/
+?? apps/api/prisma/migrations/20260728113000_serialize_provider_wallet_balance_summary_refresh/
+?? apps/api/prisma/migrations/20260729100000_add_public_site_structure/
+?? apps/api/prisma/migrations/20260730011500_add_public_site_section_content/
+?? apps/api/prisma/migrations/20260730024500_add_admin_review_source/
+?? apps/api/prisma/migrations/20260802090000_add_growth_and_developer_admin_permissions/
+?? apps/api/prisma/migrations/20260802110000_add_wallet_adjustment_idempotency/
+?? apps/api/prisma/migrations/20260802120000_add_bank_statement_import_idempotency/
+?? apps/api/prisma/migrations/20260803100000_add_provider_booking_alert_preferences/
+?? apps/api/prisma/migrations/20260806193000_add_notification_retry_permission/
+?? apps/api/prisma/migrations/20260807190000_add_shift_handoff_acknowledgement_uniqueness/
+?? apps/api/src/admin/admin-analytics.routes.ts
+?? apps/api/src/admin/admin-bank.routes.ts
+?? apps/api/src/admin/admin-booking.routes.ts
+?? apps/api/src/admin/admin-catalog.routes.ts
+?? apps/api/src/admin/admin-coupon.routes.ts
+?? apps/api/src/admin/admin-customer.routes.ts
+?? apps/api/src/admin/admin-finance.routes.ts
+?? apps/api/src/admin/admin-governance.routes.ts
+?? apps/api/src/admin/admin-identity.routes.ts
+?? apps/api/src/admin/admin-ledger.routes.ts
+?? apps/api/src/admin/admin-notification-device-health-query.spec.ts
+?? apps/api/src/admin/admin-notification-device-health-query.ts
+?? apps/api/src/admin/admin-notification-production-data.spec.ts
+?? apps/api/src/admin/admin-notification-production-data.ts
+?? apps/api/src/admin/admin-notification-retry-query.spec.ts
+?? apps/api/src/admin/admin-notification-retry-query.ts
+?? apps/api/src/admin/admin-notification-unattempted-query.spec.ts
+?? apps/api/src/admin/admin-notification-unattempted-query.ts
+?? apps/api/src/admin/admin-notification.routes.ts
+?? apps/api/src/admin/admin-operator-category-manifest.spec.ts
+?? apps/api/src/admin/admin-operator-category.guard.spec.ts
+?? apps/api/src/admin/admin-operator-category.guard.ts
+?? apps/api/src/admin/admin-partner-profile-media.service.spec.ts
+?? apps/api/src/admin/admin-partner.routes.ts
+?? apps/api/src/admin/admin-payment.routes.ts
+?? apps/api/src/admin/admin-payout.routes.ts
+?? apps/api/src/admin/admin-production-data.integration.spec.ts
+?? apps/api/src/admin/admin-queue-list.spec.ts
+?? apps/api/src/admin/admin-queue-list.ts
+?? apps/api/src/admin/admin-referral.routes.ts
+?? apps/api/src/admin/admin-refund-queue.spec.ts
+?? apps/api/src/admin/admin-refund-queue.ts
+?? apps/api/src/admin/admin-review.routes.ts
+?? apps/api/src/admin/admin-route-domain.spec.ts
+?? apps/api/src/admin/admin-route-domain.ts
+?? apps/api/src/admin/admin-settlement.routes.ts
+?? apps/api/src/admin/admin-start-shift-open-cases.ts
+?? apps/api/src/admin/admin-usage-overview-query.spec.ts
+?? apps/api/src/admin/admin-usage-overview-query.ts
+?? apps/api/src/admin/admin-wallet.routes.ts
+?? apps/api/src/app-usage/
+?? apps/api/src/bookings/bookings.alert-preferences.spec.ts
+?? apps/api/src/bookings/bookings.alert-preferences.ts
+?? apps/api/src/bookings/provider-cancellation-reason.spec.ts
+?? apps/api/src/bookings/provider-cancellation-reason.ts
+?? apps/api/src/chat/chat.controller.spec.ts
+?? apps/api/src/files/s3-presign.service.spec.ts
+?? apps/api/src/health/health.controller.spec.ts
+?? apps/api/src/locations/locations.service.spec.ts
+?? apps/api/src/notifications/customer-app-notification.policy.ts
+?? apps/api/src/notifications/notifications.controller.spec.ts
+?? apps/api/src/payments/customer-wallet-payment.ts
+?? apps/api/src/provider-wallet/provider-wallet-balance-summary-contract.spec.ts
+?? apps/api/src/providers/provider-availability-lifecycle.service.spec.ts
+?? apps/api/src/providers/provider-availability-lifecycle.service.ts
+?? apps/api/src/providers/provider-availability-reconciliation.service.spec.ts
+?? apps/api/src/providers/provider-availability-reconciliation.service.ts
+?? apps/api/src/providers/provider-availability.spec.ts
+?? apps/api/src/providers/provider-availability.ts
+?? apps/api/src/providers/provider-public-readiness.ts
+?? apps/api/src/security/rate-limit.middleware.spec.ts
+?? apps/api/src/site-content/
+?? apps/api/src/users/customer-marketing-attribution.spec.ts
+?? apps/api/src/users/customer-marketing-attribution.ts
+?? apps/api/src/users/users.service.spec.ts
+?? apps/customer_app/lib/src/core/customer_design_system.dart
+?? apps/customer_app/lib/src/core/customer_error_message.dart
+?? apps/customer_app/lib/src/core/customer_locale.dart
+?? apps/customer_app/lib/src/core/customer_marketing_attribution.dart
+?? apps/customer_app/lib/src/core/local_demo_access.dart
+?? apps/customer_app/lib/src/core/mobile_app_version.dart
+?? apps/customer_app/lib/src/core/widgets/customer_app_chrome.dart
+?? apps/customer_app/lib/src/features/notification/data/repositories/customer_notification_inbox_repository_impl.dart
+?? apps/customer_app/lib/src/features/notification/domain/entities/customer_app_notification.dart
+?? apps/customer_app/lib/src/features/notification/domain/repositories/customer_notification_inbox_repository.dart
+?? apps/customer_app/lib/src/features/notification/presentation/customer_notification_screen.dart
+?? apps/customer_app/lib/src/features/referral/
+?? apps/customer_app/test/api_client_refresh_test.dart
+?? apps/customer_app/test/app_config_security_test.dart
+?? apps/customer_app/test/app_session_reporter_test.dart
+?? apps/customer_app/test/auth_repository_session_reporting_test.dart
+?? apps/customer_app/test/chat_attachment_repository_test.dart
+?? apps/customer_app/test/customer_chat_repository_test.dart
+?? apps/customer_app/test/customer_design_system_test.dart
+?? apps/customer_app/test/customer_error_message_test.dart
+?? apps/customer_app/test/customer_locale_test.dart
+?? apps/customer_app/test/customer_login_validation_test.dart
+?? apps/customer_app/test/customer_marketing_attribution_test.dart
+?? apps/customer_app/test/customer_notification_screen_test.dart
+?? apps/customer_app/test/customer_provider_detail_page_test.dart
+?? apps/customer_app/test/customer_referral_repository_test.dart
+?? apps/customer_app/test/customer_referral_screen_test.dart
+?? apps/customer_app/test/mobile_app_version_test.dart
+?? apps/customer_app/test/realtime_socket_test.dart
+?? apps/provider_app/lib/src/core/local_demo_access.dart
+?? apps/provider_app/lib/src/core/mobile_app_version.dart
+?? apps/provider_app/lib/src/core/provider_design_system.dart
+?? apps/provider_app/lib/src/features/booking/presentation/provider_request_filter_helpers.dart
+?? apps/provider_app/lib/src/features/chat/presentation/provider_chat_priority.dart
+?? apps/provider_app/lib/src/features/provider_profile/presentation/provider_availability_schedule_card.dart
+?? apps/provider_app/test/api_client_refresh_test.dart
+?? apps/provider_app/test/app_config_security_test.dart
+?? apps/provider_app/test/app_session_reporter_test.dart
+?? apps/provider_app/test/auth_repository_session_reporting_test.dart
+?? apps/provider_app/test/mobile_app_version_test.dart
+?? apps/provider_app/test/provider_chat_priority_test.dart
+?? apps/provider_app/test/provider_chat_repository_test.dart
+?? apps/provider_app/test/provider_design_system_test.dart
+?? apps/provider_app/test/provider_earnings_repository_test.dart
+?? apps/provider_app/test/provider_earnings_summary_test.dart
+?? apps/provider_app/test/provider_error_message_test.dart
+?? apps/provider_app/test/provider_login_validation_test.dart
+?? apps/provider_app/test/provider_request_filter_helpers_test.dart
+?? apps/provider_app/test/realtime_socket_test.dart
+?? apps/public_web/
+?? artifacts/
+?? design-qa-feature-rail-comparison-v6.png
+?? design-qa-hands-faq-comparison.png
+?? design-qa-hands-faq-v2.png
+?? design-qa-hands-feature-rail-v6.png
+?? design-qa-hands-hero-comparison.png
+?? design-qa-hands-hero-v2.png
+?? design-qa-hands-how-comparison-v3.png
+?? design-qa-hands-how-exact-comparison-v5.png
+?? design-qa-hands-how-exact-v5.png
+?? design-qa-hands-how-mobile-comparison-v3.png
+?? design-qa-hands-how-mobile-v3.png
+?? design-qa-hands-how-v3.png
+?? design-qa-hands-method-v6.png
+?? design-qa-hands-mobile-faq-v2.png
+?? design-qa-hands-mobile-hero-comparison.png
+?? design-qa-hands-mobile-hero-v2.png
+?? design-qa-hands-row20-v7.png
+?? design-qa-hands-stories-spacing-v7.png
+?? design-qa-hands-testimonials-comparison-v4.png
+?? design-qa-hands-testimonials-exact-comparison-v5.png
+?? design-qa-hands-testimonials-exact-top-v5.png
+?? design-qa-hands-testimonials-exact-v5.png
+?? design-qa-hands-testimonials-mobile-v4.png
+?? design-qa-hands-testimonials-v4.png
+?? design-qa-hands-video-v2.png
+?? design-qa-hero-video-card-comparison-v11.png
+?? design-qa-hero-video-card-comparison-v12.png
+?? design-qa-hero-video-card-comparison-v13.png
+?? design-qa-method-comparison-v6.png
+?? design-qa-method-desktop-comparison-v8.png
+?? design-qa-method-desktop-comparison-v9.png
+?? design-qa-news-card.png
+?? design-qa-news-comparison.png
+?? design-qa-news-full.png
+?? design-qa-news-viewport.png
+?? design-qa-news.png
+?? design-qa-recruitment.png
+?? design-qa-row20-comparison-v7.png
+?? design-qa-source-feature-rail-v6.png
+?? design-qa-source-how-exact-v5.png
+?? design-qa-source-how-mobile-v3.png
+?? design-qa-source-how-v3.png
+?? design-qa-source-method-v6.png
+?? design-qa-source-row20-v7.png
+?? design-qa-source-stories-spacing-v7.png
+?? design-qa-source-testimonials-mobile-v4.png
+?? design-qa-source-testimonials-v4.png
+?? design-qa-source-wellness-faq.png
+?? design-qa-source-wellness-hero.png
+?? design-qa-source-wellness-mobile-faq.png
+?? design-qa-source-wellness-mobile-hero.png
+?? design-qa-stories-spacing-comparison-v7.png
+?? design-qa.md
+?? docs/admin-information-architecture-proposal.md
+?? docs/admin-operations-ux-audit.md
+?? docs/admin-operator-deep-remediation-criteria.md
+?? docs/admin-operator-redesign-requirements.md
+?? docs/admin-ux-audit-evidence/
+?? docs/admin-ux-implementation-backlog.md
+?? docs/admin-ux-implementation-progress.md
+?? docs/agent/prompts/admin-operator-deep-remediation-master.md
+?? docs/agent/prompts/admin-operator-redesign-master.md
+?? docs/architecture/admin-runtime-cleanup-checkpoint.md
+?? docs/architecture/app-usage-retention.md
+?? docs/architecture/local-95-checkpoint-plan.md
+?? infra/scripts/admin-runtime-import-audit.mjs
+?? infra/scripts/app-usage-daily-backfill-smoke.mjs
+?? infra/scripts/app-usage-daily-backfill.mjs
+?? infra/scripts/app-usage-daily-backfill.test.mjs
+?? infra/scripts/app-usage-events-smoke.mjs
+?? infra/scripts/app-usage-retention.mjs
+?? infra/scripts/bootstrap-public-site-structure.mjs
+?? infra/scripts/check-prisma-migrations.mjs
+?? infra/scripts/check-prisma-migrations.test.mjs
+?? infra/scripts/checkpoint-inventory.mjs
+?? infra/scripts/checkpoint-inventory.test.mjs
+?? infra/scripts/customer-detail-smoke.mjs
+?? infra/scripts/customer-referral-activity-smoke.mjs
+?? infra/scripts/customer-referral-reward-smoke.mjs
+?? infra/scripts/lib/app-usage-daily-backfill.mjs
+?? infra/scripts/lib/stale-api-smoke-bookings.mjs
+?? infra/scripts/manual-wallet-adjustment-lifecycle-smoke.mjs
+?? infra/scripts/provider-availability-lifecycle-smoke.mjs
+?? infra/scripts/provider-chat-unread-smoke.mjs
+?? infra/scripts/provider-payout-reversal-lifecycle-smoke.mjs
+?? infra/scripts/provider-wallet-balance-summary-concurrency-smoke.mjs
+?? infra/scripts/referral-money-lifecycle-smoke.mjs
+?? infra/scripts/stale-api-smoke-bookings.mjs
+?? infra/scripts/stale-api-smoke-bookings.test.mjs
+?? infra/scripts/withholding-remittance-lifecycle-smoke.mjs
+?? infra/supabase/patches/2026-07-28-restrict-anon-provider-directory.sql
+?? infra/supabase/patches/2026-07-29-restrict-review-and-storage-writes.sql
+?? output/admin-full-performance-ia-audit-2026-08-08/
+?? output/admin-full-performance-ia-improvement-verification-2026-08-08/
+?? output/admin-navigation-ia-audit-2026-08-06/
+?? output/admin-navigation-ia-final-reaudit-2026-08-08/
+?? output/admin-navigation-ia-final-remediation-verification-2026-08-08/
+?? output/admin-navigation-ia-improvement-verification-2026-08-08/
+?? output/admin-navigation-ia-polish-verification-2026-08-08/
+?? output/admin-navigation-ia-post-implementation-audit-2026-08-08/
+?? output/admin-navigation-ia-post-prompt-fix-2026-08-08/
+?? output/admin-navigation-ia-post-prompt-reaudit-2026-08-08/
+?? output/admin-navigation-ia-reaudit-2026-08-08/
+?? output/admin-navigation-ia-second-reaudit-2026-08-08/
+?? output/admin-operations-handoff-owner-meta-2026-08-04/
+?? output/admin-operations-handoff-queue-2026-08-04/
+?? output/admin-operations-handoff-queue-age-2026-08-04/
+?? output/admin-operator-audit-2026-08-04/
+?? output/admin-operator-deep-reaudit-2026-08-05/
+?? output/admin-operator-reaudit-2026-08-04/
+?? output/admin-operator-slice-2026-08-04/
+?? output/bank-reconciliation-audit-2026-08-08/
+?? output/bank-reconciliation-improvement-verification-2026-08-09/
+?? output/bank-reconciliation-page-test.txt
+?? output/booking-detail-audit-2026-08-05/
+?? output/booking-detail-cmrksdu210061vy3gfrmot29g-verification-2026-08-07/
+?? output/booking-detail-implementation-2026-08-05/
+?? output/booking-detail-remediation-after/
+?? output/bookings-audit-2026-08-05/
+?? output/bookings-improvement-implementation-2026-08-07/
+?? output/bookings-improvement-verification-2026-08-07/
+?? output/bookings-live-queue-audit-2026-08-05/
+?? output/bookings-live-queue-implementation-2026-08-05/
+?? output/brand-homepage-audit-2026-08-06/
+?? output/brand-redesign-references-2026-08-06/
+?? output/cash-settlements-audit-2026-08-08/
+?? output/cash-settlements-improvement-verification-2026-08-09/
+?? output/chat-archive-audit-2026-08-06/
+?? output/chat-archive-improvement-verification-2026-08-06/
+?? output/chat-archive-post-implementation-audit-2026-08-07/
+?? output/completed-bookings-audit-2026-08-05/
+?? output/completed-bookings-improvement-verification-2026-08-06/
+?? output/completed-improvement-verification-2026-08-07/
+?? output/completed-remediation-verification-2026-08-07/
+?? output/customer-detail-audit-post-match-2026-08-06/
+?? output/customer-detail-improvement-verification-2026-08-06/
+?? output/customer-detail-post-implementation-audit-2026-08-07/
+?? output/customer-live-2026-08-04.png
+?? output/customers-audit-2026-08-06/
+?? output/customers-implementation-verification-2026-08-06/
+?? output/customers-post-implementation-audit-2026-08-07/
+?? output/customers-post-implementation-remediation-2026-08-07/
+?? output/finance-closeout-audit-2026-08-09/
+?? output/finance-overview-improvement-verification-2026-08-08/
+?? output/finance-overview-reaudit-2026-08-08/
+?? output/finance-tax-approval-queue-audit-2026-08-08/
+?? output/finance-tax-approval-queue-improvement-verification-2026-08-08/
+?? output/hands-footer-desktop-comparison-latest.png
+?? output/hands-footer-desktop-implementation-latest.png
+?? output/hands-footer-desktop-source.png
+?? output/hands-footer-mobile-bottom-latest.png
+?? output/hands-footer-mobile-top-latest.png
+?? output/notifications-audit-2026-08-06/
+?? output/notifications-implementation-2026-08-06/
+?? output/notifications-improvement-verification-2026-08-08/
+?? output/notifications-post-implementation-audit-2026-08-07/
+?? output/operations-handoff-audit-2026-08-05/
+?? output/operations-handoff-improvement-verification-2026-08-06/
+?? output/operations-handoff-post-implementation-audit-2026-08-07/
+?? output/operations-handoff-remediation-verification-2026-08-07/
+?? output/partner-controls-audit-2026-08-06/
+?? output/partner-controls-improvement-verification-2026-08-07/
+?? output/partner-controls-improvement-verification-2026-08-08/
+?? output/partner-controls-post-implementation-audit-2026-08-08/
+?? output/partner-customer-evaluations-audit-2026-08-06/
+?? output/partner-customer-evaluations-improvement-v2-verification-2026-08-07/
+?? output/partner-customer-evaluations-post-implementation-audit-2026-08-07/
+?? output/partner-detail-audit-2026-08-06/
+?? output/partner-detail-improvement-verification-2026-08-07/
+?? output/partner-notes-improvement-verification-2026-08-06/
+?? output/partner-overview-audit-2026-08-06/
+?? output/partner-overview-improvement-verification-2026-08-07/
+?? output/partner-overview-post-implementation-audit-2026-08-08/
+?? output/partner-overview-remediation-verification-2026-08-08/
+?? output/partners-audit-2026-08-06/
+?? output/partners-improvement-verification-2026-08-06/
+?? output/partners-improvement-verification-2026-08-08/
+?? output/partners-post-implementation-audit-2026-08-08/
+?? output/partners-queues-audit-2026-08-06/
+?? output/partners-queues-improvement-verification-2026-08-06/
+?? output/payment-clearing-audit-2026-08-08/
+?? output/payment-clearing-improvement-verification-2026-08-09/
+?? output/playwright/
+?? output/post-match-cancellations-audit-2026-08-05/
+?? output/post-match-cancellations-improvement-verification-2026-08-07/
+?? output/post-match-cancellations-remediation-verification-2026-08-07/
+?? output/refunds-audit-2026-08-08/
+?? output/refunds-improvement-verification-2026-08-09/
+?? output/reviews-audit-2026-08-06/
+?? output/reviews-improvement-verification-2026-08-06/
+?? output/reviews-post-implementation-audit-2026-08-07/
+?? output/reviews-remediation-verification-2026-08-07/
+?? output/shift-command-audit-2026-08-05/
+?? output/shift-command-final-verification-2026-08-07/
+?? output/shift-command-improvement-verification-2026-08-07/
+?? output/usage-overview-audit-2026-08-06/
+?? output/usage-overview-implementation-validation-2026-08-08/
+?? output/usage-overview-post-implementation-audit-2026-08-08/
+?? output/vietnam-overview-audit-2026-08-05/
+?? output/vietnam-overview-improvement-verification-2026-08-06/
+?? output/vietnam-overview-live-operations-verification-2026-08-07/
+?? output/vietnam-overview-post-implementation-audit-2026-08-07/
+?? pnpm-lock.yaml
+?? pnpm-workspace.yaml
+Running: tool: node
+v22.21.1
+Running: tool: npm.cmd
+10.9.4
+Running: tool: npx.cmd
+10.9.4
+Running: tool: flutter
+Flutter 3.38.9 • channel stable • https://github.com/flutter/flutter.git
+Framework • revision 67323de285 (6 months ago) • 2026-01-28 13:43:12 -0800
+Engine • hash 5eb06b7ad5bb8cbc22c5230264c7a00ceac7674b (revision 587c18f873) (6 months ago) • 2026-01-27 23:23:03.000Z
+Tools • Dart 3.10.8 • DevTools 2.51.1
+Running: fcm env contract
+
+> fcm:env-contract
+> node infra/scripts/check-fcm-env-contract.mjs
+
+{
+  "ok": true,
+  "fcmEnvKeys": [
+    "FIREBASE_CLIENT_EMAIL",
+    "FIREBASE_PRIVATE_KEY",
+    "FIREBASE_PROJECT_ID",
+    "FIREBASE_SERVICE_ACCOUNT_JSON",
+    "GOOGLE_APPLICATION_CREDENTIALS",
+    "PUSH_PROVIDER"
+  ],
+  "fcmSmokeEnvKeys": [
+    "FCM_SMOKE_ADMIN_OTP",
+    "FCM_SMOKE_ADMIN_PHONE",
+    "FCM_SMOKE_DEVICE_TOKEN",
+    "FCM_SMOKE_EXPECT_PROVIDER",
+    "FCM_SMOKE_EXPECT_STATUS",
+    "FCM_SMOKE_NOTIFICATION_ID",
+    "FCM_SMOKE_OTP",
+    "FCM_SMOKE_PHONE",
+    "FCM_SMOKE_PLATFORM",
+    "FCM_SMOKE_POLL_INTERVAL_MS",
+    "FCM_SMOKE_ROLE",
+    "FCM_SMOKE_TIMEOUT_MS",
+    "FCM_SMOKE_USE_REGISTERED_DEVICE",
+    "FCM_TOKEN_SMOKE_CUSTOMER_PHONE",
+    "FCM_TOKEN_SMOKE_PROVIDER_PHONE"
+  ],
+  "dockerFcmEnvKeys": [
+    "FIREBASE_ADMIN_CREDENTIALS_HOST_PATH",
+    "FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH"
+  ],
+  "dockerContractCommand": "npm.cmd run docker:contract",
+  "securitySecretsCommand": "npm.cmd run security:secrets",
+  "missingBySource": {},
+  "missingSmokeBySource": {},
+  "missingDockerBySource": {},
+  "missingDockerContractCommandBySource": {},
+  "missingSecuritySecretsCommandBySource": {}
+}
+Running: notification partner alert contract
+
+> notifications:partner-alert-contract
+> npm run shared:source-only-check && node infra/scripts/check-notification-partner-alert-contract.mjs
+
+
+> shared:source-only-check
+> node infra/scripts/check-shared-types-runtime-imports.mjs
+
+{
+  "ok": true,
+  "purpose": "Guard source-only shared TypeScript contracts from runtime imports until @massage-vn/shared-types has a compiled JS package entry.",
+  "scannedRoots": [
+    "apps/api/src",
+    "apps/admin_web/app",
+    "apps/admin_web/components",
+    "apps/admin_web/lib"
+  ],
+  "violations": []
+}
+{
+  "ok": true,
+  "apiPartnerAlertCount": 5,
+  "adminPartnerAlertCount": 5,
+  "sharedPartnerAlertCount": 5,
+  "missingFromAdmin": [],
+  "missingFromApi": [],
+  "missingFromSharedPartnerAlerts": [],
+  "missingFromApiOrAdmin": [],
+  "missingFromSharedEvents": [],
+  "duplicateApiPartnerAlerts": [],
+  "duplicateAdminPartnerAlerts": [],
+  "duplicateSharedPartnerAlerts": []
+}
+Running: notification push data contract
+
+> notifications:push-data-contract
+> node infra/scripts/check-notification-push-data-contract.mjs
+
+{
+  "ok": true,
+  "apiPushDataKeys": [
+    "type",
+    "notificationType",
+    "bookingId",
+    "chatRoomId",
+    "providerProfileId",
+    "destination",
+    "appDestination",
+    "notificationId",
+    "paymentId",
+    "earningId",
+    "payoutBatchId",
+    "fileId",
+    "sanctionId"
+  ],
+  "customerOpenIntentKeys": [
+    "type",
+    "notificationType",
+    "chatRoomId",
+    "paymentId",
+    "earningId",
+    "payoutBatchId",
+    "bookingId",
+    "providerProfileId",
+    "destination",
+    "appDestination"
+  ],
+  "providerOpenIntentKeys": [
+    "type",
+    "notificationType",
+    "chatRoomId",
+    "paymentId",
+    "earningId",
+    "payoutBatchId",
+    "bookingId",
+    "providerProfileId",
+    "destination",
+    "appDestination"
+  ],
+  "missingFromApi": [],
+  "missingBackendKeys": [],
+  "sensitiveKeysAllowed": [],
+  "duplicateApiPushDataKeys": []
+}
+Running: notification retry audit contract
+
+> notifications:retry-audit-contract
+> node infra/scripts/check-notification-retry-audit-contract.mjs
+
+{
+  "ok": true,
+  "apiMissingKeys": [],
+  "apiServiceMissingSharedTypes": [],
+  "adminMissingKeys": [],
+  "smokeMissingKeys": [],
+  "duplicateMetadataKeys": [],
+  "duplicateLatestDeliveryKeys": [],
+  "duplicateRetryJobKeys": [],
+  "apiRetryDecisionOrder": {
+    "ok": true,
+    "missing": [],
+    "positions": [
+      {
+        "marker": "latestDelivery.pushDeviceEnabled === false",
+        "index": 3512
+      },
+      {
+        "marker": "latestDelivery.status === 'FAILED'",
+        "index": 3598
+      },
+      {
+        "marker": "hasStalePushTokenTimestamp(latestDelivery)",
+        "index": 3682
+      }
+    ]
+  },
+  "adminRetryDecisionOrder": {
+    "ok": true,
+    "missing": [],
+    "positions": [
+      {
+        "marker": "latestDelivery.pushDevice?.enabled === false",
+        "index": 14030
+      },
+      {
+        "marker": "latestDelivery.status === 'FAILED'",
+        "index": 14351
+      },
+      {
+        "marker": "isStaleNotificationPushDeviceDelivery(latestDelivery)",
+        "index": 14603
+      }
+    ]
+  }
+}
+Running: admin api budget test
+
+> admin:api-budget:test
+> node --test infra/scripts/admin-api-read-budget.test.mjs
+
+TAP version 13
+# Subtest: covers bounded core, Finance, Partner, customer, chat and notification read models
+ok 1 - covers bounded core, Finance, Partner, customer, chat and notification read models
+  ---
+  duration_ms: 5.7457
+  type: 'test'
+  ...
+# Subtest: normalizes the Admin API base URL without retaining query data
+ok 2 - normalizes the Admin API base URL without retaining query data
+  ---
+  duration_ms: 0.3417
+  type: 'test'
+  ...
+# Subtest: bounds sample configuration and calculates stable percentiles
+ok 3 - bounds sample configuration and calculates stable percentiles
+  ---
+  duration_ms: 0.2166
+  type: 'test'
+  ...
+# Subtest: summarizes response samples without retaining response bodies
+ok 4 - summarizes response samples without retaining response bodies
+  ---
+  duration_ms: 0.5039
+  type: 'test'
+  ...
+# Subtest: reports latency and payload violations independently
+ok 5 - reports latency and payload violations independently
+  ---
+  duration_ms: 0.3617
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 113.3741
+Running: admin test
+
+> test
+> vitest run --config vitest.config.mts
+
+
+ RUN  v4.1.9 C:/dev/massage-on-demand-vn/apps/admin_web
+
+
+ Test Files  831 passed (831)
+      Tests  4438 passed (4438)
+   Start at  07:31:58
+   Duration  139.85s (transform 19.86s, setup 0ms, import 318.50s, tests 32.26s, environment 112ms)
+
+Running: admin typecheck
+
+> typecheck
+> next typegen && tsc --noEmit
+
+Generating route types...
+✓ Types generated successfully
+Running: admin lint
+
+> lint
+> eslint .
+
+Running: admin query guards
+
+> admin:query-guards
+> node infra/scripts/check-admin-query-guards.mjs
+
+{
+  "ok": true,
+  "purpose": "Static guard for Admin app session, notification, push campaign, customer, partner, usage overview, and chat query size.",
+  "violations": []
+}
+Running: admin visible copy
+
+> admin:visible-copy
+> node infra/scripts/check-admin-visible-copy.mjs
+
+{
+  "ok": true,
+  "purpose": "Static Admin visible-copy guard: keep active Operations UI English, Vietnam-scoped, Partner-led, and free of removed MVP flows.",
+  "checked": {
+    "files": 1582
+  },
+  "violations": []
+}
+Running: admin build
+
+> build
+> next build
+
+▲ Next.js 16.2.12 (Turbopack)
+- Environments: .env.local
+- Experiments (use with caution):
+  · serverActions
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 11.4s
+  Running TypeScript ...
+  Finished TypeScript in 29.9s ...
+  Collecting page data using 23 workers ...
+  Generating static pages using 23 workers (0/67) ...
+  Generating static pages using 23 workers (16/67) 
+  Generating static pages using 23 workers (33/67) 
+  Generating static pages using 23 workers (50/67) 
+✓ Generating static pages using 23 workers (67/67) in 688ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /admin-operators
+├ ƒ /api/admin/bank-reconciliation/batch-import
+├ ƒ /api/admin/bank-reconciliation/batch-preview
+├ ƒ /api/admin/bank-reconciliation/import-batches/[batchImportId]/export
+├ ƒ /api/admin/bookings/[id]/chat-messages
+├ ƒ /api/admin/calendar-events
+├ ƒ /api/admin/calendar-events/[id]
+├ ƒ /api/admin/customers/[id]/activity/export
+├ ƒ /api/admin/customers/export
+├ ƒ /api/admin/finance-tax/booking-settlement-audit/export
+├ ƒ /api/admin/finance-tax/coupon-finance/export
+├ ƒ /api/admin/finance-tax/monthly-tax-closing/export
+├ ƒ /api/admin/finance-tax/partner-withholding-tax/export
+├ ƒ /api/admin/finance-tax/payment-fees/export
+├ ƒ /api/admin/finance-tax/platform-vat/export
+├ ƒ /api/admin/geoapify-tiles/[z]/[x]/[y]
+├ ƒ /api/admin/maptiler-tiles/[z]/[x]/[y]
+├ ƒ /api/admin/partners/export
+├ ƒ /api/admin/realtime-token
+├ ƒ /api/admin/session/login
+├ ƒ /api/admin/session/logout
+├ ƒ /api/admin/session/me
+├ ƒ /app-sessions
+├ ƒ /audit-log
+├ ƒ /background-jobs
+├ ƒ /background-jobs/incidents/[id]
+├ ƒ /bookings
+├ ƒ /bookings/[id]
+├ ƒ /bookings/completed
+├ ƒ /bookings/post-match-cancellations
+├ ƒ /calendar
+├ ƒ /cash-settlements
+├ ƒ /chat-archive
+├ ƒ /coupons
+├ ƒ /customers
+├ ƒ /customers/[id]
+├ ƒ /earnings
+├ ƒ /files
+├ ƒ /files/[id]/open
+├ ƒ /finance-closeout
+├ ƒ /finance-overview
+├ ƒ /finance-tax
+├ ƒ /finance-tax/approval-queue
+├ ƒ /finance-tax/bank-reconciliation
+├ ƒ /finance-tax/bank-reconciliation/[id]
+├ ƒ /finance-tax/bank-reconciliation/import-batches/[batchImportId]
+├ ƒ /finance-tax/booking-settlement-audit
+├ ƒ /finance-tax/booking-settlement-audit/[id]
+├ ƒ /finance-tax/company-bank-accounts
+├ ƒ /finance-tax/coupon-finance
+├ ƒ /finance-tax/finance-approvers
+├ ƒ /finance-tax/general-ledger
+├ ƒ /finance-tax/general-ledger/[id]
+├ ƒ /finance-tax/monthly-tax-closing
+├ ƒ /finance-tax/partner-bank-deposits
+├ ƒ /finance-tax/partner-bank-deposits/[id]
+├ ƒ /finance-tax/partner-withholding-tax
+├ ƒ /finance-tax/payment-clearing
+├ ƒ /finance-tax/payment-clearing/[id]
+├ ƒ /finance-tax/payment-fees
+├ ƒ /finance-tax/platform-vat
+├ ƒ /finance-tax/settlement-reversals
+├ ƒ /finance-tax/settlement-reversals/[id]
+├ ○ /icon.svg
+├ ƒ /login
+├ ƒ /marketing-analytics
+├ ƒ /notifications
+├ ƒ /notifications/push-send
+├ ƒ /notifications/templates
+├ ƒ /operations-handoff
+├ ƒ /operations-policy
+├ ƒ /partner-controls
+├ ƒ /partners
+├ ƒ /partners/[id]
+├ ƒ /partners/overview
+├ ƒ /payments
+├ ƒ /payments/[id]
+├ ƒ /payouts
+├ ƒ /providers
+├ ƒ /providers/[id]
+├ ƒ /r/[audience]/[code]
+├ ƒ /referrals
+├ ƒ /referrals/cashouts
+├ ƒ /referrals/customers
+├ ƒ /referrals/customers/[id]
+├ ƒ /referrals/partners
+├ ƒ /referrals/partners/[id]
+├ ƒ /refunds
+├ ƒ /reviews
+├ ƒ /reviews/export
+├ ƒ /reviews/partner-customer-evaluations
+├ ƒ /services
+├ ƒ /setup
+├ ƒ /tax-policy
+├ ƒ /usage-overview
+├ ƒ /vietnam-overview
+├ ƒ /wallet-adjustments
+└ ƒ /website-content
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+== Scope Verification Summary ==
+
+Check                                         Status Detail                                                            
+-----                                         ------ ------                                                            
+git root                                      PASS   git rev-parse --show-toplevel                                     
+git branch                                    PASS   git branch --show-current                                         
+git status                                    PASS   git status --short                                                
+protected changed files                       WARN   Review required for: apps/api/prisma/, apps/api/src/auth/, apps...
+required file: package.json                   PASS   Found.                                                            
+required file: package-lock.json              PASS   Found.                                                            
+required file: apps/api/package.json          PASS   Found.                                                            
+required file: apps/admin_web/package.json    PASS   Found.                                                            
+required file: apps/public_web/package.json   PASS   Found.                                                            
+required file: apps/customer_app/pubspec.yaml PASS   Found.                                                            
+required file: apps/provider_app/pubspec.yaml PASS   Found.                                                            
+tool: node                                    PASS   node --version                                                    
+tool: npm.cmd                                 PASS   npm.cmd --version                                                 
+tool: npx.cmd                                 PASS   npx.cmd --version                                                 
+tool: flutter                                 PASS   flutter --version                                                 
+fcm env contract                              PASS   npm.cmd run fcm:env-contract                                      
+notification partner alert contract           PASS   npm.cmd run notifications:partner-alert-contract                  
+notification push data contract               PASS   npm.cmd run notifications:push-data-contract                      
+notification retry audit contract             PASS   npm.cmd run notifications:retry-audit-contract                    
+admin api budget test                         PASS   npm.cmd run admin:api-budget:test                                 
+admin test                                    PASS   npm.cmd run test --workspace @massage-vn/admin-web                
+admin typecheck                               PASS   npm.cmd run typecheck --workspace @massage-vn/admin-web           
+admin lint                                    PASS   npm.cmd run lint --workspace @massage-vn/admin-web                
+admin query guards                            PASS   npm.cmd run admin:query-guards                                    
+admin visible copy                            PASS   npm.cmd run admin:visible-copy                                    
+admin build                                   PASS   npm.cmd run build --workspace @massage-vn/admin-web               
+
+

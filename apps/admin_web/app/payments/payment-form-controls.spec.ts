@@ -1,35 +1,28 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-describe('payment cash debt form controls', () => {
-  it('keeps payment cash debt settlement forms on shared AdminForm atoms', () => {
+describe('payment cash debt evidence links', () => {
+  it('keeps cash debt settlement mutations out of Payments', () => {
     const detailPageSource = readFileSync(
       join(process.cwd(), 'app/payments/[id]/page.tsx'),
       'utf8',
     );
-    const presenterSource = readFileSync(
-      join(process.cwd(), 'app/payments/payment-page-presenters.tsx'),
+    const actionsSource = readFileSync(
+      join(process.cwd(), 'app/payments/actions.ts'),
       'utf8',
     );
 
-    expect(detailPageSource).toContain('AdminFormInput');
-    expect(detailPageSource).toContain('AdminFormControlButton');
     expect(detailPageSource).toContain('AdminEmptyState');
-    expect(presenterSource).toContain('AdminFormInput');
-    expect(presenterSource).toContain('AdminFormControlButton');
     expect(detailPageSource).toContain('AdminDisclosure');
-    expect(presenterSource).toContain('AdminDisclosure');
+    expect(detailPageSource).toContain('Review exact earning in Cash Settlements');
+    expect(detailPageSource).toContain('Search Partner deposit evidence');
+    expect(detailPageSource).toContain('/cash-settlements?review=${earningId}&q=${earningId}');
+    expect(detailPageSource).toContain('/finance-tax/partner-bank-deposits?q=${encodeURIComponent(partnerId)}');
     expect(detailPageSource).not.toContain('<details className="admin-disclosure">');
-    expect(presenterSource).not.toContain('<details className="admin-disclosure admin-mt-8">');
     expect(detailPageSource).not.toContain('aria-label="Cash fee settlement reference"');
-    expect(presenterSource).not.toContain('aria-label="Cash debt settlement reference"');
     expect(detailPageSource).not.toContain('<strong>No retained messages</strong>');
     expect(detailPageSource).not.toContain('<button type="submit">Settle cash fee debt</button>');
-    expect(presenterSource).not.toContain('<button type="submit">Settle cash debt</button>');
-    expect(presenterSource).toContain('StatusBadge');
-    expect(presenterSource).not.toContain('<span className="pill pill-neutral">No callback</span>');
-    expect(presenterSource).not.toContain('<span className={`pill ${callbackPill}`}>{callbackLabel}</span>');
-    expect(presenterSource).not.toContain('<span className="pill pill-info">Received</span>');
-    expect(presenterSource).not.toContain('<span className="pill pill-neutral">Gateway</span>');
+    expect(actionsSource).not.toContain('settleCashDebt');
+    expect(actionsSource).not.toContain('/admin/cash-settlements');
   });
 });

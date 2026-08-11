@@ -1,0 +1,17 @@
+{
+  "node": {
+    "406dfc29179f26a742fbf7b9bddd3e8fb6eca17c01": {
+      "workers": {
+        "app/wallet-adjustments/page": {
+          "moduleId": 904620,
+          "async": false,
+          "exportedName": "createManualWalletAdjustment",
+          "filename": "apps/admin_web/app/wallet-adjustments/actions.ts"
+        }
+      },
+      "exportedName": "createManualWalletAdjustment",
+      "filename": "apps/admin_web/app/wallet-adjustments/actions.ts"
+    }
+  },
+  "edge": {}
+}

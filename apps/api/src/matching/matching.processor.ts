@@ -1,5 +1,5 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { BookingStatus } from '@prisma/client';
+import { BookingStatus, ParticipantStatus, Prisma } from '@prisma/client';
 import { Job } from 'bullmq';
 import { PaymentsService } from '../payments/payments.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -24,27 +24,78 @@ export class BookingTimeoutProcessor extends WorkerHost {
       include: { payment: true },
     });
 
-    if (!booking || booking.status !== BookingStatus.OPEN_MATCHING) {
+    if (!booking) {
       return { skipped: true };
     }
 
-    if (booking.payment) {
+    let expired = booking;
+    let transitioned = false;
+    if (booking.status === BookingStatus.OPEN_MATCHING) {
+      const expiredAt = new Date();
+      try {
+        expired = await this.prisma.booking.update({
+          where: {
+            id: booking.id,
+            status: BookingStatus.OPEN_MATCHING,
+            selectedProviderId: null,
+            expiresAt: { lte: expiredAt },
+          },
+          data: {
+            status: BookingStatus.EXPIRED,
+            closedAt: expiredAt,
+            closedReason: booking.preferredProviderId
+              ? 'preferred_provider_no_response'
+              : 'matching_request_expired',
+            participants: {
+              updateMany: {
+                where: {
+                  status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
+                },
+                data: { status: ParticipantStatus.EXPIRED, respondedAt: expiredAt },
+              },
+            },
+            ...(booking.preferredProviderId
+              ? {
+                  providerRequestEvents: {
+                    create: {
+                      providerProfileId: booking.preferredProviderId,
+                      eventType: 'PREFERRED_PROVIDER_NO_RESPONSE',
+                      metadata: {
+                        expiredAt: expiredAt.toISOString(),
+                        responseDeadline: booking.expiresAt?.toISOString() ?? null,
+                      },
+                    },
+                  },
+                }
+              : {}),
+          },
+          include: { payment: true },
+        });
+        transitioned = true;
+      } catch (error) {
+        if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2025') {
+          throw error;
+        }
+        return { skipped: true };
+      }
+    } else if (
+      booking.status !== BookingStatus.EXPIRED ||
+      !['preferred_provider_no_response', 'matching_request_expired'].includes(booking.closedReason ?? '')
+    ) {
+      return { skipped: true };
+    }
+
+    if (expired.payment) {
       await this.payments.closeUnmatchedBookingPayment(
-        booking.payment.id,
+        expired.payment.id,
         'Payment refund requested because matching expired without a partner',
       );
     }
 
-    const expired = await this.prisma.booking.update({
-      where: { id: booking.id },
-      data: {
-        status: BookingStatus.EXPIRED,
-      },
-      include: { payment: true },
-    });
-
     await this.redisState.closeMatching(booking.id);
-    this.gateway.emitBookingExpired(booking.id, expired);
+    if (transitioned) {
+      this.gateway.emitBookingExpired(booking.id, expired);
+    }
 
     return { expired: true, bookingId: booking.id };
   }

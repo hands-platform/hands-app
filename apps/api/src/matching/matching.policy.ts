@@ -73,7 +73,27 @@ export const NO_SHOW_EVIDENCE_REQUIREMENT_POLICY_KEY = 'no_show.evidence_require
 export const NO_SHOW_CHAT_ALERT_LOCATION_OR_NOTE_REQUIRED = 'CHAT_ALERT_LOCATION_OR_NOTE_REQUIRED';
 export const NO_SHOW_CHAT_AND_OPERATOR_NOTE_REQUIRED = 'CHAT_AND_OPERATOR_NOTE_REQUIRED';
 export const NO_SHOW_ADMIN_NOTE_ONLY = 'ADMIN_NOTE_ONLY';
-export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+// Kept under the old export name so existing imports continue to compile.
+// Customer final choice applies only to marketplace participants.
+export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'FIRST_PICK_MATCHES_ON_ACCEPT';
+export const START_SHIFT_ACTION_SLA_POLICY_KEYS = {
+  cancellationReview: 'command.start_shift.cancellation_review_sla_minutes',
+  cashReconciliation: 'command.start_shift.cash_reconciliation_sla_minutes',
+  matchingDelays: 'command.start_shift.matching_delays_sla_minutes',
+  notificationFailures: 'command.start_shift.notification_failures_sla_minutes',
+  partnerApprovals: 'command.start_shift.partner_approvals_sla_minutes',
+  paymentHolds: 'command.start_shift.payment_holds_sla_minutes',
+  refundReview: 'command.start_shift.refund_review_sla_minutes',
+} as const;
+export const DEFAULT_START_SHIFT_ACTION_SLA_MINUTES = {
+  cancellationReview: 120,
+  cashReconciliation: 1_440,
+  matchingDelays: 15,
+  notificationFailures: 60,
+  partnerApprovals: 1_440,
+  paymentHolds: 60,
+  refundReview: 240,
+} as const;
 // Authority markers: First-pick partner acceptance can match first under API rules.
 // No policy can automatically assign the final partner.
 export const MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST = 'FIRST_PICK_ACCEPTED_FIRST';
@@ -115,6 +135,90 @@ export type OperationalPolicyDefinition = {
 };
 
 export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
+  {
+    key: START_SHIFT_ACTION_SLA_POLICY_KEYS.matchingDelays,
+    category: 'Command center',
+    label: 'Matching delay review SLA',
+    description: 'Minutes before an unresolved matching delay is promoted to overdue on Start Shift.',
+    value: DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.matchingDelays,
+    recommendedValue: DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.matchingDelays,
+    unit: 'minutes',
+    min: 5,
+    max: 240,
+    enforced: true,
+  },
+  {
+    key: START_SHIFT_ACTION_SLA_POLICY_KEYS.paymentHolds,
+    category: 'Command center',
+    label: 'Payment hold review SLA',
+    description: 'Minutes before an authorized payment hold is promoted to overdue on Start Shift.',
+    value: DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.paymentHolds,
+    recommendedValue: DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.paymentHolds,
+    unit: 'minutes',
+    min: 15,
+    max: 1_440,
+    enforced: true,
+  },
+  {
+    key: START_SHIFT_ACTION_SLA_POLICY_KEYS.cancellationReview,
+    category: 'Command center',
+    label: 'Cancellation review SLA',
+    description: 'Minutes before an unresolved post-match cancellation is promoted to overdue on Start Shift.',
+    value: DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.cancellationReview,
+    recommendedValue: DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.cancellationReview,
+    unit: 'minutes',
+    min: 15,
+    max: 1_440,
+    enforced: true,
+  },
+  {
+    key: START_SHIFT_ACTION_SLA_POLICY_KEYS.refundReview,
+    category: 'Command center',
+    label: 'Refund review SLA',
+    description: 'Minutes before an open refund request is promoted to overdue on Start Shift.',
+    value: DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.refundReview,
+    recommendedValue: DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.refundReview,
+    unit: 'minutes',
+    min: 30,
+    max: 2_880,
+    enforced: true,
+  },
+  {
+    key: START_SHIFT_ACTION_SLA_POLICY_KEYS.notificationFailures,
+    category: 'Command center',
+    label: 'Notification failure review SLA',
+    description: 'Minutes before an unresolved notification delivery failure is promoted to overdue on Start Shift.',
+    value: DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.notificationFailures,
+    recommendedValue: DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.notificationFailures,
+    unit: 'minutes',
+    min: 15,
+    max: 1_440,
+    enforced: true,
+  },
+  {
+    key: START_SHIFT_ACTION_SLA_POLICY_KEYS.cashReconciliation,
+    category: 'Command center',
+    label: 'Cash reconciliation SLA',
+    description: 'Minutes before an open cash-booking debt is promoted to overdue on Start Shift.',
+    value: DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.cashReconciliation,
+    recommendedValue: DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.cashReconciliation,
+    unit: 'minutes',
+    min: 60,
+    max: 10_080,
+    enforced: true,
+  },
+  {
+    key: START_SHIFT_ACTION_SLA_POLICY_KEYS.partnerApprovals,
+    category: 'Command center',
+    label: 'Partner approval SLA',
+    description: 'Minutes before a submitted Partner review is promoted to overdue on Start Shift.',
+    value: DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.partnerApprovals,
+    recommendedValue: DEFAULT_START_SHIFT_ACTION_SLA_MINUTES.partnerApprovals,
+    unit: 'minutes',
+    min: 60,
+    max: 10_080,
+    enforced: true,
+  },
   {
     key: MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY,
     category: 'Matching',

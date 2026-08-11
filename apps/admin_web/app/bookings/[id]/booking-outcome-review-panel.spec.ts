@@ -96,6 +96,7 @@ describe('bookingOutcomeReviewPanel', () => {
         status: 'CANCELLED',
         selectedProviderId: 'partner-1',
         chatRoom: { id: 'chat-room-1' },
+        updatedAt: '2026-06-13T00:00:00.000Z',
       }),
       closeoutOpenItemCount: 2,
       closureSummary: {
@@ -103,20 +104,52 @@ describe('bookingOutcomeReviewPanel', () => {
         detail: 'This booking is terminal but has no explicit closure actor/reason saved.',
       },
       messageCount: 0,
+      nowMs: new Date('2026-06-13T03:00:00.000Z').getTime(),
       operatorNoteCount: 0,
     });
 
     expect(review.visible).toBe(true);
     expect(review.title).toBe('Post-match cancellation review');
     expect(review.tone).toBe('pill-warn');
-    expect(review.primaryHref).toBe('/bookings/post-match-cancellations?view=post-match-cancellations#booking-booking-test');
-    expect(review.primaryLabel).toBe('Open review queue');
+    expect(review.primaryHref).toBe('/bookings/post-match-cancellations?view=manual-decision#booking-booking-test');
+    expect(review.primaryLabel).toBe('Back to Needs decision');
     expect(review.postMatchDecision).toMatchObject({
       canResolve: true,
-      feeLabel: 'No earning',
+      feeLabel: 'Fee outcome pending',
       resolutionLabel: 'Pending admin decision',
       timingLabel: 'Match time missing',
       visible: true,
+    });
+    expect(review.postMatchContext).toMatchObject({
+      summary: expect.arrayContaining([
+        expect.objectContaining({
+          label: 'Decision SLA',
+          value: 'Overdue',
+        }),
+      ]),
+      reason: {
+        value: 'Legacy reason',
+      },
+      evidence: [
+        {
+          label: 'Chat evidence',
+          value: 'No messages',
+        },
+        {
+          label: 'Location evidence',
+          value: 'No location record',
+        },
+      ],
+      money: [
+        {
+          label: 'Customer money',
+          value: 'No company funds moved',
+        },
+        {
+          label: 'Partner fee',
+          value: 'No Partner payable',
+        },
+      ],
     });
     expect(review.rows.find((row) => row.label === 'Closure record')).toMatchObject({
       tone: 'pill-warn',
@@ -125,6 +158,100 @@ describe('bookingOutcomeReviewPanel', () => {
       helper: 'Open closeout items need review.',
       value: '2 open items',
       tone: 'pill-warn',
+    });
+  });
+
+  it('builds an operator-ready reason, location, and wallet outcome from existing detail data', () => {
+    const review = panel({
+      booking: booking({
+        addressSnapshot: {
+          bookingId: 'booking-test',
+          customerProfileId: 'customer-1',
+          id: 'address-1',
+          latitude: 21.0278,
+          longitude: 105.8342,
+        },
+        closedAt: '2026-06-13T03:30:00.000Z',
+        closedNote: 'Could not meet customer: fallback note',
+        matchedAt: '2026-06-13T03:00:00.000Z',
+        metadata: {
+          postMatchCancellation: {
+            detail: 'Arrived at the saved address and called twice.',
+            reasonCode: 'CUSTOMER_NOT_FOUND',
+            requiresAdminReview: true,
+          },
+        },
+        payment: {
+          amount: 400_000,
+          currency: 'VND',
+          id: 'payment-1',
+          method: 'CUSTOMER_WALLET',
+          status: 'AUTHORIZED',
+        },
+        selectedProviderId: 'partner-1',
+        snapshots: [
+          {
+            addressText: 'Cau Giay, Ha Noi',
+            bookingId: 'booking-test',
+            id: 'location-1',
+            lat: 21.028,
+            lng: 105.834,
+            providerProfileId: 'partner-1',
+            recordedAt: '2026-06-13T03:29:00.000Z',
+          },
+        ],
+        status: 'CANCELLED',
+      }),
+      messageCount: 4,
+    });
+
+    expect(review.postMatchContext?.reason).toMatchObject({
+      helper: 'Arrived at the saved address and called twice.',
+      tone: 'pill-warn',
+      value: 'Could not meet customer',
+    });
+    expect(review.postMatchContext?.evidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'Chat evidence', value: '4 messages' }),
+        expect.objectContaining({
+          label: 'Location evidence',
+          tone: 'pill-success',
+          value: 'Cancellation location saved',
+        }),
+      ]),
+    );
+    expect(review.postMatchContext?.money).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: 'Customer money',
+          tone: 'pill-warn',
+          value: 'Wallet amount still held',
+        }),
+      ]),
+    );
+  });
+
+  it('shows the pending Finance refund request instead of an unexplained captured payment', () => {
+    const review = panel({
+      booking: booking({
+        status: 'CANCELLED',
+        selectedProviderId: 'partner-1',
+        matchedAt: '2026-06-13T03:00:00.000Z',
+        payment: {
+          id: 'payment-1',
+          method: 'CARD',
+          status: 'CAPTURED',
+          amount: 400_000,
+          currency: 'VND',
+          refunds: [{ id: 'refund-1', amount: 400_000, status: 'REQUESTED' }],
+        },
+      }),
+    });
+
+    expect(review.postMatchContext?.money.find((row) => row.label === 'Customer money')).toMatchObject({
+      helper: '400.000 VND / CARD / CAPTURED / REFUND REQUESTED',
+      tone: 'pill-warn',
+      value: 'Refund approval pending',
     });
   });
 
@@ -143,7 +270,7 @@ describe('bookingOutcomeReviewPanel', () => {
     expect(review.visible).toBe(true);
     expect(review.title).toBe('No-show confirmation review');
     expect(review.tone).toBe('pill-danger');
-    expect(review.primaryHref).toBe('/bookings/post-match-cancellations?view=post-match-cancellations#booking-booking-test');
+    expect(review.primaryHref).toBe('/bookings/post-match-cancellations?view=manual-decision#booking-booking-test');
     expect(review.postMatchDecision.visible).toBe(false);
     expect(review.rows.find((row) => row.label === 'Chat evidence')).toMatchObject({
       helper: 'Retained chat is missing.',
@@ -160,6 +287,7 @@ describe('bookingOutcomeReviewPanel', () => {
         matchedAt: '2026-06-13T03:00:00.000Z',
         closedAt: '2026-06-13T03:10:00.000Z',
         closedReason: 'post_match_cancellation_approved',
+        metadata: { postMatchCancellation: { autoApproved: true } },
         earning: {
           status: 'CANCELLED',
           netAmount: 0,
@@ -177,6 +305,58 @@ describe('bookingOutcomeReviewPanel', () => {
       resolutionLabel: 'Auto-approved',
       timingLabel: 'Auto-approved',
       visible: true,
+    });
+  });
+
+  it('keeps the original cancellation facts separate from the admin decision audit event', () => {
+    const review = panel({
+      booking: booking({
+        auditLogs: [
+          {
+            action: 'booking.post_match_cancellation.approve',
+            actor: { fullName: 'Ops Kim' },
+            createdAt: '2026-06-13T04:15:00.000Z',
+            id: 'decision-1',
+            metadata: {
+              decisionReasonLabel: 'Customer request confirmed',
+              operatorNote: 'Customer request confirmed in retained chat.',
+              previousClosedByRole: 'PROVIDER',
+              previousClosedNote: 'Customer asked to cancel.',
+              previousClosedReason: 'CUSTOMER_REQUESTED',
+            },
+            target: 'booking:booking-test',
+          },
+        ],
+        closedAt: '2026-06-13T03:10:00.000Z',
+        closedByRole: 'ADMIN',
+        closedReason: 'post_match_cancellation_approved',
+        matchedAt: '2026-06-13T03:00:00.000Z',
+        selectedProviderId: 'partner-1',
+        status: 'CANCELLED',
+      }),
+    });
+
+    expect(review.postMatchContext?.summary).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'Cancellation actor', value: 'Partner cancelled' }),
+      expect.objectContaining({
+        dateTimeValue: '2026-06-13T03:10:00.000Z',
+        label: 'Cancellation time',
+      }),
+      expect.objectContaining({
+        helper: expect.stringContaining('Customer request confirmed · Ops Kim'),
+        label: 'Admin decision',
+      }),
+    ]));
+    expect(review.postMatchContext?.reason).toMatchObject({
+      helper: 'Customer asked to cancel.',
+      value: 'Customer Requested',
+    });
+    expect(review.postMatchDecision).toMatchObject({
+      canResolve: false,
+      decidedBy: 'Ops Kim',
+      decisionAt: '2026-06-13T04:15:00.000Z',
+      decisionReasonLabel: 'Customer request confirmed',
+      operatorNote: 'Customer request confirmed in retained chat.',
     });
   });
 });

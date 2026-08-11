@@ -9,9 +9,10 @@ import {
   completedCloseoutLabel,
   completedCloseoutTone,
 } from '../../../lib/booking-closeout-policy';
-import { canExpireBooking, canMarkNoShow } from '../../../lib/booking-operator-action-rules';
+import { canMarkNoShow } from '../../../lib/booking-operator-action-rules';
 import { formatDate, isTerminalPayment } from './booking-formatters';
 import type { bookingNotificationTrace } from './booking-notification-trace';
+import { bookingDetailExpiryEligibility } from './booking-participant-rules';
 
 export type BookingDetailActionEvidenceGateInput = {
   booking: AdminBookingDetail;
@@ -73,7 +74,7 @@ export function bookingDetailActionEvidenceGate({
     closeoutHelper: closeoutReadiness.helper,
     completedCloseoutLabel: completedCloseoutLabel(booking),
     completedCloseoutTone: completedCloseoutTone(booking),
-    expireAvailable: canExpireBooking(booking.status),
+    expireAvailable: bookingDetailExpiryEligibility(booking).allowed,
     hasAddressSnapshot: Boolean(booking.addressSnapshot),
     expiresAtLabel: formatDate(booking.expiresAt),
     expiresAtValue: booking.expiresAt,

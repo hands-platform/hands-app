@@ -1,6 +1,13 @@
 import type { ReactNode } from 'react';
 
-import { AdminAuditLog, AdminEarning, AdminTaxPolicyVersion, AdminTaxRule, adminGet } from '../../lib/admin-api';
+import {
+  AdminAuditLog,
+  AdminEarning,
+  AdminTaxPolicyVersion,
+  AdminTaxRule,
+  AdminUser,
+  adminGet,
+} from '../../lib/admin-api';
 import {
   AdminFormCheckbox,
   AdminFormControlButton,
@@ -11,7 +18,6 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
@@ -20,12 +26,13 @@ import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { AdminSignal, StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
+import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
+import { buildFinanceApproverOptions } from '../finance-tax/finance-approver-options';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
 import { buildTaxPolicyAuditSummary } from './tax-policy-audit-summary';
 import { buildTaxPolicySnapshotConsistency } from './tax-policy-snapshot-consistency';
 import { taxPolicyNotice } from './tax-policy-notice';
 import {
-  buildTaxPolicyDetailsHref,
   buildTaxPolicyEditorHref,
   buildTaxPolicyLoadPlan,
 } from './tax-policy-page-model';
@@ -50,13 +57,19 @@ type TaxPolicyAmountBandOverlap = {
 export default async function TaxPolicyPage({ searchParams }: { searchParams?: TaxPolicyPageSearchParams }) {
   const params = (await searchParams) ?? {};
   const loadPlan = buildTaxPolicyLoadPlan(params);
-  const [policies, auditLogs, recentEarnings] = await Promise.all([
+  const [policies, auditLogs, recentEarnings, currentOperatorAccess, approverUsers] = await Promise.all([
     adminGet<AdminTaxPolicyVersion[]>(loadPlan.taxPolicyVersionsHref, []),
     loadPlan.auditLogsHref ? adminGet<AdminAuditLog[]>(loadPlan.auditLogsHref, []) : Promise.resolve([]),
     loadPlan.recentEarningsHref
       ? adminGet<AdminEarning[]>(loadPlan.recentEarningsHref, [])
       : Promise.resolve([]),
+    getCurrentAdminOperatorAccess(),
+    adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', []),
   ]);
+  const approverOptions = buildFinanceApproverOptions(
+    approverUsers,
+    currentOperatorAccess?.id ?? null,
+  );
   const activePolicies = policies.filter((policy) => policy.status === 'ACTIVE');
   const ruleCount = policies.reduce((sum, policy) => sum + (policy.rules?.length ?? 0), 0);
   const healthItems = buildTaxPolicyHealth(policies);
@@ -77,15 +90,14 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
   return (
     <AdminPageTemplate
       actions={
-        loadPlan.detailsMode === 'summary' ? (
-          <AdminFormControlLink className="button-secondary" href={buildTaxPolicyDetailsHref('all')}>
-            Open workspaces
+        <>
+          <AdminFormControlLink className="button-secondary" href="/finance-tax/monthly-tax-closing">
+            Open monthly close
           </AdminFormControlLink>
-        ) : (
-          <AdminFormControlLink className="button-secondary" href={buildTaxPolicyDetailsHref('summary')}>
-            Back to summary
+          <AdminFormControlLink className="button-outline" href="/finance-tax/partner-withholding-tax">
+            Open withholding
           </AdminFormControlLink>
-        )
+        </>
       }
       contentClassName="tax-policy-page"
       description="Versioned withholding rules for Vietnam freelance partners. Rates are configured here, not in application code."
@@ -110,7 +122,16 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         </AdminNoticeCard>
       ) : null}
 
-      {loadPlan.shouldRenderSummary ? <AdminSection
+      {approverOptions.length === 0 ? (
+        <AdminNoticeCard className="admin-mb-16" role="alert" tone="warning">
+          <strong>No separate Finance approver is available</strong>
+          <p className="muted">
+            Assign another admin as a Finance Approver before creating or changing tax policy versions and rules.
+          </p>
+        </AdminNoticeCard>
+      ) : null}
+
+      <AdminSection
         actions={
           <>
             <AdminSignal tone={activePolicies.length === 1 ? 'ok' : 'warn'}>{activePolicies.length} active</AdminSignal>
@@ -136,9 +157,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             </AdminStageItem>
           ))}
         </AdminStageList>
-      </AdminSection> : null}
+      </AdminSection>
 
-      {loadPlan.shouldRenderSummary ? <AdminSection
+      <AdminSection
         actions={
           <StatusBadgeFromPillClass pillClass={preview.policy ? 'pill-success' : 'pill-warn'}>
             {preview.policy ? preview.policy.name : 'No effective active policy'}
@@ -219,27 +240,12 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             <small>{formatBps(preview.rule?.rateBps ?? 0)}</small>
           </AdminStageItem>
         </AdminStageList>
-      </AdminSection> : null}
+      </AdminSection>
 
-      {loadPlan.shouldRenderWorkspaceIndex ? (
-        <AdminSection
-          className="admin-mb-16 tax-policy-workspace-index-card"
-          description="Open one bounded workspace at a time. Policy editor contains write controls, audit history shows retained operator changes, and settlement records checks recent immutable earning snapshots."
-          statusLabel="Choose workspace"
-          statusTone="info"
-          title="Tax policy workspaces"
-        >
-          <AdminFilterChipGroup ariaLabel="Tax policy workspaces">
-            <AdminFormControlLink href={buildTaxPolicyDetailsHref('editor')}>Policy editor</AdminFormControlLink>
-            <AdminFormControlLink href={buildTaxPolicyDetailsHref('audit')}>Audit history</AdminFormControlLink>
-            <AdminFormControlLink href={buildTaxPolicyDetailsHref('records')}>Settlement records</AdminFormControlLink>
-          </AdminFilterChipGroup>
-        </AdminSection>
-      ) : null}
-
-      {loadPlan.shouldRenderEditor ? <><AdminSection
+      <><AdminSection
         className="admin-mb-16 tax-policy-create-policy-card"
         description="Use basis points for percentage rates. Example: 500 bps = 5%."
+        id="tax-policy-editor"
         title="Create policy version"
       >
         <AdminFormGrid action={createTaxPolicyVersion}>
@@ -283,7 +289,8 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             name="notes"
             placeholder="Policy source, approval note, or internal memo"
           />
-          <AdminFormControlButton className="button-primary" type="submit">
+          <TaxPolicyApprovalFields approverOptions={approverOptions} />
+          <AdminFormControlButton className="button-primary" disabled={approverOptions.length === 0} type="submit">
             Create policy
           </AdminFormControlButton>
         </AdminFormGrid>
@@ -292,7 +299,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       <AdminSection
         actions={<StatusBadge tone="info">{policies.length} loaded</StatusBadge>}
         className="admin-mb-16 tax-policy-version-index-card"
-        description="Open one policy version at a time. This keeps inactive history available without loading every rule editor into the page."
+        description="Every retained version is listed here. Select one version to edit its rules below while preserving inactive history."
         title="Policy versions"
       >
         <AdminStageList>
@@ -383,7 +390,8 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 labelVisibility="visible"
                 name="notes"
               />
-              <AdminFormControlButton className="button-primary" type="submit">
+              <TaxPolicyApprovalFields approverOptions={approverOptions} />
+              <AdminFormControlButton className="button-primary" disabled={approverOptions.length === 0} type="submit">
                 Update policy
               </AdminFormControlButton>
             </AdminFormGrid>
@@ -478,7 +486,8 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                       >
                         <span>Active</span>
                       </AdminFormCheckbox>
-                      <AdminFormControlButton className="button-primary" type="submit">
+                      <TaxPolicyApprovalFields approverOptions={approverOptions} />
+                      <AdminFormControlButton className="button-primary" disabled={approverOptions.length === 0} type="submit">
                         Update rule
                       </AdminFormControlButton>
                     </AdminFormGrid>
@@ -543,15 +552,16 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 name="fixedAmount"
                 type="number"
               />
-              <AdminFormControlButton className="button-primary" type="submit">
+              <TaxPolicyApprovalFields approverOptions={approverOptions} />
+              <AdminFormControlButton className="button-primary" disabled={approverOptions.length === 0} type="submit">
                 Add rule
               </AdminFormControlButton>
             </AdminFormGrid>
           </AdminCard>
         ))}
-      </AdminDetailGrid></> : null}
+      </AdminDetailGrid></>
 
-      {loadPlan.shouldRenderAudit ? <AdminSection
+      <AdminSection
         actions={
           <>
             <StatusBadge tone="info">{auditSummary.totalChangeCount} recent</StatusBadge>
@@ -592,9 +602,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             </AdminStageItem>
           ) : null}
         </AdminStageList>
-      </AdminSection> : null}
+      </AdminSection>
 
-      {loadPlan.shouldRenderRecords ? <AdminSection
+      <AdminSection
         actions={
           <>
             <StatusBadge tone="info">{snapshotConsistency.sampleCount} sampled</StatusBadge>
@@ -648,8 +658,37 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             </AdminStageItem>
           ) : null}
         </AdminStageList>
-      </AdminSection> : null}
+      </AdminSection>
     </AdminPageTemplate>
+  );
+}
+
+function TaxPolicyApprovalFields({
+  approverOptions,
+}: {
+  readonly approverOptions: readonly { readonly label: string; readonly value: string }[];
+}) {
+  return (
+    <>
+      <AdminFormSelect
+        className="admin-form-control-fluid"
+        label="Separate Finance approver"
+        labelVisibility="visible"
+        name="approvalAdminId"
+        options={[{ label: 'Select Finance approver', value: '' }, ...approverOptions]}
+        required
+      />
+      <AdminFormInput
+        className="admin-form-control-fluid admin-grid-span-2"
+        label="Approval evidence"
+        labelVisibility="visible"
+        maxLength={500}
+        minLength={10}
+        name="operatorReason"
+        placeholder="Reason, policy source, and approval evidence"
+        required
+      />
+    </>
   );
 }
 

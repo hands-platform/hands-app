@@ -40,6 +40,16 @@ final registerCurrentDevicePushTokenProvider =
       ref.read(pushNotificationRepositoryProvider));
 });
 
+final unregisterCurrentDevicePushTokenProvider =
+    Provider<Future<void> Function()>((ref) {
+  final pushTokenDataSource = ref.read(pushTokenDataSourceProvider);
+  final remoteDataSource = ref.read(notificationRemoteDataSourceProvider);
+  return () => unregisterCurrentPushDevice(
+        pushTokenDataSource: pushTokenDataSource,
+        remoteDataSource: remoteDataSource,
+      );
+});
+
 final pushTokenRefreshRegistrationProvider = Provider<void>((ref) {
   final pushTokenDataSource = ref.read(pushTokenDataSourceProvider);
   final repository = ref.read(pushNotificationRepositoryProvider);

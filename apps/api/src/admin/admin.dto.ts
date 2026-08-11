@@ -4,6 +4,7 @@ import {
   IsArray,
   ArrayMaxSize,
   ArrayMinSize,
+  ArrayUnique,
   IsBoolean,
   IsDateString,
   IsDefined,
@@ -14,12 +15,14 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Matches,
   Min,
   MinLength,
   Validate,
+  ValidateIf,
   ValidateNested,
   ValidationArguments,
   ValidatorConstraint,
@@ -42,10 +45,12 @@ import {
   ProviderReportSource,
   ProviderReportStatus,
   ProviderSanctionType,
+  ReferralRewardStatus,
   ReferralRewardMode,
   ReviewStatus,
   Role,
 } from '@prisma/client';
+import { ADMIN_POST_MATCH_CANCELLATION_REASON_CODES } from './admin-booking-list-query';
 
 function trimString(value: unknown) {
   return typeof value === 'string' ? value.trim() : value;
@@ -298,9 +303,15 @@ export class BookingCloseoutDto {
 }
 
 export class BookingPostMatchCancellationDecisionDto {
-  @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsIn(ADMIN_POST_MATCH_CANCELLATION_REASON_CODES)
+  reason!: string;
+
+  @ValidateIf((body: BookingPostMatchCancellationDecisionDto) => body.reason === 'OTHER' || body.note !== undefined)
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
   @MaxLength(1000)
   note?: string;
 }
@@ -359,6 +370,59 @@ export class AdminReasonDto {
   @IsString()
   @MaxLength(1000)
   reason?: string;
+}
+
+export class UpdatePartnerProfileContentDto {
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(2000)
+  bioEn?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(2000)
+  bioJa?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(2000)
+  bioKo?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(2000)
+  bioZh?: string;
+}
+
+export class CreatePartnerPublicMediaUploadDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  contentType!: string;
+
+  @IsIn(['profile-image', 'provider-gallery'])
+  purpose!: 'profile-image' | 'provider-gallery';
+}
+
+export class CompletePartnerPublicMediaUploadDto {
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(0)
+  sizeBytes?: number;
+}
+
+export class ReorderPartnerPublicMediaDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(12)
+  @IsString({ each: true })
+  fileIds!: string[];
 }
 
 export class UpdateFinanceApproverRoleDto {
@@ -619,6 +683,12 @@ export class CreatePaymentFeePolicyVersionDto {
   @IsString()
   @MaxLength(1000)
   notes?: string | null;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(12)
+  @MaxLength(500)
+  reason!: string;
 }
 
 export class UpdatePaymentFeePolicyVersionDto {
@@ -642,6 +712,12 @@ export class UpdatePaymentFeePolicyVersionDto {
   @IsString()
   @MaxLength(1000)
   notes?: string | null;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(12)
+  @MaxLength(500)
+  reason!: string;
 }
 
 export class UpsertPaymentFeeRuleDto {
@@ -667,6 +743,12 @@ export class UpsertPaymentFeeRuleDto {
 
   @IsEnum(PaymentFeeTreatment)
   treatment!: PaymentFeeTreatment;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(12)
+  @MaxLength(500)
+  reason!: string;
 }
 
 export class ActivatePaymentFeePolicyVersionDto {
@@ -777,6 +859,15 @@ export class CreatePartnerSanctionDto {
   expiresAt?: string | null;
 }
 
+export class LiftPartnerSanctionDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(12)
+  @MaxLength(500)
+  reason!: string;
+}
+
 export class ModerateReviewDto {
   @IsEnum(ReviewStatus)
   status!: ReviewStatus;
@@ -799,6 +890,52 @@ export class ModerateReviewDto {
   @IsString()
   @MaxLength(1000)
   reportReason?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(1000)
+  reason?: string;
+}
+
+export class ModeratePartnerCustomerReviewDto {
+  @IsEnum(ReviewStatus)
+  status!: ReviewStatus;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(1000)
+  reason?: string;
+}
+
+export class CreateAdminPartnerReviewDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  bookingId!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  providerProfileId!: string;
+
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating!: number;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(1000)
+  comment!: string;
+
+  @IsDateString()
+  createdAt!: string;
 }
 
 export class CreateCouponDto {
@@ -829,6 +966,15 @@ export class CreateCouponDto {
   @IsOptional()
   @IsDateString()
   endsAt?: string;
+}
+
+export class CreateCouponBatchDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => CreateCouponDto)
+  coupons!: CreateCouponDto[];
 }
 
 export class UpdateCouponDto {
@@ -875,19 +1021,84 @@ export class OperationsHandoffNoteDto {
   owner?: string;
 }
 
-export class UpdateOperationalPolicyDto {
+export class OperationsShiftHandoffCaseDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  caseId!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(80)
+  queueKey!: string;
+}
+
+export class CreateOperationsShiftHandoffDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  outgoingShift!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  incomingOperatorId!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  ownerId!: string;
+
   @IsOptional()
-  @Allow()
-  value?: unknown;
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ArrayUnique()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  @MaxLength(120, { each: true })
+  unresolvedCaseIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => OperationsShiftHandoffCaseDto)
+  unresolvedCases?: OperationsShiftHandoffCaseDto[];
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  expectedOpenCaseCount!: number;
 
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
-  @MaxLength(500)
-  reason?: string;
+  @MaxLength(1000)
+  note?: string;
 }
 
-export class UpdateNotificationTemplateDto {
+export class UpdateOperationalPolicyDto {
+  @IsDefined()
+  @Allow()
+  value!: unknown;
+
+  @IsDefined()
+  @Allow()
+  expectedValue!: unknown;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(12)
+  @MaxLength(500)
+  reason!: string;
+}
+
+export class NotificationTemplateTranslationInputDto {
   @Transform(({ value }) => trimString(value))
   @IsIn(['en', 'vi', 'ko', 'ja', 'zh'])
   locale!: string;
@@ -903,6 +1114,42 @@ export class UpdateNotificationTemplateDto {
   @IsNotEmpty()
   @MaxLength(500)
   body!: string;
+}
+
+export class UpdateNotificationTemplateDto {
+  @ValidateIf(
+    (body: UpdateNotificationTemplateDto) => !body.translations && typeof body.enabled !== 'boolean',
+  )
+  @Transform(({ value }) => trimString(value))
+  @IsIn(['en', 'vi', 'ko', 'ja', 'zh'])
+  locale?: string;
+
+  @ValidateIf(
+    (body: UpdateNotificationTemplateDto) => !body.translations && typeof body.enabled !== 'boolean',
+  )
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  title?: string;
+
+  @ValidateIf(
+    (body: UpdateNotificationTemplateDto) => !body.translations && typeof body.enabled !== 'boolean',
+  )
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(500)
+  body?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(5)
+  @ArrayUnique((translation: NotificationTemplateTranslationInputDto) => translation.locale)
+  @ValidateNested({ each: true })
+  @Type(() => NotificationTemplateTranslationInputDto)
+  translations?: NotificationTemplateTranslationInputDto[];
 
   @IsOptional()
   @IsBoolean()
@@ -949,6 +1196,11 @@ export class AdminPushCampaignDto {
 }
 
 export class UpdateReferralPolicyDto {
+  @IsDefined()
+  @ValidateIf((_object, value) => value !== null)
+  @IsDateString()
+  expectedUpdatedAt!: string | null;
+
   @IsOptional()
   @IsBoolean()
   enabled?: boolean;
@@ -1013,14 +1265,19 @@ export class UpdateReferralPolicyDto {
   @MaxLength(500)
   notes?: string | null;
 
-  @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
   @MaxLength(500)
-  reason?: string;
+  @MinLength(12)
+  reason!: string;
 }
 
 export class UpsertMarketingSpendDailyDto {
+  @IsDefined()
+  @ValidateIf((_object, value) => value !== null)
+  @IsDateString()
+  expectedUpdatedAt!: string | null;
+
   @IsDefined()
   @Transform(({ value }) => trimString(value))
   @IsString()
@@ -1075,14 +1332,30 @@ export class UpsertMarketingSpendDailyDto {
   @IsString()
   @MaxLength(500)
   notes?: string | null;
-}
 
-export class ReferralRewardDecisionDto {
-  @IsOptional()
+  @IsDefined()
   @Transform(({ value }) => trimString(value))
   @IsString()
   @MaxLength(500)
-  reason?: string;
+  @MinLength(12)
+  reason!: string;
+}
+
+export class ReferralRewardDecisionDto {
+  @IsDefined()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(12)
+  @MaxLength(500)
+  reason!: string;
+
+  @IsDefined()
+  @IsEnum(ReferralRewardStatus)
+  expectedStatus!: ReferralRewardStatus;
+
+  @IsDefined()
+  @IsDateString()
+  expectedUpdatedAt!: string;
 }
 
 export class ReferralRewardCashoutPaidDto extends ReferralRewardDecisionDto {
@@ -1113,8 +1386,16 @@ export class RepairBookingSettlementGapDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
+  @MinLength(12)
   @MaxLength(500)
   reason!: string;
+
+  @IsDefined()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(256)
+  sourceVersion!: string;
 }
 
 export class MarkEarningPaidDto {
@@ -1203,6 +1484,33 @@ export class AllocatePartnerBankDepositCashDebtDto {
   @MinLength(12)
   @MaxLength(500)
   notes!: string;
+
+  @IsOptional()
+  @IsIn(['BANK_DEPOSIT_CONFIRMED', 'PARTIAL_RECOVERY', 'FINAL_RECOVERY', 'OTHER_REVIEWED'])
+  reasonCode?: string;
+}
+
+export class AllocateCashSettlementDebtDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  requestId!: string;
+
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  amount!: number;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(12)
+  @MaxLength(500)
+  notes!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsIn(['BANK_DEPOSIT_CONFIRMED', 'PARTIAL_RECOVERY', 'FINAL_RECOVERY', 'OTHER_REVIEWED'])
+  reasonCode!: string;
 }
 
 export class RecordPartnerBankDepositDto extends PartnerBankDepositPayloadDto {
@@ -1228,6 +1536,42 @@ export class AssignCompanyBankTransactionImportBatchDto {
 }
 
 export class AssignCompanyBankTransactionReviewDto extends AssignCompanyBankTransactionImportBatchDto {}
+
+export class AssignCompanyBankTransactionReviewsDto extends AssignCompanyBankTransactionReviewDto {
+  @Transform(({ value }) => (Array.isArray(value) ? value.map((item) => trimString(item)) : value))
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(50)
+  @ArrayUnique()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  @MaxLength(128, { each: true })
+  bankTransactionIds!: string[];
+}
+
+export class AssignBookingPaymentClearingReviewsDto extends AssignCompanyBankTransactionReviewDto {
+  @Transform(({ value }) => (Array.isArray(value) ? value.map((item) => trimString(item)) : value))
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(50)
+  @ArrayUnique()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  @MaxLength(128, { each: true })
+  clearingEntryIds!: string[];
+}
+
+export class AssignPartnerBankDepositReconciliationReviewsDto extends AssignCompanyBankTransactionReviewDto {
+  @Transform(({ value }) => (Array.isArray(value) ? value.map((item) => trimString(item)) : value))
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(50)
+  @ArrayUnique()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  @MaxLength(128, { each: true })
+  partnerBankDepositRequestIds!: string[];
+}
 
 export class RejectPartnerBankDepositRequestDto {
   @Transform(({ value }) => trimString(value))
@@ -1279,8 +1623,27 @@ class ManualWalletAdjustmentPayloadDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
+  @MinLength(12)
   @MaxLength(1000)
   reason!: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(200)
+  operationalCause?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(300)
+  expectedCorrection?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
+  caseReference?: string | null;
 
   @IsOptional()
   @Transform(({ value }) => trimString(value))
@@ -1299,6 +1662,18 @@ class ManualWalletAdjustmentPayloadDto {
   @IsString()
   @MaxLength(500)
   attachmentUrl?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
+  attachmentFileId?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
+  reversalOfRequestId?: string;
 }
 
 export class PreviewManualWalletAdjustmentDto extends ManualWalletAdjustmentPayloadDto {
@@ -1329,7 +1704,11 @@ export class CreateManualWalletAdjustmentDto extends ManualWalletAdjustmentPaylo
   approvalAdminId!: string;
 }
 
-export class CreateManualWalletAdjustmentRequestDto extends ManualWalletAdjustmentPayloadDto {}
+export class CreateManualWalletAdjustmentRequestDto extends ManualWalletAdjustmentPayloadDto {
+  @Transform(({ value }) => trimString(value))
+  @IsUUID('4')
+  idempotencyKey!: string;
+}
 
 export class RejectManualWalletAdjustmentRequestDto {
   @Transform(({ value }) => trimString(value))
@@ -1339,13 +1718,16 @@ export class RejectManualWalletAdjustmentRequestDto {
   reason!: string;
 }
 
-export class UpdateProviderWalletWithdrawalRequestDto {
-  @IsOptional()
+export class CancelManualWalletAdjustmentRequestDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
-  @MaxLength(128)
-  approvalAdminId?: string | null;
+  @IsNotEmpty()
+  @MinLength(12)
+  @MaxLength(1000)
+  reason!: string;
+}
 
+export class UpdateProviderWalletWithdrawalRequestDto {
   @IsOptional()
   @IsEnum(ProviderWalletWithdrawalRequestStatus)
   status?: ProviderWalletWithdrawalRequestStatus;
@@ -1386,14 +1768,10 @@ export class UpdateProviderWalletWithdrawalRequestDto {
 }
 
 export class CreateCompanyBankAccountDto {
+  @IsDefined()
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
-  @MaxLength(128)
-  approvalAdminId!: string;
-
-  @Transform(({ value }) => trimString(value))
-  @IsString()
   @MinLength(12)
   @MaxLength(500)
   operatorReason!: string;
@@ -1428,14 +1806,10 @@ export class CreateCompanyBankAccountDto {
 }
 
 export class UpdateCompanyBankAccountDto {
+  @IsDefined()
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
-  @MaxLength(128)
-  approvalAdminId!: string;
-
-  @Transform(({ value }) => trimString(value))
-  @IsString()
   @MinLength(12)
   @MaxLength(500)
   operatorReason!: string;
@@ -1477,19 +1851,34 @@ export class UpdateCompanyBankAccountDto {
   status?: CompanyBankAccountStatus;
 }
 
-export class CreateCompanyBankTransactionDto {
+export class DecideCompanyBankAccountChangeDto {
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
+  @IsIn(['APPROVE', 'REJECT'])
+  decision!: 'APPROVE' | 'REJECT';
+
+  @IsDefined()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(12)
+  @MaxLength(500)
+  operatorReason!: string;
+
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
   @MaxLength(128)
-  approvalAdminId!: string;
+  requestId!: string;
+}
 
-  @IsOptional()
+export class CreateCompanyBankTransactionDto {
+  @IsDefined()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MinLength(12)
   @MaxLength(500)
-  operatorReason?: string | null;
+  operatorReason!: string;
 
   @Transform(({ value }) => trimString(value))
   @IsString()
@@ -1626,18 +2015,13 @@ export class PreviewCompanyBankTransactionBatchDto {
 }
 
 export class ImportCompanyBankTransactionBatchDto extends PreviewCompanyBankTransactionBatchDto {
+  @IsDefined()
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
-  @MaxLength(128)
-  approvalAdminId!: string;
-
-  @IsOptional()
-  @Transform(({ value }) => trimString(value))
-  @IsString()
   @MinLength(12)
   @MaxLength(500)
-  operatorReason?: string | null;
+  operatorReason!: string;
 
   @Transform(({ value }) => trimString(value))
   @IsString()
@@ -1656,12 +2040,6 @@ export class ImportCompanyBankTransactionBatchDto extends PreviewCompanyBankTran
 }
 
 export class CreateBankReconciliationMatchDto {
-  @IsOptional()
-  @Transform(({ value }) => trimString(value))
-  @IsString()
-  @MaxLength(128)
-  approvalAdminId?: string | null;
-
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
@@ -1704,37 +2082,28 @@ export class CreateBankReconciliationMatchDto {
   @MaxLength(8)
   currency?: string;
 
-  @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
+  @MinLength(12)
   @MaxLength(500)
-  notes?: string | null;
+  notes!: string;
 }
 
 export class ReverseBankReconciliationMatchDto {
-  @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
-  @MaxLength(128)
-  approvalAdminId?: string | null;
-
-  @IsOptional()
-  @Transform(({ value }) => trimString(value))
-  @IsString()
+  @IsNotEmpty()
+  @MinLength(12)
   @MaxLength(500)
-  reason?: string | null;
+  reason!: string;
 }
 
 export class IgnoreCompanyBankTransactionDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
-  @MaxLength(128)
-  approvalAdminId!: string;
-
-  @Transform(({ value }) => trimString(value))
-  @IsString()
-  @IsNotEmpty()
+  @MinLength(12)
   @MaxLength(500)
   reason!: string;
 }
@@ -1761,12 +2130,6 @@ export class CreatePayoutBatchDto {
 
 export class UpdatePayoutBatchDto {
   @IsOptional()
-  @Transform(({ value }) => trimString(value))
-  @IsString()
-  @MaxLength(128)
-  approvalAdminId?: string | null;
-
-  @IsOptional()
   @IsEnum(PayoutBatchStatus)
   status?: PayoutBatchStatus;
 
@@ -1781,4 +2144,70 @@ export class UpdatePayoutBatchDto {
   @IsString()
   @MaxLength(500)
   notes?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
+  confirmationPayoutBatchId?: string;
+
+  @IsOptional()
+  @IsEnum(PayoutBatchStatus)
+  expectedStatus?: PayoutBatchStatus;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(120)
+  expectedTransferRef?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  expectedNotes?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(10)
+  @MaxLength(1000)
+  reason?: string;
+}
+
+export class ReversePaidDisbursementDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  approvalAdminId!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(10)
+  @MaxLength(1000)
+  reason!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  reversalReference!: string;
+
+  @IsOptional()
+  @IsDateString()
+  occurredAt?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(120)
+  attachmentFileId?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  attachmentUrl?: string | null;
 }

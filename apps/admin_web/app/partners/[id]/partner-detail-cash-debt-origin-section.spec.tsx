@@ -13,6 +13,10 @@ describe('PartnerDetailCashDebtOriginSection', () => {
   it('uses the shared Vuexy badge atoms for cash debt pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-cash-debt-origin-section.tsx', 'utf8');
     const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+    const payoutRowsModelSource = readFileSync(
+      'app/partners/[id]/partner-detail-payout-rows-model.tsx',
+      'utf8',
+    );
 
     expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadge');
@@ -30,9 +34,13 @@ describe('PartnerDetailCashDebtOriginSection', () => {
     expect(source).not.toContain('created {row.createdLabel}');
     expect(pageSource).not.toContain('createdLabel: formatDate(earning.createdAt)');
     expect(pageSource).toContain('openDebtLabel={<MoneyText amount={cashFeeDebtTotal} />}');
-    expect(pageSource).toContain('amountLabel: <MoneyText amount={Math.abs(amountValue(earning.netAmount))} />');
-    expect(pageSource).toContain('handsFeeLabel: <MoneyText amount={earning.platformFee} />');
-    expect(pageSource).toContain('taxLabel: <MoneyText amount={earning.withholdingAmount} />');
+    expect(payoutRowsModelSource).toContain(
+      'amountLabel: <MoneyText amount={Math.abs(amountValue(earning.netAmount))} />',
+    );
+    expect(payoutRowsModelSource).toContain('handsFeeLabel: <MoneyText amount={earning.platformFee} />');
+    expect(payoutRowsModelSource).toContain(
+      'taxLabel: <MoneyText amount={earning.withholdingAmount} />',
+    );
   });
 
   it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {

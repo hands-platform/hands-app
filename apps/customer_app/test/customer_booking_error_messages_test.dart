@@ -91,4 +91,15 @@ void main() {
     expect(message, contains('Booking could not be created'));
     expect(message, isNot(contains('ApiException')));
   });
+
+  test('extracts the latest booking from a racing action error', () {
+    final booking = customerLatestBookingFromError(
+      ApiException(409, {
+        'message': 'Booking is already matched',
+        'booking': {'id': 'booking-1', 'status': 'MATCHED'},
+      }),
+    );
+
+    expect(booking, {'id': 'booking-1', 'status': 'MATCHED'});
+  });
 }

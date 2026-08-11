@@ -1,10 +1,9 @@
-import type { AdminPartnerCustomerReview, AdminReview } from '../../lib/admin-api';
-import {
-  adminAvatarStatusFromSignals,
-  type AdminAvatarPushDeviceSignal,
-  type AdminAvatarSessionSignal,
-  type AdminAvatarStatus,
-} from '../../lib/admin-avatar-status';
+import type {
+  AdminPartnerCustomerReview,
+  AdminPartnerCustomerReviewSummary,
+  AdminReview,
+  AdminReviewSummary,
+} from '../../lib/admin-api';
 import { formatDateTime, shortId } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
 import { reviewModerationActionMenuItems } from './review-page-actions';
@@ -32,8 +31,8 @@ export const REVIEW_SORT_OPTIONS: readonly {
   readonly label: string;
   readonly value: ReviewSortFilter;
 }[] = [
-  { value: 'newest', label: 'Newest request' },
-  { value: 'oldest', label: 'Oldest request' },
+  { value: 'newest', label: 'Most recently submitted' },
+  { value: 'oldest', label: 'Oldest submitted' },
   { value: 'rating-desc', label: 'Highest rating' },
   { value: 'rating-asc', label: 'Lowest rating' },
 ];
@@ -52,18 +51,6 @@ export const REVIEW_EXPORT_COLUMNS = [
   'Booking',
   'Service',
 ] as const;
-
-type ReviewAvatarUserSignal = {
-  readonly appSessions?: readonly AdminAvatarSessionSignal[];
-  readonly pushDevices?: readonly AdminAvatarPushDeviceSignal[];
-};
-
-type ReviewAvatarProviderSignal = {
-  readonly devices?: readonly AdminAvatarPushDeviceSignal[];
-  readonly sessions?: readonly AdminAvatarSessionSignal[];
-  readonly status?: string | null;
-  readonly user?: ReviewAvatarUserSignal;
-};
 
 export type ReviewFilters = {
   readonly dateFrom: string;
@@ -110,23 +97,25 @@ export function buildReviewTableRows(reviews: readonly AdminReview[]): ReviewTab
     customerInitials: initials(review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone),
     customerLabel:
       review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone ?? 'Unknown customer',
-    customerAvatarStatus: reviewCustomerAvatarStatus(review),
-    customerPhone: review.customerProfile?.user?.phone ?? 'No phone on file',
+    isAdminCreated: Boolean(review.createdByAdminId),
     id: review.id,
-    partnerAvatarStatus: reviewPartnerAvatarStatus(review),
     partnerHref: review.providerProfile?.id
       ? `/partners/${review.providerProfile.id}`
       : review.providerProfileId
         ? `/partners/${review.providerProfileId}`
         : null,
-    partnerHint: partnerReviewHint(review),
     partnerInitials: initials(review.providerProfile?.displayName),
     partnerLabel: reviewProviderLabel(review),
     rating: review.rating,
     ratingLabel: `${review.rating}/5`,
     reportReasonValue: review.reportReason?.trim() ?? '',
-    reportReasonLabel: review.reportReason?.trim() ? `Reason: ${review.reportReason}` : '',
+    reportReasonLabel:
+      (review.status === 'HIDDEN' || review.status === 'REPORTED') && review.reportReason?.trim()
+        ? `Reason: ${review.reportReason}`
+        : '',
+    reviewIdLabel: shortId(review.id),
     serviceLabel: reviewServiceLabel(review),
+    showBookingRequestTime: reviewRequestMs(review) !== Date.parse(review.createdAt ?? ''),
     status: review.status,
     statusClassName: reviewStatusClassName(review.status),
     statusLabel: reviewStatusLabel(review.status),
@@ -136,71 +125,43 @@ export function buildReviewTableRows(reviews: readonly AdminReview[]): ReviewTab
 export function buildPartnerCustomerReviewTableRows(
   reviews: readonly AdminPartnerCustomerReview[],
 ): PartnerCustomerEvaluationTableRow[] {
-  return reviews.map((review) => ({
-    bookingHref: review.booking?.id ? `/bookings/${review.booking.id}` : null,
-    bookingLabel: review.booking?.id ? shortId(review.booking.id) : 'No booking link',
-    bookingRequestTimeLabel: partnerCustomerReviewRequestTimeLabel(review),
-    commentLabel: review.comment?.trim() || 'No written evaluation',
-    createdAt: review.createdAt ?? null,
-    customerAvatarStatus: partnerCustomerReviewCustomerAvatarStatus(review),
-    customerHref: review.customerProfile?.id
-      ? `/customers/${review.customerProfile.id}`
-      : review.customerProfileId
-        ? `/customers/${review.customerProfileId}`
-        : null,
-    customerInitials: initials(review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone),
-    customerLabel:
-      review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone ?? 'Unknown customer',
-    customerPhone: review.customerProfile?.user?.phone ?? 'No phone on file',
-    id: review.id,
-    partnerAvatarStatus: partnerCustomerReviewPartnerAvatarStatus(review),
-    partnerHref: review.providerProfile?.id
-      ? `/partners/${review.providerProfile.id}`
-      : review.providerProfileId
-        ? `/partners/${review.providerProfileId}`
-        : null,
-    partnerHint: 'Text-only customer evaluation',
-    partnerInitials: initials(review.providerProfile?.displayName),
-    partnerLabel: review.providerProfile?.displayName ?? 'Unknown Partner',
-    serviceLabel: partnerCustomerReviewServiceLabel(review),
-  }));
-}
+  return reviews.map((review) => {
+    const status = review.status ?? 'PUBLISHED';
+    const latestModeration = review.latestModeration;
 
-function reviewCustomerAvatarStatus(review: AdminReview): AdminAvatarStatus {
-  const user = review.customerProfile?.user as ReviewAvatarUserSignal | undefined;
-
-  return adminAvatarStatusFromSignals({
-    devices: user?.pushDevices,
-    sessions: user?.appSessions,
-  });
-}
-
-function partnerCustomerReviewCustomerAvatarStatus(review: AdminPartnerCustomerReview): AdminAvatarStatus {
-  const user = review.customerProfile?.user as ReviewAvatarUserSignal | undefined;
-
-  return adminAvatarStatusFromSignals({
-    devices: user?.pushDevices,
-    sessions: user?.appSessions,
-  });
-}
-
-function partnerCustomerReviewPartnerAvatarStatus(review: AdminPartnerCustomerReview): AdminAvatarStatus {
-  const provider = review.providerProfile as ReviewAvatarProviderSignal | undefined;
-
-  return adminAvatarStatusFromSignals({
-    devices: provider?.devices ?? provider?.user?.pushDevices,
-    fallbackOnline: Boolean(provider?.status?.startsWith('ONLINE')),
-    sessions: provider?.sessions ?? provider?.user?.appSessions,
-  });
-}
-
-function reviewPartnerAvatarStatus(review: AdminReview): AdminAvatarStatus {
-  const provider = review.providerProfile as ReviewAvatarProviderSignal | undefined;
-
-  return adminAvatarStatusFromSignals({
-    devices: provider?.devices ?? provider?.user?.pushDevices,
-    fallbackOnline: Boolean(provider?.status?.startsWith('ONLINE')),
-    sessions: provider?.sessions ?? provider?.user?.appSessions,
+    return {
+      bookingHref: review.booking?.id ? `/bookings/${review.booking.id}` : null,
+      bookingLabel: review.booking?.id ? shortId(review.booking.id) : 'No booking link',
+      bookingRequestTimeLabel: partnerCustomerReviewRequestTimeLabel(review),
+      commentLabel: review.comment?.trim() || 'No written note',
+      createdAt: review.createdAt ?? null,
+      customerHref: review.customerProfile?.id
+        ? `/customers/${review.customerProfile.id}`
+        : review.customerProfileId
+          ? `/customers/${review.customerProfileId}`
+          : null,
+      customerLabel: review.customerProfile?.user?.fullName ?? 'Unknown customer',
+      id: review.id,
+      isDefaultRetained: status === 'PUBLISHED' && !latestModeration,
+      lastReviewedAt: latestModeration?.createdAt ?? null,
+      lastReviewedBy:
+        latestModeration?.actor?.fullName ?? latestModeration?.actor?.email ?? 'Unknown operator',
+      lastReviewReason: latestModeration?.reason?.trim() || review.reportReason?.trim() || 'No review reason',
+      partnerHref: review.providerProfile?.id
+        ? `/partners/${review.providerProfile.id}`
+        : review.providerProfileId
+          ? `/partners/${review.providerProfileId}`
+          : null,
+      partnerLabel: review.providerProfile?.displayName ?? 'Unknown Partner',
+      reportReasonLabel: review.reportReason?.trim() || '',
+      serviceLabel: partnerCustomerReviewServiceLabel(review),
+      status,
+      statusClassName:
+        status === 'PUBLISHED' && !latestModeration
+          ? 'review-status-chip review-status-default'
+          : partnerCustomerReviewStatusClassName(status),
+      statusLabel: partnerCustomerReviewStatusLabel(status),
+    };
   });
 }
 
@@ -248,10 +209,14 @@ export function sortPartnerCustomerReviews(
 }
 
 export function buildReviewFilters(params: Record<string, string | string[] | undefined>): ReviewFilters {
+  const dateFrom = normalizeDateParam(readParam(params.dateFrom));
+  const dateTo = normalizeDateParam(readParam(params.dateTo));
+  const requestedDateRange = normalizeReviewDateRange(readParam(params.dateRange));
+
   return {
-    dateFrom: normalizeDateParam(readParam(params.dateFrom)),
-    dateRange: normalizeReviewDateRange(readParam(params.dateRange)),
-    dateTo: normalizeDateParam(readParam(params.dateTo)),
+    dateFrom,
+    dateRange: requestedDateRange,
+    dateTo,
     page: normalizePage(readParam(params.page)),
     pageSize: normalizePageSize(readParam(params.pageSize)),
     q: readParam(params.q).trim(),
@@ -267,7 +232,7 @@ export function buildPartnerCustomerEvaluationFilters(
 
   return {
     ...filters,
-    review: '',
+    review: normalizePartnerCustomerReviewStatus(readParam(params.status)),
     sort: filters.sort === 'oldest' ? 'oldest' : 'newest',
   };
 }
@@ -298,6 +263,9 @@ export function filterPartnerCustomerReviews(
   const dateBounds = reviewDateRangeBoundsForFilter(filters);
 
   return reviews.filter((review) => {
+    if (filters.review && !partnerCustomerReviewMatchesStatus(review, filters.review)) {
+      return false;
+    }
     if (!partnerCustomerReviewMatchesDateRange(review, dateBounds)) {
       return false;
     }
@@ -334,7 +302,7 @@ export function buildServerReviewPagination<T>(
   const safeTotalRows = Math.max(0, Math.trunc(totalRows));
   const totalPages = Math.max(1, Math.ceil(safeTotalRows / filters.pageSize));
   const page = Math.min(filters.page, totalPages);
-  const start = (filters.page - 1) * filters.pageSize;
+  const start = (page - 1) * filters.pageSize;
 
   return {
     from: rows.length === 0 ? 0 : start + 1,
@@ -364,17 +332,30 @@ export function buildPartnerCustomerEvaluationListHref(
 ) {
   const nextOverrides: Partial<ReviewFilters> = {
     ...overrides,
-    review: '',
     ...(overrides.sort ? { sort: overrides.sort === 'oldest' ? 'oldest' : 'newest' } : {}),
   };
-
-  return buildReviewHref('/reviews/partner-customer-evaluations', filters, nextOverrides);
+  const href = buildReviewHref('/reviews/partner-customer-evaluations', filters, nextOverrides);
+  const url = new URL(href, 'http://admin.local');
+  const status = url.searchParams.get('review');
+  url.searchParams.delete('review');
+  if (status) {
+    url.searchParams.set('status', status);
+  }
+  return `${url.pathname}${url.search}`;
 }
 
 export function buildReviewDataHrefs(filters: ReviewFilters): ReviewDataHrefs {
   return buildReviewDataHrefPair('/admin/reviews', '/admin/reviews/summary', filters, {
     includeReviewFilter: true,
+    includeSummaryReviewFilter: false,
   });
+}
+
+export function reviewMatchingCount(summary: AdminReviewSummary, review: string) {
+  if (review === 'published') return summary.published ?? 0;
+  if (review === 'reported') return summary.reported ?? 0;
+  if (review === 'held') return summary.held ?? 0;
+  return summary.totalCount;
 }
 
 export function buildPartnerCustomerReviewDataHrefs(filters: ReviewFilters): ReviewDataHrefs {
@@ -382,7 +363,7 @@ export function buildPartnerCustomerReviewDataHrefs(filters: ReviewFilters): Rev
     '/admin/partner-customer-reviews',
     '/admin/partner-customer-reviews/summary',
     filters,
-    { includeReviewFilter: false },
+    { includeReviewFilter: true, includeSummaryReviewFilter: false, reviewParam: 'status' },
   );
 }
 
@@ -426,13 +407,20 @@ function buildReviewDataHrefPair(
   listPath: string,
   summaryPath: string,
   filters: ReviewFilters,
-  options: { readonly includeReviewFilter: boolean },
+  options: {
+    readonly includeReviewFilter: boolean;
+    readonly includeSummaryReviewFilter?: boolean;
+    readonly reviewParam?: string;
+  },
 ): ReviewDataHrefs {
   const listParams = reviewDataQueryParams(filters, options);
   listParams.set('take', String(filters.pageSize));
   listParams.set('skip', String((filters.page - 1) * filters.pageSize));
 
-  const summaryParams = reviewDataQueryParams(filters, options);
+  const summaryParams = reviewDataQueryParams(filters, {
+    ...options,
+    includeReviewFilter: options.includeSummaryReviewFilter ?? options.includeReviewFilter,
+  });
 
   return {
     listHref: `${listPath}?${listParams.toString()}`,
@@ -442,7 +430,7 @@ function buildReviewDataHrefPair(
 
 function reviewDataQueryParams(
   filters: ReviewFilters,
-  options: { readonly includeReviewFilter: boolean },
+  options: { readonly includeReviewFilter: boolean; readonly reviewParam?: string },
 ) {
   const params = new URLSearchParams();
   const bounds = reviewDateRangeBoundsForFilter(filters);
@@ -451,7 +439,7 @@ function reviewDataQueryParams(
     params.set('q', filters.q);
   }
   if (options.includeReviewFilter && filters.review) {
-    params.set('review', filters.review);
+    params.set(options.reviewParam ?? 'review', filters.review);
   }
   if (filters.sort !== 'newest') {
     params.set('sort', filters.sort);
@@ -468,13 +456,10 @@ function reviewDataQueryParams(
 
 export function reviewFilterDescription(review: string) {
   if (review === 'reported') {
-    return 'reviews that need moderation follow-up.';
-  }
-  if (review === 'follow-up') {
-    return 'reviews with report reasons or moderation follow-up.';
+    return 'reviews removed from the app until moderation is resolved.';
   }
   if (review === 'held') {
-    return 'reviews held from app visibility but retained for evidence.';
+    return 'reviews hidden from the app and retained for audit evidence.';
   }
   if (review === 'published') {
     return 'reviews currently visible in the app.';
@@ -504,21 +489,52 @@ export function reviewDateRangeLabel(filters: ReviewFilters) {
 }
 
 export function reviewSortLabel(sort: ReviewSortFilter) {
-  return REVIEW_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? 'Newest request';
+  return REVIEW_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? 'Most recently submitted';
 }
 
-export function emptyReviewMessage(review: string) {
-  if (!review) {
-    return 'No customer reviews loaded.';
+export function reviewDateRangeError(filters: ReviewFilters) {
+  if (filters.dateRange !== 'custom' || !filters.dateFrom || !filters.dateTo) {
+    return '';
   }
-  return `No customer reviews currently match this queue. ${reviewFilterDescription(review)}`;
+  return filters.dateFrom > filters.dateTo ? 'From date must be on or before To date.' : '';
+}
+
+export function reviewEmptyState(filters: ReviewFilters) {
+  const range = reviewDateRangeLabel(filters) || 'All dates';
+  if (filters.review === 'reported') {
+    return {
+      message: `No reviews are currently waiting for a moderation decision. Current date range: ${range}.`,
+      title: 'No reviews need moderation',
+    };
+  }
+  if (filters.review === 'held') {
+    return {
+      message: `No reviews are currently hidden from the customer app. Current date range: ${range}.`,
+      title: 'No hidden reviews',
+    };
+  }
+  if (filters.review === 'published') {
+    return {
+      message: 'No reviews currently match the selected filters and date range.',
+      title: 'No visible reviews',
+    };
+  }
+  if (filters.q || filters.dateRange !== 'all') {
+    return {
+      message: 'No customer reviews match the selected filters and date range.',
+      title: 'No reviews match these filters',
+    };
+  }
+  return {
+    message: 'Customer reviews will appear here after completed bookings receive feedback.',
+    title: 'No customer reviews yet',
+  };
 }
 
 export function buildSummary(reviews: readonly AdminReview[]) {
   let held = 0;
   let published = 0;
   let reported = 0;
-  let followUp = 0;
   let ratingCount = 0;
   let ratingTotal = 0;
 
@@ -536,17 +552,13 @@ export function buildSummary(reviews: readonly AdminReview[]) {
     if (review.status === 'REPORTED') {
       reported += 1;
     }
-    if (review.status === 'REPORTED' || Boolean(review.reportReason?.trim())) {
-      followUp += 1;
-    }
   }
 
   return {
-    averageRating: ratingCount > 0 ? (ratingTotal / ratingCount).toFixed(1) : '0.0',
+    averageRating: ratingCount > 0 ? (ratingTotal / ratingCount).toFixed(1) : '—',
     held,
     published,
     reported,
-    followUp,
     total: reviews.length,
   };
 }
@@ -594,9 +606,6 @@ function reviewMatchesFilter(review: AdminReview, filter: string) {
   if (filter === 'reported') {
     return review.status === 'REPORTED';
   }
-  if (filter === 'follow-up') {
-    return review.status === 'REPORTED' || Boolean(review.reportReason?.trim());
-  }
   if (filter === 'held') {
     return review.status === 'HIDDEN';
   }
@@ -606,14 +615,42 @@ function reviewMatchesFilter(review: AdminReview, filter: string) {
   return true;
 }
 
+function partnerCustomerReviewMatchesStatus(review: AdminPartnerCustomerReview, filter: string) {
+  return normalizePartnerCustomerReviewStatus(review.status ?? '') === filter;
+}
+
+export function partnerCustomerReviewStatusLabel(status: string) {
+  if (status === 'PUBLISHED') return 'Retained';
+  if (status === 'REPORTED') return 'Needs review';
+  if (status === 'HIDDEN') return 'Restricted';
+  return 'Unknown';
+}
+
+export function partnerCustomerReviewStatusClassName(status: string) {
+  if (status === 'PUBLISHED') return 'review-status-chip review-status-published';
+  if (status === 'REPORTED') return 'review-status-chip review-status-reported';
+  if (status === 'HIDDEN') return 'review-status-chip review-status-held';
+  return 'review-status-chip review-status-follow-up';
+}
+
+export function partnerCustomerReviewFilteredTotal(
+  summary: AdminPartnerCustomerReviewSummary,
+  status: string,
+) {
+  if (status === 'retained') return summary.retained;
+  if (status === 'needs-review') return summary.needsReview;
+  if (status === 'restricted') return summary.restricted;
+  return summary.totalCount;
+}
+
 function reviewStatusLabel(status: string) {
   switch (status) {
     case 'PUBLISHED':
-      return 'Published';
+      return 'Visible';
     case 'HIDDEN':
-      return 'Held';
+      return 'Hidden';
     case 'REPORTED':
-      return 'Reported';
+      return 'Needs review';
     default:
       return status
         .toLowerCase()
@@ -641,22 +678,12 @@ function statusMeaning(status: string) {
     case 'PUBLISHED':
       return 'Visible in app';
     case 'HIDDEN':
-      return 'Held from app visibility';
+      return 'Hidden from app visibility';
     case 'REPORTED':
-      return 'Moderation follow-up';
+      return 'Removed from the app until resolved';
     default:
       return 'Review state under moderation';
   }
-}
-
-function partnerReviewHint(review: AdminReview) {
-  if (review.status === 'REPORTED' || review.reportReason?.trim()) {
-    return 'Follow-up marker';
-  }
-  if (review.status === 'HIDDEN') {
-    return 'Not visible in app';
-  }
-  return 'Visible review';
 }
 
 function reviewServiceLabel(review: AdminReview) {
@@ -763,7 +790,7 @@ function customDateRangeBounds(dateFrom: string, dateTo: string) {
   const startMs = from ?? Number.NEGATIVE_INFINITY;
   const endMs = to === null ? Number.POSITIVE_INFINITY : endOfLocalDay(to);
 
-  return startMs <= endMs ? { startMs, endMs } : { startMs: endMs, endMs: startMs };
+  return { startMs, endMs };
 }
 
 function searchableReviewText(review: AdminReview) {
@@ -789,9 +816,9 @@ function searchablePartnerCustomerReviewText(review: AdminPartnerCustomerReview)
     review.id,
     review.providerProfile?.displayName ?? '',
     review.customerProfile?.user?.fullName ?? '',
-    review.customerProfile?.user?.phone ?? '',
     review.comment ?? '',
     review.reportReason ?? '',
+    partnerCustomerReviewStatusLabel(review.status ?? ''),
     partnerCustomerReviewServiceLabel(review),
     review.booking?.id ?? '',
   ]
@@ -827,22 +854,29 @@ function normalizePageSize(value: string) {
 }
 
 function normalizeReviewFilter(value: string) {
-  if (value === 'low-rating' || value === 'service-recovery') {
-    return 'follow-up';
+  if (value === 'follow-up' || value === 'low-rating' || value === 'service-recovery') {
+    return 'reported';
   }
   if (value === 'hidden' || value === 'hold') {
     return 'held';
   }
-  if (value === 'published' || value === 'held' || value === 'reported' || value === 'follow-up') {
+  if (value === 'published' || value === 'held' || value === 'reported') {
     return value;
   }
+  return '';
+}
+
+function normalizePartnerCustomerReviewStatus(value: string) {
+  if (value === 'published' || value === 'retained' || value === 'PUBLISHED') return 'retained';
+  if (value === 'reported' || value === 'needs-review' || value === 'REPORTED') return 'needs-review';
+  if (value === 'hidden' || value === 'restricted' || value === 'HIDDEN') return 'restricted';
   return '';
 }
 
 function normalizeReviewDateRange(value: string): ReviewDateRangeFilter {
   return REVIEW_DATE_RANGE_OPTIONS.some((option) => option.value === value)
     ? (value as ReviewDateRangeFilter)
-    : 'today';
+    : 'all';
 }
 
 function normalizeReviewSort(value: string): ReviewSortFilter {
@@ -864,11 +898,11 @@ function partnerCustomerReviewRequestMs(review: AdminPartnerCustomerReview) {
 }
 
 function reviewRequestTimestamp(review: AdminReview) {
-  return safeDateMs(review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt);
+  return safeDateMs(review.createdAt);
 }
 
 function partnerCustomerReviewRequestTimestamp(review: AdminPartnerCustomerReview) {
-  return safeDateMs(review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt);
+  return safeDateMs(review.createdAt);
 }
 
 function safeDateMs(value?: string | null) {
@@ -883,11 +917,7 @@ function ratingSortValue(review: AdminReview) {
   return Number.isFinite(review.rating) ? review.rating : -1;
 }
 
-function cachedValue<T extends object>(
-  cache: Map<T, number>,
-  item: T,
-  calculate: (item: T) => number,
-) {
+function cachedValue<T extends object>(cache: Map<T, number>, item: T, calculate: (item: T) => number) {
   const existing = cache.get(item);
   if (existing !== undefined) {
     return existing;
@@ -904,8 +934,12 @@ function parseDateInput(value: string) {
   }
 
   const [, year, month, day] = match;
-  const timestamp = new Date(Number(year), Number(month) - 1, Number(day)).getTime();
-  return Number.isFinite(timestamp) ? timestamp : null;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  return date.getFullYear() === Number(year) &&
+    date.getMonth() === Number(month) - 1 &&
+    date.getDate() === Number(day)
+    ? date.getTime()
+    : null;
 }
 
 function startOfLocalDay(timestamp: number) {

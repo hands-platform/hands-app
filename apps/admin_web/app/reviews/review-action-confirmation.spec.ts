@@ -3,6 +3,7 @@ import {
   buildReviewModerationConfirmation,
   readReviewModerationStatus,
   reviewModerationConfirmHref,
+  safeReviewReturnTo,
 } from './review-action-confirmation';
 
 const review = {
@@ -13,35 +14,40 @@ const review = {
 } as AdminReview;
 
 describe('review action confirmation', () => {
-  it('builds a hold confirmation with report reason evidence', () => {
-    const confirmation = buildReviewModerationConfirmation([review], review.id, 'HIDDEN', 'Held by admin');
+  it('builds a hidden confirmation with required reason and list context', () => {
+    const confirmation = buildReviewModerationConfirmation(
+      review,
+      'HIDDEN',
+      'Customer dispute under review',
+      '/reviews?dateRange=30d&page=2&q=mai',
+    );
 
-    expect(confirmation).toEqual({
-      cancelHref: '/reviews',
-      confirmLabel: 'Hold review',
-      description: 'Hold review review-f from app visibility. Reason: Held by admin.',
-      hiddenInputs: [
-        { name: 'reviewId', value: review.id },
-        { name: 'status', value: 'HIDDEN' },
-        { name: 'reportReason', value: 'Held by admin' },
-      ],
+    expect(confirmation).toMatchObject({
+      cancelHref: '/reviews?dateRange=30d&page=2&q=mai',
+      confirmLabel: 'Hide review',
+      nextStatusLabel: 'Hidden',
+      review,
       reviewId: review.id,
-      title: 'Hold review review-f?',
+      title: 'Hide review review-f?',
       tone: 'warning',
     });
+    expect(confirmation?.reasonInput?.defaultValue).toBe('Customer dispute under review');
+    expect(confirmation?.hiddenInputs).toContainEqual({ name: 'returnTo', value: '/reviews?dateRange=30d&page=2&q=mai' });
   });
 
   it('builds a publish confirmation', () => {
-    const confirmation = buildReviewModerationConfirmation([review], review.id, 'PUBLISHED', '');
+    const confirmation = buildReviewModerationConfirmation(review, 'PUBLISHED', 'Old reason');
 
     expect(confirmation?.confirmLabel).toBe('Publish review');
     expect(confirmation?.tone).toBe('success');
+    expect(confirmation?.reasonInput).toBeNull();
+    expect(confirmation?.hiddenInputs).toContainEqual({ name: 'reportReason', value: '' });
     expect(confirmation?.hiddenInputs).toContainEqual({ name: 'status', value: 'PUBLISHED' });
   });
 
   it('returns null for unsupported status or unloaded review', () => {
-    expect(buildReviewModerationConfirmation([review], review.id, null, '')).toBeNull();
-    expect(buildReviewModerationConfirmation([review], 'missing', 'REPORTED', '')).toBeNull();
+    expect(buildReviewModerationConfirmation(review, null, '')).toBeNull();
+    expect(buildReviewModerationConfirmation(null, 'REPORTED', '')).toBeNull();
   });
 
   it('reads only supported moderation statuses', () => {
@@ -55,5 +61,12 @@ describe('review action confirmation', () => {
     expect(reviewModerationConfirmHref('review 1', 'REPORTED', 'Needs review')).toBe(
       '/reviews?confirm=moderate&reviewId=review+1&status=REPORTED&reportReason=Needs+review',
     );
+  });
+
+  it('accepts only an internal reviews return path', () => {
+    expect(safeReviewReturnTo('/reviews?review=reported&page=2')).toBe('/reviews?review=reported&page=2');
+    expect(safeReviewReturnTo('//evil.example/reviews')).toBe('/reviews');
+    expect(safeReviewReturnTo('/partners')).toBe('/reviews');
+    expect(safeReviewReturnTo('/reviews\\redirect')).toBe('/reviews');
   });
 });

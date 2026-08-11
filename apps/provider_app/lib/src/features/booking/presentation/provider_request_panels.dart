@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../../../core/local_demo_access.dart';
 import '../../map/domain/services/provider_location_heartbeat.dart';
 import 'provider_jobs_helpers.dart';
 
@@ -9,6 +11,7 @@ class ProviderOtpLoginPanel extends StatelessWidget {
     required this.phoneController,
     required this.otpController,
     required this.otpRequested,
+    required this.otpCooldownSeconds,
     required this.loading,
     required this.onRequestOtp,
     required this.onVerifyOtp,
@@ -18,6 +21,7 @@ class ProviderOtpLoginPanel extends StatelessWidget {
   final TextEditingController phoneController;
   final TextEditingController otpController;
   final bool otpRequested;
+  final int otpCooldownSeconds;
   final bool loading;
   final VoidCallback onRequestOtp;
   final VoidCallback onVerifyOtp;
@@ -32,12 +36,14 @@ class ProviderOtpLoginPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Partner login',
+              'Đăng nhập đối tác',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
             Text(
-              'Use phone OTP for the production partner account, or local demo login while testing booking requests.',
+              localDemoAccessEnabled
+                  ? 'Dùng OTP qua điện thoại hoặc tài khoản thử nghiệm cục bộ khi kiểm tra yêu cầu đặt lịch.'
+                  : 'Dùng OTP qua điện thoại để đăng nhập tài khoản đối tác HANDS.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
@@ -47,7 +53,7 @@ class ProviderOtpLoginPanel extends StatelessWidget {
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
-                labelText: 'Phone number',
+                labelText: 'Số điện thoại',
                 hintText: '+84900000002',
               ),
             ),
@@ -55,9 +61,13 @@ class ProviderOtpLoginPanel extends StatelessWidget {
             TextField(
               controller: otpController,
               keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(6),
+              ],
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
-                labelText: 'OTP code',
+                labelText: 'Mã OTP',
                 hintText: '123456',
               ),
             ),
@@ -66,30 +76,39 @@ class ProviderOtpLoginPanel extends StatelessWidget {
               children: [
                 Expanded(
                   child: FilledButton.tonalIcon(
-                    onPressed: loading ? null : onRequestOtp,
+                    onPressed:
+                        loading || otpCooldownSeconds > 0 ? null : onRequestOtp,
                     icon: const Icon(Icons.sms_outlined),
-                    label: Text(otpRequested ? 'Resend OTP' : 'Request OTP'),
+                    label: Text(
+                      otpCooldownSeconds > 0
+                          ? 'Gửi lại sau $otpCooldownSeconds giây'
+                          : otpRequested
+                              ? 'Gửi lại OTP'
+                              : 'Nhận mã OTP',
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: loading ? null : onVerifyOtp,
+                    onPressed: loading || !otpRequested ? null : onVerifyOtp,
                     icon: const Icon(Icons.login),
-                    label: const Text('Verify'),
+                    label: const Text('Xác minh'),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: TextButton.icon(
-                onPressed: loading ? null : onDemoLogin,
-                icon: const Icon(Icons.play_circle_outline),
-                label: const Text('Use local demo login'),
+            if (localDemoAccessEnabled) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: loading ? null : onDemoLogin,
+                  icon: const Icon(Icons.play_circle_outline),
+                  label: const Text('Dùng tài khoản thử nghiệm cục bộ'),
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -97,21 +116,33 @@ class ProviderOtpLoginPanel extends StatelessWidget {
   }
 }
 
+bool isValidProviderPhone(String value) {
+  return RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(value.trim());
+}
+
+bool isValidProviderOtp(String value) {
+  return RegExp(r'^\d{6}$').hasMatch(value.trim());
+}
+
 class ProviderStatusPanel extends StatelessWidget {
   const ProviderStatusPanel({
     super.key,
     required this.isSignedIn,
     required this.isOnline,
+    required this.isAvailabilityEnabled,
     required this.heartbeatSnapshot,
     required this.loading,
     required this.onGoOnline,
+    required this.onGoOffline,
   });
 
   final bool isSignedIn;
   final bool isOnline;
+  final bool isAvailabilityEnabled;
   final ProviderLocationHeartbeatSnapshot heartbeatSnapshot;
   final bool loading;
   final VoidCallback? onGoOnline;
+  final VoidCallback? onGoOffline;
 
   @override
   Widget build(BuildContext context) {
@@ -134,18 +165,24 @@ class ProviderStatusPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isOnline ? 'Online available' : 'Offline',
+                    isOnline
+                        ? 'Đang trực tuyến'
+                        : isAvailabilityEnabled
+                            ? 'Đã bật theo lịch làm việc'
+                            : 'Đang ngoại tuyến',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   Text(
                     isOnline
                         ? providerLocationHeartbeatLabel(heartbeatSnapshot)
-                        : 'Go online to receive first-pick and marketplace requests.',
+                        : isAvailabilityEnabled
+                            ? 'Vị trí được cập nhật. Yêu cầu sẽ tự mở trong giờ làm việc.'
+                            : 'Bật trực tuyến để nhận yêu cầu trực tiếp và yêu cầu công khai.',
                   ),
                   if (isOnline && heartbeatSnapshot.lastError != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      'Last saved location remains visible to customers.',
+                      'Vị trí đã lưu gần nhất vẫn hiển thị cho khách hàng.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context).colorScheme.error,
                             fontWeight: FontWeight.w600,
@@ -156,8 +193,14 @@ class ProviderStatusPanel extends StatelessWidget {
               ),
             ),
             FilledButton.tonal(
-              onPressed: !isSignedIn || loading || isOnline ? null : onGoOnline,
-              child: const Text('Go online'),
+              onPressed: !isSignedIn || loading
+                  ? null
+                  : isAvailabilityEnabled
+                      ? onGoOffline
+                      : onGoOnline,
+              child: Text(
+                isAvailabilityEnabled ? 'Tắt trực tuyến' : 'Bật trực tuyến',
+              ),
             ),
           ],
         ),

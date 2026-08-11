@@ -1,5 +1,20 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { BookingStatus, Prisma } from '@prisma/client';
+import {
+  AppUsageEventType,
+  AppUsageOrigin,
+  BookingStatus,
+  FilePurpose,
+  FileReviewStatus,
+  FileUploadStatus,
+  FileVisibility,
+  Prisma,
+  Role,
+} from '@prisma/client';
+import {
+  appUsageDailyAggregateBoundsUpdates,
+  appUsageDailyAggregateUpsert,
+} from '../app-usage/app-usage-daily-aggregate';
+import { safeDistanceMeters } from '../matching/matching.policy';
 import { PrismaService } from '../prisma/prisma.service';
 
 const customerFavoriteProviderSelect = {
@@ -44,6 +59,42 @@ const customerViewedProviderSelect = {
   },
 } satisfies Prisma.CustomerProviderProfileViewSelect;
 
+const customerHomePartnerSelect = {
+  id: true,
+  displayName: true,
+  status: true,
+  ratingAvg: true,
+  reviewCount: true,
+  currentLat: true,
+  currentLng: true,
+  user: {
+    select: {
+      fullName: true,
+      fileAssets: {
+        where: {
+          purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+          visibility: FileVisibility.PUBLIC,
+          uploadStatus: FileUploadStatus.UPLOADED,
+          reviewStatus: FileReviewStatus.APPROVED,
+        },
+        orderBy: [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }],
+        take: 1,
+        select: {
+          url: true,
+          purpose: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.ProviderProfileSelect;
+
+type CustomerHomePartner = Prisma.ProviderProfileGetPayload<{
+  select: typeof customerHomePartnerSelect;
+}>;
+
+const CUSTOMER_HOME_PARTNER_LIMIT = 12;
+const CUSTOMER_HOME_PARTNER_CANDIDATE_LIMIT = 100;
+
 @Injectable()
 export class CustomersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -58,6 +109,114 @@ export class CustomersService {
     });
   }
 
+  async getHomeSummary(userId: string | undefined, lat: number, lng: number) {
+    const customer = await this.requireCustomer(userId);
+    const [wallet, favorites, completedBookings] = await Promise.all([
+      this.prisma.customerWalletLedgerEntry.aggregate({
+        where: { customerProfileId: customer.id },
+        _sum: { amount: true },
+      }),
+      this.prisma.customerFavoriteProvider.findMany({
+        where: {
+          customerProfileId: customer.id,
+          providerProfile: {
+            blockedAt: null,
+            deletedAt: null,
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: CUSTOMER_HOME_PARTNER_CANDIDATE_LIMIT,
+        select: {
+          providerProfile: {
+            select: customerHomePartnerSelect,
+          },
+        },
+      }),
+      this.prisma.booking.findMany({
+        where: {
+          customerProfileId: customer.id,
+          status: BookingStatus.COMPLETED,
+          selectedProviderId: { not: null },
+          selectedProvider: {
+            blockedAt: null,
+            deletedAt: null,
+          },
+        },
+        orderBy: [{ closedAt: 'desc' }, { updatedAt: 'desc' }],
+        take: CUSTOMER_HOME_PARTNER_CANDIDATE_LIMIT,
+        select: {
+          closedAt: true,
+          updatedAt: true,
+          selectedProvider: {
+            select: customerHomePartnerSelect,
+          },
+        },
+      }),
+    ]);
+
+    const completedPartners = new Map<string, { provider: CustomerHomePartner; lastCompletedAt: Date }>();
+    for (const booking of completedBookings) {
+      const provider = booking.selectedProvider;
+      if (!provider || completedPartners.has(provider.id)) {
+        continue;
+      }
+      completedPartners.set(provider.id, {
+        provider,
+        lastCompletedAt: booking.closedAt ?? booking.updatedAt,
+      });
+    }
+
+    return {
+      wallet: {
+        balance: wallet._sum.amount ?? 0,
+        currency: 'VND',
+      },
+      favoritePartners: sortCustomerHomePartners(
+        favorites.map(({ providerProfile }) => customerHomePartnerResponse(providerProfile, lat, lng)),
+      ).slice(0, CUSTOMER_HOME_PARTNER_LIMIT),
+      completedPartners: sortCustomerHomePartners(
+        [...completedPartners.values()].map(({ provider, lastCompletedAt }) => ({
+          ...customerHomePartnerResponse(provider, lat, lng),
+          lastCompletedAt: lastCompletedAt.toISOString(),
+        })),
+      ).slice(0, CUSTOMER_HOME_PARTNER_LIMIT),
+    };
+  }
+
+  async getWallet(userId: string | undefined) {
+    const customer = await this.requireCustomer(userId);
+    const [wallet, entries] = await Promise.all([
+      this.prisma.customerWalletLedgerEntry.aggregate({
+        where: { customerProfileId: customer.id },
+        _sum: { amount: true },
+      }),
+      this.prisma.customerWalletLedgerEntry.findMany({
+        where: { customerProfileId: customer.id },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        select: {
+          id: true,
+          bookingId: true,
+          referralRewardId: true,
+          type: true,
+          amount: true,
+          currency: true,
+          reference: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    return {
+      balance: wallet._sum.amount ?? 0,
+      currency: 'VND',
+      entries: entries.map((entry) => ({
+        ...entry,
+        createdAt: entry.createdAt.toISOString(),
+      })),
+    };
+  }
+
   async listViewedProviders(userId: string | undefined) {
     const customer = await this.requireCustomer(userId);
     return this.prisma.customerProviderProfileView.findMany({
@@ -68,7 +227,11 @@ export class CustomersService {
     });
   }
 
-  async recordProviderProfileView(userId: string | undefined, providerProfileId: string) {
+  async recordProviderProfileView(
+    userId: string | undefined,
+    providerProfileId: string,
+    rawClientEventId?: string,
+  ) {
     const customer = await this.requireCustomer(userId);
     const provider = await this.prisma.providerProfile.findFirst({
       where: {
@@ -83,25 +246,83 @@ export class CustomersService {
     }
 
     const now = new Date();
-    return this.prisma.customerProviderProfileView.upsert({
-      where: {
-        customerProfileId_providerProfileId: {
+    const clientEventId = normalizedOptionalText(rawClientEventId);
+
+    return this.prisma.$transaction(async (transaction) => {
+      const existingEvent = clientEventId
+        ? await transaction.appUsageEvent.findUnique({
+            where: { clientEventId },
+            select: { eventType: true, userId: true },
+          })
+        : null;
+
+      if (
+        existingEvent &&
+        (existingEvent.userId !== customer.userId ||
+          existingEvent.eventType !== AppUsageEventType.PROVIDER_PROFILE_VIEW)
+      ) {
+        throw new BadRequestException('clientEventId is already assigned to another app event');
+      }
+
+      if (existingEvent) {
+        return transaction.customerProviderProfileView.findUniqueOrThrow({
+          where: {
+            customerProfileId_providerProfileId: {
+              customerProfileId: customer.id,
+              providerProfileId,
+            },
+          },
+          select: customerViewedProviderSelect,
+        });
+      }
+
+      const profileView = await transaction.customerProviderProfileView.upsert({
+        where: {
+          customerProfileId_providerProfileId: {
+            customerProfileId: customer.id,
+            providerProfileId,
+          },
+        },
+        create: {
           customerProfileId: customer.id,
           providerProfileId,
+          firstViewedAt: now,
+          lastViewedAt: now,
+          viewCount: 1,
         },
-      },
-      create: {
-        customerProfileId: customer.id,
-        providerProfileId,
-        firstViewedAt: now,
-        lastViewedAt: now,
-        viewCount: 1,
-      },
-      update: {
-        lastViewedAt: now,
-        viewCount: { increment: 1 },
-      },
-      select: customerViewedProviderSelect,
+        update: {
+          lastViewedAt: now,
+          viewCount: { increment: 1 },
+        },
+        select: customerViewedProviderSelect,
+      });
+
+      await transaction.appUsageEvent.create({
+        data: {
+          clientEventId,
+          userId: customer.userId,
+          role: Role.CUSTOMER,
+          eventType: AppUsageEventType.PROVIDER_PROFILE_VIEW,
+          origin: AppUsageOrigin.PRODUCTION,
+          subjectType: 'PROVIDER_PROFILE',
+          subjectId: providerProfileId,
+          occurredAt: now,
+        },
+        select: { id: true },
+      });
+      const aggregateInput = {
+        eventType: AppUsageEventType.PROVIDER_PROFILE_VIEW,
+        occurredAt: now,
+        origin: AppUsageOrigin.PRODUCTION,
+        role: Role.CUSTOMER,
+        userId: customer.userId,
+      };
+      await transaction.appUsageDailyAggregate.upsert(appUsageDailyAggregateUpsert(aggregateInput));
+      for (const boundsUpdate of appUsageDailyAggregateBoundsUpdates(aggregateInput)) {
+        await transaction.appUsageDailyAggregate.updateMany(boundsUpdate);
+      }
+
+      return profileView;
     });
   }
 
@@ -248,6 +469,11 @@ export class CustomersService {
   }
 }
 
+function normalizedOptionalText(value: string | undefined) {
+  const normalized = value?.trim();
+  return normalized ? normalized : undefined;
+}
+
 function normalizeNullableText(value: string | undefined) {
   const normalized = value?.trim();
   return normalized ? normalized : null;
@@ -287,5 +513,48 @@ async function recalculateProviderRating(tx: Prisma.TransactionClient, providerP
       ratingAvg: aggregate._avg.rating ?? 0,
       reviewCount: aggregate._count.rating,
     },
+  });
+}
+
+function customerHomePartnerResponse(provider: CustomerHomePartner, lat: number, lng: number) {
+  const distanceMeters = safeDistanceMeters(lat, lng, provider.currentLat, provider.currentLng);
+  const media = provider.user.fileAssets;
+  const profileImageUrl =
+    media.find((file) => file.purpose === FilePurpose.PROFILE_IMAGE && file.url)?.url ??
+    media.find((file) => file.url)?.url ??
+    null;
+
+  return {
+    id: provider.id,
+    displayName: provider.displayName || provider.user.fullName || 'Partner',
+    status: provider.status,
+    ratingAvg: Number(provider.ratingAvg),
+    reviewCount: provider.reviewCount,
+    profileImageUrl,
+    distanceMeters: approximateCustomerHomeDistance(distanceMeters),
+  };
+}
+
+function approximateCustomerHomeDistance(distanceMeters: number | null) {
+  if (!Number.isFinite(distanceMeters)) {
+    return null;
+  }
+  return Math.max(0, Math.round((distanceMeters as number) / 1000) * 1000);
+}
+
+function sortCustomerHomePartners<T extends { displayName: string; distanceMeters: number | null }>(
+  partners: T[],
+) {
+  return partners.sort((left, right) => {
+    if (left.distanceMeters === null && right.distanceMeters === null) {
+      return left.displayName.localeCompare(right.displayName);
+    }
+    if (left.distanceMeters === null) {
+      return 1;
+    }
+    if (right.distanceMeters === null) {
+      return -1;
+    }
+    return left.distanceMeters - right.distanceMeters;
   });
 }

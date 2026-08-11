@@ -2,26 +2,67 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { vi } from 'vitest';
 
-import { adminPostOrThrow } from '../../../lib/admin-api';
+import { AdminApiRequestError, adminPatchOrThrow, adminPostOrThrow } from '../../../lib/admin-api';
 import {
+  approvePayoutBatchPaidCloseout,
+  approveRefundRequest,
   approvePartnerBankDepositRequest,
+  approveWithdrawalPaidCloseout,
   approveWalletAdjustmentRequest,
-  assignPartnerBankDepositReconciliationReview,
+  cancelStaleWalletAdjustmentRequest,
+  decideCompanyBankAccountRequest,
+  rejectRefundRequest,
   rejectPartnerBankDepositRequest,
   rejectWalletAdjustmentRequest,
 } from './actions';
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('next/navigation', () => ({ redirect: vi.fn() }));
-vi.mock('../../../lib/admin-api', () => ({ adminPostOrThrow: vi.fn() }));
+vi.mock('../../../lib/admin-api', async () => {
+  const actual = await vi.importActual<typeof import('../../../lib/admin-api')>('../../../lib/admin-api');
+  return {
+    ...actual,
+    adminPatchOrThrow: vi.fn(),
+    adminPostOrThrow: vi.fn(),
+  };
+});
 
+const mockedAdminPatchOrThrow = vi.mocked(adminPatchOrThrow);
 const mockedAdminPostOrThrow = vi.mocked(adminPostOrThrow);
 const mockedRedirect = vi.mocked(redirect);
 
 describe('Finance Approval Queue actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockedAdminPatchOrThrow.mockResolvedValue({});
     mockedAdminPostOrThrow.mockResolvedValue({});
+  });
+
+  it.each([
+    {
+      action: approveWithdrawalPaidCloseout,
+      id: 'withdrawal-pending-1',
+      path: '/admin/provider-wallet/withdrawal-requests/withdrawal-pending-1',
+    },
+    {
+      action: approvePayoutBatchPaidCloseout,
+      id: 'payout-processing-1',
+      path: '/admin/payout-batches/payout-processing-1',
+    },
+  ])('uses the authenticated Finance approver for $path', async ({ action, id, path }) => {
+    const formData = new FormData();
+    formData.set('requestId', id);
+    formData.set('confirmationRequestId', id);
+    formData.set('approvalAdminId', 'browser-supplied-admin');
+    formData.set('transferRef', 'MALICIOUS-REPLACEMENT');
+    formData.set('redirectTo', '/finance-tax/approval-queue?view=payouts&take=25');
+
+    await action(formData);
+
+    expect(mockedAdminPatchOrThrow).toHaveBeenCalledWith(path, { status: 'PAID' });
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      `/finance-tax/approval-queue?view=payouts&take=25&approvalNotice=approved&requestId=${id}`,
+    );
   });
 
   it('approves a persisted wallet request through the scoped Admin endpoint', async () => {
@@ -54,6 +95,27 @@ describe('Finance Approval Queue actions', () => {
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('approvalNotice=rejected'));
   });
 
+  it('cancels a stale maker request without calling an execution endpoint', async () => {
+    const formData = new FormData();
+    formData.set('requestId', 'wallet-request-stale');
+    formData.set('confirmationRequestId', 'wallet-request-stale');
+    formData.set('reason', 'Live wallet balance changed after this request');
+    formData.set(
+      'redirectTo',
+      '/finance-tax/approval-queue?view=wallet&walletReview=stale&take=25',
+    );
+
+    await cancelStaleWalletAdjustmentRequest(formData);
+
+    expect(mockedAdminPostOrThrow).toHaveBeenCalledWith(
+      '/admin/wallet-adjustment-requests/wallet-request-stale/cancel-stale',
+      { reason: 'Live wallet balance changed after this request' },
+    );
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/finance-tax/approval-queue?view=wallet&walletReview=stale&take=25&approvalNotice=cancelled&requestId=wallet-request-stale',
+    );
+  });
+
   it('approves a persisted Partner bank deposit through the scoped decision endpoint', async () => {
     const formData = new FormData();
     formData.set('requestId', 'deposit-request-1');
@@ -83,42 +145,86 @@ describe('Finance Approval Queue actions', () => {
     );
   });
 
-  it('assigns deposit reconciliation ownership without writing finance ledgers directly', async () => {
+  it('decides a company bank account request with the signed-in approver and preserved queue view', async () => {
     const formData = new FormData();
-    formData.set('requestId', 'deposit-request-1');
-    formData.set('confirmationRequestId', 'deposit-request-1');
-    formData.set('assigneeAdminId', 'finance-operator-1');
-    formData.set('reason', ' Own overdue bank evidence ');
-    formData.set(
-      'redirectTo',
-      '/finance-tax/approval-queue?view=reconciliation&take=25&confirm=assign-deposit-reconciliation',
-    );
+    formData.set('bankAccountId', 'company-bank-account-1');
+    formData.set('confirmationRequestId', 'bank-account-request-1');
+    formData.set('decision', 'APPROVE');
+    formData.set('operatorReason', 'Verified masked account against signed bank evidence');
+    formData.set('requestId', 'bank-account-request-1');
+    formData.set('redirectTo', '/finance-tax/approval-queue?view=bank-accounts&take=25');
+    formData.set('approvalAdminId', 'browser-supplied-admin');
 
-    await assignPartnerBankDepositReconciliationReview(formData);
+    await decideCompanyBankAccountRequest(formData);
 
     expect(mockedAdminPostOrThrow).toHaveBeenCalledWith(
-      '/admin/provider-wallet/deposit-requests/deposit-request-1/reconciliation-assignment',
+      '/admin/company-bank-accounts/company-bank-account-1/approval-decision',
       {
-        assigneeAdminId: 'finance-operator-1',
-        reason: 'Own overdue bank evidence',
+        decision: 'APPROVE',
+        operatorReason: 'Verified masked account against signed bank evidence',
+        requestId: 'bank-account-request-1',
       },
     );
+    expect(revalidatePath).toHaveBeenCalledWith('/finance-tax/company-bank-accounts');
     expect(mockedRedirect).toHaveBeenCalledWith(
-      '/finance-tax/approval-queue?view=reconciliation&take=25&assignmentNotice=assigned&requestId=deposit-request-1',
+      '/finance-tax/approval-queue?view=bank-accounts&take=25&approvalNotice=approved&requestId=bank-account-request-1',
     );
   });
 
-  it('blocks deposit reconciliation assignment without confirmation and a meaningful reason', async () => {
+  it('approves a refund request through the payment endpoint without sending an approver id', async () => {
     const formData = new FormData();
-    formData.set('requestId', 'deposit-request-1');
-    formData.set('confirmationRequestId', 'another-request');
-    formData.set('assigneeAdminId', 'finance-operator-1');
-    formData.set('reason', 'Too short');
+    formData.set('requestId', 'refund-request-1');
+    formData.set('confirmationRequestId', 'refund-request-1');
+    formData.set('paymentId', 'payment-1');
+    formData.set('redirectTo', '/finance-tax/approval-queue?view=refunds&take=25');
 
-    await assignPartnerBankDepositReconciliationReview(formData);
+    await approveRefundRequest(formData);
 
-    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('assignmentNotice=failed'));
+    expect(mockedAdminPostOrThrow).toHaveBeenCalledWith(
+      '/admin/payments/payment-1/refund',
+      {},
+    );
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/finance-tax/approval-queue?view=refunds&take=25&approvalNotice=approved&requestId=refund-request-1',
+    );
+  });
+
+  it('rejects a refund request with evidence and preserves the focused queue', async () => {
+    const formData = new FormData();
+    formData.set('requestId', 'refund-request-1');
+    formData.set('confirmationRequestId', 'refund-request-1');
+    formData.set('reason', 'Customer evidence does not support refund');
+    formData.set('redirectTo', '/finance-tax/approval-queue?view=refunds');
+
+    await rejectRefundRequest(formData);
+
+    expect(mockedAdminPostOrThrow).toHaveBeenCalledWith(
+      '/admin/refunds/refund-request-1/reject',
+      { reason: 'Customer evidence does not support refund' },
+    );
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/finance-tax/approval-queue?view=refunds&approvalNotice=rejected&requestId=refund-request-1',
+    );
+  });
+
+  it('returns a safe state-mismatch notice when payment state changes during refund approval', async () => {
+    mockedAdminPostOrThrow.mockRejectedValueOnce(new AdminApiRequestError(
+      'POST',
+      '/admin/payments/payment-1/refund',
+      409,
+      { message: 'Payment is already REFUNDED' },
+    ));
+    const formData = new FormData();
+    formData.set('requestId', 'refund-request-1');
+    formData.set('confirmationRequestId', 'refund-request-1');
+    formData.set('paymentId', 'payment-1');
+    formData.set('redirectTo', '/finance-tax/approval-queue?view=refunds');
+
+    await approveRefundRequest(formData);
+
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/finance-tax/approval-queue?view=refunds&approvalNotice=state-mismatch&requestId=refund-request-1',
+    );
   });
 
   it('blocks a stale or direct approval submission without matching confirmation evidence', async () => {

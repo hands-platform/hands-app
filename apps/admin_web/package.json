@@ -2,7 +2,7 @@
   "name": "@massage-vn/admin-web",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -18,10 +18,11 @@
     "@fullcalendar/timegrid": "^6.1.21",
     "lucide-react": "^0.542.0",
     "maplibre-gl": "^5.24.0",
-    "next": "^16.2.9",
+    "next": "^16.2.12",
     "react": "^19.2.7",
     "react-datepicker": "^9.1.0",
     "react-dom": "^19.2.7",
+    "recharts": "3.6.0",
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {

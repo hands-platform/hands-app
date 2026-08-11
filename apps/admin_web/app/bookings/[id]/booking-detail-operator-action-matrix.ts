@@ -6,12 +6,12 @@ import {
 import { bookingOperatorActionMatrix as buildBookingOperatorActionMatrix } from '../../../lib/booking-operator-action-matrix';
 import {
   bookingOperatorNoteLines,
-  canExpireBooking,
   canMarkNoShow,
 } from '../../../lib/booking-operator-action-rules';
 import { bookingCashDebtNeedsSettlement } from './booking-cash-wallet-gate';
 import { isTerminalPayment, formatDate, money } from './booking-formatters';
 import { bookingPaymentEvidence } from './booking-payment-evidence';
+import { bookingDetailExpiryEligibility } from './booking-participant-rules';
 
 export function bookingDetailOperatorActionMatrix(booking: AdminBookingDetail) {
   const paymentStatus = booking.payment?.status ?? 'NONE';
@@ -31,7 +31,7 @@ export function bookingDetailOperatorActionMatrix(booking: AdminBookingDetail) {
     cashDebtAmountLabel: money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency),
     closeoutAvailable: canCloseoutCompletedBooking(booking),
     closeoutLabel: completedCloseoutLabel(booking),
-    expireAvailable: canExpireBooking(booking.status),
+    expireAvailable: bookingDetailExpiryEligibility(booking).allowed,
     expiresAtLabel: formatDate(booking.expiresAt),
     noShowAvailable: canMarkNoShow(booking.status),
     refundRowCount: paymentEvidence.refundCount,

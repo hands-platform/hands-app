@@ -7,7 +7,7 @@ import {
 } from './provider-wallet.policy';
 
 describe('provider wallet settlement gate policy', () => {
-  it('blocks final acceptance, service start, and payout without hiding visible demand', () => {
+  it('blocks marketplace participation, service start, and payout without hiding visible demand', () => {
     const response = providerWalletBlockedResponse({
       providerProfileId: 'provider-profile-abc12345',
       walletBalance: -145000,
@@ -18,19 +18,19 @@ describe('provider wallet settlement gate policy', () => {
     expect(response.displayMessage).toBe(PROVIDER_WALLET_MARKETPLACE_BLOCK_DISPLAY_MESSAGE);
     expect(response.walletBlocked).toBe(true);
     expect(response.marketplaceVisibilityBlocked).toBe(false);
-    expect(response.marketplaceJoinBlocked).toBe(false);
+    expect(response.marketplaceJoinBlocked).toBe(true);
     expect(response.directFirstPickBlocked).toBe(false);
     expect(response.alreadyMatchedServiceBlocked).toBe(true);
     expect(response.payoutReleaseBlocked).toBe(true);
     expect(response.walletDebtAmount).toBe(145000);
     expect(response.walletSettlementMethod).toBe(PROVIDER_WALLET_SETTLEMENT_METHOD);
     expect(response.walletSettlementReference).toBe('HANDS-WALLET-ABC12345');
-    expect(response.message).toContain('final acceptance');
+    expect(response.message).toContain('marketplace participation');
     expect(response.walletBlockReason).toContain('service start');
-    expect(response.walletSettlementInstruction).toContain('Marketplace requests stay visible');
-    expect(response.walletSettlementInstruction).toContain('participation is allowed');
+    expect(response.walletSettlementInstruction).toContain('xem yêu cầu đặt lịch');
+    expect(response.walletSettlementInstruction).toContain('yêu cầu chỉ định trực tiếp');
     expect(response.walletSettlementSteps.join(' ')).toContain(
-      'Final acceptance, service start, and payout release resume',
+      'Quyền tham gia đặt lịch và nhận tiền chi trả',
     );
   });
 

@@ -338,7 +338,7 @@ export function PartnerDetailResubmissionGuidanceSection({
 }: PartnerDetailResubmissionGuidanceSectionProps) {
   return (
     <PartnerDetailVuexyTablePanel
-      description="Use this when a partner asks what to fix after rejection. Keep the message specific and auditable."
+      description="Use this when a partner asks what to fix while KYC is on hold. Keep the message specific and auditable."
       id="partner-resubmission-guidance"
       resultLabel={`${plan.items.length} item(s)`}
       resultTone={plan.items.length ? 'danger' : 'success'}

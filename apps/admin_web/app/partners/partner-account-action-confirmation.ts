@@ -1,6 +1,7 @@
 import type { AdminProvider } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type { StatusBadgeTone } from '../../components/status-badge';
+import type { PartnerDecisionQueue } from './partner-review-mode';
 
 export type PartnerAccountConfirmationAction = 'approve' | 'block' | 'reject' | 'sync-role' | 'unblock';
 
@@ -47,7 +48,7 @@ const partnerAccountActionMetadata: Record<PartnerAccountConfirmationAction, Par
       `Approve Partner ${partnerLabel(
         provider,
       )} as an official Partner after identity, profile, app reachability, and operating readiness review.`,
-    title: (provider) => `Approve Partner ${shortId(provider.id)}?`,
+    title: (provider) => `Approve Partner ${partnerLabel(provider)}?`,
     tone: 'success',
   },
   block: {
@@ -57,7 +58,7 @@ const partnerAccountActionMetadata: Record<PartnerAccountConfirmationAction, Par
         provider,
       )} on hold from going online, updating location, or appearing to customers. The reason is saved for audit and shown in the Partner app as correction guidance.`,
     reasonPlaceholder: 'Partner app hold reason and correction request',
-    title: (provider) => `Hold Partner ${shortId(provider.id)}?`,
+    title: (provider) => `Hold Partner ${partnerLabel(provider)}?`,
     tone: 'warning',
   },
   reject: {
@@ -65,7 +66,7 @@ const partnerAccountActionMetadata: Record<PartnerAccountConfirmationAction, Par
     description: (provider) =>
       `Reject Partner ${partnerLabel(provider)} and keep the reason clear for audit and re-submission.`,
     reasonPlaceholder: 'Partner rejection reason for resubmission',
-    title: (provider) => `Reject Partner ${shortId(provider.id)}?`,
+    title: (provider) => `Reject Partner ${partnerLabel(provider)}?`,
     tone: 'danger',
   },
   'sync-role': {
@@ -76,14 +77,14 @@ const partnerAccountActionMetadata: Record<PartnerAccountConfirmationAction, Par
       provider.verification?.status === 'APPROVED'
         ? ''
         : 'Partner verification must be approved before syncing the Supabase role.',
-    title: (provider) => `Sync role for Partner ${shortId(provider.id)}?`,
+    title: (provider) => `Sync role for Partner ${partnerLabel(provider)}?`,
     tone: 'info',
   },
   unblock: {
     confirmLabel: 'Release hold',
     description: (provider) =>
       `Release Partner ${partnerLabel(provider)} only after the recorded identity, safety, payout, or policy issue is resolved.`,
-    title: (provider) => `Release hold for Partner ${shortId(provider.id)}?`,
+    title: (provider) => `Release hold for Partner ${partnerLabel(provider)}?`,
     tone: 'warning',
   },
 };
@@ -116,7 +117,7 @@ export function buildPartnerAccountActionConfirmation(
   providers: readonly AdminProvider[],
   action: PartnerAccountConfirmationAction | null,
   providerId: string,
-  options: { readonly cancelHref?: string } = {},
+  options: { readonly cancelHref?: string; readonly decisionQueue?: PartnerDecisionQueue | null } = {},
 ): PartnerAccountActionConfirmation | null {
   if (!action) {
     return null;
@@ -137,7 +138,12 @@ export function buildPartnerAccountActionConfirmation(
     confirmLabel: metadata.confirmLabel,
     description: disabledReason || metadata.description(provider),
     disabled,
-    hiddenInputs: [{ name: 'providerId', value: provider.id }],
+    hiddenInputs: [
+      { name: 'providerId', value: provider.id },
+      ...(options.decisionQueue
+        ? [{ name: 'decisionQueue', value: options.decisionQueue }]
+        : []),
+    ],
     providerId: provider.id,
     textInputs: metadata.reasonPlaceholder
       ? [

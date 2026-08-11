@@ -7,7 +7,7 @@ import type {
   AdminProvider,
 } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
-import { partnerDisplayText as operatorDisplayText } from '../../lib/admin-copy';
+import { adminCountLabel, partnerDisplayText as operatorDisplayText } from '../../lib/admin-copy';
 import { formatMoney, formatRelativeTime, shortDisplayId } from '../../lib/admin-format';
 
 type SignalTimeOptions = {
@@ -81,15 +81,13 @@ export function buildCustomerSignals(customers: readonly AdminCustomerDirectoryR
       const paidAmount = bookings.reduce((sum, booking) => sum + (booking.payment?.amount ?? 0), 0);
       return {
         id: customer.id,
-        name: customer.user?.fullName ?? customer.user?.phone ?? 'Customer',
+        name: customer.user?.fullName ?? `Customer ${shortDisplayId(customer.id)}`,
         avatarStatus: adminAvatarStatusFromSignals({
           devices: customer.user?.pushDevices,
           sessions: customer.user?.appSessions,
         }),
         completedCount: completed.length,
-        detail: `${bookings.length} booking(s), ${formatMoney(paidAmount, 'VND')} payment total, ${
-          customer.selectedLocationCount
-        } saved location(s).`,
+        detail: `${adminCountLabel(bookings.length, 'booking')}, ${formatMoney(paidAmount, 'VND')} payment total, ${adminCountLabel(customer.selectedLocationCount, 'saved location')}.`,
         lastWorkLabel: lastWork
           ? `Last booking ${shortDisplayId(lastWork.id)} / ${relativeTime(lastWork.updatedAt ?? lastWork.createdAt)}`
           : 'No booking yet',
@@ -124,7 +122,7 @@ export function buildPartnerSignals(
         ),
         avatarStatus: partnerHandoffAvatarStatus(partner),
         status: posture.status,
-        detail: `${completed} completed booking(s), ${partner.status}, location ${partner.currentLocationUpdatedAt ? relativeTime(partner.currentLocationUpdatedAt) : 'not shared'}.`,
+        detail: `${adminCountLabel(completed, 'completed booking')}, ${partner.status}, location ${partner.currentLocationUpdatedAt ? relativeTime(partner.currentLocationUpdatedAt) : 'not shared'}.`,
         action: posture.action,
         className: posture.className,
         attention: posture.attention,
@@ -154,6 +152,15 @@ function partnerSignalFacts(
   cashDebtPartnerIds: ReadonlySet<string>,
   nowMs: number,
 ): PartnerSignalFacts {
+  if (partner.attentionSignals) {
+    return {
+      hasCashDebt: partner.attentionSignals.cashDebt,
+      hasKycPending: partner.attentionSignals.kycPending,
+      hasBankPending: partner.attentionSignals.bankPending,
+      hasFreshLocation: !partner.attentionSignals.locationStale,
+    };
+  }
+
   return {
     hasCashDebt: cashDebtPartnerIds.has(partner.id),
     hasKycPending: hasPendingReviewStatus(partner.kyc?.status),

@@ -28,12 +28,17 @@ type PaymentDetailCallbackTimelineSectionProps = {
 };
 
 export function PaymentDetailCallbackTimelineSection({ reviewCount, rows }: PaymentDetailCallbackTimelineSectionProps) {
+  const resultLabel = rows.length === 0
+    ? 'No callback attempts recorded'
+    : reviewCount
+      ? `${reviewCount} review`
+      : `${rows.length} recorded`;
   return (
     <AdminTablePanel
       description="Accepted, replayed, rejected, and conflicting callbacks connected to this payment or gateway reference."
       id="callback-timeline"
-      resultLabel={reviewCount ? `${reviewCount} review` : 'Trace ready'}
-      resultTone={reviewCount ? 'warning' : 'info'}
+      resultLabel={resultLabel}
+      resultTone={reviewCount ? 'warning' : rows.length ? 'info' : 'neutral'}
       title="Gateway callback attempt timeline"
     >
       <AdminDataTable

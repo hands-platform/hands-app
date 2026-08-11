@@ -16,8 +16,21 @@ class ProviderBookingRepositoryImpl implements ProviderBookingRepository {
   }
 
   @override
-  Future<List<dynamic>> listBookings() async {
-    final result = await _api.getJson('/partner/bookings');
+  Future<List<dynamic>> listBookings({
+    String? scope,
+    String? cursor,
+    int? take,
+  }) async {
+    final query = <String, String>{
+      if (scope != null && scope.isNotEmpty) 'scope': scope,
+      if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+      if (take != null) 'take': '$take',
+    };
+    final path = Uri(
+      path: '/partner/bookings',
+      queryParameters: query.isEmpty ? null : query,
+    ).toString();
+    final result = await _api.getJson(path);
     return result is List<dynamic> ? result : [];
   }
 
@@ -38,6 +51,23 @@ class ProviderBookingRepositoryImpl implements ProviderBookingRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> bookingAlertPreferences() async {
+    final result = await _api.getJson('/partner/booking-alert-preferences');
+    return result is Map<String, dynamic> ? result : <String, dynamic>{};
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateBookingAlertPreferences(
+    Map<String, dynamic> preferences,
+  ) async {
+    final result = await _api.patchJson(
+      '/partner/booking-alert-preferences',
+      preferences,
+    );
+    return result is Map<String, dynamic> ? result : <String, dynamic>{};
+  }
+
+  @override
   Future<Map<String, dynamic>> joinBooking(String bookingId) async {
     final result = await _api.postJson('/partner/bookings/$bookingId/join', {})
         as Map<String, dynamic>;
@@ -53,16 +83,16 @@ class ProviderBookingRepositoryImpl implements ProviderBookingRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> rejectBooking(String bookingId) async {
-    final result =
-        await _api.postJson('/partner/bookings/$bookingId/reject', {});
-    return result is Map<String, dynamic> ? result : <String, dynamic>{};
-  }
-
-  @override
-  Future<Map<String, dynamic>> startBooking(String bookingId) async {
-    final result =
-        await _api.postJson('/partner/bookings/$bookingId/start', {});
+  Future<Map<String, dynamic>> rejectBooking(
+    String bookingId, {
+    String? reasonCode,
+    String? reasonDetail,
+  }) async {
+    final result = await _api.postJson('/partner/bookings/$bookingId/reject', {
+      if (reasonCode != null) 'reasonCode': reasonCode,
+      if (reasonDetail != null) 'reasonDetail': reasonDetail.trim(),
+    });
+    _socket.leaveBooking(bookingId);
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
 
@@ -81,12 +111,14 @@ class ProviderBookingRepositoryImpl implements ProviderBookingRepository {
         addressText: addressText,
       ),
     );
+    _socket.leaveBooking(bookingId);
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
 
   @override
   Future<Map<String, dynamic>> cancelBooking(
     String bookingId, {
+    required String reasonCode,
     required String note,
     double? lat,
     double? lng,
@@ -95,12 +127,14 @@ class ProviderBookingRepositoryImpl implements ProviderBookingRepository {
     final result = await _api.postJson(
       '/partner/bookings/$bookingId/cancel',
       _bookingActionPayload(
+        reasonCode: reasonCode,
         note: note,
         lat: lat,
         lng: lng,
         addressText: addressText,
       ),
     );
+    _socket.leaveBooking(bookingId);
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
 
@@ -122,12 +156,16 @@ class ProviderBookingRepositoryImpl implements ProviderBookingRepository {
 }
 
 Map<String, dynamic> _bookingActionPayload({
+  String? reasonCode,
   String? note,
   double? lat,
   double? lng,
   String? addressText,
 }) {
   final payload = <String, dynamic>{};
+  if (reasonCode != null) {
+    payload['reasonCode'] = reasonCode;
+  }
   if (note != null) {
     payload['note'] = note;
   }

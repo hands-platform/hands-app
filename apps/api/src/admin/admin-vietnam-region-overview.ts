@@ -28,6 +28,8 @@ export type AdminVietnamOverviewWindow = {
   endAt: Date | null;
 };
 
+export const VIETNAM_OVERVIEW_TIME_ZONE = 'Asia/Ho_Chi_Minh' as const;
+
 export const VIETNAM_REGION_BUCKETS: readonly VietnamRegionBucket[] = [
   { code: 'hanoi', name: 'Ha Noi', shortName: 'HN' },
   { code: 'hcm', name: 'Ho Chi Minh City', shortName: 'HCMC' },
@@ -123,7 +125,7 @@ export function adminVietnamOverviewRangeWindow(
   now = new Date(),
 ): AdminVietnamOverviewWindow {
   const range = normalizeAdminVietnamOverviewRange(rangeInput);
-  const todayStart = startOfUtcDay(now);
+  const todayStart = startOfVietnamDay(now);
 
   if (range === 'all') {
     return {
@@ -250,8 +252,14 @@ function normalizeRegionText(value: string) {
     .trim();
 }
 
-function startOfUtcDay(value: Date) {
-  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+function startOfVietnamDay(value: Date) {
+  const vietnamOffsetMs = 7 * 60 * 60 * 1000;
+  const localValue = new Date(value.getTime() + vietnamOffsetMs);
+
+  return new Date(
+    Date.UTC(localValue.getUTCFullYear(), localValue.getUTCMonth(), localValue.getUTCDate()) -
+      vietnamOffsetMs,
+  );
 }
 
 function addUtcDays(value: Date, days: number) {

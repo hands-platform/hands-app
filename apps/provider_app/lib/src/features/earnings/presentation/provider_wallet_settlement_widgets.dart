@@ -56,7 +56,7 @@ class WalletSettlementReferenceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Settlement reference',
+            'Mã thanh toán',
             style: theme.textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.w800,
             ),
@@ -71,7 +71,7 @@ class WalletSettlementReferenceCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Deposit or offset amount: $amountLabel',
+            'Số tiền nộp hoặc bù trừ: $amountLabel',
             style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 8),
@@ -85,12 +85,12 @@ class WalletSettlementReferenceCard extends StatelessWidget {
                 }
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Settlement reference copied.'),
+                    content: Text('Đã sao chép mã thanh toán.'),
                   ),
                 );
               },
               icon: const Icon(Icons.copy, size: 18),
-              label: const Text('Copy reference'),
+              label: const Text('Sao chép mã'),
             ),
           ),
         ],

@@ -73,7 +73,7 @@ describe('PartnerShiftHandoffSection', () => {
         actions: [
           {
             detail: 'No blockers are currently visible.',
-            href: '/partners?review=direct-ready',
+            href: '/partners?review=ready-now',
             operatorAction: 'Keep monitoring dispatch supply.',
             samples: [],
             scope: 'Dispatch supply',

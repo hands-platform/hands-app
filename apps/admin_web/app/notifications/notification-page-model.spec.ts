@@ -1,16 +1,20 @@
 import type { AdminNotification } from '../../lib/admin-api';
 import {
   buildNotificationApiHref,
+  buildNotificationChannelMetrics,
   buildNotificationSummaryApiHref,
   buildNotificationChannelSummary,
   buildNotificationDeliveryStats,
   buildNotificationDeliveryOpsQueue,
+  buildNotificationDeliveryHref,
+  buildNotificationDeliveryView,
   buildNotificationFilters,
   buildNotificationFcmSmokeReadiness,
   buildNotificationListHref,
   buildNotificationPageModel,
   buildNotificationPartnerAlertSmokeFallback,
   buildNotificationPolicyApiHref,
+  buildNotificationRecordMetrics,
   buildNotificationReviewState,
   buildNotificationSummary,
   buildNotificationTableRows,
@@ -21,6 +25,7 @@ import {
   notificationFilterDescription,
   notificationFilterLinks,
   notificationFinanceAgeLinks,
+  notificationDeliveryHealthTotals,
   notificationDateRangeLabel,
   notificationDateRangeLinks,
   notificationReviewRunbook,
@@ -30,89 +35,330 @@ import {
 import { buildFcmPushSmokeCommand } from './fcm-smoke-commands';
 
 describe('notification page model', () => {
+  it('keeps current clear and historical debt independent', () => {
+    expect(notificationDeliveryHealthTotals({
+      currentDeliveryGaps: 0,
+      currentFailed: 0,
+      currentNoPushPathRecipientCount: 0,
+      currentStaleRouteNotifications: 0,
+      historicalDeliveryGaps: 2,
+      historicalDeliveryIncidentCount: 1,
+      historicalFailed: 3,
+      historicalNoPushPathRecipientCount: 4,
+      historicalStaleRouteNotifications: 5,
+      generatedAt: '2026-08-10T00:00:00.000Z',
+      openDeliveryIncidentCount: 0,
+      totalCount: 0,
+    })).toEqual({ current: 0, history: 15 });
+  });
+
+  it('does not turn a partial health summary into zero debt', () => {
+    expect(notificationDeliveryHealthTotals({
+      currentDeliveryGaps: 0,
+      currentFailed: 0,
+      currentNoPushPathRecipientCount: 0,
+      currentStaleRouteNotifications: 0,
+      generatedAt: '2026-08-10T00:00:00.000Z',
+      openDeliveryIncidentCount: 0,
+      totalCount: 0,
+    })).toEqual({ current: 0, history: null });
+    expect(notificationDeliveryHealthTotals(null)).toEqual({ current: null, history: null });
+  });
+
+  it('preserves one exact failure group through scope and pagination URLs', () => {
+    const view = buildNotificationDeliveryView({
+      failureCode: 'messaging/mismatched-credential',
+      failureProvider: 'fcm',
+      issue: 'failed',
+      page: '2',
+      scope: 'history',
+    });
+
+    expect(buildNotificationDeliveryHref(view)).toBe(
+      '/notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=messaging%2Fmismatched-credential&page=2',
+    );
+    expect(buildNotificationApiHref({
+      failureCode: view.failureCode,
+      failureProvider: view.failureProvider,
+      range: 'all',
+      review: 'failed',
+      scope: view.scope,
+    })).toContain('failureProvider=FCM&failureCode=messaging%2Fmismatched-credential');
+  });
+
+  it('uses safe recipient labels for unnamed Customer, Partner, and Admin rows', () => {
+    const rows = buildNotificationTableRows([
+      notification({ deliveries: [], id: 'customer-notification', type: 'customer.booking_created', user: { id: 'customer-123456', phone: '+849011112222' } }),
+      notification({
+        deliveries: [],
+        id: 'partner-notification',
+        type: 'provider.booking_requested',
+        user: {
+          id: 'partner-user-123456',
+          phone: '+849033334444',
+          providerProfile: { displayName: 'Lan', id: 'partner-profile-1' },
+        },
+      }),
+      notification({ deliveries: [], id: 'admin-notification', type: 'admin.system.notice', user: { id: 'admin-123456', phone: '+849055556666' } }),
+    ]);
+    const renderedModel = JSON.stringify(rows);
+
+    expect(rows[0]?.userLabel).toBe('••• ••• 2222');
+    expect(rows[1]?.userLabel).toBe('Lan');
+    expect(rows[2]?.userLabel).toBe('••• ••• 6666');
+    expect(renderedModel).not.toContain('+849011112222');
+    expect(renderedModel).not.toContain('+849033334444');
+    expect(renderedModel).not.toContain('+849055556666');
+  });
+
+  it('uses enabled push routes, not app presence, for notification recipient status', () => {
+    const [activeRoute, inactiveRoute] = buildNotificationTableRows([
+      notification({
+        deliveries: [],
+        id: 'active-route',
+        type: 'customer.booking_created',
+        user: { id: 'customer-active', pushDevices: [{ enabled: true, id: 'device-active' }] },
+      }),
+      notification({
+        deliveries: [],
+        id: 'inactive-route',
+        type: 'customer.booking_created',
+        user: { id: 'customer-inactive', pushDevices: [{ enabled: false, id: 'device-inactive' }] },
+      }),
+    ]);
+
+    expect(activeRoute?.userAvatarStatus).toBe('online');
+    expect(inactiveRoute?.userAvatarStatus).toBe('offline');
+  });
+
+  it('opens a failure group with the exact provider and code predicate', () => {
+    const row = buildNotificationTableRows([notification({
+      data: {
+        deliveryIncidentAffectedUserCount: 2,
+        deliveryIncidentFailureCode: 'messaging/mismatched-credential',
+        deliveryIncidentFirstOccurredAt: '2026-08-05T06:00:00.000Z',
+        deliveryIncidentKey: 'FCM:messaging/mismatched-credential',
+        deliveryIncidentLastOccurredAt: '2026-08-05T07:00:00.000Z',
+        deliveryIncidentNotificationCount: 4,
+        deliveryIncidentProvider: 'FCM',
+      },
+      deliveries: [],
+      id: 'incident-representative',
+      type: 'customer.booking_created',
+    })])[0];
+
+    expect(row?.incident).toMatchObject({
+      href: '/notifications?issue=failed&failureProvider=FCM&failureCode=messaging%2Fmismatched-credential',
+      ownerLabel: 'Developer / System',
+      provider: 'FCM',
+    });
+  });
   it('builds notification summary counts from delivery and alert records', () => {
     const summary = buildNotificationSummary(buildNotifications());
 
     expect(summary).toEqual({
+      awaitingWorker: 0,
+      deliveryGaps: 0,
+      deliveryIncidentNotifications: 0,
+      deliveryIncidents: 0,
       disabledDevices: 1,
+      disabledDeviceUsers: 1,
       failed: 1,
-      needsRetry: 3,
+      failedAttempts: 1,
+      historicalDeliveryIncidents: 1,
+      needsRetry: 1,
       noShow: 1,
+      noPushPath: 1,
       payoutSetup: 1,
       pending: 1,
       sent: 2,
       skipped: 1,
       staleDevices: 1,
+      staleDeviceUsers: 1,
+      unattempted: 1,
     });
   });
 
   it('builds reusable delivery stats for summary and operations queue models', () => {
     expect(buildNotificationDeliveryStats(buildNotifications())).toEqual({
       disabledDevices: 1,
+      disabledDeviceUsers: 1,
       failedDeliveries: 1,
       failedNotifications: 1,
       pendingNotifications: 1,
-      retrySignalNotifications: 3,
+      retrySignalNotifications: 1,
       sentDeliveries: 2,
       skippedDeliveries: 1,
       skippedNotifications: 1,
+      staleDevices: 1,
+      staleDeviceUsers: 1,
       stalePushDeviceDeliveries: 1,
     });
   });
 
   it('builds delivery operations queue cards from actionable delivery states', () => {
-    const queue = buildNotificationDeliveryOpsQueue(buildNotifications());
+    const notifications = buildNotifications();
+    const queue = buildNotificationDeliveryOpsQueue(
+      notifications,
+      buildNotificationDeliveryStats(notifications),
+      1,
+    );
 
     expect(queue).toEqual([
       {
+        actionLabel: 'Review unconfirmed alerts',
         count: 1,
         detail:
-          'Latest push attempt returned an error. Check failure reason, token freshness, and credentials.',
-        href: '/notifications?review=failed',
-        key: 'failed',
-        label: 'Failed sends',
-        tone: 'warning',
+          'Delivery has not been confirmed after 15 minutes. Contact the user directly if the alert is urgent.',
+        href: '/notifications?review=delivery-gap',
+        key: 'delivery-gaps',
+        label: 'Delivery not confirmed',
+        tone: 'danger',
       },
       {
+        actionLabel: 'Review affected users',
         count: 1,
         detail:
-          'Re-enable only when the app has registered a fresh token or the operator confirms the device.',
+          '1 app route cannot receive mobile alerts. Contact the user directly if urgent and ask them to reopen the app before retrying.',
         href: '/notifications?review=disabled-device',
         key: 'disabled-devices',
-        label: 'Disabled devices',
+        label: 'Push unavailable',
         tone: 'warning',
       },
       {
+        actionLabel: 'Review inactive users',
         count: 1,
         detail:
-          'Push token timestamp is 30+ days old at delivery attempt. Confirm the app has refreshed its FCM token before retrying.',
+          '1 app route has not been active for 30+ days. Ask the user to reopen the app before relying on another mobile alert.',
         href: '/notifications?review=stale-device',
         key: 'stale-devices',
-        label: 'Stale devices',
-        tone: 'warning',
-      },
-      {
-        count: 1,
-        detail:
-          'Usually means push is intentionally inactive, no enabled device exists, or credentials are pending.',
-        href: '/notifications?review=skipped',
-        key: 'skipped',
-        label: 'Skipped',
+        label: 'App reopen needed',
         tone: 'info',
-      },
-      {
-        count: 1,
-        detail: 'Notification rows exist without delivery attempts. Confirm workers and queue processing.',
-        href: '/notifications?review=pending',
-        key: 'pending',
-        label: 'Pending',
-        tone: 'neutral',
       },
     ]);
   });
 
   it('keeps the delivery operations queue empty when there are no blockers', () => {
     expect(buildNotificationDeliveryOpsQueue([])).toEqual([]);
+  });
+
+  it('groups 100 current failures with the same cause into one delivery incident', () => {
+    const now = new Date('2026-08-05T08:00:00.000Z');
+    const notifications = Array.from({ length: 100 }, (_, index) =>
+      notification({
+        deliveries: [{
+          attemptedAt: '2026-08-05T07:30:00.000Z',
+          id: `delivery-${index}`,
+          provider: 'FCM',
+          response: { failureCode: 'messaging/registration-token-not-registered' },
+          status: 'FAILED',
+        }],
+        id: `notification-${index}`,
+        type: 'booking.requested',
+        user: { id: `user-${index}`, phone: `+8490000${String(index).padStart(4, '0')}`, roles: ['CUSTOMER'] },
+      }),
+    );
+    const deliveryStats = buildNotificationDeliveryStats(notifications, now);
+    const summary = buildNotificationSummary(notifications, deliveryStats, now);
+    const queue = buildNotificationDeliveryOpsQueue(notifications, deliveryStats, 0, undefined, summary);
+
+    expect(summary).toMatchObject({
+      deliveryIncidentNotifications: 100,
+      deliveryIncidents: 1,
+      historicalDeliveryIncidents: 0,
+    });
+    expect(queue[0]).toMatchObject({
+      count: 1,
+      href: '/notifications?review=delivery-incidents',
+      key: 'delivery-incidents',
+      label: 'Open incidents',
+    });
+    expect(queue[0]?.detail).toContain('100 affected notifications');
+  });
+
+  it('moves failures older than 24 hours out of current delivery incidents', () => {
+    const now = new Date('2026-08-05T08:00:00.000Z');
+    const notifications = [
+      notification({
+        deliveries: [{
+          attemptedAt: '2026-08-04T08:00:00.000Z',
+          id: 'delivery-at-cutoff',
+          provider: 'FCM',
+          status: 'FAILED',
+        }],
+        id: 'notification-at-cutoff',
+        type: 'booking.requested',
+      }),
+      notification({
+        deliveries: [{
+          attemptedAt: '2026-08-04T07:59:59.999Z',
+          id: 'delivery-before-cutoff',
+          provider: 'FCM',
+          status: 'FAILED',
+        }],
+        id: 'notification-before-cutoff',
+        type: 'booking.requested',
+      }),
+    ];
+
+    expect(buildNotificationSummary(notifications, buildNotificationDeliveryStats(notifications, now), now))
+      .toMatchObject({
+        deliveryIncidentNotifications: 1,
+        deliveryIncidents: 1,
+        historicalDeliveryIncidents: 1,
+      });
+  });
+
+  it('does not reopen a past failure after the latest delivery succeeds', () => {
+    const now = new Date('2026-08-05T08:00:00.000Z');
+    const notifications = [notification({
+      deliveries: [
+        {
+          attemptedAt: '2026-08-05T07:00:00.000Z',
+          id: 'delivery-failed-first',
+          provider: 'FCM',
+          status: 'FAILED',
+        },
+        {
+          attemptedAt: '2026-08-05T07:01:00.000Z',
+          id: 'delivery-sent-latest',
+          provider: 'FCM',
+          status: 'SENT',
+        },
+      ],
+      id: 'notification-recovered',
+      type: 'booking.requested',
+    })];
+
+    expect(buildNotificationSummary(notifications, buildNotificationDeliveryStats(notifications, now), now))
+      .toMatchObject({ deliveryIncidentNotifications: 0, deliveryIncidents: 0 });
+  });
+
+  it('preserves the active list range when an operator opens a delivery queue', () => {
+    const notifications = buildNotifications();
+    const queue = buildNotificationDeliveryOpsQueue(
+      notifications,
+      buildNotificationDeliveryStats(notifications),
+      1,
+      {
+        age: 'all',
+        booking: '',
+        financeAge: 'all',
+        financeOwner: '',
+        incidentState: 'all',
+        range: '30d',
+        review: 'all',
+        sla: 'all',
+        sort: 'newest',
+        user: '',
+      },
+    );
+
+    expect(queue.map((item) => item.href)).toEqual([
+      '/notifications?range=30d&review=delivery-gap',
+      '/notifications?range=30d&review=disabled-device',
+      '/notifications?range=30d&review=stale-device',
+    ]);
   });
 
   it('builds partner alert routing summary from policy and delivery providers', () => {
@@ -141,6 +387,21 @@ describe('notification page model', () => {
     expect(buildNotificationChannelSummary([], []).policyLabel).toBe('Not configured');
   });
 
+  it('uses one operator-facing mobile push label for saved FCM policy copy', () => {
+    expect(
+      buildNotificationChannelSummary([], [
+        {
+          category: 'notifications',
+          enforced: true,
+          key: 'notification.partner_alert_channel',
+          label: 'Partner alert routing',
+          options: [{ label: 'In-app now, FCM push later', tradeoff: 'Mobile push is deferred.', value: 'in_app_now' }],
+          value: 'in_app_now',
+        },
+      ]).policyLabel,
+    ).toBe('In-app now, mobile push later');
+  });
+
   it('maps the deprecated partner alert push value to FCM-facing Admin copy', () => {
     const summary = buildNotificationChannelSummary(
       [],
@@ -155,7 +416,7 @@ describe('notification page model', () => {
       ],
     );
 
-    expect(summary.policyLabel).toBe('FCM for all bookings (legacy saved value)');
+    expect(summary.policyLabel).toBe('Mobile push for all bookings (legacy saved value)');
   });
 
   it('suggests a same-provider standard notification for FCM smoke fallback', () => {
@@ -634,6 +895,24 @@ describe('notification page model', () => {
         id: 'notification-current-failed',
         type: 'booking.requested',
       }),
+      notification({
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:07:00.000Z',
+            id: 'delivery-unresolved-failed',
+            provider: 'FCM',
+            status: 'FAILED',
+          },
+          {
+            attemptedAt: '2026-06-01T10:08:00.000Z',
+            id: 'delivery-unresolved-skipped',
+            provider: 'FCM',
+            status: 'SKIPPED',
+          },
+        ],
+        id: 'notification-failed-then-skipped',
+        type: 'booking.requested',
+      }),
     ];
 
     expect(
@@ -642,16 +921,76 @@ describe('notification page model', () => {
     expect(
       filterNotifications(notifications, { booking: '', review: 'sent' }).map((item) => item.id),
     ).toEqual(['notification-recovered']);
+    expect(
+      filterNotifications(notifications, { booking: '', review: 'unresolved-failed' }).map(
+        (item) => item.id,
+      ),
+    ).toEqual(['notification-current-failed', 'notification-failed-then-skipped']);
     expect(buildNotificationDeliveryStats(notifications)).toMatchObject({
-      failedDeliveries: 2,
+      failedDeliveries: 3,
       failedNotifications: 1,
       sentDeliveries: 1,
     });
     expect(buildNotificationSummary(notifications).failed).toBe(1);
-    expect(buildNotificationTableRows(notifications.slice(0, 1))[0]).toMatchObject({
+    const recoveredRow = buildNotificationTableRows(notifications.slice(0, 1))[0];
+    expect(recoveredRow).toMatchObject({
       opsHint: expect.stringContaining('Latest attempt 1 Jun 2026, 17:05'),
-      opsSignal: 'Delivered',
+      opsSignal: 'Accepted by FCM',
       signalClassName: 'signal signal-ok',
+    });
+    expect(recoveredRow?.actions.some((action) => action.label === 'Retry')).toBe(false);
+  });
+
+  it('keeps a failed device path actionable when another device already succeeded', () => {
+    const row = buildNotificationTableRows([
+      notification({
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:01:00.000Z',
+            id: 'delivery-device-failed',
+            provider: 'FCM',
+            pushDevice: {
+              enabled: true,
+              id: 'push-device-failed',
+              lastSeenAt: '2026-06-01T10:01:00.000Z',
+              platform: 'ios',
+            },
+            status: 'FAILED',
+          },
+          {
+            attemptedAt: '2026-06-01T10:02:00.000Z',
+            id: 'delivery-device-sent',
+            provider: 'FCM',
+            pushDevice: {
+              enabled: true,
+              id: 'push-device-sent',
+              lastSeenAt: '2026-06-01T10:02:00.000Z',
+              platform: 'android',
+            },
+            status: 'SENT',
+          },
+        ],
+        id: 'notification-partial-delivery',
+        type: 'booking.requested',
+        user: {
+          id: 'provider-user-partial',
+          pushDevices: [
+            { enabled: true, id: 'push-device-failed', platform: 'ios' },
+            { enabled: true, id: 'push-device-sent', platform: 'android' },
+          ],
+        },
+      }),
+    ], { canRetry: true })[0];
+
+    expect(row).toMatchObject({
+      opsHint: expect.stringContaining('at least one delivery is still unresolved'),
+      opsSignal: 'Partial delivery',
+      signalClassName: 'signal signal-warn',
+    });
+    expect(row?.primaryAction).toMatchObject({
+      label: 'Review & retry',
+      description: 'The unresolved transient failure is eligible for one controlled retry.',
+      tone: 'warning',
     });
   });
 
@@ -710,11 +1049,12 @@ describe('notification page model', () => {
       }),
     ]);
 
-    expect(sorted.map((item) => item.id)).toEqual(['failed', 'stale-device', 'sent', 'pending-newest']);
+    expect(sorted.map((item) => item.id)).toEqual(['failed', 'sent', 'stale-device', 'pending-newest']);
   });
 
   it('builds the page model with filtered rows and confirmation state', () => {
     const model = buildNotificationPageModel({
+      canRetry: true,
       notifications: [
         notification({
           data: { bookingId: 'booking-1' },
@@ -728,6 +1068,11 @@ describe('notification page model', () => {
           ],
           id: 'notification-failed',
           type: 'booking.requested',
+          user: {
+            id: 'provider-user-1',
+            pushDevices: [{ enabled: true, id: 'device-failed', platform: 'android', role: 'PROVIDER' }],
+            roles: ['PROVIDER'],
+          },
         }),
         notification({
           data: { bookingId: 'booking-2' },
@@ -754,25 +1099,17 @@ describe('notification page model', () => {
     expect(model.activeFilter?.label).toBe('Failed sends');
     expect(model.confirmation?.action).toBe('retry');
     expect(model.metrics.map((metric) => [metric.label, metric.value])).toEqual([
-      ['Total', 2],
-      ['Needs retry', 1],
-      ['Sent', 1],
-      ['Skipped', 0],
-      ['Pending', 0],
-      ['Failed', 1],
-      ['Disabled devices', 0],
-      ['Stale devices', 0],
-      ['Payout setup', 0],
-      ['Partner alerts', 2],
-      ['No-show alerts', 0],
-      ['FCM route', 2],
+      ['Open delivery incidents', 0],
+      ['Delivery not confirmed', 0],
+      ['Push unavailable', 0],
+      ['App reopen needed', 0],
     ]);
-    expect(model.metrics.find((metric) => metric.label === 'Needs retry')?.helper).toBe(
-      'Failed, disabled, or stale token delivery paths.',
+    expect(model.metrics.find((metric) => metric.label === 'Open delivery incidents')?.helper).toBe(
+      '0 affected notifications, grouped by technical cause.',
     );
     expect(model.notifications.map((item) => item.id)).toEqual(['notification-failed']);
     expect(model.notificationRows.map((row) => row.id)).toEqual(['notification-failed']);
-    expect(model.reviewRunbook).toMatchObject({ title: 'Retry gate' });
+    expect(model.reviewRunbook).toMatchObject({ title: 'Failed delivery review' });
     expect(model.summary).toMatchObject({ failed: 1, sent: 1 });
   });
 
@@ -792,7 +1129,7 @@ describe('notification page model', () => {
       params: { page: '2', review: 'all' },
     });
 
-    expect(model.metrics.find((metric) => metric.label === 'Total')?.value).toBe(25);
+    expect(model.recordMetrics.find((metric) => metric.label === 'All notification records')?.value).toBe(25);
     expect(model.notifications).toHaveLength(25);
     expect(model.notificationRows).toHaveLength(10);
     expect(model.notificationPagination).toMatchObject({
@@ -824,7 +1161,9 @@ describe('notification page model', () => {
       params: { page: '2', review: 'all' },
     });
 
-    expect(model.metrics.find((metric) => metric.label === 'Total')?.value).toBe(2400);
+    expect(model.recordMetrics.find((metric) => metric.label === 'All notification records')?.value).toBe(
+      2400,
+    );
     expect(model.totalCount).toBe(2400);
     expect(model.loadedCount).toBe(10);
     expect(model.notificationRows).toHaveLength(10);
@@ -844,42 +1183,58 @@ describe('notification page model', () => {
         generatedAt: '2026-06-27T00:00:00.000Z',
         totalCount: 2400,
         disabledDevices: 17,
+        disabledDeviceUsers: 9,
         failed: 13,
+        failedAttempts: 851,
+        deliveryIncidentNotificationCount: 851,
+        historicalDeliveryIncidentCount: 4,
         fcmDeliveries: 172,
         inAppDeliveries: 64,
         needsRetry: 19,
+        openDeliveryIncidentCount: 19,
+        deliveryGaps: 2,
         noShow: 4,
+        noPushPath: 6,
         partnerAlertCount: 33,
         payoutSetup: 5,
         pending: 8,
         sent: 121,
         skipped: 7,
         staleDevices: 6,
+        staleDeviceUsers: 5,
+        unattempted: 8,
       },
       operationalPolicies: [],
       params: {},
     });
 
     expect(Object.fromEntries(model.metrics.map((metric) => [metric.label, metric.value]))).toMatchObject({
-      'Disabled devices': 17,
-      Failed: 13,
-      'FCM route': 172,
-      'Needs retry': 19,
-      'No-show alerts': 4,
-      'Partner alerts': 33,
-      'Payout setup': 5,
-      Pending: 8,
-      Sent: 121,
-      Skipped: 7,
-      'Stale devices': 6,
-      Total: 2400,
+      'Push unavailable': 9,
+      'Open delivery incidents': 19,
+      'Delivery not confirmed': 2,
+      'App reopen needed': 5,
     });
     expect(model.opsQueue.map((item) => [item.key, item.count])).toEqual([
-      ['failed', 13],
-      ['disabled-devices', 17],
-      ['stale-devices', 6],
-      ['skipped', 7],
-      ['pending', 8],
+      ['delivery-incidents', 19],
+      ['delivery-gaps', 2],
+      ['disabled-devices', 9],
+      ['stale-devices', 5],
+    ]);
+    expect(model.recordMetrics.map((metric) => [metric.label, metric.value, metric.href])).toEqual([
+      ['All notification records', 2400, '/notifications?range=all&review=all'],
+      ['Sent records', 121, '/notifications?range=all&review=sent'],
+      ['Skipped records', 7, '/notifications?range=all&review=skipped'],
+      ['Historical delivery incidents', 4, '/notifications?range=all&review=delivery-incident-history'],
+      ['Push unavailable records', 6, '/notifications?range=all&review=no-push-path'],
+      ['All unattempted records', 8, '/notifications?range=all&review=unattempted'],
+    ]);
+    expect(model.channelMetrics.map((metric) => [metric.label, metric.value, metric.href])).toEqual([
+      ['Unavailable mobile routes', 17, undefined],
+      ['Inactive app routes', 6, undefined],
+      ['Payout setup alerts', 5, '/notifications?range=all&review=payout-setup'],
+      ['Partner alert records', 33, '/notifications?range=all&review=partner-alerts'],
+      ['No-show alert records', 4, '/notifications?range=all&review=no-show'],
+      ['Mobile push attempts', 172, undefined],
     ]);
     expect(model.channelSummary).toMatchObject({
       fcmDeliveries: 172,
@@ -917,10 +1272,146 @@ describe('notification page model', () => {
     ]);
     expect(model.metrics.some((metric) => metric.label === 'Pending')).toBe(false);
     expect(model.metrics.some((metric) => metric.label === 'Sent')).toBe(false);
+    expect(model.recordMetrics).toEqual([]);
+    expect(model.channelMetrics).toEqual([]);
   });
 
-  it('builds the FCM route model with retry confirmation guidance', () => {
+  it('keeps historical delivery records separate from current action metrics', () => {
+    const metrics = buildNotificationRecordMetrics(
+      42,
+      {
+        awaitingWorker: 0,
+        deliveryGaps: 3,
+        deliveryIncidentNotifications: 0,
+        deliveryIncidents: 0,
+        disabledDevices: 0,
+        disabledDeviceUsers: 0,
+        failed: 0,
+        failedAttempts: 0,
+        historicalDeliveryIncidents: 0,
+        needsRetry: 0,
+        noShow: 0,
+        noPushPath: 12,
+        payoutSetup: 0,
+        pending: 15,
+        sent: 0,
+        skipped: 0,
+        staleDevices: 0,
+        staleDeviceUsers: 0,
+        unattempted: 15,
+      },
+      {
+        age: 'all',
+        booking: '',
+        financeAge: 'all',
+        financeOwner: '',
+        incidentState: 'all',
+        range: '7d',
+        review: 'all',
+        sla: 'all',
+        sort: 'newest',
+        user: '',
+      },
+    );
+
+    expect(metrics).toEqual([
+      expect.objectContaining({
+        href: '/notifications?range=7d&review=all',
+        kind: 'record',
+        label: 'All notification records',
+        scope: 'Last 7 days',
+        value: 42,
+      }),
+      expect.objectContaining({
+        href: '/notifications?range=7d&review=sent',
+        label: 'Sent records',
+        value: 0,
+      }),
+      expect.objectContaining({
+        href: '/notifications?range=7d&review=skipped',
+        label: 'Skipped records',
+        value: 0,
+      }),
+      expect.objectContaining({
+        href: '/notifications?range=7d&review=delivery-incident-history',
+        label: 'Historical delivery incidents',
+        value: 0,
+      }),
+      expect.objectContaining({
+        href: '/notifications?range=7d&review=no-push-path',
+        kind: 'record',
+        label: 'Push unavailable records',
+        scope: 'Last 7 days',
+        value: 12,
+      }),
+      expect.objectContaining({
+        href: '/notifications?range=7d&review=unattempted',
+        kind: 'record',
+        label: 'All unattempted records',
+        scope: 'Last 7 days',
+        value: 15,
+      }),
+    ]);
+  });
+
+  it('keeps channel and device context separate from current operator actions', () => {
+    const metrics = buildNotificationChannelMetrics(
+      {
+        awaitingWorker: 0,
+        deliveryGaps: 0,
+        deliveryIncidentNotifications: 0,
+        deliveryIncidents: 0,
+        disabledDevices: 11,
+        disabledDeviceUsers: 7,
+        failed: 0,
+        failedAttempts: 0,
+        historicalDeliveryIncidents: 0,
+        needsRetry: 0,
+        noShow: 3,
+        noPushPath: 0,
+        payoutSetup: 5,
+        pending: 0,
+        sent: 0,
+        skipped: 0,
+        staleDevices: 2,
+        staleDeviceUsers: 1,
+        unattempted: 0,
+      },
+      {
+        fcmDeliveries: 19,
+        inAppDeliveries: 21,
+        latestFcmSentAttemptLabel: null,
+        latestFcmSentDetail: null,
+        partnerAlertCount: 13,
+        policyLabel: 'In-app now, FCM push later',
+      },
+      {
+        age: 'all',
+        booking: '',
+        financeAge: 'all',
+        financeOwner: '',
+        incidentState: 'all',
+        range: '30d',
+        review: 'all',
+        sla: 'all',
+        sort: 'newest',
+        user: '',
+      },
+    );
+
+    expect(metrics.map((metric) => [metric.label, metric.value, metric.href])).toEqual([
+      ['Unavailable mobile routes', 11, undefined],
+      ['Inactive app routes', 2, undefined],
+      ['Payout setup alerts', 5, '/notifications?range=30d&review=payout-setup'],
+      ['Partner alert records', 13, '/notifications?range=30d&review=partner-alerts'],
+      ['No-show alert records', 3, '/notifications?range=30d&review=no-show'],
+      ['Mobile push attempts', 19, undefined],
+    ]);
+  });
+
+  it('keeps FCM setup guidance out of the delivery retry confirmation', () => {
     const model = buildNotificationPageModel({
+      canRetry: true,
       notifications: [
         notification({
           deliveries: [
@@ -933,7 +1424,12 @@ describe('notification page model', () => {
           ],
           id: 'notification-fcm-failed',
           type: 'payment.updated',
-          user: { id: 'customer-user-1', phone: '+84900000001', roles: ['CUSTOMER'] },
+          user: {
+            id: 'customer-user-1',
+            phone: '+84900000001',
+            pushDevices: [{ enabled: true, id: 'device-customer-1', platform: 'android', role: 'CUSTOMER' }],
+            roles: ['CUSTOMER'],
+          },
         }),
       ],
       operationalPolicies: [],
@@ -944,19 +1440,13 @@ describe('notification page model', () => {
       },
     });
 
-    expect(model.activeFilter?.label).toBe('FCM');
+    expect(model.activeFilter?.label).toBe('Mobile push');
     expect(model.notifications.map((item) => item.id)).toEqual(['notification-fcm-failed']);
-    expect(model.reviewRunbook).toMatchObject({ title: 'FCM route gate' });
-    expect(model.confirmation?.cancelHref).toBe('/notifications?review=fcm');
-    expect(model.confirmation?.description).toContain('Runbook: FCM route gate.');
-    expect(model.confirmation?.supportingLinks).toEqual(
-      expect.arrayContaining([
-        {
-          description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
-          href: '/setup?commands=all#notifications',
-          label: 'FCM setup',
-        },
-      ]),
+    expect(model.reviewRunbook).toMatchObject({ title: 'Mobile push records' });
+    expect(model.confirmation?.cancelHref).toBe('/notifications');
+    expect(model.confirmation?.description).not.toContain('Runbook: Mobile push records.');
+    expect(model.confirmation?.supportingLinks).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ label: 'FCM setup' })]),
     );
   });
 
@@ -993,35 +1483,32 @@ describe('notification page model', () => {
           providerProfile: { displayName: 'Mai', id: 'partner-987654', status: 'APPROVED' },
         },
       }),
-    ]);
+    ], { canRetry: true });
 
     expect(rows[0]).toMatchObject({
-      actionLabel: 'Notification actions for notifica',
+      actionLabel: 'Actions for Mai · Title · 1 Jun 2026, 16:00',
       bookingDataHint:
         'booking booking- / partner partner- / distance 400 m / marketplace radius 2.5 km / marketplace mode parallel_marketplace',
-      opsSignal: 'Retry needed',
+      opsSignal: 'Failed',
       partnerHref: '/partners/partner-987654',
       partnerLabel: 'Partner Mai',
       typeLabel: 'Booking Marketplace Available',
     });
-    expect(rows[0]?.actions.map((action) => action.label)).toEqual(['Open booking', 'Audit trail', 'Retry']);
+    expect(rows[0]?.actions.map((action) => action.label)).toEqual(['Open booking', 'Audit trail']);
     expect(rows[0]?.actions.find((action) => action.label === 'Audit trail')).toMatchObject({
       href: '/audit-log?bucket=Notification&q=notification-row&range=all',
     });
-    expect(rows[0]?.actions.find((action) => action.label === 'Retry')).toMatchObject({
-      description: 'Review the delivery issue before retrying this notification.',
-      tone: 'warning',
-    });
+    expect(rows[0]?.primaryAction).toMatchObject({ label: 'Open recipient' });
+    expect(rows[0]?.actions.some((action) => action.label === 'Retry')).toBe(false);
     expect(rows[0]?.deliveryRows[0]).toMatchObject({
       attemptedAt: '2026-06-01T10:01:00.000Z',
       deviceFreshnessLabel: 'Token timestamp current',
       deviceLastSeenAt: '2026-06-01T10:02:00.000Z',
       deviceStateLabel: 'Device disabled',
-      enableDeviceHref: '/notifications?confirm=enable-device&pushDeviceId=device-disabled',
       failureCodeLabel: 'BAD_TOKEN',
       httpStatusLabel: '400',
       recoveryHintLabel:
-        'Ask the customer or Partner to reopen the app, then re-enable only after the token path is current.',
+        'Ask the customer or Partner to reopen the app before retrying.',
       statusClassName: 'pill pill-warn',
     });
   });
@@ -1079,17 +1566,74 @@ describe('notification page model', () => {
           ],
           id: 'notification-row',
           type: 'booking.requested',
+          user: {
+            id: 'provider-row',
+            pushDevices: [{ enabled: true, id: 'device-enabled', platform: 'ios' }],
+          },
         }),
       ],
-      { booking: 'booking-123456', review: 'failed' },
+      {
+        age: 'over-24h',
+        booking: 'booking-123456',
+        canRetry: true,
+        page: '2',
+        review: 'failed',
+        sort: 'oldest',
+      },
     );
 
-    expect(rows[0]?.actions.find((action) => action.label === 'Retry')).toMatchObject({
-      href: '/notifications?review=failed&booking=booking-123456&confirm=retry&notificationId=notification-row',
+    expect(rows[0]?.primaryAction).toMatchObject({
+      href:
+        '/notifications?review=failed&age=over-24h&sort=oldest&page=2&booking=booking-123456&confirm=retry&notificationId=notification-row',
     });
-    expect(rows[0]?.deliveryRows[0]?.enableDeviceHref).toBe(
-      '/notifications?review=failed&booking=booking-123456&confirm=enable-device&pushDeviceId=device-disabled',
-    );
+    expect(JSON.stringify(rows[0]?.deliveryRows)).not.toContain('enable-device');
+  });
+
+  it('keeps the server page and queue controls on confirmation links', () => {
+    const model = buildNotificationPageModel({
+      canRetry: true,
+      notificationSummary: {
+        generatedAt: '2026-07-24T10:00:00.000Z',
+        needsRetry: 20,
+        totalCount: 20,
+      },
+      notifications: [
+        notification({
+          deliveries: [
+            {
+              attemptedAt: '2026-07-23T10:00:00.000Z',
+              id: 'delivery-page-2-failed',
+              provider: 'FCM',
+              pushDevice: {
+                enabled: true,
+                id: 'device-page-2',
+                platform: 'android',
+              },
+              status: 'FAILED',
+            },
+          ],
+          id: 'notification-page-2',
+          type: 'booking.requested',
+          user: {
+            id: 'provider-page-2',
+            pushDevices: [{ enabled: true, id: 'device-page-2', platform: 'android' }],
+          },
+        }),
+      ],
+      operationalPolicies: [],
+      params: {
+        age: 'over-24h',
+        page: '2',
+        range: 'all',
+        review: 'needs-retry',
+        sort: 'oldest',
+      },
+    });
+
+    expect(model.notificationRows[0]?.primaryAction).toMatchObject({
+      href:
+        '/notifications?range=all&age=over-24h&sort=oldest&page=2&confirm=retry&notificationId=notification-page-2',
+    });
   });
 
   it('reads current push processor failure details from delivery response metadata', () => {
@@ -1152,7 +1696,7 @@ describe('notification page model', () => {
     ]);
 
     expect(rows[0]).toMatchObject({
-      opsSignal: 'Retry needed',
+      opsSignal: 'Failed',
       signalClassName: 'signal signal-warn',
     });
     expect(rows[0]?.deliveryRows[0]).toMatchObject({
@@ -1165,7 +1709,7 @@ describe('notification page model', () => {
     });
   });
 
-  it('orders delivery rows by newest attempt first for compact table summaries', () => {
+  it('keeps only the latest disposition for a delivery path', () => {
     const rows = buildNotificationTableRows([
       notification({
         data: { bookingId: 'booking-1' },
@@ -1188,14 +1732,14 @@ describe('notification page model', () => {
       }),
     ]);
 
-    expect(rows[0]?.deliveryRows.map((delivery) => delivery.id)).toEqual(['delivery-new', 'delivery-old']);
+    expect(rows[0]?.deliveryRows.map((delivery) => delivery.id)).toEqual(['delivery-new']);
     expect(rows[0]?.deliveryRows[0]).toMatchObject({
       status: 'SENT',
       statusClassName: 'pill pill-success',
     });
   });
 
-  it('marks stale push token deliveries as an operator warning even when FCM accepted the send', () => {
+  it('keeps stale token evidence visible without reopening an already delivered notification', () => {
     const notifications = [
       notification({
         data: { bookingId: 'booking-1' },
@@ -1220,21 +1764,18 @@ describe('notification page model', () => {
     const rows = buildNotificationTableRows(notifications);
 
     expect(rows[0]).toMatchObject({
-      opsSignal: 'Stale device',
-      signalClassName: 'signal signal-warn',
+      opsSignal: 'Accepted by FCM',
+      signalClassName: 'signal signal-ok',
     });
-    expect(filterNotifications(notifications, { booking: '', review: 'needs-retry' })).toHaveLength(1);
-    expect(buildNotificationSummary(notifications).needsRetry).toBe(1);
-    expect(rows[0]?.opsHint).toContain('Push token timestamp is old');
-    expect(rows[0]?.actions.find((action) => action.label === 'Retry')).toMatchObject({
-      description: 'Refresh the app FCM token before retrying this notification.',
-      tone: 'warning',
-    });
+    expect(filterNotifications(notifications, { booking: '', review: 'needs-retry' })).toHaveLength(0);
+    expect(buildNotificationSummary(notifications).needsRetry).toBe(0);
+    expect(rows[0]?.opsHint).toContain('Device receipt or app open is not confirmed');
+    expect(rows[0]?.actions.some((action) => action.label === 'Retry')).toBe(false);
     expect(rows[0]?.deliveryRows[0]).toMatchObject({
       deviceFreshnessLabel: '30+ day token timestamp',
       deviceStateLabel: 'Device enabled',
       recoveryHintLabel:
-        'Ask the user to reopen the app so the token refreshes, then prefer token recovery review before retrying.',
+        'Ask the user to reopen the app, then review the latest delivery before retrying.',
       status: 'SENT',
       statusClassName: 'pill pill-success',
     });
@@ -1350,10 +1891,6 @@ describe('notification page model', () => {
         tone: 'warning',
       }),
       expect.objectContaining({
-        href: '/audit-log?bucket=Notification&q=notification-finance-review&range=all',
-        label: 'Audit trail',
-      }),
-      expect.objectContaining({
         href: expect.stringContaining('confirm=assign-finance-review'),
         label: 'Assign to me',
         tone: 'warning',
@@ -1364,6 +1901,10 @@ describe('notification page model', () => {
         tone: 'warning',
       }),
     ]));
+    expect(row?.primaryAction).toMatchObject({
+      href: '/audit-log?bucket=Notification&q=notification-finance-review&range=all',
+      label: 'Audit trail',
+    });
     expect(row?.actions.some((action) => action.label === 'Retry')).toBe(false);
     expect(buildNotificationTableRows([notifications[1]!])[0]).toMatchObject({
       opsSignal: 'Resolved',
@@ -1416,21 +1957,27 @@ describe('notification page model', () => {
 
   it('keeps review descriptions and empty table messages stable', () => {
     expect(buildNotificationFilters({ booking: 'booking-1', review: 'failed' })).toEqual({
+      age: 'all',
       booking: 'booking-1',
       financeAge: 'all',
       financeOwner: '',
       incidentState: 'all',
       range: 'today',
       review: 'failed',
+      sla: 'all',
+      sort: 'newest',
       user: '',
     });
     expect(buildNotificationFilters({})).toEqual({
+      age: 'all',
       booking: '',
       financeAge: 'all',
       financeOwner: '',
       incidentState: 'all',
-      range: 'today',
-      review: 'needs-retry',
+      range: 'all',
+      review: 'delivery-incidents',
+      sla: 'all',
+      sort: 'newest',
       user: '',
     });
     expect(
@@ -1462,15 +2009,15 @@ describe('notification page model', () => {
     const defaultApiUrl = new URL(defaultApiHref, 'http://admin.local');
     expect(defaultApiUrl.pathname).toBe('/admin/notifications');
     expect(defaultApiUrl.searchParams.get('take')).toBe('10');
-    expect(defaultApiUrl.searchParams.get('review')).toBe('needs-retry');
-    expect(Number.isFinite(Date.parse(defaultApiUrl.searchParams.get('from') ?? ''))).toBe(true);
-    expect(Number.isFinite(Date.parse(defaultApiUrl.searchParams.get('to') ?? ''))).toBe(true);
+    expect(defaultApiUrl.searchParams.get('review')).toBe('delivery-incidents');
+    expect(defaultApiUrl.searchParams.get('from')).toBeNull();
+    expect(defaultApiUrl.searchParams.get('to')).toBeNull();
     const defaultSummaryHref = buildNotificationSummaryApiHref({});
     const defaultSummaryUrl = new URL(defaultSummaryHref, 'http://admin.local');
     expect(defaultSummaryUrl.pathname).toBe('/admin/notifications/summary');
-    expect(defaultSummaryUrl.searchParams.get('review')).toBe('needs-retry');
-    expect(Number.isFinite(Date.parse(defaultSummaryUrl.searchParams.get('from') ?? ''))).toBe(true);
-    expect(Number.isFinite(Date.parse(defaultSummaryUrl.searchParams.get('to') ?? ''))).toBe(true);
+    expect(defaultSummaryUrl.searchParams.get('review')).toBe('delivery-incidents');
+    expect(defaultSummaryUrl.searchParams.get('from')).toBeNull();
+    expect(defaultSummaryUrl.searchParams.get('to')).toBeNull();
     expect(buildNotificationPolicyApiHref()).toBe(
       '/admin/operational-policy?keys=notification.partner_alert_channel',
     );
@@ -1500,6 +2047,11 @@ describe('notification page model', () => {
       label: 'All notifications',
       review: 'all',
     });
+    expect(notificationFilterLinks.find((item) => item.review === 'unresolved-failed')).toEqual({
+      href: '/notifications?review=unresolved-failed',
+      label: 'Unresolved failures',
+      review: 'unresolved-failed',
+    });
     expect(notificationFilterLinks.find((item) => item.review === 'partner-alerts')).toEqual({
       href: '/notifications?review=partner-alerts',
       label: 'Partner alerts',
@@ -1507,7 +2059,7 @@ describe('notification page model', () => {
     });
     expect(notificationFilterLinks.find((item) => item.review === 'stale-device')).toEqual({
       href: '/notifications?review=stale-device',
-      label: 'Stale devices',
+      label: 'Inactive app users',
       review: 'stale-device',
     });
     expect(notificationFilterLinks.find((item) => item.review === 'system-incidents')).toEqual({
@@ -1526,13 +2078,13 @@ describe('notification page model', () => {
       review: 'finance-overdue-history',
     });
     expect(notificationFilterDescription('failed')).toBe(
-      'latest delivery attempts that returned an FCM push failure.',
+      'latest mobile alert attempts that were not delivered.',
     );
     expect(notificationFilterDescription('partner-alerts')).toBe(
       'booking and payout alerts sent to Partners.',
     );
     expect(notificationFilterDescription('stale-device')).toBe(
-      'delivery attempts made with old push token timestamps.',
+      'historical notification evidence linked to an enabled device that had not checked in for 30+ days.',
     );
     expect(notificationFilterDescription('system-incidents')).toBe(
       'Admin system and background-job alerts that require operational review.',
@@ -1548,27 +2100,36 @@ describe('notification page model', () => {
       'No notifications loaded.',
     );
     expect(emptyNotificationMessage('failed', undefined, (value) => `short-${value}`)).toBe(
-      'No notifications currently match this queue. latest delivery attempts that returned an FCM push failure.',
+      'No notifications currently match this queue. latest mobile alert attempts that were not delivered.',
     );
     expect(emptyNotificationMessage('failed', 'booking-1', (value) => `short-${value}`)).toBe(
       'No notifications currently match booking short-booking-1. Confirm the booking created an alert row before retrying delivery.',
     );
+    expect(emptyNotificationMessage('delivery-incidents', 'booking-1', (value) => `short-${value}`)).toBe(
+      'No delivery incidents in the last 24 hours match booking short-booking-1.',
+    );
     expect(notificationReviewRunbook('failed')).toMatchObject({
       primaryAction:
-        'Open the row delivery evidence and audit trail, fix the blocker, then use Retry only after the delivery path is valid.',
-      title: 'Retry gate',
+        'Contact the user directly if the alert is urgent. Review the latest attempt, then retry only when the alert is still needed.',
+      title: 'Failed delivery review',
     });
     expect(notificationReviewRunbook('fcm')).toMatchObject({
-      title: 'FCM route gate',
+      title: 'Mobile push records',
     });
     expect(notificationReviewRunbook('disabled-device')).toMatchObject({
-      title: 'Device recovery gate',
+      title: 'Push unavailable',
     });
     expect(notificationReviewRunbook('stale-device')).toMatchObject({
-      title: 'Token freshness gate',
+      title: 'App reopen needed',
     });
     expect(notificationReviewRunbook('pending')).toMatchObject({
-      title: 'Worker path gate',
+      title: 'Unattempted history',
+    });
+    expect(notificationReviewRunbook('delivery-gap')).toMatchObject({
+      title: 'Delivery not confirmed',
+    });
+    expect(notificationReviewRunbook('no-push-path')).toMatchObject({
+      title: 'Push unavailable',
     });
     expect(notificationReviewRunbook('system-incidents')).toMatchObject({
       title: 'System incident gate',
@@ -1806,12 +2367,15 @@ describe('notification page model', () => {
 
   it('keeps direct user notification links bounded by user id on list and summary APIs', () => {
     expect(buildNotificationFilters({ range: 'all', review: 'all', user: 'user-1' })).toEqual({
+      age: 'all',
       booking: '',
       financeAge: 'all',
       financeOwner: '',
       incidentState: 'all',
       range: 'all',
       review: 'all',
+      sla: 'all',
+      sort: 'newest',
       user: 'user-1',
     });
     expect(buildNotificationListHref({ booking: '', range: 'all', review: 'all', user: 'user-1' })).toBe(
@@ -1828,6 +2392,45 @@ describe('notification page model', () => {
     const summaryUrl = new URL(summaryHref, 'http://admin.local');
     expect(summaryUrl.pathname).toBe('/admin/notifications/summary');
     expect(summaryUrl.searchParams.get('user')).toBe('user-1');
+  });
+
+  it('forwards unresolved-delivery ageing and oldest-first order to bounded APIs', () => {
+    const apiUrl = new URL(
+      buildNotificationApiHref({
+        age: '1-4h',
+        page: '2',
+        range: 'all',
+        review: 'unresolved-failed',
+        sla: 'overdue',
+        sort: 'oldest',
+      }),
+      'http://admin.local',
+    );
+    const summaryUrl = new URL(
+      buildNotificationSummaryApiHref({
+        age: '1-4h',
+        range: 'all',
+        review: 'unresolved-failed',
+        sla: 'overdue',
+        sort: 'oldest',
+      }),
+      'http://admin.local',
+    );
+
+    expect(Object.fromEntries(apiUrl.searchParams)).toMatchObject({
+      age: '1-4h',
+      review: 'unresolved-failed',
+      skip: '10',
+      sla: 'overdue',
+      sort: 'oldest',
+      take: '10',
+    });
+    expect(Object.fromEntries(summaryUrl.searchParams)).toMatchObject({
+      age: '1-4h',
+      review: 'unresolved-failed',
+      sla: 'overdue',
+      sort: 'oldest',
+    });
   });
 
   it('keeps Finance SLA age and owner filters on list, page, and summary URLs', () => {
@@ -1919,7 +2522,7 @@ describe('notification page model', () => {
         review: 'failed',
       },
       runbook: expect.objectContaining({
-        title: 'Retry gate',
+        title: 'Failed delivery review',
       }),
     });
     expect(buildNotificationReviewState('unknown')).toEqual({
@@ -1957,6 +2560,32 @@ describe('notification page model', () => {
         status: 'FAILED',
       }),
     ).toBe(false);
+
+    expect(
+      filterNotifications(
+        [
+          notification({
+            deliveries: [
+              {
+                attemptedAt: '2026-06-02T10:00:00.000Z',
+                id: 'delivery-fresh-at-send-stale-now',
+                provider: 'FCM',
+                pushDevice: {
+                  enabled: true,
+                  id: 'device-fresh-at-send-stale-now',
+                  lastSeenAt: '2026-06-01T10:00:00.000Z',
+                  platform: 'android',
+                },
+                status: 'SENT',
+              },
+            ],
+            id: 'notification-fresh-at-send-stale-now',
+            type: 'booking.matched',
+          }),
+        ],
+        { booking: '', review: 'stale-device' },
+      ).map((item) => item.id),
+    ).toEqual([]);
   });
 });
 
@@ -2040,10 +2669,24 @@ function notification({
   readonly type: string;
   readonly user?: AdminNotification['user'];
 }): AdminNotification {
+  const record = data && typeof data === 'object' && !Array.isArray(data)
+    ? data as Record<string, unknown>
+    : {};
+  const hasFailedDelivery = deliveries.some((delivery) => delivery.status === 'FAILED');
   return {
     body: 'Body',
     createdAt: createdAt ?? '2026-06-01T09:00:00.000Z',
-    data,
+    data: hasFailedDelivery
+      ? {
+          ...record,
+          retryDecision: record.retryDecision ?? {
+            evidence: 'Transient failure cooldown passed; successful paths remain excluded.',
+            failureClass: 'transient',
+            reason: 'The unresolved transient failure is eligible for one controlled retry.',
+            state: 'allowed',
+          },
+        }
+      : data,
     deliveries,
     id,
     title: 'Title',

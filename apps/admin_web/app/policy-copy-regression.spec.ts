@@ -3,7 +3,14 @@ import { join } from 'node:path';
 
 describe('admin policy copy regression', () => {
   it('keeps cash debt copy aligned with final gate policy on large admin pages', () => {
-    const source = readAdminWebSource(['app/page.tsx', 'app/partner-controls/page.tsx']);
+    const source = readAdminWebSource([
+      'app/page.tsx',
+      'app/start-shift-operations-command-board.ts',
+      'app/operations-policy/policy-enforcement-trace.ts',
+      'app/cash-settlements/page.tsx',
+      'app/cash-settlements/cash-settlement-open-debt-table-section.tsx',
+      'app/partner-controls/page.tsx',
+    ]);
 
     expect(source).not.toContain('before marketplace alerts and participation');
     expect(source).not.toContain('before marketplace alerts, participation, or payout release');
@@ -17,7 +24,12 @@ describe('admin policy copy regression', () => {
   });
 
   it('keeps partner finance copy aligned with Level 2 and withdrawal policy', () => {
-    const source = readAdminWebSource(['app/partners/[id]/page.tsx', 'app/partner-controls/page.tsx']);
+    const source = readAdminWebSource([
+      'app/partners/[id]/page.tsx',
+      'app/partners/[id]/partner-detail-acceptance-model.tsx',
+      'app/partners/[id]/partner-detail-finance-gate-section.tsx',
+      'app/partner-controls/page.tsx',
+    ]);
 
     expect(source).not.toContain('Withdrawal bank');
     expect(source).not.toContain('Withdrawal bank account');
@@ -32,7 +44,10 @@ describe('admin policy copy regression', () => {
     expect(source).toContain('Tax profile optional');
     expect(source).toContain('Optional tax record');
     expect(source).toContain(
-      'Partner can receive booking requests and participate in matching. Withdrawal detail review is handled when wallet withdrawal is requested.',
+      'Bank details are collected and approved when the Partner requests wallet withdrawal.',
+    );
+    expect(source).toContain(
+      'Tax profile registration is not required for Vietnam MVP partner approval, matching, work, payout, or wallet withdrawal.',
     );
   });
 });

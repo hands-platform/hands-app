@@ -44,19 +44,22 @@ describe('BookingUnifiedDetailSection', () => {
     const markup = renderToStaticMarkup(<BookingUnifiedDetailSection unifiedDetail={unifiedDetail} />);
     const rendered = normalizedText(markup);
 
-    expect(rendered).toContain('Unified booking detail');
+    expect(rendered).toContain('Booking overview');
+    expect(rendered).not.toContain('Current filters');
     expect(rendered).toContain('Customer detail');
-    expect(rendered).toContain('Matched Partner detail');
-    expect(rendered).toContain('Finance detail');
-    expect(rendered).toContain('6 fields');
-    expect(rendered).toContain('9 fields');
-    expect(rendered).toContain('Customer profile, service address, live location, and service request.');
+    expect(rendered).toContain('Matching &amp; Partner candidates');
+    expect(rendered).toContain('Money result');
+    expect(rendered).toContain('6 details');
+    expect(rendered).toContain('9 details');
+    expect(rendered).toContain('Customer identity, service request, saved address, and latest location.');
     expect(rendered).toContain('Request time');
     expect(rendered).toContain('Customer booking request opened.');
     expect(rendered).toContain('Service address');
     expect(rendered).toContain('Live customer location');
     expect(rendered).toContain('Service request');
-    expect(rendered).toContain('Requested, matched, participating Partner, and location checkpoints.');
+    expect(rendered).toContain(
+      'Requested Partner, participation history, current eligibility, and selected Partner when matched.',
+    );
     expect(rendered).toContain('Requested');
     expect(rendered).toContain('Matched');
     expect(rendered).toContain('Profile');
@@ -73,19 +76,17 @@ describe('BookingUnifiedDetailSection', () => {
     expect(rendered).toContain('Cau Giay, Ha Noi');
     expect(rendered).toContain('500.000 VND');
     expect(rendered).toContain('Payment record');
-    expect(rendered).toContain('Pricing basis');
+    expect(rendered).not.toContain('Pricing basis');
     expect(rendered).toContain('Partner earning');
-    expect(rendered).toContain('HANDS fee and costs');
-    expect(rendered).toContain('Tax withholding');
-    expect(rendered).toContain('Wallet impact');
+    expect(rendered).not.toContain('HANDS fee and costs');
+    expect(rendered).not.toContain('Tax withholding');
+    expect(rendered).not.toContain('Wallet impact');
     expect(rendered).not.toContain('Wallet ledger');
-    expect(rendered).toContain('Service payout matrix');
+    expect(rendered).not.toContain('Service payout matrix');
     expect(rendered).toContain('3 chat messages');
-    expect(rendered).toContain('500.000 VND customer -&gt; 400.000 VND Partner');
+    expect(rendered).not.toContain('500.000 VND customer -&gt; 400.000 VND Partner');
     expect(rendered).not.toMatch(/\d{2}\.\d{4},\s*\d{3}\.\d{4}/);
-    expect(rendered.indexOf('Payment record')).toBeLessThan(rendered.indexOf('Service state'));
-    expect(rendered.indexOf('Partner earning')).toBeLessThan(rendered.indexOf('Service state'));
-    expect(rendered.indexOf('HANDS fee and costs')).toBeLessThan(rendered.indexOf('Service state'));
+    expect(rendered).not.toContain('Service state');
     expect(markup).toContain('id="booking-customer-detail"');
     expect(markup).toContain('id="booking-matched-partner-detail"');
     expect(markup).toContain('id="booking-finance-system-detail"');
@@ -99,8 +100,8 @@ describe('BookingUnifiedDetailSection', () => {
     expect(markup).toContain('booking-unified-finance-summary');
     expect(markup).toContain('booking-unified-finance-ledger');
     expect(markup).toContain('booking-unified-finance-ledger-row');
-    expect(markup.match(/is-finance-highlight/g)).toHaveLength(3);
-    expect(markup.match(/booking-unified-finance-ledger-row/g)).toHaveLength(6);
+    expect(markup.match(/is-finance-highlight/g)).toHaveLength(1);
+    expect(markup.match(/booking-unified-finance-ledger-row/g)).toHaveLength(3);
     expect(markup.match(/is-secondary/g)).toHaveLength(7);
   });
 
@@ -126,14 +127,68 @@ describe('BookingUnifiedDetailSection', () => {
       ),
     );
 
-    expect(summaryMarkup).toContain('Unified booking detail');
+    expect(summaryMarkup).toContain('Booking overview');
     expect(summaryMarkup).not.toContain('Customer detail');
-    expect(summaryMarkup).not.toContain('Matched Partner detail');
+    expect(summaryMarkup).not.toContain('Matching &amp; Partner candidates');
     expect(summaryMarkup).not.toContain('Finance detail');
-    expect(detailMarkup).not.toContain('Unified booking detail');
+    expect(detailMarkup).not.toContain('Booking overview');
     expect(detailMarkup).toContain('Customer detail');
-    expect(detailMarkup).toContain('Matched Partner detail');
-    expect(detailMarkup).toContain('Finance detail');
+    expect(detailMarkup).toContain('Matching &amp; Partner candidates');
+    expect(detailMarkup).toContain('Money result');
+  });
+
+  it('keeps a service quote separate when no payment record exists', () => {
+    const booking = bookingFixture({
+      earning: null,
+      matchedAt: null,
+      payment: null,
+      selectedProvider: undefined,
+      selectedProviderId: null,
+      status: 'OPEN_MATCHING',
+    });
+    const unifiedDetail = bookingUnifiedDetail({
+      addressLine: 'Cau Giay, Ha Noi',
+      addressPin: '21.0360, 105.7820',
+      booking,
+      financeTrace: financeTraceFixture(),
+      finalPartnerSummary: { href: '#participants', id: null, label: 'No final Partner', selected: false },
+      latestLocation: null,
+      messageCount: 0,
+    });
+    const rendered = normalizedText(
+      renderToStaticMarkup(<BookingUnifiedDetailSection unifiedDetail={unifiedDetail} />),
+    );
+
+    expect(rendered).toContain('Quoted service price 500.000 VND');
+    expect(rendered).toContain('No payment record; this is the service quote.');
+    expect(rendered).not.toContain('Customer payment');
+    expect(rendered).not.toContain('Payment record');
+  });
+
+  it('supports independent people and finance sections for the unified one-page booking record', () => {
+    const unifiedDetail = bookingUnifiedDetail({
+      addressLine: 'Cau Giay, Ha Noi',
+      addressPin: '21.0360, 105.7820',
+      booking: bookingFixture(),
+      financeTrace: financeTraceFixture(),
+      finalPartnerSummary: finalPartnerSummaryFixture(),
+      latestLocation: null,
+      messageCount: 3,
+    });
+
+    const peopleMarkup = normalizedText(
+      renderToStaticMarkup(<BookingUnifiedDetailSection unifiedDetail={unifiedDetail} view="people" />),
+    );
+    const financeMarkup = normalizedText(
+      renderToStaticMarkup(<BookingUnifiedDetailSection unifiedDetail={unifiedDetail} view="finance" />),
+    );
+
+    expect(peopleMarkup).toContain('Customer detail');
+    expect(peopleMarkup).toContain('Matching &amp; Partner candidates');
+    expect(peopleMarkup).not.toContain('Money result');
+    expect(financeMarkup).not.toContain('Customer detail');
+    expect(financeMarkup).not.toContain('Matching &amp; Partner candidates');
+    expect(financeMarkup).toContain('Money result');
   });
 
   it('summarizes live customer location against the reservation address snapshot', () => {
@@ -184,6 +239,10 @@ describe('BookingUnifiedDetailSection', () => {
     });
     expect(unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Match source')).toMatchObject({
       detailDateTimeValue: '2026-06-19T07:10:00.000Z',
+      value: 'Customer selected final Partner',
+    });
+    expect(unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Profile')).toMatchObject({
+      value: 'Approved',
     });
     expect(unifiedDetail.financeRows.find((row) => row.label === 'Service state')).toMatchObject({
       detailDateTimePrefix: 'Changed ',
@@ -235,11 +294,11 @@ describe('BookingUnifiedDetailSection', () => {
     ).replace(/\s+/g, ' ');
 
     expect(source).toContain("import { DateTimeText } from '../../../components/date-time-text';");
-    expect(markup.match(/class="date-time-text"/g)).toHaveLength(3);
+    expect(markup.match(/class="date-time-text"/g)).toHaveLength(2);
     expect(markup).toContain('dateTime="2026-06-19T07:00:00.000Z"');
     expect(markup).toContain('dateTime="2026-06-19T07:10:00.000Z"');
-    expect(markup).toContain('Changed <time');
-    expect(markup).toContain('dateTime="2026-06-19T07:20:00.000Z"');
+    expect(markup).not.toContain('Changed <time');
+    expect(markup).not.toContain('dateTime="2026-06-19T07:20:00.000Z"');
   });
 
   it('keeps raw Partner location checkpoint timestamps for shared DateTimeText rendering', () => {
@@ -356,7 +415,11 @@ describe('BookingUnifiedDetailSection', () => {
     });
 
     expect(unifiedDetail.statusLabel).toBe('Post-match cancellation review');
-    expect(unifiedDetail.summaryCards.at(-1)?.helper).toBe('Post-match cancellation review / CANCELLED');
+    expect(unifiedDetail.summaryCards.at(-1)).toMatchObject({
+      helper: 'No completed-service earning record.',
+      label: 'Partner earning',
+      value: 'Not created',
+    });
   });
 
   it('resolves Partner location checkpoints from selected Partner snapshots', () => {

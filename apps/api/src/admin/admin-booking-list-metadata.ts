@@ -1,4 +1,5 @@
 import { BookingStatus } from '@prisma/client';
+import { ADMIN_BOOKING_LIVE_MAX_AGE_HOURS } from './admin-booking-list-query';
 
 type AddressRecord = Record<string, unknown>;
 
@@ -11,8 +12,12 @@ export type AdminBookingListMetadataInput = {
   readonly closedAt?: Date | string | null;
   readonly createdAt?: Date | string | null;
   readonly expiresAt?: Date | string | null;
+  readonly id?: string;
   readonly matchedAt?: Date | string | null;
+  readonly metadata?: unknown;
   readonly openedAt?: Date | string | null;
+  readonly customerProfileId?: string | null;
+  readonly preferredProviderId?: string | null;
   readonly selectedProvider?: unknown;
   readonly selectedProviderId?: string | null;
   readonly status: BookingStatus;
@@ -20,9 +25,53 @@ export type AdminBookingListMetadataInput = {
 };
 
 export type AdminBookingListMetadata = {
+  readonly dataClass: AdminBookingDataClass;
+  readonly lastEventAt: Date | string | null;
+  readonly scopeEnd: Date;
+  readonly scopeStart: Date | null;
   readonly serviceAddressText: string | null;
+  readonly sourceUpdatedAt: Date | string | null;
   readonly statusChangedAt: Date | string | null;
   readonly statusChangedLabel: string;
+};
+
+export type AdminBookingDataClass = 'live' | 'backlog' | 'anomaly' | 'test';
+
+type AdminBookingListPrivacyInput = {
+  readonly address?: unknown;
+  readonly addressSnapshot?: {
+    readonly address?: unknown;
+    readonly addressText?: string | null;
+    readonly latitude?: unknown;
+    readonly longitude?: unknown;
+  } | null;
+  readonly customerProfile?: {
+    readonly user?: {
+      readonly phone?: string | null;
+    } | null;
+  } | null;
+  readonly lat?: unknown;
+  readonly lng?: unknown;
+};
+
+type ProtectedAdminBookingListItem<T extends AdminBookingListPrivacyInput> = Omit<
+  T,
+  'address' | 'addressSnapshot' | 'customerProfile' | 'lat' | 'lng'
+> & {
+  readonly address: null;
+  readonly addressSnapshot:
+    | (Record<string, unknown> & {
+        readonly address: null;
+        readonly addressText: string | null;
+        readonly latitude: null;
+        readonly longitude: null;
+      })
+    | null
+    | undefined;
+  readonly customerProfile: T['customerProfile'];
+  readonly lat: null;
+  readonly lng: null;
+  readonly serviceAddressText: string | null;
 };
 
 const LIST_METADATA_TEXT_FIELDS = ['deviceLanguage', 'customerDeviceLanguage', 'language', 'locale'] as const;
@@ -43,6 +92,12 @@ const LIST_METADATA_MATCHING_POLICY_FIELDS = [
   'travelBufferMinutes',
 ] as const;
 const LIST_METADATA_ALERT_TRACE_FIELDS = ['stage', 'createdAt', 'notifiedCount'] as const;
+const LIST_METADATA_POST_MATCH_CANCELLATION_FIELDS = [
+  'reasonCode',
+  'reasonLabel',
+  'requiresAdminReview',
+  'autoApproved',
+] as const;
 
 const ADDRESS_TEXT_FIELDS = [
   'addressText',
@@ -58,24 +113,114 @@ const ADDRESS_TEXT_FIELDS = [
 ] as const;
 
 const ADDRESS_PART_FIELDS = ['line1', 'street', 'ward', 'district', 'city', 'province', 'country'] as const;
+const SAFE_ADDRESS_AREA_FIELDS = [
+  'ward',
+  'district',
+  'subAdministrativeArea',
+  'city',
+  'administrativeArea',
+  'province',
+  'country',
+] as const;
 const ADDRESS_LABEL_FIELDS = ['label', 'name'] as const;
 const COORDINATE_PAIR_TEXT_RE = /^-?\d{1,3}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?$/;
+const ACTIVE_BOOKING_STATUSES = new Set<BookingStatus>([
+  BookingStatus.CREATED,
+  BookingStatus.OPEN_MATCHING,
+  BookingStatus.MATCHED,
+  BookingStatus.PROVIDER_ON_THE_WAY,
+  BookingStatus.ARRIVED,
+  BookingStatus.IN_SERVICE,
+]);
 
 export function withAdminBookingListMetadataList<T extends AdminBookingListMetadataInput>(
   bookings: readonly T[],
 ): Array<T & AdminBookingListMetadata> {
-  return bookings.map((booking) => withAdminBookingListMetadata(booking));
+  const now = new Date();
+  return bookings.map((booking) => withAdminBookingListMetadata(booking, now));
 }
 
 export function withAdminBookingListMetadata<T extends AdminBookingListMetadataInput>(
   booking: T,
+  now = new Date(),
 ): T & AdminBookingListMetadata {
+  const lastEventAt = bookingStatusChangedAt(booking);
+  const liveBoundary = new Date(
+    now.getTime() - ADMIN_BOOKING_LIVE_MAX_AGE_HOURS * 60 * 60_000,
+  );
+  const dataClass = adminBookingDataClass(booking, liveBoundary);
   return {
     ...booking,
+    dataClass,
+    lastEventAt,
+    scopeEnd: now,
+    scopeStart: dataClass === 'live' ? liveBoundary : null,
     serviceAddressText: bookingServiceAddressText(booking),
-    statusChangedAt: bookingStatusChangedAt(booking),
+    sourceUpdatedAt: booking.updatedAt ?? lastEventAt,
+    statusChangedAt: lastEventAt,
     statusChangedLabel: bookingStatusChangedLabel(booking),
   };
+}
+
+function adminBookingDataClass(
+  booking: AdminBookingListMetadataInput,
+  liveBoundary: Date,
+): AdminBookingDataClass {
+  if (isExplicitBookingFixture(booking)) {
+    return 'test';
+  }
+  if (!ACTIVE_BOOKING_STATUSES.has(booking.status)) {
+    return 'backlog';
+  }
+  const updatedAtMs = booking.updatedAt ? new Date(booking.updatedAt).getTime() : Number.NaN;
+  return updatedAtMs >= liveBoundary.getTime() ? 'live' : 'anomaly';
+}
+
+function isExplicitBookingFixture(booking: AdminBookingListMetadataInput) {
+  const fixtureId = [
+    booking.id,
+    booking.customerProfileId,
+    booking.preferredProviderId,
+    booking.selectedProviderId,
+  ].some((value) => /^(?:smoke|seed-)/i.test(value ?? ''));
+  const metadata = readRecord(booking.metadata);
+  return fixtureId || metadata?.smokeFixture === true || metadata?.smoke === true;
+}
+
+export function protectAdminBookingListItem<T extends AdminBookingListPrivacyInput>(
+  booking: T,
+): ProtectedAdminBookingListItem<T> {
+  const serviceAddressText = bookingServiceAreaText(booking);
+  const customerProfile = booking.customerProfile
+    ? {
+        ...booking.customerProfile,
+        user: booking.customerProfile.user
+          ? {
+              ...booking.customerProfile.user,
+              phone: maskedPhone(booking.customerProfile.user.phone),
+            }
+          : booking.customerProfile.user,
+      }
+    : booking.customerProfile;
+  const addressSnapshot = booking.addressSnapshot
+    ? {
+        ...booking.addressSnapshot,
+        address: null,
+        addressText: serviceAddressText,
+        latitude: null,
+        longitude: null,
+      }
+    : booking.addressSnapshot;
+
+  return {
+    ...booking,
+    address: null,
+    addressSnapshot,
+    customerProfile,
+    lat: null,
+    lng: null,
+    serviceAddressText,
+  } as ProtectedAdminBookingListItem<T>;
 }
 
 export function adminBookingListMetadataPayload(metadata: unknown): Record<string, unknown> | null {
@@ -104,6 +249,14 @@ export function adminBookingListMetadataPayload(metadata: unknown): Record<strin
     payload.backupNotificationTraces = alertTraces;
   }
 
+  const postMatchCancellation = pickKnownFields(
+    readRecord(record.postMatchCancellation),
+    LIST_METADATA_POST_MATCH_CANCELLATION_FIELDS,
+  );
+  if (postMatchCancellation) {
+    payload.postMatchCancellation = postMatchCancellation;
+  }
+
   return Object.keys(payload).length > 0 ? payload : null;
 }
 
@@ -114,6 +267,45 @@ export function bookingServiceAddressText(booking: AdminBookingListMetadataInput
     readBookingAddressText(booking.addressSnapshot?.address) ??
     readBookingAddressText(booking.addressSnapshot)
   );
+}
+
+function bookingServiceAreaText(booking: AdminBookingListPrivacyInput) {
+  return (
+    structuredAddressArea(booking.address) ??
+    structuredAddressArea(booking.addressSnapshot?.address) ??
+    null
+  );
+}
+
+function structuredAddressArea(value: unknown): string | null {
+  const record = readRecord(value);
+  if (!record) {
+    return null;
+  }
+
+  const parts = SAFE_ADDRESS_AREA_FIELDS.map((field) => trimmedAddressText(record[field])).filter(Boolean);
+  const uniqueParts = Array.from(new Set(parts));
+  if (uniqueParts.length > 0) {
+    return uniqueParts.slice(0, 3).join(', ');
+  }
+
+  return record.address === value ? null : structuredAddressArea(record.address);
+}
+
+function maskedPhone(value: string | null | undefined) {
+  const phone = value?.trim();
+  if (!phone || phone.includes('*')) {
+    return phone;
+  }
+
+  const digits = phone.replace(/\D/gu, '');
+  if (digits.length < 4) {
+    return 'Phone hidden';
+  }
+
+  const prefix = phone.startsWith('+84') ? '+84' : phone.startsWith('+') ? '+' : '';
+  const prefixDigits = prefix === '+84' ? 2 : 0;
+  return `${prefix}${'*'.repeat(Math.max(3, digits.length - prefixDigits - 4))}${digits.slice(-4)}`;
 }
 
 export function bookingStatusChangedAt(booking: AdminBookingListMetadataInput) {

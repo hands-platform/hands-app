@@ -1,26 +1,60 @@
 import type { BookingPageView } from './booking-page-params';
+import type { BookingDateRangeFilter } from './booking-date-range-filter';
+import type { AdminQueueAge } from '../../lib/admin-queue-list';
 
-export function emptyBookingMessage(view: BookingPageView) {
+export function emptyBookingMessage(
+  view: BookingPageView,
+  filters?: {
+    readonly age?: AdminQueueAge;
+    readonly dateRangeFilter?: BookingDateRangeFilter;
+    readonly searchQuery?: string;
+  },
+) {
+  const query = filters?.searchQuery?.trim();
+  if (query) {
+    return `No records match “${query}” in ${bookingEmptyPeriodLabel(filters?.dateRangeFilter)}. Clear the search or change the period.`;
+  }
+  if (filters && (filters.age !== 'all' || filters.dateRangeFilter !== 'all')) {
+    return 'No records match the current closed-period and waiting-time filters.';
+  }
   if (view === 'active') {
     return 'No active bookings match this queue. Dispatch is clear right now.';
   }
   if (view === 'attention') {
-    return 'No attention-queue bookings match this queue. Expired matching, missing chat, and payment closeout are clear.';
+    return 'No bookings need action right now. Matching delays, expired requests, and missing chat handoffs are clear.';
   }
   if (view === 'matching') {
     return 'No matching escalation bookings match this queue. First-pick, marketplace supply, customer selection, and chat handoff are clear.';
   }
+  if (view === 'in-service') {
+    return 'No service is in progress right now.';
+  }
+  if (view === 'matching-delays') {
+    return 'No open matching request is expired or waiting without Partner participation.';
+  }
   if (view === 'first-pick') {
-    return 'No Stage 1 first-pick bookings are waiting. The direct Partner response window is clear.';
+    return 'No booking is waiting for a preferred Partner response.';
   }
   if (view === 'marketplace') {
-    return 'No Stage 2 marketplace bookings need Partner participation review right now.';
+    return 'No booking is open for marketplace Partner participation right now.';
   }
   if (view === 'customer-choice') {
-    return 'No Stage 3 customer choice bookings are waiting. Participating/accepted Partners are not blocked on customer selection.';
+    return 'No customer is waiting to choose from participating Partners.';
   }
   if (view === 'handoff-repair') {
-    return 'No Stage 4 handoff repair bookings are missing chat.';
+    return 'No matched booking is missing its chat handoff.';
+  }
+  if (view === 'pre-match-cancelled') {
+    return 'No customer cancellation before final match is recorded in this period.';
+  }
+  if (view === 'preferred-rejected') {
+    return 'No booking ended from a preferred Partner rejection in this period.';
+  }
+  if (view === 'preferred-no-response') {
+    return 'No booking ended from a preferred Partner response timeout in this period.';
+  }
+  if (view === 'matched') {
+    return 'No booking currently has a final matched Partner.';
   }
   if (view === 'no-supply') {
     return 'No open matching booking is waiting without Partner supply.';
@@ -70,5 +104,21 @@ export function emptyBookingMessage(view: BookingPageView) {
   if (view === 'no-show') {
     return 'No no-show bookings need review. Customer protection and payment closeout are clear.';
   }
-  return 'No bookings loaded. Start the API and run the smoke flow to populate this table.';
+  return 'No booking records are available yet.';
+}
+
+function bookingEmptyPeriodLabel(range?: BookingDateRangeFilter) {
+  switch (range) {
+    case 'yesterday':
+      return 'Yesterday';
+    case '7d':
+      return 'Last 7 days';
+    case '30d':
+      return 'Last 30 days';
+    case 'custom':
+      return 'the custom period';
+    case 'today':
+    default:
+      return 'Today';
+  }
 }

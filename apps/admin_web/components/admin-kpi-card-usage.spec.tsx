@@ -18,14 +18,13 @@ describe('Admin KPI card usage', () => {
   it('keeps page-specific KPI CSS scoped to direct MetricCard content slots', () => {
     const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
 
-    expect(css).toContain('.marketing-analytics-metric > .metric-card > .metric-card-content > h2');
+    expect(css).toContain('.marketing-analytics-metric > .metric-card > .metric-card-content > .metric-card-value');
     expect(css).toContain('.marketing-analytics-metric > .metric-card > .metric-card-content > small');
-    expect(css).toContain('.vietnam-overview-metric > .metric-card > .metric-card-content > h2');
-    expect(css).toContain('.vietnam-overview-metric > .metric-card > .metric-card-content > small');
+    expect(css).toContain('.vietnam-overview-coverage-strip :is(.metric-card-label, .metric-card-value, small)');
+    expect(css).toContain('.vietnam-overview-period-metrics :is(.metric-card-label, .metric-card-value, small)');
     expect(css).not.toContain('.marketing-analytics-metric .metric-card h2,');
     expect(css).not.toContain('.marketing-analytics-metric .metric-card small,');
-    expect(css).not.toContain('.vietnam-overview-metric .metric-card h2,');
-    expect(css).not.toContain('.vietnam-overview-metric .metric-card small');
+    expect(css).not.toMatch(/\.vietnam-overview-(?:coverage-strip|period-metrics)[^}]*overflow-wrap:\s*anywhere/s);
     expect(css).not.toContain('.marketing-analytics-metric h2,');
     expect(css).not.toContain('.vietnam-overview-metric h2,');
     expect(css).not.toContain('.marketing-analytics-metric small,');
@@ -37,9 +36,7 @@ describe('Admin KPI card usage', () => {
 
     for (const tone of ['primary', 'success', 'warning', 'danger', 'info']) {
       expect(css).toContain(`.marketing-analytics-metric.is-${tone} > .metric-card > .metric-card-icon`);
-      expect(css).toContain(`.vietnam-overview-metric.is-${tone} > .metric-card > .metric-card-icon`);
       expect(css).not.toContain(`.marketing-analytics-metric.is-${tone} .metric-card-icon`);
-      expect(css).not.toContain(`.vietnam-overview-metric.is-${tone} .metric-card-icon`);
     }
   });
 });

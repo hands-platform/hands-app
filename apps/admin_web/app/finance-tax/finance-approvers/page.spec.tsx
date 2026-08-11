@@ -63,6 +63,10 @@ describe('FinanceApproversPage', () => {
     expect(markup).toContain('Finance approver directory');
     expect(markup).toContain('Finance Admin');
     expect(markup).toContain('Support Admin');
+    expect(markup).toContain('Second approver');
+    expect(markup).toContain('Maker only');
+    expect(markup).not.toContain('Latest session');
+    expect(markup).not.toContain('Push devices');
     expect(markup).not.toContain('Customer User');
     expect(markup).toContain('card admin-filter-panel');
     expect(markup).toContain('vuexy-booking-table-card');
@@ -95,19 +99,13 @@ describe('FinanceApproversPage', () => {
     );
   });
 
-  it('uses the shared DateTimeText atom for latest session timestamps', () => {
+  it('keeps session and push diagnostics out of finance role governance', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-approvers/page.tsx'), 'utf8');
 
-    expect(source).toContain('DateTimeText');
-    expect(source).not.toContain('return latest?.lastSeenAt ? formatDateTime(latest.lastSeenAt) :');
-  });
-
-  it('uses shared inline fallback atoms for missing approver session fields', () => {
-    const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-approvers/page.tsx'), 'utf8');
-
-    expect(source).toContain('AdminInlineFallback');
-    expect(source).not.toContain("'No recent session'");
-    expect(source).not.toContain("<div className=\"muted\">{user.appSessions?.[0]?.platform ?? 'No platform'}</div>");
+    expect(source).not.toContain('DateTimeText');
+    expect(source).not.toContain('AdminInlineFallback');
+    expect(source).not.toContain('user.appSessions');
+    expect(source).not.toContain('user.pushDevices');
   });
 
   it('uses Vuexy button tone classes without legacy btn aliases', () => {

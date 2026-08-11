@@ -18,12 +18,14 @@ const MANUAL_WALLET_ADJUSTMENT_HISTORY_HEADERS = [
 ] as const;
 
 type AdminManualWalletAdjustmentHistoryProps = {
+  readonly actionLabel?: string;
   readonly className?: string;
   readonly rows: readonly AdminManualWalletAdjustmentRow[];
   readonly walletAdjustmentsHref: string;
 };
 
 export function AdminManualWalletAdjustmentHistory({
+  actionLabel = 'Open wallet adjustment desk',
   className,
   rows,
   walletAdjustmentsHref,
@@ -38,7 +40,7 @@ export function AdminManualWalletAdjustmentHistory({
     >
       <div className="actions admin-mb-12">
         <AdminTextLink href={walletAdjustmentsHref}>
-          Open wallet adjustment desk
+          {actionLabel}
         </AdminTextLink>
       </div>
       <AdminTableScroll>

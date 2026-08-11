@@ -181,8 +181,8 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
         className="admin-mb-16"
         description={`Range: ${dateRangeLabel(filters.range)}. Earning rows, service bridge, cash debt, and payout batches on this page use record dates.`}
         footer={
-          <AdminTextLink href="/finance-closeout">
-            Open finance closeout
+          <AdminTextLink href="/finance-overview">
+            Open Finance Overview
           </AdminTextLink>
         }
         resultLabel={`${summary.count} row(s)`}

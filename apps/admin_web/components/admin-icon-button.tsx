@@ -1,22 +1,20 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 
 type AdminIconButtonProps = {
   readonly children: ReactNode;
   readonly className?: string;
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'className'>;
 
-export function AdminIconButton({
-  children,
-  className,
-  type = 'button',
-  ...buttonProps
-}: AdminIconButtonProps) {
+export const AdminIconButton = forwardRef<HTMLButtonElement, AdminIconButtonProps>(function AdminIconButton(
+  { children, className, type = 'button', ...buttonProps },
+  ref,
+) {
   return (
-    <button {...buttonProps} className={joinClassNames('admin-icon-button', className)} type={type}>
+    <button {...buttonProps} className={joinClassNames('admin-icon-button', className)} ref={ref} type={type}>
       {children}
     </button>
   );
-}
+});
 
 function joinClassNames(...classNames: Array<string | undefined>) {
   return classNames

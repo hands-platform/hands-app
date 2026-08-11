@@ -4,6 +4,7 @@ import {
   BookingOpsTaskType,
   BookingMatchSource as PrismaBookingMatchSource,
   BookingStatus,
+  CustomerWalletLedgerType,
   ParticipantStatus,
   PaymentMethod,
   PaymentStatus,
@@ -11,6 +12,7 @@ import {
   ProviderStatus,
   Role,
 } from '@prisma/client';
+import { ConflictException, Logger, Optional } from '@nestjs/common';
 import { EarningsService } from '../earnings/earnings.service';
 import { MatchingGateway } from '../matching/matching.gateway';
 import { MatchingService } from '../matching/matching.service';
@@ -22,11 +24,13 @@ import {
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import {
-  paymentCaptureSourceStatuses,
-  transitionPaymentStatus,
-} from '../payments/payment-status-transition';
+  customerWalletBookingLockKey,
+  customerWalletPaymentSourceKey,
+} from '../payments/customer-wallet-payment';
+import { paymentCaptureSourceStatuses, transitionPaymentStatus } from '../payments/payment-status-transition';
 import { throwProviderWalletBlocked } from '../provider-wallet/provider-wallet.policy';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProviderAvailabilityLifecycleService } from '../providers/provider-availability-lifecycle.service';
 import {
   addProviderMatchingDistance,
   assertBookingPaymentMethod,
@@ -36,6 +40,7 @@ import {
   assertProviderLifecycleTransitionAllowed,
   bookingAddressText,
   bookingDispatchCoordinates,
+  bookingHasPartnerCommitment,
   calculateDistanceMeters,
   formatMatchingRadius,
   isCustomerSelectableParticipantForFinalChoice,
@@ -58,6 +63,14 @@ import {
   preferredProviderBookingDistanceGateError,
 } from './bookings.gate';
 import {
+  preferredProviderRejectionReasonCodes,
+  type PreferredProviderRejectionReasonCode,
+} from './bookings.dto';
+import {
+  normalizeProviderBookingAlertPreferences,
+  providerBookingAlertMatches,
+} from './bookings.alert-preferences';
+import {
   clientBookingResponse,
   clientBookingResponses,
   partnerBookingResponse,
@@ -68,7 +81,6 @@ import { bookingCreateMetadata, restoreBookingMatchingPolicy } from './bookings.
 import { bookingMatchedAuditCreateInput } from './bookings.match-audit';
 import {
   bookingCompletedUpdateData,
-  bookingResponseTimeoutAt,
   bookingServiceStartedUpdateData,
   openBookingRequestTiming,
 } from './bookings.lifecycle';
@@ -142,6 +154,11 @@ import {
   POST_MATCH_CANCELLATION_PARTNER_PENDING_REASON,
   restorePostMatchCancellationEarning,
 } from './post-match-cancellation';
+import {
+  providerCancellationReasonLabel,
+  providerCancellationRequiresAdminReview,
+  type ProviderCancellationReasonCode,
+} from './provider-cancellation-reason';
 
 type MatchedBookingForClientResponse = Prisma.BookingGetPayload<{
   include: typeof matchedBookingForClientInclude;
@@ -158,6 +175,10 @@ type OpenBookingForClientResponse = Prisma.BookingGetPayload<{
 type OpenBookingListOptions = {
   cursor?: string | null;
   take?: number | string | null;
+};
+
+type ProviderBookingListOptions = OpenBookingListOptions & {
+  scope?: string | null;
 };
 
 type ProviderBookingDetailViewTelemetryInput = {
@@ -181,12 +202,22 @@ type BackupProviderNotificationInput = {
 
 const DEFAULT_PARTNER_OPEN_BOOKINGS_LIMIT = 20;
 const MAX_PARTNER_OPEN_BOOKINGS_LIMIT = 50;
+const DEFAULT_PARTNER_BOOKING_HISTORY_LIMIT = 10;
+const MAX_PARTNER_BOOKING_HISTORY_LIMIT = 50;
+const PROVIDER_BOOKING_HISTORY_STATUS_VALUES = [
+  BookingStatus.COMPLETED,
+  BookingStatus.CANCELLED,
+  BookingStatus.NO_SHOW,
+  BookingStatus.EXPIRED,
+  BookingStatus.REFUNDED,
+] as const;
 const PROVIDER_OPEN_REQUEST_LIST_VIEWED_EVENT = 'OPEN_REQUEST_LIST_VIEWED';
 const PROVIDER_OPEN_REQUEST_DETAIL_VIEWED_EVENT = 'OPEN_REQUEST_DETAIL_VIEWED';
 const PROVIDER_OPEN_REQUEST_DETAIL_HEARTBEAT_EVENT = 'OPEN_REQUEST_DETAIL_HEARTBEAT';
 const PROVIDER_OPEN_REQUEST_DETAIL_CLOSED_EVENT = 'OPEN_REQUEST_DETAIL_CLOSED';
 
 const matchedBookingForClientInclude = {
+  services: { include: { service: true } },
   participants: true,
   preferredProvider: true,
   selectedProvider: true,
@@ -196,6 +227,7 @@ const matchedBookingForClientInclude = {
 } satisfies Prisma.BookingInclude;
 
 const selectedBookingForClientInclude = {
+  services: { include: { service: true } },
   addressSnapshot: true,
   chatRoom: true,
   preferredProvider: true,
@@ -205,6 +237,13 @@ const selectedBookingForClientInclude = {
 
 const openBookingForClientInclude = {
   services: { include: { service: true } },
+  customerProfile: {
+    select: {
+      gender: true,
+      nationality: true,
+      user: { select: { fullName: true, phone: true } },
+    },
+  },
   addressSnapshot: true,
   payment: true,
   participants: { include: { providerProfile: true } },
@@ -214,15 +253,24 @@ const openBookingForClientInclude = {
 
 const paymentRecoveryBookingInclude = {
   ...openBookingForClientInclude,
-  customerProfile: { select: { userId: true } },
+  customerProfile: {
+    select: {
+      userId: true,
+      gender: true,
+      nationality: true,
+      user: { select: { fullName: true, phone: true } },
+    },
+  },
 } satisfies Prisma.BookingInclude;
 
 const firstPickRejectedBookingInclude = {
+  services: { include: { service: true } },
   participants: true,
   preferredProvider: true,
   selectedProvider: true,
   chatRoom: true,
   addressSnapshot: true,
+  payment: true,
 } satisfies Prisma.BookingInclude;
 
 const clientBookingDetailInclude = {
@@ -239,6 +287,11 @@ const clientBookingDetailInclude = {
   },
   participants: { include: { providerProfile: true } },
   payment: true,
+  refunds: {
+    orderBy: { createdAt: 'desc' as const },
+    select: { status: true },
+    take: 1,
+  },
   chatRoom: true,
   review: true,
   snapshots: {
@@ -249,10 +302,22 @@ const clientBookingDetailInclude = {
 
 const clientBookingListInclude = {
   services: { include: { service: true } },
+  customerProfile: {
+    select: {
+      gender: true,
+      nationality: true,
+      user: { select: { fullName: true, phone: true } },
+    },
+  },
   addressSnapshot: true,
   preferredProvider: true,
   participants: { include: { providerProfile: true } },
   payment: true,
+  refunds: {
+    orderBy: { createdAt: 'desc' as const },
+    select: { status: true },
+    take: 1,
+  },
   chatRoom: true,
   selectedProvider: true,
 } satisfies Prisma.BookingInclude;
@@ -279,6 +344,13 @@ const customerCancellableBookingInclude = {
 
 const providerBookingHistoryInclude = {
   services: { include: { service: true } },
+  customerProfile: {
+    select: {
+      gender: true,
+      nationality: true,
+      user: { select: { fullName: true, phone: true } },
+    },
+  },
   addressSnapshot: true,
   participants: true,
   preferredProvider: true,
@@ -303,6 +375,7 @@ const participantResponseBookingInclude = {
   selectedProvider: true,
   chatRoom: true,
   services: { select: { serviceId: true } },
+  payment: true,
 } satisfies Prisma.BookingInclude;
 
 const providerActiveWorkStatuses: BookingStatus[] = [
@@ -317,6 +390,29 @@ const providerBookingReadinessInclude = {
   kyc: true,
   documents: { where: { deletedAt: null } },
   bankAccounts: { where: { deletedAt: null } },
+  workingHours: { orderBy: { weekday: 'asc' as const } },
+  sessions: {
+    orderBy: { lastSeenAt: 'desc' as const },
+    select: { lastSeenAt: true },
+    take: 1,
+  },
+  user: {
+    select: {
+      createdAt: true,
+      appSessions: {
+        where: { role: Role.PROVIDER },
+        orderBy: { lastSeenAt: 'desc' as const },
+        select: { lastSeenAt: true },
+        take: 1,
+      },
+      appUsageDailyAggregates: {
+        where: { role: Role.PROVIDER },
+        orderBy: { lastOccurredAt: 'desc' as const },
+        select: { lastOccurredAt: true },
+        take: 1,
+      },
+    },
+  },
   selectedBookings: {
     where: { status: { in: providerActiveWorkStatuses } },
     select: { id: true, status: true },
@@ -325,7 +421,6 @@ const providerBookingReadinessInclude = {
 } satisfies Prisma.ProviderProfileInclude;
 
 const preferredProviderBookingReadinessInclude = {
-  user: true,
   ...providerBookingReadinessInclude,
 } satisfies Prisma.ProviderProfileInclude;
 
@@ -351,6 +446,8 @@ const providerPostMatchCancellableStatuses: BookingStatus[] = [
 
 @Injectable()
 export class BookingsService {
+  private readonly logger = new Logger(BookingsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly matching: MatchingService,
@@ -358,7 +455,30 @@ export class BookingsService {
     private readonly payments: PaymentsService,
     private readonly notifications: NotificationsService,
     private readonly earnings: EarningsService,
+    @Optional()
+    private readonly providerAvailabilityLifecycle?: ProviderAvailabilityLifecycleService,
   ) {}
+
+  private async markProviderBusy(providerProfileId: string) {
+    try {
+      await this.providerAvailabilityLifecycle?.markBusy(providerProfileId);
+    } catch (error) {
+      this.logger.warn(
+        `Partner availability busy sync failed for ${providerProfileId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  private async reconcileProviderAvailability(providerProfileId: string | null | undefined) {
+    if (!providerProfileId) return;
+    try {
+      await this.providerAvailabilityLifecycle?.reconcile(providerProfileId);
+    } catch (error) {
+      this.logger.warn(
+        `Partner availability release sync failed for ${providerProfileId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
 
   private async recordBookingGateRejection(input: BookingGateRejectionAuditInput) {
     await this.prisma.adminAuditLog.create(bookingGateRejectionAuditCreateInput(input));
@@ -407,6 +527,10 @@ export class BookingsService {
         lat: input.lat,
         lng: input.lng,
         selectedLocation,
+        customer: {
+          name: customer.user.fullName!.trim(),
+          phone: customer.user.phone.trim(),
+        },
       });
     if (matchingPolicy.bookingServiceAreaRequired) {
       const serviceAreaError = vietnamBookingCoordinateGateError(bookingLat, bookingLng);
@@ -483,7 +607,9 @@ export class BookingsService {
       });
     }
 
-    const requiresPostBookingAuthorization = this.payments.requiresPostBookingAuthorization(input.paymentMethod);
+    const requiresPostBookingAuthorization = this.payments.requiresPostBookingAuthorization(
+      input.paymentMethod,
+    );
     let booking: OpenBookingForClientResponse = await this.createOpenMatchingBookingRecord({
       customerProfileId: customer.id,
       selectedLocationId: selectedLocation?.id,
@@ -543,9 +669,18 @@ export class BookingsService {
       throw new BadRequestException('Authenticated customer is required');
     }
 
-    const customer = await this.prisma.customerProfile.findUnique({ where: { userId } });
+    const customer = await this.prisma.customerProfile.findUnique({
+      where: { userId },
+      include: { user: { select: { fullName: true, phone: true } } },
+    });
     if (!customer) {
       throw new NotFoundException('Customer profile not found');
+    }
+    if (!customer.user.fullName?.trim()) {
+      throw new BadRequestException('Customer name is required before booking');
+    }
+    if (!customer.user.phone.trim()) {
+      throw new BadRequestException('Customer phone is required before booking');
     }
     return { customer, customerUserId: userId };
   }
@@ -775,6 +910,7 @@ export class BookingsService {
     lat?: number;
     lng?: number;
     selectedLocation?: { latitude?: unknown; longitude?: unknown; addressText?: string | null } | null;
+    customer: { name: string; phone: string };
   }) {
     const bookingLat = normalizeBookingCoordinate(input.lat ?? input.selectedLocation?.latitude, 'lat');
     const bookingLng = normalizeBookingCoordinate(input.lng ?? input.selectedLocation?.longitude, 'lng');
@@ -787,7 +923,7 @@ export class BookingsService {
       throw new BadRequestException('Booking address text is required');
     }
     return {
-      addressPayload: normalizeBookingAddress(input.address, addressText),
+      addressPayload: normalizeBookingAddress(input.address, addressText, input.customer),
       addressText,
       addressTextForAudit,
       bookingLat,
@@ -810,6 +946,8 @@ export class BookingsService {
       preferredProviderId: input.preferredProviderId,
       backupOpenMode: input.matchingPolicy.backupOpenMode,
       policy: input.matchingPolicy,
+      customerGender: input.booking.customerProfile?.gender,
+      customerNationality: input.booking.customerProfile?.nationality,
     });
   }
 
@@ -853,7 +991,7 @@ export class BookingsService {
     });
   }
 
-  private createOpenMatchingBookingRecord(input: {
+  private async createOpenMatchingBookingRecord(input: {
     customerProfileId: string;
     selectedLocationId?: string | null;
     addressPayload: Prisma.InputJsonValue;
@@ -872,7 +1010,7 @@ export class BookingsService {
     preferredProviderDistanceMeters: number | null;
     requiresPostBookingAuthorization: boolean;
   }) {
-    return this.prisma.booking.create({
+    const createArgs = {
       data: {
         customerProfileId: input.customerProfileId,
         status: input.requiresPostBookingAuthorization ? BookingStatus.CREATED : BookingStatus.OPEN_MATCHING,
@@ -917,7 +1055,53 @@ export class BookingsService {
           : undefined,
       },
       include: openBookingForClientInclude,
+    } satisfies Prisma.BookingCreateArgs;
+
+    if (input.paymentMethod !== PaymentMethod.CUSTOMER_WALLET) {
+      return this.prisma.booking.create(createArgs);
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${customerWalletBookingLockKey(
+          input.customerProfileId,
+        )}))::text AS "lockResult"`,
+      );
+      const wallet = await tx.customerWalletLedgerEntry.aggregate({
+        where: { customerProfileId: input.customerProfileId, currency: 'VND' },
+        _sum: { amount: true },
+      });
+      const balance = wallet._sum.amount ?? 0;
+      if (balance < input.priceSummary.finalAmount) {
+        throw new BadRequestException('Insufficient customer wallet balance');
+      }
+
+      const booking = await tx.booking.create(createArgs);
+      if (!booking.payment?.id) {
+        throw new BadRequestException('Customer wallet payment was not created');
+      }
+      await tx.customerWalletLedgerEntry.create({
+        data: {
+          amount: -input.priceSummary.finalAmount,
+          bookingId: booking.id,
+          currency: 'VND',
+          customerProfileId: input.customerProfileId,
+          metadata: {
+            bookingId: booking.id,
+            customerPaymentAmount: input.priceSummary.finalAmount,
+            paymentId: booking.payment.id,
+            paymentMethod: PaymentMethod.CUSTOMER_WALLET,
+            reservationState: 'HELD',
+          },
+          notes: 'Customer wallet amount reserved for booking payment.',
+          reference: booking.payment.id,
+          sourceKey: customerWalletPaymentSourceKey(booking.id),
+          type: CustomerWalletLedgerType.CUSTOMER_WALLET_PAYMENT,
+        },
+      });
+      return booking;
     });
+    return result;
   }
 
   private async refreshBookingPaymentAuthorization(booking: OpenBookingForClientResponse) {
@@ -959,20 +1143,13 @@ export class BookingsService {
       return { skipped: true, reason: 'BOOKING_SERVICE_NOT_FOUND', bookingId };
     }
     const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
-    const refreshMatchingWindow = this.payments.paymentRequiresCaptureBeforeMatching(
-      booking.payment.method,
-    );
-    if (
-      !refreshMatchingWindow &&
-      (!booking.expiresAt || booking.expiresAt.getTime() <= Date.now())
-    ) {
+    const refreshMatchingWindow = this.payments.paymentRequiresCaptureBeforeMatching(booking.payment.method);
+    if (!refreshMatchingWindow && (!booking.expiresAt || booking.expiresAt.getTime() <= Date.now())) {
       return { skipped: true, reason: 'MATCHING_WINDOW_EXPIRED', bookingId };
     }
     const recoveredOpenedAt = new Date();
     const recoveredExpiresAt = refreshMatchingWindow
-      ? new Date(
-          recoveredOpenedAt.getTime() + matchingPolicy.providerResponseWindowMinutes * 60_000,
-        )
+      ? new Date(recoveredOpenedAt.getTime() + matchingPolicy.providerResponseWindowMinutes * 60_000)
       : (booking.expiresAt ?? recoveredOpenedAt);
     const eligibleBackupProviders = await this.findInitialEligibleBackupProviders({
       booking,
@@ -984,9 +1161,7 @@ export class BookingsService {
       where: { id: booking.id, status: BookingStatus.CREATED },
       data: {
         status: BookingStatus.OPEN_MATCHING,
-        ...(refreshMatchingWindow
-          ? { openedAt: recoveredOpenedAt, expiresAt: recoveredExpiresAt }
-          : {}),
+        ...(refreshMatchingWindow ? { openedAt: recoveredOpenedAt, expiresAt: recoveredExpiresAt } : {}),
       },
     });
     if (opened.count !== 1) {
@@ -1061,100 +1236,6 @@ export class BookingsService {
     }
   }
 
-  private async reopenBookingAfterFirstPickRejected(input: {
-    bookingId: string;
-    booking: { metadata?: Prisma.JsonValue | null; services: Array<{ serviceId: string }> };
-    reopenedBooking: FirstPickRejectedBookingResponse;
-    preferredProviderId: string;
-  }) {
-    const matchingPolicy = this.bookingPolicy(input.booking, await this.matching.getPolicy());
-    const serviceId = input.booking.services[0]?.serviceId;
-    const eligibleBackupProviders = await this.findFirstPickDeclinedBackupProviders({
-      bookingId: input.bookingId,
-      reopenedBooking: input.reopenedBooking,
-      serviceId,
-      preferredProviderId: input.preferredProviderId,
-      matchingPolicy,
-    });
-    const result = await this.activateFirstPickDeclinedOpenMatching({
-      bookingId: input.bookingId,
-      reopenedBooking: input.reopenedBooking,
-      matchingPolicy,
-      eligibleBackupProviderCount: eligibleBackupProviders.length,
-    });
-    await this.notifyFirstPickDeclinedBackupProviders({
-      bookingId: input.bookingId,
-      matchingPolicy,
-      eligibleBackupProviders,
-      matchingPayload: result,
-    });
-  }
-
-  private async findFirstPickDeclinedBackupProviders(input: {
-    bookingId: string;
-    reopenedBooking: FirstPickRejectedBookingResponse;
-    serviceId?: string;
-    preferredProviderId: string;
-    matchingPolicy: MatchingPolicy;
-  }) {
-    if (!input.serviceId) {
-      return [];
-    }
-
-    const dispatchPin = bookingDispatchCoordinates(input.reopenedBooking);
-    return this.findEligibleBackupProviders({
-      bookingId: input.bookingId,
-      serviceId: input.serviceId,
-      lat: dispatchPin.lat,
-      lng: dispatchPin.lng,
-      preferredProviderId: input.preferredProviderId,
-      backupOpenMode: input.matchingPolicy.backupOpenMode,
-      forceOpen: true,
-      policy: input.matchingPolicy,
-    });
-  }
-
-  private async activateFirstPickDeclinedOpenMatching(input: {
-    bookingId: string;
-    reopenedBooking: FirstPickRejectedBookingResponse;
-    matchingPolicy: MatchingPolicy;
-    eligibleBackupProviderCount: number;
-  }) {
-    const result = this.matching.openBooking({
-      booking: input.reopenedBooking,
-      policy: input.matchingPolicy,
-      payload: bookingOpenMatchingPayload(input.matchingPolicy, input.eligibleBackupProviderCount, {
-        firstPickDeclined: true,
-      }),
-    });
-    await this.matching.registerActiveBooking(input.bookingId, result);
-    await this.matching.scheduleBookingTimeout(
-      input.bookingId,
-      bookingResponseTimeoutAt({
-        expiresAt: input.reopenedBooking.expiresAt,
-        providerResponseWindowMinutes: input.matchingPolicy.providerResponseWindowMinutes,
-      }),
-    );
-    return result;
-  }
-
-  private async notifyFirstPickDeclinedBackupProviders(input: {
-    bookingId: string;
-    matchingPolicy: MatchingPolicy;
-    eligibleBackupProviders: BackupProviderNotificationInput['providers'];
-    matchingPayload: ReturnType<MatchingService['openBooking']>;
-  }) {
-    await this.notifyBackupProvidersAndRecordTrace({
-      stage: 'first_pick_declined',
-      bookingId: input.bookingId,
-      providers: input.eligibleBackupProviders,
-      backupProviderRadiusMeters: input.matchingPolicy.backupProviderRadiusMeters,
-      backupOpenMode: input.matchingPolicy.backupOpenMode,
-      backupProviderInvitationLimit: input.matchingPolicy.backupProviderInvitationLimit,
-      matchingPayload: input.matchingPayload,
-    });
-  }
-
   private async announceOpenBooking(input: {
     userId: string;
     bookingId: string;
@@ -1173,11 +1254,7 @@ export class BookingsService {
     });
 
     if (input.preferredProvider?.userId) {
-      await this.notifyPreferredProviderRequested(
-        input.preferredProvider.userId,
-        input.bookingId,
-        input.customerProfileId,
-      );
+      await this.notifyPreferredProviderRequested(input.preferredProvider.userId, input.bookingId);
       this.matchingGateway.emitDirectBookingRequested(
         input.preferredProvider.userId,
         input.bookingId,
@@ -1241,22 +1318,28 @@ export class BookingsService {
     return clientBookingResponse(booking);
   }
 
-  async listCustomerBookings(customerUserId: string) {
+  async listCustomerBookings(customerUserId: string, options: OpenBookingListOptions = {}) {
     const customer = await this.prisma.customerProfile.findUniqueOrThrow({
       where: { userId: customerUserId },
     });
+    const cursor = normalizePaginationCursor(options.cursor);
     const bookings = await this.prisma.booking.findMany({
       where: { customerProfileId: customer.id },
       include: clientBookingListInclude,
-      orderBy: { createdAt: 'desc' },
-      take: 20,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: normalizeBoundedTake(options.take, 20, 50),
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
     return clientBookingResponses(bookings);
   }
 
   async cancelCustomerBooking(bookingId: string, customerUserId: string) {
-    await this.requireCustomerCancellableBooking(bookingId, customerUserId);
-    const cancellation = await this.closeCustomerBookingWithPaymentRelease(bookingId);
+    const cancellableBooking = await this.requireCustomerCancellableBooking(bookingId, customerUserId);
+    const cancellation = await this.closeCustomerBookingWithPaymentRelease(
+      bookingId,
+      customerUserId,
+      cancellableBooking.expiresAt,
+    );
 
     await this.matching.closeBooking(bookingId);
     const clientResult = clientBookingResponse(cancellation.result);
@@ -1271,12 +1354,47 @@ export class BookingsService {
     return clientResult;
   }
 
-  private async closeCustomerBookingWithPaymentRelease(bookingId: string) {
-    const updated = await this.prisma.booking.update({
-      where: { id: bookingId },
-      data: customerCancellationCloseData(),
-      include: clientBookingListInclude,
-    });
+  private async closeCustomerBookingWithPaymentRelease(
+    bookingId: string,
+    customerUserId: string,
+    originalExpiresAt?: Date | null,
+  ) {
+    let updated: Prisma.BookingGetPayload<{ include: typeof clientBookingListInclude }>;
+    try {
+      updated = await this.prisma.$transaction(async (transaction) => {
+        const booking = await transaction.booking.update({
+          where: {
+            id: bookingId,
+            status: BookingStatus.OPEN_MATCHING,
+            selectedProviderId: null,
+            expiresAt: { gt: new Date() },
+          },
+          data: customerCancellationCloseData(),
+          include: clientBookingListInclude,
+        });
+        await transaction.adminAuditLog.create({
+          data: {
+            actorId: customerUserId,
+            action: 'booking.cancelled.customer_pre_match',
+            target: `booking:${bookingId}`,
+            metadata: {
+              bookingId,
+              remainingSeconds: originalExpiresAt
+                ? Math.max(0, Math.ceil((originalExpiresAt.getTime() - Date.now()) / 1000))
+                : null,
+            },
+          },
+        });
+        return booking;
+      });
+    } catch (error) {
+      return this.throwStaleBookingMatchRequest(
+        error,
+        bookingId,
+        'Booking is already matched or no longer open for customer cancellation',
+      );
+    }
+    await this.reconcileProviderAvailability(updated.selectedProviderId);
     return {
       ...(await this.bookingCancellationResultWithPaymentRelease(updated)),
       providerUserIds: bookingCancellationProviderUserIds(updated),
@@ -1292,6 +1410,13 @@ export class BookingsService {
       include: customerCancellableBookingInclude,
     });
 
+    if (bookingHasPartnerCommitment(booking)) {
+      throw new ConflictException({
+        message:
+          'Matched bookings cannot be cancelled directly. Use booking chat so HANDS operations can review the evidence.',
+        booking: clientBookingResponse(booking),
+      });
+    }
     assertCustomerDirectCancellationAllowed(booking);
     return booking;
   }
@@ -1365,10 +1490,37 @@ export class BookingsService {
     const visibleBookings = bookings
       .map((booking) => addProviderMatchingDistance(booking, provider))
       .filter((booking) =>
-        this.canProviderSeeOpenBooking(booking, provider, this.bookingPolicy(booking, fallbackPolicy)),
+        this.canProviderSeeOpenBooking(booking, provider.id, this.bookingPolicy(booking, fallbackPolicy)),
       );
-    await this.recordProviderOpenRequestListView(provider.id, visibleBookings.map((booking) => booking.id));
-    return partnerOpenBookingResponses(visibleBookings);
+    await this.recordProviderOpenRequestListView(
+      provider.id,
+      visibleBookings.map((booking) => booking.id),
+    );
+    return partnerOpenBookingResponses(visibleBookings, provider.id);
+  }
+
+  async getProviderBookingAlertPreferences(providerUserId: string) {
+    const provider = await this.requireProviderAccount(providerUserId);
+    return normalizeProviderBookingAlertPreferences(provider.bookingAlertPreferences);
+  }
+
+  async updateProviderBookingAlertPreferences(
+    providerUserId: string,
+    input: {
+      enabled: boolean;
+      maxDistanceKm?: number | null;
+      customerGender?: string | null;
+      customerNationality?: string | null;
+      serviceIds: string[];
+    },
+  ) {
+    const provider = await this.requireProviderAccount(providerUserId);
+    const preferences = normalizeProviderBookingAlertPreferences(input);
+    await this.prisma.providerProfile.update({
+      where: { id: provider.id },
+      data: { bookingAlertPreferences: preferences },
+    });
+    return preferences;
   }
 
   async getProviderBooking(bookingId: string, providerUserId: string) {
@@ -1429,15 +1581,13 @@ export class BookingsService {
   }
 
   private async recordProviderOpenRequestDetailView(providerProfileId: string, bookingId: string) {
-    await this.prisma.providerBookingRequestEvent.create(
-      {
-        data: {
-          bookingId,
-          eventType: PROVIDER_OPEN_REQUEST_DETAIL_VIEWED_EVENT,
-          providerProfileId,
-        },
+    await this.prisma.providerBookingRequestEvent.create({
+      data: {
+        bookingId,
+        eventType: PROVIDER_OPEN_REQUEST_DETAIL_VIEWED_EVENT,
+        providerProfileId,
       },
-    );
+    });
   }
 
   private async requireProviderAccessibleBookingDetail(
@@ -1463,15 +1613,36 @@ export class BookingsService {
 
     const policy = this.bookingPolicy(booking, await this.matching.getPolicy());
     const visibleBooking = addProviderMatchingDistance(booking, provider);
-    if (!this.canProviderSeeOpenBooking(visibleBooking, provider, policy)) {
+    if (!this.canProviderSeeOpenBooking(visibleBooking, provider.id, policy)) {
       throw new NotFoundException('Booking not found');
     }
 
     return { booking: visibleBooking, isOpenRequest: true };
   }
 
-  async listProviderBookings(providerUserId: string) {
+  async listProviderBookings(providerUserId: string, options: ProviderBookingListOptions = {}) {
     const provider = await this.requireProvider(providerUserId);
+    if (options.scope?.trim().toLowerCase() === 'history') {
+      const cursor = normalizePaginationCursor(options.cursor);
+      const history = await this.prisma.booking.findMany({
+        where: {
+          AND: [
+            providerBookingHistoryWhere(provider.id),
+            { status: { in: [...PROVIDER_BOOKING_HISTORY_STATUS_VALUES] } },
+          ],
+        },
+        include: providerBookingHistoryInclude,
+        orderBy: { createdAt: 'desc' },
+        take: normalizeBoundedTake(
+          options.take,
+          DEFAULT_PARTNER_BOOKING_HISTORY_LIMIT,
+          MAX_PARTNER_BOOKING_HISTORY_LIMIT,
+        ),
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
+      return partnerBookingResponses(history, provider.id);
+    }
+
     const activeBookings = await this.prisma.booking.findMany({
       where: {
         selectedProviderId: provider.id,
@@ -1490,6 +1661,7 @@ export class BookingsService {
             where: {
               AND: [
                 providerBookingHistoryWhere(provider.id),
+                { status: { notIn: [...PROVIDER_ACTIVE_WORK_STATUS_VALUES] } },
                 ...(activeBookings.length > 0
                   ? [{ id: { notIn: activeBookings.map((booking) => booking.id) } }]
                   : []),
@@ -1511,15 +1683,27 @@ export class BookingsService {
     });
     this.assertBookingOpenForPartnerResponse(booking);
     assertProviderCanReceiveBooking(provider);
+    if (isMarketplacePartnerAction(provider.id, booking.preferredProviderId)) {
+      await this.ensureProviderWalletCanJoinMarketplace(provider.id);
+    }
     const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
     const distanceMeters = this.requireProviderWithinMatchingRadius(booking, provider, matchingPolicy);
 
-    const participant = await this.joinProviderBookingParticipant({
-      bookingId,
-      providerProfileId: provider.id,
-      distanceMeters,
-      providerStatusAtJoin: provider.status,
-    });
+    let participant;
+    try {
+      participant = await this.joinProviderBookingParticipant({
+        bookingId,
+        providerProfileId: provider.id,
+        distanceMeters,
+        providerStatusAtJoin: provider.status,
+      });
+    } catch (error) {
+      return this.throwStaleBookingMatchRequest(
+        error,
+        bookingId,
+        'Booking is already matched or no longer open for marketplace participation',
+      );
+    }
 
     await this.matching.registerParticipant(bookingId, provider.id, matchingPolicy);
     const result = this.matching.joinBooking(bookingId, participant);
@@ -1527,15 +1711,30 @@ export class BookingsService {
     return result;
   }
 
-  private joinProviderBookingParticipant(input: {
+  private async joinProviderBookingParticipant(input: {
     bookingId: string;
     providerProfileId: string;
     providerStatusAtJoin: ProviderStatus;
     distanceMeters: number | null;
   }) {
-    return this.prisma.bookingParticipant.upsert({
-      ...bookingParticipantJoinUpsert(input),
+    const upsert = bookingParticipantJoinUpsert(input);
+    const booking = await this.prisma.booking.update({
+      where: {
+        id: input.bookingId,
+        status: BookingStatus.OPEN_MATCHING,
+        selectedProviderId: null,
+        expiresAt: { gt: new Date() },
+      },
+      data: { participants: { upsert } },
+      select: {
+        participants: {
+          where: { providerProfileId: input.providerProfileId },
+          include: marketplaceParticipantResponseInclude,
+          take: 1,
+        },
+      },
     });
+    return booking.participants[0];
   }
 
   async selectProvider(bookingId: string, customerUserId: string, providerId: string) {
@@ -1564,10 +1763,21 @@ export class BookingsService {
       where: { userId: customerUserId },
     });
     const booking = await this.prisma.booking.findFirst({
-      where: { id: bookingId, customerProfileId: customer.id, status: BookingStatus.OPEN_MATCHING },
+      where: { id: bookingId, customerProfileId: customer.id },
+      include: clientBookingDetailInclude,
     });
     if (!booking) {
-      throw new BadRequestException('Booking is not open or does not belong to this customer');
+      throw new BadRequestException('Booking does not belong to this customer');
+    }
+    if (
+      booking.status !== BookingStatus.OPEN_MATCHING ||
+      booking.selectedProviderId ||
+      (booking.expiresAt && booking.expiresAt.getTime() <= Date.now())
+    ) {
+      throw new ConflictException({
+        message: 'Booking is already matched or no longer open for customer final selection',
+        booking: clientBookingResponse(booking),
+      });
     }
     return booking;
   }
@@ -1591,7 +1801,12 @@ export class BookingsService {
     }
   }
 
-  async updateParticipant(bookingId: string, providerUserId: string | undefined, status: ParticipantStatus) {
+  async updateParticipant(
+    bookingId: string,
+    providerUserId: string | undefined,
+    status: ParticipantStatus,
+    rejection?: { reasonCode?: PreferredProviderRejectionReasonCode; reasonDetail?: string },
+  ) {
     const provider = await this.requireProvider(providerUserId);
     if (status === ParticipantStatus.ACCEPTED) {
       assertProviderCanReceiveBooking(provider);
@@ -1633,16 +1848,19 @@ export class BookingsService {
     }
 
     if (responseRoute === 'first-pick-rejected') {
-      const updated = await this.rejectFirstPickProvider({ bookingId, providerId: provider.id });
+      const rejectionReason = preferredProviderRejectionInput(rejection);
+      const updated = await this.rejectFirstPickProvider({
+        bookingId,
+        providerId: provider.id,
+        providerUserId: provider.userId,
+        ...rejectionReason,
+      });
       await this.matching.closeBooking(bookingId);
       await this.notifyCustomerFirstPickRejected(booking.customerProfile.userId, bookingId, provider.id);
-      await this.reopenBookingAfterFirstPickRejected({
-        bookingId,
-        booking,
-        reopenedBooking: updated,
-        preferredProviderId: provider.id,
-      });
-      return updated;
+      const cancellation = await this.bookingCancellationResultWithPaymentRelease(updated);
+      const clientResult = clientBookingResponse(cancellation.result);
+      this.matchingGateway.emitBookingExpired(bookingId, clientResult);
+      return clientResult;
     }
 
     if (
@@ -1652,11 +1870,39 @@ export class BookingsService {
       await this.ensureProviderWalletCanJoinMarketplace(provider.id);
     }
 
-    const updatedParticipant = await this.prisma.bookingParticipant.update({
-      where: participantKey,
-      data: { status, respondedAt: new Date() },
-      include: marketplaceParticipantResponseInclude,
-    });
+    let updatedParticipant;
+    try {
+      const updatedBooking = await this.prisma.booking.update({
+        where: {
+          id: bookingId,
+          status: BookingStatus.OPEN_MATCHING,
+          selectedProviderId: null,
+          expiresAt: { gt: new Date() },
+        },
+        data: {
+          participants: {
+            update: {
+              where: participantKey,
+              data: { status, respondedAt: new Date() },
+            },
+          },
+        },
+        select: {
+          participants: {
+            where: { providerProfileId: provider.id },
+            include: marketplaceParticipantResponseInclude,
+            take: 1,
+          },
+        },
+      });
+      updatedParticipant = updatedBooking.participants[0];
+    } catch (error) {
+      return this.throwStaleBookingMatchRequest(
+        error,
+        bookingId,
+        'Booking is already matched or no longer open for partner response',
+      );
+    }
     await this.announceMarketplaceParticipantResponse({
       status,
       bookingId,
@@ -1705,16 +1951,11 @@ export class BookingsService {
     await this.notifications.create(bookingOpenedNotification(input));
   }
 
-  private async notifyPreferredProviderRequested(
-    preferredProviderUserId: string,
-    bookingId: string,
-    customerProfileId: string,
-  ) {
+  private async notifyPreferredProviderRequested(preferredProviderUserId: string, bookingId: string) {
     await this.notifications.create(
       preferredProviderRequestedNotification({
         userId: preferredProviderUserId,
         bookingId,
-        customerProfileId,
       }),
     );
   }
@@ -1797,9 +2038,14 @@ export class BookingsService {
     providerId: string;
   }): Promise<SelectedBookingForClientResponse> {
     try {
-      return await this.prisma.$transaction(async (transaction) => {
+      const matchedBooking = await this.prisma.$transaction(async (transaction) => {
         const matchedBooking = await transaction.booking.update({
-          where: { id: input.bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
+          where: {
+            id: input.bookingId,
+            status: BookingStatus.OPEN_MATCHING,
+            selectedProviderId: null,
+            expiresAt: { gt: new Date() },
+          },
           data: bookingMatchedUpdateData({
             bookingId: input.bookingId,
             providerProfileId: input.providerId,
@@ -1818,9 +2064,12 @@ export class BookingsService {
         );
         return matchedBooking;
       });
+      await this.markProviderBusy(input.providerId);
+      return matchedBooking;
     } catch (error) {
-      this.throwStaleBookingMatchRequest(
+      return this.throwStaleBookingMatchRequest(
         error,
+        input.bookingId,
         'Booking is already matched or no longer open for customer final selection',
       );
     }
@@ -1829,15 +2078,60 @@ export class BookingsService {
   private async rejectFirstPickProvider(input: {
     bookingId: string;
     providerId: string;
+    providerUserId: string;
+    reasonCode: PreferredProviderRejectionReasonCode;
+    reasonDetail: string;
   }): Promise<FirstPickRejectedBookingResponse> {
-    return this.prisma.booking.update({
-      where: { id: input.bookingId },
-      data: bookingFirstPickRejectedUpdateData({
-        bookingId: input.bookingId,
-        providerProfileId: input.providerId,
-      }),
-      include: firstPickRejectedBookingInclude,
-    });
+    try {
+      return await this.prisma.$transaction(async (transaction) => {
+        const booking = await transaction.booking.update({
+          where: {
+            id: input.bookingId,
+            status: BookingStatus.OPEN_MATCHING,
+            selectedProviderId: null,
+            preferredProviderId: input.providerId,
+            expiresAt: { gt: new Date() },
+          },
+          data: bookingFirstPickRejectedUpdateData({
+            bookingId: input.bookingId,
+            providerProfileId: input.providerId,
+          }),
+          include: firstPickRejectedBookingInclude,
+        });
+        await transaction.providerBookingRequestEvent.create({
+          data: {
+            bookingId: input.bookingId,
+            providerProfileId: input.providerId,
+            eventType: 'PREFERRED_PROVIDER_REJECTED',
+            metadata: {
+              reasonCode: input.reasonCode,
+              reasonDetail: input.reasonDetail,
+              statusAtEvent: BookingStatus.OPEN_MATCHING,
+            },
+          },
+        });
+        await transaction.adminAuditLog.create({
+          data: {
+            actorId: input.providerUserId,
+            action: 'booking.closed.preferred_provider_rejected',
+            target: `booking:${input.bookingId}`,
+            metadata: {
+              bookingId: input.bookingId,
+              providerProfileId: input.providerId,
+              reasonCode: input.reasonCode,
+              reasonDetail: input.reasonDetail,
+            },
+          },
+        });
+        return booking;
+      });
+    } catch (error) {
+      return this.throwStaleBookingMatchRequest(
+        error,
+        input.bookingId,
+        'Booking is already matched or no longer open for preferred partner rejection',
+      );
+    }
   }
 
   private async matchFirstPickAcceptedProvider(input: {
@@ -1846,9 +2140,14 @@ export class BookingsService {
     providerUserId: string;
   }): Promise<MatchedBookingForClientResponse> {
     try {
-      return await this.prisma.$transaction(async (transaction) => {
+      const matchedBooking = await this.prisma.$transaction(async (transaction) => {
         const matchedBooking = await transaction.booking.update({
-          where: { id: input.bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
+          where: {
+            id: input.bookingId,
+            status: BookingStatus.OPEN_MATCHING,
+            selectedProviderId: null,
+            expiresAt: { gt: new Date() },
+          },
           data: bookingMatchedUpdateData({
             bookingId: input.bookingId,
             providerProfileId: input.providerId,
@@ -1867,9 +2166,12 @@ export class BookingsService {
         );
         return matchedBooking;
       });
+      await this.markProviderBusy(input.providerId);
+      return matchedBooking;
     } catch (error) {
-      this.throwStaleBookingMatchRequest(
+      return this.throwStaleBookingMatchRequest(
         error,
+        input.bookingId,
         'Booking is already matched or no longer open for first-pick acceptance',
       );
     }
@@ -2071,6 +2373,8 @@ export class BookingsService {
     backupOpenMode?: Awaited<ReturnType<MatchingService['getPolicy']>>['backupOpenMode'];
     forceOpen?: boolean;
     policy?: MatchingPolicy;
+    customerGender?: string | null;
+    customerNationality?: string | null;
   }) {
     const policy = input.policy ?? (await this.matching.getPolicy());
     const freshLocationAfter = new Date(Date.now() - policy.backupProviderLocationMaxAgeMinutes * 60_000);
@@ -2081,6 +2385,7 @@ export class BookingsService {
         userId: true,
         currentLat: true,
         currentLng: true,
+        bookingAlertPreferences: true,
       },
     });
 
@@ -2089,7 +2394,15 @@ export class BookingsService {
       lng: input.lng,
       radiusMeters: policy.backupProviderRadiusMeters,
     });
-    const providersWithClearWallets = await this.excludeNegativeWalletProviders(providersWithinRadius);
+    const providersMatchingAlerts = providersWithinRadius.filter((provider) =>
+      providerBookingAlertMatches(provider.bookingAlertPreferences, {
+        distanceMeters: provider.distanceMeters,
+        serviceId: input.serviceId,
+        customerGender: input.customerGender,
+        customerNationality: input.customerNationality,
+      }),
+    );
+    const providersWithClearWallets = await this.excludeNegativeWalletProviders(providersMatchingAlerts);
 
     return nearestBackupProviders(providersWithClearWallets, policy.backupProviderInvitationLimit);
   }
@@ -2120,23 +2433,13 @@ export class BookingsService {
       distanceMeters?: number | null;
       participants?: Array<{ providerProfileId: string; status: ParticipantStatus | string }>;
     },
-    provider: { id: string; currentLocationUpdatedAt?: Date | string | null },
+    providerId: string,
     policy: Awaited<ReturnType<MatchingService['getPolicy']>>,
   ) {
-    if (booking.preferredProviderId === provider.id) {
+    if (booking.preferredProviderId === providerId) {
       return true;
     }
-    if (!this.isBackupWindowOpen(booking, policy)) {
-      return false;
-    }
-    return (
-      providerLocationFreshEnough(
-        provider.currentLocationUpdatedAt,
-        policy.backupProviderLocationMaxAgeMinutes,
-      ) &&
-      typeof booking.distanceMeters === 'number' &&
-      booking.distanceMeters <= policy.backupProviderRadiusMeters
-    );
+    return this.isBackupWindowOpen(booking, policy);
   }
 
   private requireProviderWithinMatchingRadius(
@@ -2228,13 +2531,23 @@ export class BookingsService {
     if (status === BookingStatus.IN_SERVICE) {
       return this.startProviderService({ bookingId, providerProfileId: provider.id });
     }
-    return this.updateBookingStatus(bookingId, status);
+    const updated = await this.updateBookingStatus(bookingId, status);
+    if (status === BookingStatus.ARRIVED) {
+      this.matchingGateway.emitProviderArrived(bookingId, updated);
+    }
+    return updated;
   }
 
   async cancelProviderBooking(
     bookingId: string,
     providerUserId: string,
-    input: { lat?: number; lng?: number; addressText?: string; note?: string } = {},
+    input: {
+      lat?: number;
+      lng?: number;
+      addressText?: string;
+      note: string;
+      reasonCode: ProviderCancellationReasonCode;
+    },
   ) {
     const provider = await this.requireProvider(providerUserId);
     this.assertProviderBookingActionLocationInput(input);
@@ -2243,6 +2556,7 @@ export class BookingsService {
       providerProfileId: provider.id,
       providerUserId: provider.userId,
       note: input.note,
+      reasonCode: input.reasonCode,
     });
     await this.recordProviderBookingActionLocation({
       bookingId,
@@ -2252,12 +2566,25 @@ export class BookingsService {
       lng: input.lng,
     });
 
+    const paymentClosure =
+      cancellation.autoApproved && cancellation.booking.payment
+        ? await this.payments.closeUnmatchedBookingPayment(
+            cancellation.booking.payment.id,
+            'Partner post-match cancellation auto-approved',
+          )
+        : null;
     await this.matching.closeBooking(bookingId);
-    const partnerResult = partnerBookingResponse(cancellation.booking, provider.id);
+    const bookingResult = bookingCancellationResultWithReleasedPayment(
+      cancellation.booking,
+      paymentClosure?.payment,
+    );
+    const partnerResult = partnerBookingResponse(bookingResult, provider.id);
     await this.announceProviderPostMatchCancellation({
       bookingId,
       customerUserId: cancellation.booking.customerProfile.userId,
       autoApproved: cancellation.autoApproved,
+      reasonCode: cancellation.reasonCode,
+      reasonLabel: cancellation.reasonLabel,
       matchingPayload: partnerResult,
     });
 
@@ -2268,6 +2595,8 @@ export class BookingsService {
         adminReviewRequired: !cancellation.autoApproved,
         minutesAfterMatch: cancellation.minutesAfterMatch,
         earningResult: cancellation.earningResult,
+        reasonCode: cancellation.reasonCode,
+        reasonLabel: cancellation.reasonLabel,
       },
     };
   }
@@ -2276,17 +2605,23 @@ export class BookingsService {
     bookingId: string;
     providerProfileId: string;
     providerUserId: string;
-    note?: string;
+    note: string;
+    reasonCode: ProviderCancellationReasonCode;
   }) {
     const closedAt = new Date();
     const partnerNote = cleanProviderCancellationNote(input.note);
+    if (!partnerNote) {
+      throw new BadRequestException('Partner cancellation detail is required');
+    }
+    const reasonLabel = providerCancellationReasonLabel(input.reasonCode);
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const booking = await tx.booking.findUniqueOrThrow({
         where: { id: input.bookingId },
         select: {
           id: true,
           status: true,
+          metadata: true,
           notes: true,
           matchedAt: true,
           selectedProviderId: true,
@@ -2314,15 +2649,12 @@ export class BookingsService {
         booking.matchedAt,
         closedAt,
       );
-      const autoApproved = autoApprovalWindow;
+      const requiresAdminReview = providerCancellationRequiresAdminReview(input.reasonCode);
+      const autoApproved = autoApprovalWindow && !requiresAdminReview;
       const closedReason = autoApproved
         ? POST_MATCH_CANCELLATION_APPROVED_REASON
         : POST_MATCH_CANCELLATION_PARTNER_PENDING_REASON;
-      const closedNote =
-        partnerNote ??
-        (autoApproved
-          ? 'Partner cancelled within the 15-minute post-match window. Automatically approved.'
-          : 'Partner cancelled after the 15-minute post-match window. Admin review is required.');
+      const closedNote = `${reasonLabel}: ${partnerNote}`;
       const notes = appendDatedBookingNote(
         booking.notes,
         autoApproved
@@ -2342,6 +2674,20 @@ export class BookingsService {
           closedByRole: Role.PROVIDER,
           closedReason,
           closedNote,
+          metadata: toJson({
+            ...(booking.metadata && typeof booking.metadata === 'object' && !Array.isArray(booking.metadata)
+              ? booking.metadata
+              : {}),
+            postMatchCancellation: {
+              reasonCode: input.reasonCode,
+              reasonLabel,
+              detail: partnerNote,
+              requiresAdminReview: !autoApproved,
+              autoApprovalWindow,
+              autoApproved,
+              minutesAfterMatch,
+            },
+          }),
           notes,
           opsTasks: {
             upsert: {
@@ -2380,7 +2726,10 @@ export class BookingsService {
             providerProfileId: input.providerProfileId,
             previousStatus: booking.status,
             minutesAfterMatch,
-            autoApprovalWindow: autoApproved,
+            autoApprovalWindow,
+            reasonCode: input.reasonCode,
+            reasonLabel,
+            requiresAdminReview,
             note: closedNote,
             earningResult,
           }),
@@ -2392,14 +2741,20 @@ export class BookingsService {
         autoApproved,
         minutesAfterMatch,
         earningResult,
+        reasonCode: input.reasonCode,
+        reasonLabel,
       };
     });
+    await this.reconcileProviderAvailability(input.providerProfileId);
+    return result;
   }
 
   private async announceProviderPostMatchCancellation(input: {
     bookingId: string;
     customerUserId: string;
     autoApproved: boolean;
+    reasonCode: ProviderCancellationReasonCode;
+    reasonLabel: string;
     matchingPayload: unknown;
   }) {
     await this.notifications.create({
@@ -2415,6 +2770,8 @@ export class BookingsService {
         postMatchCancellation: true,
         autoApproved: input.autoApproved,
         adminReviewRequired: !input.autoApproved,
+        reasonCode: input.reasonCode,
+        reasonLabel: input.reasonLabel,
       },
     });
     this.matchingGateway.emitBookingExpired(input.bookingId, input.matchingPayload);
@@ -2484,6 +2841,7 @@ export class BookingsService {
         include: completedBookingInclude,
       });
     });
+    await this.reconcileProviderAvailability(provider.id);
     await this.earnings.createForCompletedBooking(bookingId, provider.id);
     const result = this.matching.completeBooking(bookingId, clientBookingResponse(booking));
     await this.announceServiceCompleted({
@@ -2495,11 +2853,7 @@ export class BookingsService {
     return result;
   }
 
-  async createProviderCustomerReview(
-    bookingId: string,
-    providerUserId: string,
-    input: { comment: string },
-  ) {
+  async createProviderCustomerReview(bookingId: string, providerUserId: string, input: { comment: string }) {
     const provider = await this.requireProvider(providerUserId);
     const comment = normalizeProviderCustomerReviewComment(input.comment);
 
@@ -2658,9 +3012,31 @@ export class BookingsService {
     return provider;
   }
 
-  private throwStaleBookingMatchRequest(error: unknown, message: string): never {
+  private async requireProviderAccount(userId?: string) {
+    if (!userId) {
+      throw new BadRequestException('Authenticated partner is required');
+    }
+    const provider = await this.prisma.providerProfile.findUnique({ where: { userId } });
+    if (!provider) {
+      throw new NotFoundException('Partner profile not found');
+    }
+    return provider;
+  }
+
+  private async throwStaleBookingMatchRequest(
+    error: unknown,
+    bookingId: string,
+    message: string,
+  ): Promise<never> {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      throw new BadRequestException(message);
+      const booking = await this.prisma.booking.findUnique({
+        where: { id: bookingId },
+        include: clientBookingDetailInclude,
+      });
+      throw new ConflictException({
+        message,
+        booking: booking ? clientBookingResponse(booking) : null,
+      });
     }
 
     throw error;
@@ -2674,8 +3050,25 @@ export class BookingsService {
     return booking;
   }
 
-  private assertBookingOpenForPartnerResponse(booking: { status: BookingStatus; expiresAt?: Date | null }) {
-    assertPartnerResponseWindowOpen(booking);
+  private assertBookingOpenForPartnerResponse(booking: {
+    id: string;
+    status: BookingStatus;
+    selectedProviderId?: string | null;
+    expiresAt?: Date | null;
+  }) {
+    try {
+      assertPartnerResponseWindowOpen(booking);
+    } catch {
+      throw new ConflictException({
+        message: 'Booking is already matched or no longer open for partner response',
+        booking: {
+          id: booking.id,
+          status: booking.status,
+          selectedProviderId: booking.selectedProviderId ?? null,
+          expiresAt: booking.expiresAt ?? null,
+        },
+      });
+    }
   }
 
   private assertProviderLifecycleTransition(current: BookingStatus, allowed: BookingStatus[]) {
@@ -2691,9 +3084,31 @@ export class BookingsService {
   }
 }
 
+function preferredProviderRejectionInput(input?: {
+  reasonCode?: PreferredProviderRejectionReasonCode;
+  reasonDetail?: string;
+}) {
+  const reasonCode = input?.reasonCode;
+  const reasonDetail = input?.reasonDetail?.trim();
+  if (
+    !reasonCode ||
+    !preferredProviderRejectionReasonCodes.includes(reasonCode) ||
+    !reasonDetail ||
+    reasonDetail.length > 1000
+  ) {
+    throw new BadRequestException('Preferred partner rejection reason code and detail are required');
+  }
+  return { reasonCode, reasonDetail };
+}
+
 function normalizeBoundedTake(value: number | string | null | undefined, fallback: number, max: number) {
   const numericValue = typeof value === 'string' ? Number.parseInt(value, 10) : value;
-  if (!Number.isFinite(numericValue) || numericValue === undefined || numericValue === null || numericValue <= 0) {
+  if (
+    !Number.isFinite(numericValue) ||
+    numericValue === undefined ||
+    numericValue === null ||
+    numericValue <= 0
+  ) {
     return fallback;
   }
   return Math.min(Math.trunc(numericValue), max);
@@ -2718,7 +3133,9 @@ function normalizePaginationCursor(value: string | null | undefined) {
   return normalized || undefined;
 }
 
-function providerBookingDetailViewTelemetryEvent(eventType: ProviderBookingDetailViewTelemetryInput['eventType']) {
+function providerBookingDetailViewTelemetryEvent(
+  eventType: ProviderBookingDetailViewTelemetryInput['eventType'],
+) {
   return eventType === 'closed'
     ? PROVIDER_OPEN_REQUEST_DETAIL_CLOSED_EVENT
     : PROVIDER_OPEN_REQUEST_DETAIL_HEARTBEAT_EVENT;

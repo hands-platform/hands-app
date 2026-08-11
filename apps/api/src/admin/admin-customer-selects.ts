@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, ReferralAudience } from '@prisma/client';
 import {
   adminCustomerBookingListSelect,
   adminCustomerDetailBookingSelect,
@@ -10,6 +10,7 @@ import {
   adminUserIdentitySelect,
   adminUserSummarySelect,
 } from './admin-user-selects';
+import { customerAppNotificationWhere } from '../notifications/customer-app-notification.policy';
 
 export const ADMIN_CUSTOMER_DETAIL_NOTIFICATION_LIMIT = 10;
 export const ADMIN_CUSTOMER_DIRECTORY_BOOKING_LIMIT = 10;
@@ -93,6 +94,11 @@ const adminCustomerDetailAppSessionSelect = {
   lastSeenAt: true,
 } satisfies Prisma.AppSessionSelect;
 
+const adminCustomerSafeSessionSummarySelect = {
+  deviceLanguage: true,
+  lastSeenAt: true,
+} satisfies Prisma.AppSessionSelect;
+
 export const adminCustomerNotificationSelect = {
   id: true,
   userId: true,
@@ -115,6 +121,46 @@ export const ADMIN_CUSTOMER_DETAIL_VIEWED_PROVIDER_LIMIT = 10;
 export const ADMIN_CUSTOMER_DETAIL_REVIEW_LIMIT = 10;
 export const ADMIN_CUSTOMER_DETAIL_PROVIDER_REVIEW_LIMIT = 10;
 export const ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT = 6;
+export const ADMIN_CUSTOMER_DETAIL_REFERRAL_LIMIT = 10;
+
+const adminCustomerDetailReferralRewardSelect = {
+  id: true,
+  amount: true,
+  availableAt: true,
+  currency: true,
+  qualifyingBookingId: true,
+  status: true,
+  walletOwnerCustomerProfileId: true,
+  createdAt: true,
+} satisfies Prisma.ReferralRewardSelect;
+
+const adminCustomerDetailReferralCodeSelect = {
+  id: true,
+  code: true,
+  active: true,
+  createdAt: true,
+} satisfies Prisma.ReferralCodeSelect;
+
+const adminCustomerDetailReferralAttributionSelect = {
+  id: true,
+  status: true,
+  fraudReviewStatus: true,
+  installSource: true,
+  platform: true,
+  createdAt: true,
+  referralCode: { select: adminCustomerDetailReferralCodeSelect },
+  referrerCustomerProfile: {
+    select: { id: true, user: { select: adminUserIdentitySelect } },
+  },
+  referredCustomerProfile: {
+    select: { id: true, user: { select: adminUserIdentitySelect } },
+  },
+  rewards: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_CUSTOMER_DETAIL_REFERRAL_LIMIT,
+    select: adminCustomerDetailReferralRewardSelect,
+  },
+} satisfies Prisma.ReferralAttributionSelect;
 
 const adminCustomerDetailReviewBookingSelect = {
   id: true,
@@ -166,6 +212,7 @@ const adminCustomerDetailUserSelect = {
     select: adminPushDeviceSummarySelect,
   },
   notifications: {
+    where: customerAppNotificationWhere(),
     orderBy: { createdAt: 'desc' },
     take: ADMIN_CUSTOMER_DETAIL_NOTIFICATION_LIMIT,
     select: adminCustomerNotificationSelect,
@@ -174,6 +221,22 @@ const adminCustomerDetailUserSelect = {
 
 const adminCustomerDetailUserWithoutDiagnosticsSelect = {
   ...adminUserSummarySelect,
+  appSessions: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: 1,
+    select: adminCustomerSafeSessionSummarySelect,
+  },
+  pushDevices: {
+    orderBy: { updatedAt: 'desc' },
+    take: ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT,
+    select: adminPushDeviceSummarySelect,
+  },
+  notifications: {
+    where: customerAppNotificationWhere(),
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_CUSTOMER_DETAIL_NOTIFICATION_LIMIT,
+    select: adminCustomerNotificationSelect,
+  },
 } satisfies Prisma.UserSelect;
 
 export const adminCustomerDetailSelect = {
@@ -230,6 +293,24 @@ export const adminCustomerDetailSelect = {
       viewCount: true,
       providerProfile: { select: adminProviderBookingListSummarySelect },
     },
+  },
+  referralCodes: {
+    where: { audience: ReferralAudience.CUSTOMER },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+    select: adminCustomerDetailReferralCodeSelect,
+  },
+  referralsMade: {
+    where: { audience: ReferralAudience.CUSTOMER },
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_CUSTOMER_DETAIL_REFERRAL_LIMIT,
+    select: adminCustomerDetailReferralAttributionSelect,
+  },
+  referralsReceived: {
+    where: { audience: ReferralAudience.CUSTOMER },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+    select: adminCustomerDetailReferralAttributionSelect,
   },
 } satisfies Prisma.CustomerProfileSelect;
 

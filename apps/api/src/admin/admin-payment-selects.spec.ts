@@ -3,6 +3,7 @@ import {
   adminEarningSummarySelect,
   adminPaymentCallbackAttemptSummarySelect,
   adminPaymentCallbackAttemptListSelect,
+  adminPaymentEvidenceSelect,
   adminPaymentSummarySelect,
   adminRecentPlatformFeeLogsSelect,
   adminRefundListSelect,
@@ -15,6 +16,8 @@ describe('admin payment selects', () => {
       take: 5,
       select: adminRefundSummarySelect,
     });
+    expect(adminPaymentSummarySelect).not.toHaveProperty('rawMeta');
+    expect(adminPaymentEvidenceSelect).toHaveProperty('rawMeta', true);
   });
 
   it('keeps refund and callback list rows connected to user/provider context', () => {
@@ -25,6 +28,19 @@ describe('admin payment selects', () => {
     expect(adminRefundListSelect.booking.select).toMatchObject({
       customerProfile: { select: { id: true, user: expect.any(Object) } },
       selectedProvider: expect.any(Object),
+    });
+    expect(adminRefundListSelect.payment.select.callbackAttempts).toMatchObject({
+      orderBy: { createdAt: 'desc' },
+      take: 3,
+      select: {
+        createdAt: true,
+        errorCode: true,
+        errorMessage: true,
+        gatewayTransactionId: true,
+        outcome: true,
+        providerStatus: true,
+        signatureVerified: true,
+      },
     });
     expect(adminPaymentCallbackAttemptListSelect.payment.select.booking.select).toMatchObject({
       customerProfile: { select: { id: true, user: expect.any(Object) } },

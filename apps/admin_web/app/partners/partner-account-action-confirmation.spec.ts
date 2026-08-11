@@ -26,7 +26,7 @@ describe('partner account action confirmation', () => {
       hiddenInputs: [{ name: 'providerId', value: partner.id }],
       providerId: partner.id,
       textInputs: [],
-      title: 'Approve Partner partner-?',
+      title: 'Approve Partner Linh Wellness?',
       tone: 'success',
     });
   });
@@ -90,5 +90,18 @@ describe('partner account action confirmation', () => {
         baseHref: '/partners/partner-detail-123456?section=full',
       }),
     ).toBe('/partners/partner-detail-123456?section=full&confirm=approve&providerId=partner-detail-123456');
+  });
+
+  it('carries only the validated approval queue into the decision form', () => {
+    const confirmation = buildPartnerAccountActionConfirmation([partner], 'approve', partner.id, {
+      cancelHref: '/partners/partner-account-123456?decisionQueue=approval-pending',
+      decisionQueue: 'approval-pending',
+    });
+
+    expect(confirmation?.hiddenInputs).toEqual([
+      { name: 'providerId', value: partner.id },
+      { name: 'decisionQueue', value: 'approval-pending' },
+    ]);
+    expect(confirmation?.cancelHref).toContain('decisionQueue=approval-pending');
   });
 });

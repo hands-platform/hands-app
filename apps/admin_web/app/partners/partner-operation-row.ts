@@ -1,6 +1,7 @@
 import type { AdminProvider } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import { partnerCashDebtMarketplaceAccessCopy } from '../../lib/booking-wallet-copy';
+import { adminCountLabel } from '../../lib/admin-copy';
 import { providerSecurityLabel } from './partner-filters';
 import {
   latestPartnerBookingRecord,
@@ -192,13 +193,13 @@ export function buildPartnerMatchingFlow(
     items: [
       {
         label: 'First-pick',
-        status: preferredCount ? `${preferredCount} record(s)` : 'none',
+        status: preferredCount ? adminCountLabel(preferredCount, 'record') : 'none',
         tone: preferredCount ? 'info' : 'neutral',
       },
       {
         label: 'Marketplace',
         status: marketplaceCount
-          ? `${marketplaceCount} participation record(s)`
+          ? adminCountLabel(marketplaceCount, 'participation record')
           : marketplaceEligibility.eligible
             ? 'ready'
             : 'blocked',
@@ -211,7 +212,7 @@ export function buildPartnerMatchingFlow(
       },
       {
         label: 'Chat',
-        status: chatCount ? `${chatCount} room(s)` : 'none',
+        status: chatCount ? adminCountLabel(chatCount, 'room') : 'none',
         tone: chatCount ? 'ok' : hasChatMissing ? 'warn' : 'neutral',
       },
     ],
@@ -243,7 +244,7 @@ export function partnerAcceptBlockerSummary(provider: AdminProvider, opsPolicy: 
     blockers.push(providerSecurityLabel(securityState).toLowerCase());
   }
 
-  return blockers.length ? `Held by: ${blockers.join(', ')}.` : 'Direct request gate is held by policy.';
+  return blockers.length ? `Blocked by: ${blockers.join(', ')}.` : 'Direct request gate is blocked by policy.';
 }
 
 export function partnerOperationPillClass(tone: PartnerOperationChecklistItem['tone']) {

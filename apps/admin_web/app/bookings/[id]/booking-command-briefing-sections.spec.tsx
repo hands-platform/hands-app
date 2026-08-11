@@ -62,7 +62,7 @@ describe('BookingCommandBriefingSections', () => {
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
-    expect(source).toContain('AdminTextLink');
+    expect(source).toContain('AdminFormControlLink');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('actions={<span className={`pill ${commandDecisionStrip.tone}`}>{commandDecisionStrip.status}</span>}');
@@ -109,7 +109,7 @@ describe('BookingCommandBriefingSections', () => {
     expect(source).not.toContain('<section className="grid admin-mb-16">');
   });
 
-  it('renders booking detail toolbar actions without owning the page shell', () => {
+  it('keeps the booking detail toolbar focused on returning to the booking monitor', () => {
     const toolbar = BookingDetailToolbar({
       bookingId: 'booking-detail-1',
       serviceLabel: 'Massage',
@@ -124,9 +124,11 @@ describe('BookingCommandBriefingSections', () => {
     const source = readFileSync('app/bookings/[id]/booking-command-briefing-sections.tsx', 'utf8');
 
     expect(markup).toContain('Back to booking monitor');
-    expect(markup).toContain('Open customer');
-    expect(markup).toContain('Open chat record');
-    expect(markup).not.toContain('Open chat archive');
+    expect(markup).not.toContain('Open customer');
+    expect(markup).not.toContain('Open Partner');
+    expect(markup).not.toContain('Open chat record');
+    expect(markup).not.toContain('Open payment');
+    expect(markup).not.toContain('Open refund');
     expect(markup).not.toContain('admin-page-header admin-page-header-toolbar');
     expect(source).not.toContain('AdminPageTemplate');
   });
@@ -152,6 +154,7 @@ describe('BookingCommandBriefingSections', () => {
         commandDecisionStrip: {
           primaryAction: 'Continue normal monitoring',
           primaryDetail: 'No immediate booking command issue is active.',
+          primaryHref: '#booking-unified-detail',
           rows: [
             {
               detail: 'Stored service address is ready.',
@@ -164,6 +167,13 @@ describe('BookingCommandBriefingSections', () => {
           status: 'Monitoring',
           tone: 'pill-success',
         },
+        decisionFacts: [
+          {
+            helper: 'Server matching window',
+            label: 'Matching deadline',
+            value: '5 Aug 2026, 14:10 / 15m overdue',
+          },
+        ],
       }),
       BookingOperatorFirstReadSection({ rows: linkRows }),
       BookingOperationsQuickRailSection({ rows: linkRows }),
@@ -212,6 +222,14 @@ describe('BookingCommandBriefingSections', () => {
       sections.length,
     );
     expect(normalizedText(sections)).toContain('Booking command decision strip');
+    expect(normalizedText(sections)).toContain('Matching deadline');
+    expect(normalizedText(sections)).toContain('15m overdue');
+    expect(classNamesIn(sections)).toEqual(
+      expect.arrayContaining([
+        'service-trace-summary admin-mt-12 booking-decision-strip-facts',
+        'booking-decision-fact',
+      ]),
+    );
     expect(normalizedText(sections)).toContain('Matching rule status');
     expect(normalizedText(sections)).not.toContain('Matching rule snapshot');
     expect(normalizedText(sections)).toContain('Booking priority briefing');

@@ -23,4 +23,12 @@ describe('MatchingService booking timeout queue', () => {
       },
     );
   });
+
+  it('returns the current booking status after matching activates service', () => {
+    const service = new MatchingService({} as never, {} as never, {} as never, {} as never);
+
+    expect(service.selectFinalProvider('booking-1', { id: 'booking-1', status: 'IN_SERVICE' })).toEqual(
+      expect.objectContaining({ status: 'IN_SERVICE' }),
+    );
+  });
 });

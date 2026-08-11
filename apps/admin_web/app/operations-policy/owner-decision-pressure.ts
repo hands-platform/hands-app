@@ -136,7 +136,7 @@ function buildOwnerDecisionPressureCards(stats: OwnerDecisionPressureStats): Own
         stats.currentVisibleSupply > 0
           ? 'Use the sensitivity table before changing the 10km radius.'
           : 'Refresh Partner locations or consider city/service supply rules before launch.',
-      href: '/partners?review=marketplace-ready',
+      href: '/partners?review=ready-now',
       className: stats.currentVisibleSupply > 0 ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: stats.currentVisibleSupply > 0 ? 'pill-success' : 'pill-danger',
     },
@@ -147,7 +147,7 @@ function buildOwnerDecisionPressureCards(stats: OwnerDecisionPressureStats): Own
       operatorAction: stats.staleExcluded
         ? 'Ask Partners to open the app and send location before loosening freshness rules.'
         : 'Current location freshness is not excluding supply in the sample.',
-      href: '/partners?review=location',
+      href: '/partners?review=available-blocked-location',
       className: stats.staleExcluded ? 'ops-task-pending' : 'ops-task-done',
       pillClass: stats.staleExcluded ? 'pill-warn' : 'pill-success',
     },

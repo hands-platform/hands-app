@@ -1,54 +1,49 @@
-import type { ReactNode } from 'react';
-import { ExternalLink, Filter, X } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
 import {
-  AdminOperationalPolicySetting,
-  AdminProvider,
-  AdminProviderReport,
-  AdminProviderSanction,
-  adminGet,
+  type AdminPartnerControlProviderPage,
+  type AdminProvider,
+  type AdminProviderReport,
+  type AdminProviderReportPage,
+  type AdminProviderSanction,
+  type AdminProviderSanctionPage,
+  adminGetResult,
 } from '../../lib/admin-api';
-import { marketplaceDisplayText as partnerDisplayText } from '../../lib/admin-copy';
 import { shortDisplayId } from '../../lib/admin-format';
-import {
-  createProviderReport,
-  createProviderSanction,
-  liftProviderSanction,
-  updateProviderReport,
-} from './actions';
 import { readSearchParam } from '../../lib/date-range';
-import { OPERATIONAL_POLICY_KEYS, readPositivePolicyNumber } from '../../lib/operations-policy';
-import { ActionMenu } from '../../components/action-menu';
 import { AdminDataTable, AdminTablePaginationFooter } from '../../components/admin-data-table';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import {
+  AdminFormActionRow,
+  AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormControlLink,
-  AdminFormActionRow,
+  AdminFormDateTime,
   AdminFormGrid,
   AdminFormInput,
   AdminFormSearch,
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
-import { AdminActionsForm } from '../../components/admin-inline-action-form';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import {
-  AdminActionCard,
+  AdminDisclosure,
+  AdminDisclosureCard,
+  AdminNoticeCard,
   AdminSection,
-  AdminTaskBreakdown,
-  AdminTaskCard,
-  AdminTaskGrid,
 } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
-import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
+import { StatusBadge } from '../../components/status-badge';
+import {
+  createProviderReportWithState,
+  createProviderSanctionWithState,
+  liftProviderSanction,
+  updateProviderReportWithState,
+} from './actions';
 import {
   buildPartnerControlDeskActionConfirmation,
   partnerControlDeskActionConfirmHref,
@@ -58,52 +53,39 @@ import {
 import {
   buildPartnerControlActiveFilters,
   buildPartnerControlFilters,
-  isPartnerControlCashDebtReview,
   partnerControlListHref,
-  type PartnerControlPageFilters,
 } from './partner-control-page-filters';
 import {
-  buildPartnerControlDetailsHref,
   buildPartnerControlPageLoadPlan,
+  partnerControlHref,
+  partnerControlWorkspaceHref,
+  type PartnerControlDetailsMode,
 } from './partner-control-page-load-plan';
 import { buildPartnerControlPageMetrics } from './partner-control-page-metrics';
 import {
   buildPartnerControlSummaryFromServer,
   type PartnerControlSummaryResponse,
 } from './partner-control-summary';
+import { partnerControlImpact, type PartnerControlBlockerKind } from './partner-control-policy';
+import {
+  PartnerControlActionForm,
+  PartnerControlRestrictionForm,
+} from './partner-control-restriction-form';
 
 type PartnerControlsSearchParams = Promise<Record<string, string | string[] | undefined>>;
-type PartnerControlPolicy = {
-  responseWindowMinutes: number;
-  backupRadiusMeters: number;
-  invitationLimit: number;
-  locationFreshnessMinutes: number;
-};
 
-type PartnerControlBoardItem = {
-  provider: AdminProvider;
-  partner: string;
-  status: string;
-  walletBalance: number;
-  reasons: string[];
-  controls: Array<{ label: string; className: string }>;
-  actionLabel: string;
-  actionHref: string;
-  operatorAction: string;
-  priority: number;
-};
+const EMPTY_PROVIDER_PAGE: AdminPartnerControlProviderPage = { items: [], skip: 0, take: 10, totalCount: 0 };
+const EMPTY_REPORT_PAGE: AdminProviderReportPage = { items: [], skip: 0, take: 10, totalCount: 0 };
+const EMPTY_SANCTION_PAGE: AdminProviderSanctionPage = { items: [], skip: 0, take: 10, totalCount: 0 };
 
-type PartnerControlBoard = {
-  metrics: PartnerControlCommandMetric[];
-  items: PartnerControlBoardItem[];
-};
-
-const DEFAULT_PARTNER_CONTROL_POLICY: PartnerControlPolicy = {
-  responseWindowMinutes: 10,
-  backupRadiusMeters: 10000,
-  invitationLimit: 50,
-  locationFreshnessMinutes: 90,
-};
+const REPORT_CATEGORIES = [
+  ['SAFETY', 'Safety'],
+  ['BEHAVIOR', 'Behavior'],
+  ['IDENTITY', 'Identity'],
+  ['PAYMENT', 'Payment'],
+  ['SERVICE_QUALITY', 'Service quality'],
+  ['OTHER', 'Other'],
+] as const;
 
 export default async function PartnerControlsPage({
   searchParams,
@@ -113,46 +95,53 @@ export default async function PartnerControlsPage({
   const params = searchParams ? await searchParams : {};
   const filters = buildPartnerControlFilters(params);
   const loadPlan = buildPartnerControlPageLoadPlan(params);
-  const [providers, reports, sanctions, summaryResponse, operationalPolicies] = await Promise.all([
-    loadPlan.providersHref ? adminGet<AdminProvider[]>(loadPlan.providersHref, []) : Promise.resolve([]),
-    loadPlan.reportsHref ? adminGet<AdminProviderReport[]>(loadPlan.reportsHref, []) : Promise.resolve([]),
-    loadPlan.sanctionsHref ? adminGet<AdminProviderSanction[]>(loadPlan.sanctionsHref, []) : Promise.resolve([]),
-    adminGet<PartnerControlSummaryResponse | null>(loadPlan.summaryHref, null),
-    loadPlan.operationalPolicyHref
-      ? adminGet<AdminOperationalPolicySetting[]>(loadPlan.operationalPolicyHref, [])
-      : Promise.resolve([]),
-  ]);
-  const controlPolicy = buildPartnerControlPolicy(operationalPolicies);
-  const visibleReports = filterReports(reports, filters);
-  const visibleSanctions = filterSanctions(sanctions, filters);
-  const reportTotalPages = partnerControlEstimatedTotalPages(visibleReports.length, loadPlan.reportsPage, loadPlan.listTake);
-  const sanctionTotalPages = partnerControlEstimatedTotalPages(visibleSanctions.length, loadPlan.sanctionsPage, loadPlan.listTake);
-  const activeFilters = buildPartnerControlActiveFilters(filters);
-  const providerOptions = providers.map((provider) => ({
-    id: provider.id,
-    label: partnerDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id),
-  }));
-  const summary =
-    buildPartnerControlSummaryFromServer(summaryResponse) ??
-    buildPartnerControlSummary(reports, sanctions, providers, controlPolicy);
-  const pageMetrics = buildPartnerControlPageMetrics(summary);
-  const rawProviderWatchlist = buildPartnerControlWatchlist(providers, controlPolicy);
-  const providerWatchlist = filterPartnerControlWatchlist(rawProviderWatchlist, filters);
-  const commandCenter = buildPartnerControlCommandCenter({
-    reports,
-    sanctions,
-    watchlist: providerWatchlist,
+  const [
+    summaryResult,
+    providerResult,
+    reportResult,
+    directReportResult,
+    sanctionResult,
+    partnerSearchResult,
+  ] =
+    await Promise.all([
+      loadPlan.summaryHref
+        ? adminGetResult<PartnerControlSummaryResponse | null>(loadPlan.summaryHref, null)
+        : Promise.resolve({ data: null, ok: true, status: 200 }),
+      loadPlan.providersHref
+        ? adminGetResult<AdminPartnerControlProviderPage>(loadPlan.providersHref, EMPTY_PROVIDER_PAGE)
+        : Promise.resolve({ data: EMPTY_PROVIDER_PAGE, ok: true, status: 200 }),
+      loadPlan.reportsHref
+        ? adminGetResult<AdminProviderReportPage>(loadPlan.reportsHref, EMPTY_REPORT_PAGE)
+        : Promise.resolve({ data: EMPTY_REPORT_PAGE, ok: true, status: 200 }),
+      loadPlan.reportHref
+        ? adminGetResult<AdminProviderReport | null>(loadPlan.reportHref, null)
+        : Promise.resolve({ data: null, ok: true, status: 200 }),
+      loadPlan.sanctionsHref
+        ? adminGetResult<AdminProviderSanctionPage>(loadPlan.sanctionsHref, EMPTY_SANCTION_PAGE)
+        : Promise.resolve({ data: EMPTY_SANCTION_PAGE, ok: true, status: 200 }),
+      loadPlan.partnerSearchHref
+        ? adminGetResult<AdminPartnerControlProviderPage>(loadPlan.partnerSearchHref, EMPTY_PROVIDER_PAGE)
+        : Promise.resolve({ data: EMPTY_PROVIDER_PAGE, ok: true, status: 200 }),
+    ]);
+  const summary = buildPartnerControlSummaryFromServer(summaryResult.data) ?? [
+    ['Reports needing review', 'Unavailable'],
+    ['Active restrictions', 'Unavailable'],
+    ['Debt gates', 'Unavailable'],
+    ['Overdue', 'Unavailable'],
+  ];
+  const pageMetrics = buildPartnerControlPageMetrics(summary, summaryResult.data?.generatedAt, {
+    overdue: summaryResult.data?.overdueReports,
+    urgent: summaryResult.data?.urgentMajorReports,
   });
-  const operatingBlocks = buildPartnerOperatingBlocks(providerWatchlist);
-  const acceptanceUnblockBoard = buildBookingAcceptanceUnblockBoard(providerWatchlist, controlPolicy);
-  const acceptanceUnblockPlaybook = buildAcceptanceUnblockPlaybook(acceptanceUnblockBoard);
-  const partnerControlBoard = buildPartnerControlBoard(providers, providerWatchlist);
   const controlConfirmation = buildPartnerControlDeskActionConfirmation(
-    sanctions,
+    sanctionResult.data.items,
     readPartnerControlDeskConfirmationAction(readSearchParam(params.controlAction)),
     readSearchParam(params.sanctionId),
     filters,
   );
+  const activeFilters = buildPartnerControlActiveFilters(filters).map((filter) => filter.label);
+  const selectedReport = directReportResult.data;
+  const creatingReport = readSearchParam(params.newReport) === '1' && !loadPlan.reportHref;
 
   return (
     <>
@@ -164,820 +153,1150 @@ export default async function PartnerControlsPage({
           description={controlConfirmation.description}
           disabled={controlConfirmation.disabled}
           hiddenInputs={controlConfirmation.hiddenInputs}
-          id={`partner-control-desk-action-${controlConfirmation.action}-${controlConfirmation.sanctionId}`}
+          id={`partner-control-action-${controlConfirmation.sanctionId}`}
+          textInputs={controlConfirmation.textInputs}
           title={controlConfirmation.title}
           tone={controlConfirmation.tone}
         />
       ) : null}
       <AdminPageTemplate
         actions={
-          loadPlan.detailsMode === 'summary' ? (
-            <AdminFormControlLink className="button-secondary" href={buildPartnerControlDetailsHref('all')}>
-              Open workspaces
+          <div className="actions">
+            {summaryResult.data?.generatedAt ? (
+              <span className="muted">
+                Updated <DateTimeText value={summaryResult.data.generatedAt} />
+              </span>
+            ) : null}
+            <AdminFormControlLink href={partnerControlHref(params, {})}>
+              <RefreshCw aria-hidden="true" size={16} /> Refresh now
             </AdminFormControlLink>
-          ) : (
-            <AdminFormControlLink className="button-secondary" href={buildPartnerControlDetailsHref('summary')}>
-              Back to summary
-            </AdminFormControlLink>
-          )
+          </div>
         }
         contentClassName="partner-controls-page"
-        description="Track Partner reports, account controls, booking blocks, payout holds, and operations follow-up in one operator view."
-        metrics={pageMetrics}
+        description="Prioritized Partner reports, operating blockers, and account restrictions with exact server totals."
+        metrics={loadPlan.shouldRenderSummary ? pageMetrics : []}
+        metricsClassName="partner-control-summary-metrics"
         title="Partner Controls"
       >
+        <PartnerControlWorkspaceNavigation mode={loadPlan.detailsMode} params={params} />
+        <PartnerControlLoadNotice
+          mode={loadPlan.detailsMode}
+          ok={partnerControlLoadOk(loadPlan.detailsMode, {
+            partnerSearch: !loadPlan.partnerSearchHref || partnerSearchResult.ok,
+            providers: !loadPlan.providersHref || providerResult.ok,
+            reports: !loadPlan.reportsHref || reportResult.ok,
+            sanctions: !loadPlan.sanctionsHref || sanctionResult.ok,
+            summary: !loadPlan.summaryHref || summaryResult.ok,
+          })}
+        />
+        <PartnerControlActionNotice value={readSearchParam(params.notice)} />
 
-      {loadPlan.shouldRenderSummary ? <AdminSection
-        actions={
+        {loadPlan.shouldRenderSummary ? (
           <>
-          <StatusBadgeFromPillClass pillClass={commandCenter.urgentCount ? 'pill-danger' : 'pill-success'}>
-            {commandCenter.urgentCount ? `${commandCenter.urgentCount} time-sensitive` : 'No time-sensitive lane'}
-          </StatusBadgeFromPillClass>
-          <AdminFormControlLink className="button-secondary partner-control-inline-action" href="/operations-policy">
-            <ExternalLink aria-hidden="true" size={14} />
-            {controlPolicy.responseWindowMinutes}m first-pick / {formatDistance(controlPolicy.backupRadiusMeters)}{' '}
-            marketplace radius / {controlPolicy.invitationLimit} invite cap / location{' '}
-            {controlPolicy.locationFreshnessMinutes}m
-          </AdminFormControlLink>
-          </>
-        }
-        className="admin-mb-16"
-        description="One-screen review for finance blocks, account controls, document review, and investigation SLA."
-        id="partner-control-command-center"
-        title="Partner control command center"
-      >
-        <AdminTaskGrid className="admin-mt-12">
-          {commandCenter.lanes.map((lane) => (
-            <AdminActionCard
-              actionLabel={lane.action}
-              className={lane.className}
-              detail={lane.detail}
-              href={lane.href}
-              key={lane.title}
-              leading={<small>{lane.status}</small>}
-              title={lane.title}
-              variant="ops-task"
+            <AdminSection
+              className="admin-mb-16"
+              description={`One highest-impact blocker per Partner. Showing ${providerResult.data.items.length} of ${providerResult.data.totalCount}, ordered by operating impact, then age.`}
+              id="partner-control-priority-queue"
+              statusLabel={priorityCountLabel(providerResult.data.totalCount)}
+              statusTone={providerResult.data.totalCount ? 'warning' : 'success'}
+              title="Priority queue"
             >
-              <AdminTaskBreakdown
-                items={lane.metrics.map((metric) => ({
-                  className: metric.tone,
-                  label: metric.label,
-                  value: metric.value,
-                }))}
+              <PartnerBlockerTable providers={providerResult.data.items} />
+              <PartnerQueueFooter
+                itemLabel="Partners"
+                page={providerResult.data}
+                params={params}
+                pageParam="blockerPage"
               />
-            </AdminActionCard>
-          ))}
-        </AdminTaskGrid>
-      </AdminSection> : null}
-
-      {loadPlan.shouldRenderSummary ? <AdminSection
-        className="admin-mb-16"
-        description="Sorted by saved report level, wallet impact, active controls, and how long the item has waited."
-        id="partner-control-next-actions"
-        statusLabel={`${commandCenter.nextActions.length} action(s)`}
-        statusTone="info"
-        title="Next operator actions"
-      >
-        {commandCenter.nextActions.length ? (
-          <AdminStageList className="admin-mt-12">
-            {commandCenter.nextActions.map((action) => (
-              <AdminStageItem key={action.id}>
-                <span>{action.status}</span>
-                <div>
-                  <strong>{action.title}</strong>
-                  <p className="muted">{action.detail}</p>
-                  <p className="muted">{action.operatorAction}</p>
-                  <AdminFilterChipGroup>
-                    {action.tags.map((tag) => (
-                      <StatusBadgeFromPillClass key={`${action.id}-${tag.label}`} pillClass={tag.tone}>
-                        {tag.label}
-                      </StatusBadgeFromPillClass>
-                    ))}
-                  </AdminFilterChipGroup>
-                </div>
-                <AdminTextLink href={action.href}>
-                  Open
+            </AdminSection>
+            <AdminSection
+              className="admin-mb-16 partner-control-health-signals"
+              description="Secondary health signals do not override the operating impact shown in the priority queue. Optional tax records are never an operating gate."
+              id="partner-control-health-signals"
+              title="Health signals"
+            >
+              <AdminFilterChipGroup ariaLabel="Partner health signals">
+                <AdminTextLink href="/partner-controls?details=controls&review=location">
+                  Location gaps {summaryResult.data?.locationGaps ?? 'Unavailable'}
                 </AdminTextLink>
-              </AdminStageItem>
-            ))}
-          </AdminStageList>
-        ) : (
-          <p className="muted admin-mt-12">
-            No Partner control action currently needs operator review.
-          </p>
-        )}
-      </AdminSection> : null}
+                <AdminTextLink href="/partner-controls?details=controls">
+                  KYC or bank gap {summaryResult.data?.onboardingGaps ?? 'Unavailable'}
+                </AdminTextLink>
+              </AdminFilterChipGroup>
+              <p className="muted admin-mt-8">Optional tax records are context only and never an operating gate.</p>
+            </AdminSection>
+          </>
+        ) : null}
 
-      {loadPlan.shouldRenderWorkspaceIndex ? (
-        <AdminSection
-          className="admin-mb-16"
-          description="Open one bounded workspace at a time. Control diagnostics explains booking and payout blockers, Reports contains investigation writes, and Account controls contains sanction lifecycle actions."
-          statusLabel="Choose workspace"
-          statusTone="info"
-          title="Partner control workspaces"
+        {loadPlan.shouldRenderPartnerBlockers ? (
+          <>
+            <PartnerBlockerFilters filters={filters} />
+            <AdminSection
+              className="admin-mb-16"
+              description={`${providerResult.data.items.length} of ${providerResult.data.totalCount} Partners in the server-filtered queue.`}
+              id="partner-control-blockers"
+              statusLabel={priorityCountLabel(providerResult.data.totalCount)}
+              statusTone={providerResult.data.totalCount ? 'warning' : 'success'}
+              title="Partner blockers"
+            >
+              <PartnerBlockerTable providers={providerResult.data.items} />
+              <PartnerQueueFooter
+                itemLabel="Partners"
+                page={providerResult.data}
+                params={params}
+                pageParam="blockerPage"
+              />
+            </AdminSection>
+          </>
+        ) : null}
+
+        {loadPlan.shouldRenderReports ? (
+          <>
+            <ReportFilters
+              activeFilters={activeFilters}
+              filters={filters}
+              newReportHref={partnerControlHref(params, { details: 'reports', newReport: '1' })}
+            />
+            {creatingReport ? (
+              <NewPartnerReportPanel
+                params={params}
+                partnerOptions={partnerSearchResult.data.items}
+                partnerQ={readSearchParam(params.partnerQ)}
+              />
+            ) : null}
+            {loadPlan.reportHref && (!directReportResult.ok || !selectedReport) ? (
+              <AdminNoticeCard className="admin-mb-16" role="alert" tone="danger">
+                This report could not be loaded directly. Return to the report queue and retry before making a decision.
+              </AdminNoticeCard>
+            ) : null}
+            {selectedReport ? <ReportReviewPanel params={params} report={selectedReport} /> : null}
+            <AdminSection
+              className="admin-mb-16"
+              description={`${reportResult.data.items.length} of ${reportResult.data.totalCount} reports match the server filters.`}
+              id="partner-control-reports"
+              statusLabel={`${reportResult.data.totalCount} report${reportResult.data.totalCount === 1 ? '' : 's'}`}
+              statusTone={reportResult.data.totalCount ? 'warning' : 'success'}
+              title={reportQueueTitle(params)}
+            >
+              <ReportTable params={params} reports={reportResult.data.items} />
+              <PartnerQueueFooter
+                itemLabel="reports"
+                page={reportResult.data}
+                params={params}
+                pageParam="reportPage"
+              />
+            </AdminSection>
+          </>
+        ) : null}
+
+        {loadPlan.shouldRenderAccountControls ? (
+          <>
+            <RestrictionFilters filters={filters} params={params} />
+            <AdminSection
+              className="admin-mb-16"
+              description={
+                filters.sanction === 'HISTORY'
+                  ? `${sanctionResult.data.items.length} of ${sanctionResult.data.totalCount} lifted or expired restrictions.`
+                  : `${sanctionResult.data.items.length} of ${sanctionResult.data.totalCount} active restrictions.`
+              }
+              id="partner-control-account-controls"
+              statusLabel={`${sanctionResult.data.totalCount} ${filters.sanction === 'HISTORY' ? 'history' : 'active'}`}
+              statusTone={
+                filters.sanction !== 'HISTORY' && sanctionResult.data.totalCount ? 'warning' : 'success'
+              }
+              title={filters.sanction === 'HISTORY' ? 'Restriction history' : 'Active restrictions'}
+            >
+              <RestrictionTable params={params} sanctions={sanctionResult.data.items} />
+              <PartnerQueueFooter
+                itemLabel="restrictions"
+                page={sanctionResult.data}
+                params={params}
+                pageParam="sanctionPage"
+              />
+            </AdminSection>
+          </>
+        ) : null}
+      </AdminPageTemplate>
+    </>
+  );
+}
+
+function PartnerControlWorkspaceNavigation({
+  mode,
+  params,
+}: {
+  readonly mode: PartnerControlDetailsMode;
+  readonly params: Record<string, string | string[] | undefined>;
+}) {
+  const workspaces: Array<[PartnerControlDetailsMode, string]> = [
+    ['summary', 'Summary'],
+    ['controls', 'Partner blockers'],
+    ['reports', 'Reports'],
+    ['sanctions', 'Account controls'],
+  ];
+  return (
+    <nav aria-label="Partner control workspaces" className="partner-control-workspace-tabs admin-mb-16">
+      {workspaces.map(([value, label]) => (
+        <AdminFormControlLink
+          aria-current={mode === value ? 'page' : undefined}
+          className={mode === value ? 'button-primary' : 'button-secondary'}
+          href={partnerControlWorkspaceHref(params, value)}
+          key={value}
         >
-          <AdminFilterChipGroup ariaLabel="Partner control workspaces">
-            <AdminFormControlLink href={buildPartnerControlDetailsHref('controls')}>
-              Control diagnostics
-            </AdminFormControlLink>
-            <AdminFormControlLink href={buildPartnerControlDetailsHref('reports')}>Reports</AdminFormControlLink>
-            <AdminFormControlLink href={buildPartnerControlDetailsHref('sanctions')}>
-              Account controls
-            </AdminFormControlLink>
-          </AdminFilterChipGroup>
-        </AdminSection>
-      ) : null}
+          {label}
+        </AdminFormControlLink>
+      ))}
+    </nav>
+  );
+}
 
-      {loadPlan.shouldRenderControlDiagnostics ? <><AdminSection
-        className="admin-mb-16"
-        description="Shows factual Partner controls for booking blocks, wallet debt, payout gates, document gaps, location freshness, and device reachability."
-        id="partner-control-board"
-        statusLabel={`${partnerControlBoard.items.length} partner(s)`}
-        statusTone="info"
-        title="Partner control board"
-      >
-        <AdminTaskGrid className="admin-mt-12">
-          {partnerControlBoard.metrics.map((controlMetric) => (
-            <AdminTaskCard
-              key={controlMetric.label}
-              leading={<small>{controlMetric.label}</small>}
-              title={controlMetric.value}
-            >
-              <AdminTaskBreakdown
-                items={[
-                  {
-                    className: controlMetric.tone,
-                    label: 'Control type',
-                    value: controlMetric.label,
-                  },
-                ]}
-              />
-            </AdminTaskCard>
-          ))}
-        </AdminTaskGrid>
-        {partnerControlBoard.items.length ? (
-          <AdminStageList className="admin-mt-12">
-            {partnerControlBoard.items.map((item) => (
-              <AdminStageItem key={item.provider.id}>
-                <span>{item.status}</span>
-                <div>
-                  <PartnerControlProviderCell
-                    helper={
-                      <>
-                        Wallet <MoneyText amount={item.walletBalance} /> / {item.reasons.join(', ')}
-                      </>
-                    }
-                    provider={item.provider}
-                  />
-                  <p className="muted">{item.operatorAction}</p>
-                  <AdminFilterChipGroup>
-                    {item.controls.map((control) => (
-                      <StatusBadgeFromPillClass
-                        key={`${item.provider.id}-${control.label}`}
-                        pillClass={control.className}
-                      >
-                        {control.label}
-                      </StatusBadgeFromPillClass>
-                    ))}
-                  </AdminFilterChipGroup>
-                </div>
-                <div className="actions">
-                  <AdminTextLink href={item.actionHref}>
-                    {item.actionLabel}
-                  </AdminTextLink>
-                </div>
-              </AdminStageItem>
-            ))}
-          </AdminStageList>
-        ) : (
-          <p className="muted admin-mt-12">
-            No Partner currently has an active account, wallet, document, payout, location, or device
-            follow-up.
-          </p>
-        )}
-      </AdminSection>
+function PartnerControlLoadNotice({
+  mode,
+  ok,
+}: {
+  readonly mode: PartnerControlDetailsMode;
+  readonly ok: boolean;
+}) {
+  if (ok) return null;
+  return (
+    <AdminNoticeCard className="admin-mb-16" role="alert" tone="danger">
+      {mode === 'summary'
+        ? 'Partner control totals or priority rows could not be loaded. Retry before using this workspace for operating decisions.'
+        : 'This Partner control queue could not be loaded. Retry before treating the result as empty.'}
+    </AdminNoticeCard>
+  );
+}
 
-      <AdminSection
-        className="admin-mb-16"
-        description="Shows which Partners cannot participate in marketplace bookings now, which issues only affect payout, and exactly where staff should clear the blocker."
-        id="partner-control-unblock-board"
-        status={
-          <StatusBadgeFromPillClass
-            pillClass={
-              acceptanceUnblockBoard.some((item) => item.blockingCount > 0) ? 'pill-danger' : 'pill-success'
-            }
-          >
-            {acceptanceUnblockBoard.reduce((sum, item) => sum + item.blockingCount, 0)} blocking partner(s)
-          </StatusBadgeFromPillClass>
-        }
-        title="Marketplace and payout unblock board"
-      >
-        <AdminTaskGrid className="admin-mt-12">
-          {acceptanceUnblockBoard.map((item) => (
-            <AdminActionCard
-              actionLabel={item.action}
-              className={item.className}
-              detail={item.detail}
-              href={item.href}
-              key={item.id}
-              leading={<small>{item.status}</small>}
-              title={item.title}
-              variant="ops-task"
-            >
-              <p className="muted">
-                <strong>Operator script:</strong> {item.operatorScript}
-              </p>
-              <p className="muted">
-                <strong>Customer impact:</strong> {item.customerImpact}
-              </p>
-              <AdminTaskBreakdown
-                items={item.metrics.map((metric) => ({
-                  className: metric.tone,
-                  label: metric.label,
-                  value: metric.value,
-                }))}
-              />
-              {item.partnerSamples.length ? (
-                <AdminFilterChipGroup className="admin-mt-10">
-                  {item.partnerSamples.map((partner) => (
-                    <StatusBadge key={`${item.id}-${partner}`} tone="info">
-                      {partner}
-                    </StatusBadge>
-                  ))}
-                </AdminFilterChipGroup>
+function partnerControlLoadOk(
+  mode: PartnerControlDetailsMode,
+  result: {
+    readonly partnerSearch: boolean;
+    readonly providers: boolean;
+    readonly reports: boolean;
+    readonly sanctions: boolean;
+    readonly summary: boolean;
+  },
+) {
+  if (mode === 'summary') return result.summary && result.providers;
+  if (mode === 'controls') return result.providers;
+  if (mode === 'reports') return result.reports && result.partnerSearch;
+  return result.sanctions;
+}
+
+function PartnerControlActionNotice({ value }: { readonly value: string }) {
+  if (!value) return null;
+  const failed = value.endsWith('-failed');
+  return (
+    <AdminNoticeCard
+      className="admin-mb-16"
+      role={failed ? 'alert' : 'status'}
+      tone={failed ? 'danger' : 'success'}
+    >
+      {failed
+        ? 'The change was not saved. Review the form and try again.'
+        : 'Partner control changes were saved.'}
+    </AdminNoticeCard>
+  );
+}
+
+function PartnerBlockerFilters({
+  filters,
+}: {
+  readonly filters: ReturnType<typeof buildPartnerControlFilters>;
+}) {
+  return (
+    <AdminFilterPanel
+      className="admin-mb-16"
+      description="Search the full Partner population and rank matching blockers on the server."
+      id="partner-control-blocker-filters"
+      title="Filter this queue"
+    >
+      <AdminFormGrid action="/partner-controls" method="get">
+        <input name="details" type="hidden" value="controls" />
+        <AdminFormSearch
+          defaultValue={filters.q}
+          label="Search Partners"
+          name="q"
+          placeholder="Name, phone, or Partner ID"
+        />
+        <AdminFormSelect
+          defaultValue={filters.review || 'attention'}
+          label="Blocking reason"
+          labelVisibility="visible"
+          name="review"
+          options={[
+            { label: 'All priority blockers', value: 'attention' },
+            { label: 'Account blocks', value: 'account-block' },
+            { label: 'Negative wallet', value: 'cash-debt' },
+            { label: 'Payout holds', value: 'payout-hold' },
+            { label: 'Open reports', value: 'report' },
+            { label: 'KYC readiness', value: 'kyc' },
+            { label: 'Bank approval', value: 'bank' },
+            { label: 'Stale location', value: 'location' },
+          ]}
+        />
+        <AdminFormSelect
+          defaultValue={filters.sort || 'priority'}
+          label="Sort"
+          labelVisibility="visible"
+          name="sort"
+          options={[
+            { label: 'Highest priority', value: 'priority' },
+            { label: 'Oldest first', value: 'oldest' },
+            { label: 'Newest first', value: 'newest' },
+          ]}
+        />
+        <AdminFormActionRow>
+          <AdminFormControlButton type="submit">Apply filters</AdminFormControlButton>
+          <AdminFormControlLink href="/partner-controls?details=controls">Reset</AdminFormControlLink>
+        </AdminFormActionRow>
+      </AdminFormGrid>
+    </AdminFilterPanel>
+  );
+}
+
+function PartnerBlockerTable({ providers }: { readonly providers: AdminProvider[] }) {
+  return (
+    <AdminDataTable
+      className="partner-control-table partner-control-blocker-table"
+      emptyMessage="No Partners match the current server filters."
+      headers={[
+        'Impact tier',
+        'Partner',
+        'Blocking reason',
+        'Actual impact',
+        'Age / SLA',
+        'Next owner / action',
+      ]}
+      rowCount={providers.length}
+    >
+      {providers.map((provider) => {
+        const risk = provider.controlRisk;
+        if (!risk) return null;
+        const policy = partnerControlImpact(risk.kind);
+        return (
+          <tr key={provider.id}>
+            <td data-label="Impact tier">
+              <StatusBadge tone={policy.tone}>{impactTierLabel(risk.kind, risk.priority)}</StatusBadge>
+            </td>
+            <td data-label="Partner">
+              <PartnerIdentity provider={provider} />
+            </td>
+            <td data-label="Blocking reason">
+              <strong>{policy.reason}</strong>
+              {risk.kind === 'NEGATIVE_WALLET' ? (
+                <p className="muted">
+                  Current wallet: <MoneyText amount={provider.activitySummary?.walletBalance ?? 0} />
+                </p>
               ) : null}
-            </AdminActionCard>
-          ))}
-        </AdminTaskGrid>
-      </AdminSection>
-
-      <AdminSection
-        className="admin-mb-16"
-        description="Step-by-step operating order for restoring Partner marketplace and payout gates without mixing payout-only gates into customer discovery or marketplace participation decisions."
-        id="partner-control-unblock-playbook"
-        status={
-          <StatusBadgeFromPillClass
-            pillClass={
-              acceptanceUnblockPlaybook.some((step) => step.blockingCount) ? 'pill-warn' : 'pill-success'
-            }
-          >
-            {acceptanceUnblockPlaybook.reduce((sum, step) => sum + step.blockingCount, 0)} active blocker(s)
-          </StatusBadgeFromPillClass>
-        }
-        title="Marketplace and payout unblock playbook"
-      >
-        <AdminStageList className="admin-mt-12">
-          {acceptanceUnblockPlaybook.map((step) => (
-            <AdminStageItem key={step.id}>
-              <span>{step.step}</span>
-              <div>
-                <strong>{step.title}</strong>
-                <p className="muted">{step.detail}</p>
-                <p className="muted">
-                  <strong>Booking impact:</strong> {step.bookingImpact}
-                </p>
-                <p className="muted">
-                  <strong>Payout impact:</strong> {step.payoutImpact}
-                </p>
-                <p className="muted">
-                  <strong>Customer impact:</strong> {step.customerImpact}
-                </p>
-                <AdminFilterChipGroup>
-                  <StatusBadgeFromPillClass pillClass={step.pillClass}>{step.status}</StatusBadgeFromPillClass>
-                  <StatusBadge tone="info">{step.owner}</StatusBadge>
-                  {step.partnerSamples.map((partner) => (
-                    <StatusBadge key={`${step.id}-${partner}`} tone="neutral">
-                      {partner}
-                    </StatusBadge>
-                  ))}
-                </AdminFilterChipGroup>
-              </div>
-              <AdminTextLink href={step.href}>
-                {step.action}
+              <AdminDisclosure className="partner-control-row-disclosure">
+                <summary>Policy and evidence</summary>
+                <p>{policy.detail}</p>
+              </AdminDisclosure>
+            </td>
+            <td data-label="Actual impact">
+              <AdminFilterChipGroup ariaLabel={`${policy.reason} impact`}>
+                {policy.impacts.map((impact) => (
+                  <StatusBadge key={impact} tone={policy.tone}>
+                    {impact}
+                  </StatusBadge>
+                ))}
+              </AdminFilterChipGroup>
+            </td>
+            <td data-label="Age / SLA">
+              {riskAgeLabel(risk.kind, risk.startedAt, risk.slaHours, risk.overdue)}
+            </td>
+            <td data-label="Next owner / action">
+              <strong>{risk.ownerLabel}</strong>
+              <br />
+              <AdminTextLink href={partnerBlockerActionHref(provider, risk.kind)}>
+                {partnerBlockerActionLabel(provider, risk.kind, policy.nextAction)}
               </AdminTextLink>
-            </AdminStageItem>
-          ))}
-        </AdminStageList>
-      </AdminSection>
+            </td>
+          </tr>
+        );
+      })}
+    </AdminDataTable>
+  );
+}
 
-      <AdminSection
-        className="admin-mb-16"
-        description="Explains why a Partner may be held from paid work, payout, or dispatch-sensitive work, with the exact screen an operator should open next."
-        id="partner-control-block-matrix"
-        status={
-          <StatusBadgeFromPillClass pillClass={operatingBlocks.length ? 'pill-warn' : 'pill-success'}>
-            {operatingBlocks.length ? `${operatingBlocks.length} block record(s)` : 'No block record'}
-          </StatusBadgeFromPillClass>
-        }
-        title="Partner operating block matrix"
-      >
-        {operatingBlocks.length ? (
-          <AdminStageList className="admin-mt-12">
-            {operatingBlocks.map((block) => (
-              <AdminStageItem key={block.id}>
-                <span>{block.impact}</span>
-                <div>
-                  <strong>{block.title}</strong>
-                  <p className="muted">{block.reason}</p>
-                  <p className="muted">{block.operatorAction}</p>
-                  <AdminFilterChipGroup>
-                    <StatusBadgeFromPillClass pillClass={block.tone}>{block.severity}</StatusBadgeFromPillClass>
-                    <StatusBadge tone="info">{block.partner}</StatusBadge>
-                  </AdminFilterChipGroup>
-                </div>
-                <div className="actions">
-                  <AdminTextLink href={block.href}>
-                    Open
-                  </AdminTextLink>
-                  <AdminFormControlLink
-                    className="button-secondary partner-control-inline-action"
-                    href={`/partners/${block.providerId}`}
-                  >
-                    Profile
-                  </AdminFormControlLink>
-                </div>
-              </AdminStageItem>
-            ))}
-          </AdminStageList>
-        ) : (
-          <p className="muted admin-mt-12">
-            No Partner currently has a control record that should block operations.
-          </p>
-        )}
-      </AdminSection></> : null}
+function ReportFilters({
+  activeFilters,
+  filters,
+  newReportHref,
+}: {
+  readonly activeFilters: string[];
+  readonly filters: ReturnType<typeof buildPartnerControlFilters>;
+  readonly newReportHref: string;
+}) {
+  return (
+    <AdminFilterPanel
+      actions={
+        <div className="actions">
+          <AdminFormControlLink href="/partner-controls?details=reports&status=RESOLVED">
+            View resolved
+          </AdminFormControlLink>
+          <AdminFormControlLink className="button-primary" href={newReportHref}>
+            <Plus aria-hidden="true" size={16} /> New report
+          </AdminFormControlLink>
+        </div>
+      }
+      className="admin-mb-16"
+      description="Filters run against every Partner report before pagination."
+      id="partner-control-filters"
+      title="Filter reports"
+    >
+      <AdminFormGrid action="/partner-controls" method="get">
+        <input name="details" type="hidden" value="reports" />
+        <AdminFormSearch
+          defaultValue={filters.q}
+          label="Search reports"
+          name="q"
+          placeholder="Partner, phone, report ID, or text"
+        />
+        <AdminFormSelect
+          defaultValue={filters.status}
+          label="Status"
+          labelVisibility="visible"
+          name="status"
+          options={[
+            { label: 'All statuses', value: '' },
+            { label: 'Open', value: 'OPEN' },
+            { label: 'Investigating', value: 'INVESTIGATING' },
+            { label: 'Resolved', value: 'RESOLVED' },
+            { label: 'Dismissed', value: 'DISMISSED' },
+          ]}
+        />
+        <AdminFormSelect
+          defaultValue={filters.severity}
+          label="Severity"
+          labelVisibility="visible"
+          name="severity"
+          options={[
+            { label: 'All severities', value: '' },
+            { label: 'Critical + high', value: 'HIGH_PLUS' },
+            { label: 'Critical', value: 'CRITICAL' },
+            { label: 'High', value: 'HIGH' },
+            { label: 'Medium', value: 'MEDIUM' },
+            { label: 'Low', value: 'LOW' },
+          ]}
+        />
+        <AdminFormSelect
+          defaultValue={filters.sort || 'priority'}
+          label="Sort"
+          labelVisibility="visible"
+          name="sort"
+          options={[
+            { label: 'Priority and age', value: 'priority' },
+            { label: 'Oldest first', value: 'oldest' },
+            { label: 'Newest first', value: 'newest' },
+          ]}
+        />
+        <AdminFormActionRow>
+          <AdminFormControlButton type="submit">Apply filters</AdminFormControlButton>
+          <AdminFormControlLink href="/partner-controls?details=reports">Reset</AdminFormControlLink>
+        </AdminFormActionRow>
+        <AdminFilterSummary
+          ariaLabel="Active partner control filters"
+          className="full-span"
+          labels={activeFilters}
+        />
+      </AdminFormGrid>
+    </AdminFilterPanel>
+  );
+}
 
-      {loadPlan.shouldRenderReports || loadPlan.shouldRenderAccountControls ? <AdminFilterPanel
-        className="admin-mb-16"
-        description="Dashboard links land here with the exact review lane already selected."
-        id="partner-control-filters"
-        resultLabel={
-          loadPlan.shouldRenderReports
-            ? `Showing ${visibleReports.length} report(s)`
-            : `Showing ${visibleSanctions.length} account control(s)`
-        }
-        resultTone={activeFilters.length ? 'warning' : 'success'}
-        title="Control filters"
-      >
-        {activeFilters.length > 0 ? (
-          <p className="muted admin-mb-12">
-            Active queue: {activeFilters.map((filter) => filter.description).join(' ')}
-          </p>
-        ) : (
-          <p className="muted admin-mb-12">No control filter is active. Showing every report and account-control lane.</p>
-        )}
-        <AdminFormGrid action="/partner-controls">
-          <input name="details" type="hidden" value={loadPlan.detailsMode} />
-          {filters.review ? <input name="review" type="hidden" value={filters.review} /> : null}
+function NewPartnerReportPanel({
+  params,
+  partnerOptions,
+  partnerQ,
+}: {
+  readonly params: Record<string, string | string[] | undefined>;
+  readonly partnerOptions: AdminProvider[];
+  readonly partnerQ: string;
+}) {
+  const returnTo = partnerControlHref(params, {
+    details: 'reports',
+    newReport: undefined,
+    notice: undefined,
+  });
+  return (
+    <AdminDisclosureCard
+      className="admin-mb-16 partner-control-editor"
+      id="partner-control-create-report"
+      open
+    >
+      <summary>New Partner report</summary>
+      <div className="partner-control-editor-body">
+        <AdminFormGrid action="/partner-controls" method="get">
+          <input name="details" type="hidden" value="reports" />
+          <input name="newReport" type="hidden" value="1" />
           <AdminFormSearch
-            className="admin-form-control-fluid"
-            defaultValue={filters.q}
-            label="Search Partner controls"
-            name="q"
-            placeholder="Partner, phone, category, reason"
+            defaultValue={partnerQ}
+            label="Find Partner"
+            name="partnerQ"
+            placeholder="Name, phone, or Partner ID"
           />
-          {loadPlan.shouldRenderReports ? <AdminFormSelect
-            className="admin-form-control-fluid"
-            defaultValue={filters.status}
-            label="Report status"
-            labelVisibility="visible"
-            name="status"
-            options={[
-              { label: 'All', value: '' },
-              { label: 'Open', value: 'OPEN' },
-              { label: 'Investigating', value: 'INVESTIGATING' },
-              { label: 'Resolved', value: 'RESOLVED' },
-              { label: 'Dismissed', value: 'DISMISSED' },
-            ]}
-          /> : null}
-          {loadPlan.shouldRenderReports ? <AdminFormSelect
-            className="admin-form-control-fluid"
-            defaultValue={filters.severity}
-            label="Report level"
-            labelVisibility="visible"
-            name="severity"
-            options={[
-              { label: 'All', value: '' },
-              { label: 'Urgent + major reports', value: 'HIGH_PLUS' },
-              { label: 'Urgent', value: 'CRITICAL' },
-              { label: 'Major', value: 'HIGH' },
-              { label: 'Medium', value: 'MEDIUM' },
-              { label: 'Low', value: 'LOW' },
-            ]}
-          /> : null}
-          {loadPlan.shouldRenderAccountControls ? <AdminFormSelect
-            className="admin-form-control-fluid"
-            defaultValue={filters.sanction}
-            label="Account control"
-            labelVisibility="visible"
-            name="sanction"
-            options={[
-              { label: 'All', value: '' },
-              { label: 'Active', value: 'ACTIVE' },
-              { label: 'Lifted', value: 'LIFTED' },
-              { label: 'Expired', value: 'EXPIRED' },
-            ]}
-          /> : null}
-          <AdminFormActionRow className="actions full-span">
-            <AdminFormControlButton className="button-primary" type="submit">
-              <Filter aria-hidden="true" size={16} />
-              Apply filters
-            </AdminFormControlButton>
-            <AdminFormControlLink
-              className="button-secondary"
-              href={buildPartnerControlDetailsHref(loadPlan.detailsMode)}
-            >
-              <X aria-hidden="true" size={16} />
-              Clear filters
-            </AdminFormControlLink>
+          <AdminFormActionRow>
+            <AdminFormControlButton type="submit">Find Partner</AdminFormControlButton>
+            <AdminFormControlLink href="/partner-controls?details=reports">Cancel</AdminFormControlLink>
           </AdminFormActionRow>
-          <AdminFilterSummary
-            ariaLabel="Active partner control filters"
-            className="full-span"
-            labels={activeFilters.map((filter) => filter.label)}
-          />
         </AdminFormGrid>
-      </AdminFilterPanel> : null}
-
-      {loadPlan.shouldRenderControlDiagnostics ? <AdminSection
-        className="admin-mb-16"
-        description="Factual partner follow-ups from wallet debt, account controls, onboarding gaps, devices, and recent report history."
-        id="partner-control-checklist"
-        statusLabel={`${providerWatchlist.length} partner(s)`}
-        statusTone="info"
-        title="System control checklist"
-      >
-        <AdminDataTable
-          emptyMessage="No Partner control follow-ups are active."
-          headers={['Partner', 'Control signals', 'Money / access', 'Operator next step']}
-          rowCount={providerWatchlist.length}
-        >
-            {providerWatchlist.map((item) => (
-              <tr key={item.provider.id}>
-                <td>
-                  <PartnerControlProviderCell provider={item.provider} />
-                  <StatusBadgeFromPillClass pillClass={watchSeverityPill(item.severity)}>
-                    {item.severity}
-                  </StatusBadgeFromPillClass>
-                </td>
-                <td>
-                  <AdminFilterChipGroup>
-                    {item.signals.map((signal) => (
-                      <StatusBadgeFromPillClass key={signal.label} pillClass={watchSignalPill(signal.kind)}>
-                        {signal.label}
-                      </StatusBadgeFromPillClass>
-                    ))}
-                  </AdminFilterChipGroup>
-                  <p className="muted">{item.detail}</p>
-                </td>
-                <td>
-                  <strong>
-                    <MoneyText amount={item.walletBalance} />
-                  </strong>
-                  <p className="muted">
-                    {item.walletBalance < 0
-                      ? `Settlement ref ${cashDebtSettlementReference(item.provider.id)}`
-                      : 'No negative wallet balance in pending/available earnings.'}
-                  </p>
-                  {item.hasPayoutHold ? (
-                    <StatusBadge tone="danger">Payout hold active</StatusBadge>
-                  ) : null}
-                  {item.provider.blockedAt ? <StatusBadge tone="danger">Account blocked</StatusBadge> : null}
-                </td>
-                <td>
-                  <div className="actions">
-                    {item.walletBalance < 0 ? (
-                      <AdminTextLink href="/cash-settlements">
-                        Cash debt queue
-                      </AdminTextLink>
-                    ) : null}
-                    {item.openReportCount > 0 ? (
-                      <AdminFormControlLink
-                        className="button-secondary partner-control-inline-action"
-                        href={buildPartnerControlDetailsHref('reports', { q: item.provider.id })}
-                      >
-                        <ExternalLink aria-hidden="true" size={14} />
-                        Report lane
-                      </AdminFormControlLink>
-                    ) : null}
-                  </div>
-                  <p className="muted">{item.nextStep}</p>
-                </td>
-              </tr>
-            ))}
-        </AdminDataTable>
-      </AdminSection> : null}
-
-      {loadPlan.shouldRenderReports ? <><AdminSection
-        className="admin-mb-16"
-        description="Use this for customer complaints, staff findings, payout holds, or service safety notes."
-        id="partner-control-create-report"
-        title="Create partner report"
-      >
-        <AdminFormGrid action={createProviderReport}>
+        <p className="muted admin-mt-16">
+          Record the observed event in Summary. Use Details for the evidence an operator should verify.
+        </p>
+        <PartnerControlActionForm action={createProviderReportWithState} className="admin-mt-16">
+          <input name="returnTo" type="hidden" value={returnTo} />
           <AdminFormSelect
-            className="admin-form-control-fluid"
             label="Partner"
             labelVisibility="visible"
             name="providerProfileId"
             options={[
-              { label: 'Choose partner', value: '' },
-              ...providerOptions.map((provider) => ({ label: provider.label, value: provider.id })),
+              { label: partnerQ ? 'Select a matching Partner' : 'Select a Partner or search', value: '' },
+              ...partnerOptions.map((provider) => ({
+                label: partnerOptionLabel(provider),
+                value: provider.id,
+              })),
             ]}
             required
           />
-          <AdminFormInput
-            className="admin-form-control-fluid"
+          <AdminFormSelect
             label="Category"
             labelVisibility="visible"
             name="category"
-            placeholder="safety, payout, behavior, identity"
+            options={[
+              { label: 'Select category', value: '' },
+              ...REPORT_CATEGORIES.map(([value, label]) => ({ label, value })),
+            ]}
             required
           />
           <AdminFormSelect
-            className="admin-form-control-fluid"
-            defaultValue="MEDIUM"
-            label="Report level"
+            label="Severity"
             labelVisibility="visible"
             name="severity"
             options={[
-              { label: 'Low', value: 'LOW' },
-              { label: 'Medium', value: 'MEDIUM' },
-              { label: 'Major', value: 'HIGH' },
-              { label: 'Urgent', value: 'CRITICAL' },
+              { label: 'Select severity', value: '' },
+              ...['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((value) => ({ label: value, value })),
             ]}
-          />
-          <AdminFormSelect
-            className="admin-form-control-fluid"
-            defaultValue="ADMIN"
-            label="Source"
-            labelVisibility="visible"
-            name="source"
-            options={[
-              { label: 'Admin', value: 'ADMIN' },
-              { label: 'Customer', value: 'CUSTOMER' },
-              { label: 'Partner', value: 'PROVIDER' },
-              { label: 'System', value: 'SYSTEM' },
-            ]}
+            required
           />
           <AdminFormInput
-            className="admin-form-control-fluid"
-            label="Booking ID"
+            label="Booking ID (optional)"
             labelVisibility="visible"
             name="bookingId"
-            placeholder="Optional booking id"
+            placeholder="Linked booking ID"
           />
           <AdminFormInput
-            className="admin-form-control-fluid admin-grid-span-2"
+            className="admin-grid-span-2"
             label="Summary"
             labelVisibility="visible"
+            maxLength={180}
             name="summary"
-            placeholder="Short operator-readable report summary"
             required
           />
           <AdminFormTextarea
-            className="admin-form-control-fluid admin-grid-span-2"
+            className="admin-grid-span-2"
             label="Details"
             labelVisibility="visible"
+            maxLength={2000}
             name="details"
-            placeholder="Evidence, timeline, customer/partner statements, next step"
           />
-          <AdminFormActionRow className="actions full-span">
-            <AdminFormControlButton className="button-primary" type="submit">
-              Create report
-            </AdminFormControlButton>
+          <AdminFormActionRow>
+            <AdminFormControlButton type="submit">Create report</AdminFormControlButton>
           </AdminFormActionRow>
-        </AdminFormGrid>
-      </AdminSection>
-
-      <AdminSection
-        className="admin-mb-16"
-        description="Open and investigating reports should be cleared before profile review or payout changes."
-        id="partner-control-reports"
-        statusLabel={`${visibleReports.length} shown`}
-        statusTone="info"
-        title="Reports"
-      >
-        <AdminDataTable
-          emptyMessage={emptyPartnerControlMessage('report', activeFilters)}
-          headers={['Report', 'Partner', 'Status', 'Account control', 'Action']}
-          rowCount={visibleReports.length}
-        >
-            {visibleReports.map((report) => (
-              <tr key={report.id}>
-                <td>
-                  <strong>{partnerDisplayText(report.summary)}</strong>
-                  <p className="muted">
-                    {report.category} / {report.source} / <PartnerControlDateText value={report.createdAt} />
-                  </p>
-                  {report.details ? <p className="muted">{partnerDisplayText(report.details)}</p> : null}
-                  {report.bookingId ? (
-                    <AdminFormControlLink
-                      className="button-secondary partner-control-inline-action"
-                      href={`/bookings/${report.bookingId}`}
-                    >
-                      <ExternalLink aria-hidden="true" size={14} />
-                      Booking {shortDisplayId(report.bookingId)}
-                    </AdminFormControlLink>
-                  ) : null}
-                </td>
-                <td>
-                  <PartnerControlLinkedProviderCell
-                    fallbackId={report.providerProfileId}
-                    provider={report.providerProfile}
-                  />
-                </td>
-                <td>
-                  <StatusBadgeFromPillClass pillClass={severityPill(report.severity)}>
-                    {report.severity}
-                  </StatusBadgeFromPillClass>
-                  <StatusBadgeFromPillClass pillClass={`${statusPill(report.status)} admin-ml-6`}>
-                    {report.status}
-                  </StatusBadgeFromPillClass>
-                  {report.resolutionNote ? (
-                    <p className="muted">{partnerDisplayText(report.resolutionNote)}</p>
-                  ) : null}
-                </td>
-                <td>
-                  <AdminActionsForm action={createProviderSanction}>
-                    <input type="hidden" name="providerProfileId" value={report.providerProfileId} />
-                    <input type="hidden" name="reportId" value={report.id} />
-                    <AdminFormSelect
-                      label="Account control type"
-                      name="type"
-                      defaultValue={report.severity === 'CRITICAL' ? 'ACCOUNT_BLOCK' : 'WARNING'}
-                      options={[
-                        { label: 'Warning', value: 'WARNING' },
-                        { label: 'Payout hold', value: 'PAYOUT_HOLD' },
-                        { label: 'Account block', value: 'ACCOUNT_BLOCK' },
-                        { label: 'Profile review hold', value: 'TRUST_BADGE_REMOVAL' },
-                      ]}
-                    />
-                    <AdminFormInput
-                      label="Account control reason"
-                      name="reason"
-                      placeholder="Account control reason"
-                      required
-                      minLength={12}
-                      maxLength={500}
-                    />
-                    <AdminFormControlButton className="button-primary" type="submit">
-                      Apply
-                    </AdminFormControlButton>
-                  </AdminActionsForm>
-                </td>
-                <td>
-                  <AdminActionsForm action={updateProviderReport}>
-                    <input type="hidden" name="reportId" value={report.id} />
-                    <input type="hidden" name="providerProfileId" value={report.providerProfileId} />
-                    <AdminFormSelect
-                      defaultValue={report.status}
-                      label="Report status"
-                      name="status"
-                      options={[
-                        { label: 'Open', value: 'OPEN' },
-                        { label: 'Investigating', value: 'INVESTIGATING' },
-                        { label: 'Resolved', value: 'RESOLVED' },
-                        { label: 'Dismissed', value: 'DISMISSED' },
-                      ]}
-                    />
-                    <AdminFormSelect
-                      defaultValue={report.severity}
-                      label="Report level"
-                      name="severity"
-                      options={[
-                        { label: 'Low', value: 'LOW' },
-                        { label: 'Medium', value: 'MEDIUM' },
-                        { label: 'Major', value: 'HIGH' },
-                        { label: 'Urgent', value: 'CRITICAL' },
-                      ]}
-                    />
-                    <AdminFormInput
-                      label="Resolution or follow-up note"
-                      name="resolutionNote"
-                      placeholder="Resolution or follow-up note"
-                    />
-                    <AdminFormControlButton className="button-primary" type="submit">
-                      Update
-                    </AdminFormControlButton>
-                  </AdminActionsForm>
-                </td>
-              </tr>
-            ))}
-        </AdminDataTable>
-        <AdminTablePaginationFooter
-          activePage={loadPlan.reportsPage}
-          ariaLabel="Partner reports pages"
-          className="vuexy-partner-table-footer"
-          from={partnerControlPagedListFrom(visibleReports.length, loadPlan.reportsPage, loadPlan.listTake)}
-          hrefForPage={(page) => partnerControlListHref(params, 'reportPage', page)}
-          to={partnerControlPagedListTo(visibleReports.length, loadPlan.reportsPage, loadPlan.listTake)}
-          totalPages={reportTotalPages}
-          totalRows={partnerControlPagedListTotalRows(
-            visibleReports.length,
-            loadPlan.reportsPage,
-            loadPlan.listTake,
-          )}
-        />
-      </AdminSection></> : null}
-
-      {loadPlan.shouldRenderAccountControls ? <AdminSection
-        description="Active account controls restrict work or payout. Lift them only with a clear audit trail."
-        id="partner-control-account-controls"
-        statusLabel={`${visibleSanctions.length} shown`}
-        statusTone="info"
-        title="Account controls"
-      >
-        <AdminDataTable
-          emptyMessage={emptyPartnerControlMessage('sanction', activeFilters)}
-          headers={['Control', 'Partner', 'Linked report', 'Timeline', 'Action']}
-          rowCount={visibleSanctions.length}
-        >
-            {visibleSanctions.map((sanction) => (
-              <tr key={sanction.id}>
-                <td>
-                  <StatusBadgeFromPillClass pillClass={sanction.status === 'ACTIVE' ? 'pill-danger' : 'pill-neutral'}>
-                    {sanction.status}
-                  </StatusBadgeFromPillClass>
-                  <p>
-                    <strong>{sanction.type}</strong>
-                  </p>
-                  <p className="muted">{partnerDisplayText(sanction.reason)}</p>
-                </td>
-                <td>
-                  <PartnerControlLinkedProviderCell
-                    fallbackId={sanction.providerProfileId}
-                    provider={sanction.providerProfile}
-                  />
-                </td>
-                <td>
-                  {sanction.report ? (
-                    <>
-                      <strong>{sanction.report.category}</strong>
-                      <p className="muted">
-                        {sanction.report.severity} / {sanction.report.status}
-                      </p>
-                      <p className="muted">{partnerDisplayText(sanction.report.summary)}</p>
-                    </>
-                  ) : (
-                    <span className="muted">Manual account control</span>
-                  )}
-                </td>
-                <td>
-                  <p className="muted">
-                    Started: <PartnerControlDateText value={sanction.startsAt} />
-                  </p>
-                  <p className="muted">
-                    Expires: <PartnerControlDateText value={sanction.expiresAt} />
-                  </p>
-                  <p className="muted">
-                    Lifted: <PartnerControlDateText value={sanction.liftedAt} />
-                  </p>
-                </td>
-                <td>
-                  {sanction.status === 'ACTIVE' ? (
-                    <ActionMenu
-                      actions={[
-                        {
-                          description: 'Review before lifting this Partner account control.',
-                          href: partnerControlDeskActionConfirmHref({
-                            q: filters.q,
-                            sanction: filters.sanction,
-                            sanctionId: sanction.id,
-                            severity: filters.severity,
-                            status: filters.status,
-                          }),
-                          kind: 'link',
-                          label: 'Lift control',
-                          tone: 'warning',
-                        },
-                      ]}
-                      label={`Account control actions for ${shortDisplayId(sanction.id)}`}
-                    />
-                  ) : (
-                    <span className="muted">Closed</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-        </AdminDataTable>
-        <AdminTablePaginationFooter
-          activePage={loadPlan.sanctionsPage}
-          ariaLabel="Partner account control pages"
-          className="vuexy-partner-table-footer"
-          from={partnerControlPagedListFrom(visibleSanctions.length, loadPlan.sanctionsPage, loadPlan.listTake)}
-          hrefForPage={(page) => partnerControlListHref(params, 'sanctionPage', page)}
-          to={partnerControlPagedListTo(visibleSanctions.length, loadPlan.sanctionsPage, loadPlan.listTake)}
-          totalPages={sanctionTotalPages}
-          totalRows={partnerControlPagedListTotalRows(
-            visibleSanctions.length,
-            loadPlan.sanctionsPage,
-            loadPlan.listTake,
-          )}
-        />
-      </AdminSection> : null}
-      </AdminPageTemplate>
-    </>
+        </PartnerControlActionForm>
+      </div>
+    </AdminDisclosureCard>
   );
+}
+
+function ReportTable({
+  params,
+  reports,
+}: {
+  readonly params: Record<string, string | string[] | undefined>;
+  readonly reports: AdminProviderReport[];
+}) {
+  return (
+    <AdminDataTable
+      className="partner-control-table partner-control-report-table"
+      emptyMessage={reportEmptyMessage(params)}
+      headers={['Report', 'Partner', 'Severity / status', 'Owner', 'Age / SLA', 'Last update', 'Review']}
+      rowCount={reports.length}
+    >
+      {reports.map((report) => (
+        <tr key={report.id}>
+          <td data-label="Report">
+            <strong>{report.summary}</strong>
+            <p className="muted">
+              {report.category} · {shortDisplayId(report.id)}
+            </p>
+          </td>
+          <td data-label="Partner">
+            <LinkedPartnerIdentity provider={report.providerProfile} providerId={report.providerProfileId} />
+          </td>
+          <td data-label="Severity / status">
+            <AdminFilterChipGroup>
+              <StatusBadge tone={reportSeverityTone(report.severity)}>{report.severity}</StatusBadge>
+              <StatusBadge tone={reportStatusTone(report.status)}>{report.status}</StatusBadge>
+            </AdminFilterChipGroup>
+          </td>
+          <td data-label="Owner">{operatorLabel(report.assignedAdmin)}</td>
+          <td data-label="Age / SLA">{reportAgeSlaLabel(report)}</td>
+          <td data-label="Last update">
+            <DateTimeText value={report.updatedAt ?? report.createdAt} />
+          </td>
+          <td data-label="Review">
+            <AdminTextLink
+              href={partnerControlHref(params, { details: 'reports', reviewReportId: report.id })}
+            >
+              Review report
+            </AdminTextLink>
+          </td>
+        </tr>
+      ))}
+    </AdminDataTable>
+  );
+}
+
+function ReportReviewPanel({
+  params,
+  report,
+}: {
+  readonly params: Record<string, string | string[] | undefined>;
+  readonly report: AdminProviderReport;
+}) {
+  const closeHref = partnerControlHref(params, { reviewReportId: undefined });
+  return (
+    <AdminDisclosureCard
+      className="admin-mb-16 partner-control-editor"
+      id="partner-control-report-review"
+      open
+    >
+      <summary>
+        Review report · {shortDisplayId(report.id)} · {report.summary}
+      </summary>
+      <div className="partner-control-editor-body">
+        <p>{report.details || 'No additional report details were recorded.'}</p>
+        <p className="muted">
+          Partner: {providerName(report.providerProfile, report.providerProfileId)} · Created{' '}
+          <DateTimeText value={report.createdAt} />
+        </p>
+        <PartnerControlActionForm action={updateProviderReportWithState} className="admin-mt-16">
+          <input name="reportId" type="hidden" value={report.id} />
+          <input name="providerProfileId" type="hidden" value={report.providerProfileId} />
+          <input name="returnTo" type="hidden" value={closeHref} />
+          <AdminFormSelect
+            defaultValue={report.status}
+            label="Status"
+            labelVisibility="visible"
+            name="status"
+            options={['OPEN', 'INVESTIGATING', 'RESOLVED', 'DISMISSED'].map((value) => ({
+              label: value,
+              value,
+            }))}
+          />
+          <AdminFormSelect
+            defaultValue={report.severity}
+            label="Severity"
+            labelVisibility="visible"
+            name="severity"
+            options={['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((value) => ({ label: value, value }))}
+          />
+          <AdminFormTextarea
+            className="admin-grid-span-2"
+            defaultValue={report.resolutionNote ?? ''}
+            label="Resolution note · required for Resolved or Dismissed"
+            labelVisibility="visible"
+            maxLength={1000}
+            name="resolutionNote"
+          />
+          <AdminFormActionRow>
+            <AdminFormControlButton type="submit">Save report changes</AdminFormControlButton>
+            <AdminFormControlLink href={closeHref}>Close review</AdminFormControlLink>
+          </AdminFormActionRow>
+        </PartnerControlActionForm>
+
+        <AdminDisclosure className="partner-control-restriction-flow admin-mt-16">
+          <summary>Apply account restriction</summary>
+          <div className="partner-control-restriction-body">
+            <p className="muted">Review the operating impact before applying a restriction.</p>
+            <ul className="participant-list admin-mt-8" aria-label="Restriction impact preview">
+              <li>
+                <strong>Warning</strong>
+                <span>No automatic operating gate</span>
+              </li>
+              <li>
+                <strong>Account block</strong>
+                <span>Visibility, invitations, acceptance, service start, payout, and withdrawal</span>
+              </li>
+              <li>
+                <strong>Payout hold</strong>
+                <span>Payout creation and release only</span>
+              </li>
+              <li>
+                <strong>Public profile trust indicator removal</strong>
+                <span>Public trust display only</span>
+              </li>
+            </ul>
+            <PartnerControlRestrictionForm action={createProviderSanctionWithState}>
+              <input name="providerProfileId" type="hidden" value={report.providerProfileId} />
+              <input name="reportId" type="hidden" value={report.id} />
+              <input name="returnTo" type="hidden" value={closeHref} />
+              <AdminFormSelect
+                defaultValue="WARNING"
+                label="Restriction type"
+                labelVisibility="visible"
+                name="type"
+                options={[
+                  { label: 'Warning · no automatic operating gate', value: 'WARNING' },
+                  { label: 'Account block · all operating access', value: 'ACCOUNT_BLOCK' },
+                  { label: 'Payout hold · payout creation and release', value: 'PAYOUT_HOLD' },
+                  {
+                    label: 'Public profile trust indicator removal',
+                    value: 'TRUST_BADGE_REMOVAL',
+                  },
+                ]}
+              />
+              <AdminFormDateTime label="Expiry" labelVisibility="visible" name="expiresAt" />
+              <AdminFormTextarea
+                className="admin-grid-span-2"
+                label="Reason and evidence"
+                labelVisibility="visible"
+                minLength={12}
+                maxLength={500}
+                name="reason"
+                required
+              />
+              <AdminFormCheckbox className="admin-grid-span-2" label="No expiry" name="noExpiry" value="true">
+                No expiry · keep active until an operator lifts it
+              </AdminFormCheckbox>
+              <AdminFormCheckbox
+                className="admin-grid-span-2"
+                label="Confirm restriction"
+                name="confirmation"
+                required
+                value="confirmed"
+              >
+                I confirm this restriction targets{' '}
+                {providerName(report.providerProfile, report.providerProfileId)} and matches the evidence
+                above.
+              </AdminFormCheckbox>
+              <AdminFormActionRow>
+                <AdminFormControlButton type="submit">Apply restriction</AdminFormControlButton>
+              </AdminFormActionRow>
+            </PartnerControlRestrictionForm>
+          </div>
+        </AdminDisclosure>
+      </div>
+    </AdminDisclosureCard>
+  );
+}
+
+function RestrictionFilters({
+  filters,
+  params,
+}: {
+  readonly filters: ReturnType<typeof buildPartnerControlFilters>;
+  readonly params: Record<string, string | string[] | undefined>;
+}) {
+  const history = filters.sanction === 'HISTORY';
+  return (
+    <AdminFilterPanel
+      actions={
+        <AdminFilterChipGroup ariaLabel="Restriction lifecycle">
+          <AdminFormControlLink
+            aria-current={!history ? 'page' : undefined}
+            className={!history ? 'button-primary' : 'button-secondary'}
+            href={partnerControlHref(params, {
+              details: 'sanctions',
+              sanction: 'ACTIVE',
+              sanctionPage: undefined,
+            })}
+          >
+            Active
+          </AdminFormControlLink>
+          <AdminFormControlLink
+            aria-current={history ? 'page' : undefined}
+            className={history ? 'button-primary' : 'button-secondary'}
+            href={partnerControlHref(params, {
+              details: 'sanctions',
+              sanction: 'HISTORY',
+              sanctionPage: undefined,
+            })}
+          >
+            History
+          </AdminFormControlLink>
+        </AdminFilterChipGroup>
+      }
+      className="admin-mb-16"
+      description="Active restrictions and historical records are separate server-filtered queues."
+      id="partner-control-restriction-filters"
+      title="Filter account controls"
+    >
+      <AdminFormGrid action="/partner-controls" method="get">
+        <input name="details" type="hidden" value="sanctions" />
+        {history ? <input name="sanction" type="hidden" value="HISTORY" /> : null}
+        <AdminFormSearch
+          defaultValue={filters.q}
+          label="Search restrictions"
+          name="q"
+          placeholder="Partner, report, reason, or restriction ID"
+        />
+        <AdminFormSelect
+          defaultValue={filters.controlType}
+          label="Restriction type"
+          labelVisibility="visible"
+          name="controlType"
+          options={[
+            { label: 'All types', value: '' },
+            ...['WARNING', 'ACCOUNT_BLOCK', 'PAYOUT_HOLD', 'TRUST_BADGE_REMOVAL'].map((value) => ({
+              label: value.replaceAll('_', ' '),
+              value,
+            })),
+          ]}
+        />
+        <AdminFormSelect
+          defaultValue={filters.sort || 'newest'}
+          label="Sort"
+          labelVisibility="visible"
+          name="sort"
+          options={[
+            { label: 'Newest first', value: 'newest' },
+            { label: 'Oldest first', value: 'oldest' },
+          ]}
+        />
+        <AdminFormActionRow>
+          <AdminFormControlButton type="submit">Apply filters</AdminFormControlButton>
+          <AdminFormControlLink href={partnerControlHref(params, {
+            details: 'sanctions',
+            q: undefined,
+            controlType: undefined,
+            sanction: history ? 'HISTORY' : undefined,
+            sanctionPage: undefined,
+            sort: undefined,
+          })}>
+            Reset
+          </AdminFormControlLink>
+        </AdminFormActionRow>
+      </AdminFormGrid>
+    </AdminFilterPanel>
+  );
+}
+
+function RestrictionTable({
+  params,
+  sanctions,
+}: {
+  readonly params: Record<string, string | string[] | undefined>;
+  readonly sanctions: AdminProviderSanction[];
+}) {
+  const history = readSearchParam(params.sanction) === 'HISTORY';
+  return (
+    <AdminDataTable
+      className="partner-control-table partner-control-restriction-table"
+      emptyMessage={
+        history
+          ? restrictionFiltersActive(params)
+            ? 'No lifted or expired restrictions match the current filters.'
+            : 'No lifted or expired restrictions.'
+          : restrictionFiltersActive(params)
+            ? 'No active restrictions match the current filters.'
+            : 'No active restrictions.'
+      }
+      headers={['Restriction', 'Partner', 'Evidence', 'Issued / expires', 'Operator', 'Status', 'Review']}
+      rowCount={sanctions.length}
+    >
+      {sanctions.map((sanction) => (
+        <tr key={sanction.id}>
+          <td data-label="Restriction">
+            <strong>{sanction.type.replaceAll('_', ' ')}</strong>
+            <p className="muted">{shortDisplayId(sanction.id)}</p>
+          </td>
+          <td data-label="Partner">
+            <LinkedPartnerIdentity
+              provider={sanction.providerProfile}
+              providerId={sanction.providerProfileId}
+            />
+          </td>
+          <td data-label="Evidence">
+            <strong>Issued reason</strong>
+            <p>{sanction.reason}</p>
+            <p className="muted">
+              {sanction.report
+                ? `${sanction.report.category} · ${shortDisplayId(sanction.report.id)}`
+                : 'No linked report'}
+            </p>
+            {history ? (
+              <>
+                <strong>Lift reason</strong>
+                <p>{sanctionLiftReason(sanction) || 'Not recorded for this historical action.'}</p>
+              </>
+            ) : null}
+          </td>
+          <td data-label="Issued / expires">
+            <DateTimeText value={sanction.startsAt} />
+            <p className="muted">
+              {sanction.expiresAt ? (
+                <>
+                  Expires <DateTimeText value={sanction.expiresAt} />
+                </>
+              ) : (
+                'No expiry'
+              )}
+            </p>
+            {sanction.liftedAt ? (
+              <p className="muted">
+                Lifted <DateTimeText value={sanction.liftedAt} />
+              </p>
+            ) : null}
+          </td>
+          <td data-label="Operator">
+            {operatorLabel(sanction.issuedBy)}
+            {sanction.liftedBy ? <p className="muted">Lifted by {operatorLabel(sanction.liftedBy)}</p> : null}
+          </td>
+          <td data-label="Status">
+            <StatusBadge tone={sanction.status === 'ACTIVE' ? 'warning' : 'neutral'}>
+              {sanction.status}
+            </StatusBadge>
+          </td>
+          <td data-label="Review">
+            {sanction.status === 'ACTIVE' ? (
+              <AdminTextLink
+                href={partnerControlDeskActionConfirmHref({
+                  sanctionId: sanction.id,
+                  details: 'sanctions',
+                  q: readSearchParam(params.q),
+                  sanction: readSearchParam(params.sanction) || 'ACTIVE',
+                  sanctionPage: readSearchParam(params.sanctionPage),
+                  sort: readSearchParam(params.sort),
+                  controlType: readSearchParam(params.controlType),
+                })}
+              >
+                Review restriction
+              </AdminTextLink>
+            ) : (
+              <AdminTextLink href={`/partners/${sanction.providerProfileId}`}>Open Partner</AdminTextLink>
+            )}
+          </td>
+        </tr>
+      ))}
+    </AdminDataTable>
+  );
+}
+
+function PartnerQueueFooter({
+  itemLabel,
+  page,
+  pageParam,
+  params,
+}: {
+  readonly itemLabel: string;
+  readonly page: { skip: number; take: number; totalCount: number; items: unknown[] };
+  readonly pageParam: 'blockerPage' | 'reportPage' | 'sanctionPage';
+  readonly params: Record<string, string | string[] | undefined>;
+}) {
+  const activePage = page.totalCount ? Math.floor(page.skip / page.take) + 1 : 1;
+  const totalPages = Math.max(1, Math.ceil(page.totalCount / page.take));
+  return (
+    <AdminTablePaginationFooter
+      activePage={activePage}
+      ariaLabel={`${itemLabel} pagination`}
+      className="vuexy-partner-table-footer"
+      from={page.totalCount ? page.skip + 1 : 0}
+      hrefForPage={(nextPage) => partnerControlListHref(params, pageParam, nextPage)}
+      itemLabel={itemLabel}
+      to={Math.min(page.skip + page.items.length, page.totalCount)}
+      totalPages={totalPages}
+      totalRows={page.totalCount}
+    />
+  );
+}
+
+function PartnerIdentity({ provider }: { readonly provider: AdminProvider }) {
+  return (
+    <div className="partner-control-person">
+      <AdminTextLink href={`/partners/${provider.id}?section=full`}>
+        {providerName(provider, provider.id)}
+      </AdminTextLink>
+      <span>
+        {maskedPhone(provider.user?.phone)} · {shortDisplayId(provider.id)} · {provider.status}
+      </span>
+    </div>
+  );
+}
+
+function LinkedPartnerIdentity({
+  provider,
+  providerId,
+}: {
+  readonly provider: AdminProviderReport['providerProfile'] | AdminProviderSanction['providerProfile'];
+  readonly providerId: string;
+}) {
+  return (
+    <div className="partner-control-person">
+      <AdminTextLink href={`/partners/${providerId}?section=full`}>
+        {providerName(provider, providerId)}
+      </AdminTextLink>
+      <span>
+        {maskedPhone(provider?.user?.phone)} · {shortDisplayId(providerId)}
+      </span>
+    </div>
+  );
+}
+
+function priorityCountLabel(count: number) {
+  if (count === 0) return 'No Partners with blockers';
+  return `${count} Partner${count === 1 ? '' : 's'} with blockers`;
+}
+
+function impactTierLabel(kind: PartnerControlBlockerKind, priority: number) {
+  const tier = priority >= 90 ? 'P0' : priority >= 70 ? 'P1' : priority >= 50 ? 'P2' : 'P3';
+  const impact =
+    kind === 'ACCOUNT_BLOCK'
+      ? 'work and payout blocked'
+      : kind === 'NEGATIVE_WALLET'
+        ? 'acceptance and payout blocked'
+        : kind === 'PAYOUT_HOLD'
+          ? 'payout blocked'
+          : kind === 'URGENT_REPORT'
+            ? 'urgent review'
+            : kind === 'OVERDUE_REPORT'
+              ? 'review SLA overdue'
+              : kind === 'OPEN_REPORT'
+                ? 'review required'
+                : kind === 'KYC_READINESS'
+                  ? 'readiness gap'
+                  : kind === 'BANK_APPROVAL'
+                    ? 'payout readiness gap'
+                    : 'dispatch signal gap';
+  return `${tier} · ${impact}`;
+}
+
+function partnerBlockerActionHref(provider: AdminProvider, kind: PartnerControlBlockerKind) {
+  if (kind === 'NEGATIVE_WALLET') {
+    return `/cash-settlements?${new URLSearchParams({ q: provider.id }).toString()}`;
+  }
+  if (kind === 'PAYOUT_HOLD') {
+    return `/partner-controls?${new URLSearchParams({ details: 'sanctions', q: provider.id }).toString()}`;
+  }
+  if (kind === 'URGENT_REPORT' || kind === 'OVERDUE_REPORT' || kind === 'OPEN_REPORT') {
+    return `/partner-controls?details=reports&q=${encodeURIComponent(provider.id)}`;
+  }
+  return `/partners/${provider.id}?section=full`;
+}
+
+function partnerBlockerActionLabel(
+  provider: AdminProvider,
+  kind: PartnerControlBlockerKind,
+  fallback: string,
+) {
+  if (kind !== 'KYC_READINESS') return fallback;
+  return !provider.kyc || provider.kyc.status === 'REJECTED'
+    ? 'Partner: submit missing KYC'
+    : 'Operator: review submitted KYC';
+}
+
+function riskAgeLabel(
+  kind: PartnerControlBlockerKind,
+  startedAt: string | null,
+  slaHours: number | null,
+  overdue: boolean,
+) {
+  if (!startedAt) return 'Start time not tracked';
+  const age = ageLabel(Date.now() - Date.parse(startedAt));
+  if (!slaHours) {
+    return kind === 'NEGATIVE_WALLET' || kind === 'STALE_LOCATION'
+      ? `Last changed ${age} ago`
+      : `Started ${age} ago`;
+  }
+  return `${age} · ${slaHours}h SLA${overdue ? ' overdue' : ''}`;
+}
+
+function reportAgeSlaLabel(report: AdminProviderReport) {
+  if (report.status === 'RESOLVED' || report.status === 'DISMISSED') {
+    return report.resolvedAt
+      ? `Closed · ${new Date(report.resolvedAt).toLocaleString('en-GB')}`
+      : 'Closed · close time not tracked';
+  }
+  const sla = reportSlaHours(report.severity);
+  const elapsed = Math.max(0, Date.now() - Date.parse(report.createdAt));
+  return `${ageLabel(elapsed)} · ${sla}h SLA${elapsed >= sla * 3_600_000 ? ' overdue' : ''}`;
+}
+
+function reportQueueTitle(params: Record<string, string | string[] | undefined>) {
+  return readSearchParam(params.status) ? 'Reports' : 'Reports needing review';
+}
+
+function reportEmptyMessage(params: Record<string, string | string[] | undefined>) {
+  const filtered = Boolean(
+    readSearchParam(params.q) ||
+      readSearchParam(params.status) ||
+      readSearchParam(params.severity) ||
+      readSearchParam(params.review),
+  );
+  return filtered ? 'No reports match the current filters.' : 'No reports need triage.';
+}
+
+function restrictionFiltersActive(params: Record<string, string | string[] | undefined>) {
+  return Boolean(readSearchParam(params.q) || readSearchParam(params.controlType));
+}
+
+function sanctionLiftReason(sanction: AdminProviderSanction) {
+  const reason = sanction.metadata?.liftReason;
+  return typeof reason === 'string' && reason.trim() ? reason.trim() : null;
+}
+
+function reportSlaHours(severity: string) {
+  if (severity === 'CRITICAL') return 2;
+  if (severity === 'HIGH') return 8;
+  if (severity === 'MEDIUM') return 24;
+  return 72;
+}
+
+function ageLabel(milliseconds: number) {
+  const hours = Math.max(0, Math.floor(milliseconds / 3_600_000));
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d ${hours % 24}h`;
+}
+
+function providerName(
+  provider:
+    | Pick<AdminProvider, 'displayName' | 'user'>
+    | AdminProviderReport['providerProfile']
+    | AdminProviderSanction['providerProfile']
+    | null
+    | undefined,
+  fallback: string,
+) {
+  return provider?.displayName || provider?.user?.fullName || `Partner ${shortDisplayId(fallback)}`;
+}
+
+function partnerOptionLabel(provider: AdminProvider) {
+  return `${providerName(provider, provider.id)} · ${maskedPhone(provider.user?.phone)} · ${shortDisplayId(provider.id)} · ${provider.status}`;
+}
+
+function maskedPhone(value?: string | null) {
+  const phone = value?.trim();
+  if (!phone) return 'Phone unavailable';
+  if (phone.length <= 5) return '•'.repeat(phone.length);
+  return `${phone.slice(0, 3)}${'•'.repeat(Math.max(3, phone.length - 5))}${phone.slice(-2)}`;
+}
+
+function operatorLabel(operator?: { fullName?: string | null; phone?: string | null } | null) {
+  return operator?.fullName || (operator?.phone ? maskedPhone(operator.phone) : 'Unassigned');
+}
+
+function reportSeverityTone(severity: string) {
+  if (severity === 'CRITICAL') return 'danger' as const;
+  if (severity === 'HIGH') return 'warning' as const;
+  return 'info' as const;
+}
+
+function reportStatusTone(status: string) {
+  if (status === 'OPEN') return 'warning' as const;
+  if (status === 'INVESTIGATING') return 'info' as const;
+  return 'success' as const;
 }
 
 function partnerControlDeskServerAction(action: PartnerControlDeskConfirmationAction) {
@@ -985,1290 +1304,4 @@ function partnerControlDeskServerAction(action: PartnerControlDeskConfirmationAc
     case 'lift-control':
       return liftProviderSanction;
   }
-}
-
-type PartnerControlLinkedProvider =
-  | NonNullable<AdminProviderReport['providerProfile']>
-  | NonNullable<AdminProviderSanction['providerProfile']>;
-
-function PartnerControlProviderCell({
-  helper,
-  provider,
-}: {
-  readonly helper?: ReactNode;
-  readonly provider: AdminProvider;
-}) {
-  return (
-    <AdminPersonCell
-      avatarClassName="vuexy-booking-avatar is-partner"
-      avatarStatus={partnerControlProviderAvatarStatus(provider)}
-      className="vuexy-booking-person"
-      helper={helper ?? provider.user?.phone ?? 'No phone'}
-      href={`/partners/${provider.id}`}
-      label={adminProviderName(provider)}
-      linkClassName="table-link"
-    />
-  );
-}
-
-function PartnerControlLinkedProviderCell({
-  fallbackId,
-  provider,
-}: {
-  readonly fallbackId: string;
-  readonly provider?: PartnerControlLinkedProvider | null;
-}) {
-  if (!provider) {
-    return <span>{fallbackId}</span>;
-  }
-
-  return (
-    <AdminPersonCell
-      avatarClassName="vuexy-booking-avatar is-partner"
-      avatarStatus="offline"
-      className="vuexy-booking-person"
-      helper={provider.user?.phone ?? 'No phone'}
-      href={`/partners/${provider.id}`}
-      label={providerNameOrId(provider, fallbackId)}
-      linkClassName="table-link"
-    />
-  );
-}
-
-function partnerControlProviderAvatarStatus(provider: AdminProvider): AdminAvatarStatus {
-  return adminAvatarStatusFromSignals({
-    devices: provider.devices,
-    fallbackOnline: provider.status === 'ONLINE_AVAILABLE' || provider.status === 'ONLINE_AVAILABLE_SOON',
-    matching: (provider.participants ?? []).some((participant) =>
-      ['INVITED', 'PENDING', 'REQUESTED'].includes(participant.status),
-    ),
-    sessions: provider.sessions,
-    working: provider.status === 'ONLINE_BUSY',
-  });
-}
-
-type PartnerControlCommandCenterInput = {
-  reports: AdminProviderReport[];
-  sanctions: AdminProviderSanction[];
-  watchlist: PartnerControlWatchItem[];
-};
-
-type PartnerControlCommandMetric = {
-  label: string;
-  value: ReactNode;
-  tone:
-    | 'ops-task-breakdown-ok'
-    | 'ops-task-breakdown-info'
-    | 'ops-task-breakdown-warn'
-    | 'ops-task-breakdown-danger';
-};
-
-type PartnerControlNextAction = {
-  id: string;
-  priority: number;
-  status: string;
-  title: string;
-  detail: ReactNode;
-  operatorAction: string;
-  href: string;
-  tags: Array<{ label: string; tone: string }>;
-};
-
-type PartnerOperatingBlock = {
-  id: string;
-  providerId: string;
-  partner: string;
-  impact: string;
-  severity: string;
-  tone: string;
-  title: string;
-  reason: ReactNode;
-  operatorAction: string;
-  href: string;
-  priority: number;
-};
-
-type BookingAcceptanceUnblockCard = {
-  id: string;
-  title: string;
-  status: string;
-  detail: string;
-  operatorScript: string;
-  customerImpact: string;
-  action: string;
-  href: string;
-  className: string;
-  blockingCount: number;
-  partnerSamples: string[];
-  metrics: PartnerControlCommandMetric[];
-};
-
-type AcceptanceUnblockPlaybookStep = {
-  id: string;
-  step: string;
-  owner: string;
-  title: string;
-  status: string;
-  pillClass: string;
-  detail: string;
-  bookingImpact: string;
-  payoutImpact: string;
-  customerImpact: string;
-  action: string;
-  href: string;
-  blockingCount: number;
-  partnerSamples: string[];
-};
-
-function buildPartnerControlBoard(
-  providers: AdminProvider[],
-  watchlist: PartnerControlWatchItem[],
-): PartnerControlBoard {
-  const watchByProvider = new Map(watchlist.map((item) => [item.provider.id, item]));
-  const items = providers
-    .map((provider) => buildPartnerControlBoardItem(provider, watchByProvider.get(provider.id)))
-    .filter((item): item is PartnerControlBoardItem => Boolean(item))
-    .sort((left, right) => right.priority - left.priority || left.partner.localeCompare(right.partner))
-    .slice(0, 12);
-  const bookingBlocked = items.filter((item) =>
-    item.controls.some((control) => control.label === 'Booking blocked'),
-  );
-  const payoutGated = items.filter((item) =>
-    item.controls.some((control) => control.label === 'Payout gated'),
-  );
-  const documentReview = items.filter((item) =>
-    item.controls.some((control) => control.label === 'Documents'),
-  );
-  const locationFollowUp = items.filter((item) =>
-    item.controls.some((control) => control.label === 'Location'),
-  );
-
-  return {
-    metrics: [
-      metric('Active controls', items.length, items.length ? 'warn' : 'ok'),
-      metric('Booking blocks', bookingBlocked.length, bookingBlocked.length ? 'danger' : 'ok'),
-      metric('Payout gates', payoutGated.length, payoutGated.length ? 'warn' : 'ok'),
-      metric('Documents', documentReview.length, documentReview.length ? 'warn' : 'ok'),
-      metric('Location checks', locationFollowUp.length, locationFollowUp.length ? 'info' : 'ok'),
-    ],
-    items,
-  };
-}
-
-function buildPartnerControlBoardItem(
-  provider: AdminProvider,
-  watchItem: PartnerControlWatchItem | undefined,
-): PartnerControlBoardItem | null {
-  const walletBalance = providerUnsettledWalletBalance(provider);
-  const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
-  const reportsOpen = (provider.reports ?? []).filter((report) =>
-    ['OPEN', 'INVESTIGATING'].includes(report.status),
-  );
-  const reasons = watchItem?.signals.map((signal) => signal.label) ?? [];
-  const controls: PartnerControlBoardItem['controls'] = [];
-  let priority = 0;
-
-  if (
-    provider.blockedAt ||
-    walletBalance < 0 ||
-    activeSanctions.some((sanction) => sanction.type === 'ACCOUNT_BLOCK')
-  ) {
-    controls.push({ label: 'Booking blocked', className: 'pill-danger' });
-    priority += 100;
-  }
-  if (activeSanctions.some((sanction) => sanction.type === 'PAYOUT_HOLD')) {
-    controls.push({ label: 'Payout gated', className: 'pill-warn' });
-    priority += 80;
-  }
-  if (reportsOpen.length > 0 || activeSanctions.length > 0) {
-    controls.push({ label: 'Reports', className: 'pill-info' });
-    priority += 60;
-  }
-  if (
-    !provider.kyc ||
-    provider.kyc.status !== 'APPROVED' ||
-    !(provider.bankAccounts ?? []).some((account) => account.status === 'APPROVED')
-  ) {
-    controls.push({ label: 'Documents', className: 'pill-warn' });
-    priority += 40;
-  }
-  if (watchItem?.signals.some((signal) => signal.kind === 'LOCATION')) {
-    controls.push({ label: 'Location', className: 'pill-info' });
-    priority += 25;
-  }
-  if (watchItem?.signals.some((signal) => signal.kind === 'DEVICE')) {
-    controls.push({ label: 'Device', className: 'pill-info' });
-    priority += 20;
-  }
-  if (!watchItem && controls.length === 0) return null;
-
-  const status = controls.some((control) => control.label === 'Booking blocked')
-    ? 'Blocked'
-    : controls.some((control) => control.label === 'Payout gated')
-      ? 'Payout'
-      : 'Review';
-  const fallbackReasons = reasons.length ? reasons : controls.map((control) => control.label);
-
-  return {
-    provider,
-    partner: partnerDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id),
-    status,
-    walletBalance,
-    reasons: fallbackReasons.slice(0, 5),
-    controls,
-    actionLabel: reportsOpen.length ? 'Open reports' : activeSanctions.length ? 'Open controls' : 'Open profile',
-    actionHref:
-      reportsOpen.length
-        ? buildPartnerControlDetailsHref('reports', { q: provider.id })
-        : activeSanctions.length
-          ? buildPartnerControlDetailsHref('sanctions', { q: provider.id })
-          : `/partners/${provider.id}`,
-    operatorAction:
-      walletBalance < 0
-        ? 'Collect the cash fee deposit or approve an auditable offset before this partner accepts more bookings.'
-        : activeSanctions.length
-          ? 'Review active account or payout controls and record the next operation decision.'
-          : 'Open the partner profile and clear the missing document, location, or device follow-up.',
-    priority,
-  };
-}
-
-function buildPartnerControlCommandCenter(input: PartnerControlCommandCenterInput) {
-  const openReports = input.reports.filter((report) => ['OPEN', 'INVESTIGATING'].includes(report.status));
-  const urgentReports = openReports.filter((report) => ['CRITICAL', 'HIGH'].includes(report.severity));
-  const overdueReports = openReports.filter((report) => reportAgeHours(report) >= reportSlaHours(report));
-  const activeSanctions = input.sanctions.filter((sanction) => sanction.status === 'ACTIVE');
-  const activePayoutHolds = activeSanctions.filter((sanction) => sanction.type === 'PAYOUT_HOLD');
-  const activeAccountBlocks = activeSanctions.filter((sanction) => sanction.type === 'ACCOUNT_BLOCK');
-  const walletDebtItems = input.watchlist.filter((item) => item.walletBalance < 0);
-  const sharedDeviceItems = input.watchlist.filter((item) =>
-    item.signals.some((signal) => signal.kind === 'DEVICE'),
-  );
-
-  const lanes = [
-    {
-      title: 'Safety triage',
-      status: urgentReports.length ? 'URGENT' : 'CLEAR',
-      detail: urgentReports.length
-        ? 'Urgent or major reports need evidence review and a decision before profile review changes.'
-        : 'No urgent or major partner report is currently open.',
-      href: buildPartnerControlDetailsHref('reports', {
-        severity: urgentReports.length ? 'HIGH_PLUS' : undefined,
-        status: urgentReports.length ? undefined : 'OPEN',
-      }),
-      action: urgentReports.length ? 'Open urgent + major lane' : 'Review open reports',
-      className: urgentReports.length ? 'ops-task-blocked' : 'ops-task-done',
-      metrics: [
-        metric('Urgent', urgentReports.filter((report) => report.severity === 'CRITICAL').length, 'danger'),
-        metric('Major', urgentReports.filter((report) => report.severity === 'HIGH').length, 'warn'),
-        metric('Open', openReports.length, openReports.length ? 'info' : 'ok'),
-      ],
-    },
-    {
-      title: 'Finance block',
-      status: walletDebtItems.length ? 'BLOCKED' : 'CLEAR',
-      detail: walletDebtItems.length
-        ? 'Negative wallet Partners must settle cash fee debt before final acceptance, service start, or payout release.'
-        : 'No Partner wallet is currently blocked by cash fee debt.',
-      href: walletDebtItems.length ? '/cash-settlements' : '/earnings',
-      action: walletDebtItems.length ? 'Open cash settlements' : 'Review earnings',
-      className: walletDebtItems.length ? 'ops-task-blocked' : 'ops-task-done',
-      metrics: [
-        metric('Wallets', walletDebtItems.length, walletDebtItems.length ? 'danger' : 'ok'),
-        metric(
-          'Debt',
-          <MoneyText amount={walletDebtItems.reduce((sum, item) => sum + Math.abs(item.walletBalance), 0)} />,
-          walletDebtItems.length ? 'danger' : 'ok',
-        ),
-        metric('Payout holds', activePayoutHolds.length, activePayoutHolds.length ? 'warn' : 'ok'),
-      ],
-    },
-    {
-      title: 'Access controls',
-      status: activeSanctions.length ? 'LIVE' : 'CLEAR',
-      detail: activeSanctions.length
-        ? 'Active account controls are live operating controls and need clean audit follow-up.'
-        : 'No active account control is currently restricting partner operations.',
-      href: activeSanctions.length
-        ? buildPartnerControlDetailsHref('sanctions', { sanction: 'ACTIVE' })
-        : buildPartnerControlDetailsHref('controls'),
-      action: activeSanctions.length ? 'Review active controls' : 'Open control board',
-      className: activeSanctions.length ? 'ops-task-pending' : 'ops-task-done',
-      metrics: [
-        metric('Controls', activeSanctions.length, activeSanctions.length ? 'warn' : 'ok'),
-        metric('Account blocks', activeAccountBlocks.length, activeAccountBlocks.length ? 'danger' : 'ok'),
-        metric('Shared devices', sharedDeviceItems.length, sharedDeviceItems.length ? 'warn' : 'ok'),
-      ],
-    },
-    {
-      title: 'SLA aging',
-      status: overdueReports.length ? 'OVERDUE' : 'ON TRACK',
-      detail: overdueReports.length
-        ? 'Some open investigations have passed the target review window.'
-        : 'Open Partner reports are inside their review windows.',
-      href: buildPartnerControlDetailsHref('reports', {
-        status: overdueReports.length ? 'OPEN' : 'INVESTIGATING',
-      }),
-      action: overdueReports.length ? 'Clear overdue reports' : 'Review investigations',
-      className: overdueReports.length ? 'ops-task-blocked' : 'ops-task-done',
-      metrics: [
-        metric('Overdue', overdueReports.length, overdueReports.length ? 'danger' : 'ok'),
-        metric(
-          'Investigating',
-          openReports.filter((report) => report.status === 'INVESTIGATING').length,
-          'info',
-        ),
-        metric('Oldest', oldestReportAgeLabel(openReports), overdueReports.length ? 'warn' : 'ok'),
-      ],
-    },
-  ];
-
-  return {
-    urgentCount: urgentReports.length + walletDebtItems.length + overdueReports.length,
-    lanes,
-    nextActions: buildPartnerControlNextActions({
-      openReports,
-      activeSanctions,
-      watchlist: input.watchlist,
-    }),
-  };
-}
-
-function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
-  const blocks: PartnerOperatingBlock[] = [];
-
-  for (const item of watchlist) {
-    const partner = adminProviderName(item.provider);
-    if (item.walletBalance < 0) {
-      blocks.push({
-        id: `${item.provider.id}-wallet`,
-        providerId: item.provider.id,
-        partner,
-        impact: 'MARKETPLACE BLOCK',
-        severity: 'Wallet debt',
-        tone: 'pill-danger',
-        title: `${partner} cannot participate in marketplace bookings`,
-        reason: <><MoneyText amount={Math.abs(item.walletBalance)} /> cash/company fee debt is still open.</>,
-        operatorAction: `Confirm Partner deposit, admin offset, or finance adjustment using ${cashDebtSettlementReference(item.provider.id)}.`,
-        href: '/cash-settlements',
-        priority: 110 + Math.min(20, Math.abs(item.walletBalance) / 100000),
-      });
-    }
-
-    if (item.provider.blockedAt) {
-      blocks.push({
-        id: `${item.provider.id}-account-block`,
-        providerId: item.provider.id,
-        partner,
-        impact: 'ACCOUNT BLOCK',
-        severity: 'Blocked',
-        tone: 'pill-danger',
-        title: `${partner} account is blocked`,
-        reason: item.provider.blockedReason || 'Partner account is restricted by an admin control.',
-        operatorAction:
-          'Review evidence and unblock only when the audit trail clearly explains the decision.',
-        href: `/partners/${item.provider.id}`,
-        priority: 105,
-      });
-    }
-
-    if (item.hasPayoutHold) {
-      blocks.push({
-        id: `${item.provider.id}-payout-hold`,
-        providerId: item.provider.id,
-        partner,
-        impact: 'PAYOUT BLOCK',
-        severity: 'Payout hold',
-        tone: 'pill-danger',
-        title: `${partner} payout is on hold`,
-        reason:
-          'Active payout hold prevents normal payout processing until the underlying report is cleared.',
-        operatorAction:
-          'Open the payout and control lanes, resolve evidence, then lift the account control if appropriate.',
-        href: '/payouts',
-        priority: 92,
-      });
-    }
-
-    if (item.openReportCount > 0) {
-      blocks.push({
-        id: `${item.provider.id}-open-report`,
-        providerId: item.provider.id,
-        partner,
-        impact: 'REPORT REVIEW',
-        severity: `${item.openReportCount} report(s)`,
-        tone: item.severity === 'CRITICAL' || item.severity === 'HIGH' ? 'pill-danger' : 'pill-warn',
-        title: `${partner} has open reports`,
-        reason: 'Open reports can affect profile review, payout release, and future dispatch decisions.',
-        operatorAction:
-          'Move the report to investigating, resolve with notes, dismiss with evidence, or apply an account control.',
-        href: buildPartnerControlDetailsHref('reports', { q: item.provider.id }),
-        priority: item.severity === 'CRITICAL' ? 88 : 78,
-      });
-    }
-
-    const locationSignal = item.signals.find((signal) => signal.kind === 'LOCATION');
-    if (locationSignal) {
-      blocks.push({
-        id: `${item.provider.id}-location`,
-        providerId: item.provider.id,
-        partner,
-        impact: 'DISPATCH CHECK',
-        severity: locationSignal.label,
-        tone: 'pill-warn',
-        title: `${partner} location needs refresh`,
-        reason:
-          'Distance sorting and configured invitation-radius decisions can be wrong when online location is missing or stale.',
-        operatorAction:
-          'Ask the Partner to reopen the app and refresh location before dispatch-sensitive work.',
-        href: `/partners/${item.provider.id}`,
-        priority: 64,
-      });
-    }
-
-    if (item.signals.some((signal) => signal.kind === 'KYC')) {
-      blocks.push({
-        id: `${item.provider.id}-kyc`,
-        providerId: item.provider.id,
-        partner,
-        impact: 'LEVEL GATE',
-        severity: 'KYC pending',
-        tone: 'pill-warn',
-        title: `${partner} KYC is not approved`,
-        reason:
-          'Partner can remain in onboarding, but activity level should not be upgraded without identity approval.',
-        operatorAction: 'Review CCCD/CMND and selfie documents, then approve, reject, or request reupload.',
-        href: `/partners/${item.provider.id}`,
-        priority: 56,
-      });
-    }
-
-    if (item.signals.some((signal) => signal.kind === 'BANK')) {
-      blocks.push({
-        id: `${item.provider.id}-bank`,
-        providerId: item.provider.id,
-        partner,
-        impact: 'PAYOUT SETUP',
-        severity: 'Bank pending',
-        tone: 'pill-warn',
-        title: `${partner} bank account is not approved`,
-        reason:
-          'Partner may work only if policy allows it, but payout cannot be released without a verified account.',
-        operatorAction: 'Review bank name, account holder, QR/banking data, and account-change history.',
-        href: `/partners/${item.provider.id}`,
-        priority: 48,
-      });
-    }
-
-    if (item.signals.some((signal) => signal.kind === 'TAX')) {
-      blocks.push({
-        id: `${item.provider.id}-tax`,
-        providerId: item.provider.id,
-        partner,
-        impact: 'FIRST EARNING',
-        severity: 'Optional tax record',
-        tone: 'pill-info',
-        title: `${partner} has an optional tax profile review`,
-        reason:
-          'Tax profile registration is not required for Vietnam MVP partner approval, matching, work, payout, or wallet withdrawal.',
-        operatorAction:
-          'Review only if finance keeps optional tax records; do not hold Level 2 activity because of this profile.',
-        href: '/tax-policy',
-        priority: 36,
-      });
-    }
-  }
-
-  return blocks.sort((left, right) => right.priority - left.priority).slice(0, 18);
-}
-
-function buildBookingAcceptanceUnblockBoard(
-  watchlist: PartnerControlWatchItem[],
-  controlPolicy = DEFAULT_PARTNER_CONTROL_POLICY,
-): BookingAcceptanceUnblockCard[] {
-  const cashDebtItems = watchlist.filter((item) => item.walletBalance < 0);
-  const accountBlockedItems = watchlist.filter(
-    (item) => item.provider.blockedAt || item.signals.some((signal) => signal.kind === 'BLOCK'),
-  );
-  const locationItems = watchlist.filter((item) => item.signals.some((signal) => signal.kind === 'LOCATION'));
-  const verificationItems = watchlist.filter((item) => item.signals.some((signal) => signal.kind === 'KYC'));
-  const deviceItems = watchlist.filter((item) => partnerHasDeviceContactGap(item.provider));
-  const taxItems = watchlist.filter((item) => item.signals.some((signal) => signal.kind === 'TAX'));
-
-  return [
-    {
-      id: 'wallet-debt',
-      title: 'Cash fee debt gates final acceptance and service start',
-      status: cashDebtItems.length ? 'BLOCKING' : 'CLEAR',
-      detail: cashDebtItems.length
-        ? 'Partners with negative wallet balance can stay visible but cannot complete final acceptance, start service, or receive payout release until HANDS fee debt is settled.'
-        : 'No Partner is currently blocked by cash-service fee debt.',
-      operatorScript:
-        'Tell the Partner their unpaid HANDS fee must be deposited or offset before final acceptance, service start, or payout release unlocks.',
-      customerImpact:
-        'Customers can still see marketplace request flow normally; the Partner cannot complete final acceptance or service start until fee settlement is cleared.',
-      action: cashDebtItems.length ? 'Open settlement queue' : 'Review wallet policy',
-      href: cashDebtItems.length ? '/cash-settlements' : '/operations-policy',
-      className: cashDebtItems.length ? 'ops-task-blocked' : 'ops-task-done',
-      blockingCount: cashDebtItems.length,
-      partnerSamples: partnerSamples(cashDebtItems),
-      metrics: [
-        metric('Blocked', cashDebtItems.length, cashDebtItems.length ? 'danger' : 'ok'),
-        metric(
-          'Debt',
-          <MoneyText amount={cashDebtItems.reduce((sum, item) => sum + Math.abs(item.walletBalance), 0)} />,
-          cashDebtItems.length ? 'danger' : 'ok',
-        ),
-        metric('Rule', 'Negative wallet', cashDebtItems.length ? 'warn' : 'ok'),
-      ],
-    },
-    {
-      id: 'account-controls',
-      title: 'Account controls stop work',
-      status: accountBlockedItems.length ? 'BLOCKING' : 'CLEAR',
-      detail: accountBlockedItems.length
-        ? 'Blocked accounts or active account controls must be reviewed before the partner receives work.'
-        : 'No account block is currently holding partner work access.',
-      operatorScript:
-        'Keep the block active until evidence, notes, and the unblock reason are clear in the audit trail.',
-      customerImpact: 'Customers will not see or match with partners under active account restrictions.',
-      action: accountBlockedItems.length ? 'Review account blocks' : 'Open control board',
-      href: accountBlockedItems.length
-        ? buildPartnerControlDetailsHref('sanctions', { sanction: 'ACTIVE' })
-        : buildPartnerControlDetailsHref('controls'),
-      className: accountBlockedItems.length ? 'ops-task-blocked' : 'ops-task-done',
-      blockingCount: accountBlockedItems.length,
-      partnerSamples: partnerSamples(accountBlockedItems),
-      metrics: [
-        metric('Blocked', accountBlockedItems.length, accountBlockedItems.length ? 'danger' : 'ok'),
-        metric('Profile', accountBlockedItems.filter((item) => item.provider.blockedAt).length, 'info'),
-        metric('Audit', 'Required', accountBlockedItems.length ? 'warn' : 'ok'),
-      ],
-    },
-    {
-      id: 'location-dispatch',
-      title: 'Location freshness controls dispatch',
-      status: locationItems.length ? 'DISPATCH HOLD' : 'READY',
-      detail: locationItems.length
-        ? `Distance ordering, ${formatDistance(
-            controlPolicy.backupRadiusMeters,
-          )} marketplace invitations, the ${controlPolicy.invitationLimit}-partner invite cap, and customer expectations depend on fresh partner location.`
-        : 'Online partner locations are fresh enough for dispatch decisions.',
-      operatorScript:
-        'Ask the Partner to reopen the app and refresh GPS before taking dispatch-sensitive bookings.',
-      customerImpact:
-        'Distance sorting and marketplace invitations can be inaccurate when the last location is stale.',
-      action: locationItems.length ? 'Open partner profiles' : 'Review location policy',
-      href: locationItems.length ? '/partners' : '/operations-policy',
-      className: locationItems.length ? 'ops-task-pending' : 'ops-task-done',
-      blockingCount: 0,
-      partnerSamples: partnerSamples(locationItems),
-      metrics: [
-        metric('Stale/missing', locationItems.length, locationItems.length ? 'warn' : 'ok'),
-        metric('Acceptance', 'Policy gate', locationItems.length ? 'warn' : 'ok'),
-        metric(
-          'Invite pool',
-          `${formatDistance(controlPolicy.backupRadiusMeters)} / ${controlPolicy.invitationLimit}`,
-          'info',
-        ),
-      ],
-    },
-    {
-      id: 'verification-readiness',
-      title: 'KYC and activity readiness',
-      status: verificationItems.length ? 'BOOKING BLOCK' : 'READY',
-      detail: verificationItems.length
-        ? 'Identity or required document gaps hold Level 2 paid work eligibility and marketplace participation until cleared.'
-        : 'KYC, required documents, and partner verification are not blocking listed partners.',
-      operatorScript:
-        'Review CCCD/CMND and selfie evidence; reject with a specific reupload reason if anything is unclear.',
-      customerImpact:
-        'Paid work should only be accepted by Partners who passed the Level 2 identity and activity checks.',
-      action: verificationItems.length ? 'Open acceptance-blocked Partners' : 'Review Partner levels',
-      href: verificationItems.length ? '/partners?review=acceptance-blocked' : '/partners',
-      className: verificationItems.length ? 'ops-task-blocked' : 'ops-task-done',
-      blockingCount: verificationItems.length,
-      partnerSamples: partnerSamples(verificationItems),
-      metrics: [
-        metric('Blocked', verificationItems.length, verificationItems.length ? 'danger' : 'ok'),
-        metric('Work level', 'Level 2 gate', verificationItems.length ? 'danger' : 'ok'),
-        metric('Payout', 'Withdrawal review', 'info'),
-      ],
-    },
-    {
-      id: 'device-contact',
-      title: 'Push/contact readiness',
-      status: deviceItems.length ? 'CONTACT CHECK' : 'READY',
-      detail: deviceItems.length
-        ? 'Partners without an enabled device can miss marketplace invitations and direct booking alerts.'
-        : 'Partner device readiness does not show a broad notification follow-up.',
-      operatorScript:
-        'Confirm the partner has a current app session and enabled device before relying on push alerts.',
-      customerImpact:
-        'Marketplace supply may look available but fail to respond if the partner cannot receive alerts.',
-      action: 'Review contact readiness',
-      href: buildPartnerControlDetailsHref('controls'),
-      className: deviceItems.length ? 'ops-task-pending' : 'ops-task-done',
-      blockingCount: 0,
-      partnerSamples: partnerSamples(deviceItems),
-      metrics: [
-        metric('Contact gaps', deviceItems.length, deviceItems.length ? 'warn' : 'ok'),
-        metric('Push', 'Invite check', deviceItems.length ? 'warn' : 'ok'),
-        metric('Fallback', 'Manual call', 'info'),
-      ],
-    },
-    {
-      id: 'tax-after-first-earning',
-      title: 'Optional tax record is not an operating gate',
-      status: taxItems.length ? 'OPTIONAL REVIEW' : 'READY',
-      detail:
-        'Tax profile registration is not required for Vietnam MVP and must not block Level 2 approval, matching, work, payout, or wallet withdrawal.',
-      operatorScript:
-        'Keep optional tax records read-only unless finance explicitly reviews submitted data for audit history.',
-      customerImpact:
-        'Customers can book approved Level 2 Partners without extra signup friction.',
-      action: taxItems.length ? 'Open tax policy' : 'Review tax rules',
-      href: '/tax-policy',
-      className: taxItems.length ? 'ops-task-pending' : 'ops-task-done',
-      blockingCount: 0,
-      partnerSamples: partnerSamples(taxItems),
-      metrics: [
-        metric('Legacy records', taxItems.length, taxItems.length ? 'info' : 'ok'),
-        metric('Acceptance', 'Not blocked', 'ok'),
-        metric('Payout', 'Not blocked', 'ok'),
-      ],
-    },
-  ];
-}
-
-function buildAcceptanceUnblockPlaybook(
-  cards: BookingAcceptanceUnblockCard[],
-): AcceptanceUnblockPlaybookStep[] {
-  const byId = new Map(cards.map((card) => [card.id, card]));
-  const card = (id: string) => byId.get(id);
-
-  return [
-    {
-      id: 'playbook-wallet-debt',
-      step: '1',
-      owner: 'Finance',
-      title: 'Clear negative wallet first',
-      status: card('wallet-debt')?.status ?? 'UNKNOWN',
-      pillClass: card('wallet-debt')?.blockingCount ? 'pill-danger' : 'pill-success',
-      detail:
-        'Negative wallet is the strongest marketplace gate because cash bookings create unpaid HANDS fee debt.',
-      bookingImpact:
-        'Keeps marketplace visibility available, but final acceptance, service start, and payout release wait until deposit, admin offset, or earning offset is recorded.',
-      payoutImpact:
-        'Debt should be visible before payout so finance does not pay a partner while platform fees are unpaid.',
-      customerImpact:
-        'Customer final choice stays available from eligible participants; fee-debt Partners remain visible but cannot complete final acceptance or service start.',
-      action: card('wallet-debt')?.action ?? 'Open settlement queue',
-      href: card('wallet-debt')?.href ?? '/cash-settlements',
-      blockingCount: card('wallet-debt')?.blockingCount ?? 0,
-      partnerSamples: card('wallet-debt')?.partnerSamples ?? [],
-    },
-    {
-      id: 'playbook-account-controls',
-      step: '2',
-      owner: 'Account ops',
-      title: 'Resolve account controls',
-      status: card('account-controls')?.status ?? 'UNKNOWN',
-      pillClass: card('account-controls')?.blockingCount ? 'pill-danger' : 'pill-success',
-      detail:
-        'Account blocks and active account controls are deliberate operational controls and should stay above convenience.',
-      bookingImpact: 'Blocks partner visibility and work access while the restriction is active.',
-      payoutImpact: 'Payout holds should remain until the report or account control has a clean audit outcome.',
-      customerImpact: 'Keeps customer bookings away from accounts with unresolved admin holds until documented review is complete.',
-      action: card('account-controls')?.action ?? 'Review account blocks',
-      href:
-        card('account-controls')?.href ??
-        buildPartnerControlDetailsHref('sanctions', { sanction: 'ACTIVE' }),
-      blockingCount: card('account-controls')?.blockingCount ?? 0,
-      partnerSamples: card('account-controls')?.partnerSamples ?? [],
-    },
-    {
-      id: 'playbook-verification',
-      step: '3',
-      owner: 'KYC',
-      title: 'Approve identity and activity readiness',
-      status: card('verification-readiness')?.status ?? 'UNKNOWN',
-      pillClass: card('verification-readiness')?.blockingCount ? 'pill-danger' : 'pill-success',
-      detail:
-        'KYC, required CCCD/selfie documents, partner verification, and service-ready profile are the Level 2 work gate for paid bookings.',
-      bookingImpact:
-        'Holds preferred direct requests and marketplace participation until identity evidence and activity readiness are approved.',
-      payoutImpact: 'Bank approval is handled later when the Partner requests wallet withdrawal.',
-      customerImpact: 'Keeps customer-facing booking flow simple while operators verify partner readiness before work access.',
-      action: card('verification-readiness')?.action ?? 'Open acceptance-blocked partners',
-      href: card('verification-readiness')?.href ?? '/partners?review=acceptance-blocked',
-      blockingCount: card('verification-readiness')?.blockingCount ?? 0,
-      partnerSamples: card('verification-readiness')?.partnerSamples ?? [],
-    },
-    {
-      id: 'playbook-location',
-      step: '4',
-      owner: 'Dispatch',
-      title: 'Refresh stale partner location',
-      status: card('location-dispatch')?.status ?? 'UNKNOWN',
-      pillClass: card('location-dispatch')?.blockingCount ? 'pill-danger' : 'pill-warn',
-      detail:
-        'Location freshness controls distance sorting and marketplace invite quality, but it is often solved by reopening the app.',
-      bookingImpact:
-        'Can weaken marketplace matching or make customer ETA expectations unreliable.',
-      payoutImpact:
-        'No direct payout impact, but location evidence may matter for disputes and no-show review.',
-      customerImpact: 'Improves nearby partner ordering and reduces wasted waiting time.',
-      action: card('location-dispatch')?.action ?? 'Open partner profiles',
-      href: card('location-dispatch')?.href ?? '/partners?review=location',
-      blockingCount: card('location-dispatch')?.blockingCount ?? 0,
-      partnerSamples: card('location-dispatch')?.partnerSamples ?? [],
-    },
-    {
-      id: 'playbook-device-contact',
-      step: '5',
-      owner: 'Ops',
-      title: 'Confirm device and alert reachability',
-      status: card('device-contact')?.status ?? 'UNKNOWN',
-      pillClass: card('device-contact')?.blockingCount ? 'pill-danger' : 'pill-warn',
-      detail:
-        'In-app alerts are active now and FCM push is deferred, so recent app sessions and enabled devices matter.',
-      bookingImpact:
-        'Does not always hard-block acceptance, but weakens response rate and marketplace participation.',
-      payoutImpact: 'No direct payout impact.',
-      customerImpact: 'Reduces missed partner requests during the 10 minute response window.',
-      action: card('device-contact')?.action ?? 'Review contact readiness',
-      href: card('device-contact')?.href ?? buildPartnerControlDetailsHref('controls'),
-      blockingCount: card('device-contact')?.blockingCount ?? 0,
-      partnerSamples: card('device-contact')?.partnerSamples ?? [],
-    },
-    {
-      id: 'playbook-tax',
-      step: '6',
-      owner: 'Finance',
-      title: 'Treat tax as legacy-only review',
-      status: card('tax-after-first-earning')?.status ?? 'UNKNOWN',
-      pillClass: card('tax-after-first-earning')?.blockingCount ? 'pill-warn' : 'pill-success',
-      detail:
-        'Vietnam MVP does not require tax profile registration for partner approval, matching, work, payout, or withdrawal.',
-      bookingImpact: 'Should not block signup, Level 2 approval, matching, or paid jobs.',
-      payoutImpact:
-        'Should not block payout or wallet withdrawal; bank details are reviewed during the withdrawal flow.',
-      customerImpact: 'Reduces partner onboarding drop-off while finance remains controlled before payout.',
-      action: card('tax-after-first-earning')?.action ?? 'Open tax policy',
-      href: card('tax-after-first-earning')?.href ?? '/tax-policy',
-      blockingCount: card('tax-after-first-earning')?.blockingCount ?? 0,
-      partnerSamples: card('tax-after-first-earning')?.partnerSamples ?? [],
-    },
-  ];
-}
-
-function partnerSamples(items: PartnerControlWatchItem[], limit = 3) {
-  return items.slice(0, limit).map((item) => adminProviderName(item.provider));
-}
-
-function partnerHasDeviceContactGap(provider: AdminProvider) {
-  const devices = provider.devices ?? [];
-  if (!devices.length) {
-    return true;
-  }
-  return !devices.some((device) => device.enabled && !device.blockedAt);
-}
-
-function metric(
-  label: string,
-  value: ReactNode,
-  tone: 'ok' | 'info' | 'warn' | 'danger',
-): PartnerControlCommandMetric {
-  const toneClass: Record<'ok' | 'info' | 'warn' | 'danger', PartnerControlCommandMetric['tone']> = {
-    ok: 'ops-task-breakdown-ok',
-    info: 'ops-task-breakdown-info',
-    warn: 'ops-task-breakdown-warn',
-    danger: 'ops-task-breakdown-danger',
-  };
-
-  return {
-    label,
-    value,
-    tone: toneClass[tone],
-  };
-}
-
-function buildPartnerControlNextActions(input: {
-  openReports: AdminProviderReport[];
-  activeSanctions: AdminProviderSanction[];
-  watchlist: PartnerControlWatchItem[];
-}) {
-  const actions: PartnerControlNextAction[] = [];
-
-  for (const report of input.openReports) {
-    const ageHours = reportAgeHours(report);
-    const slaHours = reportSlaHours(report);
-    actions.push({
-      id: `report-${report.id}`,
-      priority: severityPriority(report.severity) + (ageHours >= slaHours ? 30 : 0),
-      status: ageHours >= slaHours ? 'OVERDUE' : report.severity,
-      title: partnerDisplayText(report.summary),
-      detail: `${providerNameOrId(report.providerProfile, report.providerProfileId)} / ${report.category} / ${report.status} / ${ageLabel(ageHours)} old`,
-      operatorAction:
-        ageHours >= slaHours
-          ? `Past ${slaHours}h target. Add resolution note, assign account control, or dismiss with evidence.`
-          : 'Review evidence and move to investigating, resolved, dismissed, or account control.',
-      href: report.bookingId
-        ? `/bookings/${report.bookingId}`
-        : buildPartnerControlDetailsHref('reports', { q: report.id }),
-      tags: [
-        { label: report.severity, tone: severityPill(report.severity) },
-        { label: report.status, tone: statusPill(report.status) },
-        { label: `${slaHours}h SLA`, tone: ageHours >= slaHours ? 'pill-danger' : 'pill-info' },
-      ],
-    });
-  }
-
-  for (const item of input.watchlist.filter((watch) => watch.walletBalance < 0)) {
-    actions.push({
-      id: `wallet-${item.provider.id}`,
-      priority: 95 + Math.min(20, Math.abs(item.walletBalance) / 100000),
-      status: 'WALLET',
-      title: `${adminProviderName(item.provider)} cash fee debt`,
-      detail: <><MoneyText amount={Math.abs(item.walletBalance)} /> must be settled or offset before final acceptance, service start, or payout release.</>,
-      operatorAction: `Use ${cashDebtSettlementReference(item.provider.id)} and confirm finance settlement.`,
-      href: '/cash-settlements',
-      tags: [
-        { label: 'Cash debt', tone: 'pill-danger' },
-        { label: 'Booking blocked', tone: 'pill-danger' },
-      ],
-    });
-  }
-
-  for (const sanction of input.activeSanctions.slice(0, 12)) {
-    actions.push({
-      id: `sanction-${sanction.id}`,
-      priority: sanction.type === 'ACCOUNT_BLOCK' ? 90 : sanction.type === 'PAYOUT_HOLD' ? 82 : 60,
-      status: sanction.type,
-      title: `${providerNameOrId(sanction.providerProfile, sanction.providerProfileId)} account control active`,
-      detail: partnerDisplayText(sanction.reason),
-      operatorAction:
-        sanction.type === 'PAYOUT_HOLD'
-          ? 'Resolve payout evidence before creating or paying payout batches.'
-          : 'Keep or lift the account control only with a clear audit trail.',
-      href: buildPartnerControlDetailsHref('sanctions', { q: sanction.providerProfileId }),
-      tags: [
-        { label: sanction.status, tone: 'pill-danger' },
-        { label: sanction.type, tone: sanction.type === 'WARNING' ? 'pill-warn' : 'pill-danger' },
-      ],
-    });
-  }
-
-  return actions.sort((left, right) => right.priority - left.priority).slice(0, 10);
-}
-
-function emptyPartnerControlMessage(kind: 'report' | 'sanction', activeFilters: Array<{ description: string }>) {
-  const subject = kind === 'report' ? 'Partner reports' : 'Partner account controls';
-  if (activeFilters.length === 0) {
-    return `No ${subject} loaded yet.`;
-  }
-  return `No ${subject} match the active filters. Clear filters or switch investigation lane.`;
-}
-
-function partnerControlPagedListFrom(rowCount: number, activePage: number, pageSize: number) {
-  if (rowCount <= 0) return 0;
-  return (activePage - 1) * pageSize + 1;
-}
-
-function partnerControlPagedListTo(rowCount: number, activePage: number, pageSize: number) {
-  if (rowCount <= 0) return 0;
-  return partnerControlPagedListFrom(rowCount, activePage, pageSize) + rowCount - 1;
-}
-
-function partnerControlPagedListTotalRows(rowCount: number, activePage: number, pageSize: number) {
-  if (rowCount <= 0) return 0;
-  return partnerControlPagedListTo(rowCount, activePage, pageSize);
-}
-
-function partnerControlEstimatedTotalPages(rowCount: number, activePage: number, pageSize: number) {
-  return Math.max(1, rowCount >= pageSize ? activePage + 1 : activePage);
-}
-
-function filterReports(reports: AdminProviderReport[], filters: PartnerControlPageFilters) {
-  return reports.filter((report) => {
-    if (filters.status && report.status !== filters.status) return false;
-    if (filters.severity === 'HIGH_PLUS' && !['CRITICAL', 'HIGH'].includes(report.severity)) return false;
-    if (filters.severity && filters.severity !== 'HIGH_PLUS' && report.severity !== filters.severity) {
-      return false;
-    }
-    if (filters.q && !reportSearchText(report).includes(filters.q)) return false;
-    return true;
-  });
-}
-
-function filterSanctions(sanctions: AdminProviderSanction[], filters: PartnerControlPageFilters) {
-  return sanctions.filter((sanction) => {
-    if (filters.sanction && sanction.status !== filters.sanction) return false;
-    if (filters.q && !sanctionSearchText(sanction).includes(filters.q)) return false;
-    return true;
-  });
-}
-
-function buildPartnerControlSummary(
-  reports: AdminProviderReport[],
-  sanctions: AdminProviderSanction[],
-  providers: AdminProvider[],
-  controlPolicy = DEFAULT_PARTNER_CONTROL_POLICY,
-) {
-  const watchlist = buildPartnerControlWatchlist(providers, controlPolicy);
-  return [
-    [
-      'Open reports',
-      reports.filter((report) => ['OPEN', 'INVESTIGATING'].includes(report.status)).length.toString(),
-    ],
-    [
-      'Urgent / major',
-      reports.filter((report) => ['CRITICAL', 'HIGH'].includes(report.severity)).length.toString(),
-    ],
-    ['Active controls', sanctions.filter((sanction) => sanction.status === 'ACTIVE').length.toString()],
-    ['Blocked accounts', providers.filter((provider) => provider.blockedAt).length.toString()],
-    ['Wallet debt', watchlist.filter((item) => item.walletBalance < 0).length.toString()],
-    [
-      'Location gaps',
-      providers.filter((provider) => Boolean(providerLocationSignal(provider, controlPolicy))).length.toString(),
-    ],
-    [
-      'Shared devices',
-      watchlist.filter((item) => item.signals.some((signal) => signal.kind === 'DEVICE')).length.toString(),
-    ],
-    [
-      'Onboarding gaps',
-      watchlist
-        .filter((item) => item.signals.some((signal) => ['KYC', 'BANK', 'TAX'].includes(signal.kind)))
-        .length.toString(),
-    ],
-  ] as const;
-}
-
-type PartnerControlWatchItem = {
-  provider: AdminProvider;
-  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-  signals: Array<{ kind: string; label: string }>;
-  walletBalance: number;
-  openReportCount: number;
-  hasPayoutHold: boolean;
-  detail: string;
-  nextStep: string;
-};
-
-function buildPartnerControlWatchlist(
-  providers: AdminProvider[],
-  controlPolicy = DEFAULT_PARTNER_CONTROL_POLICY,
-): PartnerControlWatchItem[] {
-  const deviceUsage = buildDeviceUsage(providers);
-  return providers
-    .map((provider) => buildPartnerControlWatchItem(provider, deviceUsage, controlPolicy))
-    .filter((item): item is PartnerControlWatchItem => Boolean(item))
-    .sort((left, right) => watchSeverityRank(right.severity) - watchSeverityRank(left.severity));
-}
-
-function filterPartnerControlWatchlist(
-  watchlist: PartnerControlWatchItem[],
-  filters: PartnerControlPageFilters,
-) {
-  if (isPartnerControlCashDebtReview(filters)) {
-    return watchlist.filter((item) => item.walletBalance < 0);
-  }
-  return watchlist;
-}
-
-function buildPartnerControlWatchItem(
-  provider: AdminProvider,
-  deviceUsage: Map<string, Set<string>>,
-  controlPolicy = DEFAULT_PARTNER_CONTROL_POLICY,
-): PartnerControlWatchItem | null {
-  const walletBalance = providerUnsettledWalletBalance(provider);
-  const openReportCount = (provider.reports ?? []).filter((report) =>
-    ['OPEN', 'INVESTIGATING'].includes(report.status),
-  ).length;
-  const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
-  const hasPayoutHold = activeSanctions.some((sanction) => sanction.type === 'PAYOUT_HOLD');
-  const sharedDeviceCount = providerSharedDeviceCount(provider, deviceUsage);
-  const signals: PartnerControlWatchItem['signals'] = [];
-
-  if (provider.blockedAt) signals.push({ kind: 'BLOCK', label: 'Account blocked' });
-  if (walletBalance < 0) signals.push({ kind: 'WALLET', label: 'Negative wallet' });
-  if (hasPayoutHold) signals.push({ kind: 'PAYOUT', label: 'Payout hold' });
-  if (openReportCount > 0) signals.push({ kind: 'REPORT', label: `${openReportCount} open report(s)` });
-  if (sharedDeviceCount > 0) signals.push({ kind: 'DEVICE', label: `${sharedDeviceCount} shared device(s)` });
-  const locationSignal = providerLocationSignal(provider, controlPolicy);
-  if (locationSignal) {
-    signals.push({ kind: 'LOCATION', label: locationSignal });
-  }
-  if (!provider.kyc || provider.kyc.status !== 'APPROVED')
-    signals.push({ kind: 'KYC', label: 'KYC not approved' });
-  if (!(provider.bankAccounts ?? []).some((account) => account.status === 'APPROVED')) {
-    signals.push({ kind: 'BANK', label: 'Bank not approved' });
-  }
-  if (!provider.taxProfile || provider.taxProfile.status !== 'APPROVED') {
-    signals.push({ kind: 'TAX', label: 'Tax not approved' });
-  }
-
-  if (!signals.length) return null;
-
-  const severity =
-    provider.blockedAt || walletBalance < 0 || hasPayoutHold
-      ? 'CRITICAL'
-      : openReportCount > 0 || sharedDeviceCount > 0
-        ? 'HIGH'
-        : ['KYC', 'BANK', 'LOCATION'].some((kind) => signals.some((signal) => signal.kind === kind))
-          ? 'MEDIUM'
-          : 'LOW';
-
-  return {
-    provider,
-    severity,
-    signals,
-    walletBalance,
-    openReportCount,
-    hasPayoutHold,
-    detail: partnerControlDetail({ walletBalance, openReportCount, sharedDeviceCount, signals }),
-    nextStep: partnerControlNextStep({ walletBalance, hasPayoutHold, openReportCount, provider }, controlPolicy),
-  };
-}
-
-function partnerControlDetail(input: {
-  walletBalance: number;
-  openReportCount: number;
-  sharedDeviceCount: number;
-  signals: Array<{ kind: string }>;
-}) {
-  if (input.walletBalance < 0) {
-    return 'Partner can remain visible, but final cash/direct work gates wait until company fee debt is settled.';
-  }
-  if (input.openReportCount > 0) {
-    return 'Open report history needs operator review before profile review, payout, or account changes.';
-  }
-  if (input.sharedDeviceCount > 0) {
-    return 'Device overlap can indicate duplicate accounts or account sharing.';
-  }
-  if (input.signals.some((signal) => signal.kind === 'TAX')) {
-    return 'Tax information can stay pending until first earning, but payout must remain gated.';
-  }
-  if (input.signals.some((signal) => signal.kind === 'LOCATION')) {
-    return 'Online partner location is missing or stale, so dispatch distance and customer expectation can be wrong.';
-  }
-  return 'Partner has onboarding or compliance gaps that need staff follow-up.';
-}
-
-function partnerControlNextStep(
-  input: {
-    walletBalance: number;
-    hasPayoutHold: boolean;
-    openReportCount: number;
-    provider: AdminProvider;
-  },
-  controlPolicy = DEFAULT_PARTNER_CONTROL_POLICY,
-) {
-  if (input.walletBalance < 0) {
-    return `Confirm Partner deposit or admin offset using ${cashDebtSettlementReference(input.provider.id)}.`;
-  }
-  if (input.hasPayoutHold) {
-    return 'Resolve payout hold evidence before creating or paying payout batches.';
-  }
-  if (input.openReportCount > 0) {
-    return 'Update report status with resolution note or apply an account control if needed.';
-  }
-  if (providerLocationSignal(input.provider, controlPolicy)) {
-    return 'Ask the Partner to reopen the app and refresh their current location before dispatch-sensitive work.';
-  }
-  return 'Complete missing verification data before enabling additional profile review or payout features.';
-}
-
-function providerLocationSignal(provider: AdminProvider, controlPolicy = DEFAULT_PARTNER_CONTROL_POLICY) {
-  if (!provider.status.startsWith('ONLINE')) {
-    return null;
-  }
-  if (
-    provider.currentLat === null ||
-    provider.currentLat === undefined ||
-    provider.currentLng === null ||
-    provider.currentLng === undefined
-  ) {
-    return 'Online location missing';
-  }
-  if (!provider.currentLocationUpdatedAt) {
-    return 'Location timestamp missing';
-  }
-
-  const updatedAt = Date.parse(provider.currentLocationUpdatedAt);
-  if (!Number.isFinite(updatedAt)) {
-    return 'Location timestamp invalid';
-  }
-  return Date.now() - updatedAt > controlPolicy.locationFreshnessMinutes * 60_000
-    ? `Location older than ${controlPolicy.locationFreshnessMinutes}m`
-    : null;
-}
-
-function buildPartnerControlPolicy(settings: AdminOperationalPolicySetting[]): PartnerControlPolicy {
-  return {
-    responseWindowMinutes:
-      readPositivePolicyNumber(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ??
-      DEFAULT_PARTNER_CONTROL_POLICY.responseWindowMinutes,
-    backupRadiusMeters:
-      readPositivePolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ??
-      DEFAULT_PARTNER_CONTROL_POLICY.backupRadiusMeters,
-    invitationLimit:
-      readPositivePolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit) ??
-      DEFAULT_PARTNER_CONTROL_POLICY.invitationLimit,
-    locationFreshnessMinutes:
-      readPositivePolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ??
-      DEFAULT_PARTNER_CONTROL_POLICY.locationFreshnessMinutes,
-  };
-}
-
-function formatDistance(meters: number) {
-  if (meters >= 1000) {
-    return `${(meters / 1000).toFixed(meters % 1000 === 0 ? 0 : 1)}km`;
-  }
-  return `${meters}m`;
-}
-
-function buildDeviceUsage(providers: AdminProvider[]) {
-  const usage = new Map<string, Set<string>>();
-  for (const provider of providers) {
-    for (const device of provider.devices ?? []) {
-      if (!device.deviceId) continue;
-      const set = usage.get(device.deviceId) ?? new Set<string>();
-      set.add(provider.id);
-      usage.set(device.deviceId, set);
-    }
-  }
-  return usage;
-}
-
-function providerSharedDeviceCount(provider: AdminProvider, deviceUsage: Map<string, Set<string>>) {
-  return (provider.devices ?? []).filter((device) => {
-    const providers = deviceUsage.get(device.deviceId);
-    return providers && providers.size > 1;
-  }).length;
-}
-
-function providerUnsettledWalletBalance(provider: AdminProvider) {
-  return (provider.earnings ?? [])
-    .filter((earning) => ['PENDING', 'AVAILABLE'].includes(earning.status))
-    .reduce((sum, earning) => sum + Number(earning.netAmount ?? 0), 0);
-}
-
-function adminProviderName(provider: AdminProvider) {
-  return partnerDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id);
-}
-
-function watchSeverityRank(severity: PartnerControlWatchItem['severity']) {
-  return { LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 }[severity] ?? 0;
-}
-
-function watchSeverityPill(severity: PartnerControlWatchItem['severity']) {
-  if (severity === 'CRITICAL' || severity === 'HIGH') return 'pill-danger';
-  if (severity === 'MEDIUM') return 'pill-warn';
-  return 'pill-neutral';
-}
-
-function watchSignalPill(kind: string) {
-  if (['BLOCK', 'WALLET', 'PAYOUT'].includes(kind)) return 'pill-danger';
-  if (['REPORT', 'DEVICE', 'LOCATION', 'KYC', 'BANK'].includes(kind)) return 'pill-warn';
-  return 'pill-neutral';
-}
-
-function cashDebtSettlementReference(providerProfileId: string) {
-  return `HANDS-WALLET-${providerProfileId.slice(-8).toUpperCase()}`;
-}
-
-function reportSearchText(report: AdminProviderReport) {
-  return [
-    report.id,
-    report.category,
-    report.summary,
-    report.details,
-    report.providerProfile?.displayName,
-    report.providerProfile?.user?.phone,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-}
-
-function sanctionSearchText(sanction: AdminProviderSanction) {
-  return [
-    sanction.id,
-    sanction.type,
-    sanction.reason,
-    sanction.report?.summary,
-    sanction.providerProfile?.displayName,
-    sanction.providerProfile?.user?.phone,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-}
-
-function providerNameOrId(
-  provider:
-    | AdminProviderReport['providerProfile']
-    | AdminProviderSanction['providerProfile']
-    | null
-    | undefined,
-  fallbackId: string,
-) {
-  return partnerDisplayText(provider?.displayName || provider?.user?.fullName || provider?.user?.phone || fallbackId);
-}
-
-function reportAgeHours(report: AdminProviderReport) {
-  const createdAt = Date.parse(report.createdAt);
-  if (Number.isNaN(createdAt)) {
-    return 0;
-  }
-  return Math.max(0, Math.floor((Date.now() - createdAt) / 3_600_000));
-}
-
-function reportSlaHours(report: AdminProviderReport) {
-  if (report.severity === 'CRITICAL') return 2;
-  if (report.severity === 'HIGH') return 8;
-  if (report.severity === 'MEDIUM') return 24;
-  return 72;
-}
-
-function oldestReportAgeLabel(reports: AdminProviderReport[]) {
-  if (!reports.length) {
-    return '0h';
-  }
-  return ageLabel(Math.max(...reports.map(reportAgeHours)));
-}
-
-function ageLabel(hours: number) {
-  if (hours < 24) {
-    return `${hours}h`;
-  }
-  const days = Math.floor(hours / 24);
-  const restHours = hours % 24;
-  return restHours ? `${days}d ${restHours}h` : `${days}d`;
-}
-
-function severityPriority(severity: string) {
-  if (severity === 'CRITICAL') return 100;
-  if (severity === 'HIGH') return 80;
-  if (severity === 'MEDIUM') return 50;
-  return 25;
-}
-
-function severityPill(severity: string) {
-  if (severity === 'CRITICAL' || severity === 'HIGH') return 'pill-danger';
-  if (severity === 'MEDIUM') return 'pill-warn';
-  return 'pill-neutral';
-}
-
-function statusPill(status: string) {
-  if (status === 'RESOLVED' || status === 'DISMISSED') return 'pill-success';
-  if (status === 'INVESTIGATING') return 'pill-warn';
-  return 'pill-info';
-}
-
-function PartnerControlDateText({ value }: { readonly value?: string | null }) {
-  return <DateTimeText fallback={value ? 'Invalid' : 'None'} value={value} />;
 }

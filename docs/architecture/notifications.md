@@ -27,6 +27,12 @@ Content-Type: application/json
 
 `platform` accepts `android` or `ios` only on these legacy notification routes.
 
+On explicit Customer or Partner logout, the mobile app disables its current remote FCM token before
+clearing the local session. In-app-only development tokens are ignored. If the disable request is
+temporarily unavailable, local sign-out still completes; the next authenticated registration moves
+or re-enables the high-entropy FCM token for the current user, while the delivery worker continues
+to require an enabled device with the matching target role.
+
 New mobile builds should use the platform-neutral device route:
 
 ```http

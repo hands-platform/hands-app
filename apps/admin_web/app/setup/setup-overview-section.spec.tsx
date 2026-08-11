@@ -16,71 +16,58 @@ describe('SetupOverviewSection', () => {
     const source = readFileSync(new URL('./setup-overview-section.tsx', import.meta.url), 'utf8');
 
     expect(source).toContain("import { DateTimeText } from '../../components/date-time-text';");
-    expect(source).toContain('Updated <DateTimeText value={readinessTimestamp} />');
+    expect(source).toContain('Last checked <DateTimeText value={readinessTimestamp} />');
     expect(source).not.toContain('`Updated ${formatDate(readinessTimestamp)}`');
   });
 
-  it('uses the shared AdminSignal atom for readiness action chips', () => {
-    const source = readFileSync(new URL('./setup-overview-section.tsx', import.meta.url), 'utf8');
-
-    expect(source).toContain('AdminSignal');
-    expect(source).not.toContain('className={`signal');
-  });
-
-  it('renders setup readiness labels and summary metrics', () => {
+  it('renders operational health fields and status without developer metrics', () => {
     const section = SetupOverviewSection({
-      readinessOk: false,
       readinessUnavailable: false,
-      readinessTimestamp: new Date(0).toISOString(),
-      currentStage: {
-        ok: false,
-        label: '2 blocker(s)',
-        blockers: 2,
-        helper: 'Current setup gaps need attention.',
-      },
-      summary: {
-        ready: 3,
-        partial: 4,
-        blocked: 5,
-        missing: 6,
-      },
+      readinessTimestamp: '2026-08-08T02:00:00.000Z',
+      rows: [{
+        affectedWork: 'Notification delivery may be unavailable.',
+        id: 'push-health',
+        lastCheckedAt: '2026-08-08T02:00:00.000Z',
+        name: 'Push delivery',
+        nextAction: 'Review notification delivery.',
+        owner: 'Operations team',
+        status: 'Limited',
+        tone: 'warning',
+      }],
     });
 
     const rendered = textContent(section);
     const markup = renderToStaticMarkup(section);
 
-    expect(markup).toContain('ops-section-header');
-    expect(markup).not.toContain('class="toolbar"');
-    expect(rendered).toContain('External setup');
-    expect(rendered).toContain('Production deferred');
-    expect(markup).toContain('Current blockers');
-    expect(markup).toContain('Current setup gaps need attention.');
-    expect(markup).toContain('Missing values');
-    expect(markup).toContain('6');
+    expect(rendered).toContain('System health');
+    expect(rendered).toContain('Push delivery');
+    expect(rendered).toContain('Limited');
+    expect(rendered).toContain('Notification delivery may be unavailable.');
+    expect(rendered).toContain('Operations team');
+    expect(rendered).toContain('Review notification delivery.');
+    expect(markup).not.toContain('Developer readiness');
   });
 
   it('renders the unavailable readiness state without formatting a timestamp', () => {
     const section = SetupOverviewSection({
-      readinessOk: false,
       readinessUnavailable: true,
       readinessTimestamp: new Date(0).toISOString(),
-      currentStage: {
-        ok: true,
-        label: 'Local check',
-        blockers: 0,
-        helper: 'Start local checks.',
-      },
-      summary: {
-        ready: 0,
-        partial: 0,
-        blocked: 0,
-        missing: 0,
-      },
+      rows: [{
+        affectedWork: 'External service health cannot be confirmed.',
+        id: 'unavailable',
+        lastCheckedAt: null,
+        name: 'System health data',
+        nextAction: 'Restore API connectivity.',
+        owner: 'Owner unavailable',
+        status: 'Unavailable',
+        tone: 'danger',
+      }],
     });
 
     const rendered = textContent(section);
 
-    expect(rendered).toContain('External status unknown');
-    expect(rendered).toContain('Readiness not loaded');
+    expect(rendered).toContain('Status unavailable');
+    expect(rendered).toContain('Last checked unavailable');
+    expect(rendered).toContain('Restore API connectivity.');
   });
 });

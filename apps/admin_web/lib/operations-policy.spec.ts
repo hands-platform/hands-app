@@ -87,7 +87,7 @@ describe('admin live operations policy helpers', () => {
     expect(policy.marketplaceLocationFreshnessMinutes).toBe(90);
     expect(policy.marketplaceInvitationLimit).toBe(50);
     expect(policy.marketplaceOpenMode).toBe('IMMEDIATE_WITHIN_WINDOW');
-    expect(policy.preferredAcceptMode).toBe('CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT');
+    expect(policy.preferredAcceptMode).toBe('FIRST_PICK_MATCHES_ON_ACCEPT');
     expect(policy.walletNegativeGate).toBe('BLOCK_MARKETPLACE_PARTICIPATION');
     expect(policy.cashSettlementClearance).toBe('DEPOSIT_OR_ADMIN_OFFSET_REQUIRED');
     expect(policy.payoutBatchCycle).toBe('WEEKLY_OR_MONTHLY_BATCH');

@@ -13,10 +13,18 @@ describe('booking monitor options', () => {
     const expectedViews = [
       'active',
       'attention',
+      'data-anomaly',
       'matching',
+      'in-service',
+      'matching-delays',
       'first-pick',
       'marketplace',
       'customer-choice',
+      'pre-match-cancelled',
+      'preferred-rejected',
+      'preferred-no-response',
+      'usage-unresolved',
+      'matched',
       'handoff-repair',
       'no-supply',
       'blocked-create',
@@ -66,17 +74,21 @@ describe('booking monitor options', () => {
     expect(realtimeBookingViewOptions.map((option) => option.view)).toEqual([
       'active',
       'attention',
+      'data-anomaly',
       'matching',
+      'in-service',
+      'matching-delays',
       'first-pick',
       'marketplace',
       'customer-choice',
+      'pre-match-cancelled',
+      'preferred-rejected',
+      'preferred-no-response',
+      'usage-unresolved',
+      'matched',
       'handoff-repair',
       'no-supply',
       'blocked-create',
-      'address',
-      'location',
-      'chat',
-      'chat-repair',
       'all',
     ]);
     expect(completedBookingViewOptions.map((option) => option.view)).toEqual([
@@ -86,13 +98,21 @@ describe('booking monitor options', () => {
       'pricing',
       'refund-review',
       'expired',
+      'all',
     ]);
     expect(postMatchCancellationBookingViewOptions.map((option) => option.view)).toEqual([
       'manual-decision',
-      'chat-evidence',
-      'evidence-missing',
       'post-match-cancellations',
       'no-show',
+    ]);
+    expect(completedBookingViewOptions.map((option) => option.label)).toEqual([
+      'All payment exceptions',
+      'Cash commission',
+      'Closeout records',
+      'Pricing',
+      'Refund mismatch',
+      'Expired records',
+      'Terminal records',
     ]);
   });
 

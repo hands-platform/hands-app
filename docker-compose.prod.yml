@@ -25,6 +25,10 @@ services:
         condition: service_healthy
     expose:
       - "3000"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     healthcheck:
       test: ["CMD-SHELL", "wget --quiet --tries=1 -O - http://127.0.0.1:3000/api/health/ready | grep -q '\"ok\":true'"]
       interval: 10s
@@ -46,6 +50,10 @@ services:
         condition: service_healthy
     expose:
       - "3000"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3000/login"]
       interval: 10s

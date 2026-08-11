@@ -8,6 +8,7 @@ describe('OperationsHandoffReviewOrderSection', () => {
     const source = readFileSync('app/operations-handoff/operations-handoff-review-order-section.tsx', 'utf8');
 
     expect(source).toContain('AdminActionCard');
+    expect(source).toContain('AdminQueueMeta');
     expect(source).toContain('AdminSection');
     expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('StatusBadge');
@@ -15,7 +16,7 @@ describe('OperationsHandoffReviewOrderSection', () => {
     expect(source).not.toContain('className="ops-task-card"');
   });
 
-  it('renders only lanes that have history rows to review', () => {
+  it('renders only incomplete handoff lanes', () => {
     const section = OperationsHandoffReviewOrderSection({
       items: [
         {
@@ -24,6 +25,7 @@ describe('OperationsHandoffReviewOrderSection', () => {
           href: '/operations-handoff?details=all#operations-handoff-review-checklist',
           id: 'checks',
           label: 'Review checks',
+          owner: 'Operations history',
           priority: 1,
           tone: 'warn',
         },
@@ -33,15 +35,17 @@ describe('OperationsHandoffReviewOrderSection', () => {
           href: '/operations-handoff?details=all#operations-handoff-partner-history',
           id: 'partners',
           label: 'Partner signals',
+          owner: 'Partner Ops',
           priority: 2,
           tone: 'info',
         },
         {
           count: 12,
-          detail: 'Booking rows are paginated below.',
-          href: '/operations-handoff?details=all#operations-handoff-booking-history',
-          id: 'bookings',
-          label: 'Booking history',
+          detail: 'Historical issue lanes still need follow-up.',
+          href: '/operations-handoff?details=all#operations-handoff-issue-signals',
+          id: 'issues',
+          label: 'Issue signals',
+          owner: 'Operations history',
           priority: 3,
           tone: 'info',
         },
@@ -50,17 +54,20 @@ describe('OperationsHandoffReviewOrderSection', () => {
 
     const rendered = textContent(section);
 
-    expect(rendered).toContain('Review order');
-    expect(rendered).toContain('2 lane(s) to review');
+    expect(rendered).toContain('Incomplete handoff');
+    expect(rendered).toContain('2 lanes to review');
     expect(rendered).toContain('Review checks');
-    expect(rendered).toContain('4 row(s)');
-    expect(rendered).toContain('Booking history');
-    expect(rendered).toContain('12 row(s)');
+    expect(rendered).toContain('4 rows');
+    expect(rendered).toContain('Issue signals');
+    expect(rendered).toContain('12 rows');
+    expect(rendered).toContain('Owner');
+    expect(rendered).toContain('Impact');
+    expect(rendered).toContain('Review checks');
     expect(rendered).not.toContain('Partner signals');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/operations-handoff?details=all#operations-handoff-review-checklist',
-        '/operations-handoff?details=all#operations-handoff-booking-history',
+        '/operations-handoff?details=all#operations-handoff-issue-signals',
       ]),
     );
     expect(classNamesIn(section)).toEqual(
@@ -77,6 +84,7 @@ describe('OperationsHandoffReviewOrderSection', () => {
           href: '/operations-handoff?details=all#operations-handoff-activity-stream',
           id: 'activity',
           label: 'Activity stream',
+          owner: 'Operations history',
           priority: 1,
           tone: 'info',
         },
@@ -85,8 +93,8 @@ describe('OperationsHandoffReviewOrderSection', () => {
 
     const rendered = textContent(section);
 
-    expect(rendered).toContain('Review order');
+    expect(rendered).toContain('Incomplete handoff');
     expect(rendered).toContain('All reviewed');
-    expect(rendered).toContain('No full-history rows need review in this window.');
+    expect(rendered).toContain('No handoff work is waiting for an operator in this window.');
   });
 });

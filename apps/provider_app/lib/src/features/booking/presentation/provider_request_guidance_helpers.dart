@@ -14,6 +14,60 @@ bool isProviderAppChatVisible(Map<String, dynamic>? booking) {
       !isProviderClosedBooking(booking);
 }
 
+int providerMarketplaceParticipantCount(Map<String, dynamic> booking) {
+  final preferredProviderId =
+      asMap(booking['preferredProvider'])?['id']?.toString();
+  return asList(booking['participants']).where((item) {
+    final participant = asMap(item);
+    if (participant == null) {
+      return false;
+    }
+    return preferredProviderId == null ||
+        participant['providerProfileId']?.toString() != preferredProviderId;
+  }).length;
+}
+
+String providerClosedBookingMessage(Map<String, dynamic> booking) {
+  final cancellation = asMap(booking['cancellation']);
+  return switch (cancellation?['reasonCode']) {
+    'PREFERRED_PARTNER_DECLINED' =>
+      'Bạn đã từ chối yêu cầu trực tiếp. Đặt lịch đã đóng.',
+    'PARTNER_RESPONSE_EXPIRED' =>
+      'Yêu cầu trực tiếp đã hết hạn trước khi đối tác phản hồi.',
+    _ when booking['closedReason'] == 'preferred_provider_rejected' =>
+      'Bạn đã từ chối yêu cầu trực tiếp. Đặt lịch đã đóng.',
+    _ when booking['closedReason'] == 'preferred_provider_no_response' =>
+      'Yêu cầu trực tiếp đã hết hạn trước khi đối tác phản hồi.',
+    'CUSTOMER_CANCELLED_BEFORE_MATCH' =>
+      'Khách hàng đã hủy trước khi ghép đôi. Bạn không cần xử lý.',
+    _ when booking['status'] == 'EXPIRED' =>
+      'Yêu cầu đã hết hạn trước khi xác nhận đối tác.',
+    _ => 'Đặt lịch đã đóng. Bạn không cần xử lý dịch vụ.',
+  };
+}
+
+bool providerAcceptanceConfirmedBooking(Map<String, dynamic> response) {
+  final booking = asMap(response['booking']);
+  return response['event'] == 'booking.matched' ||
+      const {'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'}
+          .contains(response['status']) ||
+      const {'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'}
+          .contains(booking?['status']);
+}
+
+String providerBookingDecisionStatusMessage({
+  required bool accepted,
+  required Map<String, dynamic> response,
+}) {
+  if (!accepted) {
+    return providerClosedBookingMessage(response);
+  }
+  if (providerAcceptanceConfirmedBooking(response)) {
+    return 'Đặt lịch đã được xác nhận. Trò chuyện và theo dõi dịch vụ đã hoạt động.';
+  }
+  return 'Bạn đã tham gia yêu cầu. Đang chờ khách hàng chọn đối tác.';
+}
+
 class ProviderRequestGuidance {
   const ProviderRequestGuidance({
     required this.modeLabel,
@@ -47,7 +101,12 @@ ProviderRequestGuidance providerRequestGuidance({
   final preferredProviderName =
       preferredProvider?['displayName']?.toString().trim();
   final hasChat = isProviderAppChatVisible(booking);
-  final isMatched = booking['status'] == 'MATCHED';
+  final isMatched = const {
+    'MATCHED',
+    'PROVIDER_ON_THE_WAY',
+    'ARRIVED',
+    'IN_SERVICE',
+  }.contains(booking['status']);
   final actionBlockedByWallet = providerWalletBlocksMarketplaceParticipation(
     walletBlocked: walletBlocked,
     isPreferredRequest: isPreferredRequest,
@@ -57,32 +116,31 @@ ProviderRequestGuidance providerRequestGuidance({
   final marketplaceRadiusLabel = providerMarketplaceRadiusText(booking);
 
   final modeLabel = isPreferredRequest
-      ? 'Direct request'
+      ? 'Yêu cầu trực tiếp'
       : hasPreferredProvider
-          ? 'Marketplace opportunity'
-          : 'Open candidate list';
+          ? 'Cơ hội đặt lịch công khai'
+          : 'Danh sách ứng viên mở';
   final priorityLabel = isPreferredRequest
-      ? 'Reply first'
+      ? 'Phản hồi trước'
       : hasPreferredProvider
-          ? 'Marketplace option'
-          : 'Open queue';
+          ? 'Lựa chọn công khai'
+          : 'Hàng chờ mở';
   final roleLabel = isPreferredRequest
-      ? 'First partner'
+      ? 'Đối tác được chọn đầu tiên'
       : hasPreferredProvider
-          ? 'Marketplace option'
-          : 'Open candidate';
+          ? 'Ứng viên công khai'
+          : 'Ứng viên mở';
 
   if (actionBlockedByWallet) {
     return ProviderRequestGuidance(
-      modeLabel: modeLabel,
-      priorityLabel: priorityLabel,
-      roleLabel: roleLabel,
-      decisionLabel: 'Settlement required',
-      nextAction:
-          'Settle unpaid HANDS fees before marketplace participation.',
+      modeLabel: 'Cơ hội đặt lịch',
+      priorityLabel: 'Cần xử lý ví',
+      roleLabel: 'Ứng viên công khai',
+      decisionLabel: 'Cần thanh toán phí',
+      nextAction: 'Thanh toán phí HANDS còn thiếu trước khi tham gia đặt lịch.',
       contextMessage:
-          'This marketplace booking is visible, but unpaid HANDS fees must be settled before marketplace participation.',
-      detailMessage: providerWalletBlockFallbackReasonClean,
+          'Bạn vẫn có thể xem đặt lịch này, nhưng phải thanh toán phí HANDS còn thiếu trước khi tham gia.',
+      detailMessage: providerMarketplaceJoinBlockReasonClean,
       infoMessage: providerWalletBlockHintClean,
     );
   }
@@ -92,13 +150,13 @@ ProviderRequestGuidance providerRequestGuidance({
       modeLabel: modeLabel,
       priorityLabel: priorityLabel,
       roleLabel: roleLabel,
-      decisionLabel: 'Chat live',
-      nextAction: 'Continue with the customer in chat.',
+      decisionLabel: 'Trò chuyện đang mở',
+      nextAction: 'Tiếp tục trao đổi với khách hàng trong trò chuyện.',
       contextMessage:
-          'The customer picked your profile first and the service chat is now live.',
+          'Khách hàng đã chọn hồ sơ của bạn trước và trò chuyện dịch vụ đã mở.',
       detailMessage:
-          'You were chosen first and the service chat is already live.',
-      infoMessage: 'Chat is ready for this matched booking.',
+          'Bạn được chọn đầu tiên và trò chuyện dịch vụ đã hoạt động.',
+      infoMessage: 'Trò chuyện đã sẵn sàng cho đặt lịch này.',
     );
   }
 
@@ -107,15 +165,14 @@ ProviderRequestGuidance providerRequestGuidance({
       modeLabel: modeLabel,
       priorityLabel: priorityLabel,
       roleLabel: roleLabel,
-      decisionLabel: 'Accepted',
-      nextAction:
-          'Open chat to coordinate arrival, then start the service when ready.',
+      decisionLabel: 'Đã chấp nhận',
+      nextAction: 'Mở trò chuyện và phối hợp lịch hẹn với khách hàng.',
       contextMessage:
-          'The customer picked your profile and chat should already be ready.',
+          'Khách hàng đã chọn hồ sơ của bạn và trò chuyện đã sẵn sàng.',
       detailMessage:
-          'You were chosen first. Use chat to coordinate details before starting the service.',
+          'Bạn được chọn đầu tiên. Ghép đôi sẽ mở trò chuyện và bắt đầu quy trình dịch vụ.',
       infoMessage:
-          'Chat is ready after matching. Start service when work begins.',
+          'Trò chuyện và theo dõi dịch vụ đã hoạt động sau khi ghép đôi.',
     );
   }
 
@@ -124,14 +181,14 @@ ProviderRequestGuidance providerRequestGuidance({
       modeLabel: modeLabel,
       priorityLabel: priorityLabel,
       roleLabel: roleLabel,
-      decisionLabel: 'Reply now',
-      nextAction: 'Reply now so the customer can confirm you directly.',
+      decisionLabel: 'Xác nhận ngay',
+      nextAction: 'Chấp nhận để xác nhận đặt lịch ngay.',
       contextMessage:
-          'The customer picked your profile first and is waiting for your response.',
+          'Khách hàng đã chọn hồ sơ của bạn trước và đang chờ phản hồi.',
       detailMessage:
-          'You are the first partner this guest chose. Reply within $responseWindowLabel to protect the booking; marketplace partners inside $marketplaceRadiusLabel can still volunteer while the customer waits.',
+          'Bạn là đối tác đầu tiên khách hàng chọn. Chấp nhận trong $responseWindowLabel sẽ xác nhận đặt lịch ngay; các đối tác trong phạm vi $marketplaceRadiusLabel vẫn có thể tham gia khi khách hàng chờ.',
       infoMessage:
-          'The customer already chose you. Accept or decline this request within $responseWindowLabel.',
+          'Khách hàng đã chọn bạn. Chấp nhận để xác nhận ngay hoặc từ chối để đóng yêu cầu.',
     );
   }
 
@@ -140,34 +197,34 @@ ProviderRequestGuidance providerRequestGuidance({
       modeLabel: modeLabel,
       priorityLabel: priorityLabel,
       roleLabel: roleLabel,
-      decisionLabel: 'Visible now',
-      nextAction: 'Stay visible and wait for the customer to choose you.',
+      decisionLabel: 'Đang hiển thị',
+      nextAction: 'Tiếp tục hiển thị và chờ khách hàng chọn bạn.',
       contextMessage: hasPreferredProvider
-          ? 'Another partner was chosen first. You are visible as a marketplace option.'
-          : 'You are visible in this open request. The customer will pick the final partner.',
+          ? 'Một đối tác khác được chọn trước. Bạn đang hiển thị như lựa chọn thay thế.'
+          : 'Bạn đang hiển thị trong yêu cầu mở này. Khách hàng sẽ chọn đối tác cuối cùng.',
       detailMessage:
-          'You are in the candidate list. Keep the app open and wait for customer selection.',
+          'Bạn đang trong danh sách ứng viên. Hãy giữ ứng dụng mở và chờ khách hàng chọn.',
       infoMessage:
-          'You are visible to the customer now. Wait for the final selection.',
+          'Khách hàng đã thấy hồ sơ của bạn. Hãy chờ lựa chọn cuối cùng.',
     );
   }
 
   if (hasPreferredProvider) {
     final name = preferredProviderName == null || preferredProviderName.isEmpty
-        ? 'the preferred partner'
+        ? 'đối tác được chọn trước'
         : preferredProviderName;
     return ProviderRequestGuidance(
       modeLabel: modeLabel,
       priorityLabel: priorityLabel,
       roleLabel: roleLabel,
-      decisionLabel: 'Can participate',
-      nextAction: 'Offer marketplace support if you can cover this request.',
+      decisionLabel: 'Có thể tham gia',
+      nextAction: 'Tham gia nếu bạn có thể nhận yêu cầu này.',
       contextMessage:
-          'Another partner was chosen first. You can still participate as an alternative option within the $marketplaceRadiusLabel marketplace radius.',
+          'Một đối tác khác được chọn trước. Bạn vẫn có thể tham gia như lựa chọn thay thế trong phạm vi $marketplaceRadiusLabel.',
       detailMessage:
-          'The guest is still waiting on $name. Participate now to appear as a marketplace option.',
+          'Khách hàng vẫn đang chờ $name. Tham gia ngay để xuất hiện trong danh sách lựa chọn.',
       infoMessage:
-          'Preferred partner: $name. Only partners inside $marketplaceRadiusLabel can participate in this request.',
+          'Đối tác được chọn trước: $name. Chỉ đối tác trong phạm vi $marketplaceRadiusLabel có thể tham gia.',
     );
   }
 
@@ -175,14 +232,15 @@ ProviderRequestGuidance providerRequestGuidance({
     modeLabel: modeLabel,
     priorityLabel: priorityLabel,
     roleLabel: roleLabel,
-    decisionLabel: 'Can participate',
-    nextAction: 'Participate in this open request to enter the customer choice list.',
+    decisionLabel: 'Có thể tham gia',
+    nextAction:
+        'Tham gia yêu cầu mở này để vào danh sách lựa chọn của khách hàng.',
     contextMessage:
-        'This request is open to nearby partners inside $marketplaceRadiusLabel. The customer will pick the final partner.',
+        'Yêu cầu này mở cho các đối tác gần trong phạm vi $marketplaceRadiusLabel. Khách hàng sẽ chọn đối tác cuối cùng.',
     detailMessage:
-        'No preferred partner was set. Nearby partners can participate and wait for the guest selection.',
+        'Không có đối tác được chọn trước. Đối tác gần có thể tham gia và chờ khách hàng chọn.',
     infoMessage:
-        'Customer is waiting and nearby partners may volunteer for this request.',
+        'Khách hàng đang chờ và các đối tác gần có thể tham gia yêu cầu này.',
   );
 }
 
@@ -213,11 +271,11 @@ int providerMarketplaceRadiusMeters(Map<String, dynamic> booking) {
 
 String providerMatchingWindowText(Map<String, dynamic> booking) {
   final minutes = providerMatchingWindowMinutes(booking);
-  return '$minutes min';
+  return '$minutes phút';
 }
 
 String providerMatchingWindowTagLabel(Map<String, dynamic> booking) {
-  return '${providerMatchingWindowText(booking)} first-pick';
+  return '${providerMatchingWindowText(booking)} phản hồi trực tiếp';
 }
 
 String providerMarketplaceRadiusText(Map<String, dynamic> booking) {
@@ -233,7 +291,7 @@ String providerMarketplaceRadiusText(Map<String, dynamic> booking) {
 }
 
 String providerMarketplaceRadiusTagLabel(Map<String, dynamic> booking) {
-  return '${providerMarketplaceRadiusText(booking)} marketplace';
+  return '${providerMarketplaceRadiusText(booking)} phạm vi công khai';
 }
 
 @Deprecated('Use providerMarketplaceRadiusMeters. Reads legacy policy keys.')

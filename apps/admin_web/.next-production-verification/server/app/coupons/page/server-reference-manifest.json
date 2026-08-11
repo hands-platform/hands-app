@@ -1,0 +1,53 @@
+{
+  "node": {
+    "40014de92718e5944fd76fdfc7c60faee9a3a18a5c": {
+      "workers": {
+        "app/coupons/page": {
+          "moduleId": 567027,
+          "async": false,
+          "exportedName": "toggleCoupon",
+          "filename": "apps/admin_web/app/coupons/actions.ts"
+        }
+      },
+      "exportedName": "toggleCoupon",
+      "filename": "apps/admin_web/app/coupons/actions.ts"
+    },
+    "4032cf3d5af1358e75b245faed34f6cb89765cdbc1": {
+      "workers": {
+        "app/coupons/page": {
+          "moduleId": 567027,
+          "async": false,
+          "exportedName": "updateCoupon",
+          "filename": "apps/admin_web/app/coupons/actions.ts"
+        }
+      },
+      "exportedName": "updateCoupon",
+      "filename": "apps/admin_web/app/coupons/actions.ts"
+    },
+    "40499ff59e91aefeb276d39b1638fdcf62855af5a6": {
+      "workers": {
+        "app/coupons/page": {
+          "moduleId": 567027,
+          "async": false,
+          "exportedName": "deleteCoupon",
+          "filename": "apps/admin_web/app/coupons/actions.ts"
+        }
+      },
+      "exportedName": "deleteCoupon",
+      "filename": "apps/admin_web/app/coupons/actions.ts"
+    },
+    "40fdf3a9562a94aefeffa4a0fd54fe28d53bf3e81f": {
+      "workers": {
+        "app/coupons/page": {
+          "moduleId": 567027,
+          "async": false,
+          "exportedName": "createCoupon",
+          "filename": "apps/admin_web/app/coupons/actions.ts"
+        }
+      },
+      "exportedName": "createCoupon",
+      "filename": "apps/admin_web/app/coupons/actions.ts"
+    }
+  },
+  "edge": {}
+}

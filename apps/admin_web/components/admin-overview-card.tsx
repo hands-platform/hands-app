@@ -39,6 +39,7 @@ type AdminProfileOverviewCardProps = {
 };
 
 type AdminOverviewCommandCardProps = {
+  readonly actionLabel?: ReactNode;
   readonly ariaLabel?: string;
   readonly baseClassName?: string;
   readonly children?: ReactNode;
@@ -55,7 +56,18 @@ type AdminOverviewCommandCardProps = {
   readonly value: ReactNode;
 };
 
+type AdminQueueMetaProps = {
+  readonly assignee?: ReactNode;
+  readonly className?: string;
+  readonly impact?: ReactNode;
+  readonly oldest?: ReactNode;
+  readonly owner: ReactNode;
+  readonly ownerLabel?: ReactNode;
+};
+
 type AdminMiniMetric = {
+  readonly ariaCurrent?: 'page';
+  readonly href?: string;
   readonly key?: string;
   readonly label: ReactNode;
   readonly tone?: string;
@@ -71,6 +83,7 @@ type AdminMiniMetricStripProps = {
 };
 
 type AdminSummaryCardItem = {
+  readonly ariaCurrent?: 'page';
   readonly className?: string;
   readonly detail?: ReactNode;
   readonly detailDateTimeFallback?: string;
@@ -119,6 +132,7 @@ type AdminTraceSummaryProps = {
   readonly className?: string;
   readonly defaultKind?: MetricCardKind;
   readonly defaultScope?: ReactNode;
+  readonly inferScope?: boolean;
   readonly itemClassName?: string;
   readonly metrics: readonly AdminTraceSummaryMetric[];
 };
@@ -160,6 +174,35 @@ export function AdminProfileOverviewCard({ children, className }: AdminProfileOv
   return <AdminCard className={joinClassNames('admin-profile-overview-card', className)}>{children}</AdminCard>;
 }
 
+export function AdminQueueMeta({ assignee, className, impact, oldest, owner, ownerLabel = 'Owner' }: AdminQueueMetaProps) {
+  return (
+    <dl className={joinClassNames('admin-queue-meta', className)}>
+      <div>
+        <dt>{ownerLabel}</dt>
+        <dd>{owner}</dd>
+      </div>
+      {assignee ? (
+        <div className="admin-queue-meta-assignee">
+          <dt>Assignee</dt>
+          <dd>{assignee}</dd>
+        </div>
+      ) : null}
+      {oldest ? (
+        <div>
+          <dt>Oldest</dt>
+          <dd>{oldest}</dd>
+        </div>
+      ) : null}
+      {impact ? (
+        <div className="admin-queue-meta-impact">
+          <dt>Impact</dt>
+          <dd>{impact}</dd>
+        </div>
+      ) : null}
+    </dl>
+  );
+}
+
 export function AdminMiniMetricStrip({
   ariaLabel,
   className,
@@ -171,15 +214,27 @@ export function AdminMiniMetricStrip({
 
   return (
     <div aria-label={ariaLabel} className={joinClassNames('admin-mini-metric-strip', className)}>
-      {visibleMetrics.map((metric, index) => (
-        <div
-          className={joinClassNames('admin-mini-metric', itemClassName, metric.tone ? `is-${metric.tone}` : undefined)}
-          key={miniMetricKey(metric, index)}
-        >
-          <span>{metric.label}</span>
-          <strong>{metric.value}</strong>
-        </div>
-      ))}
+      {visibleMetrics.map((metric, index) => {
+        const className = joinClassNames(
+          'admin-mini-metric',
+          itemClassName,
+          metric.tone ? `is-${metric.tone}` : undefined,
+        );
+        const content = <><span>{metric.label}</span><strong>{metric.value}</strong></>;
+
+        return metric.href ? (
+          <AdminLinkCard
+            ariaCurrent={metric.ariaCurrent}
+            className={className}
+            href={metric.href}
+            key={miniMetricKey(metric, index)}
+          >
+            {content}
+          </AdminLinkCard>
+        ) : (
+          <div className={className} key={miniMetricKey(metric, index)}>{content}</div>
+        );
+      })}
     </div>
   );
 }
@@ -213,6 +268,7 @@ export function AdminSummaryCardGrid({
         if (item.href) {
           return (
             <AdminLinkCard
+              ariaCurrent={item.ariaCurrent}
               className={itemClass}
               href={item.href}
               htmlTitle={item.htmlTitle}
@@ -266,6 +322,7 @@ export function AdminTraceSummary({
   className,
   defaultKind,
   defaultScope,
+  inferScope = true,
   itemClassName,
   metrics,
 }: AdminTraceSummaryProps) {
@@ -277,7 +334,9 @@ export function AdminTraceSummary({
         const metricDetailText = traceNodeText(metric.detail);
         const inferenceText = [metricLabelText, metricDetailText].filter(Boolean).join(' ');
         const visibleScope =
-          metric.scope ?? defaultScope ?? (inferenceText ? inferredMetricScope(inferenceText) : undefined);
+          metric.scope ??
+          defaultScope ??
+          (inferScope && inferenceText ? inferredMetricScope(inferenceText) : undefined);
         const visibleKind =
           metric.kind ??
           defaultKind ??
@@ -351,6 +410,7 @@ function traceSummaryDetail(metric: AdminTraceSummaryMetric) {
 }
 
 export function AdminOverviewCommandCard({
+  actionLabel,
   ariaLabel,
   baseClassName,
   children,
@@ -379,6 +439,7 @@ export function AdminOverviewCommandCard({
         <strong>{value}</strong>
         {detail ? <small>{detail}</small> : null}
         {children}
+        {actionLabel ? <small className="admin-overview-command-action">{actionLabel}</small> : null}
       </div>
       {trailing}
     </>

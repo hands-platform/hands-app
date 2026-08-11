@@ -20,14 +20,15 @@ export type BookingUnifiedDetailSectionProps = {
   readonly view?: BookingUnifiedDetailSectionView;
 };
 
-export type BookingUnifiedDetailSectionView = 'all' | 'details' | 'summary';
+export type BookingUnifiedDetailSectionView = 'all' | 'details' | 'finance' | 'people' | 'summary';
 
 export function BookingUnifiedDetailSection({
   unifiedDetail,
   view = 'all',
 }: BookingUnifiedDetailSectionProps) {
-  const showSummary = view !== 'details';
-  const showDetails = view !== 'summary';
+  const showSummary = view === 'all' || view === 'summary';
+  const showPeople = view === 'all' || view === 'details' || view === 'people';
+  const showFinance = view === 'all' || view === 'details' || view === 'finance';
 
   return (
     <>
@@ -39,12 +40,13 @@ export function BookingUnifiedDetailSection({
             </StatusBadgeFromPillClass>
           }
           className="admin-mb-16 booking-unified-summary-card"
-          description="One booking record for realtime, in-progress, completed, and post-match cancellation updates."
+          description="Current booking state, people, service, schedule, address, and available money evidence."
           id="booking-unified-detail"
-          title="Unified booking detail"
+          title="Booking overview"
         >
           <AdminTraceSummary
             className="admin-mt-12"
+            inferScope={false}
             metrics={unifiedDetail.summaryCards.map((card) => ({
               detail: card.helper,
               href: card.href,
@@ -55,33 +57,41 @@ export function BookingUnifiedDetailSection({
         </AdminSection>
       ) : null}
 
-      {showDetails ? (
+      {showPeople ? (
         <>
           <BookingUnifiedRows
-            helper="Customer profile, service address, live location, and service request."
+            helper="Customer identity, service request, saved address, and latest location."
             id="booking-customer-detail"
             rows={unifiedDetail.customerRows}
             title="Customer detail"
           />
 
           <BookingUnifiedRows
-            helper="Requested, matched, participating Partner, and location checkpoints."
+            helper="Requested Partner, participation history, current eligibility, and selected Partner when matched."
             id="booking-matched-partner-detail"
             rows={unifiedDetail.matchedPartnerRows}
-            title="Matched Partner detail"
+            title="Matching & Partner candidates"
           />
 
-          <BookingUnifiedRows
-            helper="Closeout, charge, payout, fee, tax, and wallet impact."
-            id="booking-finance-system-detail"
-            rows={unifiedDetail.financeRows}
-            title="Finance detail"
-            variant="finance"
-          />
         </>
+      ) : null}
+
+      {showFinance ? (
+        <BookingUnifiedRows
+          helper="Quoted price and available payment, refund, settlement, tax, and wallet evidence."
+          id="booking-finance-system-detail"
+          rows={operatorMoneyResultRows(unifiedDetail.financeRows)}
+          title="Money result"
+          variant="finance"
+        />
       ) : null}
     </>
   );
+}
+
+function operatorMoneyResultRows(rows: readonly BookingUnifiedDetailRow[]) {
+  const hiddenLabels = new Set(['Pricing basis', 'Service state']);
+  return rows.filter((row) => !hiddenLabels.has(row.label));
 }
 
 function BookingUnifiedRows({
@@ -101,7 +111,7 @@ function BookingUnifiedRows({
 
   return (
     <AdminSection
-      actions={<StatusBadge tone="neutral">{countLabel(rows.length, 'field')}</StatusBadge>}
+      actions={<StatusBadge tone="neutral">{countLabel(rows.length, 'detail')}</StatusBadge>}
       className="admin-mb-16 booking-unified-detail-card"
       description={helper}
       id={id}

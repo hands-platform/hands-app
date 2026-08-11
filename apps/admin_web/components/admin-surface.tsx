@@ -1,4 +1,10 @@
-import { Children, isValidElement, type ReactNode } from 'react';
+import {
+  Children,
+  isValidElement,
+  type MouseEventHandler,
+  type ReactNode,
+  type Ref,
+} from 'react';
 import Link from 'next/link';
 
 import type { LucideIcon } from 'lucide-react';
@@ -11,6 +17,7 @@ import {
   type MetricCardKind,
   type MetricCardProps,
 } from './metric-card';
+import { AdminDetails } from './admin-details';
 import { AdminSignal, StatusBadge, adminSignalToneFromClassName, type StatusBadgeTone } from './status-badge';
 
 type AdminCardProps = {
@@ -85,7 +92,11 @@ type AdminActionFormCardProps = {
 
 type AdminDialogCardProps = AdminCardProps & {
   readonly ariaDescribedBy: string;
+  readonly ariaModal?: boolean;
   readonly loading?: boolean;
+  readonly onClickCapture?: MouseEventHandler<HTMLElement>;
+  readonly surfaceRef?: Ref<HTMLElement>;
+  readonly tabIndex?: number;
 };
 
 type AdminDrawerSurfaceProps = {
@@ -94,10 +105,13 @@ type AdminDrawerSurfaceProps = {
   readonly ariaModal?: boolean;
   readonly children: ReactNode;
   readonly className?: string;
+  readonly surfaceRef?: Ref<HTMLElement>;
+  readonly tabIndex?: number;
   readonly role?: 'dialog';
 };
 
 type AdminLinkCardProps = AdminCardProps & {
+  readonly ariaCurrent?: 'page';
   readonly href: string;
   readonly htmlTitle?: string;
 };
@@ -367,7 +381,7 @@ export function AdminDisclosureCard({
   open,
 }: AdminDisclosureCardProps) {
   return (
-    <details
+    <AdminDetails
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
       className={joinClassNames('card admin-card admin-disclosure', className)}
@@ -375,7 +389,7 @@ export function AdminDisclosureCard({
       open={open}
     >
       {children}
-    </details>
+    </AdminDetails>
   );
 }
 
@@ -388,7 +402,7 @@ export function AdminDisclosure({
   open,
 }: AdminDisclosureProps) {
   return (
-    <details
+    <AdminDetails
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
       className={joinClassNames('admin-disclosure', className)}
@@ -396,7 +410,7 @@ export function AdminDisclosure({
       open={open}
     >
       {children}
-    </details>
+    </AdminDetails>
   );
 }
 
@@ -439,19 +453,27 @@ export function AdminActionFormCard({
 export function AdminDialogCard({
   ariaDescribedBy,
   ariaLabelledBy,
+  ariaModal,
   children,
   className,
   id,
   loading,
+  onClickCapture,
+  surfaceRef,
+  tabIndex,
 }: AdminDialogCardProps) {
   return (
     <section
       aria-busy={loading || undefined}
       aria-describedby={ariaDescribedBy}
       aria-labelledby={ariaLabelledBy}
+      aria-modal={ariaModal}
       className={joinClassNames('card admin-card', className)}
       id={id}
+      onClickCapture={onClickCapture}
+      ref={surfaceRef}
       role="alertdialog"
+      tabIndex={tabIndex}
     >
       {children}
     </section>
@@ -464,7 +486,9 @@ export function AdminDrawerSurface({
   ariaModal,
   children,
   className,
-  role,
+  role = 'dialog',
+  surfaceRef,
+  tabIndex,
 }: AdminDrawerSurfaceProps) {
   return (
     <aside
@@ -472,7 +496,9 @@ export function AdminDrawerSurface({
       aria-labelledby={ariaLabelledBy}
       aria-modal={ariaModal}
       className={className}
+      ref={surfaceRef}
       role={role}
+      tabIndex={tabIndex}
     >
       {children}
     </aside>
@@ -480,6 +506,7 @@ export function AdminDrawerSurface({
 }
 
 export function AdminLinkCard({
+  ariaCurrent,
   ariaLabel,
   ariaLabelledBy,
   children,
@@ -490,6 +517,7 @@ export function AdminLinkCard({
 }: AdminLinkCardProps) {
   return (
     <Link
+      aria-current={ariaCurrent}
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
       className={joinClassNames('card admin-card', className)}

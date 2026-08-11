@@ -1,173 +1,113 @@
-import { ExternalLink, Save } from 'lucide-react';
-import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+'use client';
+
+import { Save, X } from 'lucide-react';
+import { useState } from 'react';
 import {
+  AdminFormActionRow,
+  AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormInput,
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
-import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import {
-  AdminFormCard,
-  AdminInsightCard,
-  AdminInsightLinkCard,
-  AdminNotePanel,
-} from '../../components/admin-surface';
-import { DateTimeText } from '../../components/date-time-text';
-import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
-import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admin-api';
+import { AdminFormCard, AdminNotePanel } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
+import type { AdminOperationalPolicySetting } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { operationalPolicyAnchor } from '../../lib/operations-policy';
 import { updateOperationalPolicy } from './actions';
 import { policyImpactDetails } from './policy-impact-details';
-import { policyRelatedBookingRecords } from './policy-related-bookings';
 import { policyDisplayValue } from './policy-value-display';
 
 type OperationsPolicyFormProps = {
   readonly setting: AdminOperationalPolicySetting;
-  readonly bookings: readonly AdminBooking[];
-  readonly diagnosticsMode?: 'summary' | 'full';
 };
 
-export function OperationsPolicyForm({
-  setting,
-  bookings,
-  diagnosticsMode = 'full',
-}: OperationsPolicyFormProps) {
+export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
   const valueType = typeof setting.value;
   const isNumber = valueType === 'number';
-  const recommended = policyDisplayValue(setting, true);
   const impact = policyImpactDetails(setting.key);
-  const showDiagnostics = diagnosticsMode === 'full';
-  const relatedBookings = showDiagnostics ? policyRelatedBookingRecords(setting.key, bookings) : null;
+  const [nextValue, setNextValue] = useState(String(setting.value));
 
   return (
-    <AdminFormCard
-      action={updateOperationalPolicy}
-      className="admin-m-0"
-      id={operationalPolicyAnchor(setting.key)}
-    >
+    <AdminFormCard action={updateOperationalPolicy} id={operationalPolicyAnchor(setting.key)}>
       <input type="hidden" name="key" value={setting.key} />
       <input type="hidden" name="valueType" value={valueType} />
+      <input type="hidden" name="expectedValue" value={String(setting.value)} />
       <AdminSectionHeader
-        actions={(
-          <StatusBadge tone={setting.enforced ? 'success' : 'warning'}>
-            {setting.enforced ? 'Enforced' : 'Planning'}
-          </StatusBadge>
-        )}
+        actions={
+          <AdminFormControlLink className="button-secondary" href="/operations-policy">
+            <X size={16} aria-hidden="true" />
+            Close
+          </AdminFormControlLink>
+        }
         description={displayOperationalWording(setting.description)}
-        title={displayOperationalWording(setting.label)}
+        status={
+          <StatusBadge tone={setting.enforced ? 'warning' : 'info'}>
+            {setting.enforced ? 'Live policy' : 'Decision record'}
+          </StatusBadge>
+        }
+        title={`Change ${displayOperationalWording(setting.label)}`}
       />
       <AdminTraceSummary
-        metrics={
-          showDiagnostics && relatedBookings
-            ? [
-                { label: 'Current', value: policyDisplayValue(setting) },
-                { label: 'Recommended', value: recommended },
-                { label: 'Impact', value: impact.area },
-                { label: 'Related booking records', value: relatedBookings.recordCount },
-              ]
-            : [
-                { label: 'Current', value: policyDisplayValue(setting) },
-                { label: 'Recommended', value: recommended },
-                { label: 'Impact', value: impact.area },
-              ]
-        }
+        defaultKind="record"
+        defaultScope="Policy change"
+        metrics={[
+          { label: 'Before', value: policyDisplayValue(setting) },
+          {
+            label: 'After',
+            value: policyDisplayValue({ ...setting, value: parsedPreviewValue(nextValue, valueType) }),
+          },
+          { label: 'Scope', value: setting.category },
+          { label: 'Operating impact', value: impact.area },
+          {
+            label: 'Effective',
+            value: setting.requiresRestart ? 'After service restart' : 'Immediately after save',
+          },
+          { label: 'Additional approval', value: 'Not required' },
+        ]}
       />
-      {showDiagnostics && relatedBookings ? (
-        <>
-          <AdminNotePanel className="admin-mt-12">
-            <div className="ops-row">
-              <div>
-                <strong>{impact.title}</strong>
-                <p className="muted">{impact.detail}</p>
-              </div>
-              <StatusBadge tone={setting.enforced ? 'success' : 'warning'}>
-                {setting.enforced ? 'Live behavior' : 'Decision log'}
-              </StatusBadge>
-            </div>
-          </AdminNotePanel>
-          <AdminNotePanel className="admin-mt-12">
-            <div className="ops-row">
-              <div>
-                <strong>{relatedBookings.title}</strong>
-                <p className="muted">{relatedBookings.helper}</p>
-              </div>
-              <AdminFormControlLink className="button-secondary" href={relatedBookings.href}>
-                <ExternalLink size={16} aria-hidden="true" />
-                Open records
-              </AdminFormControlLink>
-            </div>
-            <div className="booking-radar admin-mt-12">
-              {relatedBookings.rows.map((row) => (
-                <AdminInsightLinkCard href={row.href} key={`${setting.key}-${row.id}`}>
-                  <strong>{row.title}</strong>
-                  <p className="muted">{row.subtitle}</p>
-                  <AdminFilterChipGroup>
-                    {row.pills.map((pill) => (
-                      <StatusBadgeFromPillClass pillClass={pill.className} key={`${row.id}-${pill.label}`}>
-                        {pill.label}
-                      </StatusBadgeFromPillClass>
-                    ))}
-                  </AdminFilterChipGroup>
-                </AdminInsightLinkCard>
-              ))}
-              {relatedBookings.rows.length === 0 ? (
-                <AdminInsightCard>
-                  <AdminEmptyState message={relatedBookings.emptyText} title="No sampled record" />
-                </AdminInsightCard>
-              ) : null}
-            </div>
-          </AdminNotePanel>
-          <AdminNotePanel className="admin-mt-12">
-            <strong>Before saving this policy</strong>
-            <p className="muted">
-              Review these operating surfaces first, then write the reason so the shift team can trace why the
-              behavior changed.
-            </p>
-            <div className="booking-radar admin-mt-12">
-              {impact.saveChecks.map((check) => (
-                <AdminInsightLinkCard href={check.href} key={`${setting.key}-${check.label}`}>
-                  <strong>{check.label}</strong>
-                  <p className="muted">{check.detail}</p>
-                </AdminInsightLinkCard>
-              ))}
-            </div>
-          </AdminNotePanel>
-        </>
-      ) : null}
+      <AdminNotePanel className="admin-mt-12">
+        <strong>{impact.title}</strong>
+        <p className="muted">{impact.detail}</p>
+        <p className="muted admin-mt-6">
+          Only an operator with System Policy write access can save this change. The value and audit event are
+          committed together.
+        </p>
+      </AdminNotePanel>
       {setting.options?.length ? (
-        <>
-          <AdminFormSelect
-            className="admin-form-control-fluid admin-mt-12"
-            defaultValue={String(setting.value)}
-            label="Decision"
-            labelVisibility="visible"
-            name="value"
-            options={setting.options.map((option) => ({
-              label: displayOperationalWording(option.label),
-              value: option.value,
-            }))}
-          />
-          <div className="booking-radar admin-mt-12">
-            {showDiagnostics
-              ? setting.options.map((option) => (
-                  <AdminInsightCard key={option.value}>
-                    <strong>{displayOperationalWording(option.label)}</strong>
-                    <p className="muted">{displayOperationalWording(option.tradeoff)}</p>
-                  </AdminInsightCard>
-                ))
-              : null}
-          </div>
-        </>
+        <AdminFormSelect
+          className="admin-form-control-fluid admin-mt-12"
+          label="New value"
+          labelVisibility="visible"
+          name="value"
+          onChange={(event) => setNextValue(event.target.value)}
+          options={setting.options.map((option) => ({
+            label: displayOperationalWording(option.label),
+            value: option.value,
+          }))}
+          value={nextValue}
+        />
+      ) : valueType === 'boolean' ? (
+        <AdminFormSelect
+          className="admin-form-control-fluid admin-mt-12"
+          label="New value"
+          labelVisibility="visible"
+          name="value"
+          onChange={(event) => setNextValue(event.target.value)}
+          options={[
+            { label: 'Enabled', value: 'true' },
+            { label: 'Disabled', value: 'false' },
+          ]}
+          value={nextValue}
+        />
       ) : (
         <AdminFormInput
           className="admin-form-control-fluid admin-mt-12"
-          defaultValue={String(setting.value)}
-          label={`Value ${setting.unit ? `(${setting.unit})` : ''}${
+          label={`New value ${setting.unit ? `(${setting.unit})` : ''}${
             isNumber && setting.min !== undefined && setting.max !== undefined
               ? `, ${setting.min}-${setting.max}`
               : ''
@@ -176,7 +116,10 @@ export function OperationsPolicyForm({
           max={isNumber ? (setting.max ?? undefined) : undefined}
           min={isNumber ? (setting.min ?? undefined) : undefined}
           name="value"
+          onChange={(event) => setNextValue(event.target.value)}
+          required
           type={isNumber ? 'number' : 'text'}
+          value={nextValue}
         />
       )}
       <AdminFormTextarea
@@ -185,21 +128,34 @@ export function OperationsPolicyForm({
         labelVisibility="visible"
         minLength={12}
         name="reason"
-        placeholder="Example: Increase marketplace visibility because District 1 wait time is rising."
+        placeholder="State the operating evidence and expected outcome."
         required
       />
-      <AdminFormControlButton className="button-primary admin-mt-12" type="submit">
-        <Save size={16} aria-hidden="true" />
-        Save policy
-      </AdminFormControlButton>
-      {setting.updatedAt ? (
-        <p className="muted admin-mt-10">
-          Last changed <DateTimeText value={setting.updatedAt} /> by{' '}
-          {setting.updatedBy?.fullName ?? setting.updatedBy?.phone ?? 'admin'}
-        </p>
-      ) : (
-        <p className="muted admin-mt-10">Using default until an admin override is saved.</p>
-      )}
+      <AdminFormCheckbox
+        className="admin-mt-12"
+        label="I reviewed the before and after values, operating impact, and effective time."
+        name="confirmed"
+        required
+        value="yes"
+      />
+      <AdminFormActionRow className="admin-mt-12">
+        <AdminFormControlButton className="button-primary" type="submit">
+          <Save size={16} aria-hidden="true" />
+          Save policy change
+        </AdminFormControlButton>
+        <AdminFormControlLink className="button-secondary" href="/operations-policy">
+          Cancel
+        </AdminFormControlLink>
+      </AdminFormActionRow>
     </AdminFormCard>
   );
+}
+
+function parsedPreviewValue(value: string, valueType: string) {
+  if (valueType === 'number') {
+    const numberValue = Number(value);
+    return Number.isFinite(numberValue) ? numberValue : value;
+  }
+  if (valueType === 'boolean') return value === 'true';
+  return value;
 }

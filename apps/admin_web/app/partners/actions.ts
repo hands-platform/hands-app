@@ -1,14 +1,30 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { adminPatchOrThrow, adminPost } from '../../lib/admin-api';
+import { redirect } from 'next/navigation';
+import {
+  type AdminProvider,
+  adminDeleteOrThrow,
+  adminGet,
+  adminPatchOrThrow,
+  adminPost,
+  adminPostOrThrow,
+} from '../../lib/admin-api';
+import {
+  PARTNER_APPROVAL_QUEUE_API_HREF,
+  nextPartnerApprovalHref,
+  readPartnerDecisionQueue,
+} from './partner-review-mode';
 
 const MIN_REVIEW_REASON_LENGTH = 12;
+const PARTNER_PUBLIC_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+const PARTNER_PUBLIC_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 export async function approveProvider(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
-  await adminPost(`/admin/partners/${providerId}/approve`, {}, null);
+  await adminPostOrThrow(`/admin/partners/${providerId}/approve`, {});
   revalidateProviderPaths(providerId);
+  await redirectAfterPartnerApprovalDecision(formData, providerId);
 }
 
 export async function rejectProvider(formData: FormData) {
@@ -21,9 +37,10 @@ export async function rejectProvider(formData: FormData) {
 export async function blockProviderAccount(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
   const reason = readReviewReason(formData);
-  await adminPost(`/admin/partners/${providerId}/block`, { reason }, null);
+  await adminPostOrThrow(`/admin/partners/${providerId}/block`, { reason });
   revalidateProviderPaths(providerId);
   revalidatePath('/audit-log');
+  await redirectAfterPartnerApprovalDecision(formData, providerId);
 }
 
 export async function unblockProviderAccount(formData: FormData) {
@@ -80,7 +97,7 @@ export async function unblockProviderDevice(formData: FormData) {
 
 export async function approveProviderKyc(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
-  await adminPost(`/admin/partners/${providerId}/kyc/approve`, {}, null);
+  await adminPostOrThrow(`/admin/partners/${providerId}/kyc/approve`, {});
   revalidateProviderPaths(providerId);
   revalidatePath('/audit-log');
 }
@@ -91,6 +108,15 @@ export async function rejectProviderKyc(formData: FormData) {
   await adminPost(`/admin/partners/${providerId}/kyc/reject`, { reason }, null);
   revalidateProviderPaths(providerId);
   revalidatePath('/audit-log');
+}
+
+export async function putProviderKycOnHold(formData: FormData) {
+  const providerId = readRequiredFormString(formData, 'providerId');
+  const reason = readReviewReason(formData);
+  await adminPostOrThrow(`/admin/partners/${providerId}/kyc/hold`, { reason });
+  revalidateProviderPaths(providerId);
+  revalidatePath('/audit-log');
+  await redirectAfterPartnerApprovalDecision(formData, providerId);
 }
 
 export async function approveProviderDocument(formData: FormData) {
@@ -153,6 +179,95 @@ export async function rejectProviderTaxProfile(formData: FormData) {
   revalidatePath('/audit-log');
 }
 
+export async function updatePartnerProfileTranslations(formData: FormData) {
+  const providerId = readRequiredFormString(formData, 'providerId');
+  await adminPatchOrThrow(`/admin/partners/${providerId}/profile-content`, {
+    bioEn: readBioTranslation(formData, 'bioEn'),
+    bioJa: readBioTranslation(formData, 'bioJa'),
+    bioKo: readBioTranslation(formData, 'bioKo'),
+    bioZh: readBioTranslation(formData, 'bioZh'),
+  });
+  revalidateProviderPaths(providerId);
+  revalidatePath('/audit-log');
+}
+
+export async function uploadPartnerPublicMedia(formData: FormData) {
+  const providerId = readRequiredFormString(formData, 'providerId');
+  const purpose = readRequiredFormString(formData, 'purpose');
+  if (purpose !== 'profile-image' && purpose !== 'provider-gallery') {
+    throw new Error('Public media type is invalid');
+  }
+  const photo = formData.get('photo');
+  if (!(photo instanceof File) || photo.size === 0) {
+    throw new Error('Select a public profile image to upload');
+  }
+  const contentType = photo.type.trim().toLowerCase();
+  if (!PARTNER_PUBLIC_IMAGE_TYPES.has(contentType)) {
+    throw new Error('Only JPEG, PNG, and WebP public profile images are allowed');
+  }
+  if (photo.size > PARTNER_PUBLIC_IMAGE_MAX_BYTES) {
+    throw new Error('Public profile images must be 10 MB or smaller');
+  }
+
+  const presigned = await adminPostOrThrow<{
+    file: { id: string };
+    storageMode: string;
+    upload: { headers?: Record<string, string>; method: string; url: string };
+  }>(`/admin/partners/${providerId}/public-media/presign`, { contentType, purpose });
+
+  try {
+    if (!/^https?:\/\//u.test(presigned.upload.url)) {
+      throw new Error('Public media storage is not configured for uploads');
+    }
+    const uploadResponse = await fetch(presigned.upload.url, {
+      method: 'PUT',
+      headers: presigned.upload.headers ?? { 'content-type': contentType },
+      body: Buffer.from(await photo.arrayBuffer()),
+    });
+    if (!uploadResponse.ok) {
+      throw new Error(`Public media upload failed with status ${uploadResponse.status}`);
+    }
+    await adminPostOrThrow(`/admin/partners/${providerId}/public-media/${presigned.file.id}/complete`, {
+      sizeBytes: photo.size,
+    });
+  } catch (error) {
+    await adminDeleteOrThrow(`/admin/partners/${providerId}/public-media/${presigned.file.id}`).catch(
+      () => undefined,
+    );
+    throw error;
+  }
+
+  revalidateProviderPaths(providerId);
+  revalidatePath('/audit-log');
+}
+
+export async function deletePartnerPublicMedia(formData: FormData) {
+  const providerId = readRequiredFormString(formData, 'providerId');
+  const fileId = readRequiredFormString(formData, 'fileId');
+  await adminDeleteOrThrow(`/admin/partners/${providerId}/public-media/${fileId}`);
+  revalidateProviderPaths(providerId);
+  revalidatePath('/audit-log');
+}
+
+export async function reorderPartnerPublicMedia(formData: FormData) {
+  const providerId = readRequiredFormString(formData, 'providerId');
+  const fileId = readRequiredFormString(formData, 'fileId');
+  const direction = readRequiredFormString(formData, 'direction');
+  const fileIds = readRequiredFormString(formData, 'fileIds')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const currentIndex = fileIds.indexOf(fileId);
+  const targetIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+  if (currentIndex < 0 || targetIndex < 0 || targetIndex >= fileIds.length) {
+    return;
+  }
+  [fileIds[currentIndex], fileIds[targetIndex]] = [fileIds[targetIndex], fileIds[currentIndex]];
+  await adminPatchOrThrow(`/admin/partners/${providerId}/public-media/order`, { fileIds });
+  revalidateProviderPaths(providerId);
+  revalidatePath('/audit-log');
+}
+
 export async function updatePartnerWalletWithdrawalRequest(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
   const requestId = readRequiredFormString(formData, 'requestId');
@@ -163,26 +278,55 @@ export async function updatePartnerWalletWithdrawalRequest(formData: FormData) {
   const attachmentUrl = readOptionalFormString(formData, 'attachmentUrl');
   const adminNote = readOptionalFormString(formData, 'adminNote');
   const correctionReason = readOptionalFormString(formData, 'correctionReason');
-  const approvalAdminId = readOptionalFormString(formData, 'approvalAdminId');
-  if (status === 'PAID' && !approvalAdminId) {
-    throw new Error('Provider wallet withdrawal paid closeout requires approval from a different admin');
+  if (status === 'BANK_TRANSFER_PENDING' && !transferRef) {
+    throw new Error('Partner wallet withdrawal bank transfer request requires a transfer reference');
+  }
+  if (status === 'BANK_TRANSFER_PENDING' && !bankTransferDate) {
+    throw new Error('Partner wallet withdrawal bank transfer request requires a transfer date');
+  }
+  if (status === 'BANK_TRANSFER_PENDING' && !attachmentFileId && !attachmentUrl) {
+    throw new Error('Partner wallet withdrawal bank transfer request requires attached bank evidence');
   }
 
-  await adminPatchOrThrow(`/admin/provider-wallet/withdrawal-requests/${requestId}`, {
-    status,
-    approvalAdminId: approvalAdminId || undefined,
-    transferRef: transferRef || undefined,
-    bankTransferDate: bankTransferDate || undefined,
-    attachmentFileId: attachmentFileId || undefined,
-    attachmentUrl: attachmentUrl || undefined,
-    adminNote: adminNote || undefined,
-    correctionReason: correctionReason || undefined,
-  });
+  await adminPatchOrThrow(
+    `/admin/provider-wallet/withdrawal-requests/${requestId}`,
+    status === 'PAID'
+      ? { status }
+      : {
+          status,
+          transferRef: transferRef || undefined,
+          bankTransferDate: bankTransferDate || undefined,
+          attachmentFileId: attachmentFileId || undefined,
+          attachmentUrl: attachmentUrl || undefined,
+          adminNote: adminNote || undefined,
+          correctionReason: correctionReason || undefined,
+        },
+  );
 
   revalidateProviderPaths(providerId);
   revalidatePath('/payouts');
   revalidatePath('/cash-settlements');
   revalidatePath('/earnings');
+  revalidatePath('/audit-log');
+}
+
+export async function createPartnerManualCustomerReview(formData: FormData) {
+  const providerProfileId = readRequiredFormString(formData, 'providerProfileId');
+  const rating = Number.parseInt(readRequiredFormString(formData, 'rating'), 10);
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    throw new Error('rating must be between 1 and 5');
+  }
+
+  await adminPostOrThrow('/admin/reviews/manual', {
+    bookingId: readRequiredFormString(formData, 'bookingId'),
+    providerProfileId,
+    rating,
+    comment: readRequiredFormString(formData, 'comment').replace(/\s+/g, ' ').slice(0, 1000),
+    createdAt: `${readRequiredFormString(formData, 'reviewDate')}T12:00:00+07:00`,
+  });
+
+  revalidateProviderPaths(providerProfileId);
+  revalidatePath('/reviews');
   revalidatePath('/audit-log');
 }
 
@@ -219,4 +363,17 @@ function revalidateProviderPaths(providerId?: string | null) {
   if (providerId) {
     revalidatePath(`/partners/${providerId}`);
   }
+}
+
+async function redirectAfterPartnerApprovalDecision(formData: FormData, providerId: string) {
+  const decisionQueue = readPartnerDecisionQueue(readOptionalFormString(formData, 'decisionQueue'));
+  if (!decisionQueue) return;
+
+  const oldestPendingProviders = await adminGet<AdminProvider[]>(PARTNER_APPROVAL_QUEUE_API_HREF, []);
+  redirect(nextPartnerApprovalHref(oldestPendingProviders, providerId));
+}
+
+function readBioTranslation(formData: FormData, name: string) {
+  const value = formData.get(name);
+  return typeof value === 'string' ? value.trim().slice(0, 2000) : '';
 }

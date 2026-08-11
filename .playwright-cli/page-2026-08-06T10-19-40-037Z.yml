@@ -1,0 +1,214 @@
+- generic [ref=f2e3]:
+  - complementary [ref=f2e4]:
+    - strong [ref=f2e6]: HANDS Admin
+    - navigation "Admin navigation" [ref=f2e7]:
+      - group [ref=f2e8]:
+        - generic "Shift command" [ref=f2e9] [cursor=pointer]
+        - link "Shift command" [ref=f2e27] [cursor=pointer]:
+          - /url: /
+      - group [ref=f2e31]:
+        - generic "Live Operations" [ref=f2e32] [cursor=pointer]
+      - group [ref=f2e49]:
+        - generic "Customer Support" [ref=f2e50] [cursor=pointer]
+        - generic [ref=f2e67]:
+          - link "Customers" [ref=f2e68] [cursor=pointer]:
+            - /url: /customers
+          - link "Customer Reviews" [ref=f2e74] [cursor=pointer]:
+            - /url: /reviews
+          - link "Partner Notes" [ref=f2e78] [cursor=pointer]:
+            - /url: /reviews/partner-customer-evaluations
+          - link "Chat Evidence" [ref=f2e82] [cursor=pointer]:
+            - /url: /chat-archive
+          - link "Customer Notifications" [ref=f2e86] [cursor=pointer]:
+            - /url: /notifications
+          - link "Customer Usage" [ref=f2e90] [cursor=pointer]:
+            - /url: /usage-overview
+      - group [ref=f2e94]:
+        - generic "Partner Operations" [ref=f2e95] [cursor=pointer]
+      - group [ref=f2e112]:
+        - generic "Finance Today" [ref=f2e113] [cursor=pointer]
+      - group [ref=f2e120]:
+        - generic "Finance Records" [ref=f2e121] [cursor=pointer]
+      - group [ref=f2e138]:
+        - generic "Growth & Content" [ref=f2e139] [cursor=pointer]
+      - group [ref=f2e156]:
+        - generic "Tax & Monthly Close" [ref=f2e157] [cursor=pointer]
+      - group [ref=f2e164]:
+        - generic "Restricted Settings" [ref=f2e165] [cursor=pointer]
+      - group [ref=f2e172]:
+        - generic "Admin & System" [ref=f2e173] [cursor=pointer]
+      - group [ref=f2e190]:
+        - generic "Developer / System" [ref=f2e191] [cursor=pointer]
+  - main [ref=f2e199]:
+    - generic "Admin workspace" [ref=f2e200]:
+      - navigation "Breadcrumb" [ref=f2e202]:
+        - link "HANDS" [ref=f2e203] [cursor=pointer]:
+          - /url: /
+        - generic [ref=f2e206]: Customer Support
+        - generic [ref=f2e209]: Partner Notes
+      - generic "Workspace actions" [ref=f2e210]:
+        - button "Search Ctrl K" [ref=f2e212] [cursor=pointer]:
+          - generic [ref=f2e213]: Search
+          - generic [ref=f2e217]: Ctrl K
+        - button "Switch to dark mode" [ref=f2e219] [cursor=pointer]
+        - link "Operations Policy" [ref=f2e222] [cursor=pointer]:
+          - /url: /operations-policy
+        - button "Open operation alerts" [ref=f2e227] [cursor=pointer]
+        - button "Sign out" [ref=f2e232] [cursor=pointer]
+    - generic [ref=f2e236]:
+      - generic [ref=f2e237]:
+        - generic [ref=f2e238]:
+          - heading "Partner Notes About Customers" [level=1] [ref=f2e239]
+          - paragraph [ref=f2e240]: Internal notes Partners submit about customers after completed bookings. These notes are not customer-visible.
+        - generic "Page actions" [ref=f2e241]: Internal · Not customer-visible
+      - generic [ref=f2e243]:
+        - alertdialog [ref=f2e244]:
+          - generic [ref=f2e245]:
+            - heading "Review note cmrnqk89?" [level=2] [ref=f2e247]
+            - generic [ref=f2e248]: Review
+          - generic [ref=f2e252]:
+            - generic [ref=f2e253]:
+              - term [ref=f2e254]: Partner note
+              - definition [ref=f2e255]: "HANDS customer detail smoke / refunded: customer communication and access instructions were verified."
+            - generic [ref=f2e256]:
+              - term [ref=f2e257]: Customer
+              - definition [ref=f2e258]: Smoke Referral Referred Customer
+            - generic [ref=f2e259]:
+              - term [ref=f2e260]: Partner
+              - definition [ref=f2e261]: Partner 6078
+            - generic [ref=f2e262]:
+              - term [ref=f2e263]: Booking
+              - definition [ref=f2e264]: cmrnqk7t
+            - generic [ref=f2e265]:
+              - term [ref=f2e266]: Current state
+              - definition [ref=f2e267]: Retained
+            - generic [ref=f2e268]:
+              - term [ref=f2e269]: Next state
+              - definition [ref=f2e270]: Needs review
+            - generic [ref=f2e271]:
+              - term [ref=f2e272]: Impact
+              - definition [ref=f2e273]: The note remains internal and is included in the customer's reported-review risk signal.
+          - generic [ref=f2e274]:
+            - generic [ref=f2e275]:
+              - generic [ref=f2e276]:
+                - generic [ref=f2e277]: Review-state reason
+                - combobox "Review-state reason" [ref=f2e278] [cursor=pointer]:
+                  - option "Select a reason" [selected]
+                  - option "Sensitive personal information"
+                  - option "Abusive or discriminatory language"
+                  - option "Booking context requires verification"
+                  - option "Inaccurate or unsupported note"
+                  - option "Operational use restricted"
+              - button "Send to Needs review" [ref=f2e279] [cursor=pointer]
+            - link "Cancel" [ref=f2e280] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations?q=refunded#partner-note-cmrnqk89k0077vyxkz103mvzs
+        - region [ref=f2e281]:
+          - generic [ref=f2e282]:
+            - generic [ref=f2e283]:
+              - heading "Partner note search" [level=2] [ref=f2e284]
+              - paragraph [ref=f2e285]: Search immutable internal notes by submitted date, state, customer, Partner, or booking.
+            - generic [ref=f2e286]:
+              - generic [ref=f2e287]: 1 note
+              - link "Clear filters" [ref=f2e288] [cursor=pointer]:
+                - /url: /reviews/partner-customer-evaluations
+          - generic "Partner note filters" [ref=f2e290]:
+            - generic "Submitted date" [ref=f2e291]:
+              - link "All dates" [ref=f2e292] [cursor=pointer]:
+                - /url: /reviews/partner-customer-evaluations?q=refunded
+              - link "Today" [ref=f2e293] [cursor=pointer]:
+                - /url: /reviews/partner-customer-evaluations?q=refunded&dateRange=today
+              - link "Previous day" [ref=f2e294] [cursor=pointer]:
+                - /url: /reviews/partner-customer-evaluations?q=refunded&dateRange=yesterday
+              - link "Last 7 days" [ref=f2e295] [cursor=pointer]:
+                - /url: /reviews/partner-customer-evaluations?q=refunded&dateRange=7d
+              - link "Last month" [ref=f2e296] [cursor=pointer]:
+                - /url: /reviews/partner-customer-evaluations?q=refunded&dateRange=30d
+              - link "Custom dates" [ref=f2e297] [cursor=pointer]:
+                - /url: /reviews/partner-customer-evaluations?q=refunded&dateRange=custom
+            - generic "Review state" [ref=f2e298]:
+              - link "All" [ref=f2e299] [cursor=pointer]:
+                - /url: /reviews/partner-customer-evaluations?q=refunded
+              - link "Retained" [ref=f2e300] [cursor=pointer]:
+                - /url: /reviews/partner-customer-evaluations?q=refunded&status=retained
+              - link "Needs review" [ref=f2e301] [cursor=pointer]:
+                - /url: /reviews/partner-customer-evaluations?q=refunded&status=needs-review
+              - link "Restricted" [ref=f2e302] [cursor=pointer]:
+                - /url: /reviews/partner-customer-evaluations?q=refunded&status=restricted
+            - generic "Submitted date sort" [ref=f2e303]:
+              - link "Most recently submitted" [ref=f2e304] [cursor=pointer]:
+                - /url: /reviews/partner-customer-evaluations?q=refunded
+              - link "Oldest submitted" [ref=f2e305] [cursor=pointer]:
+                - /url: /reviews/partner-customer-evaluations?q=refunded&sort=oldest
+            - generic [ref=f2e306]:
+              - generic [ref=f2e307]:
+                - generic [ref=f2e311]: Search Partner notes
+                - searchbox "Search Partner notes" [ref=f2e312]: refunded
+              - generic [ref=f2e313] [cursor=pointer]:
+                - generic [ref=f2e314]: Rows per page
+                - combobox "Rows per page" [ref=f2e315]:
+                  - option "10" [selected]
+                  - option "25"
+                  - option "50"
+              - button "Apply" [ref=f2e316] [cursor=pointer]
+          - generic "Active Partner note filters" [ref=f2e318]: "Search: refunded"
+        - navigation "Partner note summary and state filters" [ref=f2e320]:
+          - link "Total 1" [ref=f2e321] [cursor=pointer]:
+            - /url: /reviews/partner-customer-evaluations?q=refunded
+            - generic [ref=f2e322]: Total
+            - strong [ref=f2e323]: "1"
+          - link "Needs review 0" [ref=f2e324] [cursor=pointer]:
+            - /url: /reviews/partner-customer-evaluations?q=refunded&status=needs-review
+            - generic [ref=f2e325]: Needs review
+            - strong [ref=f2e326]: "0"
+          - link "Restricted 0" [ref=f2e327] [cursor=pointer]:
+            - /url: /reviews/partner-customer-evaluations?q=refunded&status=restricted
+            - generic [ref=f2e328]: Restricted
+            - strong [ref=f2e329]: "0"
+          - link "Retained 1" [ref=f2e330] [cursor=pointer]:
+            - /url: /reviews/partner-customer-evaluations?q=refunded&status=retained
+            - generic [ref=f2e331]: Retained
+            - strong [ref=f2e332]: "1"
+        - region [ref=f2e333]:
+          - generic [ref=f2e334]:
+            - generic [ref=f2e335]:
+              - heading "Partner notes" [level=2] [ref=f2e336]
+              - paragraph [ref=f2e337]: The original Partner note is immutable. Review state and audit metadata are shown with each record.
+            - generic [ref=f2e338]: 1 note
+          - generic [ref=f2e340]:
+            - region "Partner notes table" [ref=f2e341]:
+              - table [ref=f2e342]:
+                - rowgroup [ref=f2e343]:
+                  - row [ref=f2e344]:
+                    - columnheader "Submitted" [ref=f2e345]
+                    - columnheader "Partner note" [ref=f2e346]
+                    - columnheader "Customer" [ref=f2e347]
+                    - columnheader "Author / booking" [ref=f2e348]
+                    - columnheader "Review state / actions" [ref=f2e349]
+                - rowgroup [ref=f2e350]:
+                  - row [ref=f2e351]:
+                    - cell [ref=f2e352]:
+                      - time [ref=f2e353]: 16 Jul 2026, 23:41
+                    - cell [ref=f2e354]:
+                      - paragraph [ref=f2e355]: "HANDS customer detail smoke / refunded: customer communication and access instructions were verified."
+                      - group [ref=f2e356]:
+                        - generic "Full note and metadata" [ref=f2e357] [cursor=pointer]
+                    - cell [ref=f2e358]:
+                      - link "Smoke Referral Referred Customer" [ref=f2e359] [cursor=pointer]:
+                        - /url: /customers/smoke_referral_customer_referred_profile
+                    - cell "Partner 6078 cmrnqk7t Foot Massage" [ref=f2e360]:
+                      - generic [ref=f2e361]:
+                        - link "Partner 6078" [ref=f2e362] [cursor=pointer]:
+                          - /url: /partners/cmrnfl4x20030vyiwruloezrg
+                        - link "cmrnqk7t" [ref=f2e363] [cursor=pointer]:
+                          - /url: /bookings/cmrnqk7t3005cvyxkx9qvwacx
+                        - generic [ref=f2e364]: Foot Massage
+                    - cell "Retained Last reviewed Not reviewed · Not reviewed" [ref=f2e365]:
+                      - generic [ref=f2e366]:
+                        - generic [ref=f2e367]: Retained
+                        - generic [ref=f2e368]:
+                          - text: Last reviewed
+                          - generic [ref=f2e369]: Not reviewed
+                          - text: · Not reviewed
+                        - group [ref=f2e370]:
+                          - generic "Change review state" [ref=f2e371] [cursor=pointer]
+            - generic [ref=f2e372]: Showing 1 to 1 of 1 notes

@@ -22,24 +22,30 @@ describe('bookingCommandDecisionStripInput', () => {
         status: 'AUTHORIZED',
       } as AdminBooking['payment'],
       status: 'MATCHED',
+      expiresAt: '2026-08-05T12:10:00.000Z',
     });
 
     expect(
-      bookingCommandDecisionStripInput(item, {
-        addressLabel: 'Confirmed service address',
-        cashDebtNeedsSettlement: true,
-        closeoutNeedsOps: true,
-        customerChoiceCandidateCount: 1,
-        hasChatRoom: true,
-        hasFinalPartner: true,
-        marketplaceEligibleCount: 3,
-      }),
+      bookingCommandDecisionStripInput(
+        item,
+        {
+          addressLabel: 'Confirmed service address',
+          cashDebtNeedsSettlement: true,
+          closeoutNeedsOps: true,
+          customerChoiceCandidateCount: 1,
+          hasChatRoom: true,
+          hasFinalPartner: true,
+          marketplaceEligibleCount: 3,
+        },
+        new Date('2026-08-05T12:00:00.000Z').getTime(),
+      ),
     ).toEqual({
       bookingStatus: 'MATCHED',
       hasAddressSnapshot: true,
       addressLabel: 'Confirmed service address',
       participantCount: 2,
       customerChoiceCandidateCount: 1,
+      expiredCustomerChoiceCandidateCount: 0,
       marketplaceEligibleCount: 3,
       hasFinalPartner: true,
       hasChatRoom: true,
@@ -48,6 +54,30 @@ describe('bookingCommandDecisionStripInput', () => {
       paymentStatus: 'AUTHORIZED',
       cashDebtNeedsSettlement: true,
       closeoutOpenItemCount: 1,
+      matchingDeadlineAt: '2026-08-05T12:10:00.000Z',
+      matchingDeadlineExpired: false,
+    });
+  });
+
+  it('does not expose accepted rows as selectable after the matching deadline', () => {
+    expect(
+      bookingCommandDecisionStripInput(
+        booking({ expiresAt: '2026-08-05T12:00:00.000Z' }),
+        {
+          addressLabel: 'Confirmed service address',
+          cashDebtNeedsSettlement: false,
+          closeoutNeedsOps: false,
+          customerChoiceCandidateCount: 1,
+          hasChatRoom: false,
+          hasFinalPartner: false,
+          marketplaceEligibleCount: 0,
+        },
+        new Date('2026-08-05T12:01:00.000Z').getTime(),
+      ),
+    ).toMatchObject({
+      customerChoiceCandidateCount: 0,
+      expiredCustomerChoiceCandidateCount: 1,
+      matchingDeadlineExpired: true,
     });
   });
 

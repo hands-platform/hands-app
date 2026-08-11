@@ -9,6 +9,16 @@ import {
 } from '../../components/admin-form-controls';
 import { StatusBadge } from '../../components/status-badge';
 import type {
+  AdminQueueAge,
+  AdminQueueAgeCounts,
+  AdminQueueSlaSummary,
+  AdminQueueSlaFilter,
+  AdminQueueSort,
+} from '../../lib/admin-queue-list';
+import { AdminQueueAgeSortControls } from '../../components/admin-queue-age-sort-controls';
+import { AdminDisclosure } from '../../components/admin-surface';
+import { adminCountLabel } from '../../lib/admin-copy';
+import type {
   NotificationDateRange,
   NotificationFinanceAge,
   NotificationIncidentState,
@@ -54,6 +64,10 @@ export type NotificationReviewRunbookView = {
 };
 
 type NotificationFilterBoardSectionProps = {
+  readonly activeAge?: AdminQueueAge;
+  readonly ageCounts?: AdminQueueAgeCounts;
+  readonly queueSla?: AdminQueueSlaSummary;
+  readonly activeSla?: AdminQueueSlaFilter;
   readonly activeBookingLabel: string | null;
   readonly activeFinanceAge?: NotificationFinanceAge;
   readonly activeFilterDescription: string | null;
@@ -63,6 +77,8 @@ type NotificationFilterBoardSectionProps = {
   readonly activeReviewRunbook: NotificationReviewRunbookView | null;
   readonly activeRange: NotificationDateRange;
   readonly activeRangeLabel: string;
+  readonly activeSort?: AdminQueueSort;
+  readonly ageHref?: (age: AdminQueueAge) => string;
   readonly clearHref: string;
   readonly filteredCount: number;
   readonly financeAgeLinks?: readonly NotificationFinanceAgeLink[];
@@ -73,9 +89,17 @@ type NotificationFilterBoardSectionProps = {
   readonly links: readonly NotificationFilterLink[];
   readonly rangeLinks: readonly NotificationDateRangeLink[];
   readonly totalCount: number;
+  readonly sortHref?: (sort: AdminQueueSort) => string;
+  readonly slaHref?: (sla: AdminQueueSlaFilter) => string;
+  readonly showQueueAgeControls?: boolean;
+  readonly showRangeControls?: boolean;
 };
 
 export function NotificationFilterBoardSection({
+  activeAge = 'all',
+  ageCounts,
+  queueSla,
+  activeSla = 'all',
   activeBookingLabel,
   activeFinanceAge = 'all',
   activeFilterDescription,
@@ -85,6 +109,8 @@ export function NotificationFilterBoardSection({
   activeReviewRunbook,
   activeRange,
   activeRangeLabel,
+  activeSort = 'newest',
+  ageHref = (value) => `?age=${value}`,
   clearHref,
   filteredCount,
   financeAgeLinks = [],
@@ -95,13 +121,41 @@ export function NotificationFilterBoardSection({
   links,
   rangeLinks,
   totalCount,
+  sortHref = (value) => `?sort=${value}`,
+  slaHref,
+  showQueueAgeControls = true,
+  showRangeControls = true,
 }: NotificationFilterBoardSectionProps) {
+  const primaryReviewValues = new Set([
+    'all',
+    'delivery-incidents',
+    'delivery-incident-history',
+    'system-incidents',
+    'finance-overdue',
+    'finance-overdue-history',
+  ]);
+  const primaryLinks = links.filter((link) => primaryReviewValues.has(link.review));
+  const additionalLinks = links.filter((link) => !primaryReviewValues.has(link.review));
   const isFiltered = Boolean(
     (activeReview && activeReview !== 'all') ||
     activeIncidentState !== 'all' ||
     activeBookingLabel ||
     activeFinanceAge !== 'all' ||
-    financeOwner,
+    financeOwner ||
+    activeAge !== 'all' ||
+    activeSla !== 'all' ||
+    activeSort !== 'newest',
+  );
+  const showAdvancedFilters = Boolean(
+    (activeReview && !primaryReviewValues.has(activeReview)) ||
+    (showRangeControls && activeRange !== 'today') ||
+    activeIncidentState !== 'all' ||
+    activeBookingLabel ||
+    activeFinanceAge !== 'all' ||
+    financeOwner ||
+    activeAge !== 'all' ||
+    activeSla !== 'all' ||
+    activeSort !== 'newest',
   );
 
   return (
@@ -109,31 +163,47 @@ export function NotificationFilterBoardSection({
       className="notification-filter-card admin-mb-16"
       description={
         <>
-          Default view is today. Use the range buttons for past delivery evidence without loading every
-          notification row.
-          <br />
-          Active range: <strong>{activeRangeLabel}</strong>.
+          Current queue: <strong>{activeFilterLabel ?? 'All notifications'}</strong>.
           {activeFilterLabel && activeFilterDescription ? (
-            <>
-              <br />
-              Active queue: <strong>{activeFilterLabel}</strong> - {activeFilterDescription}
-            </>
+            <> {activeFilterDescription}</>
           ) : null}
+          {!showRangeControls ? ' This queue uses a fixed operational time boundary.' : null}
           {activeBookingLabel ? (
-            <>
-              <br />
-              Active booking context: <strong>{activeBookingLabel}</strong>. Showing only notifications tied
-              to this booking id.
-            </>
+            <> Booking context: <strong>{activeBookingLabel}</strong>.</>
           ) : null}
         </>
       }
       id="notification-operation-filters"
-      resultLabel={`Showing ${filteredCount} loaded row(s) of ${totalCount} total / ${activeRangeLabel}`}
+      resultLabel={`Showing ${adminCountLabel(filteredCount, 'notification')} of ${totalCount} / ${activeRangeLabel}`}
       resultTone={isFiltered ? 'warning' : 'success'}
       title="Notification operation filters"
-      footer={
-        <>
+    >
+      <div className="booking-date-filter-bar notification-review-filter-bar">
+        <span className="notification-filter-group-label">Queue</span>
+        <AdminSegmentedControl
+          activeValue={activeReview || 'all'}
+          ariaLabel="Notification review filters"
+          className="notification-review-filter-buttons"
+          options={[
+            ...(isFiltered ? [{ href: clearHref, label: 'Clear filter', value: 'clear' }] : []),
+            ...primaryLinks.map((link) => ({
+              href: link.href,
+              label: link.label,
+              value: link.review,
+            })),
+          ]}
+        />
+      </div>
+      <AdminDisclosure
+        ariaLabel="Advanced notification filters"
+        className="admin-mt-12"
+        open={showAdvancedFilters}
+      >
+        <summary>
+          <span>Advanced filters</span>
+          <small>Range, age, SLA, owner, and incident state</small>
+        </summary>
+        <div className="admin-disclosure-content">
           <AdminFilterSummary
             ariaLabel="Active notification filters"
             labels={notificationActiveFilterLabels({
@@ -144,27 +214,39 @@ export function NotificationFilterBoardSection({
               activeRangeLabel,
               financeOwner,
               financeOwnerOptions,
-              filteredCount,
-              totalCount,
             })}
             tone="info"
           />
-          <div
-            className="booking-date-filter-bar notification-date-filter-bar"
-            aria-label="Notification date range"
-          >
-            <span className="notification-filter-group-label">Range</span>
-            <AdminSegmentedControl
-              activeValue={activeRange}
-              ariaLabel="Notification date range"
-              className="notification-date-filter-buttons"
-              options={rangeLinks.map((link) => ({
-                href: link.href,
-                label: link.label,
-                value: link.range,
-              }))}
+          {showRangeControls ? (
+            <div
+              className="booking-date-filter-bar notification-date-filter-bar"
+              aria-label="Notification date range"
+            >
+              <span className="notification-filter-group-label">Range</span>
+              <AdminSegmentedControl
+                activeValue={activeRange}
+                ariaLabel="Notification date range"
+                className="notification-date-filter-buttons"
+                options={rangeLinks.map((link) => ({
+                  href: link.href,
+                  label: link.label,
+                  value: link.range,
+                }))}
+              />
+            </div>
+          ) : null}
+          {showQueueAgeControls ? (
+            <AdminQueueAgeSortControls
+              age={activeAge}
+              ageCounts={ageCounts}
+              ageHref={ageHref}
+              sla={queueSla}
+              slaFilter={activeSla}
+              slaHref={slaHref}
+              sort={activeSort}
+              sortHref={sortHref}
             />
-          </div>
+          ) : null}
           {financeAgeLinks.length > 0 ? (
             <div className="booking-date-filter-bar notification-finance-age-filter-bar">
               <span className="notification-filter-group-label">SLA age</span>
@@ -242,25 +324,24 @@ export function NotificationFilterBoardSection({
               <StatusBadge tone="info">Booking {activeBookingLabel}</StatusBadge>
             </div>
           ) : null}
-          <div className="booking-date-filter-bar notification-review-filter-bar">
-            <span className="notification-filter-group-label">Queue</span>
-            <AdminSegmentedControl
-              activeValue={activeReview || 'all'}
-              ariaLabel="Notification review filters"
-              className="notification-review-filter-buttons"
-              options={[
-                ...(isFiltered ? [{ href: clearHref, label: 'Clear filter', value: 'clear' }] : []),
-                ...links.map((link) => ({
+          {additionalLinks.length > 0 ? (
+            <div className="booking-date-filter-bar notification-review-filter-bar">
+              <span className="notification-filter-group-label">Additional queues</span>
+              <AdminSegmentedControl
+                activeValue={activeReview || 'all'}
+                ariaLabel="Additional notification review filters"
+                className="notification-review-filter-buttons"
+                options={additionalLinks.map((link) => ({
                   href: link.href,
                   label: link.label,
                   value: link.review,
-                })),
-              ]}
-            />
-          </div>
-        </>
-      }
-    />
+                }))}
+              />
+            </div>
+          ) : null}
+        </div>
+      </AdminDisclosure>
+    </AdminFilterPanel>
   );
 }
 
@@ -272,8 +353,6 @@ function notificationActiveFilterLabels({
   activeRangeLabel,
   financeOwner,
   financeOwnerOptions,
-  filteredCount,
-  totalCount,
 }: {
   readonly activeBookingLabel: string | null;
   readonly activeFilterLabel: string | null;
@@ -282,13 +361,10 @@ function notificationActiveFilterLabels({
   readonly activeRangeLabel: string;
   readonly financeOwner: string;
   readonly financeOwnerOptions: readonly NotificationFinanceOwnerOption[];
-  readonly filteredCount: number;
-  readonly totalCount: number;
 }) {
   const labels = [
     `Range: ${activeRangeLabel}`,
     `Queue: ${activeFilterLabel ?? 'All notifications'}`,
-    `Rows: ${filteredCount}/${totalCount}`,
   ];
 
   if (activeIncidentState !== 'all') {

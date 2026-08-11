@@ -1,5 +1,6 @@
 import { formatDateTime as formatDate } from '../../lib/admin-format';
 import type { AdminPageMetric } from '../../components/admin-page-template';
+import type { StatusBadgeTone } from '../../components/status-badge';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import type { CustomerRow } from './customer-list-model';
 
@@ -24,6 +25,7 @@ type CustomerSummary = {
   chatRooms: number;
   missingAddress: number;
   paymentIssues: number;
+  needsAction: number;
   latestBookingAt?: string | null;
   latestCompletedAt?: string | null;
 };
@@ -43,78 +45,52 @@ export type CustomerManagementSpotlight = {
 
 export type CustomerManagementTableRow = {
   readonly avatarStatus: AdminAvatarStatus;
-  readonly chatHref: string;
+  readonly bookingStatusLabel: string;
+  readonly bookingStatusTone: StatusBadgeTone;
+  readonly bookingUpdatedAt: string | null;
+  readonly bookingCount: number;
   readonly completedBookings: number;
-  readonly countryFlag: string | null;
-  readonly countryFlagLabel: string;
-  readonly countryLabel: string;
-  readonly customerIdLabel: string;
-  readonly detailHref: string;
-  readonly deviceLanguageLabel: string;
-  readonly email: string;
-  readonly genderLabel: string;
+  readonly customerWalletBalance: number;
+  readonly detailHref: string | null;
   readonly id: string;
   readonly initials: string;
-  readonly joinedAt: string | null;
+  readonly historySignals: readonly CustomerAttentionSignal[];
   readonly lastCompletedAt: string | null;
-  readonly lastLoginAddressLabel: string;
   readonly lastSeenAt: string | null;
   readonly name: string;
-  readonly paymentsHref: string;
+  readonly openSignals: readonly CustomerAttentionSignal[];
   readonly phone: string;
-  readonly totalWalletAmount: number;
+  readonly shortId: string;
+  readonly totalPaid: number;
+};
+
+type CustomerAttentionSignal = {
+  readonly label: string;
+  readonly tone: StatusBadgeTone;
 };
 
 export function buildCustomerManagementMetrics(summary: CustomerSummary): AdminPageMetric[] {
   return [
     {
-      label: 'Total customers',
-      value: summary.total,
-      helper: genderBreakdownLabel(summary.genderBreakdown),
-      kind: 'record',
-      scope: 'All records',
-    },
-    {
-      label: 'Joined today',
-      value: summary.todayJoined,
-      helper: genderBreakdownLabel(summary.todayJoinedGenderBreakdown),
-      kind: 'period',
-      scope: 'Today',
-    },
-    {
-      label: 'Active today',
-      value: summary.todaySeen,
-      helper: genderBreakdownLabel(summary.todaySeenGenderBreakdown),
-      kind: 'live',
-      scope: 'Today',
-    },
-    {
-      label: 'Active in 30 days',
-      value: summary.monthSeen,
-      helper: genderBreakdownLabel(summary.monthSeenGenderBreakdown),
-      kind: 'period',
-      scope: 'Last 30 days',
-    },
-    {
-      label: 'Customer attention',
-      value: summary.missingAddress + summary.paymentIssues,
-      helper: `Missing address ${summary.missingAddress} / payment issues ${summary.paymentIssues}`,
+      label: 'Needs attention',
+      value: summary.needsAction,
+      helper: 'Payment, refund, or reported-review issues.',
       kind: 'risk',
       scope: 'Needs action',
     },
     {
-      label: 'Push reachable',
-      value: summary.pushReachable,
-      helper: 'Customers with enabled push devices.',
+      label: 'Active booking',
+      value: summary.activeBookings,
+      helper: 'Matching or in service.',
       kind: 'live',
-      scope: 'Live segment',
+      scope: 'Live',
     },
     {
-      label: 'Booking history',
-      value: summary.completedBookings,
-      helper: 'Completed customer booking records.',
-      kind: 'record',
-      scope: 'All records',
+      label: 'New today',
+      value: summary.todayJoined,
+      helper: 'Profiles created today in Vietnam time.',
+      kind: 'period',
+      scope: 'Today',
     },
   ];
 }
@@ -162,45 +138,66 @@ export function buildCustomerManagementSpotlights(
   ];
 }
 
-export function buildCustomerManagementTableRows(rows: readonly CustomerRow[]): CustomerManagementTableRow[] {
+export function buildCustomerManagementTableRows(
+  rows: readonly CustomerRow[],
+  returnTo = '/customers',
+  canViewCustomerDetail = true,
+): CustomerManagementTableRow[] {
   return rows.map((row) => {
-    const customerIdLabel = compactText(row.id, 12);
-    const countryCode = row.deviceLanguageCountryCode;
-    const countryLabel = row.deviceLanguageCountryLabel;
-
+    const bookingStatus = customerBookingStatus(row);
     return {
       avatarStatus: customerAvatarStatus(row),
-      chatHref: `/chat-archive?q=${encodeURIComponent(row.id)}`,
+      bookingStatusLabel: bookingStatus.label,
+      bookingStatusTone: bookingStatus.tone,
+      bookingUpdatedAt: row.currentBookingUpdatedAt ?? null,
+      bookingCount: row.bookingCount,
       completedBookings: row.completedBookings,
-      countryFlag: countryCode === 'UNKNOWN' ? null : countryFlagFromRegion(countryCode),
-      countryFlagLabel: countryCode === 'UNKNOWN' ? 'Unknown country' : `${countryLabel} flag`,
-      countryLabel,
-      customerIdLabel,
-      detailHref: `/customers/${row.id}`,
-      deviceLanguageLabel: row.deviceLanguage,
-      email: row.email,
-      genderLabel: row.genderLabel,
+      customerWalletBalance: row.customerWalletBalance,
+      detailHref: canViewCustomerDetail
+        ? `/customers/${row.id}?returnTo=${encodeURIComponent(returnTo)}`
+        : null,
       id: row.id,
       initials: readInitials(row.name),
-      joinedAt: row.joinedAt ?? null,
+      historySignals: customerHistorySignals(row),
       lastCompletedAt: row.lastCompletedAt ?? null,
-      lastLoginAddressLabel: row.lastLoginAddress,
       lastSeenAt: row.lastSeenAt ?? null,
       name: row.name,
-      paymentsHref: `/payments?customer=${encodeURIComponent(row.id)}`,
+      openSignals: customerOpenSignals(row),
       phone: row.phone,
-      totalWalletAmount: row.capturedSpend,
+      shortId: shortCustomerId(row.id),
+      totalPaid: row.capturedSpend,
     };
   });
 }
 
-function genderBreakdownLabel(breakdown: CustomerGenderBreakdown) {
-  return [
-    `Female ${breakdown.female}`,
-    `Male ${breakdown.male}`,
-    `Other ${breakdown.other}`,
-    `Not captured ${breakdown.unknown}`,
-  ].join(' / ');
+function customerBookingStatus(row: CustomerRow): { label: string; tone: StatusBadgeTone } {
+  if (row.serviceLiveBookings > 0) return { label: 'In service', tone: 'info' };
+  if (row.openMatchingBookings > 0) return { label: 'Matching', tone: 'primary' };
+  if (row.activeBookings > 0) return { label: 'Active booking', tone: 'info' };
+  return { label: 'No open booking', tone: 'neutral' };
+}
+
+function customerOpenSignals(row: CustomerRow): CustomerAttentionSignal[] {
+  const signals: CustomerAttentionSignal[] = [];
+  if (row.paymentIssues > 0) {
+    signals.push({ label: `Payment failed ${row.paymentIssues}`, tone: 'danger' });
+  }
+  if (row.refundRequests > 0) {
+    signals.push({ label: `Refund requests ${row.refundRequests}`, tone: 'warning' });
+  }
+  if (row.reportedReviews > 0) {
+    signals.push({ label: `Reported reviews ${row.reportedReviews}`, tone: 'danger' });
+  }
+  return signals;
+}
+
+function customerHistorySignals(row: CustomerRow): CustomerAttentionSignal[] {
+  const signals: CustomerAttentionSignal[] = [];
+  if (row.noShowBookings > 0) signals.push({ label: `No-show ${row.noShowBookings}`, tone: 'neutral' });
+  if (row.customerClosedBookings > 0) {
+    signals.push({ label: `Customer cancellations ${row.customerClosedBookings}`, tone: 'neutral' });
+  }
+  return signals;
 }
 
 function customerAvatarStatus(row: CustomerRow): AdminAvatarStatus {
@@ -233,20 +230,8 @@ function readInitials(name: string) {
   return tokens.map((token) => token[0]?.toUpperCase() ?? '').join('');
 }
 
-function compactText(value: string, maxLength: number) {
-  if (value.length <= maxLength) {
-    return value;
-  }
-
-  return `${value.slice(0, Math.max(0, maxLength - 3))}...`;
-}
-
-function countryFlagFromRegion(region: string) {
-  if (!/^[A-Z]{2}$/.test(region)) {
-    return null;
-  }
-
-  return String.fromCodePoint(...region.split('').map((letter) => 127397 + letter.charCodeAt(0)));
+function shortCustomerId(id: string) {
+  return id.length <= 12 ? id : `${id.slice(0, 8)}...${id.slice(-4)}`;
 }
 
 function dateMs(value?: string | null) {

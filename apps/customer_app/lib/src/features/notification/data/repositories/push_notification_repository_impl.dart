@@ -1,4 +1,5 @@
 import '../../domain/entities/push_token_registration_result.dart';
+import '../../../../core/customer_error_message.dart';
 import '../../domain/repositories/push_notification_repository.dart';
 import '../datasources/notification_remote_datasource.dart';
 import '../datasources/push_token_datasource.dart';
@@ -40,7 +41,10 @@ class PushNotificationRepositoryImpl implements PushNotificationRepository {
     } catch (exception) {
       return PushTokenRegistrationResult(
         registered: false,
-        message: 'Push setup pending: $exception',
+        message: customerErrorMessage(
+          exception,
+          fallback: 'Push notifications could not be enabled yet.',
+        ),
       );
     }
   }
@@ -55,4 +59,16 @@ class PushNotificationRepositoryImpl implements PushNotificationRepository {
       platform: platform,
     );
   }
+}
+
+Future<void> unregisterCurrentPushDevice({
+  required PushTokenDataSource pushTokenDataSource,
+  required NotificationRemoteDataSource remoteDataSource,
+}) async {
+  final deviceToken = await pushTokenDataSource.getCurrentDeviceToken();
+  if (deviceToken == null || !deviceToken.remoteRegistrationRequired) {
+    return;
+  }
+
+  await remoteDataSource.disableDeviceToken(deviceToken.token);
 }

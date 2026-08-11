@@ -66,6 +66,8 @@ describe('partner withholding tax export route', () => {
         partnerVatWithheldTotal: 50000,
         period: '2026-06',
         providerProfileId: 'provider-1',
+        postedSettlementCount: 4,
+        reversalCount: 1,
         totalPartnerTaxWithheld: 80000,
       },
     ]);
@@ -83,6 +85,7 @@ describe('partner withholding tax export route', () => {
     expect(response.headers.get('content-disposition')).toContain('hands-partner-withholding-tax-2026-06.csv');
     expect(body).toContain('"provider_profile_id"');
     expect(body).toContain('"Linh Partner"');
+    expect(body).toContain('"posted_settlement_count","reversal_count"');
     expect(body).not.toContain('data:text/csv');
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/partner-withholding-tax?period=2026-06&take=25', []);
   });

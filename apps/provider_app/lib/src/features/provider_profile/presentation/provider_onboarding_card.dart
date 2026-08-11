@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/provider_value_helpers.dart';
 import '../../provider_onboarding/presentation/provider_onboarding_status.dart';
 import '../../provider_onboarding/presentation/widgets/provider_document_upload_slots.dart';
+import 'provider_error_helpers.dart';
 import 'provider_feedback_cards.dart';
 import 'provider_onboarding_support_widgets.dart';
 
@@ -108,12 +109,12 @@ class ProviderOnboardingCard extends StatelessWidget {
       _ => null,
     };
     final walletOperationsDetail = completedBookingCount == 0
-        ? 'Wallet withdrawal/deposit review starts after the first earning. Bank details are requested from Earnings only when needed.'
+        ? 'Việc xét duyệt rút hoặc nộp tiền bắt đầu sau thu nhập đầu tiên. Chỉ cần thêm thông tin ngân hàng trong mục Thu nhập khi phát sinh giao dịch.'
         : missingAgreementCount > 0
-            ? '$missingAgreementCount wallet agreement(s) need acceptance before withdrawal review.'
+            ? 'Cần chấp nhận $missingAgreementCount thỏa thuận ví trước khi xét duyệt rút tiền.'
             : canWithdraw
-                ? 'Wallet requirements are clear for withdrawal review.'
-                : 'Use Earnings to request withdrawal or report deposit support when money movement is needed.';
+                ? 'Đã đáp ứng yêu cầu xét duyệt rút tiền.'
+                : 'Vào mục Thu nhập để yêu cầu rút tiền hoặc báo cáo khoản nộp khi cần.';
 
     return Card(
       child: Padding(
@@ -125,14 +126,14 @@ class ProviderOnboardingCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Partner onboarding',
+                    'Thiết lập tài khoản',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
                 IconButton(
                   onPressed: isSaving ? null : onRefresh,
                   icon: const Icon(Icons.refresh),
-                  tooltip: 'Refresh onboarding',
+                  tooltip: 'Làm mới trạng thái',
                 ),
               ],
             ),
@@ -142,15 +143,15 @@ class ProviderOnboardingCard extends StatelessWidget {
               runSpacing: 8,
               children: [
                 ProviderOnboardingPill(
-                    label: 'Current', value: _compactLevel(level)),
+                    label: 'Hiện tại', value: _compactLevel(level)),
                 ProviderOnboardingPill(
-                    label: 'Recommended', value: _compactLevel(recommended)),
+                    label: 'Đề xuất', value: _compactLevel(recommended)),
                 ProviderOnboardingPill(
-                    label: 'Completed',
-                    value: '$completedBookingCount service(s)'),
+                    label: 'Đã hoàn tất',
+                    value: '$completedBookingCount dịch vụ'),
                 ProviderOnboardingPill(
-                    label: 'Payout',
-                    value: canWithdraw ? 'Ready' : 'Locked',
+                    label: 'Thanh toán',
+                    value: canWithdraw ? 'Sẵn sàng' : 'Chưa mở',
                     isPositive: canWithdraw),
               ],
             ),
@@ -158,7 +159,12 @@ class ProviderOnboardingCard extends StatelessWidget {
             ProviderLevelRoadmap(milestones: levelMilestones),
             const SizedBox(height: 12),
             if (error != null) ...[
-              ErrorCard(text: 'Onboarding load failed: $error'),
+              ErrorCard(
+                text: providerAppErrorMessage(
+                  error,
+                  fallback: 'Không thể tải trạng thái thiết lập tài khoản.',
+                ),
+              ),
               const SizedBox(height: 12),
             ],
             ProviderOnboardingPriorityPanel(
@@ -204,7 +210,7 @@ class ProviderOnboardingCard extends StatelessWidget {
                           ? Theme.of(context).colorScheme.errorContainer
                           : null,
                       label: Text(
-                        '${providerDocumentTypeLabel(type)}: $status',
+                        '${providerDocumentTypeLabel(type)}: ${providerDocumentStatusLabel(status)}',
                       ),
                     );
                   }).toList(),
@@ -214,21 +220,21 @@ class ProviderOnboardingCard extends StatelessWidget {
             const SizedBox(height: 12),
             if (kycRejectionReason != null) ...[
               ProviderReviewAlert(
-                title: 'KYC needs updates',
+                title: 'KYC cần cập nhật',
                 detail: kycRejectionReason,
               ),
               const SizedBox(height: 8),
             ],
             if (rejectedDocuments.isNotEmpty) ...[
               ProviderReviewAlert(
-                title: 'Rejected document(s)',
+                title: 'Giấy tờ bị từ chối',
                 detail: rejectedRequiredSummaries.isNotEmpty
-                    ? '${rejectedRequiredSummaries.join('\n')}\n\nOpen the KYC checklist and replace each rejected required photo.'
+                    ? '${rejectedRequiredSummaries.join('\n')}\n\nMở danh sách KYC và thay từng ảnh bắt buộc bị từ chối.'
                     : rejectedDocuments.map((document) {
                         final type = providerDocumentTypeLabel(
                             document['type'].toString());
                         final reason =
-                            reviewReason(document) ?? 'Upload a clearer image.';
+                            reviewReason(document) ?? 'Hãy tải ảnh rõ hơn.';
                         return '$type: $reason';
                       }).join('\n'),
               ),
@@ -236,89 +242,89 @@ class ProviderOnboardingCard extends StatelessWidget {
             ],
             if (bankRejectionReason != null) ...[
               ProviderReviewAlert(
-                title: 'Wallet bank details need updates',
+                title: 'Thông tin ngân hàng cần cập nhật',
                 detail:
-                    '$bankRejectionReason\n\nOpen Earnings and submit corrected bank details when withdrawal or deposit support is requested.',
+                    '$bankRejectionReason\n\nMở mục Thu nhập và gửi lại thông tin ngân hàng khi cần rút hoặc nộp tiền.',
               ),
               const SizedBox(height: 8),
             ],
             ProviderOnboardingStepCard(
               step: '1',
-              title: 'Basic profile',
+              title: 'Hồ sơ cơ bản',
               detail: addressText == null || addressText.isEmpty
-                  ? 'Add legal name, public name, birthday, and service area. Tax address can wait until first earning.'
+                  ? 'Thêm họ tên pháp lý, tên hiển thị, ngày sinh và khu vực phục vụ.'
                   : addressText,
-              status: hasBasicProfile ? 'Complete' : 'Required',
+              status: hasBasicProfile ? 'Hoàn tất' : 'Bắt buộc',
               complete: hasBasicProfile,
               icon: Icons.badge_outlined,
-              actionLabel: hasBasicProfile ? 'Edit profile' : 'Start profile',
+              actionLabel: hasBasicProfile ? 'Sửa hồ sơ' : 'Tạo hồ sơ',
               onPressed: isSaving ? null : onFillBasicProfile,
             ),
             ProviderOnboardingStepCard(
               step: '2',
-              title: 'KYC verification',
+              title: 'Xác minh KYC',
               detail: rejectedRequiredSummaries.isNotEmpty
-                  ? 'Replace ${rejectedRequiredSummaries.length} rejected required photo(s), then resubmit KYC.'
-                  : '$submittedKycRequiredCount of ${requiredKycTypes.length} required photos ready. Status: ${kycStatus ?? 'Not submitted'}.',
+                  ? 'Thay ${rejectedRequiredSummaries.length} ảnh bắt buộc bị từ chối rồi gửi lại KYC.'
+                  : 'Đã có $submittedKycRequiredCount/${requiredKycTypes.length} ảnh bắt buộc. Trạng thái: ${providerOnboardingReviewStatusLabel(kycStatus)}.',
               status: kycStatus == 'APPROVED'
-                  ? 'Approved'
+                  ? 'Đã duyệt'
                   : kycDocumentsReady
-                      ? 'Ready to submit'
-                      : 'Upload documents first',
+                      ? 'Sẵn sàng gửi'
+                      : 'Cần tải giấy tờ',
               complete: kycStatus == 'APPROVED',
               icon: Icons.verified_user_outlined,
               actionLabel: kycStatus == 'REJECTED'
-                  ? 'Resubmit KYC'
+                  ? 'Gửi lại KYC'
                   : kycDocumentsReady
-                      ? 'Submit KYC'
-                      : 'Open KYC checklist',
+                      ? 'Gửi KYC'
+                      : 'Mở danh sách KYC',
               onPressed: isSaving ? null : onSubmitKyc,
             ),
             ProviderKycDecisionChecklist(
               items: kycDecisionItems,
-              reviewStatus: kycStatus ?? 'Not submitted',
+              reviewStatus: providerOnboardingReviewStatusLabel(kycStatus),
             ),
             ProviderOnboardingStepCard(
               step: '3',
-              title: 'Wallet bank details',
+              title: 'Thông tin ngân hàng',
               detail: providerBankAccountStepDetail(
                 status: bankStatus,
                 rejectionReason: bankRejectionReason,
               ),
               status: bankStatus == 'APPROVED'
-                  ? 'Approved'
+                  ? 'Đã duyệt'
                   : bankStatus == 'REJECTED'
-                      ? 'Needs correction'
+                      ? 'Cần sửa'
                       : bankStatus == 'PENDING_REVIEW'
-                          ? 'Under review'
-                          : 'On request',
+                          ? 'Đang xét duyệt'
+                          : 'Khi cần',
               complete: bankStatus == 'APPROVED',
               icon: Icons.account_balance_outlined,
               actionLabel: bankStatus == 'REJECTED'
-                  ? 'Resubmit bank details'
+                  ? 'Gửi lại thông tin ngân hàng'
                   : bankStatus == null
                       ? null
-                      : 'Update bank details',
+                      : 'Cập nhật thông tin ngân hàng',
               onPressed:
                   isSaving || bankStatus == null ? null : onAddBankAccount,
             ),
             ProviderOnboardingStepCard(
               step: '4',
-              title: 'Wallet operations',
+              title: 'Hoạt động ví',
               detail: walletOperationsDetail,
               status: canWithdraw
-                  ? 'Ready'
+                  ? 'Sẵn sàng'
                   : payoutPrerequisiteReady
-                      ? 'Manual review'
+                      ? 'Xét duyệt thủ công'
                       : completedBookingCount == 0
-                          ? 'After first earning'
-                          : 'Agreements needed',
+                          ? 'Sau thu nhập đầu tiên'
+                          : 'Cần thỏa thuận',
               complete: canWithdraw || payoutPrerequisiteReady,
               icon: Icons.payments_outlined,
               actionLabel: completedBookingCount == 0
                   ? null
                   : missingAgreementCount > 0
-                      ? 'Review agreements'
+                      ? 'Xem thỏa thuận'
                       : null,
               onPressed: isSaving
                   ? null
@@ -349,12 +355,12 @@ class ProviderOnboardingCard extends StatelessWidget {
 
 String _compactLevel(String value) {
   if (value == 'LEVEL_3_PAYOUT_ENABLED' || value == 'LEVEL_4_TRUSTED') {
-    return 'L2 active';
+    return 'Cấp 2 đang hoạt động';
   }
   return value
       .replaceAll('LEVEL_', 'L')
-      .replaceAll('_SIGNUP', ' signup')
-      .replaceAll('_ACTIVE', ' active')
-      .replaceAll('_PAYOUT_ENABLED', ' payout')
-      .replaceAll('_TRUSTED', ' reviewed');
+      .replaceAll('_SIGNUP', ' đăng ký')
+      .replaceAll('_ACTIVE', ' hoạt động')
+      .replaceAll('_PAYOUT_ENABLED', ' thanh toán')
+      .replaceAll('_TRUSTED', ' đã xét duyệt');
 }

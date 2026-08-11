@@ -198,7 +198,7 @@ function buildMarketplaceSupply(): MarketplaceSupply {
     candidateCommand: {
       action: 'Open supply',
       detail: 'Two Partners can be inspected for this booking pin.',
-      href: '/partners?review=marketplace-ready',
+      href: '/partners?review=ready-now',
       status: 'Supply ready',
       title: 'Usable supply',
       tone: 'pill-success',
@@ -212,7 +212,7 @@ function buildMarketplaceSupply(): MarketplaceSupply {
       {
         count: 0,
         detail: 'No location freshness blocker.',
-        href: '/partners?review=location',
+        href: '/partners?review=available-blocked-location',
         label: 'Location freshness',
         samples: [],
       },

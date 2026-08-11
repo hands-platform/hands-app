@@ -75,7 +75,7 @@ export function buildPartnerDispatchForecast(
         value: `${readyNow}/${providers.length}`,
         detail: 'Approved, online, fresh location, clear device checks, and push-ready partners.',
         tone: readyNow > 0 ? 'ok' : 'warn',
-        href: '/partners?readiness=ready',
+        href: '/partners?review=ready-now',
       },
       {
         label: 'Recoverable today',
@@ -83,7 +83,7 @@ export function buildPartnerDispatchForecast(
         detail:
           'Approved partners likely recoverable by going online, refreshing location, or enabling push.',
         tone: recoverableNow > 0 ? 'info' : 'ok',
-        href: recoverableNow > 0 ? '/partners?readiness=approved-offline' : '/partners',
+        href: recoverableNow > 0 ? '/partners?verification=APPROVED&providerStatus=OFFLINE&kyc=APPROVED' : '/partners',
       },
       {
         label: 'Online capacity',
@@ -99,7 +99,7 @@ export function buildPartnerDispatchForecast(
         detail:
           'Identity, account, or device/session blockers that should not be bypassed by dispatch.',
         tone: hardBlocked > 0 ? 'danger' : 'ok',
-        href: hardBlocked > 0 ? '/partners?review=acceptance-blocked' : '/partners?review=security',
+        href: hardBlocked > 0 ? '/partners?review=available-blocked' : '/partners?review=security',
       },
     ],
     blockers: [
@@ -107,7 +107,7 @@ export function buildPartnerDispatchForecast(
         label: 'Location refresh',
         count: locationNeedsRefresh,
         detail: `Partner location is missing, expired, or older than ${opsPolicy.staleLocationMinutes} minutes.`,
-        href: '/partners?review=location',
+        href: '/partners?review=available-blocked-location',
         tone: locationNeedsRefresh > 0 ? 'warn' : 'ok',
       },
       {
@@ -121,7 +121,7 @@ export function buildPartnerDispatchForecast(
         label: 'Approved but offline',
         count: approvedOffline,
         detail: 'Approved partners who can become useful supply once they open the Partner app.',
-        href: '/partners?readiness=approved-offline',
+        href: '/partners?verification=APPROVED&providerStatus=OFFLINE&kyc=APPROVED',
         tone: approvedOffline > 0 ? 'info' : 'ok',
       },
       {
@@ -136,7 +136,7 @@ export function buildPartnerDispatchForecast(
         label: 'Wallet setup',
         count: payoutLocked,
         detail: 'First-earning partners who still need wallet withdrawal/deposit follow-up or agreement completion.',
-        href: '/partners?review=payout-setup',
+        href: '/notifications?review=payout-setup',
         tone: payoutLocked > 0 ? 'warn' : 'ok',
       },
       {

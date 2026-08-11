@@ -5,6 +5,7 @@ import {
   LEGACY_OPERATIONAL_POLICY_KEYS,
   OPERATIONAL_POLICY_KEYS,
   adminPartnerAlertChannelRoutesToFcm,
+  adminPreferredAcceptModeUsesFirstPickPriority,
   normalizeAdminMarketplaceOpenMode,
   readPolicyNumber,
   readPolicyString,
@@ -59,7 +60,7 @@ export function buildPolicySimulation(
   const partnerRows = buildPartnerRows(invitedPartners, policyInputs.backupLocationFreshnessMinutes);
   const expiresAt = new Date(Date.now() + policyInputs.responseWindowMinutes * 60 * 1000);
   const immediateBackup = policyInputs.marketplaceOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
-  const customerFinalConfirm = policyInputs.preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+  const customerFinalConfirm = adminPreferredAcceptModeUsesFirstPickPriority(policyInputs.preferredAcceptMode);
   const ready = eligiblePartners.length > 0 && freshEligible.length > 0;
 
   return {

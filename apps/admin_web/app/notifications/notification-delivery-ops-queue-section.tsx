@@ -2,6 +2,7 @@ import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/adm
 import { StatusBadge, StatusBadgeLink, type StatusBadgeTone } from '../../components/status-badge';
 
 export type NotificationDeliveryOpsQueueItem = {
+  readonly actionLabel: string;
   readonly count: number;
   readonly detail: string;
   readonly href: string;
@@ -18,13 +19,15 @@ export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliv
   return (
     <AdminSection
       className="soft-card admin-mb-16"
-      description="Fix current delivery blockers before retrying, so alert sends do not loop."
+      description="Resolve failed or unconfirmed alerts first. Contact the affected user directly when the message is urgent."
       status={
         <StatusBadge tone={items.length ? 'warning' : 'success'}>
-          {items.length ? `${items.length} issue(s)` : 'No delivery blockers'}
+          {items.length
+            ? `${items.length} queue ${items.length === 1 ? 'type' : 'types'}`
+            : 'No delivery blockers'}
         </StatusBadge>
       }
-      title="Delivery operations queue"
+      title="Needs action"
     >
       <AdminTaskGrid>
         {items.length ? (
@@ -36,15 +39,15 @@ export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliv
               title={item.count}
             >
               <StatusBadgeLink href={item.href} tone="neutral">
-                Open queue
+                {item.actionLabel}
               </StatusBadgeLink>
             </AdminTaskCard>
           ))
         ) : (
           <AdminTaskCard
-            detail="Keep monitoring failed sends after FCM credentials and mobile token registration are enabled."
+            detail="No failed or unconfirmed mobile alerts currently need operator action."
             leading={<StatusBadge tone="success">Ready</StatusBadge>}
-            title="Delivery path is clean"
+            title="Delivery queue is clear"
           />
         )}
       </AdminTaskGrid>

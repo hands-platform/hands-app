@@ -135,4 +135,83 @@ void main() {
     expect(idleCalls, 0);
     expect(bookingUpdates, ['booking-active-2']);
   });
+
+  test('keeps manual offline state without starting location heartbeat',
+      () async {
+    var calls = 0;
+    final heartbeat = ProviderLocationHeartbeat(() async {
+      calls += 1;
+    });
+
+    final active = await heartbeat.syncForAvailability({
+      'availabilityIntent': 'OFFLINE',
+      'status': 'OFFLINE',
+    });
+
+    expect(active, isFalse);
+    expect(calls, 0);
+    expect(heartbeat.snapshot.active, isFalse);
+  });
+
+  test('refreshes location immediately when available Partner resumes',
+      () async {
+    var calls = 0;
+    final heartbeat = ProviderLocationHeartbeat(() async {
+      calls += 1;
+    });
+
+    final active = await heartbeat.syncForAvailability({
+      'availabilityIntent': 'AVAILABLE',
+      'status': 'ONLINE_AVAILABLE',
+    });
+    heartbeat.stop();
+
+    expect(active, isTrue);
+    expect(calls, 1);
+    expect(heartbeat.snapshot.lastSuccessAt, isNotNull);
+  });
+
+  test('preserves active booking heartbeat context during foreground refresh',
+      () async {
+    final bookingUpdates = <String>[];
+    final heartbeat = ProviderLocationHeartbeat(
+      () async {},
+      updateBookingLocation: (bookingId) async {
+        bookingUpdates.add(bookingId);
+      },
+    );
+
+    await heartbeat.startActiveBooking(
+      'booking-active-resume',
+      runImmediately: false,
+    );
+    await heartbeat.syncForAvailability({
+      'availabilityIntent': 'AVAILABLE',
+      'status': 'ONLINE_BUSY',
+    });
+    final snapshot = heartbeat.snapshot;
+    heartbeat.stop();
+
+    expect(bookingUpdates, ['booking-active-resume']);
+    expect(snapshot.bookingId, 'booking-active-resume');
+    expect(snapshot.interval, ProviderLocationHeartbeat.activeBookingInterval);
+  });
+
+  test('distinguishes availability intent from actual online status', () {
+    expect(
+      providerAvailabilityWantsLocationHeartbeat({
+        'availabilityIntent': 'AVAILABLE',
+        'status': 'OFFLINE',
+        'availabilityReason': 'OUTSIDE_WORKING_HOURS',
+      }),
+      isTrue,
+    );
+    expect(
+      providerAvailabilityIsOnline({
+        'availabilityIntent': 'AVAILABLE',
+        'status': 'OFFLINE',
+      }),
+      isFalse,
+    );
+  });
 }

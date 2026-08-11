@@ -34,8 +34,10 @@ describe('PartnerWithholdingTaxPage', () => {
     expect(markup).toContain('Period: 2026-06');
     expect(markup).toContain('Rows: 25');
     expect(markup).toContain('Withholding command board');
-    expect(markup).toContain('Partner tax payable');
+    expect(markup).toContain('Tax closeout');
+    expect(markup).toContain('Withholding payable');
     expect(markup).toContain('Taxable partners');
+    expect(markup).toContain('/finance-tax/partner-withholding-tax?period=2026-06&amp;take=25');
     expect(markup).toContain('card admin-filter-panel admin-mb-16');
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
@@ -101,10 +103,58 @@ describe('PartnerWithholdingTaxPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/monthly-tax-closings/summary?period=2026-06', expect.anything());
-    expect(markup).toContain('Remittance status');
-    expect(markup).toContain('PAID');
+    expect(markup).toContain('Tax closeout');
+    expect(markup).toContain('Close period');
     expect(markup).toContain('TAX-PAID-001');
-    expect(markup).toContain('Partner tax payable');
+    expect(markup).toContain('Withholding payable');
     expect(markup).toContain('80.000 VND');
+  });
+
+  it('shows the partner taxable base and separate VAT/PIT evidence without private phone data', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/partner-withholding-tax?period=2026-06&take=25') {
+        return [
+          {
+            completedBookingCount: 2,
+            currency: 'VND',
+            grossServiceRevenue: 1000000,
+            partnerName: 'Tax Partner',
+            partnerPayoutTotal: 860000,
+            partnerPhone: '+84900000000',
+            partnerPitWithheldTotal: 30000,
+            partnerVatWithheldTotal: 50000,
+            period: '2026-06',
+            providerProfileId: 'provider-1',
+            totalPartnerTaxWithheld: 80000,
+          },
+        ];
+      }
+      if (href === '/admin/partner-withholding-tax/summary?period=2026-06') {
+        return {
+          currency: 'VND',
+          grossServiceRevenue: 1000000,
+          partnerCountWithRevenue: 1,
+          partnerPayoutTotal: 860000,
+          partnerPitWithheldTotal: 30000,
+          partnerVatWithheldTotal: 50000,
+          period: '2026-06',
+          taxableBookingCount: 2,
+          totalPartnerTaxWithheld: 80000,
+        };
+      }
+      return fallback;
+    });
+
+    const page = await PartnerWithholdingTaxPage({
+      searchParams: Promise.resolve({ period: '2026-06', take: '25' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Partner withholding register');
+    expect(markup).toContain('Partner taxable revenue');
+    expect(markup).toContain('VAT withheld');
+    expect(markup).toContain('PIT withheld');
+    expect(markup).toContain('8.0%');
+    expect(markup).not.toContain('+84900000000');
   });
 });

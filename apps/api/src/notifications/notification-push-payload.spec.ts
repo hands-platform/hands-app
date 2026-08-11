@@ -1,4 +1,5 @@
 import {
+  chatNotificationRoutingData,
   isPartnerAlert,
   maskPushTokenInJson,
   notificationPushData,
@@ -8,14 +9,36 @@ import {
 } from './notification-push-payload';
 
 describe('notification push payload helpers', () => {
+  it('builds the exact chat routing contract and rejects incomplete targets', () => {
+    expect(
+      chatNotificationRoutingData({
+        bookingId: ' booking-1 ',
+        chatRoomId: ' chat-1 ',
+      }),
+    ).toEqual({
+      destination: 'chat',
+      bookingId: 'booking-1',
+      chatRoomId: 'chat-1',
+    });
+
+    expect(() =>
+      chatNotificationRoutingData({
+        bookingId: 'booking-1',
+        chatRoomId: ' ',
+      }),
+    ).toThrow('Chat notification routing requires bookingId and chatRoomId');
+  });
+
   it('keeps FCM push data limited to routing identifiers', () => {
     expect(
       toPushData({
         bookingId: 'booking-1',
         chatRoomId: 'chat-1',
         destination: 'booking',
+        appDestination: 'notificationCenter',
         payoutBatchId: 'payout-batch-1',
         providerProfileId: 'provider-1',
+        customerProfileId: 'customer-1',
         reason: 'Internal operator note',
         addressText: 'Private customer address',
         nested: { unsafe: true },
@@ -24,6 +47,7 @@ describe('notification push payload helpers', () => {
       bookingId: 'booking-1',
       chatRoomId: 'chat-1',
       destination: 'booking',
+      appDestination: 'notificationCenter',
       payoutBatchId: 'payout-batch-1',
       providerProfileId: 'provider-1',
     });
@@ -65,6 +89,25 @@ describe('notification push payload helpers', () => {
     ).toEqual({
       bookingId: 'booking-1',
       type: 'payment.updated',
+      notificationId: 'notification-1',
+    });
+  });
+
+  it('preserves the exact chat routing contract in FCM data', () => {
+    expect(
+      notificationPushData({
+        id: 'notification-1',
+        type: 'chat.message.created',
+        data: chatNotificationRoutingData({
+          bookingId: 'booking-1',
+          chatRoomId: 'chat-1',
+        }),
+      }),
+    ).toEqual({
+      destination: 'chat',
+      bookingId: 'booking-1',
+      chatRoomId: 'chat-1',
+      type: 'chat.message.created',
       notificationId: 'notification-1',
     });
   });

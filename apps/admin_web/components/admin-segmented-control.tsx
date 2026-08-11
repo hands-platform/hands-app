@@ -14,6 +14,7 @@ type AdminSegmentedControlProps<Value extends string = string> = {
   readonly ariaLabel?: string;
   readonly className?: string;
   readonly options: readonly AdminSegmentedControlOption<Value>[];
+  readonly semantics?: 'default' | 'navigation' | 'tabs';
 };
 
 export function AdminSegmentedControl<Value extends string = string>({
@@ -21,26 +22,40 @@ export function AdminSegmentedControl<Value extends string = string>({
   ariaLabel,
   className,
   options,
+  semantics = 'default',
 }: AdminSegmentedControlProps<Value>) {
-  return (
-    <div aria-label={ariaLabel} className={mergeClassNames('booking-date-filter-buttons', className)}>
-      {options.map((option, index) => {
-        const active = option.value === activeValue;
+  const links = options.map((option, index) => {
+    const active = option.value === activeValue;
 
-        return (
-          <a
-            aria-current={active ? 'page' : undefined}
-            aria-label={option.ariaLabel}
-            className={mergeClassNames('booking-date-filter-button', active ? 'is-active' : undefined)}
-            href={option.href}
-            key={`${option.value}-${index}`}
-            onClick={option.onClick}
-            title={option.title}
-          >
-            {option.label}
-          </a>
-        );
-      })}
+    return (
+      <a
+        aria-current={semantics !== 'tabs' && active ? 'page' : undefined}
+        aria-label={option.ariaLabel}
+        aria-selected={semantics === 'tabs' ? active : undefined}
+        className={mergeClassNames('booking-date-filter-button', active ? 'is-active' : undefined)}
+        href={option.href}
+        key={`${option.value}-${index}`}
+        onClick={option.onClick}
+        role={semantics === 'tabs' ? 'tab' : undefined}
+        title={option.title}
+      >
+        {option.label}
+      </a>
+    );
+  });
+
+  const classNames = mergeClassNames('booking-date-filter-buttons', className);
+  if (semantics === 'navigation') {
+    return (
+      <nav aria-label={ariaLabel} className={classNames}>
+        {links}
+      </nav>
+    );
+  }
+
+  return (
+    <div aria-label={ariaLabel} className={classNames} role={semantics === 'tabs' ? 'tablist' : undefined}>
+      {links}
     </div>
   );
 }

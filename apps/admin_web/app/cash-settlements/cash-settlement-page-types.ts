@@ -1,85 +1,23 @@
-import type { ReactNode } from 'react';
-
 import type { AdminEarning } from '../../lib/admin-api';
 import type { AdminDateRange } from '../../lib/date-range';
+import type {
+  AdminQueueAge,
+  AdminQueueSlaFilter,
+} from '../../lib/admin-queue-list';
 
 export type CashSettlementRow = {
   earning: AdminEarning;
   providerName: string;
   providerPhone: string;
   paymentMethod: string;
-  companyCouponOffset: number;
+  originalDebtAmount: number;
+  allocatedAmount: number;
   debtAmount: number;
   platformFee: number;
   taxAmount: number;
-  bookingAmount: number;
-  walletDeductionBreakdown: CashSettlementWalletDeductionBreakdown;
-  settlementReference: string;
-  lastLedgerRef?: string | null;
-  debtOrigin: string;
   settlementEvidence: string;
   serviceLabel: string;
   createdAtLabel: string;
-  nextAction: string;
-};
-
-export type CashSettlementProviderGroup = {
-  providerProfileId: string;
-  providerName: string;
-  currency: string;
-  rowCount: number;
-  companyCouponOffset: number;
-  debtAmount: number;
-  platformFee: number;
-  taxAmount: number;
-  settlementReference: string;
-  oldestOpenMs: number;
-  oldestOpenLabel: string;
-};
-
-export type CommandCard = {
-  title: string;
-  status: string;
-  detail: ReactNode;
-  action: string;
-  className: string;
-  pillClass: string;
-};
-
-export type CashSettlementPriorityItem = {
-  row: CashSettlementRow;
-  priority: string;
-  pillClass: string;
-  ageLabel: string;
-  reason: ReactNode;
-  requiredEvidence: ReactNode[];
-  unlockResult: ReactNode[];
-};
-
-export type AppliedCashSettlementPolicyCard = {
-  label: string;
-  value: string;
-  helper: string;
-};
-
-export type EvidenceChecklistItem = {
-  title: string;
-  status: string;
-  detail: ReactNode;
-  operatorRule: string;
-  href: string;
-  className: string;
-  pillClass: string;
-};
-
-export type CashSettlementHandoffItem = EvidenceChecklistItem;
-
-export type WalletRecoveryStep = {
-  title: string;
-  status: string;
-  detail: ReactNode;
-  operatorRule: string;
-  pillClass: string;
 };
 
 export type CashSettlementSummary = {
@@ -97,21 +35,27 @@ export type CashSettlementSummary = {
   cashPaymentRowCount: number;
 };
 
-export type CashSettlementWalletDeductionBreakdown = {
-  readonly companyCouponExpense: number;
-  readonly walletDeductionCompanyOutputVat: number;
-  readonly walletDeductionPartnerTaxPayable: number;
-  readonly walletDeductionPlatformFeeNetRevenue: number;
-};
-
-export type CashSettlementQueueFilter = 'all' | 'stale' | 'high-debt' | 'missing-ref' | 'payment-check';
+export type CashSettlementQueueFilter =
+  | 'all'
+  | 'stale'
+  | 'high-debt'
+  | 'missing-evidence'
+  | 'payment-check';
+export type CashSettlementSort = 'highest-debt' | 'newest' | 'oldest';
+export type CashSettlementView = 'guide' | null;
 
 export type CashSettlementFilters = {
+  age: AdminQueueAge;
   page: number;
   pageSize: number;
+  period: string | null;
   range: AdminDateRange;
+  returnTo: string | null;
   queue: CashSettlementQueueFilter;
   q: string;
+  sla: AdminQueueSlaFilter;
+  sort: CashSettlementSort;
+  view: CashSettlementView;
 };
 
 export type CashSettlementPagination<T> = {
@@ -125,9 +69,9 @@ export type CashSettlementPagination<T> = {
 };
 
 export const cashSettlementQueueOptions: Array<{ value: CashSettlementQueueFilter; label: string }> = [
-  { value: 'all', label: 'All open debt' },
-  { value: 'stale', label: 'Over 24h' },
-  { value: 'high-debt', label: 'High debt' },
-  { value: 'missing-ref', label: 'No recorded ref' },
+  { value: 'all', label: 'All open' },
+  { value: 'stale', label: 'Overdue' },
+  { value: 'missing-evidence', label: 'Missing evidence' },
+  { value: 'high-debt', label: 'High exposure' },
   { value: 'payment-check', label: 'Payment check' },
 ];

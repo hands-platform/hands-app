@@ -22,7 +22,7 @@ describe('Metric card CSS', () => {
   it('scopes KPI copy typography to the metric content column', () => {
     const scopeBlock = cssRuleBlock('.metric-card-scope {');
     const labelBlock = cssRuleBlock('.metric-card-content > p {');
-    const valueBlock = cssRuleBlock('.metric-card-content > h2 {');
+    const valueBlock = cssRuleBlock('.metric-card-content > .metric-card-value {');
     const helperBlock = cssRuleBlock('.metric-card-content > small {');
 
     expect(scopeBlock).toContain('border-radius: 999px;');
@@ -32,6 +32,7 @@ describe('Metric card CSS', () => {
     expect(helperBlock).toContain('display: block;');
     expect(cssRuleIndex('.metric-card p {')).toBe(-1);
     expect(cssRuleIndex('.metric-card h2 {')).toBe(-1);
+    expect(cssRuleIndex('.metric-card-content > h2 {')).toBe(-1);
     expect(cssRuleIndex('.metric-card small {')).toBe(-1);
   });
 });

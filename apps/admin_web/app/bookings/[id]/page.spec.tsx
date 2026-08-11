@@ -3,12 +3,15 @@ import { vi } from 'vitest';
 
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import { adminGet } from '../../../lib/admin-api';
-import { shouldLoadBookingDetailMarketplaceProviders } from './booking-detail-marketplace-provider-loader';
-import BookingDetailPage, {
+import {
+  readBookingDetailCheckpoint,
   readBookingDetailDiagnosticsView,
   readBookingDetailOverviewView,
+  readBookingDetailReturnHref,
   readBookingDetailWorkspace,
-} from './page';
+} from './booking-detail-page-params';
+import { shouldLoadBookingDetailMarketplaceProviders } from './booking-detail-marketplace-provider-loader';
+import BookingDetailPage from './page';
 
 vi.mock('next/navigation', () => ({
   notFound: vi.fn(() => {
@@ -35,72 +38,8 @@ const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAcc
 describe('BookingDetailPage data loading', () => {
   beforeEach(() => {
     mockedAdminGet.mockReset();
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
     mockedGetCurrentAdminOperatorAccess.mockReset();
-  });
-
-  it('requests only the operations policy keys needed by the booking detail readout', async () => {
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
-
-    await expect(
-      BookingDetailPage({
-        params: Promise.resolve({ id: 'booking-policy-load' }),
-        searchParams: Promise.resolve({ section: 'records' }),
-      }),
-    ).rejects.toThrow('NEXT_NOT_FOUND');
-
-    const policyHref = mockedAdminGet.mock.calls
-      .map(([href]) => href)
-      .find((href) => href.startsWith('/admin/operational-policy'));
-    expect(policyHref).toBe(
-      '/admin/operational-policy?keys=matching.provider_response_window_minutes%2Cmatching.marketplace_partner_radius_meters%2Cmatching.marketplace_partner_location_max_age_minutes%2Cmatching.travel_buffer_minutes%2Cmatching.preferred_accept_mode%2Cmatching.marketplace_open_mode%2Cwallet.negative_balance_gate%2Cdecision.action_evidence_gate_mode%2Ccash.settlement_clearance_policy%2Cmatching.first_pick_expiry_action_policy%2Ccancellation.after_match_policy%2Cno_show.evidence_requirement_policy%2Cno_show.partner_report_policy%2Cnotification.partner_alert_channel%2Cpayout.batch_cycle_policy',
-    );
-    expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/bookings/booking-policy-load/notifications?take=8', []);
-    expect(mockedAdminGet).not.toHaveBeenCalledWith(
-      '/admin/bookings/booking-policy-load/marketplace-providers?take=40',
-      [],
-    );
-    expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/operational-policy', []);
-  });
-
-  it('skips operational record policy queries for the overview workspace', async () => {
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
-
-    await expect(
-      BookingDetailPage({ params: Promise.resolve({ id: 'booking-overview-load' }) }),
-    ).rejects.toThrow('NEXT_NOT_FOUND');
-
-    expect(
-      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/operational-policy')),
-    ).toBe(false);
-  });
-
-  it('loads notification diagnostics only when the full booking detail view is requested', async () => {
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
-    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
-      categories: [],
-      email: 'master@example.com',
-      fullName: 'Master Admin',
-      id: 'master-1',
-      phone: null,
-      roles: ['ADMIN', 'MASTER_ADMIN'],
-      updatedAt: null,
-    });
-
-    await expect(
-      BookingDetailPage({
-        params: Promise.resolve({ id: 'booking-diagnostics-load' }),
-        searchParams: Promise.resolve({ section: 'full' }),
-      }),
-    ).rejects.toThrow('NEXT_NOT_FOUND');
-
-    expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/bookings/booking-diagnostics-load/notifications?take=8',
-      [],
-    );
-  });
-
-  it('does not load notification diagnostics for ordinary operators even when full detail is requested', async () => {
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
       categories: ['BOOKINGS_DETAIL'],
       email: 'ops@example.com',
@@ -110,30 +49,31 @@ describe('BookingDetailPage data loading', () => {
       roles: ['ADMIN'],
       updatedAt: null,
     });
+  });
 
+  it('loads the booking and scoped operating policies for ordinary operators', async () => {
     await expect(
       BookingDetailPage({
-        params: Promise.resolve({ id: 'booking-ordinary-full-load' }),
-        searchParams: Promise.resolve({ section: 'full' }),
+        params: Promise.resolve({ id: 'booking-operator-load' }),
+        searchParams: Promise.resolve({ section: 'records' }),
       }),
     ).rejects.toThrow('NEXT_NOT_FOUND');
 
-    expect(mockedAdminGet).not.toHaveBeenCalledWith(
-      '/admin/bookings/booking-ordinary-full-load/notifications?take=8',
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/bookings/booking-operator-load?includeDiagnostics=false',
+      null,
+    );
+    expect(
+      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/operational-policy?keys=')),
+    ).toBe(true);
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/bookings/booking-operator-load/notifications?take=8',
       [],
     );
-    expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/bookings/booking-ordinary-full-load?includeDiagnostics=false',
-      null,
-    );
-    expect(mockedAdminGet).not.toHaveBeenCalledWith(
-      '/admin/bookings/booking-ordinary-full-load?includeDiagnostics=true',
-      null,
-    );
+    expect(mockedAdminGet.mock.calls.some(([href]) => href.includes('/marketplace-providers?take='))).toBe(false);
   });
 
-  it('loads booking diagnostics through the detail API only for Master Admins', async () => {
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+  it('loads diagnostics for Master Admins while retaining operational notification evidence', async () => {
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
       categories: [],
       email: 'master@example.com',
@@ -146,19 +86,22 @@ describe('BookingDetailPage data loading', () => {
 
     await expect(
       BookingDetailPage({
-        params: Promise.resolve({ id: 'booking-master-full-load' }),
-        searchParams: Promise.resolve({ section: 'full' }),
+        params: Promise.resolve({ id: 'booking-master-load' }),
+        searchParams: Promise.resolve({ section: 'diagnostics' }),
       }),
     ).rejects.toThrow('NEXT_NOT_FOUND');
 
     expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/bookings/booking-master-full-load?includeDiagnostics=true',
+      '/admin/bookings/booking-master-load?includeDiagnostics=true',
       null,
+    );
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/bookings/booking-master-load/notifications?take=8',
+      [],
     );
   });
 
-  it('does not load audit or notification diagnostics for the settlement workspace', async () => {
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+  it('keeps Master Admin diagnostics out of the default payload while loading operational notifications', async () => {
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
       categories: [],
       email: 'master@example.com',
@@ -171,22 +114,40 @@ describe('BookingDetailPage data loading', () => {
 
     await expect(
       BookingDetailPage({
-        params: Promise.resolve({ id: 'booking-settlement-diagnostics-load' }),
-        searchParams: Promise.resolve({ diagnostics: 'settlement', section: 'diagnostics' }),
+        params: Promise.resolve({ id: 'booking-master-default' }),
+        searchParams: Promise.resolve({}),
       }),
     ).rejects.toThrow('NEXT_NOT_FOUND');
 
     expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/bookings/booking-settlement-diagnostics-load?includeDiagnostics=false',
+      '/admin/bookings/booking-master-default?includeDiagnostics=false',
       null,
     );
-    expect(mockedAdminGet).not.toHaveBeenCalledWith(
-      '/admin/bookings/booking-settlement-diagnostics-load/notifications?take=8',
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/bookings/booking-master-default/notifications?take=8',
       [],
     );
   });
 
-  it('maps booking detail workspace query values without breaking the legacy full link', () => {
+  it.each([
+    [{ section: 'diagnostics' }, 'booking-legacy-diagnostics'],
+    [{ section: 'full' }, 'booking-legacy-full'],
+    [{ diagnostics: 'settlement', section: 'diagnostics' }, 'booking-legacy-settlement'],
+  ])('keeps legacy query URLs compatible with the restored detail page', async (searchParams, bookingId) => {
+    await expect(
+      BookingDetailPage({
+        params: Promise.resolve({ id: bookingId }),
+        searchParams: Promise.resolve(searchParams),
+      }),
+    ).rejects.toThrow('NEXT_NOT_FOUND');
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      `/admin/bookings/${bookingId}?includeDiagnostics=false`,
+      null,
+    );
+  });
+
+  it('maps preserved booking detail query values without changing old links', () => {
     expect(readBookingDetailWorkspace({})).toBe('overview');
     expect(readBookingDetailWorkspace({ section: 'records' })).toBe('records');
     expect(readBookingDetailWorkspace({ section: 'diagnostics' })).toBe('diagnostics');
@@ -195,7 +156,7 @@ describe('BookingDetailPage data loading', () => {
     expect(readBookingDetailWorkspace({ section: 'unknown' })).toBe('overview');
   });
 
-  it('defaults diagnostics to history and accepts only the settlement subview explicitly', () => {
+  it('keeps the legacy diagnostics parser stable for external links', () => {
     expect(readBookingDetailDiagnosticsView({})).toBe('history');
     expect(readBookingDetailDiagnosticsView({ diagnostics: 'history' })).toBe('history');
     expect(readBookingDetailDiagnosticsView({ diagnostics: 'settlement' })).toBe('settlement');
@@ -203,7 +164,7 @@ describe('BookingDetailPage data loading', () => {
     expect(readBookingDetailDiagnosticsView({ diagnostics: 'unknown' })).toBe('history');
   });
 
-  it('defaults the overview to command and accepts only the activity subview explicitly', () => {
+  it('keeps the legacy overview parser stable for external links', () => {
     expect(readBookingDetailOverviewView({})).toBe('command');
     expect(readBookingDetailOverviewView({ overview: 'command' })).toBe('command');
     expect(readBookingDetailOverviewView({ overview: 'activity' })).toBe('activity');
@@ -211,7 +172,71 @@ describe('BookingDetailPage data loading', () => {
     expect(readBookingDetailOverviewView({ overview: 'unknown' })).toBe('command');
   });
 
-  it('loads marketplace provider candidates only for non-terminal booking details', () => {
+  it('accepts only the four booking checkpoint query values', () => {
+    expect(readBookingDetailCheckpoint({ checkpoint: 'CUSTOMER_CONTACTED' })).toBe('CUSTOMER_CONTACTED');
+    expect(readBookingDetailCheckpoint({ checkpoint: 'PROVIDER_CONTACTED' })).toBe('PROVIDER_CONTACTED');
+    expect(readBookingDetailCheckpoint({ checkpoint: 'LOCATION_CHECKED' })).toBe('LOCATION_CHECKED');
+    expect(readBookingDetailCheckpoint({ checkpoint: ['PAYMENT_REVIEWED', 'LOCATION_CHECKED'] })).toBe(
+      'PAYMENT_REVIEWED',
+    );
+    expect(readBookingDetailCheckpoint({ checkpoint: 'DELETE_BOOKING' })).toBeNull();
+    expect(readBookingDetailCheckpoint({})).toBeNull();
+  });
+
+  it('preserves only approved internal booking, chat evidence, and Vietnam overview return paths', () => {
+    expect(readBookingDetailReturnHref({ returnTo: '/bookings?view=matching&sort=oldest&page=2' })).toBe(
+      '/bookings?view=matching&sort=oldest&page=2',
+    );
+    expect(readBookingDetailReturnHref({ returnTo: '/bookings/completed?view=closeout' })).toBe(
+      '/bookings/completed?view=closeout',
+    );
+    expect(
+      readBookingDetailReturnHref({
+        returnTo: '/bookings/post-match-cancellations?view=manual-decision&range=7d#booking-booking-1',
+      }),
+    ).toBe('/bookings/post-match-cancellations?view=manual-decision&range=7d#booking-booking-1');
+    expect(
+      readBookingDetailReturnHref({ returnTo: '/bookings/post-match-cancellations?view=no-show' }),
+    ).toBe('/bookings/post-match-cancellations?view=no-show');
+    expect(
+      readBookingDetailReturnHref({
+        returnTo: '/bookings/post-match-cancellations?view=post-match-cancellations',
+      }),
+    ).toBe('/bookings/post-match-cancellations?view=post-match-cancellations');
+    expect(
+      readBookingDetailReturnHref({
+        returnTo: '/vietnam-overview?view=live&region=hcm&signals=online%2Cbookings#vietnam-operating-map',
+      }),
+    ).toBe('/vietnam-overview?view=live&region=hcm&signals=online%2Cbookings#vietnam-operating-map');
+    expect(
+      readBookingDetailReturnHref({
+        returnTo: '/chat-archive?q=late&range=7d&sender=partner&page=2',
+      }),
+    ).toBe('/chat-archive?q=late&range=7d&sender=partner&page=2');
+    expect(readBookingDetailReturnHref({ returnTo: 'https://example.com' })).toBe('/bookings');
+    expect(readBookingDetailReturnHref({ returnTo: '/bookings\\..\\admin' })).toBe('/bookings');
+    expect(readBookingDetailReturnHref({}, '/bookings/post-match-cancellations')).toBe(
+      '/bookings/post-match-cancellations',
+    );
+  });
+
+  it('keeps every common decision fragment connected to a rendered detail target', () => {
+    const decisionSource = readFileSync('lib/booking-command-decision-strip.ts', 'utf8');
+    const renderedSources = [
+      readFileSync('app/bookings/[id]/page.tsx', 'utf8'),
+      readFileSync('app/bookings/[id]/booking-action-status-sections.tsx', 'utf8'),
+    ].join('\n');
+    const fragments = [...decisionSource.matchAll(/href: '#([A-Za-z0-9_-]+)'/gu)].map(
+      (match) => match[1],
+    );
+
+    expect(fragments.length).toBeGreaterThan(0);
+    for (const fragment of fragments) {
+      expect(renderedSources).toContain(`id="${fragment}"`);
+    }
+  });
+
+  it('retains the marketplace loader policy', () => {
     expect(shouldLoadBookingDetailMarketplaceProviders(null)).toBe(false);
     expect(shouldLoadBookingDetailMarketplaceProviders({ status: 'COMPLETED' } as never)).toBe(false);
     expect(shouldLoadBookingDetailMarketplaceProviders({ status: 'CANCELLED' } as never)).toBe(false);
@@ -219,47 +244,93 @@ describe('BookingDetailPage data loading', () => {
     expect(shouldLoadBookingDetailMarketplaceProviders({ status: 'IN_SERVICE' } as never)).toBe(true);
   });
 
-  it('uses shared Vuexy badge atoms for advanced booking record headings', () => {
+  it('does not present stale handling checkpoints as open work after a booking ends', () => {
     const source = readFileSync('app/bookings/[id]/page.tsx', 'utf8');
 
-    expect(source).toContain('StatusBadge');
-    expect(source).not.toContain('<span className="pill pill-info">Evidence</span>');
-    expect(source).not.toContain('<span className="pill pill-success">Dispatch</span>');
-    expect(source).not.toContain('<span className="pill pill-warn">History</span>');
-    expect(source).not.toContain('<span className="pill pill-neutral">Settlement</span>');
+    expect(source).toContain('!BOOKING_DETAIL_TERMINAL_STATUSES.has(booking.status) &&');
+    expect(source).toContain("opsTaskCards.some((task) => task.status !== 'DONE')");
+  });
+});
+
+describe('BookingDetailPage section visibility', () => {
+  const source = readFileSync('app/bookings/[id]/page.tsx', 'utf8');
+
+  it('hides the captured extended sections while retaining the operator booking record', () => {
+    const hiddenSectionFlags = [
+      'addressRadiusContract',
+      'addressSupplyCheck',
+      'alertRecords',
+      'appliedOperationsPolicy',
+      'bookingCloseoutChecklist',
+      'bookingHandoffChecklist',
+      'bookingStageStatus',
+      'chatLifecycle',
+      'chronologicalActivity',
+      'communicationMovementHandoff',
+      'customerWaitDecision',
+      'dispatchChecklist',
+      'liveServiceBoard',
+      'marketplaceWalletEvidence',
+      'matchingRuleStatus',
+      'operatingLedger',
+      'operatingSnapshot',
+      'operatingTimeline',
+      'operationsAuditRecords',
+      'payoutBatchEligibility',
+      'recordDetails',
+      'recordOverview',
+      'servicePricingEvidence',
+    ] as const;
+
+    hiddenSectionFlags.forEach((flag) => expect(source).toContain(`${flag}: false`));
+    expect(source).toContain('<BookingCommandDecisionStripSection');
+    expect(source).toContain('<BookingUnifiedDetailSection');
+    expect(source).toContain('<BookingDetailChatTranscriptSection');
+    expect(source).toContain('<BookingDetailLifecycleListSection');
+    expect(source).toContain('<AdminReviewRecordsSection');
+    expect(source).toContain('<BookingFullRecordIndex');
+    expect(source).toContain('<BookingEvidenceSections');
+    expect(source).toContain('<BookingOperatorQueueSections');
+    expect(source).toContain('<BookingRecordDetailSections');
+    expect(source).toContain('showOverviewSections={BOOKING_DETAIL_VISIBLE_SECTIONS.recordOverview}');
+    expect(source).toContain('Developer/System diagnostics');
+    expect(source).toContain('id="booking-developer-system"');
+    expect(source).toContain('includeDiagnostics=');
   });
 
-  it('keeps deep diagnostic booking records behind the already-resolved Developer/System gate', () => {
-    const source = readFileSync('app/bookings/[id]/page.tsx', 'utf8');
-
-    expect(source).not.toContain('AdminDeveloperSystemSection');
-    expect(source).toContain("diagnosticsView === 'history'");
-    expect(source).toContain("diagnosticsView === 'settlement'");
-    expect(source.indexOf("diagnosticsView === 'history'")).toBeLessThan(
-      source.indexOf('<BookingOperatingLedgerSection'),
+  it('keeps the operator decision queue before the complete booking summary', () => {
+    const needsActionPosition = source.indexOf('<div id="booking-needs-action">');
+    const summaryPosition = source.indexOf(
+      '<BookingUnifiedDetailSection {...unifiedDetailProps} view="summary" />',
     );
-    expect(source.indexOf("diagnosticsView === 'settlement'")).toBeLessThan(
-      source.indexOf('<BookingRecordDetailSections'),
+
+    expect(needsActionPosition).toBeGreaterThan(-1);
+    expect(summaryPosition).toBeGreaterThan(-1);
+    expect(needsActionPosition).toBeLessThan(summaryPosition);
+    expect(source.indexOf('href="#booking-needs-action"')).toBeLessThan(
+      source.indexOf('href="#booking-unified-detail"'),
     );
   });
 
-  it('renders overview, operational records, and diagnostics as separate booking workspaces', () => {
-    const source = readFileSync('app/bookings/[id]/page.tsx', 'utf8');
+  it('renders the full record index only inside the explicit Developer/System boundary', () => {
+    expect(source.indexOf('{includeDeveloperDiagnostics ? (')).toBeLessThan(
+      source.indexOf('<BookingFullRecordIndex'),
+    );
+    expect(source.indexOf('<BookingFullRecordIndex')).toBeLessThan(
+      source.indexOf('id="booking-developer-system"') === -1
+        ? Number.POSITIVE_INFINITY
+        : source.indexOf('</section>', source.indexOf('id="booking-developer-system"')),
+    );
+  });
 
-    expect(source).toContain('id="booking-workspace-selector"');
-    expect(source).toContain('ariaLabel="Booking detail workspaces"');
-    expect(source).toContain('id="booking-diagnostics-workspace-selector"');
-    expect(source).toContain('id="booking-overview-mode-selector"');
-    expect(source).toContain('ariaLabel="Booking overview modes"');
-    expect(source).toContain("detailWorkspace === 'overview'");
-    expect(source).toContain("overviewView === 'command'");
-    expect(source).toContain("overviewView === 'activity'");
-    expect(source).toContain("view={overviewView === 'command' ? 'summary' : 'details'}");
-    expect(source).toContain("detailWorkspace === 'records' && showOperatorAdvancedRecordsDisclosure");
-    expect(source).toContain("diagnosticsView === 'history'");
-    expect(source).toContain("diagnosticsView === 'settlement'");
-    expect(source.indexOf("detailWorkspace === 'records' && showOperatorAdvancedRecordsDisclosure")).toBeLessThan(
-      source.indexOf('<BookingEvidenceSections'),
+  it('keeps Developer/System records behind the existing access check', () => {
+    expect(source).toContain('canViewAdminDeveloperSystem');
+    expect(source).toContain('const canViewDeveloperDiagnostics');
+    expect(source).toContain("canViewDeveloperDiagnostics && detailWorkspace === 'diagnostics'");
+    expect(source).toContain('?section=diagnostics#booking-developer-system');
+    expect(source).toContain('{includeDeveloperDiagnostics ? (');
+    expect(source.indexOf('{includeDeveloperDiagnostics ? (')).toBeLessThan(
+      source.indexOf('id="booking-developer-system"'),
     );
   });
 });

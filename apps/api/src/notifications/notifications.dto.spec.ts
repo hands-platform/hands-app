@@ -1,6 +1,10 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { DeleteDeviceTokenDto, RegisterDeviceTokenDto } from './notifications.dto';
+import {
+  DeleteDeviceTokenDto,
+  ProviderChatNotificationReadDto,
+  RegisterDeviceTokenDto,
+} from './notifications.dto';
 
 describe('notification DTOs', () => {
   it('trims and accepts Android/iOS device token registration payloads', async () => {
@@ -71,5 +75,24 @@ describe('notification DTOs', () => {
 
     await expect(validate(dto)).resolves.toHaveLength(0);
     expect(dto.token).toBe('fcm-token-1');
+  });
+
+  it('trims and validates provider chat room read payloads', async () => {
+    const dto = plainToInstance(ProviderChatNotificationReadDto, {
+      chatRoomId: ' chat-room-1 ',
+    });
+
+    await expect(validate(dto)).resolves.toHaveLength(0);
+    expect(dto.chatRoomId).toBe('chat-room-1');
+  });
+
+  it('rejects empty provider chat room read payloads', async () => {
+    const dto = plainToInstance(ProviderChatNotificationReadDto, {
+      chatRoomId: '   ',
+    });
+
+    const errors = await validate(dto);
+
+    expect(errors.map((error) => error.property)).toContain('chatRoomId');
   });
 });

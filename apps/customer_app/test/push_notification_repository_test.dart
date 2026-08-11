@@ -41,6 +41,36 @@ void main() {
     expect(result.message, 'In-app notifications enabled.');
     expect(remoteDataSource.registeredTokens, isEmpty);
   });
+
+  test('customer disables the current remote token before logout', () async {
+    final remoteDataSource = _RecordingNotificationRemoteDataSource();
+
+    await unregisterCurrentPushDevice(
+      pushTokenDataSource: _FakePushTokenDataSource(
+        const DevicePushToken(token: 'fcm-token-1', platform: 'android'),
+      ),
+      remoteDataSource: remoteDataSource,
+    );
+
+    expect(remoteDataSource.disabledTokens, ['fcm-token-1']);
+  });
+
+  test('customer does not unregister an in-app-only token', () async {
+    final remoteDataSource = _RecordingNotificationRemoteDataSource();
+
+    await unregisterCurrentPushDevice(
+      pushTokenDataSource: _FakePushTokenDataSource(
+        const DevicePushToken(
+          token: 'in_app_notifications',
+          platform: 'android_in_app',
+          remoteRegistrationRequired: false,
+        ),
+      ),
+      remoteDataSource: remoteDataSource,
+    );
+
+    expect(remoteDataSource.disabledTokens, isEmpty);
+  });
 }
 
 class _FakePushTokenDataSource implements PushTokenDataSource {
@@ -61,6 +91,7 @@ class _RecordingNotificationRemoteDataSource
       : super(ApiClient(baseUrl: 'http://localhost'));
 
   final registeredTokens = <DevicePushToken>[];
+  final disabledTokens = <String>[];
 
   @override
   Future<void> registerDeviceToken({
@@ -68,5 +99,10 @@ class _RecordingNotificationRemoteDataSource
     required String platform,
   }) async {
     registeredTokens.add(DevicePushToken(token: token, platform: platform));
+  }
+
+  @override
+  Future<void> disableDeviceToken(String token) async {
+    disabledTokens.add(token);
   }
 }

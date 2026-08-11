@@ -61,7 +61,7 @@ describe('operations handoff booking queue model', () => {
       customerAvatarStatus: 'matching',
       customerHref: '/customers/customer-a',
       partnerAvatarStatus: 'matching',
-      partnerDetail: 'Preferred Partner / 1 participant(s)',
+      partnerDetail: 'Preferred Partner / 1 participant',
       partnerHref: '/partners/partner-linh',
       partnerName: 'Partner Linh',
       paymentLabel: 'CASH / AUTHORIZED / 150.000 VND',

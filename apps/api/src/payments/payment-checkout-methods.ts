@@ -9,6 +9,7 @@ export type CustomerCheckoutMethod = {
 
 const checkoutLabels: Partial<Record<PaymentMethod, string>> = {
   [PaymentMethod.CASH]: 'Cash',
+  [PaymentMethod.CUSTOMER_WALLET]: 'Wallet',
   [PaymentMethod.MOMO]: 'MoMo',
   [PaymentMethod.VNPAY]: 'VNPay',
   [PaymentMethod.CARD]: 'Card',

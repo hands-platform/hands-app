@@ -11,10 +11,12 @@ describe('OperationsHandoffReadinessChecklistSection', () => {
     );
 
     expect(source).toContain('AdminActionCard');
+    expect(source).toContain('AdminDisclosure');
     expect(source).toContain('AdminFilterChipGroup');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
-    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).toContain('AdminQueueMeta');
+    expect(source).toContain('actionLabel={`Review ${item.title}`}');
     expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain("<span className={openCount ? 'pill pill-warn' : 'pill pill-success'}>");
@@ -63,10 +65,14 @@ describe('OperationsHandoffReadinessChecklistSection', () => {
     expect(section.type.name).toBe('AdminSection');
     expect(rendered).toContain('Operations review checklist');
     expect(rendered).toContain('Past checks that still need booking, chat, cash, alert, customer, or note review.');
-    expect(rendered).toContain('1 check(s) open');
+    expect(rendered).toContain('1 check open');
     expect(rendered).toContain('Live matching reviewed');
-    expect(rendered).not.toContain('Notifications clear');
-    expect(hrefsIn(section)).toContain('/bookings?view=matching');
+    expect(rendered).toContain('Completed checks');
+    expect(rendered).toContain('1');
+    expect(rendered).toContain('Notifications clear');
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining(['/bookings?view=matching', '/notifications']),
+    );
   });
 
   it('keeps the review checklist anchor visible when nothing is open', () => {

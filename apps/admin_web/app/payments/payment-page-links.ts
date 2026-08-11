@@ -3,16 +3,21 @@ import type { PaymentFilterLink, PaymentRangeLink } from './payment-filter-board
 
 export function paymentFilterLinks(): PaymentFilterLink[] {
   return [
-    { href: '/payments?review=all', label: 'All payments', review: 'all' },
-    { href: '/payments?review=capture', label: 'Capture review', review: 'capture' },
-    { href: '/payments?review=missing-ref', label: 'Missing refs', review: 'missing-ref' },
-    { href: '/payments?review=authorized', label: 'Authorized holds', review: 'authorized' },
-    { href: '/payments?review=cash', label: 'Cash collection', review: 'cash' },
-    { href: '/payments?review=cash-debt', label: 'Cash fee debt', review: 'cash-debt' },
-    { href: '/payments?review=needs-action', label: 'Needs action', review: 'needs-action' },
-    { href: '/payments?review=callback-review', label: 'Callback review', review: 'callback-review' },
-    { href: '/payments?review=callback-verified', label: 'Callback verified', review: 'callback-verified' },
-    { href: '/payments?review=refunded', label: 'Refunded', review: 'refunded' },
+    { group: 'live', href: '/payments?review=capture-ready', label: 'Capture ready', review: 'capture-ready' },
+    { group: 'live', href: '/payments?review=release-recommended', label: 'Release recommended', review: 'release-recommended' },
+    { group: 'live', href: '/payments?review=active-cash', label: 'Active cash collection', review: 'active-cash' },
+    { group: 'exception', href: '/payments?review=terminal-cash-cleanup', label: 'Terminal cash cleanup', review: 'terminal-cash-cleanup' },
+    { group: 'exception', href: '/payments?review=completed-authorization-blocked', label: 'Completed authorization blocked', review: 'completed-authorization-blocked' },
+    { group: 'exception', href: '/payments?review=missing-gateway-evidence', label: 'Missing gateway evidence', review: 'missing-gateway-evidence' },
+    { group: 'exception', href: '/payments?review=failed-active', label: 'Failed active payment', review: 'failed-active' },
+    { group: 'exception', href: '/payments?review=evidence-conflict', label: 'Gateway evidence conflict', review: 'evidence-conflict' },
+    { group: 'exception', href: '/payments?review=cash-debt', label: 'Cash debt', review: 'cash-debt' },
+    { group: 'history', href: '/payments?review=history-captured', label: 'Captured', review: 'history-captured' },
+    { group: 'history', href: '/payments?review=history-released', label: 'Released', review: 'history-released' },
+    { group: 'history', href: '/payments?review=history-refunded', label: 'Refunded', review: 'history-refunded' },
+    { group: 'history', href: '/payments?review=callback-verified', label: 'Verified callback history', review: 'callback-verified' },
+    { group: 'history', href: '/payments?review=authorized', label: 'All authorized', review: 'authorized' },
+    { group: 'history', href: '/payments?review=all', label: 'All payments', review: 'all' },
   ];
 }
 
@@ -33,32 +38,47 @@ export function withPaymentRange(href: string, range: AdminDateRange): string {
 }
 
 export function paymentFilterDescription(review: string): string {
-  if (review === 'capture') {
-    return 'authorized payments tied to completed services, ready for capture review.';
+  if (review === 'capture-ready' || review === 'capture') {
+    return 'completed bookings whose payment evidence has passed the server capture policy.';
   }
-  if (review === 'missing-ref') {
-    return 'authorized payments that do not yet have a gateway reference.';
+  if (review === 'release-recommended') {
+    return 'non-capture terminal bookings whose authorization should be released.';
+  }
+  if (review === 'evidence-conflict' || review === 'callback-review') {
+    return 'payments with callback signature, amount, or outcome evidence conflicts.';
+  }
+  if (review === 'active-cash' || review === 'cash') {
+    return 'cash payments attached to bookings that are still operationally active.';
+  }
+  if (review === 'terminal-cash-cleanup' || review === 'stale-mismatch') {
+    return 'terminal bookings whose cash payment record still needs non-mutating cleanup review.';
+  }
+  if (review === 'completed-authorization-blocked') {
+    return 'completed bookings whose authorization cannot be captured with the retained evidence.';
   }
   if (review === 'authorized') {
-    return 'active authorization holds that still need service or payment resolution.';
+    return 'all authorization holds, including blocked and recommended decisions.';
   }
-  if (review === 'cash') {
-    return 'cash bookings waiting for collection confirmation.';
+  if (review === 'failed-active') {
+    return 'failed payments attached to bookings that are still active.';
+  }
+  if (review === 'missing-gateway-evidence') {
+    return 'external gateway payments missing a reference or verified callback evidence.';
   }
   if (review === 'cash-debt') {
-    return 'completed cash bookings where the partner still owes HANDS fee or tax wallet debt.';
+    return 'cash payments whose linked Partner earning still has an unsettled negative balance.';
   }
-  if (review === 'needs-action') {
-    return 'payments that are not settled, released, or refunded yet.';
+  if (review === 'history-captured') {
+    return 'captured payment history.';
   }
-  if (review === 'callback-review') {
-    return 'MoMo or VNPay callbacks that were received without a verified gateway signature.';
+  if (review === 'history-released') {
+    return 'released authorization history.';
+  }
+  if (review === 'history-refunded') {
+    return 'refunded payment history.';
   }
   if (review === 'callback-verified') {
-    return 'MoMo or VNPay callbacks already accepted with gateway signature evidence.';
-  }
-  if (review === 'refunded') {
-    return 'payments already moved into the refund path.';
+    return 'payments with accepted and signature-verified callback history.';
   }
   return 'all payment records.';
 }

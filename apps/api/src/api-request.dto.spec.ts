@@ -37,6 +37,9 @@ describe('remaining API request DTO validation', () => {
       'CreateCustomerReviewDto',
     );
     expect(
+      (bodyMetatype(CustomersController.prototype, 'recordProviderProfileView', 2) as { name?: string })?.name,
+    ).toBe('RecordProviderProfileViewDto');
+    expect(
       (bodyMetatype(FilesController.prototype, 'createPresignedUpload', 1) as { name?: string })?.name,
     ).toBe('CreatePresignedUploadDto');
     expect((bodyMetatype(FilesController.prototype, 'completeUpload', 2) as { name?: string })?.name).toBe(
@@ -101,6 +104,8 @@ describe('remaining API request DTO validation', () => {
         appVersion: ' 1.0.0 ',
         deviceLanguage: ' vi-VN ',
         lastLoginAddress: ' 123 Nguyen Hue, District 1 ',
+        eventType: 'APP_OPEN',
+        clientEventId: ' app-open-1 ',
         ignored: true,
       },
       {
@@ -115,6 +120,8 @@ describe('remaining API request DTO validation', () => {
     expect(session).toHaveProperty('appVersion', '1.0.0');
     expect(session).toHaveProperty('deviceLanguage', 'vi-VN');
     expect(session).toHaveProperty('lastLoginAddress', '123 Nguyen Hue, District 1');
+    expect(session).toHaveProperty('eventType', 'APP_OPEN');
+    expect(session).toHaveProperty('clientEventId', 'app-open-1');
     expect(session).not.toHaveProperty('ignored');
 
     const mobileDevice = await pipe.transform(

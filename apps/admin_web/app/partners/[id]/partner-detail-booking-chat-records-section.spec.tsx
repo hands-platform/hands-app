@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { PartnerDetailBookingChatRecordsSection } from './partner-detail-booking-chat-records-section';
 
-const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+const bookingRowsModelSource = readFileSync(
+  'app/partners/[id]/partner-detail-booking-rows-model.tsx',
+  'utf8',
+);
 
 describe('PartnerDetailBookingChatRecordsSection', () => {
   it('uses the shared Vuexy empty-state atom', () => {
@@ -9,8 +12,8 @@ describe('PartnerDetailBookingChatRecordsSection', () => {
 
     expect(source).toContain('AdminEmptyState');
     expect(source).not.toContain('<strong>No booking records matched this date filter</strong>');
-    expect(pageSource).not.toContain('createdLabel: formatDate(message.createdAt)');
-    expect(pageSource).toContain('createdDateTime: message.createdAt');
+    expect(bookingRowsModelSource).not.toContain('createdLabel: formatDate(message.createdAt)');
+    expect(bookingRowsModelSource).toContain('createdDateTime: message.createdAt');
   });
 
   it('uses shared Vuexy badge atoms instead of raw chat record pill spans', () => {
@@ -39,6 +42,14 @@ describe('PartnerDetailBookingChatRecordsSection', () => {
     expect(source).toContain('PartnerDetailVuexyTablePanel');
     expect(source).not.toContain('AdminFilterPanel');
     expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
+  it('renders retained chat transcripts without a disclosure click', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-chat-records-section.tsx', 'utf8');
+
+    expect(source).not.toContain('AdminDisclosure');
+    expect(source).not.toContain('<summary');
+    expect(source).toContain('partner-chat-window-disclosure is-open');
   });
 
   it('renders booking chat records as a Vuexy table', () => {
@@ -94,7 +105,7 @@ describe('PartnerDetailBookingChatRecordsSection', () => {
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
-        'admin-disclosure admin-chat-transcript-disclosure partner-chat-window-disclosure admin-mt-10',
+        'admin-chat-transcript-disclosure partner-chat-window-disclosure is-open admin-mt-10',
         'pill pill-success',
       ]),
     );
@@ -197,10 +208,14 @@ describe('PartnerDetailBookingChatRecordsSection', () => {
     expect(source).toContain('readonly closureLineNode?: ReactNode;');
     expect(source).toContain('{row.customerLineNode ?? row.customerLine}');
     expect(source).toContain('{row.closureLineNode ?? row.closureLine}');
-    expect(pageSource).toContain('closureLineNode: isClosedPartnerBooking(booking) ? (');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={booking.closedAt} />');
-    expect(pageSource).toContain('customerLineNode: (');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={bookingRequestOpenedAt(booking)} />');
+    expect(bookingRowsModelSource).toContain('closureLineNode: isClosedPartnerBooking(booking) ? (');
+    expect(bookingRowsModelSource).toContain(
+      '<DateTimeText fallback="Missing" value={booking.closedAt} />',
+    );
+    expect(bookingRowsModelSource).toContain('customerLineNode: (');
+    expect(bookingRowsModelSource).toContain(
+      '<DateTimeText fallback="Missing" value={bookingRequestOpenedAt(booking)} />',
+    );
   });
 });
 

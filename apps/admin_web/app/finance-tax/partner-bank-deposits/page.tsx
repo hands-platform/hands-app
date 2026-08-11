@@ -1,20 +1,29 @@
 import { BanknoteArrowDown, CircleCheckBig, CircleX, ReceiptText } from 'lucide-react';
+import { redirect } from 'next/navigation';
 
 import {
   type AdminPartnerBankDepositRequestHistory,
   type AdminPartnerBankDepositReconciliationStatus,
   type AdminPartnerBankDepositRequestStatus,
+  type AdminFinanceReviewOwnerWorkloadSummary,
+  type AdminUser,
   adminGet,
+  adminPostOrThrow,
 } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFinanceOperatorEvidence } from '../../../components/admin-finance-operator-evidence';
 import {
+  AdminFormActionRow,
+  AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormGridFields,
+  AdminFormInput,
   AdminFormSearch,
   AdminFormSelect,
   AdminFormShell,
 } from '../../../components/admin-form-controls';
+import { AdminInlineNotice } from '../../../components/admin-inline-notice';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -22,8 +31,11 @@ import { MoneyText } from '../../../components/money-text';
 import { StatusBadge } from '../../../components/status-badge';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import { FinanceDataTable } from '../finance-data-table';
+import { FinanceReviewOwnerWorkloadPanel } from '../finance-review-owner-workload-panel';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { FinanceTablePanel } from '../finance-table-panel';
+import { emptyFinanceReviewOwnerWorkloadSummary } from '../tax-settlement-page-model';
+import { buildBankReconciliationReviewOwnerOptions } from '../bank-reconciliation/bank-reconciliation-review-owner-model';
 
 type PartnerBankDepositsPageProps = {
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -46,8 +58,14 @@ export default async function PartnerBankDepositsPage({ searchParams }: PartnerB
   const requestedReview = normalizeReview(readParam(params.review));
   const review = requestedReview || owner || sla ? 'needs-reconciliation' : '';
   const period = normalizePeriod(readParam(params.period));
+  const returnTo = normalizeFinanceOverviewReturnTo(readParam(params.returnTo));
+  const sourceScope = readParam(params.scope) === 'all-open' ? 'all-open' : '';
+  const sort = readParam(params.sort) === 'oldest' ? 'oldest' : '';
   const q = readParam(params.q).trim();
-  const currentOperatorAccess = owner === 'mine' ? await getCurrentAdminOperatorAccess() : null;
+  const assignmentNotice = readParam(params.assignmentNotice);
+  const currentOperatorAccess = review === 'needs-reconciliation'
+    ? await getCurrentAdminOperatorAccess()
+    : null;
   const query = new URLSearchParams({ take: String(PAGE_SIZE), skip: String((page - 1) * PAGE_SIZE) });
   if (status) query.set('status', status);
   if (review) query.set('review', review);
@@ -58,19 +76,56 @@ export default async function PartnerBankDepositsPage({ searchParams }: PartnerB
   if (sla) query.set('sla', sla);
   if (period) query.set('period', period);
   if (q) query.set('q', q);
-  const history = await adminGet<AdminPartnerBankDepositRequestHistory>(
-    `/admin/provider-wallet/deposit-requests/history?${query.toString()}`,
-    EMPTY_HISTORY,
-  );
+  const ownerSummaryQuery = new URLSearchParams();
+  if (status) ownerSummaryQuery.set('status', status);
+  if (sla) ownerSummaryQuery.set('sla', sla);
+  if (period) ownerSummaryQuery.set('period', period);
+  if (q) ownerSummaryQuery.set('q', q);
+  const [history, reviewOwnerSummary, adminUsers] = await Promise.all([
+    adminGet<AdminPartnerBankDepositRequestHistory>(
+      `/admin/provider-wallet/deposit-requests/history?${query.toString()}`,
+      EMPTY_HISTORY,
+    ),
+    review === 'needs-reconciliation'
+      ? adminGet<AdminFinanceReviewOwnerWorkloadSummary>(
+          `/admin/provider-wallet/deposit-requests/reconciliation-owner-summary?${ownerSummaryQuery.toString()}`,
+          emptyFinanceReviewOwnerWorkloadSummary(),
+        )
+      : Promise.resolve(emptyFinanceReviewOwnerWorkloadSummary()),
+    review === 'needs-reconciliation'
+      ? adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
+      : Promise.resolve([] as AdminUser[]),
+  ]);
   const totalPages = Math.max(1, Math.ceil(history.pagination.total / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const from = history.pagination.total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
   const to = Math.min(history.pagination.total, (safePage - 1) * PAGE_SIZE + history.items.length);
+  const currentQueueHref = historyHref({
+    owner,
+    page: safePage,
+    period,
+    q,
+    returnTo,
+    review,
+    scope: sourceScope,
+    sla,
+    sort,
+    status,
+  });
+  const bulkReviewOwnerOptions = buildBankReconciliationReviewOwnerOptions(
+    adminUsers,
+    null,
+    currentOperatorAccess?.id ?? null,
+  );
+  const showBulkReviewAssignment =
+    review === 'needs-reconciliation' &&
+    history.items.some((request) => isOpenDepositReconciliationReview(request));
 
   return (
     <AdminPageTemplate
       actions={
         <>
+          {returnTo ? <AdminFormControlLink href={returnTo}>Back to Finance Overview</AdminFormControlLink> : null}
           <AdminFormControlLink href="/cash-settlements">Cash debt</AdminFormControlLink>
           <AdminFormControlLink href="/finance-tax/approval-queue">Approval queue</AdminFormControlLink>
         </>
@@ -166,27 +221,132 @@ export default async function PartnerBankDepositsPage({ searchParams }: PartnerB
             ]}
           />
           {period ? <input name="period" type="hidden" value={period} /> : null}
+          {returnTo ? <input name="returnTo" type="hidden" value={returnTo} /> : null}
+          {sourceScope ? <input name="scope" type="hidden" value={sourceScope} /> : null}
+          {sort ? <input name="sort" type="hidden" value={sort} /> : null}
           <AdminFormControlButton type="submit">Apply filters</AdminFormControlButton>
-          <AdminFormControlLink href="/finance-tax/partner-bank-deposits">Clear</AdminFormControlLink>
+          <AdminFormControlLink
+            href={historyHref({
+              owner: '',
+              page: 1,
+              period,
+              q: '',
+              returnTo,
+              review,
+              scope: sourceScope,
+              sla: '',
+              sort,
+              status: '',
+            })}
+          >
+            Clear
+          </AdminFormControlLink>
         </AdminFormShell>
       </AdminFilterPanel>
 
+      {review === 'needs-reconciliation' ? (
+        <FinanceReviewOwnerWorkloadPanel
+          currentOperatorId={currentOperatorAccess?.id ?? null}
+          description="Workload uses every executed deposit with unmatched company-bank evidence in the current filters, not only the visible page. Amounts are the remaining unreconciled balances."
+          hrefForOwner={(nextOwner) => historyHref({
+            owner: nextOwner,
+            page: 1,
+            period,
+            q,
+            returnTo,
+            review,
+            scope: sourceScope,
+            sla,
+            sort,
+            status,
+          })}
+          summary={reviewOwnerSummary}
+        />
+      ) : null}
+
+      <AdminFormShell action={assignPartnerBankDepositReconciliationReviewsAction}>
+        <input name="redirectTo" type="hidden" value={currentQueueHref} />
       <FinanceTablePanel
         grouped
-        description="Open a request to inspect attachment evidence, wallet entry, balanced journal, and cash-debt allocations."
+        description={
+          assignmentNotice === 'bulk-assigned'
+            ? 'Selected reconciliation reviews were assigned. Deposit, wallet, bank, and journal state did not change.'
+            : assignmentNotice === 'failed'
+              ? 'Review assignment failed. Confirm every selected deposit is still unresolved and the operator has Bank Reconciliation access.'
+              : 'Open a request to inspect attachment evidence, wallet entry, balanced journal, and cash-debt allocations.'
+        }
         resultLabel={`${from}-${to} of ${history.pagination.total}`}
         resultTone="info"
         title="Deposit requests"
       >
+        {showBulkReviewAssignment ? (
+          bulkReviewOwnerOptions.length > 0 ? (
+            <AdminFormGridFields className="compact-form admin-mb-16">
+              <AdminFormSelect
+                defaultValue={bulkReviewOwnerOptions[0]?.value}
+                label="Assign selected to"
+                labelVisibility="visible"
+                name="assigneeAdminId"
+                options={bulkReviewOwnerOptions}
+                required
+              />
+              <AdminFormInput
+                label="Assignment reason"
+                labelVisibility="visible"
+                maxLength={500}
+                minLength={12}
+                name="reason"
+                placeholder="Why should this operator own the selected deposit reviews?"
+                required
+              />
+              <AdminFormActionRow>
+                <AdminFormControlButton className="button-secondary" type="submit">
+                  Assign selected
+                </AdminFormControlButton>
+                <span className="muted">
+                  Select up to 50 visible unresolved deposits. Reconciled or changed records reject the whole request.
+                </span>
+              </AdminFormActionRow>
+            </AdminFormGridFields>
+          ) : (
+            <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
+              No eligible Finance operator can receive the selected deposit reconciliation reviews.
+            </AdminInlineNotice>
+          )
+        ) : null}
         <FinanceDataTable
           emptyMessage="No Partner bank deposits match the current filters."
-          headers={['Partner', 'Bank evidence', 'Amount', 'Receivable allocation', 'Bank reconciliation', 'Status', 'Timeline', 'Evidence']}
+          headers={[
+            ...(showBulkReviewAssignment ? ['Select'] : []),
+            'Partner',
+            'Bank evidence',
+            'Amount',
+            'Receivable allocation',
+            'Bank reconciliation',
+            'Status',
+            'Timeline',
+            'Evidence',
+          ]}
           rowCount={history.items.length}
         >
           {history.items.map((request) => {
             const allocatedAmount = request.allocatedCashDebtAmount ?? 0;
             return (
               <tr key={request.id}>
+                {showBulkReviewAssignment ? (
+                  <td>
+                    {isOpenDepositReconciliationReview(request) ? (
+                      <AdminFormCheckbox
+                        disabled={bulkReviewOwnerOptions.length === 0}
+                        label={`Select ${request.bankTransactionId}`}
+                        name="partnerBankDepositRequestIds"
+                        value={request.id}
+                      />
+                    ) : (
+                      <span className="muted">Closed</span>
+                    )}
+                  </td>
+                ) : null}
                 <td>
                   <AdminTextLink href={`/partners/${request.providerProfileId}?section=full`}>
                     <strong>{request.providerProfile?.displayName ?? request.providerProfile?.user?.fullName ?? 'Partner'}</strong>
@@ -280,12 +440,70 @@ export default async function PartnerBankDepositsPage({ searchParams }: PartnerB
         </FinanceDataTable>
         <FinanceTablePaginationFooter
           ariaLabel="Partner bank deposit history pagination"
-          hrefForPage={(nextPage) => historyHref({ owner, page: nextPage, period, q, review, sla, status })}
+          hrefForPage={(nextPage) => historyHref({
+            owner,
+            page: nextPage,
+            period,
+            q,
+            returnTo,
+            review,
+            scope: sourceScope,
+            sla,
+            sort,
+            status,
+          })}
           pagination={{ from, page: safePage, to, totalPages, totalRows: history.pagination.total }}
         />
       </FinanceTablePanel>
+      </AdminFormShell>
     </AdminPageTemplate>
   );
+}
+
+async function assignPartnerBankDepositReconciliationReviewsAction(formData: FormData) {
+  'use server';
+
+  const partnerBankDepositRequestIds = Array.from(
+    new Set(
+      formData
+        .getAll('partnerBankDepositRequestIds')
+        .map((requestId) => String(requestId).trim())
+        .filter(Boolean),
+    ),
+  );
+  const assigneeAdminId = String(formData.get('assigneeAdminId') ?? '').trim();
+  const reason = String(formData.get('reason') ?? '').trim();
+  const redirectTo = safePartnerBankDepositsReturnTo(formData.get('redirectTo'));
+  if (
+    partnerBankDepositRequestIds.length === 0 ||
+    partnerBankDepositRequestIds.length > 50 ||
+    !assigneeAdminId ||
+    reason.length < 12
+  ) {
+    redirect(appendQueryParam(redirectTo, 'assignmentNotice', 'failed'));
+  }
+
+  try {
+    await adminPostOrThrow(
+      '/admin/provider-wallet/deposit-requests/reconciliation-assignments',
+      {
+        assigneeAdminId,
+        partnerBankDepositRequestIds,
+        reason,
+      },
+    );
+  } catch {
+    redirect(appendQueryParam(redirectTo, 'assignmentNotice', 'failed'));
+  }
+  redirect(appendQueryParam(redirectTo, 'assignmentNotice', 'bulk-assigned'));
+}
+
+function isOpenDepositReconciliationReview(
+  request: AdminPartnerBankDepositRequestHistory['items'][number],
+) {
+  return request.status === 'EXECUTED' &&
+    request.reconciliationStatus !== 'MATCHED' &&
+    request.reconciliationStatus !== 'NOT_APPLICABLE';
 }
 
 function DepositStatus({ status }: { readonly status: AdminPartnerBankDepositRequestStatus }) {
@@ -337,8 +555,11 @@ function historyHref(input: {
   page: number;
   period: string;
   q: string;
+  returnTo?: string;
   review: string;
+  scope?: string;
   sla: string;
+  sort?: string;
   status: string;
 }) {
   const query = new URLSearchParams();
@@ -349,8 +570,38 @@ function historyHref(input: {
   if (input.sla) query.set('sla', input.sla);
   if (input.period) query.set('period', input.period);
   if (input.status) query.set('status', input.status);
+  if (input.returnTo) query.set('returnTo', input.returnTo);
+  if (input.scope) query.set('scope', input.scope);
+  if (input.sort) query.set('sort', input.sort);
   const suffix = query.toString();
   return suffix ? `/finance-tax/partner-bank-deposits?${suffix}` : '/finance-tax/partner-bank-deposits';
+}
+
+function normalizeFinanceOverviewReturnTo(value: string) {
+  if (!value) return '';
+  try {
+    const url = new URL(value, 'http://admin.local');
+    return url.origin === 'http://admin.local' && url.pathname === '/finance-overview'
+      ? `${url.pathname}${url.search}${url.hash}`
+      : '';
+  } catch {
+    return '';
+  }
+}
+
+function safePartnerBankDepositsReturnTo(value: FormDataEntryValue | null) {
+  const normalized = String(value ?? '').trim();
+  if (!normalized) return '/finance-tax/partner-bank-deposits';
+  const url = new URL(normalized, 'http://localhost');
+  return url.origin === 'http://localhost' && url.pathname === '/finance-tax/partner-bank-deposits'
+    ? `${url.pathname}${url.search}`
+    : '/finance-tax/partner-bank-deposits';
+}
+
+function appendQueryParam(href: string, key: string, value: string) {
+  const url = new URL(href, 'http://localhost');
+  url.searchParams.set(key, value);
+  return `${url.pathname}${url.search}`;
 }
 
 function normalizeReview(value: string) {

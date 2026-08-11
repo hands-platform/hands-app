@@ -1,12 +1,13 @@
 import '../../../core/provider_value_helpers.dart';
 
 const providerWalletBlockFallbackReasonClean =
-    'Unpaid HANDS fees must be settled before you can participate in marketplace bookings.';
+    'Phí HANDS chưa được thanh toán nên bạn không thể tham gia đặt lịch này.';
 
 const providerWalletBlockHintClean =
-    'Cash jobs are paid directly to you. Deposit the unpaid HANDS fee or wait for an admin offset, then refresh wallet status before participating in marketplace requests.';
+    'Bạn vẫn có thể xem yêu cầu đặt lịch và phản hồi yêu cầu chỉ định trực tiếp. Hãy thanh toán phí HANDS còn thiếu trước khi tham gia đặt lịch công khai.';
 
-const providerMarketplaceJoinBlockedButtonLabel = 'Fee settlement required';
+const providerMarketplaceJoinBlockReasonClean =
+    'Phí HANDS chưa được thanh toán nên bạn không thể tham gia đặt lịch này.';
 
 bool providerWalletBlocksMarketplaceParticipation({
   required bool walletBlocked,
@@ -17,15 +18,11 @@ bool providerWalletBlocksMarketplaceParticipation({
 }
 
 String providerMarketplaceJoinButtonLabel({
-  required bool walletBlocksMarketplaceParticipation,
   required bool hasPreferredProvider,
 }) {
-  if (walletBlocksMarketplaceParticipation) {
-    return providerMarketplaceJoinBlockedButtonLabel;
-  }
   return hasPreferredProvider
-      ? 'Offer marketplace support'
-      : 'Participate in open matching';
+      ? 'Tham gia hỗ trợ đặt lịch'
+      : 'Tham gia đặt lịch';
 }
 
 num providerWalletBalance(Map<String, dynamic> summary) {
@@ -35,9 +32,6 @@ num providerWalletBalance(Map<String, dynamic> summary) {
 }
 
 bool providerWalletMarketplaceJoinBlocked(Map<String, dynamic> summary) {
-  if (providerWalletBlockReason(summary) != null) {
-    return true;
-  }
   final explicit = summary['marketplaceJoinBlocked'];
   if (explicit is bool) {
     return explicit;
@@ -170,21 +164,21 @@ class ProviderWalletSettlementView {
 
   String get bankCorrectionReasonLabel =>
       bankCorrectionReason ??
-      'Update bank details before withdrawal/deposit support can continue.';
+      'Cập nhật thông tin ngân hàng trước khi tiếp tục hỗ trợ rút hoặc nộp tiền.';
 }
 
 String providerWalletStatusLabel(Map<String, dynamic> summary) {
   final walletBalance = providerWalletBalance(summary);
   if (providerWalletBlockReason(summary) != null) {
-    return 'Settlement required';
+    return 'Cần thanh toán phí';
   }
   if (providerWalletBankCorrectionRequest(summary) != null) {
-    return 'Bank details need correction';
+    return 'Cần sửa thông tin ngân hàng';
   }
   if (walletBalance == 0) {
-    return 'No unsettled balance';
+    return 'Không có số dư chưa thanh toán';
   }
-  return walletBalance > 0 ? 'Available for payout review' : 'Under review';
+  return walletBalance > 0 ? 'Sẵn sàng để xét chi trả' : 'Đang xem xét';
 }
 
 List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
@@ -198,16 +192,16 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
   if (providerWalletBankCorrectionRequest(summary) != null &&
       providerWalletBlockReason(summary) == null) {
     return const [
-      'Open wallet bank details from Earnings.',
-      'Submit corrected bank account information.',
-      'HANDS admin will review the correction before withdrawal/deposit support continues.',
+      'Mở thông tin ngân hàng của ví trong mục Thu nhập.',
+      'Gửi lại thông tin tài khoản ngân hàng đã sửa.',
+      'Quản trị viên HANDS sẽ kiểm tra trước khi tiếp tục hỗ trợ rút hoặc nộp tiền.',
     ];
   }
   if (providerWalletBlockReason(summary) == null) {
     return const [
-      'Cash booking fees are settled.',
-      'You can participate in marketplace requests.',
-      'Wallet payouts are checked when you request withdrawal or report a deposit.',
+      'Phí đặt lịch tiền mặt đã được thanh toán.',
+      'Bạn có thể tham gia các yêu cầu đặt lịch công khai.',
+      'Khoản chi trả ví được kiểm tra khi bạn yêu cầu rút tiền hoặc báo cáo khoản nộp.',
     ];
   }
   final debtAmount = asNum(summary['walletDebtAmount']) ??
@@ -215,11 +209,11 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
   final currency = summary['currency']?.toString() ?? 'VND';
   final reference = providerWalletSettlementReference(summary);
   return [
-    'Settle ${formatCurrency(debtAmount)} $currency for unpaid HANDS fees.',
+    'Thanh toán ${formatCurrency(debtAmount)} $currency phí HANDS còn thiếu.',
     if (reference != null)
-      'Use reference $reference when sending the deposit or requesting admin offset.',
-    'After admin confirms the deposit or offset, refresh wallet status.',
-    'Marketplace participation and payout release resume when the wallet is no longer negative.',
+      'Dùng mã $reference khi gửi khoản nộp hoặc yêu cầu bù trừ.',
+    'Sau khi quản trị viên xác nhận khoản nộp hoặc bù trừ, hãy làm mới trạng thái ví.',
+    'Quyền tham gia đặt lịch và nhận tiền chi trả sẽ được khôi phục khi số dư ví không còn âm.',
   ];
 }
 
@@ -242,5 +236,5 @@ String providerWalletBankCorrectionReason(Map<String, dynamic> summary) {
   if (message != null && message.isNotEmpty) {
     return message;
   }
-  return 'Update bank details before withdrawal/deposit support can continue.';
+  return 'Cập nhật thông tin ngân hàng trước khi tiếp tục hỗ trợ rút hoặc nộp tiền.';
 }

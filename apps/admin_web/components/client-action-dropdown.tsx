@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { MoreVertical, type LucideIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 
 import { AdminFormControlButton } from './admin-form-controls';
 import { AdminIconButton } from './admin-icon-button';
@@ -44,56 +45,134 @@ export function ClientActionDropdown({
   menuClassName,
   triggerClassName,
 }: ClientActionDropdownProps) {
-  const [open, setOpen] = useState(false);
+  return (
+    <ClientActionDropdownSurface
+      className={className}
+      label={label}
+      menuClassName={menuClassName}
+      triggerClassName={triggerClassName}
+    >
+      {actions.map((item, itemIndex) => (
+        <ClientActionDropdownControl
+          item={item}
+          itemClassName={readItemClassName(item, itemClassName)}
+          key={`${item.label}:${itemIndex}`}
+        />
+      ))}
+    </ClientActionDropdownSurface>
+  );
+}
+
+export function ClientActionDropdownSurface({
+  children,
+  className,
+  label,
+  menuClassName,
+  title,
+  triggerClassName,
+}: {
+  readonly children: ReactNode;
+  readonly className?: string;
+  readonly label: string;
+  readonly menuClassName?: string;
+  readonly title?: ReactNode;
+  readonly triggerClassName?: string;
+}) {
+  const pathname = usePathname();
+  const currentPathname = pathname ?? '__unknown_route__';
+  const [openPathname, setOpenPathname] = useState<string | null>(null);
+  const open = openPathname === currentPathname;
   const rootRef = useRef<HTMLDivElement>(null);
+  const internalTriggerRef = useRef<HTMLButtonElement>(null);
+  const componentId = useId();
+  const menuId = `${componentId}-menu`;
 
   useEffect(() => {
     if (!open) {
       return;
     }
 
+    rootRef.current?.querySelector<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])')?.focus();
+
     function closeOnOutsidePointer(event: PointerEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
+        setOpenPathname(null);
       }
     }
 
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        setOpen(false);
+        setOpenPathname(null);
+        internalTriggerRef.current?.focus();
       }
+    }
+
+    function closeWhenAnotherMenuOpens(event: Event) {
+      const openedId = (event as CustomEvent<string>).detail;
+      if (openedId !== componentId) setOpenPathname(null);
     }
 
     document.addEventListener('pointerdown', closeOnOutsidePointer);
     document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('admin-action-dropdown-open', closeWhenAnotherMenuOpens);
     return () => {
       document.removeEventListener('pointerdown', closeOnOutsidePointer);
       document.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('admin-action-dropdown-open', closeWhenAnotherMenuOpens);
     };
-  }, [open]);
+  }, [componentId, open]);
+
+  function moveMenuFocus(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+
+    const items = Array.from(
+      event.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])'),
+    );
+    if (items.length === 0) return;
+
+    event.preventDefault();
+    const currentIndex = items.indexOf(document.activeElement as HTMLElement);
+    if (event.key === 'Home') items[0]?.focus();
+    else if (event.key === 'End') items.at(-1)?.focus();
+    else if (event.key === 'ArrowDown') items[(currentIndex + 1 + items.length) % items.length]?.focus();
+    else items[(currentIndex - 1 + items.length) % items.length]?.focus();
+  }
 
   return (
     <div className={joinClassNames('admin-action-dropdown', className)} ref={rootRef}>
       <AdminIconButton
+        aria-controls={menuId}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={label}
         className={joinClassNames('admin-action-trigger', triggerClassName)}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          if (!open) {
+            document.dispatchEvent(new CustomEvent('admin-action-dropdown-open', { detail: componentId }));
+          }
+          setOpenPathname((value) => value === currentPathname ? null : currentPathname);
+        }}
+        ref={internalTriggerRef}
         type="button"
       >
         <MoreVertical aria-hidden="true" size={20} />
       </AdminIconButton>
       {open ? (
-        <div className={joinClassNames('admin-action-menu', menuClassName)} role="menu">
-          {actions.map((item, itemIndex) => (
-            <ClientActionDropdownControl
-              item={item}
-              itemClassName={readItemClassName(item, itemClassName)}
-              key={`${item.label}:${itemIndex}`}
-              onSelect={() => setOpen(false)}
-            />
-          ))}
+        <div
+          aria-label={`${label} menu`}
+          className={joinClassNames('admin-action-menu', menuClassName)}
+          id={menuId}
+          onClickCapture={(event) => {
+            if ((event.target as HTMLElement).closest('[role="menuitem"]')) {
+              setOpenPathname(null);
+              internalTriggerRef.current?.focus();
+            }
+          }}
+          onKeyDown={moveMenuFocus}
+          role="menu"
+        >
+          {title ? <strong className="action-menu-title">{title}</strong> : null}
+          {children}
         </div>
       ) : null}
     </div>
@@ -103,11 +182,9 @@ export function ClientActionDropdown({
 function ClientActionDropdownControl({
   item,
   itemClassName,
-  onSelect,
 }: {
   readonly item: ClientActionDropdownItem;
   readonly itemClassName?: string;
-  readonly onSelect: () => void;
 }) {
   const Icon = item.icon;
   const className = joinClassNames('admin-action-item', itemClassName, item.disabled ? 'is-disabled' : undefined);
@@ -128,7 +205,7 @@ function ClientActionDropdownControl({
 
   if (typeof item.href === 'string') {
     return (
-      <Link className={className} href={item.href} onClick={onSelect} prefetch={false} role="menuitem" title={item.description}>
+      <Link className={className} href={item.href} prefetch={false} role="menuitem" title={item.description}>
         {content}
       </Link>
     );
@@ -141,7 +218,6 @@ function ClientActionDropdownControl({
       className={joinClassNames('button-secondary', className)}
       onClick={() => {
         handleItemSelect();
-        onSelect();
       }}
       role="menuitem"
       title={item.description}

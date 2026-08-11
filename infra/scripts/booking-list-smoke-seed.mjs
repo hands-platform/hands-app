@@ -14,6 +14,7 @@ import { loadMergedEnv } from './lib/env-file.mjs';
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const cleanupOnly = process.argv.includes('--cleanup');
+const adminVisible = process.argv.includes('--admin-visible');
 const { env, envFileExists, envPath } = loadMergedEnv(envFile);
 
 if (env.DATABASE_URL) {
@@ -23,29 +24,40 @@ if (env.DATABASE_URL) {
 if (!process.env.DATABASE_URL) {
   fail('DATABASE_URL is required for booking list smoke seed.');
 }
+if (adminVisible && env.NODE_ENV === 'production') {
+  fail('Admin-visible booking fixtures cannot run in production.');
+}
 
 const prisma = new PrismaClient();
 const now = new Date();
+const fixturePrefix = adminVisible ? 'audit_booking_list' : 'smoke_booking_list';
+const fixtureLabel = adminVisible ? 'Audit' : 'Smoke';
+const fixturePhonePrefix = adminVisible ? '+849090081' : '+849090080';
+const fixtureMetadata = adminVisible
+  ? { auditFixture: 'booking-list' }
+  : { smoke: 'booking-list' };
 
 const ids = {
-  customerUser: 'smoke_booking_list_customer_user',
-  customerProfile: 'smoke_booking_list_customer_profile',
-  preferredProviderUser: 'smoke_booking_list_preferred_provider_user',
-  preferredProviderProfile: 'smoke_booking_list_preferred_provider_profile',
-  marketplaceProviderUser: 'smoke_booking_list_marketplace_provider_user',
-  marketplaceProviderProfile: 'smoke_booking_list_marketplace_provider_profile',
-  resolvedProviderUser: 'smoke_booking_list_resolved_provider_user',
-  resolvedProviderProfile: 'smoke_booking_list_resolved_provider_profile',
-  service: 'smoke_booking_list_service',
-  openMatchingBooking: 'smoke_booking_list_open_matching_booking',
-  inServiceBooking: 'smoke_booking_list_in_service_booking',
-  completedBooking: 'smoke_booking_list_completed_booking',
-  pendingCancellationBooking: 'smoke_booking_list_pending_cancellation_booking',
-  approvedCancellationBooking: 'smoke_booking_list_approved_cancellation_booking',
+  customerUser: `${fixturePrefix}_customer_user`,
+  customerProfile: `${fixturePrefix}_customer_profile`,
+  preferredProviderUser: `${fixturePrefix}_preferred_provider_user`,
+  preferredProviderProfile: `${fixturePrefix}_preferred_provider_profile`,
+  marketplaceProviderUser: `${fixturePrefix}_marketplace_provider_user`,
+  marketplaceProviderProfile: `${fixturePrefix}_marketplace_provider_profile`,
+  resolvedProviderUser: `${fixturePrefix}_resolved_provider_user`,
+  resolvedProviderProfile: `${fixturePrefix}_resolved_provider_profile`,
+  service: `${fixturePrefix}_service`,
+  openMatchingBooking: `${fixturePrefix}_open_matching_booking`,
+  preMatchCancelledBooking: `${fixturePrefix}_pre_match_cancelled_booking`,
+  inServiceBooking: `${fixturePrefix}_in_service_booking`,
+  completedBooking: `${fixturePrefix}_completed_booking`,
+  pendingCancellationBooking: `${fixturePrefix}_pending_cancellation_booking`,
+  approvedCancellationBooking: `${fixturePrefix}_approved_cancellation_booking`,
 };
 
 const bookingIds = [
   ids.openMatchingBooking,
+  ids.preMatchCancelledBooking,
   ids.inServiceBooking,
   ids.completedBooking,
   ids.pendingCancellationBooking,
@@ -92,9 +104,11 @@ try {
         {
           ok: true,
           action: 'seed',
+          adminVisible,
           envFile: { path: envPath, exists: envFileExists },
           pages: [
             '/bookings?dateRange=today',
+            '/bookings?dateRange=today&view=pre-match-cancelled',
             '/bookings/completed?dateRange=today',
             '/bookings/post-match-cancellations?dateRange=today',
           ],
@@ -129,7 +143,7 @@ async function seedSmokeData() {
       id: ids.service,
       serviceGroupKey: 'smoke-booking-list',
       name: 'Aromatherapy Massage',
-      description: 'Smoke-only service for admin booking list UI checks.',
+      description: `${fixtureLabel}-only service for admin booking list UI checks.`,
       durationMin: 90,
       basePrice: 500000,
       priceStep: 100000,
@@ -143,25 +157,26 @@ async function seedSmokeData() {
     id: ids.preferredProviderProfile,
     userId: ids.preferredProviderUser,
     displayName: 'Linh Tran',
-    phone: '+84909008001',
+    phone: `${fixturePhonePrefix}01`,
     status: ProviderStatus.ONLINE_AVAILABLE,
   });
   await createProvider({
     id: ids.marketplaceProviderProfile,
     userId: ids.marketplaceProviderUser,
     displayName: 'Mai Nguyen',
-    phone: '+84909008002',
+    phone: `${fixturePhonePrefix}02`,
     status: ProviderStatus.ONLINE_BUSY,
   });
   await createProvider({
     id: ids.resolvedProviderProfile,
     userId: ids.resolvedProviderUser,
     displayName: 'An Pham',
-    phone: '+84909008003',
+    phone: `${fixturePhonePrefix}03`,
     status: ProviderStatus.OFFLINE,
   });
 
   await createOpenMatchingBooking();
+  await createPreMatchCancelledBooking();
   await createInServiceBooking();
   await createCompletedBooking();
   await createPendingCancellationBooking();
@@ -172,8 +187,8 @@ async function createCustomer() {
   await prisma.user.create({
     data: {
       id: ids.customerUser,
-      phone: '+84909008000',
-      fullName: 'HANDS Smoke Customer',
+      phone: `${fixturePhonePrefix}00`,
+      fullName: `HANDS ${fixtureLabel} Customer`,
       roles: [Role.CUSTOMER],
       customerProfile: {
         create: {
@@ -191,7 +206,7 @@ async function createCustomer() {
       appSessions: {
         create: {
           role: Role.CUSTOMER,
-          deviceId: 'smoke-booking-list-customer-ios',
+          deviceId: `${fixturePrefix}-customer-ios`,
           platform: 'ios',
           appVersion: '1.0.0-smoke',
           deviceLanguage: 'vi-VN',
@@ -274,9 +289,57 @@ async function createOpenMatchingBooking() {
       },
     ],
     metadata: {
-      smoke: 'booking-list',
+      ...fixtureMetadata,
       deviceLanguage: 'vi-VN',
       bookingListStage: 'open-matching',
+    },
+  });
+}
+
+async function createPreMatchCancelledBooking() {
+  const openedAt = minutesAgo(70);
+  const closedAt = minutesAgo(58);
+  await createBooking({
+    id: ids.preMatchCancelledBooking,
+    status: BookingStatus.CANCELLED,
+    preferredProviderId: ids.preferredProviderProfile,
+    openedAt,
+    createdAt: openedAt,
+    closedAt,
+    closedByRole: Role.CUSTOMER,
+    closedReason: 'customer_cancelled',
+    closedNote: `${fixtureLabel}: customer cancelled before a Partner was matched.`,
+    scheduledStartAt: minutesFromNow(40),
+    scheduledEndAt: minutesFromNow(130),
+    payment: {
+      amount: 500000,
+      id: `${ids.preMatchCancelledBooking}_payment`,
+      method: PaymentMethod.CASH,
+      providerRef: null,
+      status: PaymentStatus.RELEASED,
+    },
+    participants: [
+      {
+        providerProfileId: ids.preferredProviderProfile,
+        status: ParticipantStatus.EXPIRED,
+        distanceMeters: 1800,
+        providerStatusAtJoin: ProviderStatus.ONLINE_AVAILABLE,
+        joinedAt: minutesAgo(68),
+        respondedAt: closedAt,
+      },
+      {
+        providerProfileId: ids.marketplaceProviderProfile,
+        status: ParticipantStatus.EXPIRED,
+        distanceMeters: 2600,
+        providerStatusAtJoin: ProviderStatus.ONLINE_AVAILABLE,
+        joinedAt: minutesAgo(64),
+        respondedAt: closedAt,
+      },
+    ],
+    metadata: {
+      ...fixtureMetadata,
+      deviceLanguage: 'vi-VN',
+      bookingListStage: 'pre-match-cancelled',
     },
   });
 }
@@ -321,18 +384,18 @@ async function createInServiceBooking() {
     ],
     chatMessages: [
       {
-        body: 'Smoke: customer confirmed the service address.',
+        body: `${fixtureLabel}: customer confirmed the service address.`,
         createdAt: minutesAgo(52),
         senderId: ids.customerUser,
       },
       {
-        body: 'Smoke: Partner is starting the service.',
+        body: `${fixtureLabel}: Partner is starting the service.`,
         createdAt: minutesAgo(12),
         senderId: ids.marketplaceProviderUser,
       },
     ],
     metadata: {
-      smoke: 'booking-list',
+      ...fixtureMetadata,
       deviceLanguage: 'vi-VN',
       bookingListStage: 'in-service',
     },
@@ -353,7 +416,7 @@ async function createCompletedBooking() {
     closedAt,
     closedByRole: Role.PROVIDER,
     closedReason: 'service_completed',
-    closedNote: 'Smoke: service completed; closeout reconciliation still needs review.',
+    closedNote: `${fixtureLabel}: service completed; closeout reconciliation still needs review.`,
     matchSource: BookingMatchSource.FIRST_PICK_ACCEPTED_FIRST,
     scheduledStartAt: minutesAgo(130),
     scheduledEndAt: minutesAgo(40),
@@ -392,7 +455,7 @@ async function createCompletedBooking() {
     ],
     chatMessages: [
       {
-        body: 'Smoke: Partner arrived and completed the booking.',
+        body: `${fixtureLabel}: Partner arrived and completed the booking.`,
         createdAt: minutesAgo(42),
         senderId: ids.preferredProviderUser,
       },
@@ -407,7 +470,7 @@ async function createCompletedBooking() {
       },
     ],
     metadata: {
-      smoke: 'booking-list',
+      ...fixtureMetadata,
       deviceLanguage: 'vi-VN',
       bookingListStage: 'completed-closeout',
     },
@@ -428,7 +491,7 @@ async function createPendingCancellationBooking() {
     closedAt,
     closedByRole: Role.PROVIDER,
     closedReason: 'partner_cancelled',
-    closedNote: 'Smoke: Partner cancelled from chat after the 15 minute auto-approval window.',
+    closedNote: `${fixtureLabel}: Partner cancelled from chat after the 15 minute auto-approval window.`,
     matchSource: BookingMatchSource.CUSTOMER_SELECTED_PARTNER,
     scheduledStartAt: minutesAgo(100),
     scheduledEndAt: minutesAgo(10),
@@ -467,12 +530,12 @@ async function createPendingCancellationBooking() {
     ],
     chatMessages: [
       {
-        body: 'Smoke: Partner says they cannot continue after matching.',
+        body: `${fixtureLabel}: Partner says they cannot continue after matching.`,
         createdAt: closedAt,
         senderId: ids.marketplaceProviderUser,
       },
       {
-        body: 'Smoke: customer asks admin to review the cancellation.',
+        body: `${fixtureLabel}: customer asks admin to review the cancellation.`,
         createdAt: new Date(closedAt.getTime() + 60_000),
         senderId: ids.customerUser,
       },
@@ -487,7 +550,7 @@ async function createPendingCancellationBooking() {
       },
     ],
     metadata: {
-      smoke: 'booking-list',
+      ...fixtureMetadata,
       deviceLanguage: 'vi-VN',
       bookingListStage: 'post-match-cancel-pending',
     },
@@ -509,7 +572,7 @@ async function createApprovedCancellationBooking() {
     closedAt,
     closedByRole: Role.ADMIN,
     closedReason: 'post_match_cancellation_approved',
-    closedNote: 'Smoke: admin approved cancellation inside the 15 minute window.',
+    closedNote: `${fixtureLabel}: admin approved cancellation inside the 15 minute window.`,
     matchSource: BookingMatchSource.CUSTOMER_SELECTED_PARTNER,
     scheduledStartAt: minutesAgo(95),
     scheduledEndAt: minutesAgo(5),
@@ -548,12 +611,12 @@ async function createApprovedCancellationBooking() {
     ],
     chatMessages: [
       {
-        body: 'Smoke: Partner cancelled quickly after matching.',
+        body: `${fixtureLabel}: Partner cancelled quickly after matching.`,
         createdAt: closedAt,
         senderId: ids.resolvedProviderUser,
       },
       {
-        body: 'Smoke: admin restored the Partner fee for this cancellation.',
+        body: `${fixtureLabel}: admin restored the Partner fee for this cancellation.`,
         createdAt: new Date(closedAt.getTime() + 60_000),
         senderId: ids.customerUser,
       },
@@ -568,14 +631,14 @@ async function createApprovedCancellationBooking() {
       },
     ],
     metadata: {
-      smoke: 'booking-list',
+      ...fixtureMetadata,
       deviceLanguage: 'vi-VN',
       bookingListStage: 'post-match-cancel-approved',
     },
     walletLedger: {
       amount: 50000,
       earningId,
-      notes: 'Smoke: restored post-match cancellation fee.',
+      notes: `${fixtureLabel}: restored post-match cancellation fee.`,
       sourceKey: ledgerSourceKeys[0],
       type: ProviderWalletLedgerType.REFUND_REVERSAL,
     },
@@ -629,7 +692,7 @@ async function createBooking({
       address,
       lat,
       lng,
-      notes: 'Smoke seed for admin booking list UI verification.',
+      notes: `${fixtureLabel} seed for admin booking list UI verification.`,
       metadata,
       travelBufferMin: 30,
       earlyAcceptMin: 20,
@@ -649,7 +712,7 @@ async function createBooking({
           addressText: address.addressText,
           latitude: lat,
           longitude: lng,
-          source: 'smoke_booking_list',
+          source: fixturePrefix,
           createdAt,
         },
       },
@@ -680,7 +743,7 @@ async function createBooking({
                 amount: payment.amount,
                 currency: 'VND',
                 providerRef: payment.providerRef,
-                rawMeta: { smoke: 'booking-list' },
+                rawMeta: fixtureMetadata,
               },
             },
           }
@@ -727,7 +790,7 @@ async function createBooking({
         currency: 'VND',
         reference: id,
         notes: walletLedger.notes,
-        metadata: { smoke: 'booking-list' },
+        metadata: fixtureMetadata,
       },
     });
   }
@@ -749,6 +812,14 @@ async function verifySmokeData() {
   });
 
   assertCondition(rows.length === bookingIds.length, 'Not all smoke bookings were seeded.');
+  const preMatchCancelled = rows.find((booking) => booking.id === ids.preMatchCancelledBooking);
+  assertCondition(
+    preMatchCancelled?.matchedAt === null &&
+      preMatchCancelled.selectedProviderId === null &&
+      preMatchCancelled.payment?.status === PaymentStatus.RELEASED &&
+      preMatchCancelled.earning === null,
+    'Pre-match cancellation must release payment without Partner earnings.',
+  );
   assertCondition(
     rows.every((booking) => booking.addressSnapshot?.addressText?.includes('Ho Chi Minh City')),
     'Smoke bookings should expose real service addresses.',

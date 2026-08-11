@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import {
   BookingStatus,
+  ProviderAvailabilityIntent,
   ProviderDocumentStatus,
   ProviderDocumentType,
   ProviderKycStatus,
@@ -51,6 +52,24 @@ describe('booking provider readiness helpers', () => {
     expect(() =>
       assertProviderCanReceiveBooking(readyProvider({ kyc: { status: ProviderKycStatus.PENDING } })),
     ).toThrow(new BadRequestException('Partner KYC must be approved before receiving bookings'));
+  });
+
+  it('rejects a never-tracked available Partner after seven days', () => {
+    expect(() =>
+      assertProviderCanReceiveBooking(
+        readyProvider({
+          availabilityIntent: ProviderAvailabilityIntent.AVAILABLE,
+          currentLocationUpdatedAt: null,
+          sessions: [],
+          user: {
+            appSessions: [],
+            appUsageDailyAggregates: [],
+            createdAt: new Date('2026-07-13T03:00:00.000Z'),
+          },
+        }),
+        new Date('2026-07-20T03:00:00.000Z'),
+      ),
+    ).toThrow(new BadRequestException('Partner must reopen the app after 7 days of inactivity'));
   });
 
   it('rejects partners with unfinished selected work but ignores closed cancellations', () => {

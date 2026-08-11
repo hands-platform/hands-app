@@ -12,7 +12,9 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { customerWalletPaymentSourceKey as walletPaymentSourceKey } from '../payments/customer-wallet-payment';
 import { calculateBookingSettlementAmounts, SettlementPaymentMethod } from './settlement-calculator';
+import { settlementReversalEvidencePolicy } from './settlement-audit-health';
 import { buildBookingSettlementJournal } from './settlement-journal';
 
 export type UpsertBookingSettlementSnapshotInput = {
@@ -471,7 +473,7 @@ export class SettlementsService {
       },
     });
 
-    if (snapshot.paymentMethod === PaymentMethod.CASH) {
+    if (!settlementReversalEvidencePolicy(snapshot.paymentMethod).externalClearingRequired) {
       return;
     }
 
@@ -720,7 +722,7 @@ export function bookingPaymentClearingRefundReversalSourceKey(bookingId: string)
 }
 
 export function customerWalletPaymentSourceKey(bookingId: string) {
-  return `customer-wallet-payment:${bookingId}:settlement`;
+  return walletPaymentSourceKey(bookingId);
 }
 
 export const VIETNAM_TIME_ZONE = 'Asia/Ho_Chi_Minh';

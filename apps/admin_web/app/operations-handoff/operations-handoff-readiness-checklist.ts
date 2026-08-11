@@ -1,5 +1,6 @@
 import type { AdminBooking, AdminCashSettlementSummary, AdminNotification } from '../../lib/admin-api';
 import { formatRelativeTime } from '../../lib/admin-format';
+import { adminCountLabel } from '../../lib/admin-copy';
 import {
   bookingsMissingChatHandoffEvidence,
   bookingsMissingCloseoutEvidence,
@@ -144,7 +145,7 @@ function buildReadinessChecklistBaseRows(
       detail: 'Cash bookings can leave Partner wallet fee debt until deposit or offset evidence is recorded.',
       href: '/cash-settlements',
       count: input.cashSummary.providerCount,
-      countLabel: `${input.cashSummary.providerCount} Partner(s)`,
+      countLabel: adminCountLabel(input.cashSummary.providerCount, 'Partner'),
       status: input.cashSummary.providerCount ? 'Settle' : 'Clear',
       operatorAction: 'Check cash fee debt, missing payment evidence, and settlement notes.',
       tone: input.cashSummary.providerCount ? 'danger' : 'success',
@@ -156,7 +157,7 @@ function buildReadinessChecklistBaseRows(
       detail: 'Completed bookings should retain payment, earning, tax/wallet, and chat evidence.',
       href: '/bookings?view=closeout',
       count: context.completedWithoutEvidenceCount,
-      countLabel: `${context.completedWithoutEvidenceCount} row(s)`,
+      countLabel: adminCountLabel(context.completedWithoutEvidenceCount, 'row'),
       status: context.completedWithoutEvidenceCount ? 'Check' : 'Ready',
       operatorAction: 'Open completed rows that do not yet show all closeout evidence.',
       tone: context.completedWithoutEvidenceCount ? 'warn' : 'success',
@@ -180,7 +181,7 @@ function buildReadinessChecklistBaseRows(
       detail: 'Partner list groups KYC, bank, wallet, app session, service, and location facts.',
       href: '/partners',
       count: input.partnerSignals.attentionCount,
-      countLabel: `${input.partnerSignals.attentionCount} fact(s)`,
+      countLabel: adminCountLabel(input.partnerSignals.attentionCount, 'fact'),
       status: input.partnerSignals.attentionCount ? 'Review' : 'Clear',
       operatorAction: 'Open Partner filters only for factual follow-up, not personal evaluation.',
       tone: input.partnerSignals.attentionCount ? 'warn' : 'success',
@@ -193,7 +194,7 @@ function buildReadinessChecklistBaseRows(
         'Customer records show booking, payment/refund, chat archive, saved address, session, and notes.',
       href: '/customers',
       count: input.customerSignals.length,
-      countLabel: `${input.customerSignals.length} record(s)`,
+      countLabel: adminCountLabel(input.customerSignals.length, 'record'),
       status: input.customerSignals.length ? 'Available' : 'No rows',
       operatorAction: 'Use customer detail pages for support history when a customer contacts the team.',
       tone: input.customerSignals.length ? 'info' : 'success',

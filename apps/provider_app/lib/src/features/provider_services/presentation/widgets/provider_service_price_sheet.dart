@@ -60,12 +60,11 @@ class _ProviderServicePriceSheetState
       final detailedMessage = _active &&
               service.hasBookablePriceOptions &&
               service.bookablePayoutOptionForPrice(_selectedPrice) == null
-          ? 'Admin payout rule is required for exactly ${formatVnd(_selectedPrice)}. Choose one of: $options.'
-          : validationMessage == 'Price must be at least the HANDS minimum.'
-              ? 'Price must be at least ${formatVnd(service.basePrice)}.'
-              : validationMessage ==
-                      'Price must follow the configured VND step.'
-                  ? 'Price must increase by ${formatVnd(service.priceStep)} steps.'
+          ? 'Cần quy tắc chi trả của quản trị viên đúng với ${formatVnd(_selectedPrice)}. Hãy chọn một trong các mức: $options.'
+          : validationMessage == 'Giá phải từ mức tối thiểu của HANDS.'
+              ? 'Giá phải từ ${formatVnd(service.basePrice)} trở lên.'
+              : validationMessage == 'Giá phải theo bước VND đã cấu hình.'
+                  ? 'Giá phải tăng theo bước ${formatVnd(service.priceStep)}.'
                   : validationMessage;
       setState(() => _error = detailedMessage);
       return;
@@ -93,31 +92,31 @@ class _ProviderServicePriceSheetState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            '${service.name} / ${service.durationMin} min',
+            '${service.name} / ${service.durationMin} phút',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
           _PricingSummaryLine(
-            label: 'Admin minimum',
+            label: 'Giá tối thiểu',
             value: formatVnd(service.basePrice),
           ),
           _PricingSummaryLine(
-            label: 'Allowed step',
+            label: 'Bước giá',
             value: formatVnd(service.priceStep),
           ),
           if (service.payoutRuleConfigured) ...[
             _PricingSummaryLine(
-              label: 'Current partner payout',
+              label: 'Chi trả hiện tại',
               value: formatVnd(service.providerPayoutAmount ?? 0),
             ),
             _PricingSummaryLine(
-              label: 'Current HANDS fee',
+              label: 'Phí HANDS hiện tại',
               value: formatVnd(service.platformFee ?? 0),
             ),
           ],
           if (service.bookablePayoutOptions.isNotEmpty)
             _PricingSummaryLine(
-              label: 'Bookable price options',
+              label: 'Mức giá có thể đặt',
               value: service.bookablePayoutOptions
                   .map((option) => formatVnd(option.customerPrice))
                   .take(3)
@@ -125,13 +124,13 @@ class _ProviderServicePriceSheetState
             ),
           const SizedBox(height: 14),
           Text(
-            'Choose customer price',
+            'Chọn giá cho khách hàng',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
           if (!selectedPriceIsAvailable && service.effectivePrice > 0) ...[
             ChoiceChip(
-              label: Text('Current ${formatVnd(service.effectivePrice)}'),
+              label: Text('Hiện tại ${formatVnd(service.effectivePrice)}'),
               selected: _selectedPrice == service.effectivePrice,
               onSelected: (_) => setState(() {
                 _selectedPrice = service.effectivePrice;
@@ -152,7 +151,7 @@ class _ProviderServicePriceSheetState
               padding: const EdgeInsets.all(12),
               child: priceOptions.isEmpty
                   ? const Text(
-                      'No admin-approved price is available yet. Save this service as paused or ask admin to configure the payout matrix.',
+                      'Chưa có mức giá được phê duyệt. Hãy tạm dừng dịch vụ hoặc yêu cầu HANDS cấu hình mức chi trả.',
                     )
                   : Wrap(
                       spacing: 8,
@@ -180,7 +179,7 @@ class _ProviderServicePriceSheetState
                 _error = null;
               }),
               icon: const Icon(Icons.recommend_outlined),
-              label: Text('Use recommended ${formatVnd(recommendedPrice)}'),
+              label: Text('Dùng mức đề xuất ${formatVnd(recommendedPrice)}'),
             ),
           ],
           const SizedBox(height: 12),
@@ -189,17 +188,17 @@ class _ProviderServicePriceSheetState
                 ? Icons.fact_check_outlined
                 : Icons.admin_panel_settings_outlined,
             text: matchingRule
-                ? 'This price has an admin payout rule. You receive ${formatVnd(previewRule.providerPayoutAmount)} and HANDS fee is ${formatVnd(previewRule.platformFee)}.'
+                ? 'Mức giá này đã có quy tắc chi trả. Bạn nhận ${formatVnd(previewRule.providerPayoutAmount)} và phí HANDS là ${formatVnd(previewRule.platformFee)}.'
                 : service.hasBookablePriceOptions
-                    ? 'Active services require one of the listed admin payout prices. Pick a suggested price or save as paused.'
-                    : 'Active services require an exact admin payout rule. Save as paused or ask admin to configure this price.',
+                    ? 'Dịch vụ đang bật phải dùng một trong các mức giá chi trả đã liệt kê. Chọn giá đề xuất hoặc lưu ở trạng thái tạm dừng.'
+                    : 'Dịch vụ đang bật cần quy tắc chi trả chính xác. Hãy tạm dừng hoặc yêu cầu HANDS cấu hình mức giá này.',
           ),
           const SizedBox(height: 12),
           SwitchListTile(
             value: _active,
             onChanged: (value) => setState(() => _active = value),
-            title: const Text('Accept bookings for this service'),
-            subtitle: const Text('Inactive services will not be bookable.'),
+            title: const Text('Nhận đặt lịch cho dịch vụ này'),
+            subtitle: const Text('Dịch vụ tắt sẽ không thể được đặt.'),
           ),
           if (_error != null) ...[
             const SizedBox(height: 8),
@@ -212,7 +211,7 @@ class _ProviderServicePriceSheetState
           FilledButton.icon(
             onPressed: _submit,
             icon: const Icon(Icons.save_outlined),
-            label: const Text('Save price'),
+            label: const Text('Lưu giá'),
           ),
         ],
       ),

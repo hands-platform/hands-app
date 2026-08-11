@@ -2,7 +2,7 @@ import type { AdminProvider } from '../../lib/admin-api';
 import { providerDocumentLabel } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type { StatusBadgeTone } from '../../components/status-badge';
-import { missingApprovedRequiredKycDocuments } from './partner-kyc-facts';
+import { missingSubmittedRequiredKycDocuments } from './partner-kyc-facts';
 import { providerPublicMedia } from './partner-list-profile';
 
 export type PartnerReviewConfirmationAction =
@@ -11,6 +11,8 @@ export type PartnerReviewConfirmationAction =
   | 'approve-kyc'
   | 'approve-media'
   | 'approve-tax'
+  | 'delete-media'
+  | 'hold-kyc'
   | 'reject-bank'
   | 'reject-document'
   | 'reject-kyc'
@@ -25,6 +27,7 @@ export type PartnerReviewActionConfirmation = {
   readonly disabled: boolean;
   readonly hiddenInputs: readonly { readonly name: string; readonly value: string }[];
   readonly providerId: string;
+  readonly supportingLinks: readonly { readonly description?: string; readonly href: string; readonly label: string }[];
   readonly textInputs: readonly PartnerReviewActionTextInput[];
   readonly title: string;
   readonly tone: StatusBadgeTone;
@@ -94,6 +97,8 @@ export function readPartnerReviewConfirmationAction(value: string): PartnerRevie
     value === 'approve-kyc' ||
     value === 'approve-media' ||
     value === 'approve-tax' ||
+    value === 'delete-media' ||
+    value === 'hold-kyc' ||
     value === 'reject-bank' ||
     value === 'reject-document' ||
     value === 'reject-kyc' ||
@@ -126,10 +131,10 @@ export function buildPartnerReviewActionConfirmation(
   if (action === 'approve-bank' || action === 'reject-bank') {
     return buildBankConfirmation(provider, action, values.bankAccountId, options);
   }
-  if (action === 'approve-media' || action === 'reject-media') {
+  if (action === 'approve-media' || action === 'reject-media' || action === 'delete-media') {
     return buildMediaConfirmation(provider, action, values.fileId, options);
   }
-  if (action === 'approve-kyc' || action === 'reject-kyc') {
+  if (action === 'approve-kyc' || action === 'reject-kyc' || action === 'hold-kyc') {
     return buildKycConfirmation(provider, action, options);
   }
   return buildTaxConfirmation(provider, action, options);
@@ -165,7 +170,7 @@ function buildDocumentConfirmation(
     options,
     provider,
     reasonPlaceholder: isReject ? 'Document rejection reason for Partner app correction' : '',
-    title: `${isReject ? 'Reject' : 'Approve'} ${documentLabel} ${shortId(document.id)}?`,
+    title: `${isReject ? 'Reject' : 'Approve'} ${documentLabel} for ${partnerLabel(provider)}?`,
     tone: isReject ? 'danger' : 'success',
   });
 }
@@ -202,14 +207,14 @@ function buildBankConfirmation(
     provider,
     reasonDefaultValue: isReject ? BANK_CORRECTION_DEFAULT_REASON : '',
     reasonPlaceholder: isReject ? 'Partner withdrawal detail correction reason' : '',
-    title: `${isReject ? 'Reject' : 'Approve'} bank ${shortId(bankAccount.id)}?`,
+    title: `${isReject ? 'Reject' : 'Approve'} withdrawal bank for ${partnerLabel(provider)}?`,
     tone: isReject ? 'danger' : 'success',
   });
 }
 
 function buildMediaConfirmation(
   provider: AdminProvider,
-  action: 'approve-media' | 'reject-media',
+  action: 'approve-media' | 'delete-media' | 'reject-media',
   fileId: string,
   options: PartnerReviewActionOptions,
 ): PartnerReviewActionConfirmation | null {
@@ -218,53 +223,68 @@ function buildMediaConfirmation(
     return null;
   }
 
+  const isDelete = action === 'delete-media';
   const isReject = action === 'reject-media';
   const blockedStatus = isReject ? 'REJECTED' : 'APPROVED';
   const mediaLabel = file.purpose || 'public media';
 
   return baseConfirmation({
     action,
-    confirmLabel: isReject ? 'Reject media' : 'Approve media',
-    description: `${isReject ? 'Reject' : 'Approve'} ${mediaLabel} for Partner ${partnerLabel(
-      provider,
-    )} after checking the public profile asset.`,
+    confirmLabel: isDelete ? 'Delete public media' : isReject ? 'Reject media' : 'Approve media',
+    description: isDelete
+      ? `Delete ${mediaLabel} from Partner ${partnerLabel(provider)}. It will no longer appear in the customer app.`
+      : `${isReject ? 'Reject' : 'Approve'} ${mediaLabel} for Partner ${partnerLabel(
+          provider,
+        )} after checking the public profile asset.`,
     disabledReason:
-      file.reviewStatus === blockedStatus ? `Public media is already ${blockedStatus.toLowerCase()}.` : '',
+      !isDelete && file.reviewStatus === blockedStatus ? `Public media is already ${blockedStatus.toLowerCase()}.` : '',
     hiddenInputs: [
       { name: 'providerId', value: provider.id },
       { name: 'fileId', value: file.id },
     ],
     options,
     provider,
-    reasonPlaceholder: isReject ? 'Media rejection reason for Partner app correction' : '',
-    title: `${isReject ? 'Reject' : 'Approve'} media ${shortId(file.id)}?`,
-    tone: isReject ? 'danger' : 'success',
+    reasonPlaceholder: isDelete
+      ? 'Why this public Partner image must be deleted'
+      : isReject
+        ? 'Media rejection reason for Partner app correction'
+        : '',
+    supportingLinks: file.url
+      ? [{ description: `Preview ${mediaLabel} before the final action.`, href: file.url, label: 'Preview media' }]
+      : [],
+    title: `${isDelete ? 'Delete' : isReject ? 'Reject' : 'Approve'} ${mediaLabel} for ${partnerLabel(provider)}?`,
+    tone: isDelete || isReject ? 'danger' : 'success',
   });
 }
 
 function buildKycConfirmation(
   provider: AdminProvider,
-  action: 'approve-kyc' | 'reject-kyc',
+  action: 'approve-kyc' | 'hold-kyc' | 'reject-kyc',
   options: PartnerReviewActionOptions,
 ): PartnerReviewActionConfirmation {
+  const isHold = action === 'hold-kyc';
   const isReject = action === 'reject-kyc';
-  const missingDocuments = missingApprovedRequiredKycDocuments(provider);
-  const disabledReason = isReject
+  const missingDocuments = missingSubmittedRequiredKycDocuments(provider);
+  const disabledReason = isReject || isHold
     ? !provider.kyc
       ? 'KYC record is missing.'
-      : provider.kyc.status === 'REJECTED'
+      : isReject && provider.kyc.status === 'REJECTED'
         ? 'KYC is already rejected.'
         : ''
-    : provider.kyc?.status === 'APPROVED'
-      ? 'KYC is already approved.'
-      : missingDocuments.length > 0
-        ? `Approve required documents first: ${missingDocuments.map(providerDocumentLabel).join(', ')}.`
-        : '';
+    : !provider.kyc
+      ? 'KYC record is missing.'
+      : provider.kyc.status === 'APPROVED'
+        ? 'KYC is already approved.'
+        : missingDocuments.length > 0
+          ? `Required documents must be submitted first: ${missingDocuments.map(providerDocumentLabel).join(', ')}.`
+          : '';
 
   return baseConfirmation({
     action,
-    confirmLabel: isReject ? 'Reject KYC' : 'Approve KYC',
-    description: isReject
+    confirmLabel: isHold ? 'Put KYC on hold' : isReject ? 'Reject KYC' : 'Approve KYC',
+    description: isHold
+      ? `Put KYC for Partner ${partnerLabel(provider)} on hold and show the correction reason in the Partner app.`
+      : isReject
       ? `Reject KYC for Partner ${partnerLabel(
           provider,
         )} and show the reason in the Partner app correction checklist for resubmission.`
@@ -273,9 +293,14 @@ function buildKycConfirmation(
     hiddenInputs: [{ name: 'providerId', value: provider.id }],
     options,
     provider,
-    reasonPlaceholder: isReject ? 'KYC rejection reason for Partner app correction' : '',
-    title: `${isReject ? 'Reject' : 'Approve'} KYC for Partner ${shortId(provider.id)}?`,
-    tone: isReject ? 'danger' : 'success',
+    reasonDefaultValue: isHold ? provider.kyc?.rejectionReason ?? '' : '',
+    reasonPlaceholder: isHold
+      ? 'KYC hold reason shown to the Partner'
+      : isReject
+        ? 'KYC rejection reason for Partner app correction'
+        : '',
+    title: `${isHold ? 'Put KYC on hold' : isReject ? 'Reject KYC' : 'Approve KYC'} for ${partnerLabel(provider)}?`,
+    tone: isHold ? 'warning' : isReject ? 'danger' : 'success',
   });
 }
 
@@ -303,7 +328,7 @@ function buildTaxConfirmation(
     options,
     provider,
     reasonPlaceholder: isReject ? 'Tax rejection reason for Partner app correction' : '',
-    title: `${isReject ? 'Reject' : 'Approve'} tax profile ${shortId(provider.id)}?`,
+    title: `${isReject ? 'Reject' : 'Approve'} tax profile for ${partnerLabel(provider)}?`,
     tone: isReject ? 'danger' : 'success',
   });
 }
@@ -318,6 +343,7 @@ function baseConfirmation(input: {
   readonly provider: AdminProvider;
   readonly reasonDefaultValue?: string;
   readonly reasonPlaceholder: string;
+  readonly supportingLinks?: readonly { readonly description?: string; readonly href: string; readonly label: string }[];
   readonly title: string;
   readonly tone: StatusBadgeTone;
 }): PartnerReviewActionConfirmation {
@@ -331,6 +357,7 @@ function baseConfirmation(input: {
     disabled,
     hiddenInputs: input.hiddenInputs,
     providerId: input.provider.id,
+    supportingLinks: input.supportingLinks ?? [],
     textInputs: input.reasonPlaceholder
       ? [
           {

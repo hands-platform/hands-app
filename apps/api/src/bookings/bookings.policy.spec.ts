@@ -113,7 +113,7 @@ describe('booking policy helpers', () => {
     expect(() => assertBookingPaymentMethod(PaymentMethod.MOMO)).not.toThrow();
     expect(() => assertBookingPaymentMethod(PaymentMethod.VNPAY)).not.toThrow();
     expect(() => assertBookingPaymentMethod(PaymentMethod.BANK_TRANSFER)).toThrow(BadRequestException);
-    expect(() => assertBookingPaymentMethod(PaymentMethod.CUSTOMER_WALLET)).toThrow(BadRequestException);
+    expect(() => assertBookingPaymentMethod(PaymentMethod.CUSTOMER_WALLET)).not.toThrow();
     expect(() => assertBookingPaymentMethod(PaymentMethod.MANUAL)).toThrow(BadRequestException);
     expect(() => assertBookingPaymentMethod('NOT_A_METHOD')).toThrow(BadRequestException);
     expect(normalizeBookingCoordinate('10.7769', 'lat')).toBe(10.7769);
@@ -215,7 +215,7 @@ describe('booking policy helpers', () => {
     ).toThrow(BadRequestException);
   });
 
-  it('allows customer direct cancellation only before partner commitment', () => {
+  it('allows customer direct cancellation until a final partner is selected', () => {
     expect(() =>
       assertCustomerDirectCancellationAllowed({
         status: BookingStatus.OPEN_MATCHING,
@@ -230,7 +230,7 @@ describe('booking policy helpers', () => {
         selectedProviderId: null,
         participants: [{ status: ParticipantStatus.ACCEPTED }],
       }),
-    ).toThrow('Matched bookings cannot be cancelled directly');
+    ).not.toThrow();
 
     expect(() =>
       assertCustomerDirectCancellationAllowed({
@@ -249,7 +249,7 @@ describe('booking policy helpers', () => {
     ).toThrow('Booking cannot be cancelled in its current state');
   });
 
-  it('detects booking partner commitment from status, final partner, or accepted participant', () => {
+  it('detects booking partner commitment from the final status or selected partner', () => {
     expect(
       bookingHasPartnerCommitment({
         status: BookingStatus.OPEN_MATCHING,
@@ -263,7 +263,7 @@ describe('booking policy helpers', () => {
         selectedProviderId: null,
         participants: [{ status: ParticipantStatus.ACCEPTED }],
       }),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       bookingHasPartnerCommitment({
         status: BookingStatus.OPEN_MATCHING,
@@ -294,6 +294,9 @@ describe('booking policy helpers', () => {
       BookingStatus.ARRIVED,
     ]);
     expect(providerLifecycleAllowedPreviousStatuses(BookingStatus.COMPLETED)).toEqual([
+      BookingStatus.MATCHED,
+      BookingStatus.PROVIDER_ON_THE_WAY,
+      BookingStatus.ARRIVED,
       BookingStatus.IN_SERVICE,
     ]);
     expect(providerLifecycleAllowedPreviousStatuses(BookingStatus.PROVIDER_ON_THE_WAY)).toBeNull();

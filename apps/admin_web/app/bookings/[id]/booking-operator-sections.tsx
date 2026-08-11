@@ -5,6 +5,7 @@ import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminStageItem, AdminStageList } from '../../../components/admin-stage-item';
 import {
   AdminActionCard,
+  AdminDisclosure,
   AdminNotePanel,
   AdminSection,
   AdminTaskCard,
@@ -13,7 +14,6 @@ import {
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import { AdminBookingDetail } from '../../../lib/admin-api';
-import type { FinanceApproverOption } from '../../finance-tax/finance-approver-options';
 import {
   captureBookingPayment,
   refundBookingPayment,
@@ -96,7 +96,6 @@ export type BookingOpsCommandCenterProps = {
   actionEvidenceGate: ActionEvidenceGate;
   actionGateByAction: Map<string, PaymentActionReadout>;
   cashDebtNeedsSettlement: boolean;
-  financeApproverOptions?: readonly FinanceApproverOption[];
 };
 
 const OPERATOR_ACTION_AVAILABILITY_HEADERS = [
@@ -112,6 +111,8 @@ export function BookingOperatorQueueSections({
   operatorCommandQueue,
   operatorActionMatrix,
 }: BookingOperatorQueueSectionsProps) {
+  const availableCount = operatorActionMatrix.filter((row) => row.available).length;
+
   return (
     <>
       <AdminSection
@@ -127,6 +128,7 @@ export function BookingOperatorQueueSections({
       >
         <AdminTraceSummary
           className="admin-mt-12"
+          inferScope={false}
           metrics={operatorCommandQueue.labels.map((label) => ({
             detail: label.helper,
             label: label.label,
@@ -148,19 +150,18 @@ export function BookingOperatorQueueSections({
         </AdminStageList>
       </AdminSection>
 
-      <AdminSection
-        actions={
-          <StatusBadge tone="info">
-            {operatorActionMatrix.filter((row) => row.available).length}/{operatorActionMatrix.length}{' '}
-            available
-          </StatusBadge>
-        }
-        className="admin-mb-16"
-        description="Manual action availability and the linked destination for each action."
-        id="operator-action-availability"
-        title="Operator action availability"
-      >
-        <AdminTableScroll>
+      <AdminDisclosure className="booking-detail-section-disclosure admin-mb-16" id="operator-action-availability">
+        <summary className="booking-detail-section-summary">
+          <span className="booking-detail-section-summary-copy">
+            <strong>Operator action availability</strong>
+            <small>Available actions link to their destination; locked actions remain read-only.</small>
+          </span>
+          <span className="booking-detail-section-summary-meta">
+            {availableCount}/{operatorActionMatrix.length} available
+          </span>
+        </summary>
+        <div className="booking-detail-section-disclosure-body">
+          <AdminTableScroll ariaLabel="Operator action availability table">
           <AdminDataTable
             emptyMessage={null}
             headers={OPERATOR_ACTION_AVAILABILITY_HEADERS}
@@ -175,13 +176,18 @@ export function BookingOperatorQueueSections({
                 <td>{row.evidence}</td>
                 <td>{row.operatorRule}</td>
                 <td>
-                  <ActionLink href={row.href} label={row.hrefLabel} />
+                  {row.available ? (
+                    <ActionLink href={row.href} label={row.hrefLabel} />
+                  ) : (
+                    <span className="muted">Unavailable</span>
+                  )}
                 </td>
               </tr>
             ))}
           </AdminDataTable>
-        </AdminTableScroll>
-      </AdminSection>
+          </AdminTableScroll>
+        </div>
+      </AdminDisclosure>
     </>
   );
 }
@@ -194,7 +200,6 @@ export function BookingOpsCommandCenter({
   actionEvidenceGate,
   actionGateByAction,
   cashDebtNeedsSettlement,
-  financeApproverOptions = [],
 }: BookingOpsCommandCenterProps) {
   return (
     <AdminSection
@@ -295,13 +300,11 @@ export function BookingOpsCommandCenter({
               action={refundBookingPayment}
               bookingId={booking.id}
               paymentId={booking.payment.id}
-              label="Refund"
+              label="Request refund"
               disabled={booking.payment.status === 'REFUNDED' || booking.payment.status === 'RELEASED'}
               readout={actionGateByAction.get('Release or refund')}
-              evidenceHint={`Refund action state: ${booking.payment.status}.`}
-              ruleHint="Refund follows the action evidence gate above."
-              requiresApproval
-              financeApproverOptions={financeApproverOptions}
+              evidenceHint={`Create a refund request from payment state ${booking.payment.status}.`}
+              ruleHint="A different authenticated Finance approver executes or rejects the request in Finance Approval Queue."
             />
             {cashDebtNeedsSettlement && booking.earning?.id && (
               <BookingCashDebtSettlementForm booking={booking} />

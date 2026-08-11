@@ -9,6 +9,7 @@ const baseReward: AdminReferralReward = {
   currency: 'VND',
   qualifyingBookingId: 'booking-1',
   status: 'PENDING',
+  updatedAt: '2026-06-24T10:00:00.000Z',
   walletLedgerReference: null,
 };
 

@@ -29,7 +29,7 @@ describe('PartnerReviewQueueSection', () => {
 
     expect(rendered).toContain('Review queue');
     expect(rendered).toContain('Grouped partner records for KYC, documents, payout readiness');
-    expect(rendered).toContain('3 open item(s)');
+    expect(rendered).toContain('3 open items');
     expect(rendered).toContain('KYC updates');
     expect(rendered).toContain('Partners with missing identity verification.');
     expect(rendered).toContain('CHECK');
@@ -60,7 +60,7 @@ describe('PartnerReviewQueueSection', () => {
       },
     });
 
-    expect(normalizedText(section)).toContain('0 open item(s)');
+    expect(normalizedText(section)).toContain('0 open items');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success']));
   });
 });

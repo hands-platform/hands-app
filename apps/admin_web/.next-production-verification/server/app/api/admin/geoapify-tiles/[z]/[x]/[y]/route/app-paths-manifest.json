@@ -1,0 +1,3 @@
+{
+  "/api/admin/geoapify-tiles/[z]/[x]/[y]/route": "app/api/admin/geoapify-tiles/[z]/[x]/[y]/route.js"
+}

@@ -28,7 +28,7 @@ describe('PartnerDispatchHandoffSection', () => {
     expect(rendered).toContain('4');
     expect(rendered).toContain('Partners eligible to receive marketplace alerts.');
     expect(hrefsIn(section)).toEqual(
-      expect.arrayContaining(['/operations-policy', '/partners?review=marketplace-ready']),
+      expect.arrayContaining(['/operations-policy', '/partners?review=ready-now']),
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
@@ -47,7 +47,7 @@ function buildHandoff(): PartnerDispatchHandoffSectionModel {
     links: [
       {
         detail: 'Partners eligible to receive marketplace alerts.',
-        href: '/partners?review=marketplace-ready',
+        href: '/partners?review=ready-now',
         title: 'Marketplace ready',
         tone: 'ok',
         value: '4',

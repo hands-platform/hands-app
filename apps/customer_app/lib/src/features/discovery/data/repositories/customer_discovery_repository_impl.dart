@@ -25,6 +25,34 @@ class CustomerDiscoveryRepositoryImpl implements CustomerDiscoveryRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> getHomeSummary({
+    required double lat,
+    required double lng,
+  }) async {
+    final result =
+        await _api.getJson('/customer/home-summary?lat=$lat&lng=$lng');
+    return result is Map<String, dynamic>
+        ? result
+        : <String, dynamic>{
+            'wallet': {'balance': 0, 'currency': 'VND'},
+            'favoritePartners': <dynamic>[],
+            'completedPartners': <dynamic>[],
+          };
+  }
+
+  @override
+  Future<Map<String, dynamic>> getWallet() async {
+    final result = await _api.getJson('/customer/wallet');
+    return result is Map<String, dynamic>
+        ? result
+        : <String, dynamic>{
+            'balance': 0,
+            'currency': 'VND',
+            'entries': <dynamic>[],
+          };
+  }
+
+  @override
   Future<Map<String, dynamic>?> saveSelectedLocation({
     required double lat,
     required double lng,
@@ -40,6 +68,22 @@ class CustomerDiscoveryRepositoryImpl implements CustomerDiscoveryRepository {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> listSavedLocations() async {
+    final result = await _api.getJson('/customer/locations');
+    return result is List
+        ? result
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList()
+        : [];
+  }
+
+  @override
+  Future<void> deleteSavedLocation(String locationId) async {
+    await _api.deleteJson('/customer/locations/$locationId', {});
+  }
+
+  @override
   Future<Map<String, dynamic>> getProviderDetail(String providerId) async {
     final result = await _api.getJson('/customer/partners/$providerId');
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
@@ -47,7 +91,10 @@ class CustomerDiscoveryRepositoryImpl implements CustomerDiscoveryRepository {
 
   @override
   Future<void> recordProviderProfileView(String providerId) async {
-    await _api.postJson('/customer/partners/$providerId/view', {});
+    await _api.postJson('/customer/partners/$providerId/view', {
+      'clientEventId':
+          _appSessionReporter.createClientEventId('PROVIDER_PROFILE_VIEW'),
+    });
   }
 
   @override

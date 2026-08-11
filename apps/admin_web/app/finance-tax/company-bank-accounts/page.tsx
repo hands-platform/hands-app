@@ -1,21 +1,20 @@
-import { Archive, Pencil, Plus, RotateCcw } from 'lucide-react';
+import { Archive, Check, Pencil, Plus, RotateCcw, X } from 'lucide-react';
 import { redirect } from 'next/navigation';
 
-import { ActionMenu } from '../../../components/action-menu';
 import {
   AdminFormControlLink,
   AdminFormGrid,
   AdminFormInput,
-  AdminFormSelect,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
+import { AdminIconLink } from '../../../components/admin-icon-link';
 import { AdminInlineNotice } from '../../../components/admin-inline-notice';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminDisclosure } from '../../../components/admin-surface';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
-import type { AdminAuditLog, AdminCompanyBankAccount, AdminUser } from '../../../lib/admin-api';
+import type { AdminAuditLog, AdminCompanyBankAccount } from '../../../lib/admin-api';
 import {
   AdminApiRequestError,
   adminGet,
@@ -34,7 +33,6 @@ import {
   COMPANY_BANK_ACCOUNT_UPDATE_INTENT,
   isConfirmedCompanyBankAccountAction,
 } from './company-bank-account-action-validation';
-import { buildCompanyBankAccountApproverOptions } from './company-bank-account-approver-model';
 
 type CompanyBankAccountsPageProps = {
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -42,33 +40,43 @@ type CompanyBankAccountsPageProps = {
 
 const COMPANY_BANK_ACCOUNTS_PATH = '/finance-tax/company-bank-accounts';
 
-export default async function CompanyBankAccountsPage({ searchParams }: CompanyBankAccountsPageProps = {}) {
+export default async function CompanyBankAccountsPage({ searchParams }: CompanyBankAccountsPageProps) {
   const params = searchParams ? await searchParams : {};
   const dialog = readParam(params, 'dialog');
   const requestedAccountId = readParam(params, 'accountId');
   const statusConfirmationRequested = readParam(params, 'confirm') === 'status';
-  const needsApproverDirectory = dialog === 'new' || dialog === 'edit' || statusConfirmationRequested;
-  const [accounts, auditLogs, currentOperatorAccess, approverUsers] = await Promise.all([
+  const requestedDecision = readParam(params, 'decision').toUpperCase();
+  const approvalDecision =
+    requestedDecision === 'APPROVE' || requestedDecision === 'REJECT'
+      ? requestedDecision
+      : null;
+  const [accounts, auditLogs, currentOperatorAccess] = await Promise.all([
     adminGet<AdminCompanyBankAccount[]>('/admin/company-bank-accounts?status=ALL', []),
     adminGet<AdminAuditLog[]>('/admin/audit-logs?q=company_bank_account&take=20', []),
-    needsApproverDirectory ? getCurrentAdminOperatorAccess() : Promise.resolve(null),
-    needsApproverDirectory
-      ? adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
-      : Promise.resolve([]),
+    getCurrentAdminOperatorAccess(),
   ]);
+  const pendingApprovals = new Map(
+    accounts
+      .map((account) => [account.id, readCompanyBankAccountPendingApproval(account.metadata)] as const)
+      .filter((entry): entry is readonly [string, CompanyBankAccountPendingApproval] => Boolean(entry[1])),
+  );
   const activeCount = accounts.filter((account) => account.status === 'ACTIVE').length;
   const inactiveCount = Math.max(accounts.length - activeCount, 0);
+  const pendingCount = pendingApprovals.size;
   const accountAuditLogs = auditLogs.filter((log) => log.target.startsWith('company_bank_account:'));
   const accountById = new Map(accounts.map((account) => [account.id, account]));
-  const approverOptions = buildCompanyBankAccountApproverOptions(
-    approverUsers,
-    currentOperatorAccess?.id ?? null,
-  );
   const editingAccount = dialog === 'edit' ? accounts.find((account) => account.id === requestedAccountId) ?? null : null;
   const statusAccount =
     statusConfirmationRequested
       ? accounts.find((account) => account.id === requestedAccountId) ?? null
       : null;
+  const approvalAccount =
+    approvalDecision
+      ? accounts.find((account) => account.id === requestedAccountId) ?? null
+      : null;
+  const approvalRequest = approvalAccount ? pendingApprovals.get(approvalAccount.id) ?? null : null;
+  const approvalIsOwnRequest =
+    approvalRequest?.requestedByAdminId === currentOperatorAccess?.id;
   const nextStatus = readParam(params, 'nextStatus') === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
   const notice = readParam(params, 'notice');
   const error = readParam(params, 'error');
@@ -103,6 +111,13 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
           value: formatWholeNumber(activeCount),
         },
         {
+          helper: 'Creation or account changes waiting for another Finance approver.',
+          kind: pendingCount > 0 ? 'risk' : 'action',
+          label: 'Pending approval',
+          scope: 'Needs action',
+          value: formatWholeNumber(pendingCount),
+        },
+        {
           helper: 'Inactive accounts retained only for historical matching.',
           kind: 'record',
           label: 'Inactive accounts',
@@ -124,9 +139,9 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
       ) : null}
 
       {dialog === 'new' ? (
-        <CompanyBankAccountCreateForm approverOptions={approverOptions} />
+        <CompanyBankAccountCreateForm />
       ) : dialog === 'edit' && editingAccount ? (
-        <CompanyBankAccountEditForm account={editingAccount} approverOptions={approverOptions} />
+        <CompanyBankAccountEditForm account={editingAccount} />
       ) : dialog === 'edit' ? (
         <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
           The requested bank account is not available. Reload the account list before editing.
@@ -150,15 +165,6 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
             { name: 'nextStatus', value: nextStatus },
           ]}
           id={`company-bank-account-status-${statusAccount.id}`}
-          disabled={approverOptions.length === 0}
-          selectInputs={[
-            {
-              label: 'Separate Finance approver',
-              name: 'approvalAdminId',
-              options: [{ label: 'Select Finance approver', value: '' }, ...approverOptions],
-              required: true,
-            },
-          ]}
           textInputs={[
             {
               label: 'Status change evidence',
@@ -169,7 +175,7 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
               required: true,
             },
           ]}
-          title={`${nextStatus === 'ACTIVE' ? 'Activate' : 'Archive'} ${statusAccount.name}?`}
+          title={`Request ${nextStatus === 'ACTIVE' ? 'activation' : 'archive'} for ${statusAccount.name}?`}
           tone={nextStatus === 'ACTIVE' ? 'success' : 'warning'}
         />
       ) : statusConfirmationRequested ? (
@@ -178,9 +184,55 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
         </AdminInlineNotice>
       ) : null}
 
+      {approvalAccount && approvalRequest && approvalDecision ? (
+        <>
+          {approvalIsOwnRequest ? (
+            <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
+              This request was submitted by the current operator. A different Finance approver must decide it.
+            </AdminInlineNotice>
+          ) : null}
+          <ConfirmDialog
+            action={decideCompanyBankAccountChangeAction}
+            cancelHref={COMPANY_BANK_ACCOUNTS_PATH}
+            confirmLabel={approvalDecision === 'APPROVE' ? 'Approve change' : 'Reject change'}
+            description={
+              approvalDecision === 'APPROVE'
+                ? 'Applies the exact pending account proposal. The request maker cannot approve their own change.'
+                : 'Keeps the current account unchanged and closes the pending request with rejection evidence.'
+            }
+            disabled={approvalIsOwnRequest}
+            hiddenInputs={[
+              { name: 'accountId', value: approvalAccount.id },
+              { name: 'decision', value: approvalDecision },
+              { name: 'requestId', value: approvalRequest.requestId },
+            ]}
+            id={`company-bank-account-decision-${approvalRequest.requestId}`}
+            textInputs={[
+              {
+                label: approvalDecision === 'APPROVE' ? 'Approval evidence' : 'Rejection reason',
+                maxLength: 500,
+                minLength: COMPANY_BANK_ACCOUNT_EVIDENCE_MIN_LENGTH,
+                name: 'operatorReason',
+                placeholder:
+                  approvalDecision === 'APPROVE'
+                    ? 'What evidence confirms this account change?'
+                    : 'Why should this request not be applied?',
+                required: true,
+              },
+            ]}
+            title={`${approvalDecision === 'APPROVE' ? 'Approve' : 'Reject'} ${approvalAccount.name}?`}
+            tone={approvalDecision === 'APPROVE' ? 'success' : 'danger'}
+          />
+        </>
+      ) : approvalDecision ? (
+        <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
+          The requested approval is no longer available. Reload the account list before retrying.
+        </AdminInlineNotice>
+      ) : null}
+
       <FinanceTablePanel
         grouped
-        description="Creating, renaming, activating, and archiving an account requires a different Finance approver and records before/after audit evidence. Account identity cannot be edited after transactions exist."
+        description="Operators submit account changes first. A different Finance approver applies or rejects the exact pending proposal. Account identity cannot be edited after transactions exist."
         resultLabel={`${formatWholeNumber(accounts.length)} account(s)`}
         resultTone="info"
         title="Bank account management"
@@ -194,43 +246,64 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
             <tr key={account.id}>
               <td>
                 <strong>{account.name}</strong>
-                <span className="muted">#{account.id}</span>
               </td>
               <td>{account.bankName}</td>
               <td>{account.accountNumberMasked ?? account.accountNumberLast4 ?? 'Not provided'}</td>
               <td>{account.currency}</td>
               <td>
                 <StatusBadge tone={statusTone(account.status)}>{account.status}</StatusBadge>
+                {pendingApprovals.has(account.id) ? (
+                  <StatusBadge tone="warning">
+                    {pendingApprovalLabel(pendingApprovals.get(account.id)?.operation)}
+                  </StatusBadge>
+                ) : null}
               </td>
               <td>
-                <ActionMenu
-                  actions={[
-                    {
-                      href: `${COMPANY_BANK_ACCOUNTS_PATH}?dialog=edit&accountId=${encodeURIComponent(account.id)}`,
-                      icon: Pencil,
-                      kind: 'link',
-                      label: 'Edit name',
-                      tone: 'info',
-                    },
-                    account.status === 'ACTIVE'
-                      ? {
-                          href: companyBankAccountStatusHref(account.id, 'INACTIVE'),
-                          icon: Archive,
-                          kind: 'link' as const,
-                          label: 'Archive',
-                          tone: 'warning' as const,
+                <div className="actions">
+                  {pendingApprovals.has(account.id) ? (
+                    <>
+                      <AdminIconLink
+                        aria-label={`Approve pending change for ${account.name}`}
+                        href={companyBankAccountDecisionHref(account.id, 'APPROVE')}
+                        title="Approve pending change"
+                      >
+                        <Check aria-hidden="true" size={16} />
+                      </AdminIconLink>
+                      <AdminIconLink
+                        aria-label={`Reject pending change for ${account.name}`}
+                        href={companyBankAccountDecisionHref(account.id, 'REJECT')}
+                        title="Reject pending change"
+                      >
+                        <X aria-hidden="true" size={16} />
+                      </AdminIconLink>
+                    </>
+                  ) : (
+                    <>
+                      <AdminIconLink
+                        aria-label={`Edit ${account.name}`}
+                        href={`${COMPANY_BANK_ACCOUNTS_PATH}?dialog=edit&accountId=${encodeURIComponent(account.id)}`}
+                        title="Edit account name"
+                      >
+                        <Pencil aria-hidden="true" size={16} />
+                      </AdminIconLink>
+                      <AdminIconLink
+                        aria-label={`${account.status === 'ACTIVE' ? 'Archive' : 'Activate'} ${account.name}`}
+                        href={
+                          account.status === 'ACTIVE'
+                            ? companyBankAccountStatusHref(account.id, 'INACTIVE')
+                            : companyBankAccountStatusHref(account.id, 'ACTIVE')
                         }
-                      : {
-                          href: companyBankAccountStatusHref(account.id, 'ACTIVE'),
-                          icon: RotateCcw,
-                          kind: 'link' as const,
-                          label: 'Activate',
-                          tone: 'success' as const,
-                        },
-                  ]}
-                  label={`Actions for ${account.name}`}
-                  variant="dropdown"
-                />
+                        title={account.status === 'ACTIVE' ? 'Archive account' : 'Activate account'}
+                      >
+                        {account.status === 'ACTIVE' ? (
+                          <Archive aria-hidden="true" size={16} />
+                        ) : (
+                          <RotateCcw aria-hidden="true" size={16} />
+                        )}
+                      </AdminIconLink>
+                    </>
+                  )}
+                </div>
               </td>
             </tr>
           ))}
@@ -251,17 +324,28 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
         >
           {accountAuditLogs.map((log) => {
             const accountId = log.target.slice('company_bank_account:'.length);
+            const account = accountById.get(accountId);
             const metadata = readPlainRecord(log.metadata);
             return (
               <tr key={log.id}>
                 <td><DateTimeText value={log.createdAt} /></td>
                 <td>
-                  <strong>{accountById.get(accountId)?.name ?? accountId}</strong>
-                  <span className="muted">#{accountId}</span>
+                  <strong>{account?.name ?? accountId}</strong>
+                  {account ? (
+                    <span className="muted">
+                      {account.bankName} · {account.accountNumberMasked ?? account.accountNumberLast4 ?? 'Masked'}
+                    </span>
+                  ) : null}
                 </td>
                 <td><StatusBadge tone={auditActionTone(log.action)}>{auditActionLabel(log.action)}</StatusBadge></td>
                 <td>{adminAuditActorLabel(log)}</td>
-                <td>{typeof metadata?.operatorReason === 'string' ? metadata.operatorReason : 'Evidence retained in audit log'}</td>
+                <td>
+                  {typeof metadata?.decisionReason === 'string'
+                    ? metadata.decisionReason
+                    : typeof metadata?.operatorReason === 'string'
+                      ? metadata.operatorReason
+                      : 'Evidence retained in audit log'}
+                </td>
               </tr>
             );
           })}
@@ -271,22 +355,13 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
   );
 }
 
-function CompanyBankAccountCreateForm({
-  approverOptions,
-}: {
-  readonly approverOptions: readonly { readonly label: string; readonly value: string }[];
-}) {
+function CompanyBankAccountCreateForm() {
   return (
     <AdminDisclosure className="admin-mb-16" open>
       <summary>
         <span>Add company bank account</span>
         <small>Store only a masked account number and its last four digits.</small>
       </summary>
-      {approverOptions.length === 0 ? (
-        <AdminInlineNotice className="admin-mt-12" role="alert" tone="warning">
-          No other Finance approver is available. Assign the FINANCE_APPROVER role before creating an account.
-        </AdminInlineNotice>
-      ) : null}
       <AdminFormGrid action={createCompanyBankAccountAction} className="compact-form admin-mt-12">
         <input name="confirmationIntent" type="hidden" value={COMPANY_BANK_ACCOUNT_CREATE_INTENT} />
         <AdminFormInput label="Account name" labelVisibility="visible" maxLength={120} name="name" required />
@@ -308,13 +383,6 @@ function CompanyBankAccountCreateForm({
           required
         />
         <AdminFormInput defaultValue="VND" label="Currency" labelVisibility="visible" maxLength={3} name="currency" required />
-        <AdminFormSelect
-          label="Separate Finance approver"
-          labelVisibility="visible"
-          name="approvalAdminId"
-          options={[{ label: 'Select Finance approver', value: '' }, ...approverOptions]}
-          required
-        />
         <AdminFormTextarea
           className="form-grid-wide"
           label="Creation evidence"
@@ -327,11 +395,10 @@ function CompanyBankAccountCreateForm({
         />
         <FinanceActionConfirmationDisclosure
           className="form-grid-wide"
-          confirmLabel="Confirm approved account creation"
-          detail="Creates an active import account. Only the masked number and last four digits are stored."
-          disabled={approverOptions.length === 0}
+          confirmLabel="Submit creation request"
+          detail="Creates an inactive account request. A different Finance approver must activate it before statement import."
           secondaryAction={<AdminFormControlLink className="button-secondary" href={COMPANY_BANK_ACCOUNTS_PATH}>Cancel</AdminFormControlLink>}
-          title="Review bank account creation"
+          title="Review creation request"
         />
       </AdminFormGrid>
     </AdminDisclosure>
@@ -340,10 +407,8 @@ function CompanyBankAccountCreateForm({
 
 function CompanyBankAccountEditForm({
   account,
-  approverOptions,
 }: {
   readonly account: AdminCompanyBankAccount;
-  readonly approverOptions: readonly { readonly label: string; readonly value: string }[];
 }) {
   return (
     <AdminDisclosure className="admin-mb-16" open>
@@ -351,11 +416,6 @@ function CompanyBankAccountEditForm({
         <span>Edit account name</span>
         <small>{account.bankName} · {account.accountNumberMasked ?? account.accountNumberLast4 ?? account.id}</small>
       </summary>
-      {approverOptions.length === 0 ? (
-        <AdminInlineNotice className="admin-mt-12" role="alert" tone="warning">
-          No other Finance approver is available. Assign the FINANCE_APPROVER role before editing this account.
-        </AdminInlineNotice>
-      ) : null}
       <AdminFormGrid action={updateCompanyBankAccountNameAction} className="compact-form admin-mt-12">
         <input name="accountId" type="hidden" value={account.id} />
         <input name="confirmationAccountId" type="hidden" value={account.id} />
@@ -366,13 +426,6 @@ function CompanyBankAccountEditForm({
           labelVisibility="visible"
           maxLength={120}
           name="name"
-          required
-        />
-        <AdminFormSelect
-          label="Separate Finance approver"
-          labelVisibility="visible"
-          name="approvalAdminId"
-          options={[{ label: 'Select Finance approver', value: '' }, ...approverOptions]}
           required
         />
         <AdminFormTextarea
@@ -387,11 +440,10 @@ function CompanyBankAccountEditForm({
         />
         <FinanceActionConfirmationDisclosure
           className="form-grid-wide"
-          confirmLabel="Confirm approved name change"
-          detail={`Renames ${account.name}. Bank identity, currency, status, and historical evidence remain unchanged.`}
-          disabled={approverOptions.length === 0}
+          confirmLabel="Submit name change"
+          detail={`Requests a rename for ${account.name}. The current name remains until another Finance approver approves it.`}
           secondaryAction={<AdminFormControlLink className="button-secondary" href={COMPANY_BANK_ACCOUNTS_PATH}>Cancel</AdminFormControlLink>}
-          title="Review account name change"
+          title="Review name change request"
         />
       </AdminFormGrid>
     </AdminDisclosure>
@@ -402,9 +454,7 @@ async function createCompanyBankAccountAction(formData: FormData) {
   'use server';
   const confirmationIntent = readFormString(formData, 'confirmationIntent');
   const operatorReason = readFormString(formData, 'operatorReason');
-  const approvalAdminId = readFormString(formData, 'approvalAdminId');
   if (
-    !approvalAdminId ||
     !isConfirmedCompanyBankAccountAction({
       confirmationIntent,
       evidence: operatorReason,
@@ -417,7 +467,6 @@ async function createCompanyBankAccountAction(formData: FormData) {
     await adminPostOrThrow('/admin/company-bank-accounts', {
       accountNumberLast4: readFormString(formData, 'accountNumberLast4'),
       accountNumberMasked: readFormString(formData, 'accountNumberMasked') || undefined,
-      approvalAdminId,
       bankName: readFormString(formData, 'bankName'),
       currency: readFormString(formData, 'currency'),
       name: readFormString(formData, 'name'),
@@ -435,10 +484,8 @@ async function updateCompanyBankAccountNameAction(formData: FormData) {
   const confirmationAccountId = readFormString(formData, 'confirmationAccountId');
   const confirmationIntent = readFormString(formData, 'confirmationIntent');
   const operatorReason = readFormString(formData, 'operatorReason');
-  const approvalAdminId = readFormString(formData, 'approvalAdminId');
   if (
     !accountId ||
-    !approvalAdminId ||
     !isConfirmedCompanyBankAccountAction({
       accountId,
       confirmationAccountId,
@@ -451,7 +498,6 @@ async function updateCompanyBankAccountNameAction(formData: FormData) {
   }
   try {
     await adminPatchOrThrow(`/admin/company-bank-accounts/${encodeURIComponent(accountId)}`, {
-      approvalAdminId,
       name: readFormString(formData, 'name'),
       operatorReason,
     });
@@ -467,11 +513,9 @@ async function updateCompanyBankAccountStatusAction(formData: FormData) {
   const confirmationAccountId = readFormString(formData, 'confirmationAccountId');
   const confirmationIntent = readFormString(formData, 'confirmationIntent');
   const operatorReason = readFormString(formData, 'operatorReason');
-  const approvalAdminId = readFormString(formData, 'approvalAdminId');
   const nextStatus = readFormString(formData, 'nextStatus') === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
   if (
     !accountId ||
-    !approvalAdminId ||
     !isConfirmedCompanyBankAccountAction({
       accountId,
       confirmationAccountId,
@@ -484,7 +528,6 @@ async function updateCompanyBankAccountStatusAction(formData: FormData) {
   }
   try {
     await adminPatchOrThrow(`/admin/company-bank-accounts/${encodeURIComponent(accountId)}`, {
-      approvalAdminId,
       operatorReason,
       status: nextStatus,
     });
@@ -494,8 +537,44 @@ async function updateCompanyBankAccountStatusAction(formData: FormData) {
   redirect(`${COMPANY_BANK_ACCOUNTS_PATH}?notice=status-updated`);
 }
 
+async function decideCompanyBankAccountChangeAction(formData: FormData) {
+  'use server';
+  const accountId = readFormString(formData, 'accountId');
+  const decision = readFormString(formData, 'decision').toUpperCase();
+  const operatorReason = readFormString(formData, 'operatorReason');
+  const requestId = readFormString(formData, 'requestId');
+  if (
+    !accountId ||
+    (decision !== 'APPROVE' && decision !== 'REJECT') ||
+    !requestId ||
+    operatorReason.length < COMPANY_BANK_ACCOUNT_EVIDENCE_MIN_LENGTH
+  ) {
+    redirect(`${COMPANY_BANK_ACCOUNTS_PATH}?error=confirmation-required`);
+  }
+  try {
+    await adminPostOrThrow(
+      `/admin/company-bank-accounts/${encodeURIComponent(accountId)}/approval-decision`,
+      {
+        decision,
+        operatorReason,
+        requestId,
+      },
+    );
+  } catch (error) {
+    redirect(`${COMPANY_BANK_ACCOUNTS_PATH}?error=${companyBankAccountActionError(error)}`);
+  }
+  redirect(
+    `${COMPANY_BANK_ACCOUNTS_PATH}?notice=${decision === 'APPROVE' ? 'approved' : 'rejected'}`,
+  );
+}
+
 function companyBankAccountStatusHref(accountId: string, nextStatus: 'ACTIVE' | 'INACTIVE') {
   const search = new URLSearchParams({ accountId, confirm: 'status', nextStatus });
+  return `${COMPANY_BANK_ACCOUNTS_PATH}?${search.toString()}`;
+}
+
+function companyBankAccountDecisionHref(accountId: string, decision: 'APPROVE' | 'REJECT') {
+  const search = new URLSearchParams({ accountId, decision });
   return `${COMPANY_BANK_ACCOUNTS_PATH}?${search.toString()}`;
 }
 
@@ -506,16 +585,18 @@ function companyBankAccountActionError(error: unknown) {
 }
 
 function companyBankAccountNotice(notice: string) {
-  if (notice === 'created') return 'The approved company bank account was created.';
-  if (notice === 'updated') return 'The approved account name change was saved.';
-  if (notice === 'status-updated') return 'The approved account status change was saved.';
+  if (notice === 'created') return 'The company bank account creation request is waiting for approval.';
+  if (notice === 'updated') return 'The account name change is waiting for approval.';
+  if (notice === 'status-updated') return 'The account status change is waiting for approval.';
+  if (notice === 'approved') return 'The pending company bank account change was approved and applied.';
+  if (notice === 'rejected') return 'The pending company bank account change was rejected.';
   return 'The bank account action completed.';
 }
 
 function companyBankAccountError(error: string) {
-  if (error === 'confirmation-required') return 'Review confirmation, a separate approver, and at least 12 characters of evidence are required.';
+  if (error === 'confirmation-required') return 'Review confirmation and at least 12 characters of evidence are required.';
   if (error === 'conflict') return 'The account already exists or changed during review. Reload before retrying.';
-  if (error === 'invalid') return 'The bank account action was rejected. Check masking, approval, status, and evidence.';
+  if (error === 'invalid') return 'The bank account action was rejected. Check role separation, masking, status, and evidence.';
   return 'The bank account action failed. No confirmed result was saved.';
 }
 
@@ -528,17 +609,48 @@ function readFormString(formData: FormData, key: string) {
   return String(formData.get(key) ?? '').trim();
 }
 
+type CompanyBankAccountPendingApproval = {
+  operation: 'CREATE' | 'UPDATE';
+  requestedByAdminId: string;
+  requestId: string;
+};
+
+function readCompanyBankAccountPendingApproval(value: unknown): CompanyBankAccountPendingApproval | null {
+  const metadata = readPlainRecord(value);
+  const pending = readPlainRecord(metadata?.pendingApproval);
+  const operation = pending?.operation;
+  const requestedByAdminId =
+    typeof pending?.requestedByAdminId === 'string' ? pending.requestedByAdminId.trim() : '';
+  const requestId = typeof pending?.requestId === 'string' ? pending.requestId.trim() : '';
+  if (
+    (operation !== 'CREATE' && operation !== 'UPDATE') ||
+    !requestedByAdminId ||
+    !requestId
+  ) {
+    return null;
+  }
+  return { operation, requestedByAdminId, requestId };
+}
+
+function pendingApprovalLabel(operation: CompanyBankAccountPendingApproval['operation'] | undefined) {
+  return operation === 'CREATE' ? 'Creation pending' : 'Change pending';
+}
+
 function adminAuditActorLabel(log: AdminAuditLog) {
   return log.actor?.fullName ?? log.actor?.email ?? log.actor?.phone ?? log.actor?.id ?? 'Unknown operator';
 }
 
 function auditActionLabel(action: string) {
+  if (action === 'company_bank_account.approval_requested') return 'Approval requested';
+  if (action === 'company_bank_account.approval_rejected') return 'Rejected';
   if (action === 'company_bank_account.create') return 'Created';
   if (action === 'company_bank_account.update') return 'Updated';
   return action.replaceAll('_', ' ').replaceAll('.', ' ');
 }
 
 function auditActionTone(action: string) {
+  if (action === 'company_bank_account.approval_rejected') return 'danger' as const;
+  if (action === 'company_bank_account.approval_requested') return 'warning' as const;
   return action === 'company_bank_account.create' ? 'success' as const : 'info' as const;
 }
 

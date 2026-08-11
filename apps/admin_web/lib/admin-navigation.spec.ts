@@ -1,232 +1,273 @@
 import { readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 
-import {
-  adminHiddenRoutePolicy,
-  adminHiddenRouteRoutes,
-} from './admin-hidden-route-policy';
+import { adminHiddenRoutePolicy, adminHiddenRouteRoutes } from './admin-hidden-route-policy';
 import { adminOperatorCategoryForPath } from './admin-operator-access-model';
 import {
+  adminNavIconKeys,
+  groupAdminNavSearchResults,
+  adminNavSearchEntries,
+  adminNavSearchResults,
+  adminNavSectionDestinations,
   adminNavSections,
   adminNavSectionsForAccess,
+  adminNavWorkspaceDestinations,
   allAdminNavSections,
 } from './admin-navigation';
 
 describe('admin navigation', () => {
-  it('organizes the sidebar into operation-focused categories', () => {
+  it('organizes one direct Shift Command link and seven operator work areas', () => {
     expect(adminNavSections.map((section) => section.label)).toEqual([
-      'Shift Operations',
-      'Bookings',
-      'Customers',
-      'Partners',
-      'Analytics',
+      'Shift Command',
+      'Booking Operations',
+      'Customer Support',
+      'Partner Operations',
+      'Finance Operations',
+      'Finance Records & Close',
       'Growth & Communications',
-      'Finance',
-      'Tax & Accounting',
-      'Policies',
-      'Admin Control',
+      'Administration & Settings',
+    ]);
+    expect(adminNavSections).toHaveLength(8);
+    expect(adminNavSections[0]).toMatchObject({ href: '/', links: [] });
+    expect(adminNavSections.slice(1).every((section) => section.links.length >= 1)).toBe(true);
+    expect(adminNavSections.slice(1).every((section) => section.links.length <= 7)).toBe(true);
+  });
+
+  it('uses stable unique ids and explicit valid icon keys', () => {
+    const items = adminNavSections.flatMap((section) => [
+      section,
+      ...section.links,
+      ...section.links.flatMap((link) => link.searchEntries ?? []),
+      ...(section.localGroups ?? []),
+      ...(section.localGroups?.flatMap((group) => group.links) ?? []),
+    ]);
+    const ids = items.map((item) => item.id);
+
+    expect(ids.length).toBe(new Set(ids).size);
+    expect(items.every((item) => adminNavIconKeys.includes(item.iconKey))).toBe(true);
+  });
+
+  it('keeps direct sidebar destinations unique by exact href and pathname', () => {
+    const hrefs = sidebarHrefs(adminNavSections);
+    const pathnames = hrefs.map(normalizeMenuRoute);
+
+    expect(hrefs.length).toBe(new Set(hrefs).size);
+    expect(pathnames.length).toBe(new Set(pathnames).size);
+  });
+
+  it('places daily operating routes in their operator work areas', () => {
+    const links = navLinkLabels(adminNavSections);
+
+    expect(links.get('/cash-settlements')).toBe('Finance Operations: Cash Settlements');
+    expect(links.get('/finance-closeout')).toBe('Finance Operations: Settlement Repair');
+    expect(links.get('/partners/overview')).toBe('Partner Operations: Partner Operations');
+    expect(links.get('/chat-archive')).toBe('Customer Support: Chat Evidence');
+    expect(sidebarHrefs(adminNavSections)).not.toContain('/usage-overview');
+    expect(links.get('/usage-overview')).toBe('Growth & Communications: Customer Usage');
+    expect(adminNavWorkspaceDestinations()).toContain('/usage-overview');
+  });
+
+  it('keeps one representative sidebar link for each consolidated workspace', () => {
+    const hrefs = sidebarHrefs(adminNavSections);
+
+    expect(hrefs).toContain('/bookings/completed');
+    expect(hrefs).not.toContain('/bookings/post-match-cancellations');
+    expect(hrefs).toContain('/reviews');
+    expect(hrefs).not.toContain('/reviews/partner-customer-evaluations');
+    expect(hrefs).toContain('/notifications');
+    expect(hrefs).not.toContain('/notifications/templates');
+    expect(hrefs).toContain('/referrals/customers');
+    expect(hrefs).not.toContain('/referrals/partners');
+    expect(hrefs).toContain('/finance-tax/booking-settlement-audit');
+    expect(hrefs).not.toContain('/finance-tax/settlement-reversals');
+    expect(hrefs).toContain('/finance-tax');
+    expect(hrefs).not.toContain('/finance-tax/monthly-tax-closing');
+  });
+
+  it('keeps legacy aliases out of the sidebar while preserving their route policies', () => {
+    const hrefs = sidebarHrefs(allAdminNavSections);
+
+    expect(hrefs).not.toContain('/providers');
+    expect(hrefs).not.toContain('/files');
+    expect(hrefs).not.toContain('/referrals');
+    expect(adminHiddenRoutePolicy('/providers')).toBeTruthy();
+    expect(adminHiddenRoutePolicy('/files')).toBeTruthy();
+    expect(adminHiddenRoutePolicy('/referrals')).toBeTruthy();
+  });
+
+  it('filters direct links and local workspaces for operator access', () => {
+    const shift = visibleNav({
+      categories: ['BOOKINGS', 'CUSTOMERS_DIRECTORY', 'CUSTOMERS_REVIEWS', 'NOTIFICATIONS_DELIVERY'],
+      roles: ['ADMIN'],
+    });
+    const partner = visibleNav({ categories: ['PARTNERS', 'CUSTOMERS_REVIEWS'], roles: ['ADMIN'] });
+    const finance = visibleNav({ categories: ['FINANCE'], roles: ['ADMIN', 'FINANCE_APPROVER'] });
+    const master = visibleNav({ categories: [], roles: ['ADMIN', 'MASTER_ADMIN'] });
+
+    expect(shift.sidebarHrefs).toContain('/');
+    expect(shift.sidebarHrefs).toContain('/bookings');
+    expect(shift.sidebarHrefs).toContain('/customers');
+    expect(shift.workspaceHrefs).toContain('/reviews/partner-customer-evaluations');
+    expect(shift.sidebarHrefs).not.toContain('/partners');
+    expect(shift.sidebarHrefs).not.toContain('/finance-overview');
+    expect(shift.localGroups).not.toContain('System Health');
+
+    expect(partner.sidebarHrefs).toContain('/partners/overview');
+    expect(partner.sidebarHrefs).not.toContain('/partners');
+    expect(partner.sidebarHrefs).not.toContain('/partner-controls');
+    expect(partner.workspaceHrefs).toContain('/partners');
+    expect(partner.workspaceHrefs).toContain('/partner-controls');
+    expect(partner.sidebarHrefs).not.toContain('/customers');
+
+    expect(finance.sidebarHrefs).toContain('/finance-overview');
+    expect(finance.sidebarHrefs).toContain('/cash-settlements');
+    expect(finance.workspaceHrefs).toContain('/earnings');
+    expect(finance.workspaceHrefs).toContain('/finance-tax/monthly-tax-closing');
+    expect(finance.workspaceHrefs).toContain('/finance-tax/payment-fees');
+    expect(finance.workspaceHrefs).not.toContain('/finance-tax/payment-fees?settings=policy');
+    expect(finance.sidebarHrefs).not.toContain('/finance-tax/company-bank-accounts');
+
+    expect(master.allDestinations).toEqual(allAdminNavSections.flatMap(adminNavSectionDestinations));
+    expect(master.localGroups).toContain('System Health');
+  });
+
+  it('keeps one Partner Directory item and searchable queue deep links', () => {
+    const partnerLinks = adminNavSections.find((section) => section.id === 'partner-operations')?.links ?? [];
+    const workspaceLinks = partnerLinks.filter((link) => link.href === '/partners/overview');
+    const searchEntries = adminNavSearchEntries(adminNavSections);
+    const findByLabel = (label: string) => searchEntries.find((entry) => entry.label === label);
+
+    expect(workspaceLinks.map((link) => [link.href, link.label])).toEqual([
+      ['/partners/overview', 'Partner Operations'],
+    ]);
+    expect(findByLabel('Partner Directory')?.href).toBe('/partners');
+    expect(findByLabel('Partner Action Queue')?.href).toBe('/partner-controls');
+    expect(findByLabel('Partner Approvals')?.href).toBe('/partners?review=approval-pending&sort=oldest');
+    expect(findByLabel('Onboarding Blockers')?.href).toBe('/partners?review=unapproved');
+    expect(findByLabel('Wallet Debt')?.href).toBe('/partners?review=unsettled');
+  });
+
+  it('ranks exact and Partner-title results ahead of description matches', () => {
+    const partnerResults = adminNavSearchResults(adminNavSections, 'partner', Number.MAX_SAFE_INTEGER);
+    const exactResults = adminNavSearchResults(
+      adminNavSections,
+      'Partner Directory',
+      Number.MAX_SAFE_INTEGER,
+    );
+
+    expect(partnerResults.results[0]?.label).toBe('Partner Operations');
+    expect(partnerResults.results.map((entry) => entry.label)).toContain('Partner Directory');
+    expect(partnerResults.results.map((entry) => entry.label)).toContain('Partner Action Queue');
+    expect(partnerResults.total).toBeGreaterThan(7);
+    expect(exactResults.results[0]?.label).toBe('Partner Directory');
+    expect(partnerResults.results.findIndex((entry) => entry.label === 'Live Bookings')).toBeGreaterThan(0);
+    expect(
+      partnerResults.results.findIndex((entry) => entry.label === 'Notification Delivery'),
+    ).toBeGreaterThan(0);
+  });
+
+  it('uses representative destinations before a search and limits only after ranking', () => {
+    const limited = adminNavSearchResults(adminNavSections, '');
+    const all = adminNavSearchResults(adminNavSections, '', Number.MAX_SAFE_INTEGER);
+
+    expect(limited.results).toHaveLength(7);
+    expect(limited.total).toBe(8);
+    expect(all.results.map((entry) => entry.label)).toEqual([
+      'Shift Command',
+      'Live Bookings',
+      'Customers',
+      'Partner Operations',
+      'Finance Overview',
+      'Payments',
+      'Insights',
+      'Operations Policy',
     ]);
   });
 
-  it('keeps daily operator shortcuts in operation-facing categories', () => {
-    const linksByHref = new Map(
-      adminNavSections.flatMap((section) =>
-        section.links.map((link) => [link.href, `${section.label}: ${link.label}`] as const),
-      ),
-    );
+  it('groups expanded search results by section without changing rank order', () => {
+    const ranked = adminNavSearchResults(adminNavSections, 'partner', Number.MAX_SAFE_INTEGER).results;
+    const grouped = groupAdminNavSearchResults(ranked);
 
-    expect(linksByHref.get('/')).toBe('Shift Operations: Start Shift');
-    expect(linksByHref.get('/calendar')).toBe('Shift Operations: Calendar');
-    expect(linksByHref.get('/operations-handoff')).toBe('Shift Operations: Operations History');
-    expect(linksByHref.get('/app-sessions')).toBeUndefined();
-    expect(linksByHref.get('/setup')).toBeUndefined();
-
-    expect(linksByHref.get('/vietnam-overview')).toBe('Analytics: Vietnam Overview');
-    expect(linksByHref.get('/usage-overview')).toBe('Customers: Usage Overview');
-    expect(linksByHref.get('/partners/overview')).toBe('Partners: Partner Overview');
-    expect(linksByHref.get('/marketing-analytics')).toBe('Growth & Communications: Marketing Analytics');
-
-    expect(linksByHref.get('/bookings')).toBe('Bookings: Live Bookings');
-    expect(linksByHref.get('/customers')).toBe('Customers: Customers');
-    expect(linksByHref.get('/reviews')).toBe('Customers: Customer Reviews');
-    expect(linksByHref.get('/reviews/partner-customer-evaluations')).toBe('Customers: Partner Evaluations');
-    expect(linksByHref.get('/partners')).toBe('Partners: Partners');
-    expect(linksByHref.get('/files')).toBe('Partners: Files');
-
-    expect(linksByHref.get('/finance-overview')).toBe('Finance: Finance Overview');
-    expect(linksByHref.get('/finance-tax/approval-queue')).toBe('Finance: Approval Queue');
-    expect(linksByHref.get('/finance-closeout')).toBe('Finance: Finance Closeout');
-    expect(linksByHref.get('/payments')).toBe('Finance: Payments');
-    expect(linksByHref.get('/finance-tax/payment-clearing')).toBe('Finance: Payment Clearing');
-    expect(linksByHref.get('/cash-settlements')).toBe('Finance: Cash Debt');
-    expect(linksByHref.get('/finance-tax/partner-bank-deposits')).toBe('Finance: Partner Bank Deposits');
-    expect(linksByHref.get('/wallet-adjustments')).toBe('Finance: Wallet Adjustments');
-    expect(linksByHref.get('/earnings')).toBe('Finance: Earnings');
-    expect(linksByHref.get('/payouts')).toBe('Finance: Payouts');
-    expect(linksByHref.get('/referrals/cashouts')).toBe('Finance: Referral Cashouts');
-    expect(linksByHref.get('/refunds')).toBe('Finance: Refunds');
-
-    expect(linksByHref.get('/finance-tax')).toBe('Tax & Accounting: Tax Overview');
-    expect(linksByHref.get('/finance-tax/general-ledger')).toBe('Tax & Accounting: General Ledger');
-    expect(linksByHref.get('/finance-tax/bank-reconciliation')).toBe('Tax & Accounting: Bank Reconciliation');
-    expect(linksByHref.get('/finance-tax/booking-settlement-audit')).toBe(
-      'Tax & Accounting: Booking Settlement Audit',
-    );
-    expect(linksByHref.get('/finance-tax/settlement-reversals')).toBe(
-      'Tax & Accounting: Settlement Reversals',
-    );
-    expect(linksByHref.get('/finance-tax/monthly-tax-closing')).toBe('Tax & Accounting: Monthly Tax Closing');
-    expect(linksByHref.get('/finance-tax/platform-vat')).toBe('Tax & Accounting: Platform VAT');
-    expect(linksByHref.get('/finance-tax/partner-withholding-tax')).toBe(
-      'Tax & Accounting: Partner Withholding Tax',
-    );
-    expect(linksByHref.get('/finance-tax/payment-fees')).toBe('Tax & Accounting: Payment Fees');
-    expect(linksByHref.get('/finance-tax/coupon-finance')).toBe('Tax & Accounting: Coupon Finance');
-    expect(linksByHref.get('/finance-tax/finance-approvers')).toBe('Admin Control: Finance Approvers');
-    expect(linksByHref.get('/tax-policy')).toBe('Tax & Accounting: Tax Policy');
-
-    expect(linksByHref.get('/notifications')).toBe('Growth & Communications: Notifications');
-    expect(linksByHref.get('/notifications/templates')).toBe('Growth & Communications: Notification Templates');
-    expect(linksByHref.get('/notifications/push-send')).toBe('Growth & Communications: Push Send');
-
-    expect(linksByHref.get('/operations-policy')).toBe('Policies: Operations Policy');
-    expect(linksByHref.get('/services')).toBe('Policies: Service Catalog');
-    expect(linksByHref.get('/coupons')).toBe('Growth & Communications: Coupons');
-
-    expect(linksByHref.get('/admin-operators')).toBe('Admin Control: Admin Operators');
-    expect(linksByHref.get('/finance-tax/finance-approvers')).toBe('Admin Control: Finance Approvers');
-    expect(linksByHref.get('/audit-log')).toBe('Admin Control: Audit Log');
+    expect(grouped.map((group) => group.sectionLabel)).toEqual([
+      ...new Set(ranked.map((entry) => entry.sectionLabel)),
+    ]);
+    for (const group of grouped) {
+      expect(group.entries.map((entry) => entry.id)).toEqual(
+        ranked.filter((entry) => entry.sectionLabel === group.sectionLabel).map((entry) => entry.id),
+      );
+    }
   });
 
-  it('keeps Developer/System diagnostics out of the default operator sidebar', () => {
-    const defaultLinks = adminNavSections.flatMap((section) => section.links.map((link) => link.href));
-    const masterSections = adminNavSectionsForAccess({ categories: [], roles: ['MASTER_ADMIN'] });
-    const developerSections = adminNavSectionsForAccess({
+  it('keeps finance workspace labels precise and Wallet Adjustments visually distinct', () => {
+    const financeOperations = adminNavSections.find((section) => section.id === 'finance-operations');
+    const financeRecords = adminNavSections.find((section) => section.id === 'finance-records-close');
+    const walletAdjustments = financeRecords?.links.find((link) => link.id === 'finance-records-wallet');
+    const partnerMoney = financeRecords?.links.find((link) => link.id === 'finance-records-partner-money');
+
+    expect(walletAdjustments?.iconKey).toBe('adjustments');
+    expect(walletAdjustments?.iconKey).not.toBe(partnerMoney?.iconKey);
+    expect(financeRecords?.links.find((link) => link.href === '/finance-tax')?.label).toBe(
+      'Tax & Period Close',
+    );
+    expect(financeOperations?.links.filter((link) => link.label === 'Payment Matching')).toHaveLength(1);
+    expect(financeOperations?.links.some((link) => link.label === 'Payment Clearing')).toBe(false);
+    expect(
+      adminNavSearchEntries(adminNavSections).find((entry) => entry.label === 'Payment Clearing')?.href,
+    ).toBe('/finance-tax/payment-clearing?range=all&review=unresolved&sort=oldest');
+    expect(
+      adminNavSearchEntries(adminNavSections).find((entry) => entry.label === 'Payout / Withdrawal Risk')
+        ?.href,
+    ).toBe('/payouts?range=all&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests');
+  });
+
+  it('hides System Health for general operators and shows only authorized tools', () => {
+    const general = visibleNav({ categories: ['SYSTEM_AUDIT'], roles: ['ADMIN'] });
+    const appSessionsOnly = visibleNav({
       categories: ['DEVELOPER_APP_SESSIONS_DIAGNOSTICS'],
       roles: ['ADMIN'],
     });
-    const masterLinks = masterSections.flatMap((section) =>
-      section.links.map((link) => `${section.label}: ${link.label} -> ${link.href}`),
+    const master = visibleNav({ categories: [], roles: ['MASTER_ADMIN'] });
+
+    expect(general.localGroups).not.toContain('System Health');
+    expect(appSessionsOnly.sections).toEqual(['Administration & Settings']);
+    expect(appSessionsOnly.localGroups).toEqual(['System Health']);
+    expect(appSessionsOnly.localGroupHrefs).toEqual(['/app-sessions']);
+    expect(master.localGroupHrefs).toEqual(['/setup', '/app-sessions', '/background-jobs']);
+  });
+
+  it('maps saved views and direct routes to the same permission source', () => {
+    expect(adminOperatorCategoryForPath('/partners?review=approval-pending&sort=oldest')).toBe(
+      'PARTNERS_UNAPPROVED',
     );
-
-    expect(defaultLinks).not.toContain('/setup');
-    expect(defaultLinks).not.toContain('/app-sessions');
-    expect(masterSections.map((section) => section.label)).toContain('Developer / System');
-    expect(masterLinks).toContain('Developer / System: Setup Readiness -> /setup');
-    expect(masterLinks).toContain('Developer / System: App Session Diagnostics -> /app-sessions');
-    expect(masterLinks).toContain('Developer / System: Background Jobs -> /background-jobs');
-    expect(developerSections.map((section) => section.label)).toContain('Developer / System');
-  });
-
-  it('keeps developer/system wording out of operation-facing sidebar descriptions', () => {
-    const operatorDescriptions = adminNavSections.flatMap((section) => [
-      `${section.label}: ${section.description}`,
-      ...section.links.map((link) => `${section.label}: ${link.label}: ${link.description}`),
-    ]);
-    const developerTerms = /\b(readiness|snapshots?|setup|trace|debug|raw|diagnostics|health)\b/iu;
-
-    expect(operatorDescriptions.filter((description) => developerTerms.test(description))).toEqual([]);
-  });
-
-  it('keeps booking filter views inside the bookings workspace instead of repeating sidebar links', () => {
-    const bookingSection = adminNavSections.find((section) => section.label === 'Bookings');
-
-    expect(bookingSection?.links.map((link) => link.href)).toEqual([
-      '/bookings',
-      '/bookings/completed',
-      '/bookings/post-match-cancellations',
-    ]);
-    expect(bookingSection?.links[0]?.description).toContain('request intake');
-    expect(bookingSection?.links[2]?.description).toContain('Post-match cancellation');
-    expect(bookingSection?.links[1]?.description).toContain('closeout');
-  });
-
-  it('does not repeat the same route across nav categories', () => {
-    const seen = new Map<string, string>();
-    const duplicates: string[] = [];
-
-    for (const section of adminNavSections) {
-      for (const link of section.links) {
-        const firstLabel = seen.get(link.href);
-
-        if (firstLabel) {
-          duplicates.push(`${firstLabel} / ${section.label}: ${link.label} -> ${link.href}`);
-          continue;
-        }
-
-        seen.set(link.href, `${section.label}: ${link.label}`);
-      }
-    }
-
-    expect(duplicates).toEqual([]);
-  });
-
-  it('separates user records, partner operations, finance flow, and tax accounting', () => {
-    const userSection = adminNavSections.find((section) => section.label === 'Customers');
-    const partnerSection = adminNavSections.find((section) => section.label === 'Partners');
-    const financeSection = adminNavSections.find((section) => section.label === 'Finance');
-    const taxSection = adminNavSections.find((section) => section.label === 'Tax & Accounting');
-
-    expect(userSection?.links.map((link) => link.href)).toEqual([
-      '/customers',
-      '/usage-overview',
-      '/referrals/customers',
-      '/reviews',
-      '/reviews/partner-customer-evaluations',
-    ]);
-    expect(partnerSection?.links.map((link) => link.href)).toEqual([
-      '/partners/overview',
-      '/partners',
-      '/partners?review=unapproved',
-      '/partners?review=unsettled',
-      '/referrals/partners',
-      '/files',
-    ]);
-    expect(financeSection?.links.map((link) => link.href)).toContain('/finance-tax/payment-clearing');
-    expect(financeSection?.links.map((link) => link.href)).toContain('/finance-tax/approval-queue');
-    expect(financeSection?.links.map((link) => link.href)).not.toContain('/finance-tax/monthly-tax-closing');
-    expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/monthly-tax-closing');
-    expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/general-ledger');
-    expect(taxSection?.links.find((link) => link.href === '/finance-tax/bank-reconciliation')?.description).toContain(
-      'company bank accounts',
+    expect(adminOperatorCategoryForPath('/partners')).toBe('PARTNERS_DIRECTORY');
+    expect(adminOperatorCategoryForPath('/bookings/completed?dateRange=30d')).toBe('BOOKINGS_COMPLETED');
+    expect(adminOperatorCategoryForPath('/bookings/post-match-cancellations?range=7d')).toBe(
+      'BOOKINGS_CANCELLATIONS',
     );
-    expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/company-bank-accounts');
-    expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/coupon-finance');
-    expect(taxSection?.links.map((link) => link.href)).not.toContain('/finance-tax/finance-approvers');
-    expect(adminNavSections.find((section) => section.label === 'Admin Control')?.links.map((link) => link.href)).toEqual([
-      '/admin-operators',
-      '/finance-tax/finance-approvers',
-      '/audit-log',
-    ]);
-    expect(adminNavSections.flatMap((section) => section.links.map((link) => link.href))).not.toContain(
-      '/app-sessions?role=CUSTOMER&state=live',
-    );
+    expect(adminOperatorCategoryForPath('/notifications/templates')).toBe('NOTIFICATIONS_TEMPLATES');
+    expect(adminOperatorCategoryForPath('/notifications/push-send')).toBe('NOTIFICATIONS_PUSH');
+    expect(adminOperatorCategoryForPath('/chat-archive')).toBe('BOOKINGS_DETAIL');
   });
 
-  it('keeps every app page either in the sidebar menu or an intentional hidden route policy', () => {
+  it('keeps every app page in sidebar, local workspace, search destination, or hidden policy', () => {
     const pageRoutes = collectPageRoutes();
-    const menuRoutes = new Set(
-      allAdminNavSections.flatMap((section) =>
-        section.links.map((link) => normalizeMenuRoute(link.href)),
-      ),
+    const navigationRoutes = new Set(
+      allAdminNavSections.flatMap(adminNavSectionDestinations).map(normalizeMenuRoute),
     );
     const unclassifiedRoutes = pageRoutes.filter(
-      (route) => !menuRoutes.has(route) && !intentionalHiddenRoutePolicy(route),
+      (route) => !navigationRoutes.has(route) && !adminHiddenRoutePolicy(route),
     );
-    const staleHiddenPolicies = adminHiddenRouteRoutes().filter(
-      (route) => !pageRoutes.includes(route),
-    );
+    const staleHiddenPolicies = adminHiddenRouteRoutes().filter((route) => !pageRoutes.includes(route));
 
     expect(unclassifiedRoutes).toEqual([]);
     expect(staleHiddenPolicies).toEqual([]);
   });
 
-  it('keeps sidebar and hidden operating pages mapped to an operator permission category', () => {
-    const menuRoutes = allAdminNavSections.flatMap((section) =>
-      section.links.map((link) => normalizeMenuRoute(link.href)),
-    );
+  it('keeps every navigation destination mapped to an operator permission category', () => {
     const hiddenOperatingRoutes = adminHiddenRouteRoutes().filter((route) => route !== '/login');
-    const unmappedRoutes = [...new Set([...menuRoutes, ...hiddenOperatingRoutes])]
+    const unmappedRoutes = [
+      ...new Set([...allAdminNavSections.flatMap(adminNavSectionDestinations), ...hiddenOperatingRoutes]),
+    ]
       .filter((route) => !adminOperatorCategoryForPath(route))
       .sort();
 
@@ -234,40 +275,63 @@ describe('admin navigation', () => {
   });
 });
 
+function navLinkLabels(sections: typeof adminNavSections) {
+  return new Map(
+    sections.flatMap((section) =>
+      section.links.flatMap((link) => [
+        [link.href, `${section.label}: ${link.label}`] as const,
+        ...(link.searchEntries?.map((entry) => [entry.href, `${section.label}: ${entry.label}`] as const) ??
+          []),
+      ]),
+    ),
+  );
+}
+
+function sidebarHrefs(sections: readonly (typeof adminNavSections)[number][]) {
+  return sections.flatMap((section) => [
+    ...(section.href ? [section.href] : []),
+    ...section.links.map((link) => link.href),
+  ]);
+}
+
+function visibleNav(access: { categories: string[]; roles: string[] }) {
+  const sections = adminNavSectionsForAccess(access);
+  return {
+    allDestinations: sections.flatMap(adminNavSectionDestinations),
+    localGroupHrefs: sections.flatMap(
+      (section) => section.localGroups?.flatMap((group) => group.links.map((link) => link.href)) ?? [],
+    ),
+    localGroups: sections.flatMap((section) => section.localGroups?.map((group) => group.label) ?? []),
+    sections: sections.map((section) => section.label),
+    sidebarHrefs: sidebarHrefs(sections),
+    workspaceHrefs: adminNavSearchEntries(sections).map((entry) => entry.href),
+  };
+}
+
 function collectPageRoutes() {
   const appDirectory = path.join(process.cwd(), 'app');
-  const pageFiles = collectPageFiles(appDirectory);
-
-  return pageFiles.map((file) => pageFileToRoute(appDirectory, file)).sort();
+  return collectPageFiles(appDirectory)
+    .map((file) => pageFileToRoute(appDirectory, file))
+    .sort();
 }
 
 function collectPageFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((entry) => {
     const entryPath = path.join(directory, entry);
     const stats = statSync(entryPath);
-
-    if (stats.isDirectory()) {
-      return collectPageFiles(entryPath);
-    }
-
-    return entry === 'page.tsx' ? [entryPath] : [];
+    return stats.isDirectory() ? collectPageFiles(entryPath) : entry === 'page.tsx' ? [entryPath] : [];
   });
 }
 
 function pageFileToRoute(appDirectory: string, filePath: string) {
-  const relativePath = path.relative(appDirectory, filePath);
-  const routeSegments = relativePath
+  const routeSegments = path
+    .relative(appDirectory, filePath)
     .split(path.sep)
     .slice(0, -1)
     .filter((segment) => !segment.startsWith('('));
-
   return routeSegments.length === 0 ? '/' : `/${routeSegments.join('/')}`;
 }
 
 function normalizeMenuRoute(href: string) {
   return href.split('?')[0] || '/';
-}
-
-function intentionalHiddenRoutePolicy(route: string) {
-  return Boolean(adminHiddenRoutePolicy(route));
 }

@@ -9,7 +9,7 @@ describe('operations policy impact details', () => {
     expect(details.title).toBe('Controls who can see and participate in marketplace requests');
     expect(details.saveChecks.map((check) => check.href)).toEqual([
       '/operations-policy#matching-stage-impact',
-      '/partners?review=marketplace-ready',
+      '/partners?review=ready-now',
     ]);
   });
 
@@ -52,6 +52,13 @@ describe('operations policy impact details', () => {
     expect(details.title).toContain('Vietnam service areas');
     expect(details.detail).toContain('confirmed Vietnam service addresses');
     expect(details.saveChecks[0]?.detail).toContain('target Vietnam province or district');
+  });
+
+  it('sends missing chat rooms to the booking repair queue', () => {
+    const details = policyImpactDetails(OPERATIONAL_POLICY_KEYS.noShowEvidenceRequirement);
+    const repairCheck = details.saveChecks.find((check) => check.label === 'Chat repair queue');
+
+    expect(repairCheck).toMatchObject({ href: '/bookings?view=chat-repair' });
   });
 
   it('returns a safe operations fallback for future policy keys', () => {

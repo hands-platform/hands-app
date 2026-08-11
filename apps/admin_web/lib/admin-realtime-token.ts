@@ -13,11 +13,15 @@ type AdminRealtimeTokenResult = {
   token: string;
 };
 
-export function createAdminRealtimeToken(now = new Date()): AdminRealtimeTokenResult {
+export function createAdminRealtimeToken(subject: string, now = new Date()): AdminRealtimeTokenResult {
+  const normalizedSubject = subject.trim();
+  if (!normalizedSubject) {
+    throw new Error('Admin realtime token subject is required.');
+  }
   const iat = Math.floor(now.getTime() / 1000);
   const exp = iat + ADMIN_REALTIME_TOKEN_TTL_SECONDS;
   const payload = {
-    sub: 'admin-web',
+    sub: normalizedSubject,
     typ: ADMIN_REALTIME_TOKEN_TYPE,
     aud: ADMIN_REALTIME_TOKEN_AUDIENCE,
     scope: ADMIN_REALTIME_TOKEN_SCOPE,

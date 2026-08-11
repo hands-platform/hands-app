@@ -41,10 +41,63 @@ void main() {
 
       expect(currentPositionCalls, 0);
 
-      await tester.tap(find.byIcon(Icons.my_location_outlined));
+      await tester.tap(find.byIcon(Icons.my_location_rounded));
       await tester.pumpAndSettle();
 
       expect(currentPositionCalls, 1);
+    },
+  );
+
+  testWidgets(
+    'requires an exact location action before confirming a fallback pin',
+    (tester) async {
+      final locationSource = CustomerDeviceLocationDataSource(
+        isLocationServiceEnabled: () async => true,
+        checkPermission: () async => LocationPermission.whileInUse,
+        getCurrentPosition: ({LocationSettings? locationSettings}) async {
+          return _position(
+            latitude: 10.7769,
+            longitude: 106.7009,
+          );
+        },
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            customerLocationProvider.overrideWithValue(locationSource),
+          ],
+          child: const MaterialApp(
+            home: LocationSelectionPage(
+              initialLatitude: 10.7769,
+              initialLongitude: 106.7009,
+              initialAddress: 'District 1, Ho Chi Minh City',
+              initialLocationRequiresConfirmation: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('SELECT SERVICE ADDRESS'), findsOneWidget);
+      expect(find.text('Use this address'), findsOneWidget);
+      var confirmButton = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Use this address'),
+      );
+      expect(confirmButton.onPressed, isNull);
+
+      await tester.tap(find.byIcon(Icons.my_location_rounded));
+      await tester.pumpAndSettle();
+
+      confirmButton = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Use this address'),
+      );
+      expect(confirmButton.onPressed, isNotNull);
+      expect(find.text('Current location selected.'), findsNothing);
+      expect(
+        find.textContaining('Current location selected'),
+        findsOneWidget,
+      );
     },
   );
 }

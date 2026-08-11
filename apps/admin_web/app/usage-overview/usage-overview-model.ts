@@ -1,13 +1,16 @@
 import { type AdminUsageOverview } from '../../lib/admin-api';
+import { buildCustomerFilters, buildCustomerListHref } from '../customers/customer-filters';
+import { buildBookingListHref } from '../bookings/booking-page-params';
 
-export type UsageOverviewRange = 'today' | 'yesterday' | '7d' | 'month' | 'all';
+export type UsageOverviewRange = 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'custom';
 
 export const usageOverviewRangeOptions: Array<{ value: UsageOverviewRange; label: string }> = [
   { value: 'today', label: 'Today' },
   { value: 'yesterday', label: 'Yesterday' },
   { value: '7d', label: '7 days' },
-  { value: 'month', label: 'Month' },
-  { value: 'all', label: 'All' },
+  { value: '30d', label: '30 days' },
+  { value: 'month', label: 'This month' },
+  { value: 'custom', label: 'Custom' },
 ];
 
 export type UsageActionPriorityTone = 'danger' | 'warning' | 'info' | 'success';
@@ -19,18 +22,18 @@ export type UsageActionPriority = {
   tone: UsageActionPriorityTone;
   value: number;
   valueLabel: string;
+  href: string;
 };
 
-const usageOverviewRanges = new Set<UsageOverviewRange>(
-  usageOverviewRangeOptions.map((option) => option.value),
-);
+const usageOverviewRanges = new Set<UsageOverviewRange>(usageOverviewRangeOptions.map((option) => option.value));
 
 const usageOverviewFallbackRangeLabels: Record<UsageOverviewRange, string> = {
   today: 'Today',
   yesterday: 'Yesterday',
   '7d': 'Last 7 days',
+  '30d': 'Last 30 days',
   month: 'This month',
-  all: 'All time',
+  custom: 'Custom period',
 };
 
 function emptyHourlyActivity(): AdminUsageOverview['behavior']['hourlyActivity'] {
@@ -58,18 +61,63 @@ export function usageOverviewHref(range: UsageOverviewRange) {
 export function emptyUsageOverview(range: UsageOverviewRange): AdminUsageOverview {
   return {
     generatedAt: new Date(0).toISOString(),
-    refreshSeconds: 60,
+    dataThroughAt: null,
+    freshness: {
+      bookingActivityThroughAt: null,
+      reportGeneratedAt: new Date(0).toISOString(),
+      reviewActivityThroughAt: null,
+      refundActivityThroughAt: null,
+      usageAggregatedThroughAt: null,
+      usageStatus: 'unknown',
+    },
     source: 'stored-usage-aggregates',
+    timeZone: 'Asia/Ho_Chi_Minh',
     range,
     rangeLabel: usageOverviewFallbackRangeLabels[range],
     windowStartAt: null,
     windowEndAt: null,
+    appliedRange: {
+      dayCount: 1,
+      fromDate: null,
+      granularity: 'hourly',
+      toDate: null,
+    },
     totals: {
+      activeCustomerCount: 0,
+      appOpenCount: 0,
+      bookingCustomerCount: 0,
       customerSessionCount: 0,
       completedBookingCount: 0,
+      completedCustomerCount: 0,
       partnerProfileViewCount: 0,
       partnerBookingRequestCount: 0,
+      totalEventCount: 0,
     },
+    comparison: {
+      fromDate: null,
+      rangeLabel: 'Previous period',
+      toDate: null,
+      totals: {
+        activeCustomerCount: 0,
+        appOpenCount: 0,
+        cancellationCount: 0,
+        completedBookingCount: 0,
+        createdBookingCount: 0,
+        newCustomerCount: 0,
+        partnerBookingRequestCount: 0,
+        partnerProfileViewCount: 0,
+        sessionStartCount: 0,
+        unresolvedCount: 0,
+      },
+      windowEndAt: null,
+      windowStartAt: null,
+    },
+    funnel: [],
+    retention: [
+      { eligibleCustomerCount: 0, milestone: 1, rate: null, returnedCustomerCount: 0 },
+      { eligibleCustomerCount: 0, milestone: 7, rate: null, returnedCustomerCount: 0 },
+      { eligibleCustomerCount: 0, milestone: 30, rate: null, returnedCustomerCount: 0 },
+    ],
     customerLifecycle: {
       newCustomerCount: 0,
       activeCustomerCount: 0,
@@ -84,7 +132,10 @@ export function emptyUsageOverview(range: UsageOverviewRange): AdminUsageOvervie
     bookingQuality: {
       createdBookingCount: 0,
       cancellationCount: 0,
+      expiredCount: 0,
+      noShowCount: 0,
       refundCount: 0,
+      unresolvedCount: 0,
       lowReviewCount: 0,
     },
     paymentAndCoupon: {
@@ -105,7 +156,10 @@ export function emptyUsageOverview(range: UsageOverviewRange): AdminUsageOvervie
     behavior: {
       popularServices: [],
       hourlyActivity: emptyHourlyActivity(),
+      trend: [],
     },
+    customerRankings: [],
+    partnerRankings: [],
     customerUsage: {
       mostActiveCustomers: [],
       completedBookingCustomers: [],
@@ -119,15 +173,36 @@ export function emptyUsageOverview(range: UsageOverviewRange): AdminUsageOvervie
       requestedPartners: [],
       completedPartners: [],
     },
+    provenance: {
+      bookingFixtures: 'explicit-markers-excluded',
+      unknownAggregateCount: 0,
+      usageFixtures: 'not-guaranteed',
+    },
   };
 }
 
-type PartialUsageOverview = Partial<AdminUsageOverview> & {
+type PartialUsageOverview = Omit<
+  Partial<AdminUsageOverview>,
+  | 'behavior'
+  | 'bookingQuality'
+  | 'comparison'
+  | 'customerLifecycle'
+  | 'customerSegments'
+  | 'customerUsage'
+  | 'freshness'
+  | 'partnerUsage'
+  | 'paymentAndCoupon'
+  | 'totals'
+> & {
   bookingQuality?: Partial<AdminUsageOverview['bookingQuality']>;
   customerLifecycle?: Partial<AdminUsageOverview['customerLifecycle']>;
   customerSegments?: Partial<AdminUsageOverview['customerSegments']>;
   customerUsage?: Partial<AdminUsageOverview['customerUsage']>;
   behavior?: Partial<AdminUsageOverview['behavior']>;
+  freshness?: Partial<AdminUsageOverview['freshness']>;
+  comparison?: Partial<AdminUsageOverview['comparison']> & {
+    totals?: Partial<AdminUsageOverview['comparison']['totals']>;
+  };
   partnerUsage?: Partial<AdminUsageOverview['partnerUsage']>;
   paymentAndCoupon?: Partial<AdminUsageOverview['paymentAndCoupon']>;
   platformUsage?: AdminUsageOverview['platformUsage'];
@@ -147,6 +222,20 @@ export function usageOverviewWithDefaults(
       ...fallback.totals,
       ...(input?.totals ?? {}),
     },
+    freshness: {
+      ...fallback.freshness,
+      ...(input?.freshness ?? {}),
+    },
+    comparison: {
+      ...fallback.comparison,
+      ...(input?.comparison ?? {}),
+      totals: {
+        ...fallback.comparison.totals,
+        ...(input?.comparison?.totals ?? {}),
+      },
+    },
+    funnel: input?.funnel ?? fallback.funnel,
+    retention: input?.retention ?? fallback.retention,
     customerLifecycle: {
       ...fallback.customerLifecycle,
       ...(input?.customerLifecycle ?? {}),
@@ -170,7 +259,10 @@ export function usageOverviewWithDefaults(
       ...(input?.behavior ?? {}),
       popularServices: input?.behavior?.popularServices ?? fallback.behavior.popularServices,
       hourlyActivity: input?.behavior?.hourlyActivity ?? fallback.behavior.hourlyActivity,
+      trend: input?.behavior?.trend ?? fallback.behavior.trend,
     },
+    customerRankings: input?.customerRankings ?? fallback.customerRankings,
+    partnerRankings: input?.partnerRankings ?? fallback.partnerRankings,
     customerUsage: {
       ...fallback.customerUsage,
       ...(input?.customerUsage ?? {}),
@@ -193,61 +285,59 @@ export function usageOverviewWithDefaults(
 }
 
 export function buildUsageActionPriorities(overview: AdminUsageOverview): UsageActionPriority[] {
-  const viewToRequestRate = ratioPercent(
-    overview.totals.partnerBookingRequestCount,
-    overview.totals.partnerProfileViewCount,
-  );
-  const requestToCompleteRate = ratioPercent(
-    overview.totals.completedBookingCount,
-    overview.totals.partnerBookingRequestCount,
-  );
+  const fromDate = overview.appliedRange.fromDate ?? '';
+  const toDate = overview.appliedRange.toDate ?? '';
+  const customerFilters = buildCustomerFilters({});
 
   return [
     {
-      key: 'issue-signal',
-      label: 'Review problem customers',
-      detail: 'Cancellation, no-show, expiry, or refund signals in this range.',
-      tone: overview.customerSegments.issueCustomerCount > 0 ? 'danger' : 'success',
-      value: overview.customerSegments.issueCustomerCount,
-      valueLabel: 'customers',
-    },
-    {
-      key: 'churn-risk',
-      label: 'Recover churn risk',
-      detail: 'Completed before, then no customer app session in 30 days.',
-      tone: overview.customerSegments.churnRiskCustomerCount > 0 ? 'danger' : 'success',
-      value: overview.customerSegments.churnRiskCustomerCount,
-      valueLabel: 'customers',
-    },
-    {
       key: 'new-unbooked',
-      label: 'Convert new unbooked',
-      detail: 'New customers in this range who still have no booking.',
-      tone: overview.customerSegments.newUnbookedCustomerCount > 0 ? 'warning' : 'success',
+      label: 'New customers without a booking',
+      detail: 'Joined in this reporting period and still have no production booking.',
+      tone: 'warning',
       value: overview.customerSegments.newUnbookedCustomerCount,
-      valueLabel: 'customers',
+      valueLabel: countLabel(overview.customerSegments.newUnbookedCustomerCount, 'customer'),
+      href: buildCustomerListHref(customerFilters, {
+        dateField: 'joined',
+        dateFrom: fromDate,
+        dateRange: 'custom',
+        dateTo: toDate,
+        segment: 'usage-new-unbooked',
+        view: 'all',
+      }),
     },
     {
-      key: 'discovery-dropoff',
-      label: 'Improve Partner discovery',
-      detail: 'Partner profile views that are not becoming preferred Partner requests.',
-      tone: viewToRequestRate < 25 && overview.totals.partnerProfileViewCount > 0 ? 'warning' : 'info',
-      value: viewToRequestRate,
-      valueLabel: 'view-to-request',
+      key: 'unresolved-bookings',
+      label: 'Unresolved booking records',
+      detail: 'Created in this reporting period and still have no terminal outcome.',
+      tone: 'danger',
+      value: overview.bookingQuality.unresolvedCount,
+      valueLabel: countLabel(overview.bookingQuality.unresolvedCount, 'booking'),
+      href: buildBookingListHref({
+        dateFrom: fromDate,
+        dateRange: 'custom',
+        dateTo: toDate,
+        sort: 'oldest',
+        view: 'usage-unresolved',
+      }),
     },
-    {
-      key: 'completion-dropoff',
-      label: 'Watch booking completion',
-      detail: 'Preferred Partner requests that are not closing as completed work.',
-      tone: requestToCompleteRate < 50 && overview.totals.partnerBookingRequestCount > 0 ? 'warning' : 'info',
-      value: requestToCompleteRate,
-      valueLabel: 'request-to-complete',
-    },
-  ];
+  ].filter((priority) => priority.value > 0) as UsageActionPriority[];
 }
 
-function ratioPercent(numerator: number, denominator: number) {
-  if (denominator <= 0) return 0;
+export function countLabel(value: number, singular: string) {
+  return value === 1 ? singular : `${singular}s`;
+}
 
-  return Math.round((numerator / denominator) * 100);
+export function validateUsageCustomRange(from: string | null, to: string | null, today: string) {
+  if (!isDate(from) || !isDate(to)) return 'Enter valid From and To dates.';
+  if (from > to) return 'From must be on or before To.';
+  if (to > today) return 'Future dates are not allowed.';
+  const dayCount = Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000) + 1;
+  return dayCount > 90 ? 'Custom periods cannot exceed 90 days.' : null;
+}
+
+function isDate(value: string | null): value is string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value ?? '')) return false;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }

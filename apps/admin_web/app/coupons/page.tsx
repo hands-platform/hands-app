@@ -1,25 +1,36 @@
-import type { AdminCoupon, AdminCouponSummary, AdminCouponUsagePage } from '../../lib/admin-api';
-import { adminGet } from '../../lib/admin-api';
-import {
-  AdminFormDateTime,
-  AdminFormControlButton,
-  AdminFormGrid,
-  AdminFormInput,
-  AdminFormTextarea,
-} from '../../components/admin-form-controls';
+import { Plus, RefreshCw } from 'lucide-react';
+
+import type {
+  AdminCoupon,
+  AdminCouponSummary,
+  AdminCouponUsagePage,
+  AdminGetResult,
+} from '../../lib/admin-api';
+import { adminGetResult } from '../../lib/admin-api';
+import { AdminTablePaginationFooter } from '../../components/admin-data-table';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminNoticeCard } from '../../components/admin-surface';
 import { ConfirmDialog } from '../../components/confirm-dialog';
-import { AdminTablePaginationFooter } from '../../components/admin-data-table';
-import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
+import { deleteCoupon, toggleCoupon, updateCoupon } from './actions';
 import {
   buildCouponDeleteConfirmation,
   buildCouponToggleConfirmation,
+  couponDeleteConfirmHref,
+  couponToggleConfirmHref,
   type CouponToggleConfirmation,
 } from './coupon-action-confirmation';
-import { CouponsTableSection } from './coupons-table-section';
-import { createCoupon, deleteCoupon, toggleCoupon, updateCoupon } from './actions';
+import { CouponCreateDrawer } from './coupon-create-drawer';
+import { CouponDrawerShell } from './coupon-drawer-shell';
+import { CouponFilterBoard } from './coupon-filter-board';
+import { couponApiState, parseCouponListFilters } from './coupon-filters';
+import { CouponManagementDrawer } from './coupon-management-drawer';
+import { formatCouponIctDateTime } from './coupon-ict-time';
 import { buildCouponCreateNotice, buildCouponPageModel } from './coupon-page-model';
+import { couponReturnTo } from './coupon-return-context';
+import { CouponsTableSection } from './coupons-table-section';
 
 type CouponsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type ConfirmationHiddenInput = { readonly name: string; readonly value: boolean | number | string };
@@ -27,6 +38,7 @@ const COUPON_LIST_PAGE_SIZE = 10;
 const COUPON_USAGE_PAGE_SIZE = 10;
 const EMPTY_COUPON_SUMMARY: AdminCouponSummary = {
   expiredCount: 0,
+  filteredCount: 0,
   liveCount: 0,
   pausedCount: 0,
   scheduledCount: 0,
@@ -35,175 +47,286 @@ const EMPTY_COUPON_SUMMARY: AdminCouponSummary = {
 
 export default async function CouponsPage({ searchParams }: { searchParams?: CouponsPageSearchParams }) {
   const params = searchParams ? await searchParams : {};
+  const filters = parseCouponListFilters(params);
+  const couponPage = readPositiveInteger(readSingleParam(params.couponPage));
+  const usagePage = readPositiveInteger(readSingleParam(params.usagePage));
+  const confirmAction = readSingleParam(params.confirm);
+  const confirmCouponId = readSingleParam(params.couponId);
+  const editCouponId = readSingleParam(params.editCouponId);
+  const usageCouponId = readSingleParam(params.usageCouponId);
+  const drawer = readSingleParam(params.drawer);
+  const targetCouponId = confirmCouponId || editCouponId || usageCouponId;
+  const returnTo = couponReturnTo(params);
+  const couponSkip = (couponPage - 1) * COUPON_LIST_PAGE_SIZE;
+  const usageSkip = (usagePage - 1) * COUPON_USAGE_PAGE_SIZE;
+  const couponListParams = new URLSearchParams({ take: String(COUPON_LIST_PAGE_SIZE) });
+  const couponState = couponApiState(filters.view);
+  if (couponState) couponListParams.set('state', couponState);
+  if (filters.q) couponListParams.set('q', filters.q);
+  if (couponSkip > 0) couponListParams.set('skip', String(couponSkip));
+
+  const couponSummaryParams = new URLSearchParams();
+  if (couponState) couponSummaryParams.set('state', couponState);
+  if (filters.q) couponSummaryParams.set('q', filters.q);
+  const couponSummaryHref = couponSummaryParams.size > 0
+    ? `/admin/coupons/summary?${couponSummaryParams.toString()}`
+    : '/admin/coupons/summary';
+
+  const [couponListResult, couponSummaryResult, targetCouponResult, usageResult] = await Promise.all([
+    adminGetResult<AdminCoupon[]>(`/admin/coupons?${couponListParams.toString()}`, []),
+    adminGetResult<AdminCouponSummary>(couponSummaryHref, EMPTY_COUPON_SUMMARY),
+    targetCouponId
+      ? adminGetResult<AdminCoupon | null>(`/admin/coupons/${encodeURIComponent(targetCouponId)}`, null)
+      : resolvedAdminResult<AdminCoupon | null>(null),
+    usageCouponId
+      ? adminGetResult<AdminCouponUsagePage | null>(
+          `/admin/coupons/${encodeURIComponent(usageCouponId)}/usage?take=${COUPON_USAGE_PAGE_SIZE}&skip=${usageSkip}`,
+          null,
+        )
+      : resolvedAdminResult<AdminCouponUsagePage | null>(null),
+  ]);
+
+  const summary = couponSummaryResult.data;
+  const mutationsEnabled = couponListResult.ok && couponSummaryResult.ok;
+  const targetCoupon = withCouponUsage(targetCouponResult.data, usageResult.ok ? usageResult.data : null);
+  const couponModel = buildCouponPageModel(couponListResult.data);
+  const targetRow = targetCoupon ? buildCouponPageModel([targetCoupon]).couponRows[0] ?? null : null;
+  const filteredCouponCount = couponSummaryResult.ok
+    ? summary.filteredCount ?? filteredCountForView(summary, filters.view)
+    : 0;
+  const couponTotalPages = Math.max(1, Math.ceil(filteredCouponCount / COUPON_LIST_PAGE_SIZE));
+  const couponListFrom =
+    filteredCouponCount === 0 || couponModel.couponRows.length === 0
+      ? 0
+      : (couponPage - 1) * COUPON_LIST_PAGE_SIZE + 1;
+  const couponListTo =
+    filteredCouponCount === 0 || couponModel.couponRows.length === 0
+      ? 0
+      : Math.min(filteredCouponCount, couponSkip + couponModel.couponRows.length);
   const createNotice = buildCouponCreateNotice({
     created: readSingleParam(params.created),
     failed: readSingleParam(params.failed),
     notice: readSingleParam(params.couponNotice),
   });
-  const confirmAction = readSingleParam(params.confirm);
-  const editCouponId = readSingleParam(params.editCouponId);
-  const usageCouponId = readSingleParam(params.usageCouponId);
-  const couponPage = readPositiveInteger(readSingleParam(params.couponPage));
-  const couponSkip = (couponPage - 1) * COUPON_LIST_PAGE_SIZE;
-  const usagePage = readPositiveInteger(readSingleParam(params.usagePage));
-  const usageSkip = (usagePage - 1) * COUPON_USAGE_PAGE_SIZE;
-  const couponListParams = new URLSearchParams({ take: String(COUPON_LIST_PAGE_SIZE) });
-  if (couponSkip > 0) {
-    couponListParams.set('skip', String(couponSkip));
-  }
-  const [coupons, couponSummary, usagePageResult] = await Promise.all([
-    adminGet<AdminCoupon[]>(`/admin/coupons?${couponListParams.toString()}`, []),
-    adminGet<AdminCouponSummary>('/admin/coupons/summary', EMPTY_COUPON_SUMMARY),
-    usageCouponId
-      ? adminGet<AdminCouponUsagePage>(
-          `/admin/coupons/${encodeURIComponent(usageCouponId)}/usage?take=${COUPON_USAGE_PAGE_SIZE}&skip=${usageSkip}`,
-          emptyCouponUsagePage(usageCouponId, usagePage),
-        )
-      : Promise.resolve<AdminCouponUsagePage | null>(null),
-  ]);
-  const couponModel = buildCouponPageModel(withCouponUsagePage(coupons, usagePageResult));
-  const panelSearchParams = couponPanelSearchParams(params);
-  const couponListSearchParams = couponListSearchParamsWithoutPaging(params);
-  const couponTotalPages = Math.max(1, Math.ceil(couponSummary.totalCount / COUPON_LIST_PAGE_SIZE));
-  const couponListFrom =
-    couponSummary.totalCount === 0 || couponModel.couponRows.length === 0
-      ? 0
-      : (couponPage - 1) * COUPON_LIST_PAGE_SIZE + 1;
-  const couponListTo =
-    couponSummary.totalCount === 0 || couponModel.couponRows.length === 0
-      ? 0
-      : Math.min(couponSummary.totalCount, couponSkip + couponModel.couponRows.length);
-  const confirmation =
-    confirmAction === 'toggle'
-      ? buildCouponToggleConfirmation(couponModel.orderedCoupons, readSingleParam(params.couponId))
+  const confirmation = targetCouponResult.ok && targetCoupon
+    ? confirmAction === 'toggle'
+      ? buildCouponToggleConfirmation([targetCoupon], confirmCouponId, returnTo)
       : confirmAction === 'delete'
-        ? buildCouponDeleteConfirmation(couponModel.orderedCoupons, readSingleParam(params.couponId))
-      : null;
+        ? buildCouponDeleteConfirmation([targetCoupon], confirmCouponId, returnTo)
+        : null
+    : null;
+  const confirmationRequested = confirmAction === 'toggle' || confirmAction === 'delete';
   const confirmationAction = confirmAction === 'delete' ? deleteCoupon : toggleCoupon;
-  const confirmationInputs: ConfirmationHiddenInput[] =
-    confirmation && isCouponToggleConfirmation(confirmation)
-      ? [
-          { name: 'couponId', value: confirmation.couponId },
-          { name: 'active', value: confirmation.currentActive },
-        ]
-      : confirmation
-        ? [{ name: 'couponId', value: confirmation.couponId }]
-        : [];
+  const confirmationInputs: ConfirmationHiddenInput[] = confirmation
+    ? [
+        { name: 'couponId', value: confirmation.couponId },
+        { name: 'returnTo', value: returnTo },
+        ...(isCouponToggleConfirmation(confirmation)
+          ? [{ name: 'active', value: confirmation.currentActive } as const]
+          : []),
+      ]
+    : [];
+  const panelParams = new URL(returnTo, 'https://admin.hands.vn').searchParams;
+  const generatedAtLabel = couponSummaryResult.ok && summary.generatedAt
+    ? formatCouponIctDateTime(summary.generatedAt)
+    : null;
 
   return (
     <AdminPageTemplate
+      actions={
+        <>
+          <AdminFormControlLink className="button-secondary" href={returnTo}>
+            <RefreshCw aria-hidden="true" size={16} />
+            Refresh now
+          </AdminFormControlLink>
+          {mutationsEnabled ? (
+            <AdminFormControlLink className="button-primary" href={couponPanelHref(returnTo, 'drawer', 'create')}>
+              <Plus aria-hidden="true" size={16} />
+              Create coupon
+            </AdminFormControlLink>
+          ) : (
+            <StatusBadge tone="neutral">Create unavailable</StatusBadge>
+          )}
+        </>
+      }
       contentClassName="coupons-page"
-      description="Coupon registration, active windows, discount control, and booking usage review."
-      metrics={[
+      description={
+        <>
+          Growth campaign windows and booking usage. All times use ICT (UTC+7).
+          {generatedAtLabel ? ` Updated ${generatedAtLabel}.` : ' Freshness unavailable.'}
+        </>
+      }
+      metrics={couponSummaryResult.ok ? [
         {
-          helper: 'Coupons customers can use during booking checkout now.',
+          helper: 'Coupons available in customer checkout now.',
           kind: 'live',
           label: 'Live checkout codes',
-          scope: 'Live',
-          value: couponSummary.liveCount,
+          scope: 'Current',
+          value: summary.liveCount,
         },
         {
-          helper: 'Active coupon windows waiting for their start time.',
+          helper: 'Active coupons waiting for their ICT start time.',
           kind: 'action',
-          label: 'Pending launch',
-          scope: 'Pending',
-          value: couponSummary.scheduledCount,
+          label: 'Scheduled launches',
+          scope: 'Current',
+          value: summary.scheduledCount,
         },
         {
-          helper: 'Expired or paused coupons kept out of checkout.',
+          helper: 'Paused and expired coupons retained for operations and audit.',
           kind: 'record',
-          label: 'Coupon records',
-          scope: 'All records',
-          value: couponSummary.expiredCount + couponSummary.pausedCount,
+          label: 'Inactive records',
+          scope: 'Current',
+          value: summary.expiredCount + summary.pausedCount,
         },
-      ]}
+      ] : []}
       title="Coupons"
     >
-      {confirmation ? (
-        <ConfirmDialog
-          action={confirmationAction}
-          cancelHref={confirmation.cancelHref}
-          confirmLabel={confirmation.confirmLabel}
-          description={confirmation.description}
-          hiddenInputs={confirmationInputs}
-          id={`coupon-${confirmAction}-${confirmation.couponId}`}
-          title={confirmation.title}
-          tone={confirmation.tone}
+      {confirmationRequested ? (
+        confirmation ? (
+          <ConfirmDialog
+            action={confirmationAction}
+            cancelHref={confirmation.cancelHref}
+            confirmLabel={confirmation.confirmLabel}
+            description={confirmation.description}
+            disabled={!mutationsEnabled || (isCouponToggleConfirmation(confirmation) && confirmation.disabled)}
+            hiddenInputs={confirmationInputs}
+            id={`coupon-${confirmAction}-${confirmation.couponId}`}
+            supportingLinks={isCouponToggleConfirmation(confirmation) && confirmation.supportingHref
+              ? [{ href: confirmation.supportingHref, label: 'Update coupon window' }]
+              : []}
+            title={confirmation.title}
+            tone={confirmation.tone}
+          />
+        ) : (
+          <ConfirmDialog
+            action={confirmationAction}
+            cancelHref={returnTo}
+            confirmLabel="Action unavailable"
+            description="The exact coupon record could not be loaded. No campaign change is available."
+            disabled
+            id="coupon-confirmation-unavailable"
+            supportingLinks={[{ href: returnTo, label: 'Retry coupon list' }]}
+            title="Coupon confirmation unavailable"
+            tone="danger"
+          />
+        )
+      ) : null}
+
+      {createNotice ? (
+        <AdminInlineNotice className="coupon-create-notice" role="status" tone={createNotice.tone}>
+          <strong>{createNotice.title}</strong>
+          <span>{createNotice.detail}</span>
+        </AdminInlineNotice>
+      ) : null}
+
+      {!couponSummaryResult.ok ? (
+        <SourceFailureNotice
+          href={returnTo}
+          label="Coupon summary unavailable"
+          status={couponSummaryResult.status}
+        />
+      ) : null}
+      {!couponListResult.ok ? (
+        <SourceFailureNotice
+          href={returnTo}
+          label="Coupon list unavailable"
+          status={couponListResult.status}
         />
       ) : null}
 
-      <AdminSection
-        className="coupons-create-panel"
-        statusLabel={`${couponSummary.liveCount} running / ${couponSummary.scheduledCount} upcoming / ${
-          couponSummary.expiredCount + couponSummary.pausedCount
-        } expired`}
-        statusTone="info"
-        title="Create coupons"
-      >
-        {createNotice ? (
-          <AdminInlineNotice className="coupon-create-notice" role="status" tone={createNotice.tone}>
-            <strong>{createNotice.title}</strong>
-            <span>{createNotice.detail}</span>
-          </AdminInlineNotice>
-        ) : null}
-        <AdminFormGrid className="coupon-create-form" action={createCoupon}>
-          <AdminFormTextarea
-            className="admin-form-control-fluid"
-            label="Coupon codes"
-            name="codes"
-            required
-            rows={1}
-            textareaClassName="admin-form-textarea-compact"
-          />
-          <AdminFormInput
-            label="Discount %"
-            max="100"
-            min="1"
-            name="percent"
-            placeholder="10"
-            required
-            type="number"
-          />
-          <AdminFormDateTime
-            className="admin-form-control-fluid"
-            label="Starts"
-            labelVisibility="visible"
-            name="startsAt"
-          />
-          <AdminFormDateTime
-            className="admin-form-control-fluid"
-            label="Ends"
-            labelVisibility="visible"
-            name="endsAt"
-          />
-          <AdminFormControlButton className="button-primary" type="submit">
-            Create coupons
-          </AdminFormControlButton>
-        </AdminFormGrid>
-      </AdminSection>
-      <CouponsTableSection
-        editCouponId={editCouponId}
-        editHrefForCoupon={(couponId) => couponEditHref(panelSearchParams, couponId)}
-        rows={couponModel.couponRows}
-        updateAction={updateCoupon}
-        usageCouponId={usageCouponId}
-        usageHrefForPage={(couponId, page) => couponUsageHref(panelSearchParams, couponId, page)}
-        usagePage={usagePage}
+      <CouponFilterBoard
+        filters={filters}
+        matchingCount={couponSummaryResult.ok ? filteredCouponCount : undefined}
+        summary={summary}
+        summaryLoaded={couponSummaryResult.ok}
       />
-      {couponTotalPages > 1 ? (
+
+      <CouponsTableSection
+        actionsEnabled={mutationsEnabled}
+        deleteHrefForCoupon={(couponId) => couponDeleteConfirmHref(couponId, returnTo)}
+        editHrefForCoupon={(couponId) => couponPanelHref(returnTo, 'editCouponId', couponId)}
+        listLoaded={couponListResult.ok}
+        rows={couponModel.couponRows}
+        toggleHrefForCoupon={(couponId) => couponToggleConfirmHref(couponId, returnTo)}
+        usageHrefForCoupon={(couponId) => couponUsageHref(panelParams, couponId, 1)}
+      />
+
+      {couponSummaryResult.ok && couponListResult.ok && couponTotalPages > 1 ? (
         <AdminTablePaginationFooter
           activePage={couponPage}
           ariaLabel="Coupon list pagination"
           className="coupon-list-pagination"
           from={couponListFrom}
-          hrefForPage={(page) => couponListHref(couponListSearchParams, page)}
+          hrefForPage={(page) => couponListHref(panelParams, page)}
           to={couponListTo}
           totalPages={couponTotalPages}
-          totalRows={couponSummary.totalCount}
+          totalRows={filteredCouponCount}
+        />
+      ) : null}
+
+      {drawer === 'create' ? (
+        mutationsEnabled ? (
+          <CouponCreateDrawer closeHref={returnTo} />
+        ) : (
+          <UnavailableCouponDrawer closeHref={returnTo} title="Coupon creation unavailable" />
+        )
+      ) : null}
+
+      {editCouponId || usageCouponId ? (
+        <CouponManagementDrawer
+          closeHref={returnTo}
+          hrefForUsagePage={(page) => couponUsageHref(panelParams, usageCouponId || targetCouponId, page)}
+          mode={editCouponId ? 'edit' : 'usage'}
+          mutationsEnabled={mutationsEnabled}
+          returnTo={returnTo}
+          row={targetRow}
+          targetLoaded={targetCouponResult.ok}
+          updateAction={updateCoupon}
+          usageLoaded={!usageCouponId || usageResult.ok}
+          usagePage={usagePage}
         />
       ) : null}
     </AdminPageTemplate>
   );
+}
+
+function SourceFailureNotice({ href, label, status }: { readonly href: string; readonly label: string; readonly status: number | null }) {
+  const authFailure = status === 401 || status === 403;
+  return (
+    <AdminInlineNotice className="coupon-source-failure" role="alert" tone="danger">
+      <strong>{label}</strong>
+      <span>
+        {authFailure
+          ? 'Admin authorization could not be verified. Sign in again before changing campaign state.'
+          : 'Retry before using this page for campaign decisions.'}
+      </span>
+      <AdminFormControlLink className="button-secondary" href={href}>Retry</AdminFormControlLink>
+    </AdminInlineNotice>
+  );
+}
+
+function UnavailableCouponDrawer({ closeHref, title }: { readonly closeHref: string; readonly title: string }) {
+  return (
+    <CouponDrawerShell
+      closeHref={closeHref}
+      eyebrow="Data safety"
+      title={title}
+      titleId="coupon-unavailable-drawer-title"
+    >
+      <AdminNoticeCard role="alert" tone="danger">
+        <strong>Coupon sources are unavailable</strong>
+        <p className="muted">Retry the list and summary before creating or changing coupons.</p>
+        <AdminFormControlLink className="button-secondary" href={closeHref}>Retry coupons</AdminFormControlLink>
+      </AdminNoticeCard>
+    </CouponDrawerShell>
+  );
+}
+
+function filteredCountForView(summary: AdminCouponSummary, view: ReturnType<typeof parseCouponListFilters>['view']) {
+  if (view === 'live') return summary.liveCount;
+  if (view === 'scheduled') return summary.scheduledCount;
+  if (view === 'records') return summary.expiredCount + summary.pausedCount;
+  return summary.totalCount;
 }
 
 function readSingleParam(value: string | string[] | undefined) {
@@ -219,71 +342,18 @@ function readPositiveInteger(value: string) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
 }
 
-function couponPanelSearchParams(params: Record<string, string | string[] | undefined>) {
-  const next = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(params)) {
-    if (
-      key === 'confirm' ||
-      key === 'couponId' ||
-      key === 'editCouponId' ||
-      key === 'usageCouponId' ||
-      key === 'usagePage' ||
-      key === 'couponNotice' ||
-      key === 'created' ||
-      key === 'failed'
-    ) {
-      continue;
-    }
-
-    const values = Array.isArray(value) ? value : [value];
-    for (const item of values) {
-      if (item) {
-        next.append(key, item);
-      }
-    }
-  }
-
-  return next;
-}
-
-function couponListSearchParamsWithoutPaging(params: Record<string, string | string[] | undefined>) {
-  const next = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(params)) {
-    if (
-      key === 'confirm' ||
-      key === 'couponId' ||
-      key === 'couponPage' ||
-      key === 'editCouponId' ||
-      key === 'usageCouponId' ||
-      key === 'usagePage' ||
-      key === 'couponNotice' ||
-      key === 'created' ||
-      key === 'failed'
-    ) {
-      continue;
-    }
-
-    const values = Array.isArray(value) ? value : [value];
-    for (const item of values) {
-      if (item) {
-        next.append(key, item);
-      }
-    }
-  }
-
-  return next;
+function couponPanelHref(returnTo: string, key: 'drawer' | 'editCouponId', value: string) {
+  const parsed = new URL(returnTo, 'https://admin.hands.vn');
+  parsed.searchParams.set(key, value);
+  return `${parsed.pathname}?${parsed.searchParams.toString()}`;
 }
 
 function couponListHref(baseParams: URLSearchParams, page: number) {
   const next = new URLSearchParams(baseParams);
-  if (page > 1) {
-    next.set('couponPage', String(page));
-  } else {
-    next.delete('couponPage');
-  }
-
+  next.delete('usagePage');
+  next.delete('usageCouponId');
+  if (page > 1) next.set('couponPage', String(page));
+  else next.delete('couponPage');
   const query = next.toString();
   return query ? `/coupons?${query}` : '/coupons';
 }
@@ -291,48 +361,20 @@ function couponListHref(baseParams: URLSearchParams, page: number) {
 function couponUsageHref(baseParams: URLSearchParams, couponId: string, page: number) {
   const next = new URLSearchParams(baseParams);
   next.set('usageCouponId', couponId);
-  if (page > 1) {
-    next.set('usagePage', String(page));
-  } else {
-    next.delete('usagePage');
-  }
-
-  const query = next.toString();
-  return query ? `/coupons?${query}` : '/coupons';
-}
-
-function couponEditHref(baseParams: URLSearchParams, couponId: string) {
-  const next = new URLSearchParams(baseParams);
-  next.set('editCouponId', couponId);
-
+  if (page > 1) next.set('usagePage', String(page));
+  else next.delete('usagePage');
   return `/coupons?${next.toString()}`;
 }
 
-function emptyCouponUsagePage(couponId: string, page: number): AdminCouponUsagePage {
+function withCouponUsage(coupon: AdminCoupon | null, usagePage: AdminCouponUsagePage | null) {
+  if (!coupon || !usagePage || coupon.id !== usagePage.couponId) return coupon;
   return {
-    couponId,
-    rows: [],
-    skip: (Math.max(1, page) - 1) * COUPON_USAGE_PAGE_SIZE,
-    take: COUPON_USAGE_PAGE_SIZE,
-    totalCount: 0,
+    ...coupon,
+    usageBookingCount: usagePage.totalCount,
+    usageBookings: usagePage.rows,
   };
 }
 
-function withCouponUsagePage(
-  coupons: readonly AdminCoupon[],
-  usagePage: AdminCouponUsagePage | null,
-): AdminCoupon[] {
-  if (!usagePage) {
-    return [...coupons];
-  }
-
-  return coupons.map((coupon) =>
-    coupon.id === usagePage.couponId
-      ? {
-          ...coupon,
-          usageBookingCount: usagePage.totalCount,
-          usageBookings: usagePage.rows,
-        }
-      : coupon,
-  );
+function resolvedAdminResult<T>(data: T): Promise<AdminGetResult<T>> {
+  return Promise.resolve({ data, ok: true, status: 200 });
 }

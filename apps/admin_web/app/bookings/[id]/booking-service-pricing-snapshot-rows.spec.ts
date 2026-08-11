@@ -6,6 +6,7 @@ const baseInput = {
   adminMinimum: '400.000 VND',
   payoutRuleStatus: '500.000 VND active',
   payoutRuleLine: '500.000 VND customer -> 350.000 VND Partner',
+  earningStatus: 'AVAILABLE',
   providerPayout: '350.000 VND',
   providerNet: '320.000 VND / AVAILABLE',
   platformFee: '150.000 VND logged',
@@ -36,5 +37,11 @@ describe('booking service pricing snapshot rows', () => {
 
     expect(cashRow?.helper).toBe('Cash bookings can create Partner fee debt until settled.');
     expect(nonCashRow?.helper).toBe('Non-cash bookings should create a payout credit after completion.');
+  });
+
+  it('labels a rule-derived amount as projected when no earning exists', () => {
+    const payoutRow = bookingServicePricingSnapshotRows({ ...baseInput, earningStatus: null })[3];
+
+    expect(payoutRow).toMatchObject({ label: 'Projected payout', value: '350.000 VND' });
   });
 });

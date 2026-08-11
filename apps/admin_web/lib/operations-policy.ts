@@ -1,6 +1,13 @@
 import type { AdminOperationalPolicySetting } from './admin-api';
 
 export const OPERATIONAL_POLICY_KEYS = {
+  startShiftMatchingDelaysSlaMinutes: 'command.start_shift.matching_delays_sla_minutes',
+  startShiftPaymentHoldsSlaMinutes: 'command.start_shift.payment_holds_sla_minutes',
+  startShiftCancellationReviewSlaMinutes: 'command.start_shift.cancellation_review_sla_minutes',
+  startShiftRefundReviewSlaMinutes: 'command.start_shift.refund_review_sla_minutes',
+  startShiftNotificationFailuresSlaMinutes: 'command.start_shift.notification_failures_sla_minutes',
+  startShiftCashReconciliationSlaMinutes: 'command.start_shift.cash_reconciliation_sla_minutes',
+  startShiftPartnerApprovalsSlaMinutes: 'command.start_shift.partner_approvals_sla_minutes',
   travelBufferMinutes: 'matching.travel_buffer_minutes',
   providerResponseWindowMinutes: 'matching.provider_response_window_minutes',
   marketplaceRadiusMeters: 'matching.marketplace_partner_radius_meters',
@@ -45,11 +52,25 @@ export const ADMIN_OPERATIONS_POLICY_DEFAULTS = {
   marketplaceOpenMode: 'IMMEDIATE_WITHIN_WINDOW',
   // Compatibility alias for older saved policy snapshots and Admin pages.
   backupOpenMode: 'IMMEDIATE_WITHIN_WINDOW',
-  preferredAcceptMode: 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+  preferredAcceptMode: 'FIRST_PICK_MATCHES_ON_ACCEPT',
   partnerAlertChannel: 'IN_APP_WITH_PUSH_LATER',
   walletNegativeGate: 'BLOCK_MARKETPLACE_PARTICIPATION',
   cashSettlementClearance: 'DEPOSIT_OR_ADMIN_OFFSET_REQUIRED',
   payoutBatchCycle: 'WEEKLY_OR_MONTHLY_BATCH',
+} as const;
+
+export function adminPreferredAcceptModeUsesFirstPickPriority(value: unknown) {
+  return value === 'FIRST_PICK_MATCHES_ON_ACCEPT' || value === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+}
+
+export const ADMIN_START_SHIFT_ACTION_SLA_DEFAULTS = {
+  cancellationReview: 120,
+  cashReconciliation: 1_440,
+  matchingDelays: 15,
+  notificationFailures: 60,
+  partnerApprovals: 1_440,
+  paymentHolds: 60,
+  refundReview: 240,
 } as const;
 
 export type AdminLiveOperationsPolicy = {

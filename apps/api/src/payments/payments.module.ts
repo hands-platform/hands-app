@@ -1,5 +1,5 @@
 import { BullModule } from '@nestjs/bullmq';
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AdminModule } from '../admin/admin.module';
 import { EarningsModule } from '../earnings/earnings.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -16,7 +16,7 @@ import { VnpayGatewayClient } from './vnpay-gateway.client';
 
 @Module({
   imports: [
-    AdminModule,
+    forwardRef(() => AdminModule),
     EarningsModule,
     NotificationsModule,
     BullModule.registerQueue({ name: PAYMENT_STATUS_CHECK_QUEUE_NAME }),

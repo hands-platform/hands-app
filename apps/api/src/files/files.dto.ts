@@ -2,7 +2,13 @@ import { Transform } from 'class-transformer';
 import { IsEnum, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { FileVisibility } from '@prisma/client';
 
-const filePurposes = ['provider-verification', 'provider-gallery', 'chat-attachment', 'profile-image'] as const;
+const filePurposes = [
+  'provider-verification',
+  'provider-gallery',
+  'chat-attachment',
+  'profile-image',
+  'finance-evidence',
+] as const;
 
 function trimString(value: unknown) {
   return typeof value === 'string' ? value.trim() : value;
@@ -28,6 +34,12 @@ export class CreatePresignedUploadDto {
 
   @IsIn(filePurposes)
   purpose!: (typeof filePurposes)[number];
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(255)
+  fileName?: string;
 
   @IsOptional()
   @Transform(({ value }) => trimString(value))

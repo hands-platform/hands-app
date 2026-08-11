@@ -36,6 +36,15 @@ describe('CalendarClient', () => {
     expect(source).not.toContain('<section className="admin-metric-grid"');
   });
 
+  it('collapses an all-zero calendar summary without hiding load failures', () => {
+    const source = readFileSync('app/calendar/calendar-client.tsx', 'utf8');
+
+    expect(source).toContain('const hasCurrentCalendarMetrics = metrics.total > 0 || metrics.today > 0 || metrics.upcoming > 0;');
+    expect(source).toContain('{hasCurrentCalendarMetrics ? (');
+    expect(source).toContain('No events today or in the next 7 days.');
+    expect(source).toContain('role="alert" tone="danger"');
+  });
+
   it('keeps non-default FullCalendar views out of the initial client bundle', () => {
     const source = readFileSync('app/calendar/calendar-client.tsx', 'utf8');
 

@@ -15,6 +15,18 @@ enum Role {
   MASTER_ADMIN
 }
 
+enum AppUsageEventType {
+  APP_OPEN
+  SESSION_START
+  PROVIDER_PROFILE_VIEW
+}
+
+enum AppUsageOrigin {
+  PRODUCTION
+  SYNTHETIC
+  UNKNOWN
+}
+
 enum AdminOperatorPermissionCategory {
   BOOKINGS
   BOOKINGS_REALTIME
@@ -26,6 +38,8 @@ enum AdminOperatorPermissionCategory {
   CUSTOMERS_DIRECTORY
   CUSTOMERS_DETAIL
   CUSTOMERS_REVIEWS
+  GROWTH
+  GROWTH_MARKETING
   PARTNERS
   PARTNERS_DIRECTORY
   PARTNERS_UNAPPROVED
@@ -42,6 +56,7 @@ enum AdminOperatorPermissionCategory {
   NOTIFICATIONS_TEMPLATES
   NOTIFICATIONS_PUSH
   NOTIFICATIONS_DELIVERY
+  NOTIFICATIONS_RETRY
   SYSTEM
   SYSTEM_SERVICES
   SYSTEM_COUPONS
@@ -49,6 +64,51 @@ enum AdminOperatorPermissionCategory {
   SYSTEM_POLICY
   SYSTEM_AUDIT
   SYSTEM_SETUP
+  CONTENT_VIEW
+  CONTENT_EDIT
+  CONTENT_PUBLISH
+  CONTENT_DELETE
+  DEVELOPER_SYSTEM
+  DEVELOPER_SETUP
+  DEVELOPER_HEALTH
+  DEVELOPER_APP_SESSIONS_DIAGNOSTICS
+  DEVELOPER_ROUTE_COMPAT
+}
+
+enum PublicSiteKey {
+  MAIN
+  PARTNER_RECRUITMENT
+}
+
+enum PublicSitePageStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum PublicSiteRevisionState {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum PublicSiteRevisionReadinessState {
+  READY
+  BLOCKED
+  UNKNOWN
+}
+
+enum PublicSiteSectionKind {
+  HERO
+  APP_OVERVIEW
+  PARTNER_DIRECTORY
+  PARTNER_DETAIL
+  RECRUITMENT_BENEFITS
+  RECRUITMENT_PROCESS
+  COMPANY_INFORMATION
+  CONTACT
+  LEGAL_DOCUMENT
+  FAQ
+  CTA
 }
 
 enum BookingStatus {
@@ -75,6 +135,20 @@ enum ProviderStatus {
   ONLINE_AVAILABLE
   ONLINE_BUSY
   ONLINE_AVAILABLE_SOON
+}
+
+enum ProviderAvailabilityIntent {
+  OFFLINE
+  AVAILABLE
+}
+
+enum ProviderAvailabilityReason {
+  SYSTEM_DEFAULT
+  MANUAL_AVAILABLE
+  MANUAL_OFFLINE
+  OUTSIDE_WORKING_HOURS
+  ACTIVE_BOOKING
+  INACTIVE_7D
 }
 
 enum ProviderLevel {
@@ -183,6 +257,12 @@ enum PaymentMethod {
   MANUAL
 }
 
+enum PaymentAdminOperationStatus {
+  IN_PROGRESS
+  SUCCEEDED
+  REVIEW_REQUIRED
+}
+
 enum FileVisibility {
   PUBLIC
   PRIVATE
@@ -193,6 +273,7 @@ enum FilePurpose {
   PROVIDER_GALLERY
   CHAT_ATTACHMENT
   PROFILE_IMAGE
+  FINANCE_EVIDENCE
 }
 
 enum FileUploadStatus {
@@ -512,6 +593,8 @@ model User {
   auditLogs                 AdminAuditLog[]            @relation("AdminActor")
   bookingOpsTasks           BookingOpsTask[]           @relation("BookingOpsTaskActor")
   appSessions               AppSession[]
+  appUsageEvents            AppUsageEvent[]
+  appUsageDailyAggregates   AppUsageDailyAggregate[]
   fileAssets                FileAsset[]                @relation("FileAssetOwner")
   reviewedFileAssets        FileAsset[]                @relation("FileAssetReviewer")
   taxPolicyVersions         TaxPolicyVersion[]         @relation("TaxPolicyAuthor")
@@ -577,6 +660,48 @@ model AppSession {
   @@index([userId, lastSeenAt])
 }
 
+model AppUsageEvent {
+  id            String            @id @default(cuid())
+  clientEventId String?           @unique
+  userId        String
+  role          Role
+  eventType     AppUsageEventType
+  origin        AppUsageOrigin    @default(UNKNOWN)
+  deviceId      String?
+  subjectType   String?
+  subjectId     String?
+  occurredAt    DateTime          @default(now())
+  metadata      Json?
+  createdAt     DateTime          @default(now())
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([eventType, occurredAt])
+  @@index([userId, eventType, occurredAt])
+  @@index([role, eventType, occurredAt])
+  @@index([subjectType, subjectId, occurredAt])
+}
+
+model AppUsageDailyAggregate {
+  id                       String   @id @default(cuid())
+  userId                   String
+  role                     Role
+  origin                   AppUsageOrigin @default(UNKNOWN)
+  day                      DateTime @db.Date
+  totalEventCount          Int      @default(0)
+  appOpenCount             Int      @default(0)
+  sessionStartCount        Int      @default(0)
+  providerProfileViewCount Int      @default(0)
+  firstOccurredAt          DateTime
+  lastOccurredAt           DateTime
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role, day, origin])
+  @@index([role, origin, day])
+  @@index([day, lastOccurredAt])
+}
+
 model AppVersionPolicy {
   id                      String   @id @default(cuid())
   appType                 String
@@ -600,6 +725,7 @@ model CustomerProfile {
   userId                   String                        @unique
   user                     User                          @relation(fields: [userId], references: [id])
   gender                   String?
+  nationality              String?
   addresses                Json?
   bookings                 Booking[]
   bookingSnapshots         BookingAddressSnapshot[]
@@ -659,6 +785,7 @@ model ProviderProfile {
   facebookId               String?
   activityNickname         String?
   bio                      String?
+  bioTranslations          Json?
   experienceYears          Int?
   specialties              Json?
   languages                Json?
@@ -666,8 +793,13 @@ model ProviderProfile {
   residentialAddress       String?
   city                     String?
   serviceArea              Json?
+  bookingAlertPreferences  Json?
   level                    ProviderLevel                     @default(LEVEL_1_SIGNUP)
   status                   ProviderStatus                    @default(OFFLINE)
+  availabilityIntent       ProviderAvailabilityIntent        @default(OFFLINE)
+  availabilityReason       ProviderAvailabilityReason        @default(SYSTEM_DEFAULT)
+  availabilityChangedAt    DateTime                          @default(now())
+  workingHoursTimezone     String                            @default("Asia/Ho_Chi_Minh")
   ratingAvg                Decimal                           @default(0) @db.Decimal(3, 2)
   reviewCount              Int                               @default(0)
   currentLat               Decimal?                          @db.Decimal(10, 7)
@@ -704,6 +836,7 @@ model ProviderProfile {
   earnings                 ProviderEarning[]
   payoutBatches            ProviderPayoutBatch[]
   walletLedgerEntries      ProviderWalletLedgerEntry[]
+  walletBalanceSummaries   ProviderWalletBalanceSummary[]
   walletWithdrawalRequests ProviderWalletWithdrawalRequest[]
   bankDepositRequests      PartnerBankDepositRequest[]
   accountingJournalBatches AccountingJournalBatch[]
@@ -713,9 +846,26 @@ model ProviderProfile {
   referralsMade            ReferralAttribution[]             @relation("ProviderReferralReferrer")
   referralsReceived        ReferralAttribution[]             @relation("ProviderReferralReferred")
   referralRewards          ReferralReward[]                  @relation("ProviderReferralWalletOwner")
+  workingHours             ProviderWorkingHour[]
 
   @@index([status, currentLocationUpdatedAt])
+  @@index([availabilityIntent, status])
   @@index([blockedAt, deletedAt])
+}
+
+model ProviderWorkingHour {
+  id                String          @id @default(cuid())
+  providerProfileId String
+  providerProfile   ProviderProfile @relation(fields: [providerProfileId], references: [id], onDelete: Cascade)
+  weekday           Int
+  enabled           Boolean         @default(true)
+  startMinute       Int
+  endMinute         Int
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([providerProfileId, weekday])
+  @@index([providerProfileId, enabled, weekday])
 }
 
 model ProviderKyc {
@@ -1286,6 +1436,29 @@ model Payment {
   settlementSnapshot       BookingSettlementSnapshot?
   accountingJournalBatches AccountingJournalBatch[]
   paymentClearingEntries   BookingPaymentClearingEntry[]
+  adminOperationClaims     PaymentAdminOperationClaim[]
+}
+
+model PaymentAdminOperationClaim {
+  id             String                      @id @default(cuid())
+  paymentId      String
+  action         String
+  idempotencyKey String
+  requestHash    String
+  actorId        String
+  reason         String?
+  status         PaymentAdminOperationStatus @default(IN_PROGRESS)
+  receipt        Json?
+  errorCode      String?
+  errorMessage   String?
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+  completedAt    DateTime?
+  payment        Payment                     @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@unique([paymentId, idempotencyKey])
+  @@index([paymentId, status, createdAt])
+  @@index([status, updatedAt])
 }
 
 model PaymentCallbackAttempt {
@@ -1316,6 +1489,7 @@ model Review {
   bookingId         String          @unique
   customerProfileId String
   providerProfileId String
+  createdByAdminId  String?
   rating            Int
   comment           String?
   status            ReviewStatus    @default(PUBLISHED)
@@ -1348,31 +1522,31 @@ model ProviderCustomerReview {
 }
 
 model ProviderEarning {
-  id                  String                      @id @default(cuid())
-  providerProfileId   String
-  bookingId           String                      @unique
-  grossAmount         Int
-  platformFee         Int
-  withholdingAmount   Int                         @default(0)
-  netAmount           Int
-  currency            String                      @default("VND")
-  status              EarningStatus               @default(PENDING)
-  availableAt         DateTime?
-  paidAt              DateTime?
-  payoutBatchId       String?
-  settlementRef       String?
-  settlementNotes     String?
-  settlementMethod    CashFeeSettlementMethod?
-  createdAt           DateTime                    @default(now())
-  updatedAt           DateTime                    @updatedAt
-  providerProfile     ProviderProfile             @relation(fields: [providerProfileId], references: [id])
-  booking             Booking                     @relation(fields: [bookingId], references: [id])
-  payoutBatch         ProviderPayoutBatch?        @relation(fields: [payoutBatchId], references: [id])
-  platformFeeLogs     ProviderPlatformFeeLog[]
-  taxLogs             ProviderTaxLog[]
-  walletLedgerEntries ProviderWalletLedgerEntry[]
+  id                             String                                 @id @default(cuid())
+  providerProfileId              String
+  bookingId                      String                                 @unique
+  grossAmount                    Int
+  platformFee                    Int
+  withholdingAmount              Int                                    @default(0)
+  netAmount                      Int
+  currency                       String                                 @default("VND")
+  status                         EarningStatus                          @default(PENDING)
+  availableAt                    DateTime?
+  paidAt                         DateTime?
+  payoutBatchId                  String?
+  settlementRef                  String?
+  settlementNotes                String?
+  settlementMethod               CashFeeSettlementMethod?
+  createdAt                      DateTime                               @default(now())
+  updatedAt                      DateTime                               @updatedAt
+  providerProfile                ProviderProfile                        @relation(fields: [providerProfileId], references: [id])
+  booking                        Booking                                @relation(fields: [bookingId], references: [id])
+  payoutBatch                    ProviderPayoutBatch?                   @relation(fields: [payoutBatchId], references: [id])
+  platformFeeLogs                ProviderPlatformFeeLog[]
+  taxLogs                        ProviderTaxLog[]
+  walletLedgerEntries            ProviderWalletLedgerEntry[]
   bankDepositCashDebtAllocations PartnerBankDepositCashDebtAllocation[]
-  settlementSnapshot  BookingSettlementSnapshot?
+  settlementSnapshot             BookingSettlementSnapshot?
 
   @@index([providerProfileId, createdAt])
   @@index([status, createdAt])
@@ -1422,6 +1596,19 @@ model ProviderWalletLedgerEntry {
   @@index([earningId])
   @@index([payoutBatchId])
   @@index([type, createdAt])
+}
+
+model ProviderWalletBalanceSummary {
+  providerProfileId String
+  currency          String          @default("VND")
+  balance           BigInt          @default(0)
+  entryCount        Int             @default(0)
+  lastEntryAt       DateTime?
+  updatedAt         DateTime        @updatedAt
+  providerProfile   ProviderProfile @relation(fields: [providerProfileId], references: [id], onDelete: Cascade)
+
+  @@id([providerProfileId, currency])
+  @@index([currency, balance])
 }
 
 model ProviderWalletWithdrawalRequest {
@@ -1476,6 +1663,7 @@ model CustomerWalletLedgerEntry {
 
 model ManualWalletAdjustmentRequest {
   id                     String                              @id @default(cuid())
+  idempotencyKey         String                              @unique
   ownerType              String
   ownerId                String
   direction              String
@@ -1483,7 +1671,11 @@ model ManualWalletAdjustmentRequest {
   amount                 Int
   currency               String                              @default("VND")
   reason                 String
+  operationalCause       String?
+  expectedCorrection     String?
+  caseReference          String?
   monthlyPeriod          String?
+  attachmentFileId       String?
   attachmentUrl          String?
   requestedBeforeBalance Int
   requestedAfterBalance  Int
@@ -1501,30 +1693,32 @@ model ManualWalletAdjustmentRequest {
   rejectedAt             DateTime?
   createdAt              DateTime                            @default(now())
   updatedAt              DateTime                            @updatedAt
+  attachmentFile         FileAsset?                          @relation("ManualWalletAdjustmentEvidence", fields: [attachmentFileId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])
   @@index([ownerType, ownerId, status, createdAt])
   @@index([requestedByAdminId, createdAt])
   @@index([monthlyPeriod, status])
+  @@index([attachmentFileId])
 }
 
 model PartnerBankDepositRequest {
-  id                               String                          @id @default(cuid())
+  id                               String                                 @id @default(cuid())
   providerProfileId                String
   amount                           Int
-  currency                         String                          @default("VND")
+  currency                         String                                 @default("VND")
   bankTransactionId                String
   depositDate                      DateTime
   bankAccount                      String?
-  attachmentFileId                String?
-  attachmentUrl                   String?
+  attachmentFileId                 String?
+  attachmentUrl                    String?
   notes                            String?
   requestedBeforeBalance           Int
   requestedAfterBalance            Int
   requestedReceivableRecovery      Int
   requestedWalletLiabilityIncrease Int
   accountingPreview                Json
-  status                           PartnerBankDepositRequestStatus @default(REQUESTED)
+  status                           PartnerBankDepositRequestStatus        @default(REQUESTED)
   requestedByAdminId               String
   approvedByAdminId                String?
   rejectedByAdminId                String?
@@ -1534,17 +1728,17 @@ model PartnerBankDepositRequest {
   executedAllocation               Json?
   executedAt                       DateTime?
   rejectedAt                       DateTime?
-  createdAt                        DateTime                        @default(now())
-  updatedAt                        DateTime                        @updatedAt
-  providerProfile                  ProviderProfile                 @relation(fields: [providerProfileId], references: [id], onDelete: Restrict)
+  createdAt                        DateTime                               @default(now())
+  updatedAt                        DateTime                               @updatedAt
+  providerProfile                  ProviderProfile                        @relation(fields: [providerProfileId], references: [id], onDelete: Restrict)
   cashDebtAllocations              PartnerBankDepositCashDebtAllocation[]
 
+  @@unique([providerProfileId, bankTransactionId])
   @@index([status, createdAt])
   @@index([providerProfileId, status, createdAt])
   @@index([bankTransactionId, status])
   @@index([requestedByAdminId, createdAt])
   @@index([depositDate, status])
-  @@unique([providerProfileId, bankTransactionId])
 }
 
 model PartnerBankDepositCashDebtAllocation {
@@ -1745,7 +1939,7 @@ model MonthlyTaxClosing {
   paidById                   String?
   closedById                 String?
   notes                      String?
-  remittanceMetadata          Json?
+  remittanceMetadata         Json?
   createdAt                  DateTime                    @default(now())
   updatedAt                  DateTime                    @updatedAt
   settlementSnapshots        BookingSettlementSnapshot[]
@@ -2179,6 +2373,7 @@ model FileAsset {
   key                    String                @unique
   url                    String?
   contentType            String
+  originalName           String?
   purpose                FilePurpose           @default(PROVIDER_VERIFICATION)
   visibility             FileVisibility
   uploadStatus           FileUploadStatus      @default(PENDING)
@@ -2189,14 +2384,17 @@ model FileAsset {
   reviewedBy             User?                 @relation("FileAssetReviewer", fields: [reviewedById], references: [id])
   uploadedAt             DateTime?
   sizeBytes              Int?
+  sortOrder              Int                   @default(0)
   ownerUserId            String?
   owner                  User?                 @relation("FileAssetOwner", fields: [ownerUserId], references: [id])
   providerVerificationId String?
   providerVerification   ProviderVerification? @relation(fields: [providerVerificationId], references: [id])
   providerDocument       ProviderDocument?
+  manualWalletAdjustmentRequests ManualWalletAdjustmentRequest[] @relation("ManualWalletAdjustmentEvidence")
   createdAt              DateTime              @default(now())
 
   @@index([ownerUserId, purpose, createdAt])
+  @@index([ownerUserId, purpose, sortOrder, createdAt])
   @@index([visibility, purpose, createdAt])
   @@index([reviewStatus, purpose, createdAt])
 }
@@ -2255,6 +2453,94 @@ model AdminAuditLog {
   actor     User     @relation("AdminActor", fields: [actorId], references: [id])
 
   @@index([action, createdAt])
+}
+
+model PublicSitePage {
+  id               String                   @id @default(cuid())
+  site             PublicSiteKey
+  locale           String
+  path             String
+  internalName     String
+  status           PublicSitePageStatus     @default(DRAFT)
+  seoTitle         String?
+  seoDescription   String?
+  canonicalPath    String?
+  noIndex          Boolean                  @default(true)
+  publishedAt      DateTime?
+  activeRevisionId String?                  @unique
+  draftRevisionId  String?                  @unique
+  firstPublishedAt DateTime?
+  createdById      String?
+  updatedById      String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  sections         PublicSiteSection[]
+  revisions        PublicSitePageRevision[] @relation("PublicSitePageRevisions")
+  activeRevision   PublicSitePageRevision?  @relation("PublicSiteActiveRevision", fields: [activeRevisionId], references: [id], onDelete: SetNull)
+  draftRevision    PublicSitePageRevision?  @relation("PublicSiteDraftRevision", fields: [draftRevisionId], references: [id], onDelete: SetNull)
+
+  @@unique([site, locale, path])
+  @@index([site, locale, status])
+  @@index([updatedAt])
+}
+
+model PublicSitePageRevision {
+  id              String                           @id @default(cuid())
+  pageId         String
+  revisionNumber Int
+  version         Int                              @default(1)
+  state           PublicSiteRevisionState          @default(DRAFT)
+  readinessState  PublicSiteRevisionReadinessState @default(UNKNOWN)
+  readinessIssues Json                             @default("[]")
+  seoTitle        String?
+  seoDescription  String?
+  canonicalPath   String?
+  noIndex         Boolean                          @default(true)
+  publishedAt     DateTime?
+  createdById     String?
+  updatedById     String?
+  publishedById   String?
+  createdAt       DateTime                         @default(now())
+  updatedAt       DateTime                         @updatedAt
+  page            PublicSitePage                   @relation("PublicSitePageRevisions", fields: [pageId], references: [id], onDelete: Cascade)
+  sections        PublicSiteRevisionSection[]
+  activeForPage   PublicSitePage?                  @relation("PublicSiteActiveRevision")
+  draftForPage    PublicSitePage?                  @relation("PublicSiteDraftRevision")
+
+  @@unique([pageId, revisionNumber])
+  @@index([pageId, state, updatedAt])
+}
+
+model PublicSiteRevisionSection {
+  id         String                 @id @default(cuid())
+  revisionId String
+  key        String
+  kind       PublicSiteSectionKind
+  content    Json                  @default("{}")
+  sortOrder  Int                   @default(0)
+  enabled    Boolean               @default(true)
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  revision   PublicSitePageRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+
+  @@unique([revisionId, key])
+  @@index([revisionId, enabled, sortOrder])
+}
+
+model PublicSiteSection {
+  id        String                @id @default(cuid())
+  pageId    String
+  key       String
+  kind      PublicSiteSectionKind
+  content   Json                  @default("{}")
+  sortOrder Int                   @default(0)
+  enabled   Boolean               @default(true)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  page      PublicSitePage        @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, key])
+  @@index([pageId, enabled, sortOrder])
 }
 
 model AdminCalendarEvent {

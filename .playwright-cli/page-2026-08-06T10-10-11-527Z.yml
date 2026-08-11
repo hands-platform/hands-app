@@ -1,0 +1,198 @@
+- generic [active] [ref=f12e1]:
+  - generic [ref=f12e3]:
+    - complementary [ref=f12e4]:
+      - strong [ref=f12e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=f12e7]:
+        - group [ref=f12e8]:
+          - generic "Shift command" [ref=f12e9] [cursor=pointer]
+          - link "Shift command" [ref=f12e27] [cursor=pointer]:
+            - /url: /
+        - group [ref=f12e31]:
+          - generic "Live Operations" [ref=f12e32] [cursor=pointer]
+        - group [ref=f12e49]:
+          - generic "Customer Support" [ref=f12e50] [cursor=pointer]
+          - generic [ref=f12e67]:
+            - link "Customers" [ref=f12e68] [cursor=pointer]:
+              - /url: /customers
+            - link "Customer Reviews" [ref=f12e74] [cursor=pointer]:
+              - /url: /reviews
+            - link "Partner Notes" [ref=f12e78] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations
+            - link "Chat Evidence" [ref=f12e82] [cursor=pointer]:
+              - /url: /chat-archive
+            - link "Customer Notifications" [ref=f12e86] [cursor=pointer]:
+              - /url: /notifications
+            - link "Customer Usage" [ref=f12e90] [cursor=pointer]:
+              - /url: /usage-overview
+        - group [ref=f12e94]:
+          - generic "Partner Operations" [ref=f12e95] [cursor=pointer]
+        - group [ref=f12e112]:
+          - generic "Finance Today" [ref=f12e113] [cursor=pointer]
+        - group [ref=f12e120]:
+          - generic "Finance Records" [ref=f12e121] [cursor=pointer]
+        - group [ref=f12e138]:
+          - generic "Growth & Content" [ref=f12e139] [cursor=pointer]
+        - group [ref=f12e156]:
+          - generic "Tax & Monthly Close" [ref=f12e157] [cursor=pointer]
+        - group [ref=f12e164]:
+          - generic "Restricted Settings" [ref=f12e165] [cursor=pointer]
+        - group [ref=f12e172]:
+          - generic "Admin & System" [ref=f12e173] [cursor=pointer]
+        - group [ref=f12e190]:
+          - generic "Developer / System" [ref=f12e191] [cursor=pointer]
+    - main [ref=f12e199]:
+      - generic "Admin workspace" [ref=f12e200]:
+        - navigation "Breadcrumb" [ref=f12e202]:
+          - link "HANDS" [ref=f12e203] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f12e206]: Customer Support
+          - generic [ref=f12e209]: Partner Notes
+        - generic "Workspace actions" [ref=f12e210]:
+          - button "Search Ctrl K" [ref=f12e212] [cursor=pointer]:
+            - generic [ref=f12e213]: Search
+            - generic [ref=f12e217]: Ctrl K
+          - button "Switch to dark mode" [ref=f12e219] [cursor=pointer]
+          - link "Operations Policy" [ref=f12e222] [cursor=pointer]:
+            - /url: /operations-policy
+          - button "Open operation alerts" [ref=f12e227] [cursor=pointer]
+          - button "Sign out" [ref=f12e232] [cursor=pointer]
+      - generic [ref=f12e236]:
+        - generic [ref=f12e237]:
+          - generic [ref=f12e238]:
+            - heading "Partner Notes About Customers" [level=1] [ref=f12e239]
+            - paragraph [ref=f12e240]: Internal notes Partners submit about customers after completed bookings. These notes are not customer-visible.
+          - generic "Page actions" [ref=f12e241]: Internal · Not customer-visible
+        - generic [ref=f12e243]:
+          - region [ref=f12e244]:
+            - generic [ref=f12e245]:
+              - generic [ref=f12e246]:
+                - heading "Partner note search" [level=2] [ref=f12e247]
+                - paragraph [ref=f12e248]: Search immutable internal notes by submitted date, state, customer, Partner, or booking.
+              - generic [ref=f12e249]: 2 notes
+            - generic "Partner note filters" [ref=f12e252]:
+              - generic "Submitted date" [ref=f12e253]:
+                - link "All dates" [ref=f12e254] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations
+                - link "Today" [ref=f12e255] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=today
+                - link "Previous day" [ref=f12e256] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=yesterday
+                - link "Last 7 days" [ref=f12e257] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=7d
+                - link "Last month" [ref=f12e258] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=30d
+                - link "Custom dates" [ref=f12e259] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?dateRange=custom
+              - generic "Review state" [ref=f12e260]:
+                - link "All" [ref=f12e261] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations
+                - link "Retained" [ref=f12e262] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?status=retained
+                - link "Needs review" [ref=f12e263] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?status=needs-review
+                - link "Restricted" [ref=f12e264] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?status=restricted
+              - generic "Submitted date sort" [ref=f12e265]:
+                - link "Most recently submitted" [ref=f12e266] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations
+                - link "Oldest submitted" [ref=f12e267] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?sort=oldest
+              - generic [ref=f12e268]:
+                - generic [ref=f12e269]:
+                  - generic [ref=f12e273]: Search Partner notes
+                  - searchbox "Search Partner notes" [ref=f12e274]
+                - generic [ref=f12e275] [cursor=pointer]:
+                  - generic [ref=f12e276]: Rows per page
+                  - combobox "Rows per page" [ref=f12e277]:
+                    - option "10" [selected]
+                    - option "25"
+                    - option "50"
+                - button "Apply" [ref=f12e278] [cursor=pointer]
+          - navigation "Partner note summary and state filters" [ref=f12e280]:
+            - link "Total 2" [ref=f12e281] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations
+              - generic [ref=f12e282]: Total
+              - strong [ref=f12e283]: "2"
+            - link "Needs review 0" [ref=f12e284] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations?status=needs-review
+              - generic [ref=f12e285]: Needs review
+              - strong [ref=f12e286]: "0"
+            - link "Restricted 0" [ref=f12e287] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations?status=restricted
+              - generic [ref=f12e288]: Restricted
+              - strong [ref=f12e289]: "0"
+            - link "Retained 2" [ref=f12e290] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations?status=retained
+              - generic [ref=f12e291]: Retained
+              - strong [ref=f12e292]: "2"
+          - region [ref=f12e293]:
+            - generic [ref=f12e294]:
+              - generic [ref=f12e295]:
+                - heading "Partner notes" [level=2] [ref=f12e296]
+                - paragraph [ref=f12e297]: The original Partner note is immutable. Review state and audit metadata are shown with each record.
+              - generic [ref=f12e298]: 2 notes
+            - generic [ref=f12e300]:
+              - region "Partner notes table" [ref=f12e301]:
+                - table [ref=f12e302]:
+                  - rowgroup [ref=f12e303]:
+                    - row [ref=f12e304]:
+                      - columnheader "Submitted" [ref=f12e305]
+                      - columnheader "Partner note" [ref=f12e306]
+                      - columnheader "Customer" [ref=f12e307]
+                      - columnheader "Author / booking" [ref=f12e308]
+                      - columnheader "Review state / actions" [ref=f12e309]
+                  - rowgroup [ref=f12e310]:
+                    - row [ref=f12e311]:
+                      - cell [ref=f12e312]:
+                        - time [ref=f12e313]: 16 Jul 2026, 23:41
+                      - cell [ref=f12e314]:
+                        - paragraph [ref=f12e315]: "HANDS customer detail smoke / refunded: customer communication and access instructions were verified."
+                        - group [ref=f12e316]:
+                          - generic "Full note and metadata" [ref=f12e317] [cursor=pointer]
+                      - cell [ref=f12e318]:
+                        - link "Smoke Referral Referred Customer" [ref=f12e319] [cursor=pointer]:
+                          - /url: /customers/smoke_referral_customer_referred_profile
+                      - cell "Partner 6078 cmrnqk7t Foot Massage" [ref=f12e320]:
+                        - generic [ref=f12e321]:
+                          - link "Partner 6078" [ref=f12e322] [cursor=pointer]:
+                            - /url: /partners/cmrnfl4x20030vyiwruloezrg
+                          - link "cmrnqk7t" [ref=f12e323] [cursor=pointer]:
+                            - /url: /bookings/cmrnqk7t3005cvyxkx9qvwacx
+                          - generic [ref=f12e324]: Foot Massage
+                      - cell "Retained Last reviewed Not reviewed · Not reviewed" [ref=f12e325]:
+                        - generic [ref=f12e326]:
+                          - generic [ref=f12e327]: Retained
+                          - generic [ref=f12e328]:
+                            - text: Last reviewed
+                            - generic [ref=f12e329]: Not reviewed
+                            - text: · Not reviewed
+                          - group [ref=f12e330]:
+                            - generic "Change review state" [ref=f12e331] [cursor=pointer]
+                    - row [ref=f12e332]:
+                      - cell [ref=f12e333]:
+                        - time [ref=f12e334]: 16 Jul 2026, 23:41
+                      - cell [ref=f12e335]:
+                        - paragraph [ref=f12e336]: "HANDS customer detail smoke / completed: customer communication and access instructions were verified."
+                        - group [ref=f12e337]:
+                          - generic "Full note and metadata" [ref=f12e338] [cursor=pointer]
+                      - cell [ref=f12e339]:
+                        - link "Smoke Referral Referred Customer" [ref=f12e340] [cursor=pointer]:
+                          - /url: /customers/smoke_referral_customer_referred_profile
+                      - cell "Partner 3079 cmrnqk6x Foot Massage" [ref=f12e341]:
+                        - generic [ref=f12e342]:
+                          - link "Partner 3079" [ref=f12e343] [cursor=pointer]:
+                            - /url: /partners/cmrnfl4xj0035vyiwzxlkly99
+                          - link "cmrnqk6x" [ref=f12e344] [cursor=pointer]:
+                            - /url: /bookings/cmrnqk6x0003fvyxky856i1ha
+                          - generic [ref=f12e345]: Foot Massage
+                      - cell "Retained Last reviewed Not reviewed · Not reviewed" [ref=f12e346]:
+                        - generic [ref=f12e347]:
+                          - generic [ref=f12e348]: Retained
+                          - generic [ref=f12e349]:
+                            - text: Last reviewed
+                            - generic [ref=f12e350]: Not reviewed
+                            - text: · Not reviewed
+                          - group [ref=f12e351]:
+                            - generic "Change review state" [ref=f12e352] [cursor=pointer]
+              - generic [ref=f12e353]: Showing 1 to 2 of 2 notes
+  - button "Open Next.js Dev Tools" [ref=f12e360] [cursor=pointer]

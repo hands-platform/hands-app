@@ -7,6 +7,7 @@ import {
   type InputHTMLAttributes,
   type MouseEventHandler,
   type ReactNode,
+  type Ref,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react';
@@ -23,27 +24,36 @@ type AdminFormSelectOption = {
 type AdminFormLabelVisibility = 'hidden' | 'visible';
 
 type AdminFormSelectProps = {
+  readonly ariaDescribedBy?: string;
+  readonly ariaInvalid?: boolean;
   readonly className?: string;
   readonly label: string;
   readonly labelVisibility?: AdminFormLabelVisibility;
   readonly name: string;
   readonly options: readonly AdminFormSelectOption[];
-} & Pick<SelectHTMLAttributes<HTMLSelectElement>, 'defaultValue' | 'disabled' | 'onChange' | 'required' | 'value'>;
+} & Pick<
+  SelectHTMLAttributes<HTMLSelectElement>,
+  'defaultValue' | 'disabled' | 'multiple' | 'onChange' | 'required' | 'size' | 'value'
+>;
 
 type AdminFormSearchProps = {
   readonly className?: string;
+  readonly inputRef?: Ref<HTMLInputElement>;
   readonly label: string;
   readonly labelVisibility?: AdminFormLabelVisibility;
   readonly name?: string;
 } & Pick<InputHTMLAttributes<HTMLInputElement>, 'autoFocus' | 'defaultValue' | 'onChange' | 'placeholder' | 'value'>;
 
 type AdminFormDateProps = {
+  readonly ariaDescribedBy?: string;
+  readonly ariaInvalid?: boolean;
   readonly className?: string;
   readonly label: string;
   readonly labelVisibility?: AdminFormLabelVisibility;
   readonly mode?: 'date' | 'month' | 'time';
   readonly name: string;
-} & Pick<InputHTMLAttributes<HTMLInputElement>, 'defaultValue' | 'disabled' | 'onChange' | 'required' | 'value'>;
+  readonly native?: boolean;
+} & Pick<InputHTMLAttributes<HTMLInputElement>, 'autoFocus' | 'defaultValue' | 'disabled' | 'onChange' | 'required' | 'value'>;
 
 type AdminFormDateTimeProps = {
   readonly className?: string;
@@ -61,12 +71,15 @@ type AdminFormDatePickerInputProps = {
 };
 
 type AdminFormInputProps = {
+  readonly ariaDescribedBy?: string;
+  readonly ariaInvalid?: boolean;
   readonly className?: string;
   readonly label: string;
   readonly labelVisibility?: AdminFormLabelVisibility;
   readonly name: string;
 } & Pick<
   InputHTMLAttributes<HTMLInputElement>,
+  | 'accept'
   | 'defaultValue'
   | 'autoComplete'
   | 'disabled'
@@ -83,6 +96,8 @@ type AdminFormInputProps = {
 >;
 
 type AdminFormTextareaProps = {
+  readonly ariaDescribedBy?: string;
+  readonly ariaInvalid?: boolean;
   readonly className?: string;
   readonly label: string;
   readonly labelVisibility?: AdminFormLabelVisibility;
@@ -117,7 +132,7 @@ type AdminFormCheckboxProps = {
   readonly name?: string;
 } & Pick<
   InputHTMLAttributes<HTMLInputElement>,
-  'checked' | 'defaultChecked' | 'disabled' | 'onChange' | 'value'
+  'checked' | 'defaultChecked' | 'disabled' | 'onChange' | 'required' | 'value'
 >;
 
 type AdminFormFileProps = {
@@ -125,7 +140,7 @@ type AdminFormFileProps = {
   readonly icon?: ReactNode;
   readonly label: string;
   readonly name?: string;
-} & Pick<InputHTMLAttributes<HTMLInputElement>, 'accept' | 'disabled' | 'onChange'>;
+} & Pick<InputHTMLAttributes<HTMLInputElement>, 'accept' | 'disabled' | 'onChange' | 'required'>;
 
 type AdminFormControlLinkProps = {
   readonly children: ReactNode;
@@ -244,26 +259,34 @@ export function AdminDrawerActionFooter({ children, className, ...divProps }: Ad
 }
 
 export function AdminFormSelect({
+  ariaDescribedBy,
+  ariaInvalid,
   className,
   defaultValue,
   disabled,
   label,
   labelVisibility = 'hidden',
+  multiple,
   name,
   onChange,
   options,
   required,
+  size,
   value,
 }: AdminFormSelectProps) {
   return (
     <label className={joinClassNames('admin-form-select', visibleLabelClass(labelVisibility), className)}>
       <span className={labelClassName(labelVisibility)}>{label}</span>
       <select
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
         defaultValue={defaultValue}
         disabled={disabled}
+        multiple={multiple}
         name={name}
         onChange={onChange}
         required={required}
+        size={size}
         value={value}
       >
         {options.map((option, index) => (
@@ -280,6 +303,7 @@ export function AdminFormSearch({
   autoFocus,
   className,
   defaultValue,
+  inputRef,
   label,
   labelVisibility = 'hidden',
   name,
@@ -294,6 +318,7 @@ export function AdminFormSearch({
       <input
         autoFocus={autoFocus}
         defaultValue={defaultValue}
+        ref={inputRef}
         name={name}
         onChange={onChange}
         placeholder={placeholder}
@@ -305,6 +330,9 @@ export function AdminFormSearch({
 }
 
 export function AdminFormDate({
+  ariaDescribedBy,
+  ariaInvalid,
+  autoFocus,
   className,
   defaultValue,
   disabled,
@@ -312,11 +340,37 @@ export function AdminFormDate({
   labelVisibility = 'hidden',
   mode = 'date',
   name,
+  native = false,
+  onChange,
   required,
   value,
 }: AdminFormDateProps) {
+  if (native) {
+    return (
+      <label className={joinClassNames('admin-form-input admin-form-control-labeled', className)}>
+        <span className={labelClassName(labelVisibility)}>{label}</span>
+        <input
+          aria-describedby={ariaDescribedBy}
+          aria-invalid={ariaInvalid}
+          autoFocus={autoFocus}
+          className="admin-form-date-input"
+          defaultValue={defaultValue}
+          disabled={disabled}
+          name={name}
+          onChange={onChange}
+          required={required}
+          type={mode}
+          value={value}
+        />
+      </label>
+    );
+  }
+
   return (
     <AdminFormDatePickerField
+      ariaDescribedBy={ariaDescribedBy}
+      ariaInvalid={ariaInvalid}
+      autoFocus={autoFocus}
       className={datePickerWrapperClassName(className)}
       defaultValue={defaultValue}
       disabled={disabled}
@@ -389,6 +443,9 @@ const preventDatePickerTextInputFocus: MouseEventHandler<HTMLInputElement> = (ev
 };
 
 export function AdminFormInput({
+  accept,
+  ariaDescribedBy,
+  ariaInvalid,
   autoComplete,
   className,
   defaultValue,
@@ -435,6 +492,9 @@ export function AdminFormInput({
     >
       <span className={labelClassName(labelVisibility)}>{label}</span>
       <input
+        accept={accept}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
         autoComplete={autoComplete}
         className={dateTimeNativeInputClass(type)}
         defaultValue={defaultValue}
@@ -473,6 +533,8 @@ export function AdminFormStaticValue({
 }
 
 export function AdminFormTextarea({
+  ariaDescribedBy,
+  ariaInvalid,
   className,
   defaultValue,
   disabled,
@@ -492,6 +554,8 @@ export function AdminFormTextarea({
     <label className={joinClassNames('admin-form-textarea', visibleLabelClass(labelVisibility), className)}>
       <span className={labelClassName(labelVisibility)}>{label}</span>
       <textarea
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
         className={textareaClassName}
         defaultValue={defaultValue}
         disabled={disabled}
@@ -517,6 +581,7 @@ export function AdminFormCheckbox({
   label,
   name,
   onChange,
+  required,
   value,
 }: AdminFormCheckboxProps) {
   return (
@@ -529,6 +594,7 @@ export function AdminFormCheckbox({
         disabled={disabled}
         name={name}
         onChange={onChange}
+        required={required}
         type="checkbox"
         value={value}
       />
@@ -550,6 +616,7 @@ export function AdminFormFile({
   label,
   name,
   onChange,
+  required,
 }: AdminFormFileProps) {
   return (
     <label className="admin-form-file admin-form-control-labeled">
@@ -558,7 +625,7 @@ export function AdminFormFile({
         {icon}
         <span>{displayValue}</span>
       </span>
-      <input accept={accept} disabled={disabled} name={name} onChange={onChange} type="file" />
+      <input accept={accept} disabled={disabled} name={name} onChange={onChange} required={required} type="file" />
     </label>
   );
 }

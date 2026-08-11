@@ -48,7 +48,7 @@ describe('BookingMonitorMatchingEscalationSection', () => {
       dispatchPartnerShortcuts: [
         {
           detail: 'Use when preferred Partners must answer inside the response window.',
-          href: '/partners?review=direct-ready',
+          href: '/partners?review=ready-now',
           title: 'Direct-ready Partners',
           tone: 'warn',
           value: '1',
@@ -125,7 +125,7 @@ describe('BookingMonitorMatchingEscalationSection', () => {
       expect.arrayContaining([
         '/operations-policy',
         '/bookings?view=matching',
-        '/partners?review=direct-ready',
+        '/partners?review=ready-now',
         '/bookings/booking_123456789',
       ]),
     );

@@ -41,15 +41,15 @@ void main() {
     );
     expect(
       providerPublicMediaPurposeLabel('PROFILE_IMAGE'),
-      'Profile image',
+      'Ảnh hồ sơ',
     );
     expect(
       providerPublicMediaPurposeLabel('PROVIDER_GALLERY'),
-      'Work photo',
+      'Ảnh công việc',
     );
     expect(
       providerPublicMediaReviewLabel('REJECTED'),
-      contains('Needs changes'),
+      contains('Cần chỉnh sửa'),
     );
   });
 }

@@ -5,13 +5,13 @@ export function paymentCaptureUpdateData() {
 }
 
 type PaymentRefundUpdateInput = {
-  actorId?: string;
   amount: number;
-  approvalAdminId?: string;
   bookingId: string;
   currency?: string;
-  occurredAt?: Date;
   reason?: string;
+  requestedAt?: Date;
+  requestedByAdminId?: string;
+  source?: string;
 };
 
 export function paymentRefundRequestCreateData(input: PaymentRefundUpdateInput) {
@@ -29,9 +29,9 @@ export function paymentRefundRequestCreateData(input: PaymentRefundUpdateInput) 
 
 function paymentRefundMetadata(input: PaymentRefundUpdateInput) {
   const metadata = {
-    ...(input.actorId ? { actorId: input.actorId } : {}),
-    ...(input.approvalAdminId ? { approvalAdminId: input.approvalAdminId } : {}),
-    ...(input.occurredAt ? { occurredAt: input.occurredAt.toISOString() } : {}),
+    ...(input.requestedAt ? { requestedAt: input.requestedAt.toISOString() } : {}),
+    ...(input.requestedByAdminId ? { requestedByAdminId: input.requestedByAdminId } : {}),
+    ...(input.source ? { source: input.source } : {}),
   };
 
   return Object.keys(metadata).length > 0 ? metadata : null;

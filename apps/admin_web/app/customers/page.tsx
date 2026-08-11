@@ -1,90 +1,168 @@
-import { CalendarClock, Star } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
+import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { adminGet } from '../../lib/admin-api';
+import { AdminErrorState } from '../../components/admin-surface';
+import { DateTimeText } from '../../components/date-time-text';
+import { adminGetResult } from '../../lib/admin-api';
 import type { AdminCustomerDirectoryRow, AdminCustomerSummary } from '../../lib/admin-api';
+import { readSearchParam } from '../../lib/date-range';
+import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
+import { hasAdminOperatorCategory } from '../../lib/admin-operator-access-model';
 import {
   buildCustomerActiveFilters,
   buildCustomerDataHrefs,
-  buildCustomerExportHref,
   buildCustomerFilters,
+  buildCustomerListHref,
   customerSortLabel,
+  customerViewTotal,
 } from './customer-filters';
 import { CustomerFilterBoard } from './customer-filter-board';
-import {
-  buildCustomerRow,
-  buildCustomerSummary,
-  buildServerCustomerPagination,
-} from './customer-list-model';
-import {
-  buildCustomerManagementMetrics,
-  buildCustomerManagementTableRows,
-} from './customer-management-view-model';
+import { buildCustomerRow, buildServerCustomerPagination } from './customer-list-model';
+import { buildCustomerManagementTableRows } from './customer-management-view-model';
 import { CustomersTableSection } from './customers-table-section';
 
 type CustomersPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+export const metadata: Metadata = { title: 'Customers | HANDS Admin' };
+
 export default async function CustomersPage({ searchParams }: { searchParams?: CustomersPageSearchParams }) {
-  const filters = buildCustomerFilters(searchParams ? await searchParams : {});
-  const dataHrefs = buildCustomerDataHrefs(filters);
-  const [customers, serverSummary] = await Promise.all([
-    adminGet<AdminCustomerDirectoryRow[]>(dataHrefs.listHref, []),
-    adminGet<AdminCustomerSummary>(dataHrefs.summaryHref, { totalCount: 0 }),
+  const rawSearchParams = searchParams ? await searchParams : {};
+  const filters = buildCustomerFilters(rawSearchParams);
+  const currentHref = buildCustomerListHref(filters, { page: filters.page });
+
+  if (hasInvalidCustomDateRange(rawSearchParams, filters)) {
+    redirect(buildCustomerListHref(filters));
+  }
+
+  const summaryHref = buildCustomerDataHrefs(filters).summaryHref;
+  const [summaryResult, operatorAccess] = await Promise.all([
+    adminGetResult<AdminCustomerSummary>(summaryHref, { totalCount: 0 }),
+    getCurrentAdminOperatorAccess(),
   ]);
+  if (!summaryResult.ok) {
+    return <CustomerLoadError href={currentHref} />;
+  }
+
+  const serverSummary = summaryResult.data;
+  const selectedTotalCount = customerViewTotal(
+    filters.view,
+    serverSummary.viewCounts,
+    serverSummary.totalCount,
+  );
+  const lastPage = Math.max(1, Math.ceil(selectedTotalCount / filters.pageSize));
+  if (filters.page > lastPage) {
+    redirect(buildCustomerListHref(filters, { page: lastPage }));
+  }
+
+  const listResult = await adminGetResult<AdminCustomerDirectoryRow[]>(
+    buildCustomerDataHrefs(filters).listHref,
+    [],
+  );
+  if (!listResult.ok) {
+    return (
+      <AdminPageTemplate
+        actions={<CustomerRefreshAction generatedAt={serverSummary.generatedAt} href={currentHref} />}
+        description="Find customer accounts and resolve payment, refund, or reported-review issues."
+        title="Customers"
+      >
+        <CustomerFilterBoard
+          activeFilters={buildCustomerActiveFilters(filters)}
+          filters={filters}
+          viewCounts={serverSummary.viewCounts ?? emptyCustomerViewCounts(serverSummary)}
+        />
+        <AdminErrorState
+          action={<AdminFormControlLink href={currentHref}>Refresh</AdminFormControlLink>}
+          message="Customer data could not be loaded. Refresh the page and try again."
+          title="Unable to load customers"
+        />
+      </AdminPageTemplate>
+    );
+  }
+
+  const customers = listResult.data;
   const rows = customers.map(buildCustomerRow);
-  const rowSummary = buildCustomerSummary(rows);
-  const allSummary = {
-    ...rowSummary,
-    total: serverSummary.totalCount,
-    genderBreakdown: serverSummary.genderBreakdown ?? rowSummary.genderBreakdown,
-    todayJoined: serverSummary.todayJoined ?? rowSummary.todayJoined,
-    todayJoinedGenderBreakdown: serverSummary.todayJoinedGenderBreakdown ?? rowSummary.todayJoinedGenderBreakdown,
-    todaySeen: serverSummary.todaySeen ?? rowSummary.todaySeen,
-    todaySeenGenderBreakdown: serverSummary.todaySeenGenderBreakdown ?? rowSummary.todaySeenGenderBreakdown,
-    monthSeen: serverSummary.monthSeen ?? rowSummary.monthSeen,
-    monthSeenGenderBreakdown: serverSummary.monthSeenGenderBreakdown ?? rowSummary.monthSeenGenderBreakdown,
-  };
   const activeFilters = buildCustomerActiveFilters(filters);
-  const metrics = buildCustomerManagementMetrics(allSummary);
-  const pagination = buildServerCustomerPagination(rows, filters, serverSummary.totalCount);
-  const tableRows = buildCustomerManagementTableRows(pagination.rows);
+  const pagination = buildServerCustomerPagination(rows, filters, selectedTotalCount);
+  const canViewCustomerDetail = hasAdminOperatorCategory(operatorAccess, 'CUSTOMERS_DETAIL');
+  const tableRows = buildCustomerManagementTableRows(pagination.rows, currentHref, canViewCustomerDetail);
   const tablePagination = { ...pagination, rows: tableRows };
-  const customerListCsvHref = buildCustomerExportHref(filters);
 
   return (
     <AdminPageTemplate
-      title="Customer Management"
-      description="Customer list aligned to the Vuexy management table using live customer profile, reservation, session, and wallet data."
-      metrics={metrics}
-      actions={
-        <>
-          <AdminFormControlLink className="button-secondary" href="/bookings">
-            <CalendarClock aria-hidden="true" size={16} />
-            Open bookings
-          </AdminFormControlLink>
-          <AdminFormControlLink className="button-secondary" href="/payments">
-            Open payments
-          </AdminFormControlLink>
-          <AdminFormControlLink className="button-secondary" href="/reviews">
-            <Star aria-hidden="true" size={16} />
-            Open reviews
-          </AdminFormControlLink>
-        </>
-      }
+      title="Customers"
+      description="Find customer accounts and resolve payment, refund, or reported-review issues."
+      actions={<CustomerRefreshAction generatedAt={serverSummary.generatedAt} href={currentHref} />}
     >
       <CustomerFilterBoard
         activeFilters={activeFilters}
-        csvHref={customerListCsvHref}
-        filteredCount={rows.length}
         filters={filters}
-        totalCount={serverSummary.totalCount}
+        viewCounts={serverSummary.viewCounts ?? emptyCustomerViewCounts(serverSummary)}
       />
 
       <CustomersTableSection
+        allCustomerCount={serverSummary.viewCounts?.all ?? serverSummary.totalCount}
         filters={filters}
         pagination={tablePagination}
         sortLabel={customerSortLabel(filters.sort)}
       />
     </AdminPageTemplate>
   );
+}
+
+function CustomerLoadError({ href }: { readonly href: string }) {
+  return (
+    <AdminPageTemplate
+      description="Find customer accounts and resolve payment, refund, or reported-review issues."
+      title="Customers"
+    >
+      <AdminErrorState
+        action={<AdminFormControlLink href={href}>Refresh</AdminFormControlLink>}
+        message="Customer data could not be loaded. Refresh the page and try again."
+        title="Unable to load customers"
+      />
+    </AdminPageTemplate>
+  );
+}
+
+function CustomerRefreshAction({
+  generatedAt,
+  href,
+}: {
+  readonly generatedAt?: string;
+  readonly href: string;
+}) {
+  return (
+    <>
+      <span className="admin-page-refresh-status">
+        Updated <DateTimeText fallback="time unavailable" value={generatedAt} />
+      </span>
+      <AdminFormControlLink className="button-secondary" href={href}>
+        <RefreshCw aria-hidden="true" size={16} /> Refresh
+      </AdminFormControlLink>
+    </>
+  );
+}
+
+function emptyCustomerViewCounts(summary: AdminCustomerSummary) {
+  return {
+    activeToday: summary.todaySeen ?? 0,
+    all: summary.totalCount,
+    needsAction: summary.needsActionCount ?? 0,
+    newToday: summary.todayJoined ?? 0,
+  };
+}
+
+function hasInvalidCustomDateRange(
+  params: Record<string, string | string[] | undefined>,
+  filters: ReturnType<typeof buildCustomerFilters>,
+) {
+  const requestedCustomRange = [
+    params.dateRange,
+    params.joinedRange,
+    params.lastBookingRange,
+    params.lastLoginRange,
+  ].some((value) => readSearchParam(value) === 'custom');
+  return requestedCustomRange && filters.dateRange !== 'custom';
 }

@@ -19,24 +19,41 @@ export function bookingClosureListSignal(
   options: { readonly formatDate: (value: string) => string },
 ): BookingClosureListSignal | null {
   if (booking.closedAt) {
-    const actor = booking.closedByRole ? booking.closedByRole.toLowerCase() : 'actor missing';
-    const reason = booking.closedReason ? humanizeClosureReason(booking.closedReason) : 'reason not saved';
-    const note = booking.closedNote ? ` / ${booking.closedNote}` : '';
+    const actor = bookingClosureActorLabel(booking.closedByRole);
+    const reason = booking.closedReason ? humanizeClosureReason(booking.closedReason) : 'Closure reason missing';
+    const note = booking.closedNote ? ` · ${booking.closedNote}` : '';
 
     return {
-      label: `Closed ${options.formatDate(booking.closedAt)}`,
-      detail: `${actor} closure / ${reason}${note}`,
+      label: actor,
+      detail: `${reason}${note} · ${options.formatDate(booking.closedAt)}`,
       tone: booking.status === 'NO_SHOW' ? 'pill-danger' : 'pill-info',
     };
   }
 
   if (terminalBookingStatuses.has(booking.status)) {
     return {
-      label: 'Terminal',
-      detail: 'Terminal booking has no explicit closure actor/reason saved yet.',
+      label: 'Closure metadata missing',
+      detail: 'Closure actor and reason are not recorded.',
       tone: booking.status === 'NO_SHOW' ? 'pill-danger' : 'pill-warn',
     };
   }
 
   return null;
+}
+
+function bookingClosureActorLabel(role?: string | null) {
+  switch (role?.trim().toLowerCase()) {
+    case 'provider':
+    case 'partner':
+      return 'Closed by Partner';
+    case 'customer':
+      return 'Closed by Customer';
+    case 'admin':
+    case 'operator':
+      return 'Closed by Admin';
+    case 'system':
+      return 'Closed by System';
+    default:
+      return 'Closure actor missing';
+  }
 }

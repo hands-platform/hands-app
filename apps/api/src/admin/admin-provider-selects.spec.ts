@@ -68,7 +68,7 @@ describe('admin provider selects', () => {
 
   it('keeps provider user media selections bounded by view depth', () => {
     expect(adminProviderDetailUserSelect.fileAssets).toMatchObject({
-      take: 8,
+      take: 12,
       select: adminProviderPublicMediaSelect,
     });
     expect(adminProviderOverviewUserSelect.fileAssets).toMatchObject({

@@ -11,8 +11,7 @@ export function ReferralStoreSetupStatus({
   readonly canViewDeveloperSetup?: boolean;
 }) {
   const storeSetup = referralStoreSetupState(audience);
-  const missingEnvKeys = referralStoreMissingEnvKeys(audience, storeSetup);
-  const hasMissingSetup = missingEnvKeys.length > 0;
+  const hasMissingSetup = !storeSetup.publicBase || !storeSetup.android || !storeSetup.ios;
 
   return (
     <>
@@ -29,36 +28,14 @@ export function ReferralStoreSetupStatus({
       </AdminFilterChipGroup>
       {hasMissingSetup ? (
         <>
-          <p className="muted admin-mt-8">Missing setup: {missingEnvKeys.join(', ')}</p>
+          <p className="muted admin-mt-8">One or more required public or store destinations are not configured.</p>
           {canViewDeveloperSetup ? (
             <AdminTextLink className="admin-mt-8" href="/setup#referrals">
-              Configure store URLs
+              Open Developer setup
             </AdminTextLink>
           ) : null}
         </>
       ) : null}
     </>
   );
-}
-
-function referralStoreMissingEnvKeys(
-  audience: ReferralAudienceSlug,
-  storeSetup: ReturnType<typeof referralStoreSetupState>,
-) {
-  const audienceEnvName = audience === 'partner' ? 'PARTNER' : 'CUSTOMER';
-  const missingEnvKeys: string[] = [];
-
-  if (!storeSetup.publicBase) {
-    missingEnvKeys.push('REFERRAL_PUBLIC_BASE_URL');
-  }
-
-  if (!storeSetup.android) {
-    missingEnvKeys.push(`REFERRAL_${audienceEnvName}_ANDROID_STORE_URL`);
-  }
-
-  if (!storeSetup.ios) {
-    missingEnvKeys.push(`REFERRAL_${audienceEnvName}_IOS_STORE_URL`);
-  }
-
-  return missingEnvKeys;
 }

@@ -11,6 +11,320 @@ import {
 const KOREAN_VIETNAM_COUNTRY = '\uBCB0\uD2B8\uB0A8';
 
 describe('BookingMonitorListSection', () => {
+  it('renders the live operations workspace as one compact server-paginated table', () => {
+    const markup = renderToStaticMarkup(
+      <BookingMonitorListSection
+        emptyMessage="No bookings match filters."
+        operationsWorkspace={{
+          description: 'Stalled live bookings that need review.',
+          detailPagePath: '/bookings',
+          detailView: 'attention',
+          title: 'Needs action',
+          tone: 'warning',
+        }}
+        rows={[
+          bookingRowFixture({
+            customerName: 'Live Customer',
+            id: 'booking-live-1',
+            openedDateLabel: '18 Jul 2026, 12:00',
+            status: 'OPEN_MATCHING',
+            statusChangedAt: '2026-07-18T05:00:00.000Z',
+          }),
+        ]}
+        returnHref="/bookings?view=attention&sort=oldest&page=2"
+        serverPagination={{
+          hrefForPage: (page) => `/bookings?view=attention&page=${page}`,
+          page: 2,
+          pageSize: 20,
+          totalPages: 3,
+          totalRows: 43,
+        }}
+      />,
+    );
+    const rendered = normalizedText(markup);
+
+    expect(rendered).toContain('Needs action');
+    expect(rendered).toContain('43 bookings');
+    expect(rendered).toContain('Showing 21 to 21 of 43 entries');
+    expect(rendered).toContain('Next action');
+    expect(rendered).toContain('Last activity');
+    expect(rendered).toContain('Matching opened 12m ago');
+    expect(markup).toContain('vuexy-booking-operations-table');
+    expect(markup).toContain('>Booking · Customer</th>');
+    expect(markup).toContain('>Partner · Matching</th>');
+    expect(markup).toContain('>Service · Area</th>');
+    expect(markup.indexOf('>Status</th>')).toBeLessThan(markup.indexOf('>Last activity</th>'));
+    expect(markup.indexOf('>Last activity</th>')).toBeLessThan(markup.indexOf('>Next action</th>'));
+    expect(markup).toContain('href="/bookings?view=attention&amp;page=3"');
+    expect(markup).toContain(
+      'href="/bookings/booking-live-1?returnTo=%2Fbookings%3Fview%3Dattention%26sort%3Doldest%26page%3D2#booking-command-decision-strip"',
+    );
+    expect(rendered).not.toContain('Live / Today Bookings');
+    expect(rendered).not.toContain('Live In Progress');
+  });
+
+  it('renders booking records as a five-column historical lookup table', () => {
+    const fixture = bookingRowFixture({
+      closedAt: '2026-07-18T05:20:00.000Z',
+      closedByRole: 'PROVIDER',
+      closedReason: 'provider_cancelled',
+      closureState: {
+        detail: 'Provider cancelled · 18 Jul 2026, 12:20',
+        label: 'Closed by Partner',
+        tone: 'pill-info',
+      },
+      customerName: 'Records Customer',
+      id: 'booking-record-1',
+      openedDateLabel: '18 Jul 2026, 12:00',
+      selectedProviderId: 'partner-record-1',
+      selectedProviderName: 'Records Partner',
+      status: 'CANCELLED',
+      statusChangedAt: '2026-07-18T05:20:00.000Z',
+    });
+    const row: BookingMonitorListRow = {
+      ...fixture,
+      booking: {
+        ...fixture.booking,
+        customerProfile: {
+          ...fixture.booking.customerProfile,
+          user: {
+            ...fixture.booking.customerProfile?.user,
+            phone: '+84******00',
+          },
+        },
+        payment: { amount: 300_000, currency: 'VND', method: 'CARD', status: 'RELEASED' },
+      } as AdminBooking,
+      serviceOptionLabel: 'Aroma massage / 60 min',
+      servicePayoutLabel: 'Payout 240.000 VND / fee 60.000 VND',
+      servicePriceLabel: 'Customer price 300.000 VND / Minimum 250.000 VND',
+    };
+
+    const markup = renderToStaticMarkup(
+      <BookingMonitorListSection
+        emptyMessage="No records."
+        operationsWorkspace={{
+          description: 'Historical booking outcomes in the selected period.',
+          detailPagePath: '/bookings',
+          detailView: 'all',
+          title: 'Booking records',
+          tone: 'neutral',
+        }}
+        returnHref="/bookings?view=all&dateRange=30d"
+        rows={[row]}
+      />,
+    );
+    const rendered = normalizedText(markup);
+
+    expect(markup.match(/<th(?:\s|>)/g)).toHaveLength(5);
+    expect(markup).toContain('vuexy-booking-records-table');
+    expect(rendered).toContain('Status · Closed');
+    expect(rendered).toContain('Partner · Service');
+    expect(rendered).toContain('Area · Payment');
+    expect(rendered).toContain('Follow-up');
+    expect(rendered).toContain('Closed by Partner');
+    expect(rendered).toContain('Partner minimum 250.000 VND');
+    expect(rendered).toContain('Partner payout 240.000 VND');
+    expect(rendered).toContain('+84******00');
+    expect(rendered).toContain('No follow-up');
+    expect(rendered).not.toContain('Last activity');
+    expect(rendered).not.toContain('Provider cancelled · 18 Jul 2026, 12:20');
+  });
+
+  it('renders closeout evidence and one accessible queue action without matching noise', () => {
+    const fixture = bookingRowFixture({
+      customerName: 'Closeout Customer',
+      id: 'booking-closeout-1',
+      openedDateLabel: '5 Aug 2026, 18:00',
+      selectedProviderId: 'partner-closeout-1',
+      selectedProviderName: 'Closeout Partner',
+      status: 'COMPLETED',
+      statusChangedAt: '5 Aug 2026, 18:18',
+    });
+    const row: BookingMonitorListRow = {
+      ...fixture,
+      booking: {
+        ...fixture.booking,
+        earning: {
+          currency: 'VND',
+          netAmount: 140_000,
+          platformFeeLogs: [],
+          status: 'PENDING',
+          taxLogs: [],
+          walletLedgerEntries: [],
+        },
+        payment: {
+          amount: 200_000,
+          currency: 'VND',
+          method: 'CARD',
+          providerRef: null,
+          refunds: [],
+          status: 'CAPTURED',
+        },
+      } as unknown as AdminBooking,
+      issueChips: [
+        { label: 'Platform fee missing', tone: 'pill-warn' },
+        { label: 'Tax missing', tone: 'pill-warn' },
+      ],
+      nextActionHelper: 'Open booking finance evidence and verify the missing platform fee record.',
+      nextActionLabel: 'Review platform fee record',
+      terminalWaitingLabel: 'waiting 4h',
+    };
+    const markup = renderToStaticMarkup(
+      <BookingMonitorListSection
+        emptyMessage="No records."
+        operationsWorkspace={{
+          description: 'Completed services with one or more missing closeout records.',
+          detailPagePath: '/bookings/completed',
+          detailView: 'closeout',
+          title: 'Closeout ops',
+          tone: 'warning',
+        }}
+        returnHref="/bookings/completed?view=closeout"
+        rows={[row]}
+      />,
+    );
+    const rendered = normalizedText(markup);
+
+    for (const header of [
+      'Priority · Issue',
+      'Booking · Customer',
+      'Completed service',
+      'Payment',
+      'Partner · Closeout',
+      'Next action',
+    ]) {
+      expect(rendered).toContain(header);
+    }
+    expect(rendered).toContain('waiting 4h');
+    expect(rendered).toContain('Platform fee missing');
+    expect(rendered).not.toContain('Gateway ref missing');
+    expect(rendered).toContain('Closeout Partner');
+    expect(rendered).toContain('Fee missing');
+    expect(rendered).toContain('Tax missing');
+    expect(rendered).toContain('Wallet missing');
+    expect(rendered).toContain('Review platform fee record');
+    expect(markup).toContain('booking-closeout-operations-table');
+    expect(markup).toContain(
+      'href="/bookings/booking-closeout-1?returnTo=%2Fbookings%2Fcompleted%3Fview%3Dcloseout#booking-outcome-review"',
+    );
+    expect(rendered).not.toContain('participant');
+    expect(markup).not.toContain('admin-avatar-status-dot');
+  });
+
+  it('renders cash commission direction without a gateway issue or duplicate price prefix', () => {
+    const fixture = bookingRowFixture({
+      customerName: 'Cash Customer',
+      id: 'booking-cash-1',
+      openedDateLabel: '7 Aug 2026, 10:00',
+      selectedProviderId: 'partner-cash-1',
+      selectedProviderName: 'Cash Partner',
+      status: 'COMPLETED',
+      statusChangedAt: '2026-08-07T03:00:00.000Z',
+    });
+    const row: BookingMonitorListRow = {
+      ...fixture,
+      booking: {
+        ...fixture.booking,
+        earning: {
+          currency: 'VND',
+          netAmount: -80_000,
+          platformFeeLogs: [{}],
+          status: 'PENDING',
+          taxLogs: [{}],
+          walletLedgerEntries: [{}],
+        },
+        payment: { amount: 400_000, currency: 'VND', method: 'CASH', status: 'CAPTURED' },
+      } as unknown as AdminBooking,
+      cashDebtAmountLabel: '80.000 VND',
+      cashDebtNeedsOps: true,
+      issueChips: [{ label: 'Cash commission due', tone: 'pill-danger' }],
+      nextActionHelper: 'Open booking finance evidence and reconcile the commission owed to HANDS.',
+      nextActionLabel: 'Settle cash commission',
+      servicePriceLabel: 'Customer price 400.000 VND / Minimum 300.000 VND',
+    };
+    const markup = renderToStaticMarkup(
+      <BookingMonitorListSection
+        emptyMessage="No records."
+        operationsWorkspace={{
+          description: 'Includes payment exceptions.',
+          detailPagePath: '/bookings/completed',
+          detailView: 'payment',
+          title: 'All payment exceptions',
+          tone: 'warning',
+        }}
+        rows={[row]}
+      />,
+    );
+    const rendered = normalizedText(markup);
+
+    expect(rendered).toContain('Cash commission due');
+    expect(rendered).toContain('Partner owes HANDS 80.000 VND');
+    expect(rendered).toContain('Settle cash commission');
+    expect(rendered).not.toContain('Gateway ref missing');
+    expect(rendered.match(/Customer price/g)).toHaveLength(1);
+    expect(rendered).not.toContain('Minimum 300.000 VND');
+  });
+
+  it('keeps saved references compact and expired history neutral', () => {
+    const fixture = bookingRowFixture({
+      customerName: 'History Customer',
+      id: 'booking-expired-1',
+      openedDateLabel: '7 Aug 2026, 10:00',
+      status: 'EXPIRED',
+      statusChangedAt: '2026-08-07T03:00:00.000Z',
+    });
+    const row: BookingMonitorListRow = {
+      ...fixture,
+      booking: {
+        ...fixture.booking,
+        payment: {
+          amount: 200_000,
+          currency: 'VND',
+          method: 'CARD',
+          providerRef: 'gateway-reference-secret',
+          status: 'RELEASED',
+        },
+      } as unknown as AdminBooking,
+      issueChips: [{ label: 'Expired record', tone: 'pill-neutral' }],
+      nextActionHelper: 'Review retained terminal evidence.',
+      nextActionLabel: 'Open expired record',
+    };
+    const markup = renderToStaticMarkup(
+      <BookingMonitorListSection
+        emptyMessage="No records."
+        operationsWorkspace={{
+          description: 'Expired booking records closed in the selected period.',
+          detailPagePath: '/bookings/completed',
+          detailView: 'expired',
+          title: 'Expired records',
+          tone: 'neutral',
+        }}
+        rows={[row]}
+      />,
+    );
+    const rendered = normalizedText(markup);
+
+    expect(rendered).toContain('Reference saved');
+    expect(markup).not.toContain('gateway-reference-secret');
+    expect(rendered).toContain('Expired record');
+    expect(rendered).toContain('Open expired record');
+    expect(markup).toContain('pill pill-neutral">Record</span>');
+    expect(markup).not.toContain('pill pill-warn">Action</span>');
+  });
+
+  it('keeps the closeout table within its container at desktop widths', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.booking-monitor .table.booking-closeout-operations-table');
+    expect(css).toContain('.booking-monitor .booking-closeout-operations-table .vuexy-booking-next-action-cell');
+    expect(css).toContain('.booking-completed-filter-panel > .admin-filter-panel-body');
+    expect(css).toContain('.booking-completed-filter-panel .admin-queue-age-sort-controls');
+    expect(css).toContain('.admin-page-header:has(+ .booking-completed-monitor)');
+    expect(css).toContain('.booking-custom-date-error-row');
+    expect(css).toContain('min-height: 56px;');
+    expect(css).toContain('min-width: 0;');
+  });
+
   it('uses shared Vuexy badge atoms instead of raw booking monitor pill spans', () => {
     const source = readFileSync('app/bookings/booking-monitor-list-section.tsx', 'utf8');
 
@@ -24,7 +338,9 @@ describe('BookingMonitorListSection', () => {
     expect(source).not.toContain('<span className="pill pill-neutral">{senderRole}</span>');
     expect(source).not.toContain('<span className={`pill ${closureState.tone}`}>{closureState.label}</span>');
     expect(source).not.toContain('<span className={`pill ${cancellationReviewSignal.tone}`}>');
-    expect(source).not.toContain('<span className={`pill ${reason.tone}`} key={reason.label} title={reason.title}>');
+    expect(source).not.toContain(
+      '<span className={`pill ${reason.tone}`} key={reason.label} title={reason.title}>',
+    );
     expect(source).not.toContain('<span className="pill pill-warn">Address missing</span>');
   });
 
@@ -34,9 +350,13 @@ describe('BookingMonitorListSection', () => {
     expect(source).toContain('AdminLoadingState');
     expect(source).toContain('AdminErrorState');
     expect(source).toContain('AdminEmptyState');
-    expect(source).not.toContain('<div className="booking-chat-empty">Loading retained chat messages...</div>');
+    expect(source).not.toContain(
+      '<div className="booking-chat-empty">Loading retained chat messages...</div>',
+    );
     expect(source).not.toContain('<div className="booking-chat-empty">{chatState.error}</div>');
-    expect(source).not.toContain('<div className="booking-chat-empty">No retained chat messages for this booking.</div>');
+    expect(source).not.toContain(
+      '<div className="booking-chat-empty">No retained chat messages for this booking.</div>',
+    );
   });
 
   it('uses the shared DateTimeText atom for retained chat message timestamps', () => {
@@ -97,7 +417,7 @@ describe('BookingMonitorListSection', () => {
         user: {
           appSessions: [{ deviceLanguage: 'vi-VN' }],
           fullName: 'Customer A',
-          phone: '+84900000000',
+          phone: '+84*****0000',
         },
       },
       earning: {
@@ -184,7 +504,7 @@ describe('BookingMonitorListSection', () => {
         },
         addressText: null,
       },
-      serviceAddressText: null,
+      serviceAddressText: 'Cầu Giấy, Hà Nội',
       status: 'OPEN_MATCHING',
       statusChangedAt: '2026-06-12T03:15:00.000Z',
       statusChangedLabel: 'Matching opened at',
@@ -264,6 +584,7 @@ describe('BookingMonitorListSection', () => {
           status: 'ACCEPTED',
         },
       ],
+      nextActionHelper: 'Payment requires review.',
       nextActionLabel: 'Confirm payment state.',
       openedDateLabel: '12 Jun 2026, 10:00',
       opsSignal: <span className="signal signal-warn">Payment pending</span>,
@@ -274,7 +595,6 @@ describe('BookingMonitorListSection', () => {
         status: 'ready',
         tone: 'pill-success',
       },
-      recencyLabel: 'Updated 2m ago',
       selectedFinalPartnerPillLabel: 'Partner B',
       selection: {
         label: 'Marketplace Partner selected',
@@ -291,6 +611,12 @@ describe('BookingMonitorListSection', () => {
         key: 'marketplace',
         label: 'Stage 2 marketplace',
         tone: 'info',
+      },
+      statusEvent: {
+        clockLabel: '10:15',
+        dateLabel: '12 Jun 2026, 10:15',
+        label: 'Matching opened',
+        relativeLabel: 'Matching opened 2m ago',
       },
     };
 
@@ -323,6 +649,8 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('No resolved post-match cancellation decisions in this result set.');
     expect(rendered).toContain('Foot Massage');
     expect(rendered).toContain('Customer A');
+    expect(rendered).toContain('+84*****0000');
+    expect(rendered).not.toContain('+84900000000');
     expect(rendered).toContain('Partner A');
     expect(rendered).toContain('Vietnam');
     expect(rendered).not.toContain('vi-VN');
@@ -330,7 +658,8 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Service type');
     expect(rendered).toContain('Service address');
     expect(rendered).not.toContain('Booking pin');
-    expect(rendered).toContain('Matching opened at');
+    expect(rendered).toContain('Matching opened');
+    expect(rendered).not.toContain('Matching opened at');
     expect(rendered).toContain('State changed');
     expect(rendered).not.toContain('Detail');
     expect(rendered).toContain('+84911111111');
@@ -356,14 +685,11 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('vuexy-booking-service-cell');
     expect(markup).toContain('aria-label="Service type: Foot Massage"');
     expect(markup).toContain('vuexy-booking-address-cell');
-    expect(markup).toContain(
-      `title="Đ. Xuân Thủy/241 P. Dịch Vọng Hậu, Cầu Giấy, Hà Nội 10000 ${KOREAN_VIETNAM_COUNTRY}"`,
-    );
-    expect(markup).toContain(
-      `aria-label="Service address: Đ. Xuân Thủy/241 P. Dịch Vọng Hậu, Cầu Giấy, Hà Nội 10000 ${KOREAN_VIETNAM_COUNTRY}"`,
-    );
+    expect(markup).toContain('title="Cầu Giấy, Hà Nội"');
+    expect(markup).toContain('aria-label="Service address: Cầu Giấy, Hà Nội"');
+    expect(markup).not.toContain('Đ. Xuân Thủy/241 P. Dịch Vọng Hậu');
     expect(markup).toContain('vuexy-booking-state-cell');
-    expect(markup).toContain('aria-label="State changed: Matching opened at"');
+    expect(markup).toContain('aria-label="State changed: Matching opened"');
     expect(markup).toContain('vuexy-booking-avatar-group');
     expect(markup).toContain('aria-label="Partner C (ACCEPTED)"');
     expect(markup).toContain('admin-person-avatar-shell');
@@ -383,6 +709,22 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Closeout Records');
     expect(rendered).toContain('Cancellation Review / Needs Action');
     expect(rendered).toContain('Cancellation Records / Resolved');
+  });
+
+  it('renders a retryable alert instead of the empty state when the booking list fails', () => {
+    const markup = renderToStaticMarkup(
+      <BookingMonitorListSection
+        emptyMessage="No bookings match filters."
+        loadFailed
+        retryHref="/bookings?view=needs-action"
+        rows={[]}
+      />,
+    );
+
+    expect(markup).toContain('role="alert"');
+    expect(markup).toContain('Booking records unavailable');
+    expect(markup).toContain('/bookings?view=needs-action');
+    expect(markup).not.toContain('No bookings match filters.');
   });
 
   it('limits visible booking table groups for route-specific workspaces', () => {
@@ -577,15 +919,13 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('vuexy-booking-closure-pills');
     expect(markup).toContain('vuexy-booking-state-cell');
     expect(markup).not.toContain('vuexy-booking-actions-cell');
-    expect(markup).toContain('aria-label="State changed: Partner cancelled at"');
+    expect(markup).toContain('aria-label="State changed: Partner cancelled"');
     expect(markup).toContain('pill-success');
     expect(markup).toContain('pill-info');
     expect(markup.indexOf('Cancel Customer')).toBeGreaterThan(
       markup.indexOf('Cancellation Review / Needs Action'),
     );
-    expect(markup.indexOf('Cancel Customer')).toBeLessThan(
-      markup.indexOf('Cancellation Records / Resolved'),
-    );
+    expect(markup.indexOf('Cancel Customer')).toBeLessThan(markup.indexOf('Cancellation Records / Resolved'));
   });
 
   it('hides manual post-match cancellation decision controls from the table', () => {
@@ -627,6 +967,13 @@ describe('BookingMonitorListSection', () => {
                 netAmount: -30000,
                 status: 'PENDING',
               },
+              metadata: {
+                postMatchCancellation: {
+                  reasonCode: 'CUSTOMER_NOT_FOUND',
+                  reasonLabel: 'Could not meet customer',
+                  requiresAdminReview: true,
+                },
+              },
             } as unknown as AdminBooking,
           },
         ]}
@@ -645,6 +992,7 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).not.toContain('Chat (1)');
     expect(rendered).toContain('Fee held');
     expect(rendered).toContain('After 15m');
+    expect(rendered).toContain('Could not meet customer');
     expect(rendered).not.toContain('Resolve cancellation');
     expect(markup).not.toContain('admin-action-dropdown booking-post-match-action-dropdown');
     expect(markup).not.toContain('admin-action-menu booking-post-match-action-menu');
@@ -654,13 +1002,20 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain(
       'title="Partner cancellation happened after the 15-minute auto-approval window."',
     );
+    expect(markup).toContain(
+      'title="The Partner could not meet the customer. Admin evidence review is required."',
+    );
     expect(markup).toContain('title="Partner fee deduction remains until approval."');
     expect(markup).toContain('service-trace-summary vuexy-booking-review-summary');
     expect(markup).toContain('vuexy-booking-review-reasons');
     expect(markup).toContain('class="is-warn"');
     expect(markup).toContain('class="is-danger"');
-    expect(markup).not.toContain('type="hidden" name="bookingId" value="booking_manual_cancelled_after_match"');
-    expect(markup).not.toContain('type="hidden" name="note" value="Approved after admin chat evidence review."');
+    expect(markup).not.toContain(
+      'type="hidden" name="bookingId" value="booking_manual_cancelled_after_match"',
+    );
+    expect(markup).not.toContain(
+      'type="hidden" name="note" value="Approved after admin chat evidence review."',
+    );
     expect(markup).not.toContain('type="hidden" name="note" value="Held after admin chat evidence review."');
     expect(markup.indexOf('Manual Review Customer')).toBeGreaterThan(
       markup.indexOf('Cancellation Review / Needs Action'),
@@ -789,7 +1144,8 @@ describe('BookingMonitorListSection', () => {
 
     expect(rendered).toContain('Cancellation Review / Needs Action');
     expect(rendered).toContain('No Show Customer');
-    expect(rendered).toContain('No-show marked at');
+    expect(rendered).toContain('No-show marked');
+    expect(rendered).not.toContain('No-show marked at');
     expect(rendered).toContain('No-show');
     expect(rendered).toContain('Check Partner message and retained evidence.');
     expect(rendered).toContain('Missing chat');
@@ -895,8 +1251,8 @@ function bookingRowFixture(input: {
     },
     checkSignal: {
       helper: 'No check',
-      label: 'Clear',
-      tone: 'signal-success',
+      label: 'Checks clear',
+      tone: 'signal-ok',
     },
     closureState: input.closureState ?? null,
     commandDecisionStrip: {
@@ -934,6 +1290,7 @@ function bookingRowFixture(input: {
     },
     marketplaceParticipantOverflowCount: 0,
     marketplaceParticipants: [],
+    nextActionHelper: 'Check retained booking evidence.',
     nextActionLabel: 'Review closeout.',
     openedDateLabel: input.openedDateLabel,
     opsSignal: null,
@@ -944,7 +1301,6 @@ function bookingRowFixture(input: {
       status: 'ready',
       tone: 'pill-success',
     },
-    recencyLabel: 'Closed',
     selectedFinalPartnerPillLabel: null,
     selection: {
       label: 'Closed',
@@ -961,6 +1317,19 @@ function bookingRowFixture(input: {
       key: 'handoff',
       label: 'Completed',
       tone: 'ok',
+    },
+    statusEvent: {
+      clockLabel: '10:15',
+      dateLabel: input.statusChangedAt,
+      label:
+        input.status === 'OPEN_MATCHING'
+          ? 'Matching opened'
+          : input.status === 'NO_SHOW'
+            ? 'No-show marked'
+            : input.status === 'CANCELLED'
+              ? 'Partner cancelled'
+              : 'Completed',
+      relativeLabel: input.status === 'OPEN_MATCHING' ? 'Matching opened 12m ago' : 'Updated just now',
     },
   };
 }

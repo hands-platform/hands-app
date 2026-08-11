@@ -8,6 +8,8 @@ import '../../provider_onboarding/presentation/provider_onboarding_status.dart';
 import '../../provider_onboarding/presentation/widgets/provider_document_upload_slots.dart';
 import '../../provider_onboarding/presentation/widgets/provider_onboarding_forms.dart';
 import 'provider_feedback_cards.dart';
+import 'provider_availability_schedule_card.dart';
+import 'provider_error_helpers.dart';
 import 'provider_image_upload_picker.dart';
 import 'provider_onboarding_card.dart';
 import 'provider_public_media_review_card.dart';
@@ -23,6 +25,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late Future<Map<String, dynamic>> _verificationFuture;
   late Future<Map<String, dynamic>> _onboardingFuture;
   late Future<Map<String, dynamic>> _profileFuture;
+  late Future<Map<String, dynamic>> _availabilityFuture;
   final List<String> _uploadedFileIds = [];
   final Map<String, String> _uploadedOnboardingDocumentIds = {};
   bool _isUploadingProfileImage = false;
@@ -30,6 +33,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isUploading = false;
   bool _isSubmitting = false;
   bool _isSavingOnboarding = false;
+  bool _isSavingAvailability = false;
 
   @override
   void initState() {
@@ -38,6 +42,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _onboardingFuture =
         ref.read(providerRepositoryProvider).onboardingSnapshot();
     _profileFuture = ref.read(providerRepositoryProvider).providerMe();
+    _availabilityFuture = ref.read(providerRepositoryProvider).availability();
   }
 
   void _refreshVerification() {
@@ -59,6 +64,47 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
   }
 
+  void _refreshAvailability() {
+    setState(() {
+      _availabilityFuture = ref.read(providerRepositoryProvider).availability();
+    });
+  }
+
+  Future<void> _editWorkingHours(Map<String, dynamic> availability) async {
+    final workingHours = await showProviderWorkingHoursSheet(
+      context,
+      initial: availability,
+    );
+    if (workingHours == null) return;
+    setState(() => _isSavingAvailability = true);
+    try {
+      await ref
+          .read(providerRepositoryProvider)
+          .updateWorkingHours(workingHours);
+      _refreshAvailability();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã lưu giờ làm việc')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              providerAppErrorMessage(
+                error,
+                fallback: 'Không thể lưu giờ làm việc.',
+              ),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSavingAvailability = false);
+    }
+  }
+
   Future<void> _runOnboardingAction(
       String successMessage, Future<void> Function() action) async {
     setState(() {
@@ -75,7 +121,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Onboarding update failed: $error')),
+          SnackBar(
+            content: Text(
+              providerAppErrorMessage(
+                error,
+                fallback: 'Không thể cập nhật thông tin đăng ký.',
+              ),
+            ),
+          ),
         );
       }
     } finally {
@@ -93,7 +146,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       initial: asMap(snapshot['basicProfile']) ?? <String, dynamic>{},
     );
     if (input == null) return;
-    return _runOnboardingAction('Basic profile saved', () async {
+    return _runOnboardingAction('Đã lưu hồ sơ cơ bản', () async {
       await ref
           .read(providerRepositoryProvider)
           .updateOnboardingBasicProfile(input.toJson());
@@ -126,8 +179,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         SnackBar(
           content: Text(
             rejectedSummaries.isNotEmpty
-                ? 'Replace rejected KYC photo(s): ${rejectedSummaries.join('; ')}'
-                : 'Upload required KYC photos first: ${missingTypes.map(providerDocumentTypeLabel).join(', ')}',
+                ? 'Thay ảnh KYC bị từ chối: ${rejectedSummaries.join('; ')}'
+                : 'Tải ảnh KYC bắt buộc trước: ${missingTypes.map(providerDocumentTypeLabel).join(', ')}',
           ),
         ),
       );
@@ -139,7 +192,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final documents = _uploadedOnboardingDocumentIds.entries
         .map((entry) => {'type': entry.key, 'fileId': entry.value})
         .toList();
-    return _runOnboardingAction('KYC request submitted for admin review',
+    return _runOnboardingAction('Đã gửi yêu cầu KYC để HANDS xem xét',
         () async {
       await ref.read(providerRepositoryProvider).submitOnboardingKyc(
             cccdNumber: input.cccdNumber,
@@ -162,7 +215,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       rejectionReason: reviewReason(initialBankAccount),
     );
     if (input == null) return;
-    return _runOnboardingAction('Bank account submitted for review', () async {
+    return _runOnboardingAction('Đã gửi tài khoản ngân hàng để xem xét',
+        () async {
       await ref.read(providerRepositoryProvider).createOnboardingBankAccount(
             bankName: input.bankName,
             accountNumber: input.accountNumber,
@@ -180,7 +234,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       version: providerAgreementVersionFromSnapshot(snapshot),
     );
     if (input == null) return;
-    return _runOnboardingAction('Required agreements accepted', () async {
+    return _runOnboardingAction('Đã chấp nhận các thỏa thuận bắt buộc',
+        () async {
       for (final type in input.types) {
         await ref.read(providerRepositoryProvider).acceptOnboardingAgreement(
               type: type,
@@ -219,7 +274,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '${providerDocumentTypeLabel(documentType)} uploaded: ${image.name}',
+              'Đã tải ${providerDocumentTypeLabel(documentType)}: ${image.name}',
             ),
           ),
         );
@@ -227,7 +282,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $error')),
+          SnackBar(
+            content: Text(
+              providerAppErrorMessage(
+                error,
+                fallback: 'Không thể tải giấy tờ lên.',
+              ),
+            ),
+          ),
         );
       }
     } finally {
@@ -262,14 +324,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  'Profile image uploaded for admin review: ${image.name}')),
+              content:
+                  Text('Đã tải ảnh hồ sơ để HANDS xem xét: ${image.name}')),
         );
       }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Profile image upload failed: $error')),
+          SnackBar(
+            content: Text(
+              providerAppErrorMessage(
+                error,
+                fallback: 'Không thể tải ảnh hồ sơ lên.',
+              ),
+            ),
+          ),
         );
       }
     } finally {
@@ -305,13 +374,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content:
-                  Text('Work photo uploaded for admin review: ${image.name}')),
+                  Text('Đã tải ảnh công việc để HANDS xem xét: ${image.name}')),
         );
       }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Work photo upload failed: $error')),
+          SnackBar(
+            content: Text(
+              providerAppErrorMessage(
+                error,
+                fallback: 'Không thể tải ảnh công việc lên.',
+              ),
+            ),
+          ),
         );
       }
     } finally {
@@ -337,7 +413,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (fileIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Upload at least one verification file first.')),
+            content: Text('Hãy tải ít nhất một tệp xác minh trước.')),
       );
       return;
     }
@@ -353,13 +429,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _refreshVerification();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Verification submitted')),
+          const SnackBar(content: Text('Đã gửi xác minh')),
         );
       }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Submit failed: $error')),
+          SnackBar(
+            content: Text(
+              providerAppErrorMessage(
+                error,
+                fallback: 'Không thể gửi xác minh.',
+              ),
+            ),
+          ),
         );
       }
     } finally {
@@ -378,12 +461,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text('Profile', style: Theme.of(context).textTheme.headlineMedium),
+          Text('Hồ sơ', style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 8),
           Text(
             auth == null
-                ? 'Not signed in'
-                : 'Signed in as ${auth.user['phone']}',
+                ? 'Chưa đăng nhập'
+                : 'Đã đăng nhập: ${auth.user['phone']}',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
@@ -416,8 +499,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   _isUploadingProfileImage ? null : _pickAndUploadProfileImage,
               icon: const Icon(Icons.image_outlined),
               label: Text(_isUploadingProfileImage
-                  ? 'Uploading profile image...'
-                  : 'Upload public profile image'),
+                  ? 'Đang tải ảnh hồ sơ...'
+                  : 'Tải ảnh hồ sơ công khai'),
             ),
             const SizedBox(height: 8),
             FilledButton.tonalIcon(
@@ -425,8 +508,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   _isUploadingGalleryImage ? null : _pickAndUploadGalleryImage,
               icon: const Icon(Icons.photo_library_outlined),
               label: Text(_isUploadingGalleryImage
-                  ? 'Uploading work photo...'
-                  : 'Upload public work photo'),
+                  ? 'Đang tải ảnh công việc...'
+                  : 'Tải ảnh công việc công khai'),
             ),
             const SizedBox(height: 12),
             FutureBuilder<Map<String, dynamic>>(
@@ -444,9 +527,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 12),
             const ProviderServicePricingCard(),
             const SizedBox(height: 12),
+            FutureBuilder<Map<String, dynamic>>(
+              future: _availabilityFuture,
+              builder: (context, snapshot) {
+                return ProviderAvailabilityScheduleCard(
+                  availability: snapshot.data ?? <String, dynamic>{},
+                  error: snapshot.error,
+                  isLoading:
+                      snapshot.connectionState == ConnectionState.waiting,
+                  isSaving: _isSavingAvailability,
+                  onEdit: _editWorkingHours,
+                  onRefresh: _refreshAvailability,
+                );
+              },
+            ),
+            const SizedBox(height: 12),
           ],
           if (auth == null)
-            const InfoCard(text: 'Login first to manage verification.')
+            const InfoCard(text: 'Đăng nhập để quản lý xác minh.')
           else
             FutureBuilder<Map<String, dynamic>>(
               future: _verificationFuture,
@@ -465,10 +563,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     Card(
                       child: ListTile(
                         title: Text(
-                            'Verification ${verification['status'] ?? 'DRAFT'}'),
+                            'Xác minh ${providerProfileVerificationStatusLabel(verification['status'])}'),
                         subtitle: Text(
                           verification['rejectionReason'] == null
-                              ? '${files.length} file(s) attached'
+                              ? 'Đã đính kèm ${files.length} tệp'
                               : '${verification['rejectionReason']}',
                         ),
                         trailing: const Icon(Icons.verified_user_outlined),
@@ -477,7 +575,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 12),
                     if (snapshot.hasError) ...[
                       ErrorCard(
-                          text: 'Verification load failed: ${snapshot.error}'),
+                        text: providerAppErrorMessage(
+                          snapshot.error,
+                          fallback: 'Không thể tải chi tiết xác minh.',
+                        ),
+                      ),
                       const SizedBox(height: 12),
                     ],
                     FutureBuilder<Map<String, dynamic>>(
@@ -497,7 +599,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const SizedBox(height: 8),
                       InfoCard(
                         text:
-                            'Ready for KYC: ${_uploadedOnboardingDocumentIds.keys.map(providerDocumentTypeLabel).join(', ')}',
+                            'Sẵn sàng gửi KYC: ${_uploadedOnboardingDocumentIds.keys.map(providerDocumentTypeLabel).join(', ')}',
                       ),
                     ],
                     const SizedBox(height: 8),
@@ -507,20 +609,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           : () => _submitVerification(files),
                       icon: const Icon(Icons.send_outlined),
                       label: Text(_isSubmitting
-                          ? 'Submitting...'
-                          : 'Submit uploaded files for review'),
+                          ? 'Đang gửi...'
+                          : 'Gửi tệp đã tải để xem xét'),
                     ),
                     const SizedBox(height: 12),
                     if (files.isEmpty)
                       const InfoCard(
                         text:
-                            'Upload one private verification photo, then submit it for admin review.',
+                            'Tải một ảnh xác minh riêng tư rồi gửi để HANDS xem xét.',
                       )
                     else
                       ...files.map((file) {
                         final item = asMap(file) ?? <String, dynamic>{};
-                        final key =
-                            item['key']?.toString() ?? 'verification file';
+                        final key = item['key']?.toString() ?? 'tệp xác minh';
                         final status =
                             item['uploadStatus']?.toString() ?? 'PENDING';
                         final size = asNum(item['sizeBytes'])?.toInt();
@@ -532,7 +633,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 : Icons.pending_outlined),
                             title: Text(key),
                             subtitle: Text([
-                              status,
+                              providerProfileUploadStatusLabel(status),
                               if (size != null) '${(size / 1024).ceil()} KB',
                               if (uploadedAt != null) uploadedAt,
                             ].join(' / ')),
@@ -540,7 +641,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         );
                       }),
                     const SizedBox(height: 12),
-                    for (final item in ['Massage menu', 'Online toggle'])
+                    for (final item in ['Danh mục massage', 'Bật trực tuyến'])
                       Card(
                         child: ListTile(
                           title: Text(item),
@@ -560,17 +661,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 } catch (_) {
                   // A stale session must not prevent local credential cleanup.
                 }
+                try {
+                  await ref
+                      .read(unregisterCurrentDevicePushTokenProvider)
+                      .call();
+                } catch (_) {
+                  // Local credential cleanup must continue when push unregister fails.
+                }
                 ref.read(providerLocationHeartbeatProvider).stop();
                 await ref.read(authControllerProvider.notifier).signOut();
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Signed out and partner is offline.')),
+                        content:
+                            Text('Đã đăng xuất và chuyển sang ngoại tuyến.')),
                   );
                 }
               },
               icon: const Icon(Icons.logout),
-              label: const Text('Sign out'),
+              label: const Text('Đăng xuất'),
             ),
           ],
         ],
@@ -578,3 +687,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 }
+
+String providerProfileVerificationStatusLabel(Object? status) =>
+    switch (status) {
+      'DRAFT' => 'Bản nháp',
+      'SUBMITTED' || 'PENDING_REVIEW' => 'Đang chờ xem xét',
+      'APPROVED' => 'Đã phê duyệt',
+      'REJECTED' => 'Đã từ chối',
+      _ => 'Chưa gửi',
+    };
+
+String providerProfileUploadStatusLabel(Object? status) => switch (status) {
+      'UPLOADED' => 'Đã tải lên',
+      'PENDING' => 'Đang chờ',
+      'FAILED' => 'Tải lên thất bại',
+      _ => 'Chưa xác định',
+    };

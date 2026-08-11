@@ -115,6 +115,8 @@ export function calculateCashBookingPartnerDue(
   const companyOutputVatOffset = Math.min(remainingCouponOffset, fee.companyOutputVat);
   remainingCouponOffset -= companyOutputVatOffset;
   const partnerTaxOffset = Math.min(remainingCouponOffset, tax);
+  const totalDueBeforeCoupon = fee.platformFeeNetRevenue + fee.companyOutputVat + tax;
+  const partnerCouponSubsidyPayable = Math.max(0, companyCouponExpense - totalDueBeforeCoupon);
   const walletDeductionPlatformFeeNetRevenue = fee.platformFeeNetRevenue - platformFeeNetOffset;
   const walletDeductionCompanyOutputVat = fee.companyOutputVat - companyOutputVatOffset;
   const walletDeductionPartnerTaxPayable = tax - partnerTaxOffset;
@@ -123,6 +125,7 @@ export function calculateCashBookingPartnerDue(
     ...fee,
     companyCouponExpense,
     partnerTaxPayable: tax,
+    partnerCouponSubsidyPayable,
     totalPartnerDueToCompany:
       walletDeductionPlatformFeeNetRevenue +
       walletDeductionCompanyOutputVat +
@@ -174,10 +177,7 @@ export function calculateProviderWalletDelta(input: WalletDeltaInput) {
       input.companyCouponExpense ?? 0,
       'Company coupon expense',
     );
-    return -Math.max(
-      0,
-      input.platformFee + input.withholdingAmount - companyCouponExpense,
-    );
+    return companyCouponExpense - input.platformFee - input.withholdingAmount;
   }
 
   return input.grossAmount - input.platformFee - input.withholdingAmount;
@@ -333,6 +333,9 @@ export function normalizePayoutBatchUpdateStatus(
   }
   if (input.currentStatus === PayoutBatchStatus.PAID && nextStatus !== PayoutBatchStatus.PAID) {
     throw new BadRequestException('Paid payout batches cannot be moved back to an unpaid status');
+  }
+  if (nextStatus === PayoutBatchStatus.PROCESSING && !input.nextTransferRef) {
+    throw new BadRequestException('Transfer reference is required before processing a payout batch');
   }
   if (nextStatus === PayoutBatchStatus.PAID && !input.nextTransferRef) {
     throw new BadRequestException('Transfer reference is required before marking a payout batch paid');

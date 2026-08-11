@@ -1,5 +1,6 @@
 import type { AdminProvider } from '../../lib/admin-api';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
+import { adminCountLabel } from '../../lib/admin-copy';
 import {
   DEFAULT_PROVIDER_OPS_POLICY,
   providerLocationStatus,
@@ -185,10 +186,10 @@ export function providerReviewIssues(
     (sanction) => sanction.status === 'ACTIVE',
   ).length;
   if (openReports > 0) {
-    issues.push({ label: `${openReports} open report(s)`, severity: 'high' });
+    issues.push({ label: adminCountLabel(openReports, 'open report'), severity: 'high' });
   }
   if (activeSanctions > 0) {
-    issues.push({ label: `${activeSanctions} active control(s)`, severity: 'high' });
+    issues.push({ label: adminCountLabel(activeSanctions, 'active control'), severity: 'high' });
   }
 
   return issues;

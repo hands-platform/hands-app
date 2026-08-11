@@ -21,6 +21,17 @@ export type NotificationRetryAuditJobSummary = {
 export type NotificationRetryAuditResult = {
   readonly latestDelivery: NotificationRetryAuditLatestDelivery | null;
   readonly retryJob: NotificationRetryAuditJobSummary;
+  readonly retrySnapshot?: {
+    readonly accepted: number;
+    readonly eligibleDeviceCount: number;
+    readonly eligibleDeviceIds: readonly (string | null)[];
+    readonly failed: number;
+    readonly failureCodes: readonly string[];
+    readonly skipped: number;
+    readonly skippedSuccessfulDeviceCount: number;
+    readonly targetRole: string | null;
+    readonly unattempted: number;
+  };
 };
 
 export type NotificationRetryAuditRisk =
@@ -34,14 +45,28 @@ export type NotificationRetryAuditRisk =
 
 const STALE_PUSH_DEVICE_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
-export function notificationRetryAuditMetadata(notificationId: string, result: NotificationRetryAuditResult) {
+export function notificationRetryAuditMetadata(
+  notificationId: string,
+  result: NotificationRetryAuditResult,
+  operator?: { readonly actorId: string; readonly reason: string },
+) {
   const latestDelivery = normalizeNotificationRetryAuditLatestDelivery(result.latestDelivery);
   const retryRisk = notificationRetryAuditRisk(latestDelivery);
 
   return {
     notificationId,
+    ...(operator ? { actorId: operator.actorId, reason: operator.reason } : {}),
     latestDelivery,
     retryJob: result.retryJob,
+    ...(result.retrySnapshot
+      ? {
+          retrySnapshot: {
+            ...result.retrySnapshot,
+            eligibleDeviceIds: result.retrySnapshot.eligibleDeviceIds.map(maskPushDeviceId),
+          },
+          enqueueOutcome: 'QUEUED',
+        }
+      : {}),
     retryAlreadyDelivered: latestDelivery?.status === 'SENT',
     retryRisk,
     operatorAction: notificationRetryAuditOperatorAction(retryRisk),
@@ -61,11 +86,17 @@ function normalizeNotificationRetryAuditLatestDelivery(
     status: latestDelivery.status,
     attemptedAt: latestDelivery.attemptedAt,
     failureCode: latestDelivery.failureCode ?? null,
-    pushDeviceId: latestDelivery.pushDeviceId ?? null,
+    pushDeviceId: maskPushDeviceId(latestDelivery.pushDeviceId),
     pushDeviceEnabled: latestDelivery.pushDeviceEnabled ?? null,
     pushDeviceLastSeenAt: latestDelivery.pushDeviceLastSeenAt ?? null,
     pushDevicePlatform: latestDelivery.pushDevicePlatform ?? null,
   };
+}
+
+function maskPushDeviceId(value: string | null | undefined) {
+  if (!value) return null;
+  if (value.length <= 8) return `${value.slice(0, 2)}...${value.slice(-2)}`;
+  return `${value.slice(0, 4)}...${value.slice(-4)}`;
 }
 
 function notificationRetryAuditRisk(

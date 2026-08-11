@@ -583,24 +583,8 @@ async function cleanupSmokeData() {
   await prisma.referralCode.deleteMany({
     where: { id: { in: [ids.customerCode, ids.partnerCode] } },
   });
-  await prisma.customerProfile.deleteMany({
-    where: { id: { in: [ids.customerParentProfile, ids.customerReferredProfile] } },
-  });
-  await prisma.providerProfile.deleteMany({
-    where: { id: { in: [ids.partnerParentProfile, ids.partnerReferredProfile] } },
-  });
-  await prisma.user.deleteMany({
-    where: {
-      id: {
-        in: [
-          ids.customerParentUser,
-          ids.customerReferredUser,
-          ids.partnerParentUser,
-          ids.partnerReferredUser,
-        ],
-      },
-    },
-  });
+
+  // Booking smoke data can share these actors; seed paths upsert them in place.
 }
 
 function countBy(rows, getKey) {

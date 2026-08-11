@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { AdminBackgroundJobsService } from './admin-background-jobs.service';
+import { AdminOperatorCategoryGuard } from './admin-operator-category.guard';
 import {
   BackgroundJobHealthQueryDto,
   BackgroundJobIncidentDetailQueryDto,
@@ -13,7 +14,7 @@ import {
 } from './admin-system.dto';
 
 @Controller('admin/system')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, AdminOperatorCategoryGuard)
 @Roles(Role.ADMIN)
 export class AdminSystemController {
   constructor(private readonly backgroundJobs: AdminBackgroundJobsService) {}

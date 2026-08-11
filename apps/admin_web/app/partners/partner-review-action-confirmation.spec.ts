@@ -89,7 +89,20 @@ describe('partner review action confirmation', () => {
     expect(confirmation?.description).toContain('withdrawal details');
   });
 
-  it('disables KYC approval until required identity documents are approved', () => {
+  it('allows one overall KYC approval when required identity documents are submitted', () => {
+    const confirmation = buildPartnerReviewActionConfirmation([partner()], 'approve-kyc', {
+      bankAccountId: '',
+      documentId: '',
+      fileId: '',
+      providerId: 'partner-review-123456',
+    });
+
+    expect(confirmation?.disabled).toBe(false);
+    expect(confirmation?.tone).toBe('success');
+    expect(confirmation?.description).toContain('after reviewing required identity evidence');
+  });
+
+  it('disables KYC approval until every required identity document is submitted', () => {
     const confirmation = buildPartnerReviewActionConfirmation(
       [
         partner({
@@ -107,7 +120,7 @@ describe('partner review action confirmation', () => {
 
     expect(confirmation?.disabled).toBe(true);
     expect(confirmation?.tone).toBe('neutral');
-    expect(confirmation?.description).toContain('Approve required documents first');
+    expect(confirmation?.description).toContain('Required documents must be submitted first');
   });
 
   it('builds public media and tax confirmations', () => {

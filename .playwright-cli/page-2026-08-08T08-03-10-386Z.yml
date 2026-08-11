@@ -1,0 +1,178 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e3]:
+    - complementary [ref=f3e4]:
+      - strong [ref=f3e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=f3e7]:
+        - link "Shift Command" [ref=f3e8] [cursor=pointer]:
+          - /url: /
+        - group [ref=f3e14]:
+          - generic "Booking Operations" [ref=f3e15] [cursor=pointer]
+        - group [ref=f3e24]:
+          - generic "Customer Support" [ref=f3e25] [cursor=pointer]
+        - group [ref=f3e34]:
+          - generic "Partner Operations" [ref=f3e35] [cursor=pointer]
+        - group [ref=f3e42]:
+          - generic "Finance Operations" [ref=f3e43] [cursor=pointer]
+        - group [ref=f3e51]:
+          - generic "Finance Records & Close" [ref=f3e52] [cursor=pointer]
+        - group [ref=f3e60]:
+          - generic "Growth & Communications" [ref=f3e61] [cursor=pointer]
+          - generic [ref=f3e68]:
+            - link "Insights" [ref=f3e69] [cursor=pointer]:
+              - /url: /marketing-analytics
+            - link "Coupons" [ref=f3e73] [cursor=pointer]:
+              - /url: /coupons
+            - link "Referrals" [ref=f3e77] [cursor=pointer]:
+              - /url: /referrals/customers
+            - link "Messaging" [ref=f3e83] [cursor=pointer]:
+              - /url: /notifications
+            - link "Website Content" [ref=f3e90] [cursor=pointer]:
+              - /url: /website-content
+        - group [ref=f3e95]:
+          - generic "Administration & Settings" [ref=f3e96] [cursor=pointer]
+    - main [ref=f3e104]:
+      - generic "Admin workspace" [ref=f3e105]:
+        - navigation "Breadcrumb" [ref=f3e107]:
+          - link "HANDS" [ref=f3e108] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f3e111]: Growth & Communications
+          - link "Messaging" [ref=f3e114] [cursor=pointer]:
+            - /url: /notifications
+          - generic [ref=f3e117]: Push Send
+        - generic "Workspace actions" [ref=f3e118]:
+          - button "Search Ctrl K" [ref=f3e120] [cursor=pointer]:
+            - generic [ref=f3e121]: Search
+            - generic [ref=f3e125]: Ctrl K
+          - button "Switch to dark mode" [ref=f3e127] [cursor=pointer]
+          - link "Operations Policy" [ref=f3e130] [cursor=pointer]:
+            - /url: /operations-policy
+          - button "Open operation alerts" [ref=f3e135] [cursor=pointer]
+          - button "Sign out" [ref=f3e140] [cursor=pointer]
+      - navigation "Messaging workspace" [ref=f3e144]:
+        - strong [ref=f3e145]: Messaging
+        - generic "Messaging pages" [ref=f3e146]:
+          - link "Notification Delivery" [ref=f3e147] [cursor=pointer]:
+            - /url: /notifications
+          - link "Notification Templates" [ref=f3e148] [cursor=pointer]:
+            - /url: /notifications/templates
+          - link "Push Send" [ref=f3e149] [cursor=pointer]:
+            - /url: /notifications/push-send
+      - generic [ref=f3e150]:
+        - generic [ref=f3e151]:
+          - generic [ref=f3e152]:
+            - heading "Push Send" [level=1] [ref=f3e153]
+            - paragraph [ref=f3e154]: Manual push workspace with recipient preview before creating persistent in-app notifications and FCM deliveries.
+          - generic "Page actions" [ref=f3e155]:
+            - link "Templates" [ref=f3e156] [cursor=pointer]:
+              - /url: /notifications/templates
+        - generic [ref=f3e157]:
+          - generic [ref=f3e163]:
+            - generic [ref=f3e164]: Today
+            - paragraph [ref=f3e165]: Campaigns
+            - generic [ref=f3e166]:
+              - generic [ref=f3e167]: "Campaigns:"
+              - text: "0"
+            - generic [ref=f3e168]: Manual push campaigns in this period.
+          - generic [ref=f3e174]:
+            - generic [ref=f3e175]: Delivery history
+            - paragraph [ref=f3e176]: Last send
+            - generic [ref=f3e177]:
+              - generic [ref=f3e178]: "Last send:"
+              - text: "-"
+            - generic [ref=f3e179]: Most recent manual push record.
+          - generic [ref=f3e185]:
+            - generic [ref=f3e186]: Today
+            - paragraph [ref=f3e187]: Recipients
+            - generic [ref=f3e188]:
+              - generic [ref=f3e189]: "Recipients:"
+              - text: "0"
+            - generic [ref=f3e190]: Recipient total across campaigns in this period. 0 notifications.
+        - generic [ref=f3e191]:
+          - generic [ref=f3e192]:
+            - generic [ref=f3e193]:
+              - generic [ref=f3e194]:
+                - heading "Create push campaign" [level=2] [ref=f3e195]
+                - paragraph [ref=f3e196]: Preview recipients first, then send. Direct user sends require an exact user id.
+              - generic [ref=f3e197]: Preview required
+            - generic [ref=f3e199]:
+              - generic [ref=f3e200]:
+                - generic [ref=f3e201] [cursor=pointer]:
+                  - generic [ref=f3e202]: Target role
+                  - combobox "Target role" [ref=f3e203]:
+                    - option "Customers" [selected]
+                    - option "Partners"
+                - generic [ref=f3e204] [cursor=pointer]:
+                  - generic [ref=f3e205]: Audience filter
+                  - combobox "Audience filter" [ref=f3e206]:
+                    - option "All customers with push devices" [selected]
+                    - option "Completed booking in last 7 days"
+                    - option "Completed before, inactive 30 days"
+                    - option "Never booked"
+                    - option "Active in last 3 days, no booking"
+                    - option "Referral parent customers"
+                - generic [ref=f3e207] [cursor=pointer]:
+                  - generic [ref=f3e208]: Open page
+                  - combobox "Open page" [ref=f3e209]:
+                    - option "Home / Notification center" [selected]
+                    - option "Bookings"
+                    - option "Chat"
+                    - option "Partners"
+                    - option "Profile"
+                - generic [ref=f3e210] [cursor=pointer]:
+                  - generic [ref=f3e211]: Language
+                  - combobox "Language" [ref=f3e212]:
+                    - option "Default language" [selected]
+                    - option "English"
+                    - option "Vietnamese"
+                    - option "Korean"
+                    - option "Japanese"
+                    - option "Chinese"
+                - generic [ref=f3e213]:
+                  - generic [ref=f3e214]: Specific user id
+                  - textbox "Specific user id" [ref=f3e215]:
+                    - /placeholder: Optional user id
+                - generic [ref=f3e216]:
+                  - generic [ref=f3e217]: Push title
+                  - textbox "Push title" [ref=f3e218]
+                - generic [ref=f3e219]:
+                  - generic [ref=f3e220]: Push body
+                  - textbox "Push body" [ref=f3e221]
+                - button "Preview recipients" [ref=f3e222] [cursor=pointer]
+              - generic "Active push send filters" [ref=f3e223]:
+                - generic [ref=f3e224]: "Target: Customers"
+                - generic [ref=f3e225]: "Audience: All customers with push devices"
+                - generic [ref=f3e226]: "Open page: Home / Notification center"
+                - generic [ref=f3e227]: "Language: Default language"
+                - generic [ref=f3e228]: "Campaign rows: Today"
+          - generic [ref=f3e229]:
+            - generic [ref=f3e230]:
+              - heading "Recent push campaigns / Today" [level=2] [ref=f3e232]
+              - generic [ref=f3e233]: 0 loaded of 0 total
+            - generic [ref=f3e235]:
+              - generic "Push campaign date range" [ref=f3e236]:
+                - link "Today" [ref=f3e237] [cursor=pointer]:
+                  - /url: /notifications/push-send
+                - link "Previous day" [ref=f3e238] [cursor=pointer]:
+                  - /url: /notifications/push-send?campaignRange=yesterday
+                - link "Last 7 days" [ref=f3e239] [cursor=pointer]:
+                  - /url: /notifications/push-send?campaignRange=7d
+                - link "Last 30 days" [ref=f3e240] [cursor=pointer]:
+                  - /url: /notifications/push-send?campaignRange=30d
+                - link "All loaded" [ref=f3e241] [cursor=pointer]:
+                  - /url: /notifications/push-send?campaignRange=all
+              - region "Scrollable data table" [ref=f3e242]:
+                - table [ref=f3e243]:
+                  - rowgroup [ref=f3e244]:
+                    - row [ref=f3e245]:
+                      - columnheader "Sent" [ref=f3e246]
+                      - columnheader "Target / Filter" [ref=f3e247]
+                      - columnheader "App page" [ref=f3e248]
+                      - columnheader "Title" [ref=f3e249]
+                      - columnheader "Recipients" [ref=f3e250]
+                      - columnheader "Status" [ref=f3e251]
+                  - rowgroup [ref=f3e252]:
+                    - row [ref=f3e253]:
+                      - cell [ref=f3e254]:
+                        - status [ref=f3e255]:
+                          - paragraph [ref=f3e256]: No manual push campaigns yet.
+  - button "Open Next.js Dev Tools" [ref=f3e262] [cursor=pointer]

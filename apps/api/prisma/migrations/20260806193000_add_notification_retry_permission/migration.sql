@@ -1,0 +1,2 @@
+ALTER TYPE "AdminOperatorPermissionCategory"
+ADD VALUE IF NOT EXISTS 'NOTIFICATIONS_RETRY';

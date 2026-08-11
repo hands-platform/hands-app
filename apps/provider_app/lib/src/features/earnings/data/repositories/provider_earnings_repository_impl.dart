@@ -23,4 +23,29 @@ class ProviderEarningsRepositoryImpl implements ProviderEarningsRepository {
     final result = await _api.getJson('/partner/earnings/payout-batches');
     return result is List<dynamic> ? result : [];
   }
+
+  @override
+  Future<List<dynamic>> walletWithdrawalRequests() async {
+    final result =
+        await _api.getJson('/partner/earnings/wallet-withdrawal-requests');
+    return result is List<dynamic> ? result : [];
+  }
+
+  @override
+  Future<Map<String, dynamic>> createWalletWithdrawalRequest({
+    required int amount,
+    String? bankAccountId,
+    String? requestNote,
+  }) async {
+    final result = await _api.postJson(
+      '/partner/earnings/wallet-withdrawal-requests',
+      {
+        'amount': amount,
+        if (bankAccountId != null) 'bankAccountId': bankAccountId,
+        if (requestNote != null && requestNote.trim().isNotEmpty)
+          'requestNote': requestNote.trim(),
+      },
+    );
+    return result is Map<String, dynamic> ? result : <String, dynamic>{};
+  }
 }

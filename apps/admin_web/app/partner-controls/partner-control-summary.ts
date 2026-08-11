@@ -1,9 +1,11 @@
 export type PartnerControlSummaryResponse = {
   readonly activeControls?: number;
   readonly blockedAccounts?: number;
+  readonly generatedAt?: string;
   readonly locationGaps?: number;
   readonly onboardingGaps?: number;
   readonly openReports?: number;
+  readonly overdueReports?: number;
   readonly sharedDevices?: number;
   readonly urgentMajorReports?: number;
   readonly walletDebt?: number;
@@ -17,17 +19,13 @@ export function buildPartnerControlSummaryFromServer(
   }
 
   return [
-    ['Open reports', metricValue(summary.openReports)],
-    ['Urgent / major', metricValue(summary.urgentMajorReports)],
-    ['Active controls', metricValue(summary.activeControls)],
-    ['Blocked accounts', metricValue(summary.blockedAccounts)],
-    ['Wallet debt', metricValue(summary.walletDebt)],
-    ['Location gaps', metricValue(summary.locationGaps)],
-    ['Shared devices', metricValue(summary.sharedDevices)],
-    ['Onboarding gaps', metricValue(summary.onboardingGaps)],
+    ['Reports needing review', metricValue(summary.openReports)],
+    ['Active restrictions', metricValue(summary.activeControls)],
+    ['Debt gates', metricValue(summary.walletDebt)],
+    ['Overdue', metricValue(summary.overdueReports)],
   ];
 }
 
 function metricValue(value: number | undefined) {
-  return Number.isFinite(value) ? String(value) : '0';
+  return Number.isFinite(value) ? String(value) : 'Unavailable';
 }

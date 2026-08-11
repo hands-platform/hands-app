@@ -172,6 +172,7 @@ export type BookingRecordDetailSectionsProps = {
   participantLedger: ParticipantLedger;
   paymentRows: InfoRowModel[];
   serviceRows: InfoRowModel[];
+  showOverviewSections?: boolean;
   timelineStages: TimelineStage[];
 };
 
@@ -189,67 +190,70 @@ export function BookingRecordDetailSections({
   participantLedger,
   paymentRows,
   serviceRows,
+  showOverviewSections = true,
   timelineStages,
 }: BookingRecordDetailSectionsProps) {
   return (
     <>
-      <AdminDetailGrid>
-        <AdminSection id="flow" title="Operations timeline">
-          <div className="timeline">
-            {timelineStages.map((stage) => (
-              <div className={`timeline-step ${stage.done ? 'timeline-done' : ''}`} key={stage.label}>
-                <span>{stage.label}</span>
-                <strong>{stage.value}</strong>
-                <p className="muted">{stage.hint}</p>
-              </div>
-            ))}
-          </div>
-        </AdminSection>
+      {showOverviewSections ? (
+        <AdminDetailGrid>
+          <AdminSection id="booking-record-flow" title="Operations timeline">
+            <div className="timeline">
+              {timelineStages.map((stage) => (
+                <div className={`timeline-step ${stage.done ? 'timeline-done' : ''}`} key={stage.label}>
+                  <span>{stage.label}</span>
+                  <strong>{stage.value}</strong>
+                  <p className="muted">{stage.hint}</p>
+                </div>
+              ))}
+            </div>
+          </AdminSection>
 
-        <AdminSection
-          actions={customerProfileId ? <StatusBadge tone="neutral">Linked in toolbar</StatusBadge> : null}
-          id="customer"
-          title="Customer"
-        >
-          <InfoRows rows={customerRows} />
-        </AdminSection>
+          <AdminSection
+            actions={customerProfileId ? <StatusBadge tone="neutral">Linked in toolbar</StatusBadge> : null}
+            id="booking-record-customer"
+            title="Customer"
+          >
+            <InfoRows rows={customerRows} />
+          </AdminSection>
 
-        <AdminSection id="service" title="Service">
-          <InfoRows rows={serviceRows} />
-        </AdminSection>
+          <AdminSection id="booking-record-service" title="Service">
+            <InfoRows rows={serviceRows} />
+          </AdminSection>
 
-        <AdminSection
-          actions={
-            finalPartnerId ? (
-              <StatusBadge tone="neutral">Linked in toolbar</StatusBadge>
-            ) : (
-              <StatusBadge tone="neutral">Partner record link pending</StatusBadge>
-            )
-          }
-          id="handoff"
-          title="Partner handoff"
-        >
-          <InfoRows rows={handoffRows} />
-        </AdminSection>
-      </AdminDetailGrid>
+          <AdminSection
+            actions={
+              finalPartnerId ? (
+                <StatusBadge tone="neutral">Linked in toolbar</StatusBadge>
+              ) : (
+                <StatusBadge tone="neutral">Partner record link pending</StatusBadge>
+              )
+            }
+            id="booking-record-handoff"
+            title="Partner handoff"
+          >
+            <InfoRows rows={handoffRows} />
+          </AdminSection>
+        </AdminDetailGrid>
+      ) : null}
 
       <AdminDetailGrid className="admin-mt-16">
         <ParticipantLedgerSection participantLedger={participantLedger} />
 
-        <AdminSection id="payment" title="Payment and refund">
+        <AdminSection id="booking-record-payment" title="Payment and refund">
           <InfoRows rows={paymentRows} />
         </AdminSection>
 
         <CashFeeSettlementPathSection cashFeeSettlementPath={cashFeeSettlementPath} />
 
-        <AdminSection id="finance" title="Finance evidence">
+        <AdminSection id="booking-record-finance" title="Finance evidence">
           <InfoRows rows={financeRows} />
         </AdminSection>
 
         <AdminSection
           actions={<StatusBadge tone="info">{countLabel(chatMessages.length, 'message')}</StatusBadge>}
           description="Compact archive state. The full retained transcript stays in the chat history panel."
-          id="chat"
+          id="booking-record-chat"
           title="Chat evidence"
         >
           {chatEvidenceRows.length > 0 && (
@@ -271,7 +275,7 @@ export function BookingRecordDetailSections({
         <AdminSection
           actions={<StatusBadge tone="neutral">{countLabel(locationTrailRows.length, 'record')}</StatusBadge>}
           description="Partner location records captured only for booking actions and live movement checks."
-          id="location"
+          id="booking-record-location"
           title="Location evidence"
         >
           <div className="route-mini">
@@ -311,7 +315,7 @@ function ParticipantLedgerSection({ participantLedger }: ParticipantLedgerSectio
         <StatusBadgeFromPillClass pillClass={tone}>{status}</StatusBadgeFromPillClass>
       }
       description="Booking participation evidence only; marketplace supply visibility is tracked separately."
-      id="participants"
+      id="booking-record-participants"
       title="Actual marketplace participant ledger"
     >
       <ParticipantBoundary boundary={boundary} />

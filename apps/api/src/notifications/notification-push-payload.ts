@@ -15,8 +15,8 @@ const PUSH_DATA_KEYS = new Set([
   'bookingId',
   'chatRoomId',
   'providerProfileId',
-  'customerProfileId',
   'destination',
+  'appDestination',
   'notificationId',
   'paymentId',
   'earningId',
@@ -24,6 +24,29 @@ const PUSH_DATA_KEYS = new Set([
   'fileId',
   'sanctionId',
 ]);
+
+export type ChatNotificationRoutingData = {
+  destination: 'chat';
+  bookingId: string;
+  chatRoomId: string;
+};
+
+export function chatNotificationRoutingData(input: {
+  bookingId: string;
+  chatRoomId: string;
+}): ChatNotificationRoutingData {
+  const bookingId = input.bookingId.trim();
+  const chatRoomId = input.chatRoomId.trim();
+  if (!bookingId || !chatRoomId) {
+    throw new Error('Chat notification routing requires bookingId and chatRoomId');
+  }
+
+  return {
+    destination: 'chat',
+    bookingId,
+    chatRoomId,
+  };
+}
 
 export function isPartnerAlert(notificationType: string) {
   return PARTNER_ALERT_TYPES.has(notificationType);

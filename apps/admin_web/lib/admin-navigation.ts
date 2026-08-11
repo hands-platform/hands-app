@@ -1,396 +1,974 @@
-import type { AdminOperatorAccessLike } from './admin-operator-access-model';
+import {
+  adminOperatorCategoryForPath,
+  hasAdminOperatorCategory,
+  type AdminOperatorAccessLike,
+} from './admin-operator-access-model';
+
+export const adminNavIconKeys = [
+  'activity',
+  'adjustments',
+  'approvals',
+  'audit',
+  'bank',
+  'bookings',
+  'calendar',
+  'cash',
+  'chat',
+  'closeout',
+  'command',
+  'content',
+  'controls',
+  'coupons',
+  'customers',
+  'finance',
+  'growth',
+  'handoff',
+  'ledger',
+  'map',
+  'messaging',
+  'partners',
+  'payments',
+  'policy',
+  'referrals',
+  'refunds',
+  'services',
+  'settings',
+  'system',
+  'tax',
+  'wallet',
+] as const;
+
+export type AdminNavIconKey = (typeof adminNavIconKeys)[number];
+
+export type AdminNavSearchEntry = {
+  readonly aliases?: readonly string[];
+  readonly description?: string;
+  readonly href: string;
+  readonly iconKey: AdminNavIconKey;
+  readonly id: string;
+  readonly label: string;
+};
 
 export type AdminNavLink = {
-  href: string;
-  label: string;
-  description: string;
+  readonly aliases?: readonly string[];
+  readonly description: string;
+  readonly href: string;
+  readonly iconKey: AdminNavIconKey;
+  readonly id: string;
+  readonly label: string;
+  readonly searchEntries?: readonly AdminNavSearchEntry[];
+};
+
+export type AdminNavLocalGroup = {
+  readonly description: string;
+  readonly iconKey: AdminNavIconKey;
+  readonly id: string;
+  readonly label: string;
+  readonly links: readonly AdminNavLink[];
 };
 
 export type AdminNavSection = {
-  label: string;
-  description: string;
-  attentionCount?: number;
-  links: AdminNavLink[];
+  readonly attentionCount?: number;
+  readonly description: string;
+  readonly href?: string;
+  readonly iconKey: AdminNavIconKey;
+  readonly id: string;
+  readonly label: string;
+  readonly links: readonly AdminNavLink[];
+  readonly localGroups?: readonly AdminNavLocalGroup[];
 };
 
-const developerSystemCategories = new Set([
-  'DEVELOPER_SYSTEM',
-  'DEVELOPER_SETUP',
-  'DEVELOPER_HEALTH',
-  'DEVELOPER_APP_SESSIONS_DIAGNOSTICS',
-  'DEVELOPER_ROUTE_COMPAT',
-  'SYSTEM_SETUP',
-]);
+export type AdminWorkspaceNavigationGroup = {
+  readonly id: string;
+  readonly label: string;
+  readonly links: readonly AdminNavLink[];
+};
 
-export const adminNavSections: AdminNavSection[] = [
+const bookingCloseoutLinks = [
+  navLink(
+    'booking-closeout-completed',
+    'closeout',
+    '/bookings/completed',
+    'Completed Services',
+    'Review completed services, closeout checks, and retained records.',
+  ),
+  navLink(
+    'booking-closeout-cancellations',
+    'closeout',
+    '/bookings/post-match-cancellations',
+    'Post-match Cancellations',
+    'Review post-match cancellations, no-show evidence, and final outcomes.',
+  ),
+] as const;
+
+const customerSignalLinks = [
+  navLink(
+    'customer-signals-reviews',
+    'customers',
+    '/reviews',
+    'Customer Reviews',
+    'Moderate customer reviews and app visibility.',
+  ),
+  navLink(
+    'customer-signals-partner-notes',
+    'chat',
+    '/reviews/partner-customer-evaluations',
+    'Partner Notes',
+    'Search internal Partner notes about customers after completed work.',
+  ),
+] as const;
+
+const insightLinks = [
+  navLink(
+    'insights-marketing',
+    'growth',
+    '/marketing-analytics',
+    'Marketing Analytics',
+    'Compare acquisition, campaign conversion, and revenue.',
+  ),
+  navLink(
+    'insights-usage',
+    'activity',
+    '/usage-overview',
+    'Customer Usage',
+    'Compare customer app activity, lifecycle, and service usage.',
+  ),
+] as const;
+
+const messagingLinks = [
+  navLink(
+    'messaging-delivery',
+    'messaging',
+    '/notifications',
+    'Notification Delivery',
+    'Resolve Customer, Partner, and Admin notification delivery issues.',
+  ),
+  navLink(
+    'messaging-templates',
+    'content',
+    '/notifications/templates',
+    'Notification Templates',
+    'Manage language-specific notification titles and message bodies.',
+  ),
+  navLink(
+    'messaging-push',
+    'messaging',
+    '/notifications/push-send',
+    'Push Send',
+    'Send a manual push message to a reviewed audience.',
+  ),
+] as const;
+
+const referralLinks = [
+  navLink(
+    'referrals-customers',
+    'referrals',
+    '/referrals/customers',
+    'Customer Referrals',
+    'Review referred customer sign-ups and wallet reward exposure.',
+  ),
+  navLink(
+    'referrals-partners',
+    'partners',
+    '/referrals/partners',
+    'Partner Referrals',
+    'Review referred Partner onboarding and reward exposure.',
+  ),
+  navLink(
+    'referrals-cashouts',
+    'cash',
+    '/referrals/cashouts',
+    'Referral Cashouts',
+    'Review referral reward cashout requests and retained decisions.',
+  ),
+] as const;
+
+const partnerMoneyLinks = [
+  navLink(
+    'partner-money-payouts',
+    'finance',
+    '/payouts',
+    'Payouts',
+    'Review payout batches and withdrawal processing records.',
+  ),
+  navLink(
+    'partner-money-earnings',
+    'wallet',
+    '/earnings',
+    'Partner Earnings',
+    'Review Partner earning and settlement evidence by booking.',
+  ),
+  navLink(
+    'partner-money-deposits',
+    'bank',
+    '/finance-tax/partner-bank-deposits',
+    'Partner Bank Deposits',
+    'Review Partner deposit evidence, wallet credits, and ledger posting.',
+  ),
+] as const;
+
+const partnerOperationsLinks = [
+  navLink(
+    'partner-workspace-overview',
+    'activity',
+    '/partners/overview',
+    'Overview',
+    'Review current supply, action queues, period performance, and wallet risk.',
+  ),
+  navLink(
+    'partner-workspace-controls',
+    'controls',
+    '/partner-controls',
+    'Action Queue',
+    'Review availability, account controls, and Partner operating restrictions.',
+  ),
+  navLink(
+    'partner-workspace-directory',
+    'partners',
+    '/partners',
+    'Directory',
+    'Find Partner records and open approvals, onboarding blockers, or wallet debt.',
+  ),
+] as const;
+
+const settlementRecordLinks = [
+  navLink(
+    'settlement-records-audit',
+    'ledger',
+    '/finance-tax/booking-settlement-audit',
+    'Booking Settlements',
+    'Review immutable booking settlement records.',
+  ),
+  navLink(
+    'settlement-records-reversals',
+    'refunds',
+    '/finance-tax/settlement-reversals',
+    'Settlement Reversals',
+    'Review closed-period refund and settlement reversal records.',
+  ),
+  navLink(
+    'settlement-records-coupons',
+    'coupons',
+    '/finance-tax/coupon-finance',
+    'Coupon Finance',
+    'Review coupon-funded settlement and company expense records.',
+  ),
+] as const;
+
+const taxCloseLinks = [
+  navLink(
+    'tax-close-overview',
+    'tax',
+    '/finance-tax',
+    'Tax & Close Overview',
+    'Review the current tax period, close status, and outstanding evidence.',
+  ),
+  navLink(
+    'tax-close-monthly',
+    'closeout',
+    '/finance-tax/monthly-tax-closing',
+    'Monthly Tax Closing',
+    'Complete monthly VAT, withholding, fee, and reconciliation controls.',
+  ),
+  navLink(
+    'tax-close-vat',
+    'tax',
+    '/finance-tax/platform-vat',
+    'Platform VAT',
+    'Review company output VAT from platform fees.',
+  ),
+  navLink(
+    'tax-close-withholding',
+    'tax',
+    '/finance-tax/partner-withholding-tax',
+    'Partner Withholding',
+    'Review Partner VAT and PIT withholding totals.',
+  ),
+  navLink(
+    'tax-close-fees',
+    'payments',
+    '/finance-tax/payment-fees',
+    'Payment Fees',
+    'Review payment processing fees, evidence, and protected policy.',
+  ),
+] as const;
+
+const systemHealthLinks = [
+  navLink(
+    'system-health-setup',
+    'settings',
+    '/setup',
+    'Setup Readiness',
+    'Review external integration credentials and production launch checks.',
+  ),
+  navLink(
+    'system-health-sessions',
+    'activity',
+    '/app-sessions',
+    'App Session Diagnostics',
+    'Inspect Customer and Partner app session diagnostics.',
+  ),
+  navLink(
+    'system-health-jobs',
+    'system',
+    '/background-jobs',
+    'Background Jobs',
+    'Review queue workers, recurring jobs, retained failures, and retry health.',
+  ),
+] as const;
+
+export const adminWorkspaceNavigationGroups: readonly AdminWorkspaceNavigationGroup[] = [
+  { id: 'partner-operations', label: 'Partner Operations', links: partnerOperationsLinks },
+  { id: 'booking-closeout', label: 'Booking Closeout', links: bookingCloseoutLinks },
+  { id: 'customer-signals', label: 'Customer Signals', links: customerSignalLinks },
+  { id: 'insights', label: 'Insights', links: insightLinks },
+  { id: 'messaging', label: 'Messaging', links: messagingLinks },
+  { id: 'referrals', label: 'Referrals', links: referralLinks },
+  { id: 'partner-money', label: 'Partner Money', links: partnerMoneyLinks },
+  { id: 'settlement-records', label: 'Settlement Records', links: settlementRecordLinks },
+  { id: 'tax-close', label: 'Tax & Period Close', links: taxCloseLinks },
+  { id: 'system-health', label: 'System Health', links: systemHealthLinks },
+] as const;
+
+export const adminNavSections: readonly AdminNavSection[] = [
   {
-    label: 'Shift Operations',
-    description: 'Today-first workspace for live shift control and historical review.',
+    id: 'shift-command',
+    iconKey: 'command',
+    href: '/',
+    label: 'Shift Command',
+    description: 'Open today’s action queues and current operating picture.',
+    links: [],
+  },
+  {
+    id: 'booking-operations',
+    iconKey: 'bookings',
+    label: 'Booking Operations',
+    description: 'Control current bookings, closeout, handoff, and regional operations.',
     links: [
-      {
-        href: '/',
-        label: 'Start Shift',
-        description: 'Open the command dashboard and review today first.',
-      },
-      {
-        href: '/calendar',
-        label: 'Calendar',
-        description: 'Shared operations calendar for live planning and follow-up blocks.',
-      },
-      {
-        href: '/operations-handoff',
-        label: 'Operations History',
-        description: 'Review dated booking, finance, alert, and operator-note history.',
-      },
+      navLink(
+        'booking-live',
+        'bookings',
+        '/bookings',
+        'Live Bookings',
+        'Handle request intake, matching, Partner coordination, and active services.',
+      ),
+      navLink(
+        'booking-calendar',
+        'calendar',
+        '/calendar',
+        'Calendar',
+        'Plan current operations and follow-up work on the shared calendar.',
+      ),
+      navLink(
+        'booking-closeout',
+        'closeout',
+        '/bookings/completed',
+        'Booking Closeout',
+        'Review completed services and post-match exception work.',
+        undefined,
+        searchEntriesExcept(bookingCloseoutLinks, '/bookings/completed'),
+      ),
+      navLink(
+        'booking-handoff',
+        'handoff',
+        '/operations-handoff',
+        'Shift Handoff',
+        'Transfer unresolved work and confirm receipt between operators.',
+      ),
+      navLink(
+        'booking-vietnam',
+        'map',
+        '/vietnam-overview',
+        'Vietnam Operations Map',
+        'Compare regional demand and supply without exposing exact individual locations.',
+      ),
     ],
   },
   {
-    label: 'Bookings',
-    description: 'One booking workspace for demand, matching, marketplace, chat, and closeout evidence.',
+    id: 'customer-support',
+    iconKey: 'customers',
+    label: 'Customer Support',
+    description: 'Resolve customer account, evidence, review, and support work.',
     links: [
-      {
-        href: '/bookings',
-        label: 'Live Bookings',
-        description:
-          'Live booking workspace for request intake, matching, Partner coordination, chat repair, and active service checks.',
-      },
-      {
-        href: '/bookings/completed',
-        label: 'Completed',
-        description:
-          'Completed booking workspace for closeout, payment, wallet debt, pricing, refund, and expired records.',
-      },
-      {
-        href: '/bookings/post-match-cancellations',
-        label: 'Post-match Cancellations',
-        description:
-          'Post-match cancellation workspace for fee restoration, evidence review, no-show checks, and final admin decisions.',
-      },
+      navLink(
+        'customer-directory',
+        'customers',
+        '/customers',
+        'Customers',
+        'Find customer accounts and open booking, wallet, referral, and support history.',
+      ),
+      navLink(
+        'customer-signals',
+        'activity',
+        '/reviews',
+        'Customer Signals',
+        'Review customer feedback and retained Partner notes.',
+        undefined,
+        searchEntriesExcept(customerSignalLinks, '/reviews'),
+      ),
+      navLink(
+        'customer-chat',
+        'chat',
+        '/chat-archive',
+        'Chat Evidence',
+        'Search retained booking conversations for support decisions.',
+      ),
     ],
   },
   {
-    label: 'Customers',
-    description: 'Customer accounts, usage, referrals, reviews, and customer-evaluation records.',
+    id: 'partner-operations',
+    iconKey: 'partners',
+    label: 'Partner Operations',
+    description: 'Approve, support, monitor, and control Partner operations.',
     links: [
-      {
-        href: '/customers',
-        label: 'Customers',
-        description: 'Customer account list with booking and payment facts.',
-      },
-      {
-        href: '/usage-overview',
-        label: 'Usage Overview',
-        description: 'Customer app usage, Partner searches, requests, and completed-work rankings.',
-      },
-      {
-        href: '/referrals/customers',
-        label: 'Customer Referrals',
-        description: 'Parent customer accounts with referred customer sign-ups and wallet reward exposure.',
-      },
-      {
-        href: '/reviews',
-        label: 'Customer Reviews',
-        description: 'Customer review records, app visibility, and moderation follow-up.',
-      },
-      {
-        href: '/reviews/partner-customer-evaluations',
-        label: 'Partner Evaluations',
-        description: 'Partner-written text evaluations about customers after completed booking work.',
-      },
+      navLink(
+        'partner-operations-workspace',
+        'partners',
+        '/partners/overview',
+        'Partner Operations',
+        'Open Partner supply, action queues, and directory tools in one workspace.',
+        ['partner', 'partners'],
+        [
+          searchEntry('partner-directory', 'partners', '/partners', 'Partner Directory', [
+            'partner directory',
+          ]),
+          searchEntry('partner-controls', 'controls', '/partner-controls', 'Partner Action Queue', [
+            'partner controls',
+            'partner queue',
+          ]),
+          searchEntry(
+            'partner-approvals',
+            'approvals',
+            '/partners?review=approval-pending&sort=oldest',
+            'Partner Approvals',
+            ['approval', 'approvals'],
+          ),
+          searchEntry(
+            'partner-onboarding',
+            'controls',
+            '/partners?review=unapproved',
+            'Onboarding Blockers',
+            ['onboarding', 'blocked partners'],
+          ),
+          searchEntry('partner-wallet-debt', 'wallet', '/partners?review=unsettled', 'Wallet Debt', [
+            'unsettled partners',
+            'negative wallet',
+          ]),
+        ],
+      ),
     ],
   },
   {
-    label: 'Partners',
-    description: 'Partner overview, approval queues, approved Partners, and wallet settlement risk.',
+    id: 'finance-operations',
+    iconKey: 'finance',
+    label: 'Finance Operations',
+    description: 'Resolve current money decisions, approval queues, refunds, and reconciliation risk.',
     links: [
-      {
-        href: '/partners/overview',
-        label: 'Partner Overview',
-        description: 'Supply status, approval funnel, quality risk, wallet exposure, and action queues.',
-      },
-      {
-        href: '/partners',
-        label: 'Partners',
-        description: 'Approved and active Partner records with detail review access.',
-      },
-      {
-        href: '/partners?review=unapproved',
-        label: 'Unapproved Partners',
-        description:
-          'Partner registration, KYC, required documents, public media, or hold items waiting for admin approval.',
-      },
-      {
-        href: '/partners?review=unsettled',
-        label: 'Unsettled Partners',
-        description: 'Partners whose wallet balance is negative from unpaid HANDS commission.',
-      },
-      {
-        href: '/referrals/partners',
-        label: 'Partner Referrals',
-        description: 'Parent Partner accounts with referred Partner onboarding and fixed reward exposure.',
-      },
-      {
-        href: '/files',
-        label: 'Files',
-        description: 'Partner verification files and public media moderation.',
-      },
+      navLink(
+        'finance-overview',
+        'finance',
+        '/finance-overview',
+        'Finance Overview',
+        'Review current money actions, balances, close status, and record entry points.',
+      ),
+      navLink(
+        'finance-approvals',
+        'approvals',
+        '/finance-tax/approval-queue',
+        'Approval Queue',
+        'Review finance actions that require approval or ownership.',
+      ),
+      navLink(
+        'finance-refunds',
+        'refunds',
+        '/refunds',
+        'Refunds',
+        'Resolve open refund requests and review completed refund history.',
+      ),
+      navLink(
+        'finance-reconciliation',
+        'bank',
+        '/finance-tax/bank-reconciliation?workspace=operations&range=all&review=unmatched',
+        'Payment Matching',
+        'Match company bank transactions to unresolved payment evidence and review clearing history.',
+        undefined,
+        [
+          searchEntry(
+            'finance-unmatched-bank',
+            'approvals',
+            '/finance-tax/bank-reconciliation?range=all&review=unmatched',
+            'Unmatched Bank Transactions',
+            ['unmatched bank'],
+          ),
+          searchEntry(
+            'finance-payment-clearing',
+            'payments',
+            '/finance-tax/payment-clearing?range=all&review=unresolved&sort=oldest',
+            'Payment Clearing',
+            ['unmatched payment evidence', 'partial payment match'],
+          ),
+        ],
+      ),
+      navLink(
+        'finance-cash',
+        'cash',
+        '/cash-settlements',
+        'Cash Settlements',
+        'Recover Partner cash commission debt and verify payment evidence.',
+      ),
+      navLink(
+        'finance-closeout',
+        'closeout',
+        '/finance-closeout',
+        'Settlement Repair',
+        'Repair governed settlement gaps and complete closeout work.',
+      ),
     ],
   },
   {
-    label: 'Analytics',
-    description: 'Regional operating picture for operator review.',
+    id: 'finance-records-close',
+    iconKey: 'ledger',
+    label: 'Finance Records & Close',
+    description: 'Search retained money records and complete accounting close work.',
     links: [
-      {
-        href: '/vietnam-overview',
-        label: 'Vietnam Overview',
-        description: 'Region aggregate operating picture without individual GPS points.',
-      },
+      navLink(
+        'finance-records-payments',
+        'payments',
+        '/payments',
+        'Payments',
+        'Review customer payment and refund state records.',
+      ),
+      navLink(
+        'finance-records-partner-money',
+        'wallet',
+        '/payouts',
+        'Partner Money',
+        'Review payouts, earnings, deposits, and withdrawal risk.',
+        undefined,
+        [
+          ...searchEntriesExcept(partnerMoneyLinks, '/payouts'),
+          searchEntry(
+            'partner-money-risk',
+            'approvals',
+            '/payouts?range=all&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests',
+            'Payout / Withdrawal Risk',
+            ['payout risk', 'withdrawal review'],
+          ),
+        ],
+      ),
+      navLink(
+        'finance-records-wallet',
+        'adjustments',
+        '/wallet-adjustments',
+        'Wallet Adjustments',
+        'Review Customer and Partner wallet credits, debits, and reversals.',
+      ),
+      navLink(
+        'finance-records-ledger',
+        'ledger',
+        '/finance-tax/general-ledger',
+        'Journal Batches',
+        'Search posted accounting journal batches and entries.',
+      ),
+      navLink(
+        'finance-records-settlements',
+        'closeout',
+        '/finance-tax/booking-settlement-audit',
+        'Settlement Records',
+        'Review settlement snapshots, reversals, and coupon finance.',
+        undefined,
+        searchEntriesExcept(settlementRecordLinks, '/finance-tax/booking-settlement-audit'),
+      ),
+      navLink(
+        'finance-records-tax',
+        'tax',
+        '/finance-tax',
+        'Tax & Period Close',
+        'Review monthly VAT, withholding, fees, and close readiness.',
+        undefined,
+        [
+          ...searchEntriesExcept(taxCloseLinks, '/finance-tax'),
+          searchEntry(
+            'payment-fee-policy',
+            'policy',
+            '/finance-tax/payment-fees?settings=policy',
+            'Payment Fee Policy',
+            ['fee policy'],
+          ),
+        ],
+      ),
     ],
   },
   {
+    id: 'growth-communications',
+    iconKey: 'growth',
     label: 'Growth & Communications',
-    description: 'Acquisition, coupons, notification records, templates, and push-send operations.',
+    description: 'Manage insights, acquisition, referrals, messaging, and public content.',
     links: [
-      {
-        href: '/marketing-analytics',
-        label: 'Marketing Analytics',
-        description: 'Acquisition source, campaign, region, signup, booking, and revenue funnel aggregates.',
-      },
-      {
-        href: '/coupons',
-        label: 'Coupons',
-        description: 'Coupon codes and discount exposure.',
-      },
-      {
-        href: '/notifications',
-        label: 'Notifications',
-        description: 'In-app notification records and delivery status.',
-      },
-      {
-        href: '/notifications/templates',
-        label: 'Notification Templates',
-        description: 'Language-specific notification titles and message bodies.',
-      },
-      {
-        href: '/notifications/push-send',
-        label: 'Push Send',
-        description: 'Manual push send workspace with recipient preview.',
-      },
+      navLink(
+        'growth-insights',
+        'growth',
+        '/marketing-analytics',
+        'Insights',
+        'Compare acquisition and customer app usage.',
+        undefined,
+        searchEntriesExcept(insightLinks, '/marketing-analytics'),
+      ),
+      navLink(
+        'growth-coupons',
+        'coupons',
+        '/coupons',
+        'Coupons',
+        'Create and manage checkout coupon codes and discount exposure.',
+      ),
+      navLink(
+        'growth-referrals',
+        'referrals',
+        '/referrals/customers',
+        'Referrals',
+        'Review Customer and Partner referrals, reward exposure, and cashouts.',
+        undefined,
+        [
+          ...searchEntriesExcept(referralLinks, '/referrals/customers'),
+          searchEntry(
+            'customer-referral-policy',
+            'policy',
+            '/referrals/customers?settings=policy',
+            'Customer Referral Policy',
+            ['customer reward policy'],
+          ),
+          searchEntry(
+            'partner-referral-policy',
+            'policy',
+            '/referrals/partners?settings=policy',
+            'Partner Referral Policy',
+            ['partner reward policy'],
+          ),
+        ],
+      ),
+      navLink(
+        'growth-messaging',
+        'messaging',
+        '/notifications',
+        'Messaging',
+        'Resolve delivery issues, manage templates, and send reviewed push messages.',
+        undefined,
+        [
+          searchEntry('messaging-delivery-search', 'messaging', '/notifications', 'Notification Delivery', [
+            'notification delivery',
+            'partner notification',
+          ]),
+          ...searchEntriesExcept(messagingLinks, '/notifications'),
+        ],
+      ),
+      navLink(
+        'growth-content',
+        'content',
+        '/website-content',
+        'Website Content',
+        'Manage public website publishing, search metadata, and section order.',
+      ),
     ],
   },
   {
-    label: 'Finance',
-    description: 'Payments, wallet movement, payouts, refunds, and cash debt.',
+    id: 'administration-settings',
+    iconKey: 'settings',
+    label: 'Administration & Settings',
+    description: 'Manage protected policy, catalog, operator access, and retained audit history.',
     links: [
+      navLink(
+        'admin-policy',
+        'policy',
+        '/operations-policy',
+        'Operations Policy',
+        'Manage matching, marketplace, timeout, and operational gate rules.',
+      ),
+      navLink(
+        'admin-services',
+        'services',
+        '/services',
+        'Service Catalog',
+        'Manage service names, durations, prices, and payout rules.',
+      ),
+      navLink(
+        'admin-bank-accounts',
+        'bank',
+        '/finance-tax/company-bank-accounts',
+        'Company Bank Accounts',
+        'Manage protected company settlement bank accounts.',
+      ),
+      navLink(
+        'admin-finance-approvers',
+        'approvals',
+        '/finance-tax/finance-approvers',
+        'Finance Approvers',
+        'Manage approver separation for protected money actions.',
+      ),
+      navLink(
+        'admin-tax-policy',
+        'tax',
+        '/tax-policy',
+        'Tax Policy',
+        'Manage versioned Vietnam withholding rules.',
+      ),
+      navLink(
+        'admin-operators',
+        'controls',
+        '/admin-operators',
+        'Admin Operators',
+        'Manage operator roles and category permissions.',
+      ),
+      navLink(
+        'admin-audit',
+        'audit',
+        '/audit-log',
+        'Audit Log',
+        'Search retained Admin and system action history.',
+      ),
+    ],
+    localGroups: [
       {
-        href: '/finance-overview',
-        label: 'Finance Overview',
-        description:
-          'Gross customer payments, platform fee revenue, Partner payable, wallet exposure, refunds, tax, and reconciliation risk.',
-      },
-      {
-        href: '/finance-tax/approval-queue',
-        label: 'Approval Queue',
-        description: 'Payment fee policy reviews, Partner withdrawal work, and recent wallet approval evidence.',
-      },
-      {
-        href: '/finance-closeout',
-        label: 'Finance Closeout',
-        description: 'Daily, weekly, monthly, and manual closeout view.',
-      },
-      {
-        href: '/payments',
-        label: 'Payments',
-        description: 'Gateway, cash, refund, and payment-state operations.',
-      },
-      {
-        href: '/finance-tax/payment-clearing',
-        label: 'Payment Clearing',
-        description: 'Customer payment capture, settlement posting, refund, payment fee, and coupon offset queue.',
-      },
-      {
-        href: '/cash-settlements',
-        label: 'Cash Debt',
-        description: 'Clear Partner wallet debt from cash bookings.',
-      },
-      {
-        href: '/finance-tax/partner-bank-deposits',
-        label: 'Partner Bank Deposits',
-        description: 'Bank evidence, approved wallet credits, GL posting, and explicit cash-debt allocation history.',
-      },
-      {
-        href: '/wallet-adjustments',
-        label: 'Wallet Adjustments',
-        description:
-          'Preview and create approved customer or Partner wallet credits, debits, and reversals without moving bank/cash.',
-      },
-      {
-        href: '/earnings',
-        label: 'Earnings',
-        description: 'Partner earning rows, fee/tax logs, and settlement impact.',
-      },
-      {
-        href: '/payouts',
-        label: 'Payouts',
-        description: 'Weekly, monthly, and manual payout batches.',
-      },
-      {
-        href: '/referrals/cashouts',
-        label: 'Referral Cashouts',
-        description: 'Customer and Partner referral cashout requests, tax review, and manual paid closeout.',
-      },
-      {
-        href: '/refunds',
-        label: 'Refunds',
-        description: 'Admin refund queue and refund history.',
+        id: 'system-health',
+        iconKey: 'system',
+        label: 'System Health',
+        description: 'Restricted technical readiness, integration health, and app diagnostics.',
+        links: systemHealthLinks,
       },
     ],
   },
-  {
-    label: 'Tax & Accounting',
-    description: 'Tax, ledger, settlement audit, bank reconciliation, and monthly close.',
-    links: [
-      {
-        href: '/finance-tax',
-        label: 'Tax Overview',
-        description: 'Tax, fee, VAT, PIT, payment fee, and settlement record command view.',
-      },
-      {
-        href: '/finance-tax/general-ledger',
-        label: 'General Ledger',
-        description: 'Accounting journal batches for settlement, reversals, adjustments, refunds, and payouts.',
-      },
-      {
-        href: '/finance-tax/bank-reconciliation',
-        label: 'Bank Reconciliation',
-        description:
-          'Company bank transactions, active company bank accounts, and reconciliation status for manual finance closeout.',
-      },
-      {
-        href: '/finance-tax/company-bank-accounts',
-        label: 'Company Bank Accounts',
-        description: 'Company settlement bank accounts used by manual import and reconciliation evidence.',
-      },
-      {
-        href: '/finance-tax/booking-settlement-audit',
-        label: 'Booking Settlement Audit',
-        description: 'Immutable booking settlement records for tax and finance audit review.',
-      },
-      {
-        href: '/finance-tax/coupon-finance',
-        label: 'Coupon Finance',
-        description: 'Coupon-funded settlement rows, company expense exposure, and tax review flags.',
-      },
-      {
-        href: '/finance-tax/settlement-reversals',
-        label: 'Settlement Reversals',
-        description: 'Closed-period refund and settlement reversal rows with accounting impact.',
-      },
-      {
-        href: '/finance-tax/monthly-tax-closing',
-        label: 'Monthly Tax Closing',
-        description: 'Monthly platform VAT, Partner withholding, payment fee, and reconciliation closeout.',
-      },
-      {
-        href: '/finance-tax/platform-vat',
-        label: 'Platform VAT',
-        description: 'Company output VAT from HANDS platform fee by monthly VAT rate bucket.',
-      },
-      {
-        href: '/finance-tax/partner-withholding-tax',
-        label: 'Partner Withholding Tax',
-        description: 'Monthly Partner VAT/PIT withholding totals grouped by Partner.',
-      },
-      {
-        href: '/finance-tax/payment-fees',
-        label: 'Payment Fees',
-        description: 'Payment processing fees by method, payer, and treatment from settlement records.',
-      },
-      {
-        href: '/tax-policy',
-        label: 'Tax Policy',
-        description: 'Versioned Vietnam freelance withholding rules.',
-      },
-    ],
-  },
-  {
-    label: 'Policies',
-    description: 'Operational rules and service catalog controls.',
-    links: [
-      {
-        href: '/operations-policy',
-        label: 'Operations Policy',
-        description: 'First-pick, marketplace radius, timeout, and gate settings.',
-      },
-      {
-        href: '/services',
-        label: 'Service Catalog',
-        description: 'Service names, duration options, prices, and payout rules.',
-      },
-    ],
-  },
-  {
-    label: 'Admin Control',
-    description: 'Operator permissions, finance approvers, and retained admin audit trail.',
-    links: [
-      {
-        href: '/admin-operators',
-        label: 'Admin Operators',
-        description: 'Master Admin workspace for operator access, category permissions, and admin role review.',
-      },
-      {
-        href: '/finance-tax/finance-approvers',
-        label: 'Finance Approvers',
-        description: 'Finance action approver policy for role separation and dual-control closeout.',
-      },
-      {
-        href: '/audit-log',
-        label: 'Audit Log',
-        description: 'Admin and system audit trail.',
-      },
-    ],
-  },
-];
+] as const;
 
-export const developerSystemNavSection: AdminNavSection = {
-  label: 'Developer / System',
-  description: 'Master-only technical readiness, integration health, and app session diagnostics.',
-  links: [
-    {
-      href: '/setup',
-      label: 'Setup Readiness',
-      description: 'External integration readiness, credentials, and production launch checks.',
-    },
-    {
-      href: '/app-sessions',
-      label: 'App Session Diagnostics',
-      description: 'Customer and Partner app session diagnostics for system investigation.',
-    },
-    {
-      href: '/background-jobs',
-      label: 'Background Jobs',
-      description: 'Queue workers, recurring jobs, retained failures, and retry health.',
-    },
-  ],
-};
-
-export const allAdminNavSections: AdminNavSection[] = [
-  ...adminNavSections,
-  developerSystemNavSection,
-];
+export const allAdminNavSections = adminNavSections;
 
 export function adminNavSectionsForAccess(access: AdminOperatorAccessLike): AdminNavSection[] {
-  if (canSeeDeveloperSystem(access)) {
-    return allAdminNavSections;
-  }
+  return adminNavSections.flatMap((section) => {
+    const href = section.href && canAccessHref(access, section.href) ? section.href : undefined;
+    const links = section.links.flatMap((link) => {
+      const searchEntries = link.searchEntries?.filter((entry) => canAccessHref(access, entry.href));
+      if (canAccessHref(access, link.href)) return [{ ...link, searchEntries }];
 
-  return adminNavSections;
+      const firstAllowedEntry = searchEntries?.[0];
+      if (!firstAllowedEntry) return [];
+      return [
+        {
+          ...link,
+          aliases: firstAllowedEntry.aliases,
+          description: firstAllowedEntry.description ?? link.description,
+          href: firstAllowedEntry.href,
+          iconKey: firstAllowedEntry.iconKey,
+          label: firstAllowedEntry.label,
+          searchEntries: searchEntries?.slice(1),
+        },
+      ];
+    });
+    const localGroups = section.localGroups?.flatMap((group) => {
+      const groupLinks = group.links.filter((link) => canAccessHref(access, link.href));
+      return groupLinks.length > 0 ? [{ ...group, links: groupLinks }] : [];
+    });
+
+    return href || links.length > 0 || (localGroups?.length ?? 0) > 0
+      ? [{ ...section, href, links, localGroups }]
+      : [];
+  });
 }
 
-function canSeeDeveloperSystem(access: AdminOperatorAccessLike) {
-  if (access?.roles?.includes('MASTER_ADMIN')) {
-    return true;
-  }
+export function adminNavSearchEntries(sections: readonly AdminNavSection[]) {
+  let sourceIndex = 0;
+  return sections.flatMap((section) => {
+    const entries: AdminNavSearchResult[] = [];
+    if (section.href) {
+      entries.push(
+        toSearchResult(
+          {
+            aliases: [],
+            description: section.description,
+            href: section.href,
+            iconKey: section.iconKey,
+            id: section.id,
+            label: section.label,
+          },
+          section,
+          sourceIndex++,
+        ),
+      );
+    }
 
-  return Boolean(access?.categories.some((category) => developerSystemCategories.has(category)));
+    for (const link of section.links) {
+      entries.push(toSearchResult(link, section, sourceIndex++));
+      for (const searchEntryItem of link.searchEntries ?? []) {
+        entries.push(
+          toSearchResult(
+            {
+              ...searchEntryItem,
+              description: searchEntryItem.description ?? link.description,
+            },
+            section,
+            sourceIndex++,
+            undefined,
+            'workspace',
+          ),
+        );
+      }
+    }
+
+    for (const group of section.localGroups ?? []) {
+      for (const link of group.links) {
+        entries.push(toSearchResult(link, section, sourceIndex++, group.label, 'workspace'));
+      }
+    }
+    return entries;
+  });
+}
+
+export function adminNavSearchResults(sections: readonly AdminNavSection[], rawQuery: string, limit = 7) {
+  const entries = adminNavSearchEntries(sections);
+  const query = normalizeSearchText(rawQuery);
+  const ranked = query
+    ? entries
+        .map((entry) => ({ entry, rank: searchRank(entry, query) }))
+        .filter((item): item is { entry: AdminNavSearchResult; rank: number } => item.rank !== null)
+        .sort((left, right) => left.rank - right.rank || left.entry.sourceIndex - right.entry.sourceIndex)
+        .map((item) => item.entry)
+    : representativeSearchEntries(sections, entries);
+
+  return {
+    results: ranked.slice(0, limit),
+    total: ranked.length,
+  };
+}
+
+export function groupAdminNavSearchResults(results: readonly AdminNavSearchResult[]) {
+  const grouped = new Map<string, AdminNavSearchResult[]>();
+  for (const result of results) {
+    const sectionResults = grouped.get(result.sectionLabel) ?? [];
+    sectionResults.push(result);
+    grouped.set(result.sectionLabel, sectionResults);
+  }
+  return Array.from(grouped, ([sectionLabel, entries]) => ({ entries, sectionLabel }));
+}
+
+export function adminNavSectionDestinations(section: AdminNavSection) {
+  return [
+    ...(section.href ? [section.href] : []),
+    ...section.links.flatMap(adminNavLinkDestinations),
+    ...(section.localGroups?.flatMap((group) => group.links.map((link) => link.href)) ?? []),
+  ];
+}
+
+export function adminNavLinkDestinations(link: AdminNavLink) {
+  return [link.href, ...(link.searchEntries?.map((entry) => entry.href) ?? [])];
+}
+
+export function adminNavWorkspaceDestinations() {
+  return adminWorkspaceNavigationGroups.flatMap((group) => group.links.map((link) => link.href));
+}
+
+export type AdminNavSearchResult = {
+  readonly aliases: readonly string[];
+  readonly description: string;
+  readonly entryKind: 'primary' | 'workspace';
+  readonly href: string;
+  readonly iconKey: AdminNavIconKey;
+  readonly id: string;
+  readonly label: string;
+  readonly sectionLabel: string;
+  readonly sourceIndex: number;
+  readonly workspaceLabel?: string;
+};
+
+function navLink(
+  id: string,
+  iconKey: AdminNavIconKey,
+  href: string,
+  label: string,
+  description: string,
+  aliases?: readonly string[],
+  searchEntries?: readonly AdminNavSearchEntry[],
+): AdminNavLink {
+  return { aliases, description, href, iconKey, id, label, searchEntries };
+}
+
+function searchEntry(
+  id: string,
+  iconKey: AdminNavIconKey,
+  href: string,
+  label: string,
+  aliases?: readonly string[],
+): AdminNavSearchEntry {
+  return { aliases, href, iconKey, id, label };
+}
+
+function searchEntriesExcept(links: readonly AdminNavLink[], representativeHref: string) {
+  return links
+    .filter((link) => link.href !== representativeHref)
+    .map((link) => searchEntry(link.id, link.iconKey, link.href, link.label, link.aliases));
+}
+
+function canAccessHref(access: AdminOperatorAccessLike, href: string) {
+  const category = adminOperatorCategoryForPath(href);
+  return category ? hasAdminOperatorCategory(access, category) : false;
+}
+
+function toSearchResult(
+  entry: AdminNavSearchEntry | AdminNavLink,
+  section: AdminNavSection,
+  sourceIndex: number,
+  workspaceLabel?: string,
+  entryKind: 'primary' | 'workspace' = 'primary',
+): AdminNavSearchResult {
+  return {
+    aliases: entry.aliases ?? [],
+    description: entry.description ?? section.description,
+    entryKind,
+    href: entry.href,
+    iconKey: entry.iconKey,
+    id: entry.id,
+    label: entry.label,
+    sectionLabel: section.label,
+    sourceIndex,
+    workspaceLabel,
+  };
+}
+
+function representativeSearchEntries(
+  sections: readonly AdminNavSection[],
+  entries: readonly AdminNavSearchResult[],
+) {
+  const byId = new Map(entries.map((entry) => [entry.id, entry]));
+  return sections.flatMap((section) => {
+    const representativeId = section.href
+      ? section.id
+      : (section.links[0]?.id ?? section.localGroups?.[0]?.links[0]?.id);
+    const entry = representativeId ? byId.get(representativeId) : undefined;
+    return entry ? [entry] : [];
+  });
+}
+
+function searchRank(entry: AdminNavSearchResult, query: string) {
+  const title = normalizeSearchText(entry.label);
+  const titleWords = title.split(' ');
+  const queryWords = query.split(' ');
+  if (title === query) return 0;
+  const titlePrefix = title.startsWith(query);
+  const titleWordPrefix = queryWords.every((word) =>
+    titleWords.some((titleWord) => titleWord.startsWith(word)),
+  );
+  if (entry.entryKind === 'primary' && titlePrefix) return 1;
+  if (entry.entryKind === 'primary' && titleWordPrefix) return 2;
+  if (
+    (entry.entryKind === 'workspace' && (titlePrefix || titleWordPrefix)) ||
+    entry.aliases.some((alias) => normalizeSearchText(alias).includes(query))
+  )
+    return 3;
+  if (
+    normalizeSearchText(entry.sectionLabel).includes(query) ||
+    normalizeSearchText(entry.workspaceLabel ?? '').includes(query)
+  )
+    return 4;
+  if (normalizeSearchText(entry.description).includes(query)) return 5;
+  return null;
+}
+
+function normalizeSearchText(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ');
 }

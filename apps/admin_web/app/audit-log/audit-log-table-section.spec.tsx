@@ -15,6 +15,7 @@ describe('AuditLogTableSection', () => {
     expect(rendered).toContain('9 Jun 2026, 10:00');
     expect(rendered).toContain('Updated just now');
     expect(rendered).toContain('Booking / Ops status updated');
+    expect(rendered).toContain('Recorded');
     expect(rendered).toContain('Dispatch');
     expect(rendered).toContain('Operator One');
     expect(rendered).toContain('booking:bookin');
@@ -22,6 +23,7 @@ describe('AuditLogTableSection', () => {
     expect(rendered).toContain('Trace related flow');
     expect(rendered).toContain('Structured booking handling status was updated by an operator.');
     expect(rendered).toContain('Changed status');
+    expect(rendered).toContain('Technical evidence');
     expect(rendered).toContain('"status": "MATCHED"');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/booking-1']));
   });
@@ -40,6 +42,7 @@ describe('AuditLogTableSection', () => {
 
     expect(source).toContain('ActionMenu');
     expect(source).toContain('AdminFilterChipGroup');
+    expect(source).toContain('AdminDisclosure');
     expect(source).toContain('AdminSignal');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<div className="participant-list admin-mb-8">');
@@ -49,6 +52,8 @@ describe('AuditLogTableSection', () => {
     expect(source).not.toContain('<span className={row.bucketClassName}>{row.bucketLabel}</span>');
     expect(source).not.toContain('<span className={item.className} key={`${item.label}-${index}`}>');
     expect(source).toContain('tone={item.tone}');
+    expect(source).toContain("headers={['When', 'Result', 'Action', 'Actor', 'Target', 'Related board / route']}");
+    expect(source).not.toContain("'Ops record', 'Metadata'");
   });
 
   it('uses the shared DateTimeText atom for audit timestamps', () => {

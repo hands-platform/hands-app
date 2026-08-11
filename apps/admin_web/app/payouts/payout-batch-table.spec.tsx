@@ -4,15 +4,20 @@ import { join } from 'node:path';
 import { PayoutBatchTable, type PayoutBatchTableRow } from './payout-batch-table';
 
 describe('PayoutBatchTable', () => {
-  it('uses the shared Vuexy note panel for payout action execution maps', () => {
+  it('keeps payout rows summary-first instead of rendering repeated audit maps', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/payout-batch-table.tsx'), 'utf8');
 
-    expect(source).toContain('AdminStageItem');
-    expect(source).toContain('AdminStageList');
-    expect(source).toContain('AdminNotePanel');
-    expect(source).not.toContain('<div className="setup-stage-list admin-mt-8">');
-    expect(source).not.toContain('className="setup-stage-item"');
-    expect(source).not.toContain('<div className="ops-task-note admin-mb-10">');
+    expect(source).toContain("'Partner / batch'");
+    expect(source).toContain("'Primary issue'");
+    expect(source).toContain("'Transfer evidence'");
+    expect(source).not.toContain("'Ops record'");
+    expect(source).not.toContain("'Earnings'");
+    expect(source).not.toContain("'Checklist'");
+    expect(source).not.toContain("'Tax withheld'");
+    expect(source).not.toContain('Payout action execution map');
+    expect(source).not.toContain('AdminStageItem');
+    expect(source).not.toContain('AdminStageList');
+    expect(source).not.toContain('AdminNotePanel');
   });
 
   it('renders payout batch rows with finance actions and row anchors', () => {
@@ -38,6 +43,7 @@ describe('PayoutBatchTable', () => {
             },
           ],
           blockingActionSummary: 'Save transfer reference before paid.',
+          bankReconciliationRemainingAmount: 650000,
           blockingReasons: [
             {
               detail: 'Transfer reference is required.',
@@ -55,6 +61,7 @@ describe('PayoutBatchTable', () => {
           earningCount: 2,
           earningsHint: '2/2 linked to this batch',
           id: 'batch-123456',
+          reviewHref: '/payouts?editPayoutBatchId=batch-123456',
           notes: 'Manual transfer',
           operatorEvidence: [
             {
@@ -105,7 +112,7 @@ describe('PayoutBatchTable', () => {
           opsSignalClassName: 'signal signal-warn',
         }),
       ],
-      updateTransferRefAction: async () => undefined,
+      showOperatorEvidence: true,
     });
 
     const resolvedTable = resolveElement(table);
@@ -117,22 +124,25 @@ describe('PayoutBatchTable', () => {
     expect(normalizedRendered).toContain('Created by Finance Creator');
     expect(normalizedRendered).toContain('Paid by Finance Maker');
     expect(normalizedRendered).toContain('Approved by Finance Approver');
-    expect(rendered).toContain('Payout action execution map');
     expect(rendered).toContain('Resolve blockers before paid');
-    expect(rendered).toContain('Foot Massage');
-    expect(rendered).toContain('700.000 VND');
+    expect(rendered).toContain('900.000 VND');
+    expect(rendered).toContain('50.000 VND');
+    expect(normalizedRendered).toContain('Bank match remaining 650.000 VND');
+    expect(normalizedRendered).toContain('2 linked earnings');
+    expect(rendered).not.toContain('Payout action execution map');
+    expect(rendered).not.toContain('Foot Massage');
     expect(hrefsIn(table)).toContain('/payouts?confirm=paid&payoutBatchId=batch-123456');
     expect(hrefsIn(table)).toContain('/partners/partner-1');
+    expect(hrefsIn(table)).toContain('/payouts?editPayoutBatchId=batch-123456');
     expect(classNamesIn(table)).toEqual(
       expect.arrayContaining([
-        'table vuexy-data-table vuexy-booking-table admin-data-table',
-        'admin-form-input',
-        'admin-form-control-button button button-primary',
+        'table vuexy-data-table vuexy-booking-table admin-data-table payout-batch-compact-table',
       ]),
     );
+    expect(rendered).not.toContain('Save transfer evidence');
   });
 
-  it('renders settled payout rows with metadata save controls but no status action', () => {
+  it('renders settled payout rows as read-only summaries with no status action', () => {
     const table = PayoutBatchTable({
       rows: [
         buildPayoutBatchRow({
@@ -181,7 +191,6 @@ describe('PayoutBatchTable', () => {
           transferRef: 'BANK-PAID-1',
         }),
       ],
-      updateTransferRefAction: async () => undefined,
     });
 
     const rendered = textContent(table);
@@ -190,22 +199,20 @@ describe('PayoutBatchTable', () => {
     expect(rendered).toContain('Settlement finished');
     expect(rendered).toContain('BANK-PAID-1');
     expect(rendered).toContain('Final settlement memo');
-    expect(rendered).toContain('Earnings paid');
-    expect(rendered).toContain('Tax paid');
-    expect(rendered).toContain('Paid date');
+    expect(rendered).not.toContain('Earnings paid');
+    expect(rendered).not.toContain('Tax paid');
     expect(rendered).toContain('No status action');
   });
 
   it('renders the empty state when there are no payout batches', () => {
     const table = PayoutBatchTable({
       rows: [],
-      updateTransferRefAction: async () => undefined,
     });
 
     expect(textContent(table)).toContain('No payout batches loaded.');
   });
 
-  it('does not duplicate the base pill class for blocking reason and action execution badges', () => {
+  it('does not duplicate the base pill class for compact blocking reason badges', () => {
     const table = PayoutBatchTable({
       rows: [
         buildPayoutBatchRow({
@@ -227,14 +234,11 @@ describe('PayoutBatchTable', () => {
           ],
         }),
       ],
-      updateTransferRefAction: async () => undefined,
     });
 
     const classNames = classNamesIn(table);
 
-    expect(classNames).toContain('pill pill-warn');
     expect(classNames).toContain('pill pill-danger');
-    expect(classNames).not.toContain('pill pill pill-warn');
     expect(classNames).not.toContain('pill pill pill-danger');
   });
 
@@ -242,7 +246,7 @@ describe('PayoutBatchTable', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/payout-batch-table.tsx'), 'utf8');
 
     expect(source).toContain('AdminInlineFallback');
-    expect(source).toContain('AdminFilterChipGroup');
+    expect(source).toContain('payout-batch-row-details');
     expect(source).toContain('AdminSignal');
     expect(source).toContain('adminSignalToneFromClassName(row.opsSignalClassName)');
     expect(source).toContain('StatusBadge');
@@ -259,6 +263,9 @@ describe('PayoutBatchTable', () => {
     expect(source).not.toContain('<a className="pill pill-danger" href={row.partnerChecksHref}>');
     expect(source).not.toContain('<span className="pill pill-warn">Resolve blockers before paid</span>');
     expect(source).not.toContain('<span className="muted">No status action</span>');
+    expect(source).not.toContain('<form');
+    expect(source).not.toContain('AdminActionsForm');
+    expect(source).toContain('Review transfer');
   });
 
   it('uses the shared money atom for payout batch amounts', () => {
@@ -309,6 +316,7 @@ function buildPayoutBatchRow(overrides: Partial<PayoutBatchTableRow> = {}): Payo
     paidBlockedByReleaseCheck: false,
     phase: 'Finance review',
     readinessSummary: 'Ready for review.',
+    reviewHref: '/payouts?editPayoutBatchId=batch-123456',
     serviceEvidencePills: [],
     shortId: 'batch-123',
     statusLabel: 'Draft',

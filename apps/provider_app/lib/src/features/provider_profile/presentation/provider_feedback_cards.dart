@@ -34,13 +34,13 @@ class ProviderErrorCard extends StatelessWidget {
     final accountBlocked = isProviderAccountBlockedMessage(text);
     final title = actionBlock?.title ??
         (accountBlocked
-            ? 'Partner account blocked by admin'
-            : 'Device blocked by admin');
+            ? 'Tài khoản đối tác đang bị HANDS tạm khóa'
+            : 'Thiết bị đang bị HANDS tạm khóa');
     final detail = actionBlock?.detail ?? text;
     final nextStep = actionBlock?.nextStep ??
         (accountBlocked
-            ? 'Contact HANDS operations. This account cannot go online or share location until an admin unblocks it.'
-            : 'Do not create a new account. Contact HANDS operations so this device can be reviewed or unblocked.');
+            ? 'Liên hệ HANDS. Tài khoản không thể trực tuyến hoặc chia sẻ vị trí cho đến khi được mở khóa.'
+            : 'Không tạo tài khoản mới. Hãy liên hệ HANDS để thiết bị được xem xét hoặc mở khóa.');
     final icon = actionBlock?.icon ??
         (accountBlocked
             ? Icons.admin_panel_settings_outlined

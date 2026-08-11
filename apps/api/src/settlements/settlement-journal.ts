@@ -35,14 +35,17 @@ export function buildBookingSettlementJournal(input: BookingSettlementJournalInp
   const currency = input.currency || 'VND';
   const companyCouponExpense = numberValue(input.metadata?.companyCouponExpense);
   const platformFeeGross = input.platformFeeNetRevenue + input.companyOutputVat;
+  const cashPartnerDueBeforeCoupon = platformFeeGross + input.partnerWithholdingTotal;
+  const cashPartnerReceivable = Math.max(0, cashPartnerDueBeforeCoupon - companyCouponExpense);
+  const cashPartnerCouponSubsidyPayable = Math.max(0, companyCouponExpense - cashPartnerDueBeforeCoupon);
 
   if (input.paymentMethod === 'CASH') {
     addEntry(entries, {
       accountCode: 'partner_receivable_negative_wallet',
       accountName: 'Partner receivable / negative wallet',
-      amount: platformFeeGross + input.partnerWithholdingTotal,
+      amount: cashPartnerReceivable,
       currency,
-      memo: `Cash booking ${input.bookingId} creates partner receivable for platform fee and withholding.`,
+      memo: `Cash booking ${input.bookingId} creates partner receivable after company coupon funding.`,
       side: 'DEBIT',
     });
   } else if (input.paymentMethod === 'CUSTOMER_WALLET') {
@@ -82,13 +85,19 @@ export function buildBookingSettlementJournal(input: BookingSettlementJournalInp
     side: 'DEBIT',
   });
 
-  if (input.paymentMethod !== 'CASH') {
+  if (input.paymentMethod !== 'CASH' || cashPartnerCouponSubsidyPayable > 0) {
     addEntry(entries, {
       accountCode: 'partner_wallet_liability',
       accountName: 'Partner wallet liability',
-      amount: input.partnerPayoutAmount,
+      amount:
+        input.paymentMethod === 'CASH'
+          ? cashPartnerCouponSubsidyPayable
+          : input.partnerPayoutAmount,
       currency,
-      memo: 'Partner wallet liability credited for the actual partner payout; withholding is tracked separately.',
+      memo:
+        input.paymentMethod === 'CASH'
+          ? 'Company coupon funding exceeds cash fees due and becomes payable to the partner.'
+          : 'Partner wallet liability credited for the actual partner payout; withholding is tracked separately.',
       side: 'CREDIT',
     });
   }

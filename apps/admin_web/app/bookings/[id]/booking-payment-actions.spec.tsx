@@ -21,37 +21,19 @@ describe('Booking payment actions', () => {
     expect(source).not.toContain('<span className="pill pill-danger">Settlement needed</span>');
   });
 
-  it('uses a separate Finance approver select for booking refunds', () => {
+  it('submits booking refunds as queue requests without exposing approver selection', () => {
     const markup = renderToStaticMarkup(
       <BookingPaymentAction
         action={async () => undefined}
         bookingId="booking-1"
-        financeApproverOptions={[{ label: 'Finance Approver · approver@example.com', value: 'approver-2' }]}
-        label="Refund"
+        label="Request refund"
         paymentId="payment-1"
-        requiresApproval
       />,
     );
 
-    expect(markup).toContain('Separate Finance approver');
-    expect(markup).toContain('Finance Approver · approver@example.com');
+    expect(markup).toContain('Request refund');
+    expect(markup).not.toContain('Separate Finance approver');
+    expect(markup).not.toContain('approvalAdminId');
     expect(markup).not.toContain('Different admin user id');
-    expect(markup).not.toContain('No other Finance approver is available');
-  });
-
-  it('disables booking refund execution when no separate Finance approver exists', () => {
-    const markup = renderToStaticMarkup(
-      <BookingPaymentAction
-        action={async () => undefined}
-        bookingId="booking-1"
-        label="Refund"
-        paymentId="payment-1"
-        requiresApproval
-      />,
-    );
-
-    expect(markup).toContain('No other Finance approver is available');
-    expect(markup).toContain('<select disabled="" name="approvalAdminId" required="">');
-    expect(markup).toContain('class="admin-form-control-button button button-primary" disabled="" type="submit"');
   });
 });

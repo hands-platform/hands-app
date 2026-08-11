@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { ParseEnumPipe, RequestMethod } from '@nestjs/common';
 import { GUARDS_METADATA, METHOD_METADATA, PATH_METADATA, ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { PaymentMethod, Role } from '@prisma/client';
+import { AdminOperatorCategoryGuard } from '../admin/admin-operator-category.guard';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ROLES_KEY } from '../auth/roles.decorator';
@@ -12,10 +13,15 @@ import type { PaymentsService } from './payments.service';
 describe('PaymentsController', () => {
   const payments = {
     capture: vi.fn(),
+    captureForAdmin: vi.fn(),
+    customerCheckoutAction: vi.fn(),
     customerCheckoutMethods: vi.fn(),
     handleCallback: vi.fn(),
     handleVnpayIpn: vi.fn(),
+    rejectRefund: vi.fn(),
     refund: vi.fn(),
+    requestRefund: vi.fn(),
+    requestRefundForAdmin: vi.fn(),
     releaseForAdmin: vi.fn(),
     syncStatusForAdmin: vi.fn(),
   };
@@ -63,6 +69,28 @@ describe('PaymentsController', () => {
     expect(rolesMetadata('customerPaymentMethods')).toEqual([Role.CUSTOMER]);
   });
 
+  it('returns only the signed-in customer booking payment action', async () => {
+    payments.customerCheckoutAction.mockResolvedValue({
+      bookingId: 'booking-1',
+      checkoutUrl: 'https://payments.example.test/checkout',
+      method: PaymentMethod.MOMO,
+      paymentId: 'payment-1',
+      status: 'PENDING',
+    });
+    const customer = { id: 'customer-user-1', roles: [Role.CUSTOMER] } as AuthenticatedUser;
+
+    await expect(controller.customerPaymentAction(customer, 'booking-1')).resolves.toEqual(
+      expect.objectContaining({ paymentId: 'payment-1' }),
+    );
+    expect(routeMetadata('customerPaymentAction')).toEqual({
+      method: RequestMethod.GET,
+      path: 'customer/bookings/:bookingId/payment-action',
+    });
+    expect(guardNames('customerPaymentAction')).toEqual([JwtAuthGuard.name, RolesGuard.name]);
+    expect(rolesMetadata('customerPaymentAction')).toEqual([Role.CUSTOMER]);
+    expect(payments.customerCheckoutAction).toHaveBeenCalledWith('customer-user-1', 'booking-1');
+  });
+
   it('exposes the official VNPay GET IPN route without an application auth guard', async () => {
     const query = { vnp_TxnRef: 'booking-1', vnp_TransactionStatus: '00' };
     payments.handleVnpayIpn.mockResolvedValue({ RspCode: '00', Message: 'Confirm Success' });
@@ -80,21 +108,63 @@ describe('PaymentsController', () => {
   });
 
   it('keeps admin payment commands role protected', async () => {
+    payments.requestRefundForAdmin.mockResolvedValue({ id: 'payment-1', requested: true });
     payments.refund.mockResolvedValue({ id: 'payment-1' });
+    payments.rejectRefund.mockResolvedValue({ id: 'refund-1', status: 'REJECTED' });
 
-    await expect(controller.refund(admin, 'payment-1', { approvalAdminId: 'finance-admin-2' })).resolves.toEqual({
+    const request = {
+      idempotencyKey: 'payment-refund-request-1',
+      reason: 'Customer evidence reviewed',
+    };
+    await expect(controller.requestRefund(admin, 'payment-1', request)).resolves.toEqual({
+      id: 'payment-1',
+      requested: true,
+    });
+    await expect(controller.refund(admin, 'payment-1')).resolves.toEqual({
       id: 'payment-1',
     });
+    await expect(controller.rejectRefund(admin, 'refund-1', { reason: 'Evidence does not support refund' })).resolves.toEqual({
+      id: 'refund-1',
+      status: 'REJECTED',
+    });
 
+    expect(routeMetadata('requestRefund')).toEqual({
+      method: RequestMethod.POST,
+      path: 'admin/payments/:id/refund-request',
+    });
     expect(routeMetadata('refund')).toEqual({
       method: RequestMethod.POST,
       path: 'admin/payments/:id/refund',
     });
-    expect(guardNames('refund')).toEqual([JwtAuthGuard.name, RolesGuard.name]);
-    expect(rolesMetadata('refund')).toEqual([Role.ADMIN]);
-    expect(payments.refund).toHaveBeenCalledWith('admin-1', 'payment-1', {
-      approvalAdminId: 'finance-admin-2',
+    expect(routeMetadata('rejectRefund')).toEqual({
+      method: RequestMethod.POST,
+      path: 'admin/refunds/:id/reject',
     });
+    expect(guardNames('requestRefund')).toEqual([
+      JwtAuthGuard.name,
+      RolesGuard.name,
+      AdminOperatorCategoryGuard.name,
+    ]);
+    expect(guardNames('refund')).toEqual([
+      JwtAuthGuard.name,
+      RolesGuard.name,
+      AdminOperatorCategoryGuard.name,
+    ]);
+    expect(guardNames('rejectRefund')).toEqual([
+      JwtAuthGuard.name,
+      RolesGuard.name,
+      AdminOperatorCategoryGuard.name,
+    ]);
+    expect(rolesMetadata('requestRefund')).toEqual([Role.ADMIN]);
+    expect(rolesMetadata('refund')).toEqual([Role.ADMIN]);
+    expect(rolesMetadata('rejectRefund')).toEqual([Role.ADMIN]);
+    expect(payments.requestRefundForAdmin).toHaveBeenCalledWith('admin-1', 'payment-1', request);
+    expect(payments.refund).toHaveBeenCalledWith('admin-1', 'payment-1');
+    expect(payments.rejectRefund).toHaveBeenCalledWith(
+      'admin-1',
+      'refund-1',
+      'Evidence does not support refund',
+    );
   });
 });
 

@@ -1,247 +1,267 @@
-import { ActionMenu } from '../../components/action-menu';
+import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+
+import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminDisclosureCard, AdminNotePanel, AdminNoticeCard } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
+import { MoneyText } from '../../components/money-text';
 import {
+  type AdminCashSettlementDetail,
   type AdminCashSettlementSummary,
   type AdminEarning,
-  type AdminOperationalPolicySetting,
-  adminGet,
+  adminGetResult,
 } from '../../lib/admin-api';
-import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminTablePanel } from '../../components/admin-table-panel';
-import { ConfirmDialog } from '../../components/confirm-dialog';
-import { MoneyText } from '../../components/money-text';
-import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
-import {
-  buildAdminLiveOperationsPolicy,
-  LEGACY_OPERATIONAL_POLICY_KEYS,
-  OPERATIONAL_POLICY_KEYS,
-} from '../../lib/operations-policy';
-import { settleCashFeeDebt } from './actions';
-import { buildCashSettlementConfirmation } from './cash-settlement-action-confirmation';
-import {
-  CashSettlementExecutionSection,
-  CashSettlementRulesSection,
-  CashSettlementWorkflowSections,
-} from './cash-settlement-board-sections';
+import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
+import { hasAdminOperatorCategory } from '../../lib/admin-operator-access-model';
+import { readSearchParam } from '../../lib/date-range';
 import { CashSettlementFilterSection } from './cash-settlement-filter-section';
 import { CashSettlementOpenDebtTableSection } from './cash-settlement-open-debt-table-section';
-import {
-  buildCommandCards,
-  buildCashSettlementExecutionDesk,
-  buildDebtCauseCards,
-} from './cash-settlement-page-command-cards';
 import {
   buildCashSettlementApiHref,
   buildCashSettlementFilters,
   buildCashSettlementServerPagination,
   buildCashSettlementSummaryApiHref,
   cashSettlementHref,
+  cashSettlementQueueLabel,
+  cashSettlementReviewHref,
+  safeCashSettlementOverviewReturnTo,
 } from './cash-settlement-page-filters';
-import {
-  buildCashSettlementPriorityBoard,
-  buildCashSettlementPriorityBoardRows,
-} from './cash-settlement-page-priority';
-import {
-  buildAppliedCashSettlementPolicyCards,
-  buildCashSettlementRuleCards,
-} from './cash-settlement-page-rule-cards';
 import { buildCashSettlementOpenDebtTableRows, buildCashSettlementRows } from './cash-settlement-page-rows';
-import { buildProviderGroups, buildSummary, mergeAuthoritativeSummary } from './cash-settlement-page-summary';
-import {
-  buildCashSettlementEvidenceChecklist,
-  buildCashSettlementHandoffMap,
-  buildWalletRecoverySteps,
-} from './cash-settlement-page-workflow-cards';
-import { CashSettlementProviderGroupsSection } from './cash-settlement-provider-groups-section';
+import { buildSummary, mergeAuthoritativeSummary } from './cash-settlement-page-summary';
+import { CashSettlementReviewDrawer } from './cash-settlement-review-drawer';
 
 type CashSettlementsPageProps = {
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const CASH_SETTLEMENT_POLICY_KEYS = [
-  OPERATIONAL_POLICY_KEYS.cashSettlementClearance,
-  OPERATIONAL_POLICY_KEYS.walletNegativeGate,
-  OPERATIONAL_POLICY_KEYS.payoutBatchCycle,
-  OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
-  LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
-] as const;
-
-const CASH_SETTLEMENT_POLICY_HREF = `/admin/operational-policy?${new URLSearchParams({
-  keys: CASH_SETTLEMENT_POLICY_KEYS.join(','),
-}).toString()}`;
+export const metadata: Metadata = {
+  title: 'Cash Settlement Workbench | HANDS Admin',
+};
 
 export default async function CashSettlementsPage({ searchParams }: CashSettlementsPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = buildCashSettlementFilters(params);
-  const showFullOperationsView = readSearchParam(params.view) === 'full';
-  const [earnings, apiSummary, policySettings] = await Promise.all([
-    adminGet<AdminEarning[]>(buildCashSettlementApiHref(filters), []),
-    adminGet<AdminCashSettlementSummary | null>(buildCashSettlementSummaryApiHref(filters), null),
-    showFullOperationsView
-      ? adminGet<AdminOperationalPolicySetting[]>(CASH_SETTLEMENT_POLICY_HREF, [])
-      : Promise.resolve([] as AdminOperationalPolicySetting[]),
+  if (readSearchParam(params.view) === 'full') {
+    redirect(cashSettlementHref({ ...filters, view: 'guide' }));
+  }
+  const reviewId = readSearchParam(params.review).trim();
+  const [earningsResult, summaryResult, detailResult, operatorAccess] = await Promise.all([
+    adminGetResult<AdminEarning[]>(buildCashSettlementApiHref(filters), []),
+    adminGetResult<AdminCashSettlementSummary | null>(buildCashSettlementSummaryApiHref(filters), null),
+    reviewId
+      ? adminGetResult<AdminCashSettlementDetail | null>(
+          `/admin/cash-settlement-earnings/${encodeURIComponent(reviewId)}`,
+          null,
+        )
+      : Promise.resolve({ data: null, ok: true, status: null }),
+    getCurrentAdminOperatorAccess(),
   ]);
-  const rows = buildCashSettlementRows(earnings);
-  const providers = buildProviderGroups(rows);
-  const visibleSummary = buildSummary(rows, providers);
-  const summary = mergeAuthoritativeSummary(visibleSummary, apiSummary);
+  const rows = buildCashSettlementRows(earningsResult.data);
+  const visibleSummary = buildSummary(rows);
+  const summary = summaryResult.ok
+    ? mergeAuthoritativeSummary(visibleSummary, summaryResult.data)
+    : visibleSummary;
   const openDebtRows = buildCashSettlementOpenDebtTableRows(rows);
-  const openDebtPagination = buildCashSettlementServerPagination(openDebtRows, filters, summary.rowCount);
-  const liveOperationsPolicy = buildAdminLiveOperationsPolicy(policySettings);
-  const cashSettlementRangeScope = dateRangeLabel(filters.range);
-  const priorityBoard = buildCashSettlementPriorityBoard(rows);
-  const confirmation =
-    readSearchParam(params.confirm) === 'settle'
-      ? buildCashSettlementConfirmation(rows, {
-          earningId: readSearchParam(params.earningId),
-          settlementMethod: readSearchParam(params.settlementMethod),
-          settlementNotes: readSearchParam(params.settlementNotes),
-          settlementRef: readSearchParam(params.settlementRef),
-        })
-      : null;
+  const totalRows = summaryResult.ok ? summary.rowCount : earningsResult.data.length;
+  const openDebtPagination = buildCashSettlementServerPagination(openDebtRows, filters, totalRows);
+  const closeHref = cashSettlementHref(filters);
+  const reviewHref = reviewId ? cashSettlementReviewHref(closeHref, reviewId) : closeHref;
+  const notice = readSearchParam(params.notice);
+  const noticeCode = readSearchParam(params.code);
+  const globalSummary = summaryResult.data?.global ?? null;
+  const pageSummary = filters.period && summaryResult.data
+    ? {
+        missingSettlementEvidenceCount: summaryResult.data.missingSettlementEvidenceCount,
+        providerCount: summaryResult.data.providerCount,
+        remainingDebtAmount: summaryResult.data.totalDebtAmount,
+        staleDebtRowCount: summaryResult.data.staleDebtRowCount,
+      }
+    : globalSummary;
+  const canAllocate = hasAdminOperatorCategory(operatorAccess, 'FINANCE_SETTLEMENTS');
+  const guideHref = cashSettlementHref({ ...filters, page: 1, view: 'guide' });
 
   return (
     <AdminPageTemplate
-      description="Finance queue for cash bookings where the Partner collected customer cash and still owes HANDS platform fee or withholding."
+      contentClassName="cash-settlement-workbench-content"
+      description="Operational workbench for Partner-held cash fee receivables. Review evidence before changing financial state."
+      actions={
+        <>
+          {filters.returnTo ? (
+            <AdminTextLink href={safeCashSettlementOverviewReturnTo(filters.returnTo)}>
+              Back to Tax &amp; Period Close
+            </AdminTextLink>
+          ) : null}
+          <AdminTextLink href={guideHref}>Operating guide</AdminTextLink>
+          <AdminTextLink href={closeHref}>Refresh now</AdminTextLink>
+        </>
+      }
       metrics={[
         {
-          helper: 'Partner-held cash debt needing follow-up.',
+          className: 'cash-settlement-kpi-card',
+          helper: 'Open company receivable from Partner-collected cash.',
           kind: 'risk',
-          label: 'Partners with cash debt',
-          scope: 'Needs action',
-          value: summary.providerCount,
+          label: 'Open exposure',
+          scope: filters.period ? `Accounting month ${filters.period}` : 'All dates · All open',
+          value: summaryResult.ok && pageSummary ? (
+            <MoneyText amount={pageSummary.remainingDebtAmount} currency={summary.currency} />
+          ) : (
+            'Unavailable'
+          ),
         },
         {
-          helper: 'Open cash-fee rows in the current queue.',
+          className: 'cash-settlement-kpi-card',
+          helper: 'Open debt past the configured settlement follow-up threshold.',
           kind: 'action',
-          label: 'Open debt rows',
-          scope: 'Pending',
-          value: summary.rowCount,
+          label: 'Overdue',
+          scope: filters.period ? `Accounting month ${filters.period}` : 'All dates · All open',
+          value: summaryResult.ok && pageSummary ? pageSummary.staleDebtRowCount : 'Unavailable',
         },
         {
-          helper: 'Company receivable risk from Partner-held cash.',
+          className: 'cash-settlement-kpi-card',
+          helper: 'Open debt without an approved deposit allocation.',
           kind: 'risk',
-          label: 'Total wallet debt',
-          scope: 'Risk',
-          value: <MoneyText amount={summary.debtAmount} currency={summary.currency} />,
+          label: 'Missing settlement evidence',
+          scope: filters.period ? `Accounting month ${filters.period}` : 'All dates · All open',
+          value: summaryResult.ok && pageSummary
+            ? pageSummary.missingSettlementEvidenceCount
+            : 'Unavailable',
         },
         {
-          helper: 'Period coupon offsets already applied to cash settlements.',
-          kind: 'period',
-          label: 'Company coupon offset',
-          scope: cashSettlementRangeScope,
-          value: <MoneyText amount={summary.companyCouponOffset} currency={summary.currency} />,
-        },
-        {
-          helper: 'Period platform fee still owed from cash bookings.',
-          kind: 'period',
-          label: 'HANDS fee',
-          scope: cashSettlementRangeScope,
-          value: <MoneyText amount={summary.platformFee} currency={summary.currency} />,
-        },
-        {
-          helper: 'Period withholding still waiting for recovery.',
-          kind: 'period',
-          label: 'Tax withholding',
-          scope: cashSettlementRangeScope,
-          value: <MoneyText amount={summary.taxAmount} currency={summary.currency} />,
-        },
-        {
-          helper: 'Oldest pending cash settlement in the queue.',
+          className: 'cash-settlement-kpi-card',
+          helper: 'Distinct Partners with an open cash fee receivable.',
           kind: 'action',
-          label: 'Oldest open',
-          scope: 'Pending',
-          value: summary.oldestOpenLabel,
-        },
-        {
-          helper: 'Aged cash debt needing same-day follow-up.',
-          kind: 'risk',
-          label: 'Over 24h',
-          scope: 'Needs action',
-          value: summary.staleDebtRowCount,
-        },
-        {
-          helper: 'Open rows missing payment evidence.',
-          kind: 'risk',
-          label: 'Payment evidence',
-          scope: 'Needs action',
-          value: summary.missingPaymentEvidenceCount ? `${summary.missingPaymentEvidenceCount} check` : 'OK',
+          label: 'Partners affected',
+          scope: filters.period ? `Accounting month ${filters.period}` : 'All dates · All open',
+          value: summaryResult.ok && pageSummary ? pageSummary.providerCount : 'Unavailable',
         },
       ]}
-      title="Cash Settlements"
+      metricsClassName="cash-settlement-kpi-grid"
+      title="Cash Settlement Workbench"
     >
-      {confirmation ? (
-        <ConfirmDialog
-          action={settleCashFeeDebt}
-          cancelHref={confirmation.cancelHref}
-          confirmLabel={confirmation.confirmLabel}
-          description={confirmation.description}
-          hiddenInputs={[
-            { name: 'earningId', value: confirmation.earningId },
-            { name: 'settlementMethod', value: confirmation.settlementMethod },
-            { name: 'settlementRef', value: confirmation.settlementRef },
-            { name: 'settlementNotes', value: confirmation.settlementNotes },
-          ]}
-          id={`cash-settlement-${confirmation.earningId}`}
-          title={confirmation.title}
-          tone={confirmation.tone}
-        />
+      {!earningsResult.ok || !summaryResult.ok ? (
+        <AdminNoticeCard className="admin-mb-16" role="alert" tone="danger">
+          <strong>Cash settlement data is incomplete</strong>
+          <p className="muted">
+            {!earningsResult.ok
+              ? 'The receivable list could not be loaded. '
+              : 'The queue totals could not be loaded. '}
+            Reload before using this page for a finance decision.
+          </p>
+          <AdminTextLink href={closeHref}>Retry</AdminTextLink>
+        </AdminNoticeCard>
+      ) : null}
+
+      {notice === 'settled' ? (
+        <AdminNoticeCard className="admin-mb-16" role="status" tone="success">
+          <strong>Approved deposit allocation recorded</strong>
+          <p className="muted">
+            Earning {readSearchParam(params.resultEarningId)} ·{' '}
+            <MoneyText
+              amount={Number(readSearchParam(params.resultAmount)) || 0}
+              currency="VND"
+            />{' '}
+            · {cashSettlementResultMethodLabel(readSearchParam(params.resultMethod))} · status{' '}
+            {readSearchParam(params.resultStatus) || 'Unknown'}.
+            {readSearchParam(params.auditId) ? ` Audit ${readSearchParam(params.auditId)}.` : ''}
+          </p>
+          {readSearchParam(params.evidenceId) ? (
+            <AdminTextLink href={`/finance-tax/partner-bank-deposits/${encodeURIComponent(readSearchParam(params.evidenceId))}`}>
+              Open deposit evidence
+            </AdminTextLink>
+          ) : null}
+          {readSearchParam(params.allocationId) ? (
+            <p className="muted">Allocation {readSearchParam(params.allocationId)}</p>
+          ) : null}
+        </AdminNoticeCard>
+      ) : notice === 'error' ? (
+        <AdminNoticeCard className="admin-mb-16" role="alert" tone="danger">
+          <strong>Settlement was not changed</strong>
+          <p className="muted">{cashSettlementErrorMessage(noticeCode)}</p>
+        </AdminNoticeCard>
       ) : null}
 
       <CashSettlementFilterSection
+        ageCounts={summaryResult.data?.queueAgeCounts}
         filters={filters}
+        generatedAt={summaryResult.data?.generatedAt}
+        queueCounts={summaryResult.data?.queueCounts}
+        queueSla={summaryResult.data?.queueSla}
+        totalRowCount={totalRows}
         visibleRowCount={rows.length}
-        totalRowCount={summary.rowCount}
       />
-      {showFullOperationsView ? (
-        <>
-          <CashSettlementExecutionSection
-            executionDesk={buildCashSettlementExecutionDesk(rows, providers, summary)}
-            priorityBoardRows={buildCashSettlementPriorityBoardRows(priorityBoard)}
-          />
-          <CashSettlementRulesSection
-            appliedPolicyCards={buildAppliedCashSettlementPolicyCards(liveOperationsPolicy)}
-            settlementRuleCards={buildCashSettlementRuleCards(summary)}
-          />
-          <CashSettlementWorkflowSections
-            commandCards={buildCommandCards(rows, providers, summary)}
-            debtCauseCards={buildDebtCauseCards(rows, summary)}
-            evidenceChecklist={buildCashSettlementEvidenceChecklist(rows, providers, summary)}
-            recoverySteps={buildWalletRecoverySteps(rows, providers, summary)}
-            settlementHandoff={buildCashSettlementHandoffMap(rows, providers, summary)}
-          />
-          <CashSettlementProviderGroupsSection providers={providers} />
-        </>
-      ) : (
-        <AdminTablePanel
-          description="The default queue keeps payload focused on today's action list. Open the full view only when policy, workflow, and Partner group evidence is needed."
-          resultLabel="Compact default"
-          resultTone="info"
-          title="Cash settlement operations playbook"
-        >
-          <ActionMenu
-            actions={[
-              {
-                href: cashSettlementHref({
-                  pageSize: filters.pageSize,
-                  q: filters.q,
-                  queue: filters.queue,
-                  range: filters.range,
-                  view: 'full',
-                }),
-                kind: 'link',
-                label: 'Open full operations view',
-                tone: 'info',
-              },
-            ]}
-            label="Cash settlement optional operations actions"
-          />
-        </AdminTablePanel>
-      )}
+
+      {summaryResult.ok ? (
+        <AdminNotePanel className="admin-mb-16 cash-settlement-finance-context">
+          <strong>
+            Filtered queue · {cashSettlementQueueLabel(filters.queue)} · {summary.rowCount} row(s)
+          </strong>
+          <p className="muted">
+            Remaining exposure <MoneyText amount={summary.debtAmount} currency={summary.currency} /> · Original debt{' '}
+            <MoneyText amount={summaryResult.data?.totalOriginalDebtAmount ?? summary.debtAmount} currency={summary.currency} /> · Allocated{' '}
+            <MoneyText amount={summaryResult.data?.totalAllocatedAmount ?? 0} currency={summary.currency} />
+          </p>
+          <p className="muted">
+            HANDS fee <MoneyText amount={summary.platformFee} currency={summary.currency} /> · Partner tax{' '}
+            <MoneyText amount={summary.taxAmount} currency={summary.currency} /> · Company coupon offset{' '}
+            <MoneyText amount={summary.companyCouponOffset} currency={summary.currency} /> · Payment records
+            needing review {summary.missingPaymentEvidenceCount}
+          </p>
+        </AdminNotePanel>
+      ) : null}
+
+      {filters.view === 'guide' ? (
+        <AdminDisclosureCard className="admin-mb-16 cash-settlement-guide" open>
+          <summary>Settlement operating guide</summary>
+          <div className="admin-mt-12">
+            <p>
+              Allocate only executed Partner deposits with ledger and journal evidence. Allocation cannot
+              exceed either the deposit recovery available or the earning&apos;s remaining exposure.
+            </p>
+            <p className="muted">
+              Free-text references and synthetic identifiers are not settlement evidence. This action does
+              not create another wallet ledger or accounting journal entry.
+            </p>
+            <AdminTextLink href="/finance-tax/partner-bank-deposits">Open Partner bank deposits</AdminTextLink>
+          </div>
+        </AdminDisclosureCard>
+      ) : null}
+
       <CashSettlementOpenDebtTableSection
         filters={filters}
+        globalRowCount={globalSummary?.rowCount ?? 0}
         pagination={openDebtPagination}
-        showOperationsEvidence={showFullOperationsView}
       />
+
+      {reviewId ? (
+        <CashSettlementReviewDrawer
+          closeHref={closeHref}
+          canAllocate={canAllocate}
+          detail={detailResult.data}
+          detailLoaded={detailResult.ok}
+          returnTo={reviewHref}
+        />
+      ) : null}
     </AdminPageTemplate>
   );
+}
+
+function cashSettlementResultMethodLabel(method: string) {
+  return method === 'APPROVED_PARTNER_DEPOSIT' ? 'Approved Partner deposit' : 'Approved evidence';
+}
+
+function cashSettlementErrorMessage(code: string) {
+  switch (code) {
+    case 'INVALID_INPUT':
+      return 'Enter a positive whole-VND amount and an audit reason of at least 12 characters.';
+    case 'EVIDENCE_INVALID':
+      return 'The selected deposit is not executed, lacks accounting evidence, or cannot cover this debt.';
+    case 'PERMISSION_DENIED':
+      return 'Your finance permissions do not allow this allocation.';
+    case 'TARGET_NOT_FOUND':
+      return 'The deposit or open earning no longer exists.';
+    case 'STALE_OR_DUPLICATE':
+      return 'The deposit or debt changed while you were reviewing it. Reload the evidence before retrying.';
+    default:
+      return 'The approved deposit allocation could not be recorded. Reload the evidence before retrying.';
+  }
 }

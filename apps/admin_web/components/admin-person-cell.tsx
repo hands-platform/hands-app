@@ -16,6 +16,7 @@ type AdminPersonCellProps = {
   readonly initials?: string;
   readonly label: string;
   readonly linkClassName?: string;
+  readonly linkSuffix?: ReactNode;
 };
 
 export function AdminPersonCell({
@@ -30,6 +31,7 @@ export function AdminPersonCell({
   initials,
   label,
   linkClassName,
+  linkSuffix,
 }: AdminPersonCellProps) {
   return (
     <div className={joinClassNames(className)}>
@@ -43,6 +45,7 @@ export function AdminPersonCell({
         {href ? (
           <Link className={joinClassNames(linkClassName)} href={href} prefetch={false}>
             {label}
+            {linkSuffix}
           </Link>
         ) : (
           <strong>{label}</strong>

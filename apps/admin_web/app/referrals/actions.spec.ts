@@ -1,13 +1,13 @@
 import { vi } from 'vitest';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { adminPatch, adminPost } from '../../lib/admin-api';
+import { AdminApiRequestError, adminPatchOrThrow, adminPostOrThrow } from '../../lib/admin-api';
 import {
   approveReferralRewardCashout,
   creditReferralReward,
   holdReferralReward,
   markReferralRewardCashoutPaid,
-  releaseAvailableReferralRewards,
+  releaseHeldReferralReward,
   requestReferralCashoutBankCorrection,
   requireReferralRewardTaxReview,
   reverseReferralReward,
@@ -25,12 +25,22 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('../../lib/admin-api', () => ({
-  adminPost: vi.fn(),
-  adminPatch: vi.fn(),
+  AdminApiRequestError: class AdminApiRequestError extends Error {
+    constructor(
+      readonly method: string,
+      readonly path: string,
+      readonly status: number,
+      readonly payload?: unknown,
+    ) {
+      super(`Admin API ${method} ${path} failed with ${status}`);
+    }
+  },
+  adminPostOrThrow: vi.fn(),
+  adminPatchOrThrow: vi.fn(),
 }));
 
-const mockedAdminPatch = vi.mocked(adminPatch);
-const mockedAdminPost = vi.mocked(adminPost);
+const mockedAdminPatch = vi.mocked(adminPatchOrThrow);
+const mockedAdminPost = vi.mocked(adminPostOrThrow);
 const mockedRedirect = vi.mocked(redirect);
 const mockedRevalidatePath = vi.mocked(revalidatePath);
 
@@ -39,37 +49,33 @@ describe('referral server actions', () => {
     vi.clearAllMocks();
   });
 
-  it('releases hold-window referral rewards and refreshes referral admin views', async () => {
-    mockedAdminPost.mockResolvedValue({ releasedCount: 2 });
+  it('releases a held reward with state evidence and confirmation', async () => {
+    mockedAdminPost.mockResolvedValue({ id: 'reward-1', status: 'AVAILABLE' });
+    const formData = referralDecisionForm('customer', 'parent-customer', 'HELD');
 
-    await expect(releaseAvailableReferralRewards()).resolves.toBeUndefined();
+    await expect(releaseHeldReferralReward(formData)).rejects.toThrow('NEXT_REDIRECT:');
 
-    expect(mockedAdminPost).toHaveBeenCalledWith(
-      '/admin/referrals/rewards/release-available',
-      {},
-      { releasedCount: 0 },
-    );
-    expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
-      '/referrals/customers',
-      '/referrals/partners',
-      '/audit-log',
-    ]);
+    expect(mockedAdminPost).toHaveBeenCalledWith('/admin/referrals/rewards/reward-1/release', {
+      expectedStatus: 'HELD',
+      expectedUpdatedAt: '2026-08-10T10:00:00.000Z',
+      reason: 'review evidence confirmed',
+    });
   });
 
   it('holds a referral reward candidate and refreshes referral detail views', async () => {
     mockedAdminPost.mockResolvedValue({ id: 'reward-1', status: 'HELD' });
-    const formData = new FormData();
-    formData.set('rewardId', 'reward-1');
-    formData.set('audience', 'customer');
-    formData.set('parentId', 'parent-customer');
+    const formData = referralDecisionForm('customer', 'parent-customer', 'AVAILABLE');
     formData.set('reason', ' suspicious signup pattern ');
 
-    await expect(holdReferralReward(formData)).resolves.toBeUndefined();
+    await expect(holdReferralReward(formData)).rejects.toThrow('NEXT_REDIRECT:');
 
     expect(mockedAdminPost).toHaveBeenCalledWith(
       '/admin/referrals/rewards/reward-1/hold',
-      { reason: 'suspicious signup pattern' },
-      null,
+      {
+        expectedStatus: 'AVAILABLE',
+        expectedUpdatedAt: '2026-08-10T10:00:00.000Z',
+        reason: 'suspicious signup pattern',
+      },
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/customers',
@@ -81,18 +87,18 @@ describe('referral server actions', () => {
 
   it('reverses a referral reward candidate and refreshes referral detail views', async () => {
     mockedAdminPost.mockResolvedValue({ id: 'reward-1', status: 'REVERSED' });
-    const formData = new FormData();
-    formData.set('rewardId', 'reward-1');
-    formData.set('audience', 'partner');
-    formData.set('parentId', 'parent-partner');
+    const formData = referralDecisionForm('partner', 'parent-partner', 'HELD');
     formData.set('reason', 'invalid attribution');
 
-    await expect(reverseReferralReward(formData)).resolves.toBeUndefined();
+    await expect(reverseReferralReward(formData)).rejects.toThrow('NEXT_REDIRECT:');
 
     expect(mockedAdminPost).toHaveBeenCalledWith(
       '/admin/referrals/rewards/reward-1/reverse',
-      { reason: 'invalid attribution' },
-      null,
+      {
+        expectedStatus: 'HELD',
+        expectedUpdatedAt: '2026-08-10T10:00:00.000Z',
+        reason: 'invalid attribution',
+      },
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/partners',
@@ -108,18 +114,18 @@ describe('referral server actions', () => {
       status: 'REWARDED',
       walletLedgerReference: 'customer-wallet-ledger-1',
     });
-    const formData = new FormData();
-    formData.set('rewardId', 'reward-1');
-    formData.set('audience', 'customer');
-    formData.set('parentId', 'parent-customer');
+    const formData = referralDecisionForm('customer', 'parent-customer', 'AVAILABLE');
     formData.set('reason', 'ready for wallet credit');
 
-    await expect(creditReferralReward(formData)).resolves.toBeUndefined();
+    await expect(creditReferralReward(formData)).rejects.toThrow('NEXT_REDIRECT:');
 
     expect(mockedAdminPost).toHaveBeenCalledWith(
       '/admin/referrals/rewards/reward-1/credit',
-      { reason: 'ready for wallet credit' },
-      null,
+      {
+        expectedStatus: 'AVAILABLE',
+        expectedUpdatedAt: '2026-08-10T10:00:00.000Z',
+        reason: 'ready for wallet credit',
+      },
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/customers',
@@ -129,24 +135,48 @@ describe('referral server actions', () => {
     ]);
   });
 
+  it('blocks an unconfirmed reward decision before calling the API', async () => {
+    const formData = referralDecisionForm('customer', 'parent-customer', 'AVAILABLE');
+    formData.delete('confirmation');
+
+    await expect(creditReferralReward(formData)).rejects.toThrow('NEXT_REDIRECT:');
+
+    expect(mockedAdminPost).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      expect.stringContaining('actionCode=validation'),
+    );
+  });
+
+  it('reports stale reward decisions as conflicts without recording success', async () => {
+    mockedAdminPost.mockRejectedValue(
+      new AdminApiRequestError('POST', '/admin/referrals/rewards/reward-1/credit', 409),
+    );
+    const formData = referralDecisionForm('customer', 'parent-customer', 'AVAILABLE');
+
+    await expect(creditReferralReward(formData)).rejects.toThrow('NEXT_REDIRECT:');
+
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('actionCode=conflict'));
+    expect(mockedRevalidatePath).not.toHaveBeenCalled();
+  });
+
   it('approves a referral reward cashout request and refreshes referral detail views', async () => {
     mockedAdminPost.mockResolvedValue({
       id: 'reward-1',
       status: 'CASHOUT_APPROVED',
       walletLedgerReference: 'customer-wallet-ledger-1',
     });
-    const formData = new FormData();
-    formData.set('rewardId', 'reward-1');
-    formData.set('audience', 'customer');
-    formData.set('parentId', 'parent-customer');
+    const formData = referralDecisionForm('customer', 'parent-customer', 'CASHOUT_REQUESTED');
     formData.set('reason', 'manual cash transfer done');
 
-    await expect(approveReferralRewardCashout(formData)).resolves.toBeUndefined();
+    await expect(approveReferralRewardCashout(formData)).rejects.toThrow('NEXT_REDIRECT:');
 
     expect(mockedAdminPost).toHaveBeenCalledWith(
       '/admin/referrals/rewards/reward-1/cashout-approve',
-      { reason: 'manual cash transfer done' },
-      null,
+      {
+        expectedStatus: 'CASHOUT_REQUESTED',
+        expectedUpdatedAt: '2026-08-10T10:00:00.000Z',
+        reason: 'manual cash transfer done',
+      },
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/customers',
@@ -162,18 +192,18 @@ describe('referral server actions', () => {
       status: 'TAX_REVIEW_REQUIRED',
       walletLedgerReference: 'customer-wallet-ledger-1',
     });
-    const formData = new FormData();
-    formData.set('rewardId', 'reward-1');
-    formData.set('audience', 'partner');
-    formData.set('parentId', 'parent-partner');
+    const formData = referralDecisionForm('partner', 'parent-partner', 'CASHOUT_REQUESTED');
     formData.set('reason', 'tax details need review');
 
-    await expect(requireReferralRewardTaxReview(formData)).resolves.toBeUndefined();
+    await expect(requireReferralRewardTaxReview(formData)).rejects.toThrow('NEXT_REDIRECT:');
 
     expect(mockedAdminPost).toHaveBeenCalledWith(
       '/admin/referrals/rewards/reward-1/tax-review',
-      { reason: 'tax details need review' },
-      null,
+      {
+        expectedStatus: 'CASHOUT_REQUESTED',
+        expectedUpdatedAt: '2026-08-10T10:00:00.000Z',
+        reason: 'tax details need review',
+      },
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/partners',
@@ -189,24 +219,22 @@ describe('referral server actions', () => {
       status: 'PAID',
       walletLedgerReference: 'customer-cashout-ledger-1',
     });
-    const formData = new FormData();
-    formData.set('rewardId', 'reward-1');
-    formData.set('audience', 'customer');
-    formData.set('parentId', 'parent-customer');
+    const formData = referralDecisionForm('customer', 'parent-customer', 'CASHOUT_APPROVED');
     formData.set('approvalAdminId', 'finance-admin-2');
     formData.set('reason', 'manual bank transfer complete');
     formData.set('transferRef', 'VCB-REF-001');
 
-    await expect(markReferralRewardCashoutPaid(formData)).resolves.toBeUndefined();
+    await expect(markReferralRewardCashoutPaid(formData)).rejects.toThrow('NEXT_REDIRECT:');
 
     expect(mockedAdminPost).toHaveBeenCalledWith(
       '/admin/referrals/rewards/reward-1/cashout-paid',
       {
         approvalAdminId: 'finance-admin-2',
+        expectedStatus: 'CASHOUT_APPROVED',
+        expectedUpdatedAt: '2026-08-10T10:00:00.000Z',
         reason: 'manual bank transfer complete',
         transferRef: 'VCB-REF-001',
       },
-      null,
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/customers',
@@ -233,7 +261,6 @@ describe('referral server actions', () => {
     expect(mockedAdminPost).toHaveBeenCalledWith(
       '/admin/partner-bank-accounts/bank-1/reject',
       { reason: 'The payout bank details are inaccurate, so the deposit cannot be completed.' },
-      null,
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/partners',
@@ -254,18 +281,41 @@ describe('referral server actions', () => {
     formData.set('holdPeriodDays', '7');
     formData.set('currency', 'VND');
     formData.set('reason', 'sync accounting vat rate');
+    formData.set('confirmation', 'confirmed');
+    formData.set('expectedUpdatedAt', '2026-06-24T10:00:00.000Z');
+    formData.set('returnTo', '/referrals/customers?settings=policy');
 
-    await expect(updateReferralPolicy(formData)).rejects.toThrow('NEXT_REDIRECT:/referrals/customers');
+    await expect(updateReferralPolicy(formData)).rejects.toThrow(
+      'NEXT_REDIRECT:/referrals/customers?settings=policy&status=saved&reason=policy-updated',
+    );
 
     expect(mockedAdminPatch).toHaveBeenCalledWith(
       '/admin/referrals/policies/customer',
       expect.objectContaining({
         commissionPercentBps: 3_000,
         platformFeeVatRateBps: 900,
+        expectedUpdatedAt: '2026-06-24T10:00:00.000Z',
         reason: 'sync accounting vat rate',
       }),
-      null,
     );
-    expect(mockedRedirect).toHaveBeenCalledWith('/referrals/customers?status=saved&reason=policy-updated');
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/referrals/customers?settings=policy&status=saved&reason=policy-updated',
+    );
   });
 });
+
+function referralDecisionForm(
+  audience: 'customer' | 'partner',
+  parentId: string,
+  expectedStatus: string,
+) {
+  const formData = new FormData();
+  formData.set('rewardId', 'reward-1');
+  formData.set('audience', audience);
+  formData.set('parentId', parentId);
+  formData.set('reason', 'review evidence confirmed');
+  formData.set('confirmation', 'confirmed');
+  formData.set('expectedStatus', expectedStatus);
+  formData.set('expectedUpdatedAt', '2026-08-10T10:00:00.000Z');
+  return formData;
+}

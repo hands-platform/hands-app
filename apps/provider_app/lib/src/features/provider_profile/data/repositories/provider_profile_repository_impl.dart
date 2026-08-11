@@ -4,7 +4,6 @@ import '../../../map/data/datasources/provider_device_location_datasource.dart';
 import '../datasources/provider_device_identity_datasource.dart';
 import '../../domain/repositories/provider_profile_repository.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
 
 class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
   const ProviderProfileRepositoryImpl({
@@ -103,6 +102,21 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> availability() async {
+    final result = await _api.getJson('/partner/availability');
+    return result is Map<String, dynamic> ? result : <String, dynamic>{};
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateWorkingHours(
+      List<Map<String, dynamic>> workingHours) async {
+    final result = await _api.putJson('/partner/availability', {
+      'workingHours': workingHours,
+    });
+    return result is Map<String, dynamic> ? result : <String, dynamic>{};
+  }
+
+  @override
   Future<Map<String, dynamic>> uploadProfileImage({
     required List<int> bytes,
     required String contentType,
@@ -158,14 +172,11 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
       throw StateError('Unsupported upload method: $method');
     }
 
-    final response = await http.put(
+    await _api.putBytes(
       Uri.parse(uploadUrl),
       headers: headers,
-      body: bytes,
+      bytes: bytes,
     );
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError('$errorLabel upload failed (${response.statusCode}).');
-    }
 
     final completed = await _api.postJson('/files/$fileId/complete', {
       'sizeBytes': bytes.length,

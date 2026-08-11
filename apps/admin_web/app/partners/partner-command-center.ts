@@ -79,7 +79,7 @@ export function buildPartnerCommandCenter(
         readyNow > 0
           ? 'Some partners can receive requests now; keep location and push freshness high.'
           : 'No partner in this filtered list is fully ready for dispatch.',
-      href: readyNow > 0 ? '/partners?readiness=ready' : '/partners?review=location',
+      href: readyNow > 0 ? '/partners?review=ready-now' : '/partners?review=available-blocked-location',
       metrics: [
         partnerCommandMetric('online', online),
         partnerCommandMetric(`fresh <=${opsPolicy.staleLocationMinutes}m`, locationFresh),
@@ -95,7 +95,7 @@ export function buildPartnerCommandCenter(
         walletDebt > 0
           ? cashFeeDebtBlocksMarketplaceAlertsParticipationCopy
           : 'Wallet withdrawal address, submitted bank details, and payout agreements are under control.',
-      href: walletDebt > 0 ? '/partners?review=cash-debt' : '/partners?review=payout-setup',
+      href: walletDebt > 0 ? '/partners?review=cash-debt' : '/notifications?review=payout-setup',
       metrics: [
         partnerCommandMetric('submitted bank', bankReview),
         partnerCommandMetric('legacy tax', taxReview),

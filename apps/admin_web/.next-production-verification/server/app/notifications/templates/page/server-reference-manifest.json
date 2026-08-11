@@ -1,0 +1,17 @@
+{
+  "node": {
+    "4007698685ccba37f7ffc7c0cf38cc1cab3c5eb338": {
+      "workers": {
+        "app/notifications/templates/page": {
+          "moduleId": 306089,
+          "async": false,
+          "exportedName": "updateNotificationTemplate",
+          "filename": "apps/admin_web/app/notifications/templates/actions.ts"
+        }
+      },
+      "exportedName": "updateNotificationTemplate",
+      "filename": "apps/admin_web/app/notifications/templates/actions.ts"
+    }
+  },
+  "edge": {}
+}

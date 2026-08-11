@@ -1,15 +1,14 @@
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
 import { AdminDataTable } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFormControlButton, AdminFormControlLink, AdminFormInput } from '../../../components/admin-form-controls';
-import { AdminInlineForm } from '../../../components/admin-inline-action-form';
+import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
-import { AdminInlineNotice } from '../../../components/admin-inline-notice';
 import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminStageItem, AdminStageList } from '../../../components/admin-stage-item';
-import { AdminDetailGrid, AdminDisclosure } from '../../../components/admin-surface';
+import { AdminDetailGrid, AdminDisclosure, AdminErrorState } from '../../../components/admin-surface';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -17,7 +16,6 @@ import { MoneyText } from '../../../components/money-text';
 import { StatusBadge } from '../../../components/status-badge';
 import {
   compactValue,
-  formatMoney as money,
   readPlainRecord,
   shortId,
 } from '../../../lib/admin-format';
@@ -26,20 +24,17 @@ import {
   AdminChatMessage,
   AdminPaymentCallbackAttempt,
   AdminPaymentDetail,
-  AdminUser,
-  adminGet,
+  adminGetResult,
 } from '../../../lib/admin-api';
-import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
-import { buildFinanceApproverOptions } from '../../finance-tax/finance-approver-options';
 import { readSearchParam } from '../../../lib/date-range';
-import { capturePayment, refundPayment, releasePayment, settleCashDebt, syncPayment } from '../actions';
+import { capturePayment, refundPayment, releasePayment, syncPayment } from '../actions';
 import {
   type PaymentConfirmationAction,
   buildPaymentActionConfirmation,
-  paymentActionConfirmHref,
+  paymentReturnTo,
   readPaymentConfirmationAction,
 } from '../payment-action-confirmation';
-import { paymentActionExecutionMap as buildPaymentActionExecutionMap } from '../payment-action-execution-map';
+import { PaymentActionConfirmationSummary } from '../payment-action-confirmation-summary';
 import { PaymentDetailActionMapSection } from './payment-detail-action-map-section';
 import {
   PaymentDetailCallbackTimelineSection,
@@ -51,14 +46,37 @@ type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+export async function generateMetadata({ params }: Pick<PageProps, 'params'>): Promise<Metadata> {
+  const { id } = await params;
+  return {
+    title: { absolute: `Payment ${shortId(id)} | HANDS Admin` },
+  };
+}
+
 export default async function PaymentDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const query = searchParams ? await searchParams : {};
-  const payment = await adminGet<AdminPaymentDetail | null>(`/admin/payments/${id}`, null);
+  const paymentResult = await adminGetResult<AdminPaymentDetail | null>(`/admin/payments/${id}`, null);
 
-  if (!payment) {
+  if (!paymentResult.ok && paymentResult.status === 404) {
     notFound();
   }
+  if (!paymentResult.ok || !paymentResult.data) {
+    return (
+      <AdminPageTemplate
+        actions={<AdminFormControlLink href="/payments">Back to payments</AdminFormControlLink>}
+        description={`Payment ${shortId(id)}`}
+        title="Payment operation detail"
+      >
+        <AdminErrorState
+          action={<AdminTextLink href={`/payments/${encodeURIComponent(id)}`}>Retry payment detail</AdminTextLink>}
+          message="Payment evidence and action decisions could not be loaded. No payment action is available from fallback data."
+          title="Payment detail unavailable"
+        />
+      </AdminPageTemplate>
+    );
+  }
+  const payment = paymentResult.data;
 
   const booking = payment.booking;
   const earning = booking?.earning;
@@ -66,13 +84,6 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
   const messages = [...(booking?.chatRoom?.messages ?? [])].sort(
     (left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt),
   );
-  const actionMap = buildPaymentActionExecutionMap(payment, {
-    cashDebtActionLabel: 'Settle cash fee debt',
-    cashDebtOperatorRule:
-      'Settle with deposit reference or approved admin offset before final acceptance, service start, or payout release.',
-    completedCaptureReason: 'Service is completed and authorization hold is active.',
-    syncActionLabel: 'Sync gateway',
-  });
   const callbackTimelineRows = buildPaymentDetailCallbackTimelineRows(callbacks, payment.currency);
   const callbackReviewCount = callbacks.filter(paymentCallbackAttemptNeedsReview).length;
   const acceptedCallbackCount = callbacks.filter(paymentCallbackAttemptVerified).length;
@@ -80,30 +91,25 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
   const serviceLabel = bookingServiceLabel(payment);
   const bookingAddress = bookingAddressLabel(payment);
   const auditRows = payment.auditLogs ?? [];
+  const activeRefund = paymentActiveRefund(payment);
+  const visibleDecisions = (payment.actionDecisions ?? []).filter(
+    (decision) => !(activeRefund && decision.action === 'REQUEST_REFUND'),
+  );
+  const listReturnTo = paymentReturnTo(readSearchParam(query.returnTo));
+  const detailReturnTo = paymentDetailHref(payment.id, listReturnTo);
+  const requestedAction = readPaymentConfirmationAction(readSearchParam(query.confirm));
   const confirmation = buildPaymentActionConfirmation(
     [payment],
-    readPaymentConfirmationAction(readSearchParam(query.confirm)),
+    activeRefund && requestedAction === 'refund' ? null : requestedAction,
     payment.id,
-    { cancelHref: `/payments/${payment.id}` },
+    { returnTo: detailReturnTo },
   );
-  const needsFinanceApproverDirectory = confirmation?.action === 'refund';
-  const [currentOperatorAccess, financeApproverUsers] = needsFinanceApproverDirectory
-    ? await Promise.all([
-        getCurrentAdminOperatorAccess(),
-        adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', []),
-      ])
-    : [null, []];
-  const financeApproverOptions = buildFinanceApproverOptions(
-    financeApproverUsers,
-    currentOperatorAccess?.id ?? null,
-  );
-  const refundApprovalUnavailable = needsFinanceApproverDirectory && financeApproverOptions.length === 0;
 
   return (
     <AdminPageTemplate
       actions={
         <>
-          <AdminFormControlLink href="/payments">
+          <AdminFormControlLink href={listReturnTo}>
             Back to payments
           </AdminFormControlLink>
           {booking?.id ? (
@@ -131,6 +137,49 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
       description={`Payment ${shortId(payment.id)} - ${payment.method} - ${payment.status}`}
       title="Payment operation detail"
     >
+      <PaymentDetailActionMapSection
+        actionLabel={`Payment detail actions for ${shortId(payment.id)}`}
+        actions={paymentDetailActionMenuItems(payment, detailReturnTo, activeRefund)}
+        activeRefund={activeRefund ? {
+          href: activeRefundHref(activeRefund.id),
+          id: activeRefund.id,
+          status: activeRefund.status,
+        } : null}
+        bookingStatus={booking?.status ?? 'NOT_LINKED'}
+        cashDebtSettlementForm={cashDebt && earning?.id ? <CashDebtEvidenceLinks payment={payment} /> : null}
+        confirmation={
+          confirmation ? (
+            <ConfirmDialog
+              action={paymentConfirmationAction(confirmation.action)}
+              cancelHref={confirmation.cancelHref}
+              confirmLabel={confirmation.confirmLabel}
+              description={<PaymentActionConfirmationSummary confirmation={confirmation} />}
+              disabled={confirmation.disabled}
+              hiddenInputs={[
+                { name: 'paymentId', value: confirmation.paymentId },
+                { name: 'idempotencyKey', value: confirmation.idempotencyKey },
+                { name: 'returnTo', value: confirmation.returnTo },
+                { name: 'policyVersion', value: confirmation.policyVersion },
+              ]}
+              id={`payment-detail-${confirmation.action}-${confirmation.paymentId}`}
+              textInputs={confirmation.reasonRequired ? [{
+                label: 'Operator reason',
+                maxLength: 500,
+                minLength: 12,
+                name: 'reason',
+                placeholder: 'Describe the booking and payment evidence reviewed',
+                required: true,
+              }] : undefined}
+              title={confirmation.title}
+              tone={confirmation.tone}
+            />
+          ) : null
+        }
+        decisions={visibleDecisions}
+        evidence={payment.evidence}
+        paymentStatus={payment.status}
+      />
+
       <AdminMetricGrid
         className="admin-mb-16"
         metrics={[
@@ -176,13 +225,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
             scope: 'Gateway records',
             helper: 'Accepted or replayed with verified signature.',
           },
-          {
-            label: 'Cash fee gate',
-            value: cashDebt ? 'Blocked' : 'Clear',
-            kind: cashDebt ? 'risk' : 'record',
-            scope: cashDebt ? 'Needs action' : 'Payment record',
-            helper: cashDebtHint(payment),
-          },
+          cashFeeMetric(payment, cashDebt),
           {
             label: 'Audit trail',
             value: `${auditRows.length} event(s)`,
@@ -191,48 +234,6 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
             helper: 'Payment and linked booking operation logs.',
           },
         ]}
-      />
-
-      <PaymentDetailActionMapSection
-        actionLabel={`Payment detail actions for ${shortId(payment.id)}`}
-        actions={paymentDetailActionMenuItems(payment)}
-        cashDebtSettlementForm={cashDebt && earning?.id ? <CashDebtSettlementForm payment={payment} /> : null}
-        confirmation={
-          confirmation ? (
-            <>
-              {refundApprovalUnavailable ? (
-                <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
-                  No other Finance approver is available. Refund execution remains disabled until another operator has the FINANCE_APPROVER role.
-                </AdminInlineNotice>
-              ) : null}
-              <ConfirmDialog
-                action={paymentConfirmationAction(confirmation.action)}
-                cancelHref={confirmation.cancelHref}
-                confirmLabel={confirmation.confirmLabel}
-                description={confirmation.description}
-                disabled={confirmation.disabled || refundApprovalUnavailable}
-                hiddenInputs={[{ name: 'paymentId', value: confirmation.paymentId }]}
-                id={`payment-detail-${confirmation.action}-${confirmation.paymentId}`}
-                selectInputs={
-                  confirmation.action === 'refund'
-                    ? [
-                        {
-                          label: 'Separate Finance approver',
-                          name: 'approvalAdminId',
-                          options: [{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions],
-                          required: true,
-                        },
-                      ]
-                    : []
-                }
-                title={confirmation.title}
-                tone={confirmation.tone}
-              />
-            </>
-          ) : null
-        }
-        hasBlockingReview={cashDebt || callbackReviewCount > 0}
-        rows={actionMap}
       />
 
       <PaymentDetailCallbackTimelineSection reviewCount={callbackReviewCount} rows={callbackTimelineRows} />
@@ -332,54 +333,57 @@ function EvidenceRow({ label, value, helper }: { label: string; value: ReactNode
   );
 }
 
-function paymentDetailActionMenuItems(payment: AdminPaymentDetail) {
-  const terminalPayment = paymentStatusIsTerminal(payment.status);
-  return [
-    {
+function paymentDetailActionMenuItems(
+  payment: AdminPaymentDetail,
+  returnTo: string,
+  activeRefund: NonNullable<AdminPaymentDetail['refunds']>[number] | null,
+) {
+  const actions = (payment.actionDecisions ?? [])
+    .filter((decision) => !(activeRefund && decision.action === 'REQUEST_REFUND'))
+    .map((decision) => {
+    const action = paymentDecisionAction(decision.action);
+    return {
       kind: 'link' as const,
-      href: paymentDetailActionConfirmHref(payment.id, 'sync'),
-      label: 'Sync gateway',
-      disabled: !payment.providerRef,
-      description: payment.providerRef ? 'Confirm gateway sync before running it.' : 'Gateway reference is missing.',
-      tone: 'info' as const,
-    },
-    {
-      kind: 'link' as const,
-      href: paymentDetailActionConfirmHref(payment.id, 'capture'),
-      label: 'Capture',
-      disabled: terminalPayment,
-      description: terminalPayment ? 'Terminal payments cannot be captured again.' : 'Review before capturing funds.',
-      tone: 'warning' as const,
-    },
-    {
-      kind: 'link' as const,
-      href: paymentDetailActionConfirmHref(payment.id, 'release'),
-      label: 'Release',
-      disabled: terminalPayment,
-      description: terminalPayment ? 'Terminal payments cannot be released again.' : 'Review before releasing the hold.',
-      tone: 'warning' as const,
-    },
-    {
-      kind: 'link' as const,
-      href: paymentDetailActionConfirmHref(payment.id, 'refund'),
-      label: 'Refund',
-      disabled: payment.status === 'REFUNDED' || payment.status === 'RELEASED',
-      description:
-        payment.status === 'REFUNDED' || payment.status === 'RELEASED'
-          ? 'This payment cannot enter a new refund action.'
-          : 'Review evidence before starting a refund.',
-      tone: 'danger' as const,
-    },
-  ];
+      href: paymentDetailActionConfirmHref(payment.id, action, returnTo),
+      label: paymentDecisionLabel(decision.action),
+      disabled: decision.state === 'BLOCKED',
+      description: decision.reason,
+      tone: action === 'refund' ? 'danger' as const : action === 'sync' ? 'info' as const : 'warning' as const,
+    };
+    });
+
+  return activeRefund
+    ? [{
+        kind: 'link' as const,
+        href: activeRefundHref(activeRefund.id),
+        label: 'Open active refund',
+        description: `Refund ${activeRefund.id} · ${activeRefund.status}`,
+        tone: 'info' as const,
+      }, ...actions]
+    : actions;
+}
+
+function paymentActiveRefund(payment: AdminPaymentDetail) {
+  const activeStatuses = new Set(['REQUESTED', 'PROVIDER_PROCESSING', 'GATEWAY_CONFIRMED']);
+  return [...(payment.refunds ?? [])]
+    .filter((refund) => activeStatuses.has(refund.status.toUpperCase()))
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))[0] ?? null;
+}
+
+function activeRefundHref(refundId: string) {
+  const search = new URLSearchParams({ q: refundId, range: 'all', review: 'open', sort: 'oldest' });
+  return `/refunds?${search.toString()}#refund-${encodeURIComponent(refundId)}`;
 }
 
 function paymentMoney(amount?: number | null, currency = 'VND') {
   return <MoneyText amount={amount} currency={currency} />;
 }
 
-function paymentDetailActionConfirmHref(paymentId: string, action: PaymentConfirmationAction) {
-  const query = paymentActionConfirmHref(paymentId, action).split('?')[1] ?? '';
-  return `/payments/${encodeURIComponent(paymentId)}?${query}`;
+function paymentDetailActionConfirmHref(paymentId: string, action: PaymentConfirmationAction, returnTo: string) {
+  const url = new URL(paymentDetailHref(paymentId, paymentReturnTo(readDetailListReturnTo(returnTo))), 'http://admin.local');
+  url.searchParams.set('confirm', action);
+  url.searchParams.set('paymentId', paymentId);
+  return `${url.pathname}${url.search}`;
 }
 
 function paymentConfirmationAction(action: PaymentConfirmationAction) {
@@ -395,38 +399,56 @@ function paymentConfirmationAction(action: PaymentConfirmationAction) {
   }
 }
 
-function paymentStatusIsTerminal(status: string) {
-  return status === 'CAPTURED' || status === 'REFUNDED' || status === 'RELEASED';
+function paymentDetailHref(paymentId: string, returnTo: string) {
+  const params = new URLSearchParams({ returnTo });
+  return `/payments/${encodeURIComponent(paymentId)}?${params.toString()}`;
 }
 
-function CashDebtSettlementForm({ payment }: { payment: AdminPaymentDetail }) {
+function readDetailListReturnTo(returnTo: string) {
+  try {
+    const url = new URL(returnTo, 'http://admin.local');
+    return url.searchParams.get('returnTo') ?? '/payments';
+  } catch {
+    return '/payments';
+  }
+}
+
+function paymentDecisionAction(action: NonNullable<AdminPaymentDetail['actionDecisions']>[number]['action']): PaymentConfirmationAction {
+  if (action === 'CAPTURE') return 'capture';
+  if (action === 'RELEASE') return 'release';
+  if (action === 'REQUEST_REFUND') return 'refund';
+  return 'sync';
+}
+
+function paymentDecisionLabel(action: NonNullable<AdminPaymentDetail['actionDecisions']>[number]['action']) {
+  if (action === 'CAPTURE') return 'Capture payment';
+  if (action === 'RELEASE') return 'Release authorization';
+  if (action === 'REQUEST_REFUND') return 'Request refund review';
+  return 'Sync gateway status';
+}
+
+function CashDebtEvidenceLinks({ payment }: { payment: AdminPaymentDetail }) {
   const earning = payment.booking?.earning;
   if (!earning) {
     return null;
   }
-
-  const debtAmount = Math.abs(earning.netAmount);
-  const settlementRef = `HANDS-CASH-${shortId(payment.bookingId).toUpperCase()}`;
+  const earningId = encodeURIComponent(earning.id);
+  const partnerId = payment.booking?.selectedProvider?.id;
   return (
-    <AdminInlineForm action={settleCashDebt} className="admin-mt-16">
-      <input type="hidden" name="earningId" value={earning.id} />
-      <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
-      <AdminFormInput
-        label="Cash fee settlement reference"
-        name="settlementRef"
-        defaultValue={settlementRef}
-        placeholder={settlementRef}
-      />
-      <AdminFormInput
-        label="Cash fee settlement notes"
-        name="settlementNotes"
-        defaultValue={`Partner deposited ${money(debtAmount, earning.currency)} with ${settlementRef}`}
-        placeholder={`Partner deposited ${money(debtAmount, earning.currency)}`}
-      />
-      <AdminFormControlButton className="button-primary" type="submit">
-        Settle cash fee debt
-      </AdminFormControlButton>
-    </AdminInlineForm>
+    <div className="payment-cash-evidence-links admin-mt-16">
+      <strong>Cash debt must be cleared from retained bank evidence.</strong>
+      <span>Payments does not mark Partner cash debt paid directly.</span>
+      <div>
+        <AdminTextLink href={`/cash-settlements?review=${earningId}&q=${earningId}`}>
+          Review exact earning in Cash Settlements
+        </AdminTextLink>
+        {partnerId ? (
+          <AdminTextLink href={`/finance-tax/partner-bank-deposits?q=${encodeURIComponent(partnerId)}`}>
+            Search Partner deposit evidence
+          </AdminTextLink>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -484,6 +506,25 @@ function paymentStatusHint(payment: AdminPaymentDetail) {
 
 function gatewayReferenceLabel(payment: AdminPaymentDetail) {
   return payment.providerRef ? `Gateway ref ${payment.providerRef}` : 'No gateway reference saved.';
+}
+
+function cashFeeMetric(payment: AdminPaymentDetail, cashDebt: boolean) {
+  if (payment.method !== 'CASH') {
+    return {
+      helper: 'Cash collection and Partner fee settlement do not apply to this payment method.',
+      kind: 'record' as const,
+      label: 'Cash fee gate',
+      scope: 'Not applicable',
+      value: 'N/A',
+    };
+  }
+  return {
+    helper: cashDebtHint(payment),
+    kind: cashDebt ? 'risk' as const : 'record' as const,
+    label: 'Cash fee gate',
+    scope: cashDebt ? 'Needs action' : 'Payment record',
+    value: cashDebt ? 'Blocked' : 'Clear',
+  };
 }
 
 function cashDebtHint(payment: AdminPaymentDetail) {
@@ -685,7 +726,13 @@ function refundSummary(payment: AdminPaymentDetail) {
 }
 
 function joinPaymentEvidenceParts(parts: ReactNode[]) {
-  return parts.flatMap((part, index) => (index === 0 ? [part] : [' / ', part]));
+  return (
+    <span>
+      {parts.map((part, index) => (
+        <span key={index}>{index === 0 ? null : ' / '}{part}</span>
+      ))}
+    </span>
+  );
 }
 
 function addressLabel(address: unknown) {

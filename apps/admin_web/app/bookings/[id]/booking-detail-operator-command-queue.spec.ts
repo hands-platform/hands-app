@@ -80,7 +80,6 @@ describe('booking detail operator command queue', () => {
     expect(queue.commands.map((command) => command.id)).toEqual([
       'matching-watch',
       'partner-supply',
-      'expire-matching',
       'no-show-option',
       'ops-task-next',
     ]);

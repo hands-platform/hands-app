@@ -1,306 +1,256 @@
-import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { redirect } from 'next/navigation';
 import { vi } from 'vitest';
 
-import type { AdminChatArchiveBooking } from '../../lib/admin-api';
-import { adminGet } from '../../lib/admin-api';
+import type { AdminChatArchiveMessage } from '../../lib/admin-api';
+import { adminGetResult } from '../../lib/admin-api';
 import ChatArchivePage from './page';
 
 vi.mock('../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
-
-  return {
-    ...actual,
-    adminGet: vi.fn(),
-  };
+  return { ...actual, adminGetResult: vi.fn() };
 });
+vi.mock('next/navigation', () => ({
+  redirect: vi.fn((href: string) => {
+    throw new Error(`REDIRECT:${href}`);
+  }),
+}));
 
-const mockedAdminGet = vi.mocked(adminGet);
+const mockedAdminGetResult = vi.mocked(adminGetResult);
+const mockedRedirect = vi.mocked(redirect);
 const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 const globalCss = readFileSync('app/globals.css', 'utf8');
+const chatArchiveCss = globalCss.slice(
+  globalCss.indexOf('.chat-archive-page {'),
+  globalCss.indexOf('.audit-log-page,', globalCss.indexOf('.chat-archive-page {')),
+);
 
 describe('ChatArchivePage', () => {
   beforeEach(() => {
-    mockedAdminGet.mockReset();
+    mockedAdminGetResult.mockReset();
+    mockedRedirect.mockClear();
   });
 
-  it('keeps chat repair in the booking operations queue instead of duplicating it', () => {
-    expect(pageSource).toContain('/bookings?view=chat-repair');
-    expect(pageSource).not.toContain('AdminTraceSummary');
-    expect(pageSource).not.toContain('Chat integrity repair queue');
-  });
-
-  it('renders retained chat totals separately from the latest-message list preview', async () => {
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
+  it('renders one result per matching message without phone or fake presence data', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
       if (href.startsWith('/admin/chat-archive/summary')) {
         return {
-          activeRooms: 12,
-          completedRooms: 25,
-          customerMessages: 800,
-          emptyRooms: 3,
-          generatedAt: '2026-06-29T01:30:00.000Z',
-          latestMessageAt: '2026-06-29T01:20:00.000Z',
-          messageCount: 1234,
-          partnerMessages: 434,
-          totalCount: 99,
+          data: {
+            generatedAt: '2026-08-06T01:30:00.000Z',
+            latestMessageAt: '2026-08-06T01:20:00.000Z',
+            matchingMessages: 12,
+            roomsRepresented: 4,
+          },
+          ok: true,
+          status: 200,
         };
       }
-
       if (href.startsWith('/admin/chat-archive')) {
-        return [chatArchiveBooking()];
+        return { data: [chatArchiveMessage()], ok: true, status: 200 };
       }
-
-      if (href.startsWith('/admin/bookings')) {
-        return [];
-      }
-
-      return fallback;
+      return { data: fallback, ok: false, status: 404 };
     });
 
-    const page = await ChatArchivePage({ searchParams: Promise.resolve({ range: 'all' }) });
+    const page = await ChatArchivePage({
+      searchParams: Promise.resolve({ q: 'late', range: '7d', sender: 'partner' }),
+    });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('1 room(s), 1234 message(s)');
-    expect(markup).toContain('admin-page-header admin-page-header-toolbar');
-    expect(markup).toContain('99');
-    expect(markup).toContain('800 customer / 434 Partner');
-    expect(markup).toContain('<span class="metric-card-scope is-record">All loaded records</span>');
-    expect(markup).toContain('<span class="metric-card-scope is-live">Current open</span>');
-    expect(markup).toContain('<span class="metric-card-scope is-risk">Needs action</span>');
-    expect(markup).not.toContain('Chat window previews');
-    expect(markup).toContain('/bookings/booking-1?overview=activity#booking-chat-history');
-    expect(markup).toContain('Export page preview CSV');
-    expect(markup).toContain('admin-section');
-    expect(markup).toContain('Chat evidence index');
-    expect(markup).not.toContain('admin-chat-transcript-disclosure');
-    expect(markup).toContain('vuexy-booking-table-card vuexy-booking-table-group admin-mb-16');
-    expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table');
+    expect(markup).toContain('Restricted internal evidence · Read only');
+    expect(markup).toContain('12 messages · 4 rooms');
+    expect(markup).toContain('I am on the way.');
+    expect(markup).toContain('Attachment 1');
+    expect(markup).toContain('>booking-prod<');
+    expect(markup).toContain('aria-label="Booking booking-production-1"');
+    expect(markup).toContain('returnTo=%2Fchat-archive%3Fq%3Dlate%26sender%3Dpartner%26range%3D7d');
+    expect(markup).toContain('Open transcript');
+    expect((markup.match(/href="\/bookings\/booking-production-1\?/gu) ?? [])).toHaveLength(1);
+    expect(markup).not.toContain('messages shown');
+    expect(markup).not.toContain('+8490000');
+    expect(markup).not.toContain('Export page preview CSV');
+    expect(markup).not.toContain('Rooms loaded');
+    expect(markup).not.toContain('avatar-status');
   });
 
-  it('trusts server sender filtering when the bounded preview does not include that sender', async () => {
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href.startsWith('/admin/chat-archive')) {
-        return [chatArchiveBooking({ previewIncludesPartner: false })];
-      }
-
-      if (href.startsWith('/admin/bookings')) {
-        return [];
-      }
-
-      return fallback;
-    });
-
-    const page = await ChatArchivePage({ searchParams: Promise.resolve({ range: 'all', sender: 'partner' }) });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('1 room(s), 42 message(s)');
-    expect(markup).toContain('Sender: Partner messages');
-  });
-
-  it('keeps audit filters on shared AdminForm atoms', async () => {
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href.startsWith('/admin/chat-archive')) {
-        return [chatArchiveBooking()];
-      }
-
-      if (href.startsWith('/admin/bookings')) {
-        return [];
-      }
-
-      return fallback;
-    });
-
-    const page = await ChatArchivePage({ searchParams: Promise.resolve({ range: 'all' }) });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('admin-form-search');
-    expect(markup).toContain('admin-form-select');
-    expect(markup).toContain('calendar-datepicker-field');
-    expect(markup).toContain('card admin-filter-panel chat-archive-filter-panel admin-mb-16 admin-section');
-    expect(markup).toContain('admin-form-search admin-directory-filter-search');
-    expect(markup).toContain('admin-form-select admin-form-control-labeled admin-directory-filter-select');
-    expect(markup).toContain(
-      'react-datepicker-wrapper admin-form-control-fluid calendar-datepicker-field',
+  it('keeps a valid message list visible when summary loading fails', async () => {
+    mockedAdminGetResult.mockImplementation(async (href) =>
+      href.startsWith('/admin/chat-archive/summary')
+        ? { data: {}, ok: false, status: 503 }
+        : { data: [chatArchiveMessage()], ok: true, status: 200 },
     );
-    expect(markup).toContain(
-      'admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled calendar-datepicker-input',
-    );
-    expect(markup).toContain('admin-form-control-button');
-    expect(markup).toContain('admin-form-control-link');
-    expect(markup).toContain('admin-filter-summary');
-    expect(markup).toContain('Active chat evidence filters');
-    expect(markup).toContain('Date: All loaded records');
-    expect(markup).not.toContain('calendar-field');
-    expect(markup).not.toContain('<div class="calendar-field"><span>Search</span>');
-    expect(markup).not.toContain('<div class="calendar-field"><span>Booking status</span>');
-    expect(markup).not.toContain('<div class="calendar-field"><span>From</span>');
-    expect(markup).not.toContain('<label>Search<input');
-    expect(markup).not.toContain('<label>Booking status<select');
+
+    const page = await ChatArchivePage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Summary unavailable');
+    expect(markup).toContain('I am on the way.');
+    expect(markup).not.toContain('0 matching messages');
   });
 
-  it('summarizes active chat evidence filters for operators', async () => {
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href.startsWith('/admin/chat-archive')) {
-        return [chatArchiveBooking()];
-      }
+  it('renders API failure separately from a true empty result', async () => {
+    mockedAdminGetResult.mockImplementation(async (href) =>
+      href.startsWith('/admin/chat-archive/summary')
+        ? { data: { matchingMessages: 0, roomsRepresented: 0 }, ok: true, status: 200 }
+        : { data: [], ok: false, status: 503 },
+    );
 
-      if (href.startsWith('/admin/bookings')) {
-        return [];
-      }
+    const page = await ChatArchivePage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
 
-      return fallback;
+    expect(markup).toContain('Chat evidence could not be loaded');
+    expect(markup).toContain('Retry search');
+    expect(markup).not.toContain('No retained messages yet');
+  });
+
+  it('does not call either API for an invalid custom range', async () => {
+    const page = await ChatArchivePage({
+      searchParams: Promise.resolve({ from: '2026-08-06', range: 'custom' }),
     });
+    const markup = renderToStaticMarkup(page);
+
+    expect(mockedAdminGetResult).not.toHaveBeenCalled();
+    expect(markup).toContain('Custom date range requires valid From and To dates.');
+    expect(markup).toContain('No API request was sent.');
+    expect(markup).toContain('Search not run');
+    expect(markup).not.toContain('No matching messages');
+  });
+
+  it('keeps all active filters visible and clear returns to all dates', async () => {
+    mockedAdminGetResult.mockResolvedValue({ data: [], ok: true, status: 200 });
 
     const page = await ChatArchivePage({
       searchParams: Promise.resolve({
         q: 'booking-1',
-        range: 'all',
-        sender: 'partner',
+        range: '30d',
+        sender: 'customer',
+        sort: 'oldest',
         status: 'completed',
       }),
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Date: All loaded records');
+    expect(markup).toContain('Sent: Last 30 days');
+    expect(markup).toContain('Sort: Oldest first');
     expect(markup).toContain('Search: booking-1');
-    expect(markup).toContain('Status: Completed');
-    expect(markup).toContain('Sender: Partner messages');
+    expect(markup).toContain('Booking: Completed');
+    expect(markup).toContain('Sender: Customer');
+    expect(markup).toContain('href="/chat-archive"');
   });
 
-  it('uses the shared AdminFormControlLink atom for button-style archive actions', () => {
-    expect(pageSource).toContain('AdminFormControlLink');
-    expect(pageSource).not.toContain('AdminDisclosureCard');
-    expect(pageSource).not.toContain('AdminStageList');
-    expect(pageSource).not.toContain('<div className="setup-stage-list');
-    expect(pageSource).not.toContain('<Link className="button button-secondary"');
-    expect(pageSource).not.toContain('className="button button-secondary chat-inline-action"');
-    expect(pageSource).not.toContain('<details className="card admin-disclosure');
-  });
-
-  it('keeps visible chat status chips on shared badge atoms', () => {
-    expect(pageSource).toContain('AdminEmptyState');
-    expect(pageSource).toContain('StatusBadgeFromPillClass');
-    expect(pageSource).not.toContain('statusBadgeToneFromPillClass');
-    expect(pageSource).not.toContain('PillClassBadge');
-    expect(pageSource).not.toContain('<strong>No chat rooms found</strong>');
-    expect(pageSource).not.toContain('<span className={`pill ${row.pillClass}`}>{row.issue}</span>');
-    expect(pageSource).not.toContain('<span className={`pill ${statusPillClass(room.booking.status)}`}>');
-  });
-
-  it('uses the shared DateTimeText atom for visible chat archive table timestamps', () => {
-    expect(pageSource).toContain('DateTimeText');
-    expect(pageSource).toContain('valueDateTimeFallback: \'None\'');
-    expect(pageSource).toContain('valueDateTimeValue: summary.latestMessageAt');
-    expect(pageSource).not.toContain('value: <DateTimeText fallback="None" value={summary.latestMessageAt} />');
-    expect(pageSource).not.toContain(
-      '<p className="muted">{formatDate(row.booking.updatedAt ?? row.booking.createdAt)}</p>',
+  it('does not render default date and sort chips', async () => {
+    mockedAdminGetResult.mockImplementation(async (href) =>
+      href.startsWith('/admin/chat-archive/summary')
+        ? { data: { matchingMessages: 0, roomsRepresented: 0 }, ok: true, status: 200 }
+        : { data: [], ok: true, status: 200 },
     );
-    expect(pageSource).not.toContain(
-      "<td>{room.latestMessageAt ? formatDate(room.latestMessageAt) : 'No message'}</td>",
-    );
-    expect(pageSource).not.toContain('formatDateTime as formatDate');
-    expect(pageSource).not.toContain('latestMessageAt: latestMessageAt ? formatDate(latestMessageAt)');
+
+    const page = await ChatArchivePage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).not.toContain('Sent: All dates');
+    expect(markup).not.toContain('Sort: Newest first');
   });
 
-  it('keeps full transcript rendering in the booking activity workspace', () => {
-    expect(pageSource).toContain('?overview=activity#booking-chat-history');
+  it.each([
+    [{}, 'No retained booking messages are available in this scope.', 'No retained messages'],
+    [
+      { q: '__no_match__' },
+      'No messages match the current search and filters.',
+      'No matching messages',
+    ],
+  ])('keeps retained-empty and filtered-empty copy distinct %#', async (searchParams, copy, title) => {
+    mockedAdminGetResult.mockImplementation(async (href) =>
+      href.startsWith('/admin/chat-archive/summary')
+        ? { data: { matchingMessages: 0, roomsRepresented: 0 }, ok: true, status: 200 }
+        : { data: [], ok: true, status: 200 },
+    );
+
+    const page = await ChatArchivePage({ searchParams: Promise.resolve(searchParams) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain(copy);
+    expect(markup).toContain(title);
+    expect(markup).toContain('A missing result does not confirm that no conversation occurred.');
+  });
+
+  it.each([
+    ['way.', '<mark>way.</mark>'],
+    ['Minh', '<mark>Minh</mark> Anh'],
+    ['booking-prod', '<mark>booking-prod</mark>'],
+    ['Deep Tissue', '<mark>Deep Tissue</mark>'],
+  ])('safely highlights the visible %s match', async (q, expected) => {
+    mockedAdminGetResult.mockImplementation(async (href) =>
+      href.startsWith('/admin/chat-archive/summary')
+        ? { data: { matchingMessages: 1, roomsRepresented: 1 }, ok: true, status: 200 }
+        : { data: [chatArchiveMessage()], ok: true, status: 200 },
+    );
+
+    const page = await ChatArchivePage({ searchParams: Promise.resolve({ q }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain(expected);
+  });
+
+  it('canonicalizes unknown filters before any evidence API request', async () => {
+    await expect(
+      ChatArchivePage({
+        searchParams: Promise.resolve({ q: 'late', status: 'missing-room' }),
+      }),
+    ).rejects.toThrow('REDIRECT:/chat-archive?q=late');
+
+    expect(mockedAdminGetResult).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith('/chat-archive?q=late');
+  });
+
+  it('canonicalizes an out-of-range page to the last message page', async () => {
+    mockedAdminGetResult.mockResolvedValue({
+      data: { matchingMessages: 12, roomsRepresented: 4 },
+      ok: true,
+      status: 200,
+    });
+
+    await expect(ChatArchivePage({
+      searchParams: Promise.resolve({ page: '999', q: 'late', range: '7d', sender: 'partner' }),
+    })).rejects.toThrow('REDIRECT:/chat-archive?q=late&sender=partner&range=7d&page=2');
+    expect(mockedRedirect).toHaveBeenCalledWith('/chat-archive?q=late&sender=partner&range=7d&page=2');
+    expect(mockedAdminGetResult).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps full transcripts in Booking Activity and removes nested scrolling contracts', () => {
+    expect(pageSource).toContain('?overview=activity&returnTo=');
     expect(pageSource).not.toContain('AdminChatWindow');
-    expect(pageSource).not.toContain('chatArchiveWindowMessages');
-  });
-
-  it('uses the shared table pagination footer for the chat evidence index', () => {
-    expect(pageSource).toContain('AdminTableSection');
-    expect(pageSource).toContain('AdminTablePaginationFooter');
-    expect(pageSource).toContain('ariaLabel="Chat evidence pages"');
-    expect(pageSource).not.toContain('className="admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"');
-    expect(pageSource).not.toContain('import { AdminRoundedPagination }');
-    expect(pageSource).not.toContain('<AdminRoundedPagination');
-  });
-
-  it('scopes chat archive headers to direct cards and removes stale transcript selectors', () => {
-    expect(globalCss).toContain('.chat-archive-page > .card > .ops-section-header {');
-    expect(globalCss).not.toContain('.chat-archive-page .ops-section-header {');
-    expect(globalCss).not.toContain('.chat-transcript-room .ops-section-header');
+    expect(pageSource).not.toContain('AdminDataTable');
+    expect(pageSource).not.toContain('buildCsvDataHref');
+    expect(pageSource).not.toContain('phone');
+    expect(chatArchiveCss).not.toContain('.chat-archive-page .admin-table-scroll .table');
+    expect(chatArchiveCss).not.toContain('min-width: 1180px');
+    expect(chatArchiveCss).not.toContain('.chat-archive-page > .card {\n  max-height:');
+    expect(chatArchiveCss).toContain('@media (max-width: 1399px)');
   });
 });
 
-function chatArchiveBooking({
-  previewIncludesPartner = true,
-}: {
-  readonly previewIncludesPartner?: boolean;
-} = {}): AdminChatArchiveBooking {
-  const previewMessages = previewIncludesPartner
-    ? [
-        {
-          body: 'I am on the way.',
-          createdAt: '2026-06-29T01:10:00.000Z',
-          id: 'message-1',
-          sender: {
-            id: 'provider-user-1',
-            fullName: 'Smoke Partner',
-            phone: '+84900002222',
-            roles: ['PROVIDER'],
-          },
-        },
-        {
-          body: 'Please meet me at reception.',
-          createdAt: '2026-06-29T01:12:00.000Z',
-          id: 'message-2',
-          sender: {
-            id: 'customer-user-1',
-            fullName: 'Demo Customer',
-            phone: '+84900001111',
-            roles: ['CUSTOMER'],
-          },
-        },
-      ]
-    : [
-        {
-          body: 'Please meet me at reception.',
-          createdAt: '2026-06-29T01:12:00.000Z',
-          id: 'message-2',
-          sender: {
-            id: 'customer-user-1',
-            fullName: 'Demo Customer',
-            phone: '+84900001111',
-            roles: ['CUSTOMER'],
-          },
-        },
-      ];
-
+function chatArchiveMessage(): AdminChatArchiveMessage {
   return {
+    attachmentCount: 1,
+    body: 'I am on the way.',
     chatRoom: {
-      id: 'chat-room-1',
-      _count: { messages: 42 },
-      messages: previewMessages,
-    },
-    createdAt: '2026-06-29T01:00:00.000Z',
-    customerProfileId: 'customer-1',
-    customerProfile: {
-      id: 'customer-1',
-      user: {
-        fullName: 'Demo Customer',
-        phone: '+84900001111',
-      },
-    },
-    id: 'booking-1',
-    selectedProvider: {
-      id: 'provider-1',
-      displayName: 'Smoke Partner',
-      user: {
-        fullName: 'Smoke Partner',
-        phone: '+84900002222',
-      },
-    },
-    services: [
-      {
-        service: {
-          name: 'Deep Tissue',
-          durationMin: 60,
+      booking: {
+        customerProfile: { id: 'customer-1', user: { fullName: 'Demo Customer' } },
+        customerProfileId: 'customer-1',
+        id: 'booking-production-1',
+        selectedProvider: {
+          displayName: 'Minh Anh',
+          id: 'partner-1',
+          user: { fullName: 'Minh Anh' },
         },
+        services: [{ service: { durationMin: 60, name: 'Deep Tissue' } }],
+        status: 'IN_SERVICE',
       },
-    ],
-    status: 'IN_SERVICE',
-    updatedAt: '2026-06-29T01:12:00.000Z',
+      id: 'chat-room-1',
+    },
+    createdAt: '2026-08-06T01:20:00.000Z',
+    id: 'message-1',
+    sender: { fullName: 'Minh Anh', id: 'partner-user-1', roles: ['PROVIDER'] },
   };
 }

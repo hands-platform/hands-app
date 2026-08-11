@@ -67,9 +67,10 @@ function servicePriceLabel({
     return 'Price pending';
   }
 
-  return minimumPrice === null
-    ? `Customer ${formatMoney(customerPrice, currency)}`
-    : `Customer ${formatMoney(customerPrice, currency)} / min ${formatMoney(minimumPrice, currency)}`;
+  const customerPriceLabel = `Customer price ${formatMoney(customerPrice, currency)}`;
+  return minimumPrice === null || minimumPrice === customerPrice
+    ? customerPriceLabel
+    : `${customerPriceLabel} / Minimum ${formatMoney(minimumPrice, currency)}`;
 }
 
 function servicePayoutRuleLabel({

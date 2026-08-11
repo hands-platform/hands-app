@@ -1,5 +1,6 @@
 import 'package:customer_app/customer_app.dart';
 import 'package:customer_app/src/features/booking/presentation/customer_bookings_screen.dart';
+import 'package:customer_app/src/features/discovery/presentation/customer_discovery_widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,7 +9,87 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: CustomerApp()));
 
     expect(find.text('Home'), findsWidgets);
-    expect(find.text('Partners'), findsWidgets);
+    expect(find.text('Booking'), findsWidgets);
+    expect(find.text('More'), findsWidgets);
+
+    await tester.tap(find.text('Booking').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Choose a partner'), findsOneWidget);
+    expect(
+        find.text('Nearest first from your service address.'), findsOneWidget);
+
+    await tester.tap(find.text('More').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('My bookings'), findsOneWidget);
+  });
+
+  test('nearby partner cards are ordered from the customer location', () {
+    final providers = sortNearbyProvidersByDistance([
+      {'id': 'far', 'distanceMeters': 4200},
+      {'id': 'unknown'},
+      {'id': 'nearest', 'distanceMeters': 300},
+      {'id': 'middle', 'distanceMeters': 1700},
+    ]);
+
+    expect(
+      providers.map((provider) => provider['id']),
+      ['nearest', 'middle', 'far', 'unknown'],
+    );
+  });
+
+  test('partner discovery filters favorites and ranks completed bookings', () {
+    final providers = [
+      {
+        'id': 'nearby',
+        'displayName': 'Nearby Partner',
+        'distanceMeters': 100,
+        'completedBookingCount': 2,
+        'services': [
+          {
+            'service': {
+              'id': 'aroma',
+              'name': 'Aroma Massage',
+            },
+          },
+        ],
+      },
+      {
+        'id': 'popular',
+        'displayName': 'Popular Partner',
+        'distanceMeters': 900,
+        'completedBookingCount': 12,
+        'services': [
+          {
+            'service': {
+              'id': 'sports',
+              'name': 'Sports Massage',
+            },
+          },
+        ],
+      },
+    ];
+
+    expect(
+      filterCustomerProviders(
+        providers,
+        favoriteProviderIds: {'popular'},
+        favoritesOnly: true,
+      ).map((provider) => provider['id']),
+      ['popular'],
+    );
+    expect(
+      filterCustomerProviders(
+        providers,
+        sort: CustomerProviderSort.mostBooked,
+      ).map((provider) => provider['id']),
+      ['popular', 'nearby'],
+    );
+    expect(
+      filterCustomerProviders(providers, serviceKey: 'aroma').single['id'],
+      'nearby',
+    );
   });
 
   test('customer service price prefers partner and booking prices', () {
@@ -213,31 +294,55 @@ void main() {
         'Admin minimum');
   });
 
-  test(
-      'waiting customer action explains marketplace choices and confirmed bookings',
-      () {
+  test('waiting customer action stays focused on the customer next step', () {
     final marketplaceAction = waitingCustomerAction(
       status: 'OPEN_MATCHING',
       fallbackCount: 1,
       hasChatRoom: false,
     );
-    expect(marketplaceAction.title, 'Marketplace options are ready');
-    expect(marketplaceAction.body, contains('switch to a marketplace partner'));
+    expect(marketplaceAction.title, 'Partners are available');
+    expect(
+        marketplaceAction.body, contains('choose another available partner'));
+    expect(marketplaceAction.body, isNot(contains('marketplace')));
 
     final waitingAction = waitingCustomerAction(
       status: 'OPEN_MATCHING',
       fallbackCount: 0,
       hasChatRoom: false,
     );
-    expect(waitingAction.title, 'Waiting for partner response');
-    expect(waitingAction.body, contains('No action is needed yet'));
+    expect(waitingAction.title, 'Waiting for confirmation');
+    expect(waitingAction.body, contains('safely leave this screen'));
 
     final confirmedAction = waitingCustomerAction(
       status: 'MATCHED',
       fallbackCount: 0,
       hasChatRoom: true,
     );
-    expect(confirmedAction.title, 'Booking confirmed');
+    expect(confirmedAction.title, 'Your booking is confirmed');
+    expect(confirmedAction.body, contains('Use chat'));
+
+    final onTheWayAction = waitingCustomerAction(
+      status: 'PROVIDER_ON_THE_WAY',
+      fallbackCount: 0,
+      hasChatRoom: true,
+    );
+    expect(onTheWayAction.title, 'Your partner is on the way');
+    expect(onTheWayAction.body, contains('latest location'));
+
+    final arrivedAction = waitingCustomerAction(
+      status: 'ARRIVED',
+      fallbackCount: 0,
+      hasChatRoom: true,
+    );
+    expect(arrivedAction.title, 'Your partner has arrived');
+
+    final inServiceAction = waitingCustomerAction(
+      status: 'IN_SERVICE',
+      fallbackCount: 0,
+      hasChatRoom: true,
+    );
+    expect(inServiceAction.title, 'Service in progress');
+    expect(inServiceAction.body, contains('Use chat'));
 
     final completedAction = waitingCustomerAction(
       status: 'COMPLETED',
@@ -286,14 +391,14 @@ void main() {
     };
 
     expect(customerBookingNextAction(matchedBooking),
-        'Partner confirmed. Chat is ready to coordinate service start.');
+        'Your partner is confirmed. Open the booking to continue.');
     expect(isCustomerAppChatVisible(liveBooking), isTrue);
     expect(isCustomerAppChatVisible(completedBooking), isFalse);
     expect(isCustomerAppChatVisible(noShowBooking), isFalse);
     expect(customerBookingNextAction(completedBooking),
-        'Service complete. Review when ready.');
+        'Your service is complete.');
     expect(customerBookingNextAction(noShowBooking),
-        contains('No-show recorded by HANDS operations'));
+        'This booking was closed as a no-show.');
   });
 
   test('customer discovery falls back to Vietnam when selected pin is overseas',
@@ -349,7 +454,7 @@ void main() {
             {'providerProfileId': 'partner-1', 'status': 'ACCEPTED'},
           ],
         }),
-        isFalse);
+        isTrue);
 
     expect(
         canCustomerDirectlyCancelBooking({

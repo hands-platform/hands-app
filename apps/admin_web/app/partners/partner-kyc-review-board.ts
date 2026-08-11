@@ -1,11 +1,6 @@
 import type { AdminProvider } from '../../lib/admin-api';
-import { ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS } from '../../lib/operations-policy';
 import type { PartnerCommandLane } from './partner-command-center';
-import {
-  partnerKycState,
-  partnerNeedsKycReview,
-  providerKycDocumentStatus,
-} from './partner-kyc-facts';
+import { partnerKycState, partnerNeedsKycReview } from './partner-kyc-facts';
 
 export type PartnerKycReviewBoard = {
   openCount: number;
@@ -36,15 +31,11 @@ export function buildPartnerKycReviewBoard(
   displayName: (provider: AdminProvider) => string,
 ): PartnerKycReviewBoard {
   const missingKyc = providers.filter((provider) => !provider.kyc);
-  const pendingKyc = providers.filter((provider) => provider.kyc?.status === 'PENDING');
   const rejectedKyc = providers.filter((provider) => provider.kyc?.status === 'REJECTED');
-  const blockedByDocuments = providers.filter((provider) => partnerKycState(provider).blockedByDocuments);
-  const readyToApprove = providers.filter((provider) => partnerKycState(provider).readyToApprove);
-  const pendingRequiredDocuments = providers.filter((provider) =>
-    ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.some((type) =>
-      ['PENDING_REVIEW', 'UPLOADED'].includes(providerKycDocumentStatus(provider, type)),
-    ),
+  const blockedByDocuments = providers.filter(
+    (provider) => Boolean(provider.kyc) && partnerKycState(provider).blockedByDocuments,
   );
+  const readyToApprove = providers.filter((provider) => partnerKycState(provider).readyToApprove);
   const openCount = providers.filter(partnerNeedsKycReview).length;
 
   return {
@@ -53,23 +44,23 @@ export function buildPartnerKycReviewBoard(
     blockedByDocuments: blockedByDocuments.length,
     playbook: [
       {
-        status: pendingRequiredDocuments.length ? '1ST' : 'OK',
-        title: 'Review uploaded identity files first',
-        count: pendingRequiredDocuments.length,
-        detail:
-          'CCCD front/back and selfie evidence should be approved or rejected before the final KYC decision.',
-        operatorAction:
-          'Check file type, face/ID consistency, image clarity, and reject with a specific resubmission reason when unclear.',
-        href: '/partners?review=documents',
-      },
-      {
-        status: readyToApprove.length ? '2ND' : 'OK',
-        title: 'Approve complete KYC records',
+        status: readyToApprove.length ? '1ST' : 'OK',
+        title: 'Review submitted KYC evidence',
         count: readyToApprove.length,
         detail:
-          'These partners already have approved required evidence and only need the final KYC status decision.',
+          'CCCD front/back and selfie evidence are submitted and ready for one overall KYC decision.',
         operatorAction:
-          'Approve when legal name, CCCD last four, selfie, and profile identity are consistent.',
+          'Check file type, face/ID consistency, and image clarity, then approve or place the whole KYC review on hold.',
+        href: '/partners?review=kyc',
+      },
+      {
+        status: blockedByDocuments.length ? 'BLOCK' : 'OK',
+        title: 'Request missing KYC evidence',
+        count: blockedByDocuments.length,
+        detail:
+          'At least one required identity file is missing or rejected, so an overall approval is not available yet.',
+        operatorAction:
+          'Place the review on hold with a clear correction reason and wait for Partner resubmission.',
         href: '/partners?review=kyc',
       },
       {
@@ -89,7 +80,7 @@ export function buildPartnerKycReviewBoard(
           'Minimal signup is allowed, but partners without KYC cannot accept paid requests or marketplace matching.',
         operatorAction:
           'Let onboarding stay light, then prompt KYC before the partner becomes activity-ready.',
-        href: '/partners?review=acceptance-blocked',
+        href: '/partners?review=available-blocked',
       },
     ],
     cards: [
@@ -97,31 +88,21 @@ export function buildPartnerKycReviewBoard(
         title: 'Ready to approve',
         count: readyToApprove.length,
         status: readyToApprove.length ? 'Decision needed' : 'Clear',
-        detail: 'KYC record exists and all required CCCD/selfie evidence is already approved.',
-        operatorAction: 'Open partner detail and make the final approve/reject decision.',
+        detail: 'KYC record and all required CCCD/selfie evidence are submitted.',
+        operatorAction: 'Open Partner detail and make one overall approve or hold decision.',
         href: '/partners?review=kyc',
         tone: readyToApprove.length ? 'info' : 'ok',
         samples: partnerBlockerSamples(readyToApprove, displayName),
       },
       {
-        title: 'Blocked by identity documents',
+        title: 'Missing or rejected evidence',
         count: blockedByDocuments.length,
         status: blockedByDocuments.length ? 'Evidence gap' : 'Clear',
-        detail: 'At least one required CCCD front, CCCD back, or selfie document is not approved yet.',
-        operatorAction: 'Approve uploaded evidence first, or reject with a resubmission reason.',
+        detail: 'At least one required CCCD front, CCCD back, or selfie file is missing or rejected.',
+        operatorAction: 'Send one clear hold reason so the Partner can replace the required evidence.',
         href: '/partners?review=kyc',
         tone: blockedByDocuments.length ? 'warn' : 'ok',
         samples: partnerBlockerSamples(blockedByDocuments, displayName),
-      },
-      {
-        title: 'Pending document review',
-        count: pendingRequiredDocuments.length,
-        status: pendingRequiredDocuments.length ? 'Check files' : 'Clear',
-        detail: 'Required identity evidence is uploaded and waiting for document-level review.',
-        operatorAction: 'Review file type, face/ID match, and file quality before approving KYC.',
-        href: '/partners?review=documents',
-        tone: pendingRequiredDocuments.length ? 'warn' : 'ok',
-        samples: partnerBlockerSamples(pendingRequiredDocuments, displayName),
       },
       {
         title: 'Missing KYC record',
@@ -142,16 +123,6 @@ export function buildPartnerKycReviewBoard(
         href: '/partners?review=kyc',
         tone: rejectedKyc.length ? 'danger' : 'ok',
         samples: partnerBlockerSamples(rejectedKyc, displayName),
-      },
-      {
-        title: 'Pending KYC',
-        count: pendingKyc.length,
-        status: pendingKyc.length ? 'Review queue' : 'Clear',
-        detail: 'Submitted KYC records still need an operator decision.',
-        operatorAction: 'Prioritize partners with complete evidence and recent activity first.',
-        href: '/partners?review=kyc',
-        tone: pendingKyc.length ? 'info' : 'ok',
-        samples: partnerBlockerSamples(pendingKyc, displayName),
       },
     ],
   };

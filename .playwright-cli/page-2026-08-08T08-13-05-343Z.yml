@@ -1,0 +1,836 @@
+- generic [active] [ref=f7e1]:
+  - generic [ref=f7e3]:
+    - complementary [ref=f7e4]:
+      - strong [ref=f7e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=f7e7]:
+        - link "Shift Command" [ref=f7e8] [cursor=pointer]:
+          - /url: /
+        - group [ref=f7e14]:
+          - generic "Booking Operations" [ref=f7e15] [cursor=pointer]
+        - group [ref=f7e24]:
+          - generic "Customer Support" [ref=f7e25] [cursor=pointer]
+        - group [ref=f7e34]:
+          - generic "Partner Operations" [ref=f7e35] [cursor=pointer]
+        - group [ref=f7e42]:
+          - generic "Finance Operations" [ref=f7e43] [cursor=pointer]
+        - group [ref=f7e51]:
+          - generic "Finance Records & Close" [ref=f7e52] [cursor=pointer]
+        - group [ref=f7e60]:
+          - generic "Growth & Communications" [ref=f7e61] [cursor=pointer]
+        - group [ref=f7e68]:
+          - generic "Administration & Settings" [ref=f7e69] [cursor=pointer]
+          - generic [ref=f7e77]:
+            - link "Operations Policy" [ref=f7e78] [cursor=pointer]:
+              - /url: /operations-policy
+            - link "Service Catalog" [ref=f7e83] [cursor=pointer]:
+              - /url: /services
+            - link "Company Bank Accounts" [ref=f7e90] [cursor=pointer]:
+              - /url: /finance-tax/company-bank-accounts
+            - link "Finance Approvers" [ref=f7e94] [cursor=pointer]:
+              - /url: /finance-tax/finance-approvers
+            - link "Tax Policy" [ref=f7e98] [cursor=pointer]:
+              - /url: /tax-policy
+            - link "Admin Operators" [ref=f7e102] [cursor=pointer]:
+              - /url: /admin-operators
+            - link "Audit Log" [ref=f7e116] [cursor=pointer]:
+              - /url: /audit-log
+            - group [ref=f7e123]:
+              - generic "System Health" [ref=f7e124] [cursor=pointer]
+    - main [ref=f7e131]:
+      - generic "Admin workspace" [ref=f7e132]:
+        - navigation "Breadcrumb" [ref=f7e134]:
+          - link "HANDS" [ref=f7e135] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f7e138]: Administration & Settings
+          - generic [ref=f7e141]: Operations Policy
+        - generic "Workspace actions" [ref=f7e142]:
+          - button "Search Ctrl K" [ref=f7e144] [cursor=pointer]:
+            - generic [ref=f7e145]: Search
+            - generic [ref=f7e149]: Ctrl K
+          - button "Switch to dark mode" [ref=f7e151] [cursor=pointer]
+          - link "Operations Policy" [ref=f7e154] [cursor=pointer]:
+            - /url: /operations-policy
+          - button "Open operation alerts" [ref=f7e159] [cursor=pointer]
+          - button "Sign out" [ref=f7e164] [cursor=pointer]
+      - generic [ref=f7e168]:
+        - generic [ref=f7e170]:
+          - heading "Operations Policy" [level=1] [ref=f7e171]
+          - paragraph [ref=f7e172]: Compare active operating rules and change one policy at a time with a recorded reason and effective time.
+        - generic [ref=f7e173]:
+          - generic [ref=f7e174]:
+            - generic [ref=f7e175]:
+              - generic [ref=f7e176]:
+                - heading "Policy comparison" [level=2] [ref=f7e177]
+                - paragraph [ref=f7e178]: Current and recommended values are read-only here. Open one controlled change panel from the selected row.
+              - generic [ref=f7e179]: 28 policies
+            - region "Scrollable data table" [ref=f7e182]:
+              - table [ref=f7e183]:
+                - rowgroup [ref=f7e184]:
+                  - row [ref=f7e185]:
+                    - columnheader "Policy" [ref=f7e186]
+                    - columnheader "Current value" [ref=f7e187]
+                    - columnheader "Recommended value" [ref=f7e188]
+                    - columnheader "Scope" [ref=f7e189]
+                    - columnheader "Operating impact" [ref=f7e190]
+                    - columnheader "Last changed by" [ref=f7e191]
+                    - columnheader "Last changed at" [ref=f7e192]
+                    - columnheader "Change" [ref=f7e193]
+                - rowgroup [ref=f7e194]:
+                  - row [ref=f7e195]:
+                    - cell [ref=f7e196]:
+                      - strong [ref=f7e197]: Matching delay review SLA
+                      - paragraph [ref=f7e198]: Minutes before an unresolved matching delay is promoted to overdue on Start Shift.
+                    - cell [ref=f7e199]:
+                      - strong [ref=f7e200]: 15 min
+                    - cell "15 min" [ref=f7e201]
+                    - cell [ref=f7e202]:
+                      - strong [ref=f7e203]: Command center
+                      - paragraph [ref=f7e204]: Live operating rule
+                    - cell [ref=f7e205]:
+                      - strong [ref=f7e206]: Operational policy
+                      - paragraph [ref=f7e207]: This setting is tracked for auditability and future automation.
+                    - cell "Default policy" [ref=f7e208]
+                    - cell "Not changed" [ref=f7e209]
+                    - cell [ref=f7e210]:
+                      - link "Open change" [ref=f7e211] [cursor=pointer]:
+                        - /url: /operations-policy?edit=command.start_shift.matching_delays_sla_minutes#policy-command-start-shift-matching-delays-sla-minutes
+                  - row [ref=f7e212]:
+                    - cell [ref=f7e213]:
+                      - strong [ref=f7e214]: Payment hold review SLA
+                      - paragraph [ref=f7e215]: Minutes before an authorized payment hold is promoted to overdue on Start Shift.
+                    - cell [ref=f7e216]:
+                      - strong [ref=f7e217]: 60 min
+                    - cell "60 min" [ref=f7e218]
+                    - cell [ref=f7e219]:
+                      - strong [ref=f7e220]: Command center
+                      - paragraph [ref=f7e221]: Live operating rule
+                    - cell [ref=f7e222]:
+                      - strong [ref=f7e223]: Operational policy
+                      - paragraph [ref=f7e224]: This setting is tracked for auditability and future automation.
+                    - cell "Default policy" [ref=f7e225]
+                    - cell "Not changed" [ref=f7e226]
+                    - cell [ref=f7e227]:
+                      - link "Open change" [ref=f7e228] [cursor=pointer]:
+                        - /url: /operations-policy?edit=command.start_shift.payment_holds_sla_minutes#policy-command-start-shift-payment-holds-sla-minutes
+                  - row [ref=f7e229]:
+                    - cell [ref=f7e230]:
+                      - strong [ref=f7e231]: Cancellation review SLA
+                      - paragraph [ref=f7e232]: Minutes before an unresolved post-match cancellation is promoted to overdue on Start Shift.
+                    - cell [ref=f7e233]:
+                      - strong [ref=f7e234]: 120 min
+                    - cell "120 min" [ref=f7e235]
+                    - cell [ref=f7e236]:
+                      - strong [ref=f7e237]: Command center
+                      - paragraph [ref=f7e238]: Live operating rule
+                    - cell [ref=f7e239]:
+                      - strong [ref=f7e240]: Operational policy
+                      - paragraph [ref=f7e241]: This setting is tracked for auditability and future automation.
+                    - cell "Default policy" [ref=f7e242]
+                    - cell "Not changed" [ref=f7e243]
+                    - cell [ref=f7e244]:
+                      - link "Open change" [ref=f7e245] [cursor=pointer]:
+                        - /url: /operations-policy?edit=command.start_shift.cancellation_review_sla_minutes#policy-command-start-shift-cancellation-review-sla-minutes
+                  - row [ref=f7e246]:
+                    - cell [ref=f7e247]:
+                      - strong [ref=f7e248]: Refund review SLA
+                      - paragraph [ref=f7e249]: Minutes before an open refund request is promoted to overdue on Start Shift.
+                    - cell [ref=f7e250]:
+                      - strong [ref=f7e251]: 240 min
+                    - cell "240 min" [ref=f7e252]
+                    - cell [ref=f7e253]:
+                      - strong [ref=f7e254]: Command center
+                      - paragraph [ref=f7e255]: Live operating rule
+                    - cell [ref=f7e256]:
+                      - strong [ref=f7e257]: Operational policy
+                      - paragraph [ref=f7e258]: This setting is tracked for auditability and future automation.
+                    - cell "Default policy" [ref=f7e259]
+                    - cell "Not changed" [ref=f7e260]
+                    - cell [ref=f7e261]:
+                      - link "Open change" [ref=f7e262] [cursor=pointer]:
+                        - /url: /operations-policy?edit=command.start_shift.refund_review_sla_minutes#policy-command-start-shift-refund-review-sla-minutes
+                  - row [ref=f7e263]:
+                    - cell [ref=f7e264]:
+                      - strong [ref=f7e265]: Notification failure review SLA
+                      - paragraph [ref=f7e266]: Minutes before an unresolved notification delivery failure is promoted to overdue on Start Shift.
+                    - cell [ref=f7e267]:
+                      - strong [ref=f7e268]: 60 min
+                    - cell "60 min" [ref=f7e269]
+                    - cell [ref=f7e270]:
+                      - strong [ref=f7e271]: Command center
+                      - paragraph [ref=f7e272]: Live operating rule
+                    - cell [ref=f7e273]:
+                      - strong [ref=f7e274]: Operational policy
+                      - paragraph [ref=f7e275]: This setting is tracked for auditability and future automation.
+                    - cell "Default policy" [ref=f7e276]
+                    - cell "Not changed" [ref=f7e277]
+                    - cell [ref=f7e278]:
+                      - link "Open change" [ref=f7e279] [cursor=pointer]:
+                        - /url: /operations-policy?edit=command.start_shift.notification_failures_sla_minutes#policy-command-start-shift-notification-failures-sla-minutes
+                  - row [ref=f7e280]:
+                    - cell [ref=f7e281]:
+                      - strong [ref=f7e282]: Cash reconciliation SLA
+                      - paragraph [ref=f7e283]: Minutes before an open cash-booking debt is promoted to overdue on Start Shift.
+                    - cell [ref=f7e284]:
+                      - strong [ref=f7e285]: 1440 min
+                    - cell "1440 min" [ref=f7e286]
+                    - cell [ref=f7e287]:
+                      - strong [ref=f7e288]: Command center
+                      - paragraph [ref=f7e289]: Live operating rule
+                    - cell [ref=f7e290]:
+                      - strong [ref=f7e291]: Operational policy
+                      - paragraph [ref=f7e292]: This setting is tracked for auditability and future automation.
+                    - cell "Default policy" [ref=f7e293]
+                    - cell "Not changed" [ref=f7e294]
+                    - cell [ref=f7e295]:
+                      - link "Open change" [ref=f7e296] [cursor=pointer]:
+                        - /url: /operations-policy?edit=command.start_shift.cash_reconciliation_sla_minutes#policy-command-start-shift-cash-reconciliation-sla-minutes
+                  - row [ref=f7e297]:
+                    - cell [ref=f7e298]:
+                      - strong [ref=f7e299]: Partner approval SLA
+                      - paragraph [ref=f7e300]: Minutes before a submitted Partner review is promoted to overdue on Start Shift.
+                    - cell [ref=f7e301]:
+                      - strong [ref=f7e302]: 1440 min
+                    - cell "1440 min" [ref=f7e303]
+                    - cell [ref=f7e304]:
+                      - strong [ref=f7e305]: Command center
+                      - paragraph [ref=f7e306]: Live operating rule
+                    - cell [ref=f7e307]:
+                      - strong [ref=f7e308]: Operational policy
+                      - paragraph [ref=f7e309]: This setting is tracked for auditability and future automation.
+                    - cell "Default policy" [ref=f7e310]
+                    - cell "Not changed" [ref=f7e311]
+                    - cell [ref=f7e312]:
+                      - link "Open change" [ref=f7e313] [cursor=pointer]:
+                        - /url: /operations-policy?edit=command.start_shift.partner_approvals_sla_minutes#policy-command-start-shift-partner-approvals-sla-minutes
+                  - row [ref=f7e314]:
+                    - cell [ref=f7e315]:
+                      - strong [ref=f7e316]: First-pick Partner response window
+                      - paragraph [ref=f7e317]: Minutes the first-pick Partner has to accept before marketplace participation becomes more visible.
+                    - cell [ref=f7e318]:
+                      - strong [ref=f7e319]: 10 min
+                    - cell "10 min" [ref=f7e320]
+                    - cell [ref=f7e321]:
+                      - strong [ref=f7e322]: Matching
+                      - paragraph [ref=f7e323]: Live operating rule
+                    - cell [ref=f7e324]:
+                      - strong [ref=f7e325]: Affects new booking expiry windows
+                      - paragraph [ref=f7e326]: New requests use this value for the first-pick Partner response timer and Redis matching TTL. Existing open bookings keep their saved expiry.
+                    - cell "Default policy" [ref=f7e327]
+                    - cell "Not changed" [ref=f7e328]
+                    - cell [ref=f7e329]:
+                      - link "Open change" [ref=f7e330] [cursor=pointer]:
+                        - /url: /operations-policy?edit=matching.provider_response_window_minutes#policy-matching-provider-response-window-minutes
+                  - row [ref=f7e331]:
+                    - cell [ref=f7e332]:
+                      - strong [ref=f7e333]: Marketplace Partner radius
+                      - paragraph [ref=f7e334]: Maximum distance from the confirmed booking address for marketplace Partners that can see and participate in an open request.
+                    - cell [ref=f7e335]:
+                      - strong [ref=f7e336]: 10 km
+                    - cell "10 km" [ref=f7e337]
+                    - cell [ref=f7e338]:
+                      - strong [ref=f7e339]: Matching
+                      - paragraph [ref=f7e340]: Live operating rule
+                    - cell [ref=f7e341]:
+                      - strong [ref=f7e342]: Controls who can see and participate in marketplace requests
+                      - paragraph [ref=f7e343]: Partner open-booking lists, participation validation, marketplace notifications, and customer choice list visibility use this radius.
+                    - cell "Demo Admin" [ref=f7e344]
+                    - cell [ref=f7e345]:
+                      - time [ref=f7e346]: 3 Aug 2026, 21:45
+                    - cell [ref=f7e347]:
+                      - link "Open change" [ref=f7e348] [cursor=pointer]:
+                        - /url: /operations-policy?edit=matching.marketplace_partner_radius_meters#policy-matching-marketplace-partner-radius-meters
+                  - row [ref=f7e349]:
+                    - cell [ref=f7e350]:
+                      - strong [ref=f7e351]: Marketplace Partner location freshness
+                      - paragraph [ref=f7e352]: Maximum age of a Partner location before they are excluded from marketplace participation alerts.
+                    - cell [ref=f7e353]:
+                      - strong [ref=f7e354]: 90 min
+                    - cell "90 min" [ref=f7e355]
+                    - cell [ref=f7e356]:
+                      - strong [ref=f7e357]: Matching
+                      - paragraph [ref=f7e358]: Live operating rule
+                    - cell [ref=f7e359]:
+                      - strong [ref=f7e360]: Operational policy
+                      - paragraph [ref=f7e361]: This setting is tracked for auditability and future automation.
+                    - cell "Default policy" [ref=f7e362]
+                    - cell "Not changed" [ref=f7e363]
+                    - cell [ref=f7e364]:
+                      - link "Open change" [ref=f7e365] [cursor=pointer]:
+                        - /url: /operations-policy?edit=matching.marketplace_partner_location_max_age_minutes#policy-matching-marketplace-partner-location-max-age-minutes
+                  - row [ref=f7e366]:
+                    - cell [ref=f7e367]:
+                      - strong [ref=f7e368]: Marketplace Partner invitation limit
+                      - paragraph [ref=f7e369]: Maximum number of nearby eligible marketplace Partners that can be exposed to the request and notified for participation.
+                    - cell [ref=f7e370]:
+                      - strong [ref=f7e371]: 50 partners
+                    - cell "50 partners" [ref=f7e372]
+                    - cell [ref=f7e373]:
+                      - strong [ref=f7e374]: Matching
+                      - paragraph [ref=f7e375]: Live operating rule
+                    - cell [ref=f7e376]:
+                      - strong [ref=f7e377]: Controls how many marketplace Partners are exposed
+                      - paragraph [ref=f7e378]: Eligible marketplace Partners are sorted by distance, then capped by this limit before notification jobs and customer-visible supply are created.
+                    - cell "Demo Admin" [ref=f7e379]
+                    - cell [ref=f7e380]:
+                      - time [ref=f7e381]: 3 Aug 2026, 21:45
+                    - cell [ref=f7e382]:
+                      - link "Open change" [ref=f7e383] [cursor=pointer]:
+                        - /url: /operations-policy?edit=matching.marketplace_partner_invitation_limit#policy-matching-marketplace-partner-invitation-limit
+                  - row [ref=f7e384]:
+                    - cell [ref=f7e385]:
+                      - strong [ref=f7e386]: Travel buffer after a booking
+                      - paragraph [ref=f7e387]: Buffer minutes after the current booking before a Partner is considered available again.
+                    - cell [ref=f7e388]:
+                      - strong [ref=f7e389]: 30 min
+                    - cell "30 min" [ref=f7e390]
+                    - cell [ref=f7e391]:
+                      - strong [ref=f7e392]: Matching
+                      - paragraph [ref=f7e393]: Live operating rule
+                    - cell [ref=f7e394]:
+                      - strong [ref=f7e395]: Controls partner availability after work
+                      - paragraph [ref=f7e396]: Nearby sorting and availability calculations use this buffer before a partner becomes eligible for another booking.
+                    - cell "Default policy" [ref=f7e397]
+                    - cell "Not changed" [ref=f7e398]
+                    - cell [ref=f7e399]:
+                      - link "Open change" [ref=f7e400] [cursor=pointer]:
+                        - /url: /operations-policy?edit=matching.travel_buffer_minutes#policy-matching-travel-buffer-minutes
+                  - row [ref=f7e401]:
+                    - cell [ref=f7e402]:
+                      - strong [ref=f7e403]: Customer current-to-service address gate
+                      - paragraph [ref=f7e404]: When fresh customer GPS is available, booking creation is blocked if the selected service address is this far or farther from the customer current location.
+                    - cell [ref=f7e405]:
+                      - strong [ref=f7e406]: 50 km
+                    - cell "50 km" [ref=f7e407]
+                    - cell [ref=f7e408]:
+                      - strong [ref=f7e409]: Booking
+                      - paragraph [ref=f7e410]: Live operating rule
+                    - cell [ref=f7e411]:
+                      - strong [ref=f7e412]: Blocks distant customer GPS-to-service-address attempts
+                      - paragraph [ref=f7e413]: When fresh customer GPS is available, booking creation is blocked if the selected service address is this far or farther from the customer current location.
+                    - cell "Default policy" [ref=f7e414]
+                    - cell "Not changed" [ref=f7e415]
+                    - cell [ref=f7e416]:
+                      - link "Open change" [ref=f7e417] [cursor=pointer]:
+                        - /url: /operations-policy?edit=booking.max_customer_current_to_booking_address_km#policy-booking-max-customer-current-to-booking-address-km
+                  - row [ref=f7e418]:
+                    - cell [ref=f7e419]:
+                      - strong [ref=f7e420]: First-pick Partner-to-service address gate
+                      - paragraph [ref=f7e421]: Maximum allowed distance between the preferred Partner last saved location and the booking address.
+                    - cell [ref=f7e422]:
+                      - strong [ref=f7e423]: 50 km
+                    - cell "50 km" [ref=f7e424]
+                    - cell [ref=f7e425]:
+                      - strong [ref=f7e426]: Booking
+                      - paragraph [ref=f7e427]: Live operating rule
+                    - cell [ref=f7e428]:
+                      - strong [ref=f7e429]: Controls preferred first-pick Partner distance
+                      - paragraph [ref=f7e430]: The customer-selected first-pick Partner must be close enough to the booking address before the booking can authorize payment and open matching.
+                    - cell "Default policy" [ref=f7e431]
+                    - cell "Not changed" [ref=f7e432]
+                    - cell [ref=f7e433]:
+                      - link "Open change" [ref=f7e434] [cursor=pointer]:
+                        - /url: /operations-policy?edit=booking.max_preferred_partner_distance_km#policy-booking-max-preferred-partner-distance-km
+                  - row [ref=f7e435]:
+                    - cell [ref=f7e436]:
+                      - strong [ref=f7e437]: Customer current location evidence freshness
+                      - paragraph [ref=f7e438]: Maximum age of the optional customer current GPS snapshot stored as booking evidence when the app can provide it.
+                    - cell [ref=f7e439]:
+                      - strong [ref=f7e440]: 15 min
+                    - cell "15 min" [ref=f7e441]
+                    - cell [ref=f7e442]:
+                      - strong [ref=f7e443]: Booking
+                      - paragraph [ref=f7e444]: Live operating rule
+                    - cell [ref=f7e445]:
+                      - strong [ref=f7e446]: Controls current customer GPS freshness for the distance gate
+                      - paragraph [ref=f7e447]: The app may attach recent customer GPS evidence when available. Fresh GPS can block distant selected service addresses; stale or missing GPS does not replace the confirmed service address.
+                    - cell "Default policy" [ref=f7e448]
+                    - cell "Not changed" [ref=f7e449]
+                    - cell [ref=f7e450]:
+                      - link "Open change" [ref=f7e451] [cursor=pointer]:
+                        - /url: /operations-policy?edit=booking.current_location_freshness_minutes#policy-booking-current-location-freshness-minutes
+                  - row [ref=f7e452]:
+                    - cell [ref=f7e453]:
+                      - strong [ref=f7e454]: Booking distance gate
+                      - paragraph [ref=f7e455]: When enabled, preferred first-pick Partner distance is checked against the booking address. Customer GPS stays optional evidence.
+                    - cell [ref=f7e456]:
+                      - strong [ref=f7e457]: "true"
+                    - cell "true" [ref=f7e458]
+                    - cell [ref=f7e459]:
+                      - strong [ref=f7e460]: Booking
+                      - paragraph [ref=f7e461]: Live operating rule
+                    - cell [ref=f7e462]:
+                      - strong [ref=f7e463]: Controls whether local booking distance checks are enforced
+                      - paragraph [ref=f7e464]: When enabled, booking creation checks the preferred partner distance against the selected service address before payment authorization. Customer GPS is optional evidence only.
+                    - cell "Default policy" [ref=f7e465]
+                    - cell "Not changed" [ref=f7e466]
+                    - cell [ref=f7e467]:
+                      - link "Open change" [ref=f7e468] [cursor=pointer]:
+                        - /url: /operations-policy?edit=booking.distance_gate_enabled#policy-booking-distance-gate-enabled
+                  - row [ref=f7e469]:
+                    - cell [ref=f7e470]:
+                      - strong [ref=f7e471]: Vietnam service area required
+                      - paragraph [ref=f7e472]: When enabled, booking address snapshots must be inside the enabled Vietnam service area.
+                    - cell [ref=f7e473]:
+                      - strong [ref=f7e474]: "true"
+                    - cell "true" [ref=f7e475]
+                    - cell [ref=f7e476]:
+                      - strong [ref=f7e477]: Booking
+                      - paragraph [ref=f7e478]: Live operating rule
+                    - cell [ref=f7e479]:
+                      - strong [ref=f7e480]: Controls whether booking addresses must be inside enabled Vietnam service areas
+                      - paragraph [ref=f7e481]: Customers may browse partner profiles for context, but immediate booking should only open at confirmed Vietnam service addresses while service-area enforcement is enabled.
+                    - cell "Default policy" [ref=f7e482]
+                    - cell "Not changed" [ref=f7e483]
+                    - cell [ref=f7e484]:
+                      - link "Open change" [ref=f7e485] [cursor=pointer]:
+                        - /url: /operations-policy?edit=booking.service_area_required#policy-booking-service-area-required
+                  - row [ref=f7e486]:
+                    - cell [ref=f7e487]:
+                      - strong [ref=f7e488]: First-pick acceptance contract
+                      - paragraph [ref=f7e489]: First-pick Partner acceptance can match first under API rules; otherwise the customer selects from participating Partners.
+                    - cell [ref=f7e490]:
+                      - strong [ref=f7e491]: First-pick priority with customer fallback
+                    - cell "First-pick priority with customer fallback" [ref=f7e492]
+                    - cell [ref=f7e493]:
+                      - strong [ref=f7e494]: Decision
+                      - paragraph [ref=f7e495]: Live operating rule
+                    - cell [ref=f7e496]:
+                      - strong [ref=f7e497]: Controls first-pick priority and customer fallback
+                      - paragraph [ref=f7e498]: The first-pick Partner can match first under API rules. If first-pick does not validly win, the customer selects from participating Partners.
+                    - cell "Demo Admin" [ref=f7e499]
+                    - cell [ref=f7e500]:
+                      - time [ref=f7e501]: 29 Jul 2026, 02:31
+                    - cell [ref=f7e502]:
+                      - link "Open change" [ref=f7e503] [cursor=pointer]:
+                        - /url: /operations-policy?edit=matching.preferred_accept_mode#policy-matching-preferred-accept-mode
+                  - row [ref=f7e504]:
+                    - cell [ref=f7e505]:
+                      - strong [ref=f7e506]: When marketplace Partners can participate
+                      - paragraph [ref=f7e507]: Marketplace Partners can participate during the first-pick response window. Legacy delayed values are accepted for compatibility and normalized to immediate participation.
+                    - cell [ref=f7e508]:
+                      - strong [ref=f7e509]: Open marketplace immediately
+                    - cell "Open marketplace immediately" [ref=f7e510]
+                    - cell [ref=f7e511]:
+                      - strong [ref=f7e512]: Decision
+                      - paragraph [ref=f7e513]: Live operating rule
+                    - cell [ref=f7e514]:
+                      - strong [ref=f7e515]: Controls when other partners can participate
+                      - paragraph [ref=f7e516]: Immediate mode keeps marketplace participation parallel with the first-pick window. Legacy delayed values are normalized to immediate participation by the API.
+                    - cell "Demo Admin" [ref=f7e517]
+                    - cell [ref=f7e518]:
+                      - time [ref=f7e519]: 3 Aug 2026, 21:45
+                    - cell [ref=f7e520]:
+                      - link "Open change" [ref=f7e521] [cursor=pointer]:
+                        - /url: /operations-policy?edit=matching.marketplace_open_mode#policy-matching-marketplace-open-mode
+                  - row [ref=f7e522]:
+                    - cell [ref=f7e523]:
+                      - strong [ref=f7e524]: Negative wallet final gate
+                      - paragraph [ref=f7e525]: Controls how unpaid cash-service platform fees block final acceptance, service start, and payout release.
+                    - cell [ref=f7e526]:
+                      - strong [ref=f7e527]: Final Gate Hold
+                    - cell "Final Gate Hold" [ref=f7e528]
+                    - cell [ref=f7e529]:
+                      - strong [ref=f7e530]: Decision
+                      - paragraph [ref=f7e531]: Live operating rule
+                    - cell [ref=f7e532]:
+                      - strong [ref=f7e533]: Controls unpaid cash-fee debt enforcement
+                      - paragraph [ref=f7e534]: Policy controls cash-fee debt settlement. Marketplace requests remain visible, while final acceptance, service start, and payout release stay blocked while the wallet is negative.
+                    - cell "Default policy" [ref=f7e535]
+                    - cell "Not changed" [ref=f7e536]
+                    - cell [ref=f7e537]:
+                      - link "Open change" [ref=f7e538] [cursor=pointer]:
+                        - /url: /operations-policy?edit=wallet.negative_balance_gate#policy-wallet-negative-balance-gate
+                  - row [ref=f7e539]:
+                    - cell [ref=f7e540]:
+                      - strong [ref=f7e541]: Booking action evidence gate
+                      - paragraph [ref=f7e542]: Controls the evidence posture operators should use before capture, release, cash-fee settlement, expiry, no-show, or closeout actions.
+                    - cell [ref=f7e543]:
+                      - strong [ref=f7e544]: Admin evidence review
+                    - cell "Admin evidence review" [ref=f7e545]
+                    - cell [ref=f7e546]:
+                      - strong [ref=f7e547]: Decision
+                      - paragraph [ref=f7e548]: Live operating rule
+                    - cell [ref=f7e549]:
+                      - strong [ref=f7e550]: Controls booking action evidence posture
+                      - paragraph [ref=f7e551]: Operators use this policy before payment capture, release, cash-fee settlement, expiry, no-show, and completed closeout actions. It keeps decisions tied to retained booking evidence instead of informal judgment.
+                    - cell "Default policy" [ref=f7e552]
+                    - cell "Not changed" [ref=f7e553]
+                    - cell [ref=f7e554]:
+                      - link "Open change" [ref=f7e555] [cursor=pointer]:
+                        - /url: /operations-policy?edit=decision.action_evidence_gate_mode#policy-decision-action-evidence-gate-mode
+                  - row [ref=f7e556]:
+                    - cell [ref=f7e557]:
+                      - strong [ref=f7e558]: Cash fee settlement clearance
+                      - paragraph [ref=f7e559]: Controls what operators need before clearing a negative wallet caused by cash-service platform fees.
+                    - cell [ref=f7e560]:
+                      - strong [ref=f7e561]: Deposit or admin offset required
+                    - cell "Deposit or admin offset required" [ref=f7e562]
+                    - cell [ref=f7e563]:
+                      - strong [ref=f7e564]: Decision
+                      - paragraph [ref=f7e565]: Live operating rule
+                    - cell [ref=f7e566]:
+                      - strong [ref=f7e567]: Controls negative wallet clearance evidence
+                      - paragraph [ref=f7e568]: Cash jobs create company fee debt because the partner receives cash directly. This policy defines whether operators need deposit evidence, admin offset approval, or both before clearing a negative wallet hold.
+                    - cell "Default policy" [ref=f7e569]
+                    - cell "Not changed" [ref=f7e570]
+                    - cell [ref=f7e571]:
+                      - link "Open change" [ref=f7e572] [cursor=pointer]:
+                        - /url: /operations-policy?edit=cash.settlement_clearance_policy#policy-cash-settlement-clearance-policy
+                  - row [ref=f7e573]:
+                    - cell [ref=f7e574]:
+                      - strong [ref=f7e575]: Payout batch cycle
+                      - paragraph [ref=f7e576]: Controls how positive Partner earnings are grouped for settlement. Payout remains batch-based and admin-controlled, never paid instantly from a single booking.
+                    - cell [ref=f7e577]:
+                      - strong [ref=f7e578]: Weekly or monthly batch
+                    - cell "Weekly or monthly batch" [ref=f7e579]
+                    - cell [ref=f7e580]:
+                      - strong [ref=f7e581]: Decision
+                      - paragraph [ref=f7e582]: Live operating rule
+                    - cell [ref=f7e583]:
+                      - strong [ref=f7e584]: Controls positive earning payout cadence
+                      - paragraph [ref=f7e585]: Positive partner earnings remain settlement-batch based. Operators can run weekly, monthly, or admin-selected-day batches, but each paid batch should keep transfer references, withholding logs, and wallet impact evidence.
+                    - cell "Default policy" [ref=f7e586]
+                    - cell "Not changed" [ref=f7e587]
+                    - cell [ref=f7e588]:
+                      - link "Open change" [ref=f7e589] [cursor=pointer]:
+                        - /url: /operations-policy?edit=payout.batch_cycle_policy#policy-payout-batch-cycle-policy
+                  - row [ref=f7e590]:
+                    - cell [ref=f7e591]:
+                      - strong [ref=f7e592]: First-pick expiry handling
+                      - paragraph [ref=f7e593]: Controls the operator posture when the first-pick Partner response window passes. No policy can automatically assign the final Partner.
+                    - cell [ref=f7e594]:
+                      - strong [ref=f7e595]: Open marketplace and review
+                    - cell "Open marketplace and review" [ref=f7e596]
+                    - cell [ref=f7e597]:
+                      - strong [ref=f7e598]: Decision
+                      - paragraph [ref=f7e599]: Live operating rule
+                    - cell [ref=f7e600]:
+                      - strong [ref=f7e601]: Controls operator handling after the first-pick timer
+                      - paragraph [ref=f7e602]: When the preferred partner does not respond within the response window, the marketplace can remain open for nearby partner participation. The policy must never assign a final partner automatically.
+                    - cell "Default policy" [ref=f7e603]
+                    - cell "Not changed" [ref=f7e604]
+                    - cell [ref=f7e605]:
+                      - link "Open change" [ref=f7e606] [cursor=pointer]:
+                        - /url: /operations-policy?edit=matching.first_pick_expiry_action_policy#policy-matching-first-pick-expiry-action-policy
+                  - row [ref=f7e607]:
+                    - cell [ref=f7e608]:
+                      - strong [ref=f7e609]: Customer cancellation after match
+                      - paragraph [ref=f7e610]: Choose how HANDS should handle customer cancellation after a partner has accepted or been selected.
+                    - cell [ref=f7e611]:
+                      - strong [ref=f7e612]: Admin review for MVP
+                    - cell "Admin review for MVP" [ref=f7e613]
+                    - cell [ref=f7e614]:
+                      - strong [ref=f7e615]: Decision
+                      - paragraph [ref=f7e616]: Live operating rule
+                    - cell [ref=f7e617]:
+                      - strong [ref=f7e618]: Controls payment handling after partner commitment
+                      - paragraph [ref=f7e619]: Admin-review mode releases normal early cancellations. Auto-fee mode keeps matched cancellation payment holds for operator review.
+                    - cell "Demo Admin" [ref=f7e620]
+                    - cell [ref=f7e621]:
+                      - time [ref=f7e622]: 3 Aug 2026, 21:45
+                    - cell [ref=f7e623]:
+                      - link "Open change" [ref=f7e624] [cursor=pointer]:
+                        - /url: /operations-policy?edit=cancellation.after_match_policy#policy-cancellation-after-match-policy
+                  - row [ref=f7e625]:
+                    - cell [ref=f7e626]:
+                      - strong [ref=f7e627]: No-show handling
+                      - paragraph [ref=f7e628]: Choose how no-show reports should move from partner report to operational decision.
+                    - cell [ref=f7e629]:
+                      - strong [ref=f7e630]: Admin review required
+                    - cell "Admin review required" [ref=f7e631]
+                    - cell [ref=f7e632]:
+                      - strong [ref=f7e633]: Decision
+                      - paragraph [ref=f7e634]: Live operating rule
+                    - cell [ref=f7e635]:
+                      - strong [ref=f7e636]: Controls no-show evidence and payment review posture
+                      - paragraph [ref=f7e637]: Admin-review mode keeps no-show and fee decisions manual. Evidence mode records required evidence in notes and audit logs for consistent review.
+                    - cell "Default policy" [ref=f7e638]
+                    - cell "Not changed" [ref=f7e639]
+                    - cell [ref=f7e640]:
+                      - link "Open change" [ref=f7e641] [cursor=pointer]:
+                        - /url: /operations-policy?edit=no_show.partner_report_policy#policy-no-show-partner-report-policy
+                  - row [ref=f7e642]:
+                    - cell [ref=f7e643]:
+                      - strong [ref=f7e644]: No-show evidence requirement
+                      - paragraph [ref=f7e645]: Defines the minimum retained evidence operators should review before closing a booking as no-show.
+                    - cell [ref=f7e646]:
+                      - strong [ref=f7e647]: Chat, alert, location, or note required
+                    - cell "Chat, alert, location, or note required" [ref=f7e648]
+                    - cell [ref=f7e649]:
+                      - strong [ref=f7e650]: Decision
+                      - paragraph [ref=f7e651]: Live operating rule
+                    - cell [ref=f7e652]:
+                      - strong [ref=f7e653]: Controls minimum records before no-show closeout
+                      - paragraph [ref=f7e654]: No-show remains a factual admin closeout. This policy defines which retained records operators should inspect before marking a booking no-show and deciding payment handling.
+                    - cell "Default policy" [ref=f7e655]
+                    - cell "Not changed" [ref=f7e656]
+                    - cell [ref=f7e657]:
+                      - link "Open change" [ref=f7e658] [cursor=pointer]:
+                        - /url: /operations-policy?edit=no_show.evidence_requirement_policy#policy-no-show-evidence-requirement-policy
+                  - row [ref=f7e659]:
+                    - cell [ref=f7e660]:
+                      - strong [ref=f7e661]: Partner alert routing
+                      - paragraph [ref=f7e662]: Choose how partners should receive urgent booking and marketplace participation alerts.
+                    - cell [ref=f7e663]:
+                      - strong [ref=f7e664]: In-app now, FCM push later
+                    - cell "In-app now, FCM push later" [ref=f7e665]
+                    - cell [ref=f7e666]:
+                      - strong [ref=f7e667]: Decision
+                      - paragraph [ref=f7e668]: Live operating rule
+                    - cell [ref=f7e669]:
+                      - strong [ref=f7e670]: Controls partner booking alert delivery route
+                      - paragraph [ref=f7e671]: In-app mode records inbox notifications only. FCM mode routes partner booking alerts through FCM push delivery and logs delivery results.
+                    - cell "Demo Admin" [ref=f7e672]
+                    - cell [ref=f7e673]:
+                      - time [ref=f7e674]: 3 Aug 2026, 21:45
+                    - cell [ref=f7e675]:
+                      - link "Open change" [ref=f7e676] [cursor=pointer]:
+                        - /url: /operations-policy?edit=notification.partner_alert_channel#policy-notification-partner-alert-channel
+          - generic [ref=f7e677]:
+            - generic [ref=f7e678]:
+              - generic [ref=f7e679]:
+                - heading "MVP authority baseline" [level=2] [ref=f7e680]
+                - paragraph [ref=f7e681]: These rules are not CRM preferences. They are the operating authority for Vietnam booking, marketplace, and finance actions until a later product decision changes them.
+              - generic [ref=f7e682]: Command center rules
+            - generic [ref=f7e685]:
+              - generic [ref=f7e686]:
+                - generic [ref=f7e687]: Confirmed address
+                - heading "Confirmed service address required" [level=3] [ref=f7e688]
+                - paragraph [ref=f7e689]: Every booking must keep a confirmed service address record before distance matching, marketplace participation, payment evidence, and dispute review.
+                - generic [ref=f7e690]: Customers may browse globally; booking requires a confirmed Vietnam service address.
+              - generic [ref=f7e691]:
+                - generic [ref=f7e692]: No auto assignment
+                - heading "First-pick priority with fallback choice" [level=3] [ref=f7e693]
+                - paragraph [ref=f7e694]: The first-pick Partner can match first under API rules. If first-pick does not win, the customer chooses from eligible participating Partners.
+                - generic [ref=f7e695]: Operators review evidence, but the platform does not automatically assign the partner.
+              - generic [ref=f7e696]:
+                - generic [ref=f7e697]: 10km marketplace
+                - heading "Booking-address radius" [level=3] [ref=f7e698]
+                - paragraph [ref=f7e699]: Marketplace participation and alerts are based on the booking address, not the customer's browsing location or current country.
+                - generic [ref=f7e700]: The radius is admin-editable and defaults to 10km for Vietnam operations.
+              - generic [ref=f7e701]:
+                - generic [ref=f7e702]: Negative wallet gate
+                - heading "View demand, block finalization" [level=3] [ref=f7e703]
+                - paragraph [ref=f7e704]: A Partner with a negative wallet may see marketplace requests, but final acceptance, service start, and payout release wait until the unpaid platform fee is settled or cleared by finance.
+                - generic [ref=f7e705]: Direct first-pick response and already-matched service flow stay separate from this gate.
+          - region [ref=f7e706]:
+            - generic [ref=f7e707]:
+              - generic [ref=f7e708]:
+                - heading "Action gate policy checklist" [level=2] [ref=f7e709]
+                - paragraph [ref=f7e710]: These admin-editable policies explain which evidence operators should check before booking capture, release, cash-fee clearance, first-pick expiry, no-show closeout, and completed closeout actions.
+              - generic [ref=f7e711]: 5/5 recommended
+            - generic [ref=f7e713]:
+              - generic [ref=f7e714]:
+                - generic [ref=f7e715]:
+                  - generic [ref=f7e716]: Live
+                  - generic [ref=f7e717]: Recommended posture
+                  - strong [ref=f7e718]: 5/5
+                  - generic [ref=f7e719]: Policies aligned with current MVP operating rules.
+                - generic [ref=f7e720]:
+                  - generic [ref=f7e721]: Current filters
+                  - generic [ref=f7e722]: Money actions
+                  - strong [ref=f7e723]: Recommended
+                  - generic [ref=f7e724]: Payment and closeout gates should keep evidence review visible.
+                - generic [ref=f7e725]:
+                  - generic [ref=f7e726]: All records
+                  - generic [ref=f7e727]: Cash fee clearance
+                  - strong [ref=f7e728]: Recommended
+                  - generic [ref=f7e729]: Negative wallet clearance is tied to settlement evidence.
+                - generic [ref=f7e730]:
+                  - generic [ref=f7e731]: Current filters
+                  - generic [ref=f7e732]: Payout cycle
+                  - strong [ref=f7e733]: Recommended
+                  - generic [ref=f7e734]: Positive earnings stay batch-settled by finance.
+                - generic [ref=f7e735]:
+                  - generic [ref=f7e736]: Current filters
+                  - generic [ref=f7e737]: No-show closeout
+                  - strong [ref=f7e738]: Recommended
+                  - generic [ref=f7e739]: No-show remains an admin evidence decision.
+              - generic [ref=f7e741]:
+                - generic [ref=f7e742]: Clear
+                - heading "Action gate policies are aligned" [level=3] [ref=f7e743]
+                - paragraph [ref=f7e744]: Booking, cash, payout, first-pick, and no-show evidence gates follow the recommended baseline.
+                - generic [ref=f7e745]: Keep using booking detail evidence before irreversible operator decisions.
+          - generic [ref=f7e746]:
+            - generic [ref=f7e747]:
+              - generic [ref=f7e748]:
+                - heading "Booking create gate controls" [level=2] [ref=f7e749]
+                - paragraph [ref=f7e750]: These policies stop unsafe bookings before payment authorization and matching. Customers can browse globally, but immediate booking must pass the selected address, Vietnam service area, and first-pick Partner distance checks. Customer GPS is optional evidence only.
+              - generic [ref=f7e751]: Distance gates active
+            - generic [ref=f7e753]:
+              - generic [ref=f7e754]:
+                - generic [ref=f7e755]:
+                  - generic [ref=f7e756]: Current filters
+                  - generic [ref=f7e757]: Optional customer GPS evidence
+                  - strong [ref=f7e758]: 50 km
+                  - generic [ref=f7e759]: Optional evidence only. Booking authority comes from the confirmed service address.
+                - generic [ref=f7e760]:
+                  - generic [ref=f7e761]: Current filters
+                  - generic [ref=f7e762]: First-pick partner gate
+                  - strong [ref=f7e763]: 50 km
+                  - generic [ref=f7e764]: Preferred partner must be near the booking address before payment opens.
+                - generic [ref=f7e765]:
+                  - generic [ref=f7e766]: Current filters
+                  - generic [ref=f7e767]: Location freshness
+                  - strong [ref=f7e768]: 15 min
+                  - generic [ref=f7e769]: Optional GPS evidence freshness when the app can provide it.
+                - generic [ref=f7e770]:
+                  - generic [ref=f7e771]: Needs action
+                  - generic [ref=f7e772]: Blocked attempts
+                  - strong [ref=f7e773]: "3"
+                  - generic [ref=f7e774]: Recent booking create requests stopped before payment and matching.
+              - region "Scrollable data table" [ref=f7e775]:
+                - table [ref=f7e776]:
+                  - rowgroup [ref=f7e777]:
+                    - row [ref=f7e778]:
+                      - columnheader "Gate" [ref=f7e779]
+                      - columnheader "Current" [ref=f7e780]
+                      - columnheader "Default" [ref=f7e781]
+                      - columnheader "Operator meaning" [ref=f7e782]
+                      - columnheader "Evidence" [ref=f7e783]
+                  - rowgroup [ref=f7e784]:
+                    - row [ref=f7e785]:
+                      - cell "Distance gate" [ref=f7e786]
+                      - cell "Enabled" [ref=f7e788]
+                      - cell "Enabled" [ref=f7e789]
+                      - cell "First-pick partner distance is checked from the booking address. Customer GPS stays optional evidence." [ref=f7e790]
+                      - cell [ref=f7e791]:
+                        - link "Blocked attempts" [ref=f7e792] [cursor=pointer]:
+                          - /url: /bookings?view=blocked-create
+                    - row [ref=f7e797]:
+                      - cell "Service area" [ref=f7e798]
+                      - cell "Required" [ref=f7e800]
+                      - cell "Required" [ref=f7e801]
+                      - cell "Booking address must be inside an enabled Vietnam service area." [ref=f7e802]
+                      - cell [ref=f7e803]:
+                        - link "1 reject(s)" [ref=f7e804] [cursor=pointer]:
+                          - /url: /audit-log?query=BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA
+                    - row [ref=f7e809]:
+                      - cell "Optional customer GPS evidence" [ref=f7e810]
+                      - cell "50 km" [ref=f7e812]
+                      - cell "20 km" [ref=f7e813]
+                      - cell "A customer can browse globally and book from a confirmed Vietnam service address. GPS distance is retained only as optional evidence." [ref=f7e814]
+                      - cell [ref=f7e815]:
+                        - link "1 historical row(s)" [ref=f7e816] [cursor=pointer]:
+                          - /url: /audit-log?query=CUSTOMER_CURRENT_LOCATION_TOO_FAR
+                    - row [ref=f7e821]:
+                      - cell "First-pick partner" [ref=f7e822]
+                      - cell "50 km" [ref=f7e824]
+                      - cell "50 km" [ref=f7e825]
+                      - cell "The selected first-pick Partner must be close enough to the booking address before payment authorization." [ref=f7e826]
+                      - cell [ref=f7e827]:
+                        - link "1 reject(s)" [ref=f7e828] [cursor=pointer]:
+                          - /url: /audit-log?query=PREFERRED_PARTNER_TOO_FAR
+                    - row [ref=f7e833]:
+                      - cell "Optional GPS freshness" [ref=f7e834]
+                      - cell "15 min" [ref=f7e836]
+                      - cell "15 min" [ref=f7e837]
+                      - cell "Fresh customer GPS can be stored as optional support evidence when available. Booking authority remains the confirmed service address." [ref=f7e838]
+                      - cell [ref=f7e839]:
+                        - link "0 historical row(s)" [ref=f7e840] [cursor=pointer]:
+                          - /url: /audit-log?query=CUSTOMER_CURRENT_LOCATION
+              - generic [ref=f7e845]:
+                - generic [ref=f7e846]:
+                  - heading "Recent blocked create attempts" [level=2] [ref=f7e847]
+                  - paragraph [ref=f7e848]: Shows factual support evidence for failed booking creation and troubleshooting.
+                - link "Open blocked-create queue" [ref=f7e850] [cursor=pointer]:
+                  - /url: /bookings?view=blocked-create
+              - generic [ref=f7e855]:
+                - generic [ref=f7e856]:
+                  - generic [ref=f7e857]: First-pick partner too far
+                  - heading "Blocked booking create attempt" [level=3] [ref=f7e858]
+                  - paragraph [ref=f7e859]: "Preferred partner must be within 50km of the booking address. Customer 0 m / limit 50 km. First-pick 608.2 km / limit 50 km. Address: District 1, Ho Chi Minh City"
+                  - link "Open evidence" [ref=f7e861] [cursor=pointer]:
+                    - /url: /audit-log?query=PREFERRED_PARTNER_TOO_FAR
+                  - generic [ref=f7e866]:
+                    - text: Attempt cmsdccc1... - Recorded
+                    - time [ref=f7e867]: 3 Aug 2026, 21:45
+                - generic [ref=f7e868]:
+                  - generic [ref=f7e869]: Customer current location too far
+                  - heading "Blocked booking create attempt" [level=3] [ref=f7e870]
+                  - paragraph [ref=f7e871]: "Booking address must be within 50km of the customer's current location. Customer 608.2 km / limit 50 km. Address: Da Nang city center"
+                  - link "Open evidence" [ref=f7e873] [cursor=pointer]:
+                    - /url: /audit-log?query=CUSTOMER_CURRENT_LOCATION_TOO_FAR
+                  - generic [ref=f7e878]:
+                    - text: Attempt cmsdccbz... - Recorded
+                    - time [ref=f7e879]: 3 Aug 2026, 21:45
+                - generic [ref=f7e880]:
+                  - generic [ref=f7e881]: Outside service area
+                  - heading "Blocked booking create attempt" [level=3] [ref=f7e882]
+                  - paragraph [ref=f7e883]: "Booking address must be inside Vietnam. Address: Out of country smoke flow"
+                  - link "Open evidence" [ref=f7e885] [cursor=pointer]:
+                    - /url: /audit-log?query=BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA
+                  - generic [ref=f7e890]:
+                    - text: Attempt cmsdccbe... - Recorded
+                    - time [ref=f7e891]: 3 Aug 2026, 21:45
+          - generic [ref=f7e892]:
+            - generic [ref=f7e893]:
+              - generic [ref=f7e894]:
+                - heading "Recommended value review" [level=2] [ref=f7e895]
+                - paragraph [ref=f7e896]: Compares current policy values with the HANDS recommended baseline. Differences are allowed, but operators should know the likely tradeoff before keeping them.
+              - generic [ref=f7e897]: Aligned
+            - generic [ref=f7e899]:
+              - generic [ref=f7e900]:
+                - generic [ref=f7e901]:
+                  - generic [ref=f7e902]: Current filters
+                  - generic [ref=f7e903]: Compared policies
+                  - strong [ref=f7e904]: "28"
+                  - generic [ref=f7e905]: Policies with an explicit recommended baseline.
+                - generic [ref=f7e906]:
+                  - generic [ref=f7e907]: Live
+                  - generic [ref=f7e908]: Owner choices
+                  - strong [ref=f7e909]: "0"
+                  - generic [ref=f7e910]: Current values intentionally different from recommendation.
+                - generic [ref=f7e911]:
+                  - generic [ref=f7e912]: Live
+                  - generic [ref=f7e913]: Live deviations
+                  - strong [ref=f7e914]: "0"
+                  - generic [ref=f7e915]: Differences that can affect live booking behavior.
+                - generic [ref=f7e916]:
+                  - generic [ref=f7e917]: Live
+                  - generic [ref=f7e918]: Active bookings
+                  - strong [ref=f7e919]: "0"
+                  - generic [ref=f7e920]: Bookings to consider before changing enforced values.
+              - generic [ref=f7e922]:
+                - generic [ref=f7e923]: Aligned
+                - heading "Recommended values are aligned" [level=3] [ref=f7e924]
+                - paragraph [ref=f7e925]: Current policy values match the recommended baseline for the loaded review set.
+                - generic [ref=f7e926]: Review this again before changing live matching or booking gates.
+          - generic [ref=f7e927]:
+            - generic [ref=f7e928]:
+              - generic [ref=f7e929]:
+                - heading "Live matching policy" [level=2] [ref=f7e930]
+                - paragraph [ref=f7e931]: These settings are enforced by booking creation, marketplace partner discovery, and partner participation eligibility. Existing open bookings keep their stored expiry time, while new bookings use the latest policy.
+              - generic [ref=f7e932]:
+                - generic [ref=f7e933]: Admin editable
+                - generic [ref=f7e934]: 5 enforced policy
+                - generic [ref=f7e935]: 6 saved override(s)
+            - generic [ref=f7e937]:
+              - generic [ref=f7e938]:
+                - generic [ref=f7e939]:
+                  - heading "Matching policy changes" [level=2] [ref=f7e940]
+                  - paragraph [ref=f7e941]: Use the policy comparison to inspect current and recommended values, then open exactly one change panel.
+                - generic [ref=f7e942]: 5 matching policy item(s)
+              - link "Open policy comparison" [ref=f7e944] [cursor=pointer]:
+                - /url: /operations-policy
+          - generic [ref=f7e946]:
+            - generic [ref=f7e947]:
+              - heading "Advanced policy review" [level=2] [ref=f7e948]
+              - paragraph [ref=f7e949]: The default policy page keeps live editing and gate checks fast. Open advanced review when checking simulations, audit trail, drilldown, and owner decision pressure.
+            - link "Open advanced review" [ref=f7e951] [cursor=pointer]:
+              - /url: /operations-policy?details=all
+          - generic [ref=f7e952]:
+            - generic [ref=f7e953]:
+              - generic [ref=f7e954]:
+                - heading "Operator decisions" [level=2] [ref=f7e955]
+                - paragraph [ref=f7e956]: These are the flow choices HANDS should decide before the mobile screens are redesigned. Saving them creates an audit trail; items marked "planning" are not enforced until that flow is built.
+              - generic [ref=f7e957]: Needs owner choice
+            - generic [ref=f7e960]:
+              - generic [ref=f7e961]:
+                - generic [ref=f7e962]:
+                  - heading "Decision policy editor" [level=2] [ref=f7e963]
+                  - paragraph [ref=f7e964]: Decision policy editors are available in advanced review so the default page stays focused on live matching edits and booking gates.
+                - generic [ref=f7e965]: 11 decision item(s)
+              - link "Load decision editor" [ref=f7e967] [cursor=pointer]:
+                - /url: /operations-policy?details=all
+  - button "Open Next.js Dev Tools" [ref=f7e973] [cursor=pointer]

@@ -1,93 +1,94 @@
-import { AdminMetricGrid, AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
-import { AdminSignal, StatusBadge } from '../../components/status-badge';
+import { StatusBadge } from '../../components/status-badge';
+import type { SetupOperationalHealthRow } from './setup-page-model';
 
 type SetupOverviewSectionProps = {
-  readonly readinessOk: boolean;
   readonly readinessUnavailable: boolean;
   readonly readinessTimestamp: string;
-  readonly currentStage: {
-    readonly ok: boolean;
-    readonly label: string;
-    readonly blockers: number;
-    readonly helper: string;
-  };
-  readonly summary: {
-    readonly ready: number;
-    readonly partial: number;
-    readonly blocked: number;
-    readonly missing: number;
-  };
+  readonly rows: readonly SetupOperationalHealthRow[];
 };
 
+const SYSTEM_HEALTH_HEADERS = [
+  'Service',
+  'Status',
+  'Affected work',
+  'Last checked',
+  'Owning team',
+  'Next action',
+];
+
 export function SetupOverviewSection({
-  readinessOk,
   readinessUnavailable,
   readinessTimestamp,
-  currentStage,
-  summary,
+  rows,
 }: SetupOverviewSectionProps) {
-  return (
-    <>
-      <AdminSectionHeader
-        actions={
-          <>
-            <AdminSignal tone={currentStage.ok ? 'ok' : 'warn'}>{currentStage.label}</AdminSignal>
-            <AdminSignal tone={readinessOk ? 'ok' : 'info'}>
-              {readinessUnavailable
-                ? 'External status unknown'
-                : readinessOk
-                  ? 'Production E2E ready'
-                  : 'Production deferred'}
-            </AdminSignal>
-            <StatusBadge tone="info">
-              {readinessUnavailable ? 'Readiness not loaded' : <>Updated <DateTimeText value={readinessTimestamp} /></>}
-            </StatusBadge>
-          </>
-        }
-        description="One checklist for credentials, account setup, and external services needed before production-like E2E."
-        title="External setup"
-      />
+  const blockedCount = rows.filter((row) => row.status === 'Blocked' || row.status === 'Unavailable').length;
+  const limitedCount = rows.filter((row) => row.status === 'Limited').length;
+  const overallStatus = readinessUnavailable
+    ? { label: 'Status unavailable', tone: 'danger' as const }
+    : blockedCount > 0
+      ? { label: `${blockedCount} blocked`, tone: 'danger' as const }
+      : limitedCount > 0
+        ? { label: `${limitedCount} limited`, tone: 'warning' as const }
+        : { label: 'All checked services operational', tone: 'success' as const };
 
-      <AdminMetricGrid
-        metrics={[
-          {
-            label: 'Current blockers',
-            value: currentStage.blockers,
-            helper: currentStage.helper,
-            kind: currentStage.blockers ? 'risk' : 'record',
-            scope: 'Developer readiness',
-          },
-          {
-            label: 'Ready',
-            value: summary.ready,
-            helper: 'External groups configured enough for local/E2E use.',
-            kind: 'record',
-            scope: 'Developer readiness',
-          },
-          {
-            label: 'Partial',
-            value: summary.partial,
-            helper: 'Some values exist, but production values are missing.',
-            kind: 'record',
-            scope: 'Developer readiness',
-          },
-          {
-            label: 'Blocked',
-            value: summary.blocked,
-            helper: 'Cannot run real E2E until required values are set.',
-            kind: summary.blocked ? 'risk' : 'record',
-            scope: summary.blocked ? 'Needs action' : 'Developer readiness',
-          },
-          {
-            label: 'Missing values',
-            value: summary.missing,
-            helper: 'Secret values are never displayed here.',
-            kind: summary.missing ? 'risk' : 'record',
-            scope: summary.missing ? 'Needs action' : 'Developer readiness',
-          },
-        ]}
-      />
-    </>
+  return (
+    <AdminSection
+      actions={
+        <>
+          <StatusBadge tone={overallStatus.tone}>{overallStatus.label}</StatusBadge>
+          {readinessUnavailable ? (
+            <StatusBadge tone="warning">Last checked unavailable</StatusBadge>
+          ) : (
+            <StatusBadge tone="info">
+              Last checked <DateTimeText value={readinessTimestamp} />
+            </StatusBadge>
+          )}
+        </>
+      }
+      description="External service state, affected operator work, ownership, and the next safe action."
+      id="system-health"
+      title="System health"
+    >
+      <AdminTableScroll ariaLabel="System health status table" className="setup-health-table-scroll">
+        <AdminDataTable
+          className="setup-health-table"
+          emptyMessage="No system health checks were returned."
+          headers={SYSTEM_HEALTH_HEADERS}
+          rowCount={rows.length}
+        >
+          {rows.map((row) => {
+            const owners = row.owner
+              .split(',')
+              .map((owner) => owner.trim())
+              .filter(Boolean);
+            const contacts = owners.filter((owner) => owner.includes('@'));
+            const teams = owners.filter((owner) => !owner.includes('@'));
+
+            return (
+              <tr key={row.id}>
+                <td>
+                  <strong>{row.name}</strong>
+                </td>
+                <td>
+                  <StatusBadge tone={row.tone}>{row.status}</StatusBadge>
+                </td>
+                <td>{row.affectedWork}</td>
+                <td>{row.lastCheckedAt ? <DateTimeText value={row.lastCheckedAt} /> : 'Unavailable'}</td>
+                <td>
+                  <span className="setup-health-owner">
+                    <strong>{teams.join(', ') || (contacts.length ? 'Operations team' : 'Owner unavailable')}</strong>
+                    {contacts.length ? <small>{contacts.join(', ')}</small> : null}
+                  </span>
+                </td>
+                <td>{row.nextAction}</td>
+              </tr>
+            );
+          })}
+        </AdminDataTable>
+      </AdminTableScroll>
+    </AdminSection>
   );
 }

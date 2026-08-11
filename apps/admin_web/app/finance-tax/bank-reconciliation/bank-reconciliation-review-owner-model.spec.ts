@@ -1,5 +1,8 @@
 import type { AdminUser } from '../../../lib/admin-api';
-import { buildBankReconciliationReviewOwnerOptions } from './bank-reconciliation-review-owner-model';
+import {
+  buildBankReconciliationReviewOwnerOptions,
+  buildPaymentClearingReviewOwnerOptions,
+} from './bank-reconciliation-review-owner-model';
 
 describe('buildBankReconciliationReviewOwnerOptions', () => {
   it('keeps eligible operators, excludes the current owner, and puts the current operator first', () => {
@@ -28,6 +31,29 @@ describe('buildBankReconciliationReviewOwnerOptions', () => {
 
     expect(buildBankReconciliationReviewOwnerOptions([legacyApprover], null, null)).toEqual([
       { label: 'legacy-approver@hands.test', value: 'legacy-approver' },
+    ]);
+  });
+
+  it('uses Payment Clearing permission instead of Bank Reconciliation for clearing queues', () => {
+    const paymentOperator = adminUser({
+      id: 'payment-operator',
+      fullName: 'Payment Operator',
+      categories: ['FINANCE_PAYMENT_CLEARING'],
+    });
+    const bankOperator = adminUser({
+      id: 'bank-operator',
+      fullName: 'Bank Operator',
+      categories: ['FINANCE_BANK_RECONCILIATION'],
+    });
+
+    expect(
+      buildPaymentClearingReviewOwnerOptions(
+        [paymentOperator, bankOperator],
+        null,
+        'payment-operator',
+      ),
+    ).toEqual([
+      { label: 'Payment Operator · payment-operator@hands.test', value: 'payment-operator' },
     ]);
   });
 });

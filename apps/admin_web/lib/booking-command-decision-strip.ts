@@ -1,3 +1,5 @@
+import { formatDateTime } from './admin-format';
+
 export type BookingCommandDecisionTone =
   | 'pill-danger'
   | 'pill-info'
@@ -11,6 +13,7 @@ export type BookingCommandDecisionStripInput = {
   addressLabel: string;
   participantCount: number;
   customerChoiceCandidateCount: number;
+  expiredCustomerChoiceCandidateCount: number;
   marketplaceEligibleCount: number;
   hasFinalPartner: boolean;
   hasChatRoom: boolean;
@@ -19,6 +22,8 @@ export type BookingCommandDecisionStripInput = {
   paymentStatus: string;
   cashDebtNeedsSettlement: boolean;
   closeoutOpenItemCount: number;
+  matchingDeadlineAt: string | null;
+  matchingDeadlineExpired: boolean;
 };
 
 export type BookingCommandDecisionRow = {
@@ -34,6 +39,7 @@ export type BookingCommandDecisionStrip = {
   tone: BookingCommandDecisionTone;
   primaryAction: string;
   primaryDetail: string;
+  primaryHref: string;
   rows: BookingCommandDecisionRow[];
 };
 
@@ -55,6 +61,7 @@ export function bookingCommandDecisionStrip(
     tone: primary.tone,
     primaryAction: primary.primaryAction,
     primaryDetail: primary.primaryDetail,
+    primaryHref: primary.primaryHref,
     rows,
   };
 }
@@ -74,7 +81,7 @@ function addressRow(input: BookingCommandDecisionStripInput): BookingCommandDeci
     lane: 'Address',
     state: 'Snapshot ready',
     detail: input.addressLabel,
-    href: '#address-radius-contract',
+    href: '#customer',
     tone: 'pill-success',
   };
 }
@@ -84,8 +91,21 @@ function matchingRow(input: BookingCommandDecisionStripInput): BookingCommandDec
     return {
       lane: 'Matching',
       state: 'Customer choice',
-      detail: `${input.customerChoiceCandidateCount} customer-selectable Partner(s) / ${input.participantCount} actual participant row(s).`,
+      detail: `${input.customerChoiceCandidateCount} customer-selectable Partner(s) / ${input.participantCount} actual participant row(s). Choice closes ${formatDateTime(input.matchingDeadlineAt)}.`,
       href: '#participants',
+      tone: 'pill-warn',
+    };
+  }
+
+  if (input.bookingStatus === 'OPEN_MATCHING' && input.matchingDeadlineExpired) {
+    return {
+      lane: 'Matching',
+      state: input.expiredCustomerChoiceCandidateCount > 0 ? 'Responses expired' : 'Deadline passed',
+      detail:
+        input.expiredCustomerChoiceCandidateCount > 0
+          ? `${input.expiredCustomerChoiceCandidateCount} accepted/joined response(s) are no longer customer-selectable. Deadline passed ${formatDateTime(input.matchingDeadlineAt)}.`
+          : `The matching deadline passed ${formatDateTime(input.matchingDeadlineAt)} without a customer-selectable Partner.`,
+      href: '#matching-expiry',
       tone: 'pill-warn',
     };
   }
@@ -94,9 +114,19 @@ function matchingRow(input: BookingCommandDecisionStripInput): BookingCommandDec
     return {
       lane: 'Matching',
       state: 'Marketplace open',
-      detail: `${input.marketplaceEligibleCount} Partner(s) are inside the booking-address marketplace policy.`,
+      detail: `${input.marketplaceEligibleCount} Partner(s) are inside the booking-address marketplace policy. Matching closes ${formatDateTime(input.matchingDeadlineAt)}.`,
       href: '#marketplace-supply',
       tone: 'pill-info',
+    };
+  }
+
+  if (input.bookingStatus === 'OPEN_MATCHING' && !input.matchingDeadlineAt) {
+    return {
+      lane: 'Matching',
+      state: 'Deadline unavailable',
+      detail: 'Matching remains open, but no matching deadline is stored for this booking.',
+      href: '#participants',
+      tone: 'pill-warn',
     };
   }
 
@@ -125,7 +155,7 @@ function chatRow(input: BookingCommandDecisionStripInput): BookingCommandDecisio
       lane: 'Chat',
       state: 'Missing',
       detail: 'Matched and active bookings should have retained chat before service handoff.',
-      href: '#chat',
+      href: '#chat-repair',
       tone: 'pill-danger',
     };
   }
@@ -144,7 +174,7 @@ function chatRow(input: BookingCommandDecisionStripInput): BookingCommandDecisio
     lane: 'Chat',
     state: 'Pending',
     detail: 'Chat opens after the customer chooses the final Partner.',
-    href: '#chat',
+    href: '#participants',
     tone: 'pill-info',
   };
 }
@@ -192,13 +222,14 @@ function financeRow(input: BookingCommandDecisionStripInput): BookingCommandDeci
 function primaryDecision(
   input: BookingCommandDecisionStripInput,
   rows: BookingCommandDecisionRow[],
-): Pick<BookingCommandDecisionStrip, 'status' | 'tone' | 'primaryAction' | 'primaryDetail'> {
+): Pick<BookingCommandDecisionStrip, 'status' | 'tone' | 'primaryAction' | 'primaryDetail' | 'primaryHref'> {
   if (!input.hasAddressSnapshot) {
     return {
       status: 'Address check',
       tone: 'pill-danger',
       primaryAction: 'Confirm service address',
       primaryDetail: rows[0].detail,
+      primaryHref: rows[0].href,
     };
   }
 
@@ -209,6 +240,7 @@ function primaryDecision(
       tone: 'pill-danger',
       primaryAction: 'Repair chat handoff',
       primaryDetail: chat.detail,
+      primaryHref: chat.href,
     };
   }
 
@@ -219,6 +251,7 @@ function primaryDecision(
       tone: 'pill-danger',
       primaryAction: 'Settle Partner cash fee debt',
       primaryDetail: finance.detail,
+      primaryHref: finance.href,
     };
   }
 
@@ -229,6 +262,18 @@ function primaryDecision(
       tone: 'pill-warn',
       primaryAction: 'Keep customer final choice visible',
       primaryDetail: matching.detail,
+      primaryHref: matching.href,
+    };
+  }
+
+  if (input.bookingStatus === 'OPEN_MATCHING' && input.matchingDeadlineExpired) {
+    const matching = rows.find((row) => row.lane === 'Matching') ?? rows[1];
+    return {
+      status: 'Expiry review',
+      tone: 'pill-warn',
+      primaryAction: 'Review matching expiry impact',
+      primaryDetail: matching.detail,
+      primaryHref: matching.href,
     };
   }
 
@@ -239,6 +284,7 @@ function primaryDecision(
       tone: 'pill-info',
       primaryAction: 'Monitor marketplace participation',
       primaryDetail: matching.detail,
+      primaryHref: matching.href,
     };
   }
 
@@ -249,6 +295,7 @@ function primaryDecision(
       tone: 'pill-warn',
       primaryAction: 'Capture or release payment',
       primaryDetail: finance.detail,
+      primaryHref: finance.href,
     };
   }
 
@@ -259,6 +306,7 @@ function primaryDecision(
       tone: 'pill-warn',
       primaryAction: 'Review open closeout items',
       primaryDetail: finance.detail,
+      primaryHref: finance.href,
     };
   }
 
@@ -267,5 +315,6 @@ function primaryDecision(
     tone: 'pill-success',
     primaryAction: 'Continue normal monitoring',
     primaryDetail: 'No immediate booking command issue is active.',
+    primaryHref: '#booking-unified-detail',
   };
 }

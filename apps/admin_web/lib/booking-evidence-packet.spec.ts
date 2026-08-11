@@ -168,6 +168,25 @@ describe('bookingEvidencePacket', () => {
     expect(JSON.stringify(packet)).not.toMatch(/\bpin\b/i);
   });
 
+  it('keeps a retained empty room and location-only context partial', () => {
+    const packet = bookingEvidencePacket({
+      ...baseInput,
+      chatReady: false,
+      chatRoomShortId: 'room123',
+      locationTrailCount: 1,
+      paymentMethod: 'CASH',
+      paymentStatus: 'PAID',
+    });
+
+    expect(packet).toMatchObject({ status: 'Evidence partial', tone: 'pill-warn' });
+    expect(packet.metrics.find((metric) => metric.label === 'Chat evidence')).toMatchObject({
+      value: 'Retained room · no messages',
+    });
+    expect(packet.metrics.find((metric) => metric.label === 'Refund evidence')).toMatchObject({
+      value: 'Not expected',
+    });
+  });
+
   it('does not echo raw coordinate labels in address or location records', () => {
     const packet = bookingEvidencePacket({
       ...baseInput,

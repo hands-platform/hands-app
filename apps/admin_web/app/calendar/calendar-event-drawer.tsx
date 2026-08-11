@@ -1,6 +1,6 @@
 'use client';
 
-import type { ChangeEvent } from 'react';
+import { useRef, type ChangeEvent } from 'react';
 import DatePicker from 'react-datepicker';
 import { RotateCcw, Save, Trash2, X } from 'lucide-react';
 
@@ -16,6 +16,7 @@ import {
 import { AdminDrawerBackdropButton } from '../../components/admin-drawer-backdrop-button';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminDrawerSurface } from '../../components/admin-surface';
+import { useAdminModalFocus } from '../../components/use-admin-modal-focus';
 import { calendarTagsToInputValue, parseCalendarTags, type CalendarEventDraft } from './calendar-model';
 
 export type CalendarEventDrawerProps = {
@@ -43,6 +44,9 @@ export function CalendarEventDrawer({
   canEdit,
   currentOperatorName,
 }: CalendarEventDrawerProps) {
+  const drawerRef = useRef<HTMLElement>(null);
+  useAdminModalFocus(drawerRef, onClose, undefined, isOpen);
+
   if (!isOpen) {
     return null;
   }
@@ -76,19 +80,28 @@ export function CalendarEventDrawer({
   const readonlyReason =
     mode === 'edit' && !canEdit ? `Only ${draft.authorName} can update or delete this event.` : null;
 
+  const titleId = 'calendar-event-drawer-title';
+
   return (
     <>
       <AdminDrawerBackdropButton
         aria-label="Close event editor"
         onClick={onClose}
       />
-      <AdminDrawerSurface ariaLabel="Event editor" className="calendar-drawer">
+      <AdminDrawerSurface
+        ariaLabel="Event editor"
+        ariaLabelledBy={titleId}
+        ariaModal
+        className="calendar-drawer"
+        surfaceRef={drawerRef}
+        tabIndex={-1}
+      >
         <div className="calendar-drawer-header">
           <div>
             <span className="calendar-drawer-eyebrow">
               {mode === 'create' ? 'Add event' : 'Update event'}
             </span>
-            <h2>{mode === 'create' ? 'Create calendar event' : 'Edit calendar event'}</h2>
+            <h2 id={titleId}>{mode === 'create' ? 'Create calendar event' : 'Edit calendar event'}</h2>
             <p className="calendar-drawer-author">
               Author: <strong>{draft.authorName || currentOperatorName}</strong>
             </p>

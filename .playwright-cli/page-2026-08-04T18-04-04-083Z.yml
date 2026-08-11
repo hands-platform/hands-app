@@ -1,0 +1,164 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - strong [ref=e6]: HANDS Admin
+    - navigation "Admin navigation" [ref=e7]:
+      - group [ref=e8]:
+        - generic "Shift command" [ref=e9] [cursor=pointer]
+        - link "Shift command" [ref=e27] [cursor=pointer]:
+          - /url: /
+      - group [ref=e31]:
+        - generic "Live Operations" [ref=e32] [cursor=pointer]
+        - generic [ref=e49]:
+          - link "Live Bookings" [ref=e50] [cursor=pointer]:
+            - /url: /bookings
+          - link "Calendar" [ref=e56] [cursor=pointer]:
+            - /url: /calendar
+          - link "Completed Bookings" [ref=e60] [cursor=pointer]:
+            - /url: /bookings/completed
+          - link "Post-match Cancellations" [ref=e64] [cursor=pointer]:
+            - /url: /bookings/post-match-cancellations
+          - link "Operations History" [ref=e71] [cursor=pointer]:
+            - /url: /operations-handoff
+          - link "Vietnam Overview" [ref=e75] [cursor=pointer]:
+            - /url: /vietnam-overview
+      - group [ref=e81]:
+        - generic "Customer Support" [ref=e82] [cursor=pointer]
+      - group [ref=e99]:
+        - generic "Partner Operations" [ref=e100] [cursor=pointer]
+      - group [ref=e117]:
+        - generic "Finance Today" [ref=e118] [cursor=pointer]
+      - group [ref=e125]:
+        - generic "Finance Records" [ref=e126] [cursor=pointer]
+      - group [ref=e143]:
+        - generic "Growth & Content" [ref=e144] [cursor=pointer]
+      - group [ref=e161]:
+        - generic "Tax & Monthly Close" [ref=e162] [cursor=pointer]
+      - group [ref=e169]:
+        - generic "Restricted Settings" [ref=e170] [cursor=pointer]
+      - group [ref=e177]:
+        - generic "Admin & System" [ref=e178] [cursor=pointer]
+      - group [ref=e195]:
+        - generic "Developer / System" [ref=e196] [cursor=pointer]
+  - main [ref=e204]:
+    - generic "Admin workspace" [ref=e205]:
+      - navigation "Breadcrumb" [ref=e207]:
+        - link "HANDS" [ref=e208] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e211]: Live Operations
+        - generic [ref=e214]: Live Bookings
+      - generic "Workspace actions" [ref=e215]:
+        - button "Search Ctrl K" [ref=e217] [cursor=pointer]:
+          - generic [ref=e218]: Search
+          - generic [ref=e222]: Ctrl K
+        - group "Theme mode" [ref=e223]:
+          - button "Light mode" [pressed] [ref=e224] [cursor=pointer]
+          - button "Dark mode" [ref=e231] [cursor=pointer]
+        - link "Operations Policy" [ref=e234] [cursor=pointer]:
+          - /url: /operations-policy
+        - button "Open operation alerts" [ref=e239] [cursor=pointer]
+        - button "Sign out" [ref=e244] [cursor=pointer]
+    - generic [ref=e248]:
+      - generic [ref=e249]:
+        - generic [ref=e250]:
+          - heading "Live bookings" [level=1] [ref=e251]
+          - paragraph [ref=e252]: Handle stalled bookings first, then monitor live matching and service progress.
+        - generic "Page actions" [ref=e253]:
+          - button "Pause live" [ref=e254] [cursor=pointer]
+      - generic [ref=e258]:
+        - generic "Booking data status" [ref=e259]:
+          - generic [ref=e260]: All open
+          - generic [ref=e261]:
+            - text: Live · updated
+            - time [ref=e262]: 5 Aug 2026, 01:04
+        - generic [ref=e263]:
+          - 'link "Needs action Needs action Needs action: 0 Open and resolve stalled bookings." [ref=e264] [cursor=pointer]':
+            - /url: /bookings?view=attention
+            - generic [ref=e269]:
+              - generic [ref=e270]: Needs action
+              - paragraph [ref=e271]: Needs action
+              - generic [ref=e272]:
+                - generic [ref=e273]: "Needs action:"
+                - text: "0"
+              - generic [ref=e274]: Open and resolve stalled bookings.
+          - 'link "Live Live bookings Live bookings: 0 Matching, travel, arrival, and service." [ref=e275] [cursor=pointer]':
+            - /url: /bookings?view=active
+            - generic [ref=e280]:
+              - generic [ref=e281]: Live
+              - paragraph [ref=e282]: Live bookings
+              - generic [ref=e283]:
+                - generic [ref=e284]: "Live bookings:"
+                - text: "0"
+              - generic [ref=e285]: Matching, travel, arrival, and service.
+          - 'link "Live Matching now Matching now: 0 Waiting for a final Partner match." [ref=e286] [cursor=pointer]':
+            - /url: /bookings?view=matching
+            - generic [ref=e291]:
+              - generic [ref=e292]: Live
+              - paragraph [ref=e293]: Matching now
+              - generic [ref=e294]:
+                - generic [ref=e295]: "Matching now:"
+                - text: "0"
+              - generic [ref=e296]: Waiting for a final Partner match.
+          - generic [ref=e302]:
+            - generic [ref=e303]: Live
+            - paragraph [ref=e304]: Service in progress
+            - generic [ref=e305]:
+              - generic [ref=e306]: "Service in progress:"
+              - text: "0"
+            - generic [ref=e307]: Matched through active service.
+          - 'link "Today Blocked today Blocked today: 0 Open rejected booking attempts." [ref=e308] [cursor=pointer]':
+            - /url: /bookings?view=blocked-create
+            - generic [ref=e314]:
+              - generic [ref=e315]: Today
+              - paragraph [ref=e316]: Blocked today
+              - generic [ref=e317]:
+                - generic [ref=e318]: "Blocked today:"
+                - text: "0"
+              - generic [ref=e319]: Open rejected booking attempts.
+        - status [ref=e320]:
+          - generic [ref=e321]: Realtime connecting
+          - generic [ref=e322]: Opening realtime socket
+          - generic [ref=e323]: Last refresh pending
+        - region [ref=e324]:
+          - generic [ref=e325]:
+            - generic [ref=e326]:
+              - heading "Booking workspace filters" [level=2] [ref=e327]
+              - paragraph [ref=e328]:
+                - text: "Current workspace:"
+                - strong [ref=e329]: Needs action
+                - text: "- Live bookings stalled for 30 minutes, expired matching, or missing matched chat."
+            - generic [ref=e330]: 0 booking(s)
+          - generic [ref=e332]:
+            - generic "Primary booking queues" [ref=e333]:
+              - link "Live now · 0" [ref=e334] [cursor=pointer]:
+                - /url: /bookings?view=active
+              - link "Needs action · 0" [ref=e335] [cursor=pointer]:
+                - /url: /bookings?view=attention
+              - link "Matching now · 0" [ref=e336] [cursor=pointer]:
+                - /url: /bookings?view=matching
+            - group "Advanced booking filters" [ref=e337]:
+              - generic "Advanced filters Search, period, age, SLA, sort, and additional queues" [ref=e338] [cursor=pointer]:
+                - generic [ref=e339]: Advanced filters
+                - generic [ref=e340]: Search, period, age, SLA, sort, and additional queues
+          - paragraph [ref=e342]: Start here. Open each booking, confirm the evidence, and move or close the case.
+        - region [ref=e343]:
+          - generic [ref=e344]:
+            - generic [ref=e345]:
+              - heading "Needs action" [level=2] [ref=e346]
+              - paragraph [ref=e347]: Stalled live bookings that need an operator decision or repair.
+            - generic [ref=e348]: 0 booking(s)
+          - table [ref=e352]:
+            - rowgroup [ref=e353]:
+              - row [ref=e354]:
+                - columnheader "Status" [ref=e355]
+                - columnheader "Next action" [ref=e356]
+                - columnheader "Age" [ref=e357]
+                - columnheader "Customer" [ref=e358]
+                - columnheader "Partner" [ref=e359]
+                - columnheader "Service" [ref=e360]
+                - columnheader "Area" [ref=e361]
+                - columnheader "Booking" [ref=e362]
+            - rowgroup [ref=e363]:
+              - row [ref=e364]:
+                - cell [ref=e365]:
+                  - status [ref=e366]:
+                    - paragraph [ref=e367]: No bookings match the current filters.

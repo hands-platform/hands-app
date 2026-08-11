@@ -11,6 +11,13 @@ export {
 
 export type PartnerBookingArchiveRelation = 'Preferred' | 'Selected' | 'Joined';
 
+const ACTIVE_PARTNER_WORK_STATUSES: readonly string[] = [
+  'MATCHED',
+  'PROVIDER_ON_THE_WAY',
+  'ARRIVED',
+  'IN_SERVICE',
+];
+
 export type PartnerBookingArchiveBooking = {
   readonly id: string;
   readonly createdAt?: string;
@@ -91,6 +98,16 @@ export function buildPartnerBookingArchive<TBooking extends PartnerBookingArchiv
       dateValue(bookingRecordCreatedAt(right.booking)) -
       dateValue(bookingRecordCreatedAt(left.booking)),
   );
+}
+
+export function countDistinctActivePartnerBookings<
+  TBooking extends PartnerBookingArchiveBooking,
+>(records: readonly PartnerBookingArchiveRecord<TBooking>[]) {
+  return new Set(
+    records
+      .filter((record) => ACTIVE_PARTNER_WORK_STATUSES.includes(record.booking.status ?? ''))
+      .map((record) => record.booking.id),
+  ).size;
 }
 
 function lastBookingMessage(booking: PartnerBookingArchiveBooking) {

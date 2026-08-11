@@ -4,10 +4,17 @@ import type { BookingDateRangeFilter } from './booking-date-range-filter';
 export type BookingPageView =
   | 'active'
   | 'attention'
+  | 'data-anomaly'
   | 'matching'
+  | 'in-service'
+  | 'matching-delays'
   | 'first-pick'
   | 'marketplace'
   | 'customer-choice'
+  | 'pre-match-cancelled'
+  | 'preferred-rejected'
+  | 'preferred-no-response'
+  | 'matched'
   | 'handoff-repair'
   | 'no-supply'
   | 'blocked-create'
@@ -26,6 +33,7 @@ export type BookingPageView =
   | 'post-match-cancellations'
   | 'expired'
   | 'no-show'
+  | 'usage-unresolved'
   | 'all';
 
 export type BookingEvidenceFilter =
@@ -39,12 +47,20 @@ export type BookingEvidenceFilter =
   | 'closeout';
 
 const BOOKING_VIEWS = new Set<BookingPageView | 'backup'>([
+  'active',
   'attention',
+  'data-anomaly',
   'matching',
+  'in-service',
+  'matching-delays',
   'first-pick',
   'backup',
   'marketplace',
   'customer-choice',
+  'pre-match-cancelled',
+  'preferred-rejected',
+  'preferred-no-response',
+  'matched',
   'handoff-repair',
   'no-supply',
   'blocked-create',
@@ -63,6 +79,7 @@ const BOOKING_VIEWS = new Set<BookingPageView | 'backup'>([
   'post-match-cancellations',
   'expired',
   'no-show',
+  'usage-unresolved',
   'all',
 ]);
 
@@ -107,7 +124,7 @@ export function readBookingView(
   if (status === 'NO_SHOW') {
     return 'no-show';
   }
-  return 'active';
+  return 'attention';
 }
 
 export function readBookingEvidenceFilter(value: string | string[] | undefined): BookingEvidenceFilter {
@@ -132,6 +149,14 @@ export function readBookingDateRangeFilter(value: string | string[] | undefined)
 export function readBookingDateInput(value: string | string[] | undefined) {
   const date = readSearchParam(value);
   return /^\d{4}-\d{2}-\d{2}$/.test(date ?? '') ? (date as string) : '';
+}
+
+export function buildBookingListHref(params: Record<string, string | null | undefined>) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value) query.set(key, value);
+  }
+  return `/bookings?${query.toString()}`;
 }
 
 function readSearchParam(value: string | string[] | undefined) {

@@ -51,10 +51,10 @@ export function bookingMonitorSummaryRows(input: {
     ['Matched', countWhere(input.bookings, (booking) => booking.status === 'MATCHED')],
     ['Follow-up queue', countWhere(input.bookings, (booking) => booking.highPriorityCheck)],
     ['Blocked create attempts', input.blockedCreateAttemptCount],
-    ['Stage 1 first-pick', stageCounts.get('first-pick') ?? 0],
-    ['Stage 2 marketplace', stageCounts.get('marketplace') ?? 0],
-    ['Stage 3 customer choice', stageCounts.get('customer-choice') ?? 0],
-    ['Stage 4 handoff repair', stageCounts.get('handoff-repair') ?? 0],
+    ['Preferred pending', stageCounts.get('first-pick') ?? 0],
+    ['Marketplace open', stageCounts.get('marketplace') ?? 0],
+    ['Customer choice', stageCounts.get('customer-choice') ?? 0],
+    ['Handoff repair', stageCounts.get('handoff-repair') ?? 0],
     [
       'No Partners yet',
       countWhere(

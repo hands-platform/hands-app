@@ -20,7 +20,7 @@ describe('PayoutCommandQueueSection', () => {
 
     const rendered = textContent(section);
 
-    expect(rendered).toContain('Payout command queue');
+    expect(rendered).toContain('Needs action');
     expect(rendered).toContain('Failed transfer review');
     expect(rendered).toContain('1 FAILED');
     expect(rendered).toContain('Review failed bank transfer evidence.');
@@ -69,7 +69,9 @@ describe('PayoutCommandQueueSection', () => {
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<div className="participant-list admin-mb-12">');
-    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
+    expect(source).not.toContain(
+      'className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
+    );
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`ops-task-card');
     expect(source).not.toContain('<div className="ops-task-grid"');

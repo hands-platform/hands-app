@@ -29,6 +29,8 @@ export function bookingMatchesMonitorView(view: BookingPageView, readers: Bookin
       return readers.highPriorityCheck();
     case 'matching':
       return readers.matchingEscalationNeedsOps();
+    case 'in-service':
+      return readers.status() === 'IN_SERVICE';
     case 'first-pick':
       return readers.stageKey() === 'first-pick';
     case 'marketplace':

@@ -1,12 +1,18 @@
 import { BadRequestException } from '@nestjs/common';
 import {
   BookingStatus,
+  ProviderAvailabilityIntent,
+  ProviderAvailabilityReason,
   ProviderDocumentStatus,
   ProviderDocumentType,
   ProviderKycStatus,
   ProviderStatus,
   VerificationStatus,
 } from '@prisma/client';
+import {
+  providerLastAppActivityAt,
+  resolveProviderAvailability,
+} from '../providers/provider-availability';
 
 export const REQUIRED_BOOKING_DOCUMENT_TYPES = [
   ProviderDocumentType.CCCD_FRONT,
@@ -27,6 +33,23 @@ export function assertProviderCanReceiveBooking(provider: {
   blockedAt: Date | null;
   blockedReason: string | null;
   status: ProviderStatus;
+  availabilityChangedAt?: Date;
+  availabilityIntent?: ProviderAvailabilityIntent;
+  availabilityReason?: ProviderAvailabilityReason;
+  workingHoursTimezone?: string | null;
+  workingHours?: Array<{
+    weekday: number;
+    enabled: boolean;
+    startMinute: number;
+    endMinute: number;
+  }>;
+  currentLocationUpdatedAt?: Date | null;
+  sessions?: Array<{ lastSeenAt: Date }>;
+  user?: {
+    createdAt?: Date;
+    appSessions?: Array<{ lastSeenAt: Date }>;
+    appUsageDailyAggregates?: Array<{ lastOccurredAt: Date }>;
+  };
   selectedBookings?: Array<{
     id?: string;
     status: BookingStatus;
@@ -42,13 +65,42 @@ export function assertProviderCanReceiveBooking(provider: {
     status: string;
     deletedAt?: Date | null;
   }>;
-}) {
+}, now = new Date()) {
   if (provider.blockedAt) {
     throw new BadRequestException(
       provider.blockedReason
         ? `Partner account is blocked by admin review: ${provider.blockedReason}`
         : 'Partner account is blocked by admin review.',
     );
+  }
+  if (provider.availabilityIntent) {
+    const availability = resolveProviderAvailability({
+      availabilityIntent: provider.availabilityIntent,
+      lastAppActivityAt: providerLastAppActivityAt({
+        appSessionLastSeenAt: provider.user?.appSessions?.[0]?.lastSeenAt,
+        currentLocationUpdatedAt: provider.currentLocationUpdatedAt,
+        explicitAvailabilityChangedAt:
+          provider.availabilityReason === ProviderAvailabilityReason.MANUAL_AVAILABLE ||
+          provider.availabilityReason === ProviderAvailabilityReason.MANUAL_OFFLINE
+            ? provider.availabilityChangedAt
+            : null,
+        providerSessionLastSeenAt: provider.sessions?.[0]?.lastSeenAt,
+        usageLastOccurredAt: provider.user?.appUsageDailyAggregates?.[0]?.lastOccurredAt,
+        userCreatedAt: provider.user?.createdAt,
+      }),
+      now,
+      timezone: provider.workingHoursTimezone,
+      workingHours: provider.workingHours,
+    });
+    if (availability.availabilityReason === ProviderAvailabilityReason.INACTIVE_7D) {
+      throw new BadRequestException('Partner must reopen the app after 7 days of inactivity');
+    }
+    if (availability.availabilityReason === ProviderAvailabilityReason.MANUAL_OFFLINE) {
+      throw new BadRequestException('Partner is manually offline');
+    }
+    if (availability.availabilityReason === ProviderAvailabilityReason.OUTSIDE_WORKING_HOURS) {
+      throw new BadRequestException('Partner is outside saved working hours');
+    }
   }
   if (provider.status === ProviderStatus.OFFLINE) {
     throw new BadRequestException('Partner must be online before receiving bookings');

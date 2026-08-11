@@ -42,6 +42,14 @@ const bannedPatterns = [
   },
 ];
 
+const coreOperatorCopyPatterns = [
+  { label: 'mechanical count wording', pattern: /\((?:s|es)\)/g },
+  { label: 'ambiguous loaded range wording', pattern: /\bAll loaded\b/g },
+  { label: 'generic queue action wording', pattern: /\bOpen queue\b/g },
+  { label: 'ambiguous live control wording', pattern: /\bPause live\b/g },
+  { label: 'internal backlog disclaimer', pattern: /without mixing in older backlog/g },
+];
+
 const ignoredTechnicalLiterals = new Set([
   'provider',
   'Provider',
@@ -50,11 +58,16 @@ const ignoredTechnicalLiterals = new Set([
   'provider.payout_setup_required',
 ]);
 
+const allowedServiceProviderCopy = /\b(?:auth|email|external|geocoding|identity|map|notification|oauth|payment|push|sms|storage) providers?\b/i;
+
 const violations = [];
 
 for (const file of files) {
   const source = readFileSync(file, 'utf8');
   recordSourceViolations(file, source);
+  if (isCoreOperatorCopyFile(file) && !file.includes('.spec.') && !file.includes('.test.')) {
+    recordCoreOperatorCopyViolations(file, source);
+  }
   for (const literal of extractStringLiterals(source)) {
     recordViolations(file, literal.value, literal.line);
   }
@@ -115,6 +128,54 @@ function recordViolations(file, value, line) {
   if (isTechnicalLiteral(normalized)) {
     return;
   }
+  if (
+    !file.includes('.spec.') &&
+    !file.includes('.test.') &&
+    /\bproviders?\b/i.test(normalized) &&
+    !allowedServiceProviderCopy.test(normalized)
+  ) {
+    violations.push({
+      file,
+      line,
+      label: 'legacy Partner role wording',
+      match: normalized.match(/\bproviders?\b/i)?.[0] ?? 'Provider',
+      text: normalized.slice(0, 180),
+    });
+  }
+}
+
+function recordCoreOperatorCopyViolations(file, source) {
+  for (const rule of coreOperatorCopyPatterns) {
+    for (const match of source.matchAll(rule.pattern)) {
+      violations.push({
+        file,
+        line: lineNumberAt(source, match.index ?? 0),
+        label: rule.label,
+        match: match[0],
+        text: source.slice(match.index ?? 0, (match.index ?? 0) + 180).replace(/\s+/g, ' '),
+      });
+    }
+  }
+}
+
+function isCoreOperatorCopyFile(file) {
+  const normalized = file.replaceAll('\\', '/');
+  return (
+    normalized === 'apps/admin_web/app/page.tsx' ||
+    normalized.includes('/start-shift-') ||
+    normalized.startsWith('apps/admin_web/app/finance-overview/') ||
+    normalized.startsWith('apps/admin_web/app/operations-handoff/') ||
+    normalized.startsWith('apps/admin_web/app/refunds/') ||
+    (normalized.startsWith('apps/admin_web/app/bookings/') && !normalized.includes('/[id]/')) ||
+    (normalized.startsWith('apps/admin_web/app/notifications/') && !normalized.includes('/push-send/')) ||
+    (normalized.startsWith('apps/admin_web/app/customers/') && !normalized.includes('/[id]/')) ||
+    normalized === 'apps/admin_web/app/customers/[id]/page.tsx' ||
+    normalized.endsWith('/customers/[id]/customer-booking-operation-board.tsx') ||
+    normalized.endsWith('/customers/[id]/customer-detail-overview-shell.tsx') ||
+    (normalized.startsWith('apps/admin_web/app/partners/') &&
+      !normalized.includes('/[id]/') &&
+      !normalized.includes('/overview/'))
+  );
 }
 
 function extractStringLiterals(source) {
@@ -147,6 +208,9 @@ function isTechnicalLiteral(value) {
     return true;
   }
   if (/^[a-z0-9:-]+$/i.test(value) && !value.includes(' ')) {
+    return true;
+  }
+  if (value.split(/\s+/).every((token) => /^[a-z][a-z0-9-]*$/.test(token) && token.includes('-'))) {
     return true;
   }
   return false;

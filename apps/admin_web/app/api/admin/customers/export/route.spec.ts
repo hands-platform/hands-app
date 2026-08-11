@@ -59,7 +59,7 @@ describe('customer export route', () => {
         email: 'mai@example.test',
         fullName: 'Mai Customer',
         id: 'customer-user',
-        phone: '+84900003333',
+        phone: '+84*******33',
       },
       userId: 'customer-user',
     } as AdminCustomer;
@@ -73,6 +73,11 @@ describe('customer export route', () => {
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(body).toContain('"customer_id"');
     expect(body).toContain('"Mai Customer"');
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/customers?q=mai&take=10&skip=0', []);
+    expect(body).toContain('"\'+84*******33"');
+    expect(body).not.toContain('+84900003333');
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/customers?q=mai&view=needs-action&take=10&skip=0',
+      [],
+    );
   });
 });

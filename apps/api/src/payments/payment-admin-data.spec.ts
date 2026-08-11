@@ -9,21 +9,21 @@ describe('payment admin update data helpers', () => {
   it('builds a durable requested refund before gateway and accounting finalization', () => {
     expect(
       paymentRefundRequestCreateData({
-        actorId: 'admin-1',
         amount: 300000,
-        approvalAdminId: 'finance-admin-2',
         bookingId: 'booking-1',
         currency: 'VND',
-        occurredAt: new Date('2026-07-14T00:00:00.000Z'),
+        requestedAt: new Date('2026-07-14T00:00:00.000Z'),
+        requestedByAdminId: 'admin-1',
+        source: 'ADMIN_MANUAL',
       }),
     ).toEqual({
       amount: 300000,
       bookingId: 'booking-1',
       currency: 'VND',
       metadata: {
-        actorId: 'admin-1',
-        approvalAdminId: 'finance-admin-2',
-        occurredAt: '2026-07-14T00:00:00.000Z',
+        requestedAt: '2026-07-14T00:00:00.000Z',
+        requestedByAdminId: 'admin-1',
+        source: 'ADMIN_MANUAL',
       },
       reason: 'Admin manual refund',
       status: 'REQUESTED',

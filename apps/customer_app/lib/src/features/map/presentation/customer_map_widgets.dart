@@ -1,11 +1,14 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../../../app_state.dart';
 import '../../../core/app_config.dart';
+import '../../../core/customer_design_system.dart';
+import '../../../core/customer_error_message.dart';
 import '../../booking/presentation/customer_booking_ui_helpers.dart';
 import 'customer_location_helpers.dart';
 
@@ -50,7 +53,7 @@ class _LocationMapSurfaceState extends State<LocationMapSurface> {
     await map.clearSymbols();
     await map.addCircle(CircleOptions(
       geometry: widget.customerPoint,
-      circleColor: '#5E8E4A',
+      circleColor: '#353356',
       circleRadius: 8,
       circleStrokeColor: '#FFFFFF',
       circleStrokeWidth: 2,
@@ -87,22 +90,30 @@ class _LocationMapSurfaceState extends State<LocationMapSurface> {
   @override
   Widget build(BuildContext context) {
     if (AppConfig.mapTilerEnabled && widget.customerPoint != null) {
-      return MapLibreMap(
-        styleString: AppConfig.mapTilerStyleUrl,
-        initialCameraPosition: CameraPosition(
-          target: widget.providerPoint ?? widget.customerPoint!,
-          zoom: widget.providerPoint == null ? 13.8 : 12.8,
-        ),
-        onMapCreated: (value) => controller = value,
-        onStyleLoadedCallback: () {
-          styleLoaded = true;
-          unawaited(syncMarkers());
-        },
-        compassEnabled: false,
-        logoEnabled: false,
-        myLocationEnabled: false,
-        rotateGesturesEnabled: false,
-        tiltGesturesEnabled: false,
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          MapLibreMap(
+            styleString: AppConfig.mapTilerStyleUrl,
+            initialCameraPosition: CameraPosition(
+              target: widget.providerPoint ?? widget.customerPoint!,
+              zoom: widget.providerPoint == null ? 13.8 : 12.8,
+            ),
+            onMapCreated: (value) => controller = value,
+            onStyleLoadedCallback: () {
+              if (mounted) {
+                setState(() => styleLoaded = true);
+              }
+              unawaited(syncMarkers());
+            },
+            compassEnabled: false,
+            logoEnabled: false,
+            myLocationEnabled: false,
+            rotateGesturesEnabled: false,
+            tiltGesturesEnabled: false,
+          ),
+          if (!styleLoaded) const _MapLoadingSurface(),
+        ],
       );
     }
 
@@ -131,14 +142,15 @@ class LiveLocationDetails extends StatelessWidget {
     final providerPoint = deriveRealtimeLatLng(providerLocation);
     final hasProviderPoint = providerPoint != null;
     final recordedAt = providerLocation?['recordedAt'];
-    final statusColor = providerLocationStatusColor(recordedAt);
+    final statusColor =
+        providerLocationStatusColor(context.handsColors, recordedAt);
     final statusLabel = providerLocationStatusLabel(recordedAt);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(CustomerRadii.card),
           child: SizedBox(
             height: 180,
             child: LocationMapSurface(
@@ -218,11 +230,13 @@ class LocationSelectionPage extends ConsumerStatefulWidget {
     required this.initialLatitude,
     required this.initialLongitude,
     required this.initialAddress,
+    this.initialLocationRequiresConfirmation = false,
   });
 
   final double initialLatitude;
   final double initialLongitude;
   final String initialAddress;
+  final bool initialLocationRequiresConfirmation;
 
   @override
   ConsumerState<LocationSelectionPage> createState() =>
@@ -240,12 +254,19 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
   String? error;
   bool searching = false;
   bool styleLoaded = false;
+  bool selectionReady = false;
+  bool ignoreNextCameraIdle = true;
 
   @override
   void initState() {
     super.initState();
     selectedPoint = LatLng(widget.initialLatitude, widget.initialLongitude);
     selectedAddress = widget.initialAddress;
+    selectionReady = !widget.initialLocationRequiresConfirmation;
+    if (widget.initialLocationRequiresConfirmation) {
+      statusMessage =
+          'Search an address, use your current location, or move the map to confirm the exact service point.';
+    }
   }
 
   @override
@@ -284,7 +305,7 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
       });
     } catch (exception) {
       if (mounted) {
-        setState(() => error = '$exception');
+        setState(() => error = customerErrorMessage(exception));
       }
     } finally {
       if (mounted) {
@@ -303,11 +324,14 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
       selectedPoint = point;
       selectedAddress =
           location.isDemoLocation ? demoCustomerAddress : selectedAddress;
+      selectionReady = !location.isDemoLocation;
       statusMessage = location.isDemoLocation
-          ? 'GPS unavailable or outside Vietnam. You can browse partners from anywhere, but booking needs a Vietnam service pin.'
-          : 'Current GPS location loaded. Drag the map to fine tune the pin.';
+          ? 'Your current GPS point is unavailable or outside Vietnam. Search a Vietnam address or move the map inside Vietnam.'
+          : 'Current location selected. Move the map if the service entrance is different.';
+      error = null;
     });
     if (location.isDemoLocation == false) {
+      ignoreNextCameraIdle = true;
       await controller?.animateCamera(CameraUpdate.newLatLngZoom(point, 15));
     }
   }
@@ -322,13 +346,19 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
       searchController.text = result.label;
       searchController.selection =
           TextSelection.collapsed(offset: searchController.text.length);
-      statusMessage =
-          'Address selected. Drag the map if the pin needs adjustment.';
+      selectionReady = true;
+      statusMessage = 'Address selected. Move the map to fine tune the pin.';
+      error = null;
     });
+    ignoreNextCameraIdle = true;
     await controller?.animateCamera(CameraUpdate.newLatLngZoom(point, 15));
   }
 
   void onCameraIdle() {
+    if (ignoreNextCameraIdle) {
+      ignoreNextCameraIdle = false;
+      return;
+    }
     final target = controller?.cameraPosition?.target;
     if (target == null) {
       return;
@@ -338,13 +368,24 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
     setState(() {
       selectedPoint = target;
       selectedAddress = adjustedAddress;
-      statusMessage =
-          'Pin adjusted to ${formatCoordinate(target.latitude)}, ${formatCoordinate(target.longitude)}.';
+      selectionReady = isVietnamCoordinate(target.latitude, target.longitude);
+      statusMessage = selectionReady
+          ? 'Map pin adjusted. Confirm this service point below.'
+          : null;
+      error =
+          selectionReady ? null : 'The service point must be inside Vietnam.';
     });
   }
 
   void confirmSelection() {
     FocusScope.of(context).unfocus();
+    if (!selectionReady) {
+      setState(() {
+        error =
+            'Confirm the exact service point by searching an address, using your current location, or moving the map.';
+      });
+      return;
+    }
     if (!isVietnamCoordinate(selectedPoint.latitude, selectedPoint.longitude)) {
       setState(() {
         error =
@@ -366,31 +407,52 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.handsColors;
     final mapEnabled = AppConfig.mapTilerEnabled;
     return Scaffold(
-      appBar: AppBar(title: const Text('Choose service location')),
+      extendBodyBehindAppBar: true,
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        title: const Text('Choose location'),
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+      ),
       body: SafeArea(
+        top: false,
         child: Stack(
           children: [
             Positioned.fill(
               child: mapEnabled
-                  ? MapLibreMap(
-                      styleString: AppConfig.mapTilerStyleUrl,
-                      initialCameraPosition:
-                          CameraPosition(target: selectedPoint, zoom: 15),
-                      onMapCreated: (value) => controller = value,
-                      onStyleLoadedCallback: () =>
-                          setState(() => styleLoaded = true),
-                      onCameraIdle: onCameraIdle,
-                      compassEnabled: false,
-                      logoEnabled: false,
-                      myLocationEnabled: false,
-                      rotateGesturesEnabled: false,
-                      tiltGesturesEnabled: false,
+                  ? Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        MapLibreMap(
+                          styleString: AppConfig.mapTilerStyleUrl,
+                          initialCameraPosition:
+                              CameraPosition(target: selectedPoint, zoom: 15),
+                          onMapCreated: (value) {
+                            controller = value;
+                            ignoreNextCameraIdle = true;
+                          },
+                          onStyleLoadedCallback: () {
+                            if (mounted) {
+                              setState(() => styleLoaded = true);
+                            }
+                          },
+                          onCameraIdle: onCameraIdle,
+                          compassEnabled: false,
+                          logoEnabled: false,
+                          myLocationEnabled: false,
+                          rotateGesturesEnabled: false,
+                          tiltGesturesEnabled: false,
+                        ),
+                        if (!styleLoaded) const _MapLoadingSurface(),
+                      ],
                     )
                   : _MapPlaceholder(
-                      customerLabel: 'Selected pin',
-                      providerLabel: 'MapTiler key missing',
+                      customerLabel: 'Selected location',
+                      providerLabel: 'Move the map to fine tune',
                       showProviderMarker: false,
                     ),
             ),
@@ -398,11 +460,21 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
               child: Center(
                 child: Transform.translate(
                   offset: const Offset(0, -18),
-                  child: Icon(
-                    Icons.location_pin,
-                    size: 48,
-                    color: Theme.of(context).colorScheme.primary,
-                    shadows: const [Shadow(color: Colors.white, blurRadius: 8)],
+                  child: Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      color: colors.surface,
+                      shape: BoxShape.circle,
+                      border: Border.fromBorderSide(
+                        BorderSide(color: colors.outline),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.location_pin,
+                      size: 38,
+                      color: colors.primary,
+                    ),
                   ),
                 ),
               ),
@@ -410,18 +482,19 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
             Positioned(
               left: 16,
               right: 16,
-              top: 16,
+              top: MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
               child: Column(
                 children: [
                   Material(
-                    elevation: 3,
-                    borderRadius: BorderRadius.circular(18),
+                    elevation: 0,
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(CustomerRadii.control),
                     child: TextField(
                       controller: searchController,
                       onChanged: onSearchChanged,
                       decoration: InputDecoration(
-                        hintText: 'Search Vietnam address',
-                        prefixIcon: const Icon(Icons.search),
+                        hintText: 'Search a Vietnam address',
+                        prefixIcon: const Icon(Icons.search_rounded),
                         suffixIcon: searching
                             ? const Padding(
                                 padding: EdgeInsets.all(14),
@@ -440,16 +513,12 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
                                     },
                                     icon: const Icon(Icons.close),
                                   )
-                                : IconButton(
-                                    onPressed: () =>
-                                        unawaited(useCurrentLocation()),
-                                    icon:
-                                        const Icon(Icons.my_location_outlined),
-                                  ),
+                                : null,
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: colors.surface,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius:
+                              BorderRadius.circular(CustomerRadii.control),
                           borderSide: BorderSide.none,
                         ),
                       ),
@@ -458,8 +527,8 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
                   if (searchResults.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Material(
-                      elevation: 3,
-                      borderRadius: BorderRadius.circular(18),
+                      elevation: 0,
+                      borderRadius: BorderRadius.circular(CustomerRadii.card),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxHeight: 220),
                         child: ListView.separated(
@@ -467,11 +536,9 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
                           itemBuilder: (context, index) {
                             final item = searchResults[index];
                             return ListTile(
-                              leading: const Icon(Icons.place_outlined),
+                              leading: const Icon(Icons.location_on_outlined),
                               title: Text(item.label,
                                   maxLines: 2, overflow: TextOverflow.ellipsis),
-                              subtitle: Text(
-                                  '${formatCoordinate(item.latitude)}, ${formatCoordinate(item.longitude)}'),
                               onTap: () => unawaited(selectSearchResult(item)),
                             );
                           },
@@ -485,52 +552,165 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
               ),
             ),
             Positioned(
-              left: 16,
-              right: 16,
-              bottom: 16,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (statusMessage != null || error != null)
-                    Card(
-                      color: error == null
-                          ? Colors.white
-                          : Theme.of(context).colorScheme.errorContainer,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Text(error ?? statusMessage!),
+              right: CustomerSpacing.page,
+              bottom: 300,
+              child: FloatingActionButton.small(
+                heroTag: 'customer-location-current',
+                onPressed: () => unawaited(useCurrentLocation()),
+                backgroundColor: colors.surface,
+                foregroundColor: colors.primary,
+                tooltip: 'Use current location',
+                child: const Icon(Icons.my_location_rounded),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 276),
+                padding: EdgeInsets.fromLTRB(
+                  CustomerSpacing.page,
+                  22,
+                  CustomerSpacing.page,
+                  MediaQuery.paddingOf(context).bottom + 18,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(CustomerRadii.sheet),
+                  ),
+                  border: Border(
+                    top: BorderSide(color: colors.outline),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'SELECT SERVICE ADDRESS',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: colors.inkMuted,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: colors.primarySoft,
+                            borderRadius:
+                                BorderRadius.circular(CustomerRadii.control),
+                          ),
+                          child: Icon(
+                            Icons.location_on_outlined,
+                            color: colors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                selectedAddress.trim().isEmpty
+                                    ? 'Choose the service address'
+                                    : selectedAddress.trim(),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                '${formatCoordinate(selectedPoint.latitude)}, ${formatCoordinate(selectedPoint.longitude)}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(color: colors.inkMuted),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Icon(
+                          selectionReady
+                              ? Icons.check_circle
+                              : Icons.radio_button_unchecked,
+                          color:
+                              selectionReady ? colors.success : colors.inkMuted,
+                        ),
+                      ],
+                    ),
+                    if (statusMessage != null || error != null) ...[
+                      const SizedBox(height: 14),
+                      _LocationSelectionFeedback(
+                        text: error ?? statusMessage!,
+                        isError: error != null,
+                      ),
+                    ],
+                    if (!styleLoaded && mapEnabled) ...[
+                      const SizedBox(height: 12),
+                      const LinearProgressIndicator(minHeight: 3),
+                    ],
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: selectionReady ? confirmSelection : null,
+                        child: const Text('Use this address'),
                       ),
                     ),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Selected pin',
-                              style: Theme.of(context).textTheme.titleMedium),
-                          const SizedBox(height: 4),
-                          Text(
-                              '${formatCoordinate(selectedPoint.latitude)}, ${formatCoordinate(selectedPoint.longitude)}'),
-                          if (!styleLoaded && mapEnabled) ...[
-                            const SizedBox(height: 8),
-                            const LinearProgressIndicator(minHeight: 4),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                  FilledButton.icon(
-                    onPressed: confirmSelection,
-                    icon: const Icon(Icons.check),
-                    label: const Text('Use this location'),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _LocationSelectionFeedback extends StatelessWidget {
+  const _LocationSelectionFeedback({
+    required this.text,
+    required this.isError,
+  });
+
+  final String text;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.handsColors;
+    final color = isError ? colors.error : colors.primary;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          isError ? Icons.error_outline : Icons.info_outline,
+          size: 19,
+          color: color,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: color,
+                  height: 1.35,
+                ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -548,21 +728,17 @@ class _MapPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFD6F2DD),
-            Color(0xFFEFE8D5),
-          ],
-        ),
-      ),
+    final colors = context.handsColors;
+    return ColoredBox(
+      color: colors.surfaceMuted,
       child: Stack(
         children: [
-          Positioned.fill(
-            child: CustomPaint(painter: MapPainter()),
+          Center(
+            child: Icon(
+              Icons.map_outlined,
+              size: 72,
+              color: colors.outline,
+            ),
           ),
           Align(
             alignment: const Alignment(0, -0.1),
@@ -573,7 +749,7 @@ class _MapPlaceholder extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.92),
+                    color: colors.surface,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(customerLabel,
@@ -583,8 +759,8 @@ class _MapPlaceholder extends StatelessWidget {
                 Container(
                   width: 18,
                   height: 18,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF5E8E4A),
+                  decoration: BoxDecoration(
+                    color: colors.primary,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -601,7 +777,7 @@ class _MapPlaceholder extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.92),
+                      color: colors.surface,
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(providerLabel,
@@ -611,25 +787,14 @@ class _MapPlaceholder extends StatelessWidget {
                   Container(
                     width: 18,
                     height: 18,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE84B4B),
+                    decoration: BoxDecoration(
+                      color: colors.error,
                       shape: BoxShape.circle,
                     ),
                   ),
                 ],
               ),
             ),
-          Align(
-            alignment: const Alignment(-0.25, -0.05),
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                color: const Color(0xFF5E8E4A).withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -673,7 +838,7 @@ class _NearbyProvidersMapState extends State<NearbyProvidersMap> {
     await map.clearSymbols();
     await map.addCircle(CircleOptions(
       geometry: customerPoint,
-      circleColor: '#5E8E4A',
+      circleColor: '#353356',
       circleRadius: 8,
       circleStrokeColor: '#FFFFFF',
       circleStrokeWidth: 2,
@@ -721,20 +886,28 @@ class _NearbyProvidersMapState extends State<NearbyProvidersMap> {
   Widget build(BuildContext context) {
     final customerPoint = widget.customerPoint;
     if (AppConfig.mapTilerEnabled && customerPoint != null) {
-      return MapLibreMap(
-        styleString: AppConfig.mapTilerStyleUrl,
-        initialCameraPosition:
-            CameraPosition(target: customerPoint, zoom: 13.5),
-        onMapCreated: (value) => controller = value,
-        onStyleLoadedCallback: () {
-          styleLoaded = true;
-          unawaited(syncMarkers());
-        },
-        compassEnabled: false,
-        logoEnabled: false,
-        myLocationEnabled: false,
-        rotateGesturesEnabled: false,
-        tiltGesturesEnabled: false,
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          MapLibreMap(
+            styleString: AppConfig.mapTilerStyleUrl,
+            initialCameraPosition:
+                CameraPosition(target: customerPoint, zoom: 13.5),
+            onMapCreated: (value) => controller = value,
+            onStyleLoadedCallback: () {
+              if (mounted) {
+                setState(() => styleLoaded = true);
+              }
+              unawaited(syncMarkers());
+            },
+            compassEnabled: false,
+            logoEnabled: false,
+            myLocationEnabled: false,
+            rotateGesturesEnabled: false,
+            tiltGesturesEnabled: false,
+          ),
+          if (!styleLoaded) const _MapLoadingSurface(),
+        ],
       );
     }
 
@@ -746,41 +919,26 @@ class _NearbyProvidersMapState extends State<NearbyProvidersMap> {
   }
 }
 
-class MapPainter extends CustomPainter {
+class _MapLoadingSurface extends StatelessWidget {
+  const _MapLoadingSurface();
+
   @override
-  void paint(Canvas canvas, Size size) {
-    final roadPaint = Paint()
-      ..color = const Color(0xFFB8B8B8)
-      ..strokeWidth = 4
-      ..style = PaintingStyle.stroke;
-    final thinPaint = Paint()
-      ..color = const Color(0xFFD6D6D6)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    final mainRoad = Path()
-      ..moveTo(size.width * 0.1, size.height * 0.65)
-      ..quadraticBezierTo(size.width * 0.35, size.height * 0.55,
-          size.width * 0.5, size.height * 0.35)
-      ..quadraticBezierTo(size.width * 0.68, size.height * 0.15,
-          size.width * 0.9, size.height * 0.2);
-    canvas.drawPath(mainRoad, roadPaint);
-
-    final branch = Path()
-      ..moveTo(size.width * 0.42, size.height * 0.58)
-      ..quadraticBezierTo(size.width * 0.32, size.height * 0.45,
-          size.width * 0.24, size.height * 0.28);
-    canvas.drawPath(branch, thinPaint);
-
-    final branchTwo = Path()
-      ..moveTo(size.width * 0.55, size.height * 0.42)
-      ..quadraticBezierTo(size.width * 0.64, size.height * 0.55,
-          size.width * 0.78, size.height * 0.72);
-    canvas.drawPath(branchTwo, thinPaint);
+  Widget build(BuildContext context) {
+    final colors = context.handsColors;
+    return ColoredBox(
+      color: colors.canvas,
+      child: Center(
+        child: SizedBox(
+          width: 26,
+          height: 26,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.5,
+            color: colors.primary,
+          ),
+        ),
+      ),
+    );
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class ProviderThumbnail extends StatelessWidget {
@@ -797,6 +955,7 @@ class ProviderThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.handsColors;
     final initials = name.isEmpty
         ? 'P'
         : name
@@ -807,11 +966,11 @@ class ProviderThumbnail extends StatelessWidget {
             .join();
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(CustomerRadii.card),
       child: Container(
         width: size,
         height: size,
-        color: const Color(0xFFE8E1D3),
+        color: colors.photoMatte,
         alignment: Alignment.center,
         child: imageUrl == null || imageUrl!.isEmpty
             ? ProviderInitials(initials: initials, size: size)
@@ -845,7 +1004,7 @@ class ProviderInitials extends StatelessWidget {
       style: TextStyle(
         fontSize: size * 0.28,
         fontWeight: FontWeight.w800,
-        color: const Color(0xFF5E8E4A),
+        color: context.handsColors.primary,
       ),
     );
   }
@@ -854,15 +1013,35 @@ class ProviderInitials extends StatelessWidget {
 String? providerProfileImageUrl(Map<String, dynamic> provider) {
   final direct = provider['profileImageUrl']?.toString();
   if (direct != null && direct.isNotEmpty) {
-    return direct;
+    return customerAccessibleMediaUrl(direct);
   }
 
   final gallery = provider['galleryImageUrls'];
   if (gallery is List && gallery.isNotEmpty) {
     final first = gallery.first?.toString();
     if (first != null && first.isNotEmpty) {
-      return first;
+      return customerAccessibleMediaUrl(first);
     }
   }
   return null;
+}
+
+String customerAccessibleMediaUrl(String value) {
+  if (kReleaseMode) {
+    return value;
+  }
+
+  final mediaUri = Uri.tryParse(value);
+  final apiUri = Uri.tryParse(AppConfig.apiBaseUrl);
+  if (mediaUri == null || apiUri == null || apiUri.host.isEmpty) {
+    return value;
+  }
+
+  const localHosts = {'localhost', '0.0.0.0', '127.0.0.1', '::1'};
+  if (!localHosts.contains(mediaUri.host.toLowerCase()) ||
+      localHosts.contains(apiUri.host.toLowerCase())) {
+    return value;
+  }
+
+  return mediaUri.replace(host: apiUri.host).toString();
 }

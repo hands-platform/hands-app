@@ -2,6 +2,7 @@ import type { AdminProvider } from '../../lib/admin-api';
 import {
   kycDocumentPillClass,
   missingApprovedRequiredKycDocuments,
+  missingSubmittedRequiredKycDocuments,
   partnerKycState,
   partnerNeedsKycReview,
   providerKycDocumentStatus,
@@ -21,23 +22,46 @@ function document(type: string, status: string) {
 }
 
 describe('partner KYC facts', () => {
-  it('reports missing approved required documents and blocks approval until evidence is complete', () => {
+  it('allows one overall KYC decision when every required document is submitted', () => {
     const result = partner({
       kyc: { id: 'kyc-1', status: 'PENDING' },
-      documents: [document('CCCD_FRONT', 'APPROVED'), document('CCCD_BACK', 'PENDING_REVIEW')],
+      documents: [
+        document('CCCD_FRONT', 'APPROVED'),
+        document('CCCD_BACK', 'PENDING_REVIEW'),
+        document('SELFIE', 'PENDING_REVIEW'),
+      ],
     });
 
     expect(missingApprovedRequiredKycDocuments(result)).toEqual(['CCCD_BACK', 'SELFIE']);
-    expect(providerKycDocumentStatus(result, 'SELFIE')).toBe('MISSING');
+    expect(missingSubmittedRequiredKycDocuments(result)).toEqual([]);
+    expect(providerKycDocumentStatus(result, 'SELFIE')).toBe('PENDING_REVIEW');
     expect(partnerKycState(result)).toMatchObject({
       status: 'PENDING',
-      missingDocuments: ['CCCD_BACK', 'SELFIE'],
-      pendingDocuments: 1,
+      missingDocuments: [],
+      pendingDocuments: 2,
       rejectedDocuments: 0,
+      readyToApprove: true,
+      blockedByDocuments: false,
+      needsReview: true,
+      operatorAction: 'Review the full evidence set, then approve or place KYC on hold.',
+    });
+  });
+
+  it('blocks overall approval while a required document is missing or rejected', () => {
+    const result = partner({
+      kyc: { id: 'kyc-1', status: 'PENDING' },
+      documents: [
+        document('CCCD_FRONT', 'PENDING_REVIEW'),
+        document('CCCD_BACK', 'REJECTED'),
+      ],
+    });
+
+    expect(missingSubmittedRequiredKycDocuments(result)).toEqual(['CCCD_BACK', 'SELFIE']);
+    expect(partnerKycState(result)).toMatchObject({
+      missingDocuments: ['CCCD_BACK', 'SELFIE'],
+      rejectedDocuments: 1,
       readyToApprove: false,
       blockedByDocuments: true,
-      needsReview: true,
-      operatorAction: 'Approve uploaded evidence first, or reject with a clear resubmission reason.',
     });
   });
 
@@ -59,7 +83,7 @@ describe('partner KYC facts', () => {
       readyToApprove: true,
       blockedByDocuments: false,
       needsReview: true,
-      detail: 'KYC record and required identity documents are ready.',
+      detail: 'KYC record and all required identity evidence are submitted.',
     });
     expect(partnerNeedsKycReview(result)).toBe(true);
   });

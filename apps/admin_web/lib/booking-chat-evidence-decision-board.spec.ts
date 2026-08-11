@@ -80,10 +80,29 @@ describe('bookingChatEvidenceDecisionBoard', () => {
     });
     expect(board.rows[3]).toMatchObject({
       lane: 'Retained review context',
-      state: 'Context loaded',
+      state: 'Evidence ready',
       record: '2 notification row(s), 1 audit row(s), 1 note(s).',
     });
     expect(JSON.stringify(board)).not.toMatch(/\bpin\b/i);
+  });
+
+  it('keeps an empty retained room partial even when a location row exists', () => {
+    const board = bookingChatEvidenceDecisionBoard({
+      ...baseInput,
+      bookingStatus: 'CANCELLED',
+      hasChatRoom: true,
+      chatRoomShortId: 'room-empty',
+      hasLatestLocation: true,
+    });
+
+    expect(board).toMatchObject({
+      status: 'Retained room · no messages',
+      tone: 'pill-warn',
+    });
+    expect(board.rows[3]).toMatchObject({
+      state: 'Partial context',
+      tone: 'pill-warn',
+    });
   });
 
   it('keeps closed mobile chat available in the admin archive', () => {

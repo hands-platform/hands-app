@@ -52,25 +52,23 @@ export function AdminThemeToggle() {
     setTheme(nextTheme);
   };
 
+  const nextTheme: AdminTheme = theme === 'light' ? 'dark' : 'light';
+  const label = nextTheme === 'dark' ? 'Switch to dark mode' : 'Switch to light mode';
+
   return (
-    <div aria-label="Theme mode" className="theme-toggle" role="group">
+    <div className="theme-toggle">
       <AdminIconButton
-        aria-pressed={theme === 'light'}
+        aria-label={label}
         className="theme-toggle-button"
-        onClick={() => changeTheme('light')}
-        title="Light mode"
+        onClick={() => changeTheme(nextTheme)}
+        title={label}
         type="button"
       >
-        <Sun aria-hidden="true" size={16} />
-      </AdminIconButton>
-      <AdminIconButton
-        aria-pressed={theme === 'dark'}
-        className="theme-toggle-button"
-        onClick={() => changeTheme('dark')}
-        title="Dark mode"
-        type="button"
-      >
-        <Moon aria-hidden="true" size={16} />
+        {nextTheme === 'dark' ? (
+          <Moon aria-hidden="true" size={16} />
+        ) : (
+          <Sun aria-hidden="true" size={16} />
+        )}
       </AdminIconButton>
     </div>
   );

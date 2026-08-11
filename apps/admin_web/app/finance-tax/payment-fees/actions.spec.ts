@@ -32,11 +32,12 @@ describe('payment fee policy actions', () => {
   it('creates only a draft payload and keeps activation out of creation', async () => {
     mockedAdminPostOrThrow.mockResolvedValue({ id: 'policy-draft-1' });
     const formData = form({
-      returnTo: '/finance-tax/payment-fees?period=2026-07',
+      returnTo: '/finance-tax/payment-fees?period=2026-07&settings=policy',
       name: 'Gateway fees 2026',
       effectiveFrom: '2026-01-01T00:00',
       effectiveTo: '',
       notes: 'Pricing contract evidence',
+      reason: 'Create draft from signed gateway contract',
     });
 
     await createPaymentFeePolicyDraft(formData);
@@ -46,6 +47,7 @@ describe('payment fee policy actions', () => {
       effectiveFrom: expect.any(String),
       effectiveTo: null,
       notes: 'Pricing contract evidence',
+      reason: 'Create draft from signed gateway contract',
     });
     expect(mockedAdminPostOrThrow.mock.calls[0]?.[1]).not.toHaveProperty('status');
     expect(
@@ -62,12 +64,13 @@ describe('payment fee policy actions', () => {
   it('updates draft metadata without exposing status changes', async () => {
     mockedAdminPatchOrThrow.mockResolvedValue({ id: 'policy-draft-1' });
     const formData = form({
-      returnTo: '/finance-tax/payment-fees?period=2026-07&policyId=policy-draft-1',
+      returnTo: '/finance-tax/payment-fees?period=2026-07&settings=policy&policyId=policy-draft-1',
       policyId: 'policy-draft-1',
       name: 'Gateway fees reviewed',
       effectiveFrom: '2026-01-01T00:00',
       effectiveTo: '2026-12-31T23:30',
       notes: 'Reviewed evidence',
+      reason: 'Correct draft dates after contract review',
     });
 
     await updatePaymentFeePolicyDraft(formData);
@@ -82,7 +85,7 @@ describe('payment fee policy actions', () => {
   it('saves a validated per-method rule without activating the policy', async () => {
     mockedAdminPostOrThrow.mockResolvedValue({ id: 'rule-card' });
     const formData = form({
-      returnTo: '/finance-tax/payment-fees?policyId=policy-draft-1&method=CARD',
+      returnTo: '/finance-tax/payment-fees?settings=policy&policyId=policy-draft-1&method=CARD',
       policyId: 'policy-draft-1',
       method: 'CARD',
       feeType: 'RATE_PLUS_FIXED',
@@ -90,6 +93,7 @@ describe('payment fee policy actions', () => {
       fixedAmount: '1000',
       payer: 'HANDS',
       treatment: 'OPERATING_EXPENSE',
+      reason: 'Match signed CARD processing schedule',
     });
 
     await upsertPaymentFeePolicyRule(formData);
@@ -103,6 +107,7 @@ describe('payment fee policy actions', () => {
         treatment: 'OPERATING_EXPENSE',
         rateBps: 150,
         fixedAmount: 1000,
+        reason: 'Match signed CARD processing schedule',
       },
     );
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('policyNotice=rule-saved'));

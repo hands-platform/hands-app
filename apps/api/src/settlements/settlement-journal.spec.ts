@@ -133,4 +133,66 @@ describe('buildBookingSettlementJournal', () => {
       ]),
     );
   });
+
+  it('reduces CASH partner receivable by company coupon expense without a reconciliation delta', () => {
+    const journal = buildBookingSettlementJournal({
+      bookingId: 'booking-cash-coupon-1',
+      currency: 'VND',
+      customerPaymentAmount: 540_000,
+      partnerPayoutAmount: 430_000,
+      partnerWithholdingTotal: 42_000,
+      platformFeeNetRevenue: 118_519,
+      companyOutputVat: 9_481,
+      paymentMethod: 'CASH',
+      paymentProcessingFee: 0,
+      metadata: { companyCouponExpense: 60_000 },
+    });
+
+    expect(journal.reconciliationDelta).toBe(0);
+    expect(journal.totalDebit).toBe(170_000);
+    expect(journal.totalCredit).toBe(170_000);
+    expect(journal.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          accountCode: 'partner_receivable_negative_wallet',
+          amount: 110_000,
+          side: 'DEBIT',
+        }),
+        expect.objectContaining({
+          accountCode: 'customer_coupon_marketing_expense',
+          amount: 60_000,
+          side: 'DEBIT',
+        }),
+      ]),
+    );
+    expect(journal.entries.some((entry) => entry.accountCode === 'settlement_reconciliation_delta')).toBe(false);
+  });
+
+  it('credits Partner wallet liability when a CASH coupon exceeds fees and withholding', () => {
+    const journal = buildBookingSettlementJournal({
+      bookingId: 'booking-cash-coupon-subsidy-1',
+      currency: 'VND',
+      customerPaymentAmount: 300_000,
+      partnerPayoutAmount: 430_000,
+      partnerWithholdingTotal: 42_000,
+      platformFeeNetRevenue: 118_519,
+      companyOutputVat: 9_481,
+      paymentMethod: 'CASH',
+      paymentProcessingFee: 0,
+      metadata: { companyCouponExpense: 300_000 },
+    });
+
+    expect(journal.reconciliationDelta).toBe(0);
+    expect(journal.totalDebit).toBe(300_000);
+    expect(journal.totalCredit).toBe(300_000);
+    expect(journal.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          accountCode: 'partner_wallet_liability',
+          amount: 130_000,
+          side: 'CREDIT',
+        }),
+      ]),
+    );
+  });
 });

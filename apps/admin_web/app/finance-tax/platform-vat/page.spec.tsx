@@ -34,9 +34,13 @@ describe('PlatformVatPage', () => {
     expect(markup).toContain('Period: 2026-06');
     expect(markup).toContain('Currency: VND');
     expect(markup).toContain('VAT command board');
-    expect(markup).toContain('Output VAT');
-    expect(markup).toContain('Net revenue');
-    expect(markup).toContain('VAT rate breakdown');
+    expect(markup).toContain('Tax closeout');
+    expect(markup).toContain('Company output VAT');
+    expect(markup).toContain('Net platform revenue');
+    expect(markup).toContain('Company VAT register');
+    expect(markup).toContain(
+      '/finance-tax/booking-settlement-audit?range=all&amp;review=all&amp;period=2026-06',
+    );
     expect(markup).toContain('card admin-filter-panel admin-mb-16');
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
@@ -57,5 +61,59 @@ describe('PlatformVatPage', () => {
     expect(source).toContain('buildPlatformVatExportHref');
     expect(source).not.toContain('data:text/csv');
     expect(source).not.toContain('buildPlatformVatSummaryCsvHref');
+  });
+
+  it('shows net VAT totals, reversal evidence, and non-standard rate review flags', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/platform-vat/summary?period=2026-06') {
+        return {
+          companyOutputVatTotal: 7407,
+          currency: 'VND',
+          manualReviewCount: 1,
+          netRevenueDelta: 0,
+          period: '2026-06',
+          platformFeeGrossTotal: 100000,
+          platformFeeNetRevenueTotal: 92593,
+          rateBreakdown: [
+            {
+              category: 'MANUAL_REVIEW',
+              companyOutputVatTotal: 7407,
+              platformFeeGrossTotal: 100000,
+              platformFeeNetRevenueTotal: 92593,
+              platformVatRateBps: 800,
+              reversalCount: 1,
+              settlementCount: 2,
+            },
+          ],
+          reversalCount: 1,
+          settlementCount: 2,
+        };
+      }
+      if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
+        const monthlyClosingFallback = fallback as Record<string, unknown>;
+        return {
+          ...monthlyClosingFallback,
+          companyOutputVatTotal: 7407,
+          currency: 'VND',
+          partnerWithholdingTotal: 0,
+          period: '2026-06',
+          status: 'REVIEWED',
+        };
+      }
+      return fallback;
+    });
+
+    const page = await PlatformVatPage({
+      searchParams: Promise.resolve({ period: '2026-06' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Declare');
+    expect(markup).toContain('2 posted · 1 reversal');
+    expect(markup).toContain('VAT review flags');
+    expect(markup).toContain('Manual review');
+    expect(markup).toContain('Reversals');
+    expect(markup).toContain('7.407 VND');
+    expect(markup).toContain('92.593 VND');
   });
 });

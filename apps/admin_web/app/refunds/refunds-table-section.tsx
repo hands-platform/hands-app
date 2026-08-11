@@ -1,41 +1,48 @@
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
-import { AdminNotePanel } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
-import { AdminTextLink } from '../../components/admin-text-link';
-import { MoneyText } from '../../components/money-text';
-import { StatusBadgeFromPillClass } from '../../components/status-badge';
+import { RefundRowsTable } from './refund-rows-table';
 
-export type RefundActionExecutionRow = {
-  readonly action: string;
-  readonly operatorRule: string;
+export type RefundChecklistRow = {
+  readonly detail: string;
+  readonly label: string;
   readonly pillClass: string;
-  readonly reason: string;
   readonly status: string;
 };
 
 export type RefundTableRow = {
+  readonly ageLabel: string;
   readonly amount: number;
   readonly bookingHref: string;
+  readonly bookingId: string;
   readonly bookingIdLabel: string;
   readonly bookingStatus: string;
+  readonly checklistCompleted: number;
+  readonly checklistRows: readonly RefundChecklistRow[];
   readonly currency: string;
+  readonly customerHref: string | null;
   readonly customerLabel: string;
-  readonly executionRows: readonly RefundActionExecutionRow[];
+  readonly evidenceBlockerLabel: string;
+  readonly evidenceLabel: string;
   readonly id: string;
   readonly opsHint: string;
-  readonly opsSignal: ReactNode;
-  readonly partnerLabel: string;
+  readonly opsTone: 'info' | 'ok' | 'warn';
   readonly paymentHref: string;
+  readonly paymentId: string;
   readonly paymentLabel: string;
+  readonly primaryActionHref: string;
+  readonly primaryActionLabel: string;
+  readonly reason: string;
+  readonly requestSource: string;
   readonly shortId: string;
-  readonly status: string;
+  readonly stageLabel: string;
+  readonly workstreamLabel: string;
+  readonly createdAtLabel: string;
 };
 
 type RefundsTableSectionProps = {
-  readonly emptyMessage: string;
+  readonly emptyMessage: ReactNode;
   readonly pagination: {
     readonly from: number;
     readonly hrefForPage: (page: number) => string;
@@ -52,70 +59,30 @@ export function RefundsTableSection({ emptyMessage, pagination }: RefundsTableSe
 
   return (
     <AdminTablePanel
-      description="Refund rows with booking, payment, customer, partner, and ledger action evidence for finance follow-up."
-      resultLabel={`${pagination.totalRows} row(s)`}
-      resultTone={pagination.totalRows > 0 ? 'info' : 'warning'}
-      title="Refund operations"
+      className="refund-cases-panel"
+      description="Each case appears in one operational workstream. Open the full-width checklist without losing table comparison."
+      title="Cases"
     >
-      <AdminTableScroll>
-        <AdminDataTable
-          className="vuexy-booking-table"
-          emptyMessage={emptyMessage}
-          headers={['Refund', 'Customer', 'Partner', 'Payment', 'Booking', 'Amount', 'Status', 'Ops hint']}
-          rowCount={rows.length}
-        >
-          {rows.map((row) => (
-            <tr id={`refund-${row.id}`} key={row.id}>
-              <td>{row.shortId}</td>
-              <td>{row.customerLabel}</td>
-              <td>{row.partnerLabel}</td>
-              <td>{row.paymentLabel}</td>
-              <td>
-                {row.bookingStatus}
-                <div className="muted">Booking {row.bookingIdLabel}</div>
-                <div className="actions admin-mt-8">
-                  <AdminTextLink href={row.bookingHref}>
-                    Open booking
-                  </AdminTextLink>
-                  <AdminTextLink href={row.paymentHref}>
-                    Open payment
-                  </AdminTextLink>
-                </div>
-              </td>
-              <td>
-                <MoneyText amount={row.amount} currency={row.currency} />
-              </td>
-              <td>{row.status}</td>
-              <td>
-                <div>{row.opsSignal}</div>
-                <div className="muted admin-mt-8">{row.opsHint}</div>
-                <AdminNotePanel className="admin-mt-10">
-                  <strong>Refund action execution map</strong>
-                  <AdminStageList className="admin-mt-8">
-                    {row.executionRows.map((item) => (
-                      <AdminStageItem key={`${row.id}-${item.action}`}>
-                        <StatusBadgeFromPillClass pillClass={item.pillClass}>
-                          {item.status}
-                        </StatusBadgeFromPillClass>
-                        <div>
-                          <strong>{item.action}</strong>
-                          <p className="muted">{item.reason}</p>
-                          <small>{item.operatorRule}</small>
-                        </div>
-                      </AdminStageItem>
-                    ))}
-                  </AdminStageList>
-                </AdminNotePanel>
-              </td>
-            </tr>
-          ))}
-        </AdminDataTable>
+      <AdminTableScroll ariaLabel="Refund cases table" className="refund-table-scroll">
+        {rows.length > 0 ? (
+          <RefundRowsTable rows={rows} />
+        ) : (
+          <AdminDataTable
+            className="refund-operations-table"
+            emptyMessage={emptyMessage}
+            headers={['Stage', 'Customer / booking', 'Amount / payment', 'Reason / source', 'Control readiness', 'Owner / action']}
+            rowCount={0}
+          >
+            {null}
+          </AdminDataTable>
+        )}
       </AdminTableScroll>
       <AdminTablePaginationFooter
         activePage={pagination.page}
         ariaLabel="Refund pagination"
         from={pagination.from}
         hrefForPage={pagination.hrefForPage}
+        itemLabel="refund cases"
         to={pagination.to}
         totalPages={pagination.totalPages}
         totalRows={pagination.totalRows}

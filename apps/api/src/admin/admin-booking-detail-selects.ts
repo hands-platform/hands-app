@@ -6,6 +6,7 @@ import {
 } from './admin-booking-selects';
 import {
   adminEarningDetailSelect,
+  adminPaymentEvidenceSelect,
   adminPaymentSummarySelect,
   adminRecentPlatformFeeLogsSelect,
   adminRecentProviderTaxLogsSelect,
@@ -108,6 +109,20 @@ export const adminBookingDetailSelect = {
       providerProfile: { select: adminBookingDetailProviderSelect },
     },
   },
+  providerRequestEvents: {
+    orderBy: { createdAt: 'asc' },
+    take: 50,
+    select: {
+      id: true,
+      providerProfileId: true,
+      bookingId: true,
+      eventType: true,
+      visibleBookingCount: true,
+      metadata: true,
+      createdAt: true,
+      providerProfile: { select: adminBookingDetailProviderSelect },
+    },
+  },
   services: { select: adminBookingServiceSummarySelect },
   payment: { select: adminPaymentSummarySelect },
   refunds: {
@@ -147,7 +162,7 @@ export const adminBookingDetailSelect = {
 } satisfies Prisma.BookingSelect;
 
 export const adminPaymentDetailSelect = {
-  ...adminPaymentSummarySelect,
+  ...adminPaymentEvidenceSelect,
   booking: { select: adminBookingDetailSelect },
   refunds: {
     orderBy: { createdAt: 'desc' },

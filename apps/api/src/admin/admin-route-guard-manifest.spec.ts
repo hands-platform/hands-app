@@ -38,30 +38,35 @@ describe('AdminController route guard manifest', () => {
 
 function listAdminWriteRoutes() {
   const controllerPath = normalizePath(Reflect.getMetadata(PATH_METADATA, AdminController));
-  const prototype = AdminController.prototype;
+  const routes: Array<{ handler: RouteHandler; methodName: string; path: string }> = [];
+  const methodNames = new Set<string>();
+  let prototype: object | null = AdminController.prototype;
 
-  return Object.getOwnPropertyNames(prototype).flatMap((methodName) => {
-    if (methodName === 'constructor') {
-      return [];
+  while (prototype && prototype !== Object.prototype) {
+    for (const methodName of Object.getOwnPropertyNames(prototype)) {
+      if (methodName === 'constructor' || methodNames.has(methodName)) continue;
+      methodNames.add(methodName);
+
+      const handler = (prototype as Record<string, unknown>)[methodName];
+      if (typeof handler !== 'function') continue;
+      const routeHandler = handler as RouteHandler;
+      const requestMethod = Reflect.getMetadata(METHOD_METADATA, routeHandler) as
+        | RequestMethod
+        | undefined;
+      if (requestMethod === undefined || !WRITE_METHODS.has(requestMethod)) continue;
+
+      routes.push(
+        ...toRouteParts(Reflect.getMetadata(PATH_METADATA, routeHandler)).map((routePath) => ({
+          handler: routeHandler,
+          methodName: RequestMethod[requestMethod],
+          path: joinRouteParts(controllerPath, routePath),
+        })),
+      );
     }
+    prototype = Object.getPrototypeOf(prototype);
+  }
 
-    const handler = prototype[methodName as keyof AdminController];
-    if (typeof handler !== 'function') {
-      return [];
-    }
-
-    const routeHandler = handler as RouteHandler;
-    const requestMethod = Reflect.getMetadata(METHOD_METADATA, routeHandler) as RequestMethod | undefined;
-    if (requestMethod === undefined || !WRITE_METHODS.has(requestMethod)) {
-      return [];
-    }
-
-    return toRouteParts(Reflect.getMetadata(PATH_METADATA, routeHandler)).map((routePath) => ({
-      handler: routeHandler,
-      methodName: RequestMethod[requestMethod],
-      path: joinRouteParts(controllerPath, routePath),
-    }));
-  });
+  return routes;
 }
 
 function effectiveMetadata<T>(

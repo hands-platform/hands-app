@@ -113,7 +113,7 @@ export function bookingCloseoutChecklistRows(
       href: input.chatReady
         ? `/chat-archive?q=${encodeURIComponent(input.bookingId)}`
         : input.chatNeeded
-          ? '/chat-archive?status=missing-room'
+          ? '/bookings?view=chat-repair'
           : '#chat',
       className: input.chatReady
         ? 'ops-task-done'

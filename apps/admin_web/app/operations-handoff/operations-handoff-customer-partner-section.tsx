@@ -4,8 +4,9 @@ import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminActionCard, AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import {
+  OPERATIONS_HANDOFF_DETAIL_PAGE_SIZE,
   OperationsHandoffPaginationFooter,
-  paginateOperationsHandoffRows,
+  operationsHandoffServerPageWindow,
   type OperationsHandoffPagination,
 } from './operations-handoff-pagination';
 import type { CustomerSignalRow, PartnerSignalRow } from './operations-handoff-signals';
@@ -23,19 +24,19 @@ export function OperationsHandoffCustomerPartnerSection({
   partnerPagination,
   partners,
 }: OperationsHandoffCustomerPartnerSectionProps) {
-  const customerPage = paginateOperationsHandoffRows(
-    customers,
-    customerPagination?.activePage ?? 1,
-    customerPagination ? undefined : 8,
-  );
+  const visibleCustomers = customerPagination
+    ? customers.slice(0, OPERATIONS_HANDOFF_DETAIL_PAGE_SIZE)
+    : customers.slice(0, 8);
   const partnerRows = partners.filter((partner) => partner.attention);
-  const partnerPage = paginateOperationsHandoffRows(
-    partnerRows,
-    partnerPagination?.activePage ?? 1,
-    partnerPagination ? undefined : 8,
-  );
-  const visibleCustomers = customerPage.rows;
-  const visiblePartners = partnerPage.rows;
+  const visiblePartners = partnerPagination
+    ? partnerRows.slice(0, OPERATIONS_HANDOFF_DETAIL_PAGE_SIZE)
+    : partnerRows.slice(0, 8);
+  const customerPage = customerPagination
+    ? operationsHandoffServerPageWindow(visibleCustomers.length, customerPagination)
+    : null;
+  const partnerPage = partnerPagination
+    ? operationsHandoffServerPageWindow(visiblePartners.length, partnerPagination)
+    : null;
 
   if (visibleCustomers.length === 0 && visiblePartners.length === 0) {
     return null;
@@ -74,7 +75,7 @@ export function OperationsHandoffCustomerPartnerSection({
               </AdminActionCard>
             ))}
           </div>
-          {customerPagination ? (
+          {customerPagination && customerPage ? (
             <OperationsHandoffPaginationFooter
               from={customerPage.from}
               pagination={customerPagination}
@@ -118,7 +119,7 @@ export function OperationsHandoffCustomerPartnerSection({
               </AdminActionCard>
             ))}
           </div>
-          {partnerPagination ? (
+          {partnerPagination && partnerPage ? (
             <OperationsHandoffPaginationFooter
               from={partnerPage.from}
               pagination={partnerPagination}

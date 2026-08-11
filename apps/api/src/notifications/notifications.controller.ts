@@ -1,11 +1,16 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
-import { DeleteDeviceTokenDto, RegisterDeviceTokenDto } from './notifications.dto';
+import {
+  CustomerNotificationInboxQueryDto,
+  DeleteDeviceTokenDto,
+  ProviderChatNotificationReadDto,
+  RegisterDeviceTokenDto,
+} from './notifications.dto';
 import { NotificationsService } from './notifications.service';
 
 @Controller('notifications')
@@ -17,6 +22,30 @@ export class NotificationsController {
   @Get()
   list(@CurrentUser() user: AuthenticatedUser) {
     return this.notifications.listForUser(user.id);
+  }
+
+  @Get('customer-inbox')
+  @Roles(Role.CUSTOMER)
+  listCustomerInbox(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: CustomerNotificationInboxQueryDto,
+  ) {
+    return this.notifications.listCustomerAppInbox(user.id, query);
+  }
+
+  @Get('provider-chat/summary')
+  @Roles(Role.PROVIDER)
+  providerChatSummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.notifications.providerChatSummary(user.id);
+  }
+
+  @Patch('provider-chat/read')
+  @Roles(Role.PROVIDER)
+  markProviderChatRead(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: ProviderChatNotificationReadDto,
+  ) {
+    return this.notifications.markProviderChatRead(user.id, body.chatRoomId);
   }
 
   @Patch(':id/read')

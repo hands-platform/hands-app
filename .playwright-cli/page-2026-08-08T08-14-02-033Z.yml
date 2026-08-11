@@ -1,0 +1,925 @@
+- generic [active] [ref=f9e1]:
+  - generic [ref=f9e3]:
+    - complementary [ref=f9e4]:
+      - strong [ref=f9e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=f9e7]:
+        - link "Shift Command" [ref=f9e8] [cursor=pointer]:
+          - /url: /
+        - group [ref=f9e14]:
+          - generic "Booking Operations" [ref=f9e15] [cursor=pointer]
+        - group [ref=f9e24]:
+          - generic "Customer Support" [ref=f9e25] [cursor=pointer]
+        - group [ref=f9e34]:
+          - generic "Partner Operations" [ref=f9e35] [cursor=pointer]
+        - group [ref=f9e42]:
+          - generic "Finance Operations" [ref=f9e43] [cursor=pointer]
+        - group [ref=f9e51]:
+          - generic "Finance Records & Close" [ref=f9e52] [cursor=pointer]
+          - generic [ref=f9e60]:
+            - link "Payments" [ref=f9e61] [cursor=pointer]:
+              - /url: /payments
+            - link "Partner Money" [ref=f9e65] [cursor=pointer]:
+              - /url: /payouts
+            - link "Wallet Adjustments" [ref=f9e71] [cursor=pointer]:
+              - /url: /wallet-adjustments
+            - link "General Ledger" [ref=f9e76] [cursor=pointer]:
+              - /url: /finance-tax/general-ledger
+            - link "Settlement Records" [ref=f9e81] [cursor=pointer]:
+              - /url: /finance-tax/booking-settlement-audit
+            - link "Tax & Period Close" [ref=f9e87] [cursor=pointer]:
+              - /url: /finance-tax
+        - group [ref=f9e91]:
+          - generic "Growth & Communications" [ref=f9e92] [cursor=pointer]
+        - group [ref=f9e99]:
+          - generic "Administration & Settings" [ref=f9e100] [cursor=pointer]
+    - main [ref=f9e108]:
+      - generic "Admin workspace" [ref=f9e109]:
+        - navigation "Breadcrumb" [ref=f9e111]:
+          - link "HANDS" [ref=f9e112] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f9e115]: Finance Records & Close
+          - link "Partner Money" [ref=f9e118] [cursor=pointer]:
+            - /url: /payouts
+          - generic [ref=f9e121]: Payout / Withdrawal Risk
+        - generic "Workspace actions" [ref=f9e122]:
+          - button "Search Ctrl K" [ref=f9e124] [cursor=pointer]:
+            - generic [ref=f9e125]: Search
+            - generic [ref=f9e129]: Ctrl K
+          - button "Switch to dark mode" [ref=f9e131] [cursor=pointer]
+          - link "Operations Policy" [ref=f9e134] [cursor=pointer]:
+            - /url: /operations-policy
+          - button "Open operation alerts" [ref=f9e139] [cursor=pointer]
+          - button "Sign out" [ref=f9e144] [cursor=pointer]
+      - navigation "Partner Money workspace" [ref=f9e148]:
+        - strong [ref=f9e149]: Partner Money
+        - generic "Partner Money pages" [ref=f9e150]:
+          - link "Payouts" [ref=f9e151] [cursor=pointer]:
+            - /url: /payouts
+          - link "Partner Earnings" [ref=f9e152] [cursor=pointer]:
+            - /url: /earnings
+          - link "Partner Bank Deposits" [ref=f9e153] [cursor=pointer]:
+            - /url: /finance-tax/partner-bank-deposits
+      - generic [ref=f9e154]:
+        - generic [ref=f9e156]:
+          - heading "Partner Payouts" [level=1] [ref=f9e157]
+          - paragraph [ref=f9e158]: Partner payout batches for transfer readiness, tax evidence, cash-fee debt holds, and finance release checks.
+        - generic [ref=f9e159]:
+          - generic [ref=f9e165]:
+            - generic [ref=f9e166]: Needs action
+            - paragraph [ref=f9e167]: Needs review
+            - generic [ref=f9e168]:
+              - generic [ref=f9e169]: "Needs review:"
+              - text: "1"
+            - generic [ref=f9e170]: Draft or failed payout batches.
+          - generic [ref=f9e176]:
+            - generic [ref=f9e177]: Needs action
+            - paragraph [ref=f9e178]: Payout holds
+            - generic [ref=f9e179]:
+              - generic [ref=f9e180]: "Payout holds:"
+              - text: "0"
+            - generic [ref=f9e181]: Batches blocked by Partner account checks.
+          - generic [ref=f9e187]:
+            - generic [ref=f9e188]: Pending
+            - paragraph [ref=f9e189]: Missing refs
+            - generic [ref=f9e190]:
+              - generic [ref=f9e191]: "Missing refs:"
+              - text: "2"
+            - generic [ref=f9e192]: Transfer references required before paid.
+          - generic [ref=f9e198]:
+            - generic [ref=f9e199]: Live
+            - paragraph [ref=f9e200]: In progress
+            - generic [ref=f9e201]:
+              - generic [ref=f9e202]: "In progress:"
+              - text: "4"
+            - generic [ref=f9e203]: Processing transfer batches.
+          - generic [ref=f9e209]:
+            - generic [ref=f9e210]: All dates
+            - paragraph [ref=f9e211]: Total batches
+            - generic [ref=f9e212]:
+              - generic [ref=f9e213]: "Total batches:"
+              - text: "159"
+            - generic [ref=f9e214]: Payout batches in the selected range.
+          - generic [ref=f9e220]:
+            - generic [ref=f9e221]: All dates
+            - paragraph [ref=f9e222]: Total net
+            - generic [ref=f9e223]:
+              - generic [ref=f9e224]: "Total net:"
+              - text: 64.440.000 VND
+            - generic [ref=f9e225]: Partner net in visible batches.
+          - generic [ref=f9e231]:
+            - generic [ref=f9e232]: All dates
+            - paragraph [ref=f9e233]: Withheld tax
+            - generic [ref=f9e234]:
+              - generic [ref=f9e235]: "Withheld tax:"
+              - text: 2.730.000 VND
+            - generic [ref=f9e236]: Tax logs attached to payout batches.
+          - generic [ref=f9e242]:
+            - generic [ref=f9e243]: Transfer records
+            - paragraph [ref=f9e244]: Settled
+            - generic [ref=f9e245]:
+              - generic [ref=f9e246]: "Settled:"
+              - text: "154"
+            - generic [ref=f9e247]: Paid payout batches.
+        - generic [ref=f9e248]:
+          - generic [ref=f9e249]:
+            - generic [ref=f9e250]:
+              - heading "Payout date range" [level=2] [ref=f9e251]
+              - paragraph [ref=f9e252]: "Range: All dates. Use the workspace controls to focus the complete payout information on actions, policy, audit evidence, or records."
+            - generic [ref=f9e253]: Operations · 159 batch(es)
+          - generic [ref=f9e255]:
+            - generic [ref=f9e256]:
+              - generic [ref=f9e257]: Workspace
+              - generic "Payout workspaces" [ref=f9e258]:
+                - link "Operations" [ref=f9e259] [cursor=pointer]:
+                  - /url: /payouts?range=all
+                - link "Release policy" [ref=f9e260] [cursor=pointer]:
+                  - /url: /payouts?details=all&range=all
+                - link "Audit evidence" [ref=f9e261] [cursor=pointer]:
+                  - /url: /payouts?details=all&view=audit&range=all
+                - link "Records" [ref=f9e262] [cursor=pointer]:
+                  - /url: /payouts?details=all&view=records&range=all
+            - generic [ref=f9e263]:
+              - generic [ref=f9e264]: Range
+              - generic "Payout date range" [ref=f9e265]:
+                - link "All dates" [ref=f9e266] [cursor=pointer]:
+                  - /url: /payouts?range=all
+                - link "Today" [ref=f9e267] [cursor=pointer]:
+                  - /url: /payouts
+                - link "Last 7 days" [ref=f9e268] [cursor=pointer]:
+                  - /url: /payouts?range=7d
+                - link "Last 30 days" [ref=f9e269] [cursor=pointer]:
+                  - /url: /payouts?range=30d
+          - group "Payout evidence views" [ref=f9e271]:
+            - link "Open Finance Overview" [ref=f9e272] [cursor=pointer]:
+              - /url: /finance-overview
+        - generic [ref=f9e273]:
+          - generic [ref=f9e274]:
+            - generic [ref=f9e275]:
+              - heading "Needs action" [level=2] [ref=f9e276]
+              - paragraph [ref=f9e277]: Finance-first view for review money, active transfers, payout holds, and reconciliation warnings.
+            - generic [ref=f9e278]: 4 signal(s)
+          - generic [ref=f9e280]:
+            - group "Payout command queue links" [ref=f9e281]:
+              - link "Review earnings queue" [ref=f9e282] [cursor=pointer]:
+                - /url: /earnings
+            - generic [ref=f9e283]:
+              - generic [ref=f9e284]:
+                - generic [ref=f9e285]: 1 BATCH(ES)
+                - heading "Review amount" [level=3] [ref=f9e286]
+                - paragraph [ref=f9e287]: 525.000 VND
+                - generic [ref=f9e288]: Check failed and draft batches before starting bank transfer.
+              - generic [ref=f9e289]:
+                - generic [ref=f9e290]: 0 PROCESSING
+                - heading "Banking in motion" [level=3] [ref=f9e291]
+                - paragraph [ref=f9e292]: 0 VND
+                - generic [ref=f9e293]: No payout is currently in banking transfer.
+              - generic [ref=f9e294]:
+                - generic [ref=f9e295]: 0 on hold
+                - heading "Payout holds" [level=3] [ref=f9e296]
+                - paragraph [ref=f9e297]: No active payout hold on listed batches.
+                - generic [ref=f9e298]: No payout hold action.
+              - generic [ref=f9e299]:
+                - generic [ref=f9e300]: 0 CHECK
+                - heading "Reconciliation" [level=3] [ref=f9e301]
+                - paragraph [ref=f9e302]: 0 active missing ref, 0 paid missing ref, 0 paid withholding mismatch, 0 withholding record missing, 0 empty batch.
+                - generic [ref=f9e303]: Paid batch references and payout withholding evidence look consistent.
+        - region [ref=f9e304]:
+          - generic [ref=f9e305]:
+            - generic [ref=f9e306]:
+              - heading "Payout money flow" [level=2] [ref=f9e307]
+              - paragraph [ref=f9e308]: "Reconciles payout batches against service pricing evidence before transfer: gross represented, partner payout, HANDS fee, withholding, and cash debt."
+            - generic [ref=f9e309]: 4 check(s)
+          - generic [ref=f9e311]:
+            - group "Payout money flow links" [ref=f9e312]:
+              - link "Trace bookings" [ref=f9e313] [cursor=pointer]:
+                - /url: /bookings
+            - generic [ref=f9e314]:
+              - generic [ref=f9e315]:
+                - generic [ref=f9e316]: All dates
+                - generic [ref=f9e317]: Gross represented
+                - strong [ref=f9e318]: 7.000.000 VND
+                - generic [ref=f9e319]: Customer charge attached to earnings inside payout batches.
+              - generic [ref=f9e320]:
+                - generic [ref=f9e321]: All dates
+                - generic [ref=f9e322]: Partner payout
+                - strong [ref=f9e323]: 64.440.000 VND
+                - generic [ref=f9e324]: Batch net amount planned for partner transfer.
+              - generic [ref=f9e325]:
+                - generic [ref=f9e326]: All dates
+                - generic [ref=f9e327]: Partner net evidence
+                - strong [ref=f9e328]: 5.250.000 VND
+                - generic [ref=f9e329]: Service evidence net amount used to cross-check batch totals.
+              - generic [ref=f9e330]:
+                - generic [ref=f9e331]: All dates
+                - generic [ref=f9e332]: HANDS fee
+                - strong [ref=f9e333]: 1.400.000 VND
+                - generic [ref=f9e334]: Platform fee represented by earnings inside payout batches.
+              - generic [ref=f9e335]:
+                - generic [ref=f9e336]: All dates
+                - generic [ref=f9e337]: Tax withheld
+                - strong [ref=f9e338]: 350.000 VND
+                - generic [ref=f9e339]: Withholding logs and earning tax amount before final settlement.
+              - generic [ref=f9e340]:
+                - generic [ref=f9e341]: All dates
+                - generic [ref=f9e342]: Cash debt represented
+                - strong [ref=f9e343]: 0 VND
+                - generic [ref=f9e344]: Negative wallet amount that should not be paid out as partner net.
+            - generic [ref=f9e345]:
+              - generic [ref=f9e346]:
+                - generic [ref=f9e347]: MATCHED
+                - heading "Batch net reconciliation" [level=3] [ref=f9e348]
+                - paragraph [ref=f9e349]: "Batch net versus service evidence gap: 0 VND."
+                - generic [ref=f9e350]: Batch net aligns with service evidence.
+              - generic [ref=f9e351]:
+                - generic [ref=f9e352]: 1 OPTION(S)
+                - heading "Service evidence" [level=3] [ref=f9e353]
+                - paragraph [ref=f9e354]: Payout batches are connected to service duration options where available.
+                - generic [ref=f9e355]: Service option links are ready for finance review.
+              - generic [ref=f9e356]:
+                - generic [ref=f9e357]: CLEAR
+                - heading "Cash debt exclusion" [level=3] [ref=f9e358]
+                - paragraph [ref=f9e359]: No negative wallet amount is represented in payout evidence.
+                - generic [ref=f9e360]: Cash payment fee debt is not leaking into payout transfer.
+              - generic [ref=f9e361]:
+                - generic [ref=f9e362]: 0 CHECK
+                - heading "Settlement references" [level=3] [ref=f9e363]
+                - paragraph [ref=f9e364]: 0 active batch(es) need bank ref before paid, 0 paid missing ref, 0 paid batch(es) with incomplete withholding deduction evidence.
+                - generic [ref=f9e365]: Transfer references and payout withholding evidence look complete.
+        - generic [ref=f9e366]:
+          - generic [ref=f9e367]:
+            - generic [ref=f9e368]:
+              - heading "Release blocker queue" [level=2] [ref=f9e369]
+              - paragraph [ref=f9e370]: Transfer-facing list of batches that should not be paid until finance, tax, partner checks, and bank references are clean.
+            - generic [ref=f9e371]: 6 blocker(s)
+          - generic [ref=f9e374]:
+            - generic [ref=f9e375]:
+              - generic [ref=f9e376]: Block
+              - generic [ref=f9e377]:
+                - strong [ref=f9e378]: Smoke Partner / 525.000 VND
+                - paragraph [ref=f9e379]: "Payout Status Not Payable: Payout batch status PAID cannot advance to paid."
+                - paragraph [ref=f9e380]: Payout batch status PAID cannot advance to paid.
+                - group "Release blocker reasons for cmsdccmox021hvy8w6fr4bvgv" [ref=f9e381]:
+                  - generic [ref=f9e382]: Payout Status Not Payable
+                  - generic [ref=f9e383]: Wallet Balance Insufficient
+                  - generic [ref=f9e384]: Payout Paid Evidence Incomplete
+              - link "Row" [ref=f9e385] [cursor=pointer]:
+                - /url: "#cmsdccmox021hvy8w6fr4bvgv"
+            - generic [ref=f9e386]:
+              - generic [ref=f9e387]: Block
+              - generic [ref=f9e388]:
+                - strong [ref=f9e389]: Smoke Partner / 525.000 VND
+                - paragraph [ref=f9e390]: "Payout Status Not Payable: Payout batch status PAID cannot advance to paid."
+                - paragraph [ref=f9e391]: Payout batch status PAID cannot advance to paid.
+                - group "Release blocker reasons for cmsdbjwxt01qzvytoqj1b2gyx" [ref=f9e392]:
+                  - generic [ref=f9e393]: Payout Status Not Payable
+                  - generic [ref=f9e394]: Wallet Balance Insufficient
+                  - generic [ref=f9e395]: Payout Paid Evidence Incomplete
+              - link "Row" [ref=f9e396] [cursor=pointer]:
+                - /url: "#cmsdbjwxt01qzvytoqj1b2gyx"
+            - generic [ref=f9e397]:
+              - generic [ref=f9e398]: Block
+              - generic [ref=f9e399]:
+                - strong [ref=f9e400]: Smoke Partner / 525.000 VND
+                - paragraph [ref=f9e401]: "Payout Status Not Payable: Payout batch status PAID cannot advance to paid."
+                - paragraph [ref=f9e402]: Payout batch status PAID cannot advance to paid.
+                - group "Release blocker reasons for cmsdagwey01slvy2szg49pk7d" [ref=f9e403]:
+                  - generic [ref=f9e404]: Payout Status Not Payable
+                  - generic [ref=f9e405]: Wallet Balance Insufficient
+                  - generic [ref=f9e406]: Payout Paid Evidence Incomplete
+              - link "Row" [ref=f9e407] [cursor=pointer]:
+                - /url: "#cmsdagwey01slvy2szg49pk7d"
+            - generic [ref=f9e408]:
+              - generic [ref=f9e409]: Block
+              - generic [ref=f9e410]:
+                - strong [ref=f9e411]: Smoke Partner / 525.000 VND
+                - paragraph [ref=f9e412]: "Payout Status Not Payable: Payout batch status PAID cannot advance to paid."
+                - paragraph [ref=f9e413]: Payout batch status PAID cannot advance to paid.
+                - group "Release blocker reasons for cmsd7cqrm02rvvy0opsb8txjp" [ref=f9e414]:
+                  - generic [ref=f9e415]: Payout Status Not Payable
+                  - generic [ref=f9e416]: Wallet Balance Insufficient
+                  - generic [ref=f9e417]: Payout Paid Evidence Incomplete
+              - link "Row" [ref=f9e418] [cursor=pointer]:
+                - /url: "#cmsd7cqrm02rvvy0opsb8txjp"
+            - generic [ref=f9e419]:
+              - generic [ref=f9e420]: Block
+              - generic [ref=f9e421]:
+                - strong [ref=f9e422]: Smoke Partner / 525.000 VND
+                - paragraph [ref=f9e423]: "Payout Status Not Payable: Payout batch status PAID cannot advance to paid."
+                - paragraph [ref=f9e424]: Payout batch status PAID cannot advance to paid.
+                - group "Release blocker reasons for cmsd6ghcu02rpvyqkfjkhd1cf" [ref=f9e425]:
+                  - generic [ref=f9e426]: Payout Status Not Payable
+                  - generic [ref=f9e427]: Wallet Balance Insufficient
+                  - generic [ref=f9e428]: Payout Paid Evidence Incomplete
+              - link "Row" [ref=f9e429] [cursor=pointer]:
+                - /url: "#cmsd6ghcu02rpvyqkfjkhd1cf"
+            - generic [ref=f9e430]:
+              - generic [ref=f9e431]: Block
+              - generic [ref=f9e432]:
+                - strong [ref=f9e433]: Smoke Partner / 525.000 VND
+                - paragraph [ref=f9e434]: "Payout Status Not Payable: Payout batch status PAID cannot advance to paid."
+                - paragraph [ref=f9e435]: Payout batch status PAID cannot advance to paid.
+                - group "Release blocker reasons for cmsd5oxi30dc2vyygvbqfmy5s" [ref=f9e436]:
+                  - generic [ref=f9e437]: Payout Status Not Payable
+                  - generic [ref=f9e438]: Wallet Balance Insufficient
+                  - generic [ref=f9e439]: Payout Paid Evidence Incomplete
+              - link "Row" [ref=f9e440] [cursor=pointer]:
+                - /url: "#cmsd5oxi30dc2vyygvbqfmy5s"
+        - region [ref=f9e441]:
+          - generic [ref=f9e442]:
+            - generic [ref=f9e443]:
+              - heading "Partner finance queue" [level=2] [ref=f9e444]
+              - paragraph [ref=f9e445]: Partner-facing payout readiness queue. This shows bank detail issues, payout holds, negative wallet evidence, and transfer reference gaps before finance marks a payout paid.
+            - generic [ref=f9e446]: 10 item(s)
+          - region "Scrollable data table" [ref=f9e449]:
+            - table [ref=f9e450]:
+              - rowgroup [ref=f9e451]:
+                - row [ref=f9e452]:
+                  - columnheader "Partner" [ref=f9e453]
+                  - columnheader "Amount" [ref=f9e454]
+                  - columnheader "Finance signal" [ref=f9e455]
+                  - columnheader "Evidence" [ref=f9e456]
+                  - columnheader "Action" [ref=f9e457]
+              - rowgroup [ref=f9e458]:
+                - row [ref=f9e459]:
+                  - cell [ref=f9e460]:
+                    - strong [ref=f9e461]: Smoke Partner
+                    - paragraph [ref=f9e462]: Batch cmsd5ma9h0ajqvyyg24o5duzx
+                  - cell [ref=f9e463]:
+                    - strong [ref=f9e464]: 525.000 VND
+                  - cell "Ready for manual payout Approved bank details and transfer reference are available. Finance can complete the manual payout review." [ref=f9e465]:
+                    - generic [ref=f9e466]: Ready for manual payout
+                    - paragraph [ref=f9e467]: Approved bank details and transfer reference are available. Finance can complete the manual payout review.
+                  - cell [ref=f9e468]:
+                    - paragraph [ref=f9e469]: Approved bank details
+                  - cell [ref=f9e470]:
+                    - link "Review manual payout" [ref=f9e471] [cursor=pointer]:
+                      - /url: "#cmsd5ma9h0ajqvyyg24o5duzx"
+                - row [ref=f9e472]:
+                  - cell [ref=f9e473]:
+                    - strong [ref=f9e474]: Smoke Partner
+                    - paragraph [ref=f9e475]: Batch cmsdccmox021hvy8w6fr4bvgv
+                  - cell [ref=f9e476]:
+                    - strong [ref=f9e477]: 525.000 VND
+                  - cell "Wallet recovery check Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release." [ref=f9e478]:
+                    - generic [ref=f9e479]: Wallet recovery check
+                    - paragraph [ref=f9e480]: Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release.
+                  - cell [ref=f9e481]:
+                    - paragraph [ref=f9e482]: Recent wallet movement -225.000 VND
+                  - cell [ref=f9e483]:
+                    - link "Open cash settlements" [ref=f9e484] [cursor=pointer]:
+                      - /url: /cash-settlements
+                - row [ref=f9e485]:
+                  - cell [ref=f9e486]:
+                    - strong [ref=f9e487]: Smoke Partner
+                    - paragraph [ref=f9e488]: Batch cmsdbjwxt01qzvytoqj1b2gyx
+                  - cell [ref=f9e489]:
+                    - strong [ref=f9e490]: 525.000 VND
+                  - cell "Wallet recovery check Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release." [ref=f9e491]:
+                    - generic [ref=f9e492]: Wallet recovery check
+                    - paragraph [ref=f9e493]: Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release.
+                  - cell [ref=f9e494]:
+                    - paragraph [ref=f9e495]: Recent wallet movement -225.000 VND
+                  - cell [ref=f9e496]:
+                    - link "Open cash settlements" [ref=f9e497] [cursor=pointer]:
+                      - /url: /cash-settlements
+                - row [ref=f9e498]:
+                  - cell [ref=f9e499]:
+                    - strong [ref=f9e500]: Smoke Partner
+                    - paragraph [ref=f9e501]: Batch cmsdagwey01slvy2szg49pk7d
+                  - cell [ref=f9e502]:
+                    - strong [ref=f9e503]: 525.000 VND
+                  - cell "Wallet recovery check Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release." [ref=f9e504]:
+                    - generic [ref=f9e505]: Wallet recovery check
+                    - paragraph [ref=f9e506]: Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release.
+                  - cell [ref=f9e507]:
+                    - paragraph [ref=f9e508]: Recent wallet movement -225.000 VND
+                  - cell [ref=f9e509]:
+                    - link "Open cash settlements" [ref=f9e510] [cursor=pointer]:
+                      - /url: /cash-settlements
+                - row [ref=f9e511]:
+                  - cell [ref=f9e512]:
+                    - strong [ref=f9e513]: Smoke Partner
+                    - paragraph [ref=f9e514]: Batch cmsd7cqrm02rvvy0opsb8txjp
+                  - cell [ref=f9e515]:
+                    - strong [ref=f9e516]: 525.000 VND
+                  - cell "Wallet recovery check Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release." [ref=f9e517]:
+                    - generic [ref=f9e518]: Wallet recovery check
+                    - paragraph [ref=f9e519]: Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release.
+                  - cell [ref=f9e520]:
+                    - paragraph [ref=f9e521]: Recent wallet movement -530.000 VND
+                  - cell [ref=f9e522]:
+                    - link "Open cash settlements" [ref=f9e523] [cursor=pointer]:
+                      - /url: /cash-settlements
+                - row [ref=f9e524]:
+                  - cell [ref=f9e525]:
+                    - strong [ref=f9e526]: Smoke Partner
+                    - paragraph [ref=f9e527]: Batch cmsd6ghcu02rpvyqkfjkhd1cf
+                  - cell [ref=f9e528]:
+                    - strong [ref=f9e529]: 525.000 VND
+                  - cell "Wallet recovery check Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release." [ref=f9e530]:
+                    - generic [ref=f9e531]: Wallet recovery check
+                    - paragraph [ref=f9e532]: Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release.
+                  - cell [ref=f9e533]:
+                    - paragraph [ref=f9e534]: Recent wallet movement -225.000 VND
+                  - cell [ref=f9e535]:
+                    - link "Open cash settlements" [ref=f9e536] [cursor=pointer]:
+                      - /url: /cash-settlements
+                - row [ref=f9e537]:
+                  - cell [ref=f9e538]:
+                    - strong [ref=f9e539]: Smoke Partner
+                    - paragraph [ref=f9e540]: Batch cmsd5oxi30dc2vyygvbqfmy5s
+                  - cell [ref=f9e541]:
+                    - strong [ref=f9e542]: 525.000 VND
+                  - cell "Wallet recovery check Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release." [ref=f9e543]:
+                    - generic [ref=f9e544]: Wallet recovery check
+                    - paragraph [ref=f9e545]: Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release.
+                  - cell [ref=f9e546]:
+                    - paragraph [ref=f9e547]: Recent wallet movement -225.000 VND
+                  - cell [ref=f9e548]:
+                    - link "Open cash settlements" [ref=f9e549] [cursor=pointer]:
+                      - /url: /cash-settlements
+                - row [ref=f9e550]:
+                  - cell [ref=f9e551]:
+                    - strong [ref=f9e552]: Smoke Partner
+                    - paragraph [ref=f9e553]: Batch cms51xomn02ujvy5w8d5el8ti
+                  - cell [ref=f9e554]:
+                    - strong [ref=f9e555]: 525.000 VND
+                  - cell "Wallet recovery check Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release." [ref=f9e556]:
+                    - generic [ref=f9e557]: Wallet recovery check
+                    - paragraph [ref=f9e558]: Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release.
+                  - cell [ref=f9e559]:
+                    - paragraph [ref=f9e560]: Recent wallet movement -225.000 VND
+                  - cell [ref=f9e561]:
+                    - link "Open cash settlements" [ref=f9e562] [cursor=pointer]:
+                      - /url: /cash-settlements
+                - row [ref=f9e563]:
+                  - cell [ref=f9e564]:
+                    - strong [ref=f9e565]: Smoke Partner
+                    - paragraph [ref=f9e566]: Batch cms515zk902uhvyu8lhue661w
+                  - cell [ref=f9e567]:
+                    - strong [ref=f9e568]: 525.000 VND
+                  - cell "Wallet recovery check Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release." [ref=f9e569]:
+                    - generic [ref=f9e570]: Wallet recovery check
+                    - paragraph [ref=f9e571]: Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release.
+                  - cell [ref=f9e572]:
+                    - paragraph [ref=f9e573]: Recent wallet movement -225.000 VND
+                  - cell [ref=f9e574]:
+                    - link "Open cash settlements" [ref=f9e575] [cursor=pointer]:
+                      - /url: /cash-settlements
+                - row [ref=f9e576]:
+                  - cell [ref=f9e577]:
+                    - strong [ref=f9e578]: Smoke Partner
+                    - paragraph [ref=f9e579]: Batch cms50gn6602uhvyswioujxpda
+                  - cell [ref=f9e580]:
+                    - strong [ref=f9e581]: 525.000 VND
+                  - cell "Wallet recovery check Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release." [ref=f9e582]:
+                    - generic [ref=f9e583]: Wallet recovery check
+                    - paragraph [ref=f9e584]: Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release.
+                  - cell [ref=f9e585]:
+                    - paragraph [ref=f9e586]: Recent wallet movement -225.000 VND
+                  - cell [ref=f9e587]:
+                    - link "Open cash settlements" [ref=f9e588] [cursor=pointer]:
+                      - /url: /cash-settlements
+        - region [ref=f9e589]:
+          - generic [ref=f9e590]:
+            - generic [ref=f9e591]:
+              - heading "Partner wallet withdrawal requests" [level=2] [ref=f9e592]
+              - paragraph [ref=f9e593]: Partner wallet withdrawal requests from the partner app. Finance can request bank correction, approve, reject, or mark paid after manual bank transfer.
+            - generic [ref=f9e594]: Clear
+          - generic [ref=f9e596]:
+            - generic "Saved withdrawal request view" [ref=f9e597]:
+              - generic [ref=f9e598]: Saved view
+              - strong [ref=f9e599]: Withdrawal requests · Review required
+              - generic [ref=f9e600]: 0 requests in this view
+              - link "Clear saved view" [ref=f9e601] [cursor=pointer]:
+                - /url: /payouts?range=all
+            - generic "Withdrawal request status summary" [ref=f9e602]:
+              - link "Paid / bank match pending 49 Open action queue" [ref=f9e604] [cursor=pointer]:
+                - /url: /payouts?range=all&withdrawalStatus=PAID&withdrawalReconciliation=unmatched#partner-wallet-withdrawal-requests
+                - generic [ref=f9e605]: Paid / bank match pending
+                - strong [ref=f9e606]: "49"
+                - generic [ref=f9e607]: Open action queue
+              - link "Paid / reconciled 0 Open records" [ref=f9e608] [cursor=pointer]:
+                - /url: /payouts?range=all&withdrawalStatus=PAID&withdrawalReconciliation=matched#partner-wallet-withdrawal-requests
+                - generic [ref=f9e609]: Paid / reconciled
+                - strong [ref=f9e610]: "0"
+                - generic [ref=f9e611]: Open records
+              - link "Requested 0 Open filter" [ref=f9e612] [cursor=pointer]:
+                - /url: /payouts?range=all&withdrawalStatus=REQUESTED#partner-wallet-withdrawal-requests
+                - generic [ref=f9e613]: Requested
+                - strong [ref=f9e614]: "0"
+                - generic [ref=f9e615]: Open filter
+              - link "Review required 0 Selected" [ref=f9e616] [cursor=pointer]:
+                - /url: /payouts?range=all&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests
+                - generic [ref=f9e617]: Review required
+                - strong [ref=f9e618]: "0"
+                - generic [ref=f9e619]: Selected
+              - link "Bank transfer pending 0 Open filter" [ref=f9e620] [cursor=pointer]:
+                - /url: /payouts?range=all&withdrawalStatus=BANK_TRANSFER_PENDING#partner-wallet-withdrawal-requests
+                - generic [ref=f9e621]: Bank transfer pending
+                - strong [ref=f9e622]: "0"
+                - generic [ref=f9e623]: Open filter
+              - generic [ref=f9e624]:
+                - generic [ref=f9e625]: Lock released
+                - strong [ref=f9e626]: "0"
+                - generic [ref=f9e627]: Audit evidence
+            - region "Scrollable data table" [ref=f9e628]:
+              - table [ref=f9e629]:
+                - rowgroup [ref=f9e630]:
+                  - row [ref=f9e631]:
+                    - columnheader "Partner" [ref=f9e632]
+                    - columnheader "Amount" [ref=f9e633]
+                    - columnheader "Bank account" [ref=f9e634]
+                    - columnheader "Status" [ref=f9e635]
+                    - columnheader "Requested" [ref=f9e636]
+                    - columnheader "Action" [ref=f9e637]
+                - rowgroup [ref=f9e638]:
+                  - row [ref=f9e639]:
+                    - cell [ref=f9e640]:
+                      - status [ref=f9e641]:
+                        - status [ref=f9e642]:
+                          - strong [ref=f9e643]: No withdrawal requests found
+                          - paragraph [ref=f9e644]: No partner wallet withdrawal request is visible in the current payout window.
+        - generic [ref=f9e645]:
+          - generic [ref=f9e646]:
+            - generic [ref=f9e647]:
+              - heading "Payout batch list" [level=2] [ref=f9e648]
+              - paragraph [ref=f9e649]: Partner settlement batches ordered so unresolved money movement stays at the top.
+            - generic [ref=f9e650]: 159 row(s)
+          - generic [ref=f9e652]:
+            - group "Payout batch toolbar" [ref=f9e653]:
+              - generic [ref=f9e654]: Newest active first
+              - generic [ref=f9e655]: Payout record
+              - generic [ref=f9e656]: Reconciliation
+              - link "Review earnings" [ref=f9e657] [cursor=pointer]:
+                - /url: /earnings
+            - generic [ref=f9e658]: Choose Review transfer on one payout batch to edit its bank reference and note.
+            - region "Scrollable data table" [ref=f9e663]:
+              - table [ref=f9e664]:
+                - rowgroup [ref=f9e665]:
+                  - row [ref=f9e666]:
+                    - columnheader "Batch" [ref=f9e667]
+                    - columnheader "Partner" [ref=f9e668]
+                    - columnheader "Status" [ref=f9e669]
+                    - columnheader "Money" [ref=f9e670]
+                    - columnheader "Next action" [ref=f9e671]
+                    - columnheader "Transfer" [ref=f9e672]
+                    - columnheader "Actions" [ref=f9e673]
+                - rowgroup [ref=f9e674]:
+                  - row [ref=f9e675]:
+                    - cell "cmsd5ma9h0aj 4d ago" [ref=f9e676]:
+                      - generic [ref=f9e677]: cmsd5ma9h0aj
+                      - generic [ref=f9e678]: 4d ago
+                    - cell "Smoke Partner +84988941437" [ref=f9e679]:
+                      - generic [ref=f9e680]: Smoke Partner
+                      - generic [ref=f9e681]: "+84988941437"
+                    - cell "Draft Waiting for finance review Needs review Check included earnings, confirm the partner, and release only if totals look right." [ref=f9e682]:
+                      - generic [ref=f9e683]: Draft
+                      - generic [ref=f9e684]: Waiting for finance review
+                      - generic [ref=f9e685]: Needs review
+                      - generic [ref=f9e687]: Check included earnings, confirm the partner, and release only if totals look right.
+                    - cell "525.000 VND 2 earning(s) Withholding 35.000 VND / 2 payout deduction record(s)" [ref=f9e688]:
+                      - strong [ref=f9e689]: 525.000 VND
+                      - generic [ref=f9e690]: 2 earning(s)
+                      - generic [ref=f9e691]: Withholding 35.000 VND / 2 payout deduction record(s)
+                    - cell "Blocking reasons for cmsd5ma9h0aj No blocking reason is preventing the next finance action." [ref=f9e692]:
+                      - group "Blocking reasons for cmsd5ma9h0aj" [ref=f9e693]:
+                        - generic [ref=f9e694]: Clear
+                      - generic [ref=f9e695]: No blocking reason is preventing the next finance action.
+                    - cell "SMOKE-1785757013599 Created by smoke test Not paid Awaiting settlement" [ref=f9e696]:
+                      - generic [ref=f9e697]: SMOKE-1785757013599
+                      - generic [ref=f9e698]: Created by smoke test
+                      - generic [ref=f9e699]: Not paid
+                      - generic [ref=f9e701]: Awaiting settlement
+                    - cell "Review transfer Payout actions for cmsd5ma9h0aj Resolve blockers before paid" [ref=f9e702]:
+                      - generic [ref=f9e703]:
+                        - link "Review transfer" [ref=f9e704] [cursor=pointer]:
+                          - /url: /payouts?range=all&editPayoutBatchId=cmsd5ma9h0ajqvyyg24o5duzx&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests
+                        - navigation "Payout actions for cmsd5ma9h0aj" [ref=f9e705]:
+                          - generic [ref=f9e706]:
+                            - link "Processing" [ref=f9e707] [cursor=pointer]:
+                              - /url: /payouts?range=all&withdrawalStatus=REVIEW_REQUIRED&confirm=processing&payoutBatchId=cmsd5ma9h0ajqvyyg24o5duzx#partner-wallet-withdrawal-requests
+                            - generic "Server preflight does not allow the paid action for this batch." [ref=f9e708]: Paid
+                        - generic [ref=f9e709]: Resolve blockers before paid
+                  - row [ref=f9e710]:
+                    - cell "cmsdccmox021 4d ago" [ref=f9e711]:
+                      - generic [ref=f9e712]: cmsdccmox021
+                      - generic [ref=f9e713]: 4d ago
+                    - cell "Smoke Partner +84998679273" [ref=f9e714]:
+                      - generic [ref=f9e715]: Smoke Partner
+                      - generic [ref=f9e716]: "+84998679273"
+                    - cell "Paid Settlement finished Settled Payment already landed. Keep this for reconciliation and support follow-up." [ref=f9e717]:
+                      - generic [ref=f9e718]: Paid
+                      - generic [ref=f9e719]: Settlement finished
+                      - generic [ref=f9e720]: Settled
+                      - generic [ref=f9e722]: Payment already landed. Keep this for reconciliation and support follow-up.
+                    - cell "525.000 VND 2 earning(s) Withholding 35.000 VND / 2 payout deduction record(s)" [ref=f9e723]:
+                      - strong [ref=f9e724]: 525.000 VND
+                      - generic [ref=f9e725]: 2 earning(s)
+                      - generic [ref=f9e726]: Withholding 35.000 VND / 2 payout deduction record(s)
+                    - cell "Blocking reasons for cmsdccmox021 Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e727]:
+                      - group "Blocking reasons for cmsdccmox021" [ref=f9e728]:
+                        - generic "Payout batch status PAID cannot advance to paid." [ref=f9e729]: Payout Status Not Payable
+                        - generic "The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e730]: Wallet Balance Insufficient
+                        - generic "This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e731]: Payout Paid Evidence Incomplete
+                      - generic [ref=f9e732]: Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence.
+                    - cell "SMOKE-1785768320457-UPDATED Updated by smoke test 3 Aug 2026, 21:45 4d ago" [ref=f9e733]:
+                      - generic [ref=f9e734]: SMOKE-1785768320457-UPDATED
+                      - generic [ref=f9e735]: Updated by smoke test
+                      - time [ref=f9e737]: 3 Aug 2026, 21:45
+                      - generic [ref=f9e738]: 4d ago
+                    - cell [ref=f9e739]:
+                      - generic [ref=f9e740]:
+                        - link "Review transfer" [ref=f9e741] [cursor=pointer]:
+                          - /url: /payouts?range=all&editPayoutBatchId=cmsdccmox021hvy8w6fr4bvgv&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests
+                        - navigation "Payout actions for cmsdccmox021" [ref=f9e742]:
+                          - generic "Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e744]: Reverse paid payout
+                  - row [ref=f9e745]:
+                    - cell "cmsdbjwxt01q 4d ago" [ref=f9e746]:
+                      - generic [ref=f9e747]: cmsdbjwxt01q
+                      - generic [ref=f9e748]: 4d ago
+                    - cell "Smoke Partner +84962460137" [ref=f9e749]:
+                      - generic [ref=f9e750]: Smoke Partner
+                      - generic [ref=f9e751]: "+84962460137"
+                    - cell "Paid Settlement finished Settled Payment already landed. Keep this for reconciliation and support follow-up." [ref=f9e752]:
+                      - generic [ref=f9e753]: Paid
+                      - generic [ref=f9e754]: Settlement finished
+                      - generic [ref=f9e755]: Settled
+                      - generic [ref=f9e757]: Payment already landed. Keep this for reconciliation and support follow-up.
+                    - cell "525.000 VND 2 earning(s) Withholding 35.000 VND / 2 payout deduction record(s)" [ref=f9e758]:
+                      - strong [ref=f9e759]: 525.000 VND
+                      - generic [ref=f9e760]: 2 earning(s)
+                      - generic [ref=f9e761]: Withholding 35.000 VND / 2 payout deduction record(s)
+                    - cell "Blocking reasons for cmsdbjwxt01q Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e762]:
+                      - group "Blocking reasons for cmsdbjwxt01q" [ref=f9e763]:
+                        - generic "Payout batch status PAID cannot advance to paid." [ref=f9e764]: Payout Status Not Payable
+                        - generic "The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e765]: Wallet Balance Insufficient
+                        - generic "This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e766]: Payout Paid Evidence Incomplete
+                      - generic [ref=f9e767]: Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence.
+                    - cell "SMOKE-1785766980715-UPDATED Updated by smoke test 3 Aug 2026, 21:23 4d ago" [ref=f9e768]:
+                      - generic [ref=f9e769]: SMOKE-1785766980715-UPDATED
+                      - generic [ref=f9e770]: Updated by smoke test
+                      - time [ref=f9e772]: 3 Aug 2026, 21:23
+                      - generic [ref=f9e773]: 4d ago
+                    - cell [ref=f9e774]:
+                      - generic [ref=f9e775]:
+                        - link "Review transfer" [ref=f9e776] [cursor=pointer]:
+                          - /url: /payouts?range=all&editPayoutBatchId=cmsdbjwxt01qzvytoqj1b2gyx&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests
+                        - navigation "Payout actions for cmsdbjwxt01q" [ref=f9e777]:
+                          - generic "Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e779]: Reverse paid payout
+                  - row [ref=f9e780]:
+                    - cell "cmsdagwey01s 4d ago" [ref=f9e781]:
+                      - generic [ref=f9e782]: cmsdagwey01s
+                      - generic [ref=f9e783]: 4d ago
+                    - cell "Smoke Partner +84939097221" [ref=f9e784]:
+                      - generic [ref=f9e785]: Smoke Partner
+                      - generic [ref=f9e786]: "+84939097221"
+                    - cell "Paid Settlement finished Settled Payment already landed. Keep this for reconciliation and support follow-up." [ref=f9e787]:
+                      - generic [ref=f9e788]: Paid
+                      - generic [ref=f9e789]: Settlement finished
+                      - generic [ref=f9e790]: Settled
+                      - generic [ref=f9e792]: Payment already landed. Keep this for reconciliation and support follow-up.
+                    - cell "525.000 VND 2 earning(s) Withholding 35.000 VND / 2 payout deduction record(s)" [ref=f9e793]:
+                      - strong [ref=f9e794]: 525.000 VND
+                      - generic [ref=f9e795]: 2 earning(s)
+                      - generic [ref=f9e796]: Withholding 35.000 VND / 2 payout deduction record(s)
+                    - cell "Blocking reasons for cmsdagwey01s Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e797]:
+                      - group "Blocking reasons for cmsdagwey01s" [ref=f9e798]:
+                        - generic "Payout batch status PAID cannot advance to paid." [ref=f9e799]: Payout Status Not Payable
+                        - generic "The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e800]: Wallet Balance Insufficient
+                        - generic "This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e801]: Payout Paid Evidence Incomplete
+                      - generic [ref=f9e802]: Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence.
+                    - cell "SMOKE-1785765160438-UPDATED Updated by smoke test 3 Aug 2026, 20:52 4d ago" [ref=f9e803]:
+                      - generic [ref=f9e804]: SMOKE-1785765160438-UPDATED
+                      - generic [ref=f9e805]: Updated by smoke test
+                      - time [ref=f9e807]: 3 Aug 2026, 20:52
+                      - generic [ref=f9e808]: 4d ago
+                    - cell [ref=f9e809]:
+                      - generic [ref=f9e810]:
+                        - link "Review transfer" [ref=f9e811] [cursor=pointer]:
+                          - /url: /payouts?range=all&editPayoutBatchId=cmsdagwey01slvy2szg49pk7d&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests
+                        - navigation "Payout actions for cmsdagwey01s" [ref=f9e812]:
+                          - generic "Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e814]: Reverse paid payout
+                  - row [ref=f9e815]:
+                    - cell "cmsd7cqrm02r 4d ago" [ref=f9e816]:
+                      - generic [ref=f9e817]: cmsd7cqrm02r
+                      - generic [ref=f9e818]: 4d ago
+                    - cell "Smoke Partner +84903837041" [ref=f9e819]:
+                      - generic [ref=f9e820]: Smoke Partner
+                      - generic [ref=f9e821]: "+84903837041"
+                    - cell "Paid Settlement finished Settled Payment already landed. Keep this for reconciliation and support follow-up." [ref=f9e822]:
+                      - generic [ref=f9e823]: Paid
+                      - generic [ref=f9e824]: Settlement finished
+                      - generic [ref=f9e825]: Settled
+                      - generic [ref=f9e827]: Payment already landed. Keep this for reconciliation and support follow-up.
+                    - cell "525.000 VND 2 earning(s) Withholding 35.000 VND / 2 payout deduction record(s)" [ref=f9e828]:
+                      - strong [ref=f9e829]: 525.000 VND
+                      - generic [ref=f9e830]: 2 earning(s)
+                      - generic [ref=f9e831]: Withholding 35.000 VND / 2 payout deduction record(s)
+                    - cell "Blocking reasons for cmsd7cqrm02r Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e832]:
+                      - group "Blocking reasons for cmsd7cqrm02r" [ref=f9e833]:
+                        - generic "Payout batch status PAID cannot advance to paid." [ref=f9e834]: Payout Status Not Payable
+                        - generic "The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e835]: Wallet Balance Insufficient
+                        - generic "This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e836]: Payout Paid Evidence Incomplete
+                      - generic [ref=f9e837]: Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence.
+                    - cell "SMOKE-1785759927661-UPDATED Updated by smoke test 3 Aug 2026, 19:25 4d ago" [ref=f9e838]:
+                      - generic [ref=f9e839]: SMOKE-1785759927661-UPDATED
+                      - generic [ref=f9e840]: Updated by smoke test
+                      - time [ref=f9e842]: 3 Aug 2026, 19:25
+                      - generic [ref=f9e843]: 4d ago
+                    - cell [ref=f9e844]:
+                      - generic [ref=f9e845]:
+                        - link "Review transfer" [ref=f9e846] [cursor=pointer]:
+                          - /url: /payouts?range=all&editPayoutBatchId=cmsd7cqrm02rvvy0opsb8txjp&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests
+                        - navigation "Payout actions for cmsd7cqrm02r" [ref=f9e847]:
+                          - generic "Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e849]: Reverse paid payout
+                  - row [ref=f9e850]:
+                    - cell "cmsd6ghcu02r 4d ago" [ref=f9e851]:
+                      - generic [ref=f9e852]: cmsd6ghcu02r
+                      - generic [ref=f9e853]: 4d ago
+                    - cell "Smoke Partner +84997928193" [ref=f9e854]:
+                      - generic [ref=f9e855]: Smoke Partner
+                      - generic [ref=f9e856]: "+84997928193"
+                    - cell "Paid Settlement finished Settled Payment already landed. Keep this for reconciliation and support follow-up." [ref=f9e857]:
+                      - generic [ref=f9e858]: Paid
+                      - generic [ref=f9e859]: Settlement finished
+                      - generic [ref=f9e860]: Settled
+                      - generic [ref=f9e862]: Payment already landed. Keep this for reconciliation and support follow-up.
+                    - cell "525.000 VND 2 earning(s) Withholding 35.000 VND / 2 payout deduction record(s)" [ref=f9e863]:
+                      - strong [ref=f9e864]: 525.000 VND
+                      - generic [ref=f9e865]: 2 earning(s)
+                      - generic [ref=f9e866]: Withholding 35.000 VND / 2 payout deduction record(s)
+                    - cell "Blocking reasons for cmsd6ghcu02r Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e867]:
+                      - group "Blocking reasons for cmsd6ghcu02r" [ref=f9e868]:
+                        - generic "Payout batch status PAID cannot advance to paid." [ref=f9e869]: Payout Status Not Payable
+                        - generic "The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e870]: Wallet Balance Insufficient
+                        - generic "This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e871]: Payout Paid Evidence Incomplete
+                      - generic [ref=f9e872]: Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence.
+                    - cell "SMOKE-1785758422475-UPDATED Updated by smoke test 3 Aug 2026, 19:00 4d ago" [ref=f9e873]:
+                      - generic [ref=f9e874]: SMOKE-1785758422475-UPDATED
+                      - generic [ref=f9e875]: Updated by smoke test
+                      - time [ref=f9e877]: 3 Aug 2026, 19:00
+                      - generic [ref=f9e878]: 4d ago
+                    - cell [ref=f9e879]:
+                      - generic [ref=f9e880]:
+                        - link "Review transfer" [ref=f9e881] [cursor=pointer]:
+                          - /url: /payouts?range=all&editPayoutBatchId=cmsd6ghcu02rpvyqkfjkhd1cf&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests
+                        - navigation "Payout actions for cmsd6ghcu02r" [ref=f9e882]:
+                          - generic "Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e884]: Reverse paid payout
+                  - row [ref=f9e885]:
+                    - cell "cmsd5oxi30dc 4d ago" [ref=f9e886]:
+                      - generic [ref=f9e887]: cmsd5oxi30dc
+                      - generic [ref=f9e888]: 4d ago
+                    - cell "Smoke Partner +84913408073" [ref=f9e889]:
+                      - generic [ref=f9e890]: Smoke Partner
+                      - generic [ref=f9e891]: "+84913408073"
+                    - cell "Paid Settlement finished Settled Payment already landed. Keep this for reconciliation and support follow-up." [ref=f9e892]:
+                      - generic [ref=f9e893]: Paid
+                      - generic [ref=f9e894]: Settlement finished
+                      - generic [ref=f9e895]: Settled
+                      - generic [ref=f9e897]: Payment already landed. Keep this for reconciliation and support follow-up.
+                    - cell "525.000 VND 2 earning(s) Withholding 35.000 VND / 2 payout deduction record(s)" [ref=f9e898]:
+                      - strong [ref=f9e899]: 525.000 VND
+                      - generic [ref=f9e900]: 2 earning(s)
+                      - generic [ref=f9e901]: Withholding 35.000 VND / 2 payout deduction record(s)
+                    - cell "Blocking reasons for cmsd5oxi30dc Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e902]:
+                      - group "Blocking reasons for cmsd5oxi30dc" [ref=f9e903]:
+                        - generic "Payout batch status PAID cannot advance to paid." [ref=f9e904]: Payout Status Not Payable
+                        - generic "The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e905]: Wallet Balance Insufficient
+                        - generic "This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e906]: Payout Paid Evidence Incomplete
+                      - generic [ref=f9e907]: Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence.
+                    - cell "SMOKE-1785757137028-UPDATED Updated by smoke test 3 Aug 2026, 18:38 4d ago" [ref=f9e908]:
+                      - generic [ref=f9e909]: SMOKE-1785757137028-UPDATED
+                      - generic [ref=f9e910]: Updated by smoke test
+                      - time [ref=f9e912]: 3 Aug 2026, 18:38
+                      - generic [ref=f9e913]: 4d ago
+                    - cell [ref=f9e914]:
+                      - generic [ref=f9e915]:
+                        - link "Review transfer" [ref=f9e916] [cursor=pointer]:
+                          - /url: /payouts?range=all&editPayoutBatchId=cmsd5oxi30dc2vyygvbqfmy5s&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests
+                        - navigation "Payout actions for cmsd5oxi30dc" [ref=f9e917]:
+                          - generic "Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e919]: Reverse paid payout
+                  - row [ref=f9e920]:
+                    - cell "cms51xomn02u 10d ago" [ref=f9e921]:
+                      - generic [ref=f9e922]: cms51xomn02u
+                      - generic [ref=f9e923]: 10d ago
+                    - cell "Smoke Partner +84973075025" [ref=f9e924]:
+                      - generic [ref=f9e925]: Smoke Partner
+                      - generic [ref=f9e926]: "+84973075025"
+                    - cell "Paid Settlement finished Settled Payment already landed. Keep this for reconciliation and support follow-up." [ref=f9e927]:
+                      - generic [ref=f9e928]: Paid
+                      - generic [ref=f9e929]: Settlement finished
+                      - generic [ref=f9e930]: Settled
+                      - generic [ref=f9e932]: Payment already landed. Keep this for reconciliation and support follow-up.
+                    - cell "525.000 VND 2 earning(s) Withholding 35.000 VND / 2 payout deduction record(s)" [ref=f9e933]:
+                      - strong [ref=f9e934]: 525.000 VND
+                      - generic [ref=f9e935]: 2 earning(s)
+                      - generic [ref=f9e936]: Withholding 35.000 VND / 2 payout deduction record(s)
+                    - cell "Blocking reasons for cms51xomn02u Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e937]:
+                      - group "Blocking reasons for cms51xomn02u" [ref=f9e938]:
+                        - generic "Payout batch status PAID cannot advance to paid." [ref=f9e939]: Payout Status Not Payable
+                        - generic "The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e940]: Wallet Balance Insufficient
+                        - generic "This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e941]: Payout Paid Evidence Incomplete
+                      - generic [ref=f9e942]: Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence.
+                    - cell "SMOKE-1785267097564-UPDATED Updated by smoke test 29 Jul 2026, 02:31 10d ago" [ref=f9e943]:
+                      - generic [ref=f9e944]: SMOKE-1785267097564-UPDATED
+                      - generic [ref=f9e945]: Updated by smoke test
+                      - time [ref=f9e947]: 29 Jul 2026, 02:31
+                      - generic [ref=f9e948]: 10d ago
+                    - cell [ref=f9e949]:
+                      - generic [ref=f9e950]:
+                        - link "Review transfer" [ref=f9e951] [cursor=pointer]:
+                          - /url: /payouts?range=all&editPayoutBatchId=cms51xomn02ujvy5w8d5el8ti&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests
+                        - navigation "Payout actions for cms51xomn02u" [ref=f9e952]:
+                          - generic "Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e954]: Reverse paid payout
+                  - row [ref=f9e955]:
+                    - cell "cms515zk902u 10d ago" [ref=f9e956]:
+                      - generic [ref=f9e957]: cms515zk902u
+                      - generic [ref=f9e958]: 10d ago
+                    - cell "Smoke Partner +84981478665" [ref=f9e959]:
+                      - generic [ref=f9e960]: Smoke Partner
+                      - generic [ref=f9e961]: "+84981478665"
+                    - cell "Paid Settlement finished Settled Payment already landed. Keep this for reconciliation and support follow-up." [ref=f9e962]:
+                      - generic [ref=f9e963]: Paid
+                      - generic [ref=f9e964]: Settlement finished
+                      - generic [ref=f9e965]: Settled
+                      - generic [ref=f9e967]: Payment already landed. Keep this for reconciliation and support follow-up.
+                    - cell "525.000 VND 2 earning(s) Withholding 35.000 VND / 2 payout deduction record(s)" [ref=f9e968]:
+                      - strong [ref=f9e969]: 525.000 VND
+                      - generic [ref=f9e970]: 2 earning(s)
+                      - generic [ref=f9e971]: Withholding 35.000 VND / 2 payout deduction record(s)
+                    - cell "Blocking reasons for cms515zk902u Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e972]:
+                      - group "Blocking reasons for cms515zk902u" [ref=f9e973]:
+                        - generic "Payout batch status PAID cannot advance to paid." [ref=f9e974]: Payout Status Not Payable
+                        - generic "The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e975]: Wallet Balance Insufficient
+                        - generic "This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e976]: Payout Paid Evidence Incomplete
+                      - generic [ref=f9e977]: Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence.
+                    - cell "SMOKE-1785265805362-UPDATED Updated by smoke test 29 Jul 2026, 02:10 10d ago" [ref=f9e978]:
+                      - generic [ref=f9e979]: SMOKE-1785265805362-UPDATED
+                      - generic [ref=f9e980]: Updated by smoke test
+                      - time [ref=f9e982]: 29 Jul 2026, 02:10
+                      - generic [ref=f9e983]: 10d ago
+                    - cell [ref=f9e984]:
+                      - generic [ref=f9e985]:
+                        - link "Review transfer" [ref=f9e986] [cursor=pointer]:
+                          - /url: /payouts?range=all&editPayoutBatchId=cms515zk902uhvyu8lhue661w&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests
+                        - navigation "Payout actions for cms515zk902u" [ref=f9e987]:
+                          - generic "Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e989]: Reverse paid payout
+                  - row [ref=f9e990]:
+                    - cell "cms50gn6602u 10d ago" [ref=f9e991]:
+                      - generic [ref=f9e992]: cms50gn6602u
+                      - generic [ref=f9e993]: 10d ago
+                    - cell "Smoke Partner +84999191061" [ref=f9e994]:
+                      - generic [ref=f9e995]: Smoke Partner
+                      - generic [ref=f9e996]: "+84999191061"
+                    - cell "Paid Settlement finished Settled Payment already landed. Keep this for reconciliation and support follow-up." [ref=f9e997]:
+                      - generic [ref=f9e998]: Paid
+                      - generic [ref=f9e999]: Settlement finished
+                      - generic [ref=f9e1000]: Settled
+                      - generic [ref=f9e1002]: Payment already landed. Keep this for reconciliation and support follow-up.
+                    - cell "525.000 VND 2 earning(s) Withholding 35.000 VND / 2 payout deduction record(s)" [ref=f9e1003]:
+                      - strong [ref=f9e1004]: 525.000 VND
+                      - generic [ref=f9e1005]: 2 earning(s)
+                      - generic [ref=f9e1006]: Withholding 35.000 VND / 2 payout deduction record(s)
+                    - cell "Blocking reasons for cms50gn6602u Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e1007]:
+                      - group "Blocking reasons for cms50gn6602u" [ref=f9e1008]:
+                        - generic "Payout batch status PAID cannot advance to paid." [ref=f9e1009]: Payout Status Not Payable
+                        - generic "The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e1010]: Wallet Balance Insufficient
+                        - generic "This historical paid payout is missing complete wallet-ledger or GL evidence." [ref=f9e1011]: Payout Paid Evidence Incomplete
+                      - generic [ref=f9e1012]: Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch. This historical paid payout is missing complete wallet-ledger or GL evidence.
+                    - cell "SMOKE-1785264622904-UPDATED Updated by smoke test 29 Jul 2026, 01:50 10d ago" [ref=f9e1013]:
+                      - generic [ref=f9e1014]: SMOKE-1785264622904-UPDATED
+                      - generic [ref=f9e1015]: Updated by smoke test
+                      - time [ref=f9e1017]: 29 Jul 2026, 01:50
+                      - generic [ref=f9e1018]: 10d ago
+                    - cell [ref=f9e1019]:
+                      - generic [ref=f9e1020]:
+                        - link "Review transfer" [ref=f9e1021] [cursor=pointer]:
+                          - /url: /payouts?range=all&editPayoutBatchId=cms50gn6602uhvyswioujxpda&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests
+                        - navigation "Payout actions for cms50gn6602u" [ref=f9e1022]:
+                          - generic "Payout batch status PAID cannot advance to paid. The Partner wallet ledger balance cannot cover this payout batch." [ref=f9e1024]: Reverse paid payout
+            - generic [ref=f9e1025]:
+              - generic [ref=f9e1026]: Showing 1 to 10 of 159 entries
+              - navigation "Payout batch pages" [ref=f9e1027]:
+                - generic "First page"
+                - generic "Previous page"
+                - link "Page 1" [ref=f9e1028] [cursor=pointer]:
+                  - /url: /payouts?range=all&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests
+                  - text: "1"
+                - link "Page 2" [ref=f9e1029] [cursor=pointer]:
+                  - /url: /payouts?range=all&withdrawalStatus=REVIEW_REQUIRED&page=2#partner-wallet-withdrawal-requests
+                  - text: "2"
+                - link "Page 3" [ref=f9e1030] [cursor=pointer]:
+                  - /url: /payouts?range=all&withdrawalStatus=REVIEW_REQUIRED&page=3#partner-wallet-withdrawal-requests
+                  - text: "3"
+                - link "Page 4" [ref=f9e1031] [cursor=pointer]:
+                  - /url: /payouts?range=all&withdrawalStatus=REVIEW_REQUIRED&page=4#partner-wallet-withdrawal-requests
+                  - text: "4"
+                - link "Page 5" [ref=f9e1032] [cursor=pointer]:
+                  - /url: /payouts?range=all&withdrawalStatus=REVIEW_REQUIRED&page=5#partner-wallet-withdrawal-requests
+                  - text: "5"
+                - link "Next page" [ref=f9e1033] [cursor=pointer]:
+                  - /url: /payouts?range=all&withdrawalStatus=REVIEW_REQUIRED&page=2#partner-wallet-withdrawal-requests
+                - link "Last page" [ref=f9e1036] [cursor=pointer]:
+                  - /url: /payouts?range=all&withdrawalStatus=REVIEW_REQUIRED&page=16#partner-wallet-withdrawal-requests
+  - button "Open Next.js Dev Tools" [ref=f9e1045] [cursor=pointer]

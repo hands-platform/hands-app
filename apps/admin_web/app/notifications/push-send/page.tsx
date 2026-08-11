@@ -1,9 +1,11 @@
 import type {
+  AdminCustomerDirectoryRow,
+  AdminProvider,
   AdminPushCampaign,
   AdminPushCampaignPreview,
   AdminPushCampaignSummary,
 } from '../../../lib/admin-api';
-import { adminGet, adminPost } from '../../../lib/admin-api';
+import { adminGet, adminGetResult, adminPost } from '../../../lib/admin-api';
 import {
   AdminDataTable,
   AdminTablePaginationFooter,
@@ -24,7 +26,7 @@ import {
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
-import { AdminCard, AdminNoticeCard, AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminErrorState, AdminNoticeCard, AdminSection } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import { shortId } from '../../../lib/admin-format';
@@ -34,6 +36,8 @@ import {
   buildPushCampaignListHref,
   buildPushCampaignPageHref,
   buildPushCampaignSummaryApiHref,
+  buildPushRecipientSearchApiHref,
+  buildPushRecipientSelectionHref,
   normalizePushCampaignPage,
   normalizePushCampaignDateRange,
   pushCampaignDateRangeLabel,
@@ -91,6 +95,14 @@ const LOCALE_OPTIONS = [
 
 const CAMPAIGN_HEADERS = ['Sent', 'Target / Filter', 'App page', 'Title', 'Recipients', 'Status'];
 
+type PushRecipientCandidate = {
+  readonly accountStatus: string;
+  readonly displayName: string;
+  readonly maskedPhone: string;
+  readonly role: 'CUSTOMER' | 'PROVIDER';
+  readonly userId: string;
+};
+
 export default async function PushSendPage({ searchParams }: { searchParams?: PushSendPageSearchParams }) {
   const params = (await searchParams) ?? {};
   const targetRole = normalizeTargetRole(readSearchParam(params.targetRole));
@@ -103,7 +115,8 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
     destinationOptions,
     destinationOptions[0].value,
   );
-  const targetUserId = readSearchParam(params.targetUserId);
+  const requestedTargetUserId = readSearchParam(params.targetUserId);
+  const recipientSearch = readSearchParam(params.recipientSearch).trim();
   const locale = targetRole === 'PROVIDER' ? 'vi' : readSearchParam(params.locale);
   const title = readSearchParam(params.title);
   const body = readSearchParam(params.body);
@@ -111,6 +124,48 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
   const campaignPage = normalizePushCampaignPage(readSearchParam(params.campaignPage));
   const campaignRangeLabel = pushCampaignDateRangeLabel(campaignRange);
   const canPreview = shouldRequestPushCampaignPreview(params);
+  const recipientSearchRequested = recipientSearch.length >= 2;
+  let recipientSearchOk = true;
+  let recipientCandidates: PushRecipientCandidate[] = [];
+  if (recipientSearchRequested) {
+    if (targetRole === 'PROVIDER') {
+      const result = await adminGetResult<AdminProvider[]>(
+        buildPushRecipientSearchApiHref(targetRole, recipientSearch),
+        [],
+      );
+      recipientSearchOk = result.ok;
+      recipientCandidates = result.data.flatMap((partner) => {
+        const userId = partner.user?.id ?? partner.userId;
+        if (!userId) return [];
+        return [{
+          accountStatus: formatAccountStatus(partner.status),
+          displayName: partner.displayName || partner.user?.fullName || `Partner ${shortId(partner.id)}`,
+          maskedPhone: maskRecipientPhone(partner.user?.phone),
+          role: 'PROVIDER' as const,
+          userId,
+        }];
+      });
+    } else {
+      const result = await adminGetResult<AdminCustomerDirectoryRow[]>(
+        buildPushRecipientSearchApiHref(targetRole, recipientSearch),
+        [],
+      );
+      recipientSearchOk = result.ok;
+      recipientCandidates = result.data.flatMap((customer) => {
+        const userId = customer.user?.id;
+        if (!userId) return [];
+        return [{
+          accountStatus: 'Customer account',
+          displayName: customer.user?.fullName || maskRecipientPhone(customer.user?.phone) || `Customer ${shortId(customer.id)}`,
+          maskedPhone: maskRecipientPhone(customer.user?.phone),
+          role: 'CUSTOMER' as const,
+          userId,
+        }];
+      });
+    }
+  }
+  const selectedRecipient = recipientCandidates.find((candidate) => candidate.userId === requestedTargetUserId) ?? null;
+  const targetUserId = selectedRecipient?.userId ?? '';
   const [campaigns, campaignSummary, preview] = await Promise.all([
     adminGet<AdminPushCampaign[]>(buildPushCampaignApiHref(params), []),
     adminGet<AdminPushCampaignSummary | null>(buildPushCampaignSummaryApiHref(params), null),
@@ -147,14 +202,8 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
 
   return (
     <AdminPageTemplate
-      actions={
-        <>
-          <AdminFormControlLink href="/notifications">Delivery board</AdminFormControlLink>
-          <AdminFormControlLink href="/notifications/templates">Templates</AdminFormControlLink>
-        </>
-      }
       contentClassName="stack notification-push-send-page"
-      description="Manual push workspace with recipient preview before creating persistent in-app notifications and FCM deliveries."
+      description="Manual notification delivery with account selection and a required recipient preview before sending."
       metrics={[
         {
           helper: 'Manual push campaigns in this period.',
@@ -203,18 +252,111 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
       ) : null}
 
       <AdminSection
-        description="Preview recipients first, then send. Direct user sends require an exact user id."
+        description="Find an account by name or phone when targeting one person. The internal account id remains hidden."
         statusLabel={preview ? `${preview.willSendCount} ready` : 'Preview required'}
         statusTone={preview ? (preview.willSendCount ? 'success' : 'warning') : 'info'}
         title="Create push campaign"
       >
+        <div className="notification-push-recipient-selector">
+          <AdminFormGrid className="notification-push-recipient-search" method="get">
+            <input name="targetSegment" type="hidden" value={targetSegment} />
+            <input name="appDestination" type="hidden" value={appDestination} />
+            <input name="locale" type="hidden" value={locale} />
+            <input name="title" type="hidden" value={title} />
+            <input name="body" type="hidden" value={body} />
+            <input name="campaignRange" type="hidden" value={campaignRange} />
+            <AdminFormSelect
+              defaultValue={targetRole}
+              label="Account role"
+              labelVisibility="visible"
+              name="targetRole"
+              options={TARGET_ROLE_OPTIONS}
+            />
+            <AdminFormInput
+              defaultValue={recipientSearch}
+              label="Find account by name or phone"
+              labelVisibility="visible"
+              minLength={2}
+              name="recipientSearch"
+              placeholder="Name or phone number"
+              type="search"
+            />
+            <AdminFormControlButton>Search accounts</AdminFormControlButton>
+          </AdminFormGrid>
+
+          {!recipientSearchRequested ? (
+            <p className="notification-push-recipient-state" role="status">
+              Enter at least 2 characters to search. Leave the account unselected to use the audience filter.
+            </p>
+          ) : !recipientSearchOk ? (
+            <AdminErrorState
+              action={
+                <AdminFormControlLink
+                  href={buildPushRecipientSelectionHref(params, { recipientSearch, targetRole })}
+                >
+                  Retry account search
+                </AdminFormControlLink>
+              }
+              message="Customer or Partner accounts could not be searched. No account was selected."
+              title="Account search unavailable"
+            />
+          ) : recipientCandidates.length === 0 ? (
+            <p className="notification-push-recipient-state" role="status">
+              No {targetRole === 'PROVIDER' ? 'Partner' : 'customer'} accounts match “{recipientSearch}”.
+            </p>
+          ) : (
+            <div aria-label="Account search results" className="notification-push-recipient-results" role="list">
+              {recipientCandidates.map((candidate) => (
+                <div className="notification-push-recipient-result" key={candidate.userId} role="listitem">
+                  <div>
+                    <strong>{candidate.displayName}</strong>
+                    <span>{candidate.maskedPhone || 'Phone unavailable'}</span>
+                    <small>{candidate.accountStatus}</small>
+                  </div>
+                  <AdminFormControlLink
+                    aria-current={candidate.userId === targetUserId ? 'true' : undefined}
+                    href={buildPushRecipientSelectionHref(params, {
+                      recipientSearch,
+                      targetRole,
+                      targetUserId: candidate.userId,
+                    })}
+                  >
+                    {candidate.userId === targetUserId ? 'Selected' : 'Select account'}
+                  </AdminFormControlLink>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {selectedRecipient ? (
+            <div className="notification-push-selected-recipient" role="status">
+              <div>
+                <span>Selected account</span>
+                <strong>{selectedRecipient.displayName}</strong>
+                <small>{selectedRecipient.maskedPhone || 'Phone unavailable'} · {selectedRecipient.accountStatus}</small>
+              </div>
+              <AdminFormControlLink
+                href={buildPushRecipientSelectionHref(params, {
+                  recipientSearch: '',
+                  targetRole,
+                  targetUserId: null,
+                })}
+              >
+                Clear account
+              </AdminFormControlLink>
+            </div>
+          ) : null}
+        </div>
+
         <AdminFormGrid className="notification-push-preview-form" method="get">
           <input name="preview" type="hidden" value="1" />
-          <AdminFormSelect
-            defaultValue={targetRole}
+          <input name="targetRole" type="hidden" value={targetRole} />
+          <input name="recipientSearch" type="hidden" value={recipientSearch} />
+          <input name="targetUserId" type="hidden" value={targetUserId} />
+          <AdminFormStaticValue
             label="Target role"
-            name="targetRole"
-            options={TARGET_ROLE_OPTIONS}
+            labelVisibility="visible"
+            value={targetRole === 'PROVIDER' ? 'Partners' : 'Customers'}
           />
           <AdminFormSelect
             defaultValue={targetSegment}
@@ -239,11 +381,10 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
           ) : (
             <AdminFormSelect defaultValue={locale} label="Language" name="locale" options={LOCALE_OPTIONS} />
           )}
-          <AdminFormInput
-            defaultValue={targetUserId}
-            label="Specific user id"
-            name="targetUserId"
-            placeholder="Optional user id"
+          <AdminFormStaticValue
+            label="Specific account"
+            labelVisibility="visible"
+            value={selectedRecipient?.displayName ?? 'All accounts matching the audience filter'}
           />
           <AdminFormInput
             defaultValue={title}
@@ -272,7 +413,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
             locale,
             targetRole,
             targetSegment,
-            targetUserId,
+            targetAccountLabel: selectedRecipient?.displayName,
           })}
           tone="info"
         />
@@ -281,12 +422,24 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
           <AdminCard className="notification-push-preview-card">
             <div className="notification-push-preview-summary">
               <div>
+                <span className="muted">Target role</span>
+                <strong>{targetRole === 'PROVIDER' ? 'Partners' : 'Customers'}</strong>
+              </div>
+              <div>
                 <span className="muted">Audience filter</span>
                 <strong>{pushSegmentLabel(preview.targetSegment ?? targetSegment, targetRole)}</strong>
               </div>
               <div>
+                <span className="muted">Specific account</span>
+                <strong>{selectedRecipient?.displayName ?? 'Audience filter'}</strong>
+              </div>
+              <div>
                 <span className="muted">Opens page</span>
                 <strong>{pushDestinationLabel(preview.appDestination ?? appDestination, targetRole)}</strong>
+              </div>
+              <div>
+                <span className="muted">Language</span>
+                <strong>{pushLocaleLabel(locale, targetRole)}</strong>
               </div>
               <div>
                 <span className="muted">Recipient count</span>
@@ -295,6 +448,10 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
               <div>
                 <span className="muted">Will send</span>
                 <strong>{preview.willSendCount}</strong>
+              </div>
+              <div>
+                <span className="muted">Excluded by send limit</span>
+                <strong>{Math.max(0, preview.recipientCount - preview.willSendCount)}</strong>
               </div>
               <div>
                 <span className="muted">Limit</span>
@@ -313,7 +470,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
                   <strong>
                     {recipient.fullName || recipient.providerProfile?.displayName || recipient.phone}
                   </strong>
-                  <span className="muted">{recipient.phone}</span>
+                  <span className="muted">{maskRecipientPhone(recipient.phone)}</span>
                   {recipient.pushDevices?.[0]?.platform ? (
                     <span className="muted">{recipient.pushDevices[0].platform}</span>
                   ) : (
@@ -444,16 +601,16 @@ function pushSendActiveFilterLabels({
   appDestination,
   campaignRangeLabel,
   locale,
+  targetAccountLabel,
   targetRole,
   targetSegment,
-  targetUserId,
 }: {
   readonly appDestination: string;
   readonly campaignRangeLabel: string;
   readonly locale: string;
+  readonly targetAccountLabel?: string;
   readonly targetRole: string;
   readonly targetSegment: string;
-  readonly targetUserId: string;
 }) {
   const labels = [
     `Target: ${targetRole === 'PROVIDER' ? 'Partners' : 'Customers'}`,
@@ -463,11 +620,27 @@ function pushSendActiveFilterLabels({
     `Campaign rows: ${campaignRangeLabel}`,
   ];
 
-  if (targetUserId) {
-    labels.push(`Specific user: ${targetUserId}`);
+  if (targetAccountLabel) {
+    labels.push(`Specific account: ${targetAccountLabel}`);
   }
 
   return labels;
+}
+
+function maskRecipientPhone(value?: string | null) {
+  if (!value) return '';
+  const compact = value.replace(/\s+/g, '');
+  if (compact.length <= 6) return `${compact.slice(0, 2)}**${compact.slice(-2)}`;
+  return `${compact.slice(0, 3)}${'*'.repeat(Math.min(6, compact.length - 6))}${compact.slice(-3)}`;
+}
+
+function formatAccountStatus(value: string) {
+  return value
+    .toLowerCase()
+    .split('_')
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(' ');
 }
 
 function normalizeTargetRole(value: string) {

@@ -1,7 +1,7 @@
--- HANDS Supabase Storage buckets and RLS draft.
+-- HANDS Supabase Storage buckets and read policies.
 -- Run after `hands-core-schema.sql`.
--- The NestJS API can use Supabase Storage through the S3-compatible endpoint,
--- while these policies prepare direct client access for a later migration phase.
+-- Writes stay server-mediated through the NestJS presigned upload flow so purpose,
+-- ownership, file limits, and content signatures are validated in one place.
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values
@@ -31,32 +31,8 @@ create policy "public media read"
   using (bucket_id = 'hands-public');
 
 drop policy if exists "owner public media insert" on storage.objects;
-create policy "owner public media insert"
-  on storage.objects for insert
-  with check (
-    bucket_id = 'hands-public'
-    and owner = auth.uid()
-  );
-
 drop policy if exists "owner public media update" on storage.objects;
-create policy "owner public media update"
-  on storage.objects for update
-  using (
-    bucket_id = 'hands-public'
-    and (owner = auth.uid() or public.is_admin())
-  )
-  with check (
-    bucket_id = 'hands-public'
-    and (owner = auth.uid() or public.is_admin())
-  );
-
 drop policy if exists "owner public media delete" on storage.objects;
-create policy "owner public media delete"
-  on storage.objects for delete
-  using (
-    bucket_id = 'hands-public'
-    and (owner = auth.uid() or public.is_admin())
-  );
 
 drop policy if exists "private media owner read" on storage.objects;
 create policy "private media owner read"
@@ -67,29 +43,5 @@ create policy "private media owner read"
   );
 
 drop policy if exists "private media owner insert" on storage.objects;
-create policy "private media owner insert"
-  on storage.objects for insert
-  with check (
-    bucket_id = 'hands-private'
-    and owner = auth.uid()
-  );
-
 drop policy if exists "private media owner update" on storage.objects;
-create policy "private media owner update"
-  on storage.objects for update
-  using (
-    bucket_id = 'hands-private'
-    and (owner = auth.uid() or public.is_admin())
-  )
-  with check (
-    bucket_id = 'hands-private'
-    and (owner = auth.uid() or public.is_admin())
-  );
-
 drop policy if exists "private media owner delete" on storage.objects;
-create policy "private media owner delete"
-  on storage.objects for delete
-  using (
-    bucket_id = 'hands-private'
-    and (owner = auth.uid() or public.is_admin())
-  );

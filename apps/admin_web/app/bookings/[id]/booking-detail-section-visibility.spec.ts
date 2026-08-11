@@ -41,9 +41,26 @@ describe('bookingDetailSectionVisibility', () => {
     ).toEqual({
       showCloseoutReadiness: false,
       showDispatchDisclosure: true,
-      showEvidenceDisclosure: true,
+      showEvidenceDisclosure: false,
       showHistoryDisclosure: true,
       showSettlementDisclosure: false,
+    });
+  });
+
+  it('does not show terminal closeout panels while a booking is still live', () => {
+    expect(
+      bookingDetailSectionVisibility(
+        input({
+          hasCloseoutExceptions: true,
+          hasFinanceFlags: true,
+          hasMatchedAt: true,
+          hasSelectedPartner: true,
+          status: 'IN_SERVICE',
+        }),
+      ),
+    ).toMatchObject({
+      showCloseoutReadiness: false,
+      showDispatchDisclosure: true,
     });
   });
 

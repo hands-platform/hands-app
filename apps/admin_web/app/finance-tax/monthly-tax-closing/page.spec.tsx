@@ -83,13 +83,17 @@ describe('MonthlyTaxClosingPage', () => {
     expect(markup).toContain('Active monthly closing filters');
     expect(markup).toContain('Period: 2026-06');
     expect(markup).toContain('Rows: 25');
-    expect(markup).toContain('Status: DRAFT');
+    expect(markup).toContain('Status: NOT STARTED');
     expect(markup).toContain('Closeout command board');
-    expect(markup).toContain('Formula delta');
-    expect(markup).toContain('Closeout status');
-    expect(markup).toContain('Monthly closing action');
-    expect(markup).toContain('Closeout risk queue');
+    expect(markup).toContain('Next closeout step');
+    expect(markup).toContain('Close blockers');
+    expect(markup).toContain('Needs review');
+    expect(markup).toContain('Tax payable');
     expect(markup).toContain('Monthly reconciliation');
+    expect(markup).toContain(
+      'Customer payment + company-funded coupon expense - Partner payout - Partner withholding = platform fee gross. Payment processing fees are excluded.',
+    );
+    expect(markup).toContain('Closing history');
     expect(markup.match(/card admin-filter-panel admin-mb-16/g)?.length).toBe(1);
     expect(markup.match(/card admin-section admin-mb-16/g)?.length).toBeGreaterThanOrEqual(3);
     expect(markup).toContain('vuexy-booking-table-card');
@@ -97,7 +101,7 @@ describe('MonthlyTaxClosingPage', () => {
     expect(markup).toContain('admin-form-select admin-form-control-labeled');
     expect(markup).toContain('admin-form-label');
     expect(markup).toContain('admin-form-control-button');
-    expect(markup).toContain('Review Reviewed');
+    expect(markup).toContain('Review totals');
     expect(markup).toContain('confirm=status&amp;targetStatus=REVIEWED');
     expect(markup).not.toContain('name="confirmationStatus"');
     expect(markup).not.toContain('card admin-card-scroll');
@@ -115,8 +119,8 @@ describe('MonthlyTaxClosingPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('DRAFT → REVIEWED');
-    expect(markup).toContain('Snapshot 0 settlement record(s)');
+    expect(markup).toContain('NOT STARTED → REVIEWED');
+    expect(markup).toContain('Snapshot 0 posted settlement record(s), 0 reversal entry or entries');
     expect(markup).toContain('type="hidden" name="confirmationPeriod" value="2026-06"');
     expect(markup).toContain('type="hidden" name="confirmationStatus" value="REVIEWED"');
     expect(markup).toContain('Confirm Reviewed');
@@ -125,13 +129,38 @@ describe('MonthlyTaxClosingPage', () => {
     expect(markup).not.toContain('Approving admin ID');
   });
 
+  it('does not present an unstored active period as a stored draft', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
+        return {
+          ...emptyMonthlyTaxClosingSummary('2026-06'),
+          hasActivity: true,
+          periodState: 'NOT_STARTED',
+        };
+      }
+      return fallback;
+    });
+
+    const page = await MonthlyTaxClosingPage({
+      searchParams: Promise.resolve({ period: '2026-06' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Current NOT STARTED');
+    expect(markup).toContain('Period activity exists, but no monthly closing record has been started.');
+    expect(markup).not.toContain('Current DRAFT');
+  });
+
   it('shows required remittance evidence fields only for the paid transition', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
         return {
           ...emptyMonthlyTaxClosingSummary('2026-06'),
           companyOutputVatTotal: 10000,
+          hasActivity: true,
+          id: 'closing-2026-06',
           partnerWithholdingTotal: 80000,
+          periodState: 'DECLARED',
           status: 'DECLARED',
         };
       }
@@ -182,6 +211,9 @@ describe('MonthlyTaxClosingPage', () => {
       if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
         return {
           ...emptyMonthlyTaxClosingSummary('2026-06'),
+          hasActivity: true,
+          id: 'closing-2026-06',
+          periodState: 'DECLARED',
           status: 'DECLARED',
         };
       }
@@ -213,22 +245,76 @@ describe('MonthlyTaxClosingPage', () => {
     expect(markup).toContain('class="admin-form-control-button button button-primary" disabled="" type="submit"');
   });
 
-  it('keeps the top monthly closing KPI wall focused on four Vuexy cards', async () => {
+  it('uses one four-card command board without a duplicate page metric wall', async () => {
     const page = await MonthlyTaxClosingPage({
       searchParams: Promise.resolve({ period: '2026-06', take: '25' }),
     });
     const markup = renderToStaticMarkup(page);
-    const metricGridStart = markup.indexOf('admin-metric-grid');
-    const commandBoardStart = markup.indexOf('Closeout command board');
-    const metricGridMarkup = markup.slice(metricGridStart, commandBoardStart);
+    expect(markup).not.toContain('admin-metric-grid');
+    expect(markup.match(/finance-list-command-card/g)?.length).toBe(4);
+    expect(markup).toContain('Next closeout step');
+    expect(markup).toContain('Close blockers');
+    expect(markup).toContain('Review flags');
+    expect(markup).toContain('Tax payable');
+  });
 
-    expect(metricGridMarkup.match(/class="metric-card"/g)?.length).toBe(4);
-    expect(metricGridMarkup).toContain('Period status');
-    expect(metricGridMarkup).toContain('Settlements');
-    expect(metricGridMarkup).toContain('Company output VAT');
-    expect(metricGridMarkup).toContain('Partner withholding');
-    expect(metricGridMarkup).not.toContain('Coupon expense');
-    expect(metricGridMarkup).not.toContain('Net revenue delta');
+  it('loads all-period closing history with server pagination and surfaces journal blockers', async () => {
+    const requests: string[] = [];
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      requests.push(href);
+      if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
+        return {
+          ...emptyMonthlyTaxClosingSummary('2026-06'),
+          hasActivity: true,
+          id: 'closing-2026-06',
+          journalReconciliationIssueCount: 1,
+          monthlyClosingHistoryCount: 26,
+          periodState: 'REVIEWED',
+          status: 'REVIEWED',
+        };
+      }
+      if (href === '/admin/monthly-tax-closings?take=25&skip=25') {
+        return [
+          {
+            cashDebtTotal: 0,
+            closedAt: '2026-05-10T02:00:00.000Z',
+            companyOutputVatTotal: 10000,
+            createdAt: '2026-05-01T02:00:00.000Z',
+            currency: 'VND',
+            declaredAt: '2026-05-05T02:00:00.000Z',
+            id: 'closing-2026-04',
+            nonCashPartnerPayoutTotal: 390000,
+            notes: 'April close retained',
+            paidAt: '2026-05-08T02:00:00.000Z',
+            partnerPitWithheldTotal: 30000,
+            partnerVatWithheldTotal: 50000,
+            partnerWithholdingTotal: 80000,
+            paymentProcessingFeeTotal: 12000,
+            period: '2026-04',
+            platformFeeGrossTotal: 100000,
+            platformFeeNetRevenueTotal: 90000,
+            settlementCount: 4,
+            status: 'CLOSED',
+            updatedAt: '2026-05-10T02:00:00.000Z',
+          },
+        ];
+      }
+      return fallback;
+    });
+
+    const page = await MonthlyTaxClosingPage({
+      searchParams: Promise.resolve({ page: '2', period: '2026-06', take: '25' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(requests).toContain('/admin/monthly-tax-closings/summary?period=2026-06');
+    expect(requests).toContain('/admin/monthly-tax-closings?take=25&skip=25');
+    expect(markup).toContain('Journal reconciliation');
+    expect(markup).toContain('/finance-tax/general-ledger?q=2026-06&amp;range=all&amp;review=unbalanced');
+    expect(markup).toContain('button-primary" disabled=""');
+    expect(markup).toContain('Closing history');
+    expect(markup).toContain('Showing 26 to 26 of 26 entries');
+    expect(markup).toContain('/finance-tax/monthly-tax-closing?period=2026-04&amp;take=25');
   });
 
   it('disables closeout advancement while formula or payment fee evidence gates remain open', async () => {
@@ -236,6 +322,9 @@ describe('MonthlyTaxClosingPage', () => {
       if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
         return {
           ...emptyMonthlyTaxClosingSummary('2026-06'),
+          hasActivity: true,
+          id: 'closing-2026-06',
+          periodState: 'REVIEWED',
           status: 'REVIEWED',
           paymentFeeReviewFlagCount: 2,
         };
@@ -248,10 +337,14 @@ describe('MonthlyTaxClosingPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Resolve 2 payment fee evidence row(s) before declaration.');
+    expect(markup).toContain(
+      '2 settlement(s) still need resolved payment fee policy evidence.',
+    );
     expect(markup).toContain('button-primary" disabled=""');
     expect(markup).toContain('Payment fee evidence');
-    expect(markup).toContain('/finance-tax/payment-fees?period=2026-06');
+    expect(markup).toContain(
+      '/finance-tax/booking-settlement-audit?range=all&amp;review=payment-fee-evidence&amp;period=2026-06',
+    );
   });
 
   it('blocks declaration and links the Partner deposit reconciliation queue when bank evidence is open', async () => {
@@ -259,9 +352,12 @@ describe('MonthlyTaxClosingPage', () => {
       if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
         return {
           ...emptyMonthlyTaxClosingSummary('2026-06'),
+          hasActivity: true,
+          id: 'closing-2026-06',
           status: 'REVIEWED',
           partnerDepositReconciliationOpenAmount: 250000,
           partnerDepositReconciliationOpenCount: 2,
+          periodState: 'REVIEWED',
         };
       }
       return fallback;
@@ -272,13 +368,96 @@ describe('MonthlyTaxClosingPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Reconcile 2 executed Partner bank deposit(s) before declaration.');
+    expect(markup).toContain(
+      '2 executed Partner bank deposit(s) still need complete bank reconciliation.',
+    );
     expect(markup).toContain('button-primary" disabled=""');
     expect(markup).toContain('Partner deposit reconciliation');
     expect(markup).toContain(
       '/finance-tax/partner-bank-deposits?period=2026-06&amp;review=needs-reconciliation',
     );
     expect(markup).toContain('250.000 VND');
+  });
+
+  it('separates payout bank outflow and returned payout inflow blockers before declaration', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
+        return {
+          ...emptyMonthlyTaxClosingSummary('2026-06'),
+          hasActivity: true,
+          id: 'closing-2026-06',
+          status: 'REVIEWED',
+          payoutBankOutflowReconciliationOpenAmount: 430_000,
+          payoutBankOutflowReconciliationOpenCount: 1,
+          payoutReturnInflowReconciliationOpenAmount: 215_000,
+          payoutReturnInflowReconciliationOpenCount: 2,
+          periodState: 'REVIEWED',
+        };
+      }
+      return fallback;
+    });
+
+    const page = await MonthlyTaxClosingPage({
+      searchParams: Promise.resolve({ period: '2026-06', take: '25' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain(
+      '1 paid Partner payout batch(es) still need complete bank outflow reconciliation.',
+    );
+    expect(markup).toContain(
+      '2 Partner payout return(s) still need complete bank inflow reconciliation.',
+    );
+    expect(markup).toContain('Payout bank outflow reconciliation');
+    expect(markup).toContain('Payout return inflow reconciliation');
+    expect(markup).toContain('430.000 VND');
+    expect(markup).toContain('215.000 VND');
+    expect(markup).toContain('button-primary" disabled=""');
+  });
+
+  it('shows server preflight remittance blockers before the operator attempts final close', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
+        return {
+          ...emptyMonthlyTaxClosingSummary('2026-06'),
+          hasActivity: true,
+          id: 'closing-2026-06',
+          partnerWithholdingTotal: 84_000,
+          periodState: 'PAID',
+          preflight: {
+            blockers: [
+              {
+                code: 'REMITTANCE_EVIDENCE',
+                message: 'Retained remittance approval and payment evidence are incomplete.',
+              },
+              {
+                code: 'REMITTANCE_JOURNAL',
+                message: 'A posted Partner withholding remittance journal is required.',
+              },
+            ],
+            nextStatus: 'CLOSED',
+            ready: false,
+          },
+          status: 'PAID',
+        } as never;
+      }
+      return fallback;
+    });
+
+    const page = await MonthlyTaxClosingPage({
+      searchParams: Promise.resolve({ period: '2026-06', take: '25' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Retained remittance approval and payment evidence are incomplete.');
+    expect(markup).toContain('A posted Partner withholding remittance journal is required.');
+    expect(markup).toContain('Remittance evidence');
+    expect(markup).toContain('Withholding remittance journal');
+    expect(markup).toContain(
+      '/finance-tax/general-ledger?q=withholding-remittance%3A2026-06&amp;range=all',
+    );
+    expect(markup).toContain('button-primary" disabled=""');
+    expect(markup).not.toContain('confirm=status&amp;targetStatus=CLOSED');
   });
 
   it('shows retained remittance evidence on the command board and stored closing row', async () => {
@@ -296,6 +475,8 @@ describe('MonthlyTaxClosingPage', () => {
           customerPaymentAmountTotal: 500000,
           declaredAt: '2026-07-01T08:00:00.000Z',
           id: 'closing-1',
+          journalReconciliationIssueCount: 0,
+          monthlyClosingHistoryCount: 1,
           netRevenueDelta: 0,
           nonCashPartnerPayoutTotal: 390000,
           notes: 'Tax paid with retained portal receipt',
@@ -325,7 +506,7 @@ describe('MonthlyTaxClosingPage', () => {
           status: 'PAID',
         };
       }
-      if (href === '/admin/monthly-tax-closings?period=2026-06&take=25') {
+      if (href === '/admin/monthly-tax-closings?take=25') {
         return [
           {
             cashDebtTotal: 0,

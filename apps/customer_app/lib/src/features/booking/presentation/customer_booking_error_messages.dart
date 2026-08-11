@@ -47,6 +47,14 @@ String customerBookingErrorMessage(Object exception) {
   return 'Booking could not be created. Please check the address and try again.';
 }
 
+Map<String, dynamic>? customerLatestBookingFromError(Object exception) {
+  if (exception is! ApiException) {
+    return null;
+  }
+  final booking = exception.body['booking'];
+  return booking is Map ? Map<String, dynamic>.from(booking) : null;
+}
+
 String _apiMessage(Object exception) {
   if (exception is ApiException) {
     final message = exception.body['message'];

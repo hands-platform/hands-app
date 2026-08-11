@@ -60,8 +60,8 @@ Legacy customer aliases `/customer/providers/nearby` and `/customer/providers/:i
 - `POST /partner/bookings/:id/join`
 - `POST /partner/bookings/:id/accept`
 - `POST /partner/bookings/:id/reject`
-- `POST /partner/bookings/:id/arrived`
-- `POST /partner/bookings/:id/start`
+- `POST /partner/bookings/:id/arrived` (legacy client compatibility only)
+- `POST /partner/bookings/:id/start` (legacy client compatibility only)
 - `POST /partner/bookings/:id/complete`
 - `GET /partner/earnings`
 - `GET /partner/earnings/summary`
@@ -173,5 +173,5 @@ Manual admin refunds move the payment to `REFUNDED`, mark the booking as `REFUND
 - `POST /partner/bookings/:id/accept` confirms a direct request.
 - `POST /partner/bookings/:id/join` records a marketplace participant and stores the server-calculated distance snapshot.
 - Negative-wallet partners can still see marketplace requests in `GET /partner/bookings/open`, but `POST /partner/bookings/:id/join` is blocked until settlement or admin offset. Blocked participation attempts do not create participant records.
-- Chat is created after the booking is matched. `POST /partner/bookings/:id/start` advances service lifecycle state.
+- Final matching creates the chat room and immediately moves the booking to `IN_SERVICE`. Current partner clients do not require separate travel, arrival, or service-start actions.
 - Customer direct cancellation is not available after partner commitment. Cancellation and no-show outcomes after matching are HANDS operations decisions based on chat, location, payment, and booking evidence.

@@ -8,6 +8,9 @@ type AdminFormDatePickerMode = 'date' | 'datetime-local' | 'month' | 'time';
 const ADMIN_DATEPICKER_POPPER_PROPS = { strategy: 'fixed' as const };
 
 type AdminFormDatePickerFieldProps = {
+  readonly ariaDescribedBy?: string;
+  readonly ariaInvalid?: boolean;
+  readonly autoFocus?: boolean;
   readonly className: string;
   readonly defaultValue?: string | number | readonly string[];
   readonly disabled?: boolean;
@@ -20,6 +23,9 @@ type AdminFormDatePickerFieldProps = {
 };
 
 type AdminDatePickerTextInputProps = {
+  readonly ariaDescribedBy?: string;
+  readonly ariaInvalid?: boolean;
+  readonly autoFocus?: boolean;
   readonly disabled?: boolean;
   readonly label: string;
   readonly labelVisibility?: 'hidden' | 'visible';
@@ -30,6 +36,9 @@ type AdminDatePickerTextInputProps = {
 };
 
 export const AdminFormDatePickerField = memo(function AdminFormDatePickerField({
+  ariaDescribedBy,
+  ariaInvalid,
+  autoFocus,
   className,
   defaultValue,
   disabled,
@@ -55,6 +64,9 @@ export const AdminFormDatePickerField = memo(function AdminFormDatePickerField({
         calendarClassName="calendar-vuexy-datepicker"
         customInput={(
           <AdminDatePickerTextInput
+            ariaDescribedBy={ariaDescribedBy}
+            ariaInvalid={ariaInvalid}
+            autoFocus={autoFocus}
             disabled={disabled}
             label={label}
             labelVisibility={labelVisibility}
@@ -90,14 +102,28 @@ export const AdminFormDatePickerField = memo(function AdminFormDatePickerField({
 
 const AdminDatePickerTextInput = forwardRef<HTMLInputElement, AdminDatePickerTextInputProps>(
   function AdminDatePickerTextInput(
-    { disabled, label, labelVisibility = 'hidden', onChange, onClick, required, value },
+    {
+      ariaDescribedBy,
+      ariaInvalid,
+      autoFocus,
+      disabled,
+      label,
+      labelVisibility = 'hidden',
+      onChange,
+      onClick,
+      required,
+      value,
+    },
     ref,
   ) {
     return (
       <label className="admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled calendar-datepicker-input">
         <span className={labelVisibility === 'visible' ? 'admin-form-label' : 'sr-only'}>{label}</span>
         <input
+          aria-describedby={ariaDescribedBy}
+          aria-invalid={ariaInvalid}
           aria-label={label}
+          autoFocus={autoFocus}
           className="admin-form-date-input"
           disabled={disabled}
           onChange={onChange}
@@ -147,7 +173,14 @@ function parseDatePickerValue(value: string, mode: AdminFormDatePickerMode) {
     return validDateOrNull(date);
   }
 
-  return validDateOrNull(new Date(value));
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  if (!match) {
+    return null;
+  }
+  const [, year, month, day, hour, minute] = match;
+  return validDateOrNull(
+    new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), 0, 0),
+  );
 }
 
 function validDateOrNull(value: Date) {

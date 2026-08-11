@@ -1,11 +1,15 @@
 import { notFound } from 'next/navigation';
 
-import type { AdminAccountingJournalBatchDetail } from '../../../../lib/admin-api';
-import { adminGet } from '../../../../lib/admin-api';
+import type {
+  AdminAccountingJournalBatchDetail,
+  AdminAccountingJournalIntegrity,
+} from '../../../../lib/admin-api';
+import { adminGetResult } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { AdminTableSubstack } from '../../../../components/admin-data-table';
 import { AdminTextLink } from '../../../../components/admin-text-link';
+import { AdminErrorState } from '../../../../components/admin-surface';
 import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
 import { StatusBadge } from '../../../../components/status-badge';
@@ -19,47 +23,73 @@ import { FinanceTablePanel } from '../../finance-table-panel';
 import {
   buildAccountingJournalBatchDetailApiHref,
   buildFinanceSettlementTraceLinks,
-  generalLedgerHref,
+  safeGeneralLedgerReturnTo,
 } from '../../tax-settlement-page-model';
 
 type GeneralLedgerDetailPageProps = {
   readonly params?: Promise<{ readonly id?: string }>;
+  readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerDetailPageProps) {
+export default async function GeneralLedgerDetailPage({ params, searchParams }: GeneralLedgerDetailPageProps) {
   const id = (await params)?.id;
   if (!id) {
     notFound();
   }
 
-  const batch = await adminGet<AdminAccountingJournalBatchDetail | null>(
+  const query = searchParams ? await searchParams : {};
+  const returnTo = safeGeneralLedgerReturnTo(readParam(query, 'returnTo'));
+  const batchResult = await adminGetResult<AdminAccountingJournalBatchDetail | null>(
     buildAccountingJournalBatchDetailApiHref(id),
     null,
   );
-  if (!batch) {
+  if (!batchResult.ok && batchResult.status === 404) {
     notFound();
   }
+  if (!batchResult.ok || !batchResult.data) {
+    const errorCopy = journalDetailErrorCopy(batchResult.status);
+    return (
+      <AdminPageTemplate
+        actions={<AdminFormControlLink href={returnTo}>Back to results</AdminFormControlLink>}
+        description="The journal batch API did not return authoritative accounting evidence."
+        title="Journal Batch Detail"
+      >
+        <AdminErrorState
+          action={
+            <AdminFormControlLink
+              href={`/finance-tax/general-ledger/${encodeURIComponent(id)}?returnTo=${encodeURIComponent(returnTo)}`}
+            >
+              Retry
+            </AdminFormControlLink>
+          }
+          message={errorCopy.message}
+          title={errorCopy.title}
+        />
+      </AdminPageTemplate>
+    );
+  }
+  const batch = batchResult.data;
   const settlementRecordLinks = buildFinanceSettlementTraceLinks(batch);
-  const balanceDelta = Math.abs(batch.totalDebit - batch.totalCredit);
-  const formulaDelta = journalFormulaDelta(batch);
+  const integrity = batch.integrity;
   const bankMatches = batch.entries.flatMap((entry) => entry.bankReconciliationMatches ?? []);
   const settlementPaymentFee = paymentFeePolicyInfo(batch.settlementSnapshot, batch.currency);
+  const reversalEvidence = batch.settlementReversalEntry;
 
   return (
     <AdminPageTemplate
       actions={
-        <AdminFormControlLink className="button-secondary" href={generalLedgerHref({ page: 1, range: '30d', review: 'posted', take: 25 })}>
-          Back to ledger
+        <AdminFormControlLink className="button-secondary" href={returnTo}>
+          Back to results
         </AdminFormControlLink>
       }
       description="Entry-level accounting evidence for a single finance record. Lists stay light; this page loads journal entries only when opened."
       metrics={[
-        { helper: 'Journal batch status.', kind: 'record', label: 'Status', scope: 'Journal record', value: batch.status },
-        { helper: 'Monthly tax/accounting period.', kind: 'record', label: 'Period', scope: 'Journal record', value: batch.monthlyPeriod ?? '-' },
-        { helper: 'Batch debit total.', kind: 'record', label: 'Debit', scope: 'Journal record', value: <MoneyText amount={batch.totalDebit} currency={batch.currency} /> },
-        { helper: 'Batch credit total.', kind: 'record', label: 'Credit', scope: 'Journal record', value: <MoneyText amount={batch.totalCredit} currency={batch.currency} /> },
+        { helper: 'Server-authoritative integrity state.', kind: 'record', label: 'Integrity', scope: 'Journal batch', value: integrity?.state ?? 'UNKNOWN' },
+        { helper: integrity?.blockerCodes[0] ? journalBlockerLabel(integrity.blockerCodes[0]) : integrity?.state === 'CLEAR' ? 'No integrity blockers.' : 'Evidence could not be evaluated.', kind: 'record', label: 'Blockers', scope: integrity?.state === 'BLOCKED' ? 'Action required' : 'Journal batch', value: integrity?.blockerCodes.length ?? 'Unknown' },
+        { helper: journalNextAction(integrity?.state), kind: 'record', label: 'Maximum discrepancy', scope: 'Integrity evidence', value: integrity ? <MoneyText amount={integrity.discrepancyAmount} currency={batch.currency} /> : 'Unavailable' },
+        { helper: 'One server evaluation is reused by detail, list, closeout, and export.', kind: 'record', label: 'Checked at', scope: 'Integrity evidence', value: integrity ? <DateTimeText value={integrity.checkedAt} /> : 'Unavailable' },
       ]}
-      title="General Ledger Detail"
+      title="Journal Batch Detail"
     >
       <FinanceTablePanel
         description={
@@ -73,22 +103,41 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
       >
         <FinanceDetailGrid>
           <FinanceDetailInfoItem label="Record key" value={batch.sourceKey} />
-          <FinanceDetailInfoItem label="Double-entry check" value={journalBalanceLabel(batch)} />
           <FinanceDetailInfoItem
-            label="Monthly close blocker"
+            label="Integrity result"
             value={
-              formulaDelta === 0 ? (
-                'No formula delta'
-              ) : (
-                <>
-                  Formula delta <MoneyText amount={formulaDelta} currency={batch.currency} />
-                </>
-              )
+              <StatusBadge tone={journalIntegrityTone(integrity?.state)}>
+                {integrity?.state ?? 'UNKNOWN'}
+              </StatusBadge>
             }
           />
-          <FinanceDetailInfoItem label="Debit total" value={<MoneyText amount={batch.totalDebit} currency={batch.currency} />} />
-          <FinanceDetailInfoItem label="Credit total" value={<MoneyText amount={batch.totalCredit} currency={batch.currency} />} />
-          <FinanceDetailInfoItem label="Balance delta" value={<MoneyText amount={balanceDelta} currency={batch.currency} />} />
+          <FinanceDetailInfoItem label="Header debit" value={<MoneyText amount={batch.totalDebit} currency={batch.currency} />} />
+          <FinanceDetailInfoItem label="Header credit" value={<MoneyText amount={batch.totalCredit} currency={batch.currency} />} />
+          <FinanceDetailInfoItem label="Entry debit" value={integrity ? <MoneyText amount={integrity.entryDebit} currency={batch.currency} /> : 'Unavailable'} />
+          <FinanceDetailInfoItem label="Entry credit" value={integrity ? <MoneyText amount={integrity.entryCredit} currency={batch.currency} /> : 'Unavailable'} />
+          <FinanceDetailInfoItem label="Entry count" value={integrity ? integrity.entryCount : 'Unavailable'} />
+          <FinanceDetailInfoItem
+            label="Formula delta"
+            value={
+              integrity?.formulaDelta === null || integrity?.formulaDelta === undefined
+                ? 'Evidence unavailable or not applicable'
+                : <MoneyText amount={integrity.formulaDelta} currency={batch.currency} />
+            }
+          />
+          <FinanceDetailInfoItem
+            label="Maximum discrepancy"
+            value={integrity ? <MoneyText amount={integrity.discrepancyAmount} currency={batch.currency} /> : 'Unavailable'}
+          />
+          <FinanceDetailInfoItem
+            label="Closeout blockers"
+            value={
+              integrity?.blockerCodes.length
+                ? integrity.blockerCodes.map(journalBlockerLabel).join(' · ')
+                : integrity?.state === 'CLEAR'
+                  ? 'None'
+                  : 'Integrity evidence unavailable'
+            }
+          />
           <FinanceDetailInfoItem
             label="Booking"
             value={
@@ -103,6 +152,36 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
           />
           <FinanceDetailInfoItem label="Payment" value={batch.payment ? `${batch.payment.method} · ${batch.payment.status}` : '-'} />
           <FinanceDetailInfoItem label="Entries" value={`${batch.entries.length} journal rows`} />
+          {reversalEvidence ? (
+            <>
+              <FinanceDetailInfoItem
+                label="Original settlement"
+                value={
+                  <AdminTextLink href={`/finance-tax/booking-settlement-audit/${reversalEvidence.originalSettlementSnapshotId}`}>
+                    {shortId(reversalEvidence.originalSettlementSnapshotId)}
+                  </AdminTextLink>
+                }
+              />
+              <FinanceDetailInfoItem
+                label="Reversal reason"
+                value={reversalEvidence.reason ?? '-'}
+              />
+              <FinanceDetailInfoItem
+                label="Reversal posted"
+                value={
+                  <DateTimeText value={reversalEvidence.occurredAt} />
+                }
+              />
+              <FinanceDetailInfoItem
+                label="Reversal recorded by"
+                value={reversalEvidence.createdById ?? 'System or historical record'}
+              />
+              <FinanceDetailInfoItem
+                label="Approval evidence"
+                value="No canonical approval field is recorded on this reversal."
+              />
+            </>
+          ) : null}
           <FinanceDetailInfoItem
             label="Settlement links"
             value={
@@ -124,12 +203,12 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
 
       <FinanceTablePanel
         description="Quick route from this journal batch back to the finance record, settlement record, clearing row, and bank evidence."
-        resultLabel={balanceDelta === 0 ? 'Balanced' : 'Unbalanced'}
-        resultTone={balanceDelta === 0 ? 'success' : 'danger'}
+        resultLabel={integrity?.state ?? 'Integrity unavailable'}
+        resultTone={journalIntegrityTone(integrity?.state)}
         title="Journal evidence hub"
       >
         <FinanceOperatingPath
-          ariaLabel="General ledger operating path"
+          ariaLabel="Journal batch operating path"
           steps={[
             {
               detail: batch.sourceType,
@@ -144,12 +223,12 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
             {
               detail: `${batch.entries.length} journal row(s)`,
               label: 'Double-entry',
-              value: journalBalanceLabel(batch),
+              value: integrity?.checks.entriesBalanced ?? 'UNKNOWN',
             },
             {
-              detail: journalNextAction(balanceDelta, formulaDelta),
+              detail: journalNextAction(integrity?.state),
               label: 'Monthly close',
-              value: journalCloseoutLabel(balanceDelta, formulaDelta, batch.currency),
+              value: journalCloseoutLabel(batch),
             },
           ]}
         />
@@ -210,7 +289,13 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
           <FinanceDetailInfoItem label="Bank reconciliation evidence" value={`${bankMatches.length} match(es)`} />
           <FinanceDetailInfoItem
             label="Monthly close status"
-            value={formulaDelta === 0 ? 'Ready for monthly close checks' : 'Resolve formula delta before monthly close'}
+            value={
+              integrity?.state === 'CLEAR'
+                ? 'Ready for monthly close checks'
+                : integrity?.state === 'BLOCKED'
+                  ? 'Blocked until integrity discrepancies are resolved'
+                  : 'Blocked until integrity evidence is available'
+            }
           />
           <FinanceDetailInfoItem
             label="Latest bank evidence"
@@ -224,9 +309,32 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
         description="Debits and credits posted by the finance record. Bank match count is shown without loading unrelated bank transaction lists."
         resultLabel={`${batch.entries.length} entry row(s)`}
         resultTone="info"
-        title="Journal entries"
+        title="Journal batch entries"
       >
+        <FinanceDetailGrid>
+          <FinanceDetailInfoItem
+            label="Entry debit total"
+            value={integrity ? <MoneyText amount={integrity.entryDebit} currency={batch.currency} /> : 'Unavailable'}
+          />
+          <FinanceDetailInfoItem
+            label="Entry credit total"
+            value={integrity ? <MoneyText amount={integrity.entryCredit} currency={batch.currency} /> : 'Unavailable'}
+          />
+          <FinanceDetailInfoItem
+            label="Entry balance delta"
+            value={integrity ? <MoneyText amount={Math.abs(integrity.entryDebit - integrity.entryCredit)} currency={batch.currency} /> : 'Unavailable'}
+          />
+          <FinanceDetailInfoItem
+            label="Header debit difference"
+            value={integrity ? <MoneyText amount={Math.abs(batch.totalDebit - integrity.entryDebit)} currency={batch.currency} /> : 'Unavailable'}
+          />
+          <FinanceDetailInfoItem
+            label="Header credit difference"
+            value={integrity ? <MoneyText amount={Math.abs(batch.totalCredit - integrity.entryCredit)} currency={batch.currency} /> : 'Unavailable'}
+          />
+        </FinanceDetailGrid>
         <FinanceDataTable
+          ariaLabel="Journal batch accounting entries"
             emptyMessage="No journal entries were recorded for this batch."
             headers={['Side', 'Account', 'Amount', 'Memo', 'Record', 'Bank match']}
             rowCount={batch.entries.length}
@@ -282,83 +390,44 @@ function journalSourceLabel(batch: AdminAccountingJournalBatchDetail, settlement
   return shortId(batch.sourceId);
 }
 
-function journalCloseoutLabel(balanceDelta: number, formulaDelta: number, currency: string) {
-  if (balanceDelta > 0) {
+function journalCloseoutLabel(batch: AdminAccountingJournalBatchDetail) {
+  if (batch.integrity?.state === 'BLOCKED') {
     return (
       <>
-        Balance delta <MoneyText amount={balanceDelta} currency={currency} />
+        Blocked · max discrepancy{' '}
+        <MoneyText amount={batch.integrity.discrepancyAmount} currency={batch.currency} />
       </>
     );
   }
-  if (formulaDelta > 0) {
-    return (
-      <>
-        Formula delta <MoneyText amount={formulaDelta} currency={currency} />
-      </>
-    );
-  }
-  return 'Clear';
+  return batch.integrity?.state === 'CLEAR' ? 'Clear' : 'Evidence unknown';
 }
 
-function journalNextAction(balanceDelta: number, formulaDelta: number) {
-  if (balanceDelta > 0) {
-    return 'Fix debit/credit delta';
-  }
-  if (formulaDelta > 0) {
-    return 'Resolve formula delta';
-  }
-  return 'Ready for monthly close checks';
+function journalNextAction(state: AdminAccountingJournalIntegrity['state'] | undefined) {
+  if (state === 'BLOCKED') return 'Resolve recorded integrity blockers';
+  if (state === 'UNKNOWN') return 'Recover missing source evidence';
+  return state === 'CLEAR' ? 'Ready for monthly close checks' : 'Retry integrity evaluation';
 }
 
-function journalBalanceLabel(batch: AdminAccountingJournalBatchDetail) {
-  const delta = batch.totalDebit - batch.totalCredit;
-  if (delta === 0) {
-    return 'Balanced';
-  }
-
-  return (
-    <>
-      Delta <MoneyText amount={Math.abs(delta)} currency={batch.currency} />
-    </>
-  );
+function journalIntegrityTone(state: 'BLOCKED' | 'CLEAR' | 'UNKNOWN' | undefined) {
+  if (state === 'CLEAR') return 'success' as const;
+  if (state === 'BLOCKED') return 'danger' as const;
+  return 'warning' as const;
 }
 
-function journalFormulaDelta(batch: AdminAccountingJournalBatchDetail) {
-  const metadata = readPlainRecord(batch.metadata);
-  const delta = metadata?.reconciliationDelta;
-  if (typeof delta === 'number' && Number.isFinite(delta)) {
-    return Math.abs(delta);
-  }
-
-  const settlementDelta = batch.settlementSnapshot
-    ? settlementFormulaDelta(batch.settlementSnapshot)
-    : batch.settlementReversalEntry
-      ? settlementFormulaDelta(batch.settlementReversalEntry)
-      : 0;
-
-  return Math.abs(settlementDelta);
-}
-
-function settlementFormulaDelta(
-  settlement: Pick<
-    NonNullable<AdminAccountingJournalBatchDetail['settlementSnapshot']>,
-    | 'companyOutputVat'
-    | 'customerPaymentAmount'
-    | 'partnerPayoutAmount'
-    | 'partnerWithholdingTotal'
-    | 'paymentProcessingFee'
-    | 'platformFeeNetRevenue'
-  >,
+function journalBlockerLabel(
+  code: NonNullable<AdminAccountingJournalBatchDetail['integrity']>['blockerCodes'][number],
 ) {
-  const platformFeeGross = settlement.platformFeeNetRevenue + settlement.companyOutputVat;
-
-  return (
-    settlement.customerPaymentAmount -
-    settlement.partnerPayoutAmount -
-    settlement.partnerWithholdingTotal -
-    settlement.paymentProcessingFee -
-    platformFeeGross
-  );
+  const labels: Record<typeof code, string> = {
+    ENTRY_UNBALANCED: 'Entry debit/credit mismatch',
+    FORMULA_DELTA: 'Formula delta',
+    FORMULA_EVIDENCE_MISSING: 'Formula evidence missing',
+    HEADER_ENTRY_MISMATCH: 'Header/entry mismatch',
+    HEADER_UNBALANCED: 'Header debit/credit mismatch',
+    PERIOD_EVIDENCE_MISSING: 'Period evidence missing',
+    PERIOD_MISMATCH: 'Accounting period mismatch',
+    POSTED_WITHOUT_ENTRIES: 'Posted without entries',
+  };
+  return labels[code];
 }
 
 function paymentFeePolicyInfo(
@@ -400,4 +469,22 @@ function paymentFeeBasisLabel(
 
 function stringValue(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function readParam(params: Record<string, string | string[] | undefined>, key: string) {
+  const value = params[key];
+  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
+}
+
+function journalDetailErrorCopy(status: number | null) {
+  if (status === 401 || status === 403) {
+    return {
+      message: 'Your Admin session does not have permission to view this journal batch. Sign in with Finance access or ask an administrator to review your role.',
+      title: 'Journal batch permission required',
+    };
+  }
+  return {
+    message: 'This journal batch could not be loaded. No integrity or zero-balance assumption has been made.',
+    title: 'Journal batch unavailable',
+  };
 }

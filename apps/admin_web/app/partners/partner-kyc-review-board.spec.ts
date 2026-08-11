@@ -37,6 +37,14 @@ describe('partner KYC review board', () => {
           documents: [],
         }),
         partner({
+          id: 'missing-document',
+          displayName: 'Incomplete Partner',
+          documents: [
+            { id: 'doc-front-4', type: 'CCCD_FRONT', status: 'PENDING_REVIEW' },
+            { id: 'doc-back-4', type: 'CCCD_BACK', status: 'PENDING_REVIEW' },
+          ],
+        }),
+        partner({
           id: 'rejected-kyc',
           displayName: 'Rejected Partner',
           kyc: { id: 'kyc-rejected', status: 'REJECTED' },
@@ -50,25 +58,25 @@ describe('partner KYC review board', () => {
       (item) => item.displayName ?? item.id,
     );
 
-    expect(board.openCount).toBe(4);
+    expect(board.openCount).toBe(5);
     expect(board.readyToApprove).toBe(2);
-    expect(board.blockedByDocuments).toBe(2);
+    expect(board.blockedByDocuments).toBe(1);
     expect(board.playbook.map((item) => item.title)).toEqual([
-      'Review uploaded identity files first',
-      'Approve complete KYC records',
+      'Review submitted KYC evidence',
+      'Request missing KYC evidence',
       'Follow up rejected KYC',
       'Keep missing KYC out of paid dispatch',
     ]);
-    expect(board.playbook[0]).toMatchObject({ status: '1ST', count: 1 });
+    expect(board.playbook[0]).toMatchObject({ status: '1ST', count: 2 });
     expect(board.cards.find((item) => item.title === 'Ready to approve')).toMatchObject({
       count: 2,
       tone: 'info',
-      samples: ['Ready Partner', 'Rejected Partner'],
+      samples: ['Ready Partner', 'Document Partner'],
     });
-    expect(board.cards.find((item) => item.title === 'Pending document review')).toMatchObject({
+    expect(board.cards.find((item) => item.title === 'Missing or rejected evidence')).toMatchObject({
       count: 1,
       tone: 'warn',
-      samples: ['Document Partner'],
+      samples: ['Incomplete Partner'],
     });
     expect(board.cards.find((item) => item.title === 'Missing KYC record')).toMatchObject({
       count: 1,

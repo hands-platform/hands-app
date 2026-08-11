@@ -34,10 +34,16 @@ type PayoutMoneyFlowSectionProps = {
 export function PayoutMoneyFlowSection({ cards, checks, currency, rangeLabel = 'Selected range' }: PayoutMoneyFlowSectionProps) {
   return (
     <AdminTablePanel
-      description="Reconciles payout batches against service pricing evidence before transfer: gross represented, partner payout, HANDS fee, withholding, and cash debt."
-      id="release-blocker-queue"
-      resultLabel={`${checks.length} check(s)`}
-      resultTone={checks.length > 0 ? 'warning' : 'success'}
+      description="Reconciles payout batches against linked earning records for the selected range. Wallet-ledger and GL closeout are reviewed in a separate workspace."
+      id="payout-money-flow"
+      resultLabel={`${checks.length} controls evaluated`}
+      resultTone={
+        checks.some((check) => check.pillClass === 'pill-danger')
+          ? 'danger'
+          : checks.some((check) => check.pillClass === 'pill-warning')
+            ? 'warning'
+            : 'success'
+      }
       title="Payout money flow"
     >
       <AdminFilterChipGroup ariaLabel="Payout money flow links" className="admin-mb-12">

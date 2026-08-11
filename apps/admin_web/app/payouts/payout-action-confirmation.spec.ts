@@ -22,9 +22,8 @@ describe('payout action confirmation', () => {
     expect(confirmation).toEqual({
       action: 'processing',
       cancelHref: '/payouts',
-      confirmLabel: 'Start processing',
-      description:
-        'Move payout batch payout-b into processing after finance review is complete. Accounting boundary: transfer preparation can begin, but bank/cash and Partner wallet liability move only when the batch is marked PAID.',
+      confirmLabel: 'Start transfer preparation',
+      description: expect.stringContaining('Full batch ID payout-batch-123456.'),
       disabled: false,
       payoutBatchId: draftBatch.id,
       title: 'Start payout payout-b processing?',
@@ -36,17 +35,26 @@ describe('payout action confirmation', () => {
   it('builds a paid confirmation with the wallet liability and bank accounting preview', () => {
     const confirmation = buildPayoutActionConfirmation([draftBatch], 'paid', draftBatch.id);
 
-    expect(confirmation?.description).toBe(
-      'Mark 240.000 VND payout batch payout-b as paid after transfer reference, tax, earnings, and Partner checks are clean. Accounting preview: Dr Partner wallet liability 240.000 VND / Cr Bank 240.000 VND.',
-    );
+    expect(confirmation?.confirmLabel).toBe('Approve paid closeout');
+    expect(confirmation?.description).toContain('Partner Unknown Partner (phone unavailable).');
+    expect(confirmation?.description).toContain('Accounting preview: Dr Partner wallet liability 240.000 VND / Cr Bank 240.000 VND.');
   });
 
   it('builds a failed confirmation without implying bank or wallet movement', () => {
     const confirmation = buildPayoutActionConfirmation([draftBatch], 'failed', draftBatch.id);
 
-    expect(confirmation?.description).toBe(
-      'Mark payout batch payout-b as failed so finance can preserve the transfer failure before retry or rebuild. Accounting boundary: no bank/cash or wallet liability movement is recorded; Partner wallet liability remains for retry or rebuild.',
+    expect(confirmation?.confirmLabel).toBe('Record transfer failure');
+    expect(confirmation?.description).toContain('Accounting boundary: no bank/cash or wallet liability movement is recorded');
+  });
+
+  it('builds a paid reversal confirmation that preserves the original payout', () => {
+    const confirmation = buildPayoutActionConfirmation([draftBatch], 'reverse', draftBatch.id);
+
+    expect(confirmation?.description).toContain('The original payout remains immutable.');
+    expect(confirmation?.description).toContain(
+      'Dr Bank 240.000 VND / Cr Partner wallet liability 240.000 VND',
     );
+    expect(confirmation?.confirmLabel).toBe('Post reversal');
   });
 
   it('uses disabled reason and neutral tone when a payout action is blocked', () => {
@@ -55,7 +63,10 @@ describe('payout action confirmation', () => {
     });
 
     expect(confirmation?.disabled).toBe(true);
-    expect(confirmation?.description).toBe('Resolve transfer reference before marking paid.');
+    expect(confirmation?.description).toContain('Full batch ID payout-batch-123456.');
+    expect(confirmation?.description).toContain(
+      'Blocked by server preflight: Resolve transfer reference before marking paid.',
+    );
     expect(confirmation?.tone).toBe('neutral');
   });
 
@@ -68,10 +79,20 @@ describe('payout action confirmation', () => {
     expect(readPayoutConfirmationAction('processing')).toBe('processing');
     expect(readPayoutConfirmationAction('paid')).toBe('paid');
     expect(readPayoutConfirmationAction('failed')).toBe('failed');
+    expect(readPayoutConfirmationAction('reverse')).toBe('reverse');
     expect(readPayoutConfirmationAction('delete')).toBeNull();
   });
 
   it('encodes the confirmation URL', () => {
     expect(payoutActionConfirmHref('batch 1', 'paid')).toBe('/payouts?confirm=paid&payoutBatchId=batch%201');
+    expect(
+      payoutActionConfirmHref(
+        'batch 1',
+        'paid',
+        '/payouts?range=all&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests',
+      ),
+    ).toBe(
+      '/payouts?range=all&withdrawalStatus=REVIEW_REQUIRED&confirm=paid&payoutBatchId=batch%201#partner-wallet-withdrawal-requests',
+    );
   });
 });

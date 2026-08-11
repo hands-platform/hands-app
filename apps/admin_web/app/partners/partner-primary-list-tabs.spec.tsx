@@ -6,15 +6,21 @@ const source = readFileSync(new URL('./partner-primary-list-tabs.tsx', import.me
 const globalsCss = readFileSync(new URL('../globals.css', import.meta.url), 'utf8');
 
 describe('PartnerPrimaryListTabs', () => {
-  it('renders the three primary partner pages with one active tab', () => {
+  it('renders the four primary partner workspaces with one active tab', () => {
     const tabs = PartnerPrimaryListTabs({ activeMode: 'unapproved' });
 
     const rendered = normalizedText(tabs);
 
-    expect(rendered).toContain('Partners');
-    expect(rendered).toContain('Unapproved Partners');
-    expect(rendered).toContain('Unsettled Partners');
-    expect(hrefsIn(tabs)).toEqual(['/partners', '/partners?review=unapproved', '/partners?review=unsettled']);
+    expect(rendered).toContain('Directory');
+    expect(rendered).toContain('Approvals');
+    expect(rendered).toContain('Onboarding blockers');
+    expect(rendered).toContain('Wallet debt');
+    expect(hrefsIn(tabs)).toEqual([
+      '/partners',
+      '/partners?review=approval-pending&sort=oldest',
+      '/partners?review=unapproved',
+      '/partners?review=unsettled',
+    ]);
     expect(classNamesIn(tabs)).toEqual(
       expect.arrayContaining([
         'booking-date-filter-buttons partner-primary-list-tabs',

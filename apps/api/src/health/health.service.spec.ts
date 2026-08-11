@@ -52,6 +52,38 @@ describe('HealthService external readiness caching', () => {
   });
 });
 
+describe('HealthService public responses', () => {
+  it('does not disclose the runtime environment from the public liveness response', () => {
+    expect(service({ NODE_ENV: 'production' }).healthcheck()).toEqual({
+      ok: true,
+      service: 'hands-api',
+      timestamp: expect.any(String),
+    });
+  });
+
+  it('returns only boolean dependency status without raw infrastructure errors or config names', async () => {
+    const health = new HealthService(
+      config(),
+      {
+        $queryRaw: vi.fn().mockRejectedValue(new Error('postgres://user:secret@internal/db')),
+      } as never,
+      {
+        ping: vi.fn().mockRejectedValue(new Error('redis://:secret@internal:6379')),
+      } as never,
+    );
+
+    await expect(health.readiness()).resolves.toEqual({
+      ok: false,
+      timestamp: expect.any(String),
+      checks: {
+        database: { ok: false },
+        redis: { ok: false },
+        storage: { ok: false },
+      },
+    });
+  });
+});
+
 describe('HealthService external storage readiness', () => {
   it('keeps storage blocked when no storage values are configured', () => {
     const check = storageCheck();

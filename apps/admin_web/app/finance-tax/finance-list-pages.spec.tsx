@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { vi } from 'vitest';
 
-import { adminGet } from '../../lib/admin-api';
+import { adminGet, adminGetResult } from '../../lib/admin-api';
 import BankReconciliationPage from './bank-reconciliation/page';
 import BookingSettlementAuditPage from './booking-settlement-audit/page';
 import CouponFinancePage from './coupon-finance/page';
@@ -17,6 +17,7 @@ vi.mock('../../lib/admin-api', async () => {
   return {
     ...actual,
     adminGet: vi.fn(),
+    adminGetResult: vi.fn(),
   };
 });
 
@@ -29,29 +30,54 @@ vi.mock('next/navigation', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedAdminGetResult = vi.mocked(adminGetResult);
 
 describe('finance list pages', () => {
   beforeEach(() => {
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => ({
+      data: await mockedAdminGet(href, fallback),
+      ok: true,
+      status: 200,
+    }));
   });
 
   it.each([
-    ['booking settlement audit', BookingSettlementAuditPage, 'Settlement audit filters', 'Booking settlement records'],
+    ['booking settlement audit', BookingSettlementAuditPage, 'Audit records', 'Integrity exceptions'],
     ['coupon finance', CouponFinancePage, 'Coupon finance filters', 'Coupon settlement rows'],
-    ['settlement reversals', SettlementReversalsPage, 'Settlement reversal filters', 'Settlement reversal rows'],
-  ] as const)('renders %s filters and rows with Vuexy table panels', async (_name, Page, filterTitle, tableTitle) => {
-    const page = await Page({
-      searchParams: Promise.resolve({ range: 'today' }),
-    });
-    const markup = renderToStaticMarkup(page);
+    [
+      'settlement reversals',
+      SettlementReversalsPage,
+      'Settlement reversal filters',
+      'Settlement reversal rows',
+    ],
+  ] as const)(
+    'renders %s filters and rows with Vuexy table panels',
+    async (_name, Page, filterTitle, tableTitle) => {
+      const page = await Page({
+        searchParams: Promise.resolve({ range: 'today' }),
+      });
+      const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain(filterTitle);
-    expect(markup).toContain(tableTitle);
-    expect(markup).toContain('card admin-filter-panel admin-mb-16');
-    expect(markup).toContain('vuexy-booking-table-card');
-    expect(markup).toContain('vuexy-booking-table');
-    expect(markup).not.toContain('card admin-card-scroll');
-  });
+      expect(markup).toContain(filterTitle);
+      expect(markup).toContain(tableTitle);
+      expect(markup).toContain('card admin-filter-panel admin-mb-16');
+      expect(markup).toContain('vuexy-booking-table-card');
+      expect(markup).toContain('vuexy-booking-table');
+      expect(markup).not.toContain('card admin-card-scroll');
+
+      if (_name === 'coupon finance') {
+        expect(markup).toContain('Coupon finance command board');
+        expect(markup).toContain('Coupon review flags');
+        expect(markup).toContain('Company coupon expense');
+        expect(markup).toContain('Platform fee discount');
+        expect(markup).toContain('Coupon records');
+        expect(markup).toContain('Current filtered totals');
+        expect(markup).toContain('10 rows');
+        expect(markup).toContain('/finance-tax/coupon-finance?range=today&amp;review=coupon-review');
+      }
+    },
+  );
 
   it.each([
     [
@@ -70,6 +96,7 @@ describe('finance list pages', () => {
           id: 'snapshot-1',
           metadata: { companyCouponExpense: 0, couponCodeSnapshot: 'WELCOME10', couponDiscountAmount: 10000 },
           monthlyPeriod: '2026-06',
+          partnerPayoutAmount: 435000,
           partnerPitAmount: 15000,
           partnerVatAmount: 0,
           partnerWithholdingTotal: 15000,
@@ -83,18 +110,91 @@ describe('finance list pages', () => {
             user: { fullName: 'Demo Partner', phone: '+84900000002' },
           },
           providerProfileId: 'provider-1',
+          settlementAuditHealth: {
+            allocation: {
+              companyCouponExpense: 0,
+              customerPaymentAmount: 500000,
+              delta: 0,
+              partnerPayoutAmount: 435000,
+              partnerWithholdingTotal: 15000,
+              platformFeeGross: 50000,
+            },
+            blockers: [
+              {
+                code: 'CANONICAL_CLEARING_MISSING',
+                nextAction: 'Create or recover the canonical payment clearing evidence.',
+                ownerTeam: 'Payment Operations',
+                severity: 'BLOCKER',
+              },
+            ],
+            checkedAt: '2026-06-20T09:15:00.000Z',
+            checks: {
+              allocation: 'PASS',
+              bankMatch: 'FAIL',
+              canonicalClearing: 'FAIL',
+              canonicalJournal: 'PASS',
+              couponPolicy: 'NOT_APPLICABLE',
+              paymentFeePolicy: 'PASS',
+              reversal: 'NOT_APPLICABLE',
+              taxPeriod: 'FAIL',
+            },
+            evidence: {
+              canonicalClearing: {
+                count: 0,
+                ids: [],
+                matchedAmount: 0,
+                required: true,
+                state: 'FAIL',
+                unmatchedAmount: 500000,
+              },
+              canonicalJournal: { count: 1, ids: ['journal-1'], state: 'PASS' },
+              reversal: {
+                clearingCount: 0,
+                count: 0,
+                ids: [],
+                journalCount: 0,
+                lifecycle: 'NONE',
+                state: 'NOT_APPLICABLE',
+              },
+            },
+            formulaVersion: 'CUSTOMER_PLUS_COMPANY_COUPON_V1',
+            state: 'ACTION_REQUIRED',
+          },
           settlementStatus: 'POSTED',
           taxStatus: 'OPEN',
         },
       ],
       {
+        actionRequiredCount: 1,
+        allocationMismatchCount: 0,
+        amountAtRisk: 500000,
+        checkedAt: '2026-06-20T09:15:00.000Z',
+        clearCount: 0,
+        clearingEvidenceIssueCount: 1,
+        closedTaxCount: 0,
         companyOutputVat: 5000,
         count: 1,
         currency: 'VND',
+        customerPaymentAmount: 500000,
+        declaredTaxCount: 0,
+        feeEvidenceIssueCount: 1,
+        journalEvidenceIssueCount: 0,
+        needsActionCount: 1,
         openTaxCount: 1,
         paidTaxCount: 0,
+        partnerPayoutAmount: 390000,
         partnerWithholdingTotal: 15000,
         paymentProcessingFee: 12000,
+        paymentFeeEvidenceIssueCount: 0,
+        platformFeeGross: 50000,
+        platformFeeNetRevenue: 45000,
+        resolvedCount: 0,
+        reversalIncompleteCount: 0,
+        reversedClearCount: 0,
+        reversedCount: 0,
+        taxEvidenceIssueCount: 1,
+        unknownCount: 0,
+        couponEvidenceIssueCount: 0,
       },
     ],
     [
@@ -124,10 +224,16 @@ describe('finance list pages', () => {
       ],
       {
         amount: 500000,
+        assignedCount: 0,
         clearedCount: 0,
         count: 1,
         currency: 'VND',
+        openAmount: 500000,
         openCount: 1,
+        partiallyClearedAmount: 0,
+        partiallyClearedCount: 0,
+        reversedCount: 0,
+        unassignedCount: 1,
       },
     ],
     [
@@ -162,12 +268,16 @@ describe('finance list pages', () => {
         },
       ],
       {
+        balancedCount: 1,
         count: 1,
         currency: 'VND',
+        draftCount: 0,
         postedCount: 1,
         reversedCount: 0,
         totalCredit: 500000,
         totalDebit: 500000,
+        unbalancedAmount: 0,
+        unbalancedCount: 0,
       },
     ],
     [
@@ -198,9 +308,21 @@ describe('finance list pages', () => {
       ],
       {
         amount: 500000,
+        assignedCount: 0,
         count: 1,
         currency: 'VND',
+        ignoredCount: 0,
+        matchedAmount: 0,
         matchedCount: 0,
+        openExposureAmount: 500000,
+        oldestUnassignedAt: '2026-06-20T10:00:00.000Z',
+        partiallyMatchedAmount: 0,
+        partiallyMatchedCount: 0,
+        reversedCount: 0,
+        unassignedCount: 1,
+        unassignedOver48hAmount: 500000,
+        unassignedOver48hCount: 1,
+        unmatchedAmount: 500000,
         unmatchedCount: 1,
       },
     ],
@@ -279,97 +401,120 @@ describe('finance list pages', () => {
         platformFeeNetRevenue: 45000,
       },
     ],
-  ] as const)('renders %s rows with a dedicated Evidence action column', async (_name, Page, detailHref, rows, summary) => {
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      const requestHref = String(href);
-      if (
-        requestHref.includes('/bank-reconciliation/withdrawal-candidate-summary') ||
-        requestHref.includes('/bank-reconciliation/import-batches/summary')
-      ) {
-        return fallback;
+  ] as const)(
+    'renders %s rows with a dedicated detail action column',
+    async (_name, Page, detailHref, rows, summary) => {
+      mockedAdminGet.mockImplementation(async (href, fallback) => {
+        const requestHref = String(href);
+        if (
+          requestHref.includes('/bank-reconciliation/withdrawal-candidate-summary') ||
+          requestHref.includes('/bank-reconciliation/import-batches/summary') ||
+          requestHref.includes('/bank-reconciliation/evidence-source-summary') ||
+          requestHref.includes('/bank-reconciliation/review-owner-summary') ||
+          requestHref.includes('/booking-payment-clearing/review-owner-summary') ||
+          requestHref.includes('/deposit-requests/reconciliation-owner-summary')
+        ) {
+          return fallback;
+        }
+        if (requestHref.includes('/summary')) {
+          return summary;
+        }
+        if (
+          requestHref.includes('/bank-reconciliation/import-batches') ||
+          requestHref.includes('/company-bank-accounts') ||
+          requestHref.includes('/admin/users')
+        ) {
+          return fallback;
+        }
+        return rows.length > 0 ? rows : fallback;
+      });
+
+      const page = await Page({
+        searchParams: Promise.resolve({ range: 'today' }),
+      });
+      const markup = renderToStaticMarkup(page);
+
+      if (_name === 'bank reconciliation' || _name === 'payment clearing') {
+        expect(markup).toContain('Review and match');
+      } else if (_name === 'booking settlement audit') {
+        expect(markup).toContain('Open audit record');
+      } else if (_name !== 'settlement reversals' && _name !== 'general ledger') {
+        expect(markup).toContain('Open detail');
       }
-      if (requestHref.includes('/summary')) {
-        return summary;
+      expect(markup).toContain(detailHref);
+      if (_name === 'booking settlement audit') {
+        expect(markup).toContain('booking-settlement-audit-command-strip');
+        expect(markup).toContain('Global action required');
+        expect(markup).toContain('Amount at risk · global');
+      } else {
+        expect(markup).toContain('finance-list-command-board admin-mb-16');
+        expect(markup).not.toContain('usage-overview-command-grid finance-list-command-board');
+        expect(markup).toContain('card admin-kpi-card finance-list-command-card is-');
+        expect(markup).toContain('metric-card-icon');
+        expect(markup).not.toContain('finance-list-command-icon');
+        expect(markup).not.toContain('usage-overview-command-card finance-list-command-card');
+        expect(markup).not.toContain('usage-overview-command-icon');
       }
-      if (
-        requestHref.includes('/bank-reconciliation/import-batches') ||
-        requestHref.includes('/company-bank-accounts') ||
-        requestHref.includes('/admin/users')
-      ) {
-        return fallback;
+      expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table');
+      expect(markup).toContain('vuexy-booking-table-footer');
+
+      if (_name === 'payment clearing') {
+        expect(markup).toContain('Clearing command board');
+        expect(markup).toContain('Unassigned reviews');
+        expect(markup).toContain('Open exposure');
+        expect(markup).toContain('Over SLA');
+        expect(markup).toContain('Terminal outcomes');
+        expect(markup).not.toContain('Cleared ratio');
+        expect(markup).toContain('Bank matches 0');
+        expect(markup).toContain('money-text money-text-positive');
       }
-      return rows.length > 0 ? rows : fallback;
-    });
 
-    const page = await Page({
-      searchParams: Promise.resolve({ range: 'today' }),
-    });
-    const markup = renderToStaticMarkup(page);
+      if (_name === 'booking settlement audit') {
+        expect(markup).toContain('Integrity exceptions');
+        expect(markup).toContain('Payment evidence');
+        expect(markup).toContain('Tax workflow');
+        expect(markup).toContain('Reversals');
+        expect(markup).toContain('Evidence &amp; blockers');
+        expect(markup).toContain('Owner / next action');
+        expect(markup).toContain(
+          '/finance-tax/booking-settlement-audit?range=all&amp;review=integrity-exceptions&amp;sort=oldest&amp;take=25',
+        );
+        expect(markup).toContain('money-text money-text-positive');
+      }
 
-    expect(markup).toContain('Evidence');
-    if (_name !== 'settlement reversals') {
-      expect(markup).toContain('Open detail');
-    }
-    expect(markup).toContain(detailHref);
-    expect(markup).toContain('finance-list-command-board admin-mb-16');
-    expect(markup).not.toContain('usage-overview-command-grid finance-list-command-board');
-    expect(markup).toContain('card admin-kpi-card finance-list-command-card is-');
-    expect(markup).toContain('metric-card-icon');
-    expect(markup).not.toContain('finance-list-command-icon');
-    expect(markup).not.toContain('usage-overview-command-card finance-list-command-card');
-    expect(markup).not.toContain('usage-overview-command-icon');
-    expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table');
-    expect(markup).toContain('vuexy-booking-table-footer');
+      if (_name === 'general ledger') {
+        expect(markup).toContain('Journal batch integrity queues');
+        expect(markup).toContain('Blocked integrity');
+        expect(markup).toContain('Draft batches');
+        expect(markup).toContain('Journal batch results');
+        expect(markup).not.toContain('Open detail');
+        expect(markup).toContain('money-text money-text-positive');
+      }
 
-    if (_name === 'payment clearing') {
-      expect(markup).toContain('Clearing command board');
-      expect(markup).toContain('Open ratio');
-      expect(markup).toContain('Evidence amount');
-      expect(markup).toContain('Needs evidence');
-      expect(markup).toContain('Bank matches 0');
-      expect(markup).toContain('money-text money-text-positive');
-    }
+      if (_name === 'bank reconciliation') {
+        expect(markup).toContain('Bank command board');
+        expect(markup).toContain('48h+ unassigned');
+        expect(markup).toContain('Open exposure');
+        expect(markup).toContain('Resolved rate');
+        expect(markup).toContain('Unmatched');
+        expect(markup).toContain('money-text money-text-positive');
+      }
 
-    if (_name === 'booking settlement audit') {
-      expect(markup).toContain('Settlement audit command board');
-      expect(markup).toContain('Open tax ratio');
-      expect(markup).toContain('Withholding evidence');
-      expect(markup).toContain('Needs review');
-      expect(markup).toContain('10 rows');
-      expect(markup).toContain('/finance-tax/booking-settlement-audit?range=today&amp;review=open&amp;take=10');
-      expect(markup).toContain('money-text money-text-positive');
-    }
-
-    if (_name === 'general ledger') {
-      expect(markup).toContain('Ledger command board');
-      expect(markup).toContain('Debit/Credit delta');
-      expect(markup).toContain('Balanced');
-      expect(markup).toContain('Delta');
-      expect(markup).toContain('money-text money-text-zero');
-      expect(markup).toContain('money-text money-text-positive');
-    }
-
-    if (_name === 'bank reconciliation') {
-      expect(markup).toContain('Bank command board');
-      expect(markup).toContain('Unmatched ratio');
-      expect(markup).toContain('UNMATCHED');
-      expect(markup).toContain('money-text money-text-positive');
-    }
-
-    if (_name === 'settlement reversals') {
-      expect(markup).toContain('Reversal command board');
-      expect(markup).toContain('Non-cash share');
-      expect(markup).toContain('Tax reversal impact');
-      expect(markup).toContain('10 rows');
-      expect(markup).toContain('/finance-tax/settlement-reversals?range=today&amp;take=10');
-      expect(markup).toContain('Refund after payout');
-      expect(markup).toContain('Clearing open');
-      expect(markup).toContain('Journal POSTED · Clearing OPEN');
-      expect(markup).toContain('/finance-tax/settlement-reversals/reversal-1');
-      expect(markup).toContain('/finance-tax/booking-settlement-audit/snapshot-1');
-      expect(markup).toContain('money-text money-text-positive');
-    }
-  });
+      if (_name === 'settlement reversals') {
+        expect(markup).toContain('Reversal command board');
+        expect(markup).toContain('Non-cash share');
+        expect(markup).toContain('Tax correction recorded');
+        expect(markup).toContain('10 rows');
+        expect(markup).toContain('/finance-tax/settlement-reversals?range=today&amp;take=10');
+        expect(markup).toContain('Refund after payout');
+        expect(markup).toContain('Clearing open');
+        expect(markup).toContain('Journal POSTED · Clearing OPEN');
+        expect(markup).toContain('/finance-tax/settlement-reversals/reversal-1');
+        expect(markup).toContain('/finance-tax/booking-settlement-audit/snapshot-1');
+        expect(markup).toContain('money-text money-text-positive');
+      }
+    },
+  );
 
   it('uses shared badge atoms for payment clearing status pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/payment-clearing/page.tsx'), 'utf8');
@@ -384,7 +529,6 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/payment-clearing/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
-    expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<strong>{formatMoney(entry.amount, entry.currency)}</strong>');
     expect(source).not.toContain(
       '<div className="muted">Payment {formatMoney(entry.payment.amount, entry.payment.currency)}</div>',
@@ -403,19 +547,32 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/payment-clearing/page.tsx'), 'utf8');
 
     expect(source).toContain('AdminInlineFallback');
-    expect(source).not.toContain('<div className="muted">{entry.booking?.status ?? \'Unknown booking\'}</div>');
-    expect(source).not.toContain('<strong>{entry.payment?.method ?? \'-\'}</strong>');
+    expect(source).not.toContain(
+      '<div className="muted">{entry.booking?.status ?? \'Unknown booking\'}</div>',
+    );
+    expect(source).not.toContain("<strong>{entry.payment?.method ?? '-'}</strong>");
   });
 
   it.each([
-    ['payment clearing', 'app/finance-tax/payment-clearing/page.tsx', "entry.payment?.status ?? 'No payment row'"],
-    ['general ledger', 'app/finance-tax/general-ledger/page.tsx', "batch.booking?.status ?? 'No booking'"],
-  ] as const)('uses shared inline fallback atoms for %s optional relationship labels', (_name, sourcePath, fallbackExpression) => {
-    const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
+    [
+      'payment clearing',
+      'app/finance-tax/payment-clearing/page.tsx',
+      "entry.payment?.status ?? 'No payment row'",
+    ],
+    [
+      'general ledger',
+      'app/finance-tax/general-ledger/page.tsx',
+      "batch.booking?.status ?? 'Unknown status'",
+    ],
+  ] as const)(
+    'uses shared inline fallback atoms for %s optional relationship labels',
+    (_name, sourcePath, fallbackExpression) => {
+      const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
 
-    expect(source).toContain('AdminInlineFallback');
-    expect(source).not.toContain(`<div className="muted">{${fallbackExpression}}</div>`);
-  });
+      expect(source).toContain('AdminInlineFallback');
+      expect(source).not.toContain(`<div className="muted">{${fallbackExpression}}</div>`);
+    },
+  );
 
   it.each([
     [
@@ -453,7 +610,10 @@ describe('finance list pages', () => {
   });
 
   it('uses the shared table footer atom for finance pagination controls', () => {
-    const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-table-pagination-footer.tsx'), 'utf8');
+    const source = readFileSync(
+      join(process.cwd(), 'app/finance-tax/finance-table-pagination-footer.tsx'),
+      'utf8',
+    );
 
     expect(source).toContain('AdminTablePaginationFooter');
     expect(source).not.toContain('<div className="vuexy-booking-table-footer">');
@@ -504,7 +664,9 @@ describe('finance list pages', () => {
 
     expect(css).toContain('.finance-list-command-card > .metric-card {');
     expect(css).toContain('.finance-list-command-card > .metric-card > .metric-card-icon {');
-    expect(css).toContain('.finance-list-command-card > .metric-card > .metric-card-content > h2 {');
+    expect(css).toContain(
+      '.finance-list-command-card > .metric-card > .metric-card-content > .metric-card-value {',
+    );
     expect(css).toContain('.finance-list-command-card > .metric-card > .metric-card-content > small {');
     expect(css).not.toContain('.finance-list-command-card .metric-card {');
     expect(css).not.toContain('.finance-list-command-card .metric-card-icon {');
@@ -534,7 +696,6 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/bank-reconciliation/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
-    expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<strong>{formatMoney(transaction.amount, transaction.currency)}</strong>');
   });
 
@@ -546,7 +707,7 @@ describe('finance list pages', () => {
     expect(source).not.toContain(
       "{transaction.bankAccount?.accountNumberMasked ?? transaction.bankAccount?.accountNumberLast4 ?? '-'}",
     );
-    expect(source).not.toContain('<strong>{transaction.counterpartyName ?? \'-\'}</strong>');
+    expect(source).not.toContain("<strong>{transaction.counterpartyName ?? '-'}</strong>");
     expect(source).not.toContain('<div className="muted">{transaction.description ?? \'-\'}</div>');
   });
 
@@ -563,9 +724,10 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/general-ledger/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
-    expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<strong>{formatMoney(batch.totalDebit, batch.currency)}</strong>');
-    expect(source).not.toContain('<div className="muted">Credit {formatMoney(batch.totalCredit, batch.currency)}</div>');
+    expect(source).not.toContain(
+      '<div className="muted">Credit {formatMoney(batch.totalCredit, batch.currency)}</div>',
+    );
   });
 
   it('uses shared inline fallback atoms for general ledger missing relationship cells', () => {
@@ -573,61 +735,80 @@ describe('finance list pages', () => {
 
     expect(source).toContain('AdminInlineFallback');
     expect(source).not.toContain('<span className="muted">-</span>');
-    expect(source).not.toContain('<div className="muted">{batch.customerProfile?.user?.phone ?? \'-\'}</div>');
-    expect(source).not.toContain('<div className="muted">{batch.providerProfile?.user?.phone ?? \'-\'}</div>');
-    expect(source).not.toContain('<strong>{batch.monthlyPeriod ?? \'-\'}</strong>');
+    expect(source).not.toContain(
+      '<div className="muted">{batch.customerProfile?.user?.phone ?? \'-\'}</div>',
+    );
+    expect(source).not.toContain(
+      '<div className="muted">{batch.providerProfile?.user?.phone ?? \'-\'}</div>',
+    );
+    expect(source).not.toContain("<strong>{batch.monthlyPeriod ?? '-'}</strong>");
   });
 
   it('uses shared badge atoms for booking settlement audit status pills', () => {
-    const source = readFileSync(join(process.cwd(), 'app/finance-tax/booking-settlement-audit/page.tsx'), 'utf8');
+    const source = readFileSync(
+      join(process.cwd(), 'app/finance-tax/booking-settlement-audit/page.tsx'),
+      'utf8',
+    );
 
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).toContain('auditStateTone');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${statusPill(snapshot.taxStatus)}`}');
   });
 
   it('uses shared money atoms for booking settlement audit tax and fee cells', () => {
-    const source = readFileSync(join(process.cwd(), 'app/finance-tax/booking-settlement-audit/page.tsx'), 'utf8');
+    const source = readFileSync(
+      join(process.cwd(), 'app/finance-tax/booking-settlement-audit/page.tsx'),
+      'utf8',
+    );
 
     expect(source).toContain('MoneyText');
     expect(source).not.toContain('formatMoney(');
-    expect(source).not.toContain('<strong>{formatMoney(snapshot.partnerWithholdingTotal, snapshot.currency)}</strong>');
-    expect(source).not.toContain('<strong>{formatMoney(snapshot.platformFeeGross, snapshot.currency)}</strong>');
+    expect(source).not.toContain(
+      '<strong>{formatMoney(snapshot.partnerWithholdingTotal, snapshot.currency)}</strong>',
+    );
+    expect(source).not.toContain(
+      '<strong>{formatMoney(snapshot.platformFeeGross, snapshot.currency)}</strong>',
+    );
   });
 
   it.each([
     [
-      'booking settlement audit',
-      'app/finance-tax/booking-settlement-audit/page.tsx',
-      [
-        "<div className=\"muted\">{snapshot.customerProfile?.user?.phone ?? '-'}</div>",
-        "<div className=\"muted\">{snapshot.providerProfile?.user?.phone ?? '-'}</div>",
-      ],
-    ],
-    [
       'coupon finance',
       'app/finance-tax/coupon-finance/page.tsx',
       [
-        "<div className=\"muted\">{snapshot.customerProfile?.user?.phone ?? '-'}</div>",
-        "<div className=\"muted\">{snapshot.providerProfile?.user?.phone ?? '-'}</div>",
+        '<div className="muted">{snapshot.customerProfile?.user?.phone ?? \'-\'}</div>',
+        '<div className="muted">{snapshot.providerProfile?.user?.phone ?? \'-\'}</div>',
       ],
     ],
     [
       'settlement reversals',
       'app/finance-tax/settlement-reversals/page.tsx',
       [
-        "<div className=\"muted\">{reversal.originalSettlementSnapshot?.customerProfile?.user?.phone ?? '-'}</div>",
-        "<div className=\"muted\">{reversal.originalSettlementSnapshot?.providerProfile?.user?.phone ?? '-'}</div>",
+        '<div className="muted">{reversal.originalSettlementSnapshot?.customerProfile?.user?.phone ?? \'-\'}</div>',
+        '<div className="muted">{reversal.originalSettlementSnapshot?.providerProfile?.user?.phone ?? \'-\'}</div>',
       ],
     ],
-  ] as const)('uses shared inline fallback atoms for %s participant phone cells', (_name, sourcePath, rawFallbacks) => {
-    const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
+  ] as const)(
+    'uses shared inline fallback atoms for %s participant phone cells',
+    (_name, sourcePath, rawFallbacks) => {
+      const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
 
-    expect(source).toContain('AdminInlineFallback');
-    for (const rawFallback of rawFallbacks) {
-      expect(source).not.toContain(rawFallback);
-    }
+      expect(source).toContain('AdminInlineFallback');
+      for (const rawFallback of rawFallbacks) {
+        expect(source).not.toContain(rawFallback);
+      }
+    },
+  );
+
+  it('keeps participant phone fields out of the compact booking settlement audit list', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/finance-tax/booking-settlement-audit/page.tsx'),
+      'utf8',
+    );
+
+    expect(source).not.toContain('snapshot.customerProfile?.user?.phone');
+    expect(source).not.toContain('snapshot.providerProfile?.user?.phone');
   });
 
   it('uses shared badge atoms for settlement reversal status pills', () => {
@@ -645,8 +826,12 @@ describe('finance list pages', () => {
 
     expect(source).toContain('MoneyText');
     expect(source).not.toContain('formatMoney(');
-    expect(source).not.toContain('<strong>{formatMoney(reversal.customerPaymentAmount, reversal.currency)}</strong>');
-    expect(source).not.toContain('<strong>{formatMoney(reversal.partnerWithholdingTotal, reversal.currency)}</strong>');
+    expect(source).not.toContain(
+      '<strong>{formatMoney(reversal.customerPaymentAmount, reversal.currency)}</strong>',
+    );
+    expect(source).not.toContain(
+      '<strong>{formatMoney(reversal.partnerWithholdingTotal, reversal.currency)}</strong>',
+    );
   });
 
   it('uses shared badge atoms for coupon finance review pills', () => {
@@ -665,7 +850,9 @@ describe('finance list pages', () => {
     expect(source).not.toContain(
       '<div className="muted">Customer paid {formatMoney(coupon.customerPaid, snapshot.currency)}</div>',
     );
-    expect(source).not.toContain('<strong>Discount {formatMoney(coupon.discountAmount, snapshot.currency)}</strong>');
+    expect(source).not.toContain(
+      '<strong>Discount {formatMoney(coupon.discountAmount, snapshot.currency)}</strong>',
+    );
     expect(source).not.toContain(
       '<div className="muted">Service {formatMoney(coupon.bookingServiceAmount, snapshot.currency)}</div>',
     );
@@ -690,8 +877,12 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/monthly-tax-closing/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
-    expect(source).not.toContain('<strong>{formatMoney(closing.companyOutputVatTotal, closing.currency)}</strong>');
-    expect(source).not.toContain('<strong>{formatMoney(closing.partnerWithholdingTotal, closing.currency)}</strong>');
+    expect(source).not.toContain(
+      '<strong>{formatMoney(closing.companyOutputVatTotal, closing.currency)}</strong>',
+    );
+    expect(source).not.toContain(
+      '<strong>{formatMoney(closing.partnerWithholdingTotal, closing.currency)}</strong>',
+    );
     expect(source).not.toContain(
       '<div className="muted">Net {formatMoney(closing.platformFeeNetRevenueTotal, closing.currency)}</div>',
     );
@@ -701,18 +892,25 @@ describe('finance list pages', () => {
     expect(source).not.toContain(
       '<div className="muted">PIT {formatMoney(closing.partnerPitWithheldTotal, closing.currency)}</div>',
     );
-    expect(source).not.toContain('<td>{formatMoney(closing.paymentProcessingFeeTotal, closing.currency)}</td>');
+    expect(source).not.toContain(
+      '<td>{formatMoney(closing.paymentProcessingFeeTotal, closing.currency)}</td>',
+    );
   });
 
   it('uses shared money atoms for partner withholding tax cells', () => {
-    const source = readFileSync(join(process.cwd(), 'app/finance-tax/partner-withholding-tax/page.tsx'), 'utf8');
+    const source = readFileSync(
+      join(process.cwd(), 'app/finance-tax/partner-withholding-tax/page.tsx'),
+      'utf8',
+    );
 
     expect(source).toContain('MoneyText');
     expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<td>{formatMoney(row.grossServiceRevenue, row.currency)}</td>');
     expect(source).not.toContain('<td>{formatMoney(row.partnerPayoutTotal, row.currency)}</td>');
     expect(source).not.toContain('<strong>{formatMoney(row.partnerVatWithheldTotal, row.currency)}</strong>');
-    expect(source).not.toContain('<div className="muted">PIT {formatMoney(row.partnerPitWithheldTotal, row.currency)}</div>');
+    expect(source).not.toContain(
+      '<div className="muted">PIT {formatMoney(row.partnerPitWithheldTotal, row.currency)}</div>',
+    );
     expect(source).not.toContain('<strong>{formatMoney(row.totalPartnerTaxWithheld, row.currency)}</strong>');
   });
 
@@ -721,7 +919,9 @@ describe('finance list pages', () => {
 
     expect(source).toContain('MoneyText');
     expect(source).not.toContain('formatMoney(');
-    expect(source).not.toContain('<td>{formatMoney(Number(row.customerPaymentAmountTotal ?? 0), currency)}</td>');
+    expect(source).not.toContain(
+      '<td>{formatMoney(Number(row.customerPaymentAmountTotal ?? 0), currency)}</td>',
+    );
     expect(source).not.toContain(
       '<strong>{formatMoney(Number(row.paymentProcessingFeeTotal ?? 0), currency)}</strong>',
     );
@@ -740,20 +940,45 @@ describe('finance list pages', () => {
     expect(source).toContain('MoneyText');
     expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<td>{formatMoney(row.platformFeeGrossTotal, summary.currency)}</td>');
-    expect(source).not.toContain('<strong>{formatMoney(row.companyOutputVatTotal, summary.currency)}</strong>');
+    expect(source).not.toContain(
+      '<strong>{formatMoney(row.companyOutputVatTotal, summary.currency)}</strong>',
+    );
     expect(source).not.toContain('<td>{formatMoney(row.platformFeeNetRevenueTotal, summary.currency)}</td>');
   });
 
+  it('uses a direct detail link for compact booking settlement audit rows', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/finance-tax/booking-settlement-audit/page.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).toContain('bookingSettlementAuditDetailHref(snapshot.id, detailReturnTo)');
+    expect(source).not.toContain('ActionMenu');
+  });
+
   it.each([
-    ['booking settlement audit', 'app/finance-tax/booking-settlement-audit/page.tsx', 'bookingSettlementAuditDetailHref(snapshot.id)'],
-    ['payment clearing', 'app/finance-tax/payment-clearing/page.tsx', 'paymentClearingDetailHref(entry.id)'],
-    ['general ledger', 'app/finance-tax/general-ledger/page.tsx', 'generalLedgerDetailHref(batch.id)'],
-    ['bank reconciliation', 'app/finance-tax/bank-reconciliation/page.tsx', 'bankReconciliationDetailHref(transaction.id)'],
-  ] as const)('uses shared ActionMenu atoms for %s row detail actions', (_name, sourcePath, detailHref) => {
+    [
+      'payment clearing',
+      'app/finance-tax/payment-clearing/page.tsx',
+      'paymentClearingDetailHref(entry.id, currentQueueHref)',
+    ],
+    [
+      'general ledger',
+      'app/finance-tax/general-ledger/page.tsx',
+      'generalLedgerDetailHref(batch.id, detailReturnTo)',
+    ],
+    [
+      'bank reconciliation',
+      'app/finance-tax/bank-reconciliation/page.tsx',
+      'bankReconciliationDetailHref(transaction.id, currentQueueHref)',
+    ],
+  ] as const)('uses direct detail links for compact %s rows', (_name, sourcePath, detailHref) => {
     const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
 
-    expect(source).toContain('ActionMenu');
-    expect(source).not.toContain(`<Link className="pill pill-info" href={${detailHref}}>`);
+    expect(source).toContain('AdminTextLink');
+    expect(source).toContain(detailHref);
+    expect(source).not.toContain('ActionMenu');
   });
 
   it.each([

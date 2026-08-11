@@ -1,0 +1,353 @@
+- generic [active] [ref=f7e1]:
+  - generic [ref=f7e3]:
+    - complementary [ref=f7e4]:
+      - strong [ref=f7e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=f7e7]:
+        - group [ref=f7e8]:
+          - generic "Shift command" [ref=f7e9] [cursor=pointer]
+          - link "Shift command" [ref=f7e27] [cursor=pointer]:
+            - /url: /
+        - group [ref=f7e31]:
+          - generic "Live Operations" [ref=f7e32] [cursor=pointer]
+        - group [ref=f7e49]:
+          - generic "Customer Support" [ref=f7e50] [cursor=pointer]
+          - generic [ref=f7e67]:
+            - link "Customers" [ref=f7e68] [cursor=pointer]:
+              - /url: /customers
+            - link "Customer Reviews" [ref=f7e74] [cursor=pointer]:
+              - /url: /reviews
+            - link "Partner-to-Customer Evaluations" [ref=f7e78] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations
+            - link "Chat Evidence" [ref=f7e82] [cursor=pointer]:
+              - /url: /chat-archive
+            - link "Customer Notifications" [ref=f7e86] [cursor=pointer]:
+              - /url: /notifications
+            - link "Customer Usage" [ref=f7e90] [cursor=pointer]:
+              - /url: /usage-overview
+        - group [ref=f7e94]:
+          - generic "Partner Operations" [ref=f7e95] [cursor=pointer]
+        - group [ref=f7e112]:
+          - generic "Finance Today" [ref=f7e113] [cursor=pointer]
+        - group [ref=f7e120]:
+          - generic "Finance Records" [ref=f7e121] [cursor=pointer]
+        - group [ref=f7e138]:
+          - generic "Growth & Content" [ref=f7e139] [cursor=pointer]
+        - group [ref=f7e156]:
+          - generic "Tax & Monthly Close" [ref=f7e157] [cursor=pointer]
+        - group [ref=f7e164]:
+          - generic "Restricted Settings" [ref=f7e165] [cursor=pointer]
+        - group [ref=f7e172]:
+          - generic "Admin & System" [ref=f7e173] [cursor=pointer]
+        - group [ref=f7e190]:
+          - generic "Developer / System" [ref=f7e191] [cursor=pointer]
+    - main [ref=f7e199]:
+      - generic "Admin workspace" [ref=f7e200]:
+        - navigation "Breadcrumb" [ref=f7e202]:
+          - link "HANDS" [ref=f7e203] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f7e206]: Customer Support
+          - generic [ref=f7e209]: Customer Notifications
+        - generic "Workspace actions" [ref=f7e210]:
+          - button "Search Ctrl K" [ref=f7e212] [cursor=pointer]:
+            - generic [ref=f7e213]: Search
+            - generic [ref=f7e217]: Ctrl K
+          - group "Theme mode" [ref=f7e218]:
+            - button "Light mode" [pressed] [ref=f7e219] [cursor=pointer]
+            - button "Dark mode" [ref=f7e226] [cursor=pointer]
+          - link "Operations Policy" [ref=f7e229] [cursor=pointer]:
+            - /url: /operations-policy
+          - button "Open operation alerts" [ref=f7e234] [cursor=pointer]
+          - button "Sign out" [ref=f7e239] [cursor=pointer]
+      - generic [ref=f7e243]:
+        - generic [ref=f7e245]:
+          - heading "Notifications" [level=1] [ref=f7e246]
+          - paragraph [ref=f7e247]: Find failed or unconfirmed customer and Partner alerts, then resolve the next required action.
+        - generic [ref=f7e248]:
+          - generic [ref=f7e254]:
+            - generic [ref=f7e255]: Needs action
+            - paragraph [ref=f7e256]: Delivery issues
+            - generic [ref=f7e257]:
+              - generic [ref=f7e258]: "Delivery issues:"
+              - text: "0"
+            - generic [ref=f7e259]: Latest mobile alert delivery is still unsuccessful.
+          - generic [ref=f7e265]:
+            - generic [ref=f7e266]: Needs action
+            - paragraph [ref=f7e267]: Delivery not confirmed
+            - generic [ref=f7e268]:
+              - generic [ref=f7e269]: "Delivery not confirmed:"
+              - text: "0"
+            - generic [ref=f7e270]: More than 15 minutes old with no delivery confirmation.
+          - generic [ref=f7e276]:
+            - generic [ref=f7e277]: Needs action
+            - paragraph [ref=f7e278]: Push unavailable
+            - generic [ref=f7e279]:
+              - generic [ref=f7e280]: "Push unavailable:"
+              - text: "0"
+            - generic [ref=f7e281]: Users whose app cannot currently receive a mobile alert. Contact directly when urgent.
+          - generic [ref=f7e287]:
+            - generic [ref=f7e288]: Needs action
+            - paragraph [ref=f7e289]: App reopen needed
+            - generic [ref=f7e290]:
+              - generic [ref=f7e291]: "App reopen needed:"
+              - text: "0"
+            - generic [ref=f7e292]: Users whose app has not checked in for 30+ days. Ask them to reopen it before relying on mobile alerts.
+        - generic [ref=f7e293]:
+          - generic [ref=f7e294]:
+            - generic [ref=f7e295]:
+              - generic [ref=f7e296]:
+                - heading "Needs action" [level=2] [ref=f7e297]
+                - paragraph [ref=f7e298]: Resolve failed or unconfirmed alerts first. Contact the affected user directly when the message is urgent.
+              - generic [ref=f7e299]: No delivery blockers
+            - generic [ref=f7e303]:
+              - generic [ref=f7e304]: Ready
+              - heading "Delivery queue is clear" [level=3] [ref=f7e305]
+              - paragraph [ref=f7e306]: No failed or unconfirmed mobile alerts currently need operator action.
+          - generic [ref=f7e307]:
+            - generic [ref=f7e308]:
+              - generic [ref=f7e309]:
+                - heading "Partner alert routing policy" [level=2] [ref=f7e310]
+                - paragraph [ref=f7e311]:
+                  - text: "Current decision:"
+                  - strong [ref=f7e312]: In-app now, mobile push later
+                  - text: . Partner booking alerts follow this route until the policy is changed.
+              - link "Change alert policy" [ref=f7e314] [cursor=pointer]:
+                - /url: /operations-policy
+            - group "Partner alert policy status" [ref=f7e319]:
+              - generic [ref=f7e320]: Policy active
+              - generic [ref=f7e321]: No in-app activity in range
+              - generic [ref=f7e322]: No mobile push activity in range
+              - link "Open Developer setup" [ref=f7e323] [cursor=pointer]:
+                - /url: /setup?commands=all#notifications
+          - region [ref=f7e324]:
+            - generic [ref=f7e325]:
+              - generic [ref=f7e326]:
+                - heading "Historical delivery records" [level=2] [ref=f7e327]
+                - paragraph [ref=f7e328]: Reference counts only. Use these records to review past delivery outcomes, not as a current action queue.
+              - generic [ref=f7e329]: Record context
+            - region "Historical notification delivery records" [ref=f7e332]:
+              - 'link "Today All notification records All notification records: 0 Notification rows in the selected date range. The table remains server paginated." [ref=f7e333] [cursor=pointer]':
+                - /url: /notifications?review=all
+                - generic [ref=f7e338]:
+                  - generic [ref=f7e339]: Today
+                  - paragraph [ref=f7e340]: All notification records
+                  - generic [ref=f7e341]:
+                    - generic [ref=f7e342]: "All notification records:"
+                    - text: "0"
+                  - generic [ref=f7e343]: Notification rows in the selected date range. The table remains server paginated.
+              - 'link "Today Sent records Sent records: 0 Notifications with successful push delivery evidence." [ref=f7e344] [cursor=pointer]':
+                - /url: /notifications?review=sent
+                - generic [ref=f7e350]:
+                  - generic [ref=f7e351]: Today
+                  - paragraph [ref=f7e352]: Sent records
+                  - generic [ref=f7e353]:
+                    - generic [ref=f7e354]: "Sent records:"
+                    - text: "0"
+                  - generic [ref=f7e355]: Notifications with successful push delivery evidence.
+              - 'link "Today Skipped records Skipped records: 0 Notifications intentionally kept in-app or skipped by delivery policy." [ref=f7e356] [cursor=pointer]':
+                - /url: /notifications?review=skipped
+                - generic [ref=f7e361]:
+                  - generic [ref=f7e362]: Today
+                  - paragraph [ref=f7e363]: Skipped records
+                  - generic [ref=f7e364]:
+                    - generic [ref=f7e365]: "Skipped records:"
+                    - text: "0"
+                  - generic [ref=f7e366]: Notifications intentionally kept in-app or skipped by delivery policy.
+              - generic [ref=f7e375]:
+                - generic [ref=f7e376]: Today
+                - paragraph [ref=f7e377]: Failed attempt records
+                - generic [ref=f7e378]:
+                  - generic [ref=f7e379]: "Failed attempt records:"
+                  - text: "0"
+                - generic [ref=f7e380]: Historical failed delivery attempts. One notification can have multiple attempts, so this count does not link to notification rows.
+              - 'link "Today Push unavailable records Push unavailable records: 0 Inbox records for users whose app could not receive a mobile alert." [ref=f7e381] [cursor=pointer]':
+                - /url: /notifications?review=no-push-path
+                - generic [ref=f7e386]:
+                  - generic [ref=f7e387]: Today
+                  - paragraph [ref=f7e388]: Push unavailable records
+                  - generic [ref=f7e389]:
+                    - generic [ref=f7e390]: "Push unavailable records:"
+                    - text: "0"
+                  - generic [ref=f7e391]: Inbox records for users whose app could not receive a mobile alert.
+              - 'link "Today All unattempted records All unattempted records: 0 Complete historical inbox set without delivery evidence, including no-device records and confirmed delivery gaps." [ref=f7e392] [cursor=pointer]':
+                - /url: /notifications?review=unattempted
+                - generic [ref=f7e397]:
+                  - generic [ref=f7e398]: Today
+                  - paragraph [ref=f7e399]: All unattempted records
+                  - generic [ref=f7e400]:
+                    - generic [ref=f7e401]: "All unattempted records:"
+                    - text: "0"
+                  - generic [ref=f7e402]: Complete historical inbox set without delivery evidence, including no-device records and confirmed delivery gaps.
+          - region [ref=f7e403]:
+            - generic [ref=f7e404]:
+              - generic [ref=f7e405]:
+                - heading "Channel and device records" [level=2] [ref=f7e406]
+                - paragraph [ref=f7e407]: Supporting mobile alert and app activity records. Use Needs action above when an operator must intervene.
+              - generic [ref=f7e408]: Reference context
+            - region "Notification channel and device records" [ref=f7e411]:
+              - generic [ref=f7e417]:
+                - generic [ref=f7e418]: Current device registry
+                - paragraph [ref=f7e419]: Unavailable mobile routes
+                - generic [ref=f7e420]:
+                  - generic [ref=f7e421]: "Unavailable mobile routes:"
+                  - text: "0"
+                - generic [ref=f7e422]: Registered app routes that cannot currently receive mobile alerts.
+              - generic [ref=f7e428]:
+                - generic [ref=f7e429]: Current device registry
+                - paragraph [ref=f7e430]: Inactive app routes
+                - generic [ref=f7e431]:
+                  - generic [ref=f7e432]: "Inactive app routes:"
+                  - text: "0"
+                - generic [ref=f7e433]: Registered app routes not seen for 30+ days. This is a route count, not a notification total.
+              - 'link "Today Payout setup alerts Payout setup alerts: 0 Partner payout setup notification records." [ref=f7e434] [cursor=pointer]':
+                - /url: /notifications?review=payout-setup
+                - generic [ref=f7e442]:
+                  - generic [ref=f7e443]: Today
+                  - paragraph [ref=f7e444]: Payout setup alerts
+                  - generic [ref=f7e445]:
+                    - generic [ref=f7e446]: "Payout setup alerts:"
+                    - text: "0"
+                  - generic [ref=f7e447]: Partner payout setup notification records.
+              - 'link "Today Partner alert records Partner alert records: 0 Partner-facing notification records in the selected date range." [ref=f7e448] [cursor=pointer]':
+                - /url: /notifications?review=partner-alerts
+                - generic [ref=f7e455]:
+                  - generic [ref=f7e456]: Today
+                  - paragraph [ref=f7e457]: Partner alert records
+                  - generic [ref=f7e458]:
+                    - generic [ref=f7e459]: "Partner alert records:"
+                    - text: "0"
+                  - generic [ref=f7e460]: Partner-facing notification records in the selected date range.
+              - 'link "Today No-show alert records No-show alert records: 0 No-show support notification records." [ref=f7e461] [cursor=pointer]':
+                - /url: /notifications?review=no-show
+                - generic [ref=f7e469]:
+                  - generic [ref=f7e470]: Today
+                  - paragraph [ref=f7e471]: No-show alert records
+                  - generic [ref=f7e472]:
+                    - generic [ref=f7e473]: "No-show alert records:"
+                    - text: "0"
+                  - generic [ref=f7e474]: No-show support notification records.
+              - generic [ref=f7e480]:
+                - generic [ref=f7e481]: Today
+                - paragraph [ref=f7e482]: Mobile push attempts
+                - generic [ref=f7e483]:
+                  - generic [ref=f7e484]: "Mobile push attempts:"
+                  - text: "0"
+                - generic [ref=f7e485]: Mobile push attempts across the selected records. One notification may have more than one attempt.
+          - generic "Notification data status" [ref=f7e486]:
+            - generic [ref=f7e487]: Today
+            - generic [ref=f7e488]: 24h live window · Vietnam time · Test data excluded
+            - generic [ref=f7e489]:
+              - text: Live · updated
+              - time [ref=f7e490]: 5 Aug 2026, 02:21
+          - region [ref=f7e491]:
+            - generic [ref=f7e492]:
+              - generic [ref=f7e493]:
+                - heading "Notification operation filters" [level=2] [ref=f7e494]
+                - paragraph [ref=f7e495]:
+                  - text: "Default view is today. Use the range buttons for past delivery evidence without loading every notification row.Active range:"
+                  - strong [ref=f7e496]: Today
+                  - text: ".Active queue:"
+                  - strong [ref=f7e497]: Needs retry
+                  - text: "- notifications whose delivery path should be reviewed before retry."
+              - generic [ref=f7e498]: Showing 0 loaded row(s) of 0 total / Today
+            - generic [ref=f7e500]:
+              - generic "Active notification filters" [ref=f7e501]:
+                - generic [ref=f7e502]: "Range: Today"
+                - generic [ref=f7e503]: "Queue: Needs retry"
+                - generic [ref=f7e504]: "Rows: 0/0"
+              - generic "Notification date range" [ref=f7e505]:
+                - generic [ref=f7e506]: Range
+                - generic "Notification date range" [ref=f7e507]:
+                  - link "Today" [ref=f7e508] [cursor=pointer]:
+                    - /url: /notifications?review=needs-retry
+                  - link "Previous day" [ref=f7e509] [cursor=pointer]:
+                    - /url: /notifications?range=yesterday&review=needs-retry
+                  - link "Last 7 days" [ref=f7e510] [cursor=pointer]:
+                    - /url: /notifications?range=7d&review=needs-retry
+                  - link "Last 30 days" [ref=f7e511] [cursor=pointer]:
+                    - /url: /notifications?range=30d&review=needs-retry
+                  - link "All loaded" [ref=f7e512] [cursor=pointer]:
+                    - /url: /notifications?range=all&review=needs-retry
+              - generic [ref=f7e513]:
+                - generic [ref=f7e514]:
+                  - generic [ref=f7e515]: Age
+                  - generic "Queue age" [ref=f7e516]:
+                    - link "All ages (0)" [ref=f7e517] [cursor=pointer]:
+                      - /url: /notifications?review=needs-retry
+                    - link "Under 1h (0)" [ref=f7e518] [cursor=pointer]:
+                      - /url: /notifications?review=needs-retry&age=under-1h
+                    - link "1-4h (0)" [ref=f7e519] [cursor=pointer]:
+                      - /url: /notifications?review=needs-retry&age=1-4h
+                    - link "4-24h (0)" [ref=f7e520] [cursor=pointer]:
+                      - /url: /notifications?review=needs-retry&age=4-24h
+                    - link "24h+ (0)" [ref=f7e521] [cursor=pointer]:
+                      - /url: /notifications?review=needs-retry&age=over-24h
+                - generic [ref=f7e522]:
+                  - generic [ref=f7e523]: Order
+                  - generic "Queue sort order" [ref=f7e524]:
+                    - link "Oldest first" [ref=f7e525] [cursor=pointer]:
+                      - /url: /notifications?review=needs-retry&sort=oldest
+                    - link "Newest first" [ref=f7e526] [cursor=pointer]:
+                      - /url: /notifications?review=needs-retry
+              - generic [ref=f7e527]:
+                - generic [ref=f7e528]: Recovery decision gate
+                - paragraph [ref=f7e529]: This queue contains notifications with at least one device whose latest delivery attempt is still failed.
+                - paragraph [ref=f7e530]:
+                  - strong [ref=f7e531]: "Next action:"
+                  - text: Resolve the failure signal first, then retry only unresolved deliveries from the row action menu.
+              - generic [ref=f7e532]:
+                - generic [ref=f7e533]: Queue
+                - generic "Notification review filters" [ref=f7e534]:
+                  - link "Clear filter" [ref=f7e535] [cursor=pointer]:
+                    - /url: /notifications?review=all
+                  - link "All notifications" [ref=f7e536] [cursor=pointer]:
+                    - /url: /notifications?review=all
+                  - link "System incidents" [ref=f7e537] [cursor=pointer]:
+                    - /url: /notifications?review=system-incidents
+                  - link "Finance overdue" [ref=f7e538] [cursor=pointer]:
+                    - /url: /notifications?review=finance-overdue
+                  - link "Finance history" [ref=f7e539] [cursor=pointer]:
+                    - /url: /notifications?review=finance-overdue-history
+                  - link "Unresolved failures" [ref=f7e540] [cursor=pointer]:
+                    - /url: /notifications?review=unresolved-failed
+                  - link "Push unavailable users" [ref=f7e541] [cursor=pointer]:
+                    - /url: /notifications?review=disabled-device
+                  - link "Inactive app users" [ref=f7e542] [cursor=pointer]:
+                    - /url: /notifications?review=stale-device
+                  - link "Needs retry" [ref=f7e543] [cursor=pointer]:
+                    - /url: /notifications?review=needs-retry
+                  - link "Delivery gaps" [ref=f7e544] [cursor=pointer]:
+                    - /url: /notifications?review=delivery-gap
+                  - link "No mobile route" [ref=f7e545] [cursor=pointer]:
+                    - /url: /notifications?review=no-push-path
+                  - link "Skipped" [ref=f7e546] [cursor=pointer]:
+                    - /url: /notifications?review=skipped
+                  - link "Sent" [ref=f7e547] [cursor=pointer]:
+                    - /url: /notifications?review=sent
+                  - link "No delivery attempt" [ref=f7e548] [cursor=pointer]:
+                    - /url: /notifications?review=unattempted
+                  - link "Payout setup" [ref=f7e549] [cursor=pointer]:
+                    - /url: /notifications?review=payout-setup
+                  - link "Partner alerts" [ref=f7e550] [cursor=pointer]:
+                    - /url: /notifications?review=partner-alerts
+                  - link "No-show" [ref=f7e551] [cursor=pointer]:
+                    - /url: /notifications?review=no-show
+                  - link "Mobile push" [ref=f7e552] [cursor=pointer]:
+                    - /url: /notifications?review=fcm
+                  - link "In-app route" [ref=f7e553] [cursor=pointer]:
+                    - /url: /notifications?review=in-app-route
+          - table [ref=f7e556]:
+            - rowgroup [ref=f7e557]:
+              - row [ref=f7e558]:
+                - columnheader "Time" [ref=f7e559]
+                - columnheader "User" [ref=f7e560]
+                - columnheader "Type" [ref=f7e561]
+                - columnheader "Title" [ref=f7e562]
+                - columnheader "Ops record" [ref=f7e563]
+                - columnheader "Delivery" [ref=f7e564]
+                - columnheader "Action" [ref=f7e565]
+            - rowgroup [ref=f7e566]:
+              - row [ref=f7e567]:
+                - cell [ref=f7e568]:
+                  - status [ref=f7e569]:
+                    - paragraph [ref=f7e570]: No notifications currently match this queue. notifications whose delivery path should be reviewed before retry.
+  - alert [ref=f7e571]

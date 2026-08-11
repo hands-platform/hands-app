@@ -7,9 +7,9 @@ describe('Booking evidence sections', () => {
   it('uses shared Vuexy badge atoms instead of raw evidence pill spans', () => {
     const source = readFileSync('app/bookings/[id]/booking-evidence-sections.tsx', 'utf8');
 
-    expect(source).toContain('AdminCard');
-    expect(source).toContain('AdminNotePanel');
-    expect(source).toContain('AdminSectionHeader');
+    expect(source).toContain('AdminDisclosure');
+    expect(source).not.toContain('AdminCard');
+    expect(source).not.toContain('AdminNotePanel');
     expect(source).toContain('AdminTraceSummary');
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(source).toContain('AdminTextLink');
@@ -146,28 +146,27 @@ describe('Booking evidence sections', () => {
     const rendered = normalizedText(section);
     const markup = renderToStaticMarkup(section);
 
-    expect(rendered).toContain('Decision evidence guardrails');
-    expect(rendered).toContain('Evidence packet for admin decision');
-    expect(rendered).toContain('Chat evidence decision board');
-    expect(rendered).toContain('Manual outcome decision board');
-    expect(rendered).toContain('Booking full evidence bundle');
-    expect(rendered).toContain(
-      'Single booking command view that ties the customer, Partner, confirmed service address, chat record, payment, earning, wallet, location, alerts, and operator notes into one factual bundle.',
-    );
+    expect(rendered).toContain('Evidence summary');
+    expect(rendered).toContain('Advanced records');
+    expect(rendered).toContain('Full evidence packet, chat rows, decision lanes, note presets, and retained bundle records.');
+    expect(rendered).not.toContain('Decision evidence guardrails');
+    expect(rendered).not.toContain('Evidence packet for admin decision');
+    expect(rendered).not.toContain('Chat evidence decision board');
+    expect(rendered).not.toContain('Manual outcome decision board');
+    expect(rendered).not.toContain('Booking full evidence bundle');
     expect(rendered).not.toContain('address snapshot');
     expect(rendered).not.toContain('readiness');
     expect(rendered).not.toContain('chat archive');
-    expect(rendered).toContain('Finance guardrail');
+    expect(rendered).not.toContain('Finance guardrail');
     expect(rendered).toContain('Partner left a cancellation reason.');
     expect(rendered).toContain('No-show evidence and chat context are loaded.');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '#bundle',
         '#chat',
-        '#guardrail',
         '#manual',
         '#packet',
-        '/bookings?view=manual-decision',
+        '/bookings/post-match-cancellations?view=manual-decision',
       ]),
     );
     expect(classNamesIn(section)).toEqual(
@@ -176,7 +175,7 @@ describe('Booking evidence sections', () => {
         'booking-settlement-ledger-row is-evidence-record',
         'card admin-section admin-mb-16',
         'booking-decision-preset-list admin-mt-12',
-        'card admin-card booking-decision-preset-card',
+        'admin-disclosure booking-detail-section-disclosure admin-mt-12',
         'text-link',
         'pill pill-success',
       ]),
@@ -184,13 +183,12 @@ describe('Booking evidence sections', () => {
     expect(classNamesIn(section)).not.toContain('admin-table-scroll');
     expect(classNamesIn(section)).not.toContain('table vuexy-data-table');
     expect(classNamesIn(section)).not.toContain('setup-stage-list admin-mt-12');
-    expect(classNamesIn(section).filter((className) => className === 'card admin-section admin-mb-16')).toHaveLength(5);
+    expect(classNamesIn(section).filter((className) => className === 'card admin-section admin-mb-16')).toHaveLength(1);
     expect(classNamesIn(section)).toContain('date-time-text');
     expect(markup).toContain('dateTime="2026-06-14T02:00:00.000Z"');
     expect(markup).toContain('dateTime="2026-06-14T02:10:00.000Z"');
-    expect(markup).toContain('dateTime="2026-06-14T02:20:00.000Z"');
     expect(markup).toContain('Latest message:');
     expect(markup).toContain('Latest bundle event:');
-    expect(markup).toContain('Latest supporting context:');
+    expect(markup).not.toContain('Current filters');
   });
 });

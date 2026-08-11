@@ -8,12 +8,12 @@ describe('Confirm dialog CSS', () => {
     const actionsBlock = cssRuleBlockAt(actionsIndex);
 
     expect(actionsIndex).toBeGreaterThan(-1);
-    expect(actionsBlock).toContain('align-items: center');
+    expect(actionsBlock).toContain('align-items: flex-end');
     expect(actionsBlock).toContain('display: flex');
     expect(actionsBlock).toContain('flex-wrap: wrap');
     expect(actionsBlock).toContain('gap: 16px');
     expect(actionsBlock).toContain('margin-top: 24px');
-    expect(actionsBlock).not.toContain('align-items: flex-start');
+    expect(actionsBlock).not.toContain('align-items: center');
     expect(actionsBlock).not.toContain('margin-top: 12px');
   });
 });

@@ -51,10 +51,14 @@ export class ChatGateway implements OnGatewayConnection {
     const user = this.socketAuth.requireUser(client);
     try {
       const message = await this.chat.createMessage(payload.chatRoomId, user, { text: payload.text });
-      this.server.to(SOCKET_ROOMS.chat(payload.chatRoomId)).emit('chat.message.created', message);
+      this.emitMessageCreated(payload.chatRoomId, message);
       return { ok: true, message };
     } catch {
       return { ok: false, error: 'CHAT_MESSAGE_REJECTED' };
     }
+  }
+
+  emitMessageCreated(chatRoomId: string, message: unknown) {
+    this.server.to(SOCKET_ROOMS.chat(chatRoomId)).emit('chat.message.created', message);
   }
 }

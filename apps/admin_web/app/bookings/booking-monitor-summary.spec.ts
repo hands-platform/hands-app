@@ -75,9 +75,9 @@ describe('booking monitor summary helpers', () => {
     expect(rows['Matched']).toBe('1');
     expect(rows['Follow-up queue']).toBe('1');
     expect(rows['Blocked create attempts']).toBe('3');
-    expect(rows['Stage 1 first-pick']).toBe('1');
-    expect(rows['Stage 2 marketplace']).toBe('1');
-    expect(rows['Stage 4 handoff repair']).toBe('1');
+    expect(rows['Preferred pending']).toBe('1');
+    expect(rows['Marketplace open']).toBe('1');
+    expect(rows['Handoff repair']).toBe('1');
     expect(rows['No Partners yet']).toBe('1');
     expect(rows['First-pick pending']).toBe('1');
     expect(rows['Marketplace options']).toBe('1');
@@ -104,7 +104,7 @@ describe('booking monitor summary helpers', () => {
       ['Matched', '0'],
       ['Follow-up queue', '0'],
       ['Blocked create attempts', '0'],
-      ['Stage 2 marketplace', '0'],
+      ['Marketplace open', '0'],
       ['Policy snapshots', '7'],
       ['Payment checks', '2'],
       ['Chat repair', '0'],

@@ -5,11 +5,11 @@ import { readFileSync } from 'node:fs';
 const sectionSource = readFileSync(new URL('./payout-wallet-withdrawal-request-section.tsx', import.meta.url), 'utf8');
 
 describe('PayoutWalletWithdrawalRequestSection', () => {
-  it('uses an eligible Finance approver select for paid withdrawal closeout', () => {
-    expect(sectionSource).toContain('label={`Separate Finance approver for ${partnerLabel(request)}`}');
-    expect(sectionSource).toContain("options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}");
-    expect(sectionSource).toContain('disabled={financeApproverOptions.length === 0}');
-    expect(sectionSource).not.toContain('placeholder="Approving admin id"');
+  it('opens one page-level paid reversal review instead of repeating reversal forms per row', () => {
+    expect(sectionSource).toContain('Review paid reversal');
+    expect(sectionSource).toContain('reverseHrefForRequest');
+    expect(sectionSource).not.toContain('Separate Finance approver for');
+    expect(sectionSource).not.toContain('Bank reversal evidence URL for');
   });
 
   it('renders withdrawal requests with partner, bank, status, and finance actions', () => {
@@ -56,7 +56,7 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-wallet-withdrawal-request-section admin-mb-16 admin-section',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table admin-data-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table payout-withdrawal-compact-table',
         'admin-form-input',
         'admin-form-control-button button button-sm button-primary',
         'admin-form-control-button button button-sm button-outline',
@@ -106,6 +106,63 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(rendered).not.toContain('Reject');
   });
 
+  it('shows server preflight blockers and removes disallowed withdrawal closeout actions', () => {
+    const section = PayoutWalletWithdrawalRequestSection({
+      requests: [
+        {
+          amount: 500000,
+          bankAccount: {
+            accountHolderName: 'Blocked Partner',
+            accountNumberMasked: '****1234',
+            bankName: 'VCB',
+            id: 'bank-blocked',
+            isPrimary: true,
+            status: 'APPROVED',
+          },
+          bankAccountId: 'bank-blocked',
+          createdAt: '2026-07-26T09:00:00.000Z',
+          currency: 'VND',
+          id: 'withdrawal-request-blocked',
+          preflight: {
+            availableBalance: 300000,
+            bankAccountApproved: true,
+            blockers: [
+              {
+                code: 'INSUFFICIENT_AVAILABLE_BALANCE',
+                message: 'Available partner wallet balance cannot cover this withdrawal.',
+              },
+            ],
+            canApprove: false,
+            canMarkBankTransferPending: false,
+            canMarkPaid: false,
+            canReject: true,
+            independentApproverAvailable: true,
+            lockJournalPosted: true,
+            paidJournalPosted: false,
+            paidLedgerRecorded: false,
+            ready: false,
+            walletBalance: 300000,
+            warnings: [],
+          },
+          providerProfile: {
+            displayName: 'Blocked Partner',
+            user: { phone: '+84900002222' },
+          },
+          providerProfileId: 'provider-blocked',
+          status: 'APPROVED',
+        },
+      ] satisfies AdminProviderWalletWithdrawalRequest[],
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Available partner wallet balance cannot cover this withdrawal.');
+    expect(rendered).not.toContain('Bank pending');
+    expect(rendered).not.toContain('Mark paid');
+    expect(rendered).toContain('Reject');
+  });
+
   it('renders withdrawal status-change audit evidence for released locked amounts', () => {
     const request = {
       amount: 500000,
@@ -147,7 +204,7 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(rendered).toContain('Lock released 500.000 VND');
   });
 
-  it('renders accounting preview labels for locked, paid, and returned withdrawal requests', () => {
+  it('keeps accounting previews out of withdrawal rows while retaining amount and status evidence', () => {
     const section = PayoutWalletWithdrawalRequestSection({
       requests: [
         {
@@ -187,12 +244,12 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
 
     const rendered = normalizeSpaces(textContent(section));
 
-    expect(rendered).toContain('Accounting preview');
-    expect(rendered).toContain('Dr Partner wallet liability 800.000 VND');
-    expect(rendered).toContain('Cr Partner withdrawal payable 800.000 VND');
-    expect(rendered).toContain('Dr Partner withdrawal payable 500.000 VND');
-    expect(rendered).toContain('Cr Bank 500.000 VND');
-    expect(rendered).toContain('Cr Partner wallet liability 300.000 VND');
+    expect(rendered).not.toContain('Accounting preview');
+    expect(rendered).toContain('800.000 VND');
+    expect(rendered).toContain('500.000 VND');
+    expect(rendered).toContain('300.000 VND');
+    expect(rendered).toContain('Review request');
+    expect(sectionSource).not.toContain('AdminWithdrawalAccountingPreview');
   });
 
   it('summarizes finance queue status filters before the withdrawal table', () => {
@@ -248,15 +305,14 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(rendered).toContain('Withdrawal request status summary');
     expect(rendered).toContain('Review required 1');
     expect(rendered).toContain('Bank transfer pending 1');
-    expect(rendered).toContain('Lock released 1');
+    expect(rendered).not.toContain('Lock released 1');
     expect(rendered).toContain('Selected');
-    expect(hrefs).toContain('/payouts?range=7d&withdrawalStatus=REVIEW_REQUIRED');
-    expect(hrefs).toContain('/payouts?range=7d&withdrawalStatus=BANK_TRANSFER_PENDING');
+    expect(hrefs).toContain('/payouts?range=7d&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests');
+    expect(hrefs).toContain('/payouts?range=7d&withdrawalStatus=BANK_TRANSFER_PENDING#partner-wallet-withdrawal-requests');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-summary-card-grid payout-wallet-withdrawal-summary-grid',
         'card admin-card admin-summary-card payout-wallet-withdrawal-summary-card is-info is-active',
-        'card admin-card admin-summary-card payout-wallet-withdrawal-summary-card is-audit',
       ]),
     );
     expect(sectionSource).toContain('AdminSummaryCardGrid');
@@ -330,7 +386,7 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(rendered).toContain('Approved by Finance Approver');
     expect(rendered).toContain('Showing 1 to 1 of 11 withdrawals');
     expect(hrefs).toContain(
-      '/payouts?range=30d&withdrawalReconciliation=unmatched&withdrawalStatus=PAID',
+      '/payouts?range=30d&withdrawalReconciliation=unmatched&withdrawalStatus=PAID#partner-wallet-withdrawal-requests',
     );
     expect(hrefs).toContain(
       '/finance-tax/bank-reconciliation?range=30d&review=unmatched&q=VCB-PAID-500',
@@ -339,6 +395,109 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
       '/finance-tax/general-ledger?q=withdrawal-paid-unmatched',
     );
     expect(hrefs).toContain('/payouts?withdrawalPage=2');
+  });
+
+  it('announces an explicit saved view and exposes a clear action without raw status copy', () => {
+    const section = PayoutWalletWithdrawalRequestSection({
+      activeStatus: 'REVIEW_REQUIRED',
+      requests: [],
+      savedView: {
+        clearHref: '/payouts?range=all',
+        label: 'Withdrawal requests · Review required',
+        resultCount: 12,
+      },
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain(
+      'Saved view Withdrawal requests · Review required 12 requests in this view Clear saved view',
+    );
+    expect(rendered).toContain('No rows in selected filter');
+    expect(rendered).not.toContain('REVIEW_REQUIRED');
+    expect(hrefsIn(section)).toContain('/payouts?range=all');
+  });
+
+  it('shows returned-bank evidence for reversed withdrawals', () => {
+    const section = PayoutWalletWithdrawalRequestSection({
+      requests: [
+        {
+          amount: 500000,
+          bankAccount: null,
+          bankAccountId: null,
+          createdAt: '2026-07-15T09:00:00.000Z',
+          currency: 'VND',
+          id: 'withdrawal-reversed',
+          metadata: {
+            reversal: {
+              occurredAt: '2026-07-16T10:00:00.000Z',
+              reason: 'The receiving bank returned the transfer.',
+              reversalReference: 'BANK-RETURN-501',
+            },
+          },
+          providerProfileId: 'provider-reversed',
+          status: 'REVERSED',
+        },
+      ],
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+    const hrefs = hrefsIn(section);
+
+    expect(rendered).toContain('Reversed to Partner wallet');
+    expect(rendered).toContain('BANK-RETURN-501');
+    expect(rendered).toContain('The receiving bank returned the transfer.');
+    expect(rendered).toContain('Reversed');
+    expect(hrefs).toContain('/finance-tax/general-ledger?q=withdrawal-reversed');
+  });
+
+  it('shows a single reversal review link only when paid evidence is complete', () => {
+    const request = {
+      amount: 500000,
+      bankAccount: null,
+      bankAccountId: null,
+      createdAt: '2026-07-15T09:00:00.000Z',
+      currency: 'VND',
+      id: 'withdrawal-paid-reversible',
+      paidAt: '2026-07-15T10:00:00.000Z',
+      providerProfileId: 'provider-paid',
+      reconciliationState: 'UNMATCHED',
+      status: 'PAID',
+      transferRef: 'VCB-PAID-501',
+      preflight: {
+        availableBalance: 0,
+        bankAccountApproved: true,
+        blockers: [],
+        canApprove: false,
+        canMarkBankTransferPending: false,
+        canMarkPaid: false,
+        canReject: false,
+        canReversePaid: true,
+        independentApproverAvailable: true,
+        lockJournalPosted: true,
+        paidJournalPosted: true,
+        paidLedgerRecorded: true,
+        ready: false,
+        reversalJournalPosted: false,
+        reversalLedgerRecorded: false,
+        walletBalance: 0,
+        warnings: [],
+      },
+    } satisfies AdminProviderWalletWithdrawalRequest;
+    const section = PayoutWalletWithdrawalRequestSection({
+      requests: [request],
+      reverseHrefForRequest: (requestId) => `/payouts?reverseWithdrawalRequestId=${requestId}`,
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Review paid reversal');
+    expect(rendered).not.toContain('Reversal reason');
+    expect(hrefsIn(section)).toContain(
+      '/payouts?reverseWithdrawalRequestId=withdrawal-paid-reversible',
+    );
   });
 
   it('scopes withdrawal summary typography to direct summary-card children', () => {
@@ -359,6 +518,12 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(sectionSource).not.toContain('className="text-link"');
     expect(sectionSource).not.toContain('className="payout-wallet-withdrawal-request-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(sectionSource).not.toContain('<div className="empty-state">');
+
+    const emptySection = PayoutWalletWithdrawalRequestSection({
+      requests: [],
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+    expect(classNamesIn(emptySection)).not.toContain('admin-table-scroll');
   });
 
   it('uses the shared inline fallback atom for missing partner phone values', () => {

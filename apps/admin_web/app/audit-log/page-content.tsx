@@ -690,6 +690,10 @@ function signalClass(action: string) {
 }
 
 function humanizeAction(action: string) {
+  const publicSiteLabel = publicSiteActionLabels[action];
+  if (publicSiteLabel) {
+    return `Website content / ${publicSiteLabel}`;
+  }
   if (action === 'booking.ops_note.add') {
     return 'Booking / Operator note added';
   }
@@ -1115,6 +1119,9 @@ function compactAuditValue(value: unknown) {
 function relatedBoardHref(log: AdminAuditLog) {
   const targetId = log.target?.split(':')[1];
   const metadata = readMetadataObject(log.metadata);
+  if (isPublicSiteAction(log.action)) {
+    return '/website-content';
+  }
   if (log.action === 'booking.create.rejected') {
     const customerProfileId =
       typeof metadata.customerProfileId === 'string'
@@ -1136,8 +1143,14 @@ function relatedBoardHref(log: AdminAuditLog) {
   if (isPayoutAction(log.action)) {
     return targetId ? `/payouts#${targetId}` : '/payouts';
   }
+  if (log.action.startsWith('earning.')) {
+    return '/earnings';
+  }
+  if (log.action.startsWith('provider_wallet.') || log.action.startsWith('wallet_ledger.')) {
+    return '/wallet-adjustments';
+  }
   if (isFinanceCloseoutAction(log.action)) {
-    return '/finance-closeout';
+    return '/finance-tax/booking-settlement-audit?review=open';
   }
   if (log.action.startsWith('notification.')) {
     return notificationBoardHref(metadata, targetId);
@@ -1335,6 +1348,9 @@ function auditRelativeTime(value: string) {
 }
 
 function opsHint(action: string, target: string) {
+  if (isPublicSiteAction(action)) {
+    return 'Review the managed route and section order in Website Content.';
+  }
   if (action === 'booking.ops_note.add') {
     return 'Internal operator note was added to the booking handoff trail.';
   }
@@ -1351,7 +1367,7 @@ function opsHint(action: string, target: string) {
     return 'Confirm transfer references, withholding logs, and Partner payout release checks before release.';
   }
   if (isFinanceCloseoutAction(action)) {
-    return 'Review this row through Finance Closeout before ending the shift.';
+    return 'Open the owning finance record and confirm its ledger evidence before ending the shift.';
   }
   if (action.startsWith('notification.')) {
     return 'Check alert delivery status if the Customer or Partner missed an alert.';
@@ -1370,6 +1386,19 @@ function opsHint(action: string, target: string) {
   }
   return `Audit trail for ${target || 'system'} activity.`;
 }
+
+function isPublicSiteAction(action: string) {
+  return action.startsWith('PUBLIC_SITE_');
+}
+
+const publicSiteActionLabels: Readonly<Record<string, string>> = {
+  PUBLIC_SITE_PAGE_CREATED: 'Page created',
+  PUBLIC_SITE_PAGE_UPDATED: 'Page updated',
+  PUBLIC_SITE_PAGE_DELETED: 'Page deleted',
+  PUBLIC_SITE_SECTION_CREATED: 'Section created',
+  PUBLIC_SITE_SECTION_UPDATED: 'Section updated',
+  PUBLIC_SITE_SECTION_DELETED: 'Section deleted',
+};
 
 function opsDetail(action: string) {
   if (action === 'booking.ops_note.add') {

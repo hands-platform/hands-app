@@ -1,19 +1,24 @@
-import type { AdminPayment, AdminPaymentCallbackAttempt, AdminPaymentSummary, AdminUser } from '../../lib/admin-api';
-import { adminGet } from '../../lib/admin-api';
-import { AdminInlineNotice } from '../../components/admin-inline-notice';
+import type { Metadata } from 'next';
+
+import type { AdminPayment, AdminPaymentSummary } from '../../lib/admin-api';
+import { adminGetResult } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminErrorState, AdminNoticeCard } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { ConfirmDialog } from '../../components/confirm-dialog';
-import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
-import { buildFinanceApproverOptions } from '../finance-tax/finance-approver-options';
-import { buildPaymentActionConfirmation, readPaymentConfirmationAction } from './payment-action-confirmation';
-import { PaymentCallbackAttemptLedgerSection } from './payment-callback-attempt-ledger-section';
+import {
+  buildPaymentActionConfirmation,
+  paymentReturnTo,
+  readPaymentConfirmationAction,
+} from './payment-action-confirmation';
+import { PaymentActionConfirmationSummary } from './payment-action-confirmation-summary';
 import { PaymentFilterBoardSection } from './payment-filter-board-section';
 import { PaymentOperationsTableSection } from './payment-operations-table-section';
 import { emptyPaymentMessage, paymentFilterDescription } from './payment-page-links';
 import {
-  buildPaymentCallbackAttemptsApiHref,
   buildPaymentFilters,
   buildPaymentOperationsApiHref,
+  buildPaymentPageHref,
   buildPaymentPageModel,
   buildPaymentServerPagination,
   buildPaymentSummaryApiHref,
@@ -22,164 +27,211 @@ import { buildPaymentOperationsTableRows, paymentConfirmationAction } from './pa
 
 type PaymentsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+export const metadata: Metadata = {
+  title: { absolute: 'Payments | HANDS Admin' },
+};
+
+const EMPTY_PAYMENT_SUMMARY: AdminPaymentSummary = {
+  activeCashCollection: 0,
+  authorized: 0,
+  callbackReview: 0,
+  callbackVerified: 0,
+  captureReady: 0,
+  captured: 0,
+  cashDebt: 0,
+  evidenceConflicts: 0,
+  generatedAt: '',
+  linkedRefunds: 0,
+  needsAction: 0,
+  pendingCash: 0,
+  refunded: 0,
+  releaseRecommended: 0,
+  staleMismatch: 0,
+  totalCount: 0,
+};
+
 export default async function PaymentsPage({ searchParams }: { readonly searchParams?: PaymentsPageSearchParams }) {
   const params = searchParams ? await searchParams : {};
   const filters = buildPaymentFilters(params);
-  const [callbackAttempts, payments, paymentSummary] = await Promise.all([
-    adminGet<AdminPaymentCallbackAttempt[]>(buildPaymentCallbackAttemptsApiHref(filters), []),
-    adminGet<AdminPayment[]>(buildPaymentOperationsApiHref(filters), []),
-    adminGet<AdminPaymentSummary | null>(buildPaymentSummaryApiHref(filters), null),
+  const currentHref = buildPaymentPageHref(filters, filters.page);
+  const confirmationAction = readPaymentConfirmationAction(readSingleParam(params.confirm));
+  const confirmationPaymentId = readSingleParam(params.paymentId);
+  const [paymentsResult, summaryResult, confirmationResult] = await Promise.all([
+    adminGetResult<AdminPayment[]>(buildPaymentOperationsApiHref(filters), []),
+    adminGetResult<AdminPaymentSummary>(buildPaymentSummaryApiHref(filters), EMPTY_PAYMENT_SUMMARY),
+    confirmationAction && confirmationPaymentId
+      ? adminGetResult<AdminPayment | null>(`/admin/payments/${encodeURIComponent(confirmationPaymentId)}`, null)
+      : Promise.resolve({ data: null as AdminPayment | null, ok: true, status: 200 }),
   ]);
   const model = buildPaymentPageModel({
-    callbackAttempts,
     params,
-    paymentSummary,
-    payments,
+    paymentSummary: summaryResult.ok ? summaryResult.data : null,
+    payments: paymentsResult.data,
   });
+  const confirmationPayment = confirmationResult.data ??
+    model.allPayments.find((payment) => payment.id === confirmationPaymentId) ?? null;
+  const returnTo = paymentReturnTo(readSingleParam(params.returnTo) || currentHref);
   const confirmation = buildPaymentActionConfirmation(
-    model.allPayments,
-    readPaymentConfirmationAction(readSingleParam(params.confirm)),
-    readSingleParam(params.paymentId),
+    confirmationPayment ? [confirmationPayment] : [],
+    confirmationAction,
+    confirmationPaymentId,
+    { returnTo },
   );
-  const needsFinanceApproverDirectory = confirmation?.action === 'refund';
-  const [currentOperatorAccess, financeApproverUsers] = needsFinanceApproverDirectory
-    ? await Promise.all([
-        getCurrentAdminOperatorAccess(),
-        adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', []),
-      ])
-    : [null, []];
-  const financeApproverOptions = buildFinanceApproverOptions(
-    financeApproverUsers,
-    currentOperatorAccess?.id ?? null,
+  const paymentRows = buildPaymentOperationsTableRows(model.payments, currentHref);
+  const paymentPagination = buildPaymentServerPagination(
+    paymentRows,
+    model.filters,
+    summaryResult.ok ? model.totalCount : paymentRows.length,
   );
-  const refundApprovalUnavailable = needsFinanceApproverDirectory && financeApproverOptions.length === 0;
-  const paymentRows = buildPaymentOperationsTableRows(model.payments);
-  const paymentPagination = buildPaymentServerPagination(paymentRows, model.filters, model.totalCount);
-  const paymentRangeScope = model.dateRangeLabel;
+  const notice = paymentNotice(params);
 
   return (
     <AdminPageTemplate
-      description="Payment operations for holds, captures, cash collection, refunds, and gateway callback evidence."
-      metrics={[
+      contentClassName="payment-command-page"
+      description="Decide capture, release, refund review, and evidence follow-up from server-owned payment policy."
+      metrics={summaryResult.ok ? [
         {
-          helper: 'Holds waiting for completion or release.',
+          helper: 'Completed bookings with verified payment evidence.',
+          kind: 'action',
+          label: 'Capture ready',
+          scope: 'Action required',
+          value: model.metrics.captureReady,
+        },
+        {
+          helper: 'Terminal non-capture bookings whose authorization should be released.',
+          kind: 'action',
+          label: 'Release recommended',
+          scope: 'Action required',
+          value: model.metrics.releaseRecommended,
+        },
+        {
+          helper: 'Callback signature, amount, or outcome conflicts.',
+          kind: 'risk',
+          label: 'Evidence conflicts',
+          scope: 'Investigate',
+          value: model.metrics.evidenceConflicts,
+        },
+        {
+          helper: 'Pending cash attached to an active booking.',
           kind: 'live',
-          label: 'Authorized',
-          scope: 'Live',
-          value: model.metrics.authorized,
+          label: 'Active cash',
+          scope: 'Current operations',
+          value: model.metrics.activeCashCollection,
         },
-        {
-          helper: 'Cash bookings waiting for collection confirmation.',
-          kind: 'action',
-          label: 'Pending cash',
-          scope: 'Pending',
-          value: model.metrics.pendingCash,
-        },
-        {
-          helper: 'Cash fee debt that still needs wallet settlement.',
-          kind: 'risk',
-          label: 'Cash debt',
-          scope: 'Needs action',
-          value: model.metrics.cashDebt,
-        },
-        {
-          helper: 'Captured payment records in the selected range.',
-          kind: 'period',
-          label: 'Captured',
-          scope: paymentRangeScope,
-          value: model.metrics.captured,
-        },
-        {
-          helper: 'Payments moved into the refund path.',
-          kind: 'period',
-          label: 'Refunded',
-          scope: paymentRangeScope,
-          value: model.metrics.refunded,
-        },
-        {
-          helper: 'Rows still needing operator attention.',
-          kind: 'action',
-          label: 'Needs action',
-          scope: 'Needs action',
-          value: model.metrics.needsAction,
-        },
-        {
-          helper: 'Refund records attached to visible payments.',
-          kind: 'record',
-          label: 'Linked refunds',
-          scope: paymentRangeScope,
-          value: model.metrics.linkedRefunds,
-        },
-        {
-          helper: 'Callbacks without verified gateway evidence.',
-          kind: 'risk',
-          label: 'Callback review',
-          scope: 'Needs action',
-          value: model.metrics.callbackReview,
-        },
-        {
-          helper: 'Accepted callbacks with gateway evidence.',
-          kind: 'record',
-          label: 'Callback verified',
-          scope: 'Delivery records',
-          value: model.metrics.callbackVerified,
-        },
-      ]}
+      ] : undefined}
       title="Payments"
     >
+      {notice ? (
+        <AdminNoticeCard className="admin-mb-16" role={notice.tone === 'danger' ? 'alert' : 'status'} tone={notice.tone}>
+          <strong>{notice.title}</strong>
+          <span>{notice.message}</span>
+        </AdminNoticeCard>
+      ) : null}
+
+      {!summaryResult.ok ? (
+        <AdminErrorState
+          action={<AdminTextLink href={currentHref}>Retry payment totals</AdminTextLink>}
+          message="Payment decision totals could not be loaded. Records below are not presented as the full backlog."
+          title="Payment totals unavailable"
+        />
+      ) : null}
+
       {confirmation ? (
-        <>
-          {refundApprovalUnavailable ? (
-            <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
-              No other Finance approver is available. Refund execution remains disabled until another operator has the FINANCE_APPROVER role.
-            </AdminInlineNotice>
-          ) : null}
-          <ConfirmDialog
-            action={paymentConfirmationAction(confirmation.action)}
-            cancelHref={confirmation.cancelHref}
-            confirmLabel={confirmation.confirmLabel}
-            description={confirmation.description}
-            disabled={confirmation.disabled || refundApprovalUnavailable}
-            hiddenInputs={[{ name: 'paymentId', value: confirmation.paymentId }]}
-            id={`payment-${confirmation.action}-${confirmation.paymentId}`}
-            selectInputs={
-              confirmation.action === 'refund'
-                ? [
-                    {
-                      label: 'Separate Finance approver',
-                      name: 'approvalAdminId',
-                      options: [{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions],
-                      required: true,
-                    },
-                  ]
-                : []
-            }
-            title={confirmation.title}
-            tone={confirmation.tone}
-          />
-        </>
+        <ConfirmDialog
+          action={paymentConfirmationAction(confirmation.action)}
+          cancelHref={confirmation.cancelHref}
+          confirmLabel={confirmation.confirmLabel}
+          description={<PaymentActionConfirmationSummary confirmation={confirmation} />}
+          disabled={confirmation.disabled}
+          hiddenInputs={[
+            { name: 'paymentId', value: confirmation.paymentId },
+            { name: 'idempotencyKey', value: confirmation.idempotencyKey },
+            { name: 'returnTo', value: confirmation.returnTo },
+            { name: 'policyVersion', value: confirmation.policyVersion },
+          ]}
+          id={`payment-${confirmation.action}-${confirmation.paymentId}`}
+          textInputs={confirmation.reasonRequired ? [{
+            label: 'Operator reason',
+            maxLength: 500,
+            minLength: 12,
+            name: 'reason',
+            placeholder: 'Describe the booking and payment evidence reviewed',
+            required: true,
+          }] : undefined}
+          title={confirmation.title}
+          tone={confirmation.tone}
+        />
+      ) : confirmationAction ? (
+        <AdminErrorState
+          action={<AdminTextLink href={returnTo}>Return to payment queue</AdminTextLink>}
+          message="The selected payment could not be loaded. No payment action was made."
+          title="Payment confirmation unavailable"
+        />
       ) : null}
 
       <PaymentFilterBoardSection
-        activeFilterDescription={
-          model.activeFilter?.review ? paymentFilterDescription(model.activeFilter.review) : null
-        }
-        activeFilterLabel={model.activeFilter?.review ? model.activeFilter.label : null}
+        age={model.filters.age}
+        ageCounts={summaryResult.ok ? summaryResult.data.queueAgeCounts : undefined}
+        ageHref={(age) => buildPaymentPageHref({ ...model.filters, age, page: 1 })}
+        queueSla={summaryResult.ok ? summaryResult.data.queueSla : undefined}
+        sla={model.filters.sla}
+        slaHref={(sla) => buildPaymentPageHref({ ...model.filters, page: 1, sla })}
+        activeFilterDescription={model.activeFilter?.review ? paymentFilterDescription(model.activeFilter.review) : null}
+        activeFilterLabel={model.activeFilter?.label ?? null}
         activeRange={model.filters.range}
+        bookingStatus={model.filters.bookingStatus}
+        customerProfileId={model.filters.customerProfileId}
+        evidence={model.filters.evidence}
         filteredCount={model.payments.length}
+        pageSize={model.filters.pageSize}
+        paymentMethod={model.filters.paymentMethod}
+        paymentStatus={model.filters.paymentStatus}
+        q={model.filters.q}
         rangeLabel={model.dateRangeLabel}
-        rangeLinks={model.rangeLinks}
         review={model.filters.review}
         reviewLinks={model.reviewLinks}
-        totalCount={model.totalCount}
+        queueCounts={summaryResult.ok ? summaryResult.data.queueCounts : undefined}
+        totalCount={summaryResult.ok ? model.totalCount : model.payments.length}
+        sort={model.filters.sort}
+        sortHref={(sort) => buildPaymentPageHref({ ...model.filters, page: 1, sort })}
       />
-      <PaymentCallbackAttemptLedgerSection rows={model.callbackAttemptRows} />
-      <PaymentOperationsTableSection
-        emptyMessage={emptyPaymentMessage(model.filters.review)}
-        pagination={paymentPagination}
-      />
+
+      {paymentsResult.ok ? (
+        <PaymentOperationsTableSection
+          emptyMessage={emptyPaymentMessage(model.filters.review)}
+          pagination={paymentPagination}
+        />
+      ) : (
+        <AdminErrorState
+          action={<AdminTextLink href={currentHref}>Retry payment records</AdminTextLink>}
+          message="Payment records could not be loaded. No action controls are rendered from fallback data."
+          title="Payment records unavailable"
+        />
+      )}
     </AdminPageTemplate>
   );
+}
+
+function paymentNotice(params: Record<string, string | string[] | undefined>) {
+  const state = readSingleParam(params.paymentNotice);
+  if (state !== 'success' && state !== 'error') return null;
+  const action = readSingleParam(params.paymentAction).replaceAll('-', ' ');
+  const paymentId = readSingleParam(params.paymentId);
+  const auditId = readSingleParam(params.auditId);
+  const code = readSingleParam(params.paymentCode);
+  const message = readSingleParam(params.paymentMessage);
+  if (state === 'success') {
+    return {
+      message: `Payment ${paymentId || 'record'} completed ${action || 'the action'}.${auditId ? ` Audit receipt ${auditId}.` : ''}`,
+      title: 'Payment action completed',
+      tone: 'success' as const,
+    };
+  }
+  return {
+    message: message || `${action || 'Payment action'} was rejected after the server rechecked current evidence.${code ? ` ${code}.` : ''}`,
+    title: 'Payment action not completed',
+    tone: 'danger' as const,
+  };
 }
 
 function readSingleParam(value: string | string[] | undefined): string {

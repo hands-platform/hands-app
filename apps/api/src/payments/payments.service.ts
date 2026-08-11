@@ -1,14 +1,42 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { BadRequestException, ConflictException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  forwardRef,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { BookingStatus, PaymentMethod, PaymentStatus, Prisma, Role } from '@prisma/client';
+import {
+  BookingStatus,
+  CustomerWalletLedgerType,
+  PaymentMethod,
+  PaymentAdminOperationStatus,
+  PaymentStatus,
+  Prisma,
+  Role,
+} from '@prisma/client';
 import { Queue } from 'bullmq';
+import { createHash, randomUUID } from 'node:crypto';
 import { AdminService } from '../admin/admin.service';
 import { EarningsService } from '../earnings/earnings.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettlementsService } from '../settlements/settlements.service';
-import { CardPaymentAdapter, CashPaymentAdapter, MomoPaymentAdapter, VnpayPaymentAdapter } from './adapters';
+import {
+  CardPaymentAdapter,
+  CashPaymentAdapter,
+  CustomerWalletPaymentAdapter,
+  MomoPaymentAdapter,
+  VnpayPaymentAdapter,
+} from './adapters';
+import {
+  customerWalletBookingLockKey,
+  customerWalletPaymentRefundSourceKey,
+  customerWalletPaymentReleaseSourceKey,
+  customerWalletPaymentSourceKey,
+} from './customer-wallet-payment';
 import { PaymentAdapter, PaymentOperationResult } from './payment-adapter';
 import { availableCustomerCheckoutMethods } from './payment-checkout-methods';
 import {
@@ -33,7 +61,6 @@ import { PAYMENT_STATUS_CHECK_QUEUE_NAME, paymentStatusCheckJob } from './paymen
 import {
   paymentCaptureAuditMetadata,
   paymentRefundAuditMetadata,
-  paymentReleaseAuditMetadata,
 } from './payment-admin-audit';
 import { paymentCaptureUpdateData, paymentRefundRequestCreateData } from './payment-admin-data';
 import {
@@ -47,14 +74,49 @@ import {
   paymentRefundStatusJob,
 } from './payment-refund-status.queue';
 import { paymentUpdatedNotification } from './payments.notifications';
+import {
+  type PaymentActionDecisionRecord,
+  type PaymentAdminAction,
+  paymentActionCanExecute,
+  paymentActionDecision,
+} from './payment-action-decision';
+
+export type PaymentActionReceipt = {
+  readonly auditId: string;
+  readonly paymentId: string;
+  readonly action: PaymentAdminAction;
+  readonly before: { readonly paymentStatus: string; readonly bookingStatus: string };
+  readonly after: { readonly paymentStatus: string; readonly bookingStatus: string };
+  readonly actorId: string;
+  readonly completedAt: string;
+  readonly idempotencyKey: string;
+};
+
+type AdminPaymentActionRecord = PaymentActionDecisionRecord & {
+  readonly id: string;
+  readonly booking: NonNullable<PaymentActionDecisionRecord['booking']> & {
+    readonly status: string;
+  };
+};
+
+const paymentAdminOperationClaimReplaySelect = {
+  errorCode: true,
+  errorMessage: true,
+  id: true,
+  receipt: true,
+  requestHash: true,
+  status: true,
+} satisfies Prisma.PaymentAdminOperationClaimSelect;
 
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
+  private readonly customerWallet = new CustomerWalletPaymentAdapter();
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    @Inject(forwardRef(() => AdminService))
     private readonly admin: AdminService,
     private readonly earnings: EarningsService,
     private readonly momo: MomoPaymentAdapter,
@@ -69,7 +131,7 @@ export class PaymentsService {
 
   customerCheckoutMethods() {
     const methods = availableCustomerCheckoutMethods(
-      [this.cash, this.momo, this.vnpay, this.card],
+      [this.cash, this.customerWallet, this.momo, this.vnpay, this.card],
       {
         isProduction: this.config.get<string>('NODE_ENV') === 'production',
         allowPlaceholder:
@@ -92,8 +154,36 @@ export class PaymentsService {
     };
   }
 
+  async customerCheckoutAction(customerUserId: string, bookingId: string) {
+    const payment = await this.prisma.payment.findFirstOrThrow({
+      where: {
+        bookingId,
+        booking: { customerProfile: { userId: customerUserId } },
+      },
+      select: {
+        bookingId: true,
+        id: true,
+        method: true,
+        rawMeta: true,
+        status: true,
+      },
+    });
+    const checkoutUrl = stringValue(asJsonObject(payment.rawMeta).checkoutUrl);
+    if (!checkoutUrl) {
+      throw new BadRequestException('This payment does not require an external checkout');
+    }
+
+    return {
+      bookingId: payment.bookingId,
+      checkoutUrl,
+      method: payment.method,
+      paymentId: payment.id,
+      status: payment.status,
+    };
+  }
+
   requiresPostBookingAuthorization(method: PaymentMethod) {
-    return this.adapterFor(method).mode === 'GATEWAY';
+    return method === PaymentMethod.CUSTOMER_WALLET || this.adapterFor(method).mode === 'GATEWAY';
   }
 
   paymentCanOpenMatching(method: PaymentMethod, status: PaymentStatus) {
@@ -410,10 +500,34 @@ export class PaymentsService {
     }
   }
 
-  async syncStatusForAdmin(actorId: string, paymentId: string) {
-    const result = await this.checkAndSyncStatus(paymentId);
-    await this.admin.writeAudit(actorId, 'payment.sync', `payment:${paymentId}`, toJsonOrUndefined(result));
-    return result;
+  async syncStatusForAdmin(
+    actorId: string,
+    paymentId: string,
+    input: { idempotencyKey: string; reason?: string | null },
+  ) {
+    return this.executeAdminPaymentAction({
+      action: 'SYNC',
+      actorId,
+      execute: () => this.checkAndSyncStatus(paymentId),
+      idempotencyKey: input.idempotencyKey,
+      paymentId,
+      reason: input.reason,
+    });
+  }
+
+  async captureForAdmin(
+    actorId: string,
+    paymentId: string,
+    input: { idempotencyKey: string; reason?: string | null },
+  ) {
+    return this.executeAdminPaymentAction({
+      action: 'CAPTURE',
+      actorId,
+      execute: () => this.capture(actorId, paymentId),
+      idempotencyKey: input.idempotencyKey,
+      paymentId,
+      reason: input.reason,
+    });
   }
 
   async capture(actorId: string, paymentId: string) {
@@ -453,6 +567,9 @@ export class PaymentsService {
     if (payment.status === PaymentStatus.RELEASED) {
       return payment;
     }
+    if (payment.method === PaymentMethod.CUSTOMER_WALLET) {
+      return this.releaseCustomerWalletPayment(payment);
+    }
     if (payment.status !== PaymentStatus.PENDING && payment.status !== PaymentStatus.AUTHORIZED) {
       throw paymentTransitionConflict(paymentId, payment.status, PaymentStatus.RELEASED);
     }
@@ -469,21 +586,57 @@ export class PaymentsService {
     return updated;
   }
 
-  async releaseForAdmin(actorId: string, paymentId: string) {
-    const payment = await this.release(paymentId);
-    await this.admin.writeAudit(
+  async releaseForAdmin(
+    actorId: string,
+    paymentId: string,
+    input: { idempotencyKey: string; reason?: string | null },
+  ) {
+    return this.executeAdminPaymentAction({
+      action: 'RELEASE',
       actorId,
-      'payment.release',
-      `payment:${paymentId}`,
-      paymentReleaseAuditMetadata(payment),
-    );
-    return payment;
+      execute: () => this.release(paymentId),
+      idempotencyKey: input.idempotencyKey,
+      paymentId,
+      reason: input.reason,
+    });
   }
 
-  async closeUnmatchedBookingPayment(paymentId: string, reason: string) {
-    const payment = await this.prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
+  async requestRefundForAdmin(
+    actorId: string,
+    paymentId: string,
+    input: { idempotencyKey?: string | null; reason?: string | null },
+  ) {
+    const idempotencyKey = input.idempotencyKey?.trim() || `refund-request:${paymentId}:${randomUUID()}`;
+    return this.executeAdminPaymentAction({
+      action: 'REQUEST_REFUND',
+      actorId,
+      execute: () => this.requestRefund(actorId, paymentId, input),
+      idempotencyKey,
+      paymentId,
+      reason: input.reason,
+    });
+  }
+
+  async closeUnmatchedBookingPayment(
+    paymentId: string,
+    reason: string,
+    request: { requestedByAdminId?: string; source?: string } = {},
+    tx?: Prisma.TransactionClient,
+  ) {
+    const payment = tx
+      ? await tx.payment.findUniqueOrThrow({ where: { id: paymentId } })
+      : await this.prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
+    if (payment.status === PaymentStatus.RELEASED || payment.status === PaymentStatus.REFUNDED) {
+      return {
+        payment,
+        refundRequested: payment.status === PaymentStatus.REFUNDED,
+        released: payment.status === PaymentStatus.RELEASED,
+      };
+    }
     if (payment.status !== PaymentStatus.CAPTURED) {
-      const releasedPayment = await this.release(paymentId);
+      const releasedPayment = tx
+        ? await this.releaseWithinTransaction(tx, payment)
+        : await this.release(paymentId);
       return {
         payment: releasedPayment,
         refundRequested: false,
@@ -491,29 +644,36 @@ export class PaymentsService {
       };
     }
 
-    const refund = await this.prisma.refund.upsert({
+    const requestedAt = new Date();
+    const refund = await (tx ?? this.prisma).refund.upsert({
       where: { paymentId },
       create: {
         paymentId,
-        bookingId: payment.bookingId,
-        amount: payment.amount,
-        currency: payment.currency,
-        reason,
-        status: 'REQUESTED',
-        metadata: {
-          source: 'UNMATCHED_BOOKING_CLOSE',
-          requestedAt: new Date().toISOString(),
-        },
+        ...paymentRefundRequestCreateData({
+          amount: payment.amount,
+          bookingId: payment.bookingId,
+          currency: payment.currency,
+          reason,
+          requestedAt,
+          requestedByAdminId: request.requestedByAdminId,
+          source: request.source ?? 'UNMATCHED_BOOKING_CLOSE',
+        }),
       },
       update: {},
     });
     return { payment, refund, refundRequested: true, released: false };
   }
 
-  async refund(actorId: string, paymentId: string, input: { approvalAdminId?: string | null } = {}) {
-    const approvalAdminId = normalizePaymentRefundApprovalAdminId(input.approvalAdminId, actorId);
-    await assertPaymentRefundApprovalAdmin(this.prisma, approvalAdminId);
-    const occurredAt = new Date();
+  async notifyPaymentUpdatedAfterCommit(paymentId: string) {
+    try {
+      await this.notifyPaymentUpdated(paymentId);
+    } catch (error) {
+      this.logger.warn(`Could not notify payment update for ${paymentId}: ${errorMessage(error)}`);
+    }
+  }
+
+  async requestRefund(actorId: string, paymentId: string, input: { reason?: string | null } = {}) {
+    const requestedAt = new Date();
     const current = await this.prisma.payment.findUnique({ where: { id: paymentId } });
     if (!current) {
       throw new BadRequestException(`Payment ${paymentId} was not found`);
@@ -521,24 +681,27 @@ export class PaymentsService {
     if (current.status !== PaymentStatus.CAPTURED) {
       throw paymentTransitionConflict(paymentId, current.status, PaymentStatus.REFUNDED);
     }
-    const refundCreateData = paymentRefundRequestCreateData({
-      actorId,
+
+    const createData = paymentRefundRequestCreateData({
       amount: current.amount,
-      approvalAdminId,
       bookingId: current.bookingId,
       currency: current.currency,
-      occurredAt,
+      reason: stringValue(input.reason) ?? 'Admin manual refund',
+      requestedAt,
+      requestedByAdminId: actorId,
+      source: 'ADMIN_MANUAL',
     });
     let refund = await this.prisma.refund.findUnique({ where: { paymentId } });
-    const shouldAttachApprovalContext = refund?.status === 'REQUESTED';
+    let created = false;
     if (!refund) {
       try {
         refund = await this.prisma.refund.create({
           data: {
             paymentId,
-            ...refundCreateData,
+            ...createData,
           },
         });
+        created = true;
       } catch (error) {
         if (!isUniqueConstraintError(error)) {
           throw error;
@@ -548,83 +711,175 @@ export class PaymentsService {
           throw error;
         }
       }
-    }
-
-    if (shouldAttachApprovalContext) {
+    } else if (refund.status === 'REJECTED') {
       refund = await this.prisma.refund.update({
         where: { id: refund.id },
-        data: {
-          metadata: toJsonOrUndefined({
-            ...asJsonObject(refund.metadata),
-            actorId,
-            approvalAdminId,
-            occurredAt: occurredAt.toISOString(),
-          }),
-        },
+        data: createData,
       });
+      created = true;
     }
 
-    if (refund.status === 'PROVIDER_PROCESSING') {
-      await this.tryScheduleRefundStatusCheck(refund.id);
+    if (refund.status !== 'REQUESTED') {
+      throw new ConflictException(`Refund ${refund.id} cannot be requested from status ${refund.status}`);
+    }
+    if (created) {
+      await this.admin.writeAudit(actorId, 'payment.refund.request', `payment:${paymentId}`, {
+        refundId: refund.id,
+        requestedAt: requestedAt.toISOString(),
+      });
+    }
+    return this.prisma.payment.findUniqueOrThrow({
+      where: { id: paymentId },
+      include: { refunds: true },
+    });
+  }
+
+  async refund(actorId: string, paymentId: string) {
+    await assertPaymentRefundApprovalAdmin(this.prisma, actorId);
+    const occurredAt = new Date();
+    const current = await this.prisma.payment.findUnique({ where: { id: paymentId } });
+    if (!current) {
+      throw new BadRequestException(`Payment ${paymentId} was not found`);
+    }
+    if (current.status !== PaymentStatus.CAPTURED) {
+      throw paymentTransitionConflict(paymentId, current.status, PaymentStatus.REFUNDED);
+    }
+    const refund = await this.prisma.refund.findUnique({ where: { paymentId } });
+    if (!refund) {
+      throw new ConflictException('Payment refund must be requested before finance approval');
+    }
+    if (refund.status === 'GATEWAY_CONFIRMED') {
+      await this.checkAndFinalizeRefund(refund.id);
       return this.prisma.payment.findUniqueOrThrow({
         where: { id: paymentId },
         include: { refunds: true },
       });
     }
+    if (refund.status !== 'REQUESTED') {
+      throw new ConflictException(`Refund ${refund.id} cannot be approved from status ${refund.status}`);
+    }
+    const requestContext = paymentRefundRequestContext(refund.metadata);
+    assertIndependentPaymentRefundApprover(requestContext.requestedByAdminId, actorId);
+    const approvalMetadata = {
+      ...asJsonObject(refund.metadata),
+      approvalAdminId: actorId,
+      approvedAt: occurredAt.toISOString(),
+      occurredAt: occurredAt.toISOString(),
+    };
+    const approvalClaim = await this.prisma.refund.updateMany({
+      where: { id: refund.id, status: 'REQUESTED' },
+      data: {
+        status: 'APPROVAL_PROCESSING',
+        metadata: toJsonOrUndefined(approvalMetadata),
+      },
+    });
+    if (approvalClaim.count !== 1) {
+      throw new ConflictException(`Refund ${refund.id} approval was already claimed`);
+    }
+    let refundInProgress: { id: string; metadata: unknown; status: string } = {
+      id: refund.id,
+      metadata: approvalMetadata,
+      status: 'APPROVAL_PROCESSING',
+    };
 
-    if (refund.status !== 'GATEWAY_CONFIRMED') {
-      try {
-        const paymentMeta = asJsonObject(current.rawMeta);
-        const operation = await this.adapterFor(current.method).refund({
-          ...paymentOperationInput(current),
-          refundId: refund.id,
-          requestedBy: actorId,
-          refundMeta: refund.metadata,
-          gatewayTransactionId:
-            stringValue(paymentMeta.gatewayTransactionId || paymentMeta.transId) || undefined,
-        });
-        if (operation.providerFinalized === false) {
-          refund = await this.prisma.refund.update({
-            where: { id: refund.id },
-            data: {
-              status: 'PROVIDER_PROCESSING',
-              metadata: toJsonOrUndefined({
-                ...asJsonObject(refund.metadata),
-                ...asJsonObject(operation.rawMeta),
-                providerAcceptedAt: new Date().toISOString(),
-              }),
-            },
-          });
-          await this.tryScheduleRefundStatusCheck(refund.id);
-          await this.admin.writeAudit(actorId, 'payment.refund.provider-processing', `payment:${paymentId}`, {
-            approvalAdminId,
-            refundId: refund.id,
-            status: refund.status,
-          });
-          return this.prisma.payment.findUniqueOrThrow({
-            where: { id: paymentId },
-            include: { refunds: true },
-          });
-        }
-        assertPaymentOperationStatus(paymentId, operation.status, PaymentStatus.REFUNDED);
-        refund = await this.prisma.refund.update({
-          where: { id: refund.id },
+    try {
+      const paymentMeta = asJsonObject(current.rawMeta);
+      const operation = await this.adapterFor(current.method).refund({
+        ...paymentOperationInput(current),
+        refundId: refundInProgress.id,
+        requestedBy: actorId,
+        refundMeta: refundInProgress.metadata,
+        gatewayTransactionId:
+          stringValue(paymentMeta.gatewayTransactionId || paymentMeta.transId) || undefined,
+      });
+      if (operation.providerFinalized === false) {
+        refundInProgress = await this.prisma.refund.update({
+          where: { id: refundInProgress.id },
           data: {
-            status: 'GATEWAY_CONFIRMED',
+            status: 'PROVIDER_PROCESSING',
             metadata: toJsonOrUndefined({
-              ...asJsonObject(refund.metadata),
+              ...asJsonObject(refundInProgress.metadata),
               ...asJsonObject(operation.rawMeta),
-              gatewayConfirmedAt: new Date().toISOString(),
+              providerAcceptedAt: new Date().toISOString(),
             }),
           },
         });
-      } catch (error) {
-        await this.recordRefundGatewayFailure(refund, error);
-        throw error;
+        await this.tryScheduleRefundStatusCheck(refundInProgress.id);
+        await this.admin.writeAudit(actorId, 'payment.refund.provider-processing', `payment:${paymentId}`, {
+          approvalAdminId: actorId,
+          requestedByAdminId: requestContext.requestedByAdminId,
+          refundId: refundInProgress.id,
+          status: refundInProgress.status,
+        });
+        return this.prisma.payment.findUniqueOrThrow({
+          where: { id: paymentId },
+          include: { refunds: true },
+        });
       }
+      assertPaymentOperationStatus(paymentId, operation.status, PaymentStatus.REFUNDED);
+      refundInProgress = await this.prisma.refund.update({
+        where: { id: refundInProgress.id },
+        data: {
+          status: 'GATEWAY_CONFIRMED',
+          metadata: toJsonOrUndefined({
+            ...asJsonObject(refundInProgress.metadata),
+            ...asJsonObject(operation.rawMeta),
+            gatewayConfirmedAt: new Date().toISOString(),
+          }),
+        },
+      });
+    } catch (error) {
+      await this.recordRefundGatewayFailure(refundInProgress, error);
+      throw error;
     }
 
-    return this.finalizeRefund({ actorId, approvalAdminId, occurredAt, paymentId, refund });
+    return this.finalizeRefund({
+      actorId,
+      approvalAdminId: actorId,
+      occurredAt,
+      paymentId,
+      refund: refundInProgress,
+      requestedByAdminId: requestContext.requestedByAdminId,
+    });
+  }
+
+  async rejectRefund(actorId: string, refundId: string, reason: string) {
+    await assertPaymentRefundApprovalAdmin(this.prisma, actorId);
+    const refund = await this.prisma.refund.findUnique({ where: { id: refundId } });
+    if (!refund) {
+      throw new BadRequestException(`Refund ${refundId} was not found`);
+    }
+    if (refund.status !== 'REQUESTED') {
+      throw new ConflictException(`Refund ${refundId} cannot be rejected from status ${refund.status}`);
+    }
+    const requestContext = paymentRefundRequestContext(refund.metadata);
+    assertIndependentPaymentRefundApprover(requestContext.requestedByAdminId, actorId);
+    const rejectedAt = new Date();
+    const claim = await this.prisma.refund.updateMany({
+      where: { id: refundId, status: 'REQUESTED' },
+      data: {
+        status: 'REJECTED',
+        metadata: toJsonOrUndefined({
+          ...asJsonObject(refund.metadata),
+          rejectionAdminId: actorId,
+          rejectionReason: reason,
+          rejectedAt: rejectedAt.toISOString(),
+        }),
+      },
+    });
+    if (claim.count !== 1) {
+      throw new ConflictException(`Refund ${refundId} decision was already claimed`);
+    }
+    await this.admin.writeAudit(actorId, 'payment.refund.reject', `payment:${refund.paymentId}`, {
+      reason,
+      refundId,
+      requestedByAdminId: requestContext.requestedByAdminId,
+    });
+    return {
+      id: refundId,
+      paymentId: refund.paymentId,
+      status: 'REJECTED',
+    };
   }
 
   async checkAndFinalizeRefund(refundId: string) {
@@ -689,6 +944,7 @@ export class PaymentsService {
       occurredAt: audit.occurredAt,
       paymentId: refund.paymentId,
       refund: refundForFinalization,
+      requestedByAdminId: audit.requestedByAdminId,
     });
     return { completed: true, paymentId: refund.paymentId, refundId };
   }
@@ -699,8 +955,9 @@ export class PaymentsService {
     occurredAt: Date;
     paymentId: string;
     refund: { id: string; metadata: unknown };
+    requestedByAdminId: string | null;
   }) {
-    const { actorId, approvalAdminId, occurredAt, paymentId, refund } = input;
+    const { actorId, approvalAdminId, occurredAt, paymentId, refund, requestedByAdminId } = input;
 
     let settlementReversal: Prisma.InputJsonObject = { skipped: true, reason: 'NOT_ATTEMPTED' };
     let earningCancellation: Awaited<ReturnType<EarningsService['cancelForRefund']>> = {
@@ -740,6 +997,9 @@ export class PaymentsService {
           tx,
         ),
       );
+      if (transition.payment.method === PaymentMethod.CUSTOMER_WALLET) {
+        await this.restoreCustomerWalletPaymentForRefund(tx, transition.payment);
+      }
       earningCancellation = await this.earnings.cancelForRefund(transition.payment.bookingId, tx);
       return tx.payment.findUniqueOrThrow({ where: { id: paymentId }, include: { refunds: true } });
     });
@@ -747,6 +1007,7 @@ export class PaymentsService {
     await this.admin.writeAudit(actorId, 'payment.refund', `payment:${paymentId}`, {
       ...paymentRefundAuditMetadata(payment, paymentRefundEarningCancellationAudit(earningCancellation)),
       approvalAdminId,
+      requestedByAdminId,
       settlementReversal,
     });
     await this.notifyPaymentUpdated(payment.id);
@@ -823,7 +1084,162 @@ export class PaymentsService {
     if (method === PaymentMethod.CARD) {
       return this.card;
     }
+    if (method === PaymentMethod.CUSTOMER_WALLET) {
+      return this.customerWallet;
+    }
     throw new BadRequestException('Unsupported payment method');
+  }
+
+  private async releaseWithinTransaction(
+    tx: Prisma.TransactionClient,
+    payment: PaymentOperationRecord & { method: PaymentMethod; status: PaymentStatus },
+  ) {
+    if (payment.method === PaymentMethod.CUSTOMER_WALLET) {
+      return this.releaseCustomerWalletPayment(payment, tx);
+    }
+    if (payment.status !== PaymentStatus.PENDING && payment.status !== PaymentStatus.AUTHORIZED) {
+      throw paymentTransitionConflict(payment.id, payment.status, PaymentStatus.RELEASED);
+    }
+    const operation = await this.adapterFor(payment.method).release(paymentOperationInput(payment));
+    assertPaymentOperationStatus(payment.id, operation.status, PaymentStatus.RELEASED);
+    const { payment: updated } = await transitionPaymentStatus(tx, {
+      data: paymentOperationUpdateData(payment, operation, { status: operation.status }),
+      fromStatuses: [payment.status],
+      paymentId: payment.id,
+      targetStatus: operation.status,
+    });
+    return updated;
+  }
+
+  private async releaseCustomerWalletPayment(payment: {
+    amount: number;
+    bookingId: string;
+    currency: string;
+    id: string;
+    status: PaymentStatus;
+  }, existingTx?: Prisma.TransactionClient) {
+    if (payment.status !== PaymentStatus.AUTHORIZED) {
+      throw paymentTransitionConflict(payment.id, payment.status, PaymentStatus.RELEASED);
+    }
+
+    const release = async (tx: Prisma.TransactionClient) => {
+      const booking = await tx.booking.findUniqueOrThrow({
+        where: { id: payment.bookingId },
+        select: { customerProfileId: true },
+      });
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${customerWalletBookingLockKey(
+          booking.customerProfileId,
+        )}))::text AS "lockResult"`,
+      );
+      const reservation = await tx.customerWalletLedgerEntry.findUnique({
+        where: { sourceKey: customerWalletPaymentSourceKey(payment.bookingId) },
+      });
+      if (!reservation || reservation.amount >= 0) {
+        throw new ConflictException('Customer wallet booking reservation is missing');
+      }
+      const transition = await transitionPaymentStatus(tx, {
+        data: { status: PaymentStatus.RELEASED },
+        fromStatuses: [PaymentStatus.AUTHORIZED],
+        paymentId: payment.id,
+        targetStatus: PaymentStatus.RELEASED,
+      });
+      await tx.customerWalletLedgerEntry.upsert({
+        where: { sourceKey: customerWalletPaymentReleaseSourceKey(payment.bookingId) },
+        update: {
+          amount: -reservation.amount,
+          bookingId: payment.bookingId,
+          currency: payment.currency,
+          customerProfileId: booking.customerProfileId,
+          metadata: {
+            bookingId: payment.bookingId,
+            paymentId: payment.id,
+            reservationEntryId: reservation.id,
+            reservationState: 'RELEASED',
+          },
+          notes: 'Customer wallet booking reservation released after booking close.',
+          reference: payment.id,
+          type: CustomerWalletLedgerType.REFUND,
+        },
+        create: {
+          amount: -reservation.amount,
+          bookingId: payment.bookingId,
+          currency: payment.currency,
+          customerProfileId: booking.customerProfileId,
+          metadata: {
+            bookingId: payment.bookingId,
+            paymentId: payment.id,
+            reservationEntryId: reservation.id,
+            reservationState: 'RELEASED',
+          },
+          notes: 'Customer wallet booking reservation released after booking close.',
+          reference: payment.id,
+          sourceKey: customerWalletPaymentReleaseSourceKey(payment.bookingId),
+          type: CustomerWalletLedgerType.REFUND,
+        },
+      });
+      return transition.payment;
+    };
+    const updated = existingTx ? await release(existingTx) : await this.prisma.$transaction(release);
+    if (!existingTx) {
+      await this.notifyPaymentUpdated(updated.id);
+    }
+    return updated;
+  }
+
+  private async restoreCustomerWalletPaymentForRefund(
+    tx: Prisma.TransactionClient,
+    payment: { amount: number; bookingId: string; currency: string; id: string },
+  ) {
+    const booking = await tx.booking.findUniqueOrThrow({
+      where: { id: payment.bookingId },
+      select: { customerProfileId: true },
+    });
+    await tx.$queryRaw(
+      Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${customerWalletBookingLockKey(
+        booking.customerProfileId,
+      )}))::text AS "lockResult"`,
+    );
+    const reservation = await tx.customerWalletLedgerEntry.findUnique({
+      where: { sourceKey: customerWalletPaymentSourceKey(payment.bookingId) },
+    });
+    if (!reservation || reservation.amount >= 0) {
+      throw new ConflictException('Customer wallet payment debit is missing');
+    }
+    await tx.customerWalletLedgerEntry.upsert({
+      where: { sourceKey: customerWalletPaymentRefundSourceKey(payment.bookingId) },
+      update: {
+        amount: -reservation.amount,
+        bookingId: payment.bookingId,
+        currency: payment.currency,
+        customerProfileId: booking.customerProfileId,
+        metadata: {
+          bookingId: payment.bookingId,
+          paymentId: payment.id,
+          reservationEntryId: reservation.id,
+          reservationState: 'REFUNDED',
+        },
+        notes: 'Customer wallet payment restored after completed booking refund.',
+        reference: payment.id,
+        type: CustomerWalletLedgerType.REFUND,
+      },
+      create: {
+        amount: -reservation.amount,
+        bookingId: payment.bookingId,
+        currency: payment.currency,
+        customerProfileId: booking.customerProfileId,
+        metadata: {
+          bookingId: payment.bookingId,
+          paymentId: payment.id,
+          reservationEntryId: reservation.id,
+          reservationState: 'REFUNDED',
+        },
+        notes: 'Customer wallet payment restored after completed booking refund.',
+        reference: payment.id,
+        sourceKey: customerWalletPaymentRefundSourceKey(payment.bookingId),
+        type: CustomerWalletLedgerType.REFUND,
+      },
+    });
   }
 
   private parsePaymentMethod(method: PaymentMethod | string): PaymentMethod {
@@ -954,6 +1370,341 @@ export class PaymentsService {
       // Callback verification decisions must not become unavailable because audit storage failed.
     }
   }
+
+  private async executeAdminPaymentAction(input: {
+    action: PaymentAdminAction;
+    actorId: string;
+    execute: () => Promise<unknown>;
+    idempotencyKey: string;
+    paymentId: string;
+    reason?: string | null;
+  }): Promise<PaymentActionReceipt> {
+    const idempotencyKey = input.idempotencyKey.trim();
+    if (idempotencyKey.length < 8) {
+      throw new BadRequestException({
+        code: 'PAYMENT_ACTION_IDEMPOTENCY_KEY_REQUIRED',
+        message: 'Payment actions require an idempotency key of at least 8 characters.',
+      });
+    }
+
+    const reason = input.reason?.trim() || null;
+    if (input.action !== 'SYNC' && (!reason || reason.length < 12)) {
+      throw new BadRequestException({
+        code: 'PAYMENT_ACTION_REASON_REQUIRED',
+        message: 'Capture, release, and refund review actions require a reason of at least 12 characters.',
+      });
+    }
+
+    const replay = await this.findPaymentActionReceipt(input.paymentId, idempotencyKey);
+    if (replay) {
+      return replay;
+    }
+
+    const beforeRecord = await this.loadAdminPaymentActionRecord(input.paymentId);
+    const decision = paymentActionDecision(beforeRecord, input.action);
+    if (!paymentActionCanExecute(decision)) {
+      throw new ConflictException({
+        actionDecision: decision,
+        code: decision.reasonCode,
+        message: decision.reason,
+      });
+    }
+
+    const before = paymentActionState(beforeRecord);
+    const requestHash = paymentActionRequestHash({
+      action: input.action,
+      actorId: input.actorId,
+      paymentId: input.paymentId,
+      reason,
+    });
+    const claim = await this.acquirePaymentActionClaim({
+      action: input.action,
+      actorId: input.actorId,
+      idempotencyKey,
+      paymentId: input.paymentId,
+      reason,
+      requestHash,
+    });
+    if (claim.replay) {
+      return claim.replay;
+    }
+
+    try {
+      await input.execute();
+      const afterRecord = await this.loadAdminPaymentActionRecord(input.paymentId);
+      const receiptWithoutAuditId = {
+        action: input.action,
+        actorId: input.actorId,
+        after: paymentActionState(afterRecord),
+        before,
+        completedAt: new Date().toISOString(),
+        idempotencyKey,
+        paymentId: input.paymentId,
+      };
+      let receipt: PaymentActionReceipt = {
+        auditId: claim.id,
+        ...receiptWithoutAuditId,
+      };
+
+      try {
+        const audit = await this.admin.writeAudit(
+          input.actorId,
+          'payment.action_receipt',
+          `payment:${input.paymentId}`,
+          {
+            decision,
+            idempotencyKey,
+            reason,
+            receipt: receiptWithoutAuditId,
+          },
+        );
+        receipt = { ...receipt, auditId: audit.id };
+      } catch (error) {
+        this.logger.error(
+          `Payment action ${claim.id} completed but the legacy audit mirror failed`,
+          error instanceof Error ? error.stack : undefined,
+        );
+      }
+      await this.prisma.paymentAdminOperationClaim.update({
+        where: { id: claim.id },
+        data: {
+          completedAt: new Date(receipt.completedAt),
+          receipt: receipt as Prisma.InputJsonValue,
+          status: PaymentAdminOperationStatus.SUCCEEDED,
+        },
+      });
+      return receipt;
+    } catch (error) {
+      await this.prisma.paymentAdminOperationClaim.update({
+        where: { id: claim.id },
+        data: {
+          errorCode: 'PAYMENT_ACTION_RESULT_REQUIRES_REVIEW',
+          errorMessage: safePaymentActionErrorMessage(error),
+          status: PaymentAdminOperationStatus.REVIEW_REQUIRED,
+        },
+      });
+      throw new ConflictException({
+        code: 'PAYMENT_ACTION_RESULT_REQUIRES_REVIEW',
+        message: 'The payment provider result is uncertain. Review the payment before any retry.',
+        operationClaimId: claim.id,
+      });
+    }
+  }
+
+  private async acquirePaymentActionClaim(input: {
+    action: PaymentAdminAction;
+    actorId: string;
+    idempotencyKey: string;
+    paymentId: string;
+    reason: string | null;
+    requestHash: string;
+  }): Promise<{ id: string; replay: PaymentActionReceipt | null }> {
+    try {
+      const claim = await this.prisma.paymentAdminOperationClaim.create({
+        data: {
+          action: input.action,
+          actorId: input.actorId,
+          idempotencyKey: input.idempotencyKey,
+          paymentId: input.paymentId,
+          reason: input.reason,
+          requestHash: input.requestHash,
+        },
+        select: { id: true },
+      });
+      return { id: claim.id, replay: null };
+    } catch (error) {
+      if (!isUniqueConstraintError(error)) {
+        throw error;
+      }
+    }
+
+    const sameRequest = await this.prisma.paymentAdminOperationClaim.findUnique({
+      where: {
+        paymentId_idempotencyKey: {
+          idempotencyKey: input.idempotencyKey,
+          paymentId: input.paymentId,
+        },
+      },
+      select: paymentAdminOperationClaimReplaySelect,
+    });
+    if (sameRequest) {
+      if (sameRequest.requestHash !== input.requestHash) {
+        throw new ConflictException({
+          code: 'PAYMENT_ACTION_IDEMPOTENCY_PAYLOAD_MISMATCH',
+          message: 'This idempotency key was already used with different payment action inputs.',
+        });
+      }
+      return this.waitForPaymentActionClaim(sameRequest.id);
+    }
+
+    const activeClaim = await this.prisma.paymentAdminOperationClaim.findFirst({
+      where: {
+        paymentId: input.paymentId,
+        status: { in: [PaymentAdminOperationStatus.IN_PROGRESS, PaymentAdminOperationStatus.REVIEW_REQUIRED] },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, status: true },
+    });
+    throw new ConflictException({
+      code: activeClaim?.status === PaymentAdminOperationStatus.REVIEW_REQUIRED
+        ? 'PAYMENT_ACTION_REVIEW_REQUIRED'
+        : 'PAYMENT_ACTION_IN_PROGRESS',
+      message: activeClaim?.status === PaymentAdminOperationStatus.REVIEW_REQUIRED
+        ? 'A previous payment action has an uncertain provider result and requires review.'
+        : 'Another payment action is already in progress.',
+      operationClaimId: activeClaim?.id ?? null,
+    });
+  }
+
+  private async waitForPaymentActionClaim(
+    claimId: string,
+  ): Promise<{ id: string; replay: PaymentActionReceipt }> {
+    for (let attempt = 0; attempt < 300; attempt += 1) {
+      const claim = await this.prisma.paymentAdminOperationClaim.findUnique({
+        where: { id: claimId },
+        select: paymentAdminOperationClaimReplaySelect,
+      });
+      if (!claim) {
+        break;
+      }
+      if (claim.status === PaymentAdminOperationStatus.SUCCEEDED) {
+        const receipt = paymentActionReceiptFromAudit(claim.id, claim.receipt);
+        if (receipt) {
+          return { id: claim.id, replay: receipt };
+        }
+      }
+      if (claim.status === PaymentAdminOperationStatus.REVIEW_REQUIRED) {
+        throw new ConflictException({
+          code: claim.errorCode || 'PAYMENT_ACTION_REVIEW_REQUIRED',
+          message: claim.errorMessage || 'The previous payment action requires operator review.',
+          operationClaimId: claim.id,
+        });
+      }
+      await paymentActionClaimDelay(100);
+    }
+    throw new ConflictException({
+      code: 'PAYMENT_ACTION_IN_PROGRESS',
+      message: 'The same payment action is still in progress. Reopen the payment before retrying.',
+      operationClaimId: claimId,
+    });
+  }
+
+  private async findPaymentActionReceipt(
+    paymentId: string,
+    idempotencyKey: string,
+  ): Promise<PaymentActionReceipt | null> {
+    const audits = await this.prisma.adminAuditLog.findMany({
+      where: {
+        action: 'payment.action_receipt',
+        target: `payment:${paymentId}`,
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, metadata: true },
+      take: 20,
+    });
+
+    for (const audit of audits) {
+      const metadata = asJsonObject(audit.metadata);
+      if (stringValue(metadata.idempotencyKey) !== idempotencyKey) {
+        continue;
+      }
+      const receipt = paymentActionReceiptFromAudit(audit.id, metadata.receipt);
+      if (receipt) {
+        return receipt;
+      }
+    }
+    return null;
+  }
+
+  private async loadAdminPaymentActionRecord(paymentId: string): Promise<AdminPaymentActionRecord> {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: {
+        booking: {
+          select: {
+            status: true,
+            customerWalletLedgerEntries: {
+              orderBy: { createdAt: 'desc' },
+              select: {
+                amount: true,
+                createdAt: true,
+                sourceKey: true,
+                updatedAt: true,
+              },
+              take: 5,
+            },
+          },
+        },
+        callbackAttempts: {
+          orderBy: { createdAt: 'desc' },
+          select: {
+            callbackAmount: true,
+            createdAt: true,
+            outcome: true,
+            signatureVerified: true,
+          },
+          take: 5,
+        },
+      },
+    });
+    if (!payment) {
+      throw new BadRequestException(`Payment ${paymentId} was not found`);
+    }
+    return payment;
+  }
+}
+
+function paymentActionState(record: AdminPaymentActionRecord) {
+  return {
+    bookingStatus: record.booking.status,
+    paymentStatus: record.status,
+  };
+}
+
+function paymentActionReceiptFromAudit(
+  auditId: string,
+  value: unknown,
+): PaymentActionReceipt | null {
+  const receipt = asJsonObject(value);
+  const receiptAuditId = stringValue(receipt.auditId) || auditId;
+  const action = stringValue(receipt.action);
+  const actorId = stringValue(receipt.actorId);
+  const completedAt = stringValue(receipt.completedAt);
+  const idempotencyKey = stringValue(receipt.idempotencyKey);
+  const paymentId = stringValue(receipt.paymentId);
+  const before = asJsonObject(receipt.before);
+  const after = asJsonObject(receipt.after);
+  const beforeBookingStatus = stringValue(before.bookingStatus);
+  const beforePaymentStatus = stringValue(before.paymentStatus);
+  const afterBookingStatus = stringValue(after.bookingStatus);
+  const afterPaymentStatus = stringValue(after.paymentStatus);
+  if (
+    !isPaymentAdminAction(action) ||
+    !actorId ||
+    !completedAt ||
+    !idempotencyKey ||
+    !paymentId ||
+    !beforeBookingStatus ||
+    !beforePaymentStatus ||
+    !afterBookingStatus ||
+    !afterPaymentStatus
+  ) {
+    return null;
+  }
+  return {
+    action,
+    actorId,
+    after: { bookingStatus: afterBookingStatus, paymentStatus: afterPaymentStatus },
+    auditId: receiptAuditId,
+    before: { bookingStatus: beforeBookingStatus, paymentStatus: beforePaymentStatus },
+    completedAt,
+    idempotencyKey,
+    paymentId,
+  };
+}
+
+function isPaymentAdminAction(value: string | null): value is PaymentAdminAction {
+  return value === 'SYNC' || value === 'CAPTURE' || value === 'RELEASE' || value === 'REQUEST_REFUND';
 }
 
 function isGatewayAuthorizationReady(status: PaymentStatus) {
@@ -1025,28 +1776,67 @@ function assertPaymentOperationStatus(
 
 function refundAuditContext(metadata: unknown, refundId: string) {
   const record = asJsonObject(metadata);
-  const actorId = stringValue(record.actorId);
   const approvalAdminId = stringValue(record.approvalAdminId);
   const occurredAtValue = stringValue(record.occurredAt);
   const occurredAt = occurredAtValue ? new Date(occurredAtValue) : null;
-  if (!actorId || !approvalAdminId || !occurredAt || Number.isNaN(occurredAt.getTime())) {
+  if (!approvalAdminId || !occurredAt || Number.isNaN(occurredAt.getTime())) {
     throw new BadRequestException(`Refund ${refundId} is missing immutable approval audit context`);
   }
-  return { actorId, approvalAdminId, occurredAt };
+  return {
+    actorId: approvalAdminId,
+    approvalAdminId,
+    occurredAt,
+    requestedByAdminId:
+      stringValue(record.requestedByAdminId) || stringValue(record.actorId) || null,
+  };
 }
 
 function isUniqueConstraintError(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
 }
 
+function paymentActionRequestHash(input: {
+  action: PaymentAdminAction;
+  actorId: string;
+  paymentId: string;
+  reason: string | null;
+}) {
+  return createHash('sha256')
+    .update(JSON.stringify({
+      action: input.action,
+      actorId: input.actorId,
+      paymentId: input.paymentId,
+      reason: input.reason,
+    }))
+    .digest('hex');
+}
+
+function safePaymentActionErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : 'Payment provider result could not be confirmed.';
+  return message.replace(/[\r\n\t]+/g, ' ').slice(0, 500);
+}
+
+function paymentActionClaimDelay(milliseconds: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
+}
+
 type PaymentApprovalLookupDb = Partial<Pick<Prisma.TransactionClient, 'user'>>;
 
-function normalizePaymentRefundApprovalAdminId(value: string | null | undefined, actorId: string) {
-  const normalized = typeof value === 'string' ? value.trim() : '';
-  if (!normalized || normalized === actorId) {
+function paymentRefundRequestContext(metadata: unknown) {
+  const record = asJsonObject(metadata);
+  return {
+    requestedByAdminId:
+      stringValue(record.requestedByAdminId) || stringValue(record.actorId) || null,
+  };
+}
+
+function assertIndependentPaymentRefundApprover(
+  requestedByAdminId: string | null,
+  approvalAdminId: string,
+) {
+  if (requestedByAdminId === approvalAdminId) {
     throw new BadRequestException('Payment refund requires approval from a different admin');
   }
-  return normalized;
 }
 
 async function assertPaymentRefundApprovalAdmin(db: PaymentApprovalLookupDb, approvalAdminId: string) {

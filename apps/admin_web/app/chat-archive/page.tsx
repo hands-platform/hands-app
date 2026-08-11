@@ -1,656 +1,430 @@
-import {
-  Briefcase,
-  CalendarCheck,
-  Download,
-  Filter,
-  MessageSquare,
-  User,
-  Wrench,
-  X,
-} from 'lucide-react';
-import {
-  AdminDataTable,
-  AdminTablePaginationFooter,
-  AdminTableScroll,
-} from '../../components/admin-data-table';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import type { ReactNode } from 'react';
+import { Filter, MessageSquare, RefreshCw, ShieldCheck, X } from 'lucide-react';
+
+import { AdminTablePaginationFooter } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFilterSummary } from '../../components/admin-filter-summary';
-import { AdminTableSection } from '../../components/admin-table-panel';
 import {
+  AdminFormActionRow,
   AdminFormControlButton,
   AdminFormControlLink,
-  AdminFormActionRow,
-  AdminFormDate,
   AdminFormGrid,
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminErrorState } from '../../components/admin-surface';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadgeFromPillClass } from '../../components/status-badge';
-import { AdminChatArchiveBooking, AdminChatMessage, adminGet } from '../../lib/admin-api';
+import { type AdminChatArchiveMessage, adminGetResult } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
-import { shortId } from '../../lib/admin-format';
-import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
-import { buildCsvDataHref } from '../../lib/csv-export';
-import { bookingChatMessageCount } from '../bookings/booking-chat-message-count';
-import {
-  type DetailDateFilters,
-  detailDateRangeOptions,
-  isWithinDetailDateFilter,
-} from '../../lib/detail-date-filter';
+import { shortId, shortRecordId } from '../../lib/admin-format';
+import { ChatArchiveDateRangeFields } from './chat-archive-date-range-fields';
 import {
   buildChatArchiveLoadPlan,
+  type ChatArchiveDateFilters,
   type ChatArchiveFilters,
 } from './chat-archive-page-model';
 
 type ChatArchiveSearchParams = Promise<Record<string, string | string[] | undefined>>;
-type ChatArchiveSenderRole = 'ADMIN' | 'CUSTOMER' | 'PROVIDER' | 'SYSTEM';
 
-const CHAT_ARCHIVE_INDEX_HEADERS = [
-  'Booking',
-  'Status',
-  'Customer',
-  'Partner',
-  'Service',
-  'Messages',
-  'Latest message',
-  'Open',
-] as const;
-
-type ChatArchiveServerSummary = {
-  readonly activeRooms?: number;
-  readonly completedRooms?: number;
-  readonly customerMessages?: number;
-  readonly emptyRooms?: number;
+type ChatArchiveSummary = {
   readonly generatedAt?: string;
   readonly latestMessageAt?: string | null;
-  readonly messageCount?: number;
-  readonly partnerMessages?: number;
-  readonly totalCount?: number;
+  readonly matchingMessages?: number;
+  readonly roomsRepresented?: number;
 };
 
 export default async function ChatArchivePage({ searchParams }: { searchParams?: ChatArchiveSearchParams }) {
   const params = searchParams ? await searchParams : {};
-  const {
-    activePage,
-    archiveHref,
-    archivePageHref,
-    archivePageSize,
-    archiveSummaryHref,
-    dateFilters,
-    filters,
-  } = buildChatArchiveLoadPlan(params);
-  const [bookings, archiveSummaryResponse] = await Promise.all([
-    adminGet<AdminChatArchiveBooking[]>(archiveHref, []),
-    adminGet<unknown>(archiveSummaryHref, null),
-  ]);
-  const rooms = filterChatRooms(bookings.map(buildChatRoomRow), filters, dateFilters);
-  const pageSummary = buildChatArchiveSummary(rooms);
-  const summary = buildChatArchiveSummaryView(archiveSummaryResponse, pageSummary, rooms.length);
-  const totalRooms = summary.totalCount;
-  const totalPages = Math.max(1, Math.ceil(totalRooms / archivePageSize));
-  const visibleFrom = totalRooms === 0 || rooms.length === 0 ? 0 : (activePage - 1) * archivePageSize + 1;
-  const visibleTo =
-    totalRooms === 0 || rooms.length === 0
-      ? 0
-      : Math.min(totalRooms, (activePage - 1) * archivePageSize + rooms.length);
-  const messageCsvHref = buildCsvDataHref(
-    rooms.flatMap((room) =>
-      room.messages.map((message) => ({
-        booking_id: room.booking.id,
-        chat_room_id: room.roomId,
-        booking_status: room.booking.status,
-        service: room.serviceLabel,
-        customer: room.customerName,
-        customer_phone: room.customerPhone,
-        partner: room.partnerName,
-        partner_phone: room.partnerPhone,
-        sender: senderLabel(message),
-        sender_role: senderRole(message),
-        message: message.body,
-        created_at: message.createdAt,
-      })),
-    ),
-    [
-      'booking_id',
-      'chat_room_id',
-      'booking_status',
-      'service',
-      'customer',
-      'customer_phone',
-      'partner',
-      'partner_phone',
-      'sender',
-      'sender_role',
-      'message',
-      'created_at',
-    ],
+  const plan = buildChatArchiveLoadPlan(params);
+
+  if (plan.needsCanonicalFilterRedirect || plan.needsCanonicalPageRedirect) {
+    redirect(plan.archivePageHref(1));
+  }
+
+  const summaryResult = plan.archiveSummaryHref
+    ? await adminGetResult<ChatArchiveSummary>(plan.archiveSummaryHref, {})
+    : null;
+  const matchingMessages = summaryResult?.ok
+    ? nonNegativeInteger(summaryResult.data.matchingMessages)
+    : null;
+  const totalPages = matchingMessages === null
+    ? 1
+    : Math.max(1, Math.ceil(matchingMessages / plan.archivePageSize));
+
+  if (summaryResult?.ok && plan.activePage > totalPages) {
+    redirect(plan.archivePageHref(totalPages));
+  }
+
+  const messagesResult = plan.archiveHref
+    ? await adminGetResult<AdminChatArchiveMessage[]>(plan.archiveHref, [])
+    : null;
+  const messages = messagesResult?.ok ? messagesResult.data : [];
+  const visibleFrom = messages.length > 0 ? (plan.activePage - 1) * plan.archivePageSize + 1 : 0;
+  const visibleTo = messages.length > 0 ? visibleFrom + messages.length - 1 : 0;
+  const hasFilters = Boolean(
+    plan.filters.q ||
+      plan.filters.sender ||
+      plan.filters.status ||
+      plan.dateFilters.range !== 'all' ||
+      plan.filters.sort !== 'newest',
   );
 
   return (
     <AdminPageTemplate
       actions={
-        <>
-          <AdminFormControlLink className="button-secondary" href="/audit-log?bucket=Booking">
-            <MessageSquare aria-hidden="true" size={16} />
-            Audit log
-          </AdminFormControlLink>
-          <AdminFormControlLink className="button-secondary" href="/bookings?view=chat-repair">
-            <Wrench aria-hidden="true" size={16} />
-            Chat repair
-          </AdminFormControlLink>
-        </>
+        <AdminFormControlLink className="button-secondary" href="/audit-log?bucket=Booking">
+          <MessageSquare aria-hidden="true" size={16} />
+          Audit log
+        </AdminFormControlLink>
       }
       contentClassName="chat-archive-page"
-      description="Audit-only search for retained booking chat evidence. Day-to-day review stays inside booking, customer, and Partner detail pages; use this page when an operator needs cross-record evidence."
-      metrics={[
-        {
-          label: 'Rooms loaded',
-          value: totalRooms.toString(),
-          kind: 'record',
-          scope: dateFilters.label,
-          helper: `${rooms.length} shown / ${dateFilters.label}`,
-        },
-        {
-          label: 'Messages',
-          value: summary.messageCount.toString(),
-          kind: 'record',
-          scope: dateFilters.label,
-          helper: `${summary.customerMessages} customer / ${summary.partnerMessages} Partner`,
-        },
-        {
-          label: 'Completed rooms',
-          value: summary.completedRooms.toString(),
-          kind: 'record',
-          scope: dateFilters.label,
-          helper: 'Service done',
-        },
-        {
-          label: 'Active rooms',
-          value: summary.activeRooms.toString(),
-          kind: 'live',
-          scope: 'Current open',
-          helper: 'Open operational flow',
-        },
-        {
-          label: 'Empty rooms',
-          value: summary.emptyRooms.toString(),
-          kind: 'risk',
-          scope: 'Needs action',
-          helper: 'Chat room exists but no message',
-        },
-        {
-          label: 'Latest message',
-          value: 'None',
-          valueDateTimeFallback: 'None',
-          valueDateTimeValue: summary.latestMessageAt,
-          kind: 'record',
-          scope: 'Latest record',
-          helper: 'Newest loaded message',
-        },
-      ]}
+      description="Search retained booking messages across customers and Partners."
       title="Chat Evidence Search"
     >
+      <div className="chat-evidence-trust-line" role="status">
+        <ShieldCheck aria-hidden="true" size={18} />
+        <strong>Restricted internal evidence · Read only</strong>
+        <span>Open a booking transcript for complete context.</span>
+      </div>
 
       <AdminFilterPanel
         className="chat-archive-filter-panel admin-mb-16"
-        resultLabel={`${rooms.length} room(s), ${summary.messageCount} message(s)`}
-        resultTone="info"
-        title="Chat evidence filters"
+        resultLabel={
+          plan.validationError ? 'Search not run' : messagesResult?.ok === false ? 'Search unavailable' : undefined
+        }
+        resultTone="danger"
+        title="Search retained messages"
       >
-        <AdminFormGrid action="/chat-archive">
+        <AdminFormGrid action="/chat-archive" className="chat-evidence-filter-grid">
           <AdminFormSearch
             className="admin-directory-filter-search"
-            defaultValue={filters.q}
-            label="Search chat evidence"
+            defaultValue={plan.filters.q}
+            label="Search messages and records"
+            labelVisibility="visible"
             name="q"
-            placeholder="Booking, room, customer, Partner, message"
+            placeholder="Message, booking, room, customer, Partner"
           />
           <AdminFormSelect
-            className="admin-directory-filter-select"
-            defaultValue={filters.status}
+            defaultValue={plan.filters.status}
             label="Booking status"
             labelVisibility="visible"
             name="status"
             options={[
-              { label: 'All', value: '' },
+              { label: 'All statuses', value: '' },
               { label: 'Active or matching', value: 'active' },
               { label: 'Completed', value: 'completed' },
-              { label: 'Cancelled / expired / refunded', value: 'closed' },
-              { label: 'Room without messages', value: 'no-message' },
+              { label: 'Canceled, expired, or refunded', value: 'closed' },
             ]}
           />
           <AdminFormSelect
-            className="admin-directory-filter-select"
-            defaultValue={filters.sender}
-            label="Sender"
+            defaultValue={plan.filters.sender}
+            label="Message sender"
             labelVisibility="visible"
             name="sender"
             options={[
-              { label: 'All', value: '' },
-              { label: 'Customer messages', value: 'customer' },
-              { label: 'Partner messages', value: 'partner' },
-              { label: 'Admin/system messages', value: 'admin' },
+              { label: 'All senders', value: '' },
+              { label: 'Customer', value: 'customer' },
+              { label: 'Partner', value: 'partner' },
+              { label: 'Admin', value: 'admin' },
             ]}
           />
+          <ChatArchiveDateRangeFields
+            initialFrom={plan.dateFilters.from}
+            initialRange={plan.dateFilters.range}
+            initialTo={plan.dateFilters.to}
+            validationError={plan.validationError}
+          />
           <AdminFormSelect
-            className="admin-directory-filter-select"
-            defaultValue={dateFilters.range}
-            label="Preset"
+            defaultValue={plan.filters.sort}
+            label="Sort"
             labelVisibility="visible"
-            name="range"
-            options={detailDateRangeOptions}
+            name="sort"
+            options={[
+              { label: 'Newest sent', value: 'newest' },
+              { label: 'Oldest sent', value: 'oldest' },
+            ]}
           />
-          <AdminFormDate
-            className="admin-form-control-fluid"
-            defaultValue={dateFilters.from}
-            label="From"
-            labelVisibility="visible"
-            name="from"
-          />
-          <AdminFormDate
-            className="admin-form-control-fluid"
-            defaultValue={dateFilters.to}
-            label="To"
-            labelVisibility="visible"
-            name="to"
-          />
-          <AdminFormActionRow className="actions full-span">
+          <AdminFormActionRow className="actions" wide={false}>
             <AdminFormControlButton className="button-primary" type="submit">
               <Filter aria-hidden="true" size={16} />
               Apply filters
             </AdminFormControlButton>
-            <AdminFormControlLink className="button-secondary" href="/chat-archive">
-              <X aria-hidden="true" size={16} />
-              Clear
-            </AdminFormControlLink>
-            <AdminFormControlLink
-              className="button-secondary"
-              download="hands-chat-archive.csv"
-              href={messageCsvHref}
-            >
-              <Download aria-hidden="true" size={16} />
-              Export page preview CSV
-            </AdminFormControlLink>
-            <span className="muted">
-              {rooms.length} room(s), {summary.messageCount} message(s)
-            </span>
+            {hasFilters ? (
+              <AdminFormControlLink className="button-secondary" href="/chat-archive">
+                <X aria-hidden="true" size={16} />
+                Clear filters
+              </AdminFormControlLink>
+            ) : null}
           </AdminFormActionRow>
         </AdminFormGrid>
+        {plan.validationError ? (
+          <p className="chat-evidence-filter-error" id="chat-archive-date-error" role="alert">
+            {plan.validationError}
+          </p>
+        ) : null}
         <AdminFilterSummary
           ariaLabel="Active chat evidence filters"
-          labels={buildChatArchiveActiveFilterLabels(filters, dateFilters)}
+          labels={buildActiveFilterLabels(plan.filters, plan.dateFilters)}
           tone="info"
         />
       </AdminFilterPanel>
 
       <AdminTableSection
-        className="admin-mb-16"
-        description="One row per retained booking chat room. The list loads only the latest message timestamp; open the booking Activity workspace for the complete retained conversation."
-        statusLabel={`${rooms.length} row(s)`}
-        statusTone="info"
-        title="Chat evidence index"
+        className="admin-mb-16 chat-evidence-results-section"
+        description={chatArchiveResultsDescription(plan.validationError, summaryResult)}
+        statusLabel={chatArchiveResultsStatus(plan.validationError, summaryResult)}
+        statusTone={plan.validationError || summaryResult?.ok === false ? 'danger' : 'info'}
+        title="Matching messages"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            emptyMessage={
-              <AdminEmptyState
-                message="Clear filters or wait until matched bookings create chat rooms."
-                title="No chat rooms found"
-              />
+        {plan.validationError ? (
+          <AdminEmptyState
+            framed
+            message="Correct the custom From and To dates, then apply the filters again."
+            title="Search not run"
+          />
+        ) : messagesResult?.ok === false ? (
+          <AdminErrorState
+            action={
+              <AdminFormControlLink className="button-secondary" href={plan.currentHref}>
+                <RefreshCw aria-hidden="true" size={16} />
+                Retry search
+              </AdminFormControlLink>
             }
-            headers={CHAT_ARCHIVE_INDEX_HEADERS}
-            rowCount={rooms.length}
-          >
-            {rooms.map((room) => (
-              <tr key={room.roomId}>
-                <td>
-                  <strong>{shortId(room.booking.id)}</strong>
-                  <p className="muted">Room {shortId(room.roomId)}</p>
-                </td>
-                <td>
-                  <StatusBadgeFromPillClass pillClass={statusPillClass(room.booking.status)}>
-                    {room.booking.status}
-                  </StatusBadgeFromPillClass>
-                </td>
-                <td>
-                  <ChatArchivePersonCell
-                    avatarStatus={room.customerAvatarStatus}
-                    href={room.customerId ? `/customers/${room.customerId}#chat-history` : null}
-                    label={room.customerName}
-                    phone={room.customerPhone}
-                  />
-                </td>
-                <td>
-                  <ChatArchivePersonCell
-                    avatarStatus={room.partnerAvatarStatus}
-                    href={room.partnerId ? `/partners/${room.partnerId}#booking-chat-records` : null}
-                    label={room.partnerName}
-                    phone={room.partnerPhone}
-                    variant="partner"
-                  />
-                </td>
-                <td>{room.serviceLabel}</td>
-                <td>{room.messageCount}</td>
-                <td>
-                  <DateTimeText fallback="No message" value={room.latestMessageAt} />
-                </td>
-                <td>
-                  <div className="actions">
-                    <AdminFormControlLink
-                      className="button-secondary chat-inline-action"
-                      href={`/bookings/${room.booking.id}?overview=activity#booking-chat-history`}
-                    >
-                      <MessageSquare aria-hidden="true" size={14} />
-                      Chat
-                    </AdminFormControlLink>
-                    <AdminFormControlLink
-                      className="button-secondary chat-inline-action"
-                      href={`/bookings/${room.booking.id}?overview=activity#booking-chat-history`}
-                    >
-                      <CalendarCheck aria-hidden="true" size={14} />
-                      Booking
-                    </AdminFormControlLink>
-                    {room.customerId ? (
-                      <AdminFormControlLink
-                        className="button-secondary chat-inline-action"
-                        href={`/customers/${room.customerId}#chat-history`}
-                      >
-                        <User aria-hidden="true" size={14} />
-                        Customer
-                      </AdminFormControlLink>
-                    ) : null}
-                    {room.partnerId ? (
-                      <AdminFormControlLink
-                        className="button-secondary chat-inline-action"
-                        href={`/partners/${room.partnerId}#booking-chat-records`}
-                      >
-                        <Briefcase aria-hidden="true" size={14} />
-                        Partner
-                      </AdminFormControlLink>
-                    ) : null}
-                  </div>
-                </td>
-              </tr>
+            message={chatArchiveListErrorMessage(messagesResult.status)}
+            title="Chat evidence could not be loaded"
+          />
+        ) : messages.length === 0 ? (
+          <AdminEmptyState
+            framed
+            message={
+              hasFilters
+                ? 'No messages match the current search and filters. A missing result does not confirm that no conversation occurred.'
+                : 'No retained booking messages are available in this scope. A missing result does not confirm that no conversation occurred.'
+            }
+            title={hasFilters ? 'No matching messages' : 'No retained messages'}
+          />
+        ) : (
+          <div aria-label="Matching chat messages" className="chat-evidence-results" role="table">
+            <div className="chat-evidence-result chat-evidence-result-header" role="row">
+              <span role="columnheader">Sent</span>
+              <span role="columnheader">Matching message</span>
+              <span role="columnheader">People</span>
+              <span role="columnheader">Booking</span>
+              <span role="columnheader">Open transcript</span>
+            </div>
+            {messages.map((message) => (
+              <ChatEvidenceResult
+                currentHref={plan.currentHref}
+                key={message.id}
+                message={message}
+                query={plan.filters.q}
+              />
             ))}
-          </AdminDataTable>
-        </AdminTableScroll>
-        <AdminTablePaginationFooter
-          activePage={activePage}
-          ariaLabel="Chat evidence pages"
-          from={visibleFrom}
-          hrefForPage={archivePageHref}
-          itemLabel="rooms"
-          paginationClassName="admin-mt-16"
-          to={visibleTo}
-          totalPages={totalPages}
-          totalRows={totalRooms}
-        />
-      </AdminTableSection>
+          </div>
+        )}
 
+        {summaryResult?.ok && matchingMessages !== null ? (
+          <AdminTablePaginationFooter
+            activePage={plan.activePage}
+            ariaLabel="Chat evidence pages"
+            from={visibleFrom}
+            hrefForPage={plan.archivePageHref}
+            itemLabel="messages"
+            paginationClassName="admin-mt-16"
+            to={visibleTo}
+            totalPages={totalPages}
+            totalRows={matchingMessages}
+          />
+        ) : null}
+      </AdminTableSection>
     </AdminPageTemplate>
   );
 }
 
-function buildChatArchiveActiveFilterLabels(filters: ChatArchiveFilters, dateFilters: DetailDateFilters) {
-  const labels = [`Date: ${dateFilters.label}`];
-  if (filters.q) {
-    labels.push(`Search: ${filters.q}`);
-  }
-  if (filters.status) {
-    labels.push(`Status: ${chatArchiveStatusFilterLabel(filters.status)}`);
-  }
-  if (filters.sender) {
-    labels.push(`Sender: ${chatArchiveSenderFilterLabel(filters.sender)}`);
-  }
+function ChatEvidenceResult({
+  currentHref,
+  message,
+  query,
+}: {
+  readonly currentHref: string;
+  readonly message: AdminChatArchiveMessage;
+  readonly query: string;
+}) {
+  const booking = message.chatRoom.booking;
+  const partner = booking.selectedProvider ?? booking.preferredProvider;
+  const role = senderRole(message.sender?.roles);
+  const senderName = partnerDisplayText(message.sender?.fullName ?? role);
+  const customerName = booking.customerProfile?.user?.fullName ?? `Customer ${shortId(booking.customerProfileId)}`;
+  const partnerName = partnerDisplayText(
+    partner?.displayName ?? partner?.user?.fullName ?? (partner?.id ? `Partner ${shortId(partner.id)}` : 'No Partner'),
+  );
+  const transcriptHref = `/bookings/${booking.id}?overview=activity&returnTo=${encodeURIComponent(currentHref)}#booking-chat-history`;
+
+  return (
+    <div className="chat-evidence-result" role="row">
+      <div className="chat-evidence-sent" role="cell">
+        <span className="chat-evidence-cell-label">Sent</span>
+        <DateTimeText value={message.createdAt} />
+        <StatusBadgeFromPillClass pillClass="pill-neutral">{role}</StatusBadgeFromPillClass>
+      </div>
+      <div className="chat-evidence-message" role="cell">
+        <span className="chat-evidence-cell-label">Matching message</span>
+        <p className="chat-evidence-message-body">
+          {highlightChatEvidenceText(message.body || 'Attachment-only message', query)}
+        </p>
+        <span className="chat-evidence-message-sender muted">
+          Sent by {highlightChatEvidenceText(senderName, query)}
+        </span>
+        <span className="muted">
+          Room {highlightChatEvidenceText(shortId(message.chatRoom.id), query)} · Message{' '}
+          {highlightChatEvidenceText(shortId(message.id), query)}
+          {message.attachmentCount > 0 ? ` · Attachment ${message.attachmentCount}` : ''}
+        </span>
+      </div>
+      <div className="chat-evidence-people" role="cell">
+        <span className="chat-evidence-cell-label">People</span>
+        {booking.customerProfileId ? (
+          <Link className="table-link" href={`/customers/${booking.customerProfileId}`} prefetch={false}>
+            {highlightChatEvidenceText(customerName, query)}
+          </Link>
+        ) : <span>{highlightChatEvidenceText(customerName, query)}</span>}
+        {partner?.id ? (
+          <Link className="table-link" href={`/partners/${partner.id}`} prefetch={false}>
+            {highlightChatEvidenceText(partnerName, query)}
+          </Link>
+        ) : <span className="muted">{highlightChatEvidenceText(partnerName, query)}</span>}
+      </div>
+      <div className="chat-evidence-booking" role="cell">
+        <span className="chat-evidence-cell-label">Booking</span>
+        <span
+          aria-label={`Booking ${booking.id}`}
+          className="chat-evidence-booking-id"
+          title={`Booking ${booking.id}`}
+        >
+          {highlightChatEvidenceText(shortRecordId(booking.id), query)}
+        </span>
+        <StatusBadgeFromPillClass pillClass={statusPillClass(booking.status)}>
+          {booking.status}
+        </StatusBadgeFromPillClass>
+        <span className="muted">{highlightChatEvidenceText(bookingServiceLabel(booking), query)}</span>
+      </div>
+      <div className="chat-evidence-open" role="cell">
+        <span className="chat-evidence-cell-label">Open transcript</span>
+        <AdminFormControlLink className="button-secondary chat-inline-action" href={transcriptHref}>
+          <MessageSquare aria-hidden="true" size={15} />
+          Open transcript
+        </AdminFormControlLink>
+      </div>
+    </div>
+  );
+}
+
+function buildActiveFilterLabels(filters: ChatArchiveFilters, dates: ChatArchiveDateFilters) {
+  const labels: string[] = [];
+  if (filters.q) labels.push(`Search: ${filters.q}`);
+  if (filters.sender) labels.push(`Sender: ${senderFilterLabel(filters.sender)}`);
+  if (filters.status) labels.push(`Booking: ${statusFilterLabel(filters.status)}`);
+  if (dates.range !== 'all') labels.push(`Sent: ${dates.label}`);
+  if (filters.sort === 'oldest') labels.push('Sort: Oldest first');
   return labels;
 }
 
-function chatArchiveStatusFilterLabel(status: string) {
-  switch (status) {
-    case 'active':
-      return 'Active or matching';
-    case 'completed':
-      return 'Completed';
-    case 'closed':
-      return 'Cancelled / expired / refunded';
-    case 'no-message':
-      return 'Room without messages';
-    default:
-      return status;
-  }
-}
-
-function chatArchiveSenderFilterLabel(sender: string) {
-  switch (sender) {
-    case 'customer':
-      return 'Customer messages';
-    case 'partner':
-      return 'Partner messages';
-    case 'admin':
-      return 'Admin/system messages';
-    default:
-      return sender;
-  }
-}
-
-function buildChatArchiveSummaryView(
-  value: unknown,
-  fallback: ReturnType<typeof buildChatArchiveSummary>,
-  fallbackTotalCount: number,
+function chatArchiveResultsStatus(
+  validationError: string | null,
+  result: Awaited<ReturnType<typeof adminGetResult<ChatArchiveSummary>>> | null,
 ) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {
-      ...fallback,
-      totalCount: fallbackTotalCount,
-    };
-  }
-  const summary = value as Partial<ChatArchiveServerSummary>;
-
-  return {
-    activeRooms: readChatArchiveSummaryNumber(summary.activeRooms) ?? fallback.activeRooms,
-    completedRooms: readChatArchiveSummaryNumber(summary.completedRooms) ?? fallback.completedRooms,
-    customerMessages: readChatArchiveSummaryNumber(summary.customerMessages) ?? fallback.customerMessages,
-    emptyRooms: readChatArchiveSummaryNumber(summary.emptyRooms) ?? fallback.emptyRooms,
-    latestMessageAt: summary.latestMessageAt ?? fallback.latestMessageAt,
-    messageCount: readChatArchiveSummaryNumber(summary.messageCount) ?? fallback.messageCount,
-    partnerMessages: readChatArchiveSummaryNumber(summary.partnerMessages) ?? fallback.partnerMessages,
-    totalCount: readChatArchiveSummaryNumber(summary.totalCount) ?? fallbackTotalCount,
-  };
+  if (validationError) return 'Search not run';
+  if (!result) return undefined;
+  if (!result.ok) return 'Summary unavailable';
+  const messages = nonNegativeInteger(result.data.matchingMessages);
+  const rooms = nonNegativeInteger(result.data.roomsRepresented);
+  return `${messages} ${messages === 1 ? 'message' : 'messages'} · ${rooms} ${rooms === 1 ? 'room' : 'rooms'}`;
 }
 
-function readChatArchiveSummaryNumber(value: unknown) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
-  return Math.max(0, Math.trunc(value));
-}
-
-type ChatArchivePersonCellProps = {
-  readonly avatarStatus: AdminAvatarStatus;
-  readonly href?: string | null;
-  readonly label: string;
-  readonly phone: string;
-  readonly variant?: 'customer' | 'partner';
-};
-
-function ChatArchivePersonCell({
-  avatarStatus,
-  href,
-  label,
-  phone,
-  variant = 'customer',
-}: ChatArchivePersonCellProps) {
+function chatArchiveResultsDescription(
+  validationError: string | null,
+  result: Awaited<ReturnType<typeof adminGetResult<ChatArchiveSummary>>> | null,
+) {
+  if (validationError) return 'No API request was sent.';
+  if (!result) return undefined;
+  if (!result.ok) return 'Rows may still be available. Retry before relying on totals.';
   return (
-    <AdminPersonCell
-      avatarClassName={`vuexy-booking-avatar${variant === 'partner' ? ' is-partner' : ''}`}
-      avatarStatus={avatarStatus}
-      className="vuexy-booking-person"
-      helper={phone}
-      href={href}
-      label={label}
-      linkClassName="table-link"
-    />
+    <>
+      Latest matching message: <DateTimeText fallback="none retained" value={result.data.latestMessageAt} />
+    </>
   );
 }
 
-function filterChatRooms(
-  rooms: ReturnType<typeof buildChatRoomRow>[],
-  filters: ChatArchiveFilters,
-  dateFilters: DetailDateFilters,
-) {
-  return rooms.filter((room) => {
-    const messagesInDate = room.messages.filter((message) =>
-      isWithinDetailDateFilter(message.createdAt, dateFilters),
-    );
-    const roomInDate =
-      messagesInDate.length > 0 ||
-      isWithinDetailDateFilter(room.booking.createdAt, dateFilters) ||
-      isWithinDetailDateFilter(room.booking.updatedAt, dateFilters);
-    if (!roomInDate) return false;
+function highlightChatEvidenceText(text: string, query: string): ReactNode {
+  const needle = query.trim();
+  if (!needle) return text;
+  const lowerText = text.toLocaleLowerCase();
+  const lowerNeedle = needle.toLocaleLowerCase();
+  const parts: ReactNode[] = [];
+  let cursor = 0;
+  let match = lowerText.indexOf(lowerNeedle);
 
-    if (filters.status === 'active' && !isActiveStatus(room.booking.status)) return false;
-    if (filters.status === 'completed' && room.booking.status !== 'COMPLETED') return false;
-    if (filters.status === 'closed' && !isClosedStatus(room.booking.status)) return false;
-    if (filters.status === 'no-message' && room.messageCount > 0) return false;
-    return true;
-  });
+  while (match >= 0) {
+    if (match > cursor) parts.push(text.slice(cursor, match));
+    const end = match + needle.length;
+    parts.push(<mark key={`${match}-${end}`}>{text.slice(match, end)}</mark>);
+    cursor = end;
+    match = lowerText.indexOf(lowerNeedle, cursor);
+  }
+
+  if (cursor === 0) return text;
+  if (cursor < text.length) parts.push(text.slice(cursor));
+  return parts;
 }
 
-function buildChatRoomRow(booking: AdminChatArchiveBooking) {
-  const messages = [...(booking.chatRoom?.messages ?? [])].sort(
-    (left, right) => dateMs(left.createdAt) - dateMs(right.createdAt),
-  );
-  const messageCount = bookingChatMessageCount(booking);
-  const customerName =
-    booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer';
-  const customerPhone = booking.customerProfile?.user?.phone ?? 'No phone';
-  const partner = booking.selectedProvider ?? booking.preferredProvider;
-  const partnerName = partnerDisplayText(
-    partner?.displayName ?? partner?.user?.fullName ?? partner?.user?.phone ?? 'No Partner',
-  );
-  const partnerPhone = partner?.user?.phone ?? 'No phone';
-  const serviceLabel = bookingServiceLabel(booking);
-  const roomId = booking.chatRoom?.id ?? `booking-${booking.id}`;
-  const latestMessageAt = messages[messages.length - 1]?.createdAt;
-  const searchText = [
-    booking.id,
-    roomId,
-    booking.status,
-    booking.customerProfileId,
-    customerName,
-    customerPhone,
-    partner?.id,
-    partnerName,
-    partnerPhone,
-    serviceLabel,
-    ...messages.map((message) => `${senderLabel(message)} ${message.body}`),
-  ]
-    .join(' ')
-    .toLowerCase();
-
-  return {
-    booking,
-    roomId,
-    messages,
-    customerId: booking.customerProfileId,
-    customerName,
-    customerPhone,
-    customerAvatarStatus: bookingCustomerChatAvatarStatus(booking),
-    partnerId: partner?.id,
-    partnerName,
-    partnerPhone,
-    partnerAvatarStatus: bookingPartnerChatAvatarStatus(booking),
-    serviceLabel,
-    messageCount,
-    latestMessageAt,
-    searchText,
-  };
+function chatArchiveListErrorMessage(status: number | null) {
+  if (status === 403) return 'Your operator account does not have Booking Detail access.';
+  if (status === 400) return 'The search filters were rejected. Check the date range and try again.';
+  return 'The message search failed. Retry before using this page for an evidence decision.';
 }
 
-function buildChatArchiveSummary(rooms: ReturnType<typeof buildChatRoomRow>[]) {
-  const messages = rooms.flatMap((room) => room.messages);
-  const messageCount = rooms.reduce((sum, room) => sum + room.messageCount, 0);
-  const latestMessageAt = messages
-    .map((message) => message.createdAt)
-    .filter(Boolean)
-    .sort((left, right) => dateMs(right) - dateMs(left))[0];
-
-  return {
-    messageCount,
-    customerMessages: messages.filter((message) => senderRole(message) === 'CUSTOMER').length,
-    partnerMessages: messages.filter((message) => senderRole(message) === 'PROVIDER').length,
-    completedRooms: rooms.filter((room) => room.booking.status === 'COMPLETED').length,
-    activeRooms: rooms.filter((room) => isActiveStatus(room.booking.status)).length,
-    emptyRooms: rooms.filter((room) => room.messageCount === 0).length,
-    latestMessageAt: latestMessageAt ?? null,
-  };
+function statusFilterLabel(status: string) {
+  if (status === 'active') return 'Active or matching';
+  if (status === 'completed') return 'Completed';
+  if (status === 'closed') return 'Canceled, expired, or refunded';
+  return status;
 }
 
-function senderRole(message: AdminChatMessage): ChatArchiveSenderRole {
-  const roles = message.sender?.roles ?? [];
-  if (roles.includes('CUSTOMER')) return 'CUSTOMER';
-  if (roles.includes('PROVIDER')) return 'PROVIDER';
-  if (roles.includes('ADMIN')) return 'ADMIN';
-  return 'SYSTEM';
+function senderFilterLabel(sender: string) {
+  if (sender === 'customer') return 'Customer';
+  if (sender === 'partner') return 'Partner';
+  if (sender === 'admin') return 'Admin';
+  return sender;
 }
 
-function senderLabel(message: AdminChatMessage) {
-  return partnerDisplayText(
-    message.sender?.fullName ?? message.sender?.phone ?? displaySenderRole(senderRole(message)),
-  );
-}
-
-function displaySenderRole(role: string) {
-  if (role === 'CUSTOMER') return 'Customer';
-  if (role === 'PROVIDER') return 'Partner';
-  if (role === 'ADMIN') return 'Admin';
+function senderRole(roles: string[] | undefined) {
+  if (roles?.includes('CUSTOMER')) return 'Customer';
+  if (roles?.includes('PROVIDER')) return 'Partner';
+  if (roles?.includes('ADMIN')) return 'Admin';
   return 'System';
 }
 
-function bookingServiceLabel(booking: AdminChatArchiveBooking) {
-  const first = booking.services?.[0];
-  if (!first?.service) return 'No service';
-  return `${first.service.name ?? 'Service'} / ${first.service.durationMin ?? '?'} min`;
-}
-
-function isActiveStatus(status: string) {
-  return ['CREATED', 'OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(
-    status,
-  );
-}
-
-function isClosedStatus(status: string) {
-  return ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'].includes(status);
-}
-
-function bookingCustomerChatAvatarStatus(booking: AdminChatArchiveBooking): AdminAvatarStatus {
-  if (isWorkingStatus(booking.status)) return 'working';
-  if (booking.status === 'OPEN_MATCHING' || booking.status === 'CREATED') return 'matching';
-  return 'offline';
-}
-
-function bookingPartnerChatAvatarStatus(booking: AdminChatArchiveBooking): AdminAvatarStatus {
-  if (isWorkingStatus(booking.status)) return 'working';
-  if (booking.status === 'OPEN_MATCHING') return 'matching';
-  if (booking.selectedProvider || booking.preferredProvider) return 'offline';
-  return 'offline';
-}
-
-function isWorkingStatus(status: string) {
-  return ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(status);
+function bookingServiceLabel(booking: AdminChatArchiveMessage['chatRoom']['booking']) {
+  const service = booking.services?.[0]?.service;
+  if (!service) return 'Service not recorded';
+  return `${service.name ?? 'Service'}${service.durationMin ? ` · ${service.durationMin} min` : ''}`;
 }
 
 function statusPillClass(status: string) {
   if (status === 'COMPLETED') return 'pill-success';
-  if (isActiveStatus(status)) return 'pill-info';
-  if (isClosedStatus(status)) return 'pill-warn';
+  if (['CREATED', 'OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(status)) {
+    return 'pill-info';
+  }
+  if (['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'].includes(status)) return 'pill-warn';
   return 'pill-neutral';
 }
 
-function dateMs(value?: string | null) {
-  if (!value) return 0;
-  const ms = new Date(value).getTime();
-  return Number.isFinite(ms) ? ms : 0;
+function nonNegativeInteger(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
 }

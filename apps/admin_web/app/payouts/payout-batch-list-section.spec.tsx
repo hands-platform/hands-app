@@ -63,8 +63,8 @@ describe('PayoutBatchListSection', () => {
     expect(hrefsIn(section)).toContain('/payouts?page=3');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
-        'table vuexy-data-table vuexy-booking-table admin-data-table',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-batch-list-card admin-section',
+        'table vuexy-data-table vuexy-booking-table admin-data-table payout-batch-compact-table',
       ]),
     );
   });

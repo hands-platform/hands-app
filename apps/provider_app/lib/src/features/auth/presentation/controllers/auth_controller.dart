@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/local_demo_access.dart';
 import '../../domain/entities/auth_session.dart';
 import '../../domain/entities/otp_request.dart';
 import '../../domain/usecases/request_otp.dart';
@@ -41,6 +42,7 @@ class AuthController extends StateNotifier<AuthSession?> {
   }
 
   Future<OtpRequest> requestDemoProviderOtp() {
+    ensureLocalDemoAccessEnabled();
     return requestOtp(phone: '+84900000002');
   }
 
@@ -53,6 +55,7 @@ class AuthController extends StateNotifier<AuthSession?> {
   }
 
   Future<void> signInDemoProvider() async {
+    ensureLocalDemoAccessEnabled();
     await signInWithOtp(
       phone: '+84900000002',
       otp: '123456',

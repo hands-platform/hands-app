@@ -1,10 +1,19 @@
 import { readFileSync } from 'node:fs';
+import type { ComponentProps } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { vi } from 'vitest';
 
 import {
   BookingActionStatusSections,
   type BookingActionStatusSectionsProps,
 } from './booking-action-status-sections';
+
+vi.mock('next/link', () => ({
+  default: ({ children, prefetch, ...props }: ComponentProps<'a'> & { prefetch?: boolean }) => {
+    void prefetch;
+    return <a {...props}>{children}</a>;
+  },
+}));
 
 function props(
   overrides: Partial<BookingActionStatusSectionsProps> = {},
@@ -138,7 +147,7 @@ describe('BookingActionStatusSections', () => {
     expect(markup).toContain('Structured ops status');
   });
 
-  it('summarizes completed structured ops checkpoints without repeating action cards', () => {
+  it('only offers reasoned reopening for completed structured ops checkpoints', () => {
     const markup = render({
       opsTaskCards: [
         {
@@ -146,7 +155,7 @@ describe('BookingActionStatusSections', () => {
           label: 'Customer update',
           note: null,
           status: 'DONE',
-          type: 'CUSTOMER_UPDATE',
+          type: 'CUSTOMER_CONTACTED',
           updatedBy: 'System',
         },
         {
@@ -154,17 +163,19 @@ describe('BookingActionStatusSections', () => {
           label: 'Partner update',
           note: null,
           status: 'DONE',
-          type: 'PARTNER_UPDATE',
+          type: 'PROVIDER_CONTACTED',
           updatedBy: 'System',
         },
       ],
     });
 
     expect(markup).toContain('Structured ops status');
-    expect(markup).toContain('All done');
-    expect(markup).toContain('All structured handling checkpoints are complete.');
-    expect(markup).not.toContain('Customer update checkpoint.');
+    expect(markup).toContain('All checkpoints complete');
+    expect(markup).toContain('Reopen checkpoint');
+    expect(markup).toContain('Reason for reopening');
+    expect(markup).toContain('required=""');
     expect(markup).not.toContain('Mark done');
+    expect(markup).not.toContain('Could not confirm');
   });
 
   it('keeps open structured ops checkpoints actionable', () => {
@@ -175,7 +186,7 @@ describe('BookingActionStatusSections', () => {
           label: 'Customer update',
           note: null,
           status: 'PENDING',
-          type: 'CUSTOMER_UPDATE',
+          type: 'CUSTOMER_CONTACTED',
           updatedBy: 'System',
         },
         {
@@ -183,17 +194,50 @@ describe('BookingActionStatusSections', () => {
           label: 'Partner update',
           note: null,
           status: 'DONE',
-          type: 'PARTNER_UPDATE',
+          type: 'PROVIDER_CONTACTED',
           updatedBy: 'System',
         },
       ],
     });
 
-    expect(markup).toContain('1 open / 2');
+    expect(markup).toContain('1 checkpoints remaining');
     expect(markup).toContain('Customer update checkpoint.');
-    expect(markup).toContain('Mark done');
-    expect(markup).toContain('Blocked');
-    expect(markup).not.toContain('Partner contact checkpoint.');
+    expect(markup).toContain('Customer contact confirmed');
+    expect(markup).toContain('Record unable to confirm');
+    expect(markup).toContain('Reason');
+    expect(markup).toContain('Next check');
+    expect(markup).toContain('Partner contact checkpoint.');
+    expect(markup).not.toContain('Reopen checkpoint');
+    expect(markup).not.toContain('>Reset<');
+  });
+
+  it('opens actions for only the selected checkpoint row', () => {
+    const markup = render({
+      opsTaskCards: [
+        {
+          helper: 'Confirm the customer has been updated.',
+          label: 'Customer update',
+          note: null,
+          status: 'PENDING',
+          type: 'CUSTOMER_CONTACTED',
+          updatedBy: 'System',
+        },
+        {
+          helper: 'Confirm the Partner has been reached.',
+          label: 'Partner update',
+          note: null,
+          status: 'PENDING',
+          type: 'PROVIDER_CONTACTED',
+          updatedBy: 'System',
+        },
+      ],
+      selectedOpsTaskType: 'PROVIDER_CONTACTED',
+    });
+
+    expect(markup).toContain('?checkpoint=CUSTOMER_CONTACTED#booking-structured-ops-status');
+    expect(markup).not.toContain('?checkpoint=PROVIDER_CONTACTED#booking-structured-ops-status');
+    expect(markup).toContain('Partner contact confirmed');
+    expect(markup).not.toContain('Customer contact confirmed');
   });
 
   it('shows only actionable booking controls', () => {
@@ -215,9 +259,23 @@ describe('BookingActionStatusSections', () => {
     });
 
     expect(markup).toContain('Chat room repair');
-    expect(markup).toContain('Matching expiry handling');
-    expect(markup).toContain('No-show handling');
+    expect(markup).toContain('Review matching expiry impact');
+    expect(markup).toContain('Expire booking and close matching');
+    expect(markup).toContain('Close matching without a Partner');
+    expect(markup).not.toContain('Review and confirm no-show');
+    expect(markup).toContain('required=""');
     expect(markup).not.toContain('Completed closeout');
+    expect(markup.match(/Final Partner is recorded, but the retained chat room is missing\./g)).toHaveLength(1);
+  });
+
+  it('shows no-show handling only after matching expiry is unavailable', () => {
+    const markup = render({
+      matchingExpiry: { canSubmit: false, status: 'ARRIVED' },
+      noShow: { canSubmit: true, status: 'ARRIVED' },
+    });
+
+    expect(markup).toContain('Review and confirm no-show');
+    expect(markup).not.toContain('Close expired matching');
   });
 
   it('renders actionable status panels with the shared Vuexy admin section surface', () => {
@@ -254,7 +312,7 @@ describe('BookingActionStatusSections', () => {
       },
     });
 
-    expect(markup.match(/class="card admin-section/g)).toHaveLength(9);
+    expect(markup.match(/class="card admin-section/g)).toHaveLength(8);
     expect(markup).toContain('class="ops-section-header admin-section-header"');
     expect(markup).toContain('class="admin-section-body"');
   });
@@ -421,16 +479,23 @@ describe('BookingActionStatusSections', () => {
     expect(markup).not.toContain('Payment reviewed');
   });
 
-  it('renders post-match cancellation decision actions on detail pages', () => {
+  it('links to the single post-match decision section without duplicating its form', () => {
     const markup = render({
       outcomeReview: {
         helper: 'Use retained chat before final confirmation.',
         postMatchDecision: {
-          approveNote: 'Approved after admin chat evidence review.',
+          ...hiddenPostMatchDecision(),
+          actions: [
+            {
+              decision: 'approve',
+              helper: 'Close the customer money outcome.',
+              label: 'Approve cancellation outcome',
+              tone: 'primary',
+            },
+          ],
           canResolve: true,
           feeLabel: 'Fee held',
           feeTone: 'pill-danger',
-          holdNote: 'Held after admin chat evidence review.',
           resolutionLabel: 'Pending admin decision',
           resolutionTone: 'pill-warn',
           timingLabel: '16m after match',
@@ -447,25 +512,21 @@ describe('BookingActionStatusSections', () => {
       },
     });
 
-    expect(markup).toContain('Pending admin decision');
-    expect(markup).toContain('Fee held');
-    expect(markup).toContain('16m after match');
-    expect(markup).toContain('Approve cancellation');
-    expect(markup).toContain('Hold fee deduction');
-    expect(markup).toContain('name="bookingId" value="booking-1"');
-    expect(markup).toContain('card admin-card booking-outcome-decision-panel');
+    expect(markup).toContain('Continue to cancellation decision');
+    expect(markup).toContain('href="#booking-post-match-cancellation-decision"');
+    expect(markup).not.toContain('name="decision"');
+    expect(markup).not.toContain('booking-outcome-decision-panel');
   });
 
-  it('locks post-match cancellation decision actions after resolution', () => {
+  it('does not duplicate resolved post-match decision state in the outcome summary', () => {
     const markup = render({
       outcomeReview: {
         helper: 'Use retained chat before final confirmation.',
         postMatchDecision: {
-          approveNote: '',
+          ...hiddenPostMatchDecision(),
           canResolve: false,
           feeLabel: 'Fee restored',
           feeTone: 'pill-success',
-          holdNote: '',
           resolutionLabel: 'Approved',
           resolutionTone: 'pill-success',
           timingLabel: 'Review locked',
@@ -482,21 +543,25 @@ describe('BookingActionStatusSections', () => {
       },
     });
 
-    expect(markup).toContain('Approved');
-    expect(markup).toContain('Fee restored');
-    expect(markup).toContain('This cancellation decision is already closed.');
-    expect(markup).not.toContain('Approve cancellation');
-    expect(markup).not.toContain('Hold fee deduction');
+    expect(markup).toContain('Continue to cancellation decision');
+    expect(markup).not.toContain('Approved');
+    expect(markup).not.toContain('Fee restored');
+    expect(markup).not.toContain('name="decision"');
   });
 });
 
 function hiddenPostMatchDecision() {
   return {
-    approveNote: '',
+    actions: [],
     canResolve: false,
+    customerMoneyAfter: '',
+    customerMoneyBefore: '',
     feeLabel: '',
     feeTone: 'pill-neutral' as const,
-    holdNote: '',
+    partnerFeeApproveAfter: '',
+    partnerFeeBefore: '',
+    reviewAfter: '',
+    reviewBefore: '',
     resolutionLabel: '',
     resolutionTone: 'pill-neutral' as const,
     timingLabel: '',

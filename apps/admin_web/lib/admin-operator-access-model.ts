@@ -27,6 +27,7 @@ export type AdminOperatorPermissionCategory =
   | 'NOTIFICATIONS_TEMPLATES'
   | 'NOTIFICATIONS_PUSH'
   | 'NOTIFICATIONS_DELIVERY'
+  | 'NOTIFICATIONS_RETRY'
   | 'SYSTEM'
   | 'SYSTEM_SERVICES'
   | 'SYSTEM_COUPONS'
@@ -34,6 +35,10 @@ export type AdminOperatorPermissionCategory =
   | 'SYSTEM_POLICY'
   | 'SYSTEM_AUDIT'
   | 'SYSTEM_SETUP'
+  | 'CONTENT_VIEW'
+  | 'CONTENT_EDIT'
+  | 'CONTENT_PUBLISH'
+  | 'CONTENT_DELETE'
   | 'DEVELOPER_SYSTEM'
   | 'DEVELOPER_SETUP'
   | 'DEVELOPER_HEALTH'
@@ -49,6 +54,14 @@ const pageCategoryRules: Array<{
   readonly category: AdminOperatorPermissionCategory;
   readonly prefixes: readonly string[];
 }> = [
+  {
+    category: 'BOOKINGS_COMPLETED',
+    prefixes: ['/bookings/completed'],
+  },
+  {
+    category: 'BOOKINGS_CANCELLATIONS',
+    prefixes: ['/bookings/post-match-cancellations'],
+  },
   {
     category: 'BOOKINGS_DETAIL',
     prefixes: ['/bookings/*'],
@@ -111,7 +124,11 @@ const pageCategoryRules: Array<{
   },
   {
     category: 'FINANCE_BANK_RECONCILIATION',
-    prefixes: ['/finance-tax/bank-reconciliation', '/finance-tax/company-bank-accounts'],
+    prefixes: ['/finance-tax/bank-reconciliation'],
+  },
+  {
+    category: 'SYSTEM_POLICY',
+    prefixes: ['/finance-tax/company-bank-accounts'],
   },
   {
     category: 'FINANCE_TAX',
@@ -146,6 +163,10 @@ const pageCategoryRules: Array<{
     prefixes: ['/notifications/push-send'],
   },
   {
+    category: 'NOTIFICATIONS_TEMPLATES',
+    prefixes: ['/notifications/templates'],
+  },
+  {
     category: 'NOTIFICATIONS_DELIVERY',
     prefixes: ['/notifications'],
   },
@@ -154,12 +175,20 @@ const pageCategoryRules: Array<{
     prefixes: ['/admin-operators'],
   },
   {
+    category: 'BOOKINGS_DETAIL',
+    prefixes: ['/chat-archive'],
+  },
+  {
     category: 'SYSTEM_AUDIT',
-    prefixes: ['/audit-log', '/chat-archive'],
+    prefixes: ['/audit-log'],
   },
   {
     category: 'SYSTEM_POLICY',
     prefixes: ['/operations-policy', '/tax-policy'],
+  },
+  {
+    category: 'CONTENT_VIEW',
+    prefixes: ['/website-content'],
   },
   {
     category: 'SYSTEM_SERVICES',
@@ -200,8 +229,12 @@ const apiCategoryRules: Array<{
     prefixes: ['/admin/operations-handoff', '/admin/calendar-events'],
   },
   {
+    category: 'BOOKINGS_DETAIL',
+    prefixes: ['/admin/chat-archive'],
+  },
+  {
     category: 'CUSTOMERS_REVIEWS',
-    prefixes: ['/admin/reviews'],
+    prefixes: ['/admin/reviews', '/admin/partner-customer-reviews'],
   },
   {
     category: 'CUSTOMERS_DETAIL',
@@ -237,6 +270,7 @@ const apiCategoryRules: Array<{
       '/admin/finance-approval-queue',
       '/admin/booking-settlement-gaps',
       '/admin/booking-settlements',
+      '/admin/cash-settlement-earnings',
       '/admin/cash-settlements',
       '/admin/earnings',
       '/admin/payout-batches',
@@ -263,12 +297,19 @@ const apiCategoryRules: Array<{
     prefixes: [
       '/admin/finance',
       '/admin/monthly-tax-closings',
-      '/admin/payment-fee-policies',
       '/admin/tax-policy-versions',
       '/admin/tax-rules',
       '/admin/tax',
       '/admin/wallet',
     ],
+  },
+  {
+    category: 'NOTIFICATIONS_TEMPLATES',
+    prefixes: ['/admin/notifications/templates'],
+  },
+  {
+    category: 'NOTIFICATIONS_PUSH',
+    prefixes: ['/admin/notifications/push-campaigns'],
   },
   {
     category: 'NOTIFICATIONS_DELIVERY',
@@ -288,7 +329,11 @@ const apiCategoryRules: Array<{
   },
   {
     category: 'SYSTEM_POLICY',
-    prefixes: ['/admin/operational-policy', '/admin/referrals/policies'],
+    prefixes: [
+      '/admin/operational-policy',
+      '/admin/payment-fee-policies',
+      '/admin/referrals/policies',
+    ],
   },
   {
     category: 'SYSTEM_ADMIN_OPERATORS',
@@ -336,10 +381,15 @@ const parentCategories: Partial<Record<AdminOperatorPermissionCategory, AdminOpe
   SYSTEM_POLICY: 'SYSTEM',
   SYSTEM_SERVICES: 'SYSTEM',
   SYSTEM_SETUP: 'SYSTEM',
+  CONTENT_VIEW: 'SYSTEM',
+  CONTENT_EDIT: 'SYSTEM',
+  CONTENT_PUBLISH: 'SYSTEM',
+  CONTENT_DELETE: 'SYSTEM',
 };
 
 const legacyCategoryAliases: Partial<Record<AdminOperatorPermissionCategory, readonly AdminOperatorPermissionCategory[]>> = {
   SYSTEM_SETUP: ['DEVELOPER_SETUP', 'DEVELOPER_HEALTH', 'DEVELOPER_ROUTE_COMPAT'],
+  SYSTEM_POLICY: ['CONTENT_VIEW', 'CONTENT_EDIT', 'CONTENT_PUBLISH', 'CONTENT_DELETE'],
 };
 
 const uncategorizedWriteApiAllowlist: Record<string, string> = {
@@ -347,6 +397,23 @@ const uncategorizedWriteApiAllowlist: Record<string, string> = {
 };
 
 export function adminOperatorCategoryForPath(pathname: string): AdminOperatorPermissionCategory | null {
+  const query = queryForPath(pathname);
+  if (
+    query.get('settings') === 'policy' &&
+    ['/finance-tax/payment-fees', '/referrals/customers', '/referrals/partners'].includes(
+      normalizePath(pathname),
+    )
+  ) {
+    return 'SYSTEM_POLICY';
+  }
+
+  if (
+    normalizePath(pathname) === '/partners' &&
+    ['approval-pending', 'unapproved'].includes(query.get('review') ?? '')
+  ) {
+    return 'PARTNERS_UNAPPROVED';
+  }
+
   return categoryForPath(pathname, pageCategoryRules);
 }
 
@@ -356,6 +423,30 @@ export function adminOperatorCategoryForAdminApiPath(
 ): AdminOperatorPermissionCategory | null {
   if (!['DELETE', 'PATCH', 'POST'].includes(method)) {
     return null;
+  }
+
+  const normalizedPath = normalizePath(path);
+  if (/^\/admin\/notifications\/[^/]+\/retry$/u.test(normalizedPath)) {
+    return 'NOTIFICATIONS_RETRY';
+  }
+  if (/^\/admin\/notifications\/[^/]+\/review-legacy$/u.test(normalizedPath)) {
+    return 'DEVELOPER_SYSTEM';
+  }
+  if (normalizedPath === '/admin/site-pages' || normalizedPath.startsWith('/admin/site-pages/')) {
+    if (method === 'DELETE') return 'CONTENT_DELETE';
+    if (normalizedPath.endsWith('/publish') || normalizedPath.endsWith('/rollback')) {
+      return 'CONTENT_PUBLISH';
+    }
+    return 'CONTENT_EDIT';
+  }
+  if (
+    (normalizedPath.startsWith('/admin/payment-fee-policies') ||
+      normalizedPath === '/admin/company-bank-accounts' ||
+      /^\/admin\/company-bank-accounts\/[^/]+$/u.test(normalizedPath) ||
+      normalizedPath.startsWith('/admin/tax-policy-versions')) &&
+    !normalizedPath.endsWith('/approval-decision')
+  ) {
+    return 'SYSTEM_POLICY';
   }
 
   return categoryForPath(path, apiCategoryRules);
@@ -417,4 +508,8 @@ function normalizePath(pathname: string) {
   const [pathOnly] = pathname.split('?');
   const normalized = pathOnly.startsWith('/') ? pathOnly : `/${pathOnly}`;
   return normalized.replace(/\/+$/u, '') || '/';
+}
+
+function queryForPath(pathname: string) {
+  return new URLSearchParams(pathname.split('?')[1] ?? '');
 }

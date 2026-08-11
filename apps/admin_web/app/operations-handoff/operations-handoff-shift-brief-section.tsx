@@ -1,4 +1,5 @@
 import { AdminActionCard, AdminSection, AdminTaskGrid } from '../../components/admin-surface';
+import { AdminQueueMeta } from '../../components/admin-overview-card';
 import { StatusBadge } from '../../components/status-badge';
 import { buildShiftBriefItems } from './operations-handoff-shift-brief';
 
@@ -37,15 +38,17 @@ export function OperationsHandoffShiftBriefSection({
       <AdminTaskGrid>
         {items.map((item) => (
           <AdminActionCard
-            actionLabel={item.action}
-            detail={item.detail}
+            actionLabel={`Review ${item.title}`}
+            detail={item.action}
             href={item.href}
             key={item.title}
             signalClassName={toSignalModifierClass(item.className)}
-            signalLabel={item.owner}
+            signalLabel={item.status}
             title={item.title}
             variant="ops-task"
-          />
+          >
+            <AdminQueueMeta impact={item.detail} owner={item.owner} />
+          </AdminActionCard>
         ))}
       </AdminTaskGrid>
     </AdminSection>

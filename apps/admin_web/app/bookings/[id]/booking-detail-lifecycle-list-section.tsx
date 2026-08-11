@@ -48,9 +48,9 @@ export function BookingDetailLifecycleListSection({ booking }: BookingDetailLife
     <AdminSection
       actions={<StatusBadge tone="info">{timelineItems.length} stage(s)</StatusBadge>}
       className="booking-detail-lifecycle-list admin-mb-16"
-      description="Compact stage history for this reservation without repeating full booking-list tables."
+      description="Latest business milestones and outcomes. Full technical events remain in Developer/System."
       id="booking-detail-lifecycle-list"
-      title="Booking lifecycle timeline"
+      title="Activity"
     >
 
       <AdminBasicTimeline className="admin-mt-16" items={bookingLifecycleBasicTimelineItems(timelineItems)} />
@@ -64,13 +64,29 @@ function bookingLifecycleBasicTimelineItems(
   return items.map((item) => ({
     detail: item.detail,
     id: item.groupKey,
-    meta: item.meta,
+    meta: operatorTimelineMeta(item),
     statusLabel: item.statusLabel,
     statusTone: timelineStatusBadgeTone(item.tone),
     time: item.timeLabel,
     title: item.title,
     tone: item.tone,
   }));
+}
+
+function operatorTimelineMeta(item: BookingDetailLifecycleTimelineItem) {
+  const priorityByStage: Partial<Record<BookingTableGroupKey, readonly string[]>> = {
+    completed: ['Payment', 'Completion location', 'Partner gate'],
+    'post-match-cancellations-pending': ['Closed reason', 'Fee state', 'Matched Partner'],
+    'post-match-cancellations-resolved': ['Closed reason', 'Fee state', 'Matched Partner'],
+    'post-match-in-progress': ['Matched Partner', 'Next action', 'Partner gate'],
+    'pre-match': ['Requested', 'Address', 'Next action'],
+  };
+  const priority = priorityByStage[item.groupKey] ?? [];
+  const selected = priority
+    .map((label) => item.meta.find((meta) => meta.label === label))
+    .filter((meta): meta is BookingDetailLifecycleTimelineItem['meta'][number] => Boolean(meta));
+
+  return selected.length > 0 ? selected.slice(0, 3) : item.meta.slice(0, 3);
 }
 
 export function bookingDetailLifecycleTimelineItems(
@@ -372,8 +388,7 @@ function compactLifecyclePaymentLabel(row: BookingMonitorListRow, booking: Admin
 
 function compactLifecycleClosureDetail(detail: string, fallback: string) {
   const normalized = detail
-    .replace(/^\s*[^/]*?\bclosure\s*\/\s*/i, '')
-    .replace(/^\s*[^/]*?\bclosure\s*\/\s*/i, '')
+    .replace(/^\s*[^·/]*?\bclosure\s*[·/]\s*/i, '')
     .replace(/^Service Completed\s*\/\s*/i, '')
     .replace(/^Smoke:\s*/i, '')
     .replace(/^service completed;\s*/i, 'Service completed; ')

@@ -42,7 +42,7 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('booking bookin / partner partne');
     expect(rendered).toContain('Retry needed');
     expect(rendered).toContain('FCM');
-    expect(rendered).toContain('FAILED');
+    expect(rendered).toContain('Failed');
     expect(rendered).toContain('IOS');
     expect(rendered).toContain('Device disabled');
     expect(rendered).toContain('Attempted');
@@ -57,24 +57,26 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('Reason');
     expect(rendered).toContain('Token expired');
     expect(rendered).toContain('Next Ask the user to reopen the app');
-    expect(rendered).toContain('Re-enable device');
+    expect(rendered).toContain('1 failed');
+    expect(rendered).toContain('Path ••••1234');
+    expect(rendered).toContain('••• ••• 0000');
+    expect(rendered).not.toContain('+84900000000');
+    expect(rendered).not.toContain('Re-enable device');
+    expect(elementTypesIn(section)).toContain('details');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-card vuexy-booking-table-card vuexy-booking-table-group admin-section notification-table-shell',
-        'admin-table-scroll',
+        'card admin-card vuexy-booking-table-card vuexy-booking-table-group admin-section notification-table-shell has-5-columns',
         'admin-action-dropdown action-menu-dropdown',
         'admin-action-menu action-menu-panel',
         'admin-action-item',
         'vuexy-booking-person',
         'notification-delivery-attempt admin-mb-10',
         'admin-avatar-status-dot is-app-deleted',
-        'pill pill-warn admin-mt-6',
       ]),
     );
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/partners/partner-1',
-        '/notifications?confirm=enable-device&pushDeviceId=device-1',
         '/notifications?confirm=retry&notificationId=notification-1',
       ]),
     );
@@ -89,11 +91,11 @@ describe('NotificationsTableSection', () => {
           ...row,
           deliveryAttemptCount: 2,
           deliveryRows: [
+            row.deliveryRows[0],
             {
               ...row.deliveryRows[0],
               attemptedAt: '2026-06-09T03:03:00.000Z',
               deviceStateLabel: 'Device enabled',
-              enableDeviceHref: null,
               failureCodeLabel: '-',
               failureReasonLabel: '-',
               httpStatusLabel: '200',
@@ -103,7 +105,6 @@ describe('NotificationsTableSection', () => {
               status: 'SENT',
               statusClassName: 'pill pill-success',
             },
-            row.deliveryRows[0],
           ],
         },
       ],
@@ -111,12 +112,12 @@ describe('NotificationsTableSection', () => {
 
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('2 attempts');
-    expect(rendered).toContain('latest FCM / Android / 9 Jun 2026, 10:03');
-    expect(rendered).toContain('previous FAILED at 9 Jun 2026, 10:01');
-    expect(rendered).toContain('Latest attempt / FCM SENT / Android');
-    expect(rendered).not.toContain('Previous attempt / FCM FAILED / IOS');
-    expect(rendered).toContain('Previous delivery evidence is summarized above.');
+    expect(rendered).toContain('1 failed · 1 accepted');
+    expect(rendered).toContain('2 attempt');
+    expect(rendered).toContain('FCM Failed / IOS');
+    expect(rendered).toContain('FCM Accepted by FCM / Android');
+    expect(rendered.indexOf('FCM Failed / IOS')).toBeLessThan(rendered.indexOf('FCM Accepted by FCM / Android'));
+    expect(rendered).not.toContain('Push delivered');
     expect(elementTypesIn(section)).toContain('details');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
@@ -127,12 +128,101 @@ describe('NotificationsTableSection', () => {
     );
   });
 
-  it('uses shared badge atoms for delivery status and recovery links', () => {
+  it('distinguishes unavailable push from unconfirmed delivery in operator language', () => {
+    const baseRow = buildRow();
+    const deliveryGapSection = NotificationsTableSection({
+      emptyMessage: 'No notifications loaded.',
+      rows: [{
+        ...baseRow,
+        deliveryAttemptCount: 0,
+        deliveryRows: [],
+        opsSignal: 'No send attempt after 15m',
+      }],
+    });
+    const noPushPathSection = NotificationsTableSection({
+      emptyMessage: 'No notifications loaded.',
+      rows: [{
+        ...baseRow,
+        deliveryAttemptCount: 0,
+        deliveryRows: [],
+        opsSignal: 'No active push route',
+      }],
+    });
+
+    expect(normalizedText(deliveryGapSection)).toContain('No send attempt after 15m');
+    expect(normalizedText(noPushPathSection)).toContain('No active push route');
+    expect(normalizedText(noPushPathSection)).not.toContain('App offline');
+    const rowSource = readFileSync('app/notifications/notification-table-row.tsx', 'utf8');
+    expect(rowSource).toContain('avatarStatusLabel={notificationPushRouteStatusLabel(row.userAvatarStatus)}');
+    expect(rowSource).toContain("return status === 'online' ? 'Push route: active' : 'Push route: inactive'");
+  });
+
+  it('renders one inactive recipient route group with safe identity and occurrence counts', () => {
+    const section = NotificationsTableSection({
+      emptyMessage: 'No route groups.',
+      headers: ['Recipient / route', 'Latest notification', 'First / latest', 'Unresolved', 'Next action'],
+      rows: [{
+        ...buildRow(),
+        primaryAction: { href: '/customers/customer-1', kind: 'link', label: 'Open recipient', tone: 'warning' },
+        routeGroup: {
+          firstOccurredAt: '2026-08-05T06:00:00.000Z',
+          latestOccurredAt: '2026-08-05T08:00:00.000Z',
+          notificationCount: 12,
+          targetRole: 'CUSTOMER',
+        },
+        userLabel: '••• ••• 0000',
+        userPhone: '••• ••• 0000',
+      }],
+    });
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Push route: inactive');
+    expect(rendered).toContain('12 notifications');
+    expect(rendered).toContain('Open recipient');
+    expect(rendered).not.toContain('+84900000000');
+  });
+
+  it('shows grouped unresolved cause, age, technical next step, and affected records action', () => {
+    const incidentRow: NotificationTableRow = {
+      ...buildRow(),
+      incident: {
+        affectedUserCount: 37,
+        failureCode: 'messaging/registration-token-not-registered',
+        failureCodeLabel: 'App registration expired',
+        firstOccurredAt: '2026-08-05T06:00:00.000Z',
+        historical: false,
+        href: '/notifications?issue=failed&failureProvider=FCM&failureCode=messaging%2Fregistration-token-not-registered',
+        lastOccurredAt: '2026-08-05T06:42:00.000Z',
+        notificationCount: 100,
+        ownerLabel: 'Platform',
+        provider: 'FCM',
+        retryCondition: 'Retry after a new enabled route is registered.',
+        technicalAction: 'Confirm token cleanup before retrying.',
+        windowMinutes: 60,
+      },
+    };
+    const section = NotificationsTableSection({
+      emptyMessage: 'No incidents.',
+      rows: [incidentRow],
+    });
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('37 affected user');
+    expect(rendered).toContain('100 notification');
+    expect(rendered).toContain('messaging/registration-token-not-registered');
+    expect(rendered).toContain('Confirm token cleanup before retrying.');
+    expect(rendered).toContain('Age Updated just now');
+    expect(rendered).toContain('Open this group');
+    expect(rendered).toContain('Retry after a new enabled route is registered.');
+    expect(rendered).not.toContain('+84900000000');
+  });
+
+  it('uses shared badge atoms for technical delivery status', () => {
     const source = readFileSync('app/notifications/notification-delivery-cell.tsx', 'utf8');
 
     expect(source).toContain('AdminInlineFallback');
     expect(source).toContain('StatusBadgeFromPillClass');
-    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('StatusBadgeLink');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('PillClassBadgeLink');
@@ -192,7 +282,6 @@ describe('NotificationsTableSection', () => {
               ...row.deliveryRows[0],
               attemptedAt: '2026-06-09T03:03:00.000Z',
               deviceStateLabel: 'Device enabled',
-              enableDeviceHref: null,
               failureCodeLabel: '-',
               failureReasonLabel: '-',
               httpStatusLabel: '200',
@@ -209,11 +298,10 @@ describe('NotificationsTableSection', () => {
 
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain(
-      'FAILED 2 attempts / latest FCM / Android / 9 Jun 2026, 10:04 / previous SENT at 9 Jun 2026, 10:03',
-    );
-    expect(rendered).toContain('Latest attempt / FCM FAILED / Android');
-    expect(rendered).not.toContain('Previous attempt / FCM SENT / Android');
+    expect(rendered).toContain('1 failed · 1 accepted');
+    expect(rendered).toContain('FCM Failed / Android');
+    expect(rendered).toContain('FCM Accepted by FCM / Android');
+    expect(rendered.indexOf('FCM Failed / Android')).toBeLessThan(rendered.indexOf('FCM Accepted by FCM / Android'));
     expect(rendered).toContain('Failure messaging/internal-error');
     expect(rendered).toContain('Reason temporary provider error for [masked]');
     expect(rendered).toContain(
@@ -289,9 +377,9 @@ function buildRow(): NotificationTableRow {
       {
         attemptedAt: '2026-06-09T03:01:00.000Z',
         deviceFreshnessLabel: 'Token timestamp current',
+        deviceIdLabel: '••••1234',
         deviceLastSeenAt: '2026-06-09T03:02:00.000Z',
         deviceStateLabel: 'Device disabled',
-        enableDeviceHref: '/notifications?confirm=enable-device&pushDeviceId=device-1',
         failureCodeLabel: 'invalid_token',
         failureReasonLabel: 'Token expired',
         httpStatusLabel: '400',
@@ -318,6 +406,6 @@ function buildRow(): NotificationTableRow {
     userAvatarStatus: 'app-deleted',
     userHref: '/partners/partner-1',
     userLabel: 'Linh Partner',
-    userPhone: '+84900000000',
+    userPhone: '••• ••• 0000',
   };
 }

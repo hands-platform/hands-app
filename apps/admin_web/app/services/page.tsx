@@ -10,7 +10,7 @@ const STANDARD_SERVICE_DURATIONS = new Set([60, 90, 120]);
 
 export default async function ServicesPage({ searchParams }: { searchParams?: ServicesPageSearchParams }) {
   const params = (await searchParams) ?? {};
-  const services = await adminGet<AdminServiceCatalogItem[]>('/admin/services', []);
+  const services = await adminGet<AdminServiceCatalogItem[]>('/admin/services?scope=operational', []);
   const visibleServices = services.filter(
     (service) => !isSmokeOrTestService(service) && STANDARD_SERVICE_DURATIONS.has(service.durationMin),
   );
@@ -56,5 +56,11 @@ function findServiceGroup(groups: readonly ServiceCatalogGroup[], key: string | 
 function isSmokeOrTestService(service: AdminServiceCatalogItem) {
   const key = service.serviceGroupKey?.toLowerCase() ?? '';
   const name = service.name.toLowerCase();
-  return key.startsWith('smoke') || key.includes('test') || name.startsWith('smoke') || name.includes('test');
+  const marker = `${key} ${name}`;
+  return (
+    key.startsWith('smoke') ||
+    marker.includes('test') ||
+    name.startsWith('smoke') ||
+    /\d{10,}/.test(marker)
+  );
 }

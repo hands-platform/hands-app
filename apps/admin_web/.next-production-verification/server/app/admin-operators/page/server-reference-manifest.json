@@ -1,0 +1,41 @@
+{
+  "node": {
+    "401a819675a6e5a823018108439a5fffc2c86875e7": {
+      "workers": {
+        "app/admin-operators/page": {
+          "moduleId": 184641,
+          "async": false,
+          "exportedName": "revokeAdminOperatorAccess",
+          "filename": "apps/admin_web/app/admin-operators/actions.ts"
+        }
+      },
+      "exportedName": "revokeAdminOperatorAccess",
+      "filename": "apps/admin_web/app/admin-operators/actions.ts"
+    },
+    "4059a4f7a53b397bffa30b5c559e9fd209d9d20346": {
+      "workers": {
+        "app/admin-operators/page": {
+          "moduleId": 184641,
+          "async": false,
+          "exportedName": "updateAdminOperatorAccess",
+          "filename": "apps/admin_web/app/admin-operators/actions.ts"
+        }
+      },
+      "exportedName": "updateAdminOperatorAccess",
+      "filename": "apps/admin_web/app/admin-operators/actions.ts"
+    },
+    "40d7ce896db578e2143c74c568e8ccb14ffb5c3ec6": {
+      "workers": {
+        "app/admin-operators/page": {
+          "moduleId": 184641,
+          "async": false,
+          "exportedName": "createAdminOperator",
+          "filename": "apps/admin_web/app/admin-operators/actions.ts"
+        }
+      },
+      "exportedName": "createAdminOperator",
+      "filename": "apps/admin_web/app/admin-operators/actions.ts"
+    }
+  },
+  "edge": {}
+}

@@ -43,7 +43,7 @@ export const adminOperatorPermissionCategoryDefinitions = [
   {
     group: 'Bookings',
     key: 'BOOKINGS_COMPLETED',
-    label: 'Completed bookings',
+    label: 'Closeout operations',
     scope: 'Completed booking lists, closeout detail, settlement evidence',
     defaultOwner: 'Operations Admin',
   },
@@ -181,6 +181,13 @@ export const adminOperatorPermissionCategoryDefinitions = [
     defaultOwner: 'Support Admin',
   },
   {
+    group: 'Growth & Communications',
+    key: 'NOTIFICATIONS_RETRY',
+    label: 'Notification retry',
+    scope: 'Manual retry of unresolved notification delivery paths',
+    defaultOwner: 'Support Admin',
+  },
+  {
     group: 'Policies',
     key: 'SYSTEM_SERVICES',
     label: 'Services',
@@ -206,6 +213,34 @@ export const adminOperatorPermissionCategoryDefinitions = [
     key: 'SYSTEM_POLICY',
     label: 'Operations policy',
     scope: 'Operations policy, partner levels, wallet and bank policy settings',
+    defaultOwner: 'Master Admin',
+  },
+  {
+    group: 'Growth & Communications',
+    key: 'CONTENT_VIEW',
+    label: 'Website content view',
+    scope: 'View website routes, Live and Draft status, previews and activity',
+    defaultOwner: 'Growth Admin',
+  },
+  {
+    group: 'Growth & Communications',
+    key: 'CONTENT_EDIT',
+    label: 'Website content edit',
+    scope: 'Create and save Draft pages, news articles and sections',
+    defaultOwner: 'Growth Admin',
+  },
+  {
+    group: 'Growth & Communications',
+    key: 'CONTENT_PUBLISH',
+    label: 'Website content publish',
+    scope: 'Publish ready Drafts and restore previous Live revisions',
+    defaultOwner: 'Master Admin',
+  },
+  {
+    group: 'Growth & Communications',
+    key: 'CONTENT_DELETE',
+    label: 'Website content delete',
+    scope: 'Delete Draft-only routes and Draft sections after confirmation',
     defaultOwner: 'Master Admin',
   },
   {
@@ -279,6 +314,7 @@ export const legacyAdminOperatorPermissionGroups: Record<string, readonly AdminO
     'DEVELOPER_ROUTE_COMPAT',
   ],
   SYSTEM_SETUP: ['DEVELOPER_SETUP', 'DEVELOPER_HEALTH', 'DEVELOPER_ROUTE_COMPAT'],
+  SYSTEM_POLICY: ['CONTENT_VIEW', 'CONTENT_EDIT', 'CONTENT_PUBLISH', 'CONTENT_DELETE'],
 };
 
 const adminOperatorPermissionCategorySet = new Set<string>([

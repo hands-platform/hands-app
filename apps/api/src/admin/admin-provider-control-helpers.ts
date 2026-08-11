@@ -31,6 +31,13 @@ export type ProviderSanctionCreateInput = {
   expiresAt?: string | null;
 };
 
+export type ProviderSanctionLiftInput = {
+  reason?: string;
+};
+
+const PROVIDER_SANCTION_REASON_MIN_LENGTH = 12;
+const PROVIDER_SANCTION_REASON_MAX_LENGTH = 500;
+
 function assertEnumValue<T extends Record<string, string>>(
   enumObject: T,
   value: T[keyof T] | undefined,
@@ -92,6 +99,12 @@ export function normalizeProviderReportUpdateInput(input: ProviderReportUpdateIn
   assertProviderReportStatus(input.status);
   assertProviderReportSeverity(input.severity);
   const resolutionNote = normalizeNullable(input.resolutionNote);
+  if (
+    (input.status === ProviderReportStatus.RESOLVED || input.status === ProviderReportStatus.DISMISSED) &&
+    !resolutionNote
+  ) {
+    throw new BadRequestException('Resolution note is required when closing a report');
+  }
   return {
     data: {
       status: input.status,
@@ -117,6 +130,30 @@ export function normalizeProviderSanctionCreateInput(input: ProviderSanctionCrea
     reportId: normalizeNullable(input.reportId),
     expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
   };
+}
+
+export function normalizeProviderSanctionLiftInput(input: ProviderSanctionLiftInput) {
+  const reason = normalizeNullable(input.reason);
+  if (!reason) throw new BadRequestException('Lift reason and evidence is required');
+  if (reason.length < PROVIDER_SANCTION_REASON_MIN_LENGTH) {
+    throw new BadRequestException(
+      `Lift reason must be at least ${PROVIDER_SANCTION_REASON_MIN_LENGTH} characters`,
+    );
+  }
+  if (reason.length > PROVIDER_SANCTION_REASON_MAX_LENGTH) {
+    throw new BadRequestException(
+      `Lift reason must be at most ${PROVIDER_SANCTION_REASON_MAX_LENGTH} characters`,
+    );
+  }
+  return { reason };
+}
+
+export function providerSanctionLiftMetadata(metadata: unknown, reason: string) {
+  const existing =
+    metadata && typeof metadata === 'object' && !Array.isArray(metadata)
+      ? (metadata as Record<string, unknown>)
+      : {};
+  return { ...existing, liftReason: reason };
 }
 
 export function normalizeProviderAccountBlockReason(reason?: string) {

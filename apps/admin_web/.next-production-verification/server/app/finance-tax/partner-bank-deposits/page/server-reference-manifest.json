@@ -1,0 +1,17 @@
+{
+  "node": {
+    "40406e0be7c708b70734ad1533dc12f560d848a3e5": {
+      "workers": {
+        "app/finance-tax/partner-bank-deposits/page": {
+          "moduleId": 150846,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_0",
+          "filename": "apps/admin_web/app/finance-tax/partner-bank-deposits/page.tsx"
+        }
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_0",
+      "filename": "apps/admin_web/app/finance-tax/partner-bank-deposits/page.tsx"
+    }
+  },
+  "edge": {}
+}

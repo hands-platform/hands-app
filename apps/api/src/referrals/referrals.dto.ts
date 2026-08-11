@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
-import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 const referralPlatforms = ['android', 'ios', 'web'] as const;
 
@@ -24,4 +25,18 @@ export class ClaimReferralCodeDto {
   @IsString()
   @MaxLength(80)
   installSource?: string;
+}
+
+export class ReferralListQueryDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  cursor?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit = 20;
 }

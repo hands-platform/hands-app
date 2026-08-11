@@ -1,4 +1,5 @@
 import type { AdminBookingDetail } from '../../../lib/admin-api';
+import { bookingExpiryEligibility } from '../../../lib/booking-operator-action-rules';
 import {
   bookingParticipantPartnerId,
   bookingCustomerSelectableParticipantsForBooking,
@@ -30,4 +31,13 @@ export function bookingParticipantProviderId(participant: BookingDetailParticipa
 
 export function bookingCustomerSelectableParticipantsForFinalChoice(booking: AdminBookingDetail) {
   return bookingCustomerSelectableParticipantsForBooking(booking);
+}
+
+export function bookingDetailExpiryEligibility(booking: AdminBookingDetail) {
+  return bookingExpiryEligibility({
+    customerChoiceCandidateCount: bookingCustomerSelectableParticipantsForFinalChoice(booking).length,
+    expiresAt: booking.expiresAt,
+    selectedProviderId: bookingSelectedProviderId(booking),
+    status: booking.status,
+  });
 }

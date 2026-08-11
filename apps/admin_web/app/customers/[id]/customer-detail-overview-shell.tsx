@@ -3,11 +3,12 @@ import type { ReactNode } from 'react';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { DateTimeText } from '../../../components/date-time-text';
-import { AdminProfileOverviewCard, AdminSummaryCardGrid } from '../../../components/admin-overview-card';
+import { AdminProfileOverviewCard } from '../../../components/admin-overview-card';
 import { AdminAvatar } from '../../../components/admin-person-cell';
 import { AdminCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
+import { adminCountLabel } from '../../../lib/admin-copy';
 
 export type CustomerDetailOverviewFact = {
   readonly helper: ReactNode;
@@ -17,9 +18,9 @@ export type CustomerDetailOverviewFact = {
   readonly valueDateTimeValue?: string | null;
 };
 
-export type CustomerDetailOverviewHighlight = {
-  readonly helper: ReactNode;
-  readonly label: string;
+export type CustomerDetailContactRow = {
+  readonly id: string;
+  readonly label: ReactNode;
   readonly value: ReactNode;
 };
 
@@ -39,40 +40,30 @@ export type CustomerDetailPartnerRail = {
   readonly totalCount?: number;
 };
 
-export type CustomerDetailUsageSummaryItem = {
-  readonly helper: ReactNode;
-  readonly label: string;
-  readonly value: string;
-};
-
-export type CustomerDetailUsageSummary = {
-  readonly helper: ReactNode;
-  readonly items: readonly CustomerDetailUsageSummaryItem[];
-  readonly regionRows: readonly CustomerDetailUsageSummaryItem[];
-  readonly title: string;
-};
-
 type CustomerDetailOverviewShellProps = {
+  readonly contactRows?: readonly CustomerDetailContactRow[];
   readonly avatarStatus: AdminAvatarStatus;
   readonly facts: readonly CustomerDetailOverviewFact[];
-  readonly highlights: readonly CustomerDetailOverviewHighlight[];
   readonly name: string;
-  readonly partnerRails?: readonly CustomerDetailPartnerRail[];
   readonly statusBadges: readonly string[];
   readonly subtitle: string;
-  readonly usageSummary?: CustomerDetailUsageSummary;
+};
+
+type CustomerDetailBehaviorContextProps = {
+  readonly partnerRails?: readonly CustomerDetailPartnerRail[];
 };
 
 export function CustomerDetailOverviewShell({
   avatarStatus,
+  contactRows,
   facts,
-  highlights,
   name,
-  partnerRails = [],
   statusBadges,
   subtitle,
-  usageSummary,
 }: CustomerDetailOverviewShellProps) {
+  const visibleContactRows = contactRows?.slice(0, 2) ?? [];
+  const retainedContactRows = contactRows?.slice(2) ?? [];
+
   return (
     <AdminProfileOverviewCard className="customer-detail-overview-card">
       <div className="customer-detail-overview-main">
@@ -83,7 +74,7 @@ export function CustomerDetailOverviewShell({
             status={avatarStatus}
           />
           <div className="customer-detail-identity-copy">
-            <span>Customer profile</span>
+            <span>Profile and contact</span>
             <h2>{name}</h2>
             <p>{subtitle}</p>
           </div>
@@ -98,15 +89,6 @@ export function CustomerDetailOverviewShell({
         </AdminFilterChipGroup>
       </div>
 
-      <AdminSummaryCardGrid
-        className="customer-detail-highlight-grid"
-        items={highlights.map((item) => ({
-          detail: item.helper,
-          label: item.label,
-          value: item.value,
-        }))}
-      />
-
       <div className="customer-detail-fact-list">
         {facts.map((fact) => (
           <div key={fact.label}>
@@ -117,41 +99,59 @@ export function CustomerDetailOverviewShell({
         ))}
       </div>
 
-      {usageSummary ? (
-        <AdminCard className="customer-detail-usage-summary">
-          <div className="customer-detail-usage-summary-header">
+      {contactRows ? (
+        <div className="customer-detail-contact-list">
+          <div className="customer-detail-contact-list-header">
             <div>
-              <span>{usageSummary.title}</span>
-              <small>{usageSummary.helper}</small>
+              <span>Saved addresses</span>
+              <small>Primary and latest service addresses</small>
             </div>
-            <strong>{usageSummary.regionRows.length} region(s)</strong>
+            <strong>{contactRows.length}</strong>
           </div>
-          <AdminSummaryCardGrid
-            className="customer-detail-usage-summary-grid"
-            items={usageSummary.items.map((item) => ({
-              detail: item.helper,
-              label: item.label,
-              value: item.value,
-            }))}
-          />
-          <div className="customer-detail-usage-region-list">
-            {usageSummary.regionRows.map((row) => (
-              <div key={row.label}>
-                <span>{row.label}</span>
-                <strong>{row.value}</strong>
-                <small>{row.helper}</small>
+          {contactRows.length > 0 ? (
+            <>
+              <div className="customer-detail-contact-list-rows">
+                {visibleContactRows.map((row) => (
+                  <div key={row.id}>
+                    <strong>{row.label}</strong>
+                    <span>{row.value}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </AdminCard>
+              {retainedContactRows.length > 0 ? (
+                <details className="customer-address-disclosure">
+                  <summary>View {adminCountLabel(retainedContactRows.length, 'more address record')}</summary>
+                  <div className="customer-detail-contact-list-rows">
+                    {retainedContactRows.map((row) => (
+                      <div key={row.id}>
+                        <strong>{row.label}</strong>
+                        <span>{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+            </>
+          ) : (
+            <AdminEmptyState framed message="No saved address yet." title={null} />
+          )}
+        </div>
       ) : null}
+    </AdminProfileOverviewCard>
+  );
+}
 
+export function CustomerDetailBehaviorContext({ partnerRails = [] }: CustomerDetailBehaviorContextProps) {
+  return (
+    <>
       {partnerRails.length > 0 ? (
         <div className="customer-detail-partner-rail-grid">
           {partnerRails.map((rail) => {
             const totalCount = rail.totalCount ?? rail.partners.length;
             const countLabel =
-              totalCount > rail.partners.length ? `${rail.partners.length}/${totalCount}` : String(totalCount);
+              totalCount > rail.partners.length
+                ? `${rail.partners.length}/${totalCount}`
+                : String(totalCount);
 
             return (
               <AdminCard className="customer-detail-partner-rail" key={rail.title}>
@@ -198,7 +198,7 @@ export function CustomerDetailOverviewShell({
           })}
         </div>
       ) : null}
-    </AdminProfileOverviewCard>
+    </>
   );
 }
 

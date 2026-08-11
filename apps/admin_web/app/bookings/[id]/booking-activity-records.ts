@@ -2,7 +2,11 @@ import { Fragment, createElement, type ReactNode } from 'react';
 import type { AdminBookingDetail, AdminLocationSnapshot, AdminNotification } from '../../../lib/admin-api';
 import { MoneyText } from '../../../components/money-text';
 import { bookingRecordCreatedAt, bookingRequestOpenedAt } from '../../../lib/admin-booking-time';
-import { marketplaceDisplayText } from '../../../lib/admin-copy';
+import {
+  adminWorkflowStatusLabel,
+  marketplaceDisplayText,
+  partnerOperatingStatusLabel,
+} from '../../../lib/admin-copy';
 import { buildCsvDataHref } from '../../../lib/csv-export';
 import { bookingMatchAuditDetail, bookingMatchAuditSummary } from '../../../lib/booking-match-audit';
 import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
@@ -117,9 +121,7 @@ export function buildBookingActivityRecords({
       type: 'PARTNER',
       at: participant.joinedAt ?? booking.createdAt ?? '',
       title: `${providerName(participant.providerProfile)} entered marketplace shortlist`,
-      detail: `${participant.status} / ${distanceLabel(participant.distanceMeters)} / ${
-        participant.providerStatusAtJoin ?? 'status unknown'
-      }`,
+      detail: `${adminWorkflowStatusLabel(participant.status)} / ${distanceLabel(participant.distanceMeters)} / ${partnerOperatingStatusLabel(participant.providerStatusAtJoin)}`,
       href: participant.providerProfile?.id ? `/partners/${participant.providerProfile.id}` : '#participants',
     });
     if (participant.respondedAt) {
@@ -128,12 +130,47 @@ export function buildBookingActivityRecords({
         type: 'PARTNER',
         at: participant.respondedAt,
         title: `${providerName(participant.providerProfile)} responded`,
-        detail: `${participant.status} / customer can select from participating or accepted Partners.`,
+        detail: `${adminWorkflowStatusLabel(participant.status)} / customer can select from participating or accepted Partners.`,
         href: participant.providerProfile?.id
           ? `/partners/${participant.providerProfile.id}`
           : '#participants',
       });
     }
+  }
+
+  for (const event of booking.providerRequestEvents ?? []) {
+    records.push({
+      id: event.id,
+      type: 'REQUEST',
+      at: event.createdAt,
+      title: providerRequestEventTitle(event.eventType, providerName(event.providerProfile)),
+      detail: providerRequestEventDetail(booking, event),
+      href: event.providerProfileId ? `/partners/${event.providerProfileId}` : '#participants',
+    });
+  }
+
+  if (
+    booking.status === 'CANCELLED' &&
+    !booking.matchedAt &&
+    !booking.selectedProviderId &&
+    (booking.closedByRole === 'CUSTOMER' || booking.closedReason === 'customer_cancelled')
+  ) {
+    const remainingSeconds = elapsedSeconds(booking.closedAt, booking.expiresAt);
+    const preferredOutcome = booking.providerRequestEvents?.some(
+      (event) => event.eventType === 'PREFERRED_PROVIDER_REJECTED',
+    )
+      ? 'rejected'
+      : booking.providerRequestEvents?.some((event) => event.eventType === 'PREFERRED_PROVIDER_NO_RESPONSE')
+        ? 'no response'
+        : 'waiting';
+    records.push({
+      id: `${booking.id}-customer-pre-match-cancelled`,
+      type: 'CANCELLATION',
+      at: booking.closedAt ?? booking.updatedAt ?? booking.createdAt ?? '',
+      title: 'Customer cancelled before final match',
+      detail: `${remainingSeconds == null ? 'Deadline unavailable' : `${remainingSeconds}s remained`} / preferred request ${preferredOutcome} / ${(booking.participants ?? []).length} marketplace participant(s) / payment ${booking.payment?.status ?? 'not created'}`,
+      href: '#payment',
+    });
   }
 
   const finalPartner = bookingFinalPartnerSummary(booking);
@@ -142,7 +179,10 @@ export function buildBookingActivityRecords({
       id: `${booking.id}-selected-partner-${finalPartner.id ?? 'relation'}`,
       type: 'MATCHED',
       at: booking.updatedAt ?? booking.openedAt ?? booking.createdAt ?? '',
-      title: 'Final Partner selected',
+      title:
+        booking.matchSource === 'CUSTOMER_SELECTED_PARTNER'
+          ? 'Customer selected final Partner'
+          : 'Preferred Partner accepted and matched',
       detail: `${finalPartner.label} / chat ${booking.chatRoom ? 'created' : 'not created yet'}`,
       href: finalPartner.href,
     });
@@ -274,13 +314,14 @@ export function buildBookingActivityRecords({
   }
 
   for (const notification of notifications.filter((item) => notificationDataBookingId(item) === booking.id)) {
+    const latestDelivery = notification.deliveries?.[0];
     records.push({
       id: notification.id,
       type: 'ALERT',
       at: notification.createdAt,
       title: humanizeNotificationType(notification.type),
-      detail: `${marketplaceDisplayText(notification.title)} / ${
-        notification.deliveries?.[0]?.status ?? 'No delivery'
+      detail: `${marketplaceDisplayText(notification.title)} / ${latestDelivery?.status ?? 'No delivery'}${
+        latestDelivery?.attemptedAt ? ` ${formatDate(latestDelivery.attemptedAt)}` : ''
       } / ${notification.readAt ? `read ${formatDate(notification.readAt)}` : 'unread'}`,
       href: `/notifications?booking=${booking.id}`,
     });
@@ -370,8 +411,7 @@ export function buildBookingActivityCsvHref(booking: AdminBookingDetail, records
 
 export function buildBookingActivitySummary(records: BookingActivityRecord[]): BookingActivitySummaryItem[] {
   const financeTypes = new Set(['PAYMENT', 'REFUND', 'EARNING', 'FEE', 'TAX', 'WALLET']);
-  const count = (predicate: (record: BookingActivityRecord) => boolean) =>
-    records.filter(predicate).length;
+  const count = (predicate: (record: BookingActivityRecord) => boolean) => records.filter(predicate).length;
   const latestAt = records[0]?.at;
   const oldestAt = records[records.length - 1]?.at;
 
@@ -412,4 +452,64 @@ export function buildBookingActivitySummary(records: BookingActivityRecord[]): B
       helper: 'Booking action and Partner location records linked to this booking.',
     },
   ];
+}
+
+function providerRequestEventTitle(eventType: string, partnerLabel: string) {
+  switch (eventType) {
+    case 'PREFERRED_PROVIDER_REJECTED':
+      return `${partnerLabel} declined the preferred request`;
+    case 'PREFERRED_PROVIDER_NO_RESPONSE':
+      return `${partnerLabel} did not respond before the deadline`;
+    case 'OPEN_REQUEST_DETAIL_VIEWED':
+      return `${partnerLabel} opened the booking request`;
+    case 'OPEN_REQUEST_DETAIL_CLOSED':
+      return `${partnerLabel} closed the booking request`;
+    default:
+      return `${partnerLabel} request event: ${eventType}`;
+  }
+}
+
+function providerRequestEventDetail(
+  booking: AdminBookingDetail,
+  event: NonNullable<AdminBookingDetail['providerRequestEvents']>[number],
+) {
+  const metadata = jsonRecord(event.metadata);
+  const reasonCode = jsonText(metadata.reasonCode);
+  const reasonDetail = jsonText(metadata.reasonDetail);
+  const durationSeconds = jsonNumber(metadata.durationSeconds);
+  const role =
+    event.providerProfileId === booking.preferredProviderId ? 'Preferred request' : 'Marketplace request';
+  const responseSeconds = elapsedSeconds(booking.openedAt ?? booking.createdAt, event.createdAt);
+  const participant = booking.participants?.find(
+    (item) => (item.providerProfileId ?? item.providerProfile?.id) === event.providerProfileId,
+  );
+  const parts = [
+    role,
+    participant?.distanceMeters == null ? null : distanceLabel(participant.distanceMeters),
+    reasonCode ? `reason ${reasonCode}` : null,
+    reasonDetail,
+    durationSeconds == null ? null : `viewed ${durationSeconds}s`,
+    responseSeconds == null ? null : `response ${responseSeconds}s after opening`,
+  ].filter((part): part is string => Boolean(part));
+  return parts.join(' / ');
+}
+
+function jsonRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function jsonText(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function jsonNumber(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function elapsedSeconds(from: string | null | undefined, to: string | null | undefined) {
+  const fromTime = safeTime(from ?? '');
+  const toTime = safeTime(to ?? '');
+  return fromTime > 0 && toTime >= fromTime ? Math.round((toTime - fromTime) / 1000) : null;
 }

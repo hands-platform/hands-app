@@ -123,7 +123,7 @@ export function PartnerDetailPayoutOperationsSection({
             >
               <tr>
                 <td>
-                  <StatusBadge tone="danger">HELD</StatusBadge>
+                  <StatusBadge tone="danger">On hold</StatusBadge>
                   <p>
                     <strong>Active payout hold</strong>
                   </p>

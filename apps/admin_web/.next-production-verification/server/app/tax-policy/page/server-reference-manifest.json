@@ -1,0 +1,53 @@
+{
+  "node": {
+    "400a6adbdef461b82623033abcbf3491145d2db8a3": {
+      "workers": {
+        "app/tax-policy/page": {
+          "moduleId": 762102,
+          "async": false,
+          "exportedName": "createTaxPolicyVersion",
+          "filename": "apps/admin_web/app/tax-policy/actions.ts"
+        }
+      },
+      "exportedName": "createTaxPolicyVersion",
+      "filename": "apps/admin_web/app/tax-policy/actions.ts"
+    },
+    "403c4fc720aae61b1300e9e82ba69005c0663c5f94": {
+      "workers": {
+        "app/tax-policy/page": {
+          "moduleId": 762102,
+          "async": false,
+          "exportedName": "updateTaxPolicyVersion",
+          "filename": "apps/admin_web/app/tax-policy/actions.ts"
+        }
+      },
+      "exportedName": "updateTaxPolicyVersion",
+      "filename": "apps/admin_web/app/tax-policy/actions.ts"
+    },
+    "404c8943e42a77412e6f30f46e84adca900bc20764": {
+      "workers": {
+        "app/tax-policy/page": {
+          "moduleId": 762102,
+          "async": false,
+          "exportedName": "updateTaxRule",
+          "filename": "apps/admin_web/app/tax-policy/actions.ts"
+        }
+      },
+      "exportedName": "updateTaxRule",
+      "filename": "apps/admin_web/app/tax-policy/actions.ts"
+    },
+    "40570f2290095f30b296ce1ba23ee49978b84b0b84": {
+      "workers": {
+        "app/tax-policy/page": {
+          "moduleId": 762102,
+          "async": false,
+          "exportedName": "createTaxRule",
+          "filename": "apps/admin_web/app/tax-policy/actions.ts"
+        }
+      },
+      "exportedName": "createTaxRule",
+      "filename": "apps/admin_web/app/tax-policy/actions.ts"
+    }
+  },
+  "edge": {}
+}

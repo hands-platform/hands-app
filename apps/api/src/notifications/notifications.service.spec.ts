@@ -104,6 +104,10 @@ describe('NotificationsService retry queue', () => {
   const standardQueueOptions = {
     attempts: 3,
     backoff: { type: 'exponential', delay: 5000 },
+    deduplication: {
+      id: 'notification-1',
+      keepLastIfActive: true,
+    },
     removeOnComplete: true,
     removeOnFail: false,
   };
@@ -140,7 +144,11 @@ describe('NotificationsService retry queue', () => {
         type: 'booking.requested',
         title: 'Booking request',
         body: 'A booking request is available.',
-        data: { bookingId: 'booking-1', createdAt: '2026-06-11T00:00:00.000Z' },
+        data: {
+          bookingId: 'booking-1',
+          createdAt: '2026-06-11T00:00:00.000Z',
+          dataScope: 'synthetic',
+        },
       },
     });
     expect(queue.add).toHaveBeenCalledWith(
@@ -247,7 +255,12 @@ describe('NotificationsService retry queue', () => {
         type: 'booking.requested',
         title: 'Yêu cầu mới',
         body: 'Đơn booking-1 từ Linh đang sẵn sàng.',
-        data: { bookingId: 'booking-1', customerName: 'Linh', targetRole: Role.PROVIDER },
+        data: {
+          bookingId: 'booking-1',
+          customerName: 'Linh',
+          dataScope: 'synthetic',
+          targetRole: Role.PROVIDER,
+        },
       },
     });
   });
@@ -290,6 +303,7 @@ describe('NotificationsService retry queue', () => {
         body: 'Open HANDS for today updates.',
         data: {
           campaignId: 'campaign-1',
+          dataScope: 'synthetic',
           targetRole: Role.PROVIDER,
         },
       },
@@ -323,64 +337,55 @@ describe('NotificationsService retry queue', () => {
 
     expect(prisma.notification.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        data: { bookingId: 'booking-1', targetRole: Role.PROVIDER },
+        data: {
+          bookingId: 'booking-1',
+          dataScope: 'synthetic',
+          targetRole: Role.PROVIDER,
+        },
       }),
     });
   });
 
-  it('re-enqueues an existing notification with the standard retry policy', async () => {
+  it('blocks retry when no classified failed path exists', async () => {
     const prisma = {
       notification: {
-        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'notification-1', deliveries: [] }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          data: { targetRole: Role.CUSTOMER },
+          id: 'notification-1',
+          type: 'payment.updated',
+          deliveries: [],
+          user: {
+            pushDevices: [{ id: 'push-device-1', platform: 'android', role: Role.CUSTOMER }],
+          },
+        }),
       },
     };
-    const queue = { add: vi.fn().mockResolvedValue({ id: 'queued-retry-job-1' }) };
+    const queue = {
+      add: vi.fn().mockResolvedValue({ id: 'queued-retry-job-1' }),
+      getDeduplicationJobId: vi.fn().mockResolvedValue(null),
+    };
     const service = new NotificationsService(prisma as never, queue as never);
 
-    await expect(service.retry('notification-1')).resolves.toEqual({
-      latestDelivery: null,
-      ok: true,
-      notificationId: 'notification-1',
-      retryJob: {
-        attempts: 3,
-        backoffMs: 5000,
-        jobName: 'notification-send',
-        queueName: 'notification-retry',
-        queuedJobId: 'queued-retry-job-1',
-      },
-    });
-
-    expect(prisma.notification.findUniqueOrThrow).toHaveBeenCalledWith({
-      where: { id: 'notification-1' },
-      select: {
-        id: true,
-        deliveries: {
-          orderBy: { attemptedAt: 'desc' },
-          take: 1,
-          select: {
-            id: true,
-            provider: true,
-            status: true,
-            attemptedAt: true,
-            response: true,
-            pushDeviceId: true,
-            pushDevice: { select: { enabled: true, lastSeenAt: true, platform: true } },
-          },
-        },
-      },
-    });
-    expect(queue.add).toHaveBeenCalledWith(
-      'notification-send',
-      { notificationId: 'notification-1' },
-      standardQueueOptions,
+    await expect(service.retry('notification-1')).rejects.toThrow(
+      'No classified delivery failure is available for a safe retry',
     );
+
+    expect(prisma.notification.findUniqueOrThrow).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'notification-1' } }),
+    );
+    expect(queue.add).not.toHaveBeenCalled();
   });
 
-  it('returns latest delivery evidence when retrying a recovered notification', async () => {
+  it('rejects retry when every target path was already accepted', async () => {
     const prisma = {
       notification: {
         findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'notification-1',
+          data: { targetRole: Role.CUSTOMER },
+          type: 'payment.updated',
+          user: {
+            pushDevices: [{ id: 'push-device-1', platform: 'android', role: Role.CUSTOMER }],
+          },
           deliveries: [
             {
               id: 'delivery-1',
@@ -402,17 +407,43 @@ describe('NotificationsService retry queue', () => {
     const queue = { add: vi.fn() };
     const service = new NotificationsService(prisma as never, queue as never);
 
-    await expect(service.retry('notification-1')).resolves.toEqual({
+    await expect(service.retry('notification-1')).rejects.toThrow(
+      'Notification has no eligible unresolved push path',
+    );
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  it('returns latest delivery failure code when retrying an eligible transient failure', async () => {
+    const prisma = {
+      notification: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'notification-1',
+          data: { targetRole: Role.PROVIDER },
+          type: 'booking.requested',
+          user: {
+            pushDevices: [{ id: 'push-device-1', platform: 'android', role: Role.PROVIDER }],
+          },
+          deliveries: [
+            {
+              id: 'delivery-1',
+              provider: 'FCM',
+              status: 'FAILED',
+              attemptedAt: new Date('2026-06-13T10:23:00.000Z'),
+              response: { failureCode: 'messaging/internal-error' },
+              pushDeviceId: 'push-device-1',
+              pushDevice: { enabled: true, platform: 'android' },
+            },
+          ],
+        }),
+      },
+    };
+    const queue = { add: vi.fn(), getDeduplicationJobId: vi.fn().mockResolvedValue(null) };
+    const service = new NotificationsService(prisma as never, queue as never);
+
+    await expect(service.retry('notification-1')).resolves.toMatchObject({
       latestDelivery: {
-        attemptedAt: '2026-06-13T10:23:00.000Z',
-        failureCode: null,
-        id: 'delivery-1',
-        provider: 'FCM',
-        pushDeviceEnabled: true,
-        pushDeviceId: 'push-device-1',
-        pushDeviceLastSeenAt: '2026-06-13T10:22:00.000Z',
-        pushDevicePlatform: 'android',
-        status: 'SENT',
+        failureCode: 'messaging/internal-error',
+        status: 'FAILED',
       },
       ok: true,
       notificationId: 'notification-1',
@@ -426,42 +457,135 @@ describe('NotificationsService retry queue', () => {
     });
   });
 
-  it('returns latest delivery failure code when retrying a failed notification', async () => {
+  it('lists only customer app inbox notification types with cursor pagination', async () => {
+    const rows = [
+      { id: 'notification-1', type: 'admin.push.broadcast' },
+      { id: 'notification-2', type: 'customer.wallet.manual_adjustment' },
+      { id: 'notification-3', type: 'customer.referral.reward_credited' },
+    ];
     const prisma = {
       notification: {
-        findUniqueOrThrow: vi.fn().mockResolvedValue({
-          id: 'notification-1',
-          deliveries: [
-            {
-              id: 'delivery-1',
-              provider: 'FCM',
-              status: 'FAILED',
-              attemptedAt: new Date('2026-06-13T10:23:00.000Z'),
-              response: { failureCode: 'messaging/mismatched-credential' },
-              pushDeviceId: 'push-device-1',
-              pushDevice: { enabled: true, platform: 'android' },
-            },
-          ],
-        }),
+        count: vi.fn().mockResolvedValue(2),
+        findMany: vi.fn().mockResolvedValue(rows),
       },
     };
-    const queue = { add: vi.fn() };
-    const service = new NotificationsService(prisma as never, queue as never);
+    const service = new NotificationsService(prisma as never, { add: vi.fn() } as never);
 
-    await expect(service.retry('notification-1')).resolves.toMatchObject({
-      latestDelivery: {
-        failureCode: 'messaging/mismatched-credential',
-        status: 'FAILED',
+    await expect(
+      service.listCustomerAppInbox('customer-user-1', { cursor: 'previous-row', take: 2 }),
+    ).resolves.toEqual({
+      rows: rows.slice(0, 2),
+      unreadCount: 2,
+      pagination: { nextCursor: 'notification-2', take: 2 },
+    });
+    expect(prisma.notification.findMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'customer-user-1',
+        type: {
+          in: [
+            'admin.push.broadcast',
+            'customer.referral.reward_credited',
+            'customer.wallet.manual_adjustment',
+          ],
+        },
       },
-      ok: true,
-      notificationId: 'notification-1',
-      retryJob: {
-        attempts: 3,
-        backoffMs: 5000,
-        jobName: 'notification-send',
-        queueName: 'notification-retry',
-        queuedJobId: null,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      cursor: { id: 'previous-row' },
+      skip: 1,
+      take: 3,
+    });
+    expect(prisma.notification.count).toHaveBeenCalledWith({
+      where: {
+        userId: 'customer-user-1',
+        readAt: null,
+        type: {
+          in: [
+            'admin.push.broadcast',
+            'customer.referral.reward_credited',
+            'customer.wallet.manual_adjustment',
+          ],
+        },
       },
+    });
+  });
+
+  it('counts only unread provider chat notifications', async () => {
+    const prisma = {
+      notification: {
+        count: vi.fn().mockResolvedValue(3),
+      },
+      $queryRaw: vi.fn().mockResolvedValue([
+        { chatRoomId: 'chat-room-2', unreadCount: 2 },
+        { chatRoomId: 'chat-room-1', unreadCount: BigInt(1) },
+      ]),
+    };
+    const service = new NotificationsService(prisma as never, { add: vi.fn() } as never);
+
+    await expect(service.providerChatSummary('provider-user-1')).resolves.toEqual({
+      unreadCount: 3,
+      rooms: [
+        { chatRoomId: 'chat-room-2', unreadCount: 2 },
+        { chatRoomId: 'chat-room-1', unreadCount: 1 },
+      ],
+    });
+    expect(prisma.notification.count).toHaveBeenCalledWith({
+      where: {
+        userId: 'provider-user-1',
+        type: 'chat.message.created',
+        readAt: null,
+        AND: [
+          {
+            data: {
+              path: ['targetRole'],
+              equals: Role.PROVIDER,
+            },
+          },
+        ],
+      },
+    });
+    expect(prisma.$queryRaw).toHaveBeenCalledOnce();
+  });
+
+  it('marks only one provider chat room read and returns the remaining count', async () => {
+    const prisma = {
+      notification: {
+        updateMany: vi.fn().mockResolvedValue({ count: 2 }),
+        count: vi.fn().mockResolvedValue(1),
+      },
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValue([{ chatRoomId: 'chat-room-2', unreadCount: 1 }]),
+    };
+    const service = new NotificationsService(prisma as never, { add: vi.fn() } as never);
+
+    await expect(
+      service.markProviderChatRead('provider-user-1', 'chat-room-1'),
+    ).resolves.toEqual({
+      updated: 2,
+      unreadCount: 1,
+      rooms: [{ chatRoomId: 'chat-room-2', unreadCount: 1 }],
+    });
+    expect(prisma.notification.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'provider-user-1',
+        type: 'chat.message.created',
+        readAt: null,
+        AND: [
+          {
+            data: {
+              path: ['targetRole'],
+              equals: Role.PROVIDER,
+            },
+          },
+          {
+            data: {
+              path: ['chatRoomId'],
+              equals: 'chat-room-1',
+            },
+          },
+        ],
+      },
+      data: { readAt: expect.any(Date) },
     });
   });
 });

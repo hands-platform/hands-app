@@ -85,18 +85,21 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
     input.refundRows.length +
     input.operatorNoteLines.length +
     input.auditLogCount;
-  const hasDecisionEvidence =
+  const hasDecisionEvidence = input.messageCount > 0 && input.operatorNoteLines.length > 0;
+  const hasPartialEvidence =
     input.messageCount > 0 ||
     input.locationTrailCount > 0 ||
     input.alertCount > 0 ||
     input.operatorNoteLines.length > 0;
-  const status = hasDecisionEvidence ? 'Evidence ready' : 'Needs evidence';
+  const status = hasDecisionEvidence ? 'Evidence ready' : hasPartialEvidence ? 'Evidence partial' : 'Needs evidence';
   const tone = hasDecisionEvidence ? 'pill-success' : 'pill-warn';
   const latestNote =
     input.operatorNoteLines[input.operatorNoteLines.length - 1] ??
     'No internal note has been added for manual decision context.';
   const summary = hasDecisionEvidence
     ? `Admin can review ${evidenceCount} retained evidence item(s) before changing booking outcome.`
+    : hasPartialEvidence
+      ? `Only part of the decision record is retained. Review the missing chat or operator note before changing the outcome.`
     : 'No chat, alert, location, or operator note evidence is attached yet; add a note before manual outcome changes.';
   const addressSnapshotLabel = safeAddressSnapshotLabel(input.addressSnapshotLabel);
   const addressEvidenceLabel = safeAddressSnapshotLabel(
@@ -110,9 +113,15 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
     metrics: [
       {
         label: 'Chat evidence',
-        value: input.chatReady ? `${input.messageCount} message(s)` : 'No room',
-        helper: input.chatReady
-          ? 'Matched booking chat is retained in admin even after mobile closeout.'
+        value: input.messageCount > 0
+          ? `${input.messageCount} message(s)`
+          : input.chatRoomShortId
+            ? 'Retained room · no messages'
+            : 'No room',
+        helper: input.messageCount > 0
+          ? 'Matched booking messages are retained in admin even after mobile closeout.'
+          : input.chatRoomShortId
+            ? 'The room exists, but it contains no customer or Partner conversation evidence.'
           : 'Matched bookings should create a retained chat room before service handoff.',
       },
       {
@@ -128,10 +137,16 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
       },
       {
         label: 'Refund evidence',
-        value: `${input.refundRows.length} refund row(s)`,
+        value: input.refundRows.length
+          ? `${input.refundRows.length} refund row(s)`
+          : refundExpected(input)
+            ? 'Missing refund row'
+            : 'Not expected',
         helper: input.refundRows.length
           ? input.refundRows.map((row) => `${row.status} ${row.amountLabel}`).join(', ')
-          : 'No refund record in packet.',
+          : refundExpected(input)
+            ? 'Captured customer funds require a refund record or Finance follow-up.'
+            : 'This payment path does not require a refund record.',
       },
       {
         label: 'Alert evidence',
@@ -250,4 +265,8 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
       },
     ],
   };
+}
+
+function refundExpected(input: BookingEvidencePacketInput) {
+  return input.paymentMethod.toUpperCase() !== 'CASH' && input.paymentStatus.toUpperCase() === 'CAPTURED';
 }

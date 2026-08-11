@@ -11,6 +11,7 @@ import {
   type AdminSignalTone,
 } from '../../components/status-badge';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
+import { adminCountLabel } from '../../lib/admin-copy';
 import { partnerHasFirstRevenueSignal as providerHasFirstRevenueSignal } from './partner-finance-readiness-facts';
 import { providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
 import { partnerOperationPillClass, type PartnerOperationRow } from './partner-operation-row';
@@ -46,7 +47,7 @@ export function PartnerOperationsListSection({
       className="vuexy-partner-table-card admin-mb-16"
       description="List-first partner control view. Operators can check approval readiness, booking access, work history, wallet state, app activity, and the next operator check before opening the full partner record."
       id="partner-operations-list"
-      resultLabel={`${totalPartnerCount} partner(s)`}
+      resultLabel={adminCountLabel(totalPartnerCount, 'Partner')}
       title="Partner operations list"
     >
       <AdminFilterChipGroup ariaLabel="Partner operations summary counters" className="admin-mb-12">
@@ -153,7 +154,7 @@ export function PartnerOperationsListSection({
             <tr>
               <td colSpan={PARTNER_OPERATIONS_TABLE_HEADERS.length}>
                 <p className="muted">
-                  {hiddenPartnerCount} more partner row(s) are hidden for page speed. Use search or filters to
+                  {adminCountLabel(hiddenPartnerCount, 'more Partner row')} {hiddenPartnerCount === 1 ? 'is' : 'are'} hidden for page speed. Use search or filters to
                   narrow this list.
                 </p>
               </td>

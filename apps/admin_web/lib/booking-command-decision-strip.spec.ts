@@ -9,6 +9,7 @@ const baseInput: BookingCommandDecisionStripInput = {
   addressLabel: 'District 1, Ho Chi Minh City',
   participantCount: 0,
   customerChoiceCandidateCount: 0,
+  expiredCustomerChoiceCandidateCount: 0,
   marketplaceEligibleCount: 2,
   hasFinalPartner: false,
   hasChatRoom: false,
@@ -17,6 +18,8 @@ const baseInput: BookingCommandDecisionStripInput = {
   paymentStatus: 'AUTHORIZED',
   cashDebtNeedsSettlement: false,
   closeoutOpenItemCount: 0,
+  matchingDeadlineAt: '2026-08-05T12:10:00.000Z',
+  matchingDeadlineExpired: false,
 };
 
 describe('bookingCommandDecisionStrip', () => {
@@ -45,9 +48,27 @@ describe('bookingCommandDecisionStrip', () => {
     });
 
     expect(strip.primaryAction).toBe('Keep customer final choice visible');
+    expect(strip.primaryHref).toBe('#participants');
     expect(strip.rows.find((row) => row.lane === 'Matching')).toMatchObject({
       state: 'Customer choice',
-      detail: '2 customer-selectable Partner(s) / 3 actual participant row(s).',
+      detail:
+        '2 customer-selectable Partner(s) / 3 actual participant row(s). Choice closes 5 Aug 2026, 19:10.',
+    });
+  });
+
+  it('moves an accepted response out of customer choice after the API matching deadline', () => {
+    const strip = bookingCommandDecisionStrip({
+      ...baseInput,
+      customerChoiceCandidateCount: 0,
+      expiredCustomerChoiceCandidateCount: 1,
+      matchingDeadlineExpired: true,
+    });
+
+    expect(strip.primaryAction).toBe('Review matching expiry impact');
+    expect(strip.primaryHref).toBe('#matching-expiry');
+    expect(strip.rows.find((row) => row.lane === 'Matching')).toMatchObject({
+      state: 'Responses expired',
+      tone: 'pill-warn',
     });
   });
 
@@ -63,7 +84,7 @@ describe('bookingCommandDecisionStrip', () => {
     expect(strip.primaryAction).toBe('Repair chat handoff');
     expect(strip.rows.find((row) => row.lane === 'Chat')).toMatchObject({
       state: 'Missing',
-      href: '#chat',
+      href: '#chat-repair',
       tone: 'pill-danger',
     });
   });

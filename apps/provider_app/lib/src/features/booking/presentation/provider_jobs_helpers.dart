@@ -12,7 +12,6 @@ Map<String, dynamic>? providerBookingService(Map<String, dynamic> booking) {
 
 bool isProviderActiveBooking(Map<String, dynamic> booking) {
   return const {
-    'OPEN_MATCHING',
     'MATCHED',
     'PROVIDER_ON_THE_WAY',
     'ARRIVED',
@@ -20,18 +19,74 @@ bool isProviderActiveBooking(Map<String, dynamic> booking) {
   }.contains(booking['status']);
 }
 
+int providerOpenRequestCount(Iterable<dynamic> bookings) {
+  return bookings
+      .whereType<Map<String, dynamic>>()
+      .where((booking) => booking['status'] == 'OPEN_MATCHING')
+      .length;
+}
+
+int providerActiveJobCount(Iterable<dynamic> bookings) {
+  return bookings
+      .whereType<Map<String, dynamic>>()
+      .where(isProviderActiveBooking)
+      .length;
+}
+
+bool providerHasJoinedRequest(Map<String, dynamic> booking) {
+  return const {'JOINED', 'ACCEPTED'}.contains(booking['participationStatus']);
+}
+
+String providerBookingStatusLabel(Object? status) => switch (status) {
+      'OPEN_MATCHING' => 'Đang chờ ghép đôi',
+      'MATCHED' => 'Đã ghép đôi',
+      'PROVIDER_ON_THE_WAY' => 'Đang di chuyển',
+      'ARRIVED' => 'Đã đến',
+      'IN_SERVICE' => 'Đang phục vụ',
+      'COMPLETED' => 'Đã hoàn tất',
+      'CANCELLED' => 'Đã hủy',
+      'EXPIRED' => 'Đã hết hạn',
+      'REFUNDED' => 'Đã hoàn tiền',
+      'NO_SHOW' => 'Không gặp được khách hàng',
+      _ => 'Chưa xác định',
+    };
+
+String providerPaymentMethodLabel(Object? method) => switch (method) {
+      'CASH' => 'Tiền mặt',
+      'WALLET' => 'Ví',
+      'CARD' => 'Thẻ',
+      'MOMO' => 'MoMo',
+      'VNPAY' => 'VNPay',
+      _ => 'Chưa có phương thức',
+    };
+
+String providerPaymentStatusLabel(Object? status) => switch (status) {
+      'PENDING' => 'Đang chờ thanh toán',
+      'AUTHORIZED' => 'Đã xác thực',
+      'PAID' || 'CAPTURED' || 'COMPLETED' => 'Đã thanh toán',
+      'FAILED' => 'Thanh toán thất bại',
+      'CANCELLED' => 'Đã hủy',
+      'REFUNDED' => 'Đã hoàn tiền',
+      _ => 'Chưa thanh toán',
+    };
+
 String partnerJobNextAction(Map<String, dynamic> booking) {
   return switch (booking['status']) {
-    'OPEN_MATCHING' => 'Waiting for the guest to confirm a partner.',
+    'OPEN_MATCHING' => 'Đang chờ khách hàng chọn đối tác.',
     'MATCHED' =>
-      'Use chat to coordinate details, then start the service when ready.',
-    'PROVIDER_ON_THE_WAY' => 'Keep location sharing active until arrival.',
-    'ARRIVED' => 'Mark the service started when the guest is ready.',
-    'IN_SERVICE' => 'Complete the service after work is finished.',
-    'COMPLETED' => 'Service complete. Check earnings and payout status.',
-    'CANCELLED' => 'Customer cancelled. No service action is needed.',
-    'REFUNDED' => 'Refunded booking. Review any admin notes if needed.',
-    _ => 'Monitor this booking from Requests if action is required.',
+      'Trò chuyện đã mở. Hãy phối hợp với khách hàng và hoàn tất dịch vụ sau khi kết thúc.',
+    'PROVIDER_ON_THE_WAY' =>
+      'Trò chuyện đã mở. Hãy tiếp tục chia sẻ vị trí cho đặt lịch này.',
+    'ARRIVED' =>
+      'Trò chuyện đã mở. Hãy hoàn tất đặt lịch sau khi kết thúc dịch vụ.',
+    'IN_SERVICE' => 'Hoàn tất dịch vụ sau khi công việc kết thúc.',
+    'COMPLETED' =>
+      'Dịch vụ đã hoàn tất. Hãy kiểm tra thu nhập và trạng thái chi trả.',
+    'CANCELLED' => providerClosedBookingMessage(booking),
+    'EXPIRED' => providerClosedBookingMessage(booking),
+    'REFUNDED' =>
+      'Đặt lịch đã được hoàn tiền. Kiểm tra ghi chú của quản trị viên nếu cần.',
+    _ => 'Theo dõi đặt lịch này trong mục Yêu cầu nếu cần xử lý.',
   };
 }
 
@@ -39,9 +94,7 @@ int providerRequestPriority(
   Map<String, dynamic> booking,
   String? currentUserId,
 ) {
-  final preferredProvider = booking['preferredProvider'];
-  final isPreferredRequest = preferredProvider is Map<String, dynamic> &&
-      preferredProvider['userId'] == currentUserId;
+  final isPreferredRequest = providerIsPreferredRequest(booking, currentUserId);
   if (isProviderAppChatVisible(booking)) {
     return 1;
   }
@@ -60,6 +113,19 @@ int providerRequestPriority(
   return 0;
 }
 
+bool providerIsPreferredRequest(
+  Map<String, dynamic> booking,
+  String? currentUserId,
+) {
+  final serverValue = booking['isPreferredRequest'];
+  if (serverValue is bool) {
+    return serverValue;
+  }
+  final preferredProvider = booking['preferredProvider'];
+  return preferredProvider is Map<String, dynamic> &&
+      preferredProvider['userId'] == currentUserId;
+}
+
 int bookingTimestamp(Map<String, dynamic> booking) {
   final value = booking['updatedAt'] ??
       booking['createdAt'] ??
@@ -71,29 +137,31 @@ int bookingTimestamp(Map<String, dynamic> booking) {
 }
 
 dynamic providerBookingRequestOpenedAt(Map<String, dynamic> booking) {
-  return booking['openedAt'] ?? booking['createdAt'] ?? booking['scheduledStartAt'];
+  return booking['openedAt'] ??
+      booking['createdAt'] ??
+      booking['scheduledStartAt'];
 }
 
 String formatRelativeMoment(dynamic value) {
   final raw = value?.toString();
   if (raw == null || raw.isEmpty) {
-    return 'Updated just now';
+    return 'Vừa cập nhật';
   }
   final parsed = DateTime.tryParse(raw)?.toLocal();
   if (parsed == null) {
-    return 'Updated just now';
+    return 'Vừa cập nhật';
   }
   final diff = DateTime.now().difference(parsed);
   if (diff.inMinutes < 1) {
-    return 'Updated just now';
+    return 'Vừa cập nhật';
   }
   if (diff.inHours < 1) {
-    return 'Updated ${diff.inMinutes}m ago';
+    return 'Cập nhật ${diff.inMinutes} phút trước';
   }
   if (diff.inDays < 1) {
-    return 'Updated ${diff.inHours}h ago';
+    return 'Cập nhật ${diff.inHours} giờ trước';
   }
-  return 'Updated ${diff.inDays}d ago';
+  return 'Cập nhật ${diff.inDays} ngày trước';
 }
 
 String providerLocationHeartbeatLabel(
@@ -101,39 +169,39 @@ String providerLocationHeartbeatLabel(
 ) {
   if (snapshot.lastError != null) {
     final retryLabel = formatNextLocationRefresh(snapshot.nextUpdateAt);
-    return 'Location refresh failed. $retryLabel';
+    return 'Không thể cập nhật vị trí. $retryLabel';
   }
   final lastSuccess = snapshot.lastSuccessAt;
   if (lastSuccess == null) {
     return snapshot.active
-        ? 'Sharing location now. Idle refresh runs every 60 minutes.'
-        : 'Your last known location is saved when you go online.';
+        ? 'Đang chia sẻ vị trí. Vị trí được cập nhật mỗi 60 phút khi chờ.'
+        : 'Vị trí gần nhất được lưu khi bạn bật trực tuyến.';
   }
   return '${formatRelativeMoment(lastSuccess.toIso8601String())}. ${formatNextLocationRefresh(snapshot.nextUpdateAt)}';
 }
 
 String formatNextLocationRefresh(DateTime? value) {
   if (value == null) {
-    return 'Next refresh starts after going online.';
+    return 'Vị trí sẽ được cập nhật sau khi bạn bật trực tuyến.';
   }
   final diff = value.difference(DateTime.now());
   if (diff.inSeconds <= 0) {
-    return 'Next refresh is due now.';
+    return 'Đang đến thời điểm cập nhật vị trí.';
   }
   if (diff.inMinutes < 1) {
-    return 'Next refresh in under 1m.';
+    return 'Cập nhật tiếp theo trong chưa đầy 1 phút.';
   }
-  return 'Next refresh in ${diff.inMinutes}m.';
+  return 'Cập nhật tiếp theo sau ${diff.inMinutes} phút.';
 }
 
 String formatRequestOpenedMoment(dynamic value) {
   final raw = value?.toString();
   if (raw == null || raw.isEmpty) {
-    return 'Soon';
+    return 'Sắp tới';
   }
   final parsed = DateTime.tryParse(raw)?.toLocal();
   if (parsed == null) {
-    return 'Soon';
+    return 'Sắp tới';
   }
   final hour = parsed.hour.toString().padLeft(2, '0');
   final minute = parsed.minute.toString().padLeft(2, '0');

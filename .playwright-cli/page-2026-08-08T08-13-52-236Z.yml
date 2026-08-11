@@ -1,0 +1,578 @@
+- generic [ref=f8e1]:
+  - generic [ref=f8e3]:
+    - complementary [ref=f8e4]:
+      - strong [ref=f8e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=f8e7]:
+        - link "Shift Command" [ref=f8e8] [cursor=pointer]:
+          - /url: /
+        - group [ref=f8e14]:
+          - generic "Booking Operations" [ref=f8e15] [cursor=pointer]
+        - group [ref=f8e24]:
+          - generic "Customer Support" [ref=f8e25] [cursor=pointer]
+        - group [ref=f8e34]:
+          - generic "Partner Operations" [ref=f8e35] [cursor=pointer]
+        - group [ref=f8e42]:
+          - generic "Finance Operations" [ref=f8e43] [cursor=pointer]
+        - group [ref=f8e51]:
+          - generic "Finance Records & Close" [ref=f8e52] [cursor=pointer]
+        - group [ref=f8e60]:
+          - generic "Growth & Communications" [ref=f8e61] [cursor=pointer]
+        - group [ref=f8e68]:
+          - generic "Administration & Settings" [ref=f8e69] [cursor=pointer]
+          - generic [ref=f8e77]:
+            - link "Operations Policy" [ref=f8e78] [cursor=pointer]:
+              - /url: /operations-policy
+            - link "Service Catalog" [ref=f8e83] [cursor=pointer]:
+              - /url: /services
+            - link "Company Bank Accounts" [ref=f8e90] [cursor=pointer]:
+              - /url: /finance-tax/company-bank-accounts
+            - link "Finance Approvers" [ref=f8e94] [cursor=pointer]:
+              - /url: /finance-tax/finance-approvers
+            - link "Tax Policy" [ref=f8e98] [cursor=pointer]:
+              - /url: /tax-policy
+            - link "Admin Operators" [ref=f8e102] [cursor=pointer]:
+              - /url: /admin-operators
+            - link "Audit Log" [ref=f8e116] [cursor=pointer]:
+              - /url: /audit-log
+            - group [ref=f8e123]:
+              - generic "System Health" [ref=f8e124] [cursor=pointer]
+              - generic [ref=f8e131]:
+                - link "Setup Readiness" [ref=f8e132] [cursor=pointer]:
+                  - /url: /setup
+                - link "App Session Diagnostics" [ref=f8e137] [cursor=pointer]:
+                  - /url: /app-sessions
+                - link "Background Jobs" [ref=f8e141] [cursor=pointer]:
+                  - /url: /background-jobs
+    - main [ref=f8e146]:
+      - generic "Admin workspace" [ref=f8e147]:
+        - navigation "Breadcrumb" [ref=f8e149]:
+          - link "HANDS" [ref=f8e150] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f8e153]: Administration & Settings
+          - generic [ref=f8e156]: Background Jobs
+        - generic "Workspace actions" [ref=f8e157]:
+          - button "Search Ctrl K" [ref=f8e159] [cursor=pointer]:
+            - generic [ref=f8e160]: Search
+            - generic [ref=f8e164]: Ctrl K
+          - button "Switch to light mode" [active] [ref=f8e675] [cursor=pointer]
+          - link "Operations Policy" [ref=f8e169] [cursor=pointer]:
+            - /url: /operations-policy
+          - button "Open operation alerts" [ref=f8e174] [cursor=pointer]
+          - button "Sign out" [ref=f8e179] [cursor=pointer]
+      - navigation "System Health workspace" [ref=f8e183]:
+        - strong [ref=f8e184]: System Health
+        - generic "System Health pages" [ref=f8e185]:
+          - link "Setup Readiness" [ref=f8e186] [cursor=pointer]:
+            - /url: /setup
+          - link "App Session Diagnostics" [ref=f8e187] [cursor=pointer]:
+            - /url: /app-sessions
+          - link "Background Jobs" [ref=f8e188] [cursor=pointer]:
+            - /url: /background-jobs
+      - generic [ref=f8e189]:
+        - generic [ref=f8e190]:
+          - generic [ref=f8e191]:
+            - heading "Background Jobs" [level=1] [ref=f8e192]
+            - paragraph [ref=f8e193]: Developer/System queue health, recurring schedules, and audited failure review.
+          - generic "Page actions" [ref=f8e194]:
+            - link "Refresh status" [ref=f8e195] [cursor=pointer]:
+              - /url: /background-jobs
+        - generic [ref=f8e196]:
+          - generic [ref=f8e203]:
+            - generic [ref=f8e204]: Live
+            - paragraph [ref=f8e205]: Healthy queues
+            - generic [ref=f8e206]:
+              - generic [ref=f8e207]: "Healthy queues:"
+              - text: 3 / 5
+            - generic [ref=f8e208]: Queues with a worker and required scheduler available.
+          - 'link "Needs action Open incidents Open incidents: 1 Recurring scheduler incidents still awaiting a successful run." [ref=f8e209] [cursor=pointer]':
+            - /url: /background-jobs?incidentStatus=OPEN&review=OPEN&range=ALL
+            - generic [ref=f8e214]:
+              - generic [ref=f8e215]: Needs action
+              - paragraph [ref=f8e216]: Open incidents
+              - generic [ref=f8e217]:
+                - generic [ref=f8e218]: "Open incidents:"
+                - text: "1"
+              - generic [ref=f8e219]: Recurring scheduler incidents still awaiting a successful run.
+          - generic [ref=f8e225]:
+            - generic [ref=f8e226]: Current queue
+            - paragraph [ref=f8e227]: Open jobs
+            - generic [ref=f8e228]:
+              - generic [ref=f8e229]: "Open jobs:"
+              - text: "2"
+            - generic [ref=f8e230]: Waiting, active, and delayed jobs across the current queues.
+          - generic [ref=f8e236]:
+            - generic [ref=f8e237]: Current page
+            - paragraph [ref=f8e238]: Failures shown
+            - generic [ref=f8e239]:
+              - generic [ref=f8e240]: "Failures shown:"
+              - text: "10"
+            - generic [ref=f8e241]: Retained failures returned by the current server filters.
+        - generic [ref=f8e242]:
+          - generic [ref=f8e243]:
+            - generic [ref=f8e244]:
+              - heading "Failure filters" [level=2] [ref=f8e245]
+              - paragraph [ref=f8e246]: Filter retained BullMQ failures on the server. Queue reads are bounded and never expose job payloads or stack traces.
+            - generic [ref=f8e247]: 10 loaded
+          - generic [ref=f8e250]:
+            - generic [ref=f8e251]:
+              - generic [ref=f8e252]: Queue
+              - combobox "Queue" [ref=f8e253] [cursor=pointer]:
+                - option "All queues" [selected]
+                - option "Bank statement escalation"
+                - option "Booking timeout"
+                - option "Notification delivery"
+                - option "Payment provider refund status"
+                - option "Payment status check"
+            - generic [ref=f8e254]:
+              - generic [ref=f8e255]: Review status
+              - combobox "Review status" [ref=f8e256] [cursor=pointer]:
+                - option "All review states"
+                - option "Needs action" [selected]
+                - option "New"
+                - option "Acknowledged"
+                - option "Resolved records"
+                - option "Untracked"
+            - generic [ref=f8e257]:
+              - generic [ref=f8e258]: Failure period
+              - combobox "Failure period" [ref=f8e259] [cursor=pointer]:
+                - option "All retained time" [selected]
+                - option "Last 24 hours"
+                - option "Last 7 days"
+                - option "Last 30 days"
+            - generic [ref=f8e260]:
+              - generic [ref=f8e261]: Health events
+              - combobox "Health events" [ref=f8e262] [cursor=pointer]:
+                - option "All health events" [selected]
+                - option "Stale alerts"
+                - option "Recoveries"
+            - generic [ref=f8e263]:
+              - generic [ref=f8e264]: Recurring incidents
+              - combobox "Recurring incidents" [ref=f8e265] [cursor=pointer]:
+                - option "All recurring incidents" [selected]
+                - option "Open incidents"
+                - option "Recovered incidents"
+            - generic [ref=f8e266]:
+              - generic [ref=f8e267]: Job ID
+              - textbox "Job ID" [ref=f8e268]:
+                - /placeholder: Exact retained job ID
+            - generic [ref=f8e269]:
+              - generic [ref=f8e270]: Rows per page
+              - combobox "Rows per page" [ref=f8e271] [cursor=pointer]:
+                - option "5 rows"
+                - option "10 rows" [selected]
+                - option "20 rows"
+            - button "Apply filters" [ref=f8e272] [cursor=pointer]
+            - link "Clear filters" [ref=f8e273] [cursor=pointer]:
+              - /url: /background-jobs
+        - generic [ref=f8e274]:
+          - generic [ref=f8e275]:
+            - generic [ref=f8e276]:
+              - heading "Queue health" [level=2] [ref=f8e277]
+              - paragraph [ref=f8e278]:
+                - text: Snapshot generated
+                - time [ref=f8e279]: 8 Aug 2026, 15:13
+                - text: . Job payloads and connection details are not exposed.
+            - generic [ref=f8e280]: ATTENTION
+          - generic [ref=f8e282]:
+            - region "Scrollable data table" [ref=f8e283]:
+              - table [ref=f8e284]:
+                - rowgroup [ref=f8e285]:
+                  - row [ref=f8e286]:
+                    - columnheader "State" [ref=f8e287]
+                    - columnheader "Queue" [ref=f8e288]
+                    - columnheader "Waiting" [ref=f8e289]
+                    - columnheader "Active" [ref=f8e290]
+                    - columnheader "Failed" [ref=f8e291]
+                    - columnheader "SLA / delay" [ref=f8e292]
+                    - columnheader "Action" [ref=f8e293]
+                - rowgroup [ref=f8e294]:
+                  - row [ref=f8e295]:
+                    - cell "ATTENTION" [ref=f8e296]
+                    - cell [ref=f8e298]:
+                      - strong [ref=f8e299]: Bank statement escalation
+                    - cell "0" [ref=f8e300]
+                    - cell "0" [ref=f8e301]
+                    - cell "100" [ref=f8e302]
+                    - cell "DELAYED On schedule 8 Aug 2026, 15:15 SLA 10m" [ref=f8e303]:
+                      - generic [ref=f8e304]:
+                        - strong [ref=f8e305]: DELAYED
+                        - generic [ref=f8e306]: On schedule
+                        - time [ref=f8e307]: 8 Aug 2026, 15:15
+                      - generic [ref=f8e308]: SLA 10m
+                    - cell [ref=f8e309]:
+                      - link "Open workflow" [ref=f8e310] [cursor=pointer]:
+                        - /url: /finance-tax/bank-reconciliation?range=today&review=unmatched&importRange=all&importReview=escalated
+                  - row [ref=f8e311]:
+                    - cell "HEALTHY" [ref=f8e312]
+                    - cell [ref=f8e314]:
+                      - strong [ref=f8e315]: Booking timeout
+                    - cell "0" [ref=f8e316]
+                    - cell "0" [ref=f8e317]
+                    - cell "0" [ref=f8e318]
+                    - cell "No open jobsSLA 2m" [ref=f8e319]:
+                      - text: No open jobs
+                      - generic [ref=f8e320]: SLA 2m
+                    - cell [ref=f8e321]:
+                      - link "Open workflow" [ref=f8e322] [cursor=pointer]:
+                        - /url: /bookings?view=attention&dateRange=today
+                  - row [ref=f8e323]:
+                    - cell "HEALTHY" [ref=f8e324]
+                    - cell [ref=f8e326]:
+                      - strong [ref=f8e327]: Notification delivery
+                    - cell "0" [ref=f8e328]
+                    - cell "0" [ref=f8e329]
+                    - cell "0" [ref=f8e330]
+                    - cell "No open jobsSLA 2m" [ref=f8e331]:
+                      - text: No open jobs
+                      - generic [ref=f8e332]: SLA 2m
+                    - cell [ref=f8e333]:
+                      - link "Open workflow" [ref=f8e334] [cursor=pointer]:
+                        - /url: /notifications?range=today&review=needs-retry
+                  - row [ref=f8e335]:
+                    - cell "ATTENTION" [ref=f8e336]
+                    - cell [ref=f8e338]:
+                      - strong [ref=f8e339]: Payment status check
+                    - cell "0" [ref=f8e340]
+                    - cell "0" [ref=f8e341]
+                    - cell "240" [ref=f8e342]
+                    - cell "No open jobsSLA 2m" [ref=f8e343]:
+                      - text: No open jobs
+                      - generic [ref=f8e344]: SLA 2m
+                    - cell [ref=f8e345]:
+                      - link "Open workflow" [ref=f8e346] [cursor=pointer]:
+                        - /url: /payments?range=today&review=needs-action
+                  - row [ref=f8e347]:
+                    - cell "HEALTHY" [ref=f8e348]
+                    - cell [ref=f8e350]:
+                      - strong [ref=f8e351]: Provider refund status
+                    - cell "0" [ref=f8e352]
+                    - cell "0" [ref=f8e353]
+                    - cell "0" [ref=f8e354]
+                    - cell "No open jobsSLA 2m" [ref=f8e355]:
+                      - text: No open jobs
+                      - generic [ref=f8e356]: SLA 2m
+                    - cell [ref=f8e357]:
+                      - link "Open workflow" [ref=f8e358] [cursor=pointer]:
+                        - /url: /refunds?range=all
+            - generic [ref=f8e359]: Showing 1 to 5 of 5 entries
+            - group [ref=f8e361]:
+              - generic "Technical evidence" [ref=f8e362] [cursor=pointer]
+        - generic [ref=f8e363]:
+          - generic [ref=f8e364]:
+            - generic [ref=f8e365]:
+              - heading "Recurring job incidents" [level=2] [ref=f8e366]
+              - paragraph [ref=f8e367]: One row represents one recurring scheduler failure episode, from the first alert through successful recovery.
+            - generic [ref=f8e368]: 1 incidents
+          - generic [ref=f8e370]:
+            - region "Scrollable data table" [ref=f8e371]:
+              - table [ref=f8e372]:
+                - rowgroup [ref=f8e373]:
+                  - row [ref=f8e374]:
+                    - columnheader "Status" [ref=f8e375]
+                    - columnheader "Scheduler" [ref=f8e376]
+                    - columnheader "Queue" [ref=f8e377]
+                    - columnheader "Opened" [ref=f8e378]
+                    - columnheader "First failure" [ref=f8e379]
+                    - columnheader "Recovered" [ref=f8e380]
+                    - columnheader "Resolved failures" [ref=f8e381]
+                    - columnheader "Audit actor" [ref=f8e382]
+                    - columnheader "Action" [ref=f8e383]
+                - rowgroup [ref=f8e384]:
+                  - row [ref=f8e385]:
+                    - cell "Needs action" [ref=f8e386]
+                    - cell [ref=f8e388]:
+                      - strong [ref=f8e389]: bank-statement-escalation-sweep
+                      - text: repeat:bank-statement-escalation-every-5-minutes:1784211377298
+                    - cell "Bank statement escalation" [ref=f8e390]
+                    - cell [ref=f8e391]:
+                      - time [ref=f8e392]: 16 Jul 2026, 21:20
+                    - cell [ref=f8e393]:
+                      - time [ref=f8e394]: 16 Jul 2026, 21:16
+                    - cell "Awaiting successful run" [ref=f8e395]
+                    - cell "0" [ref=f8e397]
+                    - cell "Local Admin Web Actor" [ref=f8e398]
+                    - cell [ref=f8e399]:
+                      - link "Open incident" [ref=f8e400] [cursor=pointer]:
+                        - /url: /background-jobs/incidents/cmrnlj81o0005vyewhdidsf9s
+            - generic [ref=f8e401]:
+              - generic [ref=f8e402]: Showing 1 to 1 of 1 recurring incidents
+              - generic "Recurring incident pages" [ref=f8e403]: Page 1
+        - generic [ref=f8e405]:
+          - generic [ref=f8e406]:
+            - generic [ref=f8e407]:
+              - heading "Queue health events" [level=2] [ref=f8e408]
+              - paragraph [ref=f8e409]: Audited stale alerts and recoveries. This history is read from the server in bounded pages.
+            - generic [ref=f8e410]: 0 events
+          - generic [ref=f8e412]:
+            - region "Scrollable data table" [ref=f8e413]:
+              - table [ref=f8e414]:
+                - rowgroup [ref=f8e415]:
+                  - row [ref=f8e416]:
+                    - columnheader "Event" [ref=f8e417]
+                    - columnheader "Queue" [ref=f8e418]
+                    - columnheader "Recorded at" [ref=f8e419]
+                    - columnheader "Detected at" [ref=f8e420]
+                    - columnheader "Observed lag" [ref=f8e421]
+                    - columnheader "SLA" [ref=f8e422]
+                    - columnheader "Audit actor" [ref=f8e423]
+                - rowgroup [ref=f8e424]:
+                  - row [ref=f8e425]:
+                    - cell [ref=f8e426]:
+                      - status [ref=f8e427]:
+                        - paragraph [ref=f8e428]: No queue SLA alerts or recoveries match the current filters.
+            - generic [ref=f8e429]:
+              - generic [ref=f8e430]: "Page 1: no matching health events"
+              - generic "Queue health event pages" [ref=f8e431]: Page 1
+        - generic [ref=f8e433]:
+          - generic [ref=f8e434]:
+            - generic [ref=f8e435]:
+              - heading "Failed job records" [level=2] [ref=f8e436]
+              - paragraph [ref=f8e437]: Server-filtered retained failures. Resolve the source issue before retrying from the owning workflow.
+            - generic [ref=f8e438]: 10 retained
+          - generic [ref=f8e440]:
+            - region "Scrollable data table" [ref=f8e441]:
+              - table [ref=f8e442]:
+                - rowgroup [ref=f8e443]:
+                  - row [ref=f8e444]:
+                    - columnheader "Queue" [ref=f8e445]
+                    - columnheader "Job" [ref=f8e446]
+                    - columnheader "Attempts" [ref=f8e447]
+                    - columnheader "Failed at" [ref=f8e448]
+                    - columnheader "Failure" [ref=f8e449]
+                    - columnheader "Review" [ref=f8e450]
+                    - columnheader "Action" [ref=f8e451]
+                - rowgroup [ref=f8e452]:
+                  - row [ref=f8e453]:
+                    - cell "bank-statement-escalation" [ref=f8e454]
+                    - cell [ref=f8e455]:
+                      - strong [ref=f8e456]: bank-statement-escalation-sweep
+                    - cell [ref=f8e457]:
+                      - group [ref=f8e458]:
+                        - generic "3 / 3 Timing +" [ref=f8e459] [cursor=pointer]:
+                          - strong [ref=f8e460]: 3 / 3
+                          - generic [ref=f8e461]: Timing
+                          - text: +
+                    - cell [ref=f8e462]:
+                      - time [ref=f8e463]: 8 Aug 2026, 15:11
+                    - 'cell "Raw query failed. Code: `N/A`. Message: `Failed to deserialize column of type ''void''. If you''re using $queryRaw and this column is explicitly marked as `Unsupported` in your Prisma schema, try casting this column to any supported Prisma type such as `String`.`" [ref=f8e464]'
+                    - cell "UNTRACKED" [ref=f8e465]
+                    - cell [ref=f8e467]:
+                      - generic [ref=f8e468]:
+                        - button "Capture & acknowledge" [ref=f8e470] [cursor=pointer]
+                        - link "Open workflow" [ref=f8e471] [cursor=pointer]:
+                          - /url: /finance-tax/bank-reconciliation?range=today&review=unmatched&importRange=all&importReview=escalated
+                  - row [ref=f8e472]:
+                    - cell "bank-statement-escalation" [ref=f8e473]
+                    - cell [ref=f8e474]:
+                      - strong [ref=f8e475]: bank-statement-escalation-sweep
+                    - cell [ref=f8e476]:
+                      - group [ref=f8e477]:
+                        - generic "3 / 3 Timing +" [ref=f8e478] [cursor=pointer]:
+                          - strong [ref=f8e479]: 3 / 3
+                          - generic [ref=f8e480]: Timing
+                          - text: +
+                    - cell [ref=f8e481]:
+                      - time [ref=f8e482]: 8 Aug 2026, 15:06
+                    - 'cell "Raw query failed. Code: `N/A`. Message: `Failed to deserialize column of type ''void''. If you''re using $queryRaw and this column is explicitly marked as `Unsupported` in your Prisma schema, try casting this column to any supported Prisma type such as `String`.`" [ref=f8e483]'
+                    - cell "NEW Local Admin Web Actor / 8 Aug 2026, 15:10" [ref=f8e484]:
+                      - generic [ref=f8e485]: NEW
+                      - generic [ref=f8e486]:
+                        - text: Local Admin Web Actor /
+                        - time [ref=f8e487]: 8 Aug 2026, 15:10
+                    - cell [ref=f8e488]:
+                      - generic [ref=f8e489]:
+                        - button "Acknowledge" [ref=f8e491] [cursor=pointer]
+                        - link "Open workflow" [ref=f8e492] [cursor=pointer]:
+                          - /url: /finance-tax/bank-reconciliation?range=today&review=unmatched&importRange=all&importReview=escalated
+                  - row [ref=f8e493]:
+                    - cell "bank-statement-escalation" [ref=f8e494]
+                    - cell [ref=f8e495]:
+                      - strong [ref=f8e496]: bank-statement-escalation-sweep
+                    - cell [ref=f8e497]:
+                      - group [ref=f8e498]:
+                        - generic "3 / 3 Timing +" [ref=f8e499] [cursor=pointer]:
+                          - strong [ref=f8e500]: 3 / 3
+                          - generic [ref=f8e501]: Timing
+                          - text: +
+                    - cell [ref=f8e502]:
+                      - time [ref=f8e503]: 8 Aug 2026, 15:01
+                    - 'cell "Raw query failed. Code: `N/A`. Message: `Failed to deserialize column of type ''void''. If you''re using $queryRaw and this column is explicitly marked as `Unsupported` in your Prisma schema, try casting this column to any supported Prisma type such as `String`.`" [ref=f8e504]'
+                    - cell "NEW Local Admin Web Actor / 8 Aug 2026, 15:05" [ref=f8e505]:
+                      - generic [ref=f8e506]: NEW
+                      - generic [ref=f8e507]:
+                        - text: Local Admin Web Actor /
+                        - time [ref=f8e508]: 8 Aug 2026, 15:05
+                    - cell [ref=f8e509]:
+                      - generic [ref=f8e510]:
+                        - button "Acknowledge" [ref=f8e512] [cursor=pointer]
+                        - link "Open workflow" [ref=f8e513] [cursor=pointer]:
+                          - /url: /finance-tax/bank-reconciliation?range=today&review=unmatched&importRange=all&importReview=escalated
+                  - row [ref=f8e514]:
+                    - cell "bank-statement-escalation" [ref=f8e515]
+                    - cell [ref=f8e516]:
+                      - strong [ref=f8e517]: bank-statement-escalation-sweep
+                    - cell [ref=f8e518]:
+                      - group [ref=f8e519]:
+                        - generic "3 / 3 Timing +" [ref=f8e520] [cursor=pointer]:
+                          - strong [ref=f8e521]: 3 / 3
+                          - generic [ref=f8e522]: Timing
+                          - text: +
+                    - cell [ref=f8e523]:
+                      - time [ref=f8e524]: 8 Aug 2026, 14:56
+                    - 'cell "Raw query failed. Code: `N/A`. Message: `Failed to deserialize column of type ''void''. If you''re using $queryRaw and this column is explicitly marked as `Unsupported` in your Prisma schema, try casting this column to any supported Prisma type such as `String`.`" [ref=f8e525]'
+                    - cell "NEW Local Admin Web Actor / 8 Aug 2026, 15:00" [ref=f8e526]:
+                      - generic [ref=f8e527]: NEW
+                      - generic [ref=f8e528]:
+                        - text: Local Admin Web Actor /
+                        - time [ref=f8e529]: 8 Aug 2026, 15:00
+                    - cell [ref=f8e530]:
+                      - generic [ref=f8e531]:
+                        - button "Acknowledge" [ref=f8e533] [cursor=pointer]
+                        - link "Open workflow" [ref=f8e534] [cursor=pointer]:
+                          - /url: /finance-tax/bank-reconciliation?range=today&review=unmatched&importRange=all&importReview=escalated
+                  - row [ref=f8e535]:
+                    - cell "bank-statement-escalation" [ref=f8e536]
+                    - cell [ref=f8e537]:
+                      - strong [ref=f8e538]: bank-statement-escalation-sweep
+                    - cell [ref=f8e539]:
+                      - group [ref=f8e540]:
+                        - generic "3 / 3 Timing +" [ref=f8e541] [cursor=pointer]:
+                          - strong [ref=f8e542]: 3 / 3
+                          - generic [ref=f8e543]: Timing
+                          - text: +
+                    - cell [ref=f8e544]:
+                      - time [ref=f8e545]: 8 Aug 2026, 14:51
+                    - 'cell "Raw query failed. Code: `N/A`. Message: `Failed to deserialize column of type ''void''. If you''re using $queryRaw and this column is explicitly marked as `Unsupported` in your Prisma schema, try casting this column to any supported Prisma type such as `String`.`" [ref=f8e546]'
+                    - cell "NEW Local Admin Web Actor / 8 Aug 2026, 14:55" [ref=f8e547]:
+                      - generic [ref=f8e548]: NEW
+                      - generic [ref=f8e549]:
+                        - text: Local Admin Web Actor /
+                        - time [ref=f8e550]: 8 Aug 2026, 14:55
+                    - cell [ref=f8e551]:
+                      - generic [ref=f8e552]:
+                        - button "Acknowledge" [ref=f8e554] [cursor=pointer]
+                        - link "Open workflow" [ref=f8e555] [cursor=pointer]:
+                          - /url: /finance-tax/bank-reconciliation?range=today&review=unmatched&importRange=all&importReview=escalated
+                  - row [ref=f8e556]:
+                    - cell "bank-statement-escalation" [ref=f8e557]
+                    - cell [ref=f8e558]:
+                      - strong [ref=f8e559]: bank-statement-escalation-sweep
+                    - cell [ref=f8e560]:
+                      - group [ref=f8e561]:
+                        - generic "3 / 3 Timing +" [ref=f8e562] [cursor=pointer]:
+                          - strong [ref=f8e563]: 3 / 3
+                          - generic [ref=f8e564]: Timing
+                          - text: +
+                    - cell [ref=f8e565]:
+                      - time [ref=f8e566]: 8 Aug 2026, 14:46
+                    - 'cell "Raw query failed. Code: `N/A`. Message: `Failed to deserialize column of type ''void''. If you''re using $queryRaw and this column is explicitly marked as `Unsupported` in your Prisma schema, try casting this column to any supported Prisma type such as `String`.`" [ref=f8e567]'
+                    - cell "NEW Local Admin Web Actor / 8 Aug 2026, 14:50" [ref=f8e568]:
+                      - generic [ref=f8e569]: NEW
+                      - generic [ref=f8e570]:
+                        - text: Local Admin Web Actor /
+                        - time [ref=f8e571]: 8 Aug 2026, 14:50
+                    - cell [ref=f8e572]:
+                      - generic [ref=f8e573]:
+                        - button "Acknowledge" [ref=f8e575] [cursor=pointer]
+                        - link "Open workflow" [ref=f8e576] [cursor=pointer]:
+                          - /url: /finance-tax/bank-reconciliation?range=today&review=unmatched&importRange=all&importReview=escalated
+                  - row [ref=f8e577]:
+                    - cell "bank-statement-escalation" [ref=f8e578]
+                    - cell [ref=f8e579]:
+                      - strong [ref=f8e580]: bank-statement-escalation-sweep
+                    - cell [ref=f8e581]:
+                      - group [ref=f8e582]:
+                        - generic "3 / 3 Timing +" [ref=f8e583] [cursor=pointer]:
+                          - strong [ref=f8e584]: 3 / 3
+                          - generic [ref=f8e585]: Timing
+                          - text: +
+                    - cell [ref=f8e586]:
+                      - time [ref=f8e587]: 8 Aug 2026, 14:41
+                    - 'cell "Raw query failed. Code: `N/A`. Message: `Failed to deserialize column of type ''void''. If you''re using $queryRaw and this column is explicitly marked as `Unsupported` in your Prisma schema, try casting this column to any supported Prisma type such as `String`.`" [ref=f8e588]'
+                    - cell "NEW Local Admin Web Actor / 8 Aug 2026, 14:45" [ref=f8e589]:
+                      - generic [ref=f8e590]: NEW
+                      - generic [ref=f8e591]:
+                        - text: Local Admin Web Actor /
+                        - time [ref=f8e592]: 8 Aug 2026, 14:45
+                    - cell [ref=f8e593]:
+                      - generic [ref=f8e594]:
+                        - button "Acknowledge" [ref=f8e596] [cursor=pointer]
+                        - link "Open workflow" [ref=f8e597] [cursor=pointer]:
+                          - /url: /finance-tax/bank-reconciliation?range=today&review=unmatched&importRange=all&importReview=escalated
+                  - row [ref=f8e598]:
+                    - cell "bank-statement-escalation" [ref=f8e599]
+                    - cell [ref=f8e600]:
+                      - strong [ref=f8e601]: bank-statement-escalation-sweep
+                    - cell [ref=f8e602]:
+                      - group [ref=f8e603]:
+                        - generic "3 / 3 Timing +" [ref=f8e604] [cursor=pointer]:
+                          - strong [ref=f8e605]: 3 / 3
+                          - generic [ref=f8e606]: Timing
+                          - text: +
+                    - cell [ref=f8e607]:
+                      - time [ref=f8e608]: 8 Aug 2026, 14:36
+                    - 'cell "Raw query failed. Code: `N/A`. Message: `Failed to deserialize column of type ''void''. If you''re using $queryRaw and this column is explicitly marked as `Unsupported` in your Prisma schema, try casting this column to any supported Prisma type such as `String`.`" [ref=f8e609]'
+                    - cell "NEW Local Admin Web Actor / 8 Aug 2026, 14:40" [ref=f8e610]:
+                      - generic [ref=f8e611]: NEW
+                      - generic [ref=f8e612]:
+                        - text: Local Admin Web Actor /
+                        - time [ref=f8e613]: 8 Aug 2026, 14:40
+                    - cell [ref=f8e614]:
+                      - generic [ref=f8e615]:
+                        - button "Acknowledge" [ref=f8e617] [cursor=pointer]
+                        - link "Open workflow" [ref=f8e618] [cursor=pointer]:
+                          - /url: /finance-tax/bank-reconciliation?range=today&review=unmatched&importRange=all&importReview=escalated
+                  - row [ref=f8e619]:
+                    - cell "bank-statement-escalation" [ref=f8e620]
+                    - cell [ref=f8e621]:
+                      - strong [ref=f8e622]: bank-statement-escalation-sweep
+                    - cell [ref=f8e623]:
+                      - group [ref=f8e624]:
+                        - generic "3 / 3 Timing +" [ref=f8e625] [cursor=pointer]:
+                          - strong [ref=f8e626]: 3 / 3
+                          - generic [ref=f8e627]: Timing
+                          - text: +
+                    - cell [ref=f8e628]:
+                      - time [ref=f8e629]: 8 Aug 2026, 14:31
+                    - 'cell "Raw query failed. Code: `N/A`. Message: `Failed to deserialize column of type ''void''. If you''re using $queryRaw and this column is explicitly marked as `Unsupported` in your Prisma schema, try casting this column to any supported Prisma type such as `String`.`" [ref=f8e630]'
+                    - cell "NEW Local Admin Web Actor / 8 Aug 2026, 14:35" [ref=f8e631]:
+                      - generic [ref=f8e632]: NEW
+                      - generic [ref=f8e633]:
+                        - text: Local Admin Web Actor /
+                        - time [ref=f8e634]: 8 Aug 2026, 14:35
+                    - cell [ref=f8e635]:
+                      - generic [ref=f8e636]:
+                        - button "Acknowledge" [ref=f8e638] [cursor=pointer]
+                        - link "Open workflow" [ref=f8e639] [cursor=pointer]:
+                          - /url: /finance-tax/bank-reconciliation?range=today&review=unmatched&importRange=all&importReview=escalated
+                  - row [ref=f8e640]:
+                    - cell "bank-statement-escalation" [ref=f8e641]
+                    - cell [ref=f8e642]:
+                      - strong [ref=f8e643]: bank-statement-escalation-sweep
+                    - cell [ref=f8e644]:
+                      - group [ref=f8e645]:
+                        - generic "3 / 3 Timing +" [ref=f8e646] [cursor=pointer]:
+                          - strong [ref=f8e647]: 3 / 3
+                          - generic [ref=f8e648]: Timing
+                          - text: +
+                    - cell [ref=f8e649]:
+                      - time [ref=f8e650]: 8 Aug 2026, 14:26
+                    - 'cell "Raw query failed. Code: `N/A`. Message: `Failed to deserialize column of type ''void''. If you''re using $queryRaw and this column is explicitly marked as `Unsupported` in your Prisma schema, try casting this column to any supported Prisma type such as `String`.`" [ref=f8e651]'
+                    - cell "NEW Local Admin Web Actor / 8 Aug 2026, 14:30" [ref=f8e652]:
+                      - generic [ref=f8e653]: NEW
+                      - generic [ref=f8e654]:
+                        - text: Local Admin Web Actor /
+                        - time [ref=f8e655]: 8 Aug 2026, 14:30
+                    - cell [ref=f8e656]:
+                      - generic [ref=f8e657]:
+                        - button "Acknowledge" [ref=f8e659] [cursor=pointer]
+                        - link "Open workflow" [ref=f8e660] [cursor=pointer]:
+                          - /url: /finance-tax/bank-reconciliation?range=today&review=unmatched&importRange=all&importReview=escalated
+            - generic [ref=f8e661]:
+              - generic [ref=f8e662]: Showing 1 to 10; additional retained failures may exist
+              - generic "Failed job pages" [ref=f8e663]:
+                - generic [ref=f8e664]: Page 1
+                - link "Next" [ref=f8e665] [cursor=pointer]:
+                  - /url: /background-jobs?eventPage=1&eventStatus=ALL&incidentPage=1&incidentStatus=ALL&page=2&pageSize=10&queue=ALL&range=ALL&review=OPEN
+  - button "Open Next.js Dev Tools" [ref=f8e671] [cursor=pointer]
+  - alert [ref=f8e682]

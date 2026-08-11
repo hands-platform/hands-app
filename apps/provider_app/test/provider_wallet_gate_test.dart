@@ -3,7 +3,23 @@ import 'package:provider_app/src/core/api_client.dart';
 import 'package:provider_app/provider_app.dart';
 
 void main() {
-  test('holds marketplace participation when wallet balance is negative', () {
+  test('separates open requests from confirmed active jobs', () {
+    final bookings = [
+      {'id': 'open', 'status': 'OPEN_MATCHING'},
+      {'id': 'matched', 'status': 'MATCHED'},
+      {'id': 'travelling', 'status': 'PROVIDER_ON_THE_WAY'},
+      {'id': 'arrived', 'status': 'ARRIVED'},
+      {'id': 'service', 'status': 'IN_SERVICE'},
+      {'id': 'complete', 'status': 'COMPLETED'},
+      {'id': 'cancelled', 'status': 'CANCELLED'},
+    ];
+
+    expect(providerOpenRequestCount(bookings), 1);
+    expect(providerActiveJobCount(bookings), 4);
+    expect(isProviderActiveBooking(bookings.first), isFalse);
+  });
+
+  test('does not infer marketplace gate from negative wallet balance', () {
     final summary = {
       'walletBalance': -120000,
       'walletBlocked': true,
@@ -15,8 +31,8 @@ void main() {
 
     expect(providerWalletBalance(summary), -120000);
     expect(providerWalletBlockReason(summary), 'Custom settlement message');
-    expect(providerWalletMarketplaceJoinBlocked(summary), isTrue);
-    expect(providerWalletStatusLabel(summary), 'Settlement required');
+    expect(providerWalletMarketplaceJoinBlocked(summary), isFalse);
+    expect(providerWalletStatusLabel(summary), 'Cần thanh toán phí');
     expect(
       providerWalletSettlementInstruction(summary),
       'Pay the HANDS fee to participate in bookings.',
@@ -24,7 +40,7 @@ void main() {
     expect(
       providerWalletSettlementSteps(summary),
       contains(
-          'Use reference HANDS-WALLET-TEST1234 when sending the deposit or requesting admin offset.'),
+          'Dùng mã HANDS-WALLET-TEST1234 khi gửi khoản nộp hoặc yêu cầu bù trừ.'),
     );
     expect(providerWalletSettlementReference(summary), 'HANDS-WALLET-TEST1234');
   });
@@ -50,7 +66,7 @@ void main() {
     expect(
       view.steps,
       contains(
-          'Marketplace participation and payout release resume when the wallet is no longer negative.'),
+          'Quyền tham gia đặt lịch và nhận tiền chi trả sẽ được khôi phục khi số dư ví không còn âm.'),
     );
   });
 
@@ -149,13 +165,13 @@ void main() {
     expect(providerWalletBalance(summary), 20000);
     expect(providerWalletBlockReason(summary), isNull);
     expect(providerWalletMarketplaceJoinBlocked(summary), isFalse);
-    expect(providerWalletStatusLabel(summary), 'Available for payout review');
+    expect(providerWalletStatusLabel(summary), 'Sẵn sàng để xét chi trả');
     expect(providerWalletSettlementSteps(summary),
-        contains('Cash booking fees are settled.'));
+        contains('Phí đặt lịch tiền mặt đã được thanh toán.'));
     expect(
       providerWalletSettlementSteps(summary),
       contains(
-        'Wallet payouts are checked when you request withdrawal or report a deposit.',
+        'Khoản chi trả ví được kiểm tra khi bạn yêu cầu rút tiền hoặc báo cáo khoản nộp.',
       ),
     );
   });
@@ -176,23 +192,37 @@ void main() {
 
     expect(view.blocked, isFalse);
     expect(view.bankCorrectionRequired, isTrue);
-    expect(view.statusLabel, 'Bank details need correction');
+    expect(view.statusLabel, 'Cần sửa thông tin ngân hàng');
     expect(view.bankCorrectionReasonLabel,
         contains('Account holder name does not match KYC'));
     expect(providerWalletMarketplaceJoinBlocked(summary), isFalse);
   });
 
-  test('negative wallet overrides stale explicit marketplace open policy', () {
+  test('explicit marketplace policy blocks participation for wallet debt', () {
     final summary = <String, dynamic>{
       'walletBalance': -120000,
       'walletBlocked': true,
-      'marketplaceJoinBlocked': false,
+      'marketplaceJoinBlocked': true,
       'walletBlockReason':
           'Wallet needs settlement before marketplace participation.',
     };
 
     expect(providerWalletMarketplaceJoinBlocked(summary), isTrue);
     expect(providerWalletBlockReason(summary), isNotNull);
+  });
+
+  test('does not count the direct first-pick row as a marketplace participant',
+      () {
+    expect(
+      providerMarketplaceParticipantCount({
+        'preferredProvider': {'id': 'preferred-1'},
+        'participants': [
+          {'providerProfileId': 'preferred-1', 'status': 'JOINED'},
+          {'providerProfileId': 'marketplace-1', 'status': 'JOINED'},
+        ],
+      }),
+      1,
+    );
   });
 
   test('uses explicit marketplace policy only when wallet is settled', () {
@@ -227,7 +257,7 @@ void main() {
 
     expect(providerBookingIsCash(booking), isTrue);
     expect(providerCashBookingSettlementHint(booking), contains('450.000 VND'));
-    expect(providerCashBookingSettlementHint(booking), contains('wallet debt'));
+    expect(providerCashBookingSettlementHint(booking), contains('số dư ví âm'));
   });
 
   test('explains direct requests as first partner decisions', () {
@@ -238,13 +268,13 @@ void main() {
       walletBlocked: false,
     );
 
-    expect(guidance.modeLabel, 'Direct request');
-    expect(guidance.roleLabel, 'First partner');
-    expect(guidance.decisionLabel, 'Reply now');
-    expect(guidance.nextAction, contains('Reply now'));
-    expect(guidance.detailMessage, contains('10 min'));
+    expect(guidance.modeLabel, 'Yêu cầu trực tiếp');
+    expect(guidance.roleLabel, 'Đối tác được chọn đầu tiên');
+    expect(guidance.decisionLabel, 'Xác nhận ngay');
+    expect(guidance.nextAction, contains('xác nhận đặt lịch ngay'));
+    expect(guidance.detailMessage, contains('10 phút'));
     expect(guidance.detailMessage, contains('10 km'));
-    expect(guidance.infoMessage, contains('Accept or decline'));
+    expect(guidance.infoMessage, contains('Chấp nhận để xác nhận ngay'));
   });
 
   test('uses booking matching policy snapshot in request guidance', () {
@@ -265,9 +295,11 @@ void main() {
       walletBlocked: false,
     );
 
-    expect(providerMatchingWindowTagLabel(booking), '7 min first-pick');
-    expect(providerMarketplaceRadiusTagLabel(booking), '5 km marketplace');
-    expect(guidance.detailMessage, contains('7 min'));
+    expect(
+        providerMatchingWindowTagLabel(booking), '7 phút phản hồi trực tiếp');
+    expect(
+        providerMarketplaceRadiusTagLabel(booking), '5 km phạm vi công khai');
+    expect(guidance.detailMessage, contains('7 phút'));
     expect(guidance.detailMessage, contains('5 km'));
   });
 
@@ -283,7 +315,8 @@ void main() {
     };
 
     expect(providerMarketplaceRadiusMeters(booking), 5000);
-    expect(providerMarketplaceRadiusTagLabel(booking), '5 km marketplace');
+    expect(
+        providerMarketplaceRadiusTagLabel(booking), '5 km phạm vi công khai');
   });
 
   test('keeps direct request guidance when wallet is negative', () {
@@ -294,10 +327,44 @@ void main() {
       walletBlocked: true,
     );
 
-    expect(guidance.modeLabel, 'Direct request');
-    expect(guidance.decisionLabel, 'Reply now');
-    expect(guidance.nextAction, contains('Reply now'));
-    expect(guidance.infoMessage, contains('Accept or decline'));
+    expect(guidance.modeLabel, 'Yêu cầu trực tiếp');
+    expect(guidance.decisionLabel, 'Xác nhận ngay');
+    expect(guidance.nextAction, contains('xác nhận đặt lịch ngay'));
+    expect(guidance.infoMessage, contains('Chấp nhận để xác nhận ngay'));
+  });
+
+  test('explains when first-pick acceptance immediately confirms a booking',
+      () {
+    final response = {
+      'event': 'booking.matched',
+      'matchSource': 'FIRST_PICK_ACCEPTED_FIRST',
+      'booking': {'status': 'PROVIDER_ON_THE_WAY'},
+    };
+
+    expect(providerAcceptanceConfirmedBooking(response), isTrue);
+    expect(
+      providerBookingDecisionStatusMessage(
+        accepted: true,
+        response: response,
+      ),
+      contains('Đặt lịch đã được xác nhận'),
+    );
+  });
+
+  test('keeps marketplace acceptance waiting for customer selection', () {
+    final response = {
+      'event': 'provider.accepted',
+      'booking': {'status': 'OPEN_MATCHING'},
+    };
+
+    expect(providerAcceptanceConfirmedBooking(response), isFalse);
+    expect(
+      providerBookingDecisionStatusMessage(
+        accepted: true,
+        response: response,
+      ),
+      contains('Đang chờ khách hàng'),
+    );
   });
 
   test('blocks marketplace participation guidance when wallet is negative', () {
@@ -311,23 +378,22 @@ void main() {
       walletBlocked: true,
     );
 
-    expect(guidance.modeLabel, 'Marketplace opportunity');
-    expect(guidance.decisionLabel, 'Settlement required');
-    expect(guidance.contextMessage, contains('unpaid HANDS fees'));
+    expect(guidance.modeLabel, 'Cơ hội đặt lịch');
+    expect(guidance.decisionLabel, 'Cần thanh toán phí');
+    expect(guidance.contextMessage, contains('phí HANDS còn thiếu'));
     expect(
       providerMarketplaceJoinButtonLabel(
-        walletBlocksMarketplaceParticipation: true,
         hasPreferredProvider: true,
       ),
-      providerMarketplaceJoinBlockedButtonLabel,
+      'Tham gia hỗ trợ đặt lịch',
     );
     expect(
       providerWalletBlockFallbackReasonClean,
-      'Unpaid HANDS fees must be settled before you can participate in marketplace bookings.',
+      'Phí HANDS chưa được thanh toán nên bạn không thể tham gia đặt lịch này.',
     );
-    expect(guidance.detailMessage, providerWalletBlockFallbackReasonClean);
+    expect(guidance.detailMessage, providerMarketplaceJoinBlockReasonClean);
     expect(providerActionBlockCopy(guidance.detailMessage)?.title,
-        'Fee settlement required');
+        'Cần thanh toán phí');
     expect(
       providerActionBlockCopy(
               'Unpaid HANDS fees must be settled before you can participate in marketplace bookings.')
@@ -364,7 +430,7 @@ void main() {
       ),
       isTrue,
       reason:
-          'Partners with negative wallet debt can view marketplace requests, but cannot participate before settlement.',
+          'Explicit marketplace policy can still block participation before settlement.',
     );
     expect(
       providerWalletBlocksMarketplaceParticipation(
@@ -377,10 +443,9 @@ void main() {
     );
     expect(
       providerMarketplaceJoinButtonLabel(
-        walletBlocksMarketplaceParticipation: false,
         hasPreferredProvider: true,
       ),
-      'Offer marketplace support',
+      'Tham gia hỗ trợ đặt lịch',
     );
   });
 
@@ -397,14 +462,12 @@ void main() {
       walletBlocked: true,
     );
 
-    expect(guidance.modeLabel, 'Marketplace opportunity');
-    expect(guidance.nextAction, contains('Settle unpaid HANDS fees'));
-    expect(guidance.contextMessage, contains('visible'));
-    expect(
-        guidance.contextMessage, contains('before marketplace participation'));
-    expect(guidance.infoMessage, contains('Deposit the unpaid HANDS fee'));
-    expect(guidance.detailMessage,
-        'Unpaid HANDS fees must be settled before you can participate in marketplace bookings.');
+    expect(guidance.modeLabel, 'Cơ hội đặt lịch');
+    expect(guidance.nextAction, contains('Thanh toán phí HANDS còn thiếu'));
+    expect(guidance.contextMessage, contains('vẫn có thể xem'));
+    expect(guidance.contextMessage, contains('trước khi tham gia'));
+    expect(guidance.infoMessage, contains('thanh toán phí HANDS còn thiếu'));
+    expect(guidance.detailMessage, providerMarketplaceJoinBlockReasonClean);
   });
 
   test('explains marketplace opportunities after preferred partner exists', () {
@@ -418,9 +481,9 @@ void main() {
       walletBlocked: false,
     );
 
-    expect(guidance.modeLabel, 'Marketplace opportunity');
-    expect(guidance.roleLabel, 'Marketplace option');
-    expect(guidance.decisionLabel, 'Can participate');
+    expect(guidance.modeLabel, 'Cơ hội đặt lịch công khai');
+    expect(guidance.roleLabel, 'Ứng viên công khai');
+    expect(guidance.decisionLabel, 'Có thể tham gia');
     expect(guidance.detailMessage, contains('Linh Wellness'));
     expect(guidance.infoMessage, contains('10 km'));
   });
@@ -436,9 +499,9 @@ void main() {
       walletBlocked: false,
     );
 
-    expect(guidance.decisionLabel, 'Chat live');
-    expect(guidance.nextAction, contains('Continue'));
-    expect(guidance.infoMessage, 'Chat is ready for this matched booking.');
+    expect(guidance.decisionLabel, 'Trò chuyện đang mở');
+    expect(guidance.nextAction, contains('Tiếp tục'));
+    expect(guidance.infoMessage, 'Trò chuyện đã sẵn sàng cho đặt lịch này.');
   });
 
   test('partner app hides service chat after booking is closed', () {
@@ -454,7 +517,7 @@ void main() {
     expect(isProviderAppChatVisible(liveBooking), isTrue);
     expect(isProviderAppChatVisible(completedBooking), isFalse);
     expect(partnerJobNextAction(completedBooking),
-        'Service complete. Check earnings and payout status.');
+        'Dịch vụ đã hoàn tất. Hãy kiểm tra thu nhập và trạng thái chi trả.');
   });
 
   test('formats partner booking service option labels consistently', () {
@@ -464,20 +527,20 @@ void main() {
       'basePrice': 700000,
     };
 
-    expect(providerServiceOptionLabel(service), 'Foot Massage / 90 min');
+    expect(providerServiceOptionLabel(service), 'Foot Massage / 90 phút');
     expect(
       providerServiceOptionPriceLabel(service),
-      'Foot Massage / 90 min / 700.000 VND',
+      'Foot Massage / 90 phút / 700.000 VND',
     );
     expect(
       providerServiceOptionPriceLabel(service, amount: 750000),
-      'Foot Massage / 90 min / 750.000 VND',
+      'Foot Massage / 90 phút / 750.000 VND',
     );
   });
 
   test('keeps partner booking service labels safe for missing values', () {
-    expect(providerServiceOptionLabel(null), 'Massage booking');
-    expect(providerServiceOptionPriceLabel(null), 'Massage booking');
-    expect(providerServiceDurationLabel(null), '- min');
+    expect(providerServiceOptionLabel(null), 'Dịch vụ massage');
+    expect(providerServiceOptionPriceLabel(null), 'Dịch vụ massage');
+    expect(providerServiceDurationLabel(null), '- phút');
   });
 }

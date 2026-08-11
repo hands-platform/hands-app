@@ -20,52 +20,49 @@ describe('CustomerBookingOperationBoard', () => {
 
     const rendered = textContent(board).replace(/\s+/g, ' ');
 
-    expect(rendered).toContain('Customer booking situation board');
-    expect(rendered).toContain('Current / In Progress');
-    expect(rendered).toContain('Completed');
-    expect(rendered).toContain('Pre-match Cancellations');
-    expect(rendered).toContain('Partner Cancellations');
-    expect(rendered).toContain('Showing 1 to 5 of 11 entries');
+    expect(rendered).toContain('Recent bookings');
+    expect(rendered).toContain('Latest 14 bookings');
+    expect(rendered).toContain('View all bookings');
+    expect(rendered).toContain('All 14');
+    expect(rendered).toContain('Live 11');
+    expect(rendered).toContain('Completed 1');
+    expect(rendered).toContain('Cancelled 2');
+    expect(rendered).toContain('Showing 1 to 5 of 14 entries');
     expect(rendered).toContain('Smoke Partner');
-    expect(rendered).toContain('Payment Type');
+    expect(rendered).toContain('Money');
     expect(rendered).toContain('Wallet');
     expect(rendered).toContain('CAPTURED / 500.000 VND');
-    expect(rendered).not.toContain('Open');
-    expect(rendered).not.toContain('View');
-    expect(classNamesIn(board)).toEqual(
+    const classNames = classNamesIn(board);
+    expect(classNames.some((className) => className.includes('customer-booking-operation-section'))).toBe(true);
+    expect(classNames).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group booking-monitor customer-booking-operation-section admin-section',
-        'card admin-section admin-mb-16 customer-booking-operation-summary-card',
-        'table vuexy-data-table vuexy-booking-table admin-data-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table customer-recent-bookings-table',
         'admin-rounded-pagination vuexy-booking-pagination',
         'vuexy-booking-avatar is-partner',
         'vuexy-booking-person',
         'admin-avatar-status-dot is-working',
       ]),
     );
-    expect(classNamesIn(board)).not.toContain('admin-table-scroll');
+    expect(classNames).not.toContain('admin-table-scroll');
   });
 
   it('renders server-bounded operation rows while keeping the full group count for pagination', () => {
     const board = CustomerBookingOperationBoard({
       basePath: '/customers/customer-1',
       groups: [
-        {
-          ...group('live', 'Current / In Progress', 'Current booking rows.', 5),
-          page: 2,
-          totalRows: 11,
-        },
+        group('live', 'Current / In Progress', 'Current booking rows.', 11),
       ],
       metrics: buildMetrics(),
-      searchParams: { range: '7d' },
+      searchParams: { bookingHistoryPage: '2', range: '7d' },
     });
 
     const rendered = textContent(board).replace(/\s+/g, ' ');
 
     expect(rendered).toContain('Showing 6 to 10 of 11 entries');
-    expect(rendered).toContain('booking-5');
-    expect(rendered).not.toContain('booking-6');
-    expect(boardSource).not.toContain('group.rows.slice(');
+    expect(rendered).toContain('booking-6');
+    expect(rendered).toContain('booking-2');
+    expect(rendered).not.toContain('booking-11');
+    expect(boardSource).toContain('filteredRows.slice(');
   });
 
   it('uses a compact empty state instead of rendering four empty booking tables', () => {
@@ -83,14 +80,15 @@ describe('CustomerBookingOperationBoard', () => {
     const rendered = textContent(board).replace(/\s+/g, ' ');
     const classNames = classNamesIn(board);
 
-    expect(rendered).toContain('No customer booking operation rows yet');
-    expect(rendered).toContain('Current / In Progress');
-    expect(rendered).toContain('Completed');
-    expect(rendered).toContain('Pre-match Cancellations');
-    expect(rendered).toContain('Partner Cancellations');
-    expect(rendered).toContain('Payment Type');
-    expect(classNames).not.toContain('table vuexy-data-table vuexy-booking-table admin-data-table');
-    expect(boardSource).toContain('const hasBookingOperationRows =');
+    expect(rendered).toContain('No booking matched this recent-booking filter.');
+    expect(rendered).toContain('All 0');
+    expect(rendered).toContain('Live 0');
+    expect(rendered).toContain('Completed 0');
+    expect(rendered).toContain('Cancelled 0');
+    expect(rendered).toContain('Money');
+    expect(classNames).toContain(
+      'table vuexy-data-table vuexy-booking-table admin-data-table customer-recent-bookings-table',
+    );
   });
 
   it('uses shared Vuexy status badge atoms instead of raw operation board pill markup', () => {
@@ -128,7 +126,9 @@ describe('CustomerBookingOperationBoard', () => {
     expect(pageSource).toContain('<DateTimeText value={latestActivityAt} />');
     expect(pageSource).toContain('<DateTimeText value={bookingRequestOpenedAt(booking)} />');
     expect(pageSource).toContain('<DateTimeText value={stateAt} />');
-    expect(pageSource).not.toContain('helper: latestActivityAt ? `Latest update ${formatDate(latestActivityAt)}`');
+    expect(pageSource).not.toContain(
+      'helper: latestActivityAt ? `Latest update ${formatDate(latestActivityAt)}`',
+    );
     expect(pageSource).not.toContain('bookingHelper: `${booking.status} / State ${formatDate(stateAt)}`');
     expect(pageSource).not.toContain('requestTimeLabel: formatDate(bookingRequestOpenedAt(booking))');
     expect(pageSource).not.toContain('stateDetail: formatDate(stateAt)');
@@ -157,7 +157,7 @@ function buildGroups(): readonly CustomerBookingOperationGroup[] {
   return [
     group('live', 'Current / In Progress', 'Current booking rows.'),
     group('completed', 'Completed', 'Completed booking rows.'),
-    group('pre-match', 'Pre-match Cancellations', 'Cancelled before matching.'),
+    group('pre-match-cancelled', 'Pre-match Cancellations', 'Cancelled before matching.'),
     group('partner-cancelled', 'Partner Cancellations', 'Partner cancelled after matching.'),
   ];
 }
@@ -165,36 +165,32 @@ function buildGroups(): readonly CustomerBookingOperationGroup[] {
 function group(
   key: string,
   title: string,
-  description: string,
+  _description: string,
   rowCount = key === 'live' ? 11 : 1,
 ): CustomerBookingOperationGroup {
   return {
-    countTone: 'pill-info',
-    description,
-    emptyMessage: 'Empty',
     key,
-    page: 1,
-    pageParam: `${key}Page`,
-    rows: Array.from({ length: Math.min(rowCount, 5) }, (_, index) => ({
-        addressLabel: 'District 1, Ho Chi Minh City',
-        bookingHelper: 'OPEN_MATCHING / State 19 Jun 2026, 10:00',
-        bookingHref: `/bookings/booking-${index + 1}`,
-        bookingLabel: `booking-${index + 1}`,
-        id: `${key}-booking-${index + 1}`,
-        partnerAvatarStatus: 'working',
-        partnerHelper: 'Selected Partner / 2 participating',
-        partnerHref: '/partners/partner-1',
-        partnerLabel: 'Smoke Partner',
-        paymentDetailLabel: 'CAPTURED / 500.000 VND',
-        paymentTypeLabel: 'Wallet',
-        requestTimeLabel: '19 Jun 2026, 09:30',
-        serviceLabel: 'Aromatherapy Massage / 90 min',
-        servicePriceAmount: 500_000,
-        servicePriceCurrency: 'VND',
-        stateDetail: '19 Jun 2026, 10:00',
-        stateLabel: 'OPEN_MATCHING',
-        stateTone: 'pill-info',
-      })),
+    rows: Array.from({ length: rowCount }, (_, index) => ({
+      addressLabel: 'District 1, Ho Chi Minh City',
+      bookingHelper: 'OPEN_MATCHING / State 19 Jun 2026, 10:00',
+      bookingHref: `/bookings/booking-${index + 1}`,
+      bookingLabel: `booking-${index + 1}`,
+      id: `${key}-booking-${index + 1}`,
+      partnerAvatarStatus: 'working',
+      partnerHelper: 'Selected Partner / 2 participating',
+      partnerHref: '/partners/partner-1',
+      partnerLabel: 'Smoke Partner',
+      paymentDetailLabel: 'CAPTURED / 500.000 VND',
+      paymentTypeLabel: 'Wallet',
+      requestTimeLabel: '19 Jun 2026, 09:30',
+      serviceLabel: 'Aromatherapy Massage / 90 min',
+      servicePriceAmount: 500_000,
+      servicePriceCurrency: 'VND',
+      sortAtMs: Date.parse(`2026-06-${String(index + 1).padStart(2, '0')}T10:00:00.000Z`),
+      stateDetail: '19 Jun 2026, 10:00',
+      stateLabel: 'OPEN_MATCHING',
+      stateTone: 'pill-info',
+    })),
     title,
     totalRows: rowCount,
   };

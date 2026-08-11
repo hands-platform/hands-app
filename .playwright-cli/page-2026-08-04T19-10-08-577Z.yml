@@ -1,0 +1,694 @@
+- generic [ref=f5e3]:
+  - complementary [ref=f5e4]:
+    - strong [ref=f5e6]: HANDS Admin
+    - navigation "Admin navigation"
+  - main [ref=f5e7]:
+    - generic "Admin workspace" [ref=f5e8]
+    - generic [ref=f5e9]:
+      - generic [ref=f5e10]:
+        - heading "Shift command" [level=1] [ref=f5e12]
+        - generic "Page actions" [ref=f5e13]:
+          - link "Booking monitor" [ref=f5e14] [cursor=pointer]:
+            - /url: /bookings
+          - button "Refresh Start Shift data" [ref=f5e19] [cursor=pointer]: Refresh
+          - group "More Shift command actions" [ref=f5e25]:
+            - generic "More Shift command actions" [ref=f5e26] [cursor=pointer]: More actions
+      - generic [ref=f5e28]:
+        - navigation "Shift command sections" [ref=f5e29]:
+          - generic [ref=f5e30]:
+            - generic [ref=f5e31]: Current shift
+            - generic [ref=f5e32]: Selected window · Vietnam time · Test data excluded
+            - generic [ref=f5e33]:
+              - text: Live · updated
+              - time [ref=f5e34]: 5 Aug 2026, 02:10
+            - generic [ref=f5e35]: Refresh every 60s
+          - generic [ref=f5e36]:
+            - generic [ref=f5e37]: Operations
+            - group "Current shift sections" [ref=f5e38]:
+              - link "Needs action · 6" [ref=f5e39] [cursor=pointer]:
+                - /url: "#dashboard-needs-action-now"
+              - link "Live now" [ref=f5e40] [cursor=pointer]:
+                - /url: "#dashboard-live-now"
+              - link "Money risk · 2" [ref=f5e41] [cursor=pointer]:
+                - /url: "#dashboard-money-status"
+              - link "Additional work · 0" [ref=f5e42] [cursor=pointer]:
+                - /url: "#dashboard-today-work"
+          - generic [ref=f5e43]:
+            - generic [ref=f5e44]: Selected period · Last 7 days
+            - group "Selected period sections" [ref=f5e45]:
+              - link "Result" [ref=f5e46] [cursor=pointer]:
+                - /url: "#dashboard-today-result"
+              - link "Leaders" [ref=f5e47] [cursor=pointer]:
+                - /url: "#dashboard-performance-leaders"
+              - link "Demand and supply" [ref=f5e48] [cursor=pointer]:
+                - /url: "#dashboard-demand-supply"
+        - region [ref=f5e49]:
+          - generic [ref=f5e50]:
+            - heading "Needs action now" [level=2] [ref=f5e52]
+            - generic [ref=f5e53]:
+              - generic [ref=f5e54]: 6 queues · 987 open items
+              - link "Review oldest refund" [ref=f5e55] [cursor=pointer]:
+                - /url: /refunds?range=all&review=open&sort=oldest&sla=overdue
+          - generic [ref=f5e59]:
+            - generic [ref=f5e60]:
+              - generic [ref=f5e61]:
+                - generic [ref=f5e62]: SLA overdue
+                - heading "Refund review" [level=3] [ref=f5e63]
+                - paragraph [ref=f5e64]: Confirm eligibility and complete the payment reversal or rejection.
+                - strong [ref=f5e65]: 112 overdue / 112 total
+                - generic [ref=f5e66]:
+                  - generic [ref=f5e67]:
+                    - term [ref=f5e68]: Owner
+                    - definition [ref=f5e69]: Finance
+                  - generic [ref=f5e70]:
+                    - term [ref=f5e71]: Oldest
+                    - definition [ref=f5e72]: 78d ago
+                  - generic [ref=f5e73]:
+                    - term [ref=f5e74]: Impact
+                    - definition [ref=f5e75]: 33.510.000 VND requested
+                - group "Refund review ageing" [ref=f5e76]:
+                  - 'link "Open Refund review: 24h+ critical 112" [ref=f5e77] [cursor=pointer]':
+                    - /url: /refunds?range=all&review=open&sort=oldest&sla=critical
+                    - text: 24h+ critical 112
+                - link "Review oldest refund" [ref=f5e78] [cursor=pointer]:
+                  - /url: /refunds?range=all&review=open&sort=oldest&sla=overdue
+              - generic [ref=f5e79]:
+                - generic [ref=f5e80]: SLA overdue
+                - heading "Notification failures" [level=3] [ref=f5e81]
+                - paragraph [ref=f5e82]: Repair the destination device or retry unresolved delivery failures.
+                - strong [ref=f5e83]: 410 overdue / 410 total
+                - generic [ref=f5e84]:
+                  - generic [ref=f5e85]:
+                    - term [ref=f5e86]: Owner
+                    - definition [ref=f5e87]: Support
+                  - generic [ref=f5e88]:
+                    - term [ref=f5e89]: Oldest
+                    - definition [ref=f5e90]: 76d ago
+                - group "Notification failures ageing" [ref=f5e91]:
+                  - 'link "Open Notification failures: Overdue 1" [ref=f5e92] [cursor=pointer]':
+                    - /url: /notifications?range=all&review=unresolved-failed&sort=oldest&sla=overdue-under-24h
+                    - text: Overdue 1
+                  - 'link "Open Notification failures: 24h+ critical 409" [ref=f5e93] [cursor=pointer]':
+                    - /url: /notifications?range=all&review=unresolved-failed&sort=oldest&sla=critical
+                    - text: 24h+ critical 409
+                - link "Review oldest notification failures" [ref=f5e94] [cursor=pointer]:
+                  - /url: /notifications?range=all&review=unresolved-failed&sort=oldest&sla=overdue
+              - generic [ref=f5e95]:
+                - generic [ref=f5e96]: SLA overdue
+                - heading "Payment holds" [level=3] [ref=f5e97]
+                - paragraph [ref=f5e98]: Capture completed services or release invalid authorization holds.
+                - strong [ref=f5e99]: 371 overdue / 371 total
+                - generic [ref=f5e100]:
+                  - generic [ref=f5e101]:
+                    - term [ref=f5e102]: Owner
+                    - definition [ref=f5e103]: Finance
+                  - generic [ref=f5e104]:
+                    - term [ref=f5e105]: Oldest
+                    - definition [ref=f5e106]: 75d ago
+                  - generic [ref=f5e107]:
+                    - term [ref=f5e108]: Impact
+                    - definition [ref=f5e109]: 138.500.000 VND authorized
+                - group "Payment holds ageing" [ref=f5e110]:
+                  - 'link "Open Payment holds: 24h+ critical 371" [ref=f5e111] [cursor=pointer]':
+                    - /url: /payments?range=all&review=authorized&sort=oldest&sla=critical
+                    - text: 24h+ critical 371
+                - link "Review oldest payment holds" [ref=f5e112] [cursor=pointer]:
+                  - /url: /payments?range=all&review=authorized&sort=oldest&sla=overdue
+            - group "Other open Shift command queues" [ref=f5e113]:
+              - generic "Other open queues Lower priority, still requires follow-up 3 queues" [ref=f5e114] [cursor=pointer]:
+                - generic [ref=f5e115]:
+                  - strong [ref=f5e116]: Other open queues
+                  - generic [ref=f5e117]: Lower priority, still requires follow-up
+                - generic [ref=f5e118]: 3 queues
+            - group "Clear Shift command queues" [ref=f5e119]:
+              - strong [ref=f5e121] [cursor=pointer]: 1 operating queues clear
+        - region [ref=f5e122]:
+          - generic [ref=f5e123]:
+            - heading "Live now" [level=2] [ref=f5e125]
+            - generic [ref=f5e126]:
+              - generic [ref=f5e127]: Live
+              - link "Booking monitor" [ref=f5e128] [cursor=pointer]:
+                - /url: /bookings
+          - list "Current live operations" [ref=f5e134]:
+            - listitem [ref=f5e135] [cursor=pointer]:
+              - generic [ref=f5e136]: Matching now
+              - strong [ref=f5e137]: "0"
+            - listitem [ref=f5e138] [cursor=pointer]:
+              - generic [ref=f5e139]: Customer choice
+              - strong [ref=f5e140]: "0"
+            - listitem [ref=f5e141] [cursor=pointer]:
+              - generic [ref=f5e142]: In service
+              - strong [ref=f5e143]: "0"
+            - listitem [ref=f5e144] [cursor=pointer]:
+              - generic [ref=f5e145]: Ready Partners
+              - strong [ref=f5e146]: "208"
+            - listitem [ref=f5e147] [cursor=pointer]:
+              - generic [ref=f5e148]: Active customers 15m
+              - strong [ref=f5e149]: "0"
+            - listitem [ref=f5e150] [cursor=pointer]:
+              - generic [ref=f5e151]: Active match wait
+              - strong [ref=f5e152]: None
+        - region [ref=f5e153]:
+          - generic [ref=f5e154]:
+            - heading "Money status" [level=2] [ref=f5e156]
+            - generic [ref=f5e157]:
+              - generic [ref=f5e158]: 2 urgent
+              - link "Open finance" [ref=f5e159] [cursor=pointer]:
+                - /url: /finance-overview
+          - generic [ref=f5e160]:
+            - generic [ref=f5e161]:
+              - link "Waiting Payout waiting 1" [ref=f5e162] [cursor=pointer]:
+                - /url: /payouts
+                - generic [ref=f5e163]: Waiting
+                - generic [ref=f5e164]: Payout waiting
+                - strong [ref=f5e165]: "1"
+              - link "Last 7 days Available payout 0 VND" [ref=f5e166] [cursor=pointer]:
+                - /url: /earnings
+                - generic [ref=f5e167]: Last 7 days
+                - generic [ref=f5e168]: Available payout
+                - strong [ref=f5e169]: 0 VND
+            - generic [ref=f5e170]:
+              - generic [ref=f5e171]:
+                - generic [ref=f5e172]:
+                  - heading "Finance review ownership" [level=2] [ref=f5e173]
+                  - paragraph [ref=f5e174]: Open Finance reviews group owned reconciliation work and independent bank account approvals.
+                - generic [ref=f5e175]: 3 queues · 180 total items · 146 over 48h
+              - generic [ref=f5e177]:
+                - generic [ref=f5e178]:
+                  - generic [ref=f5e179]: SLA overdue
+                  - heading "Payment clearing" [level=3] [ref=f5e180]
+                  - paragraph [ref=f5e181]: Oldest 55d ago. 36.800.000 VND remains under review. Review and assign the queue.
+                  - strong [ref=f5e182]: 108 items
+                  - generic [ref=f5e184]:
+                    - term [ref=f5e185]: Owner
+                    - definition [ref=f5e186]: Finance
+                  - group "Payment clearing ageing" [ref=f5e187]:
+                    - 'link "Open Payment clearing: Unassigned 108" [ref=f5e188] [cursor=pointer]':
+                      - /url: /finance-tax/payment-clearing?range=all&review=open&owner=unassigned
+                      - text: Unassigned 108
+                    - 'link "Open Payment clearing: 48h+ 92" [ref=f5e189] [cursor=pointer]':
+                      - /url: /finance-tax/payment-clearing?range=all&review=open&age=48h
+                      - text: 48h+ 92
+                  - link "Review oldest payment clearing" [ref=f5e190] [cursor=pointer]:
+                    - /url: /finance-tax/payment-clearing?range=all&review=open&age=48h
+                - generic [ref=f5e191]:
+                  - generic [ref=f5e192]: SLA overdue
+                  - heading "Bank reconciliation" [level=3] [ref=f5e193]
+                  - paragraph [ref=f5e194]: Oldest 33d ago. 13.400.000 VND remains under review. Review and assign the queue.
+                  - strong [ref=f5e195]: 44 items
+                  - generic [ref=f5e197]:
+                    - term [ref=f5e198]: Owner
+                    - definition [ref=f5e199]: Finance
+                  - group "Bank reconciliation ageing" [ref=f5e200]:
+                    - 'link "Open Bank reconciliation: Unassigned 24" [ref=f5e201] [cursor=pointer]':
+                      - /url: /finance-tax/bank-reconciliation?range=all&review=unmatched&owner=unassigned
+                      - text: Unassigned 24
+                    - 'link "Open Bank reconciliation: 48h+ 36" [ref=f5e202] [cursor=pointer]':
+                      - /url: /finance-tax/bank-reconciliation?range=all&review=unmatched&age=48h
+                      - text: 48h+ 36
+                  - link "Review oldest bank reconciliation" [ref=f5e203] [cursor=pointer]:
+                    - /url: /finance-tax/bank-reconciliation?range=all&review=unmatched&age=48h
+                - generic [ref=f5e204]:
+                  - generic [ref=f5e205]: SLA overdue
+                  - heading "Partner deposit reconciliation" [level=3] [ref=f5e206]
+                  - paragraph [ref=f5e207]: Oldest 21d ago. 2.240.000 VND remains under review. Review and assign the queue.
+                  - strong [ref=f5e208]: 28 items
+                  - generic [ref=f5e210]:
+                    - term [ref=f5e211]: Owner
+                    - definition [ref=f5e212]: Finance
+                  - group "Partner deposit reconciliation ageing" [ref=f5e213]:
+                    - 'link "Open Partner deposit reconciliation: Unassigned 28" [ref=f5e214] [cursor=pointer]':
+                      - /url: /finance-tax/partner-bank-deposits?review=needs-reconciliation&owner=unassigned
+                      - text: Unassigned 28
+                    - 'link "Open Partner deposit reconciliation: 48h+ 18" [ref=f5e215] [cursor=pointer]':
+                      - /url: /finance-tax/partner-bank-deposits?review=needs-reconciliation&sla=escalate
+                      - text: 48h+ 18
+                  - link "Review oldest partner deposit reconciliation" [ref=f5e216] [cursor=pointer]:
+                    - /url: /finance-tax/partner-bank-deposits?review=needs-reconciliation&sla=escalate
+              - group "Clear Finance review queues" [ref=f5e217]:
+                - strong [ref=f5e219] [cursor=pointer]: 1 Finance review queues clear
+            - group "Clear money queues" [ref=f5e220]:
+              - strong [ref=f5e222] [cursor=pointer]: 5 money queues clear
+        - region [ref=f5e223]:
+          - generic [ref=f5e224]:
+            - heading "Additional work" [level=2] [ref=f5e226]
+            - generic [ref=f5e227]:
+              - generic [ref=f5e228]: Clear
+              - link "Past records" [ref=f5e229] [cursor=pointer]:
+                - /url: /operations-handoff
+          - status [ref=f5e236]:
+            - strong [ref=f5e237]: Clear
+            - paragraph [ref=f5e238]: No additional work queue is open.
+        - region [ref=f5e239]:
+          - generic [ref=f5e240]:
+            - heading "Period result" [level=2] [ref=f5e242]
+            - generic [ref=f5e243]:
+              - generic [ref=f5e244]: Last 7 days
+              - group "Shift command analytics range" [ref=f5e245]:
+                - link "Today" [ref=f5e246] [cursor=pointer]:
+                  - /url: /?range=today
+                - link "Last 7 days" [ref=f5e247] [cursor=pointer]:
+                  - /url: /?range=7d
+                - link "Last 30 days" [ref=f5e248] [cursor=pointer]:
+                  - /url: /?range=30d
+              - link "Open finance" [ref=f5e249] [cursor=pointer]:
+                - /url: /finance-overview
+          - generic [ref=f5e251]:
+            - region "Booking flow" [ref=f5e252]:
+              - generic [ref=f5e253]:
+                - generic [ref=f5e254]:
+                  - heading "Booking flow" [level=3] [ref=f5e255]
+                  - paragraph [ref=f5e256]: Requests move through matching, service start, and final outcome
+                - generic [ref=f5e257]: Last 7 days
+              - generic [ref=f5e262]:
+                - text: Booking flow, Last 7 days
+                - table [ref=f5e263]:
+                  - rowgroup [ref=f5e264]:
+                    - row [ref=f5e265]:
+                      - columnheader "Period" [ref=f5e266]
+                      - columnheader "Requests" [ref=f5e267]
+                      - columnheader "Matched" [ref=f5e268]
+                      - columnheader "Started" [ref=f5e269]
+                      - columnheader "Completed" [ref=f5e270]
+                      - columnheader "Cancelled" [ref=f5e271]
+                      - columnheader "No show" [ref=f5e272]
+                      - columnheader "Match rate" [ref=f5e273]
+                      - columnheader "Median match minutes" [ref=f5e274]
+                  - rowgroup [ref=f5e275]:
+                    - row [ref=f5e276]:
+                      - rowheader "30 Jul" [ref=f5e277]
+                      - cell "0" [ref=f5e278]
+                      - cell "0" [ref=f5e279]
+                      - cell "0" [ref=f5e280]
+                      - cell "0" [ref=f5e281]
+                      - cell "0" [ref=f5e282]
+                      - cell "0" [ref=f5e283]
+                      - cell "0" [ref=f5e284]
+                      - cell "No data" [ref=f5e285]
+                    - row [ref=f5e286]:
+                      - rowheader "31 Jul" [ref=f5e287]
+                      - cell "0" [ref=f5e288]
+                      - cell "0" [ref=f5e289]
+                      - cell "0" [ref=f5e290]
+                      - cell "0" [ref=f5e291]
+                      - cell "0" [ref=f5e292]
+                      - cell "0" [ref=f5e293]
+                      - cell "0" [ref=f5e294]
+                      - cell "No data" [ref=f5e295]
+                    - row [ref=f5e296]:
+                      - rowheader "01 Aug" [ref=f5e297]
+                      - cell "0" [ref=f5e298]
+                      - cell "0" [ref=f5e299]
+                      - cell "0" [ref=f5e300]
+                      - cell "0" [ref=f5e301]
+                      - cell "0" [ref=f5e302]
+                      - cell "0" [ref=f5e303]
+                      - cell "0" [ref=f5e304]
+                      - cell "No data" [ref=f5e305]
+                    - row [ref=f5e306]:
+                      - rowheader "02 Aug" [ref=f5e307]
+                      - cell "0" [ref=f5e308]
+                      - cell "0" [ref=f5e309]
+                      - cell "0" [ref=f5e310]
+                      - cell "0" [ref=f5e311]
+                      - cell "0" [ref=f5e312]
+                      - cell "0" [ref=f5e313]
+                      - cell "0" [ref=f5e314]
+                      - cell "No data" [ref=f5e315]
+                    - row [ref=f5e316]:
+                      - rowheader "03 Aug" [ref=f5e317]
+                      - cell "323" [ref=f5e318]
+                      - cell "94" [ref=f5e319]
+                      - cell "1" [ref=f5e320]
+                      - cell "41" [ref=f5e321]
+                      - cell "19" [ref=f5e322]
+                      - cell "11" [ref=f5e323]
+                      - cell "29" [ref=f5e324]
+                      - cell "0" [ref=f5e325]
+                    - row [ref=f5e326]:
+                      - rowheader "04 Aug" [ref=f5e327]
+                      - cell "13" [ref=f5e328]
+                      - cell "7" [ref=f5e329]
+                      - cell "0" [ref=f5e330]
+                      - cell "0" [ref=f5e331]
+                      - cell "11" [ref=f5e332]
+                      - cell "0" [ref=f5e333]
+                      - cell "54" [ref=f5e334]
+                      - cell "0" [ref=f5e335]
+                    - row [ref=f5e336]:
+                      - rowheader "05 Aug" [ref=f5e337]
+                      - cell "0" [ref=f5e338]
+                      - cell "0" [ref=f5e339]
+                      - cell "0" [ref=f5e340]
+                      - cell "0" [ref=f5e341]
+                      - cell "0" [ref=f5e342]
+                      - cell "0" [ref=f5e343]
+                      - cell "0" [ref=f5e344]
+                      - cell "No data" [ref=f5e345]
+            - region "Shift outcome" [ref=f5e346]:
+              - generic [ref=f5e347]:
+                - generic [ref=f5e348]:
+                  - heading "Shift outcome" [level=3] [ref=f5e349]
+                  - paragraph [ref=f5e350]: How far requests moved through the operating flow
+                - generic [ref=f5e351]: Last 7 days
+              - generic [ref=f5e353]:
+                - generic [ref=f5e354]:
+                  - strong [ref=f5e355]: 12%
+                  - generic [ref=f5e356]: Request-to-completion
+                - progressbar "12% completion rate" [ref=f5e357]
+                - generic [ref=f5e359]:
+                  - generic [ref=f5e360]: Match rate
+                  - strong [ref=f5e361]: 30%
+                - generic [ref=f5e362]:
+                  - generic [ref=f5e363]:
+                    - term [ref=f5e364]: Requests
+                    - definition [ref=f5e365]: "336"
+                  - generic [ref=f5e366]:
+                    - term [ref=f5e367]: Matched
+                    - definition [ref=f5e368]: "101"
+                  - generic [ref=f5e369]:
+                    - term [ref=f5e370]: Started
+                    - definition [ref=f5e371]: "1"
+                  - generic [ref=f5e372]:
+                    - term [ref=f5e373]: Completed
+                    - definition [ref=f5e374]: "41"
+                  - generic [ref=f5e375]:
+                    - term [ref=f5e376]: Cancelled
+                    - definition [ref=f5e377]: "30"
+                  - generic [ref=f5e378]:
+                    - term [ref=f5e379]: No show
+                    - definition [ref=f5e380]: "11"
+            - region "Money flow" [ref=f5e381]:
+              - generic [ref=f5e382]:
+                - generic [ref=f5e383]:
+                  - heading "Money flow" [level=3] [ref=f5e384]
+                  - paragraph [ref=f5e385]: Customer money, HANDS revenue, Partner payout, and unresolved money risk
+                - generic [ref=f5e386]: Last 7 days
+              - generic [ref=f5e388]:
+                - generic [ref=f5e389]:
+                  - generic [ref=f5e390]: Customer payments
+                  - strong [ref=f5e391]: VND 16M
+                - generic [ref=f5e392]:
+                  - generic [ref=f5e393]: Platform net revenue
+                  - strong [ref=f5e394]: VND 3M
+                - generic [ref=f5e395]:
+                  - generic [ref=f5e396]: Partner payout
+                  - strong [ref=f5e397]: VND 12M
+                - generic [ref=f5e398]:
+                  - generic [ref=f5e399]: Refunds
+                  - strong [ref=f5e400]: VND 2M
+                - generic [ref=f5e401]:
+                  - generic [ref=f5e402]: Cash fee debt
+                  - strong [ref=f5e403]: VND 1M
+                - generic [ref=f5e404]:
+                  - generic [ref=f5e405]: Failed payments
+                  - strong [ref=f5e406]: VND 0
+              - generic "Accounting amounts kept outside revenue" [ref=f5e410]:
+                - generic [ref=f5e411]:
+                  - generic [ref=f5e412]: Company output VAT
+                  - strong [ref=f5e413]: VND 0
+                - generic [ref=f5e414]:
+                  - generic [ref=f5e415]: Partner withholding
+                  - strong [ref=f5e416]: VND 335K
+                - generic [ref=f5e417]:
+                  - generic [ref=f5e418]: Payment processing fee
+                  - strong [ref=f5e419]: VND 0
+              - generic [ref=f5e420]:
+                - text: Money flow, Last 7 days
+                - table [ref=f5e421]:
+                  - rowgroup [ref=f5e422]:
+                    - row [ref=f5e423]:
+                      - columnheader "Period" [ref=f5e424]
+                      - columnheader "Customer payment amount" [ref=f5e425]
+                      - columnheader "Platform net revenue" [ref=f5e426]
+                      - columnheader "Partner payout amount" [ref=f5e427]
+                      - columnheader "Company output VAT" [ref=f5e428]
+                      - columnheader "Partner withholding" [ref=f5e429]
+                      - columnheader "Refund amount" [ref=f5e430]
+                      - columnheader "Cash fee debt" [ref=f5e431]
+                      - columnheader "Failed payment amount" [ref=f5e432]
+                  - rowgroup [ref=f5e433]:
+                    - row [ref=f5e434]:
+                      - rowheader "30 Jul" [ref=f5e435]
+                      - cell "0" [ref=f5e436]
+                      - cell "0" [ref=f5e437]
+                      - cell "0" [ref=f5e438]
+                      - cell "0" [ref=f5e439]
+                      - cell "0" [ref=f5e440]
+                      - cell "0" [ref=f5e441]
+                      - cell "0" [ref=f5e442]
+                      - cell "0" [ref=f5e443]
+                    - row [ref=f5e444]:
+                      - rowheader "31 Jul" [ref=f5e445]
+                      - cell "0" [ref=f5e446]
+                      - cell "0" [ref=f5e447]
+                      - cell "0" [ref=f5e448]
+                      - cell "0" [ref=f5e449]
+                      - cell "0" [ref=f5e450]
+                      - cell "0" [ref=f5e451]
+                      - cell "0" [ref=f5e452]
+                      - cell "0" [ref=f5e453]
+                    - row [ref=f5e454]:
+                      - rowheader "01 Aug" [ref=f5e455]
+                      - cell "0" [ref=f5e456]
+                      - cell "0" [ref=f5e457]
+                      - cell "0" [ref=f5e458]
+                      - cell "0" [ref=f5e459]
+                      - cell "0" [ref=f5e460]
+                      - cell "0" [ref=f5e461]
+                      - cell "0" [ref=f5e462]
+                      - cell "0" [ref=f5e463]
+                    - row [ref=f5e464]:
+                      - rowheader "02 Aug" [ref=f5e465]
+                      - cell "0" [ref=f5e466]
+                      - cell "0" [ref=f5e467]
+                      - cell "0" [ref=f5e468]
+                      - cell "0" [ref=f5e469]
+                      - cell "0" [ref=f5e470]
+                      - cell "0" [ref=f5e471]
+                      - cell "0" [ref=f5e472]
+                      - cell "0" [ref=f5e473]
+                    - row [ref=f5e474]:
+                      - rowheader "03 Aug" [ref=f5e475]
+                      - cell "15500000" [ref=f5e476]
+                      - cell "3040000" [ref=f5e477]
+                      - cell "12125000" [ref=f5e478]
+                      - cell "0" [ref=f5e479]
+                      - cell "335000" [ref=f5e480]
+                      - cell "1800000" [ref=f5e481]
+                      - cell "1200000" [ref=f5e482]
+                      - cell "0" [ref=f5e483]
+                    - row [ref=f5e484]:
+                      - rowheader "04 Aug" [ref=f5e485]
+                      - cell "0" [ref=f5e486]
+                      - cell "0" [ref=f5e487]
+                      - cell "0" [ref=f5e488]
+                      - cell "0" [ref=f5e489]
+                      - cell "0" [ref=f5e490]
+                      - cell "0" [ref=f5e491]
+                      - cell "0" [ref=f5e492]
+                      - cell "0" [ref=f5e493]
+                    - row [ref=f5e494]:
+                      - rowheader "05 Aug" [ref=f5e495]
+                      - cell "0" [ref=f5e496]
+                      - cell "0" [ref=f5e497]
+                      - cell "0" [ref=f5e498]
+                      - cell "0" [ref=f5e499]
+                      - cell "0" [ref=f5e500]
+                      - cell "0" [ref=f5e501]
+                      - cell "0" [ref=f5e502]
+                      - cell "0" [ref=f5e503]
+            - region "Customer activity" [ref=f5e504]:
+              - generic [ref=f5e505]:
+                - generic [ref=f5e506]:
+                  - heading "Customer activity" [level=3] [ref=f5e507]
+                  - paragraph [ref=f5e508]: Active customers, booking intent, repeat use, and failure signals
+                - generic [ref=f5e509]: Last 7 days
+              - generic [ref=f5e511]:
+                - generic [ref=f5e512]: Tracked customer activity
+                - strong [ref=f5e513]: "33"
+                - generic [ref=f5e514]: 14 app opens · 10 sessions · 9 profile views
+              - generic [ref=f5e518]:
+                - generic [ref=f5e519]: Customer activity, Last 7 days
+                - table [ref=f5e520]:
+                  - rowgroup [ref=f5e521]:
+                    - row [ref=f5e522]:
+                      - columnheader "Metric" [ref=f5e523]
+                      - columnheader "Customers" [ref=f5e524]
+                  - rowgroup [ref=f5e525]:
+                    - row [ref=f5e526]:
+                      - rowheader "Active 15m" [ref=f5e527]
+                      - cell "0" [ref=f5e528]
+                    - row [ref=f5e529]:
+                      - rowheader "App opens" [ref=f5e530]
+                      - cell "14" [ref=f5e531]
+                    - row [ref=f5e532]:
+                      - rowheader "Session starts" [ref=f5e533]
+                      - cell "10" [ref=f5e534]
+                    - row [ref=f5e535]:
+                      - rowheader "Profile views" [ref=f5e536]
+                      - cell "9" [ref=f5e537]
+                    - row [ref=f5e538]:
+                      - rowheader "Booked" [ref=f5e539]
+                      - cell "1" [ref=f5e540]
+                    - row [ref=f5e541]:
+                      - rowheader "First booking" [ref=f5e542]
+                      - cell "0" [ref=f5e543]
+                    - row [ref=f5e544]:
+                      - rowheader "Repeat" [ref=f5e545]
+                      - cell "1" [ref=f5e546]
+                    - row [ref=f5e547]:
+                      - rowheader "High intent" [ref=f5e548]
+                      - cell "0" [ref=f5e549]
+                    - row [ref=f5e550]:
+                      - rowheader "Payment failed" [ref=f5e551]
+                      - cell "0" [ref=f5e552]
+                    - row [ref=f5e553]:
+                      - rowheader "Match failed" [ref=f5e554]
+                      - cell "1" [ref=f5e555]
+            - paragraph [ref=f5e556]: Generated 05 Aug, 02:10 · Vietnam time
+        - region [ref=f5e557]:
+          - generic [ref=f5e558]:
+            - heading "Customer and Partner leaders" [level=2] [ref=f5e560]
+            - generic [ref=f5e561]:
+              - generic [ref=f5e562]: Last 7 days
+              - group "Performance directories" [ref=f5e563]:
+                - link "Customers" [ref=f5e564] [cursor=pointer]:
+                  - /url: /customers
+                - link "Partners" [ref=f5e565] [cursor=pointer]:
+                  - /url: /partners
+          - region "Partner performance" [ref=f5e568]:
+            - generic [ref=f5e569]:
+              - generic [ref=f5e570]:
+                - heading "Partner performance" [level=3] [ref=f5e571]
+                - paragraph [ref=f5e572]: Ordered by sessionized app opens, then authenticated session starts and recent activity
+              - generic [ref=f5e573]: Last 7 days
+            - tablist "Partner ranking mode" [ref=f5e575]:
+              - tab "Most active" [selected] [ref=f5e576] [cursor=pointer]
+              - tab "Most completed" [ref=f5e577] [cursor=pointer]
+              - tab "Fastest response" [ref=f5e578] [cursor=pointer]
+              - tab "Highest rated" [ref=f5e579] [cursor=pointer]
+              - tab "Needs attention" [ref=f5e580] [cursor=pointer]
+            - table [ref=f5e582]:
+              - rowgroup [ref=f5e583]:
+                - row [ref=f5e584]:
+                  - columnheader "Partner" [ref=f5e585]
+                  - columnheader "Status" [ref=f5e586]
+                  - columnheader "Last active" [ref=f5e587]
+                  - columnheader "App opens" [ref=f5e588]
+                  - columnheader "Sessions" [ref=f5e589]
+                  - columnheader "Completed" [ref=f5e590]
+                  - columnheader "Acceptance" [ref=f5e591]
+                  - columnheader "Response" [ref=f5e592]
+                  - columnheader "Rating" [ref=f5e593]
+                  - columnheader "Earnings" [ref=f5e594]
+                  - columnheader "Open issues" [ref=f5e595]
+                  - columnheader "Open" [ref=f5e596]
+              - rowgroup [ref=f5e597]:
+                - row [ref=f5e598]:
+                  - rowheader "1 Smoke Partner" [ref=f5e599]:
+                    - generic [ref=f5e600]: "1"
+                    - text: Smoke Partner
+                  - cell "Online available" [ref=f5e601]
+                  - cell "03 Aug, 15:43" [ref=f5e603]
+                  - cell "5" [ref=f5e604]
+                  - cell "4" [ref=f5e605]
+                  - cell "1" [ref=f5e606]
+                  - cell "100%" [ref=f5e607]
+                  - cell "4.6m" [ref=f5e608]
+                  - cell "5.0" [ref=f5e609]
+                  - cell "-VND 80K" [ref=f5e610]
+                  - cell "Clear" [ref=f5e611]
+                  - cell [ref=f5e613]:
+                    - link "Open" [ref=f5e614] [cursor=pointer]:
+                      - /url: /partners/cmrkqcd890003vyw4e4ys82l6
+                - row [ref=f5e615]:
+                  - rowheader "2 Smoke Partner" [ref=f5e616]:
+                    - generic [ref=f5e617]: "2"
+                    - text: Smoke Partner
+                  - cell "Online available" [ref=f5e618]
+                  - cell "04 Aug, 13:03" [ref=f5e620]
+                  - cell "4" [ref=f5e621]
+                  - cell "4" [ref=f5e622]
+                  - cell "3" [ref=f5e623]
+                  - cell "100%" [ref=f5e624]
+                  - cell "0.1m" [ref=f5e625]
+                  - cell "5.0" [ref=f5e626]
+                  - cell "VND 445K" [ref=f5e627]
+                  - cell "Clear" [ref=f5e628]
+                  - cell [ref=f5e630]:
+                    - link "Open" [ref=f5e631] [cursor=pointer]:
+                      - /url: /partners/cmsd7c8dj0007vy0o2bqdnn4e
+                - row [ref=f5e632]:
+                  - rowheader "3 Provider 0003" [ref=f5e633]:
+                    - generic [ref=f5e634]: "3"
+                    - text: Provider 0003
+                  - cell "Online available" [ref=f5e635]
+                  - cell "03 Aug, 17:33" [ref=f5e637]
+                  - cell "3" [ref=f5e638]
+                  - cell "3" [ref=f5e639]
+                  - cell "0" [ref=f5e640]
+                  - cell "100%" [ref=f5e641]
+                  - cell "5.7m" [ref=f5e642]
+                  - cell "0.0" [ref=f5e643]
+                  - cell "VND 0" [ref=f5e644]
+                  - cell "Clear" [ref=f5e645]
+                  - cell [ref=f5e647]:
+                    - link "Open" [ref=f5e648] [cursor=pointer]:
+                      - /url: /partners/cmpf5a67j00h2vyz0wiyr99c3
+        - region [ref=f5e649]:
+          - generic [ref=f5e650]:
+            - heading "Demand and supply" [level=2] [ref=f5e652]
+            - generic [ref=f5e653]:
+              - generic [ref=f5e654]: 208 ready now
+              - group "Demand and supply workspaces" [ref=f5e655]:
+                - link "Services" [ref=f5e656] [cursor=pointer]:
+                  - /url: /services
+                - link "Vietnam Overview" [ref=f5e657] [cursor=pointer]:
+                  - /url: /vietnam-overview
+          - generic [ref=f5e659]:
+            - region "Service demand and supply" [ref=f5e660]:
+              - generic [ref=f5e661]:
+                - generic [ref=f5e662]:
+                  - heading "Service demand and supply" [level=3] [ref=f5e663]
+                  - paragraph [ref=f5e664]: Bookings created in the selected period; current ready supply is shown as operating context
+                - generic [ref=f5e665]: 208 ready now
+              - list [ref=f5e667]:
+                - listitem [ref=f5e668]:
+                  - generic [ref=f5e669]:
+                    - strong [ref=f5e670]: Foot Massage
+                    - generic [ref=f5e671]: 224 unmatched booking(s)
+                  - generic [ref=f5e672]:
+                    - generic [ref=f5e673]:
+                      - term [ref=f5e674]: Demand
+                      - definition [ref=f5e675]: "336"
+                    - generic [ref=f5e676]:
+                      - term [ref=f5e677]: Ready now
+                      - definition [ref=f5e678]: "184"
+                    - generic [ref=f5e679]:
+                      - term [ref=f5e680]: Unmatched
+                      - definition [ref=f5e681]: "224"
+              - link "Open services" [ref=f5e682] [cursor=pointer]:
+                - /url: /services
+            - region "Matching pressure" [ref=f5e683]:
+              - generic [ref=f5e685]:
+                - heading "Matching pressure" [level=3] [ref=f5e686]
+                - paragraph [ref=f5e687]: Unmatched requests by hour and area in the selected period
+              - generic [ref=f5e688]:
+                - generic [ref=f5e689]:
+                  - heading "Hourly request gap" [level=4] [ref=f5e690]
+                  - list [ref=f5e691]:
+                    - listitem [ref=f5e692]:
+                      - generic [ref=f5e693]: 03 Aug
+                      - strong [ref=f5e694]: "229"
+                    - listitem [ref=f5e695]:
+                      - generic [ref=f5e696]: 04 Aug
+                      - strong [ref=f5e697]: "6"
+                - generic [ref=f5e698]:
+                  - heading "Failed-match areas" [level=4] [ref=f5e699]
+                  - list [ref=f5e700]:
+                    - listitem [ref=f5e701]:
+                      - generic [ref=f5e702]: Unknown area
+                      - strong [ref=f5e703]: "224"
+              - link "Open Vietnam Overview" [ref=f5e704] [cursor=pointer]:
+                - /url: /vietnam-overview

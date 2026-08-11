@@ -15,6 +15,7 @@ import {
   normalizeProviderReportCreateInput,
   normalizeProviderReportUpdateInput,
   normalizeProviderSanctionCreateInput,
+  normalizeProviderSanctionLiftInput,
   providerAccountBlockAuditMetadata,
   providerAccountBlockedNotification,
   providerAccountUnblockAuditMetadata,
@@ -22,6 +23,7 @@ import {
   providerReportCreateAuditMetadata,
   providerReportResolvedAt,
   providerSanctionCreateAuditMetadata,
+  providerSanctionLiftMetadata,
 } from './admin-provider-control-helpers';
 
 describe('admin provider control helpers', () => {
@@ -101,6 +103,26 @@ describe('admin provider control helpers', () => {
     });
   });
 
+  it.each([ProviderReportStatus.RESOLVED, ProviderReportStatus.DISMISSED])(
+    'requires a resolution note when closing a report as %s',
+    (status) => {
+      expect(() => normalizeProviderReportUpdateInput({ status, resolutionNote: '   ' })).toThrow(
+        'Resolution note is required when closing a report',
+      );
+    },
+  );
+
+  it('does not require a resolution note while a report remains open', () => {
+    expect(normalizeProviderReportUpdateInput({ status: ProviderReportStatus.INVESTIGATING })).toEqual(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: ProviderReportStatus.INVESTIGATING,
+          resolutionNote: null,
+        }),
+      }),
+    );
+  });
+
   it('normalizes provider sanction create input with defaults', () => {
     expect(
       normalizeProviderSanctionCreateInput({
@@ -112,6 +134,28 @@ describe('admin provider control helpers', () => {
       reason: 'policy violation',
       reportId: 'report-1',
       expiresAt: null,
+    });
+  });
+
+  it('requires and trims meaningful sanction lift evidence', () => {
+    expect(normalizeProviderSanctionLiftInput({ reason: '  Partner debt settled in full  ' })).toEqual({
+      reason: 'Partner debt settled in full',
+    });
+    expect(() => normalizeProviderSanctionLiftInput({ reason: '   ' })).toThrow(
+      'Lift reason and evidence is required',
+    );
+    expect(() => normalizeProviderSanctionLiftInput({ reason: 'too short' })).toThrow(
+      'Lift reason must be at least 12 characters',
+    );
+    expect(() => normalizeProviderSanctionLiftInput({ reason: 'x'.repeat(501) })).toThrow(
+      'Lift reason must be at most 500 characters',
+    );
+  });
+
+  it('preserves sanction metadata when recording lift evidence', () => {
+    expect(providerSanctionLiftMetadata({ source: 'partner-controls' }, 'Debt was reconciled')).toEqual({
+      source: 'partner-controls',
+      liftReason: 'Debt was reconciled',
     });
   });
 

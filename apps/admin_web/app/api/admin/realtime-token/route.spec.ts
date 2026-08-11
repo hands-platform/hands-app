@@ -16,6 +16,7 @@ describe('Admin realtime token route', () => {
       ADMIN_WEB_ALLOW_DEV_REALTIME_TOKEN: 'true',
       ADMIN_ACCESS_TOKEN: 'broad-admin-rest-token',
       ADMIN_REALTIME_TOKEN_SECRET: 'test-admin-realtime-secret',
+      ADMIN_WEB_LOGIN_EMAIL: 'developer@hands.local',
       ADMIN_SOCKET_BASE_URL: 'http://localhost:3000',
       NODE_ENV: 'test',
     };
@@ -34,7 +35,7 @@ describe('Admin realtime token route', () => {
     const payload = decodeJwtPayload(body.token);
     expect(body.expiresAt).toBe(new Date((payload.exp as number) * 1000).toISOString());
     expect(payload).toMatchObject({
-      sub: 'admin-web',
+      sub: 'developer@hands.local',
       typ: 'admin-realtime',
       aud: 'hands-socket',
       scope: 'admin:realtime',
@@ -93,6 +94,7 @@ describe('Admin realtime token route', () => {
     const sessionCookie = createAdminWebSessionCookieValue({
       expiresAtMs: Date.now() + 60_000,
       secret: sessionSecret,
+      sub: 'operator-user-1',
     });
 
     const response = await GET(
@@ -109,6 +111,7 @@ describe('Admin realtime token route', () => {
     const payload = decodeJwtPayload(body.token);
     expect(body.expiresAt).toBe(new Date((payload.exp as number) * 1000).toISOString());
     expect(payload).toMatchObject({
+      sub: 'operator-user-1',
       typ: 'admin-realtime',
       aud: 'hands-socket',
       scope: 'admin:realtime',
@@ -232,8 +235,12 @@ describe('Admin realtime token route', () => {
 
     expect(source).not.toMatch(/\b(?:localStorage|sessionStorage)\b/);
     expect(source).not.toMatch(/console\.log\s*\(/);
-    expect(source).toMatch(/import type \{ AdminAuditLog, AdminBooking \} from '..\/..\/lib\/admin-api';/);
-    expect(source).not.toMatch(/import \{ AdminAuditLog, AdminBooking \} from '..\/..\/lib\/admin-api';/);
+    expect(source).toMatch(
+      /import type \{[\s\S]*?\bAdminAuditLog,\s*\bAdminBooking,[\s\S]*?\} from '..\/..\/lib\/admin-api';/,
+    );
+    expect(source).not.toMatch(
+      /import\s+(?!type\b)\{[^}]*\bAdminAuditLog\b[^}]*\bAdminBooking\b[^}]*\}\s+from '..\/..\/lib\/admin-api';/,
+    );
   });
 });
 

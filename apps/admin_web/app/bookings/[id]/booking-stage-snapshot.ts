@@ -111,7 +111,7 @@ export function bookingStageSnapshot(
     noteClassName = 'ops-task-pending';
     headline = 'The marketplace Partner window has usable supply.';
     detail = `${marketplaceSupply.eligibleCount} Partner(s) can participate or be nudged while the customer waits.`;
-    actionHref = '/partners?review=marketplace-ready';
+    actionHref = '/partners?review=ready-now';
     actionLabel = 'Open marketplace Partners';
   } else if (status === 'OPEN_MATCHING') {
     stage = 'Stage 1 - First-pick response';

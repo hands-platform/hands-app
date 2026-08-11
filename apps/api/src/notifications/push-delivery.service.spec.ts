@@ -217,13 +217,20 @@ describe('PushDeliveryService', () => {
   });
 
   it('sends Android FCM notifications through the HANDS priority channel', async () => {
+    const notificationMessage = {
+      ...message,
+      data: {
+        ...message.data,
+        notificationId: 'notification-1',
+      },
+    };
     await expect(
       pushService({
         PUSH_PROVIDER: 'fcm',
         FIREBASE_PROJECT_ID: 'hands-demo',
         FIREBASE_CLIENT_EMAIL: 'firebase-admin@example.test',
         FIREBASE_PRIVATE_KEY: 'placeholder-firebase-admin-private-key',
-      }).send(message),
+      }).send(notificationMessage),
     ).resolves.toMatchObject({
       provider: 'FCM',
       status: 'SENT',
@@ -246,9 +253,29 @@ describe('PushDeliveryService', () => {
           priority: 'high',
           notification: {
             channelId: FCM_ANDROID_NOTIFICATION_CHANNEL_ID,
+            tag: 'notification-1',
+          },
+        },
+        apns: {
+          headers: {
+            'apns-collapse-id': 'notification-1',
           },
         },
       },
     });
+  });
+
+  it('does not collapse unrelated direct FCM messages without a notification id', async () => {
+    await pushService({
+      PUSH_PROVIDER: 'fcm',
+      FIREBASE_PROJECT_ID: 'hands-demo',
+      FIREBASE_CLIENT_EMAIL: 'firebase-admin@example.test',
+      FIREBASE_PRIVATE_KEY: 'placeholder-firebase-admin-private-key',
+    }).send(message);
+
+    const lastRequest = mockFetch.mock.calls[mockFetch.mock.calls.length - 1]?.[1] as RequestInit;
+    const payload = JSON.parse(String(lastRequest.body));
+    expect(payload.message.android.notification).not.toHaveProperty('tag');
+    expect(payload.message.apns).not.toHaveProperty('headers');
   });
 });

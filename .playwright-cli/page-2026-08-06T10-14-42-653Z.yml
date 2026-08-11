@@ -1,0 +1,187 @@
+- generic [ref=f18e1]:
+  - generic [ref=f18e377] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=f18e378]
+    - generic [ref=f18e382]:
+      - button "Open issues overlay" [ref=f18e383]:
+        - generic [ref=f18e384]:
+          - generic [ref=f18e385]: "5"
+          - generic [ref=f18e386]: "6"
+        - generic [ref=f18e387]:
+          - text: Issue
+          - generic [ref=f18e388]: s
+      - button "Collapse issues badge" [ref=f18e389]
+  - generic [ref=f18e393]:
+    - complementary [ref=f18e394]:
+      - strong [ref=f18e396]: HANDS Admin
+      - navigation "Admin navigation" [ref=f18e397]:
+        - group [ref=f18e398]:
+          - generic "Shift command" [ref=f18e399] [cursor=pointer]
+          - link "Shift command" [ref=f18e417] [cursor=pointer]:
+            - /url: /
+        - group [ref=f18e421]:
+          - generic "Live Operations" [ref=f18e422] [cursor=pointer]
+        - group [ref=f18e439]:
+          - generic "Customer Support" [ref=f18e440] [cursor=pointer]
+          - generic [ref=f18e457]:
+            - link "Customers" [ref=f18e458] [cursor=pointer]:
+              - /url: /customers
+            - link "Customer Reviews" [ref=f18e464] [cursor=pointer]:
+              - /url: /reviews
+            - link "Partner Notes" [ref=f18e468] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations
+            - link "Chat Evidence" [ref=f18e472] [cursor=pointer]:
+              - /url: /chat-archive
+            - link "Customer Notifications" [ref=f18e476] [cursor=pointer]:
+              - /url: /notifications
+            - link "Customer Usage" [ref=f18e480] [cursor=pointer]:
+              - /url: /usage-overview
+        - group [ref=f18e484]:
+          - generic "Partner Operations" [ref=f18e485] [cursor=pointer]
+        - group [ref=f18e502]:
+          - generic "Finance Today" [ref=f18e503] [cursor=pointer]
+        - group [ref=f18e510]:
+          - generic "Finance Records" [ref=f18e511] [cursor=pointer]
+        - group [ref=f18e528]:
+          - generic "Growth & Content" [ref=f18e529] [cursor=pointer]
+        - group [ref=f18e546]:
+          - generic "Tax & Monthly Close" [ref=f18e547] [cursor=pointer]
+        - group [ref=f18e554]:
+          - generic "Restricted Settings" [ref=f18e555] [cursor=pointer]
+        - group [ref=f18e562]:
+          - generic "Admin & System" [ref=f18e563] [cursor=pointer]
+        - group [ref=f18e580]:
+          - generic "Developer / System" [ref=f18e581] [cursor=pointer]
+    - main [ref=f18e589]:
+      - generic "Admin workspace" [ref=f18e590]:
+        - navigation "Breadcrumb" [ref=f18e592]:
+          - link "HANDS" [ref=f18e593] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f18e596]: Customer Support
+          - generic [ref=f18e599]: Partner Notes
+        - generic "Workspace actions" [ref=f18e600]:
+          - button "Search Ctrl K" [ref=f18e602] [cursor=pointer]:
+            - generic [ref=f18e603]: Search
+            - generic [ref=f18e607]: Ctrl K
+          - button "Switch to dark mode" [ref=f18e609] [cursor=pointer]
+          - link "Operations Policy" [ref=f18e612] [cursor=pointer]:
+            - /url: /operations-policy
+          - button "Open operation alerts" [ref=f18e617] [cursor=pointer]
+          - button "Sign out" [ref=f18e622] [cursor=pointer]
+      - generic [ref=f18e626]:
+        - generic [ref=f18e627]:
+          - generic [ref=f18e628]:
+            - heading "Partner Notes About Customers" [level=1] [ref=f18e629]
+            - paragraph [ref=f18e630]: Internal notes Partners submit about customers after completed bookings. These notes are not customer-visible.
+          - generic "Page actions" [ref=f18e631]: Internal · Not customer-visible
+        - generic [ref=f18e633]:
+          - region [ref=f18e671]:
+            - generic [ref=f18e672]:
+              - generic [ref=f18e673]:
+                - heading "Partner note search" [level=2] [ref=f18e674]
+                - paragraph [ref=f18e675]: Search immutable internal notes by submitted date, state, customer, Partner, or booking.
+              - generic [ref=f18e676]:
+                - generic [ref=f18e677]: 1 note
+                - link "Clear filters" [ref=f18e678] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations
+            - generic "Partner note filters" [ref=f18e680]:
+              - generic "Submitted date" [ref=f18e681]:
+                - link "All dates" [ref=f18e682] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=refunded
+                - link "Today" [ref=f18e683] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=refunded&dateRange=today
+                - link "Previous day" [ref=f18e684] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=refunded&dateRange=yesterday
+                - link "Last 7 days" [ref=f18e685] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=refunded&dateRange=7d
+                - link "Last month" [ref=f18e686] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=refunded&dateRange=30d
+                - link "Custom dates" [ref=f18e687] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=refunded&dateRange=custom
+              - generic "Review state" [ref=f18e688]:
+                - link "All" [ref=f18e689] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=refunded
+                - link "Retained" [ref=f18e690] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=refunded&status=retained
+                - link "Needs review" [ref=f18e691] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=refunded&status=needs-review
+                - link "Restricted" [ref=f18e692] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=refunded&status=restricted
+              - generic "Submitted date sort" [ref=f18e693]:
+                - link "Most recently submitted" [ref=f18e694] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=refunded
+                - link "Oldest submitted" [ref=f18e695] [cursor=pointer]:
+                  - /url: /reviews/partner-customer-evaluations?q=refunded&sort=oldest
+              - generic [ref=f18e696]:
+                - generic [ref=f18e697]:
+                  - generic [ref=f18e701]: Search Partner notes
+                  - searchbox "Search Partner notes" [ref=f18e702]: refunded
+                - generic [ref=f18e703] [cursor=pointer]:
+                  - generic [ref=f18e704]: Rows per page
+                  - combobox "Rows per page" [ref=f18e705]:
+                    - option "10" [selected]
+                    - option "25"
+                    - option "50"
+                - button "Apply" [ref=f18e706] [cursor=pointer]
+            - generic "Active Partner note filters" [ref=f18e708]: "Search: refunded"
+          - navigation "Partner note summary and state filters" [ref=f18e710]:
+            - link "Total 1" [ref=f18e711] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations?q=refunded
+              - generic [ref=f18e712]: Total
+              - strong [ref=f18e713]: "1"
+            - link "Needs review 0" [ref=f18e714] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations?q=refunded&status=needs-review
+              - generic [ref=f18e715]: Needs review
+              - strong [ref=f18e716]: "0"
+            - link "Restricted 0" [ref=f18e717] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations?q=refunded&status=restricted
+              - generic [ref=f18e718]: Restricted
+              - strong [ref=f18e719]: "0"
+            - link "Retained 1" [ref=f18e720] [cursor=pointer]:
+              - /url: /reviews/partner-customer-evaluations?q=refunded&status=retained
+              - generic [ref=f18e721]: Retained
+              - strong [ref=f18e722]: "1"
+          - region [ref=f18e723]:
+            - generic [ref=f18e724]:
+              - generic [ref=f18e725]:
+                - heading "Partner notes" [level=2] [ref=f18e726]
+                - paragraph [ref=f18e727]: The original Partner note is immutable. Review state and audit metadata are shown with each record.
+              - generic [ref=f18e728]: 1 note
+            - generic [ref=f18e730]:
+              - region "Partner notes table" [ref=f18e731]:
+                - table [ref=f18e732]:
+                  - rowgroup [ref=f18e733]:
+                    - row [ref=f18e734]:
+                      - columnheader "Submitted" [ref=f18e735]
+                      - columnheader "Partner note" [ref=f18e736]
+                      - columnheader "Customer" [ref=f18e737]
+                      - columnheader "Author / booking" [ref=f18e738]
+                      - columnheader "Review state / actions" [ref=f18e739]
+                  - rowgroup [ref=f18e740]:
+                    - row [active] [ref=f18e741]:
+                      - cell [ref=f18e742]:
+                        - time [ref=f18e743]: 16 Jul 2026, 23:41
+                      - cell [ref=f18e744]:
+                        - paragraph [ref=f18e745]: "HANDS customer detail smoke / refunded: customer communication and access instructions were verified."
+                        - group [ref=f18e746]:
+                          - generic "Full note and metadata" [ref=f18e747] [cursor=pointer]
+                      - cell [ref=f18e748]:
+                        - link "Smoke Referral Referred Customer" [ref=f18e749] [cursor=pointer]:
+                          - /url: /customers/smoke_referral_customer_referred_profile
+                      - cell "Partner 6078 cmrnqk7t Foot Massage" [ref=f18e750]:
+                        - generic [ref=f18e751]:
+                          - link "Partner 6078" [ref=f18e752] [cursor=pointer]:
+                            - /url: /partners/cmrnfl4x20030vyiwruloezrg
+                          - link "cmrnqk7t" [ref=f18e753] [cursor=pointer]:
+                            - /url: /bookings/cmrnqk7t3005cvyxkx9qvwacx
+                          - generic [ref=f18e754]: Foot Massage
+                      - cell "Retained Last reviewed Not reviewed · Not reviewed" [ref=f18e755]:
+                        - generic [ref=f18e756]:
+                          - generic [ref=f18e757]: Retained
+                          - generic [ref=f18e758]:
+                            - text: Last reviewed
+                            - generic [ref=f18e759]: Not reviewed
+                            - text: · Not reviewed
+                          - group [ref=f18e760]:
+                            - generic "Change review state" [ref=f18e761] [cursor=pointer]
+              - generic [ref=f18e762]: Showing 1 to 1 of 1 notes
+  - alert [ref=f18e764]

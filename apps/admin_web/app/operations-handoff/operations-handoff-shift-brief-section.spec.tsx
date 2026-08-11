@@ -10,6 +10,8 @@ describe('OperationsHandoffShiftBriefSection', () => {
     expect(source).toContain('AdminActionCard');
     expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminQueueMeta');
+    expect(source).toContain('actionLabel={`Review ${item.title}`}');
     expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain('<div className="ops-task-grid"');
     expect(source).not.toContain('actions={<span className="pill pill-info">Factual queue</span>}');
@@ -31,7 +33,10 @@ describe('OperationsHandoffShiftBriefSection', () => {
     expect(rendered).toContain('Factual queue');
     expect(rendered).toContain('5 matching wait');
     expect(rendered).toContain('6 Partner facts to check');
-    expect(rendered).toContain('2 cash wallet gate(s)');
+    expect(rendered).toContain('2 cash wallet gates');
+    expect(rendered).toContain('Owner');
+    expect(rendered).toContain('Impact');
+    expect(rendered).toContain('Review 5 matching wait');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-section',

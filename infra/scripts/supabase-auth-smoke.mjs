@@ -1,4 +1,4 @@
-import { createHmac, randomUUID } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
 
@@ -8,15 +8,22 @@ const { env } = loadMergedEnv(envFile);
 const apiBaseUrl = env.API_BASE_URL ?? 'http://localhost:3000/api';
 const jwtSecret = env.SUPABASE_JWT_SECRET;
 const jwtAudience = env.SUPABASE_JWT_AUDIENCE ?? 'authenticated';
+const smokeSubjects = {
+  customer: 'smoke-supabase-auth-customer',
+  provider: 'smoke-supabase-auth-provider',
+  escalation: 'smoke-supabase-auth-role-escalation',
+  userMetadataEscalation: 'smoke-supabase-auth-user-metadata-escalation',
+  invalidAudience: 'smoke-supabase-auth-invalid-audience',
+};
 
 if (!jwtSecret) {
   throw new Error('SUPABASE_JWT_SECRET is required for the Supabase auth smoke test.');
 }
 
 const customerToken = signSupabaseToken({
-  sub: `smoke-${randomUUID()}`,
+  sub: smokeSubjects.customer,
   aud: jwtAudience,
-  phone: `+849${Date.now().toString().slice(-8)}`,
+  phone: '+84900009001',
   app_metadata: { role: 'CUSTOMER' },
   user_metadata: { role: 'CUSTOMER' },
 });
@@ -28,9 +35,9 @@ if (!customer?.id || !customer?.customerProfile) {
 }
 
 const providerSupabaseToken = signSupabaseToken({
-  sub: `smoke-provider-${randomUUID()}`,
+  sub: smokeSubjects.provider,
   aud: jwtAudience,
-  phone: `+848${Date.now().toString().slice(-8)}`,
+  phone: '+84800009002',
   app_metadata: { role: 'PROVIDER' },
   user_metadata: { role: 'PROVIDER' },
 });
@@ -46,9 +53,9 @@ if (!provider?.id || !provider?.providerProfile || !directProvider?.providerProf
 }
 
 const escalationToken = signSupabaseToken({
-  sub: `smoke-escalation-${randomUUID()}`,
+  sub: smokeSubjects.escalation,
   aud: jwtAudience,
-  phone: `+847${Date.now().toString().slice(-8)}`,
+  phone: '+84700009003',
   app_metadata: { role: 'CUSTOMER' },
   user_metadata: { role: 'CUSTOMER' },
 });
@@ -62,9 +69,9 @@ await postJson(
 );
 
 const userMetadataEscalationToken = signSupabaseToken({
-  sub: `smoke-user-metadata-escalation-${randomUUID()}`,
+  sub: smokeSubjects.userMetadataEscalation,
   aud: jwtAudience,
-  phone: `+845${Date.now().toString().slice(-8)}`,
+  phone: '+84500009004',
   app_metadata: { role: 'CUSTOMER' },
   user_metadata: { role: 'PROVIDER' },
 });
@@ -78,9 +85,9 @@ await postJson(
 );
 
 const invalidAudienceToken = signSupabaseToken({
-  sub: `smoke-invalid-audience-${randomUUID()}`,
+  sub: smokeSubjects.invalidAudience,
   aud: 'wrong-audience',
-  phone: `+846${Date.now().toString().slice(-8)}`,
+  phone: '+84600009005',
   app_metadata: { role: 'CUSTOMER' },
 });
 await getJson('/customer/me', invalidAudienceToken, 401);

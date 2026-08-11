@@ -13,6 +13,7 @@ import {
   adminPartnerLocationFresh,
   adminPartnerMarketplaceBlocked,
   adminPartnerWalletBalance,
+  adminPreferredAcceptModeUsesFirstPickPriority,
   adminWalletGateBlocksFinalGate,
   normalizeAdminMarketplaceOpenMode,
   readPolicyNumber,
@@ -89,7 +90,7 @@ function readBookingAcceptancePolicy(
   return {
     backupLocationFreshnessMinutes,
     backupRadiusMeters,
-    customerFinalChoice: preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+    customerFinalChoice: adminPreferredAcceptModeUsesFirstPickPriority(preferredAcceptMode),
     hardWalletBlock: adminWalletGateBlocksFinalGate(walletGate),
     immediateBackup: marketplaceOpenMode === 'IMMEDIATE_WITHIN_WINDOW',
     pushReady: adminPartnerAlertChannelRoutesToFcm(alertChannel),

@@ -20,6 +20,7 @@ class ApiClient {
       onTokensRefreshed;
   String? accessToken;
   String? refreshToken;
+  Future<bool>? _refreshInFlight;
 
   Future<dynamic> getJson(String path) async {
     return _sendWithRefresh(() => http.get(_uri(path), headers: _headers()));
@@ -28,6 +29,30 @@ class ApiClient {
   Future<dynamic> postJson(String path, Map<String, dynamic> body) async {
     return _sendWithRefresh(() =>
         http.post(_uri(path), headers: _headers(), body: jsonEncode(body)));
+  }
+
+  Future<dynamic> patchJson(String path, Map<String, dynamic> body) async {
+    return _sendWithRefresh(() =>
+        http.patch(_uri(path), headers: _headers(), body: jsonEncode(body)));
+  }
+
+  Future<dynamic> deleteJson(String path, Map<String, dynamic> body) async {
+    return _sendWithRefresh(() =>
+        http.delete(_uri(path), headers: _headers(), body: jsonEncode(body)));
+  }
+
+  Future<void> putBytes(
+    Uri uri, {
+    required Map<String, String> headers,
+    required List<int> bytes,
+  }) async {
+    final response = await http.put(uri, headers: headers, body: bytes);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        response.statusCode,
+        const {'message': 'File upload failed'},
+      );
+    }
   }
 
   Future<void> revokeRefreshToken() async {
@@ -69,7 +94,7 @@ class ApiClient {
       return _decode(firstResponse);
     }
 
-    final refreshed = await _refreshAccessToken();
+    final refreshed = await _refreshAccessTokenSingleFlight();
     if (!refreshed) {
       return _decode(firstResponse);
     }
@@ -101,6 +126,22 @@ class ApiClient {
     return decoded is Map<String, dynamic>
         ? decoded
         : <String, dynamic>{'error': decoded};
+  }
+
+  Future<bool> _refreshAccessTokenSingleFlight() {
+    final pending = _refreshInFlight;
+    if (pending != null) {
+      return pending;
+    }
+
+    late final Future<bool> refresh;
+    refresh = _refreshAccessToken().whenComplete(() {
+      if (identical(_refreshInFlight, refresh)) {
+        _refreshInFlight = null;
+      }
+    });
+    _refreshInFlight = refresh;
+    return refresh;
   }
 
   Future<bool> _refreshAccessToken() async {

@@ -171,7 +171,7 @@ describe('bookingDetailCloseoutChecklist', () => {
       status: 'Repair needed',
     });
     expect(rows.find((row) => row.title === 'Chat record')).toMatchObject({
-      href: '/chat-archive?status=missing-room',
+      href: '/bookings?view=chat-repair',
       status: 'Repair needed',
     });
     expect(rows.find((row) => row.title === 'Money and wallet gate')).toMatchObject({

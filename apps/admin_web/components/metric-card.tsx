@@ -53,7 +53,7 @@ export function MetricCard({
 }: MetricCardProps) {
   const Icon = icon ?? metricIcon(label);
   const inferenceText = [label, metricNodeText(helper)].filter(Boolean).join(' ');
-  const visibleScope = scope ?? inferredMetricScope(inferenceText);
+  const visibleScope = scope === undefined ? inferredMetricScope(inferenceText) : scope;
   const visibleKind = kind ?? inferredMetricKind(inferenceText, typeof visibleScope === 'string' ? visibleScope : undefined);
   const content = (
     <div className="metric-card">
@@ -61,9 +61,14 @@ export function MetricCard({
         {createElement(Icon, { size: iconSize, strokeWidth: 2.2 })}
       </span>
       <div className="metric-card-content">
-        <span className={joinClassNames('metric-card-scope', `is-${visibleKind}`)}>{visibleScope}</span>
+        {visibleScope === null ? null : (
+          <span className={joinClassNames('metric-card-scope', `is-${visibleKind}`)}>{visibleScope}</span>
+        )}
         <p>{label}</p>
-        <h2>{value}</h2>
+        <div className="metric-card-value">
+          <span className="sr-only">{label}: </span>
+          {value}
+        </div>
         <small className="muted">{helper}</small>
       </div>
     </div>

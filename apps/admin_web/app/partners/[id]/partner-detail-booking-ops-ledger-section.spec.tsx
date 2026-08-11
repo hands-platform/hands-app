@@ -9,7 +9,9 @@ describe('PartnerDetailBookingOpsLedgerSection', () => {
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
-    expect(source).not.toContain('<span className={`pill ${statusPillClass(row.status)}`}>{row.status}</span>');
+    expect(source).not.toContain(
+      '<span className={`pill ${statusPillClass(row.status)}`}>{row.status}</span>',
+    );
   });
 
   it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {
@@ -56,7 +58,9 @@ describe('PartnerDetailBookingOpsLedgerSection', () => {
     expect(rendered).toContain('Manual note saved');
     expect(rendered).toContain('Evidence task');
     expect(rendered).toContain('Closeout reviewed');
-    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/BK-1001', '/chat-archive?q=BK-1001']));
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining(['/bookings/BK-1001', '/chat-archive?q=BK-1001']),
+    );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
@@ -116,7 +120,7 @@ describe('PartnerDetailBookingOpsLedgerSection', () => {
     });
     const rendered = normalizeSpaces(textContent(section));
     const source = readFileSync('app/partners/[id]/partner-detail-booking-ops-ledger-section.tsx', 'utf8');
-    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+    const modelSource = readFileSync('app/partners/[id]/partner-detail-record-summary-model.tsx', 'utf8');
 
     expect(rendered).toContain('Shared booking ops date marker');
     expect(rendered).toContain('Shared closeout date marker');
@@ -126,8 +130,12 @@ describe('PartnerDetailBookingOpsLedgerSection', () => {
     expect(source).toContain('closeoutDetailNode?: ReactNode;');
     expect(source).toContain('{row.bookingLabelNode ?? row.bookingLabel}');
     expect(source).toContain('{row.closeoutDetailNode ?? row.closeoutDetail}');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={bookingRecordCreatedAt(booking)} />');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={booking.closedAt} /> / {bookingClosureLabel(booking)}');
+    expect(modelSource).toContain(
+      '<DateTimeText fallback="Missing" value={bookingRecordCreatedAt(booking)} />',
+    );
+    expect(modelSource).toContain(
+      '<DateTimeText fallback="Missing" value={booking.closedAt} /> / {bookingClosureLabel(booking)}',
+    );
   });
 });
 

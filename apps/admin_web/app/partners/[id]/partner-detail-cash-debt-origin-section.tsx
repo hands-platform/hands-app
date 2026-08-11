@@ -78,7 +78,7 @@ export function PartnerDetailCashDebtOriginSection({
           {
             detail: 'Finance should not release payout while HANDS fee/tax debt is open.',
             label: 'Payout release',
-            value: hasCashFeeDebt ? 'Held' : 'Open',
+            value: hasCashFeeDebt ? 'Blocked by cash debt' : 'Available',
           },
           {
             detail: hasCashFeeDebt ? 'Use Cash Settlements to clear the wallet.' : 'No finance action needed.',

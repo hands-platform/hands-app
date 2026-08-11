@@ -6,13 +6,18 @@ import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-grou
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { DateTimeText } from '../../../components/date-time-text';
-import { StatusBadge, StatusBadgeFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
+import {
+  StatusBadge,
+  StatusBadgeFromPillClass,
+  type StatusBadgeTone,
+} from '../../../components/status-badge';
 
 import {
   PartnerDetailVuexyTableFooter,
   PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
+import { PartnerEvidencePreview } from './partner-detail-document-media-section';
 
 export type PartnerKycDecisionEvidence = {
   readonly allRequiredApproved: boolean;
@@ -29,9 +34,11 @@ type PartnerKycDecisionChecklistItem = {
 };
 
 type PartnerKycEvidenceRow = {
+  readonly fileHref?: string;
   readonly fileLabel: string;
   readonly label: string;
   readonly rejectionReason?: string | null;
+  readonly previewable?: boolean;
   readonly status: string;
   readonly type: string;
   readonly uploadedAt?: string | null;
@@ -46,6 +53,7 @@ type PartnerDetailKycDecisionSectionProps = {
   readonly reviewedLabel: ReactNode;
   readonly status?: string | null;
   readonly submittedLabel: ReactNode;
+  readonly showEvidenceTable?: boolean;
 };
 
 export function PartnerDetailKycDecisionSection({
@@ -57,6 +65,7 @@ export function PartnerDetailKycDecisionSection({
   reviewedLabel,
   status,
   submittedLabel,
+  showEvidenceTable = true,
 }: PartnerDetailKycDecisionSectionProps) {
   return (
     <PartnerDetailVuexyTablePanel
@@ -80,6 +89,7 @@ export function PartnerDetailKycDecisionSection({
       </div>
       <AdminTraceSummary
         className="admin-mt-12"
+        inferScope={false}
         metrics={[
           {
             detail:
@@ -107,9 +117,7 @@ export function PartnerDetailKycDecisionSection({
                 <strong>{item.label}</strong>
               </td>
               <td>
-                <StatusBadge tone={item.ok ? 'success' : 'danger'}>
-                  {item.ok ? 'OK' : 'FIX'}
-                </StatusBadge>
+                <StatusBadge tone={item.ok ? 'success' : 'danger'}>{item.ok ? 'OK' : 'FIX'}</StatusBadge>
               </td>
               <td>
                 <p className="muted">{item.detailNode ?? item.detail}</p>
@@ -122,44 +130,52 @@ export function PartnerDetailKycDecisionSection({
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={evidence.decisionChecklist.length} />
-      <AdminTableScroll>
-        <AdminDataTable
-          className={partnerDetailReviewTableClassName}
-          emptyMessage={<KycDecisionEmptyState message="No KYC evidence files." />}
-          headers={kycEvidenceHeaders}
-          rowCount={evidence.rows.length}
-        >
-          {evidence.rows.map((row) => (
-            <tr key={row.type}>
-              <td>
-                <strong>{row.label}</strong>
-                <p className="muted">{row.type}</p>
-              </td>
-              <td>
-                <StatusBadgeFromPillClass pillClass={kycEvidencePill(row.status)}>
-                  {row.status}
-                </StatusBadgeFromPillClass>
-              </td>
-              <td>
-                <span className="muted">{row.fileLabel}</span>
-              </td>
-              <td>
-                <span className="muted">
-                  <DateTimeText fallback="Missing" value={row.uploadedAt} />
-                </span>
-              </td>
-              <td>
-                {row.rejectionReason ? (
-                  <span className="muted">Rejection: {row.rejectionReason}</span>
-                ) : (
-                  <AdminInlineFallback>No rejection note</AdminInlineFallback>
-                )}
-              </td>
-            </tr>
-          ))}
-        </AdminDataTable>
-      </AdminTableScroll>
-      <PartnerDetailVuexyTableFooter rowCount={evidence.rows.length} />
+      {showEvidenceTable ? (
+        <>
+          <AdminTableScroll>
+            <AdminDataTable
+              className={partnerDetailReviewTableClassName}
+              emptyMessage={<KycDecisionEmptyState message="No KYC evidence files." />}
+              headers={kycEvidenceHeaders}
+              rowCount={evidence.rows.length}
+            >
+              {evidence.rows.map((row) => (
+                <tr key={row.type}>
+                  <td>
+                    <strong>{row.label}</strong>
+                    <p className="muted">{row.type}</p>
+                  </td>
+                  <td>
+                    <StatusBadgeFromPillClass pillClass={kycEvidencePill(row.status)}>
+                      {row.status}
+                    </StatusBadgeFromPillClass>
+                  </td>
+                  <td>
+                    <PartnerEvidencePreview
+                      fileHref={row.fileHref}
+                      label={`Open ${row.label}`}
+                      previewable={row.previewable}
+                    />
+                  </td>
+                  <td>
+                    <span className="muted">
+                      <DateTimeText fallback="Missing" value={row.uploadedAt} />
+                    </span>
+                  </td>
+                  <td>
+                    {row.rejectionReason ? (
+                      <span className="muted">Rejection: {row.rejectionReason}</span>
+                    ) : (
+                      <AdminInlineFallback>No rejection note</AdminInlineFallback>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </AdminDataTable>
+          </AdminTableScroll>
+          <PartnerDetailVuexyTableFooter rowCount={evidence.rows.length} />
+        </>
+      ) : null}
       <p className="muted admin-mt-10">{evidence.nextAction}</p>
     </PartnerDetailVuexyTablePanel>
   );

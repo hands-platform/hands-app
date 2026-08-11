@@ -1,9 +1,9 @@
+import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 
 import type {
   AdminBankReconciliationMatch,
   AdminBankReconciliationTransactionDetail,
-  AdminBookingPaymentClearingEntry,
   AdminUser,
 } from '../../../../lib/admin-api';
 import {
@@ -13,10 +13,12 @@ import {
   adminPostOrThrow,
 } from '../../../../lib/admin-api';
 import {
+  AdminFormControlButton,
   AdminFormControlLink,
   AdminFormActionRow,
   AdminFormGrid,
   AdminFormInput,
+  AdminFormSearch,
   AdminFormSelect,
   AdminFormShell,
   AdminFormTextarea,
@@ -38,20 +40,20 @@ import { StatusBadge, StatusBadgeFromPillClass } from '../../../../components/st
 import { formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { getCurrentAdminOperatorAccess } from '../../../../lib/admin-operator-access';
 import { FinanceDataTable } from '../../finance-data-table';
-import { buildFinanceApproverOptions, type FinanceApproverOption } from '../../finance-approver-options';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
 import {
   financeBankReconciliationStatusPill,
+  financeBankReconciliationStatusModel,
   financeBankReconciliationStatusTone,
 } from '../../finance-status-badge-model';
 import { FinanceTablePanel } from '../../finance-table-panel';
 import {
-  bankReconciliationHref,
+  bankReconciliationDetailHref,
   buildBankReconciliationDetailApiHref,
-  buildBookingPaymentClearingApiHref,
   generalLedgerDetailHref,
   paymentClearingDetailHref,
+  safeBankReconciliationReturnTo,
 } from '../../tax-settlement-page-model';
 import { buildBankReconciliationAssignmentTimeline } from '../bank-reconciliation-assignment-timeline-model';
 import {
@@ -65,6 +67,11 @@ type BankReconciliationDetailPageProps = {
   readonly params?: Promise<{ readonly id?: string }>;
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export async function generateMetadata({ params }: BankReconciliationDetailPageProps): Promise<Metadata> {
+  const id = (params ? await params : {})?.id;
+  return { title: id ? `Bank Transaction ${shortId(id)}` : 'Payment Matching' };
+}
 
 const reconciliationSourceOptions = [
   { label: 'Payment clearing entry', value: 'payment-clearing' },
@@ -91,50 +98,57 @@ export default async function BankReconciliationDetailPage({
   const ignoreError = readParam(noticeParams, 'ignoreError');
   const reviewAssignmentNotice = readParam(noticeParams, 'reviewAssignmentNotice');
   const confirmAction = readParam(noticeParams, 'confirm');
+  const candidateQuery = readParam(noticeParams, 'candidateQ').trim();
+  const candidatePage = boundedCandidatePage(readParam(noticeParams, 'candidatePage'));
+  const candidateTake = boundedCandidateTake(readParam(noticeParams, 'candidateTake'));
+  const returnTo = safeBankReconciliationReturnTo(readParam(noticeParams, 'returnTo'));
+  const detailApiParams = new URLSearchParams({
+    candidatePage: String(candidatePage),
+    candidateTake: String(candidateTake),
+  });
+  if (candidateQuery) detailApiParams.set('candidateQ', candidateQuery);
+  const detailApiHref = `${buildBankReconciliationDetailApiHref(id)}?${detailApiParams.toString()}`;
 
-  const transaction = await adminGet<AdminBankReconciliationTransactionDetail | null>(
-    buildBankReconciliationDetailApiHref(id),
-    null,
-  );
+  const transaction = await adminGet<AdminBankReconciliationTransactionDetail | null>(detailApiHref, null);
   if (!transaction) {
     notFound();
   }
 
   const canAssignReviewOwner = canAssignBankTransactionReview(transaction.status);
-  const requestedReviewOwnerConfirmation =
-    confirmAction === 'review-owner' && canAssignReviewOwner;
+  const requestedReviewOwnerConfirmation = confirmAction === 'review-owner' && canAssignReviewOwner;
   const [currentOperatorAccess, adminUsers] = await Promise.all([
     getCurrentAdminOperatorAccess(),
     adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', []),
   ]);
-  const financeApproverOptions = buildFinanceApproverOptions(
-    adminUsers,
-    currentOperatorAccess?.id ?? null,
-  );
-
   const matches = transaction.reconciliationMatches ?? [];
   const latestActiveMatch = matches.find((match) => match.status !== 'REVERSED') ?? null;
   const latestReversedMatch = matches.find((match) => match.status === 'REVERSED') ?? null;
-  const matchedAmount = matches.reduce((total, match) => {
-    return match.status === 'REVERSED' ? total : total + Math.abs(match.amount);
-  }, 0);
-  const remainingAmount = Math.max(0, Math.abs(transaction.amount) - matchedAmount);
+  const matchedAmount =
+    transaction.preflight?.matchedAmount ??
+    matches.reduce((total, match) => {
+      return match.status === 'REVERSED' ? total : total + Math.abs(match.amount);
+    }, 0);
+  const remainingAmount =
+    transaction.preflight?.remainingAmount ?? Math.max(0, Math.abs(transaction.amount) - matchedAmount);
   const suggestedMatchAmount = remainingAmount || Math.abs(transaction.amount);
-  const canCreateManualMatch = canCreateBankReconciliationMatch(transaction.status);
-  const canIgnoreBankTransaction = transaction.status === 'UNMATCHED' && !latestActiveMatch;
-  const paymentClearingCandidates = canCreateManualMatch
-    ? await adminGet<AdminBookingPaymentClearingEntry[]>(
-        buildBookingPaymentClearingApiHref({ page: 1, range: '30d', review: 'open', take: 50 }),
-        [],
-      )
-    : [];
-  const paymentClearingOptions = paymentClearingCandidates
-    .filter((entry) => entry.currency === transaction.currency)
-    .sort(paymentClearingCandidateComparator(suggestedMatchAmount))
-    .map((entry) => ({
-      label: paymentClearingCandidateLabel(entry, suggestedMatchAmount),
+  const statusModel = financeBankReconciliationStatusModel(transaction.status);
+  const reconciliationNextAction =
+    latestReversedMatch && !statusModel.closed ? 'Review reversed evidence' : statusModel.nextAction;
+  const canCreateManualMatch =
+    transaction.preflight?.actions.createMatch.allowed ??
+    canCreateBankReconciliationMatch(transaction.status);
+  const canIgnoreBankTransaction =
+    transaction.preflight?.actions.ignore.allowed ??
+    (transaction.status === 'UNMATCHED' && !latestActiveMatch);
+  const paymentClearingCandidates = transaction.paymentClearingCandidates ?? [];
+  const eligiblePaymentClearingCandidates = paymentClearingCandidates.filter((entry) => entry.eligible);
+  const paymentClearingOptions = [
+    { label: 'Select a payment clearing candidate', value: '' },
+    ...eligiblePaymentClearingCandidates.map((entry) => ({
+      label: paymentClearingCandidateLabel(entry),
       value: entry.id,
-    }));
+    })),
+  ];
   const withdrawalCandidates = transaction.withdrawalCandidates ?? [];
   const withdrawalOptions = withdrawalCandidates.map((candidate) => ({
     label: withdrawalCandidateLabel(candidate),
@@ -147,19 +161,159 @@ export default async function BankReconciliationDetailPage({
     currentAssignment?.assigneeId ?? null,
     currentOperatorAccess?.id ?? null,
   );
-  const detailHref = `/finance-tax/bank-reconciliation/${encodeURIComponent(transaction.id)}`;
-  const showReviewOwnerConfirmation =
-    requestedReviewOwnerConfirmation && reviewOwnerOptions.length > 0;
+  const detailPath = `/finance-tax/bank-reconciliation/${encodeURIComponent(transaction.id)}`;
+  const detailHref = bankReconciliationDetailHref(transaction.id, returnTo);
+  const showReviewOwnerConfirmation = requestedReviewOwnerConfirmation && reviewOwnerOptions.length > 0;
+  const paymentClearingCandidateEvidence = (
+    <>
+      <AdminFormShell action={detailPath} className="filter-form admin-mb-16" method="get">
+        <input name="returnTo" type="hidden" value={returnTo} />
+        <input name="candidatePage" type="hidden" value="1" />
+        <input name="candidateTake" type="hidden" value={candidateTake} />
+        <AdminFormSearch
+          defaultValue={candidateQuery}
+          label="Find another payment clearing record"
+          name="candidateQ"
+          placeholder="Booking, payment, customer, or Partner reference"
+        />
+        <AdminFormActionRow>
+          <AdminFormControlButton className="button-secondary" type="submit">
+            Search candidates
+          </AdminFormControlButton>
+          {candidateQuery ? (
+            <AdminTextLink
+              href={bankCandidateStateHref(detailHref, {
+                candidatePage: 1,
+                candidateQuery: '',
+                candidateTake,
+              })}
+            >
+              Clear search
+            </AdminTextLink>
+          ) : null}
+        </AdminFormActionRow>
+      </AdminFormShell>
+      <FinanceDataTable
+        ariaLabel="Payment clearing candidates"
+        emptyMessage={
+          candidateQuery
+            ? 'No payment clearing evidence matches this search.'
+            : 'No payment clearing evidence is close enough to this bank transaction. Search by an exact identifier or reference to look beyond the 45-day window.'
+        }
+        headers={['Candidate', 'Payment evidence', 'Amount', 'Why it is shown']}
+        rowCount={paymentClearingCandidates.length}
+      >
+        {paymentClearingCandidates.map((candidate) => (
+          <tr key={candidate.id}>
+            <td>
+              <AdminTableSubstack>
+                <strong>{candidate.customerLabel}</strong>
+                <span className="muted">
+                  Booking {shortId(candidate.bookingId)} · {candidate.bookingStatus}
+                </span>
+                <span className="muted">Clearing {shortId(candidate.id)}</span>
+                <span className="muted">
+                  Payment {candidate.paymentId ? shortId(candidate.paymentId) : 'not linked'}
+                </span>
+              </AdminTableSubstack>
+            </td>
+            <td>
+              <AdminTableSubstack>
+                <strong>{candidate.paymentMethod ?? candidate.type}</strong>
+                <span className="muted">{candidate.paymentStatus ?? 'No payment record status'}</span>
+                <span className="muted">
+                  {candidate.paymentProviderRef ?? 'No payment provider reference'}
+                </span>
+              </AdminTableSubstack>
+            </td>
+            <td>
+              <AdminTableSubstack>
+                <strong>
+                  <MoneyText amount={candidate.amount} currency={candidate.currency} />
+                </strong>
+                <span className="muted">
+                  Remaining <MoneyText amount={candidate.remainingAmount} currency={candidate.currency} />
+                </span>
+                <span className="muted">
+                  Amount gap <MoneyText amount={candidate.amountDelta} currency={candidate.currency} />
+                </span>
+              </AdminTableSubstack>
+            </td>
+            <td>
+              <AdminTableSubstack>
+                <StatusBadge
+                  tone={
+                    !candidate.eligible
+                      ? 'danger'
+                      : candidate.confidence === 'STRONG'
+                        ? 'success'
+                        : 'warning'
+                  }
+                >
+                  {!candidate.eligible
+                    ? 'Not eligible'
+                    : candidate.confidence === 'STRONG'
+                      ? 'Recommended'
+                      : 'Review'}
+                </StatusBadge>
+                <DateTimeText value={candidate.occurredAt} />
+                <span className="muted">
+                  {(candidate.eligible ? candidate.reasons : candidate.exclusionReasons ?? []).join(' · ')}
+                </span>
+              </AdminTableSubstack>
+            </td>
+          </tr>
+        ))}
+      </FinanceDataTable>
+      {transaction.paymentClearingCandidatePage ? (
+        <AdminFormActionRow className="admin-mt-12">
+          {transaction.paymentClearingCandidatePage.hasPrevious ? (
+            <AdminFormControlLink
+              className="button-secondary"
+              href={bankCandidateStateHref(detailHref, {
+                candidatePage: candidatePage - 1,
+                candidateQuery,
+                candidateTake,
+              })}
+            >
+              Previous candidates
+            </AdminFormControlLink>
+          ) : null}
+          <span className="muted">
+            Candidate page {transaction.paymentClearingCandidatePage.page} · up to{' '}
+            {transaction.paymentClearingCandidatePage.take} per page
+          </span>
+          {transaction.paymentClearingCandidatePage.hasNext ? (
+            <AdminFormControlLink
+              className="button-secondary"
+              href={bankCandidateStateHref(detailHref, {
+                candidatePage: candidatePage + 1,
+                candidateQuery,
+                candidateTake,
+              })}
+            >
+              Next candidates
+            </AdminFormControlLink>
+          ) : null}
+        </AdminFormActionRow>
+      ) : null}
+    </>
+  );
 
   return (
     <AdminPageTemplate
       actions={
         <AdminFormActionRow>
-          <AdminFormControlLink className="button-secondary" href={bankReconciliationHref({ page: 1, range: '30d', review: 'unmatched', take: 25 })}>
-            Back to bank reconciliation
+          <AdminFormControlLink className="button-secondary" href={returnTo}>
+            {returnTo.startsWith('/finance-tax/payment-clearing/')
+              ? 'Back to payment evidence'
+              : 'Back to bank reconciliation'}
           </AdminFormControlLink>
           {canAssignReviewOwner ? (
-            <AdminFormControlLink className="button-primary" href={`${detailHref}?confirm=review-owner`}>
+            <AdminFormControlLink
+              className="button-primary"
+              href={appendDetailParam(detailHref, 'confirm', 'review-owner')}
+            >
               {currentAssignment ? 'Reassign owner' : 'Assign owner'}
             </AdminFormControlLink>
           ) : null}
@@ -167,7 +321,13 @@ export default async function BankReconciliationDetailPage({
       }
       description="Bank transaction evidence for manual reconciliation against payment clearing, journal, withdrawal, and payout records."
       metrics={[
-        { helper: 'Bank transaction state.', kind: 'record', label: 'Status', scope: 'Record detail', value: transaction.status },
+        {
+          helper: statusModel.closeoutLabel,
+          kind: 'record',
+          label: 'Status',
+          scope: 'Record detail',
+          value: statusModel.label,
+        },
         {
           helper: 'Bank transaction amount.',
           kind: 'record',
@@ -175,8 +335,20 @@ export default async function BankReconciliationDetailPage({
           scope: 'Record detail',
           value: <MoneyText amount={transaction.amount} currency={transaction.currency} />,
         },
-        { helper: 'Linked reconciliation matches.', kind: 'record', label: 'Matches', scope: 'Record detail', value: matches.length },
-        { helper: 'Bank flow direction.', kind: 'record', label: 'Type', scope: 'Record detail', value: transaction.type },
+        {
+          helper: 'Linked reconciliation matches.',
+          kind: 'record',
+          label: 'Matches',
+          scope: 'Record detail',
+          value: matches.length,
+        },
+        {
+          helper: 'Bank flow direction.',
+          kind: 'record',
+          label: 'Type',
+          scope: 'Record detail',
+          value: transaction.type,
+        },
       ]}
       title="Bank Reconciliation Detail"
     >
@@ -186,7 +358,8 @@ export default async function BankReconciliationDetailPage({
         </AdminInlineNotice>
       ) : reviewAssignmentNotice === 'failed' ? (
         <AdminInlineNotice className="admin-mb-16" role="alert" tone="danger">
-          Review owner was not updated. Confirm the operator has Bank Reconciliation access and is not already assigned.
+          Review owner was not updated. Confirm the operator has Bank Reconciliation access and is not already
+          assigned.
         </AdminInlineNotice>
       ) : null}
 
@@ -203,6 +376,7 @@ export default async function BankReconciliationDetailPage({
           hiddenInputs={[
             { name: 'bankTransactionId', value: transaction.id },
             { name: 'confirmationBankTransactionId', value: transaction.id },
+            { name: 'returnTo', value: returnTo },
           ]}
           id={`bank-review-owner-${transaction.id}`}
           selectInputs={[
@@ -233,9 +407,9 @@ export default async function BankReconciliationDetailPage({
         </AdminInlineNotice>
       ) : null}
 
-      {financeApproverOptions.length === 0 ? (
-        <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
-          No other Finance approver is available. Matching, ignoring, and reversal actions remain disabled until another operator has the FINANCE_APPROVER role.
+      {!statusModel.closed && transaction.preflight && !transaction.preflight.actions.createMatch.allowed ? (
+        <AdminInlineNotice className="admin-mb-16" role="status" tone="warning">
+          {transaction.preflight.actions.createMatch.blockers.map((blocker) => blocker.message).join(' ')}
         </AdminInlineNotice>
       ) : null}
 
@@ -246,12 +420,15 @@ export default async function BankReconciliationDetailPage({
             <DateTimeText value={transaction.occurredAt} />
           </>
         }
-        resultLabel={transaction.status}
+        resultLabel={statusModel.label}
         resultTone={financeBankReconciliationStatusTone(transaction.status)}
         title="Bank transaction overview"
       >
         <FinanceDetailGrid>
-          <FinanceDetailInfoItem label="Bank account" value={transaction.bankAccount?.name ?? 'Unknown account'} />
+          <FinanceDetailInfoItem
+            label="Bank account"
+            value={transaction.bankAccount?.name ?? 'Unknown account'}
+          />
           <FinanceDetailInfoItem label="Bank" value={transaction.bankAccount?.bankName ?? '-'} />
           <FinanceDetailInfoItem label="Counterparty" value={transaction.counterpartyName ?? '-'} />
           <FinanceDetailInfoItem
@@ -271,11 +448,15 @@ export default async function BankReconciliationDetailPage({
                 )}
               />
               <FinanceDetailInfoItem
-                label="Import approved by"
-                value={adminOperatorLabel(
-                  transaction.creationEvidence.approvalAdmin,
-                  transaction.creationEvidence.approvalAdminId,
-                )}
+                label="Import approval stage"
+                value={
+                  transaction.creationEvidence.approvalAdminId
+                    ? `Legacy import: ${adminOperatorLabel(
+                        transaction.creationEvidence.approvalAdmin,
+                        transaction.creationEvidence.approvalAdminId,
+                      )}`
+                    : 'Required when reconciling'
+                }
               />
               <FinanceDetailInfoItem
                 label="Import source"
@@ -291,7 +472,10 @@ export default async function BankReconciliationDetailPage({
               />
             </>
           ) : null}
-          <FinanceDetailInfoItem label="Matched amount" value={<MoneyText amount={matchedAmount} currency={transaction.currency} />} />
+          <FinanceDetailInfoItem
+            label="Matched amount"
+            value={<MoneyText amount={matchedAmount} currency={transaction.currency} />}
+          />
           <FinanceDetailInfoItem
             label="Remaining amount"
             value={<MoneyText amount={remainingAmount} currency={transaction.currency} />}
@@ -343,28 +527,27 @@ export default async function BankReconciliationDetailPage({
                   ? 'Ignored'
                   : 'Available after review'
           }
-          resultTone={ignoreNotice === '1' || transaction.status === 'IGNORED' ? 'success' : ignoreError ? 'danger' : 'warning'}
+          resultTone={
+            ignoreNotice === '1'
+              ? 'success'
+              : ignoreError
+                ? 'danger'
+                : financeBankReconciliationStatusTone(transaction.status)
+          }
           title="Ignore bank transaction"
         >
           {ignoreError ? (
             <p className="muted admin-mt-8">
               {ignoreError === 'confirmation-required'
-                ? 'The bank row was not ignored. Review the entered approver and provide at least 12 characters of evidence before confirming.'
-                : 'The bank row was not ignored. Confirm it has no active match and use a different Finance approver ID.'}
+                ? 'The bank row was not ignored. Provide at least 12 characters of evidence before confirming.'
+                : 'The bank row was not ignored. Confirm it has no active match, an assigned review owner, and a different signed-in Finance approver.'}
             </p>
           ) : null}
           {canIgnoreBankTransaction ? (
             <AdminFormGrid action={ignoreCompanyBankTransactionAction} className="compact-form admin-mt-16">
               <input name="bankTransactionId" type="hidden" value={transaction.id} />
               <input name="confirmationBankTransactionId" type="hidden" value={transaction.id} />
-              <AdminFormSelect
-                disabled={financeApproverOptions.length === 0}
-                label="Separate Finance approver"
-                labelVisibility="visible"
-                name="approvalAdminId"
-                options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}
-                required
-              />
+              <input name="returnTo" type="hidden" value={returnTo} />
               <AdminFormTextarea
                 className="admin-grid-span-2"
                 label="Ignore reason"
@@ -381,28 +564,28 @@ export default async function BankReconciliationDetailPage({
                 className="admin-grid-span-2"
                 confirmLabel="Confirm ignore"
                 detail="This removes only the bank row from the active queue. It does not settle Partner deposit, wallet, tax, or GL evidence."
-                disabled={financeApproverOptions.length === 0}
                 title="Review ignored bank row"
                 tone="danger"
               />
             </AdminFormGrid>
-          ) : (
+          ) : transaction.status === 'IGNORED' ? (
             <div className="admin-mt-8">
               <p className="muted">
-                This bank row is ignored. Reason: {transaction.ignoreEvidence?.reason ?? 'Recorded in audit evidence'}.
+                This bank row is ignored. Reason:{' '}
+                {transaction.ignoreEvidence?.reason ?? 'Recorded in audit evidence'}.
               </p>
               <AdminFinanceOperatorEvidence
                 lines={[
                   {
                     fallbackId: transaction.ignoreEvidence?.ignoredByAdminId,
                     key: 'ignored-by',
-                    label: 'Ignored by',
+                    label: 'Action recorded by',
                     operator: transaction.ignoreEvidence?.ignoredBy,
                   },
                   {
                     fallbackId: transaction.ignoreEvidence?.approvalAdminId,
                     key: 'ignore-approved-by',
-                    label: 'Approved by',
+                    label: 'Finance approver',
                     operator: transaction.ignoreEvidence?.approvalAdmin,
                   },
                 ]}
@@ -413,14 +596,19 @@ export default async function BankReconciliationDetailPage({
                 </p>
               ) : null}
             </div>
+          ) : (
+            <AdminInlineNotice className="admin-mt-8" role="status" tone="warning">
+              {transaction.preflight?.actions.ignore.blockers.map((blocker) => blocker.message).join(' ') ??
+                'This bank transaction cannot be ignored in its current state.'}
+            </AdminInlineNotice>
           )}
         </FinanceTablePanel>
       ) : null}
 
       <FinanceTablePanel
         description="Quick route from this bank transaction to the matched finance source, clearing evidence, and journal evidence."
-        resultLabel={remainingAmount > 0 ? 'Unmatched remainder' : 'Fully reconciled'}
-        resultTone={remainingAmount > 0 ? 'warning' : 'success'}
+        resultLabel={statusModel.closeoutLabel}
+        resultTone={financeBankReconciliationStatusTone(transaction.status)}
         title="Bank evidence hub"
       >
         <FinanceOperatingPath
@@ -432,9 +620,16 @@ export default async function BankReconciliationDetailPage({
               value: <MoneyText amount={transaction.amount} currency={transaction.currency} />,
             },
             {
-              detail: latestActiveMatch ? latestActiveMatch.status : 'Waiting for match',
+              detail: latestActiveMatch
+                ? latestActiveMatch.status
+                : statusModel.closed
+                  ? 'No active source required'
+                  : 'Waiting for match',
               label: 'Finance source',
-              value: reconciliationSourceLabel(latestActiveMatch),
+              value:
+                !latestActiveMatch && statusModel.closed
+                  ? 'No active matched source'
+                  : reconciliationSourceLabel(latestActiveMatch),
             },
             {
               detail: latestActiveMatch?.accountingJournalEntry ? 'GL linked' : 'No active GL link',
@@ -442,13 +637,13 @@ export default async function BankReconciliationDetailPage({
               value: reconciliationLedgerLabel(latestActiveMatch),
             },
             {
-              detail: bankReconciliationNextAction(transaction.status, remainingAmount, latestReversedMatch),
+              detail: reconciliationNextAction,
               label: 'Closeout state',
               value:
-                remainingAmount > 0 ? (
+                !statusModel.closed && remainingAmount > 0 ? (
                   <MoneyText amount={remainingAmount} currency={transaction.currency} />
                 ) : (
-                  'Clear'
+                  statusModel.label
                 ),
             },
           ]}
@@ -482,7 +677,9 @@ export default async function BankReconciliationDetailPage({
             value={
               latestActiveMatch?.accountingJournalEntry ? (
                 <AdminTableSubstack>
-                  <AdminTextLink href={generalLedgerDetailHref(latestActiveMatch.accountingJournalEntry.batchId)}>
+                  <AdminTextLink
+                    href={generalLedgerDetailHref(latestActiveMatch.accountingJournalEntry.batchId)}
+                  >
                     {latestActiveMatch.accountingJournalEntry.accountCode}
                   </AdminTextLink>
                   <span className="muted">{latestActiveMatch.accountingJournalEntry.accountName}</span>
@@ -505,99 +702,200 @@ export default async function BankReconciliationDetailPage({
             value={latestReversedMatch ? (reversalReasonFromMatch(latestReversedMatch) ?? '-') : '-'}
           />
           <FinanceDetailInfoItem
-            label="Unmatched remainder"
-            value={<MoneyText amount={remainingAmount} currency={transaction.currency} />}
+            label={statusModel.closed ? 'Open remainder' : 'Unmatched remainder'}
+            value={
+              statusModel.closed ? (
+                'Not applicable to this closed record'
+              ) : (
+                <MoneyText amount={remainingAmount} currency={transaction.currency} />
+              )
+            }
           />
         </FinanceDetailGrid>
       </FinanceTablePanel>
 
-      <FinanceTablePanel
-        description="Create one explicit match against a payment clearing, Partner deposit, journal, withdrawal, or payout record. The Admin API writes the audit log."
-        resultLabel={manualMatchResultLabel({ matchError, matchNotice, reverseError, reverseNotice })}
-        resultTone={manualMatchResultTone({ matchError, matchNotice, reverseError, reverseNotice })}
-        title="Manual reconciliation match"
-      >
-        {matchError ? (
-          <p className="muted admin-mt-8">
-            {matchError === 'confirmation-required'
-              ? 'No match was saved. Review the exact bank transaction, source, amount, approver, and at least 12 characters of accounting evidence before confirming.'
-              : 'No match was saved. Check the source id, amount, currency, approval admin, and current transaction state before trying again.'}
-          </p>
-        ) : null}
-        {reverseError ? (
-          <p className="muted admin-mt-8">
-            {reverseError === 'confirmation-required'
-              ? 'No match was reversed. Review the exact bank transaction, approver, and at least 12 characters of reversal evidence before confirming.'
-              : 'No match was reversed. Check the approval admin and whether the match already belongs to this bank row and is not already reversed.'}
-          </p>
-        ) : null}
-        {canCreateManualMatch ? (
-          <div className="finance-reconciliation-match-board admin-mt-16">
-            {transaction.type === 'OUTFLOW' ? (
-              <div className="finance-reconciliation-match-primary admin-mb-16">
+      {!statusModel.closed && !canCreateManualMatch ? (
+        <FinanceTablePanel
+          description="Search and inspect candidate evidence before assigning an owner. Matching remains unavailable until every preflight blocker is resolved."
+          resultLabel={`${eligiblePaymentClearingCandidates.length} eligible / ${paymentClearingCandidates.length} shown`}
+          resultTone={eligiblePaymentClearingCandidates.length > 0 ? 'success' : 'warning'}
+          title="Payment clearing candidates"
+        >
+          {paymentClearingCandidateEvidence}
+        </FinanceTablePanel>
+      ) : null}
+
+      {!statusModel.closed ? (
+        <FinanceTablePanel
+          description="Create one explicit match against a payment clearing, Partner deposit, journal, withdrawal, or payout record. The Admin API writes the audit log."
+          resultLabel={manualMatchResultLabel({ matchError, matchNotice, reverseError, reverseNotice })}
+          resultTone={manualMatchResultTone({ matchError, matchNotice, reverseError, reverseNotice })}
+          title="Manual reconciliation match"
+        >
+          {matchError ? (
+            <p className="muted admin-mt-8">
+              {matchError === 'confirmation-required'
+                ? 'No match was saved. Review the exact bank transaction, source, amount, and at least 12 characters of accounting evidence before confirming.'
+                : 'No match was saved. Check the source, amount, review owner, signed-in Finance approver, and current transaction state before trying again.'}
+            </p>
+          ) : null}
+          {reverseError ? (
+            <p className="muted admin-mt-8">
+              {reverseError === 'confirmation-required'
+                ? 'No match was reversed. Review the exact bank transaction and provide at least 12 characters of reversal evidence before confirming.'
+                : 'No match was reversed. Check the review owner, signed-in Finance approver, and whether the match is still active.'}
+            </p>
+          ) : null}
+          {canCreateManualMatch ? (
+            <div className="finance-reconciliation-match-board admin-mt-16">
+              {transaction.type === 'OUTFLOW' ? (
+                <div className="finance-reconciliation-match-primary admin-mb-16">
+                  <div className="finance-reconciliation-match-heading">
+                    <div>
+                      <strong>Recommended withdrawal match</strong>
+                      <span>
+                        Compare amount, paid date, and transfer reference. A candidate is never matched
+                        automatically.
+                      </span>
+                    </div>
+                    <StatusBadge tone={withdrawalOptions.length > 0 ? 'success' : 'warning'}>
+                      {withdrawalOptions.length} candidate(s)
+                    </StatusBadge>
+                  </div>
+                  <FinanceDataTable
+                    emptyMessage="No unreconciled PAID withdrawal is close enough to this bank transaction."
+                    headers={['Partner', 'Withdrawal', 'Paid', 'Transfer reference', 'Evidence']}
+                    rowCount={withdrawalCandidates.length}
+                  >
+                    {withdrawalCandidates.map((candidate) => (
+                      <tr key={candidate.id}>
+                        <td>
+                          <AdminTableSubstack>
+                            <AdminTextLink
+                              href={`/partners/${encodeURIComponent(candidate.providerProfileId)}?section=full#finance`}
+                            >
+                              {candidate.providerLabel}
+                            </AdminTextLink>
+                            <span className="muted">{shortId(candidate.id)}</span>
+                          </AdminTableSubstack>
+                        </td>
+                        <td>
+                          <strong>
+                            <MoneyText amount={candidate.amount} currency={candidate.currency} />
+                          </strong>
+                          <span className="muted">
+                            Amount gap <MoneyText amount={candidate.amountDelta} currency={candidate.currency} />
+                          </span>
+                        </td>
+                        <td>
+                          <DateTimeText value={candidate.paidAt ?? candidate.createdAt} />
+                          <span className="muted">Date gap {candidate.dateDeltaDays} day(s)</span>
+                        </td>
+                        <td>
+                          {candidate.transferRef ?? (
+                            <AdminInlineFallback>No transfer ref</AdminInlineFallback>
+                          )}
+                        </td>
+                        <td>
+                          <AdminTableSubstack>
+                            <StatusBadge tone={candidate.confidence === 'STRONG' ? 'success' : 'warning'}>
+                              {candidate.confidence}
+                            </StatusBadge>
+                            <span className="muted">{withdrawalCandidateEvidence(candidate)}</span>
+                          </AdminTableSubstack>
+                        </td>
+                      </tr>
+                    ))}
+                  </FinanceDataTable>
+                  <AdminFormGrid
+                    action={createBankReconciliationMatchAction}
+                    className="compact-form admin-mt-16"
+                  >
+                    <input name="bankTransactionId" type="hidden" value={transaction.id} />
+                    <input name="confirmationBankTransactionId" type="hidden" value={transaction.id} />
+                    <input name="returnTo" type="hidden" value={returnTo} />
+                    <input name="sourceType" type="hidden" value="withdrawal" />
+                    <AdminFormSelect
+                      disabled={!withdrawalOptions.length}
+                      label="Withdrawal candidate"
+                      labelVisibility="visible"
+                      name="sourceId"
+                      options={
+                        withdrawalOptions.length
+                          ? withdrawalOptions
+                          : [{ label: 'No eligible withdrawal candidate', value: '' }]
+                      }
+                      required
+                    />
+                    <AdminFormInput
+                      defaultValue={suggestedMatchAmount}
+                      label="Match amount"
+                      labelVisibility="visible"
+                      min={1}
+                      name="amount"
+                      required
+                      step={1}
+                      type="number"
+                    />
+                    <AdminFormInput
+                      defaultValue={transaction.currency}
+                      label="Currency"
+                      labelVisibility="visible"
+                      name="currency"
+                      required
+                    />
+                    <AdminFormTextarea
+                      className="admin-grid-span-2"
+                      label="Operator notes"
+                      labelVisibility="visible"
+                      maxLength={500}
+                      minLength={BANK_RECONCILIATION_EVIDENCE_MIN_LENGTH}
+                      name="notes"
+                      placeholder="Why the bank outflow matches this Partner withdrawal"
+                      required
+                      rows={3}
+                    />
+                    <BankReconciliationConfirmationDisclosure
+                      className="admin-grid-span-2"
+                      confirmLabel="Confirm withdrawal match"
+                      detail="Creates a bank reconciliation match against the selected paid withdrawal. The signed-in Finance approver must differ from the assigned review owner."
+                      disabled={!withdrawalOptions.length}
+                      title="Review withdrawal match"
+                    />
+                  </AdminFormGrid>
+                </div>
+              ) : null}
+              <div className="finance-reconciliation-match-primary">
                 <div className="finance-reconciliation-match-heading">
                   <div>
-                    <strong>Recommended withdrawal match</strong>
+                    <strong>Recommended payment clearing match</strong>
                     <span>
-                      Compare amount, paid date, and transfer reference. A candidate is never matched automatically.
+                      Use this first when the bank row belongs to a customer payment or booking settlement
+                      clearing entry.
                     </span>
                   </div>
-                  <StatusBadge tone={withdrawalOptions.length > 0 ? 'success' : 'warning'}>
-                    {withdrawalOptions.length} candidate(s)
+                  <StatusBadge tone={eligiblePaymentClearingCandidates.length > 0 ? 'success' : 'warning'}>
+                    {eligiblePaymentClearingCandidates.length} eligible / {paymentClearingCandidates.length} shown
                   </StatusBadge>
                 </div>
-                <FinanceDataTable
-                  emptyMessage="No unreconciled PAID withdrawal is close enough to this bank transaction."
-                  headers={['Partner', 'Withdrawal', 'Paid', 'Transfer reference', 'Evidence']}
-                  rowCount={withdrawalCandidates.length}
+                {paymentClearingCandidateEvidence}
+                <AdminFormGrid
+                  action={createBankReconciliationMatchAction}
+                  className="compact-form admin-mt-16"
                 >
-                  {withdrawalCandidates.map((candidate) => (
-                    <tr key={candidate.id}>
-                      <td>
-                        <AdminTableSubstack>
-                          <AdminTextLink href={`/partners/${encodeURIComponent(candidate.providerProfileId)}?section=full#finance`}>
-                            {candidate.providerLabel}
-                          </AdminTextLink>
-                          <span className="muted">{shortId(candidate.id)}</span>
-                        </AdminTableSubstack>
-                      </td>
-                      <td>
-                        <strong>
-                          <MoneyText amount={candidate.amount} currency={candidate.currency} />
-                        </strong>
-                        <span className="muted">
-                          Delta <MoneyText amount={candidate.amountDelta} currency={candidate.currency} />
-                        </span>
-                      </td>
-                      <td>
-                        <DateTimeText value={candidate.paidAt ?? candidate.createdAt} />
-                        <span className="muted">{candidate.dateDeltaDays} day(s) from bank row</span>
-                      </td>
-                      <td>{candidate.transferRef ?? <AdminInlineFallback>No transfer ref</AdminInlineFallback>}</td>
-                      <td>
-                        <AdminTableSubstack>
-                          <StatusBadge tone={candidate.confidence === 'STRONG' ? 'success' : 'warning'}>
-                            {candidate.confidence}
-                          </StatusBadge>
-                          <span className="muted">{withdrawalCandidateEvidence(candidate)}</span>
-                        </AdminTableSubstack>
-                      </td>
-                    </tr>
-                  ))}
-                </FinanceDataTable>
-                <AdminFormGrid action={createBankReconciliationMatchAction} className="compact-form admin-mt-16">
                   <input name="bankTransactionId" type="hidden" value={transaction.id} />
                   <input name="confirmationBankTransactionId" type="hidden" value={transaction.id} />
-                  <input name="sourceType" type="hidden" value="withdrawal" />
+                  <input name="returnTo" type="hidden" value={returnTo} />
+                  <input name="sourceType" type="hidden" value="payment-clearing" />
                   <AdminFormSelect
-                    disabled={!withdrawalOptions.length}
-                    label="Withdrawal candidate"
+                    disabled={!eligiblePaymentClearingCandidates.length}
+                    label="Payment clearing candidate"
                     labelVisibility="visible"
                     name="sourceId"
                     options={
-                      withdrawalOptions.length
-                        ? withdrawalOptions
-                        : [{ label: 'No eligible withdrawal candidate', value: '' }]
+                      eligiblePaymentClearingCandidates.length
+                        ? paymentClearingOptions
+                        : [{ label: 'No eligible payment clearing candidate available', value: '' }]
                     }
                     required
                   />
@@ -618,12 +916,77 @@ export default async function BankReconciliationDetailPage({
                     name="currency"
                     required
                   />
-                  <AdminFormSelect
-                    disabled={financeApproverOptions.length === 0}
-                    label="Separate Finance approver"
+                  <AdminFormTextarea
+                    className="admin-grid-span-2"
+                    label="Operator notes"
                     labelVisibility="visible"
-                    name="approvalAdminId"
-                    options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}
+                    maxLength={500}
+                    minLength={BANK_RECONCILIATION_EVIDENCE_MIN_LENGTH}
+                    name="notes"
+                    placeholder="Why this bank row matches the selected payment clearing evidence"
+                    required
+                    rows={3}
+                  />
+                  <BankReconciliationConfirmationDisclosure
+                    className="admin-grid-span-2"
+                    confirmLabel="Confirm clearing match"
+                    detail={
+                      <>
+                        Creates a reconciliation link for the entered amount. Suggested amount:{' '}
+                        <MoneyText amount={suggestedMatchAmount} currency={transaction.currency} />.
+                      </>
+                    }
+                    disabled={!eligiblePaymentClearingCandidates.length}
+                    title="Review payment clearing match"
+                  />
+                </AdminFormGrid>
+              </div>
+
+              <AdminDisclosure className="finance-reconciliation-import-disclosure admin-mt-16">
+                <summary>
+                  <span>Advanced source match</span>
+                  <small>
+                    Use for a Partner deposit request, journal, withdrawal, or payout evidence that is not in
+                    payment clearing.
+                  </small>
+                </summary>
+                <AdminFormGrid
+                  action={createBankReconciliationMatchAction}
+                  className="compact-form admin-mt-16"
+                >
+                  <input name="bankTransactionId" type="hidden" value={transaction.id} />
+                  <input name="confirmationBankTransactionId" type="hidden" value={transaction.id} />
+                  <input name="returnTo" type="hidden" value={returnTo} />
+                  <AdminFormSelect
+                    label="Match source"
+                    labelVisibility="visible"
+                    name="sourceType"
+                    options={reconciliationSourceOptions.filter(
+                      (option) => option.value !== 'payment-clearing',
+                    )}
+                  />
+                  <AdminFormInput
+                    label="Source id"
+                    labelVisibility="visible"
+                    name="sourceId"
+                    placeholder="deposit request, journal, withdrawal, or payout id"
+                    required
+                  />
+                  <AdminFormInput
+                    defaultValue={suggestedMatchAmount}
+                    label="Match amount"
+                    labelVisibility="visible"
+                    min={1}
+                    name="amount"
+                    required
+                    step={1}
+                    type="number"
+                  />
+                  <AdminFormInput
+                    defaultValue={transaction.currency}
+                    label="Currency"
+                    labelVisibility="visible"
+                    name="currency"
                     required
                   />
                   <AdminFormTextarea
@@ -633,166 +996,30 @@ export default async function BankReconciliationDetailPage({
                     maxLength={500}
                     minLength={BANK_RECONCILIATION_EVIDENCE_MIN_LENGTH}
                     name="notes"
-                    placeholder="Why the bank outflow matches this Partner withdrawal"
+                    placeholder="Why this bank row matches the selected finance source"
                     required
                     rows={3}
                   />
                   <BankReconciliationConfirmationDisclosure
                     className="admin-grid-span-2"
-                    confirmLabel="Confirm withdrawal match"
-                    detail="Creates a bank reconciliation match against the selected paid withdrawal. A different Finance approver is still required."
-                    disabled={!withdrawalOptions.length || financeApproverOptions.length === 0}
-                    title="Review withdrawal match"
+                    confirmLabel="Confirm advanced match"
+                    detail="Creates a reconciliation link to the explicit finance source ID. Verify the source record, currency, amount, and assigned review owner before submitting."
+                    title="Review advanced source match"
+                    tone="danger"
                   />
                 </AdminFormGrid>
-              </div>
-            ) : null}
-            <div className="finance-reconciliation-match-primary">
-              <div className="finance-reconciliation-match-heading">
-                <div>
-                  <strong>Recommended payment clearing match</strong>
-                  <span>Use this first when the bank row belongs to a customer payment or booking settlement clearing entry.</span>
-                </div>
-                <StatusBadge tone={paymentClearingOptions.length > 0 ? 'success' : 'warning'}>
-                  {paymentClearingOptions.length} candidate(s)
-                </StatusBadge>
-              </div>
-              <AdminFormGrid action={createBankReconciliationMatchAction} className="compact-form">
-                <input name="bankTransactionId" type="hidden" value={transaction.id} />
-                <input name="confirmationBankTransactionId" type="hidden" value={transaction.id} />
-                <input name="sourceType" type="hidden" value="payment-clearing" />
-                <AdminFormSelect
-                  disabled={!paymentClearingOptions.length}
-                  label="Payment clearing candidate"
-                  labelVisibility="visible"
-                  name="sourceId"
-                  options={
-                    paymentClearingOptions.length
-                      ? paymentClearingOptions
-                      : [{ label: 'No open payment clearing candidate for this currency', value: '' }]
-                  }
-                  required
-                />
-                <AdminFormInput
-                  defaultValue={suggestedMatchAmount}
-                  label="Match amount"
-                  labelVisibility="visible"
-                  min={1}
-                  name="amount"
-                  required
-                  step={1}
-                  type="number"
-                />
-                <AdminFormInput
-                  defaultValue={transaction.currency}
-                  label="Currency"
-                  labelVisibility="visible"
-                  name="currency"
-                  required
-                />
-                <AdminFormSelect
-                  disabled={financeApproverOptions.length === 0}
-                  label="Separate Finance approver"
-                  labelVisibility="visible"
-                  name="approvalAdminId"
-                  options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}
-                  required
-                />
-                <AdminFormTextarea
-                  className="admin-grid-span-2"
-                  label="Operator notes"
-                  labelVisibility="visible"
-                  maxLength={500}
-                  minLength={BANK_RECONCILIATION_EVIDENCE_MIN_LENGTH}
-                  name="notes"
-                  placeholder="Why this bank row matches the selected payment clearing evidence"
-                  required
-                  rows={3}
-                />
-                <BankReconciliationConfirmationDisclosure
-                  className="admin-grid-span-2"
-                  confirmLabel="Confirm clearing match"
-                  detail={<>Creates a reconciliation link for the entered amount. Suggested amount: <MoneyText amount={suggestedMatchAmount} currency={transaction.currency} />.</>}
-                  disabled={!paymentClearingOptions.length || financeApproverOptions.length === 0}
-                  title="Review payment clearing match"
-                />
-              </AdminFormGrid>
+              </AdminDisclosure>
             </div>
-
-            <AdminDisclosure className="finance-reconciliation-import-disclosure admin-mt-16">
-              <summary>
-                <span>Advanced source match</span>
-                <small>Use for a Partner deposit request, journal, withdrawal, or payout evidence that is not in payment clearing.</small>
-              </summary>
-              <AdminFormGrid action={createBankReconciliationMatchAction} className="compact-form admin-mt-16">
-                <input name="bankTransactionId" type="hidden" value={transaction.id} />
-                <input name="confirmationBankTransactionId" type="hidden" value={transaction.id} />
-                <AdminFormSelect
-                  label="Match source"
-                  labelVisibility="visible"
-                  name="sourceType"
-                  options={reconciliationSourceOptions.filter((option) => option.value !== 'payment-clearing')}
-                />
-                <AdminFormInput
-                  label="Source id"
-                  labelVisibility="visible"
-                  name="sourceId"
-                  placeholder="deposit request, journal, withdrawal, or payout id"
-                  required
-                />
-                <AdminFormInput
-                  defaultValue={suggestedMatchAmount}
-                  label="Match amount"
-                  labelVisibility="visible"
-                  min={1}
-                  name="amount"
-                  required
-                  step={1}
-                  type="number"
-                />
-                <AdminFormInput
-                  defaultValue={transaction.currency}
-                  label="Currency"
-                  labelVisibility="visible"
-                  name="currency"
-                  required
-                />
-                <AdminFormSelect
-                  disabled={financeApproverOptions.length === 0}
-                  label="Separate Finance approver"
-                  labelVisibility="visible"
-                  name="approvalAdminId"
-                  options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}
-                  required
-                />
-                <AdminFormTextarea
-                  className="admin-grid-span-2"
-                  label="Operator notes"
-                  labelVisibility="visible"
-                  maxLength={500}
-                  minLength={BANK_RECONCILIATION_EVIDENCE_MIN_LENGTH}
-                  name="notes"
-                  placeholder="Why this bank row matches the selected finance source"
-                  required
-                  rows={3}
-                />
-                <BankReconciliationConfirmationDisclosure
-                  className="admin-grid-span-2"
-                  confirmLabel="Confirm advanced match"
-                  detail="Creates a reconciliation link to the explicit finance source ID. Verify the source record, currency, amount, and independent approver before submitting."
-                  disabled={financeApproverOptions.length === 0}
-                  title="Review advanced source match"
-                  tone="danger"
-                />
-              </AdminFormGrid>
-            </AdminDisclosure>
-          </div>
-        ) : (
-          <p className="muted admin-mt-8">
-            This bank transaction is already fully reconciled. Reverse an existing match before creating a new one.
-          </p>
-        )}
-      </FinanceTablePanel>
+          ) : (
+            <p className="muted admin-mt-8">
+              {transaction.preflight?.actions.createMatch.blockers
+                .map((blocker) => blocker.message)
+                .join(' ') ??
+                'This bank transaction is already fully reconciled. Reverse an existing match before creating a new one.'}
+            </p>
+          )}
+        </FinanceTablePanel>
+      ) : null}
 
       <FinanceTablePanel
         grouped
@@ -802,56 +1029,61 @@ export default async function BankReconciliationDetailPage({
         title="Reconciliation matches"
       >
         <FinanceDataTable
-            emptyMessage="No reconciliation matches are linked to this bank transaction."
-            headers={[
-              'Matched source',
-              'Accounting entry',
-              'Payment clearing',
-              'Withdrawal / payout',
-              'Amount',
-              'Status',
-              'Audit trail',
-              'Action',
-            ]}
-            rowCount={matches.length}
-          >
-            {matches.map((match) => (
-              <tr key={match.id}>
-                <td>
-                  <ReconciliationMatchedSourceCell match={match} />
-                </td>
-                <td>
-                  <ReconciliationJournalCell match={match} />
-                </td>
-                <td>
-                  <ReconciliationPaymentClearingCell match={match} />
-                </td>
-                <td>
-                  <ReconciliationPayoutCell match={match} />
-                </td>
-                <td>
-                  <strong>
-                    <MoneyText amount={match.amount} currency={match.currency} />
-                  </strong>
-                </td>
-                <td>
-                  <StatusBadgeFromPillClass pillClass={financeBankReconciliationStatusPill(match.status)}>
-                    {match.status}
-                  </StatusBadgeFromPillClass>
-                </td>
-                <td>
-                  <ReconciliationAuditTrail metadata={match.metadata} />
-                </td>
-                <td>
-                  <ReconciliationMatchActionCell
-                    financeApproverOptions={financeApproverOptions}
-                    match={match}
-                    transactionId={transaction.id}
-                  />
-                </td>
-              </tr>
-            ))}
-          </FinanceDataTable>
+          emptyMessage="No reconciliation matches are linked to this bank transaction."
+          headers={[
+            'Matched source',
+            'Accounting entry',
+            'Payment clearing',
+            'Withdrawal / payout',
+            'Amount',
+            'Status',
+            'Audit trail',
+            'Action',
+          ]}
+          rowCount={matches.length}
+        >
+          {matches.map((match) => (
+            <tr key={match.id}>
+              <td>
+                <ReconciliationMatchedSourceCell match={match} />
+              </td>
+              <td>
+                <ReconciliationJournalCell match={match} />
+              </td>
+              <td>
+                <ReconciliationPaymentClearingCell match={match} />
+              </td>
+              <td>
+                <ReconciliationPayoutCell match={match} />
+              </td>
+              <td>
+                <strong>
+                  <MoneyText amount={match.amount} currency={match.currency} />
+                </strong>
+              </td>
+              <td>
+                <StatusBadgeFromPillClass pillClass={financeBankReconciliationStatusPill(match.status)}>
+                  {match.status}
+                </StatusBadgeFromPillClass>
+              </td>
+              <td>
+                <ReconciliationAuditTrail metadata={match.metadata} />
+              </td>
+              <td>
+                <ReconciliationMatchActionCell
+                  canReverse={
+                    transaction.preflight
+                      ? transaction.preflight.actions.reverse.allowedMatchIds.includes(match.id)
+                      : match.status !== 'REVERSED'
+                  }
+                  match={match}
+                  returnTo={returnTo}
+                  transactionId={transaction.id}
+                />
+              </td>
+            </tr>
+          ))}
+        </FinanceDataTable>
       </FinanceTablePanel>
     </AdminPageTemplate>
   );
@@ -873,12 +1105,16 @@ function ReconciliationJournalCell({ match }: { readonly match: AdminBankReconci
     return <AdminInlineFallback>No journal entry</AdminInlineFallback>;
   }
 
-  const partnerBankDepositRequestId = partnerBankDepositRequestIdFromJournalEntry(match.accountingJournalEntry);
+  const partnerBankDepositRequestId = partnerBankDepositRequestIdFromJournalEntry(
+    match.accountingJournalEntry,
+  );
 
   return (
     <AdminTableSubstack>
       {partnerBankDepositRequestId ? (
-        <AdminTextLink href={`/finance-tax/partner-bank-deposits/${encodeURIComponent(partnerBankDepositRequestId)}`}>
+        <AdminTextLink
+          href={`/finance-tax/partner-bank-deposits/${encodeURIComponent(partnerBankDepositRequestId)}`}
+        >
           Partner deposit
         </AdminTextLink>
       ) : null}
@@ -900,7 +1136,9 @@ function ReconciliationPaymentClearingCell({ match }: { readonly match: AdminBan
       <AdminTextLink href={paymentClearingDetailHref(match.paymentClearingEntry.id)}>
         {match.paymentClearingEntry.type}
       </AdminTextLink>
-      <span className="muted">{match.paymentClearingEntry.bookingId ? shortId(match.paymentClearingEntry.bookingId) : '-'}</span>
+      <span className="muted">
+        {match.paymentClearingEntry.bookingId ? shortId(match.paymentClearingEntry.bookingId) : '-'}
+      </span>
     </AdminTableSubstack>
   );
 }
@@ -919,31 +1157,32 @@ function ReconciliationPayoutCell({ match }: { readonly match: AdminBankReconcil
 }
 
 function ReconciliationMatchActionCell({
-  financeApproverOptions,
+  canReverse,
   match,
+  returnTo,
   transactionId,
 }: {
-  readonly financeApproverOptions: readonly FinanceApproverOption[];
+  readonly canReverse: boolean;
   readonly match: AdminBankReconciliationMatch;
+  readonly returnTo: string;
   readonly transactionId: string;
 }) {
   if (match.status === 'REVERSED') {
     return <span className="muted">Reversed</span>;
   }
+  if (!canReverse) {
+    return <StatusBadge tone="danger">Reversal blocked</StatusBadge>;
+  }
 
   return (
-    <AdminFormShell action={reverseBankReconciliationMatchAction} className="finance-reconciliation-reverse-form">
+    <AdminFormShell
+      action={reverseBankReconciliationMatchAction}
+      className="finance-reconciliation-reverse-form"
+    >
       <input name="bankTransactionId" type="hidden" value={transactionId} />
       <input name="confirmationBankTransactionId" type="hidden" value={transactionId} />
       <input name="matchId" type="hidden" value={match.id} />
-      <AdminFormSelect
-        className="admin-inline-approval-input"
-        disabled={financeApproverOptions.length === 0}
-        label="Separate Finance approver"
-        name="approvalAdminId"
-        options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}
-        required
-      />
+      <input name="returnTo" type="hidden" value={returnTo} />
       <AdminFormInput
         label="Reversal reason"
         labelVisibility="visible"
@@ -956,7 +1195,6 @@ function ReconciliationMatchActionCell({
         auditDetail="Submitting records the selected match, approving operator, and reversal evidence in the reconciliation audit trail."
         confirmLabel="Confirm reversal"
         detail="Reopens the matched amount for reconciliation and preserves the original match as reversed audit evidence."
-        disabled={financeApproverOptions.length === 0}
         title="Review match reversal"
         tone="danger"
       />
@@ -973,38 +1211,38 @@ async function createBankReconciliationMatchAction(formData: FormData) {
   const sourceId = readFormString(formData, 'sourceId');
   const amount = Number(readFormString(formData, 'amount'));
   const currency = readFormString(formData, 'currency');
-  const approvalAdminId = readFormString(formData, 'approvalAdminId');
   const notes = readFormString(formData, 'notes');
   const sourceField = bankReconciliationSourceField(sourceType);
-  const returnHref = bankTransactionId
-    ? `/finance-tax/bank-reconciliation/${encodeURIComponent(bankTransactionId)}`
-    : '/finance-tax/bank-reconciliation';
+  const returnTo = safeBankReconciliationReturnTo(readFormString(formData, 'returnTo'));
+  const returnHref = bankTransactionId ? bankReconciliationDetailHref(bankTransactionId, returnTo) : returnTo;
 
   if (
-    !isConfirmedBankReconciliationAction({ bankTransactionId, confirmationBankTransactionId, evidence: notes }) ||
+    !isConfirmedBankReconciliationAction({
+      bankTransactionId,
+      confirmationBankTransactionId,
+      evidence: notes,
+    }) ||
     !sourceField ||
     !sourceId ||
-    !approvalAdminId ||
     !Number.isFinite(amount) ||
     amount <= 0
   ) {
-    return redirect(`${returnHref}?matchError=confirmation-required`);
+    return redirect(appendDetailParam(returnHref, 'matchError', 'confirmation-required'));
   }
 
   try {
     await adminPostOrThrow(`/admin/bank-reconciliation/${encodeURIComponent(bankTransactionId)}/matches`, {
       amount,
-      approvalAdminId,
       ...(currency ? { currency } : {}),
       ...(notes ? { notes } : {}),
       [sourceField]: sourceId,
     });
   } catch (error) {
     logBankReconciliationActionError('create match', error);
-    return redirect(`${returnHref}?matchError=${bankReconciliationActionErrorCode(error)}`);
+    return redirect(appendDetailParam(returnHref, 'matchError', bankReconciliationActionErrorCode(error)));
   }
 
-  return redirect(`${returnHref}?matched=1`);
+  return redirect(appendDetailParam(returnHref, 'matched', '1'));
 }
 
 async function assignBankTransactionReviewAction(formData: FormData) {
@@ -1014,14 +1252,17 @@ async function assignBankTransactionReviewAction(formData: FormData) {
   const confirmationBankTransactionId = readFormString(formData, 'confirmationBankTransactionId');
   const assigneeAdminId = readFormString(formData, 'assigneeAdminId');
   const reason = readFormString(formData, 'reason');
-  const detailHref = bankTransactionId
-    ? `/finance-tax/bank-reconciliation/${encodeURIComponent(bankTransactionId)}`
-    : '/finance-tax/bank-reconciliation';
+  const returnTo = safeBankReconciliationReturnTo(readFormString(formData, 'returnTo'));
+  const detailHref = bankTransactionId ? bankReconciliationDetailHref(bankTransactionId, returnTo) : returnTo;
   if (
-    !isConfirmedBankReconciliationAction({ bankTransactionId, confirmationBankTransactionId, evidence: reason }) ||
+    !isConfirmedBankReconciliationAction({
+      bankTransactionId,
+      confirmationBankTransactionId,
+      evidence: reason,
+    }) ||
     !assigneeAdminId
   ) {
-    return redirect(`${detailHref}?reviewAssignmentNotice=failed`);
+    return redirect(appendDetailParam(detailHref, 'reviewAssignmentNotice', 'failed'));
   }
 
   try {
@@ -1031,10 +1272,10 @@ async function assignBankTransactionReviewAction(formData: FormData) {
     );
   } catch (error) {
     logBankReconciliationActionError('review assignment', error);
-    return redirect(`${detailHref}?reviewAssignmentNotice=failed`);
+    return redirect(appendDetailParam(detailHref, 'reviewAssignmentNotice', 'failed'));
   }
 
-  return redirect(`${detailHref}?reviewAssignmentNotice=assigned`);
+  return redirect(appendDetailParam(detailHref, 'reviewAssignmentNotice', 'assigned'));
 }
 
 async function reverseBankReconciliationMatchAction(formData: FormData) {
@@ -1043,18 +1284,19 @@ async function reverseBankReconciliationMatchAction(formData: FormData) {
   const bankTransactionId = readFormString(formData, 'bankTransactionId');
   const confirmationBankTransactionId = readFormString(formData, 'confirmationBankTransactionId');
   const matchId = readFormString(formData, 'matchId');
-  const approvalAdminId = readFormString(formData, 'approvalAdminId');
   const reason = readFormString(formData, 'reason');
-  const returnHref = bankTransactionId
-    ? `/finance-tax/bank-reconciliation/${encodeURIComponent(bankTransactionId)}`
-    : '/finance-tax/bank-reconciliation';
+  const returnTo = safeBankReconciliationReturnTo(readFormString(formData, 'returnTo'));
+  const returnHref = bankTransactionId ? bankReconciliationDetailHref(bankTransactionId, returnTo) : returnTo;
 
   if (
-    !isConfirmedBankReconciliationAction({ bankTransactionId, confirmationBankTransactionId, evidence: reason }) ||
-    !matchId ||
-    !approvalAdminId
+    !isConfirmedBankReconciliationAction({
+      bankTransactionId,
+      confirmationBankTransactionId,
+      evidence: reason,
+    }) ||
+    !matchId
   ) {
-    return redirect(`${returnHref}?reverseError=confirmation-required`);
+    return redirect(appendDetailParam(returnHref, 'reverseError', 'confirmation-required'));
   }
 
   try {
@@ -1062,14 +1304,14 @@ async function reverseBankReconciliationMatchAction(formData: FormData) {
       `/admin/bank-reconciliation/${encodeURIComponent(bankTransactionId)}/matches/${encodeURIComponent(
         matchId,
       )}/reverse`,
-      { approvalAdminId, ...(reason ? { reason } : {}) },
+      { reason },
     );
   } catch (error) {
     logBankReconciliationActionError('reverse match', error);
-    return redirect(`${returnHref}?reverseError=${bankReconciliationActionErrorCode(error)}`);
+    return redirect(appendDetailParam(returnHref, 'reverseError', bankReconciliationActionErrorCode(error)));
   }
 
-  return redirect(`${returnHref}?matchReversed=1`);
+  return redirect(appendDetailParam(returnHref, 'matchReversed', '1'));
 }
 
 async function ignoreCompanyBankTransactionAction(formData: FormData) {
@@ -1077,30 +1319,30 @@ async function ignoreCompanyBankTransactionAction(formData: FormData) {
 
   const bankTransactionId = readFormString(formData, 'bankTransactionId');
   const confirmationBankTransactionId = readFormString(formData, 'confirmationBankTransactionId');
-  const approvalAdminId = readFormString(formData, 'approvalAdminId');
   const reason = readFormString(formData, 'reason');
-  const returnHref = bankTransactionId
-    ? `/finance-tax/bank-reconciliation/${encodeURIComponent(bankTransactionId)}`
-    : '/finance-tax/bank-reconciliation';
+  const returnTo = safeBankReconciliationReturnTo(readFormString(formData, 'returnTo'));
+  const returnHref = bankTransactionId ? bankReconciliationDetailHref(bankTransactionId, returnTo) : returnTo;
 
   if (
-    !isConfirmedBankReconciliationAction({ bankTransactionId, confirmationBankTransactionId, evidence: reason }) ||
-    !approvalAdminId
+    !isConfirmedBankReconciliationAction({
+      bankTransactionId,
+      confirmationBankTransactionId,
+      evidence: reason,
+    })
   ) {
-    return redirect(`${returnHref}?ignoreError=confirmation-required`);
+    return redirect(appendDetailParam(returnHref, 'ignoreError', 'confirmation-required'));
   }
 
   try {
     await adminPostOrThrow(`/admin/bank-reconciliation/${encodeURIComponent(bankTransactionId)}/ignore`, {
-      approvalAdminId,
       reason,
     });
   } catch (error) {
     logBankReconciliationActionError('ignore bank transaction', error);
-    return redirect(`${returnHref}?ignoreError=${bankReconciliationActionErrorCode(error)}`);
+    return redirect(appendDetailParam(returnHref, 'ignoreError', bankReconciliationActionErrorCode(error)));
   }
 
-  return redirect(`${returnHref}?ignored=1`);
+  return redirect(appendDetailParam(returnHref, 'ignored', '1'));
 }
 
 function ReconciliationAuditTrail({ metadata }: { readonly metadata: unknown }) {
@@ -1135,8 +1377,7 @@ function ReconciliationAuditTrail({ metadata }: { readonly metadata: unknown }) 
   const actorLabel = auditActorName ?? auditActorEmail ?? auditActorId;
   const approverLabel = approvalAdminName ?? approvalAdminEmail ?? approvalAdminId;
   const matchActorLabel = matchActorName ?? matchActorEmail ?? matchActorId;
-  const matchApproverLabel =
-    matchApprovalAdminName ?? matchApprovalAdminEmail ?? matchApprovalAdminId;
+  const matchApproverLabel = matchApprovalAdminName ?? matchApprovalAdminEmail ?? matchApprovalAdminId;
   const reversedByLabel = reversedByAdminName ?? reversedByAdminEmail ?? reversedByAdminId;
   const reversalApproverLabel =
     reversalApprovalAdminName ?? reversalApprovalAdminEmail ?? reversalApprovalAdminId;
@@ -1161,7 +1402,7 @@ function ReconciliationAuditTrail({ metadata }: { readonly metadata: unknown }) 
         </span>
       ) : null}
       {!hasSeparatedOperatorEvidence && approverLabel ? (
-        <span className="muted">Approved by {approverLabel}</span>
+        <span className="muted">Finance approver: {approverLabel}</span>
       ) : null}
       {matchActorLabel ? (
         <span className="muted">
@@ -1174,9 +1415,7 @@ function ReconciliationAuditTrail({ metadata }: { readonly metadata: unknown }) 
           ) : null}
         </span>
       ) : null}
-      {matchApproverLabel ? (
-        <span className="muted">Match approved by {matchApproverLabel}</span>
-      ) : null}
+      {matchApproverLabel ? <span className="muted">Match approved by {matchApproverLabel}</span> : null}
       {reversedByLabel ? (
         <span className="muted">
           Reversed by {reversedByLabel}
@@ -1194,13 +1433,15 @@ function ReconciliationAuditTrail({ metadata }: { readonly metadata: unknown }) 
       {reversalReason ? <span className="muted">Reversal reason: {reversalReason}</span> : null}
       {bankBefore || bankAfter ? (
         <span>
-          Bank: {bankBefore ?? '-'}{' -> '}
+          Bank: {bankBefore ?? '-'}
+          {' -> '}
           {bankAfter ?? '-'}
         </span>
       ) : null}
       {clearingBefore || clearingAfter ? (
         <span className="muted">
-          Clearing: {clearingBefore ?? '-'}{' -> '}
+          Clearing: {clearingBefore ?? '-'}
+          {' -> '}
           {clearingAfter ?? '-'}
         </span>
       ) : null}
@@ -1257,23 +1498,15 @@ function manualMatchResultTone({
   return 'info';
 }
 
-function paymentClearingCandidateComparator(targetAmount: number) {
-  return (left: AdminBookingPaymentClearingEntry, right: AdminBookingPaymentClearingEntry) => {
-    const leftDelta = Math.abs(Math.abs(left.amount) - targetAmount);
-    const rightDelta = Math.abs(Math.abs(right.amount) - targetAmount);
-    if (leftDelta !== rightDelta) {
-      return leftDelta - rightDelta;
-    }
-    return new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime();
-  };
-}
-
-function paymentClearingCandidateLabel(entry: AdminBookingPaymentClearingEntry, targetAmount: number) {
-  const baseLabel = `${entry.type} - ${formatMoney(entry.amount, entry.currency)} - booking ${shortId(entry.bookingId)}`;
-  if (Math.abs(Math.abs(entry.amount) - targetAmount) === 0) {
-    return `Exact amount - ${baseLabel}`;
-  }
-  return baseLabel;
+function paymentClearingCandidateLabel(
+  entry: NonNullable<AdminBankReconciliationTransactionDetail['paymentClearingCandidates']>[number],
+) {
+  const evidence = entry.transferRefMatch
+    ? 'Reference match'
+    : entry.exactAmount
+      ? 'Exact amount'
+      : 'Review amount';
+  return `${evidence} - ${entry.customerLabel} - ${formatMoney(entry.remainingAmount, entry.currency)} - booking ${shortId(entry.bookingId)}`;
 }
 
 function withdrawalCandidateLabel(
@@ -1322,23 +1555,6 @@ function reconciliationLedgerLabel(match: AdminBankReconciliationMatch | null) {
     return 'Pending journal evidence';
   }
   return `${match.accountingJournalEntry.accountCode} · ${match.accountingJournalEntry.accountName}`;
-}
-
-function bankReconciliationNextAction(
-  status: string,
-  remainingAmount: number,
-  latestReversedMatch: AdminBankReconciliationMatch | null,
-) {
-  if (remainingAmount <= 0 || status === 'MATCHED') {
-    return 'Ready for closeout';
-  }
-  if (latestReversedMatch) {
-    return 'Review reversed evidence';
-  }
-  if (status === 'PARTIALLY_MATCHED') {
-    return 'Match remaining amount';
-  }
-  return 'Create explicit match';
 }
 
 function canCreateBankReconciliationMatch(status: string) {
@@ -1420,6 +1636,41 @@ function readParam(params: Record<string, string | string[] | undefined>, key: s
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
 }
 
+function boundedCandidatePage(value: string) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 10_000) : 1;
+}
+
+function boundedCandidateTake(value: string) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 50) : 25;
+}
+
+function bankCandidateStateHref(
+  detailHref: string,
+  state: {
+    readonly candidatePage: number;
+    readonly candidateQuery: string;
+    readonly candidateTake: number;
+  },
+) {
+  const url = new URL(detailHref, 'http://admin.local');
+  url.searchParams.set('candidatePage', String(Math.max(1, state.candidatePage)));
+  url.searchParams.set('candidateTake', String(state.candidateTake));
+  if (state.candidateQuery) {
+    url.searchParams.set('candidateQ', state.candidateQuery);
+  } else {
+    url.searchParams.delete('candidateQ');
+  }
+  return `${url.pathname}${url.search}`;
+}
+
 function readFormString(formData: FormData, key: string) {
   return String(formData.get(key) ?? '').trim();
+}
+
+function appendDetailParam(href: string, key: string, value: string) {
+  const url = new URL(href, 'http://admin.local');
+  url.searchParams.set(key, value);
+  return `${url.pathname}${url.search}`;
 }

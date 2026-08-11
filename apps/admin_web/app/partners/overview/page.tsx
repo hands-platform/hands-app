@@ -4,16 +4,11 @@ import {
   BadgeCheck,
   Ban,
   ChevronRight,
-  CircleDollarSign,
   ClipboardCheck,
   Clock,
-  FileWarning,
   MapPinned,
-  MousePointerClick,
   RadioTower,
-  ShieldAlert,
   Star,
-  TrendingUp,
   UserCheck,
   Users,
   UserX,
@@ -39,10 +34,9 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
 import {
   AdminCard,
-  AdminCardGrid,
-  AdminCardHeader,
+  AdminDisclosure,
+  AdminErrorState,
   AdminKpiCard,
-  AdminRowLink,
   AdminSection,
 } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
@@ -50,15 +44,13 @@ import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
-import {
-  formatDateTime,
-  formatWholeNumber as formatNumber,
-} from '../../../lib/admin-format';
+import { formatWholeNumber as formatNumber } from '../../../lib/admin-format';
 import {
   AdminPartnerOverview,
-  AdminPartnerOverviewActionList,
-  AdminPartnerOverviewActionRow,
+  AdminPartnerOverviewAppActivityRow,
   AdminPartnerOverviewAreaRow,
+  AdminPartnerOverviewAvailableBlockedReason,
+  AdminPartnerOverviewCustomerDiscoveryBlocker,
   AdminPartnerOverviewFunnelStep,
   AdminPartnerOverviewKpi,
   AdminPartnerOverviewNegativeWalletPartner,
@@ -66,14 +58,14 @@ import {
   AdminPartnerOverviewRiskPartner,
   AdminPartnerOverviewSelectionIssueCount,
   AdminPartnerOverviewSelectionFrictionRow,
-  AdminPartnerOverviewSegment,
   AdminPartnerOverviewServiceRow,
   adminGet,
 } from '../../../lib/admin-api';
 import {
-  emptyPartnerOverview,
   normalizePartnerOverviewRange,
   partnerOverviewActiveFilters,
+  partnerOverviewDirectoryLink,
+  partnerOverviewFreshness,
   partnerOverviewHref,
   partnerOverviewRangeOptions,
   partnerOverviewWithDefaults,
@@ -101,52 +93,71 @@ export default async function PartnerOverviewPage({
     serviceId: firstParam(params?.serviceId) ?? null,
     verificationStatus: firstParam(params?.verificationStatus) ?? null,
   };
-  const apiParams = new URLSearchParams({ range });
+  const apiParams = new URLSearchParams({
+    range,
+    includeActionRows: 'false',
+    previewLimit: '5',
+  });
   for (const [key, value] of Object.entries(filters)) {
     if (value) apiParams.set(key, value);
   }
-  const rawOverview = await adminGet<AdminPartnerOverview>(
+  const rawOverview = await adminGet<AdminPartnerOverview | null>(
     `/admin/partners/overview?${apiParams.toString()}`,
-    emptyPartnerOverview(range),
+    null,
   );
-  const overview = partnerOverviewWithDefaults(rawOverview, range);
-  const activeFilters = partnerOverviewActiveFilters(range, filters);
+  const overview = rawOverview ? partnerOverviewWithDefaults(rawOverview, range) : null;
+  const serviceOptions = partnerOverviewServiceOptions(overview, filters.serviceId);
+  const activeFilters = partnerOverviewActiveFilters(range, filters).map((filter) =>
+    filter.key === 'serviceId'
+      ? {
+          ...filter,
+          value: serviceOptions.find((option) => option.value === filter.value)?.label ?? filter.value,
+        }
+      : filter,
+  );
+  const freshness = overview
+    ? partnerOverviewFreshness(overview.generatedAt, overview.refreshSeconds)
+    : null;
 
   return (
     <AdminPageTemplate
       contentClassName="partner-overview-page"
-      description="Supply status, Partner activation, booking quality, wallet risk, and action queues from stored operational records."
-      title="Partner Overview"
+      description="Current Partner supply, action queues, period performance, and operational risk in Vietnam time."
+      title="Partner Operations"
     >
-
       <AdminFilterPanel
         actions={
           <>
-            <StatusBadge tone="success">Vietnam supply</StatusBadge>
-            <StatusBadge tone="info">
-              Generated <DateTimeText value={overview.generatedAt} />
-            </StatusBadge>
+            <StatusBadge tone="success">Vietnam time</StatusBadge>
+            {overview ? (
+              <StatusBadge tone={freshness?.stale ? 'warning' : 'info'}>
+                {freshness?.stale ? 'Data stale' : 'Current operations'} · as of{' '}
+                <DateTimeText value={overview.generatedAt} />
+              </StatusBadge>
+            ) : (
+              <StatusBadge tone="danger">Source unavailable</StatusBadge>
+            )}
+            {overview?.queryScope.walletBalanceScopeTruncated ? (
+              <StatusBadge tone="warning">
+                Risk analysis: latest {overview.queryScope.providerScanLimit}
+              </StatusBadge>
+            ) : null}
+            <AdminFormControlLink href={partnerOverviewHref(range, filters)}>Refresh now</AdminFormControlLink>
           </>
         }
         className="partner-overview-filter-panel"
-        description="Default view stays focused on current supply and bounded operating windows."
-        resultLabel={overview.rangeLabel}
-        title="Partner supply range"
+        description="Filters apply to current operations and the selected performance period."
+        resultLabel={overview?.rangeLabel ?? 'Unavailable'}
+        title="Partner filters"
       >
-        <AdminSegmentedControl
-          activeValue={range}
-          ariaLabel="Partner overview range"
-          className="partner-overview-range-buttons"
-          options={partnerOverviewRangeOptions.map((option) => ({
-            href: partnerOverviewHref(option.value, filters),
-            label: option.label,
-            value: option.value,
-          }))}
-        />
         <AdminFormGrid action="/partners/overview" className="partner-overview-filter-grid">
           <input type="hidden" name="range" value={range} />
-          {filters.selectionIssue ? <input type="hidden" name="selectionIssue" value={filters.selectionIssue} /> : null}
-          {filters.selectionSort ? <input type="hidden" name="selectionSort" value={filters.selectionSort} /> : null}
+          {filters.selectionIssue ? (
+            <input type="hidden" name="selectionIssue" value={filters.selectionIssue} />
+          ) : null}
+          {filters.selectionSort ? (
+            <input type="hidden" name="selectionSort" value={filters.selectionSort} />
+          ) : null}
           <AdminFormInput
             defaultValue={filters.city ?? ''}
             label="City / area"
@@ -154,12 +165,12 @@ export default async function PartnerOverviewPage({
             name="city"
             placeholder="hcm, hanoi, cau giay"
           />
-          <AdminFormInput
+          <AdminFormSelect
             defaultValue={filters.serviceId ?? ''}
             label="Service"
             labelVisibility="visible"
             name="serviceId"
-            placeholder="service id"
+            options={serviceOptions}
           />
           <AdminFormSelect
             defaultValue={filters.verificationStatus ?? ''}
@@ -201,7 +212,11 @@ export default async function PartnerOverviewPage({
           >
             <span>Active filters</span>
             {activeFilters.map((filter) => (
-              <a aria-label={`Remove ${filter.label} filter ${filter.value}`} key={filter.key} href={filter.removeHref}>
+              <a
+                aria-label={`Remove ${filter.label} filter ${filter.value}`}
+                key={filter.key}
+                href={filter.removeHref}
+              >
                 <strong>{filter.label}</strong>
                 {filter.value}
                 <span aria-hidden="true">×</span>
@@ -214,111 +229,103 @@ export default async function PartnerOverviewPage({
         ) : null}
       </AdminFilterPanel>
 
-      {overview.summaryKpis.length > 0 ? (
-        <AdminOverviewCommandGrid ariaLabel="Partner supply summary">
-          {overview.summaryKpis.map((kpi, index) => (
-            <PartnerKpiCard
-              key={kpi.key}
-              icon={summaryIcons[index % summaryIcons.length]}
-              kpi={kpi}
-              rangeLabel={overview.rangeLabel}
-            />
-          ))}
-        </AdminOverviewCommandGrid>
-      ) : null}
-
-      <OperatingStatusBoard cards={overview.operatingStatus.cards} />
-
-      <PartnerPriorityBoard filters={filters} overview={overview} range={range} />
-
-      <AdminOverviewGrid ariaLabel="Supply status" className="partner-overview-supply-grid" variant="insight">
-        <SupplyAreaCard rows={overview.supplyHealth.areas} rangeLabel={overview.rangeLabel} />
-        <SupplyServiceCard rows={overview.supplyHealth.services} rangeLabel={overview.rangeLabel} />
-      </AdminOverviewGrid>
-
-      <AdminSection
-        bodyClassName="partner-overview-funnel-steps"
-        className="partner-overview-section-card"
-        description="From signup to approved supply, request activity, completed work, and payout profile completion."
-        statusLabel={overview.rangeLabel}
-        title="Partner activation funnel"
-      >
-        {overview.funnel.steps.map((step) => (
-          <PartnerFunnelStep key={step.key} step={step} />
-        ))}
-      </AdminSection>
-
-      {overview.activityRetention.cards.length > 0 ? (
-        <AdminOverviewGrid ariaLabel="Partner activity and retention" variant="segment">
-          {overview.activityRetention.cards.map((kpi, index) => (
-            <PartnerKpiCard
-              key={kpi.key}
-              icon={activityIcons[index % activityIcons.length]}
-              kpi={kpi}
-              rangeLabel={overview.rangeLabel}
-            />
-          ))}
-        </AdminOverviewGrid>
-      ) : null}
-
-      <AdminOverviewGrid ariaLabel="Partner quality and finance" className="partner-overview-quality-grid" variant="insight">
-        <QualityRiskCard kpis={overview.bookingQuality.kpis} rows={overview.bookingQuality.riskPartners} />
-        <WalletRiskCard
-          kpis={overview.financeWalletRisk.kpis}
-          policyNote={overview.financeWalletRisk.policyNote}
-          rows={overview.financeWalletRisk.negativeWalletPartners}
+      {!overview ? (
+        <AdminErrorState
+          action={<AdminTextLink href={partnerOverviewHref(range, filters)}>Retry Partner Overview</AdminTextLink>}
+          message="The Partner Overview API did not return a report. No zero values are shown until the source becomes available."
+          title="Partner data unavailable"
         />
-      </AdminOverviewGrid>
+      ) : (
+        <>
+          <PartnerPriorityBoard filters={filters} overview={overview} range={range} />
 
-      <SelectionFrictionCard
-        filters={filters}
-        issueCounts={overview.selectionFriction.issueCounts}
-        range={range}
-        rows={overview.selectionFriction.rows}
-      />
+          <OperatingStatusBoard
+            availableBlockedReasons={overview.operatingStatus.availableBlockedReasons}
+            cards={overview.operatingStatus.cards}
+            customerDiscovery={overview.operatingStatus.customerDiscovery}
+            filters={filters}
+            locationFreshnessMinutes={overview.operatingStatus.locationFreshnessMinutes}
+            range={range}
+          />
 
-      <AdminSection
-        bodyClassName="partner-overview-action-grid"
-        className="partner-overview-section-card"
-        description="Small, operator-first queues. Open full filtered lists from each section when needed."
-        statusLabel={`${overview.actionLists.length} queues`}
-        statusTone="warning"
-        title="Risk and action queues"
-      >
-        {overview.actionLists.map((list) => (
-          <ActionListCard key={list.key} list={list} />
-        ))}
-      </AdminSection>
+          <PartnerPeriodPerformance filters={filters} overview={overview} range={range} />
 
-      {overview.segments.length > 0 ? (
-        <AdminOverviewGrid ariaLabel="Partner segments" variant="segment">
-          {overview.segments.map((segment) => (
-            <PartnerSegmentCard key={segment.key} rangeLabel={overview.rangeLabel} segment={segment} />
-          ))}
-        </AdminOverviewGrid>
-      ) : null}
+          <div className="partner-overview-supply-grid" aria-label="Supply status">
+            <SupplyAreaCard rows={overview.supplyHealth.areas.slice(0, 5)} rangeLabel={overview.rangeLabel} />
+            <SupplyServiceCard rows={overview.supplyHealth.services.slice(0, 5)} rangeLabel={overview.rangeLabel} />
+          </div>
 
-      {overview.dataNotes.length > 0 ? (
-        <AdminSection
-          className="partner-overview-notes-card"
-          description="Signals that need additional mobile event logging before they become exact."
-          title="Data notes"
-        >
-          <ul className="partner-overview-notes">
-            {overview.dataNotes.map((note) => (
-              <li key={note}>{note}</li>
+          <AdminSection
+            bodyClassName="partner-overview-funnel-steps"
+            className="partner-overview-section-card"
+            description="Current registered accounts, approved Partners, and Partners able to accept a booking now."
+            status={
+              <StatusBadge tone="info">
+                Current · as of <DateTimeText value={overview.generatedAt} />
+              </StatusBadge>
+            }
+            title="Current readiness snapshot"
+          >
+            {overview.funnel.steps.map((step, index) => (
+              <PartnerFunnelStep
+                baseCount={overview.funnel.steps[0]?.count ?? null}
+                key={step.key}
+                previousCount={index > 0 ? (overview.funnel.steps[index - 1]?.count ?? null) : null}
+                step={step}
+              />
             ))}
-          </ul>
-        </AdminSection>
-      ) : null}
+          </AdminSection>
+
+          {overview.appActivity.kpis.length > 0 ? (
+            <PartnerAppActivitySection
+              inactivePartners={overview.appActivity.inactivePartners}
+              kpis={overview.appActivity.kpis}
+              mostActive={overview.appActivity.mostActive}
+              rangeLabel={overview.rangeLabel}
+            />
+          ) : null}
+
+          <div className="partner-overview-quality-grid" aria-label="Partner quality and finance">
+            <QualityRiskCard
+              kpis={overview.bookingQuality.kpis}
+              riskPartnerCount={overview.bookingQuality.riskPartnerCount}
+              rows={overview.bookingQuality.riskPartners}
+            />
+            <WalletRiskCard
+              kpis={overview.financeWalletRisk.kpis}
+              policyNote={overview.financeWalletRisk.policyNote}
+              rows={overview.financeWalletRisk.negativeWalletPartners}
+            />
+          </div>
+
+          <SelectionFrictionCard
+            filters={filters}
+            issueCounts={overview.selectionFriction.issueCounts}
+            range={range}
+            rows={overview.selectionFriction.rows}
+          />
+
+          <DetailedActionQueues filters={filters} lists={overview.actionLists} range={range} />
+        </>
+      )}
     </AdminPageTemplate>
   );
 }
 
-const summaryIcons = [Users, BadgeCheck, ClipboardCheck, RadioTower, MapPinned, UserCheck, Activity, AlertTriangle];
-const activityIcons = [ShieldAlert, Activity, RadioTower, AlertTriangle, Star];
+const summaryIcons = [
+  Users,
+  BadgeCheck,
+  ClipboardCheck,
+  RadioTower,
+  MapPinned,
+  UserCheck,
+  Activity,
+  AlertTriangle,
+];
 const partnerOperatingStatusIcons: Record<string, typeof Users> = {
+  'available-blocked': AlertTriangle,
   'available-soon': Clock,
+  busy: Activity,
   'busy-now': Activity,
   'inactive-7d': UserX,
   offline: Ban,
@@ -373,6 +380,22 @@ const selectionSortOptions = [
   { label: 'Availability risk', value: 'availability' },
 ];
 
+function partnerOverviewServiceOptions(
+  overview: AdminPartnerOverview | null,
+  selectedServiceId: string | null,
+) {
+  const options = (overview?.filterOptions.services ?? []).map((service) => ({
+    label: `${service.name} · ${service.durationMin} min`,
+    value: service.id,
+  }));
+
+  if (selectedServiceId && !options.some((option) => option.value === selectedServiceId)) {
+    options.unshift({ label: 'Unavailable service', value: selectedServiceId });
+  }
+
+  return [{ label: 'All services', value: '' }, ...options];
+}
+
 function PartnerKpiCard({
   icon: Icon,
   kpi,
@@ -384,17 +407,77 @@ function PartnerKpiCard({
 }) {
   const tone = kpi.value === null ? 'neutral' : kpi.value > 0 ? 'primary' : 'neutral';
   const meta = partnerOverviewKpiMeta(kpi, rangeLabel);
+  const comparisonLabel =
+    kpi.deltaPercent === null
+      ? kpi.detail
+      : `${kpi.detail} · ${kpi.deltaPercent >= 0 ? '+' : ''}${kpi.deltaPercent}% vs previous`;
 
   return (
     <AdminKpiCard
       className={`partner-overview-kpi-card is-${tone}`}
-      helper={kpi.detail}
+      helper={comparisonLabel}
       icon={Icon}
       kind={meta.kind}
       label={kpi.label}
       scope={meta.scope}
       value={formatKpiValue(kpi)}
     />
+  );
+}
+
+function PartnerPeriodPerformance({
+  filters,
+  overview,
+  range,
+}: {
+  readonly filters: AdminPartnerOverview['filters'];
+  readonly overview: AdminPartnerOverview;
+  readonly range: AdminPartnerOverview['range'];
+}) {
+  const preferredKeys = [
+    'averageResponseTime',
+    'averageRating',
+    'completionRate',
+    'nonCompletedBookingRate',
+  ];
+  const availableKpis = [...overview.summaryKpis, ...overview.bookingQuality.kpis];
+  const kpis = preferredKeys
+    .map((key) => availableKpis.find((kpi) => kpi.key === key))
+    .filter((kpi): kpi is AdminPartnerOverviewKpi => Boolean(kpi));
+
+  if (kpis.length === 0) return null;
+
+  return (
+    <AdminSection
+      actions={
+        <AdminSegmentedControl
+          activeValue={range}
+          ariaLabel="Partner performance range"
+          className="partner-overview-range-buttons"
+          options={partnerOverviewRangeOptions.map((option) => ({
+            href: partnerOverviewHref(option.value, filters),
+            label: option.label,
+            value: option.value,
+          }))}
+        />
+      }
+      bodyClassName="partner-overview-performance-body"
+      className="partner-overview-section-card"
+      description="Booking outcomes recorded in the selected Vietnam-time period."
+      statusLabel={overview.rangeLabel}
+      title="Performance · selected period"
+    >
+      <AdminOverviewCommandGrid ariaLabel="Partner period performance">
+        {kpis.map((kpi, index) => (
+          <PartnerKpiCard
+            key={kpi.key}
+            icon={summaryIcons[index % summaryIcons.length]}
+            kpi={kpi}
+            rangeLabel={overview.rangeLabel}
+          />
+        ))}
+      </AdminOverviewCommandGrid>
+    </AdminSection>
   );
 }
 
@@ -414,34 +497,59 @@ function partnerOverviewKpiMeta(kpi: AdminPartnerOverviewKpi, rangeLabel: string
     return { kind: 'risk', scope: rangeLabel } as const;
   }
 
-  if (normalized.includes('approval') || normalized.includes('verification') || normalized.includes('pending')) {
+  if (
+    normalized.includes('approval') ||
+    normalized.includes('verification') ||
+    normalized.includes('pending')
+  ) {
     return { kind: 'action', scope: 'Pending' } as const;
   }
 
   return { kind: 'period', scope: rangeLabel } as const;
 }
 
-function OperatingStatusBoard({ cards }: { readonly cards: readonly AdminPartnerOverviewOperatingStatusCard[] }) {
+function OperatingStatusBoard({
+  availableBlockedReasons,
+  cards,
+  customerDiscovery,
+  filters,
+  locationFreshnessMinutes,
+  range,
+}: {
+  readonly availableBlockedReasons: readonly AdminPartnerOverviewAvailableBlockedReason[];
+  readonly cards: readonly AdminPartnerOverviewOperatingStatusCard[];
+  readonly customerDiscovery: {
+    readonly visibleNow: number;
+    readonly visibleHref: string;
+    readonly blockers: readonly AdminPartnerOverviewCustomerDiscoveryBlocker[];
+  };
+  readonly filters: AdminPartnerOverview['filters'];
+  readonly locationFreshnessMinutes: number;
+  readonly range: AdminPartnerOverview['range'];
+}) {
+  const customerDiscoveryLink = partnerOverviewDirectoryLink(customerDiscovery.visibleHref, range, filters);
+
   return (
     <AdminSection
       bodyClassName="partner-overview-operating-grid"
       className="partner-overview-section-card partner-overview-operating-board"
-      description="Separates ready supply from busy, soon-online, offline, and inactive Partners."
-      statusLabel={`${cards.length} statuses`}
-      title="Partner operating status"
+      description="Current online, bookable, blocked, and customer-visible Partner supply."
+      statusLabel={`Location <= ${locationFreshnessMinutes}m`}
+      title="Current supply"
     >
       {cards.length > 0 ? (
         cards.map((card) => {
           const Icon = partnerOperatingStatusIcons[card.key] ?? RadioTower;
           const meta = partnerOperatingStatusMeta(card);
+          const directoryLink = partnerOverviewDirectoryLink(card.href, range, filters);
 
           return (
             <AdminOverviewCommandCard
-              ariaLabel={`${card.label}, ${formatNumber(card.count)} Partners. Open filtered Partners list`}
-              baseClassName="partner-overview-operating-card"
+              ariaLabel={`${card.label}, ${formatNumber(card.count)} Partners. ${directoryLink.exact ? 'Open exact filtered Partners list' : 'Open full queue; bounded Risk filter is not applied'}`}
+              baseClassName="partner-overview-command-card partner-overview-operating-card"
               className={`is-${card.tone}`}
               detail={card.detail}
-              href={card.href}
+              href={directoryLink.href}
               icon={<Icon size={18} aria-hidden="true" />}
               iconClassName="partner-overview-command-icon"
               key={card.key}
@@ -451,7 +559,7 @@ function OperatingStatusBoard({ cards }: { readonly cards: readonly AdminPartner
               value={formatNumber(card.count)}
             >
               <em>
-                Open filtered list
+                {directoryLink.exact ? 'Open exact list' : 'Open full queue'}
                 <ChevronRight size={14} aria-hidden="true" />
               </em>
             </AdminOverviewCommandCard>
@@ -460,6 +568,63 @@ function OperatingStatusBoard({ cards }: { readonly cards: readonly AdminPartner
       ) : (
         <AdminEmptyState framed message="No operating status data is available yet." title={null} />
       )}
+      <div
+        className="partner-overview-blocker-strip partner-overview-discovery-strip"
+        aria-label="Customer App Partner visibility"
+      >
+        <AdminTextLink
+          className="partner-overview-blocker-heading partner-overview-discovery-heading"
+          href={customerDiscoveryLink.href}
+        >
+          <span>
+            <strong>Visible in customer app: {formatNumber(customerDiscovery.visibleNow)}</strong>
+            <small>Approved public profiles with active services · blocker counts can overlap</small>
+          </span>
+          <ChevronRight size={14} aria-hidden="true" />
+        </AdminTextLink>
+        {customerDiscovery.blockers.map((blocker) => {
+          const directoryLink = partnerOverviewDirectoryLink(blocker.href, range, filters);
+          return (
+            <AdminTextLink
+              className={`partner-overview-blocker-link is-${blocker.tone}`}
+              href={directoryLink.href}
+              key={blocker.key}
+            >
+              <span>
+                <strong>{blocker.label}</strong>
+                <small>{blocker.detail}</small>
+              </span>
+              <b>{formatNumber(blocker.count)}</b>
+              <ChevronRight size={14} aria-hidden="true" />
+            </AdminTextLink>
+          );
+        })}
+      </div>
+      {availableBlockedReasons.length > 0 ? (
+        <div className="partner-overview-blocker-strip" aria-label="Available Partner blocking signals">
+          <div className="partner-overview-blocker-heading">
+            <strong>Blocking signals</strong>
+            <small>Signals can overlap</small>
+          </div>
+          {availableBlockedReasons.map((reason) => {
+            const directoryLink = partnerOverviewDirectoryLink(reason.href, range, filters);
+            return (
+              <AdminTextLink
+                className={`partner-overview-blocker-link is-${reason.tone}`}
+                href={directoryLink.href}
+                key={reason.key}
+              >
+                <span>
+                  <strong>{reason.label}</strong>
+                  <small>{reason.detail}</small>
+                </span>
+                <b>{formatNumber(reason.count)}</b>
+                <ChevronRight size={14} aria-hidden="true" />
+              </AdminTextLink>
+            );
+          })}
+        </div>
+      ) : null}
     </AdminSection>
   );
 }
@@ -473,6 +638,7 @@ type PartnerPriorityCardConfig = {
   readonly label: string;
   readonly tone: 'success' | 'warning' | 'danger' | 'info' | 'primary' | 'neutral';
   readonly value: string;
+  readonly exact: boolean;
 };
 
 function PartnerPriorityBoard({
@@ -484,94 +650,117 @@ function PartnerPriorityBoard({
   readonly overview: AdminPartnerOverview;
   readonly range: AdminPartnerOverview['range'];
 }) {
-  const readyCard = overview.operatingStatus.cards.find((card) => card.key === 'ready-now');
-  const selectionIssueCount =
-    overview.selectionFriction.issueCounts.find((issue) => issue.key === 'all')?.count ??
-    overview.selectionFriction.rows.length;
-  const walletRiskCount = overview.financeWalletRisk.negativeWalletPartners.length;
-  const qualityRiskCount = overview.bookingQuality.riskPartners.length;
-  const selectionHref = partnerOverviewHref(range, {
-    ...filters,
-    selectionIssue: filters.selectionIssue ?? 'availability',
-    selectionSort: filters.selectionSort ?? 'response',
-  });
-  const cards: readonly PartnerPriorityCardConfig[] = [
+  const availableBlockedCard = overview.operatingStatus.cards.find(
+    (card) => card.key === 'available-blocked',
+  );
+  const pendingVerificationList = overview.actionLists.find(
+    (list) => list.key === 'pending-verification',
+  );
+  const walletRiskList = overview.actionLists.find((list) => list.key === 'negative-wallet');
+  const availableBlockedLink = partnerOverviewDirectoryLink(
+    availableBlockedCard?.href ?? '/partners?review=available-blocked',
+    range,
+    filters,
+  );
+  const pendingVerificationLink = partnerOverviewDirectoryLink(
+    pendingVerificationList?.viewAllHref ?? '/partners?review=approval-incomplete',
+    range,
+    filters,
+  );
+  const walletLink = partnerOverviewDirectoryLink(
+    walletRiskList?.viewAllHref ?? '/partners?review=unsettled',
+    range,
+    filters,
+  );
+  const qualityRiskCount = overview.bookingQuality.riskPartnerCount;
+  const qualityLink = partnerOverviewDirectoryLink('/partners?review=quality-all', range, filters);
+  const cards = ([
     {
-      action: 'Open ready list',
-      detail: readyCard?.detail ?? 'Approved Partners who can accept bookings now.',
-      href: readyCard?.href ?? '/partners?review=marketplace-ready&onlineStatus=available',
-      icon: UserCheck,
-      key: 'ready-supply',
-      label: 'Ready supply',
-      tone: (readyCard?.count ?? 0) > 0 ? 'success' : 'warning',
-      value: formatPriorityCount(readyCard?.count ?? 0, 'partner'),
+      action: 'Review blockers',
+      detail: availableBlockedCard?.detail ?? 'Online available Partners blocked at final acceptance.',
+      href: availableBlockedLink.href,
+      icon: AlertTriangle,
+      key: 'available-blocked',
+      label: 'Online but not bookable',
+      tone: 'warning',
+      value: formatPriorityCount(availableBlockedCard?.count ?? 0, 'partner'),
+      exact: availableBlockedLink.exact,
     },
     {
-      action: 'Review friction',
-      detail: 'Viewed or favorited Partners who are not converting into selected bookings.',
-      href: selectionHref,
-      icon: MousePointerClick,
-      key: 'selection-drop-off',
-      label: 'Selection drop-off',
-      tone: selectionIssueCount > 0 ? 'warning' : 'success',
-      value: formatPriorityCount(selectionIssueCount, 'issue'),
+      action: 'Review verification',
+      detail: 'Partner verification or KYC evidence still needs an operator decision.',
+      href: pendingVerificationLink.href,
+      icon: BadgeCheck,
+      key: 'pending-verification',
+      label: 'Pending verification',
+      tone: 'warning',
+      value: formatPriorityCount(pendingVerificationList?.totalCount ?? 0, 'partner'),
+      exact: pendingVerificationLink.exact,
     },
     {
       action: 'Review wallet',
-      detail: overview.financeWalletRisk.policyNote || 'Negative Partner wallet exposure from ledger balances.',
-      href: '/partners?review=unsettled',
+      detail:
+        overview.financeWalletRisk.policyNote || 'Negative Partner wallet exposure from canonical VND balances.',
+      href: walletLink.href,
       icon: WalletCards,
       key: 'wallet-risk',
       label: 'Wallet risk',
-      tone: walletRiskCount > 0 ? 'danger' : 'success',
-      value: formatPriorityCount(walletRiskCount, 'partner'),
+      tone: 'danger',
+      value: formatPriorityCount(walletRiskList?.totalCount ?? 0, 'partner'),
+      exact: walletLink.exact,
     },
     {
       action: 'Review quality',
-      detail: 'Cancellation, no-show, low-review, and service-quality follow-up queue.',
-      href: '/partners?review=reports',
+      detail: 'Non-completed bookings, no-show, low-review, and service-quality follow-up queue.',
+      href: qualityLink.href,
       icon: Star,
       key: 'quality-risk',
       label: 'Quality risk',
-      tone: qualityRiskCount > 0 ? 'danger' : 'success',
+      tone: 'danger',
       value: formatPriorityCount(qualityRiskCount, 'partner'),
+      exact: qualityLink.exact,
     },
-  ];
+  ] satisfies readonly PartnerPriorityCardConfig[]).filter((card) => {
+    if (card.key === 'available-blocked') return (availableBlockedCard?.count ?? 0) > 0;
+    if (card.key === 'pending-verification') return (pendingVerificationList?.totalCount ?? 0) > 0;
+    if (card.key === 'wallet-risk') return (walletRiskList?.totalCount ?? 0) > 0;
+    return qualityRiskCount > 0;
+  });
 
   return (
     <AdminSection
       bodyClassName="partner-overview-priority-grid"
       className="partner-overview-section-card partner-overview-priority-board"
-      description="The shortest route from supply signal to the next operator action."
-      statusLabel={`${cards.length} actions`}
-      title="Partner operations priority"
+      description="Only queues with current work are shown."
+      statusLabel={cards.length > 0 ? `${formatPriorityCount(cards.length, 'active queue')}` : 'No action'}
+      title="Action required"
     >
-        {cards.map((card) => {
-          const Icon = card.icon;
-          const meta = partnerPriorityCardMeta(card);
+      {cards.length > 0 ? cards.map((card) => {
+        const Icon = card.icon;
+        const meta = partnerPriorityCardMeta(card);
 
-          return (
-            <AdminOverviewCommandCard
-              ariaLabel={`${card.label}, ${card.value}. ${card.action}`}
-              baseClassName="partner-overview-command-card"
-              className={`partner-overview-priority-card is-${card.tone}`}
-              detail={card.detail}
-              href={card.href}
-              icon={<Icon size={20} aria-hidden="true" />}
-              iconClassName="partner-overview-command-icon"
-              key={card.key}
-              kind={meta.kind}
-              label={card.label}
-              scope={meta.scope}
-              value={card.value}
-            >
-              <em>
-                {card.action}
-                <ChevronRight size={14} aria-hidden="true" />
-              </em>
-            </AdminOverviewCommandCard>
-          );
-        })}
+        return (
+          <AdminOverviewCommandCard
+            ariaLabel={`${card.label}, ${card.value}. ${card.exact ? card.action : 'Open full queue; bounded Risk filter is not applied'}`}
+            baseClassName="partner-overview-command-card"
+            className={`partner-overview-priority-card is-${card.tone}`}
+            detail={card.detail}
+            href={card.href}
+            icon={<Icon size={20} aria-hidden="true" />}
+            iconClassName="partner-overview-command-icon"
+            key={card.key}
+            kind={meta.kind}
+            label={card.label}
+            scope={meta.scope}
+            value={card.value}
+          >
+            <em>
+              {card.exact ? card.action : 'Open full queue'}
+              <ChevronRight size={14} aria-hidden="true" />
+            </em>
+          </AdminOverviewCommandCard>
+        );
+      }) : <AdminEmptyState framed message="No Partner action queues require follow-up." title={null} />}
     </AdminSection>
   );
 }
@@ -586,44 +775,44 @@ function SupplyAreaCard({
   return (
     <AdminSection
       className="partner-overview-table-card"
-      description={`Partner coverage and open demand by area · ${rangeLabel}`}
+      description={`Current supply with demand outcomes for ${rangeLabel}.`}
       title="Area supply status"
     >
-      <AdminTableScroll className="partner-overview-table-wrap">
+      <AdminTableScroll ariaLabel="Area supply table" className="partner-overview-table-wrap">
         <AdminDataTable
-          className="partner-overview-table"
+          className="partner-overview-table partner-overview-area-table"
           emptyMessage="No area supply rows for this range."
           headers={[
             'Area',
-            'Partners',
-            'Online',
-            'Fresh location',
-            'Eligible',
-            'Open',
-            'Failed',
-            'Failure',
-            'Response',
             'Status',
+            'Partners',
+            'Online available',
+            'Fresh location',
+            'Bookable now',
+            'Open demand',
+            'Non-completed',
+            'Non-completed share',
+            'Response',
           ]}
           rowCount={rows.length}
         >
           {rows.map((row) => (
             <tr key={row.areaCode}>
               <td>{row.area}</td>
+              <td>
+                <StatusBadgeFromPillClass pillClass={riskPillClass(row.riskLevel)}>
+                  {row.status}
+                </StatusBadgeFromPillClass>
+              </td>
               <td>{formatNumber(row.totalPartners)}</td>
               <td>{formatNumber(row.onlinePartners)}</td>
               <td>{formatNumber(row.locationFreshPartners)}</td>
               <td>{formatNumber(row.eligiblePartners)}</td>
               <td>{formatNumber(row.openRequests)}</td>
-              <td>{formatNumber(row.failedRequests)}</td>
-              <td>{row.matchingFailureRate}%</td>
+              <td>{formatNumber(row.nonCompletedOutcomes)}</td>
+              <td>{row.nonCompletedShare === null ? 'No outcomes' : `${row.nonCompletedShare}%`}</td>
               <td>
                 <StatusBadge tone="info">{formatDurationSeconds(row.averageResponseSeconds)}</StatusBadge>
-              </td>
-              <td>
-                <StatusBadgeFromPillClass pillClass={riskPillClass(row.riskLevel)}>
-                  {row.status}
-                </StatusBadgeFromPillClass>
               </td>
             </tr>
           ))}
@@ -643,14 +832,24 @@ function SupplyServiceCard({
   return (
     <AdminSection
       className="partner-overview-table-card"
-      description={`Supply by service duration and open work · ${rangeLabel}`}
+      description={`Current service supply with booking outcomes for ${rangeLabel}.`}
       title="Service supply status"
     >
-      <AdminTableScroll className="partner-overview-table-wrap">
+      <AdminTableScroll ariaLabel="Service supply table" className="partner-overview-table-wrap">
         <AdminDataTable
-          className="partner-overview-table"
+          className="partner-overview-table partner-overview-service-table"
           emptyMessage="No service supply rows for this range."
-          headers={['Service', 'Offering', 'Online', 'Eligible', 'Open', 'Done', 'Completion', 'Avg rating', 'Status']}
+          headers={[
+            'Service',
+            'Offering',
+            'Online available',
+            'Bookable now',
+            'Open demand',
+            'Completed',
+            'Completed share',
+            'Lifetime Partner rating',
+            'Status',
+          ]}
           rowCount={rows.length}
         >
           {rows.map((row) => (
@@ -661,7 +860,7 @@ function SupplyServiceCard({
               <td>{formatNumber(row.eligiblePartners)}</td>
               <td>{formatNumber(row.openRequests)}</td>
               <td>{formatNumber(row.completedBookings)}</td>
-              <td>{row.completionRate}%</td>
+              <td>{row.completionRate === null ? 'No events' : `${row.completionRate}%`}</td>
               <td>{row.avgRating === null ? '-' : row.avgRating.toFixed(2)}</td>
               <td>
                 <StatusBadgeFromPillClass pillClass={riskPillClass(row.riskLevel)}>
@@ -676,20 +875,38 @@ function SupplyServiceCard({
   );
 }
 
-function PartnerFunnelStep({ step }: { readonly step: AdminPartnerOverviewFunnelStep }) {
+function PartnerFunnelStep({
+  baseCount,
+  previousCount,
+  step,
+}: {
+  readonly baseCount: number | null;
+  readonly previousCount: number | null;
+  readonly step: AdminPartnerOverviewFunnelStep;
+}) {
+  const shareOfRegistered =
+    step.count !== null && baseCount !== null && baseCount > 0
+      ? Math.round((step.count / baseCount) * 100)
+      : null;
+  const shareOfPrevious =
+    step.count !== null && previousCount !== null && previousCount > 0
+      ? Math.round((step.count / previousCount) * 100)
+      : null;
+
   return (
-    <AdminCard className={`partner-overview-funnel-step ${step.dataStatus === 'available' ? 'is-primary' : 'is-neutral'}`}>
+    <AdminCard
+      className={`partner-overview-funnel-step ${step.dataStatus === 'available' ? 'is-primary' : 'is-neutral'}`}
+    >
       <div className="partner-overview-funnel-step-header">
         <span>{step.label}</span>
-        <strong>{step.count === null ? 'Needs event' : formatNumber(step.count)}</strong>
-      </div>
-      <div className="partner-overview-funnel-bar" aria-hidden="true">
-        <i style={{ width: `${Math.max(4, step.conversionRate ?? 4)}%` }} />
+        <strong>{step.count === null ? 'No events in this period' : formatNumber(step.count)}</strong>
       </div>
       <small>
         {step.dataStatus === 'available'
-          ? `${step.conversionRate ?? 0}% from signup · ${step.dropoffRate ?? 0}% drop`
-          : 'Add mobile event logging'}
+          ? previousCount === null
+            ? 'Current registered Partner accounts'
+            : `${shareOfPrevious ?? 0}% of previous stage · ${shareOfRegistered ?? 0}% of registered`
+          : 'Current snapshot unavailable'}
       </small>
     </AdminCard>
   );
@@ -697,19 +914,34 @@ function PartnerFunnelStep({ step }: { readonly step: AdminPartnerOverviewFunnel
 
 function QualityRiskCard({
   kpis,
+  riskPartnerCount,
   rows,
 }: {
   readonly kpis: readonly AdminPartnerOverviewKpi[];
+  readonly riskPartnerCount: number;
   readonly rows: readonly AdminPartnerOverviewRiskPartner[];
 }) {
+  if (riskPartnerCount === 0) {
+    return (
+      <AdminSection
+        className="partner-overview-table-card partner-overview-compact-empty"
+        description="No non-completed, no-show, or low-review Partner signal is open in this scope."
+        statusLabel="No current quality risk"
+        statusTone="success"
+        title="Booking quality risk"
+      />
+    );
+  }
+
   return (
     <AdminSection
       bodyClassName="partner-overview-risk-card-body"
       className="partner-overview-table-card"
-      description="Cancellation, no-show, low review, and rating risk."
+      description="Non-completed bookings, no-show reports, and low-review signals only."
+      statusLabel={`Showing ${formatNumber(rows.length)} of ${formatNumber(riskPartnerCount)}`}
       title="Booking quality risk"
     >
-      <MiniKpiStrip kpis={kpis} />
+      <MiniKpiStrip ariaLabel="Booking quality metrics" kpis={kpis} />
       <PartnerRiskTable rows={rows} />
     </AdminSection>
   );
@@ -724,24 +956,54 @@ function WalletRiskCard({
   readonly policyNote: string;
   readonly rows: readonly AdminPartnerOverviewNegativeWalletPartner[];
 }) {
+  const periodKeys = new Set(['grossBookingAmount', 'platformFee', 'partnerPayoutCompleted']);
+  const periodKpis = kpis.filter((kpi) => periodKeys.has(kpi.key));
+  const currentKpis = kpis.filter((kpi) => !periodKeys.has(kpi.key));
+  const negativeWalletPartnerCount =
+    currentKpis.find((kpi) => kpi.key === 'partnersWithNegativeWallet')?.value ?? rows.length;
+
   return (
     <AdminSection
+      actions={
+        negativeWalletPartnerCount > 0 ? (
+          <AdminTextLink href="/partners?review=unsettled">View all negative wallets</AdminTextLink>
+        ) : null
+      }
       bodyClassName="partner-overview-risk-card-body"
       className="partner-overview-table-card"
       description={policyNote || 'Ledger-backed Partner wallet exposure.'}
+      statusLabel={
+        negativeWalletPartnerCount > 0
+          ? `Showing ${formatNumber(rows.length)} of ${formatNumber(negativeWalletPartnerCount)}`
+          : 'No negative wallets'
+      }
+      statusTone={negativeWalletPartnerCount > 0 ? 'warning' : 'success'}
       title="Finance and wallet risk"
     >
-      <MiniKpiStrip kpis={kpis} />
+      <div className="partner-overview-finance-metric-group">
+        <strong>Period activity</strong>
+        <MiniKpiStrip ariaLabel="Period finance metrics" kpis={periodKpis} />
+      </div>
+      <div className="partner-overview-finance-metric-group">
+        <strong>Current exposure and payout readiness</strong>
+        <MiniKpiStrip ariaLabel="Current wallet and payout metrics" kpis={currentKpis} />
+      </div>
       <PartnerRiskTable rows={rows} showWallet />
     </AdminSection>
   );
 }
 
-function MiniKpiStrip({ kpis }: { readonly kpis: readonly AdminPartnerOverviewKpi[] }) {
+function MiniKpiStrip({
+  ariaLabel,
+  kpis,
+}: {
+  readonly ariaLabel?: string;
+  readonly kpis: readonly AdminPartnerOverviewKpi[];
+}) {
   return (
     <AdminMiniMetricStrip
+      ariaLabel={ariaLabel}
       className="partner-overview-mini-kpis"
-      limit={5}
       metrics={kpis.map((kpi) => ({
         key: kpi.key,
         label: kpi.label,
@@ -749,6 +1011,134 @@ function MiniKpiStrip({ kpis }: { readonly kpis: readonly AdminPartnerOverviewKp
       }))}
     />
   );
+}
+
+function PartnerAppActivitySection({
+  inactivePartners,
+  kpis,
+  mostActive,
+  rangeLabel,
+}: {
+  readonly inactivePartners: readonly AdminPartnerOverviewAppActivityRow[];
+  readonly kpis: readonly AdminPartnerOverviewKpi[];
+  readonly mostActive: readonly AdminPartnerOverviewAppActivityRow[];
+  readonly rangeLabel: string;
+}) {
+  const periodKeys = new Set(['appActivePartners', 'partnerAppOpens', 'partnerSessionStarts']);
+  const periodKpis = kpis.filter((kpi) => periodKeys.has(kpi.key));
+  const coverageKpis = kpis.filter((kpi) => !periodKeys.has(kpi.key));
+
+  return (
+    <>
+      <AdminSection
+        bodyClassName="partner-overview-risk-card-body"
+        className="partner-overview-section-card"
+        description="Actual Partner App opens and authenticated session starts in the selected period."
+        statusLabel={rangeLabel}
+        title="Partner app usage · period"
+      >
+        <MiniKpiStrip ariaLabel="Partner app usage metrics" kpis={periodKpis} />
+      </AdminSection>
+      <AdminSection
+        actions={
+          <>
+            <AdminFormControlLink href="/partners?activity=app-inactive-7d">
+              App telemetry inactive 7D+
+            </AdminFormControlLink>
+            <AdminFormControlLink href="/partners?activity=app-not-tracked">
+              No app telemetry recorded
+            </AdminFormControlLink>
+          </>
+        }
+        bodyClassName="partner-overview-risk-card-body"
+        className="partner-overview-section-card"
+        description="Current approved Partner telemetry coverage and inactive or untracked accounts."
+        statusLabel="Current"
+        title="App telemetry coverage"
+      >
+        <MiniKpiStrip ariaLabel="Current Partner app telemetry coverage" kpis={coverageKpis} />
+      </AdminSection>
+      <AdminOverviewGrid
+        ariaLabel="Partner app activity lists"
+        className="partner-overview-quality-grid partner-overview-app-activity-grid"
+        variant="insight"
+      >
+        <PartnerAppActivityTable
+          emptyMessage="No Partner app activity was recorded in this range."
+          rows={mostActive}
+          title="Most active"
+        />
+        <PartnerAppActivityTable
+          emptyMessage="No approved Partners are inactive or awaiting activity tracking."
+          rows={inactivePartners}
+          title="App telemetry inactive 7D+ / untracked"
+        />
+      </AdminOverviewGrid>
+    </>
+  );
+}
+
+function PartnerAppActivityTable({
+  emptyMessage,
+  rows,
+  title,
+}: {
+  readonly emptyMessage: string;
+  readonly rows: readonly AdminPartnerOverviewAppActivityRow[];
+  readonly title: string;
+}) {
+  return (
+    <AdminSection className="partner-overview-table-card" title={title}>
+      <AdminTableScroll ariaLabel={`${title} Partner app telemetry table`} className="partner-overview-table-wrap">
+        <AdminDataTable
+          className="partner-overview-table"
+          emptyMessage={emptyMessage}
+          headers={['Partner', 'Last active', 'Usage', 'Status']}
+          rowCount={rows.length}
+        >
+          {rows.map((row) => (
+            <tr key={row.partnerId}>
+              <td>
+                <AdminTextLink href={row.href}>{row.partnerName}</AdminTextLink>
+                <small>
+                  {row.area} · {formatPartnerStatus(row.status)}
+                </small>
+              </td>
+              <td>
+                {row.lastActiveAt ? <DateTimeText value={row.lastActiveAt} /> : 'No app telemetry recorded'}
+                {row.inactivityDays !== null ? (
+                  <small>{formatNumber(row.inactivityDays)} day(s) ago</small>
+                ) : null}
+              </td>
+              <td>
+                {formatNumber(row.appOpenCount)} opens
+                <small>{formatNumber(row.sessionStartCount)} sessions</small>
+              </td>
+              <td>
+                <StatusBadge tone={partnerAppActivityTone(row.activityStatus)}>
+                  {partnerAppActivityLabel(row.activityStatus)}
+                </StatusBadge>
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
+    </AdminSection>
+  );
+}
+
+function partnerAppActivityLabel(status: AdminPartnerOverviewAppActivityRow['activityStatus']) {
+  if (status === 'inactive_7d') return 'App telemetry inactive 7D+';
+  if (status === 'never_tracked') return 'No app telemetry recorded';
+  return 'Telemetry active';
+}
+
+function partnerAppActivityTone(
+  status: AdminPartnerOverviewAppActivityRow['activityStatus'],
+): 'success' | 'warning' | 'danger' {
+  if (status === 'inactive_7d') return 'danger';
+  if (status === 'never_tracked') return 'warning';
+  return 'success';
 }
 
 function PartnerRiskTable({
@@ -759,11 +1149,14 @@ function PartnerRiskTable({
   readonly showWallet?: boolean;
 }) {
   const headers = showWallet
-    ? ['Partner', 'Area', 'Rating', 'Done', 'Cancel', 'No-show', 'Wallet', 'Action']
-    : ['Partner', 'Area', 'Rating', 'Done', 'Cancel', 'No-show', 'Action'];
+    ? ['Partner', 'Area', 'Wallet', 'Reason', 'Action']
+    : ['Partner', 'Area', 'Lifetime rating', 'Completed', 'Non-completed', 'No-show', 'Action'];
 
   return (
-    <AdminTableScroll className="partner-overview-table-wrap">
+    <AdminTableScroll
+      ariaLabel={showWallet ? 'Finance wallet risk table' : 'Booking quality risk table'}
+      className="partner-overview-table-wrap"
+    >
       <AdminDataTable
         className="partner-overview-table"
         emptyMessage="No risk rows in this range."
@@ -779,15 +1172,19 @@ function PartnerRiskTable({
               </small>
             </td>
             <td>{row.area}</td>
-            <td>{row.rating ? row.rating.toFixed(1) : '-'}</td>
-            <td>{formatNumber(row.completedBookings)}</td>
-            <td>{row.cancellationRate}%</td>
-            <td>{formatNumber(row.noShowReports)}</td>
             {showWallet ? (
-              <td>
-                <MoneyText amount={row.walletBalance} />
-              </td>
-            ) : null}
+              <>
+                <td><MoneyText amount={row.walletBalance} /></td>
+                <td>{row.mainReason}</td>
+              </>
+            ) : (
+              <>
+                <td>{row.rating ? row.rating.toFixed(1) : '-'}</td>
+                <td>{formatNumber(row.completedBookings)}</td>
+                <td>{row.cancellationRate}%</td>
+                <td>{formatNumber(row.noShowReports)}</td>
+              </>
+            )}
             <td>
               <AdminFormControlLink
                 aria-label={`${row.recommendedAction} for ${row.partnerName}`}
@@ -818,6 +1215,19 @@ function SelectionFrictionCard({
   const activeIssue = filters.selectionIssue ?? '';
   const activeSort = filters.selectionSort ?? 'views';
   const issueCountMap = new Map(issueCounts.map((issue) => [issue.key, issue.count]));
+  const totalIssueCount = issueCountMap.get('all') ?? rows.length;
+
+  if (totalIssueCount === 0) {
+    return (
+      <AdminSection
+        className="partner-overview-table-card partner-overview-compact-empty"
+        description="No viewed or favorited Partner needs selection follow-up in this period."
+        statusLabel="No selection friction"
+        statusTone="success"
+        title="Selection friction"
+      />
+    );
+  }
 
   return (
     <AdminSection
@@ -846,10 +1256,16 @@ function SelectionFrictionCard({
         <AdminFormGrid action="/partners/overview" className="partner-overview-selection-sort-form">
           <input type="hidden" name="range" value={range} />
           {filters.city ? <input type="hidden" name="city" value={filters.city} /> : null}
-          {filters.onlineStatus ? <input type="hidden" name="onlineStatus" value={filters.onlineStatus} /> : null}
+          {filters.onlineStatus ? (
+            <input type="hidden" name="onlineStatus" value={filters.onlineStatus} />
+          ) : null}
           {filters.riskStatus ? <input type="hidden" name="riskStatus" value={filters.riskStatus} /> : null}
-          {filters.walletStatus ? <input type="hidden" name="walletStatus" value={filters.walletStatus} /> : null}
-          {filters.selectionIssue ? <input type="hidden" name="selectionIssue" value={filters.selectionIssue} /> : null}
+          {filters.walletStatus ? (
+            <input type="hidden" name="walletStatus" value={filters.walletStatus} />
+          ) : null}
+          {filters.selectionIssue ? (
+            <input type="hidden" name="selectionIssue" value={filters.selectionIssue} />
+          ) : null}
           {filters.serviceId ? <input type="hidden" name="serviceId" value={filters.serviceId} /> : null}
           {filters.verificationStatus ? (
             <input type="hidden" name="verificationStatus" value={filters.verificationStatus} />
@@ -866,24 +1282,17 @@ function SelectionFrictionCard({
           </AdminFormControlButton>
         </AdminFormGrid>
       </div>
-      <AdminTableScroll className="partner-overview-table-wrap">
+      <AdminTableScroll ariaLabel="Selection friction table" className="partner-overview-table-wrap">
         <AdminDataTable
-          className="partner-overview-table"
+          className="partner-overview-table partner-overview-selection-table"
           emptyMessage="No viewed or favorited Partners need selection follow-up in this range."
           headers={[
             'Partner',
-            'Area',
-            'Views',
-            'Favorites',
-            'Price',
+            'Demand signal',
+            'Bookable status and blockers',
             'Response',
-            'Availability',
-            'Profile',
-            'Done',
-            'Selected',
-            'Rating',
-            'Reason',
-            'Action',
+            'Conversion',
+            'Recommended action',
           ]}
           rowCount={rows.length}
         >
@@ -891,38 +1300,31 @@ function SelectionFrictionCard({
             <tr key={row.partnerId}>
               <td>
                 <AdminTextLink href={row.href}>{row.partnerName}</AdminTextLink>
-                <small>{formatPartnerStatus(row.status)}</small>
+                <small>{row.area} · {formatPartnerStatus(row.status)}</small>
+                <AdminDisclosure className="partner-overview-selection-details">
+                  <summary>Profile and service details</summary>
+                  <span>
+                    <PartnerOverviewPriceRange maxValue={row.maxServicePrice} minValue={row.minServicePrice} />
+                    {' · '}{formatNumber(row.galleryImageCount)} gallery
+                    {' · '}{formatNumber(row.activeServiceCount)} services
+                    {' · '}{row.rating ? `${row.rating.toFixed(1)} (${formatNumber(row.reviewCount)})` : 'No rating'}
+                  </span>
+                </AdminDisclosure>
               </td>
-              <td>{row.area}</td>
               <td>
                 {formatNumber(row.profileViews)} views
-                <small>{formatNumber(row.profileViewCustomers)} customers</small>
+                <small>{formatNumber(row.favoriteCount)} favorites · {formatNumber(row.profileViewCustomers)} customers</small>
               </td>
-              <td>{formatNumber(row.favoriteCount)} favorites</td>
               <td>
-                <PartnerOverviewPriceRange maxValue={row.maxServicePrice} minValue={row.minServicePrice} />
+                <StatusBadge tone={row.readinessFlags.includes('Not bookable') ? 'warning' : 'success'}>
+                  {row.readinessFlags.includes('Not bookable') ? 'Not bookable' : row.availabilityStatus}
+                </StatusBadge>
+                <small>{row.readinessFlags.join(' · ')}</small>
               </td>
               <td>{formatDurationSeconds(row.averageResponseSeconds)}</td>
               <td>
-                {row.availabilityStatus}
-                <small>
-                  Next <DateTimeText value={row.nextAvailableAt} />
-                </small>
-              </td>
-              <td>
-                {row.hasProfileImage ? 'Profile image ready' : 'No profile image'}
-                <small>
-                  {formatNumber(row.galleryImageCount)} gallery · {formatNumber(row.activeServiceCount)} services
-                </small>
-              </td>
-              <td>{formatNumber(row.completedBookings)}</td>
-              <td>{row.selectionRate}% selected</td>
-              <td>{row.rating ? `${row.rating.toFixed(1)} (${formatNumber(row.reviewCount)})` : '-'}</td>
-              <td>
-                <StatusBadgeFromPillClass pillClass={riskPillClass(row.riskLevel)}>
-                  {row.mainReason}
-                </StatusBadgeFromPillClass>
-                <small>{row.readinessFlags.join(' · ')}</small>
+                {row.selectionRate}% selected
+                <small>{formatNumber(row.completedBookings)} completed · {row.mainReason}</small>
               </td>
               <td>
                 <AdminFormControlLink
@@ -941,94 +1343,75 @@ function SelectionFrictionCard({
   );
 }
 
-function ActionListCard({ list }: { readonly list: AdminPartnerOverviewActionList }) {
-  return (
-    <AdminCard className="partner-overview-action-card">
-      <AdminCardHeader
-        actions={
-          <AdminFormControlLink aria-label={`Open ${list.title}`} href={list.viewAllHref}>
-            Open
-            <ChevronRight size={14} aria-hidden="true" />
-          </AdminFormControlLink>
-        }
-        description={`${formatNumber(list.totalCount)} Partners`}
-        title={list.title}
-      />
-      <AdminCardGrid ariaLabel={`${list.title} action rows`} className="partner-overview-action-rows">
-        {list.rows.length > 0 ? (
-          list.rows.map((row) => <ActionRow key={`${list.key}-${row.partnerId}`} row={row} />)
-        ) : (
-          <AdminEmptyState framed message="No Partners need this action right now." title={null} />
-        )}
-      </AdminCardGrid>
-    </AdminCard>
-  );
-}
-
-function ActionRow({ row }: { readonly row: AdminPartnerOverviewActionRow }) {
-  const lastActivity = formatDateTime(row.lastActivityAt);
-  const partnerStatus = formatPartnerStatus(row.status);
-
-  return (
-    <AdminRowLink
-      ariaLabel={`${row.partnerName}, ${row.phone ?? 'no phone'}, ${row.area}, ${partnerStatus}, last activity ${lastActivity}, ${row.mainReason}, ${row.recommendedAction}`}
-      className="partner-overview-action-row"
-      href={row.href}
-    >
-      <span className="partner-overview-action-identity">
-        <strong>{row.partnerName}</strong>
-        <small>{[row.phone, row.area].filter(Boolean).join(' · ') || 'No contact area'}</small>
-        <small>
-          {partnerStatus} · Last activity <DateTimeText value={row.lastActivityAt} />
-        </small>
-      </span>
-      <span className="partner-overview-action-reason">
-        <StatusBadgeFromPillClass pillClass={riskPillClass(row.riskLevel)}>
-          {row.mainReason}
-        </StatusBadgeFromPillClass>
-        <small>{row.recommendedAction}</small>
-      </span>
-    </AdminRowLink>
-  );
-}
-
-function PartnerSegmentCard({
-  rangeLabel,
-  segment,
-}: {
-  readonly rangeLabel: string;
-  readonly segment: AdminPartnerOverviewSegment;
-}) {
-  const Icon = partnerSegmentIcons[segment.key] ?? Activity;
-  const meta = partnerSegmentCardMeta(segment, rangeLabel);
-
-  return (
-    <AdminOverviewCommandCard
-      baseClassName="partner-overview-command-card"
-      className={`is-${segment.tone}`}
-      detail={segment.explanation}
-      icon={<Icon size={20} aria-hidden="true" />}
-      iconClassName="partner-overview-command-icon"
-      kind={meta.kind}
-      label={segment.label}
-      scope={meta.scope}
-      value={formatNumber(segment.count)}
-    >
-      <AdminTextLink href={segment.href}>{segment.recommendedAction}</AdminTextLink>
-    </AdminOverviewCommandCard>
-  );
-}
-
 function partnerOperatingStatusMeta(card: AdminPartnerOverviewOperatingStatusCard) {
-  if (card.key === 'ready-now' || card.key === 'busy-now' || card.key === 'available-soon') {
+  if (card.count === 0) return { kind: 'record', scope: 'No action' } as const;
+
+  if (card.key === 'ready-now' || card.key === 'busy' || card.key === 'busy-now' || card.key === 'available-soon') {
     return { kind: 'live', scope: 'Live' } as const;
   }
 
-  if (card.key === 'inactive-7d' || card.key === 'offline' || card.tone === 'danger') {
+  if (
+    card.key === 'available-blocked' ||
+    card.key === 'inactive-7d' ||
+    card.tone === 'danger'
+  ) {
     return { kind: 'risk', scope: 'Needs action' } as const;
   }
 
   return { kind: 'record', scope: 'Current queue' } as const;
+}
+
+function DetailedActionQueues({
+  filters,
+  lists,
+  range,
+}: {
+  readonly filters: AdminPartnerOverview['filters'];
+  readonly lists: AdminPartnerOverview['actionLists'];
+  readonly range: AdminPartnerOverview['range'];
+}) {
+  const activeLists = lists.filter((list) => list.totalCount > 0);
+  const financeKeys = new Set(['negative-wallet', 'payout-blocked', 'tax-info-missing']);
+
+  return (
+    <AdminSection
+      bodyClassName="partner-overview-action-table-body"
+      className="partner-overview-section-card"
+      description="Active Partner supply, quality, and Finance/Tax queues behind the priorities above."
+      statusLabel={activeLists.length > 0 ? formatPriorityCount(activeLists.length, 'active queue') : 'No work'}
+      statusTone={activeLists.length > 0 ? 'warning' : 'success'}
+      title="Detailed action queues"
+    >
+      <AdminTableScroll ariaLabel="Detailed Partner action queues table" className="partner-overview-table-wrap">
+        <AdminDataTable
+          className="partner-overview-table partner-overview-action-table"
+          emptyMessage="No Partner action queues require follow-up."
+          headers={['Queue', 'Scope', 'Open Partners', 'Action']}
+          rowCount={activeLists.length}
+        >
+          {activeLists.map((list) => {
+            const finance = financeKeys.has(list.key);
+            const directoryLink = partnerOverviewDirectoryLink(list.viewAllHref, range, filters);
+            return (
+              <tr key={list.key}>
+                <td><strong>{list.title}</strong></td>
+                <td><StatusBadge tone={finance ? 'warning' : 'info'}>{finance ? 'Finance / Tax' : 'Partner operations'}</StatusBadge></td>
+                <td>{formatNumber(list.totalCount)}</td>
+                <td>
+                  <AdminTextLink
+                    aria-label={`${directoryLink.exact ? 'Review' : 'Open full queue for'} ${list.title}`}
+                    href={directoryLink.href}
+                  >
+                    {directoryLink.exact ? `Review ${formatNumber(list.totalCount)}` : 'Open full queue'}
+                  </AdminTextLink>
+                </td>
+              </tr>
+            );
+          })}
+        </AdminDataTable>
+      </AdminTableScroll>
+    </AdminSection>
+  );
 }
 
 function partnerPriorityCardMeta(card: PartnerPriorityCardConfig) {
@@ -1045,55 +1428,12 @@ function partnerPriorityCardMeta(card: PartnerPriorityCardConfig) {
   return { kind: 'live', scope: 'Live' } as const;
 }
 
-function partnerSegmentCardMeta(segment: AdminPartnerOverviewSegment, rangeLabel: string) {
-  const normalized = `${segment.key} ${segment.label}`.toLowerCase();
-
-  if (
-    normalized.includes('pending') ||
-    normalized.includes('documents') ||
-    normalized.includes('payout-blocked')
-  ) {
-    return { kind: 'action', scope: 'Pending' } as const;
-  }
-
-  if (
-    normalized.includes('risk') ||
-    normalized.includes('negative') ||
-    normalized.includes('cancellation') ||
-    normalized.includes('no-show') ||
-    normalized.includes('low-rating') ||
-    normalized.includes('blocked')
-  ) {
-    return { kind: 'risk', scope: 'Needs action' } as const;
-  }
-
-  return { kind: 'period', scope: rangeLabel } as const;
-}
-
-const partnerSegmentIcons: Record<string, typeof WalletCards> = {
-  'approved-inactive': Clock,
-  'churn-risk': UserX,
-  'documents-missing': FileWarning,
-  'first-job': ClipboardCheck,
-  'high-activity': TrendingUp,
-  'high-cancellation': Ban,
-  'high-rating': Star,
-  'low-rating': AlertTriangle,
-  'negative-wallet': WalletCards,
-  'new-pending': FileWarning,
-  'no-show': ShieldAlert,
-  overpriced: CircleDollarSign,
-  payoutBlocked: WalletCards,
-  'payout-blocked': WalletCards,
-  pending: FileWarning,
-};
-
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
 function formatKpiValue(kpi: AdminPartnerOverviewKpi) {
-  if (kpi.value === null) return 'Needs event';
+  if (kpi.value === null) return 'No events in this period';
   if (kpi.unit === 'money') return <MoneyText amount={kpi.value} />;
   if (kpi.unit === 'percent') return `${kpi.value}%`;
   if (kpi.unit === 'seconds') return formatDurationSeconds(kpi.value);
@@ -1102,7 +1442,7 @@ function formatKpiValue(kpi: AdminPartnerOverviewKpi) {
 }
 
 function formatDurationSeconds(value: number | null) {
-  if (value === null || !Number.isFinite(value) || value <= 0) return 'Needs event';
+  if (value === null || !Number.isFinite(value) || value <= 0) return 'No events in this period';
   const seconds = Math.round(value);
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;

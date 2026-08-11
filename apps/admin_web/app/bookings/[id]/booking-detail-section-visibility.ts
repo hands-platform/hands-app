@@ -40,14 +40,15 @@ export function bookingDetailSectionVisibility({
   const isCompleted = status === 'COMPLETED';
   const hasLiveServiceState = LIVE_BOOKING_STATUSES.has(status);
   const hasPostMatchState = hasLiveServiceState || hasMatchedAt || hasSelectedPartner || isCompleted;
-  const hasDecisionEvidence = hasPostMatchDecision || hasOperatorNotes || hasChatMessages;
+  const hasDecisionEvidence =
+    hasPostMatchDecision || status === 'CANCELLED' || status === 'NO_SHOW' || status === 'REFUNDED';
   const hasFinanceEvidence = hasPayment || hasEarning || hasFinanceFlags;
 
   return {
-    showCloseoutReadiness: !isCompleted && (hasCloseoutExceptions || hasFinanceFlags),
+    showCloseoutReadiness: isTerminal && !isCompleted && (hasCloseoutExceptions || hasFinanceFlags),
     showDispatchDisclosure: !isTerminal,
     showEvidenceDisclosure: hasDecisionEvidence || status === 'NO_SHOW' || status === 'REFUNDED',
-    showHistoryDisclosure: hasPostMatchState || hasChatMessages || hasNotifications,
+    showHistoryDisclosure: hasPostMatchState || hasChatMessages || hasNotifications || hasOperatorNotes,
     showSettlementDisclosure: isTerminal || hasFinanceEvidence,
   };
 }

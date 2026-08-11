@@ -1,5 +1,5 @@
 param(
-  [ValidateSet("preflight", "api", "admin", "customer", "provider", "mobile", "node", "docs", "harness", "full")]
+  [ValidateSet("preflight", "api", "admin", "public", "customer", "provider", "mobile", "node", "docs", "harness", "full")]
   [string]$Scope = "preflight",
   [switch]$SkipBuild,
   [switch]$WithServices
@@ -97,7 +97,7 @@ function Invoke-Preflight {
     Add-Result "git" "FAIL" "Git is not installed or not on PATH."
   }
 
-  foreach ($required in @("package.json", "package-lock.json", "apps/api/package.json", "apps/admin_web/package.json", "apps/customer_app/pubspec.yaml", "apps/provider_app/pubspec.yaml")) {
+  foreach ($required in @("package.json", "package-lock.json", "apps/api/package.json", "apps/admin_web/package.json", "apps/public_web/package.json", "apps/customer_app/pubspec.yaml", "apps/provider_app/pubspec.yaml")) {
     if (Test-Path (Join-Path $root $required)) {
       Add-Result "required file: $required" "PASS" "Found."
     } else {
@@ -119,8 +119,10 @@ function Invoke-Api {
   Invoke-Check "api policy coverage" "npm.cmd run api:policy-coverage"
   Invoke-Check "fcm env contract" "npm.cmd run fcm:env-contract"
   Invoke-Check "notification partner alert contract" "npm.cmd run notifications:partner-alert-contract"
+  Invoke-Check "notification push data contract" "npm.cmd run notifications:push-data-contract"
   Invoke-Check "notification retry audit contract" "npm.cmd run notifications:retry-audit-contract"
   Invoke-Check "realtime event contract" "npm.cmd run realtime:contract"
+  Invoke-Check "app usage daily backfill test" "npm.cmd run app-usage:backfill:test"
   Invoke-Check "api test" "npm.cmd run api:test"
   Invoke-Check "api typecheck" "npm.cmd run typecheck --workspace @massage-vn/api"
   Invoke-Check "api lint" "npm.cmd run lint --workspace @massage-vn/api"
@@ -134,6 +136,7 @@ function Invoke-Api {
 function Invoke-Admin {
   Invoke-Check "fcm env contract" "npm.cmd run fcm:env-contract"
   Invoke-Check "notification partner alert contract" "npm.cmd run notifications:partner-alert-contract"
+  Invoke-Check "notification push data contract" "npm.cmd run notifications:push-data-contract"
   Invoke-Check "notification retry audit contract" "npm.cmd run notifications:retry-audit-contract"
   Invoke-Check "admin api budget test" "npm.cmd run admin:api-budget:test"
   Invoke-Check "admin test" "npm.cmd run test --workspace @massage-vn/admin-web"
@@ -145,6 +148,17 @@ function Invoke-Admin {
     Add-Result "admin build" "SKIP" "SkipBuild was set."
   } else {
     Invoke-Check "admin build" "npm.cmd run build --workspace @massage-vn/admin-web"
+  }
+}
+
+function Invoke-Public {
+  Invoke-Check "public web test" "npm.cmd run test --workspace @massage-vn/public-web"
+  Invoke-Check "public web typecheck" "npm.cmd run typecheck --workspace @massage-vn/public-web"
+  Invoke-Check "public web lint" "npm.cmd run lint --workspace @massage-vn/public-web"
+  if ($SkipBuild) {
+    Add-Result "public web build" "SKIP" "SkipBuild was set."
+  } else {
+    Invoke-Check "public web build" "npm.cmd run build --workspace @massage-vn/public-web"
   }
 }
 
@@ -170,11 +184,14 @@ function Invoke-Harness {
   Invoke-Check "script syntax: admin visible copy" "node --check infra\scripts\check-admin-visible-copy.mjs"
   Invoke-Check "script syntax: shared types source guard" "node --check infra\scripts\check-shared-types-runtime-imports.mjs"
   Invoke-Check "script syntax: notification partner alert contract" "node --check infra\scripts\check-notification-partner-alert-contract.mjs"
+  Invoke-Check "script syntax: notification push data contract" "node --check infra\scripts\check-notification-push-data-contract.mjs"
   Invoke-Check "script syntax: notification retry audit contract" "node --check infra\scripts\check-notification-retry-audit-contract.mjs"
   Invoke-Check "script syntax: fcm env contract" "node --check infra\scripts\check-fcm-env-contract.mjs"
   Invoke-Check "script syntax: fcm credentials check" "node --check infra\scripts\check-firebase-admin-credentials.mjs"
   Invoke-Check "script syntax: fcm credentials install" "powershell -NoProfile -Command `"[void][scriptblock]::Create([System.IO.File]::ReadAllText((Resolve-Path '.\infra\scripts\install-firebase-admin-credentials.ps1')))`""
   Invoke-Check "script syntax: vietnam scope" "node --check infra\scripts\check-vietnam-scope.mjs"
+  Invoke-Check "script syntax: app usage daily backfill" "node --check infra\scripts\app-usage-daily-backfill.mjs"
+  Invoke-Check "script syntax: app usage daily backfill smoke" "node --check infra\scripts\app-usage-daily-backfill-smoke.mjs"
 }
 
 function Invoke-Docs {
@@ -195,10 +212,11 @@ try {
     "preflight" { Invoke-Preflight }
     "api" { Invoke-Preflight; Invoke-Api }
     "admin" { Invoke-Preflight; Invoke-Admin }
+    "public" { Invoke-Preflight; Invoke-Public }
     "customer" { Invoke-Preflight; Invoke-Customer }
     "provider" { Invoke-Preflight; Invoke-Provider }
     "mobile" { Invoke-Preflight; Invoke-Customer; Invoke-Provider }
-    "node" { Invoke-Preflight; Invoke-Api; Invoke-Admin; Invoke-Check "shared types typecheck" "npm.cmd run typecheck --workspace @massage-vn/shared-types" }
+    "node" { Invoke-Preflight; Invoke-Api; Invoke-Admin; Invoke-Public; Invoke-Check "shared types typecheck" "npm.cmd run typecheck --workspace @massage-vn/shared-types" }
     "docs" { Invoke-Preflight; Invoke-Docs }
     "harness" { Invoke-Preflight; Invoke-Harness }
     "full" {

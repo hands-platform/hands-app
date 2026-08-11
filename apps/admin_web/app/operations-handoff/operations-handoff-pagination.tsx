@@ -35,6 +35,24 @@ export function paginateOperationsHandoffRows<T>(
   };
 }
 
+export function operationsHandoffServerPageWindow(
+  visibleRowCount: number,
+  pagination: OperationsHandoffPagination,
+): Pick<OperationsHandoffPagedRows<unknown>, 'from' | 'to' | 'totalPages'> {
+  const totalPages = Math.max(
+    1,
+    Math.ceil(pagination.totalRows / OPERATIONS_HANDOFF_DETAIL_PAGE_SIZE),
+  );
+  const safePage = Math.min(Math.max(1, pagination.activePage), totalPages);
+  const start = (safePage - 1) * OPERATIONS_HANDOFF_DETAIL_PAGE_SIZE;
+
+  return {
+    from: visibleRowCount === 0 ? 0 : start + 1,
+    to: visibleRowCount === 0 ? 0 : Math.min(start + visibleRowCount, pagination.totalRows),
+    totalPages,
+  };
+}
+
 export function OperationsHandoffPaginationFooter({
   from,
   pagination,

@@ -1,0 +1,17 @@
+{
+  "node": {
+    "404b44293cb07870c52e143ec5758f6d0a91f37212": {
+      "workers": {
+        "app/marketing-analytics/page": {
+          "moduleId": 488748,
+          "async": false,
+          "exportedName": "upsertMarketingSpendDaily",
+          "filename": "apps/admin_web/app/marketing-analytics/actions.ts"
+        }
+      },
+      "exportedName": "upsertMarketingSpendDaily",
+      "filename": "apps/admin_web/app/marketing-analytics/actions.ts"
+    }
+  },
+  "edge": {}
+}

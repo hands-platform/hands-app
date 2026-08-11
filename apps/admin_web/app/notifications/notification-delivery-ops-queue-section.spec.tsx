@@ -5,12 +5,7 @@ import {
   NotificationDeliveryOpsQueueSection,
   type NotificationDeliveryOpsQueueItem,
 } from './notification-delivery-ops-queue-section';
-import {
-  classNamesIn,
-  hrefsIn,
-  normalizedText,
-  textContent,
-} from './notification-section-test-utils';
+import { classNamesIn, hrefsIn, normalizedText, textContent } from './notification-section-test-utils';
 
 describe('NotificationDeliveryOpsQueueSection', () => {
   it('renders delivery issue cards when blockers exist', () => {
@@ -20,17 +15,19 @@ describe('NotificationDeliveryOpsQueueSection', () => {
 
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('Delivery operations queue');
-    expect(rendered).toContain('1 issue(s)');
-    expect(rendered).toContain('Failed sends');
-    expect(rendered).toContain('Latest push attempt returned an error');
-    expect(rendered).toContain('Open queue');
-    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/notifications?review=failed']));
+    expect(rendered).toContain('Needs action');
+    expect(rendered).toContain('1 queue type');
+    expect(rendered).toContain('Open incidents');
+    expect(rendered).toContain('100 affected notifications');
+    expect(rendered).toContain('Review delivery incidents');
+    expect(rendered).not.toContain('Open queue');
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/notifications?review=delivery-incidents']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-section soft-card admin-mb-16',
         'ops-section-header admin-section-header',
         'ops-task-card',
+        'pill pill-danger',
         'pill pill-warn',
         'pill pill-neutral',
       ]),
@@ -44,8 +41,10 @@ describe('NotificationDeliveryOpsQueueSection', () => {
     const rendered = textContent(section);
 
     expect(rendered).toContain('No delivery blockers');
-    expect(rendered).toContain('Delivery path is clean');
-    expect(rendered).toContain('FCM credentials and mobile token registration');
+    expect(rendered).toContain('Delivery queue is clear');
+    expect(rendered).toContain('No failed or unconfirmed mobile alerts');
+    expect(rendered).not.toContain('FCM');
+    expect(rendered).not.toContain('token');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['ops-task-card', 'pill pill-success']));
   });
 
@@ -73,12 +72,14 @@ describe('NotificationDeliveryOpsQueueSection', () => {
 function buildItems(): NotificationDeliveryOpsQueueItem[] {
   return [
     {
+      actionLabel: 'Review delivery incidents',
       count: 2,
-      detail: 'Latest push attempt returned an error. Check failure reason, token freshness, and credentials.',
-      href: '/notifications?review=failed',
-      key: 'failed',
-      label: 'Failed sends',
-      tone: 'warning',
+      detail:
+        '100 affected notifications grouped by provider and failure code. Contact affected users when urgent; Platform reviews the technical cause.',
+      href: '/notifications?review=delivery-incidents',
+      key: 'delivery-incidents',
+      label: 'Open incidents',
+      tone: 'danger',
     },
   ];
 }

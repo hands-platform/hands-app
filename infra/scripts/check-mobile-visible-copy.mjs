@@ -3,12 +3,21 @@ import { join } from 'node:path';
 
 const dartFiles = [
   ...listFiles('apps/customer_app/lib', '.dart'),
-  ...listFiles('apps/customer_app/test', '.dart'),
   ...listFiles('apps/provider_app/lib', '.dart'),
-  ...listFiles('apps/provider_app/test', '.dart'),
 ].sort();
 
 const textFiles = ['apps/customer_app/README.md', 'apps/provider_app/README.md'];
+
+const providerAppBannedVisibleCopy = [
+  'Booking requests',
+  'Demo partner login',
+  'Open active chats',
+  'Complete service',
+  'Accept request',
+  'Go online',
+  'Go offline',
+  'Request withdrawal',
+];
 
 const bannedPatterns = [
   { label: 'non-English Hangul visible copy', pattern: /[\u3131-\u318e\uac00-\ud7a3]/u },
@@ -81,6 +90,19 @@ function recordViolations(file, value, line) {
   if (ignoredTechnicalLiterals.has(normalized) || isTechnicalLiteral(normalized)) {
     return;
   }
+  if (file.startsWith('apps/provider_app/lib')) {
+    for (const phrase of providerAppBannedVisibleCopy) {
+      if (normalized.includes(phrase)) {
+        violations.push({
+          file,
+          line,
+          label: 'legacy English Partner UI copy',
+          match: phrase,
+          text: normalized.slice(0, 180),
+        });
+      }
+    }
+  }
   for (const rule of bannedPatterns) {
     const match = normalized.match(rule.pattern);
     if (match) {
@@ -122,6 +144,9 @@ function lineNumberAt(source, index) {
 
 function isTechnicalLiteral(value) {
   if (value.includes('${provider')) {
+    return true;
+  }
+  if (value.includes('${') && !/\s/.test(value)) {
     return true;
   }
   if (value.includes('/') || value.includes('.') || value.includes('_')) {

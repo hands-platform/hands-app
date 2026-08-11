@@ -34,6 +34,16 @@ class PushNotificationOpenIntent {
     );
 
     if (explicitDestination != null) {
+      if (explicitDestination == PushNotificationOpenDestination.chat &&
+          chatRoomId == null) {
+        return PushNotificationOpenIntent._(
+          destination: bookingId == null
+              ? PushNotificationOpenDestination.notificationCenter
+              : PushNotificationOpenDestination.jobs,
+          bookingId: bookingId,
+          providerProfileId: providerProfileId,
+        );
+      }
       return PushNotificationOpenIntent._(
         destination: explicitDestination,
         bookingId: bookingId,

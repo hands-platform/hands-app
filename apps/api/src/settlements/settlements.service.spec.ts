@@ -704,6 +704,68 @@ describe('SettlementsService', () => {
     });
   });
 
+  it('reverses customer wallet settlement journals without creating bank payment clearing', async () => {
+    const existing = {
+      id: 'settlement-wallet-1',
+      bookingId: 'booking-wallet-1',
+      companyOutputVat: 0,
+      customerPaymentAmount: 600_000,
+      customerProfileId: 'customer-1',
+      currency: 'VND',
+      metadata: {},
+      monthlyClosingId: null,
+      monthlyPeriod: '2026-06',
+      partnerPayoutAmount: 430_000,
+      partnerWithholdingTotal: 42_000,
+      paymentId: 'payment-wallet-1',
+      paymentMethod: 'CUSTOMER_WALLET',
+      paymentProcessingFee: 0,
+      platformFeeNetRevenue: 128_000,
+      providerEarningId: 'earning-1',
+      providerProfileId: 'provider-1',
+      settlementStatus: BookingSettlementStatus.POSTED,
+      taxStatus: BookingSettlementTaxStatus.OPEN,
+    };
+    const prisma = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'journal-reversal-wallet-1' }),
+      },
+      bookingPaymentClearingEntry: { upsert: vi.fn() },
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue(existing),
+        update: vi.fn().mockResolvedValue({
+          ...existing,
+          settlementStatus: BookingSettlementStatus.REVERSED,
+        }),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await service.reverseBookingSettlementSnapshotForRefund({
+      actorId: 'admin-1',
+      bookingId: 'booking-wallet-1',
+      occurredAt: new Date('2026-06-14T03:02:00.000Z'),
+      reason: 'Customer wallet refund',
+    });
+
+    expect(prisma.accountingJournalBatch.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          entries: {
+            create: expect.arrayContaining([
+              expect.objectContaining({
+                accountCode: 'customer_wallet_liability',
+                amount: 600_000,
+                side: 'CREDIT',
+              }),
+            ]),
+          },
+        }),
+      }),
+    );
+    expect(prisma.bookingPaymentClearingEntry.upsert).not.toHaveBeenCalled();
+  });
+
   it('moves refund after paid partner payout to partner receivable instead of wallet liability', async () => {
     const existing = {
       id: 'settlement-paid-payout-1',

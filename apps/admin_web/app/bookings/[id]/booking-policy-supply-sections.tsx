@@ -4,6 +4,7 @@ import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminStageItem, AdminStageList } from '../../../components/admin-stage-item';
 import {
+  AdminDisclosure,
   AdminNoteCard,
   AdminNotePanel,
   AdminSection,
@@ -11,6 +12,7 @@ import {
   AdminTaskGrid,
 } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
@@ -118,6 +120,8 @@ type MarketplaceSupply = {
     href: string;
   }>;
   eligibleCount: number;
+  evaluatedAt?: string;
+  evaluatedCount?: number;
   metrics: SummaryCard[];
   decisionTone: string;
   decisionStatus: string;
@@ -156,9 +160,7 @@ export function BookingStageSnapshotSection({ stageSnapshot }: BookingStageSnaps
             <p className="muted">{stageSnapshot.detail}</p>
             <PillBadgeList badges={stageSnapshot.badges} />
           </div>
-          <AdminTextLink href={stageSnapshot.actionHref}>
-            {stageSnapshot.actionLabel}
-          </AdminTextLink>
+          <AdminTextLink href={stageSnapshot.actionHref}>{stageSnapshot.actionLabel}</AdminTextLink>
         </div>
       </AdminNotePanel>
     </AdminSection>
@@ -169,9 +171,7 @@ export type BookingStageSnapshotSectionProps = {
   stageSnapshot: StageSnapshot;
 };
 
-export function BookingCustomerWaitPanelSection({
-  customerWaitPanel,
-}: BookingCustomerWaitPanelSectionProps) {
+export function BookingCustomerWaitPanelSection({ customerWaitPanel }: BookingCustomerWaitPanelSectionProps) {
   return (
     <AdminSection
       actions={
@@ -208,11 +208,7 @@ export type BookingCustomerWaitPanelSectionProps = {
 export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPolicySectionProps) {
   return (
     <AdminSection
-      actions={
-        <AdminTextLink href="/operations-policy">
-          Open policy
-        </AdminTextLink>
-      }
+      actions={<AdminTextLink href="/operations-policy">Open policy</AdminTextLink>}
       className="admin-mb-16"
       description="The live admin policy that operators should use when handling this booking. Existing bookings keep their saved timeout, while Partner visibility and participation checks use the latest policy."
       id="applied-operations-policy"
@@ -228,9 +224,7 @@ export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPo
             <strong>{policySnapshot.decisionTitle}</strong>
             <p className="muted">{policySnapshot.decisionDetail}</p>
           </div>
-          <AdminTextLink href="/operations-policy">
-            Review decision
-          </AdminTextLink>
+          <AdminTextLink href="/operations-policy">Review decision</AdminTextLink>
         </div>
       </AdminNotePanel>
       <AdminTaskGrid className="admin-mt-14">
@@ -326,8 +320,8 @@ export function BookingDispatchCandidateDecisionMatrixSection({
         <AdminNoteCard className="booking-supply-panel">
           <h3>Top usable Partners</h3>
           <p className="muted">
-            Closest eligible Partners under the booking pin, radius, online, verification, and location freshness
-            gates.
+            Closest eligible Partners under the booking pin, radius, online, verification, and location
+            freshness gates.
           </p>
           <AdminStageList className="admin-mt-12">
             {marketplaceSupply.topCandidates.map((row) => (
@@ -355,7 +349,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
                     title="No usable marketplace participant"
                   />
                 </div>
-                <AdminTextLink href="/partners?review=marketplace-ready">
+                <AdminTextLink href="/partners?review=ready-now">
                   Open marketplace queue
                 </AdminTextLink>
               </AdminStageItem>
@@ -377,9 +371,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
                   <p className="muted">{group.detail}</p>
                   {group.samples.length ? <p className="muted">Sample: {group.samples.join(', ')}</p> : null}
                 </div>
-                <AdminTextLink href={group.href}>
-                  {group.count}
-                </AdminTextLink>
+                <AdminTextLink href={group.href}>{group.count}</AdminTextLink>
               </AdminStageItem>
             ))}
           </AdminStageList>
@@ -394,6 +386,9 @@ export type BookingDispatchCandidateDecisionMatrixSectionProps = {
 };
 
 export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMarketplaceSupplySectionProps) {
+  const evaluatedCount = marketplaceSupply.evaluatedCount ?? marketplaceSupply.rows.length;
+  const excludedCount = Math.max(evaluatedCount - marketplaceSupply.eligibleCount, 0);
+
   return (
     <AdminSection
       actions={
@@ -402,7 +397,7 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMa
         </StatusBadge>
       }
       className="admin-mb-16"
-      description="Full Partner supply rows for the booking pin, with eligibility and exclusion evidence."
+      description={`Current evaluation: showing top ${marketplaceSupply.rows.length} of ${evaluatedCount} Partners; ${excludedCount} excluded.`}
       id="marketplace-supply"
       title="Marketplace Partner supply for this booking"
     >
@@ -416,41 +411,48 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMa
             <strong>{marketplaceSupply.decisionTitle}</strong>
             <p className="muted">{marketplaceSupply.decisionDetail}</p>
           </div>
-          <AdminTextLink href="/partners">
-            Open Partners
+          <AdminTextLink href="/partners?review=ready-now">
+            Open marketplace-ready Partners
           </AdminTextLink>
         </div>
       </AdminNotePanel>
-      <div className="stack admin-mt-14">
-        {marketplaceSupply.rows.map((row) => (
-          <div className="ops-row" key={row.id}>
-            <div>
-              <AdminPersonCell
-                avatarClassName="vuexy-booking-avatar is-partner"
-                avatarStatus={marketplaceSupplyRowAvatarStatus(row.status)}
-                className="vuexy-booking-person"
-                helper={`${row.role} / ${row.status} / ${row.locationAge}`}
-                href={`/partners/${row.id}`}
-                label={row.name}
-                linkClassName="table-link"
-              />
-              <p className="muted">{row.detail}</p>
+      <p className="muted admin-mt-12">
+        Current evaluation{marketplaceSupply.evaluatedAt ? ' at ' : ''}
+        {marketplaceSupply.evaluatedAt ? <DateTimeText value={marketplaceSupply.evaluatedAt} /> : null}
+      </p>
+      <AdminDisclosure ariaLabel="Evaluated Partner details">
+        <summary>Review top {marketplaceSupply.rows.length} evaluated Partners</summary>
+        <div className="stack admin-mt-14">
+          {marketplaceSupply.rows.map((row) => (
+            <div className="ops-row" key={row.id}>
+              <div>
+                <AdminPersonCell
+                  avatarClassName="vuexy-booking-avatar is-partner"
+                  avatarStatus={marketplaceSupplyRowAvatarStatus(row.status)}
+                  className="vuexy-booking-person"
+                  helper={`Current evaluation / ${row.role} / ${row.status} / ${row.locationAge}`}
+                  href={`/partners/${row.id}`}
+                  label={row.name}
+                  linkClassName="table-link"
+                />
+                <p className="muted">{row.detail}</p>
+              </div>
+              <div>
+                <StatusBadge tone={row.eligible ? 'success' : 'warning'}>
+                  {row.eligible ? 'Can participate' : 'Excluded'}
+                </StatusBadge>
+                <div className="muted">{row.distance}</div>
+              </div>
             </div>
-            <div>
-              <StatusBadge tone={row.eligible ? 'success' : 'warning'}>
-                {row.eligible ? 'Can participate' : 'Excluded'}
-              </StatusBadge>
-              <div className="muted">{row.distance}</div>
-            </div>
-          </div>
-        ))}
-        {marketplaceSupply.rows.length === 0 ? (
-          <p className="muted">
-            No displayable Partner supply can be evaluated until the booking has a customer pin or an
-            eligible non-wallet-blocked Partner.
-          </p>
-        ) : null}
-      </div>
+          ))}
+          {marketplaceSupply.rows.length === 0 ? (
+            <p className="muted">
+              No displayable Partner supply can be evaluated until the booking has a customer pin or an eligible
+              non-wallet-blocked Partner.
+            </p>
+          ) : null}
+        </div>
+      </AdminDisclosure>
     </AdminSection>
   );
 }
@@ -493,10 +495,7 @@ function compactSummaryCardHelper(helper: string): string {
   return helper;
 }
 
-function PillBadgeList({
-  badges,
-  showDetailTitle = false,
-}: PillBadgeListProps) {
+function PillBadgeList({ badges, showDetailTitle = false }: PillBadgeListProps) {
   return (
     <AdminFilterChipGroup ariaLabel="Policy supply badges" className="admin-mt-8">
       {badges.map((badge) => (
@@ -520,7 +519,9 @@ function OpsTaskCardGrid({ cards }: OpsTaskCardGridProps) {
           className={card.className}
           detail={card.detail}
           key={card.title}
-          leading={<StatusBadgeFromPillClass pillClass={card.pillClass}>{card.status}</StatusBadgeFromPillClass>}
+          leading={
+            <StatusBadgeFromPillClass pillClass={card.pillClass}>{card.status}</StatusBadgeFromPillClass>
+          }
           title={card.title}
         >
           <small>{card.action}</small>

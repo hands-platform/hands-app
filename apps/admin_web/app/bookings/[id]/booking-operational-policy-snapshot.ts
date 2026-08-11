@@ -7,6 +7,7 @@ import {
   OPERATIONAL_POLICY_KEYS,
   adminPartnerAlertChannelRoutesToFcm,
   adminOperationalPolicySettingByKey,
+  adminPreferredAcceptModeUsesFirstPickPriority,
 } from '../../../lib/operations-policy';
 
 export function bookingOperationalPolicySnapshot(
@@ -37,7 +38,7 @@ export function bookingOperationalPolicySnapshot(
       : Math.max(0, Math.ceil((expiresAt - Date.now()) / 60_000));
   const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
   const selected = booking.status === 'MATCHED' || Boolean(booking.selectedProvider);
-  const customerConfirmMode = String(acceptMode?.value) === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+  const customerConfirmMode = adminPreferredAcceptModeUsesFirstPickPriority(acceptMode?.value);
 
   const decisionTitle = customerConfirmMode
     ? 'Customer final confirmation mode'

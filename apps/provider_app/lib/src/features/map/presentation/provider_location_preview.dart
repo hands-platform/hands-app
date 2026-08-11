@@ -33,7 +33,7 @@ class ProviderLocationPreviewCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Shared location preview',
+              'Vị trí đã chia sẻ',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 10),
@@ -57,14 +57,14 @@ class ProviderLocationPreviewCard extends StatelessWidget {
               children: [
                 ProviderStatusChip(
                   label: hasLocation
-                      ? 'Shared ${formatProviderSharedAt(lastSharedAt)}'
-                      : 'Not shared yet',
+                      ? 'Đã chia sẻ ${formatProviderSharedAt(lastSharedAt)}'
+                      : 'Chưa chia sẻ',
                   color: statusColor,
                 ),
                 if (hasLocation)
                   ProviderStatusChip(
                     label:
-                        'Lat ${formatCoordinate(latitude)} / Lng ${formatCoordinate(longitude)}',
+                        'Vĩ độ ${formatCoordinate(latitude)} / Kinh độ ${formatCoordinate(longitude)}',
                     color: Colors.black87,
                   ),
               ],
@@ -182,7 +182,7 @@ class _ProviderMapSurfaceState extends State<ProviderMapSurface> {
     await map.addSymbol(
       SymbolOptions(
         geometry: customer,
-        textField: 'Customer',
+        textField: 'Khách hàng',
         textSize: 13,
         textColor: '#111827',
         textHaloColor: '#FFFFFF',
@@ -205,7 +205,7 @@ class _ProviderMapSurfaceState extends State<ProviderMapSurface> {
       await map.addSymbol(
         SymbolOptions(
           geometry: provider,
-          textField: 'You',
+          textField: 'Bạn',
           textSize: 13,
           textColor: '#111827',
           textHaloColor: '#FFFFFF',
@@ -272,7 +272,7 @@ class _ProviderMapPlaceholder extends StatelessWidget {
           Align(
             alignment: const Alignment(-0.25, -0.08),
             child: _MapPinChip(
-              label: 'Customer',
+              label: 'Khách hàng',
               color: const Color(0xFF5E8E4A),
             ),
           ),
@@ -280,7 +280,7 @@ class _ProviderMapPlaceholder extends StatelessWidget {
             Align(
               alignment: const Alignment(0.36, -0.34),
               child: _MapPinChip(
-                label: 'You',
+                label: 'Bạn',
                 color: const Color(0xFFE84B4B),
               ),
             ),
@@ -408,7 +408,7 @@ String buildProviderLocationSummary({
   required DateTime? lastSharedAt,
 }) {
   if (providerLatitude == null || providerLongitude == null) {
-    return 'Share your current pin once so the customer can see your last known location.';
+    return 'Chia sẻ vị trí hiện tại để khách hàng thấy vị trí gần nhất của bạn.';
   }
 
   final distance = approximateDistanceMeters(
@@ -419,25 +419,25 @@ String buildProviderLocationSummary({
   );
   final distanceText = distance == null
       ? ''
-      : '\nApprox. distance to guest: ${formatDistance(distance)}';
-  return 'Customers see this saved pin, not continuous tracking. Last shared ${formatProviderSharedAt(lastSharedAt)}.$distanceText';
+      : '\nKhoảng cách ước tính đến khách hàng: ${formatDistance(distance)}';
+  return 'Khách hàng thấy vị trí đã lưu này, không phải theo dõi liên tục. Chia sẻ lần cuối ${formatProviderSharedAt(lastSharedAt)}.$distanceText';
 }
 
 String formatProviderSharedAt(DateTime? value) {
   if (value == null) {
-    return 'just now';
+    return 'vừa xong';
   }
   final diff = DateTime.now().difference(value);
   if (diff.inMinutes < 1) {
-    return 'just now';
+    return 'vừa xong';
   }
   if (diff.inMinutes < 60) {
-    return '${diff.inMinutes}m ago';
+    return '${diff.inMinutes} phút trước';
   }
   if (diff.inHours < 24) {
-    return '${diff.inHours}h ago';
+    return '${diff.inHours} giờ trước';
   }
-  return '${diff.inDays}d ago';
+  return '${diff.inDays} ngày trước';
 }
 
 String formatDistance(double meters) {

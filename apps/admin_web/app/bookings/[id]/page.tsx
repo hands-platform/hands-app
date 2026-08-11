@@ -14,14 +14,17 @@ import {
 } from './booking-activity-records';
 import {
   BookingActionStatusSections,
+  BookingLiveServiceBoardSection,
+  BookingOperatorNotesSection,
+  BookingOutcomeReviewSection,
   type BookingActionStatusSectionsProps,
 } from './booking-action-status-sections';
 import { BookingDetailLifecycleListSection } from './booking-detail-lifecycle-list-section';
 import { BookingDetailChatTranscriptSection } from './booking-detail-chat-transcript-section';
 import { BookingDetailPostMatchDecisionSection } from './booking-detail-post-match-decision-section';
 import { BookingCloseoutSections, type BookingCloseoutSectionsProps } from './booking-closeout-sections';
-import { BookingDetailDisclosureGroup } from './booking-detail-disclosure-group';
 import {
+  BookingCommandDecisionStripSection,
   BookingDetailToolbar,
   BookingMatchingRuleSnapshotSection,
   type BookingMatchingRuleSnapshotSectionProps,
@@ -86,19 +89,10 @@ import {
   BookingStageSnapshotSection,
   type BookingStageSnapshotSectionProps,
 } from './booking-policy-supply-sections';
-import {
-  bookingCommunicationMovementHandoff,
-} from './booking-communication-movement-handoff';
-import {
-  bookingAddressSnapshotLabel,
-  money,
-  shortId,
-} from './booking-formatters';
+import { bookingCommunicationMovementHandoff } from './booking-communication-movement-handoff';
+import { bookingAddressSnapshotLabel, money, shortId } from './booking-formatters';
 import { BookingEvidenceSections, type BookingEvidenceSectionsProps } from './booking-evidence-sections';
-import {
-  bookingCashDebtNeedsSettlement,
-  bookingCashFeeSettlementPath,
-} from './booking-cash-wallet-gate';
+import { bookingCashDebtNeedsSettlement, bookingCashFeeSettlementPath } from './booking-cash-wallet-gate';
 import { bookingDetailActionEvidenceGate } from './booking-detail-action-evidence-gate';
 import { bookingDetailChatEvidenceDecisionBoard } from './booking-detail-chat-evidence-decision-board';
 import { bookingDetailGateAndNotes } from './booking-detail-gate-and-notes';
@@ -106,10 +100,9 @@ import { bookingFinanceTrace } from './booking-finance-trace';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { bookingAddressRadiusContract } from './booking-address-radius-contract';
 import { bookingChatReady } from './booking-chat-evidence';
-import {
-  bookingChatRepairActionState,
-} from './booking-chat-repair-state';
+import { bookingChatRepairActionState } from './booking-chat-repair-state';
 import { bookingOutcomeReviewPanel } from './booking-outcome-review-panel';
+import { isPostMatchCancellationBooking } from '../booking-post-match-cancellations-model';
 import { bookingDetailConnectedRecordLinks } from './booking-detail-connected-record-links';
 import { bookingDetailCloseoutChecklist } from './booking-detail-closeout-checklist';
 import { bookingDetailDecisionReadiness } from './booking-detail-decision-readiness';
@@ -144,12 +137,12 @@ import {
   reviewRecordsForBooking,
 } from '../../../components/admin-review-records-section';
 import { canViewAdminDeveloperSystem } from '../../../components/admin-developer-system-section';
-import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminSection } from '../../../components/admin-surface';
+import { AdminDisclosure, AdminSection } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
+import { formatDateTime } from '../../../lib/admin-format';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
 import { bookingOperatingSnapshot } from './booking-operating-snapshot';
@@ -166,10 +159,7 @@ import {
   bookingOperationsTrace,
   humanizeAuditAction,
 } from './booking-operations-trace';
-import {
-  bookingDispatchPin,
-  bookingMarketplacePartnerSupply,
-} from './booking-marketplace-supply';
+import { bookingDispatchPin, bookingMarketplacePartnerSupply } from './booking-marketplace-supply';
 import { bookingMarketplaceWalletEvidence } from './booking-marketplace-wallet-evidence';
 import { bookingDetailMatchingRuleSnapshot } from './booking-matching-rule-snapshot';
 import { bookingPaymentEvidence } from './booking-payment-evidence';
@@ -182,7 +172,10 @@ import {
   bookingDetailLocationTrailRows,
   bookingDetailServiceRows,
 } from './booking-detail-record-rows';
-import { bookingCustomerSelectableParticipantsForFinalChoice } from './booking-participant-rules';
+import {
+  bookingCustomerSelectableParticipantsForFinalChoice,
+  bookingDetailExpiryEligibility,
+} from './booking-participant-rules';
 import {
   bookingDetailProviderLocationMetricHelper,
   bookingDetailProviderLocationMetricValue,
@@ -194,13 +187,12 @@ import {
   AdminNotification,
   AdminOperationalPolicySetting,
   AdminProvider,
-  AdminUser,
   adminGet,
 } from '../../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
-import { buildFinanceApproverOptions } from '../../finance-tax/finance-approver-options';
 import { OPERATIONAL_POLICY_KEYS } from '../../../lib/operations-policy';
 import { attentionLevel } from '../../../lib/admin-attention-flags';
+import { postMatchCancellationWorkspaceFromHref } from '../../../lib/admin-nav-match';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
 import { bookingPayoutBatchEligibility as buildBookingPayoutBatchEligibilityFromFacts } from '../../../lib/booking-payout-batch-eligibility';
@@ -209,24 +201,24 @@ import {
   completedCloseoutLabel,
   completedCloseoutTone,
 } from '../../../lib/booking-closeout-policy';
-import {
-  bookingOperatorNoteLines,
-  canExpireBooking,
-  canMarkNoShow,
-} from '../../../lib/booking-operator-action-rules';
+import { bookingOperatorAuditNotes, canMarkNoShow } from '../../../lib/booking-operator-action-rules';
+import { bookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
+import { bookingCommandDecisionStripInput } from '../booking-command-decision-strip-inputs';
+import { bookingStatusEvent, deadlineRelativeLabel } from '../booking-list-time';
 import {
   BOOKING_DETAIL_TERMINAL_STATUSES,
   shouldLoadBookingDetailMarketplaceProviders,
 } from './booking-detail-marketplace-provider-loader';
+import {
+  readBookingDetailCheckpoint,
+  readBookingDetailReturnHref,
+  readBookingDetailWorkspace,
+} from './booking-detail-page-params';
 
 type PageProps = {
   params: Promise<{ id: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
-
-export type BookingDetailWorkspace = 'overview' | 'records' | 'diagnostics';
-export type BookingDetailDiagnosticsView = 'history' | 'settlement';
-export type BookingDetailOverviewView = 'command' | 'activity';
 
 type BookingDetailPageData = {
   booking: AdminBookingDetail | null;
@@ -263,6 +255,31 @@ const BOOKING_DETAIL_ACTIVITY_PREVIEW_LIMIT = 16;
 const BOOKING_DETAIL_ACTIVITY_CSV_PREVIEW_LIMIT = 24;
 const BOOKING_DETAIL_OPERATING_TIMELINE_PREVIEW_LIMIT = 12;
 const BOOKING_DETAIL_MARKETPLACE_PROVIDER_PREVIEW_LIMIT = 40;
+const BOOKING_DETAIL_VISIBLE_SECTIONS = {
+  addressRadiusContract: false,
+  addressSupplyCheck: false,
+  alertRecords: false,
+  appliedOperationsPolicy: false,
+  bookingCloseoutChecklist: false,
+  bookingHandoffChecklist: false,
+  bookingStageStatus: false,
+  chatLifecycle: false,
+  chronologicalActivity: false,
+  communicationMovementHandoff: false,
+  customerWaitDecision: false,
+  dispatchChecklist: false,
+  liveServiceBoard: false,
+  marketplaceWalletEvidence: false,
+  matchingRuleStatus: false,
+  operatingLedger: false,
+  operatingSnapshot: false,
+  operatingTimeline: false,
+  operationsAuditRecords: false,
+  payoutBatchEligibility: false,
+  recordDetails: false,
+  recordOverview: false,
+  servicePricingEvidence: false,
+} as const;
 const BOOKING_DETAIL_OPERATIONAL_POLICY_KEYS = [
   OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes,
   OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
@@ -287,24 +304,14 @@ const BOOKING_DETAIL_OPERATIONAL_POLICY_HREF = `/admin/operational-policy?${new 
 export default async function BookingDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const detailSearchParams = searchParams ? await searchParams : {};
-  const requestedWorkspace = readBookingDetailWorkspace(detailSearchParams);
-  const diagnosticsView = readBookingDetailDiagnosticsView(detailSearchParams);
-  const overviewView = readBookingDetailOverviewView(detailSearchParams);
+  const actionNotice = bookingDetailActionNotice(detailSearchParams);
+  const nowMs = new Date().getTime();
   const currentOperatorAccess = await getCurrentAdminOperatorAccess();
   const canViewDeveloperDiagnostics = canViewAdminDeveloperSystem(currentOperatorAccess);
-  const detailWorkspace =
-    requestedWorkspace === 'diagnostics' && !canViewDeveloperDiagnostics
-      ? 'overview'
-      : requestedWorkspace;
-  const includeOperationalRecords = detailWorkspace === 'records';
-  const includeDeveloperDiagnostics =
-    detailWorkspace === 'diagnostics' && diagnosticsView === 'history';
-  const {
-    booking,
-    operationalPolicies,
-    providers,
-    rawNotifications,
-  } = await loadBookingDetailPageData(
+  const detailWorkspace = readBookingDetailWorkspace(detailSearchParams);
+  const includeOperationalRecords = true;
+  const includeDeveloperDiagnostics = canViewDeveloperDiagnostics && detailWorkspace === 'diagnostics';
+  const { booking, operationalPolicies, providers, rawNotifications } = await loadBookingDetailPageData(
     id,
     includeDeveloperDiagnostics,
     includeOperationalRecords,
@@ -314,18 +321,6 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     notFound();
   }
 
-  const needsFinanceApproverDirectory = Boolean(
-    includeDeveloperDiagnostics &&
-    booking.payment?.id && booking.payment.status !== 'REFUNDED' && booking.payment.status !== 'RELEASED',
-  );
-  const financeApproverUsers = needsFinanceApproverDirectory
-    ? await adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
-    : [];
-  const financeApproverOptions = buildFinanceApproverOptions(
-    financeApproverUsers,
-    currentOperatorAccess?.id ?? null,
-  );
-
   const messages = [...(booking.chatRoom?.messages ?? [])].sort(
     (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
   );
@@ -333,7 +328,6 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   const visibleMessages = latestItems(messages, BOOKING_DETAIL_CHAT_PREVIEW_LIMIT);
   const chatReady = bookingChatReady(booking);
   const finalPartnerSummary = bookingFinalPartnerSummary(booking);
-  const toolbarProps = bookingDetailToolbarProps({ booking, finalPartnerSummary });
   const participantCounts = bookingParticipantCounts(booking);
   const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking).length;
   const latestLocation = latestProviderLocation(booking);
@@ -347,6 +341,12 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   const liveSignals = bookingLiveServiceSignals(booking);
   const dispatchSteps = bookingDetailDispatchChecklist(booking);
   const opsTaskCards = bookingDetailOpsTaskCards(booking);
+  const requestedOpsTaskType = readBookingDetailCheckpoint(detailSearchParams);
+  const selectedOpsTask =
+    opsTaskCards.find((task) => task.type === requestedOpsTaskType) ??
+    opsTaskCards.find((task) => task.status !== 'DONE') ??
+    opsTaskCards[0] ??
+    null;
   const financeTrace = bookingFinanceTrace(booking);
   const financeSummaryCards = bookingDetailFinanceSummaryCards(financeTrace);
   const financeFlags = bookingDetailFinanceFlags(booking, financeTrace);
@@ -355,7 +355,8 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   const paymentEvidence = bookingPaymentEvidence(booking);
   const refundLedgerRows = paymentEvidence.refundRows;
   const refundLedgerCount = refundLedgerRows.length;
-  const operatorNoteLines = bookingOperatorNoteLines(booking.notes);
+  const operatorNotes = bookingOperatorAuditNotes(booking.auditLogs);
+  const operatorNoteLines = operatorNotes.map((note) => note.content);
   const operatorNoteCount = operatorNoteLines.length;
   const closureSummary = bookingClosureSummary(booking);
   const servicePricingSnapshotRows = bookingServicePricingSnapshotRows(financeTrace);
@@ -387,7 +388,10 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     humanizeNotificationType,
   });
   const bookingActivitySummary = buildBookingActivitySummary(bookingActivityRecords);
-  const visibleBookingActivityRecords = firstItems(bookingActivityRecords, BOOKING_DETAIL_ACTIVITY_PREVIEW_LIMIT);
+  const visibleBookingActivityRecords = firstItems(
+    bookingActivityRecords,
+    BOOKING_DETAIL_ACTIVITY_PREVIEW_LIMIT,
+  );
   const bookingActivityCsvHref = buildBookingActivityCsvHref(
     booking,
     firstItems(bookingActivityRecords, BOOKING_DETAIL_ACTIVITY_CSV_PREVIEW_LIMIT),
@@ -410,6 +414,18 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     messageCount,
     notificationCount,
   });
+  const matchingExpiryEligibility = bookingDetailExpiryEligibility(booking);
+  const commandDecisionStrip = bookingCommandDecisionStrip(
+    bookingCommandDecisionStripInput(booking, {
+      addressLabel: addressLine,
+      cashDebtNeedsSettlement: cashFeeDebtNeedsSettlement,
+      closeoutNeedsOps: closeoutReadiness.openItems.length > 0,
+      customerChoiceCandidateCount: customerChoiceCandidates,
+      hasChatRoom: Boolean(booking.chatRoom?.id),
+      hasFinalPartner: finalPartnerSummary.selected,
+      marketplaceEligibleCount: marketplaceSupply.eligibleCount,
+    }),
+  );
   const payoutBatchEligibility = buildBookingPayoutBatchEligibilityFromFacts({
     bookingStatus: booking.status,
     paymentExists: Boolean(booking.payment),
@@ -421,8 +437,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     earningNetAmountLabel: money(booking.earning?.netAmount, booking.earning?.currency),
     payoutBatchShortId: booking.earning?.payoutBatchId ? shortId(booking.earning.payoutBatchId) : null,
     hasTaxLog: (booking.earning?.taxLogs?.length ?? booking.taxLogs?.length ?? 0) > 0,
-    hasPlatformFeeLog:
-      (booking.earning?.platformFeeLogs?.length ?? booking.platformFeeLogs?.length ?? 0) > 0,
+    hasPlatformFeeLog: (booking.earning?.platformFeeLogs?.length ?? booking.platformFeeLogs?.length ?? 0) > 0,
     hasWalletLedger:
       (booking.earning?.walletLedgerEntries?.length ?? booking.walletLedgerEntries?.length ?? 0) > 0,
     cashDebt: cashFeeDebtNeedsSettlement,
@@ -448,6 +463,54 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     latestLocation,
     messageCount,
   });
+  const statusEvent = bookingStatusEvent(booking);
+  const customerContactTask = opsTaskCards.find((task) => task.type === 'CUSTOMER_CONTACTED');
+  const selectableResponseCount = (booking.participants ?? []).filter((participant) =>
+    ['ACCEPTED', 'JOINED'].includes(participant.status),
+  ).length;
+  const waitingResponseCount = (booking.participants ?? []).filter((participant) =>
+    ['PENDING', 'REQUESTED'].includes(participant.status),
+  ).length;
+  const evaluatedSupplyCount = marketplaceSupply.evaluatedCount ?? marketplaceSupply.rows.length;
+  const decisionFacts = [
+    {
+      label: 'Status',
+      value: unifiedDetail.statusLabel,
+      helper: statusEvent.relativeLabel(nowMs),
+    },
+    {
+      label: 'Matching deadline',
+      value: booking.expiresAt ? formatDateTime(booking.expiresAt) : 'Deadline unavailable',
+      helper: deadlineRelativeLabel(booking.expiresAt, nowMs),
+    },
+    {
+      label: 'Customer choice',
+      value: `${customerChoiceCandidates} selectable / ${waitingResponseCount} waiting`,
+      helper:
+        selectableResponseCount > customerChoiceCandidates
+          ? `${selectableResponseCount - customerChoiceCandidates} response(s) expired at the matching deadline.`
+          : `${selectableResponseCount} accepted or joined response(s).`,
+    },
+    {
+      label: 'Current supply',
+      value: `${marketplaceSupply.eligibleCount} eligible / ${Math.max(evaluatedSupplyCount - marketplaceSupply.eligibleCount, 0)} excluded`,
+      helper: `${evaluatedSupplyCount} Partners evaluated under current policy.`,
+    },
+    {
+      label: 'Customer contact',
+      value: customerContactTask ? humanizeBookingDetailLabel(customerContactTask.status) : 'Not recorded',
+      helper: customerContactTask?.note || customerContactTask?.helper || 'No contact checkpoint exists.',
+    },
+    {
+      label: 'Payment conclusion',
+      value: booking.payment
+        ? `${money(booking.payment.amount, booking.payment.currency)} ${humanizeBookingDetailLabel(booking.payment.status)}`
+        : 'No payment record',
+      helper: booking.payment
+        ? `${humanizeBookingDetailLabel(booking.payment.method)} payment record.`
+        : `${financeTrace.customerPrice} quoted service price; no refund required.`,
+    },
+  ];
   const activityRecordCount = bookingActivityRecords.length;
   const operatingTimeline = bookingOperatingTimeline({
     booking,
@@ -506,13 +569,33 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     latestLocation,
   });
   const operatorActionMatrix = bookingDetailOperatorActionMatrix(booking);
+  const backHref = readBookingDetailReturnHref(
+    detailSearchParams,
+    isPostMatchCancellationBooking(booking)
+      ? '/bookings/post-match-cancellations?view=manual-decision'
+      : '/bookings',
+  );
   const outcomeReview = bookingOutcomeReviewPanel({
     booking,
     closeoutOpenItemCount: closeoutReadiness.openItems.length,
     closureSummary,
     messageCount,
+    nowMs,
     operatorNoteCount,
+    returnHref: backHref,
   });
+  const postMatchWorkspace = postMatchCancellationWorkspaceFromHref(backHref);
+  const toolbarProps = {
+    ...bookingDetailToolbarProps({ booking, finalPartnerSummary }),
+    backLabel: backHref.startsWith('/vietnam-overview')
+      ? 'Vietnam overview'
+      : backHref.startsWith('/chat-archive')
+        ? 'Chat Evidence Search'
+      : postMatchWorkspace
+      ? postMatchWorkspace.label
+      : 'booking monitor',
+    backHref,
+  };
   const showPostMatchDecisionBelowLifecycle = outcomeReview.postMatchDecision.visible;
   const evidencePacket = bookingDetailEvidencePacket({
     booking,
@@ -632,7 +715,6 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     badges: opsCommandCenter.badges,
     booking,
     cashDebtNeedsSettlement: opsCommandCenter.cashDebtNeedsSettlement,
-    financeApproverOptions,
     finalGateReason,
     instruction: opsCommandCenter.instruction,
   };
@@ -652,16 +734,22 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     },
     dispatchSteps,
     liveSignals,
-    matchingExpiry: { canSubmit: canExpireBooking(booking.status), status: booking.status },
+    matchingExpiry: { canSubmit: matchingExpiryEligibility.allowed, status: booking.status },
     noShow: { canSubmit: canMarkNoShow(booking.status), status: booking.status },
     notes: booking.notes,
+    operatorNotes,
     opsTaskCards,
-    operatorNotesPlacement: booking.status === 'COMPLETED' ? 'after-actions' : 'before-actions',
+    operatorNotesPlacement: 'hidden',
     outcomeReview,
-    showDispatchChecklist: !BOOKING_DETAIL_TERMINAL_STATUSES.has(booking.status),
-    showLiveServiceBoard: booking.status === 'MATCHED' || booking.status === 'IN_SERVICE',
-    showOutcomeReview: !showPostMatchDecisionBelowLifecycle,
-    showStructuredOpsStatus: booking.status !== 'COMPLETED',
+    showDispatchChecklist:
+      BOOKING_DETAIL_VISIBLE_SECTIONS.dispatchChecklist &&
+      !BOOKING_DETAIL_TERMINAL_STATUSES.has(booking.status),
+    showLiveServiceBoard: false,
+    showOutcomeReview: false,
+    showStructuredOpsStatus:
+      !BOOKING_DETAIL_TERMINAL_STATUSES.has(booking.status) &&
+      opsTaskCards.some((task) => task.status !== 'DONE'),
+    selectedOpsTaskType: selectedOpsTask?.type ?? null,
   };
   const locationTrailRows = bookingDetailLocationTrailRows(locationTrailSnapshots, booking.id);
   const bookingRecordCustomerRows = bookingDetailCustomerRows({ booking, addressLine, addressPin });
@@ -800,290 +888,340 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     hasSelectedPartner: Boolean(booking.selectedProviderId || booking.selectedProvider),
     status: booking.status,
   });
-  const showOperatorAdvancedRecordsDisclosure =
-    sectionVisibility.showDispatchDisclosure ||
-    sectionVisibility.showEvidenceDisclosure;
-  const operatorAdvancedRecordSummaryItems = [
-    sectionVisibility.showEvidenceDisclosure ? { label: 'Evidence', tone: 'pill-info' } : null,
-    sectionVisibility.showDispatchDisclosure ? { label: 'Dispatch', tone: 'pill-success' } : null,
-  ].filter((item): item is { label: string; tone: string } => Boolean(item));
+  const supportingRecords = (
+    <>
+      <div id="booking-people-and-communication">
+        <span aria-hidden="true" className="booking-detail-anchor-target" id="customer" />
+        <span aria-hidden="true" className="booking-detail-anchor-target" id="service" />
+        <span aria-hidden="true" className="booking-detail-anchor-target" id="handoff" />
+        <span aria-hidden="true" className="booking-detail-anchor-target" id="participants" />
+        <span aria-hidden="true" className="booking-detail-anchor-target" id="location" />
+        <span aria-hidden="true" className="booking-detail-anchor-target" id="chat-repair" />
+        <BookingUnifiedDetailSection {...unifiedDetailProps} view="people" />
+        {BOOKING_DETAIL_VISIBLE_SECTIONS.liveServiceBoard &&
+        (booking.status === 'MATCHED' || booking.status === 'IN_SERVICE') ? (
+          <BookingLiveServiceBoardSection liveSignals={liveSignals} />
+        ) : null}
+        {booking.chatRoom || messageCount > 0 || finalPartnerSummary.selected ? (
+          <div id="chat">
+            <BookingDetailChatTranscriptSection
+              archiveHref={`/chat-archive?q=${encodeURIComponent(booking.id)}`}
+              messages={visibleMessages}
+              totalMessages={messageCount}
+            />
+          </div>
+        ) : null}
+      </div>
 
+      <div id="finance">
+        <span aria-hidden="true" className="booking-detail-anchor-target" id="payment" />
+        {sectionVisibility.showSettlementDisclosure ? (
+          <BookingUnifiedDetailSection {...unifiedDetailProps} view="finance" />
+        ) : null}
+      </div>
+      {booking.status !== 'OPEN_MATCHING' ? (
+        <div id="flow">
+          <BookingDetailLifecycleListSection booking={booking} />
+        </div>
+      ) : null}
+
+      {bookingReviewRecords.customerReviews.length > 0 ||
+      bookingReviewRecords.partnerEvaluations.length > 0 ? (
+        <AdminReviewRecordsSection
+          basePath={`/bookings/${id}`}
+          customerReviews={bookingReviewRecords.customerReviews}
+          description="Customer review and Partner evaluation attached to this booking."
+          id="booking-review-records"
+          partnerEvaluations={bookingReviewRecords.partnerEvaluations}
+          searchParams={detailSearchParams}
+          title="Reviews"
+        />
+      ) : null}
+      {outcomeReview.visible && !showPostMatchDecisionBelowLifecycle ? (
+        <BookingOutcomeReviewSection outcomeReview={outcomeReview} />
+      ) : null}
+    </>
+  );
   return (
     <AdminPageTemplate
       actions={<BookingDetailToolbar {...toolbarProps} />}
       contentClassName="booking-detail-page"
-      description={`${toolbarProps.serviceLabel} - ${toolbarProps.status}`}
-      title={`Booking ${shortId(booking.id)}`}
+      description={`${unifiedDetail.statusLabel} · Booking ID ${booking.id}`}
+      title={toolbarProps.serviceLabel}
     >
       <span hidden>{bookingDetailAuthoritySourceMarkers.join(' | ')}</span>
 
+      {actionNotice ? (
+        <p
+          className={actionNotice.tone === 'error' ? 'admin-form-error admin-mb-16' : 'admin-form-success admin-mb-16'}
+          role="status"
+        >
+          {actionNotice.message}
+        </p>
+      ) : null}
+
+      <div id="booking-needs-action">
+        {showPostMatchDecisionBelowLifecycle ? (
+          <BookingDetailPostMatchDecisionSection bookingId={booking.id} outcomeReview={outcomeReview} />
+        ) : (
+          <BookingCommandDecisionStripSection
+            commandDecisionStrip={commandDecisionStrip}
+            decisionFacts={decisionFacts}
+          />
+        )}
+        {!sectionVisibility.showCloseoutReadiness ? (
+          <span aria-hidden="true" className="booking-detail-anchor-target" id="booking-closeout-readiness" />
+        ) : null}
+        {!matchingExpiryEligibility.allowed ? (
+          <span aria-hidden="true" className="booking-detail-anchor-target" id="matching-expiry" />
+        ) : null}
+        {!canMarkNoShow(booking.status) ? (
+          <span aria-hidden="true" className="booking-detail-anchor-target" id="no-show-handling" />
+        ) : null}
+        <BookingActionStatusSections {...actionStatusSectionsProps} />
+        {booking.status === 'OPEN_MATCHING' && sectionVisibility.showDispatchDisclosure ? (
+          <BookingMarketplaceSupplySection {...marketplaceSupplyProps} />
+        ) : null}
+        {sectionVisibility.showCloseoutReadiness ? (
+          <BookingCloseoutReadinessSection {...closeoutReadinessProps} />
+        ) : null}
+      </div>
+
       <AdminSection
-        description={
-          canViewDeveloperDiagnostics
-            ? 'Overview, operational records, and Developer diagnostics.'
-            : 'Overview and operational records.'
-        }
-        id="booking-workspace-selector"
-        title="Booking workspace view"
+        className="booking-detail-section-navigation"
+        description="Jump to one part of this booking without leaving the complete record."
+        headerClassName={showPostMatchDecisionBelowLifecycle ? 'sr-only' : undefined}
+        id="booking-section-navigation"
+        title="Booking sections"
       >
-        <AdminFilterChipGroup ariaLabel="Booking detail workspaces">
-          <AdminFormControlLink
-            aria-current={detailWorkspace === 'overview' ? 'page' : undefined}
-            href={`/bookings/${booking.id}`}
-          >
-            Overview
-          </AdminFormControlLink>
-          <AdminFormControlLink
-            aria-current={detailWorkspace === 'records' ? 'page' : undefined}
-            href={`/bookings/${booking.id}?section=records`}
-          >
-            Operational records
-          </AdminFormControlLink>
+        <AdminFilterChipGroup ariaLabel="Booking detail sections">
+          <AdminFormControlLink href="#booking-needs-action">Needs action</AdminFormControlLink>
+          <AdminFormControlLink href="#booking-unified-detail">Booking summary</AdminFormControlLink>
+          {showPostMatchDecisionBelowLifecycle ? (
+            <AdminFormControlLink href="#booking-supporting-records">Supporting records</AdminFormControlLink>
+          ) : (
+            <>
+              <AdminFormControlLink href="#booking-people-and-communication">
+                Customer / Partner / Chat
+              </AdminFormControlLink>
+              {sectionVisibility.showSettlementDisclosure ? (
+                <AdminFormControlLink href="#booking-finance-system-detail">
+                  Payment &amp; settlement
+                </AdminFormControlLink>
+              ) : null}
+              <AdminFormControlLink href="#booking-detail-lifecycle-list">Booking timeline</AdminFormControlLink>
+              {bookingReviewRecords.customerReviews.length > 0 ||
+              bookingReviewRecords.partnerEvaluations.length > 0 ? (
+                <AdminFormControlLink href="#booking-review-records">Reviews</AdminFormControlLink>
+              ) : null}
+            </>
+          )}
+          <AdminFormControlLink href="#operator-notes">Operator notes</AdminFormControlLink>
+          <AdminFormControlLink href="#booking-operational-records">Operational records</AdminFormControlLink>
           {canViewDeveloperDiagnostics ? (
             <AdminFormControlLink
-              aria-current={detailWorkspace === 'diagnostics' ? 'page' : undefined}
-              href={`/bookings/${booking.id}?section=diagnostics&diagnostics=history`}
+              href={`/bookings/${encodeURIComponent(booking.id)}?section=diagnostics#booking-developer-system`}
             >
-              Developer diagnostics
+              Developer/System
             </AdminFormControlLink>
           ) : null}
         </AdminFilterChipGroup>
       </AdminSection>
 
-      {detailWorkspace === 'diagnostics' ? (
-        <AdminSection
-          description="History and settlement evidence are loaded independently."
-          id="booking-diagnostics-workspace-selector"
-          title="Developer diagnostics view"
+      {booking.status === 'OPEN_MATCHING' ? (
+        <div id="flow">
+          <BookingDetailLifecycleListSection booking={booking} />
+        </div>
+      ) : null}
+      {booking.status === 'OPEN_MATCHING' ? (
+        <BookingOperatorNotesSection auditNotes={operatorNotes} bookingId={booking.id} />
+      ) : null}
+
+      <BookingUnifiedDetailSection {...unifiedDetailProps} view="summary" />
+
+      {showPostMatchDecisionBelowLifecycle ? (
+        <AdminDisclosure
+          className="booking-detail-section-disclosure"
+          id="booking-supporting-records"
         >
-          <AdminFilterChipGroup ariaLabel="Booking Developer diagnostics workspaces">
-            <AdminFormControlLink
-              aria-current={diagnosticsView === 'history' ? 'page' : undefined}
-              href={`/bookings/${booking.id}?section=diagnostics&diagnostics=history`}
-            >
-              History &amp; audit
-            </AdminFormControlLink>
-            <AdminFormControlLink
-              aria-current={diagnosticsView === 'settlement' ? 'page' : undefined}
-              href={`/bookings/${booking.id}?section=diagnostics&diagnostics=settlement`}
-            >
-              Settlement &amp; finance
-            </AdminFormControlLink>
-          </AdminFilterChipGroup>
-        </AdminSection>
-      ) : null}
-
-      {detailWorkspace === 'overview' ? (
-        <AdminSection
-          description="Current command state and retained activity evidence are separated for faster review."
-          id="booking-overview-mode-selector"
-          title="Overview mode"
-        >
-          <AdminFilterChipGroup ariaLabel="Booking overview modes">
-            <AdminFormControlLink
-              aria-current={overviewView === 'command' ? 'page' : undefined}
-              href={`/bookings/${booking.id}`}
-            >
-              Command
-            </AdminFormControlLink>
-            <AdminFormControlLink
-              aria-current={overviewView === 'activity' ? 'page' : undefined}
-              href={`/bookings/${booking.id}?overview=activity`}
-            >
-              People &amp; activity
-            </AdminFormControlLink>
-          </AdminFilterChipGroup>
-        </AdminSection>
-      ) : null}
-
-      {detailWorkspace === 'overview' ? (
-        <BookingUnifiedDetailSection
-          {...unifiedDetailProps}
-          view={overviewView === 'command' ? 'summary' : 'details'}
-        />
-      ) : null}
-
-      {detailWorkspace === 'records' ? (
-        <AdminReviewRecordsSection
-          basePath={`/bookings/${id}`}
-          customerReviews={bookingReviewRecords.customerReviews}
-          description="Customer review and Partner evaluation records attached to this booking."
-          id="booking-review-records"
-          partnerEvaluations={bookingReviewRecords.partnerEvaluations}
-          searchParams={detailSearchParams}
-          title="Booking review records"
-        />
-      ) : null}
-
-      {detailWorkspace === 'overview' && overviewView === 'activity' ? (
-        <BookingDetailChatTranscriptSection
-          archiveHref={`/chat-archive?q=${encodeURIComponent(booking.id)}`}
-          messages={visibleMessages}
-          totalMessages={messageCount}
-        />
-      ) : null}
-
-      {detailWorkspace === 'overview' && overviewView === 'activity' ? (
-        <BookingDetailLifecycleListSection booking={booking} />
-      ) : null}
-
-      {detailWorkspace === 'overview' && overviewView === 'command' && showPostMatchDecisionBelowLifecycle && (
-        <BookingDetailPostMatchDecisionSection
-          bookingId={booking.id}
-          outcomeReview={outcomeReview}
-        />
+          <summary className="booking-detail-section-summary">
+            <span className="booking-detail-section-summary-copy">
+              <strong>Supporting records</strong>
+              <small>Customer, Partner, chat, money, timeline, and review records.</small>
+            </span>
+            <span className="booking-detail-section-summary-meta">Read-only</span>
+          </summary>
+          <div className="booking-detail-section-disclosure-body">{supportingRecords}</div>
+        </AdminDisclosure>
+      ) : (
+        supportingRecords
       )}
-
-      {detailWorkspace === 'overview' && overviewView === 'command' ? (
-        <BookingActionStatusSections {...actionStatusSectionsProps} />
+      {booking.status !== 'OPEN_MATCHING' ? (
+        <BookingOperatorNotesSection auditNotes={operatorNotes} bookingId={booking.id} />
       ) : null}
 
-      {detailWorkspace === 'overview' &&
-      overviewView === 'command' &&
-      sectionVisibility.showCloseoutReadiness && (
-        <BookingCloseoutReadinessSection {...closeoutReadinessProps} />
-      )}
+      <section aria-labelledby="booking-operational-records-title" id="booking-operational-records">
+        <span aria-hidden="true" className="booking-detail-anchor-target" id="manual-decision-readiness" />
+        <span aria-hidden="true" className="booking-detail-anchor-target" id="address-radius-contract" />
+        <span aria-hidden="true" className="booking-detail-anchor-target" id="alerts" />
+        <span aria-hidden="true" className="booking-detail-anchor-target" id="audit" />
+        {!sectionVisibility.showDispatchDisclosure ? (
+          <span aria-hidden="true" className="booking-detail-anchor-target" id="marketplace-supply" />
+        ) : null}
+        <div className="booking-detail-advanced-heading">
+          <StatusBadge tone="info">Records</StatusBadge>
+          <span className="booking-detail-advanced-heading-copy">
+            <strong id="booking-operational-records-title">Operational records</strong>
+            <small>Closeout, connected records, decision evidence, and matching policy.</small>
+          </span>
+        </div>
+        <div className="booking-detail-advanced-section">
+          <div className="booking-detail-advanced-heading">
+            <StatusBadge tone="neutral">Core</StatusBadge>
+            <span className="booking-detail-advanced-heading-copy">
+              <strong>Closeout and connected records</strong>
+              <small>Permanent booking links and the factual closeout record.</small>
+            </span>
+          </div>
+          {BOOKING_DETAIL_VISIBLE_SECTIONS.bookingCloseoutChecklist ? (
+            <BookingCloseoutSections {...closeoutSectionsProps} />
+          ) : null}
+          {BOOKING_DETAIL_VISIBLE_SECTIONS.bookingHandoffChecklist ? (
+            <BookingHandoffChecklistSection {...handoffChecklistProps} />
+          ) : null}
+        </div>
 
-      {detailWorkspace === 'records' && showOperatorAdvancedRecordsDisclosure && (
-        <BookingDetailDisclosureGroup
-          helper="Open only when an operator needs evidence or dispatch records for the booking."
-          label="Records"
-          open
-          summaryItems={operatorAdvancedRecordSummaryItems}
-          title="Operational records"
-        >
-          {sectionVisibility.showEvidenceDisclosure && (
-            <div className="booking-detail-advanced-section">
-              <div className="booking-detail-advanced-heading">
-                <StatusBadge tone="info">Evidence</StatusBadge>
-                <span className="booking-detail-advanced-heading-copy">
-                  <strong>Decision and closeout evidence</strong>
-                  <small>Chat, evidence packet, closeout links, and operator queue.</small>
-                </span>
-              </div>
-              <BookingEvidenceSections {...evidenceSectionsProps} />
-              <BookingCloseoutSections {...closeoutSectionsProps} />
-              <BookingOperatorQueueSections {...operatorQueueSectionsProps} />
-              <BookingHandoffChecklistSection {...handoffChecklistProps} />
-              <BookingFullRecordIndex {...fullRecordIndexProps} />
+        {sectionVisibility.showEvidenceDisclosure && (
+          <div className="booking-detail-advanced-section">
+            <div className="booking-detail-advanced-heading">
+              <StatusBadge tone="info">Evidence</StatusBadge>
+              <span className="booking-detail-advanced-heading-copy">
+                <strong>Evidence summary</strong>
+                <small>Decision completeness first; supporting records remain available in one disclosure.</small>
+              </span>
             </div>
-          )}
+            <BookingEvidenceSections {...evidenceSectionsProps} />
+            <BookingOperatorQueueSections {...operatorQueueSectionsProps} />
+          </div>
+        )}
 
-          {sectionVisibility.showDispatchDisclosure && (
-            <div className="booking-detail-advanced-section">
-              <div className="booking-detail-advanced-heading">
-                <StatusBadge tone="success">Dispatch</StatusBadge>
-                <span className="booking-detail-advanced-heading-copy">
-                  <strong>Matching policy and supply checks</strong>
-                  <small>Stage, radius, wait, supply, and Partner candidate rules.</small>
-                </span>
-              </div>
+        {sectionVisibility.showDispatchDisclosure && (
+          <div className="booking-detail-advanced-section">
+            <div className="booking-detail-advanced-heading">
+              <StatusBadge tone="success">Dispatch</StatusBadge>
+              <span className="booking-detail-advanced-heading-copy">
+                <strong>Matching policy and supply checks</strong>
+                <small>Stage, radius, wait, supply, and Partner candidate rules.</small>
+              </span>
+            </div>
+            {BOOKING_DETAIL_VISIBLE_SECTIONS.bookingStageStatus ? (
               <BookingStageSnapshotSection {...stageSnapshotProps} />
+            ) : null}
+            {BOOKING_DETAIL_VISIBLE_SECTIONS.matchingRuleStatus ? (
               <BookingMatchingRuleSnapshotSection {...matchingRuleSnapshotProps} />
+            ) : null}
+            {BOOKING_DETAIL_VISIBLE_SECTIONS.customerWaitDecision ? (
               <BookingCustomerWaitPanelSection {...customerWaitPanelProps} />
+            ) : null}
+            {BOOKING_DETAIL_VISIBLE_SECTIONS.appliedOperationsPolicy ? (
               <BookingAppliedPolicySection {...appliedPolicyProps} />
+            ) : null}
+            {BOOKING_DETAIL_VISIBLE_SECTIONS.addressRadiusContract ? (
               <BookingAddressRadiusContractSection {...addressRadiusContractProps} />
+            ) : null}
+            {BOOKING_DETAIL_VISIBLE_SECTIONS.addressSupplyCheck ? (
               <BookingDispatchCandidateDecisionMatrixSection {...dispatchCandidateDecisionMatrixProps} />
+            ) : null}
+            {booking.status !== 'OPEN_MATCHING' ? (
               <BookingMarketplaceSupplySection {...marketplaceSupplyProps} />
-            </div>
-          )}
-        </BookingDetailDisclosureGroup>
-      )}
-
-      {detailWorkspace === 'diagnostics' &&
-      diagnosticsView === 'history' &&
-      sectionVisibility.showHistoryDisclosure ? (
-        <BookingDetailDisclosureGroup
-          helper="Visible to Master Admin and Developer/System operators for movement, audit, trace, and activity review."
-          label="Diagnostics"
-          open
-          summaryItems={[{ label: 'History', tone: 'pill-warn' }]}
-          title="Developer/System history"
-        >
-          <div className="booking-detail-advanced-section">
-            <div className="booking-detail-advanced-heading">
-              <StatusBadge tone="warning">History</StatusBadge>
-              <span className="booking-detail-advanced-heading-copy">
-                <strong>Operating movement and audit trail</strong>
-                <small>Movement history, notifications, audit rows, and activity export.</small>
-              </span>
-            </div>
-            <BookingOperatingLedgerSection {...operatingLedgerProps} />
-            <BookingOperatingSnapshotSection {...operatingSnapshotProps} />
-            <BookingOperatingTimelineSection {...operatingTimelineProps} />
-            <BookingCommunicationMovementHandoffSection {...communicationMovementHandoffProps} />
-            <BookingChatLifecycleSection {...chatLifecycleProps} />
-            <BookingOpsCommandCenter {...opsCommandCenterProps} />
-            <BookingAlertTraceSection {...alertTraceProps} />
-            <BookingOperationsAuditTraceSection {...operationsAuditTraceProps} />
-            <BookingAttentionChecksSection {...attentionChecksProps} />
-            <BookingActivityPanel {...activityPanelProps} />
+            ) : null}
           </div>
-        </BookingDetailDisclosureGroup>
-      ) : null}
+        )}
+      </section>
 
-      {detailWorkspace === 'diagnostics' &&
-      diagnosticsView === 'settlement' &&
-      sectionVisibility.showSettlementDisclosure ? (
-        <BookingDetailDisclosureGroup
-          helper="Visible to Master Admin and Developer/System operators for wallet, payout, pricing, and finance record review."
-          label="Diagnostics"
-          open
-          summaryItems={[{ label: 'Settlement', tone: 'pill-neutral' }]}
-          title="Developer/System settlement"
-        >
-          <div className="booking-detail-advanced-section">
-            <div className="booking-detail-advanced-heading">
-              <StatusBadge tone="neutral">Settlement</StatusBadge>
-              <span className="booking-detail-advanced-heading-copy">
-                <strong>Wallet, payout, pricing, and full records</strong>
-                <small>Wallet evidence, payout eligibility, pricing, and full record detail.</small>
-              </span>
-            </div>
-            <BookingMarketplaceWalletEvidenceSection {...marketplaceWalletEvidenceProps} />
-            <BookingFinanceCommandCenterSection {...financeCommandCenterProps} />
-            <BookingPayoutBatchEligibilitySection {...payoutBatchEligibilityProps} />
-            <BookingServicePricingSnapshotSection {...servicePricingSnapshotProps} />
-            <BookingRecordDetailSections {...recordDetailSectionsProps} />
+      {includeDeveloperDiagnostics ? (
+        <section aria-labelledby="booking-developer-system-title" id="booking-developer-system">
+          <div className="booking-detail-advanced-heading">
+            <StatusBadge tone="warning">Developer/System</StatusBadge>
+            <span className="booking-detail-advanced-heading-copy">
+              <strong id="booking-developer-system-title">Developer/System diagnostics</strong>
+              <small>Technical history, audit, settlement, wallet, pricing, and raw record evidence.</small>
+            </span>
           </div>
-        </BookingDetailDisclosureGroup>
-      ) : null}
-
-      {detailWorkspace === 'diagnostics' &&
-      ((diagnosticsView === 'history' && !sectionVisibility.showHistoryDisclosure) ||
-        (diagnosticsView === 'settlement' && !sectionVisibility.showSettlementDisclosure)) ? (
-        <AdminSection title={diagnosticsView === 'history' ? 'Developer/System history' : 'Developer/System settlement'}>
-          <AdminEmptyState
-            framed
-            message="No retained records are available for this diagnostics workspace."
-          />
-        </AdminSection>
+          <BookingFullRecordIndex {...fullRecordIndexProps} />
+          {sectionVisibility.showHistoryDisclosure ? (
+            <div className="booking-detail-advanced-section">
+              <div className="booking-detail-advanced-heading">
+                <StatusBadge tone="warning">History</StatusBadge>
+                <span className="booking-detail-advanced-heading-copy">
+                  <strong>Operating movement and audit trail</strong>
+                  <small>Movement history, notifications, audit rows, and activity export.</small>
+                </span>
+              </div>
+              {BOOKING_DETAIL_VISIBLE_SECTIONS.operatingLedger ? (
+                <BookingOperatingLedgerSection {...operatingLedgerProps} />
+              ) : null}
+              {BOOKING_DETAIL_VISIBLE_SECTIONS.operatingSnapshot ? (
+                <BookingOperatingSnapshotSection {...operatingSnapshotProps} />
+              ) : null}
+              {BOOKING_DETAIL_VISIBLE_SECTIONS.operatingTimeline ? (
+                <BookingOperatingTimelineSection {...operatingTimelineProps} />
+              ) : null}
+              {BOOKING_DETAIL_VISIBLE_SECTIONS.communicationMovementHandoff ? (
+                <BookingCommunicationMovementHandoffSection {...communicationMovementHandoffProps} />
+              ) : null}
+              {BOOKING_DETAIL_VISIBLE_SECTIONS.chatLifecycle ? (
+                <BookingChatLifecycleSection {...chatLifecycleProps} />
+              ) : null}
+              <BookingOpsCommandCenter {...opsCommandCenterProps} />
+              {BOOKING_DETAIL_VISIBLE_SECTIONS.alertRecords ? (
+                <BookingAlertTraceSection {...alertTraceProps} />
+              ) : null}
+              {BOOKING_DETAIL_VISIBLE_SECTIONS.operationsAuditRecords ? (
+                <BookingOperationsAuditTraceSection {...operationsAuditTraceProps} />
+              ) : null}
+              <BookingAttentionChecksSection {...attentionChecksProps} />
+              {BOOKING_DETAIL_VISIBLE_SECTIONS.chronologicalActivity ? (
+                <BookingActivityPanel {...activityPanelProps} />
+              ) : null}
+            </div>
+          ) : null}
+          {sectionVisibility.showSettlementDisclosure ? (
+            <div className="booking-detail-advanced-section">
+              <div className="booking-detail-advanced-heading">
+                <StatusBadge tone="neutral">Settlement</StatusBadge>
+                <span className="booking-detail-advanced-heading-copy">
+                  <strong>Wallet, payout, pricing, and full records</strong>
+                  <small>Wallet evidence, payout eligibility, pricing, and full record detail.</small>
+                </span>
+              </div>
+              {BOOKING_DETAIL_VISIBLE_SECTIONS.marketplaceWalletEvidence ? (
+                <BookingMarketplaceWalletEvidenceSection {...marketplaceWalletEvidenceProps} />
+              ) : null}
+              <BookingFinanceCommandCenterSection {...financeCommandCenterProps} />
+              {BOOKING_DETAIL_VISIBLE_SECTIONS.payoutBatchEligibility ? (
+                <BookingPayoutBatchEligibilitySection {...payoutBatchEligibilityProps} />
+              ) : null}
+              {BOOKING_DETAIL_VISIBLE_SECTIONS.servicePricingEvidence ? (
+                <BookingServicePricingSnapshotSection {...servicePricingSnapshotProps} />
+              ) : null}
+              {BOOKING_DETAIL_VISIBLE_SECTIONS.recordDetails ? (
+                <BookingRecordDetailSections
+                  {...recordDetailSectionsProps}
+                  showOverviewSections={BOOKING_DETAIL_VISIBLE_SECTIONS.recordOverview}
+                />
+              ) : null}
+            </div>
+          ) : null}
+          {!sectionVisibility.showHistoryDisclosure && !sectionVisibility.showSettlementDisclosure ? (
+            <p className="muted admin-mt-12">
+              No technical history or settlement diagnostics exist for this booking yet.
+            </p>
+          ) : null}
+        </section>
       ) : null}
     </AdminPageTemplate>
   );
-}
-
-export function readBookingDetailWorkspace(
-  params: Record<string, string | string[] | undefined>,
-): BookingDetailWorkspace {
-  const rawSection = Array.isArray(params.section) ? params.section[0] : params.section;
-  if (rawSection === 'records') return 'records';
-  if (rawSection === 'full' || rawSection === 'diagnostics') return 'diagnostics';
-  return 'overview';
-}
-
-export function readBookingDetailDiagnosticsView(
-  params: Record<string, string | string[] | undefined>,
-): BookingDetailDiagnosticsView {
-  const rawDiagnostics = Array.isArray(params.diagnostics) ? params.diagnostics[0] : params.diagnostics;
-  return rawDiagnostics === 'settlement' ? 'settlement' : 'history';
-}
-
-export function readBookingDetailOverviewView(
-  params: Record<string, string | string[] | undefined>,
-): BookingDetailOverviewView {
-  const rawOverview = Array.isArray(params.overview) ? params.overview[0] : params.overview;
-  return rawOverview === 'activity' ? 'activity' : 'command';
 }
 
 async function loadBookingDetailPageData(
@@ -1100,19 +1238,18 @@ async function loadBookingDetailPageData(
     includeOperationalRecords
       ? adminGet<AdminOperationalPolicySetting[]>(BOOKING_DETAIL_OPERATIONAL_POLICY_HREF, [])
       : Promise.resolve([]),
-    includeDeveloperDiagnostics
-      ? adminGet<AdminNotification[]>(
-          `/admin/bookings/${encodedId}/notifications?take=${BOOKING_DETAIL_NOTIFICATION_ROW_PREVIEW_LIMIT}`,
+    adminGet<AdminNotification[]>(
+      `/admin/bookings/${encodedId}/notifications?take=${BOOKING_DETAIL_NOTIFICATION_ROW_PREVIEW_LIMIT}`,
+      [],
+    ),
+  ]);
+  const providers =
+    includeOperationalRecords && shouldLoadBookingDetailMarketplaceProviders(booking)
+      ? await adminGet<AdminProvider[]>(
+          `/admin/bookings/${encodedId}/marketplace-providers?take=${BOOKING_DETAIL_MARKETPLACE_PROVIDER_PREVIEW_LIMIT}`,
           [],
         )
-      : Promise.resolve([]),
-  ]);
-  const providers = includeOperationalRecords && shouldLoadBookingDetailMarketplaceProviders(booking)
-    ? await adminGet<AdminProvider[]>(
-        `/admin/bookings/${encodedId}/marketplace-providers?take=${BOOKING_DETAIL_MARKETPLACE_PROVIDER_PREVIEW_LIMIT}`,
-        [],
-      )
-    : [];
+      : [];
 
   return {
     booking,
@@ -1128,6 +1265,34 @@ function firstItems<T>(items: readonly T[], limit: number): T[] {
 
 function latestItems<T>(items: readonly T[], limit: number): T[] {
   return items.length > limit ? items.slice(-limit) : [...items];
+}
+
+function humanizeBookingDetailLabel(value: string) {
+  return value
+    .toLowerCase()
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function bookingDetailActionNotice(params: Record<string, string | string[] | undefined>) {
+  const notice = Array.isArray(params.notice) ? params.notice[0] : params.notice;
+  switch (notice) {
+    case 'note-saved':
+      return { message: 'Operator note saved.', tone: 'success' as const };
+    case 'note-failed':
+      return { message: 'Operator note could not be saved. Review the entry and try again.', tone: 'error' as const };
+    case 'expiry-complete':
+      return { message: 'Booking expired and matching closed.', tone: 'success' as const };
+    case 'expiry-failed':
+      return {
+        message: 'Booking could not be expired. Refresh and review the current matching state.',
+        tone: 'error' as const,
+      };
+    default:
+      return null;
+  }
 }
 
 function bookingNotificationTracePreview(trace: ReturnType<typeof bookingNotificationTrace>) {

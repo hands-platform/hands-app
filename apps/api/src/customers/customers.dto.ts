@@ -71,3 +71,11 @@ export class SetCustomerFavoriteProviderDto {
   @IsBoolean()
   favorite?: boolean;
 }
+
+export class RecordProviderProfileViewDto {
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(160)
+  clientEventId?: string;
+}

@@ -20,6 +20,7 @@ final providerProfileRepositoryProvider =
     api: ref.read(apiClientProvider),
     socket: ref.read(realtimeSocketProvider),
     locationDataSource: ref.read(providerDeviceLocationDataSourceProvider),
-    deviceIdentityDataSource: ref.read(providerDeviceIdentityDataSourceProvider),
+    deviceIdentityDataSource:
+        ref.read(providerDeviceIdentityDataSourceProvider),
   );
 });

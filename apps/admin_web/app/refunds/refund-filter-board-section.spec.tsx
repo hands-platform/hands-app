@@ -1,162 +1,67 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { renderToStaticMarkup } from 'react-dom/server';
 
-import {
-  RefundFilterBoardSection,
-  type RefundFilterLink,
-  type RefundRangeLink,
-} from './refund-filter-board-section';
+import { RefundFilterBoardSection } from './refund-filter-board-section';
+
+const ageCounts = {
+  all: 12,
+  'under-1h': 1,
+  '1-4h': 2,
+  '4-24h': 3,
+  '1-3d': 2,
+  '3-7d': 2,
+  'over-7d': 2,
+} as const;
 
 describe('RefundFilterBoardSection', () => {
-  it('renders active refund queue, range links, and review links', () => {
-    const section = RefundFilterBoardSection({
-      activeFilterDescription: 'customer refund requests waiting for operator processing.',
-      activeFilterLabel: 'Requested',
-      activeRange: '30d',
-      filteredCount: 3,
-      rangeLabel: 'Last 30 days',
-      rangeLinks: buildRangeLinks(),
-      review: 'requested',
-      reviewLinks: buildFilterLinks(),
-      totalCount: 9,
-    });
-
-    const rendered = normalizedText(section);
-
-    expect(rendered).toContain('Refund operation filters');
-    expect(rendered).toContain('Refund date range: Last 30 days');
-    expect(rendered).toContain('Active queue: Requested - customer refund requests waiting for operator processing.');
-    expect(rendered).toContain('Range: Last 30 days');
-    expect(rendered).toContain('Queue: Requested');
-    expect(rendered).toContain('Showing 3 of 9');
-    expect(rendered).toContain('Clear filters');
-    expect(rendered).toContain('Open refunds');
-    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/refunds?range=all&review=all', '/refunds?range=30d', '/refunds?review=requested&range=30d']));
-    expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
-        'booking-date-filter-bar refund-filter-group admin-mb-12',
-        'refund-filter-group-label',
-        'booking-date-filter-buttons refund-filter-buttons',
-        'booking-date-filter-button is-active',
-        'pill pill-warn',
-      ]),
+  it('renders the desktop toolbar, explicit all-date option, search, and separate Reset action', () => {
+    const markup = renderToStaticMarkup(
+      <RefundFilterBoardSection
+        ageCounts={ageCounts}
+        ageHref={(age) => `/refunds?range=all&review=open&sort=oldest&age=${age}`}
+        filters={{
+          age: 'all', customerProfileId: '', pageSize: 10, q: '', range: 'all',
+          review: 'open', sla: 'all', sort: 'oldest',
+        }}
+        queueSla={{ overdueCount: 4, thresholdMinutes: 240 }}
+        resetHref="/refunds?range=all&review=open&sort=oldest"
+        slaHref={(sla) => `/refunds?range=all&review=open&sort=oldest&sla=${sla}`}
+      />,
     );
+
+    expect(markup).toContain('Refund queue');
+    expect(markup).toContain('Refund, booking, payment, customer or phone');
+    expect(markup).toContain('<option value="all" selected="">All dates</option>');
+    expect(markup).toContain('Queue: Open work');
+    expect(markup).toContain('Range: All dates');
+    expect(markup).toContain('Order: Oldest first');
+    expect(markup).toContain('>Reset<');
+    expect(markup).not.toContain('Clear filters');
+    expect(markup).not.toContain('<details open=""');
   });
 
-  it('renders an unfiltered state without clear filter affordance', () => {
-    const section = RefundFilterBoardSection({
-      activeFilterDescription: null,
-      activeFilterLabel: null,
-      activeRange: 'all',
-      filteredCount: 9,
-      rangeLabel: 'All dates',
-      rangeLinks: buildRangeLinks(),
-      review: '',
-      reviewLinks: buildFilterLinks(),
-      totalCount: 9,
-    });
+  it('shows six operational age buckets and only exposes SLA for the open queue', () => {
+    const markup = renderToStaticMarkup(
+      <RefundFilterBoardSection
+        ageCounts={ageCounts}
+        ageHref={(age) => `/refunds?age=${age}`}
+        filters={{
+          age: 'over-7d', customerProfileId: '', pageSize: 10, q: 'refund-1', range: '30d',
+          review: 'open', sla: 'overdue', sort: 'newest',
+        }}
+        queueSla={{ overdueCount: 4, thresholdMinutes: 240 }}
+        resetHref="/refunds?range=all&review=open&sort=oldest"
+        slaHref={(sla) => `/refunds?sla=${sla}`}
+      />,
+    );
 
-    const rendered = normalizedText(section);
-
-    expect(rendered).toContain('Showing 9 of 9');
-    expect(rendered).not.toContain('Clear filters');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success']));
-  });
-
-  it('uses shared badge link atoms for refund filter shortcuts', () => {
-    const source = readFileSync(join(process.cwd(), 'app/refunds/refund-filter-board-section.tsx'), 'utf8');
-
-    expect(source).toContain('AdminSegmentedControl');
-    expect(source).toContain('AdminFilterSummary');
-    expect(source).toContain('AdminTablePanel');
-    expect(source).not.toContain('AdminFilterChipGroup');
-    expect(source).not.toContain('StatusBadgeLink');
-    expect(source).not.toContain('<div className="participant-list admin-mb-12">');
-    expect(source).not.toContain('<div className="participant-list">');
-    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
-    expect(source).not.toContain('import Link from');
-    expect(source).not.toContain('className={`pill ${activeRange === item.range');
-    expect(source).not.toContain('<Link className="pill pill-success" href="/refunds?range=all&review=all">');
-    expect(source).not.toContain('className={`pill ${review === item.review');
+    expect(markup).toContain('0-1h · 1');
+    expect(markup).toContain('1-3d · 2');
+    expect(markup).toContain('3-7d · 2');
+    expect(markup).toContain('7d+ · 2');
+    expect(markup).toContain('SLA · 4h');
+    expect(markup).toContain('More filters · Age and SLA');
+    expect(markup).toContain('2 active');
+    expect(markup).toContain('Search: refund-1');
+    expect(markup).toContain('<details class="refund-more-filters admin-mt-12" open=""');
   });
 });
-
-function buildRangeLinks(): RefundRangeLink[] {
-  return [
-    { href: '/refunds', label: 'All dates', range: 'all' },
-    { href: '/refunds?range=30d', label: 'Last 30 days', range: '30d' },
-  ];
-}
-
-function buildFilterLinks(): RefundFilterLink[] {
-  return [
-    { href: '/refunds?review=all', label: 'All refunds', review: 'all' },
-    { href: '/refunds?review=open&range=30d', label: 'Open refunds', review: 'open' },
-    { href: '/refunds?review=requested&range=30d', label: 'Requested', review: 'requested' },
-  ];
-}
-
-function textContent(value: unknown): string {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value === 'boolean') {
-    return '';
-  }
-  if (typeof value === 'string' || typeof value === 'number') {
-    return String(value);
-  }
-  if (Array.isArray(value)) {
-    return value.map(textContent).join(' ');
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  return textContent(props?.children);
-}
-
-function normalizedText(value: unknown): string {
-  return textContent(value).replace(/\s+/g, ' ').trim();
-}
-
-function hrefsIn(value: unknown): string[] {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value !== 'object') {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap(hrefsIn);
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  const href = typeof props?.href === 'string' ? [props.href] : [];
-  return [...href, ...hrefsIn(props?.children)];
-}
-
-function classNamesIn(value: unknown): string[] {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value !== 'object') {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap(classNamesIn);
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  const className = typeof props?.className === 'string' ? [props.className] : [];
-  return [...className, ...classNamesIn(props?.children)];
-}
-
-function resolveElement(value: unknown): unknown {
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
-}
-
-function readRecord(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return null;
-}

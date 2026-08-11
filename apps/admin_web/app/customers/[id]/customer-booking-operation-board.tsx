@@ -1,15 +1,18 @@
 import type { ReactNode } from 'react';
 import { Eye } from 'lucide-react';
-import { AdminDataTable, AdminTablePaginationFooter } from '../../../components/admin-data-table';
-import { AdminEmptyState } from '../../../components/admin-empty-state';
+import {
+  AdminDataTable,
+  AdminTablePaginationFooter,
+} from '../../../components/admin-data-table';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
-import { AdminSection } from '../../../components/admin-surface';
+import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
+import { adminCountLabel } from '../../../lib/admin-copy';
 
 export type CustomerBookingOperationMetric = {
   readonly helper: ReactNode;
@@ -32,35 +35,36 @@ export type CustomerBookingOperationRow = {
   readonly paymentTypeLabel: string;
   readonly requestTimeLabel: ReactNode;
   readonly serviceLabel: string;
-  readonly servicePriceAmount: number;
+  readonly servicePriceAmount: number | null;
   readonly servicePriceCurrency: string;
+  readonly sortAtMs: number;
   readonly stateDetail: ReactNode;
   readonly stateLabel: string;
   readonly stateTone: string;
 };
 
 export type CustomerBookingOperationGroup = {
-  readonly countTone: string;
-  readonly description: string;
-  readonly emptyMessage: string;
   readonly key: string;
-  readonly page: number;
-  readonly pageParam: string;
   readonly rows: readonly CustomerBookingOperationRow[];
   readonly title: string;
   readonly totalRows: number;
 };
 
+type CustomerBookingHistoryFilter = 'all' | 'cancelled' | 'completed' | 'live';
+
 export const CUSTOMER_BOOKING_OPERATION_PAGE_SIZE = 5;
 const CUSTOMER_BOOKING_OPERATION_HEADERS = [
-  'Request Time',
-  'Booking',
-  'Service Type',
-  'Partner',
-  'Payment Type',
-  'Address',
-  'State',
+  'When & booking',
+  'Service & Partner',
+  'Money',
+  'Outcome',
 ] as const;
+const CUSTOMER_BOOKING_HISTORY_FILTERS: readonly CustomerBookingHistoryFilter[] = [
+  'all',
+  'live',
+  'completed',
+  'cancelled',
+];
 
 type CustomerBookingOperationBoardProps = {
   readonly basePath: string;
@@ -69,156 +73,88 @@ type CustomerBookingOperationBoardProps = {
   readonly searchParams: Record<string, string | string[] | undefined>;
 };
 
+type GroupedBookingRow = CustomerBookingOperationRow & { readonly groupKey: string };
+
 export function CustomerBookingOperationBoard({
   basePath,
   groups,
   metrics,
   searchParams,
 }: CustomerBookingOperationBoardProps) {
-  const hasBookingOperationRows = groups.some((group) => group.totalRows > 0);
-
-  return (
-    <>
-      <AdminSection
-        className="admin-mb-16 customer-booking-operation-summary-card"
-        description="Current work appears first, followed by completed work, pre-match cancellations, and Partner cancellations for this customer."
-        id="customer-booking-situation-board"
-        statusLabel="Booking operations"
-        statusTone="info"
-        title="Customer booking situation board"
-      >
-        <AdminTraceSummary
-          className="admin-mt-12"
-          metrics={metrics.map((metric) => ({
-            className: `customer-booking-operation-metric ${metric.tone}`,
-            detail: metric.helper,
-            label: metric.label,
-            value: metric.value,
-          }))}
-        />
-      </AdminSection>
-
-      {hasBookingOperationRows ? (
-        groups.map((group) => (
-          <CustomerBookingOperationSection
-            basePath={basePath}
-            group={group}
-            key={group.key}
-            searchParams={searchParams}
-          />
-        ))
-      ) : (
-        <AdminSection
-          className="admin-mb-16 customer-booking-operation-empty-card"
-          description="Payment Type, Partner, address, and state evidence will appear after the first booking."
-          id="customer-booking-operation-empty"
-          statusLabel="0 booking(s)"
-          statusTone="neutral"
-          title="Customer booking records"
-        >
-          <AdminEmptyState
-            framed
-            message="No customer booking operation rows have been created for this customer yet."
-            title="No customer booking operation rows yet"
-          />
-          <div className="admin-filter-chip-row admin-mt-12" aria-label="Empty booking operation buckets">
-            {groups.map((group) => (
-              <StatusBadge key={group.key} tone="neutral">
-                {group.title}
-              </StatusBadge>
-            ))}
-          </div>
-        </AdminSection>
-      )}
-    </>
+  const activeFilter = readCustomerBookingHistoryFilter(searchParams.bookingHistory);
+  const allRows = groups.flatMap((group) =>
+    group.rows.map((row) => ({ ...row, groupKey: group.key })),
   );
-}
-
-function CustomerBookingOperationSection({
-  basePath,
-  group,
-  searchParams,
-}: {
-  readonly basePath: string;
-  readonly group: CustomerBookingOperationGroup;
-  readonly searchParams: Record<string, string | string[] | undefined>;
-}) {
-  const sectionId = `customer-booking-operation-${group.key}`;
-  const totalRows = Math.max(0, group.totalRows);
+  const filteredRows = allRows
+    .filter((row) => customerBookingHistoryRowMatches(row, activeFilter))
+    .sort((left, right) => customerBookingHistorySort(left, right, activeFilter));
+  const totalRows = filteredRows.length;
   const totalPages = Math.max(1, Math.ceil(totalRows / CUSTOMER_BOOKING_OPERATION_PAGE_SIZE));
-  const activePage = Math.min(Math.max(1, group.page), totalPages);
-  const pageStartIndex = (activePage - 1) * CUSTOMER_BOOKING_OPERATION_PAGE_SIZE;
-  const visibleRows = group.rows;
-  const pageFrom = totalRows === 0 ? 0 : pageStartIndex + 1;
-  const pageTo = Math.min(totalRows, pageStartIndex + visibleRows.length);
+  const activePage = Math.min(
+    readPositiveInteger(searchParams.bookingHistoryPage),
+    totalPages,
+  );
+  const startIndex = (activePage - 1) * CUSTOMER_BOOKING_OPERATION_PAGE_SIZE;
+  const visibleRows = filteredRows.slice(
+    startIndex,
+    startIndex + CUSTOMER_BOOKING_OPERATION_PAGE_SIZE,
+  );
+  const counts = customerBookingHistoryCounts(allRows);
+  const pageFrom = totalRows === 0 ? 0 : startIndex + 1;
+  const pageTo = Math.min(totalRows, startIndex + visibleRows.length);
 
   return (
     <AdminTablePanel
-      className="booking-monitor customer-booking-operation-section"
-      description={group.description}
-      id={sectionId}
-      resultLabel={`${totalRows} booking(s)`}
-      resultTone={customerBookingOperationResultTone(group.countTone)}
-      title={group.title}
+      actions={
+        <AdminTextLink href={`/bookings?customer=${encodeURIComponent(basePath.split('/').at(-1) ?? '')}`}>
+          View all bookings
+        </AdminTextLink>
+      }
+      className="booking-monitor customer-booking-operation-section admin-mb-16"
+      description={`Latest ${allRows.length} bookings. An active booking is shown first when available.`}
+      id="customer-booking-history"
+      resultLabel={adminCountLabel(totalRows, 'booking')}
+      resultTone={customerBookingHistoryTone(activeFilter, totalRows)}
+      title="Recent bookings"
     >
+      <AdminTraceSummary
+        className="customer-booking-operation-summary admin-mb-12"
+        metrics={metrics.map((metric) => ({
+          className: `customer-booking-operation-metric ${metric.tone}`,
+          detail: metric.helper,
+          label: metric.label,
+          value: metric.value,
+        }))}
+      />
+      <AdminSegmentedControl
+        activeValue={activeFilter}
+        ariaLabel="Recent booking filters"
+        className="customer-booking-history-filters admin-mb-12"
+        options={CUSTOMER_BOOKING_HISTORY_FILTERS.map((filter) => ({
+          href: buildCustomerBookingHistoryHref(basePath, searchParams, filter),
+          label: `${customerBookingHistoryFilterLabel(filter)} ${counts[filter]}`,
+          value: filter,
+        }))}
+      />
+
       <AdminDataTable
-        className="vuexy-booking-table"
-        emptyMessage={group.emptyMessage}
+        className="vuexy-booking-table customer-recent-bookings-table"
+        emptyMessage="No booking matched this recent-booking filter."
         headers={CUSTOMER_BOOKING_OPERATION_HEADERS}
         rowCount={visibleRows.length}
       >
         {visibleRows.map((row) => (
-          <tr key={row.id}>
-            <td>
-              <span className="muted">{row.requestTimeLabel}</span>
-            </td>
-            <td>
-              <div className="vuexy-booking-id-line">
-                <AdminTextLink href={row.bookingHref} title="Open booking detail">
-                  <Eye aria-hidden="true" size={14} />
-                  <strong>{row.bookingLabel}</strong>
-                </AdminTextLink>
-              </div>
-              <p className="muted">{row.bookingHelper}</p>
-            </td>
-            <td>
-              <strong>{row.serviceLabel}</strong>
-              <p className="muted">
-                <MoneyText amount={row.servicePriceAmount} currency={row.servicePriceCurrency} />
-              </p>
-            </td>
-            <td>
-              <AdminPersonCell
-                avatarClassName="vuexy-booking-avatar is-partner"
-                avatarStatus={row.partnerAvatarStatus}
-                className="vuexy-booking-person"
-                copyClassName="vuexy-booking-person-copy"
-                helper={row.partnerHelper}
-                href={row.partnerHref}
-                label={row.partnerLabel}
-                linkClassName="vuexy-booking-person-link"
-              />
-            </td>
-            <td>
-              <StatusBadge tone="neutral">{row.paymentTypeLabel}</StatusBadge>
-              <p className="muted">{row.paymentDetailLabel}</p>
-            </td>
-            <td>{row.addressLabel}</td>
-            <td>
-              <StatusBadgeFromPillClass pillClass={row.stateTone}>{row.stateLabel}</StatusBadgeFromPillClass>
-              <p className="muted">{row.stateDetail}</p>
-            </td>
-          </tr>
+          <CustomerBookingOperationTableRow key={row.id} row={row} />
         ))}
       </AdminDataTable>
 
       <AdminTablePaginationFooter
         activePage={activePage}
-        ariaLabel={`${group.title} pages`}
+        ariaLabel="Recent booking pages"
         className="customer-booking-operation-footer"
         from={pageFrom}
         hrefForPage={(page) =>
-          buildCustomerBookingOperationPageHref(basePath, searchParams, group.pageParam, page, sectionId)
+          buildCustomerBookingHistoryHref(basePath, searchParams, activeFilter, page)
         }
         to={pageTo}
         totalPages={totalPages}
@@ -228,47 +164,150 @@ function CustomerBookingOperationSection({
   );
 }
 
-function buildCustomerBookingOperationPageHref(
+function CustomerBookingOperationTableRow({ row }: { readonly row: CustomerBookingOperationRow }) {
+  return (
+    <tr>
+      <td>
+        <span className="muted">{row.requestTimeLabel}</span>
+        <div className="vuexy-booking-id-line">
+          <AdminTextLink href={row.bookingHref} title={`Open booking ${row.bookingLabel}`}>
+            <Eye aria-hidden="true" size={14} />
+            <strong>{row.bookingLabel}</strong>
+          </AdminTextLink>
+        </div>
+        <p className="muted">{row.bookingHelper}</p>
+        <details className="customer-booking-row-details">
+          <summary>Address</summary>
+          <p>{row.addressLabel}</p>
+        </details>
+      </td>
+      <td>
+        <strong>{row.serviceLabel}</strong>
+        {row.servicePriceAmount === null ? null : (
+          <p className="muted">
+            <MoneyText amount={row.servicePriceAmount} currency={row.servicePriceCurrency} />
+          </p>
+        )}
+        <AdminPersonCell
+          avatarClassName="vuexy-booking-avatar is-partner"
+          avatarStatus={row.partnerAvatarStatus}
+          className="vuexy-booking-person"
+          copyClassName="vuexy-booking-person-copy"
+          helper={row.partnerHelper}
+          href={row.partnerHref}
+          label={row.partnerLabel}
+          linkClassName="vuexy-booking-person-link"
+        />
+      </td>
+      <td>
+        <StatusBadge tone="neutral">{row.paymentTypeLabel}</StatusBadge>
+        <p className="muted">{row.paymentDetailLabel}</p>
+      </td>
+      <td>
+        <StatusBadgeFromPillClass pillClass={row.stateTone}>{row.stateLabel}</StatusBadgeFromPillClass>
+        <p className="muted">{row.stateDetail}</p>
+      </td>
+    </tr>
+  );
+}
+
+function customerBookingHistoryCounts(rows: readonly GroupedBookingRow[]) {
+  return {
+    all: rows.length,
+    live: rows.filter((row) => row.groupKey === 'live').length,
+    completed: rows.filter((row) => row.groupKey === 'completed').length,
+    cancelled: rows.filter((row) => customerBookingHistoryRowMatches(row, 'cancelled')).length,
+  } satisfies Record<CustomerBookingHistoryFilter, number>;
+}
+
+function customerBookingHistoryRowMatches(
+  row: GroupedBookingRow,
+  filter: CustomerBookingHistoryFilter,
+) {
+  if (filter === 'all') return true;
+  if (filter === 'cancelled') {
+    return row.groupKey === 'pre-match-cancelled' || row.groupKey === 'partner-cancelled';
+  }
+  return row.groupKey === filter;
+}
+
+function customerBookingHistorySort(
+  left: GroupedBookingRow,
+  right: GroupedBookingRow,
+  filter: CustomerBookingHistoryFilter,
+) {
+  if (filter === 'all' && left.groupKey !== right.groupKey) {
+    if (left.groupKey === 'live') return -1;
+    if (right.groupKey === 'live') return 1;
+  }
+  return right.sortAtMs - left.sortAtMs;
+}
+
+function readCustomerBookingHistoryFilter(
+  value: string | string[] | undefined,
+): CustomerBookingHistoryFilter {
+  const normalized = Array.isArray(value) ? value[0] : value;
+  return CUSTOMER_BOOKING_HISTORY_FILTERS.includes(normalized as CustomerBookingHistoryFilter)
+    ? (normalized as CustomerBookingHistoryFilter)
+    : 'all';
+}
+
+function readPositiveInteger(value: string | string[] | undefined) {
+  const normalized = Array.isArray(value) ? value[0] : value;
+  const parsed = Number.parseInt(normalized ?? '1', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+function buildCustomerBookingHistoryHref(
   basePath: string,
   searchParams: Record<string, string | string[] | undefined>,
-  pageParam: string,
-  page: number,
-  sectionId: string,
+  filter: CustomerBookingHistoryFilter,
+  page = 1,
 ) {
   const params = new URLSearchParams();
 
   for (const [key, value] of Object.entries(searchParams)) {
-    if (key === pageParam || value === undefined) continue;
+    if (
+      key === 'bookingHistory' ||
+      key === 'bookingHistoryPage' ||
+      key.endsWith('BookingsPage') ||
+      value === undefined
+    ) {
+      continue;
+    }
     if (Array.isArray(value)) {
-      for (const item of value) {
-        params.append(key, item);
-      }
+      for (const item of value) params.append(key, item);
     } else {
       params.set(key, value);
     }
   }
 
-  if (page > 1) {
-    params.set(pageParam, String(page));
-  }
+  if (filter !== 'all') params.set('bookingHistory', filter);
+  if (page > 1) params.set('bookingHistoryPage', String(page));
 
   const query = params.toString();
-  return `${basePath}${query ? `?${query}` : ''}#${sectionId}`;
+  return `${basePath}${query ? `?${query}` : ''}#customer-booking-history`;
 }
 
-function customerBookingOperationResultTone(
-  countTone: string,
-): 'danger' | 'info' | 'neutral' | 'success' | 'warning' {
-  switch (countTone) {
-    case 'pill-danger':
-      return 'danger';
-    case 'pill-success':
-      return 'success';
-    case 'pill-warn':
-      return 'warning';
-    case 'pill-info':
-      return 'info';
+function customerBookingHistoryFilterLabel(filter: CustomerBookingHistoryFilter) {
+  switch (filter) {
+    case 'live':
+      return 'Live';
+    case 'completed':
+      return 'Completed';
+    case 'cancelled':
+      return 'Cancelled';
     default:
-      return 'neutral';
+      return 'All';
   }
+}
+
+function customerBookingHistoryTone(
+  filter: CustomerBookingHistoryFilter,
+  totalRows: number,
+): 'danger' | 'info' | 'neutral' | 'success' | 'warning' {
+  if (totalRows === 0) return 'neutral';
+  if (filter === 'live' || filter === 'cancelled') return 'warning';
+  if (filter === 'completed') return 'success';
+  return 'info';
 }

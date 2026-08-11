@@ -6,52 +6,67 @@ import { CashSettlementFilterSection } from './cash-settlement-filter-section';
 import type { CashSettlementFilters } from './cash-settlement-page-types';
 
 describe('CashSettlementFilterSection', () => {
-  it('keeps the search and queue filters on shared AdminForm atoms', () => {
+  it('keeps the primary queue compact and moves secondary controls into advanced filters', () => {
     const source = readFileSync(
       join(process.cwd(), 'app/cash-settlements/cash-settlement-filter-section.tsx'),
       'utf8',
     );
     const markup = renderToStaticMarkup(
-      <CashSettlementFilterSection filters={filters()} totalRowCount={12} visibleRowCount={10} />,
+      <CashSettlementFilterSection
+        filters={filters()}
+        queueCounts={{ all: 12, highDebt: 2, missingEvidence: 8, paymentCheck: 1, stale: 7 }}
+        totalRowCount={7}
+        visibleRowCount={7}
+      />,
     );
 
-    expect(source).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
-    expect(source).toContain("import { AdminSegmentedControl } from '../../components/admin-segmented-control';");
-    expect(source).toContain("import { AdminFilterSummary } from '../../components/admin-filter-summary';");
-    expect(source).toContain('<AdminTextLink');
-    expect(source).not.toContain('StatusBadgeLink');
-    expect(source).not.toContain('className="text-link"');
-    expect(source).not.toContain("import Link from 'next/link';");
-    expect(source).not.toContain('PillClassBadgeLink');
-    expect(source).not.toContain('pillClass');
-    expect(markup).toContain('Cash settlement date range');
-    expect(markup).toContain('admin-form-search');
-    expect(markup).toContain('admin-form-select');
-    expect(markup).toContain('admin-form-control-button');
-    expect(markup).toContain('booking-date-filter-bar cash-settlement-filter-group');
-    expect(markup).toContain('cash-settlement-filter-group-label');
-    expect(markup).toContain('booking-date-filter-buttons cash-settlement-filter-buttons');
-    expect(markup).toContain('booking-date-filter-button is-active');
-    expect(markup).toContain('Active cash settlement filters');
+    expect(markup).toContain('Settlement queue');
+    expect(markup).toContain('All open');
+    expect(markup).toContain('Missing evidence');
+    expect(markup).toContain('High exposure');
+    expect(markup).toContain('Additional queues');
+    expect(markup).toContain('aria-label="Overdue, 7, selected"');
+    expect(markup).toContain('High exposure <span class="cash-settlement-queue-count">2</span>');
+    expect(markup).toContain('Advanced filters');
+    expect(markup).toContain('Sort receivables');
+    expect(markup).toContain('Highest exposure');
+    expect(markup).toContain('aria-label="Cash settlement scope"');
     expect(markup).toContain('Range: Today');
-    expect(markup).toContain('Queue: Over 24h');
+    expect(markup).toContain('Queue: Overdue');
     expect(markup).toContain('Search: smoke');
-    expect(markup).toContain('/cash-settlements?queue=stale&amp;q=smoke');
-    expect(markup).toContain('/cash-settlements?range=7d&amp;queue=stale&amp;q=smoke');
-    expect(markup).toContain('/cash-settlements?queue=high-debt&amp;q=smoke');
-    expect(markup).not.toContain('pill pill-neutral');
-    expect(markup).toContain('aria-current="page"');
-    expect(markup).not.toContain('<input aria-label="Search cash settlement queue"');
-    expect(markup).not.toContain('filter-pill');
+    expect(markup).toContain('/cash-settlements?range=today&amp;queue=missing-evidence&amp;q=smoke&amp;sort=newest');
+    expect(source).not.toContain('missing-ref');
+    expect(source).not.toContain('AdminQueueAgeSortControls');
+  });
+
+  it('does not render default scope values as active filters', () => {
+    const markup = renderToStaticMarkup(
+      <CashSettlementFilterSection
+        filters={{ ...filters(), q: '', queue: 'all', range: 'all', sort: 'oldest' }}
+        totalRowCount={12}
+        visibleRowCount={10}
+      />,
+    );
+
+    expect(markup).not.toContain('Range: All');
+    expect(markup).not.toContain('Queue: All open');
+    expect(markup).not.toContain('Age: all');
+    expect(markup).not.toContain('Order: Oldest first');
   });
 });
 
 function filters(): CashSettlementFilters {
   return {
+    age: 'all',
     page: 1,
     pageSize: 10,
+    period: null,
     q: 'smoke',
     queue: 'stale',
     range: 'today',
+    returnTo: null,
+    sla: 'all',
+    sort: 'newest',
+    view: null,
   };
 }

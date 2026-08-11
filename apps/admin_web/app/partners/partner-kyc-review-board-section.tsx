@@ -3,6 +3,7 @@ import { AdminActionCard, AdminDetailGrid, AdminSection } from '../../components
 import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge } from '../../components/status-badge';
+import { adminCountLabel } from '../../lib/admin-copy';
 
 type PartnerKycReviewTone = 'danger' | 'info' | 'ok' | 'warn';
 
@@ -44,7 +45,7 @@ export function PartnerKycReviewBoardSection({ board }: PartnerKycReviewBoardSec
       actions={
         <>
           <StatusBadge tone={board.openCount > 0 ? 'warning' : 'success'}>
-            {board.openCount} KYC item(s)
+            {adminCountLabel(board.openCount, 'KYC item')}
           </StatusBadge>
           <StatusBadge tone="success">{board.readyToApprove} ready to approve</StatusBadge>
           <StatusBadge tone="danger">{board.blockedByDocuments} blocked by docs</StatusBadge>

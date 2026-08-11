@@ -5,6 +5,61 @@ export function partnerDisplayText(value?: string | null) {
     .replaceAll('provider', 'partner');
 }
 
+export function adminCountLabel(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+const PARTNER_OPERATING_STATUS_LABELS: Readonly<Record<string, string>> = {
+  APPROVED: 'Approved',
+  BLOCKED: 'Blocked',
+  DEFERRED: 'Review postponed',
+  DRAFT: 'Profile draft',
+  INCOMPLETE: 'Profile incomplete',
+  'MANUAL OFFLINE': 'Taken offline by an operator',
+  MANUAL_OFFLINE: 'Taken offline by an operator',
+  MISSING: 'Required information missing',
+  NOT_SUBMITTED: 'Not submitted',
+  OFFLINE: 'Offline',
+  ONLINE_AVAILABLE: 'Ready now',
+  ONLINE_AVAILABLE_SOON: 'Available soon',
+  ONLINE_BUSY: 'Busy with a booking',
+  ON_REQUEST: 'Available on request',
+  PENDING: 'Review pending',
+  REJECTED: 'Changes requested',
+  SUBMITTED: 'Submitted for review',
+};
+
+export function partnerOperatingStatusLabel(value?: string | null) {
+  const status = value?.trim();
+  if (!status) return 'Not recorded';
+
+  const normalized = status.toUpperCase();
+  return PARTNER_OPERATING_STATUS_LABELS[normalized]
+    ?? normalized.replaceAll('_', ' ').toLowerCase().replace(/^./u, (character) => character.toUpperCase());
+}
+
+const ADMIN_WORKFLOW_STATUS_LABELS: Readonly<Record<string, string>> = {
+  ACKNOWLEDGED: 'Acknowledged',
+  BANK_TRANSFER_PENDING: 'Bank transfer pending',
+  HELD: 'On hold',
+  HOLD: 'On hold',
+  NEEDS_BANK_CORRECTION: 'Bank details need correction',
+  NEW: 'New',
+  OPEN: 'Needs action',
+  REVIEW: 'Needs review',
+  REVIEW_REQUIRED: 'Review required',
+  RESOLVED: 'Resolved',
+};
+
+export function adminWorkflowStatusLabel(value?: string | null) {
+  const status = value?.trim();
+  if (!status) return 'Not recorded';
+
+  const normalized = status.toUpperCase();
+  return ADMIN_WORKFLOW_STATUS_LABELS[normalized]
+    ?? normalized.replaceAll('_', ' ').toLowerCase().replace(/^./u, (character) => character.toUpperCase());
+}
+
 export function marketplaceDisplayText(value?: string | null) {
   // Authority markers for legacy internal backup naming:
   // replaceAll('backup partner', 'marketplace partner')

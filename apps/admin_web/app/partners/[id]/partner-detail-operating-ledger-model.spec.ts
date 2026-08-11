@@ -24,7 +24,7 @@ describe('partner detail operating ledger model', () => {
 
     expect(rowByArea(rows, 'Identity')).toMatchObject({
       evidence: 'Linh Partner / +84900000000 / Ho Chi Minh City',
-      href: '/partners/partner-1?section=full#partner-master-facts',
+      href: '/partners/partner-1?section=dossier&dossier=evidence',
       status: 'Profile linked',
     });
     expect(rowByArea(rows, 'KYC')).toMatchObject({

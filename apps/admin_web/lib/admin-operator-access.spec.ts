@@ -129,7 +129,7 @@ describe('admin operator page access', () => {
     const sessionCookieValue = createAdminWebSessionCookieValue({
       expiresAtMs: Date.now() + 60_000,
       secret: sessionSecret,
-      sub: 'master@example.com',
+      sub: 'stored-master-1',
     });
     vi.mocked(headers).mockResolvedValue(
       new Headers({

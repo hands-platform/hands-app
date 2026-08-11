@@ -1,11 +1,12 @@
 import { ArrowRight } from 'lucide-react';
 import type { AdminOperationalPolicySetting, AdminProvider, AdminProviderSummary } from '../../lib/admin-api';
-import { adminGet } from '../../lib/admin-api';
+import { adminGet, adminGetResult } from '../../lib/admin-api';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminMetricGrid, AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminErrorState, AdminSection } from '../../components/admin-surface';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
 import { readSearchParam } from '../../lib/date-range';
 import {
@@ -103,11 +104,38 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const params = searchParams ? await searchParams : {};
   const filters = buildProviderFilters(params);
   const dataHrefs = buildPartnerDataHrefs(filters);
-  const [rawProviders, providerDirectorySummary, operationalPolicies] = await Promise.all([
-    adminGet<AdminProvider[]>(dataHrefs.listHref, []),
-    adminGet<AdminProviderSummary>(dataHrefs.summaryHref, { totalCount: 0 }),
+  const currentHref = buildPartnerListHref(filters, { page: filters.page });
+  const [providersResult, summaryResult, operationalPolicies] = await Promise.all([
+    adminGetResult<AdminProvider[]>(dataHrefs.listHref, []),
+    adminGetResult<AdminProviderSummary>(dataHrefs.summaryHref, { totalCount: 0 }),
     adminGet<AdminOperationalPolicySetting[]>(buildProviderOpsPolicyApiHref(), []),
   ]);
+  const partnerListMode = partnerPrimaryListMode(filters.review);
+  const partnerReviewContent = partnerReviewModeContent(filters.review);
+  const partnerPageTitle = partnerReviewContent?.title ?? 'Partner directory';
+
+  if (!providersResult.ok || !summaryResult.ok) {
+    return (
+      <AdminPageTemplate
+        contentClassName="partners-page"
+        description={
+          partnerReviewContent?.description ??
+          'Search by partner name, phone, or ID, then open a profile to review status and restrictions.'
+        }
+        title={partnerPageTitle}
+      >
+        <PartnerPrimaryListTabs activeMode={partnerListMode} />
+        <AdminErrorState
+          action={<AdminFormControlLink href={currentHref}>Refresh</AdminFormControlLink>}
+          message="Partner data could not be loaded. Refresh before using this directory for an operational decision."
+          title="Unable to load Partners"
+        />
+      </AdminPageTemplate>
+    );
+  }
+
+  const rawProviders = providersResult.data;
+  const providerDirectorySummary = summaryResult.data;
   const opsPolicy = buildProviderOpsPolicy(operationalPolicies);
   const allProviders = dataHrefs.listIsServerPaginated
     ? rawProviders
@@ -116,10 +144,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     ? allProviders
     : filterProviders(allProviders, filters, opsPolicy, PARTNER_LIST_QUERY_DEPS);
   const activeFilters = buildProviderActiveFilters(filters);
-  const partnerDirectoryTotalCount =
-    dataHrefs.summaryMatchesVisibleFilter
-      ? providerDirectorySummary.totalCount || rawProviders.length
-      : providers.length;
+  const partnerDirectoryTotalCount = dataHrefs.summaryMatchesVisibleFilter
+    ? providerDirectorySummary.totalCount || rawProviders.length
+    : providers.length;
   const providerPagination = partnerRowsPagination(providers, filters, {
     serverPaginated: dataHrefs.listIsServerPaginated,
     totalRows: partnerDirectoryTotalCount,
@@ -191,11 +218,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     buildPartnerMasterRow(provider, opsPolicy, { displayName: providerDisplayName }),
   );
   const partnerMasterPagination = { ...providerPagination, rows: partnerMasterRows };
-  const partnerListMode = partnerPrimaryListMode(filters.review);
-  const partnerReviewContent = partnerReviewModeContent(filters.review);
-  const partnerPageTitle = partnerReviewContent?.title ?? 'Partners';
   const partnerMasterListMode =
-    filters.review === 'unapproved' || filters.review === 'unsettled' ? filters.review : 'default';
+    filters.review === 'approval-pending' || filters.review === 'unapproved' || filters.review === 'unsettled'
+      ? filters.review
+      : 'default';
   const showAdvancedPartnerFilters = partnerHasAdvancedOperationalFilters(filters);
   const partnerListCsvHref = buildPartnerExportHref(filters);
   const compactPartnerListHref = buildPartnerListHref(filters);
@@ -223,15 +249,27 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
 
   return (
     <AdminPageTemplate
-      actions={deepPartnerOpsAvailable ? (
-        <AdminFormControlLink href={showDeepPartnerOpsSections ? compactPartnerListHref : deepPartnerOpsHref}>
-          {showDeepPartnerOpsSections ? 'Compact list' : 'Load operations analysis'}
-        </AdminFormControlLink>
-      ) : undefined}
+      actions={
+        <>
+          <span className="admin-page-refresh-status">
+            Updated <DateTimeText fallback="time unavailable" value={providerDirectorySummary.generatedAt} />
+          </span>
+          <AdminFormControlLink className="button-secondary" href={currentHref}>
+            Refresh
+          </AdminFormControlLink>
+          {deepPartnerOpsAvailable ? (
+            <AdminFormControlLink
+              href={showDeepPartnerOpsSections ? compactPartnerListHref : deepPartnerOpsHref}
+            >
+              {showDeepPartnerOpsSections ? 'Compact list' : 'Load operations analysis'}
+            </AdminFormControlLink>
+          ) : null}
+        </>
+      }
       contentClassName="partners-page"
       description={
         partnerReviewContent?.description ??
-        'Partner directory aligned to the Vuexy management table using live onboarding, wallet, app session, location, and booking data.'
+        'Search by partner name, phone, or ID, then open a profile to review status and restrictions.'
       }
       title={partnerPageTitle}
     >
@@ -277,16 +315,20 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         />
       ) : null}
       <PartnerPrimaryListTabs activeMode={partnerListMode} />
-      <PartnerFilterBoard
-        activeFilters={activeFilters}
-        csvDownloadName={`hands-partners-${partnerExportFileSlug}.csv`}
-        csvHref={partnerListCsvHref}
-        filteredCount={visibleProviders.length}
-        filters={filters}
-        locationFreshnessLabel={`Location freshness: ${opsPolicy.staleLocationMinutes}m`}
-        showAdvancedFilters={showAdvancedPartnerFilters}
-        totalCount={partnerDirectoryTotalCount}
-      />
+      {filters.review !== 'approval-pending' || partnerDirectoryTotalCount > 0 ? (
+        <PartnerFilterBoard
+          activeFilters={activeFilters}
+          ageCounts={providerDirectorySummary.queueAgeCounts}
+          queueSla={providerDirectorySummary.queueSla}
+          csvDownloadName={`hands-partners-${partnerExportFileSlug}.csv`}
+          csvHref={partnerListCsvHref}
+          filteredCount={visibleProviders.length}
+          filters={filters}
+          locationFreshnessLabel={`Location freshness: ${opsPolicy.staleLocationMinutes}m`}
+          showAdvancedFilters={showAdvancedPartnerFilters}
+          totalCount={partnerDirectoryTotalCount}
+        />
+      ) : null}
       {deepPartnerOps ? (
         <>
           <AdminSection
@@ -302,7 +344,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
 
                 return {
                   action: item.href ? (
-                    <AdminFormControlLink className="button-secondary partner-summary-action" href={item.href}>
+                    <AdminFormControlLink
+                      className="button-secondary partner-summary-action"
+                      href={item.href}
+                    >
                       <ArrowRight aria-hidden="true" size={14} />
                       Open subset
                     </AdminFormControlLink>

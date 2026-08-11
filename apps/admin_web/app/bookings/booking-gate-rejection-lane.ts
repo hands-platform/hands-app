@@ -1,4 +1,5 @@
 import type { AdminAuditLog } from '../../lib/admin-api';
+import { adminCountLabel } from '../../lib/admin-copy';
 import type { BookingCommandCenterLane } from './booking-command-center-board';
 import { bookingGateRejectionLaneFacts } from './booking-gate-rejection-lane-facts';
 import { bookingGateReasonCode } from './booking-gate-rejections';
@@ -22,7 +23,7 @@ export function buildBookingGateRejectionLane(
     tone: facts.totalCount > 0 ? 'warn' : 'ok',
     detail:
       facts.totalCount > 0
-        ? `${facts.customerTooFarCount} customer distance, ${facts.partnerTooFarCount} first-pick distance, ${facts.serviceAreaCount} service-area, and ${facts.locationEvidenceCount} optional GPS evidence attempt(s). Latest ${facts.latestAge}.`
+        ? `${facts.customerTooFarCount} customer distance, ${facts.partnerTooFarCount} first-pick distance, ${facts.serviceAreaCount} service-area, and ${adminCountLabel(facts.locationEvidenceCount, 'optional GPS evidence attempt')}. Latest ${facts.latestAge}.`
         : 'No booking create request has been blocked by the local booking gates.',
     href: '/bookings?view=blocked-create',
     metrics: [

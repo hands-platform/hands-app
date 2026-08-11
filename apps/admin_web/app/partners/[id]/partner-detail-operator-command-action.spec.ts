@@ -18,7 +18,7 @@ describe('partner detail operator command action', () => {
         type: 'approve-profile',
       }),
     ).toBe(
-      '/partners/partner-detail-123456?section=full&confirm=approve&providerId=partner-detail-123456',
+      '/partners/partner-detail-123456?section=control&control=work&confirm=approve&providerId=partner-detail-123456',
     );
     expect(
       partnerOperatorCommandActionHref('partner-detail-123456', {
@@ -53,7 +53,7 @@ describe('partner detail operator command action', () => {
         type: 'approve-kyc',
       }),
     ).toBe(
-      '/partners/partner-detail-123456?section=full&providerId=partner-detail-123456&reviewAction=approve-kyc',
+      '/partners/partner-detail-123456?section=control&control=work&providerId=partner-detail-123456&reviewAction=approve-kyc',
     );
     expect(
       partnerOperatorCommandActionHref('partner-detail-123456', {
@@ -68,7 +68,7 @@ describe('partner detail operator command action', () => {
         type: 'approve-bank',
       }),
     ).toBe(
-      '/partners/partner-detail-123456?section=full&providerId=partner-detail-123456&reviewAction=approve-bank&bankAccountId=bank-account-123456',
+      '/partners/partner-detail-123456?section=control&control=work&providerId=partner-detail-123456&reviewAction=approve-bank&bankAccountId=bank-account-123456',
     );
     expect(
       partnerOperatorCommandActionHref('partner-detail-123456', {

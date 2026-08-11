@@ -1,20 +1,56 @@
-import type { FormHTMLAttributes, ReactNode } from 'react';
+'use client';
+
+import type { FormHTMLAttributes, ReactNode, SubmitEvent } from 'react';
 
 type AdminDirectoryFilterFormProps = {
+  readonly canonicalDefaults?: Readonly<Record<string, string>>;
   readonly children: ReactNode;
   readonly className?: string;
 } & Omit<FormHTMLAttributes<HTMLFormElement>, 'children' | 'className'>;
 
 export function AdminDirectoryFilterForm({
+  canonicalDefaults,
   children,
   className,
+  onSubmit,
   ...formProps
 }: AdminDirectoryFilterFormProps) {
+  const handleSubmit = canonicalDefaults
+    ? (event: SubmitEvent<HTMLFormElement>) => {
+        onSubmit?.(event);
+        if (event.defaultPrevented) return;
+        event.preventDefault();
+        const action = event.currentTarget.getAttribute('action') || window.location.pathname;
+        window.location.assign(
+          canonicalGetFormHref(action, new FormData(event.currentTarget).entries(), canonicalDefaults),
+        );
+      }
+    : onSubmit;
+
   return (
-    <form {...formProps} className={mergeClassNames('admin-directory-filter-form', className)}>
+    <form
+      {...formProps}
+      className={mergeClassNames('admin-directory-filter-form', className)}
+      onSubmit={handleSubmit}
+    >
       {children}
     </form>
   );
+}
+
+export function canonicalGetFormHref(
+  action: string,
+  entries: Iterable<[string, FormDataEntryValue]>,
+  defaults: Readonly<Record<string, string>>,
+) {
+  const search = new URLSearchParams();
+  for (const [name, value] of entries) {
+    if (typeof value === 'string' && value && value !== defaults[name]) {
+      search.append(name, value);
+    }
+  }
+  const query = search.toString();
+  return query ? `${action}${action.includes('?') ? '&' : '?'}${query}` : action;
 }
 
 function mergeClassNames(...classNames: Array<string | undefined>) {

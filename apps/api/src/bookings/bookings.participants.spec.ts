@@ -36,6 +36,13 @@ describe('booking participant helpers', () => {
           respondedAt,
         },
       },
+      updateMany: {
+        where: {
+          providerProfileId: { not: 'partner-1' },
+          status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
+        },
+        data: { status: ParticipantStatus.EXPIRED, respondedAt },
+      },
     });
   });
 
@@ -63,13 +70,11 @@ describe('booking participant helpers', () => {
         distanceMeters: 1200,
       },
       create: {
-        bookingId: 'booking-1',
         providerProfileId: 'partner-1',
         status: ParticipantStatus.JOINED,
         distanceMeters: 1200,
         providerStatusAtJoin: ProviderStatus.ONLINE_AVAILABLE,
       },
-      include: { providerProfile: true },
     });
   });
 
@@ -103,7 +108,7 @@ describe('booking participant helpers', () => {
         respondedAt,
       }),
     ).toEqual({
-      status: 'MATCHED',
+      status: 'IN_SERVICE',
       selectedProviderId: 'partner-1',
       matchedAt,
       matchSource: 'CUSTOMER_SELECTED_PARTNER',
@@ -120,12 +125,19 @@ describe('booking participant helpers', () => {
             respondedAt,
           },
         },
+        updateMany: {
+          where: {
+            providerProfileId: { not: 'partner-1' },
+            status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
+          },
+          data: { status: ParticipantStatus.EXPIRED, respondedAt },
+        },
       },
       chatRoom: { upsert: { create: {}, update: {} } },
     });
   });
 
-  it('builds first-pick rejection update data that reopens matching', () => {
+  it('builds first-pick rejection update data that closes matching and other participants', () => {
     const respondedAt = new Date('2026-06-11T02:00:00.000Z');
 
     expect(
@@ -135,8 +147,11 @@ describe('booking participant helpers', () => {
         respondedAt,
       }),
     ).toEqual({
-      status: 'OPEN_MATCHING',
+      status: 'CANCELLED',
       selectedProviderId: null,
+      closedAt: respondedAt,
+      closedByRole: 'PROVIDER',
+      closedReason: 'preferred_provider_rejected',
       participants: {
         update: {
           where: {
@@ -149,6 +164,13 @@ describe('booking participant helpers', () => {
             status: ParticipantStatus.REJECTED,
             respondedAt,
           },
+        },
+        updateMany: {
+          where: {
+            providerProfileId: { not: 'partner-1' },
+            status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
+          },
+          data: { status: ParticipantStatus.EXPIRED, respondedAt },
         },
       },
     });

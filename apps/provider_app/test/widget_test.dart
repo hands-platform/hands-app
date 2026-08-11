@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider_app/provider_app.dart';
 import 'package:provider_app/src/core/api_client.dart';
 import 'package:provider_app/src/features/booking/presentation/provider_requests_list_section.dart';
+import 'package:provider_app/src/features/booking/presentation/provider_request_filter_helpers.dart';
 import 'package:provider_app/src/features/chat/presentation/provider_chat_location_helpers.dart';
 import 'package:provider_app/src/features/earnings/presentation/provider_earnings_screen.dart';
 import 'package:provider_app/src/features/notification/data/datasources/in_app_notification_token_datasource.dart';
@@ -21,8 +22,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Booking requests'), findsOneWidget);
-    expect(find.text('Demo partner login'), findsOneWidget);
+    expect(find.text('Yêu cầu đặt lịch'), findsOneWidget);
+    expect(find.text('Đăng nhập thử nghiệm'), findsOneWidget);
   });
 
   test('partner service option labels tolerate numeric strings', () {
@@ -33,10 +34,10 @@ void main() {
       'basePrice': '500000',
     };
 
-    expect(providerServiceOptionLabel(service), 'Foot Massage / 90 min');
-    expect(providerServiceDurationLabel(service), '90 min');
+    expect(providerServiceOptionLabel(service), 'Foot Massage / 90 phút');
+    expect(providerServiceDurationLabel(service), '90 phút');
     expect(providerServiceOptionPriceLabel(service),
-        'Foot Massage / 90 min / 700.000 VND');
+        'Foot Massage / 90 phút / 700.000 VND');
   });
 
   test('partner wallet settlement labels tolerate numeric strings', () {
@@ -49,9 +50,9 @@ void main() {
     };
 
     expect(providerWalletBalance(summary), -120000);
-    expect(providerWalletStatusLabel(summary), 'Settlement required');
+    expect(providerWalletStatusLabel(summary), 'Cần thanh toán phí');
     expect(providerWalletSettlementSteps(summary).first,
-        'Settle 120.000 VND for unpaid HANDS fees.');
+        'Thanh toán 120.000 VND phí HANDS còn thiếu.');
   });
 
   test('partner earning target sort moves push earning first', () {
@@ -120,8 +121,8 @@ void main() {
 
     expect(providerWalletBankInputRequired(snapshot), isFalse);
     expect(
-      providerWalletBankRequestMessage('withdrawal request', 'PENDING_REVIEW'),
-      'Bank information is waiting for admin approval before withdrawal request can continue.',
+      providerWalletBankRequestMessage('yêu cầu rút tiền', 'PENDING_REVIEW'),
+      'Thông tin ngân hàng đang chờ phê duyệt trước khi tiếp tục yêu cầu rút tiền.',
     );
   });
 
@@ -134,8 +135,8 @@ void main() {
 
     expect(providerWalletBankInputRequired(snapshot), isFalse);
     expect(
-      providerWalletBankRequestMessage('deposit report', 'APPROVED'),
-      'Bank information is approved. deposit report can continue through HANDS operations.',
+      providerWalletBankRequestMessage('báo cáo khoản nộp', 'APPROVED'),
+      'Thông tin ngân hàng đã được phê duyệt. Có thể tiếp tục báo cáo khoản nộp qua HANDS.',
     );
   });
 
@@ -154,11 +155,14 @@ void main() {
               joinedBookingIds: const {},
               loading: false,
               walletBlocked: true,
+              filters: const ProviderRequestFilters(),
+              savingAlertPreferences: false,
               onRequestViewChanged: (_) {},
               onJoin: (_) {},
               onAccept: (_) {},
               onReject: (_) {},
-              onStart: (_) {},
+              onFiltersChanged: (_) {},
+              onSaveAlertPreferences: () {},
             ),
           ),
         ),
@@ -167,7 +171,7 @@ void main() {
 
     expect(
       find.text(
-        '$providerWalletBlockFallbackReasonClean Marketplace requests stay visible, but participation is locked until settlement is cleared. Direct first-pick requests are handled separately.',
+        '$providerMarketplaceJoinBlockReasonClean Yêu cầu trực tiếp vẫn được xử lý riêng.',
       ),
       findsOneWidget,
     );
@@ -186,8 +190,7 @@ void main() {
     }));
 
     expect(walletMessage, providerWalletBlockFallbackReasonClean);
-    expect(providerActionBlockCopy(walletMessage)?.title,
-        'Fee settlement required');
+    expect(providerActionBlockCopy(walletMessage)?.title, 'Cần thanh toán phí');
 
     final kycMessage = providerAppErrorMessage(ApiException(403, {
       'message': 'Partner KYC must be approved before receiving paid work.',
@@ -195,7 +198,7 @@ void main() {
       'statusCode': 403,
     }));
 
-    expect(providerActionBlockCopy(kycMessage)?.title, 'KYC approval required');
+    expect(providerActionBlockCopy(kycMessage)?.title, 'Cần phê duyệt KYC');
 
     final bankMessage = providerAppErrorMessage(ApiException(403, {
       'message':
@@ -203,10 +206,10 @@ void main() {
     }));
 
     expect(providerActionBlockCopy(bankMessage)?.title,
-        'Wallet bank details required');
+        'Cần thông tin ngân hàng cho ví');
     expect(
       providerActionBlockCopy(bankMessage)?.detail,
-      contains('wallet withdrawal/deposit checks'),
+      contains('yêu cầu rút hoặc nộp tiền vào ví'),
     );
   });
 
@@ -265,7 +268,7 @@ void main() {
     expect(providerChatCustomerLongitude(booking), 106.701);
   });
 
-  testWidgets('locks marketplace participation action when wallet is negative',
+  testWidgets('keeps participation clickable for the wallet settlement dialog',
       (tester) async {
     var joinTapped = false;
 
@@ -307,26 +310,22 @@ void main() {
               onJoin: () => joinTapped = true,
               onAccept: () {},
               onReject: () {},
-              onStart: () {},
             ),
           ),
         ),
       ),
     );
 
-    expect(
-        find.text('Cannot participate until fees are settled'), findsOneWidget);
-    expect(find.text(providerWalletBlockFallbackReasonClean), findsOneWidget);
-    expect(
-        find.text(providerMarketplaceJoinBlockedButtonLabel), findsOneWidget);
+    expect(find.text('Không thể tham gia khi phí chưa được thanh toán'),
+        findsOneWidget);
+    expect(find.text(providerMarketplaceJoinBlockReasonClean), findsOneWidget);
+    expect(find.text('Tham gia hỗ trợ đặt lịch'), findsOneWidget);
 
-    await tester.ensureVisible(
-      find.text(providerMarketplaceJoinBlockedButtonLabel),
-    );
-    await tester.tap(find.text(providerMarketplaceJoinBlockedButtonLabel));
+    await tester.ensureVisible(find.text('Tham gia hỗ trợ đặt lịch'));
+    await tester.tap(find.text('Tham gia hỗ trợ đặt lịch'));
     await tester.pump();
 
-    expect(joinTapped, isFalse);
+    expect(joinTapped, isTrue);
   });
 
   testWidgets('allows first-pick request response when wallet is negative',
@@ -371,28 +370,25 @@ void main() {
               onJoin: () {},
               onAccept: () => acceptTapped = true,
               onReject: () {},
-              onStart: () {},
             ),
           ),
         ),
       ),
     );
 
-    expect(
-        find.text('Cannot participate until fees are settled'), findsNothing);
-    expect(find.text('Accept request'), findsOneWidget);
+    expect(find.text('Không thể tham gia khi phí chưa được thanh toán'),
+        findsNothing);
+    expect(find.text('Chấp nhận yêu cầu'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('Accept request'));
-    await tester.tap(find.text('Accept request'));
+    await tester.ensureVisible(find.text('Chấp nhận yêu cầu'));
+    await tester.tap(find.text('Chấp nhận yêu cầu'));
     await tester.pump();
 
     expect(acceptTapped, isTrue);
   });
 
-  testWidgets('allows matched first-pick service start when wallet is negative',
+  testWidgets('shows matched first-pick chat as active when wallet is negative',
       (tester) async {
-    var startTapped = false;
-
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -434,25 +430,21 @@ void main() {
               onJoin: () {},
               onAccept: () {},
               onReject: () {},
-              onStart: () => startTapped = true,
             ),
           ),
         ),
       ),
     );
 
-    expect(
-        find.text('Cannot participate until fees are settled'), findsNothing);
-    expect(find.text('Start service'), findsOneWidget);
-
-    await tester.ensureVisible(find.text('Start service'));
-    await tester.tap(find.text('Start service'));
-    await tester.pump();
-
-    expect(startTapped, isTrue);
+    expect(find.text('Không thể tham gia khi phí chưa được thanh toán'),
+        findsNothing);
+    expect(find.text('Trò chuyện đã sẵn sàng. Tiếp tục trong mục Trò chuyện.'),
+        findsOneWidget);
+    expect(find.text('Bắt đầu dịch vụ'), findsNothing);
   });
 
-  testWidgets('locks participating marketplace card when wallet is negative',
+  testWidgets(
+      'keeps an existing marketplace participation visible after wallet debt',
       (tester) async {
     var rejectTapped = false;
 
@@ -496,29 +488,20 @@ void main() {
               onJoin: () {},
               onAccept: () {},
               onReject: () => rejectTapped = true,
-              onStart: () {},
             ),
           ),
         ),
       ),
     );
 
-    expect(
-        find.text('Cannot participate until fees are settled'), findsOneWidget);
+    expect(find.text('Không thể tham gia khi phí chưa được thanh toán'),
+        findsOneWidget);
     expect(
       find.text(
-          'You are visible to the customer now. Wait for the final selection.'),
-      findsNothing,
+          'Bạn vẫn có thể xem đặt lịch này, nhưng phải thanh toán phí HANDS còn thiếu trước khi tham gia.'),
+      findsOneWidget,
     );
-    expect(
-        find.text(providerMarketplaceJoinBlockedButtonLabel), findsOneWidget);
-
-    await tester.ensureVisible(
-      find.text(providerMarketplaceJoinBlockedButtonLabel),
-    );
-    await tester.tap(find.text(providerMarketplaceJoinBlockedButtonLabel));
-    await tester.pump();
-
+    expect(find.text('Tham gia hỗ trợ đặt lịch'), findsNothing);
     expect(rejectTapped, isFalse);
   });
 }

@@ -86,6 +86,7 @@ export const REALTIME_EVENTS = [
   'booking.rejected',
   'booking.expired',
   'booking.no_show',
+  'provider.arrived',
   'provider.account.blocked',
   'provider.account.unblocked',
   'provider.payout_setup_required',

@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import {
   NOTIFICATION_SEND_QUEUE_NAME,
+  NOTIFICATION_SEND_PUSH_DEVICE_LIMIT,
   type NotificationSendJob,
 } from './notification-send.queue';
 import {
@@ -29,9 +30,11 @@ export const notificationSendPushDeviceOrder = [
   { updatedAt: 'desc' },
   { createdAt: 'desc' },
 ] satisfies Prisma.PushDeviceOrderByWithRelationInput[];
-export const NOTIFICATION_SEND_PUSH_DEVICE_LIMIT = 10;
-
 const notificationSendInclude = Prisma.validator<Prisma.NotificationInclude>()({
+  deliveries: {
+    where: { status: 'SENT' },
+    select: { pushDeviceId: true },
+  },
   user: {
     include: {
       pushDevices: {
@@ -63,15 +66,29 @@ export class NotificationRetryProcessor extends WorkerHost {
     }
 
     const targetRole = notificationTargetRole(notification);
-    const devices = notification.user.pushDevices
+    const targetDevices = notification.user.pushDevices
       .filter((device) => pushDeviceMatchesTargetRole(device, targetRole))
       .slice(0, NOTIFICATION_SEND_PUSH_DEVICE_LIMIT);
-    if (devices.length === 0) {
+    if (targetDevices.length === 0) {
       return {
         skipped: true,
         reason: targetRole ? 'NO_ENABLED_TARGET_ROLE_DEVICES' : 'NO_ENABLED_DEVICES',
         notificationId: notification.id,
         ...(targetRole ? { targetRole } : {}),
+      };
+    }
+
+    const deliveredDeviceIds = new Set(
+      (notification.deliveries ?? []).map((delivery) => delivery.pushDeviceId),
+    );
+    const devices = targetDevices.filter((device) => !deliveredDeviceIds.has(device.id));
+    const skippedDeliveredDeviceCount = targetDevices.length - devices.length;
+    if (devices.length === 0) {
+      return {
+        skipped: true,
+        reason: 'ALREADY_DELIVERED',
+        notificationId: notification.id,
+        skippedDeliveredDeviceCount,
       };
     }
 
@@ -87,6 +104,7 @@ export class NotificationRetryProcessor extends WorkerHost {
       notificationId: notification.id,
       userId: notification.userId,
       results,
+      ...(skippedDeliveredDeviceCount > 0 ? { skippedDeliveredDeviceCount } : {}),
     };
   }
 

@@ -1,0 +1,17 @@
+{
+  "node": {
+    "40f2975bac26b34209194e6888f53fb8b2c3504005": {
+      "workers": {
+        "app/reviews/page": {
+          "moduleId": 645807,
+          "async": false,
+          "exportedName": "moderateReview",
+          "filename": "apps/admin_web/app/reviews/actions.ts"
+        }
+      },
+      "exportedName": "moderateReview",
+      "filename": "apps/admin_web/app/reviews/actions.ts"
+    }
+  },
+  "edge": {}
+}

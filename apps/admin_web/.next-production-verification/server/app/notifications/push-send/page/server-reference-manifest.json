@@ -1,0 +1,17 @@
+{
+  "node": {
+    "402ca4f5086323b69ea488099f6d6391f7e52509ed": {
+      "workers": {
+        "app/notifications/push-send/page": {
+          "moduleId": 78802,
+          "async": false,
+          "exportedName": "sendPushCampaign",
+          "filename": "apps/admin_web/app/notifications/push-send/actions.ts"
+        }
+      },
+      "exportedName": "sendPushCampaign",
+      "filename": "apps/admin_web/app/notifications/push-send/actions.ts"
+    }
+  },
+  "edge": {}
+}

@@ -3,6 +3,7 @@ import { AdminActionCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadgeFromPillClass } from '../../components/status-badge';
+import { adminCountLabel } from '../../lib/admin-copy';
 
 export type RefundDecisionChecklistItem = {
   readonly className: string;
@@ -22,7 +23,7 @@ export function RefundDecisionChecklistSection({ items }: RefundDecisionChecklis
   return (
     <AdminTablePanel
       description="Evidence-first checklist for operators before a refund is released, rejected, or handed to finance closeout."
-      resultLabel={`${items.length} check(s)`}
+      resultLabel={adminCountLabel(items.length, 'check')}
       resultTone={items.length > 0 ? 'warning' : 'success'}
       title="Refund decision checklist"
     >

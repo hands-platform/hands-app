@@ -159,9 +159,19 @@ export const adminNotificationListSelect = {
 
 export const adminNotificationBoardListSelect = {
   ...adminNotificationListSelect,
+  user: {
+    select: {
+      ...adminNotificationUserSelect,
+      pushDevices: {
+        orderBy: { updatedAt: 'desc' },
+        take: 10,
+        select: adminUserListPushDeviceSelect,
+      },
+    },
+  },
   deliveries: {
     orderBy: { attemptedAt: 'desc' },
-    take: 3,
+    take: 10,
     select: adminNotificationDeliverySelect,
   },
 } satisfies Prisma.NotificationSelect;

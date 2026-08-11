@@ -1,0 +1,53 @@
+{
+  "node": {
+    "403c0fd54f6b7bd9ff3e81b13578504485594994e0": {
+      "workers": {
+        "app/finance-tax/company-bank-accounts/page": {
+          "moduleId": 32553,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_1",
+          "filename": "apps/admin_web/app/finance-tax/company-bank-accounts/page.tsx"
+        }
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_1",
+      "filename": "apps/admin_web/app/finance-tax/company-bank-accounts/page.tsx"
+    },
+    "406dd5f15cfef63b046f50e3f8a2552737c8283cf4": {
+      "workers": {
+        "app/finance-tax/company-bank-accounts/page": {
+          "moduleId": 32553,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_0",
+          "filename": "apps/admin_web/app/finance-tax/company-bank-accounts/page.tsx"
+        }
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_0",
+      "filename": "apps/admin_web/app/finance-tax/company-bank-accounts/page.tsx"
+    },
+    "407d5cf849e149d6590ea661844e47cb1ec1650c24": {
+      "workers": {
+        "app/finance-tax/company-bank-accounts/page": {
+          "moduleId": 32553,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_2",
+          "filename": "apps/admin_web/app/finance-tax/company-bank-accounts/page.tsx"
+        }
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_2",
+      "filename": "apps/admin_web/app/finance-tax/company-bank-accounts/page.tsx"
+    },
+    "40a4c53ea8382031047175d2af0783376d970c26e6": {
+      "workers": {
+        "app/finance-tax/company-bank-accounts/page": {
+          "moduleId": 32553,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_3",
+          "filename": "apps/admin_web/app/finance-tax/company-bank-accounts/page.tsx"
+        }
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_3",
+      "filename": "apps/admin_web/app/finance-tax/company-bank-accounts/page.tsx"
+    }
+  },
+  "edge": {}
+}

@@ -35,7 +35,7 @@ describe('partner control page filters', () => {
     });
   });
 
-  it('preserves the review lane across paged report and account control lists', () => {
+  it('keeps only the active workspace filters while paging', () => {
     expect(
       partnerControlListHref(
         {
@@ -48,7 +48,7 @@ describe('partner control page filters', () => {
         'reportPage',
         1,
       ),
-    ).toBe('/partner-controls?details=reports&q=linh&review=cash-debt&sanctionPage=2');
+    ).toBe('/partner-controls?details=reports&q=linh');
 
     expect(
       partnerControlListHref(
@@ -61,6 +61,6 @@ describe('partner control page filters', () => {
         'sanctionPage',
         4,
       ),
-    ).toBe('/partner-controls?q=linh&review=cash-debt&reportPage=3&sanctionPage=4');
+    ).toBe('/partner-controls?details=sanctions&q=linh&sanctionPage=4');
   });
 });

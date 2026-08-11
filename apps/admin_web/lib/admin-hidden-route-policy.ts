@@ -23,11 +23,6 @@ export const intentionallyUnlistedPageRoutes = {
     primaryRoutes: ['/bookings'],
     reason: 'Booking detail opens from booking lists and evidence links.',
   },
-  '/chat-archive': {
-    kind: 'AUDIT_SEARCH',
-    primaryRoutes: ['/bookings/[id]', '/customers/[id]', '/partners/[id]'],
-    reason: 'Audit search page is intentionally kept out of the sidebar and opened from detail evidence links.',
-  },
   '/customers/[id]': {
     kind: 'DETAIL_PAGE',
     primaryRoutes: ['/customers', '/bookings/[id]'],
@@ -68,15 +63,16 @@ export const intentionallyUnlistedPageRoutes = {
     primaryRoutes: ['/finance-tax/settlement-reversals'],
     reason: 'Reversal detail opens from settlement reversal lists and finance evidence links.',
   },
+  '/files': {
+    kind: 'LEGACY_ALIAS',
+    primaryRoutes: ['/partners/[id]'],
+    reason:
+      'Legacy file review route is preserved for compatibility; Partner documents and public media are reviewed from Partner detail.',
+  },
   '/login': {
     kind: 'AUTH_BOUNDARY',
     primaryRoutes: ['/'],
     reason: 'Public admin login page is outside the authenticated sidebar shell.',
-  },
-  '/partner-controls': {
-    kind: 'DEEP_OPERATIONAL_EVIDENCE',
-    primaryRoutes: ['/partners/[id]', '/cash-settlements', '/payouts'],
-    reason: 'Partner controls are deep operational evidence opened from partner and payout contexts.',
   },
   '/partners/[id]': {
     kind: 'DETAIL_PAGE',

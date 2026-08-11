@@ -3,6 +3,7 @@ import {
   backupBookingAvailableNotification,
   bookingOpenedNotification,
   customerBookingCancelledNotification,
+  customerFirstPickRejectedNotification,
   customerMarketplaceProviderAcceptedNotification,
   customerProviderJoinedNotification,
   firstPickMatchedCustomerNotification,
@@ -11,6 +12,7 @@ import {
   providerPayoutSetupRequiredNotification,
   selectedPartnerMatchedProviderNotification,
   serviceStartedCustomerNotification,
+  serviceStartedProviderNotification,
 } from './bookings.notifications';
 
 describe('booking notification payloads', () => {
@@ -54,7 +56,6 @@ describe('booking notification payloads', () => {
       preferredProviderRequestedNotification({
         userId: 'provider-user-1',
         bookingId: 'booking-1',
-        customerProfileId: 'customer-1',
       }),
     ).toEqual({
       userId: 'provider-user-1',
@@ -62,7 +63,7 @@ describe('booking notification payloads', () => {
       type: 'booking.requested',
       title: 'New direct booking request',
       body: 'A customer requested one of your services.',
-      data: { bookingId: 'booking-1', customerProfileId: 'customer-1' },
+      data: { bookingId: 'booking-1' },
     });
 
     expect(providerBookingCancelledNotification('provider-user-1', 'booking-1')).toMatchObject({
@@ -91,6 +92,17 @@ describe('booking notification payloads', () => {
       }),
     ).toMatchObject({
       body: 'Your request has been cancelled and the captured payment is queued for refund review.',
+    });
+
+    expect(
+      customerFirstPickRejectedNotification({
+        userId: 'customer-user-1',
+        bookingId: 'booking-1',
+        providerProfileId: 'provider-1',
+      }),
+    ).toMatchObject({
+      type: 'booking.rejected',
+      body: 'This booking request has ended. You can review the result and make a new booking.',
     });
 
     expect(
@@ -149,6 +161,35 @@ describe('booking notification payloads', () => {
     ).toMatchObject({
       type: 'service.started',
       data: { bookingId: 'booking-1', chatRoomId: 'chat-1' },
+    });
+
+    expect(
+      serviceStartedProviderNotification({
+        userId: 'provider-user-1',
+        bookingId: 'booking-1',
+        chatRoomId: 'chat-1',
+      }),
+    ).toEqual({
+      userId: 'provider-user-1',
+      targetRole: Role.PROVIDER,
+      type: 'service.started',
+      title: 'Service started',
+      body: 'Continue with the customer in the matched chat if needed.',
+      data: {
+        destination: 'chat',
+        bookingId: 'booking-1',
+        chatRoomId: 'chat-1',
+      },
+    });
+
+    expect(
+      serviceStartedProviderNotification({
+        userId: 'provider-user-1',
+        bookingId: 'booking-1',
+      }),
+    ).toMatchObject({
+      body: 'Your active booking is ready in Jobs.',
+      data: { bookingId: 'booking-1', destination: 'jobs' },
     });
   });
 

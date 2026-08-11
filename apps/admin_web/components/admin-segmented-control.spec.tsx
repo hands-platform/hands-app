@@ -40,4 +40,34 @@ describe('AdminSegmentedControl', () => {
       'open-1',
     ]);
   });
+
+  it('supports explicit navigation and tab semantics without changing default callers', () => {
+    const navigation = AdminSegmentedControl({
+      activeValue: 'today',
+      ariaLabel: 'Finance workspaces',
+      options: [
+        { href: '/finance-overview', label: 'Today movement', value: 'today' },
+        { href: '/finance-overview?view=queues', label: 'Current backlog', value: 'queues' },
+      ],
+      semantics: 'navigation',
+    });
+    const tabs = AdminSegmentedControl({
+      activeValue: '7d',
+      ariaLabel: 'Finance range',
+      options: [
+        { href: '/finance-overview?view=flow&range=today', label: 'Today', value: 'today' },
+        { href: '/finance-overview?view=flow&range=7d', label: '7 days', value: '7d' },
+      ],
+      semantics: 'tabs',
+    });
+
+    expect(navigation.type).toBe('nav');
+    expect(navigation.props.children[0].props['aria-current']).toBe('page');
+    expect(tabs.props.role).toBe('tablist');
+    expect(tabs.props.children[1].props).toMatchObject({
+      'aria-current': undefined,
+      'aria-selected': true,
+      role: 'tab',
+    });
+  });
 });

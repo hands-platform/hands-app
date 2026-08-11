@@ -69,6 +69,31 @@ void main() {
     expect(intent.hasBooking, isTrue);
   });
 
+  test('Partner chat destination without room falls back to Jobs', () {
+    final intent = PushNotificationOpenIntent.fromData({
+      'destination': 'chat',
+      'bookingId': 'booking-1',
+      'chatRoomId': ' ',
+    });
+
+    expect(intent.destination, PushNotificationOpenDestination.jobs);
+    expect(intent.bookingId, 'booking-1');
+    expect(intent.chatRoomId, isNull);
+  });
+
+  test('Partner empty chat destination falls back to notification center', () {
+    final intent = PushNotificationOpenIntent.fromData({
+      'destination': 'chat',
+    });
+
+    expect(
+      intent.destination,
+      PushNotificationOpenDestination.notificationCenter,
+    );
+    expect(intent.hasBooking, isFalse);
+    expect(intent.chatRoomId, isNull);
+  });
+
   test('Partner service notification opens chat when room id is present', () {
     final intent = PushNotificationOpenIntent.fromData({
       'type': 'service.started',

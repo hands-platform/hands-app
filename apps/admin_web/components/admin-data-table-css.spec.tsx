@@ -102,6 +102,13 @@ describe('Admin data table CSS', () => {
     expect(emptyMessageBlock).toContain('line-height: 1.45');
     expect(emptyMessageBlock).toContain('margin: 0');
   });
+
+  it('switches booking operations rows by their container width', () => {
+    expect(globalsCss).toContain('#booking-table-operations {\n  container: booking-operations / inline-size;');
+    expect(globalsCss).toContain('@container booking-operations (max-width: 1100px)');
+    expect(globalsCss).toContain('@container booking-operations (max-width: 780px)');
+    expect(globalsCss).toContain('content: attr(data-label)');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

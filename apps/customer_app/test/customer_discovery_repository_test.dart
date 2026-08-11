@@ -66,7 +66,65 @@ void main() {
     await repository.recordProviderProfileView('partner-1');
 
     expect(api.postPath, '/customer/partners/partner-1/view');
-    expect(api.postBody, isEmpty);
+    expect(api.postBody?['clientEventId'],
+        startsWith('hands-provider-profile-view-'));
+  });
+
+  test('home summary loads the customer wallet and partner shortcuts',
+      () async {
+    final api = _FakeApiClient({
+      'wallet': {'balance': 250000, 'currency': 'VND'},
+      'favoritePartners': [
+        {'id': 'partner-1', 'distanceMeters': 1000},
+      ],
+      'completedPartners': [
+        {'id': 'partner-2', 'distanceMeters': 2000},
+      ],
+    });
+    final repository = CustomerDiscoveryRepositoryImpl(
+      api,
+      AppSessionReporter(
+        api: api,
+        addressStorageKey: 'test-customer-address',
+        storage: const FlutterSecureStorage(),
+        role: 'CUSTOMER',
+        storageKey: 'test-customer-device',
+      ),
+    );
+
+    final result = await repository.getHomeSummary(lat: 10.7769, lng: 106.7009);
+
+    expect(api.getPath, '/customer/home-summary?lat=10.7769&lng=106.7009');
+    expect(result['wallet'], {'balance': 250000, 'currency': 'VND'});
+    expect(result['favoritePartners'], hasLength(1));
+    expect(result['completedPartners'], hasLength(1));
+  });
+
+  test('wallet loads balance and recent activity from the customer endpoint',
+      () async {
+    final api = _FakeApiClient({
+      'balance': 170000,
+      'currency': 'VND',
+      'entries': [
+        {'id': 'entry-1', 'amount': 70000, 'type': 'REFERRAL_REWARD'},
+      ],
+    });
+    final repository = CustomerDiscoveryRepositoryImpl(
+      api,
+      AppSessionReporter(
+        api: api,
+        addressStorageKey: 'test-customer-address',
+        storage: const FlutterSecureStorage(),
+        role: 'CUSTOMER',
+        storageKey: 'test-customer-device',
+      ),
+    );
+
+    final result = await repository.getWallet();
+
+    expect(api.getPath, '/customer/wallet');
+    expect(result['balance'], 170000);
+    expect(result['entries'], hasLength(1));
   });
 }
 

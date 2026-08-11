@@ -5,10 +5,8 @@ import { adminGet } from '../../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminInlineActionForm } from '../../../components/admin-inline-action-form';
 import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
-import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminNoticeCard, AdminSection } from '../../../components/admin-surface';
-import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import { ADMIN_OPERATOR_BASE_ROLE, FINANCE_APPROVER_ROLE } from '../../../lib/admin-operator-permissions';
 import { FinanceDataTable } from '../finance-data-table';
@@ -152,18 +150,17 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
         title="Finance approver directory"
       >
         <FinanceDataTable
-            emptyMessage="No admin users were returned by the bounded admin user API."
-            headers={['Admin', 'Roles', 'Latest session', 'Push devices', 'Finance approver']}
-            rowCount={adminUsers.length}
-          >
-            {adminUsers.map((user) => {
-              const enabled = isFinanceApprover(user);
-              return (
+          emptyMessage="No admin users were returned by the bounded admin user API."
+          headers={['Admin', 'Assigned roles', 'Finance authority', 'Change role']}
+          rowCount={adminUsers.length}
+        >
+          {adminUsers.map((user) => {
+            const enabled = isFinanceApprover(user);
+            return (
                 <tr key={user.id}>
                   <td>
                     <strong>{user.fullName ?? user.phone ?? user.id}</strong>
                     <div className="muted">{user.phone ?? user.id}</div>
-                    <div className="muted">{user.id}</div>
                   </td>
                   <td>
                     <AdminFilterChipGroup ariaLabel={`${user.fullName ?? user.id} roles`}>
@@ -178,22 +175,14 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
                     </AdminFilterChipGroup>
                   </td>
                   <td>
-                    <strong>
-                      {user.appSessions?.[0]?.lastSeenAt ? (
-                        <DateTimeText value={user.appSessions[0].lastSeenAt} />
-                      ) : (
-                        <AdminInlineFallback>No recent session</AdminInlineFallback>
-                      )}
-                    </strong>
-                    {user.appSessions?.[0]?.platform ? (
-                      <div className="muted">{user.appSessions[0].platform}</div>
-                    ) : (
-                      <AdminInlineFallback className="admin-mt-6">No platform</AdminInlineFallback>
-                    )}
-                  </td>
-                  <td>
-                    <strong>{user.pushDevices?.filter((device) => device.enabled).length ?? 0} enabled</strong>
-                    <div className="muted">{user.pushDevices?.length ?? 0} registered</div>
+                    <StatusBadge tone={enabled ? 'success' : 'neutral'}>
+                      {enabled ? 'Second approver' : 'Maker only'}
+                    </StatusBadge>
+                    <div className="muted">
+                      {enabled
+                        ? 'Can approve money movement submitted by another admin.'
+                        : 'Can prepare permitted work but cannot provide the second finance approval.'}
+                    </div>
                   </td>
                   <td>
                     <AdminInlineActionForm
@@ -219,9 +208,9 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
                     </AdminInlineActionForm>
                   </td>
                 </tr>
-              );
-            })}
-          </FinanceDataTable>
+            );
+          })}
+        </FinanceDataTable>
       </FinanceTablePanel>
     </AdminPageTemplate>
   );

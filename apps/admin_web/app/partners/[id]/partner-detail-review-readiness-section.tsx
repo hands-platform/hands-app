@@ -1,5 +1,3 @@
-import type { ReactNode } from 'react';
-
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { StatusBadge } from '../../../components/status-badge';
@@ -8,20 +6,10 @@ import {
   PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
-
-type PartnerReadinessItem = {
-  detail: string;
-  detailNode?: ReactNode;
-  label: string;
-  ok: boolean;
-  status: string;
-};
-
-type PartnerApprovalChecklist = {
-  blockers: number;
-  items: PartnerReadinessItem[];
-  ready: boolean;
-};
+import type {
+  PartnerApprovalChecklist,
+  PartnerApprovalChecklistItem as PartnerReadinessItem,
+} from './partner-detail-approval-checklist-model';
 
 type PartnerRegistrationDossierItem = PartnerReadinessItem & {
   operatorAction: string;

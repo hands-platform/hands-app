@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
 import type { AdminAppSessionDirectoryRow } from '../../lib/admin-api';
-import { adminGet } from '../../lib/admin-api';
+import { adminGetResult } from '../../lib/admin-api';
 import AppSessionsPage from './page';
 
 vi.mock('../../lib/admin-api', async () => {
@@ -12,16 +12,21 @@ vi.mock('../../lib/admin-api', async () => {
 
   return {
     ...actual,
-    adminGet: vi.fn(),
+    adminGetResult: vi.fn(),
   };
 });
 
-const mockedAdminGet = vi.mocked(adminGet);
+const mockedAdminGetResult = vi.mocked(adminGetResult);
 const globalCss = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
 
 describe('AppSessionsPage', () => {
   beforeEach(() => {
-    mockedAdminGet.mockReset();
+    mockedAdminGetResult.mockReset();
+    mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({
+      data: fallback,
+      ok: true,
+      status: 200,
+    }));
   });
 
   it('renders bounded server app-session rows without applying a second local filter', async () => {
@@ -43,26 +48,30 @@ describe('AppSessionsPage', () => {
       userId: 'server-user-row',
     } as AdminAppSessionDirectoryRow;
 
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
       if (String(href).startsWith('/admin/app-sessions/summary')) {
         return {
-          expired: 2,
-          generatedAt: '2026-06-28T09:00:00.000Z',
-          liveCustomers: 17,
-          livePartners: 9,
-          recent: 7,
-          recentCustomers: 5,
-          recentPartners: 2,
-          stale: 4,
-          totalCount: 120,
+          data: {
+            expired: 2,
+            generatedAt: '2026-06-28T09:00:00.000Z',
+            liveCustomers: 17,
+            livePartners: 9,
+            recent: 7,
+            recentCustomers: 5,
+            recentPartners: 2,
+            stale: 4,
+            totalCount: 120,
+          },
+          ok: true,
+          status: 200,
         };
       }
 
       if (String(href).startsWith('/admin/app-sessions')) {
-        return [serverSession];
+        return { data: [serverSession], ok: true, status: 200 };
       }
 
-      return fallback;
+      return { data: fallback, ok: true, status: 200 };
     });
 
     const page = await AppSessionsPage({
@@ -70,8 +79,9 @@ describe('AppSessionsPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/app-sessions?take=10&role=PROVIDER&state=live', []);
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/app-sessions/summary?role=PROVIDER&state=live', null);
+    expect(markup).toContain('<h1>App Session Diagnostics</h1>');
+    expect(mockedAdminGetResult).toHaveBeenCalledWith('/admin/app-sessions?take=10&role=PROVIDER&state=live', []);
+    expect(mockedAdminGetResult).toHaveBeenCalledWith('/admin/app-sessions/summary?role=PROVIDER&state=live', null);
     expect(markup).toContain('Server Trusted Session');
     expect(markup).toContain('>17<');
     expect(markup).toContain('>9<');
@@ -93,21 +103,56 @@ describe('AppSessionsPage', () => {
     expect(source).not.toContain('<span className="pill pill-info">{sessions.length} loaded</span>');
   });
 
-  it('uses the shared AdminFormControlLink atom for page header actions', () => {
-    const source = readFileSync(join(process.cwd(), 'app/app-sessions/page.tsx'), 'utf8');
+  it('keeps only the notification delivery action in the page header', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => ({
+      data: String(href).includes('/summary')
+        ? { expired: 0, generatedAt: '2026-08-08T00:00:00.000Z', liveCustomers: 1, livePartners: 0, recent: 0, recentCustomers: 0, recentPartners: 0, stale: 0, totalCount: 1 }
+        : fallback,
+      ok: true,
+      status: 200,
+    }));
+    const page = await AppSessionsPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
 
-    expect(source).toContain('AdminFormControlLink');
-    expect(source).not.toContain('<Link className="button button-secondary"');
+    expect(markup).toContain('Open notification delivery');
+    expect(markup).not.toContain('Shift command');
   });
 
-  it('scopes app session and file section headers to direct page cards', () => {
-    expect(globalCss).toContain('.app-sessions-page > .card > .ops-section-header,');
-    expect(globalCss).toContain('.files-page > .card > .ops-section-header {');
-    expect(globalCss).toContain('.app-sessions-page > .card > .ops-section-header > div,');
-    expect(globalCss).toContain('.files-page > .card > .ops-section-header > div {');
-    expect(globalCss).toContain('.app-sessions-page > .card > .ops-section-header > .participant-list,');
-    expect(globalCss).toContain('.files-page > .card > .ops-section-header > .participant-list {');
-    expect(globalCss).not.toContain('.app-sessions-page .ops-section-header,');
-    expect(globalCss).not.toContain('.files-page .ops-section-header {');
+  it('compresses a successful zero response into an explicit data-empty state', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => ({
+      data: String(href).includes('/summary')
+        ? { expired: 0, generatedAt: '2026-08-08T00:00:00.000Z', liveCustomers: 0, livePartners: 0, recent: 0, recentCustomers: 0, recentPartners: 0, stale: 0, totalCount: 0 }
+        : fallback,
+      ok: true,
+      status: 200,
+    }));
+
+    const markup = renderToStaticMarkup(await AppSessionsPage({ searchParams: Promise.resolve({}) }));
+
+    expect(markup).toContain('No app session data');
+    expect(markup).toContain('not a system health confirmation');
+    expect(markup).not.toContain('metric-card-label');
+  });
+
+  it('does not render zero metrics when a session API request fails', async () => {
+    mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({
+      data: fallback,
+      ok: false,
+      status: 503,
+    }));
+
+    const markup = renderToStaticMarkup(await AppSessionsPage({ searchParams: Promise.resolve({}) }));
+
+    expect(markup).toContain('App session data unavailable');
+    expect(markup).toContain('Retry session data');
+    expect(markup).not.toContain('metric-card-label');
+  });
+
+  it('scopes app session section headers to direct page cards', () => {
+    expect(globalCss).toContain('.app-sessions-page > .card > .ops-section-header {');
+    expect(globalCss).toContain('.app-sessions-page > .card > .ops-section-header > div {');
+    expect(globalCss).toContain('.app-sessions-page > .card > .ops-section-header > .participant-list {');
+    expect(globalCss).not.toContain('.app-sessions-page .ops-section-header {');
+    expect(globalCss).not.toContain('.files-page');
   });
 });

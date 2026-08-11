@@ -46,7 +46,7 @@ const partnerEvaluation: AdminPartnerCustomerReview = {
   id: 'evaluation_1',
   bookingId: 'booking_1',
   comment: 'Customer was ready at the service address.',
-  status: 'INTERNAL',
+  status: 'PUBLISHED',
   createdAt: '2026-06-13T04:02:00.000Z',
   customerProfileId: 'customer_1',
   providerProfileId: 'partner_1',
@@ -54,15 +54,11 @@ const partnerEvaluation: AdminPartnerCustomerReview = {
     id: 'customer_1',
     user: {
       fullName: 'Demo Customer',
-      phone: '+84810000001',
     },
   },
   providerProfile: {
     id: 'partner_1',
     displayName: 'Smoke Partner',
-    user: {
-      phone: '+84810000002',
-    },
   },
   booking: {
     id: 'booking_1',
@@ -98,7 +94,7 @@ function partnerEvaluationAt(index: number): AdminPartnerCustomerReview {
 }
 
 describe('AdminReviewRecordsSection', () => {
-  it('renders customer reviews and Partner evaluations together', () => {
+  it('renders customer reviews and Partner notes together', () => {
     const markup = renderToStaticMarkup(
       <AdminReviewRecordsSection
         customerReviews={[customerReview]}
@@ -108,9 +104,11 @@ describe('AdminReviewRecordsSection', () => {
     );
 
     expect(markup).toContain('Customer reviews');
-    expect(markup).toContain('Partner evaluations');
+    expect(markup).toContain('Partner notes');
     expect(markup).toContain('Review submitted');
-    expect(markup).toContain('Evaluation submitted');
+    expect(markup).toContain('Note submitted');
+    expect(markup).toContain('Note state');
+    expect(markup).toContain('Open note record');
     expect(markup).toContain('Great service.');
     expect(markup).toContain('Customer was ready at the service address.');
     expect(markup).toContain('href="/bookings/booking_1"');
@@ -121,7 +119,7 @@ describe('AdminReviewRecordsSection', () => {
     );
   });
 
-  it('keeps Partner evaluations read-only without moderation controls', () => {
+  it('keeps Partner notes read-only without moderation controls', () => {
     const markup = renderToStaticMarkup(
       <AdminReviewRecordsSection
         customerReviews={[]}
@@ -137,7 +135,26 @@ describe('AdminReviewRecordsSection', () => {
     expect(markup).not.toContain('Hide');
   });
 
-  it('paginates customer reviews and Partner evaluations independently', () => {
+  it('separates customer detail review panels and omits the redundant customer column', () => {
+    const markup = renderToStaticMarkup(
+      <AdminReviewRecordsSection
+        customerReviews={[customerReview]}
+        hideCustomerColumn
+        id="customer-detail-review-records"
+        partnerEvaluations={[partnerEvaluation]}
+        separatePanels
+      />,
+    );
+
+    expect(markup.match(/vuexy-review-card/g)).toHaveLength(2);
+    expect(markup).toContain('id="customer-detail-review-records-customer-reviews"');
+    expect(markup).toContain('id="customer-detail-review-records-partner-evaluations"');
+    expect(markup).not.toContain('<th scope="col">Customer</th>');
+    expect(markup).not.toContain('href="/customers/customer_1"');
+    expect(markup).toContain('href="/partners/partner_1"');
+  });
+
+  it('paginates customer reviews and Partner notes independently', () => {
     const markup = renderToStaticMarkup(
       <AdminReviewRecordsSection
         basePath="/customers/customer_1"
@@ -178,10 +195,7 @@ describe('AdminReviewRecordsSection', () => {
     };
 
     expect(
-      new Set([
-        reviewRecordRowKey(customerReview, 0),
-        reviewRecordRowKey(duplicateCustomerReview, 1),
-      ]).size,
+      new Set([reviewRecordRowKey(customerReview, 0), reviewRecordRowKey(duplicateCustomerReview, 1)]).size,
     ).toBe(2);
     expect(
       new Set([
@@ -231,21 +245,27 @@ describe('AdminReviewRecordsSection', () => {
       providerProfileId: 'partner_2',
     };
 
-    expect(reviewRecordsForBooking([customerReview, otherCustomerReview], [partnerEvaluation], 'booking_1')).toEqual({
+    expect(
+      reviewRecordsForBooking([customerReview, otherCustomerReview], [partnerEvaluation], 'booking_1'),
+    ).toEqual({
       customerReviews: [customerReview],
       partnerEvaluations: [partnerEvaluation],
     });
-    expect(reviewRecordsForCustomer([customerReview], [partnerEvaluation, otherPartnerEvaluation], 'customer_1')).toEqual({
+    expect(
+      reviewRecordsForCustomer([customerReview], [partnerEvaluation, otherPartnerEvaluation], 'customer_1'),
+    ).toEqual({
       customerReviews: [customerReview],
       partnerEvaluations: [partnerEvaluation],
     });
-    expect(reviewRecordsForPartner([customerReview], [partnerEvaluation, otherPartnerEvaluation], 'partner_1')).toEqual({
+    expect(
+      reviewRecordsForPartner([customerReview], [partnerEvaluation, otherPartnerEvaluation], 'partner_1'),
+    ).toEqual({
       customerReviews: [customerReview],
       partnerEvaluations: [partnerEvaluation],
     });
   });
 
-  it('uses shared badge atoms for review and evaluation counters', () => {
+  it('uses shared badge atoms for review and Partner note counters', () => {
     const source = readFileSync(join(process.cwd(), 'components/admin-review-records-section.tsx'), 'utf8');
 
     expect(source).toContain('AdminInlineFallback');
@@ -260,13 +280,17 @@ describe('AdminReviewRecordsSection', () => {
     expect(source).not.toContain(
       '<section aria-labelledby={`${id}-partner-evaluations-title`} className="admin-review-records-block">',
     );
-    expect(source).not.toContain('import Link from \'next/link\';');
+    expect(source).not.toContain("import Link from 'next/link';");
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain(
       'className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card"',
     );
-    expect(source).not.toContain('<span className="pill pill-neutral">{customerRows.length} review(s)</span>');
-    expect(source).not.toContain('<span className="pill pill-neutral">{partnerRows.length} evaluation(s)</span>');
+    expect(source).not.toContain(
+      '<span className="pill pill-neutral">{customerRows.length} review(s)</span>',
+    );
+    expect(source).not.toContain(
+      '<span className="pill pill-neutral">{partnerRows.length} evaluation(s)</span>',
+    );
     expect(source).not.toContain('<span className="muted">No booking link</span>');
     expect(source).not.toContain('<div className="ops-section-header admin-review-records-heading">');
   });

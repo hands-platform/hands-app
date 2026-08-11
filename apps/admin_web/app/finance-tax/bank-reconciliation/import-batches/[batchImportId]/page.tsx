@@ -1,13 +1,11 @@
 import { notFound, redirect } from 'next/navigation';
 import { Download } from 'lucide-react';
+import type { Metadata } from 'next';
 
 import type { AdminCompanyBankTransactionImportBatchDetail, AdminUser } from '../../../../../lib/admin-api';
 import { adminGet, adminPostOrThrow } from '../../../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../../../components/admin-filter-panel';
-import {
-  AdminFormActionRow,
-  AdminFormControlLink,
-} from '../../../../../components/admin-form-controls';
+import { AdminFormActionRow, AdminFormControlLink } from '../../../../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../../../../components/admin-inline-fallback';
 import { AdminInlineNotice } from '../../../../../components/admin-inline-notice';
 import { AdminPageTemplate } from '../../../../../components/admin-page-template';
@@ -21,7 +19,12 @@ import { getCurrentAdminOperatorAccess } from '../../../../../lib/admin-operator
 import { FinanceDataTable } from '../../../finance-data-table';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../../finance-detail-info-item';
 import { FinanceListFilterLinks } from '../../../finance-list-filter-links';
+import { financeBankReconciliationStatusPill } from '../../../finance-status-badge-model';
 import { FinanceTablePanel } from '../../../finance-table-panel';
+import {
+  bankReconciliationDetailHref,
+  safeBankReconciliationReturnTo,
+} from '../../../tax-settlement-page-model';
 import { buildBankReconciliationAssignmentTimeline } from '../../bank-reconciliation-assignment-timeline-model';
 import { buildBankReconciliationReviewOwnerOptions } from '../../bank-reconciliation-review-owner-model';
 
@@ -29,6 +32,13 @@ type BankStatementImportBatchDetailPageProps = {
   readonly params?: Promise<{ readonly batchImportId?: string }>;
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export async function generateMetadata({ params }: BankStatementImportBatchDetailPageProps): Promise<Metadata> {
+  const batchImportId = (params ? await params : {})?.batchImportId;
+  return {
+    title: batchImportId ? `Bank Statement Import ${shortId(batchImportId)}` : 'Bank Statement Imports',
+  };
+}
 
 type BatchRow = AdminCompanyBankTransactionImportBatchDetail['rows'][number];
 type BatchRowFilter = 'all' | 'needs-reconciliation' | 'reconciled' | 'skipped';
@@ -40,6 +50,7 @@ export default async function BankStatementImportBatchDetailPage({
   const batchImportId = (await params)?.batchImportId;
   if (!batchImportId) notFound();
   const pageParams = searchParams ? await searchParams : {};
+  const returnTo = safeBankReconciliationReturnTo(readSearchParam(pageParams.returnTo));
   const batch = await adminGet<AdminCompanyBankTransactionImportBatchDetail | null>(
     `/admin/bank-reconciliation/import-batches/${encodeURIComponent(batchImportId)}`,
     null,
@@ -48,10 +59,13 @@ export default async function BankStatementImportBatchDetailPage({
   const rowFilter = readBatchRowFilter(pageParams.review);
   const rowSummary = summarizeBatchRows(batch.rows);
   const visibleRows = batch.rows.filter((row) => batchRowMatchesFilter(row, rowFilter));
-  const reconciliationProgress = rowSummary.created > 0
-    ? `${Math.round((rowSummary.reconciled / rowSummary.created) * 100)}%`
-    : 'N/A';
-  const batchHref = `/finance-tax/bank-reconciliation/import-batches/${encodeURIComponent(batch.batchImportId)}`;
+  const reconciliationProgress =
+    rowSummary.created > 0 ? `${Math.round((rowSummary.reconciled / rowSummary.created) * 100)}%` : 'N/A';
+  const batchHref = appendBatchHrefParam(
+    `/finance-tax/bank-reconciliation/import-batches/${encodeURIComponent(batch.batchImportId)}`,
+    'returnTo',
+    returnTo,
+  );
   const assignmentTimeline = buildBankReconciliationAssignmentTimeline(batch.assignmentHistory);
   const currentAssignment = assignmentTimeline[0] ?? null;
   const canAssignReviewOwner = rowSummary.needsReconciliation > 0;
@@ -68,15 +82,17 @@ export default async function BankStatementImportBatchDetailPage({
     currentAssignment?.assigneeId ?? null,
     currentOperatorAccess?.id ?? null,
   );
-  const showReviewOwnerConfirmation =
-    requestedReviewOwnerConfirmation && reviewOwnerOptions.length > 0;
+  const showReviewOwnerConfirmation = requestedReviewOwnerConfirmation && reviewOwnerOptions.length > 0;
   const reviewAssignmentNotice = readSearchParam(pageParams.reviewAssignmentNotice);
 
   return (
     <AdminPageTemplate
       actions={
         <AdminFormActionRow wide={false}>
-          <AdminFormControlLink className="button-secondary" href="/finance-tax/bank-reconciliation">
+          <AdminFormControlLink
+            className="button-secondary"
+            href={returnTo}
+          >
             Back to bank reconciliation
           </AdminFormControlLink>
           <AdminFormControlLink
@@ -88,7 +104,10 @@ export default async function BankStatementImportBatchDetailPage({
             Export audit CSV
           </AdminFormControlLink>
           {canAssignReviewOwner ? (
-            <AdminFormControlLink className="button-primary" href={`${batchHref}?confirm=review-owner`}>
+            <AdminFormControlLink
+              className="button-primary"
+              href={appendBatchHrefParam(batchHref, 'confirm', 'review-owner')}
+            >
               {currentAssignment ? 'Reassign owner' : 'Assign owner'}
             </AdminFormControlLink>
           ) : null}
@@ -96,10 +115,34 @@ export default async function BankStatementImportBatchDetailPage({
       }
       description="Read-only row outcomes and retained provenance for one reviewed bank statement import."
       metrics={[
-        { helper: 'Open transaction records that still require matching or review.', kind: rowSummary.needsReconciliation > 0 ? 'risk' : 'record', label: 'Needs reconciliation', scope: 'Current batch', value: rowSummary.needsReconciliation },
-        { helper: 'Transaction records already matched, ignored, or reversed.', kind: 'record', label: 'Reconciled', scope: 'Current batch', value: rowSummary.reconciled },
-        { helper: 'Share of created bank transactions with a closed reconciliation state.', kind: 'record', label: 'Progress', scope: 'Current batch', value: reconciliationProgress },
-        { helper: 'Rows blocked or skipped after review.', kind: batch.skippedCount > 0 ? 'risk' : 'record', label: 'Skipped', scope: 'Batch result', value: batch.skippedCount },
+        {
+          helper: 'Open transaction records that still require matching or review.',
+          kind: rowSummary.needsReconciliation > 0 ? 'risk' : 'record',
+          label: 'Needs reconciliation',
+          scope: 'Current batch',
+          value: rowSummary.needsReconciliation,
+        },
+        {
+          helper: `Matched ${rowSummary.matched} · Ignored ${rowSummary.ignored} · Reversed ${rowSummary.reversed}`,
+          kind: 'record',
+          label: 'Closed records',
+          scope: 'Current batch',
+          value: rowSummary.reconciled,
+        },
+        {
+          helper: 'Share of created bank transactions with a closed reconciliation state.',
+          kind: 'record',
+          label: 'Progress',
+          scope: 'Current batch',
+          value: reconciliationProgress,
+        },
+        {
+          helper: 'Rows blocked or skipped after review.',
+          kind: batch.skippedCount > 0 ? 'risk' : 'record',
+          label: 'Skipped',
+          scope: 'Batch result',
+          value: batch.skippedCount,
+        },
       ]}
       title="Bank Statement Import Batch"
     >
@@ -123,7 +166,10 @@ export default async function BankStatementImportBatchDetailPage({
               ? 'Transfer this open statement batch to another eligible Finance operator. Import SLA and prior ownership evidence remain unchanged.'
               : 'Assign this open statement batch to an eligible Finance operator without changing any bank transaction status.'
           }
-          hiddenInputs={[{ name: 'batchImportId', value: batch.batchImportId }]}
+          hiddenInputs={[
+            { name: 'batchImportId', value: batch.batchImportId },
+            { name: 'returnTo', value: returnTo },
+          ]}
           id={`bank-import-batch-owner-${batch.batchImportId}`}
           selectInputs={[
             {
@@ -154,7 +200,11 @@ export default async function BankStatementImportBatchDetailPage({
       ) : null}
 
       <FinanceTablePanel
-        description={<><DateTimeText value={batch.createdAt} /> · {batch.sourceFileName ?? 'Legacy import record'}</>}
+        description={
+          <>
+            <DateTimeText value={batch.createdAt} /> · {batch.sourceFileName ?? 'Legacy import record'}
+          </>
+        }
         resultLabel={shortId(batch.batchImportId)}
         resultTone={batch.skippedCount > 0 ? 'warning' : 'success'}
         title="Batch provenance"
@@ -164,8 +214,18 @@ export default async function BankStatementImportBatchDetailPage({
           <FinanceDetailInfoItem label="Source file" value={batch.sourceFileName ?? 'Not retained'} />
           <FinanceDetailInfoItem label="SHA-256" value={batch.sourceFileSha256 ?? 'Not retained'} />
           <FinanceDetailInfoItem label="Mapping preset" value={batch.mappingPreset ?? 'Legacy'} />
-          <FinanceDetailInfoItem label="Operator" value={adminIdentityLabel(batch.operator, 'Unknown operator')} />
-          <FinanceDetailInfoItem label="Approver" value={adminIdentityLabel(batch.approver, batch.approvalAdminId ?? 'Unknown approver')} />
+          <FinanceDetailInfoItem
+            label="Operator"
+            value={adminIdentityLabel(batch.operator, 'Unknown operator')}
+          />
+          <FinanceDetailInfoItem
+            label="Approval stage"
+            value={
+              batch.approvalAdminId
+                ? `Legacy import: ${adminIdentityLabel(batch.approver, batch.approvalAdminId)}`
+                : 'Required when reconciling'
+            }
+          />
           <FinanceDetailInfoItem label="Imported at" value={<DateTimeText value={batch.createdAt} />} />
           <FinanceDetailInfoItem label="Original CSV" value="Not stored" />
         </FinanceDetailGrid>
@@ -229,12 +289,7 @@ export default async function BankStatementImportBatchDetailPage({
                   `Reconciled (${rowSummary.reconciled})`,
                   'pill-success',
                 ),
-                batchRowFilterLink(
-                  batchHref,
-                  rowFilter,
-                  'skipped',
-                  `Skipped (${rowSummary.skipped})`,
-                ),
+                batchRowFilterLink(batchHref, rowFilter, 'skipped', `Skipped (${rowSummary.skipped})`),
               ],
             },
           ]}
@@ -249,20 +304,39 @@ export default async function BankStatementImportBatchDetailPage({
       >
         <FinanceDataTable
           emptyMessage={batchRowEmptyMessage(rowFilter)}
-          headers={['CSV row', 'Classification', 'Import result', 'Reconciliation', 'Transaction', 'Amount', 'Occurred at']}
+          headers={[
+            'CSV row',
+            'Classification',
+            'Import result',
+            'Reconciliation',
+            'Transaction',
+            'Amount',
+            'Occurred at',
+          ]}
           rowCount={visibleRows.length}
         >
           {visibleRows.map((row) => (
             <tr key={`${row.rowNumber}:${row.transactionId ?? row.status}`}>
-              <td><strong>{row.rowNumber}</strong></td>
+              <td>
+                <strong>{row.rowNumber}</strong>
+              </td>
               <td>
                 <StatusBadgeFromPillClass pillClass={classificationPill(row.classification)}>
                   {row.classification.replaceAll('_', ' ')}
                 </StatusBadgeFromPillClass>
               </td>
               <td>
+                <StatusBadgeFromPillClass
+                  pillClass={row.status === 'IMPORTED' ? 'pill-success' : 'pill-warn'}
+                >
+                  {row.status}
+                </StatusBadgeFromPillClass>
+              </td>
+              <td>
                 {row.transaction ? (
-                  <StatusBadgeFromPillClass pillClass={reconciliationStatusPill(row.transaction.status)}>
+                  <StatusBadgeFromPillClass
+                    pillClass={financeBankReconciliationStatusPill(row.transaction.status)}
+                  >
                     {row.transaction.status.replaceAll('_', ' ')}
                   </StatusBadgeFromPillClass>
                 ) : (
@@ -270,15 +344,10 @@ export default async function BankStatementImportBatchDetailPage({
                 )}
               </td>
               <td>
-                <StatusBadgeFromPillClass pillClass={row.status === 'IMPORTED' ? 'pill-success' : 'pill-warn'}>
-                  {row.status}
-                </StatusBadgeFromPillClass>
-              </td>
-              <td>
                 {row.transaction ? (
                   <AdminFormControlLink
                     className="button-secondary"
-                    href={`/finance-tax/bank-reconciliation/${encodeURIComponent(row.transaction.id)}`}
+                    href={bankReconciliationDetailHref(row.transaction.id, batchHref)}
                   >
                     {row.transaction.transferRef ?? shortId(row.transaction.id)}
                   </AdminFormControlLink>
@@ -286,7 +355,13 @@ export default async function BankStatementImportBatchDetailPage({
                   <AdminInlineFallback>No transaction created</AdminInlineFallback>
                 )}
               </td>
-              <td>{row.transaction ? <MoneyText amount={row.transaction.amount} currency={row.transaction.currency} /> : '-'}</td>
+              <td>
+                {row.transaction ? (
+                  <MoneyText amount={row.transaction.amount} currency={row.transaction.currency} />
+                ) : (
+                  '-'
+                )}
+              </td>
               <td>{row.transaction ? <DateTimeText value={row.transaction.occurredAt} /> : '-'}</td>
             </tr>
           ))}
@@ -309,11 +384,16 @@ async function assignImportBatchReviewAction(formData: FormData) {
   const batchImportId = String(formData.get('batchImportId') ?? '').trim();
   const assigneeAdminId = String(formData.get('assigneeAdminId') ?? '').trim();
   const reason = String(formData.get('reason') ?? '').trim();
+  const returnTo = safeBankReconciliationReturnTo(String(formData.get('returnTo') ?? '').trim());
   const batchHref = batchImportId
-    ? `/finance-tax/bank-reconciliation/import-batches/${encodeURIComponent(batchImportId)}`
-    : '/finance-tax/bank-reconciliation';
+    ? appendBatchHrefParam(
+        `/finance-tax/bank-reconciliation/import-batches/${encodeURIComponent(batchImportId)}`,
+        'returnTo',
+        returnTo,
+      )
+    : returnTo;
   if (!batchImportId || !assigneeAdminId || reason.length < 12) {
-    redirect(`${batchHref}?reviewAssignmentNotice=failed`);
+    redirect(appendBatchHrefParam(batchHref, 'reviewAssignmentNotice', 'failed'));
   }
 
   try {
@@ -322,10 +402,10 @@ async function assignImportBatchReviewAction(formData: FormData) {
       { assigneeAdminId, reason },
     );
   } catch {
-    redirect(`${batchHref}?reviewAssignmentNotice=failed`);
+    redirect(appendBatchHrefParam(batchHref, 'reviewAssignmentNotice', 'failed'));
   }
 
-  redirect(`${batchHref}?reviewAssignmentNotice=assigned`);
+  redirect(appendBatchHrefParam(batchHref, 'reviewAssignmentNotice', 'assigned'));
 }
 
 function classificationPill(classification: string) {
@@ -350,12 +430,18 @@ function summarizeBatchRows(rows: BatchRow[]) {
         summary.skipped += 1;
       } else {
         summary.created += 1;
-        if (isReconciliationOpen(row)) summary.needsReconciliation += 1;
-        else summary.reconciled += 1;
+        if (isReconciliationOpen(row)) {
+          summary.needsReconciliation += 1;
+        } else {
+          summary.reconciled += 1;
+          if (row.transaction.status === 'MATCHED') summary.matched += 1;
+          if (row.transaction.status === 'IGNORED') summary.ignored += 1;
+          if (row.transaction.status === 'REVERSED') summary.reversed += 1;
+        }
       }
       return summary;
     },
-    { created: 0, needsReconciliation: 0, reconciled: 0, skipped: 0 },
+    { created: 0, ignored: 0, matched: 0, needsReconciliation: 0, reconciled: 0, reversed: 0, skipped: 0 },
   );
 }
 
@@ -380,17 +466,16 @@ function batchRowFilterLink(
   return {
     active: activeFilter === filter,
     activePillClassName,
-    href: filter === 'all' ? batchHref : `${batchHref}?review=${filter}`,
+    href: filter === 'all' ? batchHref : appendBatchHrefParam(batchHref, 'review', filter),
     id: filter,
     label,
   } as const;
 }
 
-function reconciliationStatusPill(status: string) {
-  if (status === 'MATCHED') return 'pill-success';
-  if (status === 'UNMATCHED' || status === 'PARTIALLY_MATCHED') return 'pill-warn';
-  if (status === 'REVERSED') return 'pill-danger';
-  return 'pill-neutral';
+function appendBatchHrefParam(href: string, key: string, value: string) {
+  const url = new URL(href, 'http://admin.local');
+  url.searchParams.set(key, value);
+  return `${url.pathname}${url.search}`;
 }
 
 function batchRowEmptyMessage(filter: BatchRowFilter) {

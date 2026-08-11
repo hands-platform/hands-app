@@ -1,6 +1,8 @@
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminQueueMeta } from '../../components/admin-overview-card';
 import { AdminActionCard, AdminSection, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
+import { adminCountLabel } from '../../lib/admin-copy';
 
 export type OperationsHandoffReviewOrderTone = 'danger' | 'info' | 'warn';
 
@@ -10,6 +12,7 @@ export type OperationsHandoffReviewOrderItem = {
   readonly href: string;
   readonly id: string;
   readonly label: string;
+  readonly owner: string;
   readonly priority: number;
   readonly tone: OperationsHandoffReviewOrderTone;
 };
@@ -29,36 +32,37 @@ export function OperationsHandoffReviewOrderSection({
     <AdminSection
       bodyClassName={visibleItems.length > 0 ? undefined : 'admin-section-empty-body'}
       className="admin-mb-16 operations-handoff-review-order-card"
-      description="Start with these history lanes before opening Full history tables."
+      description="Start with incomplete handoff work. Completed records are available under View completed handoffs below."
       id="operations-handoff-review-order"
       status={
         <StatusBadge tone={visibleItems.length > 0 ? 'warning' : 'success'}>
-          {visibleItems.length > 0 ? `${visibleItems.length} lane(s) to review` : 'All reviewed'}
+          {visibleItems.length > 0 ? `${adminCountLabel(visibleItems.length, 'lane')} to review` : 'All reviewed'}
         </StatusBadge>
       }
-      title="Review order"
+      title="Incomplete handoff"
     >
       {visibleItems.length > 0 ? (
         <AdminTaskGrid>
           {visibleItems.map((item) => (
             <AdminActionCard
-              actionLabel="Open section"
-              detail={item.detail}
+              actionLabel={item.label}
               href={item.href}
               key={item.id}
               signalClassName={reviewOrderSignalClass(item.tone)}
               signalLabel={reviewOrderSignalLabel(item.priority)}
               title={item.label}
-              value={`${item.count} row(s)`}
+              value={adminCountLabel(item.count, 'row')}
               variant="ops-task"
-            />
+            >
+              <AdminQueueMeta impact={item.detail} owner={item.owner} />
+            </AdminActionCard>
           ))}
         </AdminTaskGrid>
       ) : (
         <AdminEmptyState
           framed
-          message="No full-history rows need review in this window."
-          title="No review order needed"
+          message="No handoff work is waiting for an operator in this window."
+          title="No incomplete handoff"
         />
       )}
     </AdminSection>

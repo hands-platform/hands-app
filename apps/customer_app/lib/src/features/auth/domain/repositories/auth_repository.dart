@@ -15,5 +15,12 @@ abstract class AuthRepository {
     required String role,
   });
 
+  Future<AuthSession> updateProfile({
+    required String fullName,
+    required String email,
+    String? gender,
+    String? nationality,
+  });
+
   Future<void> signOut();
 }

@@ -34,6 +34,129 @@ export type ExternalRegistrationPlanDisplayItem = Omit<
   readonly statusClass: string;
 };
 
+export type SetupOperationalHealthRow = {
+  readonly affectedWork: string;
+  readonly id: string;
+  readonly lastCheckedAt: string | null;
+  readonly name: string;
+  readonly nextAction: string;
+  readonly owner: string;
+  readonly status: 'Blocked' | 'Limited' | 'Operational' | 'Unavailable';
+  readonly tone: 'danger' | 'info' | 'success' | 'warning';
+};
+
+export function buildOperationalHealthRows(
+  readiness: AdminExternalReadiness,
+  registrationPlan: readonly ExternalRegistrationPlanItem[],
+  readinessUnavailable = false,
+): SetupOperationalHealthRow[] {
+  if (readinessUnavailable) {
+    return [
+      {
+        affectedWork: 'External service health cannot be confirmed from the Admin API.',
+        id: 'system-health-unavailable',
+        lastCheckedAt: null,
+        name: 'System health data',
+        nextAction: 'Restore API connectivity, then refresh this page before relying on service status.',
+        owner: 'Owner unavailable',
+        status: 'Unavailable',
+        tone: 'danger',
+      },
+    ];
+  }
+
+  return readiness.checks.filter(isOperatorHealthCheck).map((check, index) => {
+    const owners = registrationPlan
+      .filter((item) => setupGroupMatches(item.groupId, check.category))
+      .map((item) => item.owner)
+      .filter((owner, ownerIndex, allOwners) => allOwners.indexOf(owner) === ownerIndex);
+    const status = check.status === 'READY' ? 'Operational' : check.status === 'PARTIAL' ? 'Limited' : 'Blocked';
+
+    return {
+      affectedWork: operationalImpactForCheck(check.category, check.name),
+      id: `${check.category}-${check.name}-${index}`,
+      lastCheckedAt: readiness.timestamp || null,
+      name: setupReadinessDisplayText(check.name),
+      nextAction: status === 'Operational'
+        ? 'No operator action required.'
+        : operationalNextActionForCheck(check.category, check.name),
+      owner: owners.join(', ') || 'Owner unavailable',
+      status,
+      tone: status === 'Operational' ? 'success' : status === 'Limited' ? 'warning' : 'danger',
+    };
+  });
+}
+
+function isOperatorHealthCheck(check: AdminExternalReadiness['checks'][number]) {
+  return check.category !== 'mobile' && check.category !== 'mobile-release';
+}
+
+function operationalImpactForCheck(category: string, name: string) {
+  if (name === 'Production SMS') {
+    return 'Customer and Partner phone verification messages.';
+  }
+  if (name === 'MoMo payments') {
+    return 'MoMo payment authorization, refund, and reconciliation.';
+  }
+  if (name === 'VNPay payments') {
+    return 'VNPay payment authorization, refund, and reconciliation.';
+  }
+
+  switch (category) {
+    case 'supabase':
+      return 'Customer, Partner, booking, and retained service records.';
+    case 'supabase-auth':
+      return 'Customer and Partner phone sign-in.';
+    case 'maps':
+      return 'Address search, location confirmation, and nearby Partner discovery.';
+    case 'referrals':
+      return 'Referral sharing and opening the correct app destination.';
+    case 'storage':
+      return 'Partner documents, profile media, and support evidence.';
+    case 'push':
+      return 'Customer and Partner booking, chat, and payment notifications.';
+    case 'payments':
+      return 'Digital payment authorization, refund, and reconciliation.';
+    case 'operations-policy':
+      return 'Booking matching, wallet gates, and operational controls.';
+    default:
+      return 'Operational impact is not documented for this service.';
+  }
+}
+
+function operationalNextActionForCheck(category: string, name: string) {
+  if (name === 'Production SMS') {
+    return 'Restore SMS delivery before directing customers or Partners to retry phone verification.';
+  }
+  if (name === 'MoMo payments') {
+    return 'Restore MoMo merchant configuration before accepting MoMo payments.';
+  }
+  if (name === 'VNPay payments') {
+    return 'Restore VNPay merchant configuration before accepting VNPay payments.';
+  }
+
+  switch (category) {
+    case 'supabase':
+      return 'Restore Supabase connectivity and confirm affected records are available.';
+    case 'supabase-auth':
+      return 'Restore phone sign-in before directing customers or Partners to retry.';
+    case 'maps':
+      return 'Restore maps and geocoding before relying on address or nearby Partner flows.';
+    case 'referrals':
+      return 'Configure public referral and app destinations before enabling referral sharing.';
+    case 'storage':
+      return 'Restore storage and media delivery before processing document or evidence work.';
+    case 'push':
+      return 'Restore push delivery; use in-app records for urgent follow-up until delivery is confirmed.';
+    case 'payments':
+      return 'Restore the affected payment method before accepting new digital payments.';
+    case 'operations-policy':
+      return 'Review blocked policy settings before relying on booking operations.';
+    default:
+      return 'Review this service with the owning team before relying on affected workflows.';
+  }
+}
+
 export function buildSummary(readiness: AdminExternalReadiness, readinessUnavailable = false) {
   if (readinessUnavailable) {
     return { ready: 0, partial: 0, blocked: 1, missing: 1 };

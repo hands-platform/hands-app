@@ -83,6 +83,17 @@ describe('matching policy', () => {
     expect(serializedPolicyCopy).not.toMatch(/\b(penalty|penalties|risk|score|rank)\b/i);
   });
 
+  it('registers editable Start Shift queue SLAs with bounded minute values', () => {
+    const definitions = OPERATIONAL_POLICY_DEFINITIONS.filter((definition) =>
+      definition.key.startsWith('command.start_shift.'),
+    );
+
+    expect(definitions).toHaveLength(7);
+    expect(definitions.every((definition) => definition.category === 'Command center')).toBe(true);
+    expect(definitions.every((definition) => definition.unit === 'minutes')).toBe(true);
+    expect(definitions.every((definition) => definition.enforced)).toBe(true);
+  });
+
   it('labels partner alert routing with FCM-ready Admin copy', () => {
     const definition = OPERATIONAL_POLICY_DEFINITIONS.find(
       (item) => item.key === NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY,

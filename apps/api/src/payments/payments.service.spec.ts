@@ -1,5 +1,12 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
-import { PaymentMethod, PaymentStatus, Role } from '@prisma/client';
+import {
+  BookingStatus,
+  PaymentAdminOperationStatus,
+  PaymentMethod,
+  PaymentStatus,
+  Prisma,
+  Role,
+} from '@prisma/client';
 
 import { PaymentsService } from './payments.service';
 
@@ -34,6 +41,43 @@ describe('PaymentsService VNPay IPN protocol', () => {
 });
 
 describe('PaymentsService status check queue', () => {
+  it('returns checkout metadata only for a booking owned by the customer', async () => {
+    const { prisma, service } = createService({ existingPayment: null });
+    prisma.payment.findFirstOrThrow.mockResolvedValue({
+      bookingId: 'booking-1',
+      id: 'payment-1',
+      method: PaymentMethod.MOMO,
+      rawMeta: {
+        authorizationState: 'READY',
+        checkoutUrl: 'https://payments.example.test/checkout',
+      },
+      status: PaymentStatus.PENDING,
+    });
+
+    await expect(
+      service.customerCheckoutAction('customer-user-1', 'booking-1'),
+    ).resolves.toEqual({
+      bookingId: 'booking-1',
+      checkoutUrl: 'https://payments.example.test/checkout',
+      method: PaymentMethod.MOMO,
+      paymentId: 'payment-1',
+      status: PaymentStatus.PENDING,
+    });
+    expect(prisma.payment.findFirstOrThrow).toHaveBeenCalledWith({
+      where: {
+        bookingId: 'booking-1',
+        booking: { customerProfile: { userId: 'customer-user-1' } },
+      },
+      select: {
+        bookingId: true,
+        id: true,
+        method: true,
+        rawMeta: true,
+        status: true,
+      },
+    });
+  });
+
   it('schedules payment status checks with the shared queue descriptor', async () => {
     const { queue, service } = createService({ existingPayment: null });
 
@@ -444,6 +488,51 @@ describe('PaymentsService callbacks', () => {
 });
 
 describe('PaymentsService refunds', () => {
+  it('creates a durable refund request without touching the gateway, payment, booking, or accounting', async () => {
+    const admin = { writeAudit: vi.fn() };
+    const earnings = { cancelForRefund: vi.fn() };
+    const settlements = { reverseBookingSettlementSnapshotForRefund: vi.fn() };
+    const adapter = gatewayAdapter(PaymentMethod.MOMO);
+    const captured = payment({ method: PaymentMethod.MOMO, status: PaymentStatus.CAPTURED });
+    const { prisma, service } = createService({
+      admin,
+      earnings,
+      existingPayment: captured,
+      existingRefund: null,
+      momoPaymentAdapter: adapter,
+      settlements,
+      updatedPayment: { ...captured, refunds: [{ id: 'refund-1', status: 'REQUESTED' }] } as never,
+    });
+
+    await expect(
+      service.requestRefund('admin-1', 'payment-1', { reason: 'Customer cancellation evidence reviewed' }),
+    ).resolves.toEqual(expect.objectContaining({ status: PaymentStatus.CAPTURED }));
+
+    expect(prisma.refund.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        paymentId: 'payment-1',
+        reason: 'Customer cancellation evidence reviewed',
+        status: 'REQUESTED',
+        metadata: expect.objectContaining({
+          requestedByAdminId: 'admin-1',
+          source: 'ADMIN_MANUAL',
+          requestedAt: expect.any(String),
+        }),
+      }),
+    });
+    expect(adapter.refund).not.toHaveBeenCalled();
+    expect(prisma.payment.updateMany).not.toHaveBeenCalled();
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(settlements.reverseBookingSettlementSnapshotForRefund).not.toHaveBeenCalled();
+    expect(earnings.cancelForRefund).not.toHaveBeenCalled();
+    expect(admin.writeAudit).toHaveBeenCalledWith(
+      'admin-1',
+      'payment.refund.request',
+      'payment:payment-1',
+      expect.objectContaining({ refundId: 'refund-1' }),
+    );
+  });
+
   it('rejects admin refunds without approval from a different admin', async () => {
     const admin = { writeAudit: vi.fn() };
     const earnings = {
@@ -462,9 +551,6 @@ describe('PaymentsService refunds', () => {
     prisma.payment.findUniqueOrThrow.mockResolvedValue(existingPayment);
 
     await expect(service.refund('admin-1', 'payment-1')).rejects.toThrow(
-      'Payment refund requires approval from a different admin',
-    );
-    await expect(service.refund('admin-1', 'payment-1', { approvalAdminId: 'admin-1' })).rejects.toThrow(
       'Payment refund requires approval from a different admin',
     );
 
@@ -493,7 +579,7 @@ describe('PaymentsService refunds', () => {
     prisma.user.findFirst.mockResolvedValue(null);
 
     await expect(
-      service.refund('admin-1', 'payment-1', { approvalAdminId: 'support-user-2' }),
+      service.refund('support-user-2', 'payment-1'),
     ).rejects.toThrow('Payment refund requires approval from a finance approver');
 
     expect(prisma.user.findFirst).toHaveBeenCalledWith({
@@ -503,6 +589,92 @@ describe('PaymentsService refunds', () => {
     expect(prisma.payment.updateMany).not.toHaveBeenCalled();
     expect(settlements.reverseBookingSettlementSnapshotForRefund).not.toHaveBeenCalled();
     expect(earnings.cancelForRefund).not.toHaveBeenCalled();
+    expect(admin.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it('rejects a requested refund through an independent finance approver without money side effects', async () => {
+    const admin = { writeAudit: vi.fn() };
+    const earnings = { cancelForRefund: vi.fn() };
+    const settlements = { reverseBookingSettlementSnapshotForRefund: vi.fn() };
+    const adapter = gatewayAdapter(PaymentMethod.MOMO);
+    const captured = payment({ method: PaymentMethod.MOMO, status: PaymentStatus.CAPTURED });
+    const { prisma, service } = createService({
+      admin,
+      earnings,
+      existingPayment: captured,
+      momoPaymentAdapter: adapter,
+      settlements,
+    });
+
+    await expect(
+      service.rejectRefund('finance-admin-2', 'refund-1', 'Chat evidence does not support a refund'),
+    ).resolves.toEqual({
+      id: 'refund-1',
+      paymentId: 'payment-1',
+      status: 'REJECTED',
+    });
+
+    expect(prisma.refund.updateMany).toHaveBeenCalledWith({
+      where: { id: 'refund-1', status: 'REQUESTED' },
+      data: {
+        status: 'REJECTED',
+        metadata: expect.objectContaining({
+          rejectionAdminId: 'finance-admin-2',
+          rejectionReason: 'Chat evidence does not support a refund',
+          rejectedAt: expect.any(String),
+          requestedByAdminId: 'admin-1',
+        }),
+      },
+    });
+    expect(adapter.refund).not.toHaveBeenCalled();
+    expect(prisma.payment.updateMany).not.toHaveBeenCalled();
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(settlements.reverseBookingSettlementSnapshotForRefund).not.toHaveBeenCalled();
+    expect(earnings.cancelForRefund).not.toHaveBeenCalled();
+    expect(admin.writeAudit).toHaveBeenCalledWith(
+      'finance-admin-2',
+      'payment.refund.reject',
+      'payment:payment-1',
+      expect.objectContaining({
+        reason: 'Chat evidence does not support a refund',
+        refundId: 'refund-1',
+        requestedByAdminId: 'admin-1',
+      }),
+    );
+  });
+
+  it('blocks the refund maker from rejecting their own request', async () => {
+    const admin = { writeAudit: vi.fn() };
+    const { prisma, service } = createService({
+      admin,
+      existingPayment: payment({ status: PaymentStatus.CAPTURED }),
+    });
+
+    await expect(
+      service.rejectRefund('admin-1', 'refund-1', 'Customer evidence is incomplete'),
+    ).rejects.toThrow('Payment refund requires approval from a different admin');
+
+    expect(prisma.refund.updateMany).not.toHaveBeenCalled();
+    expect(admin.writeAudit).not.toHaveBeenCalled();
+  });
+
+  it('stops a concurrently claimed approval before calling the payment provider', async () => {
+    const admin = { writeAudit: vi.fn() };
+    const adapter = gatewayAdapter(PaymentMethod.MOMO);
+    const { prisma, service } = createService({
+      admin,
+      existingPayment: payment({ method: PaymentMethod.MOMO, status: PaymentStatus.CAPTURED }),
+      momoPaymentAdapter: adapter,
+    });
+    prisma.refund.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      service.refund('finance-admin-2', 'payment-1'),
+    ).rejects.toThrow('Refund refund-1 approval was already claimed');
+
+    expect(adapter.refund).not.toHaveBeenCalled();
+    expect(prisma.payment.updateMany).not.toHaveBeenCalled();
+    expect(prisma.booking.update).not.toHaveBeenCalled();
     expect(admin.writeAudit).not.toHaveBeenCalled();
   });
 
@@ -531,7 +703,7 @@ describe('PaymentsService refunds', () => {
       updatedPayment: refundedPayment,
     });
     await expect(
-      service.refund('admin-1', 'payment-1', { approvalAdminId: 'finance-admin-2' }),
+      service.refund('finance-admin-2', 'payment-1'),
     ).resolves.toEqual(refundedPayment);
 
     expect(prisma.payment.updateMany).toHaveBeenCalledWith({
@@ -542,19 +714,16 @@ describe('PaymentsService refunds', () => {
       data: { status: 'REFUNDED' },
       where: { id: 'booking-1' },
     });
-    expect(prisma.refund.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        amount: 300000,
-        bookingId: 'booking-1',
-        currency: 'VND',
+    expect(prisma.refund.updateMany).toHaveBeenCalledWith({
+      where: { id: 'refund-1', status: 'REQUESTED' },
+      data: {
+        status: 'APPROVAL_PROCESSING',
         metadata: expect.objectContaining({
-          actorId: 'admin-1',
+          requestedByAdminId: 'admin-1',
           approvalAdminId: 'finance-admin-2',
           occurredAt: expect.any(String),
         }),
-        paymentId: 'payment-1',
-        status: 'REQUESTED',
-      }),
+      },
     });
     expect(prisma.refund.update).toHaveBeenNthCalledWith(1, {
       where: { id: 'refund-1' },
@@ -571,7 +740,7 @@ describe('PaymentsService refunds', () => {
       }),
     });
     expect(settlements.reverseBookingSettlementSnapshotForRefund).toHaveBeenCalledWith({
-      actorId: 'admin-1',
+      actorId: 'finance-admin-2',
       bookingId: 'booking-1',
       occurredAt: expect.any(Date),
       reason: 'Admin manual refund',
@@ -581,11 +750,12 @@ describe('PaymentsService refunds', () => {
       expect.objectContaining({ payment: expect.any(Object) }),
     );
     expect(admin.writeAudit).toHaveBeenCalledWith(
-      'admin-1',
+      'finance-admin-2',
       'payment.refund',
       'payment:payment-1',
       expect.objectContaining({
         approvalAdminId: 'finance-admin-2',
+        requestedByAdminId: 'admin-1',
         earningCancellation: { skipped: false, earningId: 'earning-1' },
         settlementReversal: expect.objectContaining({ settlementStatus: 'REVERSED' }),
       }),
@@ -621,10 +791,10 @@ describe('PaymentsService refunds', () => {
       settlements,
       updatedPayment: refundedPayment,
     });
-    await service.refund('admin-1', 'payment-1', { approvalAdminId: 'finance-admin-2' });
+    await service.refund('finance-admin-2', 'payment-1');
 
     expect(admin.writeAudit).toHaveBeenCalledWith(
-      'admin-1',
+      'finance-admin-2',
       'payment.refund',
       'payment:payment-1',
       expect.objectContaining({
@@ -653,7 +823,7 @@ describe('PaymentsService refunds', () => {
     });
 
     await expect(
-      service.refund('admin-1', 'payment-1', { approvalAdminId: 'finance-admin-2' }),
+      service.refund('finance-admin-2', 'payment-1'),
     ).rejects.toBeInstanceOf(ConflictException);
 
     expect(prisma.refund.create).not.toHaveBeenCalled();
@@ -774,6 +944,57 @@ describe('PaymentsService conditional transitions', () => {
     expect(adapter.release).not.toHaveBeenCalled();
   });
 
+  it('releases an unmatched customer wallet reservation with an exact compensating ledger entry', async () => {
+    const authorized = payment({ method: PaymentMethod.CUSTOMER_WALLET, status: PaymentStatus.AUTHORIZED });
+    const released = payment({ method: PaymentMethod.CUSTOMER_WALLET, status: PaymentStatus.RELEASED });
+    const { prisma, service } = createService({ existingPayment: authorized, updatedPayment: released });
+    prisma.payment.findUniqueOrThrow.mockResolvedValueOnce(authorized).mockResolvedValue(released);
+
+    await expect(service.release('payment-1')).resolves.toEqual(released);
+
+    expect(prisma.customerWalletLedgerEntry.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'customer-wallet-payment:booking-1:release' },
+      update: expect.objectContaining({
+        amount: 300_000,
+        bookingId: 'booking-1',
+        type: 'REFUND',
+      }),
+      create: expect.objectContaining({
+        amount: 300_000,
+        bookingId: 'booking-1',
+        sourceKey: 'customer-wallet-payment:booking-1:release',
+        type: 'REFUND',
+      }),
+    });
+    expect(prisma.payment.updateMany).toHaveBeenCalledWith({
+      data: { status: PaymentStatus.RELEASED },
+      where: { id: 'payment-1', status: { in: [PaymentStatus.AUTHORIZED] } },
+    });
+  });
+
+  it('reuses the admin transaction when closing an unmatched customer wallet payment', async () => {
+    const authorized = payment({ method: PaymentMethod.CUSTOMER_WALLET, status: PaymentStatus.AUTHORIZED });
+    const released = payment({ method: PaymentMethod.CUSTOMER_WALLET, status: PaymentStatus.RELEASED });
+    const { prisma, service } = createService({ existingPayment: authorized, updatedPayment: released });
+    prisma.payment.findUniqueOrThrow.mockResolvedValueOnce(authorized).mockResolvedValue(released);
+
+    await expect(
+      service.closeUnmatchedBookingPayment(
+        'payment-1',
+        'Post-match cancellation approved',
+        { source: 'ADMIN_POST_MATCH_CANCELLATION' },
+        prisma as never,
+      ),
+    ).resolves.toMatchObject({
+      payment: released,
+      refundRequested: false,
+      released: true,
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.customerWalletLedgerEntry.upsert).toHaveBeenCalledTimes(1);
+  });
+
   it('queues captured unmatched payments for audited refund review without claiming release', async () => {
     const captured = payment({ method: PaymentMethod.VNPAY, status: PaymentStatus.CAPTURED });
     const adapter = gatewayAdapter(PaymentMethod.VNPAY);
@@ -801,7 +1022,59 @@ describe('PaymentsService conditional transitions', () => {
     expect(adapter.release).not.toHaveBeenCalled();
   });
 
-  it('attaches maker and approver context when finance accepts an automatic refund request', async () => {
+  it('treats terminal unmatched payment closure as idempotent', async () => {
+    const refunded = payment({ method: PaymentMethod.CARD, status: PaymentStatus.REFUNDED });
+    const { service } = createService({
+      existingPayment: refunded,
+    });
+
+    await expect(
+      service.closeUnmatchedBookingPayment('payment-1', 'Duplicate cancellation closure'),
+    ).resolves.toEqual({
+      payment: refunded,
+      refundRequested: true,
+      released: false,
+    });
+  });
+
+  it('restores a completed customer wallet payment exactly once during the refund transaction', async () => {
+    const captured = payment({ method: PaymentMethod.CUSTOMER_WALLET, status: PaymentStatus.CAPTURED });
+    const refunded = payment({ method: PaymentMethod.CUSTOMER_WALLET, status: PaymentStatus.REFUNDED });
+    const settlements = { reverseBookingSettlementSnapshotForRefund: vi.fn().mockResolvedValue({ id: 'reversal-1' }) };
+    const earnings = { cancelForRefund: vi.fn().mockResolvedValue({ cancelled: true }) };
+    const { prisma, service } = createService({
+      earnings,
+      existingPayment: captured,
+      settlements,
+      updatedPayment: refunded,
+    });
+
+    await expect(
+      service.refund('finance-admin-2', 'payment-1'),
+    ).resolves.toEqual(refunded);
+
+    expect(settlements.reverseBookingSettlementSnapshotForRefund).toHaveBeenCalledWith(
+      expect.objectContaining({ bookingId: 'booking-1', reason: 'Admin manual refund' }),
+      prisma,
+    );
+    expect(prisma.customerWalletLedgerEntry.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'customer-wallet-payment:booking-1:refund' },
+      update: expect.objectContaining({
+        amount: 300_000,
+        bookingId: 'booking-1',
+        type: 'REFUND',
+      }),
+      create: expect.objectContaining({
+        amount: 300_000,
+        bookingId: 'booking-1',
+        sourceKey: 'customer-wallet-payment:booking-1:refund',
+        type: 'REFUND',
+      }),
+    });
+    expect(earnings.cancelForRefund).toHaveBeenCalledWith('booking-1', prisma);
+  });
+
+  it('attaches the authenticated approver context when finance accepts an automatic system refund request', async () => {
     const adapter = gatewayAdapter(PaymentMethod.VNPAY);
     adapter.refund.mockResolvedValueOnce({
       status: PaymentStatus.REFUNDED,
@@ -819,20 +1092,20 @@ describe('PaymentsService conditional transitions', () => {
       vnpayPaymentAdapter: adapter,
     });
 
-    await service.refund('admin-1', 'payment-1', { approvalAdminId: 'finance-admin-2' });
+    await service.refund('finance-admin-2', 'payment-1');
 
-    expect(prisma.refund.update).toHaveBeenNthCalledWith(1, {
-      where: { id: 'refund-1' },
+    expect(prisma.refund.updateMany).toHaveBeenCalledWith({
+      where: { id: 'refund-1', status: 'REQUESTED' },
       data: {
+        status: 'APPROVAL_PROCESSING',
         metadata: expect.objectContaining({
           source: 'UNMATCHED_BOOKING_CLOSE',
-          actorId: 'admin-1',
           approvalAdminId: 'finance-admin-2',
           occurredAt: expect.any(String),
         }),
       },
     });
-    expect(prisma.refund.update).toHaveBeenNthCalledWith(2, {
+    expect(prisma.refund.update).toHaveBeenNthCalledWith(1, {
       where: { id: 'refund-1' },
       data: expect.objectContaining({ status: 'PROVIDER_PROCESSING' }),
     });
@@ -851,11 +1124,12 @@ describe('PaymentsService conditional transitions', () => {
     });
 
     await expect(
-      service.refund('admin-1', 'payment-1', { approvalAdminId: 'finance-admin-2' }),
+      service.refund('finance-admin-2', 'payment-1'),
     ).rejects.toThrow('gateway timeout');
 
-    expect(prisma.refund.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ paymentId: 'payment-1', status: 'REQUESTED' }),
+    expect(prisma.refund.updateMany).toHaveBeenCalledWith({
+      where: { id: 'refund-1', status: 'REQUESTED' },
+      data: expect.objectContaining({ status: 'APPROVAL_PROCESSING' }),
     });
     expect(prisma.refund.update).toHaveBeenCalledWith({
       where: { id: 'refund-1' },
@@ -896,7 +1170,7 @@ describe('PaymentsService conditional transitions', () => {
     });
 
     await expect(
-      service.refund('admin-1', 'payment-1', { approvalAdminId: 'finance-admin-2' }),
+      service.refund('finance-admin-2', 'payment-1'),
     ).resolves.toEqual(expect.objectContaining({ status: PaymentStatus.CAPTURED }));
 
     expect(prisma.refund.update).toHaveBeenCalledWith({
@@ -919,7 +1193,7 @@ describe('PaymentsService conditional transitions', () => {
     expect(settlements.reverseBookingSettlementSnapshotForRefund).not.toHaveBeenCalled();
     expect(earnings.cancelForRefund).not.toHaveBeenCalled();
     expect(admin.writeAudit).toHaveBeenCalledWith(
-      'admin-1',
+      'finance-admin-2',
       'payment.refund.provider-processing',
       'payment:payment-1',
       expect.objectContaining({ approvalAdminId: 'finance-admin-2', refundId: 'refund-1' }),
@@ -1014,7 +1288,7 @@ describe('PaymentsService conditional transitions', () => {
     expect(settlements.reverseBookingSettlementSnapshotForRefund).toHaveBeenCalledOnce();
     expect(earnings.cancelForRefund).toHaveBeenCalledOnce();
     expect(admin.writeAudit).toHaveBeenCalledWith(
-      'admin-1',
+      'finance-admin-2',
       'payment.refund',
       'payment:payment-1',
       expect.objectContaining({ approvalAdminId: 'finance-admin-2' }),
@@ -1058,7 +1332,12 @@ describe('PaymentsService conditional transitions', () => {
       }),
       existingRefund: {
         id: 'refund-1',
-        metadata: { gatewayTransactionId: 'momo-refund-tx-1' },
+        metadata: {
+          actorId: 'admin-1',
+          approvalAdminId: 'finance-admin-2',
+          occurredAt: '2026-07-14T07:00:00.000Z',
+          gatewayTransactionId: 'momo-refund-tx-1',
+        },
         status: 'GATEWAY_CONFIRMED',
       },
       momoPaymentAdapter: adapter,
@@ -1066,7 +1345,7 @@ describe('PaymentsService conditional transitions', () => {
     });
 
     await expect(
-      service.refund('admin-1', 'payment-1', { approvalAdminId: 'finance-admin-2' }),
+      service.refund('finance-admin-2', 'payment-1'),
     ).resolves.toEqual(refunded);
 
     expect(adapter.refund).not.toHaveBeenCalled();
@@ -1075,6 +1354,163 @@ describe('PaymentsService conditional transitions', () => {
       where: { id: 'refund-1' },
       data: expect.objectContaining({ status: 'COMPLETED' }),
     });
+  });
+
+  it('blocks admin capture when the booking is cancelled even if the payment is authorized', async () => {
+    const adapter = gatewayAdapter(PaymentMethod.MOMO);
+    const authorized = payment({
+      method: PaymentMethod.MOMO,
+      providerRef: 'gateway-payment-1',
+      status: PaymentStatus.AUTHORIZED,
+    });
+    const { prisma, service } = createService({
+      existingPayment: authorized,
+      momoPaymentAdapter: adapter,
+    });
+    prisma.payment.findUnique.mockResolvedValueOnce(
+      paymentActionRecord(authorized, BookingStatus.CANCELLED),
+    );
+
+    await expect(
+      service.captureForAdmin('admin-1', authorized.id, {
+        idempotencyKey: 'capture-cancelled-payment-1',
+        reason: 'Operator reviewed booking and gateway evidence.',
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'BOOKING_NOT_COMPLETED' }),
+    });
+    expect(adapter.capture).not.toHaveBeenCalled();
+  });
+
+  it('returns an auditable receipt and replays the same admin capture only once', async () => {
+    const adapter = gatewayAdapter(PaymentMethod.MOMO);
+    const authorized = payment({
+      method: PaymentMethod.MOMO,
+      providerRef: 'gateway-payment-1',
+      status: PaymentStatus.AUTHORIZED,
+    });
+    const captured = { ...authorized, status: PaymentStatus.CAPTURED };
+    const writeAudit = vi.fn().mockResolvedValue({ id: 'action-audit-1' });
+    const { prisma, service } = createService({
+      admin: { writeAudit },
+      existingPayment: authorized,
+      momoPaymentAdapter: adapter,
+      updatedPayment: captured,
+    });
+    const before = paymentActionRecord(authorized, BookingStatus.COMPLETED);
+    const after = paymentActionRecord(captured, BookingStatus.COMPLETED);
+    prisma.payment.findUnique
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce(authorized)
+      .mockResolvedValueOnce(after);
+
+    const receipt = await service.captureForAdmin('admin-1', authorized.id, {
+      idempotencyKey: 'capture-completed-payment-1',
+      reason: 'Completion and signed gateway evidence were reviewed.',
+    });
+    prisma.adminAuditLog.findMany.mockResolvedValueOnce([
+      {
+        id: receipt.auditId,
+        metadata: {
+          idempotencyKey: receipt.idempotencyKey,
+          receipt: {
+            action: receipt.action,
+            actorId: receipt.actorId,
+            after: receipt.after,
+            before: receipt.before,
+            completedAt: receipt.completedAt,
+            idempotencyKey: receipt.idempotencyKey,
+            paymentId: receipt.paymentId,
+          },
+        },
+      },
+    ]);
+
+    await expect(
+      service.captureForAdmin('admin-1', authorized.id, {
+        idempotencyKey: 'capture-completed-payment-1',
+        reason: 'Completion and signed gateway evidence were reviewed.',
+      }),
+    ).resolves.toEqual(receipt);
+    expect(adapter.capture).toHaveBeenCalledOnce();
+    expect(writeAudit).toHaveBeenCalledWith(
+      'admin-1',
+      'payment.action_receipt',
+      'payment:payment-1',
+      expect.objectContaining({ idempotencyKey: 'capture-completed-payment-1' }),
+    );
+  });
+
+  it('executes one provider operation when identical admin actions race', async () => {
+    const adapter = gatewayAdapter(PaymentMethod.MOMO);
+    const authorized = payment({
+      method: PaymentMethod.MOMO,
+      providerRef: 'gateway-payment-1',
+      status: PaymentStatus.AUTHORIZED,
+    });
+    const captured = { ...authorized, status: PaymentStatus.CAPTURED };
+    const { prisma, service } = createService({
+      admin: { writeAudit: vi.fn().mockResolvedValue({ id: 'concurrent-action-audit-1' }) },
+      existingPayment: authorized,
+      momoPaymentAdapter: adapter,
+      updatedPayment: captured,
+    });
+    prisma.payment.findUnique.mockResolvedValue(
+      paymentActionRecord(authorized, BookingStatus.COMPLETED),
+    );
+    prisma.payment.findUniqueOrThrow
+      .mockResolvedValueOnce(authorized)
+      .mockResolvedValueOnce(captured);
+    adapter.capture.mockImplementationOnce(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      return captured;
+    });
+
+    const input = {
+      idempotencyKey: 'capture-concurrent-payment-1',
+      reason: 'Completion and signed gateway evidence were reviewed.',
+    };
+    const [first, second] = await Promise.all([
+      service.captureForAdmin('admin-1', authorized.id, input),
+      service.captureForAdmin('admin-1', authorized.id, input),
+    ]);
+
+    expect(first).toEqual(second);
+    expect(adapter.capture).toHaveBeenCalledOnce();
+    expect(prisma.paymentAdminOperationClaim.create).toHaveBeenCalledTimes(2);
+  });
+
+  it('allows admin release for a cancelled authorized gateway payment', async () => {
+    const adapter = gatewayAdapter(PaymentMethod.MOMO);
+    const authorized = payment({
+      method: PaymentMethod.MOMO,
+      providerRef: 'gateway-payment-1',
+      status: PaymentStatus.AUTHORIZED,
+    });
+    const released = { ...authorized, status: PaymentStatus.RELEASED };
+    const { prisma, service } = createService({
+      admin: { writeAudit: vi.fn().mockResolvedValue({ id: 'release-audit-1' }) },
+      existingPayment: authorized,
+      momoPaymentAdapter: adapter,
+      updatedPayment: released,
+    });
+    prisma.payment.findUnique
+      .mockResolvedValueOnce(paymentActionRecord(authorized, BookingStatus.CANCELLED))
+      .mockResolvedValueOnce(paymentActionRecord(released, BookingStatus.CANCELLED));
+    prisma.payment.findUniqueOrThrow
+      .mockResolvedValueOnce(authorized)
+      .mockResolvedValueOnce(released);
+
+    await expect(
+      service.releaseForAdmin('admin-1', authorized.id, {
+        idempotencyKey: 'release-cancelled-payment-1',
+        reason: 'Cancelled booking must not retain customer authorization.',
+      }),
+    ).resolves.toMatchObject({
+      action: 'RELEASE',
+      after: { paymentStatus: PaymentStatus.RELEASED },
+    });
+    expect(adapter.release).toHaveBeenCalledOnce();
   });
 });
 
@@ -1113,17 +1549,29 @@ function createService({
   }
   const prisma = {
     $transaction: vi.fn(async (callback: (client: unknown) => Promise<unknown>) => callback(prisma)),
+    $queryRaw: vi.fn().mockResolvedValue([{ lockResult: null }]),
     payment: {
+      findFirstOrThrow: vi.fn(),
       findUnique,
       findUniqueOrThrow: vi.fn().mockResolvedValue(updatedPayment ?? existingPayment),
       update: vi.fn().mockResolvedValue(updatedPayment ?? existingPayment),
       updateMany: vi.fn().mockResolvedValue({ count: updateCount }),
     },
     booking: {
+      findUniqueOrThrow: vi.fn().mockResolvedValue({ customerProfileId: 'customer-1' }),
       update: vi.fn(),
     },
+    customerWalletLedgerEntry: {
+      findUnique: vi.fn().mockResolvedValue({
+        amount: -300_000,
+        id: 'wallet-reservation-1',
+      }),
+      upsert: vi.fn().mockResolvedValue({ id: 'wallet-release-1' }),
+    },
     refund: {
-      findUnique: vi.fn().mockResolvedValue(existingRefund ?? null),
+      findUnique: vi.fn().mockResolvedValue(
+        existingRefund === undefined ? requestedRefund() : existingRefund,
+      ),
       create: vi.fn().mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
         id: 'refund-1',
         ...data,
@@ -1132,6 +1580,7 @@ function createService({
         id: 'refund-1',
         ...data,
       })),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       upsert: vi.fn().mockImplementation(async ({ create }: { create: Record<string, unknown> }) => ({
         id: 'refund-1',
         ...create,
@@ -1139,6 +1588,10 @@ function createService({
     },
     paymentCallbackAttempt: {
       create: vi.fn(),
+    },
+    paymentAdminOperationClaim: paymentAdminOperationClaimDelegate(),
+    adminAuditLog: {
+      findMany: vi.fn().mockResolvedValue([]),
     },
     user: {
       findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }),
@@ -1170,6 +1623,34 @@ function createService({
   };
 }
 
+function paymentAdminOperationClaimDelegate() {
+  let stored: Record<string, unknown> | null = null;
+  const duplicate = () => new Prisma.PrismaClientKnownRequestError('Payment action claim exists', {
+    clientVersion: 'test',
+    code: 'P2002',
+  });
+  return {
+    create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+      if (stored) throw duplicate();
+      stored = {
+        ...data,
+        errorCode: null,
+        errorMessage: null,
+        id: 'payment-action-claim-1',
+        receipt: null,
+        status: PaymentAdminOperationStatus.IN_PROGRESS,
+      };
+      return { id: stored.id };
+    }),
+    findFirst: vi.fn(async () => stored),
+    findUnique: vi.fn(async () => stored),
+    update: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+      stored = { ...(stored ?? {}), ...data };
+      return stored;
+    }),
+  };
+}
+
 function payment({
   status,
   method = PaymentMethod.CASH,
@@ -1188,6 +1669,27 @@ function payment({
     providerRef,
     rawMeta: {},
     status,
+  };
+}
+
+function paymentActionRecord(
+  paymentRecord: ReturnType<typeof payment>,
+  bookingStatus: BookingStatus,
+) {
+  return {
+    ...paymentRecord,
+    booking: {
+      customerWalletLedgerEntries: [],
+      status: bookingStatus,
+    },
+    callbackAttempts: [
+      {
+        callbackAmount: paymentRecord.amount,
+        createdAt: new Date('2026-08-09T03:00:00.000Z'),
+        outcome: 'ACCEPTED',
+        signatureVerified: true,
+      },
+    ],
   };
 }
 
@@ -1275,5 +1777,18 @@ function providerProcessingRefund(paymentRecord: ReturnType<typeof payment>) {
       occurredAt: '2026-07-14T07:00:00.000Z',
     },
     payment: paymentRecord,
+  };
+}
+
+function requestedRefund() {
+  return {
+    id: 'refund-1',
+    paymentId: 'payment-1',
+    status: 'REQUESTED',
+    metadata: {
+      requestedAt: '2026-07-14T06:55:00.000Z',
+      requestedByAdminId: 'admin-1',
+      source: 'ADMIN_MANUAL',
+    },
   };
 }

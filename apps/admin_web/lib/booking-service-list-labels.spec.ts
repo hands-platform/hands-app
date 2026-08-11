@@ -35,7 +35,7 @@ describe('bookingServiceListLabelsFromFacts', () => {
       }),
     ).toMatchObject({
       optionLabel: 'Deep Tissue / 90 min',
-      priceLabel: 'Customer VND 900000 / min VND 700000',
+      priceLabel: 'Customer price VND 900000 / Minimum VND 700000',
     });
   });
 
@@ -48,8 +48,19 @@ describe('bookingServiceListLabelsFromFacts', () => {
       }),
     ).toMatchObject({
       optionLabel: 'Aroma / duration pending',
-      priceLabel: 'Customer VND 800000',
+      priceLabel: 'Customer price VND 800000',
     });
+  });
+
+  it('does not repeat an identical minimum price', () => {
+    expect(
+      bookingServiceListLabelsFromFacts({
+        ...baseInput,
+        customerPrice: 800000,
+        minimumPrice: 800000,
+        serviceName: 'Aroma',
+      }).priceLabel,
+    ).toBe('Customer price VND 800000');
   });
 
   it('returns missing payout rule copy when customer price has no active matching rule', () => {

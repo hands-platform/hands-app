@@ -4,7 +4,7 @@ import { bookingChatMessageCount } from './booking-chat-message-count';
 
 type BookingCommandDecisionStripBooking = Pick<
   AdminBooking,
-  'addressSnapshot' | 'chatRoom' | 'participants' | 'payment' | 'status'
+  'addressSnapshot' | 'chatRoom' | 'expiresAt' | 'participants' | 'payment' | 'status'
 >;
 
 export type BookingCommandDecisionStripInputSignals = {
@@ -20,13 +20,18 @@ export type BookingCommandDecisionStripInputSignals = {
 export function bookingCommandDecisionStripInput(
   booking: BookingCommandDecisionStripBooking,
   signals: BookingCommandDecisionStripInputSignals,
+  nowMs = Date.now(),
 ): BookingCommandDecisionStripInput {
+  const deadlineMs = booking.expiresAt ? new Date(booking.expiresAt).getTime() : Number.NaN;
+  const matchingDeadlineExpired = Number.isFinite(deadlineMs) && deadlineMs <= nowMs;
+
   return {
     bookingStatus: booking.status,
     hasAddressSnapshot: Boolean(booking.addressSnapshot),
     addressLabel: signals.addressLabel,
     participantCount: booking.participants?.length ?? 0,
-    customerChoiceCandidateCount: signals.customerChoiceCandidateCount,
+    customerChoiceCandidateCount: matchingDeadlineExpired ? 0 : signals.customerChoiceCandidateCount,
+    expiredCustomerChoiceCandidateCount: matchingDeadlineExpired ? signals.customerChoiceCandidateCount : 0,
     marketplaceEligibleCount: signals.marketplaceEligibleCount,
     hasFinalPartner: signals.hasFinalPartner,
     hasChatRoom: signals.hasChatRoom,
@@ -35,5 +40,7 @@ export function bookingCommandDecisionStripInput(
     paymentStatus: booking.payment?.status ?? 'NONE',
     cashDebtNeedsSettlement: signals.cashDebtNeedsSettlement,
     closeoutOpenItemCount: signals.closeoutNeedsOps ? 1 : 0,
+    matchingDeadlineAt: booking.expiresAt ?? null,
+    matchingDeadlineExpired,
   };
 }

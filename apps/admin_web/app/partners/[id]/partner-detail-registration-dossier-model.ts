@@ -128,7 +128,7 @@ export function buildProviderRegistrationDossier(
           }.`,
       operatorAction: identityComplete
         ? 'Identity gate is clear.'
-        : 'Review typed documents first, then approve or reject KYC.',
+        : 'Review all submitted details and documents, then approve or put KYC on hold.',
     },
     {
       label: 'Device and session',

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/api_client.dart';
@@ -17,12 +20,35 @@ class ProviderActionBlockCopy {
   final IconData icon;
 }
 
-String providerAppErrorMessage(Object error) {
+String providerAppErrorMessage(
+  Object? error, {
+  String fallback = 'Đã xảy ra lỗi. Vui lòng thử lại.',
+}) {
   if (error is ApiException) {
+    if (error.statusCode >= 500) {
+      return 'HANDS tạm thời không khả dụng. Vui lòng thử lại.';
+    }
     final apiMessage = providerApiExceptionMessage(error.body);
     if (apiMessage != null) {
-      return apiMessage;
+      return providerActionBlockCopy(apiMessage)?.detail ?? apiMessage;
     }
+    switch (error.statusCode) {
+      case 401:
+        return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+      case 403:
+        return 'Tài khoản của bạn không thể thực hiện thao tác này.';
+      case 404:
+        return 'Thông tin này không còn khả dụng.';
+      case 409:
+        return 'Thông tin đã thay đổi. Hãy làm mới và thử lại.';
+      case 429:
+        return 'Có quá nhiều yêu cầu. Hãy chờ một lúc rồi thử lại.';
+      default:
+        return fallback;
+    }
+  }
+  if (error is SocketException || error is TimeoutException) {
+    return 'Kiểm tra kết nối Internet và thử lại.';
   }
   final raw = error.toString();
   final normalized = raw
@@ -30,18 +56,12 @@ String providerAppErrorMessage(Object error) {
       .replaceFirst('Exception: ', '')
       .trim();
   if (isProviderDeviceBlockedMessage(normalized)) {
-    return normalized.replaceFirst(
-      'This device is blocked by admin review',
-      'This device is blocked by HANDS admin review',
-    );
+    return 'Thiết bị này đang bị HANDS tạm khóa để xem xét.';
   }
   if (isProviderAccountBlockedMessage(normalized)) {
-    return normalized.replaceFirst(
-      'This partner account is blocked by admin review',
-      'This partner account is blocked by HANDS admin review',
-    );
+    return 'Tài khoản đối tác này đang bị HANDS tạm khóa để xem xét.';
   }
-  return normalized;
+  return fallback;
 }
 
 Map<String, dynamic>? providerApiExceptionWalletSummary(Object error) {
@@ -138,68 +158,72 @@ bool isProviderBlockedMessage(String value) {
 
 ProviderActionBlockCopy? providerActionBlockCopy(String value) {
   final normalized = value.toLowerCase();
-  if (normalized.contains('bank account must be approved')) {
+  if (normalized.contains('bank account must be approved') ||
+      normalized.contains('thông tin ngân hàng được kiểm tra')) {
     return const ProviderActionBlockCopy(
-      title: 'Wallet bank details required',
+      title: 'Cần thông tin ngân hàng cho ví',
       detail:
-          'Bank details are reviewed for wallet withdrawal/deposit checks, not for receiving paid work.',
+          'Thông tin ngân hàng được kiểm tra cho yêu cầu rút hoặc nộp tiền vào ví, không ảnh hưởng đến việc nhận công việc.',
       nextStep:
-          'Open Earnings, request withdrawal or report a deposit, then add or correct the bank details when prompted.',
+          'Mở mục Thu nhập, chọn rút tiền hoặc báo cáo khoản nộp rồi thêm hoặc sửa thông tin ngân hàng khi được yêu cầu.',
       icon: Icons.account_balance_outlined,
     );
   }
-  if (normalized.contains('wallet') ||
+  if (value == providerWalletBlockFallbackReasonClean ||
+      normalized.contains('wallet') ||
       normalized.contains('settlement') ||
       normalized.contains('hands fee') ||
       normalized.contains('unpaid hands fees') ||
       normalized.contains('unpaid hands cash-service fees')) {
     return const ProviderActionBlockCopy(
-      title: 'Fee settlement required',
+      title: 'Cần thanh toán phí',
       detail: providerWalletBlockFallbackReasonClean,
       nextStep:
-          'Open Earnings, copy the settlement reference, then refresh wallet status after HANDS confirms payment.',
+          'Mở mục Thu nhập, sao chép mã thanh toán và làm mới trạng thái ví sau khi HANDS xác nhận.',
       icon: Icons.account_balance_wallet_outlined,
     );
   }
-  if (normalized.contains('kyc must be approved')) {
+  if (normalized.contains('kyc must be approved') ||
+      normalized.contains('xác minh danh tính phải được phê duyệt')) {
     return const ProviderActionBlockCopy(
-      title: 'KYC approval required',
+      title: 'Cần phê duyệt KYC',
       detail:
-          'Your identity verification must be approved before receiving paid work.',
+          'Xác minh danh tính phải được phê duyệt trước khi nhận công việc có trả phí.',
       nextStep:
-          'Open Profile, submit CCCD and selfie verification, then wait for HANDS operations approval.',
+          'Mở mục Hồ sơ, gửi CCCD và ảnh chân dung rồi chờ HANDS phê duyệt.',
       icon: Icons.badge_outlined,
     );
   }
   if (normalized.contains('required kyc document') ||
+      normalized.contains('mặt trước cccd') ||
       normalized.contains('cccd') ||
       normalized.contains('selfie')) {
     return const ProviderActionBlockCopy(
-      title: 'Identity document approval required',
+      title: 'Cần phê duyệt giấy tờ danh tính',
       detail:
-          'Required CCCD front, CCCD back, and selfie documents must be approved first.',
+          'Mặt trước CCCD, mặt sau CCCD và ảnh chân dung phải được phê duyệt trước.',
       nextStep:
-          'Upload clear identity photos in Profile and ask HANDS operations to review them.',
+          'Tải ảnh danh tính rõ nét trong mục Hồ sơ và chờ HANDS xem xét.',
       icon: Icons.assignment_ind_outlined,
     );
   }
-  if (normalized.contains('verification must be approved')) {
+  if (normalized.contains('verification must be approved') ||
+      normalized.contains('hồ sơ đối tác phải được phê duyệt')) {
     return const ProviderActionBlockCopy(
-      title: 'Partner verification required',
-      detail:
-          'Your partner profile verification must be approved before receiving work.',
-      nextStep:
-          'Complete the basic profile and wait for HANDS operations to approve your account.',
+      title: 'Cần xác minh đối tác',
+      detail: 'Hồ sơ đối tác phải được phê duyệt trước khi nhận công việc.',
+      nextStep: 'Hoàn tất hồ sơ cơ bản và chờ HANDS phê duyệt tài khoản.',
       icon: Icons.verified_user_outlined,
     );
   }
-  if (normalized.contains('must be online')) {
+  if (normalized.contains('must be online') ||
+      normalized.contains('bạn phải trực tuyến')) {
     return const ProviderActionBlockCopy(
-      title: 'Go online first',
+      title: 'Hãy bật trực tuyến trước',
       detail:
-          'You must be online and sharing your current location before receiving requests.',
+          'Bạn phải trực tuyến và chia sẻ vị trí hiện tại trước khi nhận yêu cầu.',
       nextStep:
-          'Tap Go online, allow location permission, then refresh the request list.',
+          'Chọn Bật trực tuyến, cho phép truy cập vị trí rồi làm mới danh sách yêu cầu.',
       icon: Icons.power_settings_new,
     );
   }

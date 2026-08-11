@@ -30,7 +30,7 @@ const backgroundJobWorkflows: Record<string, BackgroundJobWorkflow> = {
   'payment-refund-status': {
     actionLabel: 'Open workflow',
     href: '/refunds?range=all',
-    label: 'Provider refund recovery',
+    label: 'Payment provider refund recovery',
   },
 };
 

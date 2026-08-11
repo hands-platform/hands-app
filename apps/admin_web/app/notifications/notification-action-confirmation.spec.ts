@@ -1,8 +1,6 @@
 import type { AdminNotification } from '../../lib/admin-api';
 import {
   buildNotificationActionConfirmation,
-  assignFinanceReviewConfirmHref,
-  enablePushDeviceConfirmHref,
   filterNotificationActionConfirmationSupportingLinks,
   legacyReviewNotificationConfirmHref,
   notificationBackgroundJobEvidenceHref,
@@ -10,646 +8,180 @@ import {
   retryNotificationConfirmHref,
 } from './notification-action-confirmation';
 
-const notification = {
-  id: 'notification-row-123456',
-  type: 'booking.requested',
-  title: 'Partner request',
-  body: 'A booking request is available.',
-  createdAt: '2026-06-01T00:00:00.000Z',
-  deliveries: [
-    {
-      id: 'delivery-1',
-      provider: 'FCM',
-      status: 'FAILED',
-      attemptedAt: '2026-06-01T00:01:00.000Z',
-      pushDevice: {
-        id: 'push-device-123456',
-        platform: 'ios',
-        enabled: false,
-      },
-    },
-  ],
-} as AdminNotification;
+const notification = buildPartialNotification();
 
 describe('notification action confirmation', () => {
-  it('builds an audited assign-to-me confirmation for an overdue Finance review', () => {
-    const financeNotification = {
-      ...notification,
-      data: {
-        bankTransactionId: 'bank-tx-1',
-        destination: '/finance-tax/bank-reconciliation/bank-tx-1',
-        financeReviewOwner: { id: 'finance-owner-old' },
-        financeReviewStatus: 'OPEN',
-      },
-      id: 'finance-notification-1',
-      type: 'admin.finance.bank_transaction.review_escalated',
-    } as AdminNotification;
-    const href = assignFinanceReviewConfirmHref(financeNotification.id, 'finance-owner-current', {
-      financeAge: '72-plus',
-      financeOwner: 'unassigned',
-      range: 'all',
-      review: 'finance-overdue',
-    });
-
-    expect(href).toContain('confirm=assign-finance-review');
-    expect(href).toContain('financeAge=72-plus');
-    const confirmation = buildNotificationActionConfirmation(
-      [financeNotification],
-      'assign-finance-review',
-      {
-        assigneeAdminId: 'finance-owner-current',
-        financeAge: '72-plus',
-        financeOwner: 'unassigned',
-        notificationId: financeNotification.id,
-        pushDeviceId: '',
-        range: 'all',
-        review: 'finance-overdue',
-      },
-    );
-
-    expect(confirmation).toMatchObject({
-      action: 'assign-finance-review',
-      confirmLabel: 'Reassign to me',
-      hiddenInputs: expect.arrayContaining([
-        { name: 'assigneeAdminId', value: 'finance-owner-current' },
-        { name: 'assignmentSourceId', value: 'bank-tx-1' },
-        { name: 'assignmentSourceKind', value: 'bank-transaction' },
-      ]),
-      textInputs: [expect.objectContaining({ name: 'reason', required: true })],
-    });
-    expect(confirmation?.supportingLinks).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        href: '/audit-log?q=bank-tx-1&range=all',
-        label: 'Audit trail',
-      }),
-    ]));
-    expect(confirmation?.cancelHref).toBe(
-      '/notifications?range=all&review=finance-overdue&financeAge=72-plus&financeOwner=unassigned',
-    );
-
-    const ownerConfirmation = buildNotificationActionConfirmation(
-      [financeNotification],
-      'assign-finance-review',
-      {
-        financeAssigneeOptions: [
-          { label: 'Current owner', value: 'finance-owner-old' },
-          { label: 'Finance Two', value: 'finance-owner-2' },
-          { label: 'Finance Three', value: 'finance-owner-3' },
-        ],
-        notificationId: financeNotification.id,
-        pushDeviceId: '',
-        review: 'finance-overdue',
-      },
-    );
-    expect(ownerConfirmation).toMatchObject({
-      confirmLabel: 'Reassign owner',
-      selectInputs: [{
-        defaultValue: 'finance-owner-2',
-        label: 'Review owner',
-        name: 'assigneeAdminId',
-        options: [
-          { label: 'Finance Two', value: 'finance-owner-2' },
-          { label: 'Finance Three', value: 'finance-owner-3' },
-        ],
-        required: true,
-      }],
-    });
-  });
-
-  it('builds a retry confirmation for a loaded notification', () => {
-    const confirmation = buildNotificationActionConfirmation([notification], 'retry', {
+  it('fails closed when the operator lacks Notification retry access', () => {
+    expect(buildNotificationActionConfirmation([notification], 'retry', {
       notificationId: notification.id,
       pushDeviceId: '',
+    })).toBeNull();
+  });
+
+  it('shows only unresolved paths, masked identifiers, source context, and a required reason', () => {
+    const confirmation = buildNotificationActionConfirmation([notification], 'retry', {
+      canRetry: true,
+      issue: 'failed',
+      mode: 'action',
+      notificationId: notification.id,
+      page: '2',
+      pushDeviceId: '',
     });
 
-    expect(confirmation).toEqual({
+    expect(confirmation).toMatchObject({
       action: 'retry',
-      cancelHref: '/notifications',
-      confirmLabel: 'Retry after device recovery',
-      description:
-        'Notification notifica latest delivery used a disabled push device. Refresh or re-enable the device path before retrying. Latest evidence: FCM FAILED; platform ios; attempted 1 Jun 2026, 07:01; device disabled; token timestamp unknown.',
-      hiddenInputs: [
-        { name: 'notificationId', value: notification.id },
-        { name: 'returnHref', value: '/notifications' },
-      ],
-      id: notification.id,
-      supportingLinks: [
-        {
-          description: 'Open retry, delivery, and device recovery audit events before resending.',
-          href: '/audit-log?bucket=Notification&q=notification-row-123456&range=all',
-          label: 'Audit trail',
-        },
-        {
-          description: 'Open push device recovery and token change audit events before retrying.',
-          href: '/audit-log?bucket=Notification&q=push-device-123456&range=all',
-          label: 'Device audit',
-        },
-      ],
-      title: 'Retry notification notifica?',
-      tone: 'danger',
-    });
-  });
-
-  it('builds an enable device confirmation for a disabled push device', () => {
-    const confirmation = buildNotificationActionConfirmation([notification], 'enable-device', {
-      notificationId: '',
-      pushDeviceId: 'push-device-123456',
-    });
-
-    expect(confirmation).toEqual({
-      action: 'enable-device',
-      cancelHref: '/notifications',
-      confirmLabel: 'Re-enable device',
-      description:
-        'Re-enable ios push device push-dev only after a fresh token or operator confirmation exists. Latest evidence: FCM FAILED; platform ios; attempted 1 Jun 2026, 07:01; device disabled; token timestamp unknown.',
-      hiddenInputs: [
-        { name: 'pushDeviceId', value: 'push-device-123456' },
-        { name: 'returnHref', value: '/notifications' },
-      ],
-      id: 'push-device-123456',
-      supportingLinks: [
-        {
-          description: 'Open device recovery audit events before re-enabling push delivery.',
-          href: '/audit-log?bucket=Notification&q=push-device-123456&range=all',
-          label: 'Audit trail',
-        },
-      ],
-      title: 'Re-enable device push-dev?',
-      tone: 'danger',
-    });
-  });
-
-  it('warns operators when retrying a notification with no delivery attempt yet', () => {
-    const pendingNotification = { ...notification, deliveries: [] };
-    const confirmation = buildNotificationActionConfirmation([pendingNotification], 'retry', {
-      notificationId: pendingNotification.id,
-      pushDeviceId: '',
-    });
-
-    expect(confirmation?.description).toBe(
-      'Retry notification notifica only after confirming workers and queue processing. No delivery attempt is captured yet; confirm workers before retrying.',
-    );
-  });
-
-  it('adds worker path guidance before retrying a pending notification', () => {
-    const pendingNotification = { ...notification, deliveries: [] };
-    const confirmation = buildNotificationActionConfirmation([pendingNotification], 'retry', {
-      notificationId: pendingNotification.id,
-      pushDeviceId: '',
-      review: 'pending',
-    });
-
-    expect(confirmation?.description).toContain(
-      'Runbook: Worker path gate. Confirm API workers and delivery processing first; retry only if operations intentionally wants to create a new send attempt.',
-    );
-    expect(confirmation?.supportingLinks).toEqual([
-      {
-        description: 'Open retry, delivery, and device recovery audit events before resending.',
-        href: '/audit-log?bucket=Notification&q=notification-row-123456&range=all',
-        label: 'Audit trail',
-      },
-    ]);
-  });
-
-  it('uses the newest delivery attempt as retry evidence', () => {
-    const confirmation = buildNotificationActionConfirmation(
-      [
-        {
-          ...notification,
-          deliveries: [
-            {
-              ...notification.deliveries?.[0],
-              attemptedAt: '2026-06-01T00:01:00.000Z',
-              id: 'delivery-old',
-              provider: 'FCM',
-              status: 'FAILED',
-            },
-            {
-              ...notification.deliveries?.[0],
-              attemptedAt: '2026-06-01T00:04:00.000Z',
-              id: 'delivery-new',
-              pushDevice: {
-                id: 'push-device-123456',
-                platform: 'android',
-                enabled: true,
-              },
-              provider: 'FCM',
-              response: { failureCode: 'messaging/mismatched-credential' },
-              status: 'FAILED',
-            },
-          ],
-        },
-      ],
-      'retry',
-      {
-        notificationId: notification.id,
-        pushDeviceId: '',
-      },
-    );
-
-    expect(confirmation?.description).toContain('attempted 1 Jun 2026, 07:04');
-    expect(confirmation?.description).toContain('after fixing the latest delivery failure');
-    expect(confirmation?.description).toContain('failure messaging/mismatched-credential');
-    expect(confirmation?.description).toContain(
-      'next Install Firebase Admin SDK JSON from the same Firebase project as the mobile app configs before retrying.',
-    );
-  });
-
-  it('requires token refresh before retrying a stale FCM delivery', () => {
-    const confirmation = buildNotificationActionConfirmation(
-      [
-        {
-          ...notification,
-          deliveries: [
-            {
-              ...notification.deliveries?.[0],
-              attemptedAt: '2026-06-01T00:04:00.000Z',
-              id: 'delivery-stale-sent',
-              provider: 'FCM',
-              status: 'SENT',
-              pushDevice: {
-                id: 'push-device-123456',
-                platform: 'android',
-                enabled: true,
-                lastSeenAt: '2026-04-15T00:04:00.000Z',
-              },
-            },
-          ],
-        },
-      ],
-      'retry',
-      {
-        notificationId: notification.id,
-        pushDeviceId: '',
-        review: 'stale-device',
-      },
-    );
-
-    expect(confirmation).toMatchObject({
-      confirmLabel: 'Retry after token refresh',
+      cancelHref: '/notifications?mode=action&issue=failed&page=2',
+      confirmLabel: 'Retry unresolved paths',
+      textInputs: [{
+        label: 'Retry reason',
+        maxLength: 500,
+        minLength: 12,
+        name: 'reason',
+        placeholder: 'Why are the unresolved delivery paths safe to retry?',
+        required: true,
+      }],
       tone: 'warning',
     });
-    expect(confirmation?.description).toContain(
-      'latest delivery used an old FCM token timestamp. Ask the user to reopen the app or complete token recovery before retrying.',
-    );
-    expect(confirmation?.description).toContain('30+ day token timestamp');
-    expect(confirmation?.description).toContain('Runbook: Token freshness gate.');
-    expect(confirmation?.supportingLinks).toEqual(
-      expect.arrayContaining([
-        {
-          description: 'Open push device recovery and token change audit events before retrying.',
-          href: '/audit-log?bucket=Notification&q=push-device-123456&range=all',
-          label: 'Device audit',
-        },
-      ]),
-    );
+    expect(confirmation?.description).toContain('Partner request for Linh Partner (Partner).');
+    expect(confirmation?.description).toContain('1 failed · 1 accepted · 1 eligible for retry');
+    expect(confirmation?.description).toContain('FCM ••••iled FAILED (messaging/internal-error)');
+    expect(confirmation?.description).toContain('1 successful path excluded');
+    expect(confirmation?.description).not.toContain('push-device-failed');
+    expect(confirmation?.description).not.toContain('push-device-accepted');
+    expect(confirmation?.supportingLinks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ href: '/bookings/booking-1', label: 'Booking' }),
+      expect.objectContaining({ href: '/partners/partner-1', label: 'Recipient' }),
+      expect.objectContaining({ href: expect.stringContaining('/audit-log?bucket=Notification'), label: 'Audit trail' }),
+    ]));
   });
 
-  it('prioritizes failed delivery recovery before stale token guidance', () => {
-    const confirmation = buildNotificationActionConfirmation(
-      [
-        {
-          ...notification,
-          deliveries: [
-            {
-              ...notification.deliveries?.[0],
-              attemptedAt: '2026-06-01T00:04:00.000Z',
-              id: 'delivery-stale-failed',
-              provider: 'FCM',
-              response: { failureCode: 'messaging/mismatched-credential' },
-              status: 'FAILED',
-              pushDevice: {
-                id: 'push-device-123456',
-                platform: 'android',
-                enabled: true,
-                lastSeenAt: '2026-04-15T00:04:00.000Z',
-              },
-            },
-          ],
-        },
-      ],
-      'retry',
-      {
-        notificationId: notification.id,
-        pushDeviceId: '',
-        review: 'failed',
-      },
-    );
-
-    expect(confirmation).toMatchObject({
-      confirmLabel: 'Retry notification',
-      tone: 'warning',
-    });
-    expect(confirmation?.description).toContain('after fixing the latest delivery failure');
-    expect(confirmation?.description).toContain('failure messaging/mismatched-credential');
-    expect(confirmation?.description).toContain('30+ day token timestamp');
-  });
-
-  it('makes retry copy explicit when the latest delivery already succeeded', () => {
-    const confirmation = buildNotificationActionConfirmation(
-      [
-        {
-          ...notification,
-          deliveries: [
-            {
-              ...notification.deliveries?.[0],
-              attemptedAt: '2026-06-01T00:01:00.000Z',
-              id: 'delivery-old-failed',
-              provider: 'FCM',
-              status: 'FAILED',
-            },
-            {
-              ...notification.deliveries?.[0],
-              attemptedAt: '2026-06-01T00:04:00.000Z',
-              id: 'delivery-new-sent',
-              provider: 'FCM',
-              status: 'SENT',
-              pushDevice: {
-                id: 'push-device-123456',
-                platform: 'android',
-                enabled: true,
-              },
-            },
-          ],
-        },
-      ],
-      'retry',
-      {
-        notificationId: notification.id,
-        pushDeviceId: '',
-      },
-    );
-
-    expect(confirmation).toMatchObject({
-      confirmLabel: 'Retry anyway',
-      supportingLinks: [
-        {
-          description: 'Open retry, delivery, and device recovery audit events before resending.',
-          href: '/audit-log?bucket=Notification&q=notification-row-123456&range=all',
-          label: 'Audit trail',
-        },
-      ],
-      tone: 'info',
-    });
-    expect(confirmation?.description).toBe(
-      'Notification notifica already has a successful latest delivery. Retry only if support confirmed the user still missed it. Latest evidence: FCM SENT; platform android; attempted 1 Jun 2026, 07:04; device enabled; token timestamp unknown.',
-    );
-  });
-
-  it('returns null when the requested notification or device is not loaded', () => {
-    expect(
-      buildNotificationActionConfirmation([notification], 'retry', {
-        notificationId: 'missing',
-        pushDeviceId: '',
-      }),
-    ).toBeNull();
-    expect(
-      buildNotificationActionConfirmation([notification], 'enable-device', {
-        notificationId: '',
-        pushDeviceId: 'missing',
-      }),
-    ).toBeNull();
-  });
-
-  it('reads only supported confirmation actions', () => {
-    expect(readNotificationConfirmationAction('retry')).toBe('retry');
-    expect(readNotificationConfirmationAction('enable-device')).toBe('enable-device');
-    expect(readNotificationConfirmationAction('review-legacy')).toBe('review-legacy');
-    expect(readNotificationConfirmationAction('delete')).toBeNull();
-  });
-
-  it('encodes confirmation URLs', () => {
-    expect(retryNotificationConfirmHref('notification 1')).toBe(
-      '/notifications?confirm=retry&notificationId=notification%201',
-    );
-    expect(enablePushDeviceConfirmHref('device 1')).toBe(
-      '/notifications?confirm=enable-device&pushDeviceId=device%201',
-    );
-    expect(legacyReviewNotificationConfirmHref('notification 1')).toBe(
-      '/notifications?confirm=review-legacy&notificationId=notification%201',
-    );
-  });
-
-  it('requires review evidence before closing an unlinked legacy system alert', () => {
-    const legacyNotification = {
+  it('does not offer retry when no eligible target-role path remains', () => {
+    const noEligible = {
       ...notification,
-      data: {
-        destination: '/background-jobs',
-        jobId: 'repeat:background-job-failure-monitor:1783980324023',
-        queueName: 'bank-statement-escalation',
+      user: {
+        ...notification.user,
+        pushDevices: notification.user?.pushDevices?.map((device) => ({ ...device, enabled: false })),
       },
+    } as AdminNotification;
+    expect(buildNotificationActionConfirmation([noEligible], 'retry', {
+      canRetry: true,
+      notificationId: noEligible.id,
+      pushDeviceId: '',
+    })).toBeNull();
+  });
+
+  it('does not offer retry after every observed delivery path succeeded', () => {
+    const accepted = {
+      ...notification,
+      deliveries: notification.deliveries?.map((delivery) => ({ ...delivery, status: 'SENT' })),
+    } as AdminNotification;
+    expect(buildNotificationActionConfirmation([accepted], 'retry', {
+      canRetry: true,
+      notificationId: accepted.id,
+      pushDeviceId: '',
+    })).toBeNull();
+  });
+
+  it('preserves canonical delivery filters in confirmation and cancel URLs', () => {
+    const href = retryNotificationConfirmHref('notification 1', {
+      channel: 'fcm',
+      mode: 'records',
+      page: '3',
+      q: 'booking 1',
+      recipientRole: 'provider',
+      status: 'failed',
+    });
+    expect(href).toBe('/notifications?mode=records&status=failed&recipientRole=provider&channel=fcm&q=booking%201&page=3&confirm=retry&notificationId=notification%201');
+  });
+
+  it('keeps Developer/System setup guidance out of ordinary operator confirmation copy', () => {
+    const confirmation = buildNotificationActionConfirmation([notification], 'retry', {
+      canRetry: true,
+      notificationId: notification.id,
+      pushDeviceId: '',
+      review: 'failed',
+    });
+    expect(confirmation?.supportingLinks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ href: '/setup?commands=all#notifications' }),
+    ]));
+    expect(filterNotificationActionConfirmationSupportingLinks(confirmation, false)?.supportingLinks)
+      .not.toEqual(expect.arrayContaining([expect.objectContaining({ href: '/setup?commands=all#notifications' })]));
+  });
+
+  it('keeps the restricted legacy review route compatible without exposing it as a primary mode', () => {
+    const legacy = {
+      ...notification,
+      data: { jobId: 'job-1', queueName: 'notification-retry' },
       deliveries: [],
       id: 'notification-legacy',
       type: 'admin.system.background_job.failed',
     } as AdminNotification;
-    const confirmation = buildNotificationActionConfirmation(
-      [legacyNotification],
-      'review-legacy',
-      {
-        incidentState: 'legacy',
-        notificationId: legacyNotification.id,
-        pushDeviceId: '',
-        range: '7d',
-        review: 'system-incidents',
-      },
-    );
-
+    const confirmation = buildNotificationActionConfirmation([legacy], 'review-legacy', {
+      notificationId: legacy.id,
+      pushDeviceId: '',
+    });
     expect(confirmation).toMatchObject({
       action: 'review-legacy',
-      cancelHref: '/notifications?range=7d&review=system-incidents&incidentState=legacy',
-      confirmLabel: 'Mark reviewed',
-      textInputs: [
-        expect.objectContaining({ minLength: 12, name: 'reason', required: true }),
-      ],
-      tone: 'warning',
+      textInputs: [expect.objectContaining({ minLength: 12, name: 'reason', required: true })],
     });
-    expect(confirmation?.description).toContain('does not mark a source incident recovered');
-    expect(confirmation?.supportingLinks).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          href: '/background-jobs?jobId=repeat%3Abackground-job-failure-monitor%3A1783980324023&queue=bank-statement-escalation&range=ALL&review=ALL',
-          label: 'Job evidence',
-        }),
-        expect.objectContaining({ href: expect.stringContaining('/audit-log?bucket=Notification') }),
-      ]),
+    expect(notificationBackgroundJobEvidenceHref(legacy)).toBe(
+      '/background-jobs?jobId=job-1&queue=notification-retry&range=ALL&review=ALL',
     );
   });
 
-  it('only builds exact job evidence links for allowlisted queues and bounded ids', () => {
-    const base = {
-      ...notification,
-      type: 'admin.system.background_job.failed',
-    } as AdminNotification;
-
-    expect(notificationBackgroundJobEvidenceHref({
-      ...base,
-      data: { jobId: 'job-1', queueName: 'notification-retry' },
-    })).toBe('/background-jobs?jobId=job-1&queue=notification-retry&range=ALL&review=ALL');
-    expect(notificationBackgroundJobEvidenceHref({
-      ...base,
-      data: { jobId: 'job-1', queueName: 'arbitrary-queue' },
-    })).toBeNull();
-    expect(notificationBackgroundJobEvidenceHref({
-      ...base,
-      data: { jobId: 'x'.repeat(301), queueName: 'notification-retry' },
-    })).toBeNull();
-  });
-
-  it('does not allow linked or already reviewed incidents through the legacy confirmation', () => {
-    const linked = {
-      ...notification,
-      data: { incidentId: 'incident-1' },
-      id: 'notification-linked',
-      type: 'admin.system.background_job.failed',
-    } as AdminNotification;
-    const reviewed = {
-      ...linked,
-      data: { incidentStatus: 'LEGACY_REVIEWED' },
-      id: 'notification-reviewed',
-    } as AdminNotification;
-
-    expect(buildNotificationActionConfirmation([linked], 'review-legacy', {
-      notificationId: linked.id,
-      pushDeviceId: '',
-    })).toBeNull();
-    expect(buildNotificationActionConfirmation([reviewed], 'review-legacy', {
-      notificationId: reviewed.id,
-      pushDeviceId: '',
-    })).toBeNull();
-  });
-
-  it('preserves active queue context in confirmation URLs and cancel links', () => {
-    expect(
-      retryNotificationConfirmHref('notification 1', {
-        booking: 'booking 1',
-        review: 'failed',
-      }),
-    ).toBe('/notifications?review=failed&booking=booking%201&confirm=retry&notificationId=notification%201');
-    expect(
-      enablePushDeviceConfirmHref('device 1', {
-        booking: 'booking 1',
-        review: 'disabled-device',
-      }),
-    ).toBe(
-      '/notifications?review=disabled-device&booking=booking%201&confirm=enable-device&pushDeviceId=device%201',
+  it('accepts only supported actions and safely encodes compatibility links', () => {
+    expect(readNotificationConfirmationAction('retry')).toBe('retry');
+    expect(readNotificationConfirmationAction('review-legacy')).toBe('review-legacy');
+    expect(readNotificationConfirmationAction('delete')).toBeNull();
+    expect(legacyReviewNotificationConfirmHref('notification 1')).toBe(
+      '/notifications?confirm=review-legacy&notificationId=notification%201',
     );
-
-    const confirmation = buildNotificationActionConfirmation([notification], 'retry', {
-      booking: 'booking 1',
-      notificationId: notification.id,
-      pushDeviceId: '',
-      review: 'failed',
-    });
-
-    expect(confirmation?.cancelHref).toBe('/notifications?review=failed&booking=booking%201');
-    expect(confirmation?.hiddenInputs).toContainEqual({
-      name: 'returnHref',
-      value: '/notifications?review=failed&booking=booking%201',
-    });
-    expect(confirmation?.description).toContain(
-      'Runbook: Retry gate. Open the row delivery evidence and audit trail, fix the blocker, then use Retry only after the delivery path is valid.',
-    );
-    expect(confirmation?.supportingLinks).toEqual(
-      expect.arrayContaining([
-        {
-          description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
-          href: '/setup?commands=all#notifications',
-          label: 'FCM setup',
-        },
-      ]),
-    );
-  });
-
-  it('adds disabled-device runbook guidance before re-enabling a push device', () => {
-    const confirmation = buildNotificationActionConfirmation([notification], 'enable-device', {
-      notificationId: '',
-      pushDeviceId: 'push-device-123456',
-      review: 'disabled-device',
-    });
-
-    expect(confirmation?.description).toContain(
-      'Runbook: Device recovery gate. Ask the customer or Partner to reopen the app, complete token recovery when needed, then re-enable only after the token path is current.',
-    );
-    expect(confirmation?.supportingLinks).toEqual(
-      expect.arrayContaining([
-        {
-          description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
-          href: '/setup?commands=all#notifications',
-          label: 'FCM setup',
-        },
-      ]),
-    );
-  });
-
-  it('keeps FCM setup guidance when retrying from the token recovery path', () => {
-    const confirmation = buildNotificationActionConfirmation([notification], 'retry', {
-      notificationId: notification.id,
-      pushDeviceId: '',
-      review: 'needs-retry',
-    });
-
-    expect(confirmation?.description).toContain(
-      'Runbook: Recovery decision gate. Resolve the device or credential signal first, then retry from the row action menu with the active queue context preserved.',
-    );
-    expect(confirmation?.supportingLinks).toEqual(
-      expect.arrayContaining([
-        {
-          description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
-          href: '/setup?commands=all#notifications',
-          label: 'FCM setup',
-        },
-      ]),
-    );
-  });
-
-  it('adds FCM route runbook guidance before retrying from the FCM queue', () => {
-    const confirmation = buildNotificationActionConfirmation([notification], 'retry', {
-      notificationId: notification.id,
-      pushDeviceId: '',
-      review: 'fcm',
-    });
-
-    expect(confirmation?.cancelHref).toBe('/notifications?review=fcm');
-    expect(confirmation?.description).toContain(
-      'Runbook: FCM route gate. Check the live preflight candidate, complete token recovery when app devices changed, then retry only after the notification and device path are valid.',
-    );
-    expect(confirmation?.supportingLinks).toEqual(
-      expect.arrayContaining([
-        {
-          description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
-          href: '/setup?commands=all#notifications',
-          label: 'FCM setup',
-        },
-      ]),
-    );
-  });
-
-  it('filters setup links from confirmation support for ordinary operators', () => {
-    const confirmation = buildNotificationActionConfirmation([notification], 'retry', {
-      notificationId: notification.id,
-      pushDeviceId: '',
-      review: 'failed',
-    });
-
-    expect(confirmation?.supportingLinks).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ href: '/setup?commands=all#notifications', label: 'FCM setup' }),
-      ]),
-    );
-
-    const filtered = filterNotificationActionConfirmationSupportingLinks(confirmation, false);
-    const unfiltered = filterNotificationActionConfirmationSupportingLinks(confirmation, true);
-
-    expect(filtered?.supportingLinks).toEqual(
-      expect.not.arrayContaining([
-        expect.objectContaining({ href: '/setup?commands=all#notifications', label: 'FCM setup' }),
-      ]),
-    );
-    expect(filtered?.supportingLinks).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ href: '/audit-log?bucket=Notification&q=notification-row-123456&range=all' }),
-      ]),
-    );
-    expect(unfiltered?.supportingLinks).toEqual(confirmation?.supportingLinks);
   });
 });
+
+function buildPartialNotification() {
+  return {
+    body: 'A booking request is available.',
+    createdAt: '2026-06-01T00:00:00.000Z',
+    data: {
+      bookingId: 'booking-1',
+      retryDecision: {
+        evidence: 'Transient failure cooldown passed; successful paths remain excluded.',
+        failureClass: 'transient',
+        reason: 'The unresolved transient failure is eligible for one controlled retry.',
+        state: 'allowed',
+      },
+      targetRole: 'PROVIDER',
+    },
+    deliveries: [
+      {
+        attemptedAt: '2026-06-01T00:03:00.000Z',
+        id: 'delivery-failed',
+        provider: 'FCM',
+        pushDevice: { enabled: true, id: 'push-device-failed', platform: 'ios', role: 'PROVIDER' },
+        response: { failureCode: 'messaging/internal-error' },
+        status: 'FAILED',
+      },
+      {
+        attemptedAt: '2026-06-01T00:04:00.000Z',
+        id: 'delivery-accepted',
+        provider: 'FCM',
+        pushDevice: { enabled: true, id: 'push-device-accepted', platform: 'android', role: 'PROVIDER' },
+        status: 'SENT',
+      },
+    ],
+    id: 'notification-row-123456',
+    title: 'Partner request',
+    type: 'booking.requested',
+    user: {
+      fullName: 'Linh Nguyen',
+      id: 'user-1',
+      providerProfile: { displayName: 'Linh Partner', id: 'partner-1' },
+      pushDevices: [
+        { enabled: true, id: 'push-device-failed', platform: 'ios', role: 'PROVIDER' },
+        { enabled: true, id: 'push-device-accepted', platform: 'android', role: 'PROVIDER' },
+      ],
+      roles: ['PROVIDER'],
+    },
+  } as AdminNotification;
+}

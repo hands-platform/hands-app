@@ -11,6 +11,7 @@ import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { AdminSignal, StatusBadge } from '../../components/status-badge';
 import type { AdminAuditLog } from '../../lib/admin-api';
+import { adminCountLabel } from '../../lib/admin-copy';
 import { shortId } from '../../lib/admin-format';
 import { commandSignalTone } from './booking-command-display';
 import {
@@ -108,7 +109,7 @@ export function BookingMonitorBlockedCreateSection({
                 <AdminSignal tone={commandSignalTone(item.tone)}>{item.status}</AdminSignal>
               </td>
               <td>
-                <StatusBadge tone="neutral">{item.count} attempt(s)</StatusBadge>
+                <StatusBadge tone="neutral">{adminCountLabel(item.count, 'attempt')}</StatusBadge>
               </td>
               <td>
                 <span className="muted">{item.latestAge}</span>

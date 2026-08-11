@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { adminPatch } from '../../lib/admin-api';
+import { adminPatchOrThrow } from '../../lib/admin-api';
+import { safeReviewReturnTo } from './review-action-confirmation';
 
 export async function moderateReview(formData: FormData) {
   const reviewId = String(formData.get('reviewId') || '').trim();
@@ -10,12 +11,14 @@ export async function moderateReview(formData: FormData) {
   const reportReason = String(formData.get('reportReason') || '').trim();
   const commentValue = formData.get('comment');
   const returnTo = safeReviewReturnTo(String(formData.get('returnTo') || '/reviews'));
+  const reason = String(formData.get('reason') || reportReason).trim();
   const payload: {
     status: string;
     reportReason: string;
+    reason: string;
     rating?: number;
     comment?: string;
-  } = { status, reportReason };
+  } = { status, reportReason, reason };
 
   const rating = reviewRatingFromFormData(formData);
   if (rating !== null) {
@@ -25,9 +28,26 @@ export async function moderateReview(formData: FormData) {
     payload.comment = String(commentValue).trim();
   }
 
-  await adminPatch(`/admin/reviews/${reviewId}/moderate`, payload, null);
+  if (!reviewId || !['HIDDEN', 'PUBLISHED', 'REPORTED'].includes(status)) {
+    redirect(reviewNoticeHref(returnTo, 'failed'));
+    return;
+  }
+
+  try {
+    await adminPatchOrThrow(`/admin/reviews/${encodeURIComponent(reviewId)}/moderate`, payload);
+  } catch {
+    redirect(reviewNoticeHref(returnTo, 'failed'));
+    return;
+  }
   revalidatePath('/reviews');
-  redirect(returnTo);
+  const notice = commentValue !== null || rating !== null
+    ? 'updated'
+    : status === 'PUBLISHED'
+      ? 'published'
+      : status === 'HIDDEN'
+        ? 'hidden'
+        : 'needs-review';
+  redirect(reviewNoticeHref(returnTo, notice));
 }
 
 function reviewRatingFromFormData(formData: FormData) {
@@ -36,9 +56,8 @@ function reviewRatingFromFormData(formData: FormData) {
   return Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null;
 }
 
-function safeReviewReturnTo(value: string) {
-  if (!value.startsWith('/reviews') || value.startsWith('//') || value.includes('\n')) {
-    return '/reviews';
-  }
-  return value;
+function reviewNoticeHref(returnTo: string, notice: string) {
+  const url = new URL(returnTo, 'http://admin.local');
+  url.searchParams.set('notice', notice);
+  return `${url.pathname}${url.search}${url.hash}`;
 }

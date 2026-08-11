@@ -1,16 +1,24 @@
 import { createHash } from 'crypto';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import {
+  BookingSettlementStatus,
   BookingStatus,
   CustomerWalletLedgerType,
+  PaymentStatus,
   Prisma,
   ProviderWalletLedgerType,
+  ReferralFraudReviewStatus,
   ReferralAttributionStatus,
   ReferralAudience,
   ReferralRewardMode,
   ReferralRewardStatus,
+  Role,
 } from '@prisma/client';
 import { calculatePlatformFeeBreakdown } from '../earnings/earnings.policy';
+import { customerReferralRewardNotification } from '../notifications/customer-app-notification.policy';
+import { notificationDataWithTargetRole } from '../notifications/notification-target-role';
+import { toJson } from '../notifications/notification-push-payload';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   calculateCustomerReferralReward,
@@ -132,12 +140,14 @@ const referralRewardSelect = {
   currency: true,
   sourceKey: true,
   status: true,
+  updatedAt: true,
   walletLedgerReference: true,
 } satisfies Prisma.ReferralRewardSelect;
 
 type ReferralRewardRecord = Prisma.ReferralRewardGetPayload<{ select: typeof referralRewardSelect }>;
 
 const referralRewardCreditCandidateSelect = {
+  availableAt: true,
   id: true,
   amount: true,
   calculationSnapshot: true,
@@ -145,24 +155,77 @@ const referralRewardCreditCandidateSelect = {
   qualifyingBookingId: true,
   sourceKey: true,
   status: true,
+  updatedAt: true,
   walletLedgerReference: true,
   walletOwnerCustomerProfileId: true,
   walletOwnerProviderProfileId: true,
+  attribution: {
+    select: {
+      audience: true,
+      fraudReviewStatus: true,
+      referrerCustomerProfileId: true,
+      referrerProviderProfileId: true,
+      status: true,
+    },
+  },
+  qualifyingBooking: {
+    select: {
+      customerProfileId: true,
+      earning: { select: { id: true } },
+      id: true,
+      payment: { select: { method: true, status: true } },
+      refunds: { select: { status: true } },
+      selectedProviderId: true,
+      settlementSnapshot: {
+        select: {
+          customerProfileId: true,
+          providerProfileId: true,
+          reversedById: true,
+          settlementStatus: true,
+        },
+      },
+      status: true,
+    },
+  },
 } satisfies Prisma.ReferralRewardSelect;
 
 type ReferralRewardCreditCandidate = Prisma.ReferralRewardGetPayload<{
   select: typeof referralRewardCreditCandidateSelect;
 }>;
 
+type ReferralRewardLedgerCandidate = Pick<
+  ReferralRewardCreditCandidate,
+  | 'amount'
+  | 'availableAt'
+  | 'calculationSnapshot'
+  | 'currency'
+  | 'id'
+  | 'qualifyingBookingId'
+  | 'sourceKey'
+  | 'status'
+  | 'walletLedgerReference'
+  | 'walletOwnerCustomerProfileId'
+  | 'walletOwnerProviderProfileId'
+>;
+
 const referralRewardCandidateStateSelect = {
+  amount: true,
+  availableAt: true,
+  currency: true,
   id: true,
   status: true,
+  updatedAt: true,
   walletLedgerReference: true,
 } satisfies Prisma.ReferralRewardSelect;
 
 type ReferralRewardCandidateState = Prisma.ReferralRewardGetPayload<{
   select: typeof referralRewardCandidateStateSelect;
 }>;
+
+type ReferralRewardExpectedState = {
+  expectedStatus: ReferralRewardStatus;
+  expectedUpdatedAt: string;
+};
 
 const HOLDABLE_REWARD_CANDIDATE_STATUSES = new Set<ReferralRewardStatus>([
   ReferralRewardStatus.PENDING,
@@ -190,9 +253,17 @@ type ReferralRewardSummaryGroup = {
   _sum: { amount: number | null };
 };
 
+type ReferralListInput = {
+  cursor?: string;
+  limit?: number;
+};
+
 @Injectable()
 export class ReferralsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly notifications?: NotificationsService,
+  ) {}
 
   async getCustomerReferralCode(userId: string) {
     const profile = await this.customerProfileForUser(userId);
@@ -209,7 +280,7 @@ export class ReferralsService {
 
   async getCustomerReferralSummary(userId: string) {
     const profile = await this.customerProfileForUser(userId);
-    const [referralCode, referralCount, rewardGroups] = await Promise.all([
+    const [referralCode, referralCount, validReferralCount, rewardGroups, policy] = await Promise.all([
       this.prisma.referralCode.findFirst({
         where: {
           audience: ReferralAudience.CUSTOMER,
@@ -223,17 +294,144 @@ export class ReferralsService {
           referrerCustomerProfileId: profile.id,
         },
       }),
+      this.prisma.referralAttribution.count({
+        where: {
+          audience: ReferralAudience.CUSTOMER,
+          referrerCustomerProfileId: profile.id,
+          status: {
+            in: [
+              ReferralAttributionStatus.REGISTERED,
+              ReferralAttributionStatus.QUALIFIED,
+              ReferralAttributionStatus.REWARDED,
+            ],
+          },
+        },
+      }),
       this.prisma.referralReward.groupBy({
         by: ['status', 'currency'],
         where: { walletOwnerCustomerProfileId: profile.id },
         _count: { _all: true },
         _sum: { amount: true },
       }),
+      this.prisma.referralPolicy.findUnique({
+        where: { audience: ReferralAudience.CUSTOMER },
+        select: referralPolicySelect,
+      }),
     ]);
 
     return {
+      policy: referralPolicyView(policy),
       referralCode: referralCode ? referralCodeView(referralCode) : null,
-      totals: referralRewardTotals(referralCount, rewardGroups),
+      totals: referralRewardTotals(referralCount, rewardGroups, validReferralCount),
+    };
+  }
+
+  async listCustomerReferralInvites(userId: string, input: ReferralListInput = {}) {
+    const profile = await this.customerProfileForUser(userId);
+    const limit = referralListLimit(input.limit);
+    const rows = await this.prisma.referralAttribution.findMany({
+      where: {
+        audience: ReferralAudience.CUSTOMER,
+        referrerCustomerProfileId: profile.id,
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        referredCustomerProfile: {
+          select: {
+            user: { select: { fullName: true, phone: true } },
+          },
+        },
+        _count: { select: { rewards: true } },
+      },
+    });
+    const hasMore = rows.length > limit;
+    const visibleRows = hasMore ? rows.slice(0, limit) : rows;
+
+    return {
+      rows: visibleRows.map((row) => ({
+        id: row.id,
+        displayName: maskReferralCustomerDisplayName(
+          row.referredCustomerProfile?.user.fullName,
+          row.referredCustomerProfile?.user.phone,
+        ),
+        status: row.status,
+        attributedAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        rewardConditionMet:
+          row.status === ReferralAttributionStatus.QUALIFIED ||
+          row.status === ReferralAttributionStatus.REWARDED ||
+          row._count.rewards > 0,
+      })),
+      pagination: {
+        nextCursor: hasMore ? (visibleRows.at(-1)?.id ?? null) : null,
+      },
+    };
+  }
+
+  async listCustomerReferralRewards(userId: string, input: ReferralListInput = {}) {
+    const profile = await this.customerProfileForUser(userId);
+    const limit = referralListLimit(input.limit);
+    const [rows, walletBalance] = await Promise.all([
+      this.prisma.referralReward.findMany({
+        where: { walletOwnerCustomerProfileId: profile.id },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: limit + 1,
+        ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+        select: {
+          id: true,
+          amount: true,
+          availableAt: true,
+          calculationSnapshot: true,
+          createdAt: true,
+          currency: true,
+          qualifyingBookingId: true,
+          sourceKey: true,
+          status: true,
+          walletLedgerReference: true,
+          walletOwnerCustomerProfileId: true,
+          walletOwnerProviderProfileId: true,
+        },
+      }),
+      this.prisma.customerWalletLedgerEntry.aggregate({
+        where: { customerProfileId: profile.id },
+        _sum: { amount: true },
+      }),
+    ]);
+    const hasMore = rows.length > limit;
+    const visibleRows = hasMore ? rows.slice(0, limit) : rows;
+    const availableBalance = walletBalance._sum.amount ?? 0;
+
+    return {
+      rows: visibleRows.map((row) => {
+        const cashoutAmount = referralRewardNetWalletAmount(row);
+        const canRequestCashout =
+          isCreditedReferralRewardStatus(row.status) &&
+          Boolean(row.walletLedgerReference) &&
+          availableBalance >= cashoutAmount;
+        return {
+          id: row.id,
+          amount: row.amount,
+          availableAt: row.availableAt,
+          bookingReference: referralBookingReference(row.qualifyingBookingId),
+          canRequestCashout,
+          cashoutUnavailableReason: canRequestCashout
+            ? null
+            : referralCashoutUnavailableReason(row, availableBalance, cashoutAmount),
+          cashoutAmount,
+          createdAt: row.createdAt,
+          currency: row.currency,
+          status: row.status,
+        };
+      }),
+      pagination: {
+        nextCursor: hasMore ? (visibleRows.at(-1)?.id ?? null) : null,
+      },
     };
   }
 
@@ -243,6 +441,7 @@ export class ReferralsService {
       return existing;
     }
 
+    await this.assertReferralProgramEnabled(ReferralAudience.CUSTOMER);
     const profile = await this.customerProfileForUser(userId);
     const code = await this.prisma.referralCode.create({
       data: {
@@ -257,6 +456,7 @@ export class ReferralsService {
   }
 
   async claimCustomerReferralCode(userId: string, input: ClaimReferralCodeInput) {
+    const claim = normalizeReferralClaim(input);
     const profile = await this.customerProfileForUser(userId);
     const existing = await this.prisma.referralAttribution.findFirst({
       where: {
@@ -269,7 +469,6 @@ export class ReferralsService {
       return referralAttributionView(existing);
     }
 
-    const claim = normalizeReferralClaim(input);
     const code = await this.prisma.referralCode.findFirst({
       where: {
         active: true,
@@ -285,6 +484,7 @@ export class ReferralsService {
       throw new BadRequestException('Customers cannot claim their own referral code');
     }
 
+    await this.assertReferralProgramEnabled(ReferralAudience.CUSTOMER);
     const attribution = await this.prisma.referralAttribution.create({
       data: {
         audience: ReferralAudience.CUSTOMER,
@@ -298,6 +498,13 @@ export class ReferralsService {
     });
 
     return referralAttributionView(attribution);
+  }
+
+  async requestCustomerRewardCashout(userId: string, rewardId: string) {
+    const profile = await this.customerProfileForUser(userId);
+    return this.requestRewardCashout(rewardId, {
+      walletOwnerCustomerProfileId: profile.id,
+    });
   }
 
   async getPartnerReferralCode(userId: string) {
@@ -406,6 +613,13 @@ export class ReferralsService {
     return referralAttributionView(attribution);
   }
 
+  async requestPartnerRewardCashout(userId: string, rewardId: string) {
+    const profile = await this.partnerProfileForUser(userId);
+    return this.requestRewardCashout(rewardId, {
+      walletOwnerProviderProfileId: profile.id,
+    });
+  }
+
   async releaseAvailableRewards(referenceDate = new Date()) {
     const result = await this.prisma.referralReward.updateMany({
       data: { status: ReferralRewardStatus.AVAILABLE },
@@ -418,11 +632,15 @@ export class ReferralsService {
     return { releasedCount: result.count };
   }
 
-  async holdRewardCandidate(rewardId: string) {
-    return this.updateRewardCandidateStatus(rewardId, ReferralRewardStatus.HELD);
+  async holdRewardCandidate(rewardId: string, expected: ReferralRewardExpectedState) {
+    return this.updateRewardCandidateStatus(rewardId, ReferralRewardStatus.HELD, expected);
   }
 
-  async reverseRewardCandidate(rewardId: string) {
+  async releaseHeldRewardCandidate(rewardId: string, expected: ReferralRewardExpectedState) {
+    return this.updateRewardCandidateStatus(rewardId, ReferralRewardStatus.AVAILABLE, expected);
+  }
+
+  async reverseRewardCandidate(rewardId: string, expected: ReferralRewardExpectedState) {
     const reward = await this.prisma.referralReward.findUnique({
       where: { id: rewardId },
       select: referralRewardCreditCandidateSelect,
@@ -430,26 +648,27 @@ export class ReferralsService {
     if (!reward) {
       throw new NotFoundException('Referral reward was not found');
     }
+    this.assertExpectedRewardState(reward, expected);
     if (isCreditedReferralRewardStatus(reward.status)) {
-      return this.reverseCreditedRewardCandidate(reward);
+      return this.reverseCreditedRewardCandidate(reward, expected);
     }
-    return this.updateRewardCandidateStatus(rewardId, ReferralRewardStatus.REVERSED);
+    return this.updateRewardCandidateStatus(rewardId, ReferralRewardStatus.REVERSED, expected);
   }
 
-  async approveRewardCashoutRequest(rewardId: string) {
+  async approveRewardCashoutRequest(rewardId: string, expected: ReferralRewardExpectedState) {
     return this.updateRewardLifecycleStatus(rewardId, CASHOUT_APPROVED_REFERRAL_REWARD_STATUS, {
       allowedStatuses: [CASHOUT_REQUESTED_REFERRAL_REWARD_STATUS],
-    });
+    }, expected);
   }
 
-  async requireRewardTaxReview(rewardId: string) {
+  async requireRewardTaxReview(rewardId: string, expected: ReferralRewardExpectedState) {
     return this.updateRewardLifecycleStatus(rewardId, TAX_REVIEW_REQUIRED_REFERRAL_REWARD_STATUS, {
       blockedStatuses: [ReferralRewardStatus.CANCELLED, ReferralRewardStatus.REVERSED],
-    });
+    }, expected);
   }
 
-  async creditRewardCandidate(rewardId: string) {
-    return this.prisma.$transaction(async (tx) => {
+  async creditRewardCandidate(rewardId: string, expected: ReferralRewardExpectedState) {
+    const outcome = await this.prisma.$transaction(async (tx) => {
       const reward = await tx.referralReward.findUnique({
         where: { id: rewardId },
         select: referralRewardCreditCandidateSelect,
@@ -457,7 +676,9 @@ export class ReferralsService {
       if (!reward) {
         throw new NotFoundException('Referral reward was not found');
       }
-      this.assertRewardCandidateCanBeCredited(reward);
+      this.assertExpectedRewardState(reward, expected);
+      await this.assertRewardCandidateCanBeCredited(tx, reward);
+      await this.claimRewardForWalletMutation(tx, reward, expected);
 
       const ledgerSourceKey = referralWalletCreditSourceKey(reward.id);
       const walletCreditAmount = referralRewardNetWalletAmount(reward);
@@ -496,18 +717,55 @@ export class ReferralsService {
 
       await upsertReferralRewardJournal(tx, reward, ledger.id, 'wallet-credit');
 
-      return tx.referralReward.update({
+      const creditedReward = await tx.referralReward.update({
         data: {
           status: CREDITED_REFERRAL_REWARD_STATUS,
           walletLedgerReference: ledger.id,
         },
-        where: { id: reward.id },
+        where: { id: reward.id, status: ReferralRewardStatus.LOCKED },
         select: referralRewardSelect,
       });
-    });
+
+      if (!reward.walletOwnerCustomerProfileId) {
+        return { notificationId: null, reward: creditedReward };
+      }
+
+      const walletOwner = await tx.customerProfile.findUniqueOrThrow({
+        where: { id: reward.walletOwnerCustomerProfileId },
+        select: { userId: true },
+      });
+      const copy = customerReferralRewardNotification({
+        amount: walletCreditAmount,
+        bookingId: reward.qualifyingBookingId,
+        currency: reward.currency,
+        ledgerId: ledger.id,
+        rewardId: reward.id,
+      });
+      const notification = await tx.notification.create({
+        data: {
+          userId: walletOwner.userId,
+          type: copy.type,
+          title: copy.title,
+          body: copy.body,
+          data: toJson(notificationDataWithTargetRole(copy.data, Role.CUSTOMER)),
+        },
+        select: { id: true },
+      });
+
+      return { notificationId: notification.id, reward: creditedReward };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+    if (outcome.notificationId) {
+      await this.notifications?.enqueuePersistedNotification(outcome.notificationId);
+    }
+
+    return outcome.reward;
   }
 
-  async payRewardCashout(rewardId: string, input: { notes?: string | null; reference?: string | null } = {}) {
+  async payRewardCashout(
+    rewardId: string,
+    input: { expectedStatus: ReferralRewardStatus; expectedUpdatedAt: string; notes?: string | null; reference?: string | null },
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const reward = await tx.referralReward.findUnique({
         where: { id: rewardId },
@@ -516,7 +774,10 @@ export class ReferralsService {
       if (!reward) {
         throw new NotFoundException('Referral reward was not found');
       }
+      this.assertExpectedRewardState(reward, input);
       this.assertRewardCashoutCanBePaid(reward);
+      await this.assertRewardCashoutWalletBalance(tx, reward);
+      await this.claimRewardForWalletMutation(tx, reward, input);
 
       const ledgerSourceKey = referralWalletCashoutSourceKey(reward.id);
       const reference = normalizeOptionalText(input.reference ?? undefined);
@@ -576,13 +837,16 @@ export class ReferralsService {
           status: PAID_REFERRAL_REWARD_STATUS,
           walletLedgerReference: ledger.id,
         },
-        where: { id: reward.id },
+        where: { id: reward.id, status: ReferralRewardStatus.LOCKED },
         select: referralRewardSelect,
       });
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
-  private async reverseCreditedRewardCandidate(reward: ReferralRewardCreditCandidate) {
+  private async reverseCreditedRewardCandidate(
+    reward: ReferralRewardCreditCandidate,
+    expected: ReferralRewardExpectedState,
+  ) {
     if (!reward.walletLedgerReference) {
       throw new BadRequestException(
         'Credited referral reward reversal requires an existing wallet ledger reference',
@@ -593,6 +857,7 @@ export class ReferralsService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      await this.claimRewardForWalletMutation(tx, reward, expected);
       const ledgerSourceKey = referralWalletReversalSourceKey(reward.id);
       const walletReversalAmount = referralRewardNetWalletAmount(reward);
       const ledger = reward.walletOwnerCustomerProfileId
@@ -645,10 +910,10 @@ export class ReferralsService {
           status: ReferralRewardStatus.REVERSED,
           walletLedgerReference: ledger.id,
         },
-        where: { id: reward.id },
+        where: { id: reward.id, status: ReferralRewardStatus.LOCKED },
         select: referralRewardSelect,
       });
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   async createRewardsForCompletedBooking(bookingId: string) {
@@ -694,6 +959,81 @@ export class ReferralsService {
     return profile;
   }
 
+  private async requestRewardCashout(
+    rewardId: string,
+    ownerWhere: Partial<
+      Pick<Prisma.ReferralRewardWhereInput, 'walletOwnerCustomerProfileId' | 'walletOwnerProviderProfileId'>
+    >,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const reward = await tx.referralReward.findFirst({
+        where: { id: rewardId, ...ownerWhere },
+        select: referralRewardCreditCandidateSelect,
+      });
+      if (!reward) {
+        throw new NotFoundException('Referral reward was not found');
+      }
+      if (reward.status === CASHOUT_REQUESTED_REFERRAL_REWARD_STATUS) {
+        return tx.referralReward.findUniqueOrThrow({
+          where: { id: reward.id },
+          select: referralRewardSelect,
+        });
+      }
+      if (!isCreditedReferralRewardStatus(reward.status)) {
+        throw new BadRequestException('Only credited referral rewards can request cashout');
+      }
+      if (!reward.walletLedgerReference) {
+        throw new BadRequestException('Referral cashout requires an existing wallet ledger reference');
+      }
+      await this.assertRewardCashoutWalletBalance(tx, reward);
+
+      const transition = await tx.referralReward.updateMany({
+        data: { status: CASHOUT_REQUESTED_REFERRAL_REWARD_STATUS },
+        where: {
+          id: reward.id,
+          ...ownerWhere,
+          status: reward.status,
+          walletLedgerReference: reward.walletLedgerReference,
+        },
+      });
+      if (transition.count !== 1) {
+        const latest = await tx.referralReward.findUnique({
+          where: { id: reward.id },
+          select: referralRewardSelect,
+        });
+        if (latest?.status === CASHOUT_REQUESTED_REFERRAL_REWARD_STATUS) {
+          return latest;
+        }
+        throw new BadRequestException('Referral reward cashout state changed; refresh and try again');
+      }
+
+      return tx.referralReward.findUniqueOrThrow({
+        where: { id: reward.id },
+        select: referralRewardSelect,
+      });
+    });
+  }
+
+  private async assertRewardCashoutWalletBalance(
+    tx: Prisma.TransactionClient,
+    reward: ReferralRewardLedgerCandidate,
+  ) {
+    const balance = reward.walletOwnerCustomerProfileId
+      ? await tx.customerWalletLedgerEntry.aggregate({
+          where: { customerProfileId: reward.walletOwnerCustomerProfileId },
+          _sum: { amount: true },
+        })
+      : await tx.providerWalletLedgerEntry.aggregate({
+          where: { providerProfileId: reward.walletOwnerProviderProfileId as string },
+          _sum: { amount: true },
+        });
+    const availableBalance = balance._sum.amount ?? 0;
+    const cashoutAmount = referralRewardNetWalletAmount(reward);
+    if (availableBalance < cashoutAmount) {
+      throw new BadRequestException('Wallet balance cannot cover referral cashout');
+    }
+  }
+
   private async createCustomerRewardForCompletedBooking(booking: CompletedBookingReferralWithEarning) {
     const [policy, attribution] = await Promise.all([
       this.referralPolicyFor(ReferralAudience.CUSTOMER),
@@ -710,7 +1050,17 @@ export class ReferralsService {
     if (!policy || !attribution?.referrerCustomerProfileId) {
       return null;
     }
-    if (policy.rewardMode !== ReferralRewardMode.COMMISSION_PERCENT || !policy.commissionPercentBps) {
+    const baseRewardAmount =
+      policy.rewardMode === ReferralRewardMode.COMMISSION_PERCENT && policy.commissionPercentBps
+        ? calculateCustomerReferralReward({
+            platformFeeGross: booking.earning.platformFee,
+            platformFeeVatRateBps: referralPlatformFeeVatRateBps(policy),
+            referralRateBps: policy.commissionPercentBps,
+          }).rewardGross
+        : policy.rewardMode === ReferralRewardMode.FIXED_AMOUNT && policy.fixedRewardAmount
+          ? policy.fixedRewardAmount
+          : null;
+    if (!baseRewardAmount) {
       return null;
     }
     const [referrerSlotsAvailable, referredSlotsAvailable] = await Promise.all([
@@ -728,13 +1078,8 @@ export class ReferralsService {
       return null;
     }
 
-    const customerReferralReward = calculateCustomerReferralReward({
-      platformFeeGross: booking.earning.platformFee,
-      platformFeeVatRateBps: referralPlatformFeeVatRateBps(policy),
-      referralRateBps: policy.commissionPercentBps,
-    });
     const amount = await this.rewardAmountAfterLifetimeCap(
-      cappedRewardAmount(customerReferralReward.rewardGross, policy.perRewardCapAmount),
+      cappedRewardAmount(baseRewardAmount, policy.perRewardCapAmount),
       {
         audience: ReferralAudience.CUSTOMER,
         totalRewardCapAmount: policy.totalRewardCapAmount,
@@ -826,6 +1171,14 @@ export class ReferralsService {
     });
 
     return policy?.enabled ? policy : null;
+  }
+
+  private async assertReferralProgramEnabled(audience: ReferralAudience) {
+    const policy = await this.referralPolicyFor(audience);
+    if (!policy) {
+      throw new BadRequestException('Referral program is not active');
+    }
+    return policy;
   }
 
   private async referrerRewardSlotsAvailable(input: {
@@ -950,15 +1303,37 @@ export class ReferralsService {
     });
   }
 
-  private async updateRewardCandidateStatus(rewardId: string, status: ReferralRewardStatus) {
-    const reward = await this.referralRewardCandidateState(rewardId);
-    this.assertRewardCandidateCanChangeStatus(reward, status);
-
-    return this.prisma.referralReward.update({
-      data: { status },
-      where: { id: rewardId },
-      select: referralRewardSelect,
-    });
+  private async updateRewardCandidateStatus(
+    rewardId: string,
+    status: ReferralRewardStatus,
+    expected: ReferralRewardExpectedState,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const reward = await tx.referralReward.findUnique({
+        where: { id: rewardId },
+        select: referralRewardCandidateStateSelect,
+      });
+      if (!reward) {
+        throw new NotFoundException('Referral reward was not found');
+      }
+      this.assertExpectedRewardState(reward, expected);
+      this.assertRewardCandidateCanChangeStatus(reward, status);
+      const transition = await tx.referralReward.updateMany({
+        data: { status },
+        where: {
+          id: rewardId,
+          status: expected.expectedStatus,
+          updatedAt: new Date(expected.expectedUpdatedAt),
+        },
+      });
+      if (transition.count !== 1) {
+        throw new ConflictException('Referral reward changed after this decision was loaded');
+      }
+      return tx.referralReward.findUniqueOrThrow({
+        where: { id: rewardId },
+        select: referralRewardSelect,
+      });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   private async updateRewardLifecycleStatus(
@@ -967,36 +1342,43 @@ export class ReferralsService {
     options: {
       allowedStatuses?: readonly ReferralRewardStatus[];
       blockedStatuses?: readonly ReferralRewardStatus[];
-    } = {},
+    },
+    expected: ReferralRewardExpectedState,
   ) {
-    const reward = await this.referralRewardCandidateState(rewardId);
-    const allowedStatuses = options.allowedStatuses ? new Set(options.allowedStatuses) : null;
-    const blockedStatuses = options.blockedStatuses ? new Set(options.blockedStatuses) : null;
+    return this.prisma.$transaction(async (tx) => {
+      const reward = await tx.referralReward.findUnique({
+        where: { id: rewardId },
+        select: referralRewardCandidateStateSelect,
+      });
+      if (!reward) {
+        throw new NotFoundException('Referral reward was not found');
+      }
+      this.assertExpectedRewardState(reward, expected);
+      const allowedStatuses = options.allowedStatuses ? new Set(options.allowedStatuses) : null;
+      const blockedStatuses = options.blockedStatuses ? new Set(options.blockedStatuses) : null;
 
-    if (allowedStatuses && !allowedStatuses.has(reward.status)) {
-      throw new BadRequestException('Referral reward is not in the required lifecycle state');
-    }
-    if (blockedStatuses?.has(reward.status)) {
-      throw new BadRequestException('Closed referral rewards cannot move back into review');
-    }
-
-    return this.prisma.referralReward.update({
-      data: { status },
-      where: { id: rewardId },
-      select: referralRewardSelect,
-    });
-  }
-
-  private async referralRewardCandidateState(rewardId: string) {
-    const reward = await this.prisma.referralReward.findUnique({
-      where: { id: rewardId },
-      select: referralRewardCandidateStateSelect,
-    });
-    if (!reward) {
-      throw new NotFoundException('Referral reward was not found');
-    }
-
-    return reward;
+      if (allowedStatuses && !allowedStatuses.has(reward.status)) {
+        throw new BadRequestException('Referral reward is not in the required lifecycle state');
+      }
+      if (blockedStatuses?.has(reward.status)) {
+        throw new BadRequestException('Closed referral rewards cannot move back into review');
+      }
+      const transition = await tx.referralReward.updateMany({
+        data: { status },
+        where: {
+          id: rewardId,
+          status: expected.expectedStatus,
+          updatedAt: new Date(expected.expectedUpdatedAt),
+        },
+      });
+      if (transition.count !== 1) {
+        throw new ConflictException('Referral reward changed after this decision was loaded');
+      }
+      return tx.referralReward.findUniqueOrThrow({
+        where: { id: rewardId },
+        select: referralRewardSelect,
+      });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   private assertRewardCandidateCanChangeStatus(
@@ -1014,6 +1396,13 @@ export class ReferralsService {
       return;
     }
 
+    if (nextStatus === ReferralRewardStatus.AVAILABLE) {
+      if (reward.status !== ReferralRewardStatus.HELD) {
+        throw new BadRequestException('Only held referral rewards can be released for wallet review');
+      }
+      return;
+    }
+
     if (nextStatus === ReferralRewardStatus.REVERSED) {
       if (!REVERSIBLE_REWARD_CANDIDATE_STATUSES.has(reward.status)) {
         throw new BadRequestException('Only uncredited referral reward candidates can be reversed');
@@ -1021,7 +1410,10 @@ export class ReferralsService {
     }
   }
 
-  private assertRewardCandidateCanBeCredited(reward: ReferralRewardCreditCandidate) {
+  private async assertRewardCandidateCanBeCredited(
+    tx: Prisma.TransactionClient,
+    reward: ReferralRewardCreditCandidate,
+  ) {
     if (reward.walletLedgerReference) {
       throw new BadRequestException('Referral reward already has a wallet ledger reference');
     }
@@ -1031,9 +1423,93 @@ export class ReferralsService {
     if (!reward.walletOwnerCustomerProfileId && !reward.walletOwnerProviderProfileId) {
       throw new BadRequestException('Referral reward does not have a wallet owner');
     }
+    if (!reward.availableAt || reward.availableAt.getTime() > Date.now()) {
+      throw new BadRequestException('Referral reward hold period has not matured');
+    }
+    if (
+      reward.attribution.status !== ReferralAttributionStatus.REGISTERED &&
+      reward.attribution.status !== ReferralAttributionStatus.QUALIFIED
+    ) {
+      throw new BadRequestException('Referral attribution is no longer eligible for wallet credit');
+    }
+    if (reward.attribution.fraudReviewStatus !== ReferralFraudReviewStatus.CLEAR) {
+      throw new BadRequestException('Referral integrity review must be clear before wallet credit');
+    }
+    const expectedWalletOwner =
+      reward.attribution.audience === ReferralAudience.CUSTOMER
+        ? reward.attribution.referrerCustomerProfileId
+        : reward.attribution.referrerProviderProfileId;
+    const actualWalletOwner = reward.walletOwnerCustomerProfileId ?? reward.walletOwnerProviderProfileId;
+    if (!expectedWalletOwner || expectedWalletOwner !== actualWalletOwner) {
+      throw new BadRequestException('Referral reward wallet owner does not match its attribution');
+    }
+    const booking = reward.qualifyingBooking;
+    if (!booking || booking.status !== BookingStatus.COMPLETED || !booking.earning || !booking.selectedProviderId) {
+      throw new BadRequestException('Qualifying booking is not completed with settled earning data');
+    }
+    if (
+      booking.payment &&
+      booking.payment.status !== PaymentStatus.CAPTURED &&
+      booking.payment.status !== PaymentStatus.RELEASED
+    ) {
+      throw new BadRequestException('Qualifying booking payment is not captured or released');
+    }
+    if (booking.refunds.some((refund) => !['REJECTED', 'CANCELLED'].includes(refund.status.toUpperCase()))) {
+      throw new BadRequestException('Qualifying booking has an active or completed refund');
+    }
+    const settlement = booking.settlementSnapshot;
+    if (
+      !settlement ||
+      settlement.settlementStatus !== BookingSettlementStatus.POSTED ||
+      settlement.reversedById ||
+      settlement.customerProfileId !== booking.customerProfileId ||
+      settlement.providerProfileId !== booking.selectedProviderId
+    ) {
+      throw new BadRequestException('Qualifying booking settlement is missing, reversed, or inconsistent');
+    }
+    if (!validReferralRewardCalculationSnapshot(reward)) {
+      throw new BadRequestException('Referral reward policy snapshot is missing or inconsistent');
+    }
+    const ledgerSourceKey = referralWalletCreditSourceKey(reward.id);
+    const existingLedger = reward.walletOwnerCustomerProfileId
+      ? await tx.customerWalletLedgerEntry.findUnique({ where: { sourceKey: ledgerSourceKey }, select: { id: true } })
+      : await tx.providerWalletLedgerEntry.findUnique({ where: { sourceKey: ledgerSourceKey }, select: { id: true } });
+    if (existingLedger) {
+      throw new ConflictException('Referral reward already has a wallet credit ledger entry');
+    }
   }
 
-  private assertRewardCashoutCanBePaid(reward: ReferralRewardCreditCandidate) {
+  private assertExpectedRewardState(
+    reward: Pick<ReferralRewardCandidateState, 'status' | 'updatedAt'>,
+    expected: ReferralRewardExpectedState,
+  ) {
+    if (
+      reward.status !== expected.expectedStatus ||
+      reward.updatedAt.toISOString() !== new Date(expected.expectedUpdatedAt).toISOString()
+    ) {
+      throw new ConflictException('Referral reward changed after this decision was loaded');
+    }
+  }
+
+  private async claimRewardForWalletMutation(
+    tx: Prisma.TransactionClient,
+    reward: Pick<ReferralRewardCreditCandidate, 'id'>,
+    expected: ReferralRewardExpectedState,
+  ) {
+    const transition = await tx.referralReward.updateMany({
+      data: { status: ReferralRewardStatus.LOCKED },
+      where: {
+        id: reward.id,
+        status: expected.expectedStatus,
+        updatedAt: new Date(expected.expectedUpdatedAt),
+      },
+    });
+    if (transition.count !== 1) {
+      throw new ConflictException('Referral reward changed after this decision was loaded');
+    }
+  }
+
+  private assertRewardCashoutCanBePaid(reward: ReferralRewardLedgerCandidate) {
     if (reward.status !== CASHOUT_APPROVED_REFERRAL_REWARD_STATUS) {
       throw new BadRequestException('Only approved referral cashouts can be marked paid');
     }
@@ -1059,7 +1535,11 @@ function referralAttributionView(attribution: ReferralAttributionRecord) {
   return attribution;
 }
 
-function referralRewardTotals(referralCount: number, groups: ReferralRewardSummaryGroup[]) {
+function referralRewardTotals(
+  referralCount: number,
+  groups: ReferralRewardSummaryGroup[],
+  validReferralCount?: number,
+) {
   const totals = {
     availableAmount: 0,
     cancelledAmount: 0,
@@ -1071,11 +1551,27 @@ function referralRewardTotals(referralCount: number, groups: ReferralRewardSumma
     reversedAmount: 0,
     rewardCount: 0,
   };
+  let paidOutAmount = 0;
+  let processingAmount = 0;
+  let totalRewardAmount = 0;
 
   for (const group of groups) {
     const amount = group._sum.amount ?? 0;
     totals.currency = group.currency || totals.currency;
     totals.rewardCount += group._count._all;
+    if (group.status !== ReferralRewardStatus.CANCELLED && group.status !== ReferralRewardStatus.REVERSED) {
+      totalRewardAmount += amount;
+    }
+    if (group.status === PAID_REFERRAL_REWARD_STATUS) {
+      paidOutAmount += amount;
+    } else if (
+      group.status !== ReferralRewardStatus.CANCELLED &&
+      group.status !== ReferralRewardStatus.REVERSED &&
+      group.status !== referralRewardStatus('USED_FOR_SERVICE') &&
+      group.status !== referralRewardStatus('OFFSET')
+    ) {
+      processingAmount += amount;
+    }
     if (group.status === ReferralRewardStatus.AVAILABLE) {
       totals.availableAmount += amount;
     } else if (group.status === ReferralRewardStatus.CANCELLED) {
@@ -1091,7 +1587,85 @@ function referralRewardTotals(referralCount: number, groups: ReferralRewardSumma
     }
   }
 
-  return totals;
+  return validReferralCount === undefined
+    ? totals
+    : {
+        ...totals,
+        invitedFriendCount: validReferralCount,
+        paidOutAmount,
+        processingAmount,
+        totalRewardAmount,
+      };
+}
+
+function referralPolicyView(policy: ReferralPolicyRecord | null) {
+  if (!policy) return null;
+
+  return {
+    commissionPercentBps: policy.commissionPercentBps,
+    currency: policy.currency,
+    enabled: policy.enabled,
+    fixedRewardAmount: policy.fixedRewardAmount,
+    holdPeriodDays: policy.holdPeriodDays,
+    maxRewardedReferrals: policy.maxRewardedReferrals,
+    maxRewardsPerReferred: policy.maxRewardsPerReferred,
+    perRewardCapAmount: policy.perRewardCapAmount,
+    rewardMode: policy.rewardMode,
+    totalRewardCapAmount: policy.totalRewardCapAmount,
+  };
+}
+
+function referralListLimit(value: number | undefined) {
+  return Math.min(Math.max(value ?? 20, 1), 50);
+}
+
+function maskReferralCustomerDisplayName(
+  fullName: string | null | undefined,
+  phone: string | null | undefined,
+) {
+  const name = fullName?.trim();
+  if (name) {
+    const parts = name.split(/\s+/u);
+    return parts
+      .map((part) =>
+        part.length <= 1 ? `${part}*` : `${part.slice(0, 1)}${'*'.repeat(Math.min(part.length - 1, 3))}`,
+      )
+      .join(' ');
+  }
+  const digits = phone?.replace(/\D/gu, '') ?? '';
+  return digits.length >= 4 ? `HANDS customer · ${digits.slice(-4)}` : 'HANDS customer';
+}
+
+function referralBookingReference(bookingId: string | null) {
+  if (!bookingId) return null;
+  return `HANDS-${bookingId.slice(-8).toUpperCase()}`;
+}
+
+function referralCashoutUnavailableReason(
+  reward: ReferralRewardLedgerCandidate,
+  availableBalance: number,
+  cashoutAmount: number,
+) {
+  if (
+    reward.status === CASHOUT_REQUESTED_REFERRAL_REWARD_STATUS ||
+    reward.status === CASHOUT_APPROVED_REFERRAL_REWARD_STATUS ||
+    reward.status === TAX_REVIEW_REQUIRED_REFERRAL_REWARD_STATUS
+  ) {
+    return 'PROCESSING';
+  }
+  if (
+    reward.status === PAID_REFERRAL_REWARD_STATUS ||
+    reward.status === referralRewardStatus('USED_FOR_SERVICE') ||
+    reward.status === referralRewardStatus('OFFSET') ||
+    reward.status === ReferralRewardStatus.CANCELLED ||
+    reward.status === ReferralRewardStatus.REVERSED
+  ) {
+    return 'COMPLETED';
+  }
+  if (!isCreditedReferralRewardStatus(reward.status) || !reward.walletLedgerReference) {
+    return 'NOT_CREDITED';
+  }
+  return availableBalance < cashoutAmount ? 'WALLET_BALANCE' : 'NOT_AVAILABLE';
 }
 
 function normalizeReferralClaim(input: ClaimReferralCodeInput) {
@@ -1195,6 +1769,25 @@ function referralRewardAvailableAt(referenceDate: Date, holdPeriodDays: number) 
   return new Date(referenceDate.getTime() + Math.max(holdPeriodDays, 0) * 24 * 60 * 60 * 1000);
 }
 
+function validReferralRewardCalculationSnapshot(reward: ReferralRewardCreditCandidate) {
+  const snapshot = reward.calculationSnapshot;
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+    return false;
+  }
+  const audience = snapshot.audience;
+  const bookingId = snapshot.bookingId;
+  const rewardAmountSnapshot = snapshot.rewardAmountSnapshot;
+  const rewardMode = snapshot.rewardMode;
+  return (
+    audience === reward.attribution.audience &&
+    typeof bookingId === 'string' &&
+    bookingId === reward.qualifyingBookingId &&
+    typeof rewardAmountSnapshot === 'number' &&
+    rewardAmountSnapshot === reward.amount &&
+    (rewardMode === ReferralRewardMode.COMMISSION_PERCENT || rewardMode === ReferralRewardMode.FIXED_AMOUNT)
+  );
+}
+
 function referralWalletCreditSourceKey(rewardId: string) {
   return `referral:wallet-credit:${rewardId}`;
 }
@@ -1208,7 +1801,7 @@ function referralWalletReversalSourceKey(rewardId: string) {
 }
 
 function referralWalletCreditMetadata(
-  reward: ReferralRewardCreditCandidate,
+  reward: ReferralRewardLedgerCandidate,
   walletOwner: 'CUSTOMER' | 'PARTNER',
 ) {
   const withholding = referralRewardWithholding(reward);
@@ -1227,7 +1820,7 @@ function referralWalletCreditMetadata(
 }
 
 function referralWalletCashoutMetadata(
-  reward: ReferralRewardCreditCandidate,
+  reward: ReferralRewardLedgerCandidate,
   walletOwner: 'CUSTOMER' | 'PARTNER',
 ) {
   const withholding = referralRewardWithholding(reward);
@@ -1247,7 +1840,7 @@ function referralWalletCashoutMetadata(
 }
 
 function referralWalletReversalMetadata(
-  reward: ReferralRewardCreditCandidate,
+  reward: ReferralRewardLedgerCandidate,
   walletOwner: 'CUSTOMER' | 'PARTNER',
 ) {
   const withholding = referralRewardWithholding(reward);
@@ -1266,20 +1859,20 @@ function referralWalletReversalMetadata(
   };
 }
 
-function referralRewardWithholding(reward: ReferralRewardCreditCandidate) {
+function referralRewardWithholding(reward: ReferralRewardLedgerCandidate) {
   return calculateReferralTaxWithholding({
     grossRewardAmount: reward.amount,
     taxPolicy: referralRewardTaxPolicySnapshot(reward),
   });
 }
 
-function referralRewardNetWalletAmount(reward: ReferralRewardCreditCandidate) {
+function referralRewardNetWalletAmount(reward: ReferralRewardLedgerCandidate) {
   return referralRewardWithholding(reward).netWalletAmount;
 }
 
 async function upsertReferralRewardJournal(
   tx: Prisma.TransactionClient,
-  reward: ReferralRewardCreditCandidate,
+  reward: ReferralRewardLedgerCandidate,
   ledgerId: string,
   action: 'wallet-credit' | 'wallet-cashout' | 'wallet-reversal',
 ) {
@@ -1477,14 +2070,14 @@ function positiveReferralJournalEntries(
   return entries.filter((entry) => entry.amount > 0).map(referralJournalEntry);
 }
 
-function referralRewardWalletOwner(reward: ReferralRewardCreditCandidate) {
+function referralRewardWalletOwner(reward: ReferralRewardLedgerCandidate) {
   if (reward.walletOwnerCustomerProfileId) {
     return { id: reward.walletOwnerCustomerProfileId, type: 'CUSTOMER' as const };
   }
   return { id: reward.walletOwnerProviderProfileId as string, type: 'PARTNER' as const };
 }
 
-function referralRewardTaxPolicySnapshot(reward: ReferralRewardCreditCandidate): ReferralTaxPolicy {
+function referralRewardTaxPolicySnapshot(reward: ReferralRewardLedgerCandidate): ReferralTaxPolicy {
   const snapshot = reward.calculationSnapshot;
   if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
     return 'CUSTOMER_SERVICE_CREDIT_ONLY';

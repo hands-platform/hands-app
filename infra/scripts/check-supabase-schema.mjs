@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '..', '..');
 const prismaSchema = readFileSync(resolve(root, 'apps/api/prisma/schema.prisma'), 'utf8');
 const supabaseSchema = readFileSync(resolve(root, 'infra/supabase/hands-core-schema.sql'), 'utf8');
+const storageSchema = readFileSync(resolve(root, 'infra/supabase/storage-schema.sql'), 'utf8');
 
 const enumChecks = [
   { prisma: 'BookingStatus', sql: 'booking_status' },
@@ -87,12 +88,20 @@ const forbiddenSchemaFragments = [
     pattern: /grant\s+select\s+on\s+table[^;]*public\.provider_locations[^;]*to\s+anon\s*;/i,
   },
   {
+    label: 'anonymous raw provider table grant',
+    pattern: /grant\s+select\s+on\s+table[^;]*public\.providers[^;]*to\s+anon\s*;/i,
+  },
+  {
     label: 'browser role nearby provider RPC execution grant',
     pattern: /grant\s+execute\s+on\s+function\s+public\.nearby_providers[^;]*to\s+(?:anon|authenticated|anon\s*,\s*authenticated)/i,
   },
   {
     label: 'time-only provider location read policy',
     pattern: /create\s+policy\s+"recent provider locations read"[\s\S]*?updated_at\s*>=\s*now\(\)\s*-\s*interval/i,
+  },
+  {
+    label: 'unfiltered public review policy',
+    pattern: /create\s+policy\s+"reviews public read"[\s\S]*?using\s*\(\s*true\s*\)/i,
   },
 ];
 
@@ -142,6 +151,11 @@ requireSchemaFragments([
     pattern: /grant\s+execute\s+on\s+function\s+public\.nearby_providers[^;]*to\s+service_role\s*;/i,
   },
   {
+    label: 'anonymous raw provider and location table revoke',
+    pattern:
+      /revoke\s+select\s+on\s+table\s+public\.providers\s*,\s*public\.provider_locations\s+from\s+anon\s*;/i,
+  },
+  {
     label: 'future Data API table grants default to private',
     pattern:
       /alter\s+default\s+privileges\s+for\s+role\s+postgres\s+in\s+schema\s+public[\s\S]*?revoke\s+select\s*,\s*insert\s*,\s*update\s*,\s*delete\s+on\s+tables\s+from\s+anon\s*,\s*authenticated\s*,\s*service_role/i,
@@ -150,6 +164,10 @@ requireSchemaFragments([
     label: 'future Data API function execution defaults to private',
     pattern:
       /alter\s+default\s+privileges\s+for\s+role\s+postgres\s+in\s+schema\s+public[\s\S]*?revoke\s+execute\s+on\s+functions\s+from\s+public\s*,\s*anon\s*,\s*authenticated\s*,\s*service_role/i,
+  },
+  {
+    label: 'published-only public review policy',
+    pattern: /create\s+policy\s+"reviews public read"[\s\S]*?using\s*\(\s*status\s*=\s*'PUBLISHED'\s*\)/i,
   },
 ]);
 
@@ -173,6 +191,23 @@ const requiredFileSchemaFragments = [
 ];
 
 requireSchemaFragments(requiredFileSchemaFragments);
+requireStorageSchemaFragments([
+  {
+    label: 'public media direct insert policy removal',
+    pattern: /drop\s+policy\s+if\s+exists\s+"owner public media insert"\s+on\s+storage\.objects/i,
+  },
+  {
+    label: 'private media direct insert policy removal',
+    pattern: /drop\s+policy\s+if\s+exists\s+"private media owner insert"\s+on\s+storage\.objects/i,
+  },
+]);
+rejectStoragePatterns([
+  {
+    label: 'authenticated direct storage write policy',
+    pattern:
+      /create\s+policy\s+"(?:owner public media (?:insert|update|delete)|private media owner (?:insert|update|delete))"/i,
+  },
+]);
 
 if (failures.length > 0) {
   console.error(JSON.stringify({ ok: false, failures }, null, 2));
@@ -230,6 +265,22 @@ function requireSchemaFragments(fragments) {
   for (const fragment of fragments) {
     if (!fragment.pattern.test(supabaseSchema)) {
       failures.push(`Supabase core schema is missing ${fragment.label}.`);
+    }
+  }
+}
+
+function requireStorageSchemaFragments(fragments) {
+  for (const fragment of fragments) {
+    if (!fragment.pattern.test(storageSchema)) {
+      failures.push(`Supabase storage schema is missing ${fragment.label}.`);
+    }
+  }
+}
+
+function rejectStoragePatterns(fragments) {
+  for (const fragment of fragments) {
+    if (fragment.pattern.test(storageSchema)) {
+      failures.push(`Supabase storage schema contains forbidden ${fragment.label}.`);
     }
   }
 }

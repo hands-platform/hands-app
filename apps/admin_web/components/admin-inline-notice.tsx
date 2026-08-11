@@ -7,6 +7,7 @@ type AdminInlineNoticeTone = 'danger' | 'info' | 'success' | 'warning';
 type AdminInlineNoticeProps = {
   readonly children: ReactNode;
   readonly className?: string;
+  readonly id?: string;
   readonly role?: AriaRole;
   readonly tone?: AdminInlineNoticeTone;
 };
@@ -14,13 +15,14 @@ type AdminInlineNoticeProps = {
 export function AdminInlineNotice({
   children,
   className,
+  id,
   role,
   tone = 'info',
 }: AdminInlineNoticeProps) {
   const Icon = noticeToneIcons[tone];
 
   return (
-    <div className={joinClassNames('admin-inline-notice', `admin-inline-notice-${tone}`, className)} role={role}>
+    <div className={joinClassNames('admin-inline-notice', `admin-inline-notice-${tone}`, className)} id={id} role={role}>
       <span className="admin-inline-notice-icon" aria-hidden={true}>
         <Icon size={18} strokeWidth={2} />
       </span>

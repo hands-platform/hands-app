@@ -1,9 +1,5 @@
-import type {
-  AdminBooking,
-  AdminBookingMatchSource,
-  AdminBookingMatchingEvidence,
-} from './admin-api';
-import { AdminApiRequestError, adminPostOrThrow, getAdminAccessToken } from './admin-api';
+import type { AdminBooking, AdminBookingMatchSource, AdminBookingMatchingEvidence } from './admin-api';
+import { AdminApiRequestError, adminGetResult, adminPostOrThrow, getAdminAccessToken } from './admin-api';
 import { ADMIN_WEB_SESSION_COOKIE_NAME, createAdminWebSessionCookieValue } from './admin-session';
 import { headers } from 'next/headers';
 
@@ -99,6 +95,118 @@ describe('admin api auth guard', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('preserves Admin GET success state for pages that must distinguish data from fallback values', async () => {
+    const sessionSecret = 'test-session-secret';
+    process.env = {
+      ...process.env,
+      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+      NODE_ENV: 'production',
+    };
+    const sessionCookieValue = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      secret: sessionSecret,
+      sub: 'operator-1',
+    });
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({ cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookieValue}` }) as never,
+    );
+    vi.spyOn(global, 'fetch').mockResolvedValue(Response.json({ count: 7 }));
+
+    await expect(adminGetResult('/admin/finance-summary', { count: 0 })).resolves.toEqual({
+      data: { count: 7 },
+      ok: true,
+      status: 200,
+    });
+  });
+
+  it('preserves Admin GET failure state instead of exposing fallback zeroes as successful data', async () => {
+    const sessionSecret = 'test-session-secret';
+    process.env = {
+      ...process.env,
+      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+      NODE_ENV: 'production',
+    };
+    const sessionCookieValue = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      secret: sessionSecret,
+      sub: 'operator-1',
+    });
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({ cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookieValue}` }) as never,
+    );
+    vi.spyOn(global, 'fetch').mockResolvedValue(new Response('unavailable', { status: 503 }));
+
+    await expect(adminGetResult('/admin/finance-summary', { count: 0 })).resolves.toEqual({
+      data: { count: 0 },
+      ok: false,
+      status: 503,
+    });
+  });
+
+  it('keeps live operator reads uncached', async () => {
+    const sessionSecret = 'test-session-secret';
+    process.env = {
+      ...process.env,
+      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+      NODE_ENV: 'production',
+    };
+    const sessionCookieValue = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      secret: sessionSecret,
+      sub: 'operator-live',
+    });
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({ cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookieValue}` }) as never,
+    );
+    const fetchMock = vi.spyOn(global, 'fetch').mockResolvedValue(Response.json({ count: 1 }));
+
+    await adminGetResult('/admin/live-bookings', { count: 0 }, { freshness: 'live' });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/admin/live-bookings'),
+      expect.objectContaining({ cache: 'no-store' }),
+    );
+  });
+
+  it('uses bounded Next revalidation for aggregate operator reads', async () => {
+    const sessionSecret = 'test-session-secret';
+    process.env = {
+      ...process.env,
+      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+      NODE_ENV: 'production',
+    };
+    const sessionCookieValue = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      secret: sessionSecret,
+      sub: 'operator-aggregate',
+    });
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({ cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookieValue}` }) as never,
+    );
+    const fetchMock = vi.spyOn(global, 'fetch').mockResolvedValue(Response.json({ count: 3 }));
+
+    await adminGetResult(
+      '/admin/usage-overview',
+      { count: 0 },
+      {
+        freshness: 'aggregate',
+        revalidateSeconds: 45,
+        tags: ['usage-overview'],
+      },
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/admin/usage-overview'),
+      expect.objectContaining({
+        next: { revalidate: 45, tags: ['usage-overview'] },
+      }),
+    );
+  });
+
   it('allows env master admin sessions to perform categorized write actions without stored category setup', async () => {
     const sessionSecret = 'test-session-secret';
     process.env = {
@@ -157,7 +265,7 @@ describe('admin api auth guard', () => {
     const sessionCookieValue = createAdminWebSessionCookieValue({
       expiresAtMs: Date.now() + 60_000,
       secret: sessionSecret,
-      sub: 'master@example.com',
+      sub: 'stored-master-1',
     });
     vi.mocked(headers).mockResolvedValue(
       new Headers({ cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookieValue}` }) as never,

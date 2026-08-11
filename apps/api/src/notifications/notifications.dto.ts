@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsIn, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 const devicePlatforms = ['ios', 'android'] as const;
 
@@ -30,4 +30,30 @@ export class DeleteDeviceTokenDto {
   @IsNotEmpty()
   @MaxLength(512)
   token!: string;
+}
+
+export class CustomerNotificationInboxQueryDto {
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return Number(value);
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  take?: number;
+
+  @Transform(({ value }) => trimString(value))
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  cursor?: string;
+}
+
+export class ProviderChatNotificationReadDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  chatRoomId!: string;
 }

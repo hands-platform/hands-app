@@ -7,6 +7,13 @@ export type AdminNotificationPushDevice = NonNullable<
   NonNullable<AdminNotification['user']>['pushDevices']
 >[number];
 
+export type NotificationDeliveryDisposition =
+  | 'delivered'
+  | 'failed'
+  | 'partial'
+  | 'pending'
+  | 'skipped';
+
 export function notificationDeliveries(
   notification: AdminNotification,
 ): readonly AdminNotificationDelivery[] {
@@ -20,6 +27,43 @@ export function deliveryAttemptMs(delivery: AdminNotificationDelivery) {
 
 export function newestNotificationDeliveries(deliveries: readonly AdminNotificationDelivery[]) {
   return [...deliveries].sort((left, right) => deliveryAttemptMs(right) - deliveryAttemptMs(left));
+}
+
+export function notificationDeliveryDisposition(
+  notification: AdminNotification,
+): NotificationDeliveryDisposition {
+  const deliveries = newestNotificationDeliveries(notificationDeliveries(notification));
+  if (deliveries.some((delivery) => !delivery.pushDevice?.id && !delivery.pushDeviceId)) {
+    return dispositionFromLatestDeliveries(deliveries.slice(0, 1));
+  }
+
+  const latestByPath = new Map<string, AdminNotificationDelivery>();
+
+  for (const delivery of deliveries) {
+    const pathKey =
+      delivery.pushDevice?.id ??
+      delivery.pushDeviceId ??
+      `${delivery.provider}:without-device`;
+    if (!latestByPath.has(pathKey)) {
+      latestByPath.set(pathKey, delivery);
+    }
+  }
+
+  return dispositionFromLatestDeliveries([...latestByPath.values()]);
+}
+
+function dispositionFromLatestDeliveries(
+  latestDeliveries: readonly AdminNotificationDelivery[],
+): NotificationDeliveryDisposition {
+  if (latestDeliveries.length === 0) return 'pending';
+
+  const hasSent = latestDeliveries.some((delivery) => isSuccessfulDeliveryStatus(delivery.status));
+  const hasFailed = latestDeliveries.some((delivery) => delivery.status === 'FAILED');
+  if (hasSent && hasFailed) return 'partial';
+  if (hasFailed) return 'failed';
+  if (hasSent) return 'delivered';
+  if (latestDeliveries.some((delivery) => delivery.status === 'SKIPPED')) return 'skipped';
+  return 'pending';
 }
 
 export function isNotificationDeliveryProvider(delivery: AdminNotificationDelivery, provider: string) {
@@ -81,4 +125,8 @@ function isProviderNotification(notification: AdminNotification) {
     Boolean(notification.user?.providerProfile) ||
     (notification.user?.roles ?? []).map((role) => role.toUpperCase()).includes('PROVIDER')
   );
+}
+
+function isSuccessfulDeliveryStatus(status: string) {
+  return status === 'SENT' || status === 'DELIVERED' || status === 'SUCCESS';
 }

@@ -5,7 +5,10 @@ import { OperationsHandoffOperatorNotesSection } from './operations-handoff-oper
 
 describe('OperationsHandoffOperatorNotesSection', () => {
   it('uses shared Vuexy badge atoms for operator note labels', () => {
-    const source = readFileSync('app/operations-handoff/operations-handoff-operator-notes-section.tsx', 'utf8');
+    const source = readFileSync(
+      'app/operations-handoff/operations-handoff-operator-notes-section.tsx',
+      'utf8',
+    );
 
     expect(source).toContain('AdminActionCard');
     expect(source).toContain('StatusBadge');
@@ -16,13 +19,16 @@ describe('OperationsHandoffOperatorNotesSection', () => {
   });
 
   it('uses the shared AdminFormControlLink atom for audit actions', () => {
-    const source = readFileSync('app/operations-handoff/operations-handoff-operator-notes-section.tsx', 'utf8');
+    const source = readFileSync(
+      'app/operations-handoff/operations-handoff-operator-notes-section.tsx',
+      'utf8',
+    );
 
     expect(source).toContain('AdminFormControlLink');
     expect(source).not.toContain('<Link className="button button-secondary"');
   });
 
-  it('renders the note form, latest notes, and audit links', () => {
+  it('renders a read-only note archive and audit links', () => {
     const section = OperationsHandoffOperatorNotesSection({
       notes: [
         {
@@ -38,12 +44,15 @@ describe('OperationsHandoffOperatorNotesSection', () => {
 
     const rendered = textContent(section);
 
-    expect(rendered).toContain('Operations history notes');
-    expect(rendered).toContain('Owner lane');
-    expect(rendered).toContain('Partner operations history reviewed.');
-    expect(rendered).toContain('Save history note');
+    expect(rendered).toContain('Operator notes archive');
+    expect(rendered).toContain('Read-only');
+    expect(rendered).not.toContain('Owner lane');
+    expect(rendered).not.toContain('Save history note');
     expect(rendered).toContain('Partner document reviewed');
     expect(rendered).toContain('Ops Lead');
+    expect(rendered).toContain('Created');
+    expect(rendered).toContain('Last changed');
+    expect(rendered).toContain('Open related record');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-section',
@@ -54,14 +63,13 @@ describe('OperationsHandoffOperatorNotesSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/audit-log', '/partners/partner-1']));
   });
 
-  it('uses shared admin form controls for the note form', () => {
+  it('does not expose current write controls in History', () => {
     const section = OperationsHandoffOperatorNotesSection({ notes: [] });
     const classNames = classNamesIn(section);
 
-    expect(classNames).toContain('admin-form-select admin-form-control-labeled');
-    expect(classNames).toContain('admin-form-textarea admin-form-control-labeled');
-    expect(classNames).toContain('admin-form-control-button button button-primary');
-    expect(classNames).not.toContain('calendar-field');
+    expect(classNames).not.toContain('admin-form-select admin-form-control-labeled');
+    expect(classNames).not.toContain('admin-form-textarea admin-form-control-labeled');
+    expect(classNames).not.toContain('admin-form-control-button button button-primary');
   });
 
   it('renders the empty state when there are no notes', () => {

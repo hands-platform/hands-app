@@ -9,7 +9,7 @@ import type {
   AdminPayoutBatch,
   AdminPayoutBatchSummary,
 } from '../../lib/admin-api';
-import { adminGet } from '../../lib/admin-api';
+import { adminGet, adminGetResult } from '../../lib/admin-api';
 import PayoutsPage from './page';
 
 vi.mock('../../lib/admin-api', async () => {
@@ -18,16 +18,24 @@ vi.mock('../../lib/admin-api', async () => {
   return {
     ...actual,
     adminGet: vi.fn(),
+    adminGetResult: vi.fn(),
   };
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedAdminGetResult = vi.mocked(adminGetResult);
 const payoutPolicyHref =
   '/admin/operational-policy?keys=payout.batch_cycle_policy%2Ccash.settlement_clearance_policy%2Cwallet.negative_balance_gate%2Cmatching.marketplace_partner_radius_meters%2Cmatching.backup_provider_radius_meters';
 
 describe('PayoutsPage', () => {
   beforeEach(() => {
     mockedAdminGet.mockReset();
+    mockedAdminGetResult.mockReset();
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => ({
+      data: await mockedAdminGet(href, fallback),
+      ok: true,
+      status: 200,
+    }));
   });
 
   it('renders bounded server payout rows without applying a second local date filter', async () => {
@@ -51,7 +59,7 @@ describe('PayoutsPage', () => {
     } as AdminPayoutBatch;
 
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/payout-batches?range=today&take=10') {
+      if (href === '/admin/payout-batches?range=today&take=20&view=summary&queue=open') {
         return [batch];
       }
       if (href === '/admin/payout-batches/summary?range=today') {
@@ -86,65 +94,108 @@ describe('PayoutsPage', () => {
       searchParams: Promise.resolve({ range: 'today' }),
     });
     const markup = renderToStaticMarkup(page);
-    const requestedHrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+    const requestedHrefs = mockedAdminGetResult.mock.calls.map(([href]) => href);
 
     expect(requestedHrefs).not.toContain('/admin/earnings?range=today&take=10');
     expect(requestedHrefs).not.toContain(payoutPolicyHref);
-    expect(markup).toContain('Payout workspaces');
-    expect(markup).toContain('Release policy');
-    expect(markup).toContain('Audit evidence');
-    expect(markup).toContain('Records');
+    expect(markup).toContain('Payout views');
+    expect(markup).toContain('Payout batches');
+    expect(markup).toContain('Withdrawals');
+    expect(markup).toContain('Reconciliation');
     expect(markup).not.toContain('Payout batch release policy desk');
     expect(markup).not.toContain('Payout inclusion audit');
   });
 
-  it('keeps policy, audit, and record evidence in separate payout workspaces', async () => {
+  it('keeps batch, withdrawal, and reconciliation row reads in separate views', async () => {
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
 
-    const policyPage = await PayoutsPage({
-      searchParams: Promise.resolve({ details: 'all', range: 'today' }),
-    });
-    const policyMarkup = renderToStaticMarkup(policyPage);
-    const policyHrefs = mockedAdminGet.mock.calls.map(([href]) => href);
-
-    expect(policyMarkup).toContain('Payout batch release policy desk');
-    expect(policyMarkup).not.toContain('Payout inclusion audit');
-    expect(policyMarkup).not.toContain('Payout batch list');
-    expect(policyHrefs).toContain('/admin/earnings?range=today&take=10');
-    expect(policyHrefs).toContain(payoutPolicyHref);
-    expect(policyHrefs).not.toContain(
-      '/admin/provider-wallet/withdrawal-requests?range=today&take=10&status=REVIEW_REQUIRED',
-    );
-
-    mockedAdminGet.mockClear();
     const auditPage = await PayoutsPage({
-      searchParams: Promise.resolve({ details: 'all', range: 'today', view: 'audit' }),
+      searchParams: Promise.resolve({ range: 'today', view: 'reconciliation' }),
     });
     const auditMarkup = renderToStaticMarkup(auditPage);
-    const auditHrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+    const auditHrefs = mockedAdminGetResult.mock.calls.map(([href]) => href);
 
-    expect(auditMarkup).toContain('Payout inclusion audit');
-    expect(auditMarkup).toContain('Payout service evidence');
-    expect(auditMarkup).toContain('Payout status lanes');
-    expect(auditMarkup).not.toContain('Payout batch release policy desk');
+    expect(auditMarkup).toContain('Payout money flow');
+    expect(auditMarkup).toContain('Reconciliation queues');
+    expect(auditMarkup).not.toContain('Partner wallet withdrawal requests');
     expect(auditMarkup).not.toContain('Payout batch list');
-    expect(auditHrefs).toContain('/admin/earnings?range=today&take=10');
-    expect(auditHrefs).not.toContain(payoutPolicyHref);
+    expect(auditHrefs.some((href) => href.includes('/admin/payout-batches?'))).toBe(false);
+    expect(auditHrefs.some((href) => href.includes('/admin/provider-wallet/withdrawal-requests?'))).toBe(false);
 
-    mockedAdminGet.mockClear();
+    mockedAdminGetResult.mockClear();
+    await PayoutsPage({
+      searchParams: Promise.resolve({
+        range: 'today',
+        recon: 'payout-closeout-repair',
+        view: 'reconciliation',
+      }),
+    });
+    expect(mockedAdminGetResult.mock.calls.map(([href]) => href)).toContain(
+      '/admin/payout-batches?range=today&take=20&view=summary&queue=repair',
+    );
+
+    mockedAdminGetResult.mockClear();
     const recordsPage = await PayoutsPage({
-      searchParams: Promise.resolve({ details: 'all', range: 'today', view: 'records' }),
+      searchParams: Promise.resolve({ range: 'today', view: 'withdrawals' }),
     });
     const recordsMarkup = renderToStaticMarkup(recordsPage);
-    const recordHrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+    const recordHrefs = mockedAdminGetResult.mock.calls.map(([href]) => href);
 
     expect(recordsMarkup).toContain('Partner wallet withdrawal requests');
-    expect(recordsMarkup).toContain('Payout batch list');
+    expect(recordsMarkup).not.toContain('Payout batch list');
     expect(recordsMarkup).not.toContain('Payout money flow');
-    expect(recordsMarkup).not.toContain('Payout batch release policy desk');
-    expect(recordsMarkup).not.toContain('Payout inclusion audit');
-    expect(recordHrefs).not.toContain('/admin/earnings?range=today&take=10');
-    expect(recordHrefs).not.toContain(payoutPolicyHref);
+    expect(recordHrefs.some((href) => href.includes('/admin/payout-batches?'))).toBe(false);
+  });
+
+  it('loads an off-page payout batch exactly when a confirmation URL is opened directly', async () => {
+    const offPageBatch = {
+      createdAt: '2026-08-10T01:00:00.000Z',
+      currency: 'VND',
+      earnings: [],
+      id: 'off-page-payout-batch',
+      providerProfile: {
+        displayName: 'Off Page Partner',
+        user: {
+          fullName: 'Off Page Partner',
+          phone: '+84900009999',
+        },
+      },
+      providerProfileId: 'off-page-partner',
+      status: 'DRAFT',
+      totalNetAmount: 420000,
+      transferRef: null,
+      withholdingLogs: [],
+    } as AdminPayoutBatch;
+
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/payout-batches/off-page-payout-batch') {
+        return offPageBatch;
+      }
+      return fallback;
+    });
+
+    const page = await PayoutsPage({
+      searchParams: Promise.resolve({
+        confirm: 'processing',
+        payoutBatchId: offPageBatch.id,
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(mockedAdminGetResult.mock.calls.map(([href]) => href)).toContain(
+      '/admin/payout-batches/off-page-payout-batch',
+    );
+    expect(markup).toContain('Start payout off-page processing?');
+    expect(markup).toContain('Off Page Partner');
+  });
+
+  it('uses the exact post-payment repair count for reconciliation pagination', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
+
+    expect(source).toContain('const payoutBatchTotal = payoutSummary?.total ?? payoutBatchRows.length');
+    expect(source).toContain(
+      'buildPayoutServerPagination(payoutBatchRows, filters, payoutBatchTotal)',
+    );
   });
 
   it('uses the payout summary endpoint for top-level payout metrics', async () => {
@@ -181,7 +232,7 @@ describe('PayoutsPage', () => {
     } satisfies AdminPayoutBatchSummary;
 
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/payout-batches?range=today&take=10') {
+      if (href === '/admin/payout-batches?range=today&take=20&view=summary&queue=open') {
         return [batch];
       }
       if (href === '/admin/payout-batches/summary?range=today') {
@@ -201,8 +252,98 @@ describe('PayoutsPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('987.654 VND');
-    expect(markup).toContain('45.678 VND');
+    expect(markup).toContain('Needs review');
+    expect(markup).toContain('6');
+    expect(markup).toContain('Transfers in progress');
+    expect(markup).toContain('7');
+  });
+
+  it('uses server payout preflight to block paid closeout while keeping warnings non-blocking', async () => {
+    const sharedBatch = {
+      currency: 'VND',
+      earnings: [],
+      providerProfile: {
+        displayName: 'Preflight Partner',
+        user: {
+          fullName: 'Preflight Partner',
+          phone: '+84900008888',
+        },
+      },
+      providerProfileId: 'provider-preflight',
+      status: 'PROCESSING',
+      totalNetAmount: 380000,
+      transferRef: 'BANK-PREFLIGHT',
+      withholdingLogs: [],
+    };
+    const blockedBatch = {
+      ...sharedBatch,
+      createdAt: '2026-07-26T09:00:00.000Z',
+      id: 'payout-preflight-blocked',
+      preflight: {
+        approvedBankAccountId: 'bank-preflight',
+        blockers: [
+          {
+            code: 'INSUFFICIENT_WALLET_BALANCE',
+            message: 'Partner wallet ledger balance cannot cover payout batch.',
+          },
+        ],
+        canMarkFailed: true,
+        canMarkPaid: false,
+        canStartProcessing: false,
+        independentApproverAvailable: true,
+        paidLedgerAmount: 0,
+        paidLedgerEntryCount: 0,
+        payableAmount: 380000,
+        payoutJournalPosted: false,
+        ready: false,
+        requiredAmount: 380000,
+        walletBalance: 300000,
+        warnings: [],
+      },
+    } as AdminPayoutBatch;
+    const warningBatch = {
+      ...sharedBatch,
+      createdAt: '2026-07-26T08:00:00.000Z',
+      id: 'payout-preflight-warning',
+      preflight: {
+        approvedBankAccountId: 'bank-preflight',
+        blockers: [],
+        canMarkFailed: true,
+        canMarkPaid: true,
+        canStartProcessing: false,
+        independentApproverAvailable: true,
+        paidLedgerAmount: 0,
+        paidLedgerEntryCount: 0,
+        payableAmount: 380000,
+        payoutJournalPosted: false,
+        ready: true,
+        requiredAmount: 380000,
+        walletBalance: 500000,
+        warnings: [
+          {
+            code: 'PAYOUT_PAID_EVIDENCE_INCOMPLETE',
+            message: 'Historical payout evidence needs reconciliation.',
+          },
+        ],
+      },
+    } as AdminPayoutBatch;
+
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/payout-batches?range=today&take=20&view=summary&queue=open') {
+        return [blockedBatch, warningBatch];
+      }
+      return fallback;
+    });
+
+    const page = await PayoutsPage({
+      searchParams: Promise.resolve({ range: 'today' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Partner wallet ledger balance cannot cover payout batch.');
+    expect(markup).toContain('Historical payout evidence needs reconciliation.');
+    expect(markup.match(/Resolve blockers before paid/g)).toHaveLength(1);
+    expect(markup).toContain('aria-disabled="true"');
   });
 
   it('uses shared badge atoms for payout policy desk status labels', () => {
@@ -224,8 +365,12 @@ describe('PayoutsPage', () => {
     expect(source).not.toContain('<div className="ops-task-grid admin-mt-12">');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<div className="participant-list admin-mb-12">');
-    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-date-range-card"');
-    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-release-policy-card"');
+    expect(source).not.toContain(
+      'className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-date-range-card"',
+    );
+    expect(source).not.toContain(
+      'className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-release-policy-card"',
+    );
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('className={`ops-task-card');
@@ -242,7 +387,9 @@ describe('PayoutsPage', () => {
     expect(source).toContain("'/admin/users?take=50&role=ADMIN&view=finance-approver-directory'");
     expect(source).toContain('buildFinanceApproverOptions');
     expect(source).toContain("label: 'Separate Finance approver'");
-    expect(source).toContain("options: [{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]");
+    expect(source).toContain(
+      "options: [{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]",
+    );
     expect(source).not.toContain("label: 'Approving admin id'");
   });
 
@@ -255,10 +402,11 @@ describe('PayoutsPage', () => {
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
   });
 
-  it('keeps payout service evidence copy operator-facing', () => {
+  it('uses the full selected-range evidence contract instead of sampled service copy', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
 
-    expect(source).toContain('Service option links are ready for finance review.');
+    expect(source).toContain('Full selected-range evidence was evaluated.');
+    expect(source).not.toContain('Service option links are ready for finance review.');
     expect(source).not.toContain('Service trace is ready for finance review.');
     expect(source).not.toContain('Payout batches are traceable to service duration options');
   });
@@ -301,10 +449,14 @@ describe('PayoutsPage', () => {
   it('uses shared money atoms for payout action execution withholding amounts', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
 
-    expect(source).toContain('function payoutReleaseBlockerDetail');
-    expect(source).toContain('<MoneyText amount={batchWithholdingAmount(batch)} currency={batch.currency} />');
+    expect(source).toContain('function payoutActionExecutionMap');
+    expect(source).toContain(
+      '<MoneyText amount={withholdingAmount} currency={batch.currency} /> withholding exists without a',
+    );
     expect(source).not.toContain('${formatMoney(withholdingAmount, batch.currency)} withholding exists');
-    expect(source).not.toContain('detail: `Withholding exists (${formatMoney(withholdingAmount, batch.currency)}) but no tax log is linked.`');
+    expect(source).not.toContain(
+      'detail: `Withholding exists (${formatMoney(withholdingAmount, batch.currency)}) but no tax log is linked.`',
+    );
   });
 
   it('scopes top-level payout KPI cards by selected range and release action state', () => {
@@ -313,11 +465,29 @@ describe('PayoutsPage', () => {
     expect(source).toContain('const payoutRangeScope = dateRangeLabel(filters.range);');
     expect(source).toContain('scope: payoutRangeScope');
     expect(source).toContain("scope: 'Needs action'");
-    expect(source).toContain("scope: 'Pending'");
-    expect(source).toContain("scope: 'Transfer records'");
-    expect(source).toContain("kind: 'period'");
-    expect(source).toContain("kind: 'action'");
+    expect(source).toContain("scope: 'Current queue'");
+    expect(source).toContain("scope: 'All open evidence'");
     expect(source).toContain("kind: 'risk'");
-    expect(source).toContain("kind: 'record'");
+    expect(source).toContain("label: 'Wallet / GL closeout repair'");
+  });
+
+  it('keeps reconciliation evidence rows out of the aggregate overview', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
+
+    expect(source).toContain("filters.recon === 'overview'");
+    expect(source).toContain("filters.recon === 'bank-unmatched'");
+    expect(source).toContain("filters.recon === 'payout-closeout-repair'");
+  });
+
+  it('does not mix a withdrawal saved view with payout batch rows', async () => {
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    const page = await PayoutsPage({
+      searchParams: Promise.resolve({ range: 'all', withdrawalStatus: 'REVIEW_REQUIRED' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('No rows in selected filter');
+    expect(markup).not.toContain('Payout batch list');
   });
 });

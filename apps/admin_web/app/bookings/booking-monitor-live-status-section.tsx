@@ -1,11 +1,21 @@
 import type { BookingMonitorSummaryRow } from './booking-monitor-summary';
-import { AdminMetricGrid } from '../../components/admin-page-template';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
+import { bookingMonitorRealtimeLabel, type BookingMonitorRealtimeState } from './booking-monitor-realtime';
 import {
-  bookingMonitorRealtimeLabel,
-  type BookingMonitorRealtimeState,
-} from './booking-monitor-realtime';
+  DashboardDataScopeStatus,
+  type DashboardDataScope,
+  type DashboardSourceState,
+} from '../dashboard-trace-summary';
 
 type BookingMonitorLiveStatusSectionProps = {
+  readonly auditFixtureVisible?: boolean;
+  readonly dataClass?: 'live' | 'backlog' | 'anomaly' | 'test';
+  readonly dataGeneratedAt?: string;
+  readonly dataPartialSourceCount: number;
+  readonly dataScope: DashboardDataScope;
+  readonly dataScopeEnd?: string | null;
+  readonly dataScopeStart?: string | null;
+  readonly dataSourceState: DashboardSourceState;
   readonly hasMounted: boolean;
   readonly isPending: boolean;
   readonly lastRefreshLabel: string;
@@ -14,105 +24,90 @@ type BookingMonitorLiveStatusSectionProps = {
 };
 
 export function BookingMonitorLiveStatusSection({
+  auditFixtureVisible = false,
+  dataClass,
+  dataGeneratedAt,
+  dataPartialSourceCount,
+  dataScope,
+  dataScopeEnd,
+  dataScopeStart,
+  dataSourceState,
   hasMounted,
   isPending,
   lastRefreshLabel,
   realtimeState,
   summary,
 }: BookingMonitorLiveStatusSectionProps) {
+  if (dataScope === 'historical') {
+    return (
+      <>
+        <div className="monitor-meta" role="status">
+          <span suppressHydrationWarning>
+            Historical snapshot · refreshed {hasMounted ? lastRefreshLabel : 'pending'}
+          </span>
+          <span>
+            {auditFixtureVisible
+              ? 'Audit fixtures visible'
+              : process.env.NODE_ENV === 'production'
+                ? 'Historical operations data'
+                : 'Local data'}
+          </span>
+        </div>
+        {summary.length > 0 && (
+          <AdminFilterSummary
+            ariaLabel="Closeout queue summary"
+            className="admin-mb-16"
+            labels={summary.map(([label, value]) => `${label}: ${value}`)}
+          />
+        )}
+      </>
+    );
+  }
+
   const realtimeLabel = bookingMonitorRealtimeLabel(realtimeState);
   const realtimeDetail = bookingMonitorRealtimeDetail(realtimeState);
+  const warnings = summary.filter(
+    ([label, value]) => ['Data anomaly', 'Blocked today'].includes(label) && Number(value) > 0,
+  );
 
   return (
     <>
-      <AdminMetricGrid
-        metrics={summary.map(([label, value]) => ({
-          helper: bookingMonitorSummaryHelper(label),
-          kind: bookingMonitorSummaryKind(label),
-          label,
-          scope: bookingMonitorSummaryScope(label),
-          value,
-        }))}
-      />
-
-      <div className="monitor-meta">
-        <span>{isPending ? 'Syncing...' : realtimeLabel}</span>
-        <span>{realtimeDetail}</span>
-        <span suppressHydrationWarning>Last refresh {hasMounted ? lastRefreshLabel : 'pending'}</span>
+      <div aria-label="Booking data status" className="admin-filter-chip-group">
+        <DashboardDataScopeStatus
+          dataClass={dataClass}
+          generatedAt={dataGeneratedAt}
+          partialSourceCount={dataPartialSourceCount}
+          scope={dataScope}
+          scopeEnd={dataScopeEnd}
+          scopeStart={dataScopeStart}
+          sourceState={dataSourceState}
+          testDataLabel={
+            auditFixtureVisible
+              ? 'Audit fixtures visible'
+              : process.env.NODE_ENV === 'production'
+                ? 'Production data · Test data excluded'
+                : 'Audit fixtures may be visible'
+          }
+        />
       </div>
+      {warnings.length > 0 ? (
+        <AdminFilterSummary
+          ariaLabel="Booking data warnings"
+          className="admin-mb-16"
+          labels={warnings.map(([label, value]) => `${label}: ${value}`)}
+          tone="warning"
+        />
+      ) : null}
+
+      {(isPending || realtimeState !== 'live') && (
+        <div className="monitor-meta" role={realtimeState === 'error' ? 'alert' : 'status'}>
+          <span>{isPending ? 'Syncing...' : realtimeLabel}</span>
+          <span>{realtimeDetail}</span>
+          <span suppressHydrationWarning>Last refresh {hasMounted ? lastRefreshLabel : 'pending'}</span>
+        </div>
+      )}
     </>
   );
-}
-
-function bookingMonitorSummaryScope(label: string) {
-  if (
-    label === 'Active bookings' ||
-    label === 'Open matching' ||
-    label === 'Matched' ||
-    label === 'Chat live' ||
-    label.startsWith('Stage ')
-  ) {
-    return 'Live';
-  }
-
-  if (
-    label === 'Follow-up queue' ||
-    label.endsWith('checks') ||
-    label === 'Chat repair' ||
-    label === 'Evidence missing' ||
-    label === 'Refund review' ||
-    label === 'No Partners yet' ||
-    label === 'First-pick pending'
-  ) {
-    return 'Needs action';
-  }
-
-  if (label === 'Blocked create attempts') {
-    return 'Today';
-  }
-
-  return 'Records';
-}
-
-function bookingMonitorSummaryKind(label: string) {
-  const scope = bookingMonitorSummaryScope(label);
-
-  if (label === 'Blocked create attempts' || label === 'Payment checks' || label === 'Refund review') {
-    return 'risk' as const;
-  }
-
-  if (scope === 'Live') return 'live' as const;
-  if (scope === 'Needs action') return 'action' as const;
-
-  return 'record' as const;
-}
-
-function bookingMonitorSummaryHelper(label: string) {
-  if (label === 'Blocked create attempts') {
-    return 'Create attempts stopped before payment or matching; open audit evidence.';
-  }
-
-  if (label === 'Follow-up queue') {
-    return 'Rows with operator checks before the shift can move on.';
-  }
-
-  if (label === 'Payment checks') {
-    return 'Rows where capture, release, refund, or evidence still needs review.';
-  }
-
-  if (label === 'Closeout checks') {
-    return 'Completed or ended bookings missing closeout evidence.';
-  }
-
-  if (label === 'Refund review') {
-    return 'Refund records that still need operator or finance follow-up.';
-  }
-
-  if (bookingMonitorSummaryScope(label) === 'Live') {
-    return 'Current booking monitor state for live dispatch decisions.';
-  }
-
-  return 'Retained booking monitor record for audit or history review.';
 }
 
 function bookingMonitorRealtimeDetail(state: BookingMonitorRealtimeState) {

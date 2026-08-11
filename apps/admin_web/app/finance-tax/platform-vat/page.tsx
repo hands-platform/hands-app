@@ -1,6 +1,6 @@
 import { AlertTriangle, CircleDollarSign, ReceiptText, ShieldCheck } from 'lucide-react';
 
-import type { AdminPlatformVatSummary } from '../../../lib/admin-api';
+import type { AdminMonthlyTaxClosingSummary, AdminPlatformVatSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFilterSummary } from '../../../components/admin-filter-summary';
@@ -15,7 +15,11 @@ import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildPlatformVatExportHref,
   buildPlatformVatSummaryApiHref,
+  buildMonthlyTaxClosingSummaryApiHref,
+  buildMonthlyTaxCloseoutCommandState,
   buildTaxFinanceWorkflowLinks,
+  bookingSettlementAuditHref,
+  emptyMonthlyTaxClosingSummary,
   emptyPlatformVatSummary,
   readBookingSettlementFilters,
   readMonthlyTaxClosingFilters,
@@ -31,12 +35,27 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
   const filters = readMonthlyTaxClosingFilters(params);
   const settlementFilters = readBookingSettlementFilters(params);
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
-  const summary = await adminGet<AdminPlatformVatSummary>(
-    buildPlatformVatSummaryApiHref(filters),
-    emptyPlatformVatSummary(filters.period),
-  );
+  const [summary, monthlyClosingSummary] = await Promise.all([
+    adminGet<AdminPlatformVatSummary>(
+      buildPlatformVatSummaryApiHref(filters),
+      emptyPlatformVatSummary(filters.period),
+    ),
+    adminGet<AdminMonthlyTaxClosingSummary>(
+      buildMonthlyTaxClosingSummaryApiHref(filters),
+      emptyMonthlyTaxClosingSummary(filters.period),
+    ),
+  ]);
   const csvHref = buildPlatformVatExportHref(filters);
   const periodScope = `Period ${filters.period}`;
+  const closeoutState = buildMonthlyTaxCloseoutCommandState(monthlyClosingSummary);
+  const reviewFlagCount = summary.manualReviewCount + (summary.netRevenueDelta === 0 ? 0 : 1);
+  const periodSettlementHref = bookingSettlementAuditHref({
+    ...settlementFilters,
+    page: 1,
+    period: filters.period,
+    range: 'all',
+    review: 'all',
+  });
 
   return (
     <AdminPageTemplate
@@ -63,47 +82,60 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
     >
       <FinanceListCommandBoard ariaLabel="VAT command board">
         <FinanceListCommandCard
+          detail={closeoutState.detail}
+          href={`/finance-tax/monthly-tax-closing?period=${encodeURIComponent(filters.period)}`}
+          icon={ShieldCheck}
+          label="Tax closeout"
+          scope={closeoutState.scope}
+          tone={closeoutState.tone}
+          value={closeoutState.value}
+        />
+        <FinanceListCommandCard
+          detail="HANDS platform fee including company output VAT. Customer booking payment is not this amount."
+          href={periodSettlementHref}
+          icon={CircleDollarSign}
+          label="Platform fee gross"
+          scope={periodScope}
+          tone={summary.platformFeeGrossTotal > 0 ? 'info' : 'neutral'}
+          value={<MoneyText amount={summary.platformFeeGrossTotal} currency={summary.currency} />}
+        />
+        <FinanceListCommandCard
           detail="Company output VAT payable from HANDS platform fee gross."
           href={`/finance-tax/platform-vat?period=${encodeURIComponent(filters.period)}`}
           icon={ReceiptText}
-          label="Output VAT"
+          label="Company output VAT"
           scope={periodScope}
           tone={summary.companyOutputVatTotal > 0 ? 'warning' : 'neutral'}
           value={<MoneyText amount={summary.companyOutputVatTotal} currency={summary.currency} />}
         />
         <FinanceListCommandCard
           detail="Company revenue after removing output VAT from platform fee gross."
-          href="/finance-tax/booking-settlement-audit"
+          href={periodSettlementHref}
           icon={CircleDollarSign}
-          label="Net revenue"
+          label="Net platform revenue"
           scope={periodScope}
           tone={summary.platformFeeNetRevenueTotal > 0 ? 'success' : 'neutral'}
           value={<MoneyText amount={summary.platformFeeNetRevenueTotal} currency={summary.currency} />}
         />
         <FinanceListCommandCard
-          detail="Must be 0 before monthly closeout."
-          href={`/finance-tax/monthly-tax-closing?period=${encodeURIComponent(filters.period)}`}
+          detail={`${summary.manualReviewCount} non-standard rate event(s); formula delta must be 0 before monthly closeout.`}
+          href={
+            summary.netRevenueDelta === 0
+              ? `/finance-tax/platform-vat?period=${encodeURIComponent(filters.period)}`
+              : `/finance-tax/monthly-tax-closing?period=${encodeURIComponent(filters.period)}`
+          }
           icon={AlertTriangle}
-          label="Formula delta"
-          scope={summary.netRevenueDelta === 0 ? periodScope : 'Needs action'}
-          tone={summary.netRevenueDelta === 0 ? 'success' : 'danger'}
-          value={<MoneyText amount={summary.netRevenueDelta} currency={summary.currency} />}
-        />
-        <FinanceListCommandCard
-          detail="VAT rate buckets from posted booking settlement records."
-          href={`/finance-tax/platform-vat?period=${encodeURIComponent(filters.period)}`}
-          icon={ShieldCheck}
-          label="VAT buckets"
-          scope={periodScope}
-          tone={summary.rateBreakdown.length > 0 ? 'info' : 'neutral'}
-          value={`${summary.rateBreakdown.length} bucket(s)`}
+          label="VAT review flags"
+          scope={reviewFlagCount === 0 ? periodScope : 'Needs action'}
+          tone={summary.netRevenueDelta !== 0 ? 'danger' : summary.manualReviewCount > 0 ? 'warning' : 'success'}
+          value={String(reviewFlagCount)}
         />
       </FinanceListCommandBoard>
 
       <AdminFilterPanel
         className="admin-mb-16"
-        description={`Period ${summary.period}. Showing VAT rate buckets from posted booking settlement records.`}
-        resultLabel={summary.currency}
+        description="Choose the monthly company VAT period. Open-period reversals are excluded and closed-period reversal entries reduce this period's totals."
+        resultLabel={`${summary.settlementCount} posted · ${summary.reversalCount} reversal`}
         resultTone="info"
         title="Platform VAT period"
       >
@@ -117,39 +149,52 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
 
       <FinanceTablePanel
         grouped
-        description="Use this breakdown for company VAT review. The net revenue formula delta should be 0 VND before monthly closeout."
+        description="Review the VAT rate, reversal impact, and gross-to-net formula before monthly closeout."
         resultLabel={`${summary.rateBreakdown.length} row(s)`}
-        resultTone="info"
-        title="VAT rate breakdown"
+        resultTone={reviewFlagCount > 0 ? 'warning' : 'success'}
+        title="Company VAT register"
       >
         <FinanceDataTable
-            emptyMessage="No platform VAT rows exist for this period."
-            headers={['VAT bucket', 'Rate', 'Settlements', 'Platform fee gross', 'Company VAT', 'Net revenue']}
-            rowCount={summary.rateBreakdown.length}
-          >
-            {summary.rateBreakdown.map((row) => (
-              <tr key={`${row.category}-${row.platformVatRateBps}`}>
-                <td>
-                  <StatusBadgeFromPillClass pillClass={platformVatCategoryPill(row.category)}>
-                    {row.category}
-                  </StatusBadgeFromPillClass>
-                </td>
-                <td>{formatBps(row.platformVatRateBps)}</td>
-                <td>{row.settlementCount}</td>
-                <td>
-                  <MoneyText amount={row.platformFeeGrossTotal} currency={summary.currency} />
-                </td>
-                <td>
-                  <strong>
-                    <MoneyText amount={row.companyOutputVatTotal} currency={summary.currency} />
-                  </strong>
-                </td>
-                <td>
-                  <MoneyText amount={row.platformFeeNetRevenueTotal} currency={summary.currency} />
-                </td>
-              </tr>
-            ))}
-          </FinanceDataTable>
+          emptyMessage="No platform VAT rows exist for this period."
+          headers={[
+            'VAT category',
+            'Rate',
+            'Posted',
+            'Reversals',
+            'Platform fee gross',
+            'Company output VAT',
+            'Net platform revenue',
+            'Formula delta',
+          ]}
+          rowCount={summary.rateBreakdown.length}
+        >
+          {summary.rateBreakdown.map((row) => (
+            <tr key={`${row.category}-${row.platformVatRateBps}`}>
+              <td>
+                <StatusBadgeFromPillClass pillClass={platformVatCategoryPill(row.category)}>
+                  {platformVatCategoryLabel(row.category)}
+                </StatusBadgeFromPillClass>
+              </td>
+              <td>{formatBps(row.platformVatRateBps)}</td>
+              <td>{row.settlementCount}</td>
+              <td>{row.reversalCount}</td>
+              <td>
+                <MoneyText amount={row.platformFeeGrossTotal} currency={summary.currency} />
+              </td>
+              <td>
+                <strong>
+                  <MoneyText amount={row.companyOutputVatTotal} currency={summary.currency} />
+                </strong>
+              </td>
+              <td>
+                <MoneyText amount={row.platformFeeNetRevenueTotal} currency={summary.currency} />
+              </td>
+              <td>
+                <MoneyText amount={platformVatRowDelta(row)} currency={summary.currency} />
+              </td>
+            </tr>
+          ))}
+        </FinanceDataTable>
       </FinanceTablePanel>
     </AdminPageTemplate>
   );
@@ -167,4 +212,14 @@ function platformVatCategoryPill(category: string) {
     return 'pill-success';
   }
   return 'pill-warn';
+}
+
+function platformVatCategoryLabel(category: string) {
+  if (category === 'REDUCED_8') return 'Reduced VAT';
+  if (category === 'STANDARD_10') return 'Standard VAT';
+  return 'Manual review';
+}
+
+function platformVatRowDelta(row: AdminPlatformVatSummary['rateBreakdown'][number]) {
+  return row.platformFeeGrossTotal - row.companyOutputVatTotal - row.platformFeeNetRevenueTotal;
 }

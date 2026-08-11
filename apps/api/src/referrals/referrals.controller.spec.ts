@@ -12,10 +12,14 @@ describe('ReferralsController', () => {
     claimPartnerReferralCode: vi.fn(),
     getCustomerReferralCode: vi.fn(),
     getCustomerReferralSummary: vi.fn(),
+    listCustomerReferralInvites: vi.fn(),
+    listCustomerReferralRewards: vi.fn(),
     getPartnerReferralCode: vi.fn(),
     getPartnerReferralSummary: vi.fn(),
     issueCustomerReferralCode: vi.fn(),
     issuePartnerReferralCode: vi.fn(),
+    requestCustomerRewardCashout: vi.fn(),
+    requestPartnerRewardCashout: vi.fn(),
   };
   const controller = new ReferralsController(referrals as unknown as ReferralsService);
   const user = { id: 'user-1', roles: [Role.CUSTOMER] } as AuthenticatedUser;
@@ -73,6 +77,50 @@ describe('ReferralsController', () => {
     expect(referrals.getCustomerReferralSummary).toHaveBeenCalledWith('user-1');
   });
 
+  it('lists only the signed-in customer referral invites', async () => {
+    referrals.listCustomerReferralInvites.mockResolvedValue({ rows: [] });
+    const query = { cursor: 'invite-1', limit: 10 };
+
+    await expect(controller.customerReferralInvites(user, query)).resolves.toEqual({ rows: [] });
+
+    expect(routeMetadata('customerReferralInvites')).toEqual({
+      method: RequestMethod.GET,
+      path: 'customer/referrals/invites',
+    });
+    expect(referrals.listCustomerReferralInvites).toHaveBeenCalledWith('user-1', query);
+  });
+
+  it('lists only the signed-in customer referral rewards', async () => {
+    referrals.listCustomerReferralRewards.mockResolvedValue({ rows: [] });
+    const query = { cursor: 'reward-1', limit: 10 };
+
+    await expect(controller.customerReferralRewards(user, query)).resolves.toEqual({ rows: [] });
+
+    expect(routeMetadata('customerReferralRewards')).toEqual({
+      method: RequestMethod.GET,
+      path: 'customer/referrals/rewards',
+    });
+    expect(referrals.listCustomerReferralRewards).toHaveBeenCalledWith('user-1', query);
+  });
+
+  it('requests customer referral cashout for the signed-in customer', async () => {
+    referrals.requestCustomerRewardCashout.mockResolvedValue({
+      id: 'reward-1',
+      status: 'CASHOUT_REQUESTED',
+    });
+
+    await expect(controller.requestCustomerReferralCashout(user, 'reward-1')).resolves.toMatchObject({
+      id: 'reward-1',
+      status: 'CASHOUT_REQUESTED',
+    });
+
+    expect(routeMetadata('requestCustomerReferralCashout')).toEqual({
+      method: RequestMethod.POST,
+      path: 'customer/referrals/rewards/:rewardId/cashout',
+    });
+    expect(referrals.requestCustomerRewardCashout).toHaveBeenCalledWith('user-1', 'reward-1');
+  });
+
   it('exposes existing Partner referral code under partner and provider aliases', async () => {
     referrals.getPartnerReferralCode.mockResolvedValue({ code: 'HPARTNER' });
 
@@ -120,6 +168,24 @@ describe('ReferralsController', () => {
       path: ['partner/referrals/summary', 'provider/referrals/summary'],
     });
     expect(referrals.getPartnerReferralSummary).toHaveBeenCalledWith('user-1');
+  });
+
+  it('requests Partner referral cashout through partner and provider aliases', async () => {
+    referrals.requestPartnerRewardCashout.mockResolvedValue({
+      id: 'reward-2',
+      status: 'CASHOUT_REQUESTED',
+    });
+
+    await expect(controller.requestPartnerReferralCashout(user, 'reward-2')).resolves.toMatchObject({
+      id: 'reward-2',
+      status: 'CASHOUT_REQUESTED',
+    });
+
+    expect(routeMetadata('requestPartnerReferralCashout')).toEqual({
+      method: RequestMethod.POST,
+      path: ['partner/referrals/rewards/:rewardId/cashout', 'provider/referrals/rewards/:rewardId/cashout'],
+    });
+    expect(referrals.requestPartnerRewardCashout).toHaveBeenCalledWith('user-1', 'reward-2');
   });
 });
 

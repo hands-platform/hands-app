@@ -2,182 +2,220 @@ import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
-import { adminGet } from '../../lib/admin-api';
+import { adminGetResult } from '../../lib/admin-api';
 import PartnerControlsPage from './page';
 
 vi.mock('../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
-
-  return {
-    ...actual,
-    adminGet: vi.fn(),
-  };
+  return { ...actual, adminGetResult: vi.fn() };
 });
 
-const mockedAdminGet = vi.mocked(adminGet);
-const partnerControlsSource = readFileSync('app/partner-controls/page.tsx', 'utf8');
+const mockedAdminGetResult = vi.mocked(adminGetResult);
+const pageSource = readFileSync('app/partner-controls/page.tsx', 'utf8');
 
 describe('PartnerControlsPage', () => {
   beforeEach(() => {
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+    mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({
+      data: fallback,
+      ok: true,
+      status: 200,
+    }));
   });
 
-  it('renders each Partner control workspace on shared Vuexy section surfaces', async () => {
-    const summaryMarkup = renderToStaticMarkup(
-      await PartnerControlsPage({ searchParams: Promise.resolve({}) }),
-    );
-    const controlsMarkup = renderToStaticMarkup(
+  it('keeps four fixed workspaces and isolates their operating queues', async () => {
+    const summary = renderToStaticMarkup(await PartnerControlsPage({ searchParams: Promise.resolve({}) }));
+    const blockers = renderToStaticMarkup(
       await PartnerControlsPage({ searchParams: Promise.resolve({ details: 'controls' }) }),
     );
-    const reportsMarkup = renderToStaticMarkup(
+    const reports = renderToStaticMarkup(
       await PartnerControlsPage({ searchParams: Promise.resolve({ details: 'reports' }) }),
     );
-    const sanctionsMarkup = renderToStaticMarkup(
+    const controls = renderToStaticMarkup(
       await PartnerControlsPage({ searchParams: Promise.resolve({ details: 'sanctions' }) }),
     );
 
-    expect(summaryMarkup).toContain('id="partner-control-command-center"');
-    expect(summaryMarkup).toContain('id="partner-control-next-actions"');
-    expect(summaryMarkup).toContain('Partner control workspaces');
-    expect(summaryMarkup).not.toContain('id="partner-control-board"');
-
-    expect(controlsMarkup).toContain('id="partner-control-board"');
-    expect(controlsMarkup).toContain('id="partner-control-unblock-board"');
-    expect(controlsMarkup).toContain('id="partner-control-unblock-playbook"');
-    expect(controlsMarkup).toContain('id="partner-control-block-matrix"');
-    expect(controlsMarkup).toContain('id="partner-control-checklist"');
-    expect(controlsMarkup).not.toContain('id="partner-control-reports"');
-
-    expect(reportsMarkup).toContain('id="partner-control-filters"');
-    expect(reportsMarkup).toContain('id="partner-control-create-report"');
-    expect(reportsMarkup).toContain('id="partner-control-reports"');
-    expect(reportsMarkup).not.toContain('id="partner-control-account-controls"');
-
-    expect(sanctionsMarkup).toContain('id="partner-control-filters"');
-    expect(sanctionsMarkup).toContain('id="partner-control-account-controls"');
-    expect(sanctionsMarkup).not.toContain('id="partner-control-create-report"');
+    for (const markup of [summary, blockers, reports, controls]) {
+      expect(markup).toContain('aria-label="Partner control workspaces"');
+      expect(markup).toContain('Summary');
+      expect(markup).toContain('Partner blockers');
+      expect(markup).toContain('Reports');
+      expect(markup).toContain('Account controls');
+    }
+    expect(summary).toContain('id="partner-control-priority-queue"');
+    expect(summary).toContain('id="partner-control-health-signals"');
+    expect(blockers).toContain('id="partner-control-blockers"');
+    expect(reports).toContain('id="partner-control-reports"');
+    expect(reports).not.toContain('id="partner-control-create-report"');
+    expect(controls).toContain('id="partner-control-account-controls"');
   });
 
-  it('uses shared Vuexy status badge atoms instead of raw partner control pill markup', () => {
-    expect(partnerControlsSource).toContain("from '../../components/status-badge'");
-    expect(partnerControlsSource).toContain('AdminFilterChipGroup');
-    expect(partnerControlsSource).toContain('AdminFilterSummary');
-    expect(partnerControlsSource).toContain('StatusBadge');
-    expect(partnerControlsSource).toContain('StatusBadgeFromPillClass');
-    expect(partnerControlsSource).not.toContain('statusBadgeToneFromPillClass');
-    expect(partnerControlsSource).not.toContain('function PartnerControlStatusBadge');
-    expect(partnerControlsSource).not.toContain('partnerControlStatusBadgeExtraClassName');
-    expect(partnerControlsSource).not.toContain('PillClassBadge');
-    expect(partnerControlsSource).not.toContain('<div className="participant-list');
-    expect(partnerControlsSource).not.toContain('<span className="pill');
-    expect(partnerControlsSource).not.toContain('<span className={`pill');
+  it('opens new report progressively and searches Partners through the server', async () => {
+    const markup = renderToStaticMarkup(
+      await PartnerControlsPage({
+        searchParams: Promise.resolve({ details: 'reports', newReport: '1', partnerQ: 'linh' }),
+      }),
+    );
+
+    expect(markup).toContain('id="partner-control-create-report"');
+    expect(markup).toContain('Find Partner');
+    expect(markup).toContain('Safety');
+    expect(markup).toContain('Service quality');
+    expect(mockedAdminGetResult).toHaveBeenCalledWith(
+      expect.stringContaining('/admin/partner-controls/providers?q=linh&'),
+      expect.any(Object),
+    );
   });
 
-  it('uses the shared Vuexy text link atom for inline navigation', () => {
-    expect(partnerControlsSource).toContain('AdminTextLink');
-    expect(partnerControlsSource).not.toContain('className="text-link"');
-  });
-
-  it('uses the shared Vuexy stage item atom for partner control row surfaces', () => {
-    expect(partnerControlsSource).toContain('AdminStageItem');
-    expect(partnerControlsSource).toContain('AdminStageList');
-    expect(partnerControlsSource).not.toContain('<div className="setup-stage-list admin-mt-12">');
-    expect(partnerControlsSource).not.toContain('className="setup-stage-item"');
-  });
-
-  it('keeps Partner control command cards on shared Vuexy task surfaces', () => {
-    expect(partnerControlsSource).toContain('AdminActionCard');
-    expect(partnerControlsSource).toContain('AdminTaskBreakdown');
-    expect(partnerControlsSource).toContain('AdminTaskCard');
-    expect(partnerControlsSource).toContain('AdminTaskGrid');
-    expect(partnerControlsSource).not.toContain('<div className="ops-task-breakdown">');
-    expect(partnerControlsSource).not.toContain('<div className="ops-task-grid admin-mt-12">');
-    expect(partnerControlsSource).not.toContain('className={`ops-task-card');
-    expect(partnerControlsSource).not.toContain('className={`ops-task-breakdown-item');
-    expect(partnerControlsSource).not.toContain('className="ops-task-card"');
-    expect(partnerControlsSource).not.toContain('ops-task-card-action');
-  });
-
-  it('uses the shared Vuexy money atom for visible wallet amounts', () => {
-    expect(partnerControlsSource).toContain('MoneyText');
-    expect(partnerControlsSource).not.toContain('helper={`Wallet ${formatMoney(item.walletBalance)}');
-    expect(partnerControlsSource).not.toContain('<strong>{formatMoney(item.walletBalance)}</strong>');
-    expect(partnerControlsSource).not.toContain("metric(\n          'Debt',\n          formatMoney");
-    expect(partnerControlsSource).toContain('reason: <><MoneyText amount={Math.abs(item.walletBalance)} /> cash/company fee debt is still open.</>');
-    expect(partnerControlsSource).toContain('detail: <><MoneyText amount={Math.abs(item.walletBalance)} /> must be settled or offset before final acceptance, service start, or payout release.</>');
-    expect(partnerControlsSource).not.toContain('reason: `${formatMoney(Math.abs(item.walletBalance))} cash/company fee debt is still open.`');
-    expect(partnerControlsSource).not.toContain('detail: `${formatMoney(Math.abs(item.walletBalance))} must be settled or offset before final acceptance, service start, or payout release.`');
-  });
-
-  it('uses the shared Vuexy date atom for visible report and account-control timestamps', () => {
-    expect(partnerControlsSource).toContain('DateTimeText');
-    expect(partnerControlsSource).not.toContain('formatDateTime,');
-    expect(partnerControlsSource).not.toContain('function formatDate(value?: string | null)');
-    expect(partnerControlsSource).not.toContain('{report.category} / {report.source} / {formatDate(report.createdAt)}');
-    expect(partnerControlsSource).not.toContain('Started: {formatDate(sanction.startsAt)}');
-    expect(partnerControlsSource).not.toContain('Expires: {formatDate(sanction.expiresAt)}');
-    expect(partnerControlsSource).not.toContain('Lifted: {formatDate(sanction.liftedAt)}');
-  });
-
-  it('uses shared labeled form atoms for partner control forms', async () => {
-    const page = await PartnerControlsPage({ searchParams: Promise.resolve({ details: 'reports' }) });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('admin-form-control-labeled admin-form-control-fluid');
-    expect(markup).toContain('admin-grid-span-2');
-    expect(markup).not.toContain('partner-control-form-field');
-    expect(markup).not.toContain('calendar-field');
-    expect(partnerControlsSource).not.toContain('partner-control-form-field');
-    expect(partnerControlsSource).not.toContain('<div className="calendar-field');
-  });
-
-  it('renders active partner control filters through the shared filter summary atom', async () => {
-    const page = await PartnerControlsPage({
-      searchParams: Promise.resolve({ q: 'cash', sanction: 'ACTIVE', status: 'OPEN' }),
-    });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('aria-label="Active partner control filters"');
-    expect(markup).toContain('class="admin-filter-summary full-span"');
-    expect(markup).toContain('Search: cash');
-    expect(markup).toContain('Report: OPEN');
-    expect(markup).toContain('Control: ACTIVE');
-  });
-
-  it('uses the shared table pagination footer for reports and account controls', () => {
-    expect(partnerControlsSource).toContain('AdminTablePaginationFooter');
-    expect(partnerControlsSource).toContain('className="vuexy-partner-table-footer"');
-    expect(partnerControlsSource).not.toContain('<AdminTableFooter');
-    expect(partnerControlsSource).not.toContain('partnerControlPagedListFooterLabel(');
-  });
-
-  it('does not link ordinary Partner control tasks to Developer/System app session diagnostics', async () => {
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href.startsWith('/admin/partner-controls/providers')) {
-        return [
-          {
-            id: 'partner-device-gap',
-            displayName: 'Device Gap Partner',
-            status: 'OFFLINE',
-            user: {
-              fullName: 'Device Gap Partner',
-              phone: '+84000000001',
-              pushDevices: [],
-            },
-            activitySummary: {
-              walletBalance: 0,
-            },
+  it('loads a requested report directly even when it is outside the current list page', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/provider-reports/report-direct') {
+        return {
+          data: {
+            id: 'report-direct',
+            providerProfileId: 'partner-1',
+            source: 'ADMIN',
+            severity: 'HIGH',
+            status: 'OPEN',
+            category: 'SAFETY',
+            summary: 'Direct report evidence',
+            createdAt: '2026-08-08T00:00:00.000Z',
           },
-        ];
+          ok: true,
+          status: 200,
+        } as never;
       }
-
-      return fallback;
+      return { data: fallback, ok: true, status: 200 } as never;
     });
 
-    const page = await PartnerControlsPage({ searchParams: Promise.resolve({ details: 'controls' }) });
-    const markup = renderToStaticMarkup(page);
+    const markup = renderToStaticMarkup(
+      await PartnerControlsPage({
+        searchParams: Promise.resolve({
+          details: 'reports',
+          newReport: '1',
+          partnerQ: 'ignored',
+          reviewReportId: 'report-direct',
+        }),
+      }),
+    );
 
-    expect(markup).toContain('Push/contact readiness');
-    expect(markup).not.toContain('href="/app-sessions');
+    expect(markup).toContain('id="partner-control-report-review"');
+    expect(markup).toContain('Direct report evidence');
+    expect(markup).not.toContain('id="partner-control-create-report"');
+    expect(mockedAdminGetResult).toHaveBeenCalledWith('/admin/provider-reports/report-direct', null);
+  });
+
+  it('does not let an unused summary request fail the Reports workspace', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => ({
+      data: fallback,
+      ok: href !== '/admin/partner-controls/summary',
+      status: href === '/admin/partner-controls/summary' ? 503 : 200,
+    }));
+
+    const markup = renderToStaticMarkup(
+      await PartnerControlsPage({ searchParams: Promise.resolve({ details: 'reports' }) }),
+    );
+
+    expect(markup).toContain('Reports needing review');
+    expect(markup).not.toContain('This Partner control queue could not be loaded');
+    expect(mockedAdminGetResult).not.toHaveBeenCalledWith('/admin/partner-controls/summary', null);
+  });
+
+  it('does not apply a current review SLA to closed report history', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/provider-reports?')) {
+        return {
+          data: {
+            items: [
+              {
+                id: 'report-closed',
+                providerProfileId: 'partner-1',
+                source: 'ADMIN',
+                severity: 'LOW',
+                status: 'RESOLVED',
+                category: 'OTHER',
+                summary: 'Closed report',
+                createdAt: '2026-01-01T00:00:00.000Z',
+                resolvedAt: '2026-01-02T00:00:00.000Z',
+              },
+            ],
+            skip: 0,
+            take: 10,
+            totalCount: 1,
+          },
+          ok: true,
+          status: 200,
+        } as never;
+      }
+      return { data: fallback, ok: true, status: 200 } as never;
+    });
+
+    const markup = renderToStaticMarkup(
+      await PartnerControlsPage({
+        searchParams: Promise.resolve({ details: 'reports', status: 'RESOLVED' }),
+      }),
+    );
+
+    expect(markup).toContain('Closed ·');
+    expect(markup).not.toContain('72h SLA');
+  });
+
+  it('separates active and historical restrictions', async () => {
+    const active = renderToStaticMarkup(
+      await PartnerControlsPage({ searchParams: Promise.resolve({ details: 'sanctions' }) }),
+    );
+    const history = renderToStaticMarkup(
+      await PartnerControlsPage({
+        searchParams: Promise.resolve({ details: 'sanctions', sanction: 'HISTORY' }),
+      }),
+    );
+
+    expect(active).toContain('Active restrictions');
+    expect(active).toContain('aria-current="page"');
+    expect(history).toContain('Restriction history');
+    expect(history).toContain('lifted or expired restrictions');
+  });
+
+  it('renders unavailable state instead of turning API errors into zero totals', async () => {
+    mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({
+      data: fallback,
+      ok: false,
+      status: 503,
+    }));
+
+    const markup = renderToStaticMarkup(await PartnerControlsPage({ searchParams: Promise.resolve({}) }));
+    expect(markup).toContain('could not be loaded');
+    expect(markup).toContain('Unavailable');
+    expect(markup).not.toContain('Reports needing review: </span>0');
+  });
+
+  it('keeps list rows read-only with one report review action', () => {
+    expect(pageSource).toContain('Review report');
+    expect(pageSource).toContain('ReportReviewPanel');
+    expect(pageSource).not.toContain('name="reportStatus"');
+    expect(pageSource).not.toContain('name="reportSeverity"');
+  });
+
+  it('uses shared form, date, money, badge, table, and confirmation atoms', () => {
+    for (const atom of [
+      'AdminDataTable',
+      'AdminFilterPanel',
+      'AdminFormSelect',
+      'AdminFormTextarea',
+      'AdminTablePaginationFooter',
+      'ConfirmDialog',
+      'DateTimeText',
+      'MoneyText',
+      'StatusBadge',
+    ]) {
+      expect(pageSource).toContain(atom);
+    }
+    expect(pageSource).not.toContain('className="text-link"');
+    expect(pageSource).not.toContain('<span className="pill');
+  });
+
+  it('masks phone values in the server-rendered workspace', () => {
+    expect(pageSource).toContain('function maskedPhone');
+    expect(pageSource).toContain("'•'.repeat");
+    expect(pageSource).not.toContain('{provider.user?.phone}');
   });
 });

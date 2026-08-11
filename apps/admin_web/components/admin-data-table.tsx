@@ -12,6 +12,7 @@ type AdminDataTableProps = {
 };
 
 type AdminTableScrollProps = {
+  readonly ariaLabel?: string;
   readonly children: ReactNode;
   readonly className?: string;
 };
@@ -48,8 +49,17 @@ type AdminTablePaginationFooterProps = {
   readonly trailing?: ReactNode;
 };
 
-export function AdminTableScroll({ children, className }: AdminTableScrollProps) {
-  return <div className={joinClassNames('admin-table-scroll', className)}>{children}</div>;
+export function AdminTableScroll({ ariaLabel = 'Scrollable data table', children, className }: AdminTableScrollProps) {
+  return (
+    <div
+      aria-label={ariaLabel}
+      className={joinClassNames('admin-table-scroll', className)}
+      role="region"
+      tabIndex={0}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function AdminTableFooter({ children, className }: AdminTableFooterProps) {
@@ -88,6 +98,10 @@ export function AdminTablePaginationFooter({
   totalRows,
   trailing,
 }: AdminTablePaginationFooterProps) {
+  if (totalRows <= 0) {
+    return null;
+  }
+
   return AdminTableFooter({
     className,
     children: (
@@ -99,15 +113,17 @@ export function AdminTablePaginationFooter({
             </>
           )}
         </span>
-        <AdminRoundedPagination
-          activePage={activePage}
-          ariaLabel={ariaLabel}
-          className={joinClassNames('vuexy-booking-pagination', paginationClassName)}
-          hrefForPage={hrefForPage}
-          onPageChange={onPageChange}
-          pageLinkClassName={pageLinkClassName}
-          totalPages={totalPages}
-        />
+        {totalPages > 1 ? (
+          <AdminRoundedPagination
+            activePage={activePage}
+            ariaLabel={ariaLabel}
+            className={joinClassNames('vuexy-booking-pagination', paginationClassName)}
+            hrefForPage={hrefForPage}
+            onPageChange={onPageChange}
+            pageLinkClassName={pageLinkClassName}
+            totalPages={totalPages}
+          />
+        ) : null}
         {trailing}
       </>
     ),

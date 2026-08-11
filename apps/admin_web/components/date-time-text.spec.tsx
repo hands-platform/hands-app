@@ -41,7 +41,7 @@ describe('DateTimeText', () => {
     expect(globals).toContain('.date-time-text {');
     expect(dateTimeBlock).toContain('align-items: center;');
     expect(dateTimeBlock).toContain('display: inline-flex;');
-    expect(dateTimeBlock).toContain('font-feature-settings: "tnum" 1;');
+    expect(dateTimeBlock).toContain("font-feature-settings: 'tnum' 1;");
     expect(dateTimeBlock).toContain('font-size: 0.8125rem;');
     expect(dateTimeBlock).toContain('line-height: 1.35;');
     expect(dateTimeBlock).toContain('white-space: nowrap;');

@@ -70,7 +70,7 @@ function dateRangeStart(range: AdminDateRange) {
   return null;
 }
 
-function vietnamDateKey(date: Date) {
+export function vietnamDateKey(date: Date) {
   const parts = vietnamDateFormatter.formatToParts(date);
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;

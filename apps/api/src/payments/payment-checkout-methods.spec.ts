@@ -16,6 +16,11 @@ describe('availableCustomerCheckoutMethods', () => {
         label: 'Cash',
         requiresRedirect: false,
       },
+      {
+        method: PaymentMethod.CUSTOMER_WALLET,
+        label: 'Wallet',
+        requiresRedirect: false,
+      },
     ]);
   });
 
@@ -26,7 +31,13 @@ describe('availableCustomerCheckoutMethods', () => {
         allowPlaceholder: true,
         allowRedirectMethods: true,
       }).map((item) => item.method),
-    ).toEqual([PaymentMethod.CASH, PaymentMethod.MOMO, PaymentMethod.VNPAY, PaymentMethod.CARD]);
+    ).toEqual([
+      PaymentMethod.CASH,
+      PaymentMethod.CUSTOMER_WALLET,
+      PaymentMethod.MOMO,
+      PaymentMethod.VNPAY,
+      PaymentMethod.CARD,
+    ]);
 
     expect(
       availableCustomerCheckoutMethods(adapters(), {
@@ -34,7 +45,7 @@ describe('availableCustomerCheckoutMethods', () => {
         allowPlaceholder: true,
         allowRedirectMethods: true,
       }).map((item) => item.method),
-    ).toEqual([PaymentMethod.CASH]);
+    ).toEqual([PaymentMethod.CASH, PaymentMethod.CUSTOMER_WALLET]);
   });
 
   it('exposes configured gateway adapters in production', () => {
@@ -45,6 +56,7 @@ describe('availableCustomerCheckoutMethods', () => {
       ),
     ).toEqual([
       { method: PaymentMethod.CASH, label: 'Cash', requiresRedirect: false },
+      { method: PaymentMethod.CUSTOMER_WALLET, label: 'Wallet', requiresRedirect: false },
       { method: PaymentMethod.MOMO, label: 'MoMo', requiresRedirect: true },
       { method: PaymentMethod.VNPAY, label: 'VNPay', requiresRedirect: true },
     ]);
@@ -56,7 +68,7 @@ describe('availableCustomerCheckoutMethods', () => {
         adapters({ momo: 'GATEWAY', vnpay: 'GATEWAY' }),
         { isProduction: true, allowPlaceholder: false, allowRedirectMethods: false },
       ).map((item) => item.method),
-    ).toEqual([PaymentMethod.CASH]);
+    ).toEqual([PaymentMethod.CASH, PaymentMethod.CUSTOMER_WALLET]);
   });
 });
 
@@ -65,6 +77,7 @@ function adapters(
 ): PaymentAdapter[] {
   return [
     adapter(PaymentMethod.CASH, 'INTERNAL'),
+    adapter(PaymentMethod.CUSTOMER_WALLET, 'INTERNAL'),
     adapter(PaymentMethod.MOMO, modes.momo ?? 'PLACEHOLDER'),
     adapter(PaymentMethod.VNPAY, modes.vnpay ?? 'PLACEHOLDER'),
     adapter(PaymentMethod.CARD, 'PLACEHOLDER'),

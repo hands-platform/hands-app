@@ -13,16 +13,31 @@ import {
   buildOperationsHandoffFilters,
   buildOperationsHandoffRangeData,
   emptyCashSettlementSummary,
+  operationsHandoffActivityBacklogHref,
+  operationsHandoffActivityAgeHref,
+  operationsHandoffActivityOver24hHref,
+  operationsHandoffActivityReasonOptions,
+  operationsHandoffActivityReasonHref,
+  operationsHandoffActivityReviewHref,
+  operationsHandoffActivitySortHref,
+  operationsHandoffActivitySourceHref,
   operationsHandoffDetailPageHref,
 } from './operations-handoff-page-model';
 
 describe('operations handoff page model', () => {
   it('normalizes filters and provides a complete empty cash settlement fallback', () => {
     expect(buildOperationsHandoffFilters({})).toEqual({
+      activityAge: 'all',
+      activityBacklog: 'current',
+      activityReason: 'all',
+      activityReview: 'needs-review',
+      activitySort: 'oldest',
+      activitySource: 'all',
       detailPages: {
         activity: 1,
         bookings: 1,
         customers: 1,
+        decisions: 1,
         finance: 1,
         partners: 1,
       },
@@ -30,10 +45,17 @@ describe('operations handoff page model', () => {
       range: '7d',
     });
     expect(buildOperationsHandoffFilters({ range: ['7d'] })).toEqual({
+      activityAge: 'all',
+      activityBacklog: 'current',
+      activityReason: 'all',
+      activityReview: 'needs-review',
+      activitySort: 'oldest',
+      activitySource: 'all',
       detailPages: {
         activity: 1,
         bookings: 1,
         customers: 1,
+        decisions: 1,
         finance: 1,
         partners: 1,
       },
@@ -41,10 +63,17 @@ describe('operations handoff page model', () => {
       range: '7d',
     });
     expect(buildOperationsHandoffFilters({ range: 'unsupported' })).toEqual({
+      activityAge: 'all',
+      activityBacklog: 'current',
+      activityReason: 'all',
+      activityReview: 'needs-review',
+      activitySort: 'oldest',
+      activitySource: 'all',
       detailPages: {
         activity: 1,
         bookings: 1,
         customers: 1,
+        decisions: 1,
         finance: 1,
         partners: 1,
       },
@@ -52,10 +81,17 @@ describe('operations handoff page model', () => {
       range: 'today',
     });
     expect(buildOperationsHandoffFilters({ details: 'all' })).toEqual({
+      activityAge: 'all',
+      activityBacklog: 'current',
+      activityReason: 'all',
+      activityReview: 'needs-review',
+      activitySort: 'oldest',
+      activitySource: 'all',
       detailPages: {
         activity: 1,
         bookings: 1,
         customers: 1,
+        decisions: 1,
         finance: 1,
         partners: 1,
       },
@@ -69,13 +105,75 @@ describe('operations handoff page model', () => {
       topProviderGroups: [],
       totalDebtAmount: 0,
     });
+    expect(
+      buildOperationsHandoffFilters({
+        activityReason: 'payment',
+        activityReview: 'all',
+        activitySource: 'booking',
+      }),
+    ).toMatchObject({
+      activityBacklog: 'all',
+      activityReason: 'all',
+      activityReview: 'all',
+      activitySort: 'newest',
+      activitySource: 'booking',
+    });
+    expect(
+      buildOperationsHandoffFilters({
+        activityReason: 'payment',
+        activitySource: 'finance',
+      }),
+    ).toMatchObject({
+      activityBacklog: 'current',
+      activityReason: 'all',
+      activityReview: 'needs-review',
+      activitySource: 'finance',
+    });
+    expect(
+      operationsHandoffActivityReasonOptions('booking').map((option) => option.value),
+    ).toEqual(['all', 'booking-state', 'payment', 'missing-settlement']);
+  });
+
+  it('preserves compatible reason priority and clears it when the source changes domain', () => {
+    const filters = buildOperationsHandoffFilters({
+      activityAge: 'over-24h',
+      activityReason: 'payment',
+      activitySort: 'newest',
+      activitySource: 'all',
+      details: 'all',
+      range: '30d',
+    });
+
+    expect(operationsHandoffActivitySourceHref(filters, 'booking')).toContain(
+      'activityReason=payment',
+    );
+    expect(operationsHandoffActivitySourceHref(filters, 'finance')).not.toContain(
+      'activityReason=payment',
+    );
+    expect(operationsHandoffDetailPageHref(filters, 'activity')(2)).toContain(
+      'activityReason=payment',
+    );
+    expect(operationsHandoffActivityAgeHref(filters, '1-4h')).toContain(
+      'activityReason=payment',
+    );
+    expect(operationsHandoffActivitySortHref(filters, 'oldest')).toContain(
+      'activityReason=payment',
+    );
+    expect(operationsHandoffActivityBacklogHref(filters, 'legacy')).toContain(
+      'activityBacklog=legacy',
+    );
+    expect(operationsHandoffActivityOver24hHref(filters, 'notification-failure')).toBe(
+      '/operations-handoff?details=all&range=30d&activityReason=notification-failure&activityAge=over-24h',
+    );
   });
 
   it('normalizes full history detail pagination links without changing the data window', () => {
     const filters = buildOperationsHandoffFilters({
       activityPage: '2',
+      activitySource: 'finance',
       bookingPage: 'bad',
       customerPage: '4',
+      decisionPage: '6',
       details: 'all',
       financePage: '30',
       partnerPage: '5',
@@ -86,26 +184,76 @@ describe('operations handoff page model', () => {
       activity: 2,
       bookings: 1,
       customers: 4,
-      finance: 20,
+      decisions: 6,
+      finance: 30,
       partners: 5,
     });
     expect(operationsHandoffDetailPageHref(filters, 'bookings')(3)).toBe(
-      '/operations-handoff?details=all&range=30d&activityPage=2&bookingPage=3&customerPage=4&financePage=20&partnerPage=5',
+      '/operations-handoff?details=all&range=30d&activitySource=finance&activityPage=2&bookingPage=3&customerPage=4&decisionPage=6&financePage=30&partnerPage=5',
     );
     expect(operationsHandoffDetailPageHref(filters, 'customers')(6)).toBe(
-      '/operations-handoff?details=all&range=30d&activityPage=2&customerPage=6&financePage=20&partnerPage=5',
+      '/operations-handoff?details=all&range=30d&activitySource=finance&activityPage=2&customerPage=6&decisionPage=6&financePage=30&partnerPage=5',
     );
     expect(operationsHandoffDetailPageHref(filters, 'partners')(7)).toBe(
-      '/operations-handoff?details=all&range=30d&activityPage=2&customerPage=4&financePage=20&partnerPage=7',
+      '/operations-handoff?details=all&range=30d&activitySource=finance&activityPage=2&customerPage=4&decisionPage=6&financePage=30&partnerPage=7',
+    );
+    expect(operationsHandoffDetailPageHref(filters, 'decisions')(2)).toBe(
+      '/operations-handoff?details=all&range=30d&activitySource=finance&activityPage=2&customerPage=4&decisionPage=2&financePage=30&partnerPage=5',
+    );
+    expect(operationsHandoffActivitySourceHref(filters, 'chat')).toBe(
+      '/operations-handoff?details=all&range=30d&activitySource=chat&customerPage=4&decisionPage=6&financePage=30&partnerPage=5',
+    );
+    expect(operationsHandoffActivitySourceHref(filters, 'all')).toBe(
+      '/operations-handoff?details=all&range=30d&customerPage=4&decisionPage=6&financePage=30&partnerPage=5',
+    );
+    expect(operationsHandoffActivityReviewHref(filters, 'all')).toBe(
+      '/operations-handoff?details=all&range=30d&activitySource=finance&activityReview=all&customerPage=4&decisionPage=6&financePage=30&partnerPage=5',
+    );
+    expect(operationsHandoffActivityReviewHref(filters, 'needs-review')).toBe(
+      '/operations-handoff?details=all&range=30d&activitySource=finance&customerPage=4&decisionPage=6&financePage=30&partnerPage=5',
+    );
+    expect(operationsHandoffActivityAgeHref(filters, 'over-24h')).toBe(
+      '/operations-handoff?details=all&range=30d&activitySource=finance&activityAge=over-24h&customerPage=4&decisionPage=6&financePage=30&partnerPage=5',
+    );
+    expect(operationsHandoffActivitySortHref(filters, 'newest')).toBe(
+      '/operations-handoff?details=all&range=30d&activitySource=finance&activitySort=newest&customerPage=4&decisionPage=6&financePage=30&partnerPage=5',
+    );
+    expect(operationsHandoffActivityReasonHref(filters, 'finance-unpaid')).toBe(
+      '/operations-handoff?details=all&range=30d&activitySource=finance&activityReason=finance-unpaid&customerPage=4&decisionPage=6&financePage=30&partnerPage=5',
+    );
+    expect(operationsHandoffActivityReasonHref(filters, 'payment')).toBe(
+      '/operations-handoff?details=all&range=30d&activitySource=finance&customerPage=4&decisionPage=6&financePage=30&partnerPage=5',
+    );
+    expect(operationsHandoffActivityOver24hHref(filters, 'finance-unpaid')).toBe(
+      '/operations-handoff?details=all&range=30d&activitySource=finance&activityReason=finance-unpaid&activityAge=over-24h&customerPage=4&decisionPage=6&financePage=30&partnerPage=5',
+    );
+    expect(operationsHandoffActivityOver24hHref(filters, 'payment')).toBe(
+      '/operations-handoff?details=all&range=30d&activitySource=finance&activityAge=over-24h&customerPage=4&decisionPage=6&financePage=30&partnerPage=5',
     );
   });
 
   it('keeps default operations history requests bounded and scoped to the last 7 days', () => {
     const hrefs = buildOperationsHandoffDataHrefs({});
     const bookingsUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
+    const completedBookingSummaryUrl = new URL(
+      hrefs.completedBookingSummaryHref,
+      'http://admin.local',
+    );
     const auditUrl = new URL(hrefs.auditLogsHref, 'http://admin.local');
+    const operatorNoteSummaryUrl = new URL(
+      hrefs.operatorNoteSummaryHref,
+      'http://admin.local',
+    );
     const paymentsUrl = new URL(hrefs.paymentsHref, 'http://admin.local');
     const earningsUrl = new URL(hrefs.earningsHref, 'http://admin.local');
+    const financeCloseoutSummaryUrl = new URL(
+      hrefs.financeCloseoutSummaryHref,
+      'http://admin.local',
+    );
+    const financeDecisionAuditSummaryUrl = new URL(
+      hrefs.financeDecisionAuditSummaryHref,
+      'http://admin.local',
+    );
     const refundsUrl = new URL(hrefs.refundsHref, 'http://admin.local');
     const payoutBatchesUrl = new URL(hrefs.payoutBatchesHref, 'http://admin.local');
 
@@ -114,13 +262,26 @@ describe('operations handoff page model', () => {
     expect(bookingsUrl.searchParams.get('take')).toBe('10');
     expect('appSessionsHref' in hrefs).toBe(false);
     expect('appSessionSummaryHref' in hrefs).toBe(false);
-    expect(hrefs.chatArchiveHref).toBeNull();
+    expect(hrefs.activityStreamHref).toBeNull();
+    expect(hrefs.bookingHistoryHref).toBeNull();
+    expect(hrefs.customerSummaryHref).toBeNull();
     expect(hrefs.customersHref).toBeNull();
-    expect(hrefs.partnersHref).toBeNull();
+    const partnersUrl = new URL(hrefs.partnersHref!, 'http://admin.local');
+    expect(partnersUrl.pathname).toBe('/admin/operations-handoff/providers');
+    expect(partnersUrl.searchParams.get('review')).toBe('attention');
+    expect(partnersUrl.searchParams.get('skip')).toBe('0');
+    expect(partnersUrl.searchParams.get('take')).toBe('1');
+    expect(partnersUrl.searchParams.get('withTotal')).toBe('true');
+    expect(completedBookingSummaryUrl.pathname).toBe('/admin/bookings/completed-operations-summary');
+    expect(completedBookingSummaryUrl.searchParams.get('dateRange')).toBe('7d');
     expect(paymentsUrl.searchParams.get('range')).toBe('7d');
     expect(paymentsUrl.searchParams.get('take')).toBe('5');
     expect(earningsUrl.searchParams.get('range')).toBe('7d');
     expect(earningsUrl.searchParams.get('take')).toBe('5');
+    expect(hrefs.financeCloseoutEarningsHref).toBeNull();
+    expect(financeCloseoutSummaryUrl.pathname).toBe('/admin/earnings/summary');
+    expect(financeCloseoutSummaryUrl.searchParams.get('range')).toBe('7d');
+    expect(financeCloseoutSummaryUrl.searchParams.get('review')).toBe('closeout-review');
     expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=7d');
     expect(hrefs.notificationsHref).toBeNull();
     expect(hrefs.notificationSummaryHref).toContain('/admin/notifications/summary?');
@@ -131,32 +292,156 @@ describe('operations handoff page model', () => {
     expect(payoutBatchesUrl.searchParams.get('review')).toBe('needs-review');
     expect(auditUrl.pathname).toBe('/admin/audit-logs');
     expect(auditUrl.searchParams.get('take')).toBe('5');
+    expect(operatorNoteSummaryUrl.pathname).toBe('/admin/audit-logs/summary');
+    expect(operatorNoteSummaryUrl.searchParams.getAll('action')).toEqual([
+      'operations.handoff_note.add',
+      'booking.ops_note.add',
+      'customer.ops_note.add',
+      'provider.ops_note.add',
+    ]);
+    expect(
+      Date.parse(operatorNoteSummaryUrl.searchParams.get('to') ?? '') -
+        Date.parse(operatorNoteSummaryUrl.searchParams.get('from') ?? ''),
+    ).toBe(4 * 60 * 60 * 1000);
+    expect(hrefs.financeDecisionAuditLogsHref).toBeNull();
+    expect(financeDecisionAuditSummaryUrl.pathname).toBe('/admin/audit-logs/summary');
+    expect(financeDecisionAuditSummaryUrl.searchParams.getAll('action')).toEqual([
+      'company_bank_account.create',
+      'company_bank_account.update',
+      'company_bank_account.approval_rejected',
+      'bank_reconciliation.match.create',
+      'bank_reconciliation.match.reverse',
+      'bank_reconciliation.transaction.ignore',
+      'company_bank_transaction.review_escalation_resolved',
+      'partner_bank_deposit.reconciliation_escalation_resolved',
+      'wallet_adjustment_request.execute',
+      'wallet_adjustment_request.reject',
+      'wallet_adjustment_request.cancel_stale',
+      'partner_bank_deposit_request.execute',
+      'partner_bank_deposit_request.reject',
+      'payout_batch.update',
+      'payout_batch.reversal',
+      'provider_wallet.withdrawal_request.update',
+      'provider_wallet.withdrawal_request.reversal',
+      'monthly_tax_closing.status_update',
+      'payment.refund',
+      'payment.refund.reject',
+    ]);
     expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('from') ?? ''))).toBe(true);
     expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('to') ?? ''))).toBe(true);
   });
 
-  it('keeps retained chat archive behind full handoff details', () => {
+  it('keeps the exact unified activity stream behind full handoff details', () => {
     const hrefs = buildOperationsHandoffDataHrefs({ details: 'all', range: '7d' });
     const bookingsUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
-    const chatArchiveUrl = new URL(hrefs.chatArchiveHref!, 'http://admin.local');
+    const bookingHistoryUrl = new URL(hrefs.bookingHistoryHref!, 'http://admin.local');
+    const activityStreamUrl = new URL(hrefs.activityStreamHref!, 'http://admin.local');
     const customersUrl = new URL(hrefs.customersHref!, 'http://admin.local');
+    const customerSummaryUrl = new URL(hrefs.customerSummaryHref!, 'http://admin.local');
     const notificationsUrl = new URL(hrefs.notificationsHref!, 'http://admin.local');
+    const financeDecisionAuditUrl = new URL(
+      hrefs.financeDecisionAuditLogsHref!,
+      'http://admin.local',
+    );
+    const financeDecisionAuditSummaryUrl = new URL(
+      hrefs.financeDecisionAuditSummaryHref,
+      'http://admin.local',
+    );
+    const financeCloseoutEarningsUrl = new URL(
+      hrefs.financeCloseoutEarningsHref!,
+      'http://admin.local',
+    );
     const partnersUrl = new URL(hrefs.partnersHref!, 'http://admin.local');
     const paymentsUrl = new URL(hrefs.paymentsHref, 'http://admin.local');
 
     expect(bookingsUrl.searchParams.get('take')).toBe('50');
+    expect(bookingHistoryUrl.pathname).toBe('/admin/bookings/page');
+    expect(bookingHistoryUrl.searchParams.get('dateRange')).toBe('7d');
+    expect(bookingHistoryUrl.searchParams.get('page')).toBe('1');
+    expect(bookingHistoryUrl.searchParams.get('pageSize')).toBe('3');
     expect('appSessionsHref' in hrefs).toBe(false);
     expect('appSessionSummaryHref' in hrefs).toBe(false);
-    expect(chatArchiveUrl.pathname).toBe('/admin/chat-archive');
-    expect(chatArchiveUrl.searchParams.get('dateRange')).toBe('7d');
-    expect(chatArchiveUrl.searchParams.get('take')).toBe('50');
+    expect(activityStreamUrl.pathname).toBe('/admin/operations-handoff/activity');
+    expect(activityStreamUrl.searchParams.get('range')).toBe('7d');
+    expect(activityStreamUrl.searchParams.get('age')).toBe('all');
+    expect(activityStreamUrl.searchParams.get('backlog')).toBe('current');
+    expect(activityStreamUrl.searchParams.get('review')).toBe('needs-review');
+    expect(activityStreamUrl.searchParams.get('page')).toBe('1');
+    expect(activityStreamUrl.searchParams.get('pageSize')).toBe('3');
+    expect(activityStreamUrl.searchParams.get('reason')).toBe('all');
+    expect(activityStreamUrl.searchParams.get('sort')).toBe('oldest');
+    expect(activityStreamUrl.searchParams.get('source')).toBe('all');
     expect(customersUrl.pathname).toBe('/admin/customers');
-    expect(customersUrl.searchParams.get('take')).toBe('50');
+    expect(customersUrl.searchParams.get('skip')).toBe('0');
+    expect(customersUrl.searchParams.get('take')).toBe('3');
+    expect(customerSummaryUrl.pathname).toBe('/admin/customers/summary');
     expect(notificationsUrl.pathname).toBe('/admin/notifications');
     expect(notificationsUrl.searchParams.get('take')).toBe('50');
     expect(partnersUrl.pathname).toBe('/admin/operations-handoff/providers');
-    expect(partnersUrl.searchParams.get('take')).toBe('50');
+    expect(partnersUrl.searchParams.get('review')).toBe('attention');
+    expect(partnersUrl.searchParams.get('skip')).toBe('0');
+    expect(partnersUrl.searchParams.get('take')).toBe('3');
+    expect(partnersUrl.searchParams.get('withTotal')).toBe('true');
     expect(paymentsUrl.searchParams.get('take')).toBe('50');
+    expect(financeDecisionAuditUrl.searchParams.get('take')).toBe('3');
+    expect(financeDecisionAuditUrl.searchParams.get('withTotal')).toBe('true');
+    expect(financeDecisionAuditSummaryUrl.pathname).toBe('/admin/audit-logs/summary');
+    expect(financeCloseoutEarningsUrl.pathname).toBe('/admin/earnings');
+    expect(financeCloseoutEarningsUrl.searchParams.get('range')).toBe('7d');
+    expect(financeCloseoutEarningsUrl.searchParams.get('review')).toBe('closeout-review');
+    expect(financeCloseoutEarningsUrl.searchParams.get('skip')).toBe('0');
+    expect(financeCloseoutEarningsUrl.searchParams.get('take')).toBe('3');
+  });
+
+  it('requests only the selected Activity, Booking, Customer, and Partner history pages', () => {
+    const hrefs = buildOperationsHandoffDataHrefs({
+      activityPage: '7',
+      activityReview: 'all',
+      activitySource: 'notification',
+      bookingPage: '4',
+      customerPage: '5',
+      details: 'all',
+      partnerPage: '6',
+      range: '30d',
+    });
+    const activityStreamUrl = new URL(hrefs.activityStreamHref!, 'http://admin.local');
+    const bookingHistoryUrl = new URL(hrefs.bookingHistoryHref!, 'http://admin.local');
+    const customersUrl = new URL(hrefs.customersHref!, 'http://admin.local');
+    const partnersUrl = new URL(hrefs.partnersHref!, 'http://admin.local');
+
+    expect(activityStreamUrl.searchParams.get('range')).toBe('30d');
+    expect(activityStreamUrl.searchParams.get('age')).toBe('all');
+    expect(activityStreamUrl.searchParams.get('backlog')).toBe('all');
+    expect(activityStreamUrl.searchParams.get('review')).toBe('all');
+    expect(activityStreamUrl.searchParams.get('page')).toBe('7');
+    expect(activityStreamUrl.searchParams.get('pageSize')).toBe('3');
+    expect(activityStreamUrl.searchParams.get('reason')).toBe('all');
+    expect(activityStreamUrl.searchParams.get('sort')).toBe('newest');
+    expect(activityStreamUrl.searchParams.get('source')).toBe('notification');
+    expect(bookingHistoryUrl.searchParams.get('dateRange')).toBe('30d');
+    expect(bookingHistoryUrl.searchParams.get('page')).toBe('4');
+    expect(bookingHistoryUrl.searchParams.get('pageSize')).toBe('3');
+    expect(customersUrl.searchParams.get('skip')).toBe('12');
+    expect(customersUrl.searchParams.get('take')).toBe('3');
+    expect(partnersUrl.searchParams.get('skip')).toBe('15');
+    expect(partnersUrl.searchParams.get('take')).toBe('3');
+  });
+
+  it('requests only the selected Finance closeout page from the API', () => {
+    const hrefs = buildOperationsHandoffDataHrefs({
+      details: 'all',
+      financePage: '4',
+      range: '30d',
+    });
+    const financeCloseoutEarningsUrl = new URL(
+      hrefs.financeCloseoutEarningsHref!,
+      'http://admin.local',
+    );
+
+    expect(financeCloseoutEarningsUrl.searchParams.get('range')).toBe('30d');
+    expect(financeCloseoutEarningsUrl.searchParams.get('review')).toBe('closeout-review');
+    expect(financeCloseoutEarningsUrl.searchParams.get('skip')).toBe('9');
+    expect(financeCloseoutEarningsUrl.searchParams.get('take')).toBe('3');
   });
 
   it('keeps selected handoff range on bounded list requests', () => {
@@ -166,7 +451,7 @@ describe('operations handoff page model', () => {
     const payoutBatchesUrl = new URL(hrefs.payoutBatchesHref, 'http://admin.local');
 
     expect(bookingsUrl.searchParams.get('dateRange')).toBe('7d');
-    expect(hrefs.chatArchiveHref).toBeNull();
+    expect(hrefs.activityStreamHref).toBeNull();
     expect(paymentsUrl.searchParams.get('range')).toBe('7d');
     expect(paymentsUrl.searchParams.get('take')).toBe('5');
     expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=7d');

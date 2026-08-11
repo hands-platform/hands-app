@@ -106,8 +106,8 @@ describe('partner list readiness', () => {
         { label: 'location missing', severity: 'high' },
         { label: 'push missing', severity: 'medium' },
         { label: 'Supabase role pending', severity: 'medium' },
-        { label: '1 open report(s)', severity: 'high' },
-        { label: '1 active control(s)', severity: 'high' },
+        { label: '1 open report', severity: 'high' },
+        { label: '1 active control', severity: 'high' },
       ]),
     );
   });

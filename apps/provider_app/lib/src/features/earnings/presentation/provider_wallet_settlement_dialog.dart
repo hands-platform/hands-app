@@ -16,7 +16,7 @@ Future<void> showProviderWalletSettlementDialog({
       final theme = Theme.of(dialogContext);
       return AlertDialog(
         icon: const Icon(Icons.lock_outline),
-        title: const Text('Settlement required'),
+        title: const Text('Cần thanh toán phí'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -29,12 +29,12 @@ Future<void> showProviderWalletSettlementDialog({
               ),
               const SizedBox(height: 10),
               Text(
-                'You cannot participate in marketplace bookings until unpaid HANDS fees are settled.',
+                'Bạn không thể tham gia đặt lịch công khai cho đến khi thanh toán phí HANDS còn thiếu.',
                 style: theme.textTheme.bodyMedium,
               ),
               const SizedBox(height: 12),
               Text(
-                'Amount to settle: ${settlementView.amountLabel}',
+                'Số tiền cần thanh toán: ${settlementView.amountLabel}',
                 style: theme.textTheme.titleSmall
                     ?.copyWith(fontWeight: FontWeight.w800),
               ),
@@ -55,7 +55,7 @@ Future<void> showProviderWalletSettlementDialog({
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Close'),
+            child: const Text('Đóng'),
           ),
           FilledButton.icon(
             onPressed: () {
@@ -63,7 +63,7 @@ Future<void> showProviderWalletSettlementDialog({
               onRefresh();
             },
             icon: const Icon(Icons.refresh),
-            label: const Text('Refresh wallet'),
+            label: const Text('Làm mới ví'),
           ),
         ],
       );

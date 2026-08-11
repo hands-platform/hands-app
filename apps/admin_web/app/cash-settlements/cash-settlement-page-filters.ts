@@ -1,9 +1,17 @@
 import type { AdminDateRange } from '../../lib/date-range';
 import { normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import {
+  readAdminQueueAge,
+  readAdminQueueSlaFilter,
+  type AdminQueueAge,
+  type AdminQueueSlaFilter,
+} from '../../lib/admin-queue-list';
+import {
   cashSettlementQueueOptions,
   type CashSettlementFilters,
   type CashSettlementQueueFilter,
+  type CashSettlementSort,
+  type CashSettlementView,
 } from './cash-settlement-page-types';
 
 const CASH_SETTLEMENT_API_LIMIT = 10;
@@ -15,19 +23,24 @@ export function buildCashSettlementFilters(
   const rangeParam = readSearchParam(params.range);
 
   return {
+    age: readAdminQueueAge(params.age),
     page: readCashSettlementPage(params.page),
     pageSize: readCashSettlementPageSize(params.pageSize),
-    range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
+    period: normalizeCashSettlementPeriod(readSearchParam(params.period)),
+    range: rangeParam ? normalizeDateRange(rangeParam) : 'all',
+    returnTo: normalizeCashSettlementOverviewReturnTo(readSearchParam(params.returnTo)),
     queue: normalizeCashSettlementQueue(readSearchParam(params.queue)),
     q: readSearchParam(params.q).trim(),
+    sla: readAdminQueueSlaFilter(params.sla),
+    sort: readCashSettlementSort(params.sort),
+    view: readCashSettlementView(params.view),
   };
 }
 
 export function buildCashSettlementApiHref(filters: CashSettlementFilters) {
-  const params = new URLSearchParams({
-    range: filters.range,
-    take: String(filters.pageSize),
-  });
+  const params = new URLSearchParams();
+  appendCashSettlementPeriodOrRange(params, filters);
+  params.set('take', String(filters.pageSize));
   appendCashSettlementListParams(params, filters);
   const skip = (filters.page - 1) * filters.pageSize;
   if (skip > 0) {
@@ -38,9 +51,8 @@ export function buildCashSettlementApiHref(filters: CashSettlementFilters) {
 }
 
 export function buildCashSettlementSummaryApiHref(filters: CashSettlementFilters) {
-  const params = new URLSearchParams({
-    range: filters.range,
-  });
+  const params = new URLSearchParams();
+  appendCashSettlementPeriodOrRange(params, filters);
   appendCashSettlementListParams(params, filters);
 
   return `/admin/cash-settlement-summary?${params.toString()}`;
@@ -62,15 +74,30 @@ export function cashSettlementHref(input: {
   range: AdminDateRange;
   page?: number;
   pageSize?: number;
+  period?: string | null;
   queue?: CashSettlementQueueFilter;
   q?: string;
-  view?: 'full';
+  age?: AdminQueueAge;
+  sort?: CashSettlementSort;
+  sla?: AdminQueueSlaFilter;
+  view?: CashSettlementView;
+  review?: string;
+  returnTo?: string | null;
 }) {
   const params = new URLSearchParams();
-  if (input.range && input.range !== 'today') {
+  if (input.range && input.range !== 'all') {
     params.set('range', input.range);
   }
-  if (input.view === 'full') {
+  const period = normalizeCashSettlementPeriod(input.period ?? '');
+  if (period) {
+    params.delete('range');
+    params.set('period', period);
+  }
+  const returnTo = normalizeCashSettlementOverviewReturnTo(input.returnTo ?? '');
+  if (returnTo) {
+    params.set('returnTo', returnTo);
+  }
+  if (input.view === 'guide') {
     params.set('view', input.view);
   }
   if (input.queue && input.queue !== 'all') {
@@ -79,14 +106,89 @@ export function cashSettlementHref(input: {
   if (input.q?.trim()) {
     params.set('q', input.q.trim());
   }
+  if (input.age && input.age !== 'all') {
+    params.set('age', input.age);
+  }
+  if (input.sort) {
+    params.set('sort', input.sort);
+  }
+  if (input.sla && input.sla !== 'all') {
+    params.set('sla', input.sla);
+  }
   if (input.pageSize && input.pageSize !== CASH_SETTLEMENT_API_LIMIT) {
     params.set('pageSize', String(input.pageSize));
   }
   if (input.page && input.page > 1) {
     params.set('page', String(input.page));
   }
+  if (input.review?.trim()) {
+    params.set('review', input.review.trim());
+  }
   const query = params.toString();
   return query ? `/cash-settlements?${query}` : '/cash-settlements';
+}
+
+export function safeCashSettlementReturnTo(value: string | null | undefined) {
+  if (!value) return '/cash-settlements';
+  try {
+    const url = new URL(value, 'http://admin.local');
+    if (url.origin !== 'http://admin.local' || url.pathname !== '/cash-settlements') {
+      return '/cash-settlements';
+    }
+    const raw = Object.fromEntries(url.searchParams.entries());
+    return cashSettlementHref({
+      ...buildCashSettlementFilters(raw),
+      review: url.searchParams.get('review') ?? undefined,
+    });
+  } catch {
+    return '/cash-settlements';
+  }
+}
+
+export function safeCashSettlementOverviewReturnTo(value: string | null | undefined) {
+  return normalizeCashSettlementOverviewReturnTo(value ?? '') ?? '/finance-tax';
+}
+
+export function cashSettlementReviewHref(returnTo: string, earningId: string) {
+  const url = new URL(safeCashSettlementReturnTo(returnTo), 'http://admin.local');
+  url.searchParams.set('review', earningId);
+  clearCashSettlementNotice(url.searchParams);
+  return `${url.pathname}?${url.searchParams.toString()}`;
+}
+
+export function cashSettlementNoticeHref(
+  returnTo: string,
+  input: {
+    notice: 'error' | 'settled';
+    earningId: string;
+    code?: string;
+    auditId?: string;
+    allocationId?: string;
+    amount?: number;
+    evidenceId?: string;
+    method?: string;
+    status?: string;
+  },
+) {
+  const url = new URL(safeCashSettlementReturnTo(returnTo), 'http://admin.local');
+  clearCashSettlementNotice(url.searchParams);
+  if (input.notice === 'settled') {
+    url.searchParams.delete('review');
+  } else {
+    url.searchParams.set('review', input.earningId);
+  }
+  url.searchParams.set('notice', input.notice);
+  if (input.code) url.searchParams.set('code', input.code);
+  url.searchParams.set('resultEarningId', input.earningId);
+  if (input.auditId) url.searchParams.set('auditId', input.auditId);
+  if (input.allocationId) url.searchParams.set('allocationId', input.allocationId);
+  if (input.evidenceId) url.searchParams.set('evidenceId', input.evidenceId);
+  if (Number.isInteger(input.amount) && Number(input.amount) > 0) {
+    url.searchParams.set('resultAmount', String(input.amount));
+  }
+  if (input.method) url.searchParams.set('resultMethod', input.method);
+  if (input.status) url.searchParams.set('resultStatus', input.status);
+  return `${url.pathname}?${url.searchParams.toString()}`;
 }
 
 export function buildCashSettlementServerPagination<T>(
@@ -111,11 +213,71 @@ export function buildCashSettlementServerPagination<T>(
 }
 
 function appendCashSettlementListParams(params: URLSearchParams, filters: CashSettlementFilters) {
+  if (filters.age !== 'all') {
+    params.set('age', filters.age);
+  }
+  if (filters.sort) {
+    params.set('sort', filters.sort);
+  }
+  if (filters.sla && filters.sla !== 'all') {
+    params.set('sla', filters.sla);
+  }
   if (filters.queue !== 'all') {
     params.set('queue', filters.queue);
   }
   if (filters.q) {
     params.set('q', filters.q);
+  }
+}
+
+function appendCashSettlementPeriodOrRange(params: URLSearchParams, filters: CashSettlementFilters) {
+  if (filters.period) {
+    params.set('period', filters.period);
+  } else {
+    params.set('range', filters.range);
+  }
+}
+
+function normalizeCashSettlementPeriod(value: string) {
+  const period = value.trim();
+  return /^\d{4}-(0[1-9]|1[0-2])$/u.test(period) ? period : null;
+}
+
+function normalizeCashSettlementOverviewReturnTo(value: string) {
+  if (!value) return null;
+  try {
+    const url = new URL(value, 'http://admin.local');
+    if (url.origin !== 'http://admin.local' || url.pathname !== '/finance-tax') return null;
+    const period = normalizeCashSettlementPeriod(url.searchParams.get('period') ?? '');
+    return period ? `/finance-tax?${new URLSearchParams({ period }).toString()}` : '/finance-tax';
+  } catch {
+    return null;
+  }
+}
+
+function readCashSettlementSort(value: string | string[] | undefined): CashSettlementSort {
+  const sort = readSearchParam(value);
+  return sort === 'newest' || sort === 'highest-debt' ? sort : 'oldest';
+}
+
+function readCashSettlementView(value: string | string[] | undefined): CashSettlementView {
+  const view = readSearchParam(value);
+  return view === 'guide' || view === 'full' ? 'guide' : null;
+}
+
+function clearCashSettlementNotice(params: URLSearchParams) {
+  for (const key of [
+    'notice',
+    'code',
+    'resultEarningId',
+    'auditId',
+    'allocationId',
+    'evidenceId',
+    'resultAmount',
+    'resultMethod',
+    'resultStatus',
+  ]) {
+    params.delete(key);
   }
 }
 

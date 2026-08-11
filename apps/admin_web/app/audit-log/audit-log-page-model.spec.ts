@@ -221,6 +221,30 @@ describe('audit log page model', () => {
     });
   });
 
+  it('links public website structure changes back to Website Content', () => {
+    const [row] = buildAuditLogTableRows([
+      {
+        action: 'PUBLIC_SITE_SECTION_UPDATED',
+        actor: { fullName: 'Master Admin' },
+        createdAt: '2026-07-30T00:00:00.000Z',
+        id: 'audit-site-section',
+        metadata: {
+          enabled: true,
+          key: 'partner-directory',
+          kind: 'PARTNER_DIRECTORY',
+          sortOrder: 20,
+        },
+        target: 'public_site_page:page-1',
+      },
+    ]);
+
+    expect(row).toMatchObject({
+      actionLabel: 'Website content / Section updated',
+      relatedBoardHref: '/website-content',
+      relatedBoardLabel: 'Website Content',
+    });
+  });
+
   it('adds notification audit records to the command board', () => {
     const board = buildAuditCommandBoard(
       [

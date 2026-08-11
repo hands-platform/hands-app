@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffFinanceCloseoutSection } from './operations-handoff-finance-closeout-section';
@@ -11,6 +12,7 @@ describe('OperationsHandoffFinanceCloseoutSection', () => {
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('MoneyText');
     expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('paginateOperationsHandoffRows');
     expect(source).not.toContain('statusBadgeToneFromPillClass(row.statusClass)');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<div className="admin-table-scroll">');
@@ -67,6 +69,36 @@ describe('OperationsHandoffFinanceCloseoutSection', () => {
     const rendered = textContent(OperationsHandoffFinanceCloseoutSection({ pagination: pagination(0), rows: [] }));
 
     expect(rendered).toContain('No finance history rows.');
+  });
+
+  it('treats incoming rows as the current server-bounded page', () => {
+    const section = OperationsHandoffFinanceCloseoutSection({
+      pagination: {
+        ...pagination(10),
+        activePage: 2,
+      },
+      rows: [
+        {
+          bookingId: 'booking-page-2',
+          createdAt: '2026-06-14T00:00:00.000Z',
+          currency: 'VND',
+          grossAmount: 200000,
+          id: 'earning-page-2',
+          netAmount: 150000,
+          partnerName: 'Partner Page Two',
+          platformFee: 40000,
+          providerId: 'partner-page-2',
+          reviewReason: 'Earning is not fully paid yet.',
+          status: 'PENDING',
+          statusClass: 'pill pill-warn',
+          withholdingAmount: 10000,
+        },
+      ],
+    });
+
+    const rendered = renderToStaticMarkup(section);
+    expect(rendered).toContain('Partner Page Two');
+    expect(rendered).toContain('Showing 4 to 4 of 10 finance rows');
   });
 });
 

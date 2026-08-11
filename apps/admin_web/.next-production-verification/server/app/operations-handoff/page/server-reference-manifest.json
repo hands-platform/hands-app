@@ -1,0 +1,29 @@
+{
+  "node": {
+    "40209823ae83d5cfaaefcef3a891c6d23ca830199c": {
+      "workers": {
+        "app/operations-handoff/page": {
+          "moduleId": 305132,
+          "async": false,
+          "exportedName": "acknowledgeOperationsShiftHandoff",
+          "filename": "apps/admin_web/app/operations-handoff/actions.ts"
+        }
+      },
+      "exportedName": "acknowledgeOperationsShiftHandoff",
+      "filename": "apps/admin_web/app/operations-handoff/actions.ts"
+    },
+    "405a8fb00632cf18f686d08ce60d3373ae08856a7b": {
+      "workers": {
+        "app/operations-handoff/page": {
+          "moduleId": 305132,
+          "async": false,
+          "exportedName": "createOperationsShiftHandoff",
+          "filename": "apps/admin_web/app/operations-handoff/actions.ts"
+        }
+      },
+      "exportedName": "createOperationsShiftHandoff",
+      "filename": "apps/admin_web/app/operations-handoff/actions.ts"
+    }
+  },
+  "edge": {}
+}

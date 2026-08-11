@@ -39,21 +39,21 @@ export function buildBookingDispatchPartnerShortcutsFromFacts(
       title: 'Direct-ready Partners',
       value: facts.firstPickWaiting.length.toString(),
       detail: 'Use when preferred Partners must answer inside the response window.',
-      href: '/partners?review=direct-ready',
+      href: '/partners?review=ready-now',
       tone: facts.firstPickWaiting.length ? 'warn' : 'ok',
     },
     {
       title: 'Marketplace-ready',
       value: facts.noPartnerSupply.length.toString(),
       detail: 'Use when open matching has no marketplace supply or customer options.',
-      href: '/partners?review=marketplace-ready',
+      href: '/partners?review=ready-now',
       tone: facts.noPartnerSupply.length ? 'warn' : 'ok',
     },
     {
       title: 'Acceptance blockers',
       value: facts.customerSelection.length.toString(),
       detail: 'Repair KYC, bank, wallet, location, push, or control gates before dispatch pressure rises.',
-      href: '/partners?review=acceptance-blocked',
+      href: '/partners?review=available-blocked',
       tone: facts.customerSelection.length ? 'info' : 'ok',
     },
     {
@@ -67,7 +67,7 @@ export function buildBookingDispatchPartnerShortcutsFromFacts(
       title: 'Location refresh',
       value: facts.locationChecks.length.toString(),
       detail: 'Live booking location checks should send operators to Partner location freshness review.',
-      href: '/partners?review=location',
+      href: '/partners?review=available-blocked-location',
       tone: facts.locationChecks.length ? 'warn' : 'ok',
     },
     {

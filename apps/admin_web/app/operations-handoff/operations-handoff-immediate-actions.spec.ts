@@ -30,7 +30,7 @@ describe('operations handoff immediate action model', () => {
     });
     expect(rowById(rows, 'cash-fee-debt')).toMatchObject({
       count: 2,
-      countLabel: '2 Partner(s)',
+      countLabel: '2 Partners',
       detail:
         'Partners with negative wallet from cash bookings can stay visible, but final acceptance, service start, and payout release wait for settlement.',
       nextAction:
@@ -39,7 +39,7 @@ describe('operations handoff immediate action model', () => {
     });
     expect(rowById(rows, 'partner-admin-facts')).toMatchObject({
       count: 3,
-      countLabel: '3 Partner fact(s)',
+      countLabel: '3 Partner facts',
       statusClass: 'pill pill-warn',
     });
     expect(rowById(rows, 'recent-operator-notes')).toMatchObject({
@@ -67,22 +67,57 @@ describe('operations handoff immediate action model', () => {
     ]);
   });
 
-  it('uses server notification summary count instead of bounded failed notification samples', () => {
+  it('uses exact server counts and oldest timestamps instead of bounded list samples', () => {
     const rows = buildImmediateActionQueue({
       bookings: [],
+      bookingSummary: {
+        chatMissingCount: 9,
+        matchingNow: 23,
+        oldestChatMissingAt: '2026-06-13T08:00:00.000Z',
+        oldestMatchingAt: '2026-06-14T08:00:00.000Z',
+        serviceInProgress: 41,
+      },
+      completedBookingSummary: {
+        closeoutChecks: 31,
+        oldestCloseoutAt: '2026-06-11T08:00:00.000Z',
+      },
       matchingBookings: [],
       inServiceBookings: [],
       failedNotificationCount: 27,
       failedNotifications: [],
+      notificationSummary: { oldestFailedAt: '2026-06-12T08:00:00.000Z' },
       cashSummary: cashSummary({ providerCount: 0 }),
       partnerSignals: { attentionCount: 0 },
+      operatorNoteCount: 18,
       operatorNotes: [],
     });
 
+    expect(rowById(rows, 'matching-live-window')).toMatchObject({
+      count: 23,
+      oldestOpenAt: '2026-06-14T08:00:00.000Z',
+    });
+    expect(rowById(rows, 'chat-creation')).toMatchObject({
+      count: 9,
+      oldestOpenAt: '2026-06-13T08:00:00.000Z',
+    });
     expect(rowById(rows, 'notification-delivery')).toMatchObject({
       count: 27,
       countLabel: '27 failed',
+      oldestOpenAt: '2026-06-12T08:00:00.000Z',
       statusClass: 'pill pill-warn',
+    });
+    expect(rowById(rows, 'completed-closeout')).toMatchObject({
+      count: 31,
+      oldestOpenAt: '2026-06-11T08:00:00.000Z',
+    });
+    expect(rowById(rows, 'in-service-watch')).toMatchObject({
+      count: 41,
+      countLabel: '41 active',
+      title: 'Active service handoffs',
+    });
+    expect(rowById(rows, 'recent-operator-notes')).toMatchObject({
+      count: 18,
+      countLabel: '18 recent notes',
     });
   });
 });

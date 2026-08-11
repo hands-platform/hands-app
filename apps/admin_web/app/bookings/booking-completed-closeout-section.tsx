@@ -1,4 +1,4 @@
-import { AdminSection } from '../../components/admin-surface';
+import { AdminDisclosure } from '../../components/admin-surface';
 
 const COMPLETED_CLOSEOUT_FLOW = [
   {
@@ -23,28 +23,33 @@ const COMPLETED_CLOSEOUT_FLOW = [
 
 export function BookingCompletedCloseoutSection() {
   return (
-    <AdminSection
+    <AdminDisclosure
+      ariaLabel="How to review closeout"
       className="booking-completed-closeout-card admin-mt-16"
-      description="Completed bookings stay here until service evidence, closeout records, retained chat, and audit trail are aligned."
-      title="Completed closeout flow"
     >
-      <div className="booking-post-match-decision-flow admin-mt-14" aria-label="Completed closeout flow">
-        {COMPLETED_CLOSEOUT_FLOW.map((item) => (
-          <div className="booking-post-match-decision-step" key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <p>{item.helper}</p>
-          </div>
-        ))}
-      </div>
+      <summary>
+        <span>How to review closeout</span>
+        <small>Service evidence, finance records, and retained audit trail</small>
+      </summary>
+      <div className="admin-disclosure-content">
+        <div className="booking-post-match-decision-flow" aria-label="Completed closeout flow">
+          {COMPLETED_CLOSEOUT_FLOW.map((item) => (
+            <div className="booking-post-match-decision-step" key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <p>{item.helper}</p>
+            </div>
+          ))}
+        </div>
 
-      <div className="booking-post-match-operator-note admin-mt-14">
-        <strong>Admin handling rule</strong>
-        <span>
-          Keep completed bookings in this page for normal closeout review, then open the booking detail
-          only when customer, matched Partner, finance, or system evidence needs deeper inspection.
-        </span>
+        <div className="booking-post-match-operator-note admin-mt-14">
+          <strong>Admin handling rule</strong>
+          <span>
+            Keep terminal bookings here for normal closeout review, then open the booking detail only
+            when customer, final Partner, finance, or system evidence needs deeper inspection.
+          </span>
+        </div>
       </div>
-    </AdminSection>
+    </AdminDisclosure>
   );
 }

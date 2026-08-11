@@ -1,4 +1,8 @@
-import { visibleReviewActionItems } from './review-row-actions';
+import {
+  reviewActionHrefWithReturnTo,
+  reviewListReturnTo,
+  visibleReviewActionItems,
+} from './review-row-actions';
 import type { ReviewActionItem } from './review-page-actions';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -8,10 +12,10 @@ describe('visibleReviewActionItems', () => {
     const actions: ReviewActionItem[] = [
       action({ disabled: true, label: 'Publish' }),
       action({ disabled: false, label: 'Hold' }),
-      action({ disabled: false, label: 'Follow-up' }),
+      action({ disabled: false, label: 'Needs review' }),
     ];
 
-    expect(visibleReviewActionItems(actions).map((item) => item.label)).toEqual(['Hold', 'Follow-up']);
+    expect(visibleReviewActionItems(actions).map((item) => item.label)).toEqual(['Hold', 'Needs review']);
   });
 
   it('uses shared form atoms for the edit review drawer fields', () => {
@@ -29,6 +33,21 @@ describe('visibleReviewActionItems', () => {
     expect(source).not.toContain('<textarea');
     expect(source).not.toContain('<button className="button button-primary" type="submit">');
     expect(source).not.toContain('<button className="button button-secondary" onClick={onClose} type="button">');
+  });
+
+  it('preserves list filters while removing action-only query fields', () => {
+    const returnTo = reviewListReturnTo(
+      '/reviews',
+      'dateRange=30d&page=2&q=mai&sort=oldest&confirm=moderate&reviewId=review-1&notice=failed',
+    );
+
+    expect(returnTo).toBe('/reviews?dateRange=30d&page=2&q=mai&sort=oldest');
+    expect(reviewActionHrefWithReturnTo(
+      '/reviews?confirm=moderate&reviewId=review-1&status=HIDDEN',
+      returnTo,
+    )).toBe(
+      '/reviews?confirm=moderate&reviewId=review-1&status=HIDDEN&returnTo=%2Freviews%3FdateRange%3D30d%26page%3D2%26q%3Dmai%26sort%3Doldest',
+    );
   });
 });
 

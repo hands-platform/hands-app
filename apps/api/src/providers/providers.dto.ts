@@ -1,5 +1,7 @@
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsBoolean,
   IsInt,
@@ -8,7 +10,9 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  Max,
   Min,
+  ValidateNested,
 } from 'class-validator';
 
 function trimString(value: unknown) {
@@ -55,6 +59,35 @@ export class UpdateProviderProfileDto {
   @IsString()
   @MaxLength(2000)
   bio?: string;
+}
+
+export class ProviderWorkingHourDto {
+  @IsInt()
+  @Min(1)
+  @Max(7)
+  weekday!: number;
+
+  @IsBoolean()
+  enabled!: boolean;
+
+  @IsInt()
+  @Min(0)
+  @Max(1439)
+  startMinute!: number;
+
+  @IsInt()
+  @Min(1)
+  @Max(1440)
+  endMinute!: number;
+}
+
+export class UpdateProviderAvailabilityDto {
+  @IsArray()
+  @ArrayMinSize(7)
+  @ArrayMaxSize(7)
+  @ValidateNested({ each: true })
+  @Type(() => ProviderWorkingHourDto)
+  workingHours!: ProviderWorkingHourDto[];
 }
 
 export class RecordProviderDeviceSessionDto {

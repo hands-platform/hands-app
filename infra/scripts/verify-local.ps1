@@ -258,6 +258,7 @@ Invoke-Check "script syntax: admin visible copy" "node --check infra\scripts\che
 Invoke-Check "script syntax: admin shared format" "node --check infra\scripts\check-admin-shared-format.mjs"
 Invoke-Check "script syntax: shared types source guard" "node --check infra\scripts\check-shared-types-runtime-imports.mjs"
 Invoke-Check "script syntax: notification partner alert contract" "node --check infra\scripts\check-notification-partner-alert-contract.mjs"
+Invoke-Check "script syntax: notification push data contract" "node --check infra\scripts\check-notification-push-data-contract.mjs"
 Invoke-Check "script syntax: notification retry audit contract" "node --check infra\scripts\check-notification-retry-audit-contract.mjs"
 Invoke-Check "script syntax: fcm env contract" "node --check infra\scripts\check-fcm-env-contract.mjs"
 Invoke-Check "script syntax: fcm credentials check" "node --check infra\scripts\check-firebase-admin-credentials.mjs"
@@ -285,6 +286,7 @@ Invoke-Check "admin sensitive exposure" "npm.cmd run security:admin-sensitive"
 Invoke-Check "admin visible copy" "npm.cmd run admin:visible-copy"
 Invoke-Check "admin shared format" "npm.cmd run admin:shared-format"
 Invoke-Check "notification partner alert contract" "npm.cmd run notifications:partner-alert-contract"
+Invoke-Check "notification push data contract" "npm.cmd run notifications:push-data-contract"
 Invoke-Check "notification retry audit contract" "npm.cmd run notifications:retry-audit-contract"
 Invoke-Check "fcm env contract" "npm.cmd run fcm:env-contract"
 Invoke-Check "realtime event contract" "npm.cmd run realtime:contract"
@@ -300,13 +302,18 @@ Invoke-Check "prisma validate" "`$env:DATABASE_URL='postgresql://massage:massage
 Invoke-Check "api typecheck" "npm.cmd run typecheck --workspace @massage-vn/api"
 Invoke-Check "admin test" "npm.cmd run test --workspace @massage-vn/admin-web"
 Invoke-Check "admin typecheck" "npm.cmd run typecheck --workspace @massage-vn/admin-web"
+Invoke-Check "public web test" "npm.cmd run test --workspace @massage-vn/public-web"
+Invoke-Check "public web typecheck" "npm.cmd run typecheck --workspace @massage-vn/public-web"
+Invoke-Check "public web lint" "npm.cmd run lint --workspace @massage-vn/public-web"
 
 if (-not $SkipBuild) {
   Invoke-Check "api build" "npm.cmd run build --workspace @massage-vn/api"
   Invoke-Check "admin build" "npm.cmd run build --workspace @massage-vn/admin-web"
+  Invoke-Check "public web build" "npm.cmd run build --workspace @massage-vn/public-web"
 } else {
   Add-Result "api build" "SKIP" "SkipBuild was set."
   Add-Result "admin build" "SKIP" "SkipBuild was set."
+  Add-Result "public web build" "SKIP" "SkipBuild was set."
 }
 
 if (Test-CommandExists "git") {

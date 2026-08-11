@@ -26,23 +26,23 @@ export function reviewModerationActionMenuItems(review: AdminReview): readonly R
     {
       description:
         review.status === 'HIDDEN'
-          ? 'Review is already held from app visibility.'
-          : 'Hold this review so it no longer appears in the app.',
+          ? 'Review is already hidden from app visibility.'
+          : 'Hide this review so it no longer appears in the app.',
       disabled: review.status === 'HIDDEN',
-      href: reviewModerationConfirmHref(review.id, 'HIDDEN', 'Held by admin'),
+      href: reviewModerationConfirmHref(review.id, 'HIDDEN'),
       kind: 'link',
-      label: 'Hold',
+      label: 'Hide',
       tone: 'warning',
     },
     {
       description:
         review.status === 'REPORTED'
-          ? 'Review is already marked for moderation follow-up.'
-          : 'Mark this review for moderation follow-up without publishing it immediately.',
+          ? 'Review is already in Needs review.'
+          : 'Remove this review from the app until moderation is resolved.',
       disabled: review.status === 'REPORTED',
-      href: reviewModerationConfirmHref(review.id, 'REPORTED', 'Marked for follow-up'),
+      href: reviewModerationConfirmHref(review.id, 'REPORTED'),
       kind: 'link',
-      label: 'Follow-up',
+      label: 'Needs review',
       tone: 'info',
     },
   ];

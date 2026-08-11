@@ -5,7 +5,10 @@ import { PartnerDetailPayoutOperationsSection } from './partner-detail-payout-op
 describe('PartnerDetailPayoutOperationsSection', () => {
   it('uses shared Vuexy badge atoms for payout operation statuses', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-payout-operations-section.tsx', 'utf8');
-    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+    const payoutRowsModelSource = readFileSync(
+      'app/partners/[id]/partner-detail-payout-rows-model.tsx',
+      'utf8',
+    );
 
     expect(source).toContain('AdminDetailGrid');
     expect(source).toContain('StatusBadgeFromPillClass');
@@ -18,10 +21,10 @@ describe('PartnerDetailPayoutOperationsSection', () => {
     expect(source).toContain('readonly title: ReactNode;');
     expect(source).toContain('readonly totalNetLabel: ReactNode;');
     expect(source).toContain('readonly walletLines: readonly ReactNode[];');
-    expect(pageSource).toContain('Gross <MoneyText amount={earning.grossAmount} />');
-    expect(pageSource).toContain('<MoneyText amount={earning.platformFee} />');
-    expect(pageSource).toContain('<MoneyText amount={earning.withholdingAmount} />');
-    expect(pageSource).toContain('<MoneyText amount={batch.totalNetAmount} />');
+    expect(payoutRowsModelSource).toContain('Gross <MoneyText amount={earning.grossAmount} />');
+    expect(payoutRowsModelSource).toContain('<MoneyText amount={earning.platformFee} />');
+    expect(payoutRowsModelSource).toContain('<MoneyText amount={earning.withholdingAmount} />');
+    expect(payoutRowsModelSource).toContain('<MoneyText amount={batch.totalNetAmount} />');
     expect(source).not.toContain('PillClassBadge');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTaskCard');
@@ -285,7 +288,14 @@ describe('PartnerDetailPayoutOperationsSection', () => {
     });
     const rendered = normalizeSpaces(textContent(section));
     const source = readFileSync('app/partners/[id]/partner-detail-payout-operations-section.tsx', 'utf8');
-    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+    const payoutModelSource = readFileSync(
+      'app/partners/[id]/partner-detail-payout-security-model.tsx',
+      'utf8',
+    );
+    const payoutRowsModelSource = readFileSync(
+      'app/partners/[id]/partner-detail-payout-rows-model.tsx',
+      'utf8',
+    );
 
     expect(rendered).toContain('Shared card paid date marker');
     expect(rendered).toContain('Shared earning created date marker');
@@ -307,11 +317,21 @@ describe('PartnerDetailPayoutOperationsSection', () => {
     expect(source).toContain('{batch.createdLineNode ?? batch.createdLine}');
     expect(source).toContain('{batch.paidLineNode ?? batch.paidLine}');
     expect(source).toContain('actionLabel={card.actionNode ?? card.action}');
-    expect(pageSource).toContain('Last paid <DateTimeText fallback="Missing" value={latestBatch.paidAt} />.');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={earning.createdAt} />');
-    expect(pageSource).toContain('Settled <DateTimeText fallback="Missing" value={earning.paidAt} />');
-    expect(pageSource).toContain('Created <DateTimeText fallback="Missing" value={batch.createdAt} />');
-    expect(pageSource).toContain('Paid <DateTimeText fallback="Missing" value={batch.paidAt} />');
+    expect(payoutModelSource).toContain(
+      'Last paid <DateTimeText fallback="Missing" value={latestBatch.paidAt} />.',
+    );
+    expect(payoutRowsModelSource).toContain(
+      '<DateTimeText fallback="Missing" value={earning.createdAt} />',
+    );
+    expect(payoutRowsModelSource).toContain(
+      'Settled <DateTimeText fallback="Missing" value={earning.paidAt} />',
+    );
+    expect(payoutRowsModelSource).toContain(
+      'Created <DateTimeText fallback="Missing" value={batch.createdAt} />',
+    );
+    expect(payoutRowsModelSource).toContain(
+      'Paid <DateTimeText fallback="Missing" value={batch.paidAt} />',
+    );
   });
 });
 

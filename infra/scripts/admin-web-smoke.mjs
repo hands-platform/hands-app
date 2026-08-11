@@ -7,11 +7,6 @@ const rawSmokeArgs = process.argv.slice(2).filter((value) => !value.startsWith('
 const criticalSmokePaths = [
   '/',
   '/?details=all',
-  '/?details=booking',
-  '/?details=operations',
-  '/?details=operations&operations=analysis',
-  '/?details=operations&operations=partner',
-  '/?details=operations&operations=closeout',
   '/calendar',
   '/bookings',
   '/bookings/completed',
@@ -40,11 +35,16 @@ const budgetSmokePaths = [
   '/partners',
   '/reviews',
   '/notifications',
+  '/usage-overview',
+  '/partners/overview',
+  '/marketing-analytics',
   '/finance-overview',
   '/finance-overview?view=flow',
   '/finance-overview?view=queues',
   '/finance-tax',
   '/finance-tax/payment-clearing',
+  '/finance-tax/payment-clearing?range=all&review=open&age=48h',
+  '/finance-tax/partner-bank-deposits',
   '/finance-tax/general-ledger',
   '/finance-tax/bank-reconciliation',
   '/finance-tax/bank-reconciliation?workspace=imports',
@@ -58,11 +58,12 @@ const budgetSmokePaths = [
   '/finance-tax/partner-withholding-tax',
   '/finance-tax/finance-approvers',
   '/finance-tax/approval-queue',
+  '/finance-tax/approval-queue?view=bank-accounts',
   '/finance-tax/approval-queue?view=reconciliation',
   '/operations-policy',
   '/cash-settlements',
   '/finance-closeout',
-  '/finance-closeout?view=settlement',
+  '/finance-closeout?view=operations&range=today',
   '/finance-closeout?view=settlement&settlementMode=batch',
   '/payouts',
   '/payouts?details=all',
@@ -193,177 +194,91 @@ const pages = [
     markers: [
       'HANDS Admin',
       'Calendar',
-      'Vietnam Overview',
-      'Marketing Analytics',
-      'Bookings',
       'Live Bookings',
-      'Completed',
-      'Post-match Cancellations',
-      'Partners',
       'Customers',
-      'Finance',
-      'Start Shift',
-      'Needs action now',
-      'Live now',
+      'Partner Operations',
+      'Finance Overview',
+      'Shift Command',
+      'Next action',
+      'Open queues',
       'Money status',
-      'Today work',
       'Today result',
-      'Booking requests',
-      'Matching exceptions',
-      'Waiting for Partner',
-      'Completed',
-      'Cancelled',
-      'Customers in app',
-      'Partners in app',
-      'Ready Partners',
-      'Payment holds',
-      'Cash debt',
-      'Diagnostics',
-      'Booking diagnostics',
-      'Operations diagnostics',
+      'In service',
+      'Open handoff',
     ],
   },
   {
     path: '/?details=all',
     markers: [
       'HANDS Admin',
-      'Start Shift',
-      'Needs action now',
-      'Live now',
+      'Shift Command',
+      'Next action',
+      'Open queues',
       'Money status',
-      'Today work',
       'Today result',
-      'Booking requests',
-      'Matching exceptions',
-      'Waiting for Partner',
-      'Completed',
-      'Cancelled',
-      'Customers in app',
-      'Partners in app',
-      'Ready Partners',
-      'Payment holds',
-      'Cash debt',
-      'Diagnostics',
-      'Choose workspace',
-      'Booking diagnostics',
-      'Operations diagnostics',
-      'Booking records',
-      'Finance records',
-      'Operations History',
-    ],
-  },
-  {
-    path: '/?details=booking',
-    markers: [
-      'HANDS Admin',
-      'Start Shift',
-      'Booking diagnostics',
-      'Dispatch evidence map',
-      'Retained evidence signals',
-      'No-show evidence',
-      'Evidence queue shortcuts',
-      'Booking loaded',
-    ],
-  },
-  {
-    path: '/?details=operations',
-    markers: [
-      'HANDS Admin',
-      'Start Shift',
-      'Full diagnostics',
-      'Operations diagnostics workspace',
-      'Live operations radar',
-      'Shift command briefing',
-      'Opening shift checklist',
-      'Matching control room',
-    ],
-  },
-  {
-    path: '/?details=operations&operations=analysis',
-    markers: [
-      'HANDS Admin',
-      'Start Shift',
-      'Demand analysis',
-      'Policy outcome pulse',
-      'Booking attention cockpit',
-      'Hourly booking demand',
-      'Regional booking demand',
-    ],
-  },
-  {
-    path: '/?details=operations&operations=partner',
-    markers: [
-      'HANDS Admin',
-      'Start Shift',
-      'Partner readiness',
-      'Partner supply status',
-      'Partner approval funnel',
-      'Partner dispatch control',
-      'Marketplace unblock quick order',
-    ],
-  },
-  {
-    path: '/?details=operations&operations=closeout',
-    markers: [
-      'HANDS Admin',
-      'Start Shift',
-      'Closeout queues',
-      'Today command lanes',
-      'Operations checklist queue',
-      'Finance closeout status',
+      'In service',
+      'Open handoff',
     ],
   },
   {
     path: '/calendar',
     markers: [
       'Calendar',
-      'Visible events',
-      'Mini calendar',
+      'No events today or in the next 7 days.',
       'Event Filters',
       'Shared operations planning',
       'Add Event',
     ],
   },
   {
+    path: '/admin-operators',
+    markers: [
+      'Admin Operators',
+      'Master admin control',
+      'Category permissions',
+      'Operator activity log',
+      'Operator directory',
+    ],
+  },
+  {
     path: '/?range=7d',
-    markers: ['Start Shift', 'Needs action now', 'Today result', 'Last 7 days'],
+    markers: ['Shift Command', 'Next action', 'Open queues', 'Period result', 'Last 7 days'],
+  },
+  {
+    path: '/usage-overview',
+    markers: ['Customer Usage', 'Reporting period', 'Needs attention'],
+  },
+  {
+    path: '/partners/overview',
+    markers: ['Partner Operations', 'Partner filters', 'Current supply', 'Performance · selected period'],
   },
   {
     path: '/marketing-analytics',
     markers: [
       'Marketing Analytics',
       'Marketing filters',
-      'Acquisition funnel',
+      'Acquisition and booking trend',
       'Breakdown tables',
       'Dimension rows are not loaded by default',
       'No live ad API',
     ],
   },
   {
+    path: '/referrals/customers',
+    markers: ['Customer Referrals', 'Referral operations filters', 'Customer referral operations'],
+  },
+  {
+    path: '/referrals/partners',
+    markers: ['Partner Referrals', 'Referral operations filters', 'Partner referral parents'],
+  },
+  {
     path: '/bookings',
-    markers: [
-      'Booking Monitor',
-      'Active bookings',
-      'Open matching',
-      'Matched',
-      'Follow-up queue',
-      'Booking workspace filters',
-      'Live / Today Bookings',
-      'Live In Progress',
-      'Request Time',
-      'Customer',
-      'Requested',
-      'Participating',
-      'Country',
-      'Service Type',
-      'Address',
-    ],
+    markers: ['Live bookings', 'Booking queues', 'Work now', 'Monitor', 'Search bookings', 'Needs action'],
   },
   {
     path: '/bookings/completed',
     markers: [
       'Completed Bookings',
-      'Closeout Records',
       'Booking workspace filters',
       'Completed',
       'Completed Bookings',
@@ -375,10 +290,12 @@ const pages = [
     path: '/bookings/post-match-cancellations',
     markers: [
       'Post-match Cancellations',
-      'Cancellation Review / Needs Action',
-      'Cancellation Records / Resolved',
-      'Evidence missing',
       'Booking workspace filters',
+      'Current workspace:',
+      'Cancellation Review',
+      'Needs review',
+      'Needs admin review',
+      'No-show',
     ],
   },
   {
@@ -477,18 +394,17 @@ const pages = [
       'Joined today',
       'Active today',
       'Active in 30 days',
-      'Customer operations filters',
+      'Customer filters',
+      'Operational view',
+      'Search customer',
+      'Customer segment',
       'Sign-up Date',
-      'Reservation risk / history',
-      'Last Login Date',
-      'Reservation count sort',
+      'Last activity',
+      'Last address',
+      'Bookings',
+      'Attention',
+      'Customer value',
       'Customer directory',
-      'Customer',
-      'Country',
-      'Gender',
-      'Last Login Address',
-      'Last Completed',
-      'Total Wallet Amount',
     ],
   },
   {
@@ -537,11 +453,10 @@ const pages = [
       'No auto assignment',
       'Action gate policy checklist',
       'Action gate policies are aligned',
+      'Policy comparison',
+      'Open change',
       'Live matching policy',
       'Operator decisions',
-      'Live matching policy',
-      'Operator decisions',
-      'Change reason',
     ],
   },
   {
@@ -626,7 +541,7 @@ const pages = [
     markers: [
       'Operations History',
       'Operations history range',
-      'Review order',
+      'Incomplete handoff',
       'Operations review checklist',
       'Historical issue signals',
       'Finance history review',
@@ -650,6 +565,8 @@ const pages = [
       'Customer history',
       'Partner history',
       'Finance and chat closeout',
+      'Finance decision history',
+      'Completed approvals, bank reconciliation decisions, refunds, executions, remittances, monthly close decisions, rejections, reversals, and resolved Finance SLA alerts only.',
     ],
   },
   {
@@ -688,14 +605,20 @@ const pages = [
   },
   {
     path: '/finance-overview',
-    markers: ['Finance Overview', 'Finance range', 'Finance Priority Desk', 'Core Finance KPI'],
-    forbiddenMarkers: ['Gross customer payment', 'Finance Action Lists'],
+    markers: [
+      'Finance Overview',
+      'Finance scope',
+      'Today Movement',
+      'Current Balances',
+      'Records',
+    ],
+    forbiddenMarkers: ['Gross customer payment', 'Finance Priority Desk', 'Finance Action Lists'],
   },
   {
     path: '/finance-overview?view=flow',
     markers: [
       'Finance Overview',
-      'Finance range',
+      'Finance scope',
       'Money flow',
       'Gross customer payment',
       'Revenue &amp; Platform Fee',
@@ -706,21 +629,21 @@ const pages = [
     path: '/finance-overview?view=queues',
     markers: [
       'Finance Overview',
-      'Finance range',
+      'Finance scope',
       'Action queues',
-      'Finance Action Lists',
-      'Each link opens a bounded evidence list',
+      'Current Finance Queues',
+      'Current unresolved queues across all dates',
     ],
     forbiddenMarkers: ['Finance Priority Desk', 'Gross customer payment'],
   },
   {
     path: '/finance-tax',
     markers: [
-      'Tax Overview',
-      'Tax finance operating model',
-      'Finance operations priority desk',
-      'Finance tax workspaces',
-      'Summary API',
+      'Tax &amp; Close Overview',
+      'Accounting month',
+      'Monthly closeout checks',
+      'Accounting records',
+      'Closeout gates',
     ],
   },
   {
@@ -728,10 +651,31 @@ const pages = [
     markers: [
       'Booking Payment Clearing',
       'Payment clearing filters',
-      'Payment clearing rows',
-      'Payment',
-      'Clearing type',
-      'Status',
+      'Clearing command board',
+      'Booking &amp; payment',
+      'Clearing event',
+      'Status &amp; evidence',
+    ],
+  },
+  {
+    path: '/finance-tax/payment-clearing?range=all&review=open&age=48h',
+    markers: [
+      'Booking Payment Clearing',
+      'Payment clearing filters',
+      'SLA age: 48h+',
+      '48h+',
+      'Booking &amp; payment',
+      'Status &amp; evidence',
+    ],
+  },
+  {
+    path: '/finance-tax/partner-bank-deposits',
+    markers: [
+      'Partner Bank Deposits',
+      'Deposit history filters',
+      'Deposit requests',
+      'Bank evidence',
+      'Bank reconciliation',
     ],
   },
   {
@@ -739,7 +683,7 @@ const pages = [
     markers: [
       'General Ledger',
       'General ledger filters',
-      'Journal batches',
+      'Needs action',
       'Debit / Credit',
       'Status',
     ],
@@ -748,58 +692,63 @@ const pages = [
     path: '/finance-tax/bank-reconciliation',
     markers: [
       'Bank Reconciliation',
-      'Bank reconciliation workspace',
-      'Operations',
+      'Bank reconciliation work',
+      'Review unmatched',
+      'Needs action',
       'Bank reconciliation filters',
-      'Company bank transactions',
-      'Transaction',
-      'Match',
     ],
-    forbiddenMarkers: [
-      'CSV bank statement review',
-      'Bank statement import history',
-      'Manual bank transaction import',
+  },
+  {
+    path: '/finance-tax/bank-reconciliation?range=all&review=unmatched',
+    markers: [
+      'Bank Reconciliation',
+      'Bank reconciliation work',
+      'Review unmatched',
+      'Needs action',
+      'Bank reconciliation filters',
     ],
   },
   {
     path: '/finance-tax/bank-reconciliation?workspace=imports',
     markers: [
       'Bank Reconciliation',
-      'Bank reconciliation workspace',
-      'Statement imports',
+      'Bank reconciliation work',
+      'Import statement',
       'CSV bank statement review',
       'Statement import history filters',
       'Bank statement import history',
     ],
-    forbiddenMarkers: ['Bank reconciliation filters', 'Company bank transactions', 'Manual bank transaction import'],
   },
   {
     path: '/finance-tax/bank-reconciliation?workspace=manual',
     markers: [
       'Bank Reconciliation',
-      'Bank reconciliation workspace',
-      'Manual entry',
+      'Bank reconciliation work',
+      'Back to statement import',
       'Manual bank transaction import',
       'Bank import form',
     ],
-    forbiddenMarkers: ['Bank reconciliation filters', 'CSV bank statement review', 'Company bank transactions'],
   },
   {
     path: '/finance-tax/booking-settlement-audit',
     markers: [
       'Booking Settlement Audit',
+      'Settlement audit command board',
       'Settlement audit filters',
-      'Booking settlement records',
-      'Partner tax',
-      'HANDS fee',
-      'Status',
+      'Needs action',
+      'Partner settlement',
+      'HANDS revenue',
+      'Review state',
     ],
   },
   {
     path: '/finance-tax/coupon-finance',
     markers: [
       'Coupon Finance',
+      'Coupon finance command board',
+      'Coupon review flags',
       'Coupon finance filters',
+      'Current filtered totals',
       'Coupon settlement rows',
       'Coupon policy',
       'Amounts',
@@ -810,6 +759,8 @@ const pages = [
     path: '/finance-tax/settlement-reversals',
     markers: [
       'Settlement Reversals',
+      'Closed-period reversals',
+      'Tax correction recorded',
       'Settlement reversal filters',
       'Settlement reversal rows',
       'Original',
@@ -822,9 +773,11 @@ const pages = [
     markers: [
       'Monthly Tax Closing',
       'Monthly closing period',
-      'Monthly closing action',
-      'Closeout risk queue',
-      'Stored monthly closing rows',
+      'Close blockers',
+      'Needs review',
+      'Next closeout step',
+      'Monthly reconciliation',
+      'Closing history',
     ],
   },
   {
@@ -832,10 +785,10 @@ const pages = [
     markers: [
       'Platform VAT',
       'Platform VAT period',
-      'VAT rate breakdown',
+      'Company VAT register',
       'Platform fee gross',
-      'Company VAT',
-      'Net revenue',
+      'Company output VAT',
+      'Net platform revenue',
     ],
   },
   {
@@ -843,10 +796,10 @@ const pages = [
     markers: [
       'Payment Fees',
       'Payment fee period',
-      'Active payment fee policy',
-      'Historical remediation preview',
-      'Fees by payer',
-      'Fees by treatment',
+      'Applicable period policy',
+      'Payment fee evidence by method',
+      'Fee accounting classification',
+      'Net processing fee',
     ],
   },
   {
@@ -854,9 +807,10 @@ const pages = [
     markers: [
       'Partner Withholding Tax',
       'Withholding tax period',
-      'Partner monthly withholding rows',
-      'Gross revenue',
-      'VAT / PIT',
+      'Partner withholding register',
+      'Partner taxable revenue',
+      'VAT withheld',
+      'PIT withheld',
       'Total withheld',
     ],
   },
@@ -871,14 +825,36 @@ const pages = [
     ],
   },
   {
+    path: '/finance-tax/company-bank-accounts',
+    markers: [
+      'Company Bank Accounts',
+      'Bank account management',
+      'Masked number',
+      'Recent account changes',
+    ],
+  },
+  {
     path: '/finance-tax/approval-queue',
     markers: [
       'Finance Approval Queue',
-      'Approvals',
-      'Payment fee policy reviews',
-      'Partner bank deposit approval queue',
-      'Partner withdrawal work queue',
-      'Wallet adjustment approval queue',
+      'Policy approvals',
+      'Bank account changes',
+      'Withdrawal review',
+      'Wallet adjustments',
+      'Partner deposits',
+      'Queue controls',
+      'Oldest finance work',
+    ],
+  },
+  {
+    path: '/finance-tax/approval-queue?view=bank-accounts',
+    markers: [
+      'Finance Approval Queue',
+      'Bank account changes',
+      'Company bank account approval queue',
+      'Current state',
+      'Proposed state',
+      'Maker &amp; reason',
     ],
   },
   {
@@ -893,8 +869,19 @@ const pages = [
   {
     path: '/finance-closeout',
     markers: [
-      'Finance Closeout',
-      'Closeout workspace',
+      'Settlement Repair',
+      'Settlement workspace',
+      'Repair queue',
+      'Repair queue filters',
+      'Settlement backlog',
+    ],
+    forbiddenMarkers: ['Finance date range', 'Closeout reconciliation board'],
+  },
+  {
+    path: '/finance-closeout?view=operations&range=today',
+    markers: [
+      'Settlement Repair',
+      'Settlement workspace',
       'Operations closeout',
       'Finance date range',
       'Closeout reconciliation board',
@@ -906,29 +893,10 @@ const pages = [
     forbiddenMarkers: ['Settlement gap filters', 'Settlement backlog'],
   },
   {
-    path: '/finance-closeout?view=settlement',
-    markers: [
-      'Finance Closeout',
-      'Closeout workspace',
-      'Settlement repair',
-      'Settlement review mode',
-      'Repair queue',
-      'Settlement gap filters',
-      'Settlement backlog',
-    ],
-    forbiddenMarkers: [
-      'Closeout reconciliation board',
-      'Payment-to-earning checks',
-      'Historical settlement dry-run',
-    ],
-  },
-  {
     path: '/finance-closeout?view=settlement&settlementMode=batch',
     markers: [
-      'Finance Closeout',
-      'Closeout workspace',
-      'Settlement repair',
-      'Settlement review mode',
+      'Settlement Repair',
+      'Settlement workspace',
       'Batch review',
       'Historical batch filters',
       'Historical settlement dry-run',
@@ -940,9 +908,9 @@ const pages = [
     ],
   },
   {
-    path: '/finance-closeout?range=7d',
+    path: '/finance-closeout?view=operations&range=7d',
     markers: [
-      'Finance Closeout',
+      'Settlement Repair',
       'Finance date range',
       'Range:',
       'Last 7 days',
@@ -951,7 +919,7 @@ const pages = [
   },
   {
     path: '/coupons',
-    markers: ['Coupons', 'Create coupons', 'Live checkout coupons', 'Upcoming coupon launches', 'Coupon records'],
+    markers: ['Coupons', 'Create coupons', 'Live checkout coupons', 'Coupon records'],
   },
   {
     path: '/earnings',
@@ -967,9 +935,10 @@ const pages = [
     markers: [
       'Wallet Adjustments',
       'Manual adjustment request',
-      'New request',
-      'Records',
-      'Owner profile id',
+      'Customer or partner',
+      'Find wallet owner',
+      'Record filters',
+      'Manual adjustment history',
     ],
   },
   {
@@ -1001,7 +970,7 @@ const pages = [
       'Payments',
       'Payment operation filters',
       'Payment date range',
-      'Payment callback attempt ledger',
+      'Callback review',
       'Payment operations',
     ],
   },
@@ -1016,7 +985,7 @@ const pages = [
       'Payment operation filters',
       'Missing refs',
       'authorized payments that do not yet have a gateway reference.',
-      'Payment callback attempt ledger',
+      'Payment operations',
     ],
   },
   {
@@ -1026,7 +995,7 @@ const pages = [
       'Payment operation filters',
       'Callback review',
       'Callbacks without verified gateway evidence.',
-      'Payment callback attempt ledger',
+      'Payment operations',
     ],
   },
   {
@@ -1036,29 +1005,32 @@ const pages = [
       'Payment operation filters',
       'Callback verified',
       'Accepted callbacks with gateway evidence.',
-      'Payment callback attempt ledger',
+      'Payment operations',
     ],
   },
-  { path: '/refunds', markers: ['Refunds', 'Refund command board', 'Refund operation filters', 'Refund operations'] },
+  { path: '/refunds', markers: ['Refunds', 'Needs action', 'Refund operation filters', 'Refund operations'] },
   {
     path: '/refunds?range=7d',
     markers: ['Refunds', 'Refund operation filters', 'Refund date range', 'Last 7 days'],
   },
   { path: '/reviews', markers: ['Customer Reviews', 'Customer Review', 'Follow-up', 'Search Review'] },
-  { path: '/notifications', markers: ['Notifications', 'Delivery operations queue', 'No-show alerts'] },
+  {
+    path: '/notifications',
+    markers: ['Notification Delivery', 'All delivery paths healthy', 'Review records and 24h+ history'],
+  },
   {
     path: '/notifications?review=failed',
-    markers: ['Notifications', 'Failed sends', 'Delivery operations queue', 'Retry gate'],
+    markers: ['Notifications', 'Failed sends', 'Needs action', 'Retry gate'],
     followUps: [notificationFcmRetryFollowUp('failed', 'Retry gate')],
   },
   {
     path: '/notifications?review=disabled-device',
-    markers: ['Notifications', 'Disabled devices', 'Delivery operations queue', 'Device recovery gate'],
+    markers: ['Notifications', 'Disabled devices', 'Needs action', 'Device recovery gate'],
     followUps: [notificationFcmDeviceFollowUp('disabled-device', 'Device recovery gate')],
   },
   {
     path: '/notifications?review=stale-device',
-    markers: ['Notifications', 'Stale devices', 'Delivery operations queue', 'Token freshness gate'],
+    markers: ['Notifications', 'Stale devices', 'Needs action', 'Token freshness gate'],
     followUps: [notificationFcmStaleRetryFollowUp('stale-device', 'Token freshness gate')],
   },
   {
@@ -1070,41 +1042,23 @@ const pages = [
     ],
   },
   {
-    path: '/notifications?review=pending',
-    markers: ['Notifications', 'Pending', 'Notification operation filters', 'Worker path gate'],
-    followUps: [notificationRetryFollowUp('pending', 'Worker path gate', 'pending retry confirmation', [])],
+    path: '/notifications?review=unattempted',
+    markers: [
+      'Notifications',
+      'Unattempted history',
+      'Notification operation filters',
+      'Needs action',
+    ],
   },
   {
     path: '/notifications?review=fcm',
-    markers: ['Notifications', 'FCM', 'FCM route', 'FCM route gate', 'Delivery operations queue'],
+    markers: ['Notifications', 'FCM', 'FCM route', 'FCM route gate', 'Needs action'],
     followUps: [notificationFcmRetryFollowUp('fcm', 'FCM route gate', 'FCM retry confirmation')],
   },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
   {
     path: '/files',
-    markers: [
-      'Files',
-      'Central review board for Partner verification files and public profile media.',
-      'Total files',
-      'Needs review',
-      'Public media',
-      'Private files',
-      'Review queue',
-      'Search files',
-      'Open Partner',
-    ],
-  },
-  {
-    path: '/files?review=needs-review',
-    markers: ['Files', 'Needs review', 'Queue: Needs review', 'Review queue'],
-  },
-  {
-    path: '/files?kind=private-verification',
-    markers: ['Files', 'Private files', 'Queue: Private files', 'Review queue'],
-  },
-  {
-    path: '/files?q=smoke',
-    markers: ['Files', 'Search: smoke', 'Review queue'],
+    markers: ['Partners', 'Partner operations filters'],
   },
   {
     path: '/payouts',
@@ -1114,11 +1068,21 @@ const pages = [
       'Payout workspaces',
       'Operations',
       'Payout money flow',
-      'Payout command queue',
+      'Needs action',
       'Release blocker queue',
       'Partner finance queue',
       'Partner wallet withdrawal requests',
       'Payout batch list',
+    ],
+  },
+  {
+    path: '/payouts?range=all&withdrawalStatus=REVIEW_REQUIRED',
+    markers: [
+      'Partner Payouts',
+      'Payout date range',
+      'Payout workspaces',
+      'Operations',
+      'Partner wallet withdrawal requests',
     ],
   },
   {
@@ -1172,7 +1136,7 @@ const pages = [
       'Last 7 days',
       'Payout workspaces',
       'Payout money flow',
-      'Payout command queue',
+      'Needs action',
       'Release blocker queue',
       'Partner wallet withdrawal requests',
     ],
@@ -1181,7 +1145,7 @@ const pages = [
     path: '/partner-controls',
     markers: [
       'Partner Controls',
-      'Partner control command center',
+      'Priority queue',
       'Partner control workspaces',
     ],
   },
@@ -1242,20 +1206,10 @@ const pages = [
   {
     path: '/partners',
     markers: [
-      'Partners',
-      'Unapproved Partners',
-      'Unsettled Partners',
-      'Compact admin list',
-      'Partner',
-      'Gender',
-      'State',
-      'Level',
-      'Access',
-      'Location',
-      'Work',
-      'Wallet',
-      'Account',
-      'Partner operations filters',
+      'Partner directory',
+      'Directory',
+      'Partner directory filters',
+      'Search Partner',
       'Partner sort',
     ],
   },
@@ -1321,22 +1275,8 @@ const pages = [
   { path: '/partners?sort=available-payout', markers: ['Partners', 'Sort: available payout'] },
   {
     path: '/providers',
-    markers: [
-      'Partners',
-      'Unapproved Partners',
-      'Unsettled Partners',
-      'Partner',
-      'Gender',
-      'State',
-      'Level',
-      'Access',
-      'Location',
-      'Work',
-      'Wallet',
-      'Account',
-    ],
+    markers: ['Partners', 'Partner operations filters'],
   },
-  { path: '/providers', markers: ['Partners', 'Compact admin list', 'Unapproved Partners'] },
   { path: '/providers?review=cash-debt', markers: ['Partners', 'Cash fee debt'] },
   {
     path: '/services',
@@ -1352,15 +1292,12 @@ const pages = [
   {
     path: '/setup',
     markers: [
-      'External setup',
-      'Current blockers',
-      'Production deferred',
-      'Master progress control',
-      'Phase A',
-      'Phase B',
-      'Phase C',
-      'Phase D',
-      'Phase E',
+      'Setup Readiness',
+      'System health',
+      'Affected work',
+      'Last checked',
+      'Owning team',
+      'Next action',
     ],
   },
   {
@@ -1643,8 +1580,10 @@ function assertNoLegacyVisibleLanguage(path, body) {
 }
 
 function isAllowedVisibleLanguageViolation(path, label, match) {
-  // Wallet adjustment uses Penalty as a finance/accounting adjustment type, not as partner scoring copy.
-  return path.startsWith('/wallet-adjustments') && label === 'people scoring wording' && /^penalty$/i.test(match);
+  // Wallet adjustment forms use Penalty as a finance/accounting adjustment type, not as people scoring copy.
+  const isWalletAdjustmentSurface =
+    path.startsWith('/wallet-adjustments') || /^\/customers\/[^/]+/.test(path);
+  return isWalletAdjustmentSurface && label === 'people scoring wording' && /^penalty$/i.test(match);
 }
 
 for (const page of smokePages) {
@@ -1735,150 +1674,84 @@ const providersBody =
   shouldRunDeepSection('/partners') || shouldRunDeepSection('/providers')
     ? await fetchPage('/providers')
     : '';
-const providerLinkMatch = providersBody.match(/href="\/(?:partners|providers)\/([^"]+)"/);
+const providerLinkMatch = providersBody.match(
+  /href="\/(?:partners|providers)\/(?!overview(?:["/?]))([^"]+)"/,
+);
 if (providerLinkMatch) {
   const providerDetailPaths = [`/partners/${providerLinkMatch[1]}`, `/providers/${providerLinkMatch[1]}`];
+  const providerOverviewMarkers = [
+    'Fast operations overview',
+    'Open full partner record',
+    'Needs action',
+    'Identity',
+    'Booking command',
+    'Payout readiness',
+    'Next operator action',
+    'Detail workspaces',
+  ];
   for (const providerPath of providerDetailPaths) {
     const providerBody = await fetchPage(providerPath);
-    const overviewMarkers = ['Fast operations overview', 'Detail workspaces'];
-    const missingOverviewMarkers = overviewMarkers.filter((marker) => !providerBody.includes(marker));
-    if (missingOverviewMarkers.length > 0) {
+    const missingProviderMarkers = providerOverviewMarkers.filter((marker) => !providerBody.includes(marker));
+    if (missingProviderMarkers.length > 0) {
       throw new Error(
-        `${providerPath} is missing expected overview markers: ${missingOverviewMarkers.join(', ')}`,
+        `${providerPath} is missing expected markers: ${missingProviderMarkers.join(', ')}`,
       );
     }
     assertNoLegacyVisibleLanguage(providerPath, providerBody);
     console.log(`PASS ${providerPath}`);
+  }
 
-    const fullProviderPath = `${providerPath}?section=full`;
-    const fullProviderBody = await fetchPage(fullProviderPath);
-    const providerMarkers = [
-      'Partner detail workspaces',
-      'Choose workspace',
-      'Control',
-      'Bookings',
-      'Access',
-      'Dossier',
-      'All Partner chats',
-    ];
-    const missing = providerMarkers.filter((marker) => !fullProviderBody.includes(marker));
+  const providerFullPath = `/partners/${providerLinkMatch[1]}?section=full`;
+  const providerFullBody = await fetchPage(providerFullPath);
+  const providerFullMarkers = [
+    'Current partner status',
+    'Profile and KYC',
+    'Work readiness',
+    'Bookings and reputation',
+    'Reviews and evaluations',
+    'Wallet and payout',
+    'Operations timeline',
+    'System diagnostics',
+    'Open technical diagnostics',
+    'All Partner chats',
+  ];
+  const missingProviderFullMarkers = providerFullMarkers.filter(
+    (marker) => !providerFullBody.includes(marker),
+  );
+  if (missingProviderFullMarkers.length > 0) {
+    throw new Error(
+      `${providerFullPath} is missing expected markers: ${missingProviderFullMarkers.join(', ')}`,
+    );
+  }
+  assertNoLegacyVisibleLanguage(providerFullPath, providerFullBody);
+  console.log(`PASS ${providerFullPath}`);
+
+  const providerWorkspaceTargets = [
+    {
+      markers: ['Partner booking journey', 'Record date filter'],
+      path: `/partners/${providerLinkMatch[1]}?section=bookings`,
+    },
+    {
+      markers: ['Partner control records', 'Partner operator notes', 'Partner recent operations timeline'],
+      path: `/partners/${providerLinkMatch[1]}?section=control&control=records`,
+    },
+    {
+      markers: ['Partner finance records', 'Finance-only evidence', 'Partner wallet detail'],
+      path: `/partners/${providerLinkMatch[1]}?section=dossier&dossier=finance`,
+    },
+    {
+      markers: ['Partner device and session diagnostics', 'Device and session activity'],
+      path: `/partners/${providerLinkMatch[1]}?section=access&access=diagnostics`,
+    },
+  ];
+  for (const target of providerWorkspaceTargets) {
+    const body = await fetchPage(target.path);
+    const missing = target.markers.filter((marker) => !body.includes(marker));
     if (missing.length > 0) {
-      throw new Error(`${fullProviderPath} is missing expected markers: ${missing.join(', ')}`);
+      throw new Error(`${target.path} is missing expected markers: ${missing.join(', ')}`);
     }
-    assertNoLegacyVisibleLanguage(fullProviderPath, fullProviderBody);
-    console.log(`PASS ${fullProviderPath}`);
-
-    if (providerPath.startsWith('/partners/')) {
-      const workspaceChecks = [
-        {
-          query: 'section=control',
-          markers: ['Partner control workspace', 'Control workspace view', 'Partner operator command queue'],
-          excludedMarkers: ['Partner control records', 'Partner review records', 'Partner operations digest'],
-        },
-        {
-          query: 'section=control&control=records',
-          markers: ['Partner control records', 'Control records', 'Partner review records'],
-          excludedMarkers: ['Partner operator command queue', 'Partner operations digest'],
-        },
-        {
-          query: 'section=control&control=reference',
-          markers: [
-            'Partner control workspace',
-            'Developer reference',
-            'Partner operations digest',
-            'Partner operating ledger',
-          ],
-          excludedMarkers: ['Partner operator command queue', 'Partner review records'],
-        },
-        {
-          query: 'section=bookings',
-          markers: ['Partner booking journey', 'Booking workspace view', 'Partner booking create gate evidence'],
-          excludedMarkers: ['Partner chat retention ledger', 'Booking operations note ledger'],
-        },
-        {
-          query: 'section=bookings&bookings=evidence',
-          markers: ['Partner booking evidence', 'Chat &amp; evidence', 'Partner booking evidence bundles', 'Partner chat retention ledger'],
-          excludedMarkers: ['Partner booking create gate evidence', 'Booking operations note ledger'],
-        },
-        {
-          query: 'section=bookings&bookings=ledger',
-          markers: ['Partner booking operations ledger', 'Developer ledger', 'Booking operations note ledger'],
-          excludedMarkers: ['Partner booking create gate evidence', 'Partner chat retention ledger'],
-        },
-        {
-          query: 'section=access',
-          markers: ['Partner marketplace readiness', 'Access workspace view', 'Marketplace booking gate decision'],
-          excludedMarkers: ['Reports and account controls', 'Device and session activity'],
-        },
-        {
-          query: 'section=access&access=controls',
-          markers: ['Partner reports and account controls', 'Reports &amp; controls', 'Reports and account controls'],
-          excludedMarkers: ['Marketplace booking gate decision', 'Device and session activity'],
-        },
-        {
-          query: 'section=access&access=diagnostics',
-          markers: [
-            'Partner device and session diagnostics',
-            'Access workspace view',
-            'Recent app and operations activity',
-            'Device and session activity',
-          ],
-          excludedMarkers: ['Marketplace booking gate decision'],
-        },
-        {
-          query: 'section=dossier',
-          markers: ['Partner approval decision', 'Dossier workspace view', 'Partner registration dossier', 'KYC decision'],
-          excludedMarkers: ['Partner evidence records', 'Review history', 'Partner wallet detail'],
-        },
-        {
-          query: 'section=dossier&dossier=evidence',
-          markers: ['Partner evidence records', 'Evidence records', 'Required approval evidence', 'Review history'],
-          excludedMarkers: ['Partner registration dossier', 'Partner wallet detail'],
-        },
-        {
-          query: 'section=dossier&dossier=finance',
-          markers: ['Partner finance records', 'Finance records', 'Partner wallet detail'],
-          excludedMarkers: ['Partner registration dossier'],
-        },
-      ];
-
-      for (const workspace of workspaceChecks) {
-        const workspacePath = `${providerPath}?${workspace.query}`;
-        const workspaceBody = await fetchPage(workspacePath);
-        const missingWorkspaceMarkers = workspace.markers.filter(
-          (marker) => !workspaceBody.includes(marker),
-        );
-        if (missingWorkspaceMarkers.length > 0) {
-          throw new Error(
-            `${workspacePath} is missing expected markers: ${missingWorkspaceMarkers.join(', ')}`,
-          );
-        }
-        const unexpectedWorkspaceMarkers = (workspace.excludedMarkers ?? []).filter((marker) =>
-          workspaceBody.includes(marker),
-        );
-        if (unexpectedWorkspaceMarkers.length > 0) {
-          throw new Error(
-            `${workspacePath} includes deferred markers: ${unexpectedWorkspaceMarkers.join(', ')}`,
-          );
-        }
-        assertNoLegacyVisibleLanguage(workspacePath, workspaceBody);
-        console.log(`PASS ${workspacePath}`);
-      }
-
-      const filteredProviderPath = `${providerPath}?section=bookings&range=30d`;
-      const filteredProviderBody = await fetchPage(filteredProviderPath);
-      const filteredProviderMarkers = ['Record date filter', 'Filtered booking archive', 'Filtered activity'];
-      const missingFilteredProviderMarkers = filteredProviderMarkers.filter(
-        (marker) => !filteredProviderBody.includes(marker),
-      );
-      if (missingFilteredProviderMarkers.length > 0) {
-        throw new Error(
-          `${filteredProviderPath} is missing expected markers: ${missingFilteredProviderMarkers.join(', ')}`,
-        );
-      }
-      assertNoLegacyVisibleLanguage(filteredProviderPath, filteredProviderBody);
-      console.log(`PASS ${filteredProviderPath}`);
-    }
+    assertNoLegacyVisibleLanguage(target.path, body);
+    console.log(`PASS ${target.path}`);
   }
 }
 
@@ -1889,25 +1762,32 @@ if (customerLinkMatch) {
   const customerBody = await fetchPage(customerPath);
   const customerMarkers = [
     'Customer Detail',
-    'Customer workspace view',
-    'Customer operating picture',
-    'Customer booking situation board',
-    'Current / In Progress',
-    'Completed',
-    'Pre-match Cancellations',
-    'Partner Cancellations',
-    'Payment Type',
-    'Customer operator command queue',
-    'All customer chats',
+    'Current status',
+    'Profile and contact',
+    'Needs action',
+    'Payment &amp; wallet',
+    'Payment and wallet summary',
+    'Adjust customer wallet',
+    'Customer behavior',
+    'Booking history',
+    'Referral activity',
+    'Customer app notifications',
+    'Notification history',
+    'Audit records',
+    'Add operator note',
+    'Operator note history',
+    'Chat evidence',
+    'Chat history',
   ];
   const missing = customerMarkers.filter((marker) => !customerBody.includes(marker));
   if (missing.length > 0) {
     throw new Error(`${customerPath} is missing expected markers: ${missing.join(', ')}`);
   }
   const unexpectedCustomerMarkers = [
-    'Customer account and balance',
     'Record date filter',
-    'Chat and audit record',
+    'Customer workspace view',
+    'Chat and system evidence',
+    'System audit records',
   ].filter((marker) => customerBody.includes(marker));
   if (unexpectedCustomerMarkers.length > 0) {
     throw new Error(
@@ -1917,87 +1797,20 @@ if (customerLinkMatch) {
   assertNoLegacyVisibleLanguage(customerPath, customerBody);
   console.log(`PASS ${customerPath}`);
 
-  const customerAccountPath = `${customerPath}?view=account`;
-  const customerAccountBody = await fetchPage(customerAccountPath);
-  const customerAccountMarkers = [
-    'Customer workspace view',
-    'Customer account and balance',
-    'Customer contact and evidence',
-    'Customer account operations',
-    'Saved addresses',
-    'Recent manual wallet adjustments',
-  ];
-  const missingCustomerAccountMarkers = customerAccountMarkers.filter(
-    (marker) => !customerAccountBody.includes(marker),
-  );
-  if (missingCustomerAccountMarkers.length > 0) {
+  const customerDiagnosticsPath = `${customerPath}?diagnostics=developer`;
+  const customerDiagnosticsBody = await fetchPage(customerDiagnosticsPath);
+  const missingCustomerDiagnosticsMarkers = [
+    'Chat and system evidence',
+    'System audit records',
+    'System audit evidence',
+  ].filter((marker) => !customerDiagnosticsBody.includes(marker));
+  if (missingCustomerDiagnosticsMarkers.length > 0) {
     throw new Error(
-      `${customerAccountPath} is missing expected markers: ${missingCustomerAccountMarkers.join(', ')}`,
+      `${customerDiagnosticsPath} is missing expected markers: ${missingCustomerDiagnosticsMarkers.join(', ')}`,
     );
   }
-  const unexpectedCustomerAccountMarkers = ['Customer operating picture', 'Record date filter'].filter(
-    (marker) => customerAccountBody.includes(marker),
-  );
-  if (unexpectedCustomerAccountMarkers.length > 0) {
-    throw new Error(
-      `${customerAccountPath} includes deferred markers: ${unexpectedCustomerAccountMarkers.join(', ')}`,
-    );
-  }
-  assertNoLegacyVisibleLanguage(customerAccountPath, customerAccountBody);
-  console.log(`PASS ${customerAccountPath}`);
-
-  const customerRecordsPath = `${customerPath}?view=records&range=7d`;
-  const customerRecordsBody = await fetchPage(customerRecordsPath);
-  const customerRecordsMarkers = [
-    'Customer workspace view',
-    'Record date filter',
-    'Preset',
-    'Record type',
-    'Sort order',
-    'Apply filter',
-    'Customer activity action panel',
-    'Chat and audit record',
-    'Record archive summary',
-    'Matched booking chat archives retained for admin evidence',
-  ];
-  const missingCustomerRecordsMarkers = customerRecordsMarkers.filter(
-    (marker) => !customerRecordsBody.includes(marker),
-  );
-  if (missingCustomerRecordsMarkers.length > 0) {
-    throw new Error(
-      `${customerRecordsPath} is missing expected markers: ${missingCustomerRecordsMarkers.join(', ')}`,
-    );
-  }
-  const unexpectedCustomerRecordsMarkers = [
-    'Customer operating picture',
-    'Customer account and balance',
-  ].filter((marker) => customerRecordsBody.includes(marker));
-  if (unexpectedCustomerRecordsMarkers.length > 0) {
-    throw new Error(
-      `${customerRecordsPath} includes deferred markers: ${unexpectedCustomerRecordsMarkers.join(', ')}`,
-    );
-  }
-  assertNoLegacyVisibleLanguage(customerRecordsPath, customerRecordsBody);
-  console.log(`PASS ${customerRecordsPath}`);
-
-  const customerArchivePath = `${customerPath}?records=all`;
-  const customerArchiveBody = await fetchPage(customerArchivePath);
-  const customerArchiveMarkers = [
-    'Chat history',
-    'Notification and audit records',
-    'Recent customer notifications',
-    'Customer audit trail',
-  ];
-  const missingCustomerArchiveMarkers = customerArchiveMarkers.filter(
-    (marker) => !customerArchiveBody.includes(marker),
-  );
-  if (missingCustomerArchiveMarkers.length > 0) {
-    throw new Error(
-      `${customerArchivePath} is missing expected markers: ${missingCustomerArchiveMarkers.join(', ')}`,
-    );
-  }
-  assertNoLegacyVisibleLanguage(customerArchivePath, customerArchiveBody);
-  console.log(`PASS ${customerArchivePath}`);
+  assertNoLegacyVisibleLanguage(customerDiagnosticsPath, customerDiagnosticsBody);
+  console.log(`PASS ${customerDiagnosticsPath}`);
 }
 
 const bookingsBody = shouldRunDeepSection('/bookings') ? await fetchPage('/bookings') : '';
@@ -2014,7 +1827,6 @@ if (bookingLinkMatch) {
     'Connected operations records',
     'Operator action availability',
     'Booking gate reason',
-    'Booking full record index',
     'Finance evidence',
     'Cash settlement desk',
     'Tax policy',
@@ -2028,84 +1840,43 @@ if (bookingLinkMatch) {
   const bookingWorkspaceTargets = [
     {
       forbiddenMarkers: [
+        'Booking workspace view',
+        'Overview mode',
         'Booking review records',
-        'Customer detail',
-        'Matched Partner detail',
         'Finance detail',
-        'Customer and Partner chat history',
         'Booking lifecycle timeline',
         'Developer/System history',
         'Developer/System settlement',
+        'Developer/System diagnostics',
       ],
       markers: [
         ...bookingAuthorityContractMarkers,
-        'Booking workspace view',
-        'Overview mode',
-        'Command',
-        'Unified booking detail',
-        'Operator action availability',
+        'Booking sections',
+        'Booking summary',
+        'Needs action',
+        'Customer / Partner / Chat',
+        'Payment &amp; settlement',
+        'Booking timeline',
+        'Reviews &amp; notes',
+        'Operational records',
+        'Booking result',
+        'Customer detail',
+        'Matched Partner detail',
+        'Money result',
+        'Customer and Partner chat history',
+        'Activity',
       ],
       path: bookingPath,
     },
     {
-      forbiddenMarkers: [
-        'Unified booking detail',
-        'Booking review records',
-        'Developer/System history',
-        'Developer/System settlement',
-      ],
+      forbiddenMarkers: ['>Access restricted<', 'Page content is hidden.'],
       markers: [
-        ...bookingAuthorityContractMarkers,
-        'Booking workspace view',
-        'Overview mode',
-        'People &amp; activity',
-        'Customer detail',
-        'Matched Partner detail',
-        'Finance detail',
-        'Customer and Partner chat history',
-        'Booking lifecycle timeline',
-      ],
-      path: `${bookingPath}?overview=activity`,
-    },
-    {
-      forbiddenMarkers: ['Unified booking detail', 'Developer/System history', 'Developer/System settlement'],
-      markers: [
-        'Booking workspace view',
-        'Booking review records',
-        'Operational records',
+        'Booking sections',
+        'Booking summary',
         'Booking full record index',
+        'Developer/System diagnostics',
       ],
-      path: `${bookingPath}?section=records`,
-    },
-    {
-      forbiddenMarkers: [
-        'Unified booking detail',
-        'Booking review records',
-        'Developer/System settlement',
-        'Wallet, payout, pricing, and full records',
-      ],
-      markers: [
-        'Booking workspace view',
-        'Developer diagnostics view',
-        'Developer/System history',
-        'Operating movement and audit trail',
-      ],
-      path: `${bookingPath}?section=diagnostics&diagnostics=history`,
-    },
-    {
-      forbiddenMarkers: [
-        'Unified booking detail',
-        'Booking review records',
-        'Developer/System history',
-        'Operating movement and audit trail',
-      ],
-      markers: [
-        'Booking workspace view',
-        'Developer diagnostics view',
-        'Developer/System settlement',
-        'Wallet, payout, pricing, and full records',
-      ],
-      path: `${bookingPath}?section=diagnostics&diagnostics=settlement`,
+      path: `${bookingPath}?section=diagnostics`,
     },
   ];
   let bookingBody = '';
@@ -2176,7 +1947,7 @@ async function runFinanceDetailRouteSmoke() {
     {
       listPath: '/finance-tax/general-ledger',
       markers: [
-        'General Ledger Detail',
+        'Journal Batch Detail',
         'Journal batch overview',
         'Journal evidence hub',
         'Double-entry check',

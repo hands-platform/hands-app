@@ -3,22 +3,32 @@ import { readSearchParam } from '../../lib/date-range';
 export const DEFAULT_CUSTOMER_PAGE_SIZE = 10;
 export const CUSTOMER_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
+export type CustomerView = 'needs-action' | 'new-today' | 'active-today' | 'all';
+export type CustomerSegment =
+  | ''
+  | 'never-booked'
+  | 'usage-new-unbooked'
+  | 'has-bookings'
+  | 'completed'
+  | 'cancellation-risk'
+  | 'inactive-30d';
+export type CustomerDateField = 'joined' | 'last-booking' | 'last-login';
+export type CustomerDateRange = '' | 'today' | 'yesterday' | '7d' | '30d' | 'custom';
+export type CustomerSort = 'newest' | 'booking-count' | 'booking-count-asc' | 'name';
+
 export type CustomerFilters = {
   page: number;
   pageSize: number;
   q: string;
+  view: CustomerView;
+  segment: CustomerSegment;
   country: string;
   gender: string;
-  sort: string;
-  joinedRange: string;
-  joinedFrom: string;
-  joinedTo: string;
-  lastBookingRange: string;
-  lastBookingFrom: string;
-  lastBookingTo: string;
-  lastLoginRange: string;
-  lastLoginFrom: string;
-  lastLoginTo: string;
+  dateField: CustomerDateField;
+  dateRange: CustomerDateRange;
+  dateFrom: string;
+  dateTo: string;
+  sort: CustomerSort;
 };
 
 export type CustomerDataHrefs = {
@@ -26,42 +36,39 @@ export type CustomerDataHrefs = {
   readonly summaryHref: string;
 };
 
+export type CustomerViewCounts = {
+  readonly activeToday: number;
+  readonly all: number;
+  readonly needsAction: number;
+  readonly newToday: number;
+};
+
 export function buildCustomerFilters(params: Record<string, string | string[] | undefined>): CustomerFilters {
-  const joinedRange = normalizeCustomerDateRangeFilter(readSearchParam(params.joinedRange));
-  const joinedDateRange = resolveCustomerDateRange(
-    joinedRange,
-    readDateParam(params.joinedFrom),
-    readDateParam(params.joinedTo),
-  );
-  const lastBookingRange = normalizeCustomerDateRangeFilter(readSearchParam(params.lastBookingRange));
-  const lastBookingDateRange = resolveCustomerDateRange(
-    lastBookingRange,
-    readDateParam(params.lastBookingFrom),
-    readDateParam(params.lastBookingTo),
-  );
-  const lastLoginRange = normalizeCustomerDateRangeFilter(readSearchParam(params.lastLoginRange));
-  const lastLoginDateRange = resolveCustomerDateRange(
-    lastLoginRange,
-    readDateParam(params.lastLoginFrom),
-    readDateParam(params.lastLoginTo),
-  );
+  const legacyDateFilter = readLegacyCustomerDateFilter(params);
+  const dateField = readCustomerDateField(params.dateField) ?? legacyDateFilter.field ?? 'last-login';
+  const requestedDateRange =
+    normalizeCustomerDateRangeFilter(readSearchParam(params.dateRange)) || legacyDateFilter.range;
+  const requestedDateFrom = readDateParam(params.dateFrom) || legacyDateFilter.from;
+  const requestedDateTo = readDateParam(params.dateTo) || legacyDateFilter.to;
+  const dateRange =
+    requestedDateRange === 'custom' && !isValidCustomerCustomDateRange(requestedDateFrom, requestedDateTo)
+      ? ''
+      : requestedDateRange;
+  const dateValues = resolveCustomerDateRange(dateRange, requestedDateFrom, requestedDateTo);
 
   return {
     page: readPageNumber(params.page),
     pageSize: readPageSize(params.pageSize),
     q: readSearchParam(params.q),
+    view: readCustomerView(params.view),
+    segment: readCustomerSegment(params.segment),
     country: normalizeCustomerCountryFilter(readSearchParam(params.country)),
     gender: normalizeCustomerGenderFilter(readSearchParam(params.gender)),
+    dateField,
+    dateRange,
+    dateFrom: dateValues.from,
+    dateTo: dateValues.to,
     sort: readCustomerSort(params.sort),
-    joinedRange,
-    joinedFrom: joinedDateRange.from,
-    joinedTo: joinedDateRange.to,
-    lastBookingRange,
-    lastBookingFrom: lastBookingDateRange.from,
-    lastBookingTo: lastBookingDateRange.to,
-    lastLoginRange,
-    lastLoginFrom: lastLoginDateRange.from,
-    lastLoginTo: lastLoginDateRange.to,
   };
 }
 
@@ -71,36 +78,7 @@ export function buildCustomerListHref(filters: CustomerFilters, overrides: Parti
     ...overrides,
     page: overrides.page ?? 1,
   };
-  const params = new URLSearchParams();
-
-  appendTextParam(params, 'q', next.q);
-  appendTextParam(params, 'country', next.country);
-  appendTextParam(params, 'gender', next.gender);
-  appendTextParam(params, 'joinedRange', next.joinedRange);
-  if (!next.joinedRange || next.joinedRange === 'custom') {
-    appendTextParam(params, 'joinedFrom', next.joinedFrom);
-    appendTextParam(params, 'joinedTo', next.joinedTo);
-  }
-  appendTextParam(params, 'lastBookingRange', next.lastBookingRange);
-  if (!next.lastBookingRange || next.lastBookingRange === 'custom') {
-    appendTextParam(params, 'lastBookingFrom', next.lastBookingFrom);
-    appendTextParam(params, 'lastBookingTo', next.lastBookingTo);
-  }
-  appendTextParam(params, 'lastLoginRange', next.lastLoginRange);
-  if (!next.lastLoginRange || next.lastLoginRange === 'custom') {
-    appendTextParam(params, 'lastLoginFrom', next.lastLoginFrom);
-    appendTextParam(params, 'lastLoginTo', next.lastLoginTo);
-  }
-  if (next.sort !== 'last-booking') {
-    params.set('sort', next.sort);
-  }
-  if (next.pageSize !== DEFAULT_CUSTOMER_PAGE_SIZE) {
-    params.set('pageSize', String(next.pageSize));
-  }
-  if (next.page > 1) {
-    params.set('page', String(next.page));
-  }
-
+  const params = buildCustomerPageQueryParams(next);
   return params.size ? `/customers?${params.toString()}` : '/customers';
 }
 
@@ -115,7 +93,7 @@ export function buildCustomerDataHrefs(filters: CustomerFilters): CustomerDataHr
   listParams.set('take', String(filters.pageSize));
   listParams.set('skip', String((filters.page - 1) * filters.pageSize));
 
-  const summaryParams = buildCustomerDataQueryParams(filters);
+  const summaryParams = buildCustomerDataQueryParams({ ...filters, view: 'all' });
 
   return {
     listHref: `/admin/customers?${listParams.toString()}`,
@@ -125,127 +103,235 @@ export function buildCustomerDataHrefs(filters: CustomerFilters): CustomerDataHr
   };
 }
 
-export function customerSortLabel(sort: string) {
-  if (sort === 'booking-count') return 'reservations many first';
-  if (sort === 'booking-count-asc') return 'reservations few first';
-  return 'latest booking progress date';
+export function customerSortLabel(sort: CustomerSort) {
+  if (sort === 'booking-count') return 'Most bookings';
+  if (sort === 'booking-count-asc') return 'Fewest bookings';
+  if (sort === 'name') return 'Customer name';
+  return 'Newest first';
 }
 
 export function buildCustomerActiveFilters(filters: CustomerFilters) {
   const labels: string[] = [];
   if (filters.q) labels.push(`Search: ${filters.q}`);
-  if (filters.country) labels.push(`Country: ${customerCountryFilterLabel(filters.country)}`);
+  if (filters.segment) labels.push(`Segment: ${customerSegmentLabel(filters.segment)}`);
+  if (filters.country) labels.push(`Recorded app language: ${customerCountryFilterLabel(filters.country)}`);
   if (filters.gender) labels.push(`Gender: ${customerGenderFilterLabel(filters.gender)}`);
-  if (filters.joinedRange) {
+  if (filters.dateRange) {
     labels.push(
-      `Sign-up date: ${customerDateRangeFilterLabel(filters.joinedRange, filters.joinedFrom, filters.joinedTo)}`,
-    );
-  } else {
-    if (filters.joinedFrom) labels.push(`Joined from: ${filters.joinedFrom}`);
-    if (filters.joinedTo) labels.push(`Joined to: ${filters.joinedTo}`);
-  }
-  if (filters.lastBookingRange) {
-    labels.push(
-      `Last reservation: ${customerDateRangeFilterLabel(
-        filters.lastBookingRange,
-        filters.lastBookingFrom,
-        filters.lastBookingTo,
+      `${customerDateFieldLabel(filters.dateField)}: ${customerDateRangeFilterLabel(
+        filters.dateRange,
+        filters.dateFrom,
+        filters.dateTo,
       )}`,
     );
-  } else {
-    if (filters.lastBookingFrom) labels.push(`Last reservation from: ${filters.lastBookingFrom}`);
-    if (filters.lastBookingTo) labels.push(`Last reservation to: ${filters.lastBookingTo}`);
   }
-  if (filters.lastLoginRange) {
-    labels.push(
-      `Last login date: ${customerDateRangeFilterLabel(
-        filters.lastLoginRange,
-        filters.lastLoginFrom,
-        filters.lastLoginTo,
-      )}`,
-    );
-  } else {
-    if (filters.lastLoginFrom) labels.push(`Last login from: ${filters.lastLoginFrom}`);
-    if (filters.lastLoginTo) labels.push(`Last login to: ${filters.lastLoginTo}`);
-  }
-  if (filters.sort !== 'last-booking') labels.push(`Sort: ${customerSortLabel(filters.sort)}`);
   return labels;
+}
+
+export function customerViewLabel(view: CustomerView) {
+  const labels: Record<CustomerView, string> = {
+    all: 'All customers',
+    'needs-action': 'Payment & review',
+    'new-today': 'New today',
+    'active-today': 'App seen today',
+  };
+  return labels[view];
+}
+
+export function customerViewTotal(
+  view: CustomerView,
+  counts: CustomerViewCounts | undefined,
+  fallback: number,
+) {
+  if (!counts) return fallback;
+  if (view === 'needs-action') return counts.needsAction;
+  if (view === 'new-today') return counts.newToday;
+  if (view === 'active-today') return counts.activeToday;
+  return counts.all;
+}
+
+export function customerSegmentLabel(segment: CustomerSegment) {
+  const labels: Record<Exclude<CustomerSegment, ''>, string> = {
+    'never-booked': 'Never booked',
+    'usage-new-unbooked': 'New in period · no production booking',
+    'has-bookings': 'Has booking history',
+    completed: 'Completed customers',
+    'cancellation-risk': 'Cancellation / no-show history',
+    'inactive-30d': 'Inactive 30 days',
+  };
+  return segment ? labels[segment] : 'All customer segments';
+}
+
+export function customerDateFieldLabel(field: CustomerDateField) {
+  if (field === 'joined') return 'Joined date';
+  if (field === 'last-booking') return 'Last booking activity';
+  return 'Session activity period';
+}
+
+export function safeCustomerReturnTo(value: string | string[] | undefined) {
+  const raw = readSearchParam(value);
+  if (!raw || raw.startsWith('//') || raw.includes('\\')) return '/customers';
+
+  try {
+    const url = new URL(raw, 'http://admin.local');
+    return url.origin === 'http://admin.local' && url.pathname === '/customers'
+      ? `${url.pathname}${url.search}`
+      : '/customers';
+  } catch {
+    return '/customers';
+  }
 }
 
 function buildCustomerDataQueryParams(filters: CustomerFilters, options: { includeSort?: boolean } = {}) {
   const params = new URLSearchParams();
 
   appendTextParam(params, 'q', filters.q);
+  if (filters.view !== 'all') appendTextParam(params, 'view', filters.view);
+  appendTextParam(params, 'segment', filters.segment);
   appendTextParam(params, 'country', filters.country);
   appendTextParam(params, 'gender', filters.gender);
-  appendTextParam(params, 'joinedFrom', filters.joinedFrom);
-  appendTextParam(params, 'joinedTo', filters.joinedTo);
-  appendTextParam(params, 'lastBookingFrom', filters.lastBookingFrom);
-  appendTextParam(params, 'lastBookingTo', filters.lastBookingTo);
-  appendTextParam(params, 'lastLoginFrom', filters.lastLoginFrom);
-  appendTextParam(params, 'lastLoginTo', filters.lastLoginTo);
-  if (options.includeSort && filters.sort !== 'last-booking') {
+  appendCustomerDateParams(params, filters);
+  if (options.includeSort && filters.sort !== 'newest') {
     appendTextParam(params, 'sort', filters.sort);
   }
 
   return params;
 }
 
-function normalizeCustomerDateRangeFilter(value: string) {
-  const allowed = ['today', 'yesterday', '7d', '30d', 'custom'];
-  return allowed.includes(value) ? value : '';
+function appendCustomerDateParams(params: URLSearchParams, filters: CustomerFilters) {
+  if (!filters.dateRange) return;
+
+  const keys = customerDateApiKeys(filters.dateField);
+  appendTextParam(params, keys.from, filters.dateFrom);
+  appendTextParam(params, keys.to, filters.dateTo);
 }
 
-function resolveCustomerDateRange(range: string, from: string, to: string) {
+function customerDateApiKeys(field: CustomerDateField) {
+  if (field === 'joined') return { from: 'joinedFrom', to: 'joinedTo' } as const;
+  if (field === 'last-booking') return { from: 'lastBookingFrom', to: 'lastBookingTo' } as const;
+  return { from: 'lastLoginFrom', to: 'lastLoginTo' } as const;
+}
+
+function normalizeCustomerDateRangeFilter(value: string): CustomerDateRange {
+  const allowed: CustomerDateRange[] = ['today', 'yesterday', '7d', '30d', 'custom'];
+  return allowed.includes(value as CustomerDateRange) ? (value as CustomerDateRange) : '';
+}
+
+function resolveCustomerDateRange(range: CustomerDateRange, from: string, to: string) {
   if (range === 'today') {
-    const today = localDateParam(0);
+    const today = vietnamDateParam(0);
     return { from: today, to: today };
   }
   if (range === 'yesterday') {
-    const yesterday = localDateParam(-1);
+    const yesterday = vietnamDateParam(-1);
     return { from: yesterday, to: yesterday };
   }
   if (range === '7d') {
-    return { from: localDateParam(-6), to: localDateParam(0) };
+    return { from: vietnamDateParam(-6), to: vietnamDateParam(0) };
   }
   if (range === '30d') {
-    return { from: localDateParam(-29), to: localDateParam(0) };
+    return { from: vietnamDateParam(-29), to: vietnamDateParam(0) };
+  }
+  if (range === 'custom') {
+    return { from, to };
   }
 
-  return { from, to };
+  return { from: '', to: '' };
 }
 
-function localDateParam(dayOffset: number) {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  date.setDate(date.getDate() + dayOffset);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+function vietnamDateParam(dayOffset: number) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const date = new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day)));
+  date.setUTCDate(date.getUTCDate() + dayOffset);
+  return date.toISOString().slice(0, 10);
 }
 
-function customerDateRangeFilterLabel(range: string, from: string, to: string) {
-  const labels: Record<string, string> = {
+function customerDateRangeFilterLabel(range: CustomerDateRange, from: string, to: string) {
+  const labels: Record<CustomerDateRange, string> = {
+    '': 'All dates',
     '7d': 'Last 7 days',
-    '30d': 'Last month',
+    '30d': 'Last 30 days',
     custom: [from, to].filter(Boolean).join(' - ') || 'Custom period',
     today: 'Today',
-    yesterday: 'Yesterday',
+    yesterday: 'Previous day',
   };
-  return labels[range] ?? range;
+  return labels[range];
 }
 
-function readCustomerSort(value: string | string[] | undefined) {
+function readCustomerView(value: string | string[] | undefined): CustomerView {
+  const view = readSearchParam(value);
+  return ['all', 'needs-action', 'new-today', 'active-today'].includes(view)
+    ? (view as CustomerView)
+    : 'needs-action';
+}
+
+function readCustomerSegment(value: string | string[] | undefined): CustomerSegment {
+  const segment = readSearchParam(value);
+  return ['never-booked', 'usage-new-unbooked', 'has-bookings', 'completed', 'cancellation-risk', 'inactive-30d'].includes(segment)
+    ? (segment as CustomerSegment)
+    : '';
+}
+
+function readCustomerDateField(value: string | string[] | undefined): CustomerDateField | null {
+  const field = readSearchParam(value);
+  return ['joined', 'last-booking', 'last-login'].includes(field) ? (field as CustomerDateField) : null;
+}
+
+function readCustomerSort(value: string | string[] | undefined): CustomerSort {
   const sort = readSearchParam(value);
-  return ['last-booking', 'booking-count', 'booking-count-asc'].includes(sort)
-    ? sort
-    : 'last-booking';
+  if (sort === 'last-booking') return 'newest';
+  return ['newest', 'booking-count', 'booking-count-asc', 'name'].includes(sort)
+    ? (sort as CustomerSort)
+    : 'newest';
+}
+
+function readLegacyCustomerDateFilter(params: Record<string, string | string[] | undefined>) {
+  const candidates = [
+    legacyDateCandidate('joined', params.joinedRange, params.joinedFrom, params.joinedTo),
+    legacyDateCandidate(
+      'last-booking',
+      params.lastBookingRange,
+      params.lastBookingFrom,
+      params.lastBookingTo,
+    ),
+    legacyDateCandidate('last-login', params.lastLoginRange, params.lastLoginFrom, params.lastLoginTo),
+  ];
+  return candidates.find((candidate) => candidate.range || candidate.from || candidate.to) ?? candidates[2];
+}
+
+function legacyDateCandidate(
+  field: CustomerDateField,
+  rangeValue: string | string[] | undefined,
+  fromValue: string | string[] | undefined,
+  toValue: string | string[] | undefined,
+) {
+  return {
+    field,
+    range: normalizeCustomerDateRangeFilter(readSearchParam(rangeValue)),
+    from: readDateParam(fromValue),
+    to: readDateParam(toValue),
+  };
 }
 
 function readDateParam(value: string | string[] | undefined) {
   const date = readSearchParam(value);
-  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return '';
+
+  const [year, month, day] = date.split('-').map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return parsed.getUTCFullYear() === year && parsed.getUTCMonth() === month - 1 && parsed.getUTCDate() === day
+    ? date
+    : '';
+}
+
+function isValidCustomerCustomDateRange(from: string, to: string) {
+  return Boolean(from && to && from <= to);
 }
 
 function readPositiveNumber(value: string | string[] | undefined) {
@@ -278,24 +364,19 @@ function buildCustomerPageQueryParams(filters: CustomerFilters) {
   const params = new URLSearchParams();
 
   appendTextParam(params, 'q', filters.q);
+  if (filters.view !== 'needs-action') appendTextParam(params, 'view', filters.view);
+  appendTextParam(params, 'segment', filters.segment);
   appendTextParam(params, 'country', filters.country);
   appendTextParam(params, 'gender', filters.gender);
-  appendTextParam(params, 'joinedRange', filters.joinedRange);
-  if (!filters.joinedRange || filters.joinedRange === 'custom') {
-    appendTextParam(params, 'joinedFrom', filters.joinedFrom);
-    appendTextParam(params, 'joinedTo', filters.joinedTo);
+  if (filters.dateRange) {
+    params.set('dateField', filters.dateField);
+    params.set('dateRange', filters.dateRange);
+    if (filters.dateRange === 'custom') {
+      appendTextParam(params, 'dateFrom', filters.dateFrom);
+      appendTextParam(params, 'dateTo', filters.dateTo);
+    }
   }
-  appendTextParam(params, 'lastBookingRange', filters.lastBookingRange);
-  if (!filters.lastBookingRange || filters.lastBookingRange === 'custom') {
-    appendTextParam(params, 'lastBookingFrom', filters.lastBookingFrom);
-    appendTextParam(params, 'lastBookingTo', filters.lastBookingTo);
-  }
-  appendTextParam(params, 'lastLoginRange', filters.lastLoginRange);
-  if (!filters.lastLoginRange || filters.lastLoginRange === 'custom') {
-    appendTextParam(params, 'lastLoginFrom', filters.lastLoginFrom);
-    appendTextParam(params, 'lastLoginTo', filters.lastLoginTo);
-  }
-  if (filters.sort !== 'last-booking') {
+  if (filters.sort !== 'newest') {
     params.set('sort', filters.sort);
   }
   if (filters.page > 1) {
@@ -310,8 +391,15 @@ function buildCustomerPageQueryParams(filters: CustomerFilters) {
 
 function normalizeCustomerCountryFilter(value: string) {
   const normalized = value.toUpperCase();
-  const allowed = ['VN', 'KR', 'JP', 'CN', 'SG', 'UNKNOWN'];
-  return allowed.includes(normalized) ? normalized : '';
+  const legacyAliases: Record<string, string> = {
+    CN: 'ZH',
+    JP: 'JA',
+    KR: 'KO',
+    SG: 'EN',
+    VN: 'VI',
+  };
+  const language = legacyAliases[normalized] ?? normalized;
+  return ['VI', 'KO', 'JA', 'ZH', 'EN', 'UNKNOWN'].includes(language) ? language : '';
 }
 
 function normalizeCustomerGenderFilter(value: string) {
@@ -322,12 +410,12 @@ function normalizeCustomerGenderFilter(value: string) {
 
 function customerCountryFilterLabel(country: string) {
   const labels: Record<string, string> = {
-    CN: 'China',
-    JP: 'Japan',
-    KR: 'South Korea',
-    SG: 'Singapore',
-    UNKNOWN: 'Unknown country',
-    VN: 'Vietnam',
+    EN: 'English',
+    JA: 'Japanese',
+    KO: 'Korean',
+    UNKNOWN: 'Unknown language',
+    VI: 'Vietnamese',
+    ZH: 'Chinese',
   };
   return labels[country] ?? country;
 }

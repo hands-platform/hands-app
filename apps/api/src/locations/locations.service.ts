@@ -23,10 +23,7 @@ export class LocationsService {
       throw new BadRequestException('addressText is required');
     }
 
-    const customerProfile = await this.prisma.customerProfile.findUnique({ where: { userId } });
-    if (!customerProfile) {
-      throw new NotFoundException('Customer profile not found');
-    }
+    const customerProfile = await this.requireCustomerProfile(userId);
 
     return this.prisma.customerSelectedLocation.create({
       data: {
@@ -36,5 +33,45 @@ export class LocationsService {
         addressText: input.addressText.trim(),
       },
     });
+  }
+
+  async listCustomerLocations(userId: string | undefined) {
+    const customerProfile = await this.requireCustomerProfile(userId);
+    return this.prisma.customerSelectedLocation.findMany({
+      where: { customerProfileId: customerProfile.id },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+  }
+
+  async deleteCustomerLocation(
+    userId: string | undefined,
+    locationId: string,
+  ) {
+    const customerProfile = await this.requireCustomerProfile(userId);
+    const deleted = await this.prisma.customerSelectedLocation.deleteMany({
+      where: {
+        id: locationId,
+        customerProfileId: customerProfile.id,
+      },
+    });
+    if (deleted.count === 0) {
+      throw new NotFoundException('Customer location not found');
+    }
+    return { deleted: true };
+  }
+
+  private async requireCustomerProfile(userId: string | undefined) {
+    if (!userId) {
+      throw new BadRequestException('Authenticated customer is required');
+    }
+    const customerProfile = await this.prisma.customerProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (!customerProfile) {
+      throw new NotFoundException('Customer profile not found');
+    }
+    return customerProfile;
   }
 }

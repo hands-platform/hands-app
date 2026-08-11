@@ -1,80 +1,168 @@
-import { buildPartnerControlPageLoadPlan } from './partner-control-page-load-plan';
+import {
+  buildPartnerControlPageLoadPlan,
+  partnerControlHref,
+  partnerControlWorkspaceHref,
+} from './partner-control-page-load-plan';
+
+function parsed(value: string | null) {
+  expect(value).not.toBeNull();
+  return new URL(value!, 'http://admin.local');
+}
 
 describe('partner control page load plan', () => {
-  it('keeps default operations lists explicitly bounded', () => {
+  it('loads only the summary totals and server-ranked blocker page by default', () => {
     const loadPlan = buildPartnerControlPageLoadPlan();
-    const policyUrl = new URL(loadPlan.operationalPolicyHref!, 'http://admin.local');
+    const providers = parsed(loadPlan.providersHref);
 
-    expect(policyUrl.pathname).toBe('/admin/operational-policy');
-    expect(policyUrl.searchParams.get('keys')?.split(',')).toEqual([
-      'matching.provider_response_window_minutes',
-      'matching.marketplace_partner_radius_meters',
-      'matching.marketplace_partner_invitation_limit',
-      'matching.marketplace_partner_location_max_age_minutes',
-    ]);
-    expect(loadPlan).toEqual({
+    expect(loadPlan).toMatchObject({
+      blockersPage: 1,
       detailsMode: 'summary',
       listTake: 10,
-      operationalPolicyHref:
-        '/admin/operational-policy?keys=matching.provider_response_window_minutes%2Cmatching.marketplace_partner_radius_meters%2Cmatching.marketplace_partner_invitation_limit%2Cmatching.marketplace_partner_location_max_age_minutes',
-      providersHref: '/admin/partner-controls/providers?take=10',
-      reportsPage: 1,
-      reportsHref: '/admin/provider-reports?take=10',
-      sanctionsPage: 1,
-      sanctionsHref: '/admin/provider-sanctions?take=10',
-      summaryHref: '/admin/partner-controls/summary',
+      partnerSearchHref: null,
+      reportHref: null,
+      reportsHref: null,
+      sanctionsHref: null,
       shouldRenderAccountControls: false,
-      shouldRenderControlDiagnostics: false,
+      shouldRenderPartnerBlockers: false,
       shouldRenderReports: false,
       shouldRenderSummary: true,
-      shouldRenderWorkspaceIndex: true,
+      summaryHref: '/admin/partner-controls/summary',
+    });
+    expect(providers.pathname).toBe('/admin/partner-controls/providers');
+    expect(Object.fromEntries(providers.searchParams)).toEqual({
+      review: 'attention',
+      take: '10',
+      withTotal: 'true',
     });
   });
 
-  it('adds server skips only for the selected paged queue', () => {
-    const buildLoadPlanWithParams = buildPartnerControlPageLoadPlan as unknown as (
-      params: Record<string, string | undefined>,
-    ) => ReturnType<typeof buildPartnerControlPageLoadPlan>;
-
-    const loadPlan = buildLoadPlanWithParams({
+  it('loads only the selected server-paged workspace', () => {
+    const reports = buildPartnerControlPageLoadPlan({
+      details: 'reports',
       reportPage: '3',
+      severity: 'HIGH_PLUS',
+      status: 'OPEN',
+    });
+    const reportUrl = parsed(reports.reportsHref);
+
+    expect(reports.providersHref).toBeNull();
+    expect(reports.sanctionsHref).toBeNull();
+    expect(reports.summaryHref).toBeNull();
+    expect(Object.fromEntries(reportUrl.searchParams)).toEqual({
+      severity: 'HIGH_PLUS',
+      skip: '20',
+      status: 'OPEN',
+      take: '10',
+      withTotal: 'true',
     });
 
-    expect(loadPlan.reportsHref).toBe('/admin/provider-reports?take=10&skip=20');
-    expect(loadPlan.sanctionsHref).toBeNull();
-    expect(loadPlan.detailsMode).toBe('reports');
+    const sanctions = buildPartnerControlPageLoadPlan({
+      controlType: 'PAYOUT_HOLD',
+      details: 'sanctions',
+      sanction: 'HISTORY',
+      sanctionPage: '2',
+    });
+    const sanctionUrl = parsed(sanctions.sanctionsHref);
 
-    const sanctionPlan = buildLoadPlanWithParams({ sanctionPage: '2' });
-    expect(sanctionPlan.reportsHref).toBeNull();
-    expect(sanctionPlan.sanctionsHref).toBe('/admin/provider-sanctions?take=10&skip=10');
-    expect(sanctionPlan.detailsMode).toBe('sanctions');
-  });
-
-  it('keeps detailed workspaces isolated and infers old filtered links', () => {
-    const controls = buildPartnerControlPageLoadPlan({ details: 'controls' });
-    const reports = buildPartnerControlPageLoadPlan({ status: 'OPEN' });
-    const sanctions = buildPartnerControlPageLoadPlan({ sanction: 'ACTIVE' });
-    const index = buildPartnerControlPageLoadPlan({ details: 'all' });
-
-    expect(controls.shouldRenderControlDiagnostics).toBe(true);
-    expect(controls.providersHref).not.toBeNull();
-    expect(controls.reportsHref).not.toBeNull();
-    expect(controls.sanctionsHref).not.toBeNull();
-    expect(controls.operationalPolicyHref).not.toBeNull();
-
-    expect(reports.detailsMode).toBe('reports');
-    expect(reports.shouldRenderReports).toBe(true);
-    expect(reports.sanctionsHref).toBeNull();
-    expect(reports.operationalPolicyHref).toBeNull();
-
-    expect(sanctions.detailsMode).toBe('sanctions');
-    expect(sanctions.shouldRenderAccountControls).toBe(true);
     expect(sanctions.providersHref).toBeNull();
     expect(sanctions.reportsHref).toBeNull();
+    expect(sanctions.summaryHref).toBeNull();
+    expect(Object.fromEntries(sanctionUrl.searchParams)).toEqual({
+      skip: '10',
+      status: 'HISTORY',
+      take: '10',
+      type: 'PAYOUT_HOLD',
+      withTotal: 'true',
+    });
+  });
 
-    expect(index.shouldRenderWorkspaceIndex).toBe(true);
-    expect(index.providersHref).toBeNull();
-    expect(index.reportsHref).toBeNull();
-    expect(index.sanctionsHref).toBeNull();
+  it('uses full server search only while the new report disclosure is open', () => {
+    const search = buildPartnerControlPageLoadPlan({
+      details: 'reports',
+      newReport: '1',
+      partnerQ: 'thanh',
+    });
+    const searchUrl = parsed(search.partnerSearchHref);
+
+    expect(Object.fromEntries(searchUrl.searchParams)).toEqual({
+      q: 'thanh',
+      review: 'all',
+      take: '20',
+      withTotal: 'true',
+    });
+    expect(buildPartnerControlPageLoadPlan({ details: 'reports' }).partnerSearchHref).toBeNull();
+  });
+
+  it('loads the active report queue by default and a requested report directly', () => {
+    const defaultReports = buildPartnerControlPageLoadPlan({ details: 'reports' });
+    expect(Object.fromEntries(parsed(defaultReports.reportsHref).searchParams)).toEqual({
+      review: 'active',
+      take: '10',
+      withTotal: 'true',
+    });
+
+    const direct = buildPartnerControlPageLoadPlan({
+      details: 'reports',
+      newReport: '1',
+      partnerQ: 'ignored',
+      reviewReportId: 'report/outside-page',
+    });
+    expect(direct.reportHref).toBe('/admin/provider-reports/report%2Foutside-page');
+    expect(direct.partnerSearchHref).toBeNull();
+  });
+
+  it('canonicalizes mode-specific filters, defaults, pages, and mutually exclusive report actions', () => {
+    expect(
+      partnerControlHref(
+        {
+          details: 'reports',
+          newReport: '1',
+          partnerQ: 'linh',
+          reviewReportId: 'report-1',
+          sanction: 'ACTIVE',
+          blockerPage: '4',
+          reportPage: '1',
+          sort: 'priority',
+        },
+        {},
+      ),
+    ).toBe('/partner-controls?details=reports&reviewReportId=report-1');
+
+    expect(
+      partnerControlHref(
+        { details: 'sanctions', sanction: 'ACTIVE', sort: 'newest', sanctionPage: '2' },
+        {},
+      ),
+    ).toBe('/partner-controls?details=sanctions&sanctionPage=2');
+
+    expect(
+      partnerControlHref(
+        { details: 'controls', review: 'kyc', sort: 'oldest', blockerPage: '3', status: 'OPEN' },
+        {},
+      ),
+    ).toBe('/partner-controls?details=controls&review=kyc&sort=oldest&blockerPage=3');
+  });
+
+  it('drops inactive workspace state while preserving the shared Partner search', () => {
+    const params = {
+      details: 'controls',
+      newReport: '1',
+      q: 'Mai',
+      reportPage: '5',
+      review: 'cash-debt',
+      sanctionPage: '4',
+    };
+
+    expect(partnerControlWorkspaceHref(params, 'summary')).toBe('/partner-controls?q=Mai');
+    expect(partnerControlWorkspaceHref(params, 'controls')).toBe('/partner-controls?details=controls&q=Mai');
+    expect(partnerControlWorkspaceHref(params, 'reports')).toBe('/partner-controls?details=reports&q=Mai');
+    expect(partnerControlWorkspaceHref(params, 'sanctions')).toBe('/partner-controls?details=sanctions&q=Mai');
+  });
+
+  it('keeps old filtered links mapped to the fixed workspaces', () => {
+    expect(buildPartnerControlPageLoadPlan({ details: 'all' }).detailsMode).toBe('summary');
+    expect(buildPartnerControlPageLoadPlan({ status: 'OPEN' }).detailsMode).toBe('reports');
+    expect(buildPartnerControlPageLoadPlan({ sanction: 'ACTIVE' }).detailsMode).toBe('sanctions');
+    expect(buildPartnerControlPageLoadPlan({ review: 'cash-debt' }).detailsMode).toBe('controls');
   });
 });

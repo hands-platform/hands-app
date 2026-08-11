@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { AdminCard, AdminDisclosure, AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 
 type PartnerDetailSectionGroupProps = {
@@ -13,7 +13,6 @@ type PartnerDetailSectionGroupProps = {
 
 type PartnerDetailReferenceDetailsProps = {
   readonly children: ReactNode;
-  readonly defaultOpen?: boolean;
   readonly helper: string;
   readonly label: string;
   readonly status: ReactNode;
@@ -52,22 +51,21 @@ export function PartnerDetailSectionGroup({
 
 export function PartnerDetailReferenceDetails({
   children,
-  defaultOpen = false,
   helper,
   label,
   status,
 }: PartnerDetailReferenceDetailsProps) {
   return (
-    <AdminDisclosure className="partner-detail-reference-details" open={defaultOpen ? true : undefined}>
-      <summary>
+    <AdminCard className="partner-detail-reference-details">
+      <div className="partner-detail-reference-details-header">
         <span>
           <strong>{label}</strong>
           <small>{helper}</small>
         </span>
-        <em>{status}</em>
-      </summary>
+        <StatusBadge tone="info">{status}</StatusBadge>
+      </div>
       <div className="partner-detail-reference-details-body">{children}</div>
-    </AdminDisclosure>
+    </AdminCard>
   );
 }
 

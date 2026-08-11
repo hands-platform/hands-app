@@ -32,7 +32,7 @@ class ProviderServicePriceModel extends ProviderServicePrice {
     return ProviderServicePriceModel(
       id: json['id']?.toString() ?? '',
       serviceGroupKey: json['serviceGroupKey']?.toString(),
-      name: json['name']?.toString() ?? 'Service',
+      name: json['name']?.toString() ?? 'Dịch vụ',
       description: json['description']?.toString(),
       durationMin: _asInt(json['durationMin']) ?? 0,
       basePrice: _asInt(json['basePrice']) ?? 0,

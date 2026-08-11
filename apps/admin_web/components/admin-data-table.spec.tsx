@@ -98,12 +98,18 @@ describe('AdminDataTable', () => {
 
   it('renders a reusable scroll wrapper for wide admin tables', () => {
     const wrapper = AdminTableScroll({
+      ariaLabel: 'Finance transactions table',
       children: <table className="table" />,
       className: 'vietnam-overview-table-wrap',
     });
 
     expect(wrapper.type).toBe('div');
-    expect(wrapper.props).toMatchObject({ className: 'admin-table-scroll vietnam-overview-table-wrap' });
+    expect(wrapper.props).toMatchObject({
+      'aria-label': 'Finance transactions table',
+      className: 'admin-table-scroll vietnam-overview-table-wrap',
+      role: 'region',
+      tabIndex: 0,
+    });
   });
 
   it('renders a reusable Vuexy table substack for dense table cells', () => {
@@ -160,6 +166,8 @@ describe('AdminDataTable', () => {
       totalRows: 42,
     });
 
+    if (!footer) throw new Error('Expected pagination footer');
+
     expect(footer.props.className).toBe('vuexy-booking-table-footer');
     expect(normalizeText(textContent(footer))).toContain('Showing 11 to 20 of 42 entries');
     expect(classNamesIn(footer)).toEqual(
@@ -186,6 +194,20 @@ describe('AdminDataTable', () => {
     });
 
     expect(normalizeText(textContent(footer))).toContain('Showing 1 to 5 of 7 rooms');
+  });
+
+  it('keeps the summary but hides page buttons for a one-page result', () => {
+    const footer = AdminTablePaginationFooter({
+      activePage: 1,
+      ariaLabel: 'Closeout pages',
+      from: 1,
+      to: 4,
+      totalPages: 1,
+      totalRows: 4,
+    });
+
+    expect(normalizeText(textContent(footer))).toBe('Showing 1 to 4 of 4 entries');
+    expect(classNamesIn(footer)).not.toContain('admin-rounded-pagination vuexy-booking-pagination');
   });
 
   it('allows callers to override summary copy and append trailing context', () => {

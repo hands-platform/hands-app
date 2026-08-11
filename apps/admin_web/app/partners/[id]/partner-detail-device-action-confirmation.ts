@@ -96,7 +96,7 @@ function buildBlockDeviceConfirmation(
     device,
     provider,
     reasonPlaceholder: 'Device block reason',
-    title: `Block device ${shortId(device.id)}?`,
+    title: `Block a device for ${partnerLabel(provider)}?`,
     tone: 'danger',
   });
 }
@@ -117,7 +117,7 @@ function buildUnblockDeviceConfirmation(
     device,
     provider,
     reasonPlaceholder: '',
-    title: `Unblock device ${shortId(device.id)}?`,
+    title: `Unblock a device for ${partnerLabel(provider)}?`,
     tone: 'warning',
   });
 }

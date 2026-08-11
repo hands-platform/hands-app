@@ -1,66 +1,95 @@
 import { readFileSync } from 'node:fs';
-import { hrefMatchesPath } from '../lib/admin-nav-match';
-import { adminNavSections } from '../lib/admin-navigation';
 import { renderToStaticMarkup } from 'react-dom/server';
 
+import { bestMatchingNavHref, hrefMatchesPath } from '../lib/admin-nav-match';
+import { adminNavSections } from '../lib/admin-navigation';
 import { AdminShellNav } from './admin-shell-nav';
-import { AdminWorkspaceHeader } from './admin-workspace-header';
+import { AdminWorkspaceHeader, operationAlertMenuTargetIndex } from './admin-workspace-header';
+import { AdminWorkspaceLocalNav } from './admin-workspace-local-nav';
 
+const navigationState = vi.hoisted(() => ({ pathname: '/partners', search: '' }));
 const workspaceHeaderSource = readFileSync('components/admin-workspace-header.tsx', 'utf8');
+const shellNavSource = readFileSync('components/admin-shell-nav.tsx', 'utf8');
+const localNavSource = readFileSync('components/admin-workspace-local-nav.tsx', 'utf8');
 const topbarSearchInputSourcePath = 'components/admin-topbar-search-input.tsx';
 const themeToggleSource = readFileSync('components/admin-theme-toggle.tsx', 'utf8');
 const globalsCss = readFileSync('app/globals.css', 'utf8');
 
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/partners',
-  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => navigationState.pathname,
+  useSearchParams: () => new URLSearchParams(navigationState.search),
 }));
 
 describe('admin shell navigation', () => {
-  it('matches route links, detail pages, and query-specific entries', () => {
+  beforeEach(() => {
+    navigationState.pathname = '/partners';
+    navigationState.search = '';
+  });
+
+  it('matches detail pages and query-specific saved views', () => {
     expect(hrefMatchesPath('/', '/', '')).toBe(true);
     expect(hrefMatchesPath('/bookings', '/bookings/cmq123', '')).toBe(true);
-    expect(hrefMatchesPath('/bookings', '/bookings', 'view=attention')).toBe(true);
-    expect(hrefMatchesPath('/bookings', '/bookings', 'view=marketplace')).toBe(true);
-    expect(hrefMatchesPath('/bookings?view=attention', '/bookings', 'view=attention')).toBe(true);
-    expect(hrefMatchesPath('/bookings?view=attention', '/bookings', 'view=marketplace')).toBe(false);
     expect(hrefMatchesPath('/bookings', '/bookings/completed', '')).toBe(false);
-    expect(hrefMatchesPath('/bookings/completed', '/bookings/completed', '')).toBe(true);
     expect(hrefMatchesPath('/bookings/completed', '/bookings/completed', 'view=closeout')).toBe(true);
-    expect(hrefMatchesPath('/bookings/post-match-cancellations', '/bookings/post-match-cancellations', '')).toBe(true);
-    expect(
-      hrefMatchesPath(
-        '/bookings/post-match-cancellations',
-        '/bookings/post-match-cancellations',
-        'view=no-show',
-      ),
-    ).toBe(true);
-    expect(hrefMatchesPath('/partners', '/partners', 'review=kyc')).toBe(false);
+    expect(hrefMatchesPath('/partners', '/partners', 'review=kyc')).toBe(true);
     expect(hrefMatchesPath('/partners/overview', '/partners/overview', 'range=7d')).toBe(true);
     expect(hrefMatchesPath('/partners', '/partners/overview', 'range=7d')).toBe(false);
     expect(hrefMatchesPath('/partners?review=unapproved', '/partners', 'review=unapproved')).toBe(true);
-    expect(hrefMatchesPath('/partners?review=unapproved', '/partners', 'review=unsettled')).toBe(false);
+    expect(
+      bestMatchingNavHref(
+        [
+          '/payouts',
+          '/payouts?range=all&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests',
+        ],
+        '/payouts',
+        'range=all&withdrawalStatus=REVIEW_REQUIRED',
+      ),
+    ).toBe('/payouts?range=all&withdrawalStatus=REVIEW_REQUIRED#partner-wallet-withdrawal-requests');
   });
 
-  it('renders Vuexy-style grouped parent navigation with active state', () => {
+  it('renders Shift Command once, seven work areas, and one System Health representative', () => {
     const html = renderToStaticMarkup(<AdminShellNav sections={adminNavSections} />);
 
     expect(html).toContain('aria-label="Admin navigation"');
-    expect(html).toContain('nav-section-summary');
-    expect(html).toContain('nav-section-count-slot');
-    expect(html).toContain('nav-section-chevron');
-    expect(html).not.toContain('items need review');
-    expect(html).toContain('data-active="true"');
-    expect(html).toContain('href="/partners"');
-    expect(html).toContain('Partner Referrals');
-    expect(html).toContain('Admin Operators');
+    expect(html.match(/>Shift Command</g)).toHaveLength(1);
+    expect(html).toContain('class="nav-section-summary nav-direct-link"');
+    expect(html.match(/<details/g)).toHaveLength(7);
+    expect(html.match(/>Partner Operations</g)).toHaveLength(2);
+    expect(html).not.toContain('Partner Directory');
+    expect(html).not.toContain('Partner Referrals');
+    expect(html.match(/>System Health</g)).toHaveLength(1);
+    expect(html).toContain('class="nav-link nav-local-group-link"');
+    expect(html).toContain('href="/setup"');
+    expect(html).toContain('lucide-sparkles');
     expect(html).toContain('lucide-calendar-clock');
-    expect(html).toContain('lucide-users-round');
     expect(html).toContain('lucide-heart-handshake');
-    expect(html).toContain('lucide-landmark');
-    expect(html).toContain('lucide-credit-card');
-    expect(html).toContain('lucide-send');
-    expect(html).toContain('lucide-user-round-cog');
+    expect(html).toContain('lucide-banknote');
+  });
+
+  it('opens only the active accordion section and marks a deep route representative active', () => {
+    navigationState.pathname = '/partners/overview';
+    navigationState.search = 'range=7d';
+    const html = renderToStaticMarkup(<AdminShellNav sections={adminNavSections} />);
+
+    expect(html.match(/<details[^>]* open=""/g)).toHaveLength(1);
+    expect(html).toContain('class="nav-section" data-active="true" open=""');
+    expect(html).toContain('aria-current="page" class="nav-link" data-active="true"');
+    expect(html).toContain('href="/partners/overview"');
+  });
+
+  it('visually activates representative items for saved views without claiming the current page', () => {
+    navigationState.pathname = '/payouts';
+    navigationState.search = 'range=all&withdrawalStatus=REVIEW_REQUIRED';
+    const payoutHtml = renderToStaticMarkup(<AdminShellNav sections={adminNavSections} />);
+
+    navigationState.pathname = '/finance-tax/bank-reconciliation';
+    navigationState.search = 'range=all&review=unmatched';
+    const bankHtml = renderToStaticMarkup(<AdminShellNav sections={adminNavSections} />);
+
+    expect(payoutHtml).toMatch(/class="nav-link" data-active="true"[^>]*href="\/payouts"/);
+    expect(payoutHtml).not.toMatch(/aria-current="page"[^>]*href="\/payouts"/);
+    expect(bankHtml).toMatch(/class="nav-link" data-active="true"/);
+    expect(bankHtml).not.toMatch(/aria-current="page"[^>]*href="\/finance-tax\/bank-reconciliation"/);
   });
 
   it('shows a section badge only when an operation count needs review', () => {
@@ -68,10 +97,20 @@ describe('admin shell navigation', () => {
       <AdminShellNav
         sections={[
           {
+            id: 'command',
+            iconKey: 'bookings',
             label: 'Command',
             description: 'Live work.',
             attentionCount: 3,
-            links: [{ href: '/', label: 'Start Shift', description: 'Open dashboard.' }],
+            links: [
+              {
+                id: 'command-home',
+                iconKey: 'command',
+                href: '/',
+                label: 'Start Shift',
+                description: 'Open dashboard.',
+              },
+            ],
           },
         ]}
       />,
@@ -81,141 +120,238 @@ describe('admin shell navigation', () => {
     expect(html).toContain('>3<');
   });
 
-  it('does not reserve badge width for sidebar sections without operation counts', () => {
-    const countSlotBlock = cssRuleBlockAt(globalsCss.indexOf('.nav-section-count-slot {'));
-    const emptyCountSlotBlock = cssRuleBlockAt(globalsCss.indexOf('.nav-section-count-slot:empty {'));
-    const summaryBlock = cssRuleBlockAt(globalsCss.indexOf('.nav-section-summary {'));
+  it('labels the empty operation alert control without exposing menu semantics', () => {
+    const html = renderToStaticMarkup(<AdminWorkspaceHeader sections={adminNavSections} />);
 
-    expect(summaryBlock).toContain('grid-template-columns: 18px minmax(0, 1fr) auto 16px');
-    expect(countSlotBlock).toContain('min-width: 0');
-    expect(emptyCountSlotBlock).toContain('inline-size: 0');
+    expect(html).toContain('aria-label="Operation alerts, 0"');
+    expect(html).not.toContain('aria-haspopup="menu"');
+    expect(workspaceHeaderSource).toContain("role={hasOperationAlerts ? 'menu' : 'status'}");
+    expect(workspaceHeaderSource).toContain(
+      '<p className="topbar-notification-empty">No operation alerts</p>',
+    );
   });
 
-  it('keeps duplicate section labels and link hrefs on unique React keys during menu migrations', () => {
-    const nav = AdminShellNav({
-      sections: [
-        {
-          label: 'Finance',
-          description: 'First finance group.',
-          links: [
-            { href: '/finance-tax', label: 'Tax Overview', description: 'Open tax overview.' },
-            { href: '/finance-tax', label: 'Tax Overview', description: 'Open tax overview duplicate.' },
-          ],
-        },
-        {
-          label: 'Finance',
-          description: 'Second finance group.',
-          links: [{ href: '/finance-overview', label: 'Finance Overview', description: 'Open finance overview.' }],
-        },
-      ],
-    });
-    const sections = nav.props.children as Array<{ key: string; props: { children: unknown[] } }>;
-    const firstSubmenu = sections[0].props.children[1] as { props: { children: Array<{ key: string }> } };
+  it('preserves menu semantics when operation alerts are populated', () => {
+    const html = renderToStaticMarkup(
+      <AdminWorkspaceHeader
+        sections={[
+          {
+            attentionCount: 2,
+            description: 'Booking work.',
+            href: '/bookings',
+            iconKey: 'bookings',
+            id: 'bookings',
+            label: 'Bookings',
+            links: [
+              {
+                description: 'Open bookings.',
+                href: '/bookings',
+                iconKey: 'bookings',
+                id: 'bookings-home',
+                label: 'Live bookings',
+              },
+            ],
+          },
+        ]}
+      />,
+    );
 
-    expect(sections.map((section) => section.key)).toEqual(['Finance-0', 'Finance-1']);
-    expect(firstSubmenu.props.children.map((link) => link.key)).toEqual(['/finance-tax-0', '/finance-tax-1']);
+    expect(html).toContain('aria-label="Operation alerts, 2"');
+    expect(html).toContain('aria-haspopup="menu"');
   });
 
-  it('passes mobile drawer close callbacks to navigation links', () => {
-    const onNavigate = vi.fn();
-    const nav = AdminShellNav({
-      onNavigate,
-      sections: [
-        {
-          label: 'Command',
-          description: 'Live work.',
-          links: [{ href: '/', label: 'Start Shift', description: 'Open dashboard.' }],
-        },
-      ],
-    });
-    const section = (nav.props.children as Array<{ props: { children: unknown[] } }>)[0];
-    const submenu = section.props.children[1] as { props: { children: Array<{ props: { onClick?: () => void } }> } };
-
-    submenu.props.children[0].props.onClick?.();
-
-    expect(onNavigate).toHaveBeenCalledTimes(1);
+  it('keeps route-scoped accordion state and stable item ids without effect synchronization', () => {
+    expect(shellNavSource).toContain('const [manualOpenSection, setManualOpenSection]');
+    expect(shellNavSource).toContain('manualOpenSection?.routeKey === routeKey');
+    expect(shellNavSource).toContain('open={openSectionId === section.id}');
+    expect(shellNavSource).not.toContain('useEffect');
+    expect(shellNavSource).toContain('key={section.id}');
+    expect(shellNavSource).toContain('key={link.id}');
+    expect(shellNavSource).not.toContain('key={`${section.label}-${index}`}');
+    expect(shellNavSource).not.toContain('key={`${link.href}-${linkIndex}`}');
   });
 
-  it('renders workspace breadcrumbs and active page header from the active route', () => {
+  it('renders workspace breadcrumbs and active page title from the representative route', () => {
     const html = renderToStaticMarkup(<AdminWorkspaceHeader sections={adminNavSections} />);
 
     expect(html).toContain('aria-label="Breadcrumb"');
     expect(html).toContain('HANDS');
-    expect(html).toContain('Partners');
-    expect(html).toContain('workspace-page-title');
-    expect(html).toContain('Vietnam Operations');
-    expect(html).toContain('Live Workspace');
+    expect(html).toContain('Partner Operations');
+    expect(html).toContain('aria-current="page">Directory</span>');
+    expect(html).toContain('aria-label="Operations Policy"');
+    expect(html).toContain('aria-label="Operation alerts, 0"');
     expect(html).toContain('action="/api/admin/session/logout"');
     expect(html).toContain('aria-label="Sign out"');
-    expect(html).toContain('title="Sign out"');
-    expect(html).toContain('lucide-log-out');
-    expect(html).not.toContain('<span>Sign out</span>');
   });
 
-  it('keeps the topbar search input as a labeled Vuexy navbar control', () => {
-    expect(workspaceHeaderSource).toContain("import { AdminTopbarSearchInput } from './admin-topbar-search-input';");
+  it('renders query-specific breadcrumb context from the central navigation resolver', () => {
+    navigationState.pathname = '/payouts';
+    navigationState.search = 'range=all&withdrawalStatus=REVIEW_REQUIRED';
+    const payoutHtml = renderToStaticMarkup(<AdminWorkspaceHeader sections={adminNavSections} />);
+
+    navigationState.pathname = '/partners';
+    navigationState.search = 'review=approval-pending&sort=oldest';
+    const partnerHtml = renderToStaticMarkup(<AdminWorkspaceHeader sections={adminNavSections} />);
+
+    expect(payoutHtml).toContain('Finance Records &amp; Close');
+    expect(payoutHtml).toContain('href="/payouts">Partner Money</a>');
+    expect(payoutHtml).toContain('aria-current="page">Payout / Withdrawal Risk</span>');
+    expect(partnerHtml).toContain('aria-current="page">Partner Approvals</span>');
+    expect(partnerHtml).not.toContain('href="/partners">Partner Directory</a>');
+    expect(partnerHtml).toContain('aria-current="page">Partner Approvals</span>');
+    expect(partnerHtml).not.toContain('Partner directory');
+  });
+
+  it('renders authorized local workspace navigation for existing URLs', () => {
+    navigationState.pathname = '/notifications/templates';
+    const messagingHtml = renderToStaticMarkup(<AdminWorkspaceLocalNav sections={adminNavSections} />);
+
+    navigationState.pathname = '/referrals/partners';
+    const referralHtml = renderToStaticMarkup(<AdminWorkspaceLocalNav sections={adminNavSections} />);
+
+    expect(messagingHtml).toContain('aria-label="Messaging workspace"');
+    expect(messagingHtml).toContain('href="/notifications"');
+    expect(messagingHtml).toContain('href="/notifications/templates"');
+    expect(messagingHtml).toContain('href="/notifications/push-send"');
+    expect(messagingHtml).toMatch(/aria-current="page"[^>]*href="\/notifications\/templates"/);
+    expect(referralHtml).toContain('aria-label="Referrals workspace"');
+    expect(referralHtml).toContain('href="/referrals/customers"');
+    expect(referralHtml).toContain('href="/referrals/partners"');
+    expect(referralHtml).toContain('href="/referrals/cashouts"');
+  });
+
+  it.each([
+    ['Booking Closeout', '/bookings/post-match-cancellations'],
+    ['Customer Signals', '/reviews/partner-customer-evaluations'],
+    ['Messaging', '/notifications/templates'],
+    ['Referrals', '/referrals/partners'],
+    ['Partner Money', '/earnings'],
+    ['Settlement Records', '/finance-tax/settlement-reversals'],
+    ['Tax & Period Close', '/finance-tax/platform-vat'],
+    ['System Health', '/background-jobs'],
+  ])('keeps %s workspace permissions, local navigation, and one current page', (label, pathname) => {
+    navigationState.pathname = pathname;
+    navigationState.search = '';
+    const html = renderToStaticMarkup(<AdminWorkspaceLocalNav sections={adminNavSections} />);
+
+    expect(html).toContain(`aria-label="${label.replace('&', '&amp;')} workspace"`);
+    expect(html.match(/aria-current="page"/g)).toHaveLength(1);
+  });
+
+  it('keeps local workspace navigation inside the shared segmented control', () => {
+    expect(localNavSource).toContain("import { AdminSegmentedControl } from './admin-segmented-control';");
+    expect(localNavSource).toContain('<AdminSegmentedControl');
+    expect(localNavSource).not.toContain('<a');
+  });
+
+  it('keeps the topbar search input as a labeled shared navbar control', () => {
+    expect(workspaceHeaderSource).toContain(
+      "import { AdminTopbarSearchInput } from './admin-topbar-search-input';",
+    );
     expect(workspaceHeaderSource).toContain('<AdminTopbarSearchInput');
     expect(workspaceHeaderSource).not.toContain('<input');
 
     const topbarSearchInputSource = readFileSync(topbarSearchInputSourcePath, 'utf8');
-
     expect(topbarSearchInputSource).toContain('AdminFormSearch');
     expect(topbarSearchInputSource).toContain('autoFocus={autoFocus}');
-    expect(topbarSearchInputSource).toContain('className="topbar-dropdown-header"');
-    expect(topbarSearchInputSource).not.toContain('<input');
-    expect(topbarSearchInputSource).not.toContain('topbar-search-input');
   });
 
-  it('keeps the topbar search trigger inside the shared Vuexy topbar button atom', () => {
+  it('shows ranked results on stable ids and exposes the overflow result count', () => {
+    expect(workspaceHeaderSource).toContain('adminNavSearchResults');
+    expect(workspaceHeaderSource).toContain('group.entries.map((link) => (');
+    expect(workspaceHeaderSource).toContain('groupAdminNavSearchResults');
+    expect(workspaceHeaderSource).toContain('key={link.id}');
+    expect(workspaceHeaderSource).toContain('Show all results ({searchResults.total})');
+    expect(workspaceHeaderSource).not.toContain('.filter((link) =>');
+    expect(workspaceHeaderSource).not.toContain('searchText.includes(query)');
+  });
+
+  it('supports nonmodal search keyboard, focus return, outside click, and mutually exclusive alerts', () => {
+    expect(workspaceHeaderSource).toContain("event.key.toLowerCase() === 'k'");
+    expect(workspaceHeaderSource).toContain("event.key === 'Escape'");
+    expect(workspaceHeaderSource).toContain("event.key !== 'ArrowDown' && event.key !== 'ArrowUp'");
+    expect(workspaceHeaderSource).toContain("event.key === 'Enter'");
+    expect(workspaceHeaderSource).toContain("document.addEventListener('pointerdown'");
+    expect(workspaceHeaderSource).toContain('searchTriggerRef.current?.focus()');
+    expect(workspaceHeaderSource).toContain('notificationTriggerRef.current?.focus()');
+    expect(workspaceHeaderSource).toContain('searchResultsListRef.current.scrollTop = 0');
+    expect(workspaceHeaderSource).toContain('closeNotifications(true)');
+    expect(workspaceHeaderSource).toContain('role="search"');
+    expect(workspaceHeaderSource).not.toContain('aria-haspopup="dialog"');
+  });
+
+  it.each([
+    ['ArrowDown', -1, 3, 0],
+    ['ArrowDown', 2, 3, 0],
+    ['ArrowUp', 0, 3, 2],
+    ['Home', 2, 3, 0],
+    ['End', 0, 3, 2],
+    ['Enter', 0, 3, null],
+    ['ArrowDown', 0, 0, null],
+  ])('moves operation alert focus for %s', (key, activeIndex, itemCount, expected) => {
+    expect(operationAlertMenuTargetIndex(key, activeIndex, itemCount)).toBe(expected);
+  });
+
+  it.each(['/setup', '/app-sessions', '/background-jobs'])(
+    'keeps one System Health representative active for %s while details stay in local navigation',
+    (pathname) => {
+      navigationState.pathname = '/operations-policy';
+      const defaultHtml = renderToStaticMarkup(<AdminShellNav sections={adminNavSections} />);
+      navigationState.pathname = pathname;
+      const activeHtml = renderToStaticMarkup(<AdminShellNav sections={adminNavSections} />);
+      const localHtml = renderToStaticMarkup(<AdminWorkspaceLocalNav sections={adminNavSections} />);
+
+      expect(defaultHtml.match(/>System Health</g)).toHaveLength(1);
+      expect(activeHtml).toMatch(
+        /class="nav-link nav-local-group-link" data-active="true"[^>]*href="\/setup"/,
+      );
+      if (pathname === '/setup') {
+        expect(activeHtml).toMatch(/aria-current="page"[^>]*href="\/setup"/);
+      } else {
+        expect(activeHtml).not.toMatch(/aria-current="page"[^>]*href="\/setup"/);
+      }
+      expect(localHtml).toContain('href="/setup"');
+      expect(localHtml).toContain('href="/app-sessions"');
+      expect(localHtml).toContain('href="/background-jobs"');
+      expect(localHtml.match(/aria-current="page"/g)).toHaveLength(1);
+    },
+  );
+
+  it('keeps a local booking representative visually active without claiming the current page', () => {
+    navigationState.pathname = '/bookings/post-match-cancellations';
+    const html = renderToStaticMarkup(<AdminShellNav sections={adminNavSections} />);
+
+    expect(html).toMatch(/class="nav-link" data-active="true"[^>]*href="\/bookings\/completed"/);
+    expect(html).not.toMatch(/aria-current="page"[^>]*href="\/bookings\/completed"/);
+  });
+
+  it('keeps shared topbar atoms for search, notification, theme, and icon actions', () => {
     expect(workspaceHeaderSource).toContain("import { AdminTopbarButton } from './admin-topbar-button';");
-    expect(workspaceHeaderSource).toContain('<AdminTopbarButton');
-    expect(workspaceHeaderSource).not.toContain('<button');
-  });
-
-  it('keeps topbar notification counts inside the shared Vuexy badge atom', () => {
     expect(workspaceHeaderSource).toContain('AdminAttentionBadge');
-    expect(workspaceHeaderSource).not.toContain('<span className="topbar-attention-badge">{totalAttentionCount}</span>');
-  });
-
-  it('keeps topbar icon buttons inside the shared Vuexy icon button atom', () => {
     expect(workspaceHeaderSource).toContain("import { AdminIconButton } from './admin-icon-button';");
     expect(workspaceHeaderSource).toContain("import { AdminIconLink } from './admin-icon-link';");
-    expect(workspaceHeaderSource).toContain('<AdminIconButton');
-    expect(workspaceHeaderSource).toContain('<AdminIconLink');
-    expect(workspaceHeaderSource).not.toContain('<Link className="topbar-icon-chip" aria-label="Help"');
-    expect(workspaceHeaderSource).not.toContain('<button className="topbar-icon-chip topbar-icon-button"');
-    expect(workspaceHeaderSource).not.toContain('className="topbar-icon-chip topbar-icon-button" type="submit"');
-  });
-
-  it('keeps theme mode icon buttons inside the shared Vuexy icon button atom', () => {
     expect(themeToggleSource).toContain("import { AdminIconButton } from './admin-icon-button';");
-    expect(themeToggleSource).toContain('<AdminIconButton');
-    expect(themeToggleSource).not.toContain('<button');
+    expect(themeToggleSource.match(/<AdminIconButton/g)).toHaveLength(1);
   });
 
-  it('keeps topbar empty states inside the shared Vuexy empty-state atom', () => {
-    expect(workspaceHeaderSource).toContain('AdminEmptyState');
-    expect(workspaceHeaderSource).not.toContain('<span className="topbar-empty">No matching admin pages</span>');
-    expect(workspaceHeaderSource).not.toContain('<span className="topbar-empty">No operation alerts</span>');
-  });
-
-  it('keeps topbar dropdown links on stable keys during menu migrations', () => {
-    expect(workspaceHeaderSource).toContain('filteredLinks.map((link, linkIndex) => (');
-    expect(workspaceHeaderSource).toContain('key={`${link.sectionLabel}:${link.href}:${linkIndex}`}');
-    expect(workspaceHeaderSource).toContain('attentionSections.map((section, sectionIndex) => (');
-    expect(workspaceHeaderSource).toContain('key={`${section.label}:${sectionIndex}`}');
-    expect(workspaceHeaderSource).not.toContain('filteredLinks.map((link) => (');
-    expect(workspaceHeaderSource).not.toContain('attentionSections.map((section) => (');
-    expect(workspaceHeaderSource).not.toContain('key={`${link.sectionLabel}:${link.href}`}');
-    expect(workspaceHeaderSource).not.toContain('key={section.label}');
+  it('keeps sidebar and workspace controls readable on desktop', () => {
+    expect(cssRuleBlockAt(globalsCss.indexOf('.nav-section-summary {'))).toContain(
+      'grid-template-columns: 18px minmax(0, 1fr) auto 16px',
+    );
+    expect(globalsCss).toContain('.nav-direct-link {');
+    expect(globalsCss).toContain('.nav-local-group-link {');
+    expect(globalsCss).toContain('.admin-workspace-local-nav {');
+    expect(globalsCss).toContain('.topbar-search-show-all {');
+    expect(cssRuleBlockAt(globalsCss.indexOf('.topbar-search-menu {'))).toContain('overflow: hidden');
+    expect(globalsCss).toContain('.topbar-search-menu > .topbar-dropdown-list {');
+    expect(
+      globalsCss.match(/--admin-sidebar-muted: rgb\(var\(--admin-main-channel\) \/ 0\.66\);/g),
+    ).toHaveLength(2);
   });
 });
 
 function cssRuleBlockAt(index: number) {
-  if (index < 0) {
-    return '';
-  }
-
+  if (index < 0) return '';
   const endIndex = globalsCss.indexOf('}', index);
   return globalsCss.slice(index, endIndex + 1);
 }

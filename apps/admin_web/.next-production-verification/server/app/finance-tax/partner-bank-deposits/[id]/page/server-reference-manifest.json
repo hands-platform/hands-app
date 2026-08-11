@@ -1,0 +1,17 @@
+{
+  "node": {
+    "40711f4f48483d30c623256f72f04ef64f2d3880e4": {
+      "workers": {
+        "app/finance-tax/partner-bank-deposits/[id]/page": {
+          "moduleId": 976060,
+          "async": false,
+          "exportedName": "allocatePartnerBankDepositCashDebt",
+          "filename": "apps/admin_web/app/finance-tax/partner-bank-deposits/actions.ts"
+        }
+      },
+      "exportedName": "allocatePartnerBankDepositCashDebt",
+      "filename": "apps/admin_web/app/finance-tax/partner-bank-deposits/actions.ts"
+    }
+  },
+  "edge": {}
+}

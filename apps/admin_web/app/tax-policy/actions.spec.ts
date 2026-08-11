@@ -43,10 +43,12 @@ describe('tax policy server actions', () => {
     });
 
     const formData = new FormData();
+    formData.set('approvalAdminId', 'finance-admin-2');
     formData.set('name', ' Vietnam withholding ');
     formData.set('status', 'ACTIVE');
     formData.set('effectiveFrom', effectiveFrom);
     formData.set('notes', ' Approved policy ');
+    formData.set('operatorReason', 'Reviewed against the approved withholding schedule.');
     formData.set('defaultRateBps', '500');
 
     await createTaxPolicyVersion(formData);
@@ -55,9 +57,11 @@ describe('tax policy server actions', () => {
       1,
       '/admin/tax-policy-versions',
       {
+        approvalAdminId: 'finance-admin-2',
         effectiveFrom: effectiveFromIso,
         name: 'Vietnam withholding',
         notes: 'Approved policy',
+        operatorReason: 'Reviewed against the approved withholding schedule.',
         status: 'ACTIVE',
       },
       null,
@@ -67,7 +71,9 @@ describe('tax policy server actions', () => {
       '/admin/tax-policy-versions/policy-1/rules',
       {
         active: true,
+        approvalAdminId: 'finance-admin-2',
         fixedAmount: 0,
+        operatorReason: 'Reviewed against the approved withholding schedule.',
         rateBps: 500,
         scope: 'DEFAULT',
       },
@@ -97,20 +103,24 @@ describe('tax policy server actions', () => {
     const effectiveToIso = new Date(effectiveTo).toISOString();
 
     const formData = new FormData();
+    formData.set('approvalAdminId', 'finance-admin-2');
     formData.set('policyId', 'policy-1');
     formData.set('status', 'ACTIVE');
     formData.set('effectiveFrom', effectiveFrom);
     formData.set('effectiveTo', effectiveTo);
     formData.set('notes', ' Policy reviewed ');
+    formData.set('operatorReason', 'Reviewed the policy dates and retained settlement evidence.');
 
     await updateTaxPolicyVersion(formData);
 
     expect(mockedAdminPatch).toHaveBeenCalledWith(
       '/admin/tax-policy-versions/policy-1',
       {
+        approvalAdminId: 'finance-admin-2',
         effectiveFrom: effectiveFromIso,
         effectiveTo: effectiveToIso,
         notes: 'Policy reviewed',
+        operatorReason: 'Reviewed the policy dates and retained settlement evidence.',
         status: 'ACTIVE',
       },
       null,

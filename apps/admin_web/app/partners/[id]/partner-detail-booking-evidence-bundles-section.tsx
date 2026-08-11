@@ -40,12 +40,10 @@ type PartnerDetailBookingEvidenceBundlesSectionProps = {
 
 const PARTNER_BOOKING_EVIDENCE_HEADERS = [
   'Booking',
+  'Status',
   'Partner role',
-  'Customer and location',
-  'Chat archive',
-  'Money records',
-  'Ops evidence',
-  'Open',
+  'Amount',
+  'Next action',
 ] as const;
 
 export function PartnerDetailBookingEvidenceBundlesSection({
@@ -60,7 +58,7 @@ export function PartnerDetailBookingEvidenceBundlesSection({
       resultLabel={`${rows.length} booking bundle(s)`}
       title="Partner booking evidence bundles"
     >
-      <AdminTableScroll>
+      <AdminTableScroll ariaLabel="Partner booking evidence table">
         <AdminDataTable
           className={partnerDetailReviewTableClassName}
           emptyMessage={null}
@@ -72,6 +70,8 @@ export function PartnerDetailBookingEvidenceBundlesSection({
               <td>
                 <strong>{row.bookingLabelNode ?? row.bookingLabel}</strong>
                 <p className="muted">{row.serviceLabelNode ?? row.serviceLabel}</p>
+              </td>
+              <td>
                 <StatusBadgeFromPillClass pillClass={statusPillClass(row.status)}>
                   {row.status}
                 </StatusBadgeFromPillClass>
@@ -81,35 +81,21 @@ export function PartnerDetailBookingEvidenceBundlesSection({
                 <p className="muted">{row.roleDetail}</p>
               </td>
               <td>
-                <strong>{row.customerStatus}</strong>
-                <p className="muted">{row.customerDetail}</p>
-              </td>
-              <td>
-                <strong>{row.chatStatus}</strong>
-                <p className="muted">{row.chatDetail}</p>
-              </td>
-              <td>
                 <strong>{row.moneyStatus}</strong>
                 <p className="muted">{row.moneyDetailNode ?? row.moneyDetail}</p>
               </td>
               <td>
-                <strong>{row.opsStatus}</strong>
-                <p className="muted">{row.opsDetailNode ?? row.opsDetail}</p>
-              </td>
-              <td>
                 <AdminTextLink href={`/bookings/${row.id}`}>
-                  Booking
+                  Open details
                 </AdminTextLink>
-                {row.customerHref ? (
-                  <AdminTextLink className="admin-ml-10" href={row.customerHref}>
-                    Customer
-                  </AdminTextLink>
-                ) : null}
-                {row.chatHref ? (
-                  <AdminTextLink className="admin-ml-10" href={row.chatHref}>
-                    Chat
-                  </AdminTextLink>
-                ) : null}
+                <details className="partner-booking-evidence-details">
+                  <summary>Evidence summary</summary>
+                  <p><strong>Customer and location:</strong> {row.customerStatus} · {row.customerDetail}</p>
+                  <p><strong>Chat:</strong> {row.chatStatus} · {row.chatDetail}</p>
+                  <p><strong>Operations:</strong> {row.opsStatus} · {row.opsDetailNode ?? row.opsDetail}</p>
+                  {row.customerHref ? <AdminTextLink href={row.customerHref}>Open customer</AdminTextLink> : null}
+                  {row.chatHref ? <AdminTextLink className="admin-ml-10" href={row.chatHref}>Open chat</AdminTextLink> : null}
+                </details>
               </td>
             </tr>
           ))}

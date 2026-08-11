@@ -1,6 +1,8 @@
 import { bookingRequestOpenedAt } from '../../../lib/admin-booking-time';
 import type { AdminBookingDetail, AdminLocationSnapshot } from '../../../lib/admin-api';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
+import { partnerOperatingStatusLabel } from '../../../lib/admin-copy';
+import { bookingFinalSelectionCopy } from '../../../lib/booking-final-selection-copy';
 import {
   isPostMatchCancellationManualReviewRequired,
   isPostMatchCancellationReviewBooking,
@@ -124,28 +126,35 @@ export function bookingUnifiedDetail({
       {
         label: 'Matched Partner',
         value: partnerName,
-        helper: booking.selectedProvider?.user?.phone ?? finalPartnerSummary.id ?? 'No Partner yet',
+        helper: `${booking.selectedProvider?.user?.phone ?? finalPartnerSummary.id ?? 'No Partner yet'} / ${countLabel(
+          messageCount,
+          'chat message',
+        )}`,
         href: partnerHref,
       },
       {
-        label: 'Reservation',
+        label: 'Scheduled service',
         value: reservationTime,
         helper: addressLine,
       },
       {
-        label: 'Service / Price',
+        label: 'Service',
         value: bookingServiceOptionLabel(booking),
-        helper: financeTrace.customerPrice,
+        helper: booking.notes ? `Legacy booking note: ${booking.notes}` : 'No legacy booking note',
       },
       {
-        label: 'Settlement',
-        value: financeTrace.providerNet,
-        helper: `${financeTrace.platformFee} platform fee / ${financeTrace.withholding} tax`,
+        label: booking.payment ? 'Customer payment' : 'Quoted service price',
+        value: financeTrace.customerPrice,
+        helper: booking.payment
+          ? `${financeTrace.paymentMethod} / ${booking.payment.status}`
+          : 'No payment record; this is the service quote.',
       },
       {
-        label: 'Updates',
-        value: countLabel(messageCount, 'chat message'),
-        helper: `${bookingUnifiedStatusLabel(booking)} / ${booking.status}`,
+        label: booking.earning ? 'Partner payout' : 'Partner earning',
+        value: booking.earning ? financeTrace.providerPayout : 'Not created',
+        helper: booking.earning
+          ? `${financeTrace.providerNet} net / ${financeTrace.withholding} withholding`
+          : 'No completed-service earning record.',
       },
     ],
   };
@@ -204,7 +213,7 @@ function bookingUnifiedCustomerRows({
     {
       label: 'Service request',
       value: bookingServiceOptionLabel(booking),
-      detail: booking.notes ?? 'No customer note saved.',
+      detail: booking.notes ? `Legacy booking note: ${booking.notes}` : 'No legacy booking note saved.',
     },
   ];
 }
@@ -256,7 +265,7 @@ function bookingUnifiedMatchedPartnerRows({
     },
     {
       label: 'Profile',
-      value: selectedProvider?.status ?? 'Unknown',
+      value: partnerOperatingStatusLabel(selectedProvider?.status),
       detail: selectedProvider?.id
         ? `Partner ${shortId(selectedProvider.id)}`
         : 'No selected Partner profile.',
@@ -264,7 +273,7 @@ function bookingUnifiedMatchedPartnerRows({
     },
     {
       label: 'Match source',
-      value: booking.matchSource ?? booking.matchingEvidence?.finalSelection ?? 'Not recorded',
+      value: bookingMatchSourceLabel(booking),
       detail: formatDate(booking.matchedAt),
       detailDateTimeFallback: formatDate(booking.matchedAt),
       detailDateTimeValue: booking.matchedAt,
@@ -295,6 +304,16 @@ function bookingUnifiedMatchedPartnerRows({
       variant: 'secondary',
     },
   ];
+}
+
+function bookingMatchSourceLabel(booking: AdminBookingDetail) {
+  if (booking.matchSource === 'FIRST_PICK_ACCEPTED_FIRST') {
+    return 'First-pick Partner accepted first';
+  }
+  if (booking.matchSource === 'CUSTOMER_SELECTED_PARTNER') {
+    return 'Customer selected final Partner';
+  }
+  return bookingFinalSelectionCopy(booking.matchingEvidence?.finalSelection)?.label ?? 'Not recorded';
 }
 
 function bookingUnifiedRequestedPartnerRow(booking: AdminBookingDetail): BookingUnifiedDetailRow {
@@ -337,27 +356,39 @@ function bookingUnifiedFinanceRows({
 
   return [
     {
-      label: 'Payment record',
+      label: 'Quoted service price',
       value: financeTrace.customerPrice,
-      detail: `${financeTrace.paymentMethod} / ${booking.payment?.status ?? 'No payment'} / ref ${
-        booking.payment?.providerRef ?? 'no provider ref'
-      }`,
-      href: booking.payment?.id ? `/payments/${booking.payment.id}` : undefined,
-      variant: 'finance-highlight',
+      detail: 'Service price saved on this booking; not an actual payment record.',
+      variant: 'secondary',
     },
-    {
-      label: 'Partner earning',
-      value: financeTrace.providerPayout,
-      detail: `${financeTrace.providerNet} / ${financeTrace.payoutRuleLine}`,
-      href: booking.earning?.id ? `/earnings?bookingId=${booking.id}` : undefined,
-      variant: 'finance-highlight',
-    },
-    {
-      label: 'HANDS fee and costs',
-      value: financeTrace.platformFee,
-      detail: `${financeTrace.feeCosts} / ${financeTrace.netHandsFee} before withholding`,
-      variant: 'finance-highlight',
-    },
+    ...(booking.payment
+      ? [
+          {
+            label: 'Payment record',
+            value: money(booking.payment.amount, paymentCurrency),
+            detail: `${financeTrace.paymentMethod} / ${booking.payment.status} / ref ${booking.payment.providerRef ?? 'no provider ref'}`,
+            href: booking.payment?.id ? `/payments/${booking.payment.id}` : undefined,
+            variant: 'finance-highlight',
+          } satisfies BookingUnifiedDetailRow,
+        ]
+      : []),
+    ...(booking.earning
+      ? ([
+          {
+            label: 'Partner earning',
+            value: financeTrace.providerPayout,
+            detail: `${financeTrace.providerNet} / ${financeTrace.payoutRuleLine}`,
+            href: booking.earning?.id ? `/earnings?bookingId=${booking.id}` : undefined,
+            variant: 'finance-highlight',
+          },
+          {
+            label: 'HANDS fee and costs',
+            value: financeTrace.platformFee,
+            detail: `${financeTrace.feeCosts} / ${financeTrace.netHandsFee} before withholding`,
+            variant: 'finance-highlight',
+          },
+        ] satisfies BookingUnifiedDetailRow[])
+      : []),
     {
       label: 'Service state',
       value: booking.status,
@@ -373,7 +404,7 @@ function bookingUnifiedFinanceRows({
       detail: booking.closedNote ?? `Closeout time ${formatDate(booking.closedAt ?? null)}`,
       detailDateTimeFallback: booking.closedNote ? undefined : formatDate(booking.closedAt ?? null),
       detailDateTimePrefix: booking.closedNote ? undefined : 'Closeout time ',
-      detailDateTimeValue: booking.closedNote ? null : booking.closedAt ?? null,
+      detailDateTimeValue: booking.closedNote ? null : (booking.closedAt ?? null),
       variant: 'secondary',
     },
     {
@@ -382,27 +413,35 @@ function bookingUnifiedFinanceRows({
       detail: `${financeTrace.serviceOption} / min ${financeTrace.adminMinimum}`,
       variant: 'secondary',
     },
-    {
-      label: 'Tax withholding',
-      value: financeTrace.withholding,
-      detail: `${financeTrace.companyFeeAfterTax} company fee after tax`,
-      variant: 'secondary',
-    },
-    {
-      label: 'Wallet impact',
-      value: financeTrace.walletLedger,
-      detail: `${walletEntryCount} wallet row(s) / Partner wallet impact`,
-      variant: 'secondary',
-    },
-    {
-      label: 'Refunds',
-      value: `${refundCount}`,
-      detail: `${money(refundAmount ?? 0, paymentCurrency)} refunded / payment amount ${money(
-        booking.payment?.amount,
-        paymentCurrency,
-      )}`,
-      variant: 'secondary',
-    },
+    ...(booking.earning
+      ? ([
+          {
+            label: 'Tax withholding',
+            value: financeTrace.withholding,
+            detail: `${financeTrace.companyFeeAfterTax} company fee after tax`,
+            variant: 'secondary',
+          },
+          {
+            label: 'Wallet impact',
+            value: financeTrace.walletLedger,
+            detail: `${walletEntryCount} wallet row(s) / Partner wallet impact`,
+            variant: 'secondary',
+          },
+        ] satisfies BookingUnifiedDetailRow[])
+      : []),
+    ...(booking.payment || refundCount > 0
+      ? [
+          {
+            label: 'Refunds',
+            value: `${refundCount}`,
+            detail: `${money(refundAmount ?? 0, paymentCurrency)} refunded / payment amount ${money(
+              booking.payment?.amount,
+              paymentCurrency,
+            )}`,
+            variant: 'secondary',
+          } satisfies BookingUnifiedDetailRow,
+        ]
+      : []),
   ];
 }
 
@@ -414,14 +453,18 @@ function bookingUnifiedStatusLabel(booking: AdminBookingDetail) {
   }
 
   if (booking.status === 'COMPLETED') {
-    return 'Completed booking detail';
+    return 'Completed';
   }
 
   if (booking.status === 'IN_SERVICE' || booking.selectedProviderId) {
-    return 'Post-match in progress detail';
+    return 'In progress';
   }
 
-  return 'Realtime booking detail';
+  return booking.status
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
 }
 
 function bookingUnifiedStatusTone(status: string) {
@@ -488,6 +531,10 @@ function customerActualLocationDetail(booking: AdminBookingDetail) {
 
 function bookingUnifiedParticipantPeople(booking: AdminBookingDetail): BookingUnifiedDetailPerson[] {
   const selectedProviderId = booking.selectedProviderId ?? booking.selectedProvider?.id ?? null;
+  const matchingDeadlineExpired =
+    booking.status === 'OPEN_MATCHING' &&
+    Boolean(booking.expiresAt) &&
+    new Date(booking.expiresAt ?? '').getTime() <= Date.now();
   const people: BookingUnifiedDetailPerson[] = [];
 
   for (const participant of booking.participants ?? []) {
@@ -504,14 +551,22 @@ function bookingUnifiedParticipantPeople(booking: AdminBookingDetail): BookingUn
         ? `Joined ${formatDate(participant.joinedAt)}`
         : 'No response time';
     const distance = distanceLabel(participant.distanceMeters);
-    const statusLabel = bookingParticipantStatusLabel(participant.status, profileId === selectedProviderId);
+    const selected = profileId === selectedProviderId;
+    const responseExpired =
+      !selected && matchingDeadlineExpired && ['ACCEPTED', 'JOINED'].includes(participant.status);
+    const statusLabel = responseExpired
+      ? 'Response expired'
+      : bookingParticipantStatusLabel(participant.status, selected);
+    const currentEligibility = responseExpired
+      ? `No longer selectable after matching deadline ${formatDate(booking.expiresAt)}`
+      : 'Current booking participation status';
 
     people.push({
-      helper: `${statusLabel} / ${distance} / ${responseLabel}`,
+      helper: `At participation: ${bookingParticipantStatusLabel(participant.status, selected)} / ${distance} / ${responseLabel}. ${currentEligibility}.`,
       href: `/partners/${profileId}`,
       id: participant.id,
       label,
-      status: bookingParticipantAvatarStatus(participant.status, profileId === selectedProviderId),
+      status: bookingParticipantAvatarStatus(responseExpired ? 'EXPIRED' : participant.status, selected),
       statusLabel,
     });
   }
@@ -753,12 +808,7 @@ function bookingUnifiedLocationSnapshotForEvent(
           snapshot.bookingId === preferBookingId && bookingUnifiedTimeValue(snapshot.recordedAt) > eventTime,
       )
     : null;
-  return (
-    bookingLinkedBeforeOrAt.at(-1) ??
-    bookingLinkedAfter ??
-    beforeOrAt.at(-1) ??
-    null
-  );
+  return bookingLinkedBeforeOrAt.at(-1) ?? bookingLinkedAfter ?? beforeOrAt.at(-1) ?? null;
 }
 
 function bookingUnifiedLocationSnapshotKey(snapshot: AdminLocationSnapshot) {

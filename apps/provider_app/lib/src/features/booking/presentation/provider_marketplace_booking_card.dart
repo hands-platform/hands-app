@@ -19,7 +19,6 @@ class OpenBookingCard extends StatelessWidget {
     required this.onJoin,
     required this.onAccept,
     required this.onReject,
-    required this.onStart,
   });
 
   final Map<String, dynamic> booking;
@@ -30,7 +29,6 @@ class OpenBookingCard extends StatelessWidget {
   final VoidCallback onJoin;
   final VoidCallback onAccept;
   final VoidCallback onReject;
-  final VoidCallback onStart;
 
   @override
   Widget build(BuildContext context) {
@@ -41,15 +39,19 @@ class OpenBookingCard extends StatelessWidget {
         ? services.first as Map<String, dynamic>
         : <String, dynamic>{};
     final service = firstService['service'] as Map<String, dynamic>?;
-    final participants = booking['participants'] is List<dynamic>
-        ? booking['participants'] as List<dynamic>
-        : [];
+    final marketplaceParticipantCount =
+        providerMarketplaceParticipantCount(booking);
     final preferredProvider =
         booking['preferredProvider'] as Map<String, dynamic>?;
     final payment = asMap(booking['payment']);
     final hasPreferredProvider = preferredProvider != null;
     final hasChat = isProviderAppChatVisible(booking);
-    final isMatched = booking['status'] == 'MATCHED';
+    final isMatched = const {
+      'MATCHED',
+      'PROVIDER_ON_THE_WAY',
+      'ARRIVED',
+      'IN_SERVICE',
+    }.contains(booking['status']);
     final walletBlocksMarketplaceParticipation =
         providerWalletBlocksMarketplaceParticipation(
       walletBlocked: walletBlocked,
@@ -59,8 +61,17 @@ class OpenBookingCard extends StatelessWidget {
     final isCashBooking = providerBookingIsCash(booking);
     final customerAmount = payment?['amount'] ?? service?['basePrice'];
     final customerAddress = booking['address'] as Map<String, dynamic>?;
+    final customer = asMap(booking['customer']);
     final addressPreview = customerAddress?['addressPreview']?.toString();
-    final guestArea = addressPreview ?? 'Area pending';
+    final guestArea = addressPreview ?? 'Chưa có khu vực';
+    final distanceMeters = asNum(booking['distanceMeters'])?.toDouble();
+    final distanceLabel = distanceMeters == null
+        ? 'Chưa có thông tin'
+        : distanceMeters < 1000
+            ? '${distanceMeters.round()} m'
+            : '${(distanceMeters / 1000).toStringAsFixed(1)} km';
+    final customerGender = customer?['gender']?.toString().trim();
+    final customerNationality = customer?['nationality']?.toString().trim();
     final bookingId = booking['id']?.toString() ?? '';
     final shortBookingId =
         bookingId.length <= 8 ? bookingId : bookingId.substring(0, 8);
@@ -96,15 +107,15 @@ class OpenBookingCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         hasPreferredProvider
-                            ? 'Guest request with marketplace alternatives'
-                            : 'Marketplace request',
+                            ? 'Yêu cầu trực tiếp có lựa chọn thay thế'
+                            : 'Yêu cầu đặt lịch công khai',
                         style: Theme.of(context)
                             .textTheme
                             .bodyMedium
                             ?.copyWith(color: Colors.black54),
                       ),
                       Text(
-                        '${booking['status']} - ${participants.length} marketplace participant(s)',
+                        '${providerBookingStatusLabel(booking['status'])} - $marketplaceParticipantCount đối tác tham gia',
                       ),
                     ],
                   ),
@@ -122,8 +133,8 @@ class OpenBookingCard extends StatelessWidget {
                   ),
                   child: Text(
                     isPreferredRequest
-                        ? 'Preferred'
-                        : (hasPreferredProvider ? 'Marketplace' : 'Open'),
+                        ? 'Trực tiếp'
+                        : (hasPreferredProvider ? 'Công khai' : 'Mở'),
                     style: Theme.of(context)
                         .textTheme
                         .labelLarge
@@ -139,7 +150,7 @@ class OpenBookingCard extends StatelessWidget {
               children: [
                 ProviderRequestTag(label: guidance.modeLabel),
                 ProviderRequestTag(
-                  label: 'Booking $shortBookingId',
+                  label: 'Đặt lịch $shortBookingId',
                   highlighted: true,
                 ),
                 ProviderRequestTag(
@@ -152,20 +163,21 @@ class OpenBookingCard extends StatelessWidget {
                 ProviderRequestTag(
                     label: providerMarketplaceRadiusTagLabel(booking)),
                 ProviderRequestTag(
-                  label: payment?['method']?.toString() ??
-                      (isCashBooking ? 'CASH' : 'PAYMENT'),
+                  label: providerPaymentMethodLabel(
+                    payment?['method'] ?? (isCashBooking ? 'CASH' : null),
+                  ),
                   highlighted: isCashBooking,
                 ),
-                if (updatedLabel != 'Updated just now')
+                if (updatedLabel != 'Vừa cập nhật')
                   ProviderRequestTag(label: updatedLabel),
               ],
             ),
             const SizedBox(height: 10),
-            Text('Opened: $openedLabel'),
+            Text('Mở lúc: $openedLabel'),
             if (customerAddress != null) ...[
               const SizedBox(height: 4),
               Text(
-                'Guest area: $guestArea',
+                'Khu vực khách hàng: $guestArea',
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
@@ -181,26 +193,37 @@ class OpenBookingCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xFFE4EAF2)),
               ),
-              child: Row(
+              child: Wrap(
+                spacing: 16,
+                runSpacing: 12,
                 children: [
-                  Expanded(
+                  SizedBox(
+                    width: 132,
+                    child:
+                        InlineRequestFact(label: 'Khu vực', value: guestArea),
+                  ),
+                  SizedBox(
+                    width: 112,
                     child: InlineRequestFact(
-                      label: 'Area',
-                      value: guestArea,
+                        label: 'Khoảng cách', value: distanceLabel),
+                  ),
+                  SizedBox(
+                    width: 112,
+                    child: InlineRequestFact(
+                      label: 'Giới tính',
+                      value: customerGender == null || customerGender.isEmpty
+                          ? 'Chưa cung cấp'
+                          : customerGender,
                     ),
                   ),
-                  Expanded(
+                  SizedBox(
+                    width: 132,
                     child: InlineRequestFact(
-                      label: 'Request',
-                      value: hasPreferredProvider
-                          ? 'First-pick marketplace'
-                          : 'Marketplace',
-                    ),
-                  ),
-                  Expanded(
-                    child: InlineRequestFact(
-                      label: 'Priority',
-                      value: guidance.priorityLabel,
+                      label: 'Quốc tịch',
+                      value: customerNationality == null ||
+                              customerNationality.isEmpty
+                          ? 'Chưa cung cấp'
+                          : customerNationality,
                     ),
                   ),
                 ],
@@ -211,7 +234,7 @@ class OpenBookingCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: RequestSummaryCard(
-                    label: 'Role',
+                    label: 'Vai trò',
                     value: guidance.roleLabel,
                     tone: isPreferredRequest
                         ? const Color(0xFFEAF5E3)
@@ -223,7 +246,7 @@ class OpenBookingCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: RequestSummaryCard(
-                    label: 'Decision',
+                    label: 'Quyết định',
                     value: guidance.decisionLabel,
                     tone: isMatched
                         ? const Color(0xFFF2EAFE)
@@ -244,7 +267,7 @@ class OpenBookingCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Next action',
+                    'Hành động tiếp theo',
                     style: Theme.of(context)
                         .textTheme
                         .labelLarge
@@ -301,7 +324,7 @@ class OpenBookingCard extends StatelessWidget {
                     child: FilledButton.tonalIcon(
                       onPressed: loading ? null : onReject,
                       icon: const Icon(Icons.close),
-                      label: const Text('Decline'),
+                      label: const Text('Từ chối'),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -309,33 +332,21 @@ class OpenBookingCard extends StatelessWidget {
                     child: FilledButton.icon(
                       onPressed: loading ? null : onAccept,
                       icon: const Icon(Icons.check),
-                      label: const Text('Accept request'),
+                      label: const Text('Chấp nhận yêu cầu'),
                     ),
                   ),
                 ],
               )
-            else if (isPreferredRequest && isMatched && !hasChat)
-              FilledButton.icon(
-                onPressed: loading ? null : onStart,
-                icon: const Icon(Icons.play_arrow_outlined),
-                label: const Text('Start service'),
-              )
-            else if (isPreferredRequest && hasChat)
-              const InfoCard(text: 'Chat is ready. Continue from the Chat tab.')
-            else if (walletBlocksMarketplaceParticipation)
-              FilledButton.icon(
-                onPressed: null,
-                icon: const Icon(Icons.lock_outline),
-                label: const Text(providerMarketplaceJoinBlockedButtonLabel),
-              )
+            else if (isPreferredRequest && (isMatched || hasChat))
+              const InfoCard(
+                  text:
+                      'Trò chuyện đã sẵn sàng. Tiếp tục trong mục Trò chuyện.')
             else if (!joined)
               FilledButton.icon(
                 onPressed: loading ? null : onJoin,
                 icon: const Icon(Icons.add_circle_outline),
                 label: Text(
                   providerMarketplaceJoinButtonLabel(
-                    walletBlocksMarketplaceParticipation:
-                        walletBlocksMarketplaceParticipation,
                     hasPreferredProvider: hasPreferredProvider,
                   ),
                 ),
@@ -343,13 +354,13 @@ class OpenBookingCard extends StatelessWidget {
             else ...[
               const InfoCard(
                 text:
-                    'You are visible to the customer now. Wait for the final selection.',
+                    'Khách hàng đã thấy hồ sơ của bạn. Hãy chờ lựa chọn cuối cùng.',
               ),
               const SizedBox(height: 8),
               FilledButton.tonalIcon(
                 onPressed: loading ? null : onReject,
                 icon: const Icon(Icons.close),
-                label: const Text('Withdraw from candidate list'),
+                label: const Text('Rút khỏi danh sách ứng viên'),
               ),
             ],
           ],
@@ -385,14 +396,14 @@ class MarketplaceJoinLockCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Cannot participate until fees are settled',
+                  'Không thể tham gia khi phí chưa được thanh toán',
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: colorScheme.onErrorContainer,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(providerWalletBlockFallbackReasonClean),
+                const Text(providerMarketplaceJoinBlockReasonClean),
                 const SizedBox(height: 8),
                 Text(
                   providerWalletBlockHintClean,

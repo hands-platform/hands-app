@@ -93,10 +93,10 @@ describe('BookingCloseoutSections', () => {
   it('scopes booking finance metric CSS to direct MetricCard slots', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
-    expect(css).toContain('.booking-detail-page #finance .admin-kpi-card > .metric-card');
-    expect(css).toContain('.booking-detail-page #finance .admin-kpi-card > .metric-card > .metric-card-icon');
-    expect(css).toContain('.booking-detail-page #finance .admin-kpi-card > .metric-card > .metric-card-content > h2');
-    expect(css).toContain('.booking-detail-page #finance .admin-kpi-card > .metric-card > .metric-card-content > small');
+    expect(css).toContain('.booking-detail-page #booking-finance-command-center .admin-kpi-card > .metric-card');
+    expect(css).toContain('.booking-detail-page #booking-finance-command-center .admin-kpi-card > .metric-card > .metric-card-icon');
+    expect(css).toContain('.booking-detail-page #booking-finance-command-center .admin-kpi-card > .metric-card > .metric-card-content > .metric-card-value');
+    expect(css).toContain('.booking-detail-page #booking-finance-command-center .admin-kpi-card > .metric-card > .metric-card-content > small');
     expect(css).not.toContain('.booking-detail-page #finance .metric-card {');
     expect(css).not.toContain('.booking-detail-page #finance .metric-card-icon {');
     expect(css).not.toContain('.booking-detail-page #finance .metric-card h2 {');

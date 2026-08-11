@@ -13,6 +13,7 @@ export const REALTIME_EVENTS = [
   'provider.joined',
   'provider.accepted',
   'provider.rejected',
+  'provider.arrived',
   'booking.matched',
   'booking.expired',
   'provider.location.updated',

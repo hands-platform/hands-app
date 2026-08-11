@@ -12,6 +12,7 @@ describe('ServicesPage source', () => {
     expect(source).not.toContain('<span className="pill pill-neutral">{payoutRuleCount} payout rule(s)</span>');
     expect(managerSource).toContain('AdminCard');
     expect(managerSource).not.toContain('<article className="service-menu-card">');
+    expect(source).toContain("'/admin/services?scope=operational'");
   });
 
   it('scopes service catalog page section headers to direct cards', () => {

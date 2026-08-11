@@ -43,10 +43,8 @@ export type BookingListStageInput = {
 export function bookingListStageFromFacts(input: BookingListStageInput): BookingListStage {
   const finalSelection = input.matchingEvidence?.finalSelection;
   const chatReady = input.matchingEvidence?.chatReady ?? input.hasChatRoom;
-  const marketplaceCount =
-    input.matchingEvidence?.marketplaceParticipantCount ?? input.marketplaceCount;
-  const selectableCount =
-    input.matchingEvidence?.selectableParticipantCount ?? input.selectableCount;
+  const marketplaceCount = input.matchingEvidence?.marketplaceParticipantCount ?? input.marketplaceCount;
+  const selectableCount = input.matchingEvidence?.selectableParticipantCount ?? input.selectableCount;
   const selectedPartnerPresent =
     input.selectedPartnerPresent ||
     finalSelection === 'FIRST_PICK_ACCEPTED' ||
@@ -69,7 +67,7 @@ export function bookingListStageFromFacts(input: BookingListStageInput): Booking
       detail: 'Final Partner exists, but chat is not ready.',
       href: `/bookings/${input.bookingId}#chat`,
       key: 'handoff-repair',
-      label: 'Stage 4 repair',
+      label: 'Handoff repair',
       tone: 'danger',
     };
   }
@@ -82,7 +80,7 @@ export function bookingListStageFromFacts(input: BookingListStageInput): Booking
         : 'Chat and service handoff are available.',
       href: `/bookings/${input.bookingId}#chat`,
       key: 'handoff',
-      label: 'Stage 4 handoff',
+      label: 'Service handoff',
       tone: input.locationNeedsOps ? 'warn' : 'ok',
     };
   }
@@ -93,7 +91,7 @@ export function bookingListStageFromFacts(input: BookingListStageInput): Booking
       detail: `${selectableCount} customer-selectable Partner(s) are waiting for customer selection.`,
       href: `/bookings/${input.bookingId}#participants`,
       key: 'customer-choice',
-      label: 'Stage 3 choice',
+      label: 'Customer choice',
       tone: 'warn',
     };
   }
@@ -107,7 +105,7 @@ export function bookingListStageFromFacts(input: BookingListStageInput): Booking
       detail: `${marketplaceCount} marketplace Partner(s) are visible while matching stays open.`,
       href: `/bookings/${input.bookingId}#participants`,
       key: 'marketplace',
-      label: 'Stage 2 marketplace',
+      label: 'Marketplace open',
       tone: 'info',
     };
   }
@@ -118,11 +116,11 @@ export function bookingListStageFromFacts(input: BookingListStageInput): Booking
         ? 'Escalate marketplace supply or close/extend the request intentionally.'
         : 'Monitor Partner response, wallet gate, push delivery, and KYC status.',
       detail: input.responseWindowExpired
-        ? 'The first response window is overdue and no usable marketplace Partner is visible.'
-        : 'Preferred Partner is inside the first response window.',
+        ? 'The booking deadline is overdue and no usable marketplace Partner is visible.'
+        : 'Preferred Partner and marketplace response are inside the same deadline.',
       href: `/bookings/${input.bookingId}#participants`,
       key: 'first-pick',
-      label: 'Stage 1 first-pick',
+      label: 'Preferred pending',
       tone: input.responseWindowExpired ? 'danger' : 'warn',
     };
   }
@@ -132,7 +130,7 @@ export function bookingListStageFromFacts(input: BookingListStageInput): Booking
     detail: `Booking is ${input.status.toLowerCase().replaceAll('_', ' ')}.`,
     href: `/bookings/${input.bookingId}`,
     key: 'intake',
-    label: 'Stage 0 intake',
+    label: 'Booking intake',
     tone: 'info',
   };
 }

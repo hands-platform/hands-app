@@ -40,9 +40,10 @@ import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer
 import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
-  buildMonthlyTaxClosingApiHref,
   buildMonthlyTaxClosingExportHref,
+  buildMonthlyTaxClosingHistoryApiHref,
   buildMonthlyTaxClosingRemittanceEvidenceState,
+  buildMonthlyTaxClosingPreflightLinks,
   buildMonthlyTaxClosingRiskLinks,
   buildMonthlyTaxClosingSummaryApiHref,
   buildTaxSettlementServerPagination,
@@ -50,6 +51,7 @@ import {
   emptyMonthlyTaxClosingSummary,
   monthlyTaxClosingHref,
   monthlyTaxClosingNextStatusOptions,
+  resolveMonthlyTaxClosingPreflight,
   readBookingSettlementFilters,
   readMonthlyTaxClosingFilters,
   readPartnerWithholdingTaxFilters,
@@ -73,32 +75,36 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
       buildMonthlyTaxClosingSummaryApiHref(filters),
       emptyMonthlyTaxClosingSummary(filters.period),
     ),
-    adminGet<AdminMonthlyTaxClosing[]>(buildMonthlyTaxClosingApiHref(filters), []),
+    adminGet<AdminMonthlyTaxClosing[]>(buildMonthlyTaxClosingHistoryApiHref(filters), []),
   ]);
-  const storedClosingTotal = summary.id || closings.length ? 1 : 0;
-  const pagination = buildTaxSettlementServerPagination(closings, filters, storedClosingTotal);
+  const pagination = buildTaxSettlementServerPagination(
+    closings,
+    filters,
+    summary.monthlyClosingHistoryCount ?? closings.length,
+  );
   const tableRows = pagination.rows;
   const returnTo = monthlyTaxClosingHref(filters);
   const summaryCsvHref = buildMonthlyTaxClosingExportHref(filters, 'summary');
   const closingRowsCsvHref = buildMonthlyTaxClosingExportHref(filters, 'rows');
   const accountingJournalCsvHref = buildMonthlyTaxClosingExportHref(filters, 'accounting-journal');
+  const closeoutPreflight = resolveMonthlyTaxClosingPreflight(summary);
+  const periodState = summary.periodState ?? summary.status;
   const nextStatusOptions = monthlyTaxClosingNextStatusOptions(summary.status);
-  const nextStatus = nextStatusOptions[0]?.value ?? null;
+  const nextStatus = closeoutPreflight.nextStatus;
   const closeoutRiskLinks = buildMonthlyTaxClosingRiskLinks(summary, settlementFilters, filters);
-  const formulaDelta = Math.abs(summary.reconciliationDelta) + Math.abs(summary.netRevenueDelta);
-  const paymentFeeEvidenceBlocksNextStatus =
-    Boolean(nextStatus && nextStatus !== 'REVIEWED') && summary.paymentFeeReviewFlagCount > 0;
-  const partnerDepositReconciliationBlocksNextStatus =
-    Boolean(nextStatus && nextStatus !== 'REVIEWED') && summary.partnerDepositReconciliationOpenCount > 0;
+  const activeCloseoutBlockers = buildMonthlyTaxClosingPreflightLinks(
+    summary,
+    settlementFilters,
+    filters,
+  );
+  const activeCloseoutBlockerKeys = new Set(activeCloseoutBlockers.map((link) => link.key));
+  const activeReviewFlags = closeoutRiskLinks.filter(
+    (link) => !activeCloseoutBlockerKeys.has(link.key) && hasFinancePriorityWork(link),
+  );
   const closeoutActionBlocked =
-    formulaDelta > 0 || paymentFeeEvidenceBlocksNextStatus || partnerDepositReconciliationBlocksNextStatus;
-  const closeoutActionHelper = formulaDelta > 0
-    ? 'Resolve the formula delta before advancing this monthly closing.'
-    : paymentFeeEvidenceBlocksNextStatus
-      ? `Resolve ${summary.paymentFeeReviewFlagCount} payment fee evidence row(s) before declaration.`
-      : partnerDepositReconciliationBlocksNextStatus
-        ? `Reconcile ${summary.partnerDepositReconciliationOpenCount} executed Partner bank deposit(s) before declaration.`
-      : nextStatusOptions[0]?.helper;
+    Boolean(nextStatus) && (!closeoutPreflight.ready || activeCloseoutBlockers.length > 0);
+  const closeoutActionHelper =
+    activeCloseoutBlockers[0]?.helper ?? nextStatusOptions[0]?.helper;
   const showStatusConfirmation =
     requestedStatusConfirmation &&
     Boolean(nextStatus) &&
@@ -120,14 +126,15 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
     ? monthlyTaxClosingConfirmationHref(returnTo, nextStatus)
     : returnTo;
   const remittanceEvidenceState = buildMonthlyTaxClosingRemittanceEvidenceState(summary);
-  const openCloseoutRiskCount =
-    summary.openTaxCount +
-    summary.couponReviewFlagCount +
-    summary.paymentFeeReviewFlagCount +
-    summary.partnerDepositReconciliationOpenCount +
-    (summary.cashDebtTotal > 0 ? 1 : 0) +
-    (formulaDelta > 0 ? 1 : 0);
   const periodScope = `Period ${filters.period}`;
+  const readiness = monthlyTaxClosingReadiness(
+    summary.status,
+    periodState,
+    summary.hasActivity ?? true,
+    nextStatus,
+    activeCloseoutBlockers.length,
+  );
+  const taxPayable = summary.companyOutputVatTotal + summary.partnerWithholdingTotal;
 
   return (
     <AdminPageTemplate
@@ -164,36 +171,6 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
         </TaxFinanceWorkflowActions>
       }
       description="Monthly platform VAT, Partner VAT/PIT withholding, payment fee, and booking settlement reconciliation preview."
-      metrics={[
-        {
-          helper: 'Current stored closing status, or draft preview when no closing row exists yet.',
-          kind: summary.status === 'CLOSED' ? 'record' : 'action',
-          label: 'Period status',
-          scope: periodScope,
-          value: summary.status,
-        },
-        {
-          helper: 'Settlement records included in this monthly tax period.',
-          kind: 'period',
-          label: 'Settlements',
-          scope: periodScope,
-          value: summary.settlementCount,
-        },
-        {
-          helper: 'Company VAT payable from platform fee gross.',
-          kind: 'period',
-          label: 'Company output VAT',
-          scope: periodScope,
-          value: <MoneyText amount={summary.companyOutputVatTotal} currency={summary.currency} />,
-        },
-        {
-          helper: 'Partner VAT plus PIT withheld for the month.',
-          kind: 'period',
-          label: 'Partner withholding',
-          scope: periodScope,
-          value: <MoneyText amount={summary.partnerWithholdingTotal} currency={summary.currency} />,
-        },
-      ]}
       title="Monthly Tax Closing"
     >
       {closingNotice ? (
@@ -210,64 +187,118 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
 
       <FinanceListCommandBoard ariaLabel="Closeout command board">
         <FinanceListCommandCard
-          detail="Current stored closing status, or draft preview when no closing row exists yet."
+          detail={readiness.detail}
           href={monthlyTaxClosingHref(filters)}
           icon={CheckCircle2}
-          label="Closeout status"
-          scope={periodScope}
-          tone={financeMonthlyTaxClosingStatusTone(summary.status)}
-          value={summary.status}
+          label="Next closeout step"
+          scope={readiness.scope}
+          tone={readiness.tone}
+          value={readiness.label}
         />
         <FinanceListCommandCard
-          detail="Reconciliation and net revenue deltas must be 0 before declaration or final closeout."
-          href={monthlyTaxClosingHref(filters)}
-          icon={Scale}
-          label="Formula delta"
-          scope={periodScope}
-          tone={formulaDelta === 0 ? 'success' : 'danger'}
-          value={<MoneyText amount={formulaDelta} currency={summary.currency} />}
-        />
-        <FinanceListCommandCard
-          detail="Open tax rows, payment fee evidence, coupon flags, cash debt, or formula mismatch still blocking closeout."
-          href={closeoutRiskLinks.find(hasFinancePriorityWork)?.href ?? monthlyTaxClosingHref(filters)}
+          detail="Only conditions that prevent the next status transition are counted here."
+          href={activeCloseoutBlockers[0]?.href ?? monthlyTaxClosingHref(filters)}
           icon={AlertTriangle}
-          label="Closeout gates"
-          scope={openCloseoutRiskCount > 0 ? 'Needs action' : periodScope}
-          tone={openCloseoutRiskCount > 0 ? 'warning' : 'success'}
-          value={String(openCloseoutRiskCount)}
+          label="Close blockers"
+          scope={activeCloseoutBlockers.length > 0 ? 'Needs action' : periodScope}
+          tone={activeCloseoutBlockers.length > 0 ? 'danger' : 'success'}
+          value={activeCloseoutBlockers.length}
         />
         <FinanceListCommandCard
-          detail={remittanceEvidenceState.detail}
+          detail="Operational items that should be checked but do not currently prevent the next closeout step."
+          href={activeReviewFlags[0]?.href ?? monthlyTaxClosingHref(filters)}
+          icon={Scale}
+          label="Review flags"
+          scope={activeReviewFlags.length > 0 ? 'Needs review' : periodScope}
+          tone={activeReviewFlags.length > 0 ? 'warning' : 'success'}
+          value={activeReviewFlags.length}
+        />
+        <FinanceListCommandCard
+          detail={`${summary.settlementCount} posted settlement(s) and ${summary.reversalCount ?? 0} reversal(s). Company VAT ${formatMoney(summary.companyOutputVatTotal, summary.currency)} · Partner withholding ${formatMoney(summary.partnerWithholdingTotal, summary.currency)}. ${remittanceEvidenceState.detail}`}
           href={monthlyTaxClosingHref(filters)}
           icon={Landmark}
-          label="Remittance evidence"
+          label="Tax payable"
           scope={periodScope}
           tone={remittanceEvidenceState.tone}
-          value={remittanceEvidenceState.label}
+          value={<MoneyText amount={taxPayable} currency={summary.currency} />}
         />
       </FinanceListCommandBoard>
 
       <AdminFilterPanel
         className="admin-mb-16"
-        description={`Period ${summary.period}. The preview is calculated from posted settlement records; stored closing rows only add status and closeout timestamps.`}
-        resultLabel={summary.status}
-        resultTone={financeMonthlyTaxClosingStatusTone(summary.status)}
+        description={`Period ${summary.period}. The preview nets active posted settlements with closed-period reversal entries; stored closing rows only retain status, totals, and closeout evidence.`}
+        resultLabel={periodState.replaceAll('_', ' ')}
+        resultTone={periodState === 'FUTURE_PERIOD' ? 'neutral' : financeMonthlyTaxClosingStatusTone(summary.status)}
         title="Monthly closing period"
       >
         <FinancePeriodFilterForm period={filters.period} rows={{ value: filters.take }} />
         <AdminFilterSummary
           ariaLabel="Active monthly closing filters"
-          labels={[`Period: ${filters.period}`, `Rows: ${filters.take}`, `Status: ${summary.status}`]}
+          labels={[
+            `Period: ${filters.period}`,
+            `Rows: ${filters.take}`,
+            `Status: ${periodState.replaceAll('_', ' ')}`,
+          ]}
           tone="info"
         />
       </AdminFilterPanel>
 
       <AdminSection
         className="admin-mb-16"
-        description="Save the reviewed monthly totals into the closing row before declaration, payment, or final closeout. Closed periods require reversal entries, not direct edits."
-        statusLabel={summary.status}
-        statusTone={financeMonthlyTaxClosingStatusTone(summary.status)}
-        title="Monthly closing action"
+        description="These conditions prevent the next monthly closing transition. Resolve them before using the closeout action."
+        statusLabel={activeCloseoutBlockers.length > 0 ? `${activeCloseoutBlockers.length} blocked` : 'Ready'}
+        statusTone={activeCloseoutBlockers.length > 0 ? 'danger' : 'success'}
+        title="Close blockers"
+      >
+        {activeCloseoutBlockers.length > 0 ? (
+          <FinanceStageList
+            items={activeCloseoutBlockers.map((link) => ({
+              helper: link.helper,
+              href: link.href,
+              key: link.key,
+              label: link.label,
+              signal: link.signal,
+              value: renderFinancePriorityValue(link),
+            }))}
+          />
+        ) : (
+          <AdminInlineNotice role="status" tone="success">
+            No hard blocker prevents the next closeout step.
+          </AdminInlineNotice>
+        )}
+      </AdminSection>
+
+      <AdminSection
+        className="admin-mb-16"
+        description="Review these operating signals before final close, but treat them separately from hard API blockers."
+        statusLabel={activeReviewFlags.length > 0 ? `${activeReviewFlags.length} to review` : 'Clear'}
+        statusTone={activeReviewFlags.length > 0 ? 'warning' : 'success'}
+        title="Needs review"
+      >
+        {activeReviewFlags.length > 0 ? (
+          <FinanceStageList
+            items={activeReviewFlags.map((link) => ({
+              helper: link.helper,
+              href: link.href,
+              key: link.key,
+              label: link.label,
+              signal: link.signal,
+              value: renderFinancePriorityValue(link),
+            }))}
+          />
+        ) : (
+          <AdminInlineNotice role="status" tone="success">
+            No additional review flag is open for this period.
+          </AdminInlineNotice>
+        )}
+      </AdminSection>
+
+      <AdminSection
+        className="admin-mb-16"
+        description="Advance only one controlled status at a time. Closed periods require reversal entries, not direct edits."
+        statusLabel={readiness.label}
+        statusTone={readiness.tone}
+        title="Next closeout step"
       >
         {showStatusConfirmation && nextStatus ? (
           <AdminFormGrid action={updateMonthlyTaxClosingStatus} className="compact-form admin-mt-12">
@@ -277,7 +308,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             <input name="returnTo" type="hidden" value={returnTo} />
             <input name="status" type="hidden" value={nextStatus} />
             <AdminInlineNotice role="status" tone={nextStatus === 'CLOSED' ? 'danger' : 'warning'}>
-              <strong>{summary.status} → {nextStatus}</strong>{' '}
+              <strong>{periodState.replaceAll('_', ' ')} → {nextStatus}</strong>{' '}
               {monthlyTaxClosingTransitionDescription(nextStatus, summary)}
             </AdminInlineNotice>
             {paidApprovalUnavailable ? (
@@ -349,11 +380,11 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
           <div className="admin-mt-12">
             {closeoutActionBlocked ? (
               <AdminFormControlButton className="button-primary" disabled type="button">
-                Review {nextStatusOptions[0]?.label ?? nextStatus}
+                {monthlyTaxClosingReviewActionLabel(nextStatus)}
               </AdminFormControlButton>
             ) : (
               <AdminFormControlLink className="button-primary" href={statusConfirmationHref}>
-                Review {nextStatusOptions[0]?.label ?? nextStatus}
+                {monthlyTaxClosingReviewActionLabel(nextStatus)}
               </AdminFormControlLink>
             )}
             <p className="muted admin-mt-8">{closeoutActionHelper}</p>
@@ -367,32 +398,14 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
 
       <AdminSection
         className="admin-mb-16"
-        description="Resolve these queues before declaration, payment, or final closeout. This section uses the monthly summary only."
-        statusLabel="Closeout gates"
-        statusTone="warning"
-        title="Closeout risk queue"
-      >
-        <FinanceStageList
-          items={closeoutRiskLinks.map((link) => ({
-            helper: link.helper,
-            href: link.href,
-            key: link.key,
-            label: link.label,
-            signal: link.signal,
-            value: renderFinancePriorityValue(link),
-          }))}
-        />
-      </AdminSection>
-
-      <AdminSection
-        className="admin-mb-16"
         description="Both formulas should show 0 VND delta before an operator declares or closes the period."
         title="Monthly reconciliation"
       >
         <FinanceStageList
           items={[
             {
-              helper: 'Customer payment - Partner payout - Partner withholding - payment fees = platform fee gross.',
+              helper:
+                'Customer payment + company-funded coupon expense - Partner payout - Partner withholding = platform fee gross. Payment processing fees are excluded.',
               key: 'customer-payment-reconciliation',
               label: 'Customer payment reconciliation',
               signal: '1',
@@ -408,7 +421,8 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             {
               helper: (
                 <>
-                  {summary.couponSettlementCount} coupon settlement row(s), {summary.couponReviewFlagCount} review
+                  {summary.couponSettlementCount} posted coupon settlement row(s),{' '}
+                  {summary.couponReversalCount ?? 0} reversal(s), {summary.couponReviewFlagCount} review
                   flag(s). Company-funded coupons stay outside platform revenue and VAT.
                 </>
               ),
@@ -435,78 +449,79 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
 
       <FinanceTablePanel
         grouped
-        description="Stored closing rows. If no row exists yet, the cards above still show a draft preview from settlement records."
+        description="Stored monthly close records across all periods, newest first. Select a period to review its totals and retained evidence above."
         resultLabel={`${pagination.totalRows} row(s)`}
         resultTone="info"
-        title="Stored monthly closing rows"
+        title="Closing history"
       >
         <FinanceDataTable
-            emptyMessage="No stored monthly tax closing row exists for this period yet."
-            headers={['Period', 'Status', 'Settlements', 'Platform VAT', 'Partner tax', 'Payment fees', 'Closeout']}
-            rowCount={tableRows.length}
-          >
-            {tableRows.map((closing) => {
-              const closingRemittanceState = buildMonthlyTaxClosingRemittanceEvidenceState(closing);
+          emptyMessage="No stored monthly tax closing record exists yet."
+          headers={['Period / status', 'Settlements', 'Company tax', 'Partner withholding', 'Evidence', 'Open']}
+          rowCount={tableRows.length}
+        >
+          {tableRows.map((closing) => {
+            const closingRemittanceState = buildMonthlyTaxClosingRemittanceEvidenceState(closing);
 
-              return (
-                <tr key={closing.id}>
-                  <td>
-                    <strong>{closing.period}</strong>
-                    <div className="muted">{closing.currency}</div>
-                  </td>
-                  <td>
+            return (
+              <tr key={closing.id}>
+                <td>
+                  <strong>{closing.period}</strong>
+                  <div className="admin-mt-6">
                     <StatusBadgeFromPillClass pillClass={financeMonthlyTaxClosingStatusPill(closing.status)}>
                       {closing.status}
                     </StatusBadgeFromPillClass>
-                  </td>
-                  <td>{closing.settlementCount}</td>
-                  <td>
-                    <strong>
-                      <MoneyText amount={closing.companyOutputVatTotal} currency={closing.currency} />
-                    </strong>
-                    <div className="muted">
-                      Net <MoneyText amount={closing.platformFeeNetRevenueTotal} currency={closing.currency} />
-                    </div>
-                  </td>
-                  <td>
-                    <strong>
-                      <MoneyText amount={closing.partnerWithholdingTotal} currency={closing.currency} />
-                    </strong>
-                    <div className="muted">
-                      VAT <MoneyText amount={closing.partnerVatWithheldTotal} currency={closing.currency} />
-                    </div>
-                    <div className="muted">
-                      PIT <MoneyText amount={closing.partnerPitWithheldTotal} currency={closing.currency} />
-                    </div>
-                  </td>
-                  <td>
-                    <MoneyText amount={closing.paymentProcessingFeeTotal} currency={closing.currency} />
-                  </td>
-                  <td>
-                    <StatusBadgeFromPillClass pillClass={financeEvidenceTonePill(closingRemittanceState.tone)}>
-                      {closingRemittanceState.label}
-                    </StatusBadgeFromPillClass>
-                    <div className="muted admin-mt-8">
-                      Declared <DateTimeText value={closing.declaredAt} />
-                    </div>
-                    <div className="muted">
-                      Paid <DateTimeText value={closing.paidAt} />
-                    </div>
-                    <div className="muted">
-                      Closed <DateTimeText value={closing.closedAt} />
-                    </div>
-                    <div className="muted">{closingRemittanceState.detail}</div>
-                    {closingRemittanceState.evidenceHref ? (
+                  </div>
+                </td>
+                <td>
+                  <strong>{closing.settlementCount}</strong>
+                  <div className="muted">
+                    Processing <MoneyText amount={closing.paymentProcessingFeeTotal} currency={closing.currency} />
+                  </div>
+                </td>
+                <td>
+                  <strong>
+                    <MoneyText amount={closing.companyOutputVatTotal} currency={closing.currency} />
+                  </strong>
+                  <div className="muted">
+                    Net revenue <MoneyText amount={closing.platformFeeNetRevenueTotal} currency={closing.currency} />
+                  </div>
+                </td>
+                <td>
+                  <strong>
+                    <MoneyText amount={closing.partnerWithholdingTotal} currency={closing.currency} />
+                  </strong>
+                  <div className="muted">
+                    VAT <MoneyText amount={closing.partnerVatWithheldTotal} currency={closing.currency} /> · PIT{' '}
+                    <MoneyText amount={closing.partnerPitWithheldTotal} currency={closing.currency} />
+                  </div>
+                </td>
+                <td>
+                  <StatusBadgeFromPillClass pillClass={financeEvidenceTonePill(closingRemittanceState.tone)}>
+                    {closingRemittanceState.label}
+                  </StatusBadgeFromPillClass>
+                  <div className="muted admin-mt-8">
+                    Paid <DateTimeText value={closing.paidAt} /> · Closed <DateTimeText value={closing.closedAt} />
+                  </div>
+                  {closing.notes ? <div className="muted admin-mt-8">{closing.notes}</div> : null}
+                </td>
+                <td>
+                  <AdminTextLink
+                    href={monthlyTaxClosingHref({ ...filters, page: 1, period: closing.period })}
+                  >
+                    Review period
+                  </AdminTextLink>
+                  {closingRemittanceState.evidenceHref ? (
+                    <div className="admin-mt-6">
                       <AdminTextLink href={closingRemittanceState.evidenceHref} rel="noreferrer" target="_blank">
-                        Open remittance evidence
+                        Open evidence
                       </AdminTextLink>
-                    ) : null}
-                    {closing.notes ? <div className="muted admin-mt-8">{closing.notes}</div> : null}
-                  </td>
-                </tr>
-              );
-            })}
-          </FinanceDataTable>
+                    </div>
+                  ) : null}
+                </td>
+              </tr>
+            );
+          })}
+        </FinanceDataTable>
         <FinanceTablePaginationFooter
           ariaLabel="Monthly tax closing pages"
           hrefForPage={(page) => monthlyTaxClosingHref({ ...filters, page })}
@@ -541,7 +556,7 @@ function monthlyTaxClosingTransitionDescription(
   summary: AdminMonthlyTaxClosingSummary,
 ) {
   if (targetStatus === 'REVIEWED') {
-    return `Snapshot ${summary.settlementCount} settlement record(s) and the current tax totals for Finance review.`;
+    return `Snapshot ${summary.settlementCount} posted settlement record(s), ${summary.reversalCount ?? 0} reversal entry or entries, and the current net tax totals for Finance review.`;
   }
   if (targetStatus === 'DECLARED') {
     return 'Record that this reviewed period was submitted to the tax portal. Open formula, fee, and bank-evidence gates remain blocked by the API.';
@@ -550,6 +565,104 @@ function monthlyTaxClosingTransitionDescription(
     return `Record retained payment evidence for ${formatMoney(summary.companyOutputVatTotal + summary.partnerWithholdingTotal, summary.currency)} of company VAT and Partner withholding obligations.`;
   }
   return 'Close and lock this paid period. Future corrections must use reversal entries; stored snapshots cannot be edited directly.';
+}
+
+function monthlyTaxClosingReviewActionLabel(targetStatus: string | null) {
+  switch (targetStatus) {
+    case 'REVIEWED':
+      return 'Review totals';
+    case 'DECLARED':
+      return 'Review declaration';
+    case 'PAID':
+      return 'Review remittance';
+    case 'CLOSED':
+      return 'Review final close';
+    default:
+      return 'Review transition';
+  }
+}
+
+function monthlyTaxClosingReadiness(
+  status: AdminMonthlyTaxClosing['status'],
+  periodState: NonNullable<AdminMonthlyTaxClosingSummary['periodState']> | AdminMonthlyTaxClosing['status'],
+  hasActivity: boolean,
+  nextStatus: string | null,
+  blockerCount: number,
+) {
+  if (periodState === 'FUTURE_PERIOD') {
+    return {
+      detail: 'This is a future accounting period. No closeout transition is available yet.',
+      label: 'Future period',
+      scope: 'Planning',
+      tone: 'neutral' as const,
+    };
+  }
+  if (periodState === 'NOT_STARTED' && !hasActivity) {
+    return {
+      detail: 'No settlement, reversal, or reconciliation activity exists for this period.',
+      label: 'Not started',
+      scope: 'No period activity',
+      tone: 'neutral' as const,
+    };
+  }
+  if (periodState === 'NOT_STARTED') {
+    return {
+      detail: 'Period activity exists, but no monthly closing record has been started. Review and snapshot the current totals.',
+      label: 'Review totals',
+      scope: 'Current NOT STARTED',
+      tone: 'info' as const,
+    };
+  }
+  if (status === 'CLOSED') {
+    return {
+      detail: 'This period is locked. Future corrections must use reversal entries.',
+      label: 'Closed',
+      scope: 'Record',
+      tone: 'success' as const,
+    };
+  }
+  if (status === 'REVERSED') {
+    return {
+      detail: 'This closing was reversed and remains available as an audit record.',
+      label: 'Reversed',
+      scope: 'Record',
+      tone: 'danger' as const,
+    };
+  }
+  if (blockerCount > 0) {
+    return {
+      detail: `${blockerCount} hard blocker(s) must be resolved before the next status transition.`,
+      label: 'Blocked',
+      scope: 'Needs action',
+      tone: 'danger' as const,
+    };
+  }
+
+  const nextStep = {
+    REVIEWED: {
+      detail: 'Review and snapshot the current settlement and tax totals.',
+      label: 'Review totals',
+    },
+    DECLARED: {
+      detail: 'The reviewed period is ready to be recorded as submitted to the tax portal.',
+      label: 'Ready to declare',
+    },
+    PAID: {
+      detail: 'Record remittance evidence with a separate Finance approver.',
+      label: 'Ready to record payment',
+    },
+    CLOSED: {
+      detail: 'Payment evidence is retained and the period is ready to be locked.',
+      label: 'Ready to close',
+    },
+  }[nextStatus ?? ''];
+
+  return {
+    detail: nextStep?.detail ?? 'No direct closeout action is available for this period.',
+    label: nextStep?.label ?? status,
+    scope: `Current ${status}`,
+    tone: financeMonthlyTaxClosingStatusTone(status),
+  };
 }
 
 function monthlyTaxClosingNotice(value: string) {

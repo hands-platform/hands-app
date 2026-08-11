@@ -36,6 +36,51 @@ export function partnerOverviewHref(
   return `/partners/overview?${params.toString()}`;
 }
 
+const partnerOverviewDirectoryFilterMap = {
+  city: 'city',
+  onlineStatus: 'onlineStatus',
+  serviceId: 'serviceId',
+  verificationStatus: 'verification',
+  walletStatus: 'walletStatus',
+} as const satisfies Partial<Record<keyof AdminPartnerOverview['filters'], string>>;
+
+export function partnerOverviewDirectoryLink(
+  sourceHref: string,
+  range: AdminPartnerOverviewRange,
+  filters: Partial<AdminPartnerOverview['filters']> = {},
+) {
+  const url = new URL(sourceHref, 'http://partner-overview.local');
+  const exact = !filters.riskStatus;
+
+  for (const [overviewKey, directoryKey] of Object.entries(partnerOverviewDirectoryFilterMap)) {
+    const value = filters[overviewKey as keyof AdminPartnerOverview['filters']];
+    if (value) url.searchParams.set(directoryKey, value);
+  }
+  if (url.searchParams.get('review')?.includes('quality')) {
+    url.searchParams.set('qualityRange', range);
+  }
+
+  return {
+    exact,
+    href: `${url.pathname}${url.search}`,
+  };
+}
+
+export function partnerOverviewFreshness(
+  generatedAt: string,
+  refreshSeconds: number,
+  now = Date.now(),
+) {
+  const generatedTime = Date.parse(generatedAt);
+  const safeRefreshMs = Math.max(1, refreshSeconds) * 1_000;
+  const ageMs = Number.isFinite(generatedTime) ? Math.max(0, now - generatedTime) : Number.POSITIVE_INFINITY;
+
+  return {
+    ageMs,
+    stale: ageMs > safeRefreshMs * 2,
+  };
+}
+
 const partnerOverviewFilterLabels: Record<keyof AdminPartnerOverview['filters'], string> = {
   city: 'City / area',
   onlineStatus: 'Online',
@@ -47,7 +92,9 @@ const partnerOverviewFilterLabels: Record<keyof AdminPartnerOverview['filters'],
   walletStatus: 'Wallet',
 };
 
-const partnerOverviewFilterValueLabels: Partial<Record<keyof AdminPartnerOverview['filters'], Record<string, string>>> = {
+const partnerOverviewFilterValueLabels: Partial<
+  Record<keyof AdminPartnerOverview['filters'], Record<string, string>>
+> = {
   onlineStatus: {
     available: 'Available',
     busy: 'Busy',
@@ -113,11 +160,32 @@ export function emptyPartnerOverview(range: AdminPartnerOverviewRange): AdminPar
   return {
     generatedAt: '',
     refreshSeconds: 60,
-    source: 'stored-partner-supply-aggregates',
+    source: 'live-summary-backed-partner-operational-query',
+    timeZone: 'Asia/Ho_Chi_Minh',
     range,
     rangeLabel: partnerOverviewFallbackRangeLabels[range],
     windowStartAt: null,
     windowEndAt: null,
+    comparison: {
+      rangeLabel: `Previous ${partnerOverviewFallbackRangeLabels[range].toLowerCase()}`,
+      windowStartAt: null,
+      windowEndAt: null,
+      totals: {
+        appOpenCount: 0,
+        cancellationCount: 0,
+        completedBookingCount: 0,
+        sessionStartCount: 0,
+      },
+    },
+    queryScope: {
+      actionListCountScope: 'full-population',
+      appActivityCountScope: 'full-population',
+      operatingStatusCountScope: 'full-population',
+      providerScanLimit: 500,
+      walletBalancePartnerCount: 0,
+      walletBalanceScopeTruncated: false,
+      walletStatusFilterBounded: false,
+    },
     filters: {
       city: null,
       onlineStatus: null,
@@ -128,9 +196,19 @@ export function emptyPartnerOverview(range: AdminPartnerOverviewRange): AdminPar
       verificationStatus: null,
       walletStatus: null,
     },
+    filterOptions: {
+      services: [],
+    },
     summaryKpis: [],
     operatingStatus: {
+      locationFreshnessMinutes: 90,
+      customerDiscovery: {
+        visibleNow: 0,
+        visibleHref: '/partners?review=customer-visible-now',
+        blockers: [],
+      },
       cards: [],
+      availableBlockedReasons: [],
     },
     supplyHealth: {
       areas: [],
@@ -142,8 +220,14 @@ export function emptyPartnerOverview(range: AdminPartnerOverviewRange): AdminPar
     activityRetention: {
       cards: [],
     },
+    appActivity: {
+      kpis: [],
+      mostActive: [],
+      inactivePartners: [],
+    },
     bookingQuality: {
       kpis: [],
+      riskPartnerCount: 0,
       riskPartners: [],
     },
     financeWalletRisk: {
@@ -163,11 +247,17 @@ export function emptyPartnerOverview(range: AdminPartnerOverviewRange): AdminPar
 
 type PartialPartnerOverview = Partial<AdminPartnerOverview> & {
   activityRetention?: Partial<AdminPartnerOverview['activityRetention']>;
+  appActivity?: Partial<AdminPartnerOverview['appActivity']>;
   bookingQuality?: Partial<AdminPartnerOverview['bookingQuality']>;
+  comparison?: Partial<AdminPartnerOverview['comparison']> & {
+    totals?: Partial<AdminPartnerOverview['comparison']['totals']>;
+  };
+  filterOptions?: Partial<AdminPartnerOverview['filterOptions']>;
   financeWalletRisk?: Partial<AdminPartnerOverview['financeWalletRisk']>;
   filters?: Partial<AdminPartnerOverview['filters']>;
   funnel?: Partial<AdminPartnerOverview['funnel']>;
   operatingStatus?: Partial<AdminPartnerOverview['operatingStatus']>;
+  queryScope?: Partial<AdminPartnerOverview['queryScope']>;
   selectionFriction?: Partial<AdminPartnerOverview['selectionFriction']>;
   supplyHealth?: Partial<AdminPartnerOverview['supplyHealth']>;
 };
@@ -184,15 +274,42 @@ export function partnerOverviewWithDefaults(
     ...value,
     range: normalizePartnerOverviewRange(value.range ?? fallbackRange),
     rangeLabel: value.rangeLabel ?? partnerOverviewFallbackRangeLabels[fallbackRange],
+    comparison: {
+      ...fallback.comparison,
+      ...(value.comparison ?? {}),
+      totals: {
+        ...fallback.comparison.totals,
+        ...(value.comparison?.totals ?? {}),
+      },
+    },
+    queryScope: {
+      ...fallback.queryScope,
+      ...(value.queryScope ?? {}),
+    },
     filters: {
       ...fallback.filters,
       ...(value.filters ?? {}),
+    },
+    filterOptions: {
+      ...fallback.filterOptions,
+      ...(value.filterOptions ?? {}),
+      services: value.filterOptions?.services ?? fallback.filterOptions.services,
     },
     summaryKpis: value.summaryKpis ?? fallback.summaryKpis,
     operatingStatus: {
       ...fallback.operatingStatus,
       ...(value.operatingStatus ?? {}),
+      customerDiscovery: {
+        ...fallback.operatingStatus.customerDiscovery,
+        ...(value.operatingStatus?.customerDiscovery ?? {}),
+        blockers:
+          value.operatingStatus?.customerDiscovery?.blockers ??
+          fallback.operatingStatus.customerDiscovery.blockers,
+      },
       cards: value.operatingStatus?.cards ?? fallback.operatingStatus.cards,
+      availableBlockedReasons:
+        value.operatingStatus?.availableBlockedReasons ??
+        fallback.operatingStatus.availableBlockedReasons,
     },
     supplyHealth: {
       ...fallback.supplyHealth,
@@ -209,6 +326,13 @@ export function partnerOverviewWithDefaults(
       ...fallback.activityRetention,
       ...(value.activityRetention ?? {}),
       cards: value.activityRetention?.cards ?? fallback.activityRetention.cards,
+    },
+    appActivity: {
+      ...fallback.appActivity,
+      ...(value.appActivity ?? {}),
+      kpis: value.appActivity?.kpis ?? fallback.appActivity.kpis,
+      mostActive: value.appActivity?.mostActive ?? fallback.appActivity.mostActive,
+      inactivePartners: value.appActivity?.inactivePartners ?? fallback.appActivity.inactivePartners,
     },
     bookingQuality: {
       ...fallback.bookingQuality,

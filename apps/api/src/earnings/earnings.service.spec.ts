@@ -1,8 +1,13 @@
 import {
+  AccountingJournalBatchStatus,
+  AccountingJournalEntrySide,
+  AccountingJournalSourceType,
   BankReconciliationStatus,
   BookingStatus,
   EarningStatus,
+  MonthlyTaxClosingStatus,
   PartnerTaxLineKind,
+  PartnerBankDepositRequestStatus,
   PaymentFeePayer,
   PaymentFeeTreatment,
   PaymentMethod,
@@ -15,6 +20,7 @@ import {
   ProviderWalletWithdrawalRequestStatus,
   Role,
 } from '@prisma/client';
+import { adminBookingProductionDataWhere } from '../admin/admin-booking-list-query';
 import { EarningsService } from './earnings.service';
 
 type EarningsServiceWithWithdrawalRequests = EarningsService & {
@@ -41,6 +47,50 @@ type EarningsServiceWithWithdrawalRequests = EarningsService & {
     adminId: string,
   ) => Promise<unknown>;
 };
+
+function cashSettlementSummarySqlRow(overrides: Record<string, unknown> = {}) {
+  return {
+    allocatedAmount: 0n,
+    cashPaymentRowCount: 0n,
+    currency: 'VND',
+    globalAllocatedAmount: 0n,
+    globalMissingSettlementEvidenceCount: 0n,
+    globalOriginalDebtAmount: 0n,
+    globalProviderCount: 0n,
+    globalRemainingDebtAmount: 0n,
+    globalRowCount: 0n,
+    globalStaleDebtRowCount: 0n,
+    highDebtProviderCount: 0n,
+    missingPaymentEvidenceCount: 0n,
+    missingSettlementEvidenceCount: 0n,
+    oldestOpenAt: null,
+    originalDebtAmount: 0n,
+    providerCount: 0n,
+    queueAgeAll: 0n,
+    queueAgeFourToTwentyFourHours: 0n,
+    queueAgeOneToFourHours: 0n,
+    queueAgeOverTwentyFourHours: 0n,
+    queueAgeUnderOneHour: 0n,
+    queueAll: 0n,
+    queueHighDebt: 0n,
+    queueMissingEvidence: 0n,
+    queuePaymentCheck: 0n,
+    queueSlaOverdue: 0n,
+    queueStale: 0n,
+    remainingDebtAmount: 0n,
+    rowCount: 0n,
+    staleDebtRowCount: 0n,
+    totalCompanyCouponOffset: 0n,
+    totalPlatformFee: 0n,
+    totalTaxAmount: 0n,
+    ...overrides,
+  };
+}
+
+function rawQueryText(mock: ReturnType<typeof vi.fn>, call = 0) {
+  const query = mock.mock.calls[call]?.[0] as { strings?: readonly string[] } | undefined;
+  return query?.strings?.join('?') ?? '';
+}
 
 describe('EarningsService payout batches', () => {
   it('exposes a partner bank correction request on the wallet summary', async () => {
@@ -117,6 +167,7 @@ describe('EarningsService payout batches', () => {
     await expect(service.summaryForProviderUser('provider-user-1')).resolves.toMatchObject({
       walletBalance: -225_000,
       walletBlocked: true,
+      marketplaceJoinBlocked: true,
       walletDebtAmount: 225_000,
       walletSettlementRequired: true,
     });
@@ -147,10 +198,15 @@ describe('EarningsService payout batches', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
-          booking: { is: { status: BookingStatus.COMPLETED } },
-          netAmount: { gt: 0 },
-          payoutBatchId: null,
-          status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+          AND: expect.arrayContaining([
+            { booking: { is: adminBookingProductionDataWhere() } },
+            expect.objectContaining({
+              booking: { is: { status: BookingStatus.COMPLETED } },
+              netAmount: { gt: 0 },
+              payoutBatchId: null,
+              status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+            }),
+          ]),
         }),
         skip: 25,
         take: 100,
@@ -166,23 +222,30 @@ describe('EarningsService payout batches', () => {
     };
     const service = new EarningsService(prisma as never);
 
-    await expect(service.listForAdmin({ range: 'today', review: 'closeout-review', take: '10' })).resolves.toEqual([]);
+    await expect(
+      service.listForAdmin({ range: 'today', review: 'closeout-review', take: '10' }),
+    ).resolves.toEqual([]);
 
     expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           AND: expect.arrayContaining([
+            { booking: { is: adminBookingProductionDataWhere() } },
             expect.objectContaining({
-              OR: expect.arrayContaining([
-                { netAmount: { lte: 0 } },
-                { booking: { is: { status: { not: BookingStatus.COMPLETED } } } },
+              AND: expect.arrayContaining([
+                expect.objectContaining({
+                  OR: expect.arrayContaining([
+                    { netAmount: { lte: 0 } },
+                    { booking: { is: { status: { not: BookingStatus.COMPLETED } } } },
+                  ]),
+                }),
+                expect.objectContaining({ NOT: expect.any(Object) }),
               ]),
+              payoutBatchId: null,
+              status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
             }),
-            expect.objectContaining({ NOT: expect.any(Object) }),
           ]),
           createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
-          payoutBatchId: null,
-          status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
         }),
         take: 10,
       }),
@@ -284,12 +347,201 @@ describe('EarningsService payout batches', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
-          status: { in: [PayoutBatchStatus.DRAFT, PayoutBatchStatus.FAILED] },
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              NOT: expect.objectContaining({
+                OR: expect.arrayContaining([
+                  expect.objectContaining({ id: expect.objectContaining({ startsWith: 'smoke' }) }),
+                ]),
+              }),
+              earnings: expect.objectContaining({ every: expect.any(Object) }),
+            }),
+            expect.objectContaining({
+              status: { in: [PayoutBatchStatus.DRAFT, PayoutBatchStatus.FAILED] },
+            }),
+          ]),
         }),
         skip: 25,
         take: 100,
       }),
     );
+  });
+
+  it('separates open payout work from paid history at the database predicate', async () => {
+    const prisma = {
+      providerPayoutBatch: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await service.listPayoutBatchesForAdmin({ queue: 'open' });
+    expect(prisma.providerPayoutBatch.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              status: { notIn: [PayoutBatchStatus.PAID, PayoutBatchStatus.CANCELLED] },
+            }),
+          ]),
+        }),
+      }),
+    );
+
+    await service.listPayoutBatchesForAdmin({ queue: 'paid' });
+    expect(prisma.providerPayoutBatch.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({ status: PayoutBatchStatus.PAID }),
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('uses the exact post-payment evidence predicate for the repair queue', async () => {
+    const candidates = ['payout-1', 'payout-2'].map((id) => ({
+      currency: 'VND',
+      earnings: [{ withholdingAmount: 0 }],
+      id,
+      status: PayoutBatchStatus.PAID,
+      totalNetAmount: 75_000,
+      transferRef: `bank-${id}`,
+      withholdingLogs: [],
+    }));
+    const prisma = {
+      accountingJournalBatch: {
+        findMany: vi.fn().mockResolvedValue(
+          candidates.map((batch) => ({
+            sourceId: batch.id,
+            sourceKey: `accounting-journal:provider-payout-batch:${batch.id}:paid`,
+            status: AccountingJournalBatchStatus.POSTED,
+            totalCredit: batch.totalNetAmount,
+            totalDebit: batch.totalNetAmount,
+          })),
+        ),
+      },
+      providerPayoutBatch: {
+        findMany: vi.fn().mockResolvedValueOnce(candidates).mockResolvedValueOnce([]),
+      },
+      providerWalletLedgerEntry: {
+        findMany: vi.fn().mockResolvedValue([{ amount: -75_000, payoutBatchId: 'payout-1' }]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.listPayoutBatchesForAdmin({ queue: 'repair', range: '7d' })).resolves.toEqual([]);
+
+    expect(prisma.providerPayoutBatch.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([expect.objectContaining({ id: { in: ['payout-2'] } })]),
+        }),
+      }),
+    );
+  });
+
+  it('lists the exact monthly paid payout bank-outflow candidates with remaining evidence amounts', async () => {
+    const candidate = {
+      id: 'payout-bank-gap-1',
+      paidAt: new Date('2026-07-03T02:00:00.000Z'),
+      targetAmount: 900_000n,
+      matchedAmount: 250_000n,
+      remainingAmount: 650_000n,
+    };
+    const payout = {
+      id: candidate.id,
+      status: PayoutBatchStatus.PAID,
+      totalNetAmount: 900_000,
+    };
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([candidate]),
+      providerPayoutBatch: {
+        findMany: vi.fn().mockResolvedValue([payout]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.listPayoutBatchesForAdmin({
+        evidence: 'bank-match-incomplete',
+        period: '2026-07',
+        sort: 'oldest',
+        status: PayoutBatchStatus.PAID,
+        view: 'summary',
+      }),
+    ).resolves.toEqual([
+      {
+        ...payout,
+        bankReconciliation: {
+          id: candidate.id,
+          matchedAmount: 250_000,
+          paidAt: candidate.paidAt,
+          period: '2026-07',
+          remainingAmount: 650_000,
+          targetAmount: 900_000,
+        },
+      },
+    ]);
+    expect(prisma.providerPayoutBatch.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({ id: { in: [candidate.id] } }),
+            { status: PayoutBatchStatus.PAID },
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('summarizes the same monthly payout bank-outflow candidates and rejects a missing period', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          id: 'payout-bank-gap-1',
+          paidAt: new Date('2026-07-03T02:00:00.000Z'),
+          targetAmount: 900_000n,
+          matchedAmount: 250_000n,
+          remainingAmount: 650_000n,
+        },
+        {
+          id: 'payout-bank-gap-2',
+          paidAt: new Date('2026-07-04T02:00:00.000Z'),
+          targetAmount: 400_000n,
+          matchedAmount: 300_000n,
+          remainingAmount: 100_000n,
+        },
+      ]),
+      providerPayoutBatch: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'payout-bank-gap-1' },
+          { id: 'payout-bank-gap-2' },
+        ]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.payoutBatchSummaryForAdmin({
+        evidence: 'bank-match-incomplete',
+        period: '2026-07',
+        status: PayoutBatchStatus.PAID,
+      }),
+    ).resolves.toMatchObject({
+      bankReconciliationCandidateCount: 2,
+      bankReconciliationPeriod: '2026-07',
+      bankReconciliationRemainingAmount: 750_000,
+      settled: 2,
+      total: 2,
+      totalNetAmount: 1_300_000,
+    });
+
+    await expect(
+      service.payoutBatchSummaryForAdmin({ evidence: 'bank-match-incomplete' }),
+    ).rejects.toThrow('Payout bank reconciliation period must use YYYY-MM');
   });
 
   it('summarizes admin payout batches with aggregate queries instead of loading full batches', async () => {
@@ -304,8 +556,46 @@ describe('EarningsService payout batches', () => {
           .mockResolvedValueOnce(1)
           .mockResolvedValueOnce(4)
           .mockResolvedValueOnce(5)
-          .mockResolvedValueOnce(6),
-        findMany: vi.fn(),
+          .mockResolvedValueOnce(6)
+          .mockResolvedValueOnce(20),
+        findMany: vi.fn().mockResolvedValue(
+          Array.from({ length: 12 }, (_, index) => ({
+            currency: 'VND',
+            id: `payout-${index}`,
+            status: PayoutBatchStatus.PAID,
+            totalNetAmount: 75000,
+            transferRef: `VCB-${index}`,
+            earnings: [
+              {
+                currency: 'VND',
+                grossAmount: 100000,
+                netAmount: 70000,
+                platformFee: 10000,
+                withholdingAmount: 20000,
+              },
+            ],
+            withholdingLogs: [{ status: 'PAID' }],
+          })),
+        ),
+      },
+      providerWalletLedgerEntry: {
+        findMany: vi.fn().mockResolvedValue(
+          Array.from({ length: 10 }, (_, index) => ({
+            amount: -75000,
+            payoutBatchId: `payout-${index}`,
+          })),
+        ),
+      },
+      accountingJournalBatch: {
+        findMany: vi.fn().mockResolvedValue(
+          Array.from({ length: 10 }, (_, index) => ({
+            sourceId: `payout-${index}`,
+            sourceKey: `accounting-journal:provider-payout-batch:payout-${index}:paid`,
+            status: AccountingJournalBatchStatus.POSTED,
+            totalCredit: 75000,
+            totalDebit: 75000,
+          })),
+        ),
       },
       withholdingLog: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 75000 } }),
@@ -316,6 +606,9 @@ describe('EarningsService payout batches', () => {
     await expect(service.payoutBatchSummaryForAdmin({ range: '7d' })).resolves.toEqual({
       currency: 'VND',
       generatedAt: expect.any(String),
+      range: '7d',
+      timeZone: 'Asia/Ho_Chi_Minh',
+      scopeCount: 12,
       inProgress: 3,
       missingTransferRefs: 4,
       needsReview: 2,
@@ -325,9 +618,30 @@ describe('EarningsService payout batches', () => {
       total: 12,
       totalNetAmount: 900000,
       withholdingAmount: 75000,
+      postPaymentRepairCount: 2,
+      moneyFlow: {
+        scope: '7d',
+        scopeBatchCount: 12,
+        totalBatchCount: 20,
+        evidenceBatchCount: 12,
+        grossAmount: 1_200_000,
+        payoutNetAmount: 900_000,
+        evidenceNetAmount: 840_000,
+        platformFeeAmount: 120_000,
+        withholdingAmount: 240_000,
+        cashDebtAmount: 0,
+        netGap: 60_000,
+        completeness: 'COMPLETE',
+        verdict: 'MISMATCH',
+        generatedAt: expect.any(String),
+      },
     });
 
-    expect(prisma.providerPayoutBatch.findMany).not.toHaveBeenCalled();
+    expect(prisma.providerPayoutBatch.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({ earnings: expect.any(Object), totalNetAmount: true }),
+      }),
+    );
     expect(prisma.providerPayoutBatch.count).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -406,8 +720,49 @@ describe('EarningsService payout batches', () => {
     ).not.toHaveProperty('include');
   });
 
+  it('uses the lightweight payout list projection without raw payment or ledger metadata', async () => {
+    const prisma = {
+      providerPayoutBatch: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.listPayoutBatchesForAdmin({ range: '7d', view: 'summary' })).resolves.toEqual([]);
+
+    const include = prisma.providerPayoutBatch.findMany.mock.calls[0][0].include;
+    expect(include.earnings).toEqual(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          id: true,
+          netAmount: true,
+          status: true,
+          booking: {
+            select: expect.objectContaining({
+              payment: {
+                select: {
+                  amount: true,
+                  currency: true,
+                  method: true,
+                  status: true,
+                },
+              },
+            }),
+          },
+        }),
+      }),
+    );
+    expect(include.earnings).not.toHaveProperty('include');
+    expect(include.earnings.select.booking.select.payment.select).not.toHaveProperty('rawMeta');
+    expect(include.earnings.select).not.toHaveProperty('platformFeeLogs');
+    expect(include.earnings.select).not.toHaveProperty('taxLogs');
+    expect(include.earnings.select).not.toHaveProperty('walletLedgerEntries');
+    expect(include.withholdingLogs.select).toEqual(expect.objectContaining({ amount: true, status: true }));
+  });
+
   it('excludes post-match cancellation fee holds from cash settlement debt lists', async () => {
     const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
       providerEarning: {
         findMany: vi.fn().mockResolvedValue([]),
       },
@@ -416,24 +771,18 @@ describe('EarningsService payout batches', () => {
 
     await expect(service.listCashSettlementDebtForAdmin()).resolves.toEqual([]);
 
-    expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          NOT: {
-            booking: {
-              is: expect.objectContaining({
-                OR: [{ matchedAt: { not: null } }, { selectedProviderId: { not: null } }],
-                status: BookingStatus.CANCELLED,
-              }),
-            },
-          },
-        }),
-      }),
-    );
+    const sql = rawQueryText(prisma.$queryRaw);
+    expect(sql).toContain('booking.status::text =');
+    expect(sql).toContain('booking."matchedAt" IS NOT NULL OR booking."selectedProviderId" IS NOT NULL');
+    expect(sql).toContain('debt."remainingDebtAmount" > 0');
+    expect(prisma.providerEarning.findMany).not.toHaveBeenCalled();
   });
 
   it('uses a compact include for cash settlement debt lists', async () => {
     const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        { id: 'earning-1', originalDebtAmount: 120_000n, allocatedAmount: 20_000n, remainingDebtAmount: 100_000n },
+      ]),
       providerEarning: {
         findMany: vi.fn().mockResolvedValue([]),
       },
@@ -459,6 +808,7 @@ describe('EarningsService payout batches', () => {
 
   it('filters cash settlement debt by range and clamps requested limits', async () => {
     const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
       providerEarning: {
         findMany: vi.fn().mockResolvedValue([]),
       },
@@ -472,26 +822,39 @@ describe('EarningsService payout batches', () => {
       }),
     ).resolves.toEqual([]);
 
-    expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
-          NOT: {
-            booking: {
-              is: expect.objectContaining({
-                OR: [{ matchedAt: { not: null } }, { selectedProviderId: { not: null } }],
-                status: BookingStatus.CANCELLED,
-              }),
-            },
-          },
-        }),
-        take: 100,
-      }),
+    const query = prisma.$queryRaw.mock.calls[0][0] as { strings: readonly string[]; values: unknown[] };
+    expect(query.strings.join('?')).toContain('debt."createdAt" >=');
+    expect(query.strings.join('?')).toContain('LIMIT');
+    expect(query.values).toContain(100);
+    expect(prisma.providerEarning.findMany).not.toHaveBeenCalled();
+  });
+
+  it('uses the stored settlement month for cash debt list and summary filters', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([cashSettlementSummarySqlRow()]),
+      operationalPolicySetting: {
+        findUnique: vi.fn().mockResolvedValue({ value: 1_440 }),
+      },
+      providerEarning: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await service.listCashSettlementDebtForAdmin({ period: '2026-08' });
+    await service.cashSettlementSummaryForAdmin({ period: '2026-08' });
+
+    const [listQuery, summaryQuery] = prisma.$queryRaw.mock.calls.map(
+      ([query]) => query as { strings: readonly string[]; values: unknown[] },
     );
+    expect(listQuery.strings.join('?')).toContain('debt."monthlyPeriod" =');
+    expect(summaryQuery.strings.join('?')).toContain('debt."monthlyPeriod" =');
+    expect(listQuery.values).toContain('2026-08');
+    expect(summaryQuery.values).toContain('2026-08');
+    expect(listQuery.values).not.toContain('2026-07');
   });
 
   it('applies server-side cash settlement search, queue, and pagination filters', async () => {
     const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
       providerEarning: {
         findMany: vi.fn().mockResolvedValue([]),
       },
@@ -507,44 +870,158 @@ describe('EarningsService payout batches', () => {
       }),
     ).resolves.toEqual([]);
 
+    const query = prisma.$queryRaw.mock.calls[0][0] as { strings: readonly string[]; values: unknown[] };
+    const sql = query.strings.join('?');
+    expect(sql).toContain('debt."remainingDebtAmount" >=');
+    expect(sql).toContain('debt."providerDisplayName"');
+    expect(sql).toContain('search_ledger.reference');
+    expect(query.values).toContain('%Mai +8490%');
+    expect(query.values).toContain(25);
+    expect(prisma.providerEarning.findMany).not.toHaveBeenCalled();
+  });
+
+  it('sorts the full cash settlement queue by highest exposure before pagination', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        { id: 'earning-1', originalDebtAmount: 600_000n, allocatedAmount: 200_000n, remainingDebtAmount: 400_000n },
+      ]),
+      providerEarning: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await service.listCashSettlementDebtForAdmin({ sort: 'highest-debt', skip: '10', take: '10' });
+
+    expect(rawQueryText(prisma.$queryRaw)).toContain(
+      'ORDER BY debt."remainingDebtAmount" DESC, debt."createdAt" ASC, debt.id ASC',
+    );
     expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        skip: 25,
-        take: 25,
-        where: expect.objectContaining({
-          AND: expect.arrayContaining([
-            { netAmount: { lte: -500000 } },
-            expect.objectContaining({
-              OR: expect.arrayContaining([
-                { id: { contains: 'Mai +8490', mode: 'insensitive' } },
-                { bookingId: { contains: 'Mai +8490', mode: 'insensitive' } },
-                {
-                  providerProfile: {
-                    is: expect.objectContaining({
-                      displayName: { contains: 'Mai +8490', mode: 'insensitive' },
-                    }),
-                  },
-                },
-              ]),
-            }),
-          ]),
+        where: { id: { in: ['earning-1'] } },
+        include: expect.objectContaining({
+          bankDepositCashDebtAllocations: expect.objectContaining({
+            select: expect.objectContaining({ amount: true, partnerBankDepositRequest: expect.any(Object) }),
+          }),
         }),
       }),
     );
   });
 
-  it('uses the same post-match cancellation exclusion for cash settlement summaries', async () => {
+  it('returns authoritative original, allocated, and remaining amounts from the paged debt query', async () => {
+    const earning = { id: 'earning-1', netAmount: -600_000 };
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          id: 'earning-1',
+          originalDebtAmount: 600_000n,
+          allocatedAmount: 450_000n,
+          remainingDebtAmount: 150_000n,
+        },
+      ]),
+      providerEarning: { findMany: vi.fn().mockResolvedValue([earning]) },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.listCashSettlementDebtForAdmin({ sort: 'highest-debt' })).resolves.toEqual([
+      {
+        ...earning,
+        allocatedAmount: 450_000,
+        originalDebtAmount: 600_000,
+        remainingDebtAmount: 150_000,
+      },
+    ]);
+  });
+
+  it('loads exact open debt evidence and only unallocated approved deposits', async () => {
+    const earning = {
+      id: 'earning-1',
+      bookingId: 'booking-1',
+      providerProfileId: 'partner-1',
+      currency: 'VND',
+      netAmount: -120_000,
+      bankDepositCashDebtAllocations: [
+        {
+          amount: 20_000,
+          partnerBankDepositRequest: { id: 'deposit-linked-1' },
+        },
+      ],
+    };
+    const prisma = {
+      providerEarning: { findFirst: vi.fn().mockResolvedValue(earning) },
+      partnerBankDepositRequest: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'deposit-available-1',
+            requestedReceivableRecovery: 150_000,
+            cashDebtAllocations: [{ amount: 40_000 }],
+          },
+          {
+            id: 'deposit-used-1',
+            requestedReceivableRecovery: 50_000,
+            cashDebtAllocations: [{ amount: 50_000 }],
+          },
+        ]),
+      },
+      providerWalletBalanceSummary: {
+        findUnique: vi.fn().mockResolvedValue({ balance: -100_000n }),
+      },
+      adminAuditLog: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.cashSettlementDebtDetailForAdmin('earning-1')).resolves.toMatchObject({
+      allocatedAmount: 20_000,
+      remainingDebtAmount: 100_000,
+      walletBalance: -100_000,
+      availableDeposits: [
+        expect.objectContaining({
+          id: 'deposit-available-1',
+          allocatedAmount: 40_000,
+          remainingReceivableRecovery: 110_000,
+        }),
+      ],
+    });
+    expect(prisma.providerEarning.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ AND: expect.arrayContaining([{ id: 'earning-1' }]) }),
+      }),
+    );
+    expect(prisma.partnerBankDepositRequest.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          providerProfileId: 'partner-1',
+          status: PartnerBankDepositRequestStatus.EXECUTED,
+          ledgerEntryId: { not: null },
+          journalBatchId: { not: null },
+        }),
+      }),
+    );
+  });
+
+  it('rejects direct cash debt settlement before any transaction can mutate evidence', async () => {
     const prisma = {
       providerEarning: {
-        aggregate: vi.fn().mockResolvedValue({ _min: { createdAt: null }, _sum: {} }),
-        count: vi.fn().mockResolvedValue(0),
-        groupBy: vi.fn().mockResolvedValue([]),
+        findUnique: vi.fn().mockResolvedValue({ id: 'earning-1', netAmount: -120_000 }),
       },
-      providerProfile: {
-        findMany: vi.fn().mockResolvedValue([]),
-      },
-      providerWalletLedgerEntry: {
-        findMany: vi.fn().mockResolvedValue([]),
+      $transaction: vi.fn(),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.markPaid('earning-1', {
+        settlementMethod: 'PARTNER_DEPOSIT',
+        settlementRef: 'HANDS-CASH-booking-1',
+      }),
+    ).rejects.toThrow('Cash fee debt can only be settled by allocating approved evidence');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('uses the same post-match cancellation exclusion for cash settlement summaries', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([cashSettlementSummarySqlRow()]),
+      operationalPolicySetting: {
+        findUnique: vi.fn().mockResolvedValue({ value: 1_440 }),
       },
     };
     const service = new EarningsService(prisma as never);
@@ -554,64 +1031,69 @@ describe('EarningsService payout batches', () => {
       totalDebtAmount: 0,
     });
 
-    expect(prisma.providerEarning.aggregate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          NOT: {
-            booking: {
-              is: expect.objectContaining({
-                OR: [{ matchedAt: { not: null } }, { selectedProviderId: { not: null } }],
-                status: BookingStatus.CANCELLED,
-              }),
-            },
-          },
-        }),
-      }),
-    );
+    const sql = rawQueryText(prisma.$queryRaw);
+    expect(sql).toContain('booking.status::text =');
+    expect(sql).toContain('debt."remainingDebtAmount" > 0');
+  });
+
+  it('counts cash reconciliation debt overdue under the configured SLA', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-19T08:00:00.000Z'));
+    const prisma = {
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValue([cashSettlementSummarySqlRow({ queueSlaOverdue: 3n })]),
+      operationalPolicySetting: {
+        findUnique: vi.fn().mockResolvedValue({ value: 90 }),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.cashSettlementSummaryForAdmin({ age: 'under-1h', sla: 'overdue' }),
+    ).resolves.toMatchObject({
+      queueSla: { overdueCount: 3, thresholdMinutes: 90 },
+    });
+    const query = prisma.$queryRaw.mock.calls[0][0] as { values: unknown[] };
+    expect(query.values).toContainEqual(new Date('2026-07-19T06:30:00.000Z'));
+    vi.useRealTimers();
+  });
+
+  it('opens the exact critical cash reconciliation subset from Start Shift', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-19T08:00:00.000Z'));
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      operationalPolicySetting: {
+        findUnique: vi.fn().mockResolvedValue({ value: 90 }),
+      },
+      providerEarning: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await service.listCashSettlementDebtForAdmin({ sla: 'critical' });
+
+    const query = prisma.$queryRaw.mock.calls[0][0] as { values: unknown[] };
+    expect(query.values).toContainEqual(new Date('2026-07-18T08:00:00.000Z'));
+    vi.useRealTimers();
   });
 
   it('summarizes company coupon offsets for cash settlement debt', async () => {
     const prisma = {
-      providerEarning: {
-        aggregate: vi.fn().mockResolvedValue({
-          _min: { createdAt: new Date('2026-06-13T03:02:00.000Z') },
-          _sum: { netAmount: -110_000, platformFee: 170_000, withholdingAmount: 42_000 },
+      $queryRaw: vi.fn().mockResolvedValue([
+        cashSettlementSummarySqlRow({
+          originalDebtAmount: 170_000n,
+          allocatedAmount: 60_000n,
+          remainingDebtAmount: 110_000n,
+          rowCount: 1n,
+          providerCount: 1n,
+          totalCompanyCouponOffset: 60_000n,
+          totalPlatformFee: 170_000n,
+          totalTaxAmount: 42_000n,
         }),
-        count: vi
-          .fn()
-          .mockResolvedValueOnce(1)
-          .mockResolvedValueOnce(0)
-          .mockResolvedValueOnce(0)
-          .mockResolvedValueOnce(1),
-        groupBy: vi.fn().mockResolvedValue([
-          {
-            currency: 'VND',
-            providerProfileId: 'provider-coupon-1',
-            _count: { _all: 1 },
-            _sum: { netAmount: -110_000, platformFee: 170_000, withholdingAmount: 42_000 },
-            _min: { createdAt: new Date('2026-06-13T03:02:00.000Z') },
-            _max: { createdAt: new Date('2026-06-13T03:02:00.000Z') },
-          },
-        ]),
-      },
-      providerProfile: {
-        findMany: vi.fn().mockResolvedValue([
-          {
-            id: 'provider-coupon-1',
-            displayName: 'Coupon Partner',
-            user: { fullName: 'Coupon Partner', phone: '+8490' },
-          },
-        ]),
-      },
-      providerWalletLedgerEntry: {
-        findMany: vi.fn().mockResolvedValue([
-          {
-            metadata: {
-              cashBookingCompanyCouponExpense: 60_000,
-              totalPartnerDueToCompany: 110_000,
-            },
-          },
-        ]),
+      ]),
+      operationalPolicySetting: {
+        findUnique: vi.fn().mockResolvedValue({ value: 1_440 }),
       },
     };
     const service = new EarningsService(prisma as never);
@@ -620,69 +1102,75 @@ describe('EarningsService payout batches', () => {
       rowCount: 1,
       totalCompanyCouponOffset: 60_000,
       totalDebtAmount: 110_000,
+      totalOriginalDebtAmount: 170_000,
+      totalAllocatedAmount: 60_000,
       totalPlatformFee: 170_000,
       totalTaxAmount: 42_000,
     });
-
-    expect(prisma.providerWalletLedgerEntry.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          type: ProviderWalletLedgerType.CASH_BOOKING_PLATFORM_FEE_DEDUCTED,
-          metadata: { path: ['cashBookingCompanyCouponExpense'], not: expect.anything() },
-        }),
-        select: { metadata: true },
-      }),
-    );
+    expect(rawQueryText(prisma.$queryRaw)).toContain('cashBookingCompanyCouponExpense');
   });
 
   it('filters cash settlement summaries by range and queue without hydrating unrelated earning rows', async () => {
     const prisma = {
-      providerEarning: {
-        aggregate: vi.fn().mockResolvedValue({ _min: { createdAt: null }, _sum: {} }),
-        count: vi.fn().mockResolvedValue(0),
-        groupBy: vi.fn().mockResolvedValue([]),
-        findMany: vi.fn(),
+      $queryRaw: vi.fn().mockResolvedValue([cashSettlementSummarySqlRow()]),
+      operationalPolicySetting: {
+        findUnique: vi.fn().mockResolvedValue({ value: 1_440 }),
       },
-      providerProfile: {
-        findMany: vi.fn().mockResolvedValue([]),
-      },
-      providerWalletLedgerEntry: {
-        findMany: vi.fn().mockResolvedValue([]),
-      },
+      providerEarning: { findMany: vi.fn() },
     };
     const service = new EarningsService(prisma as never);
 
     await expect(
-      service.cashSettlementSummaryForAdmin({ q: 'Mai', queue: 'missing-ref', range: '7d' }),
+      service.cashSettlementSummaryForAdmin({ q: 'Mai', queue: 'missing-evidence', range: '7d' }),
     ).resolves.toMatchObject({
       rowCount: 0,
       totalDebtAmount: 0,
     });
 
-    expect(prisma.providerEarning.aggregate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
-          AND: expect.arrayContaining([
-            expect.objectContaining({
-              settlementRef: null,
-            }),
-            expect.objectContaining({
-              OR: expect.arrayContaining([{ id: { contains: 'Mai', mode: 'insensitive' } }]),
-            }),
-          ]),
-          NOT: {
-            booking: {
-              is: expect.objectContaining({
-                OR: [{ matchedAt: { not: null } }, { selectedProviderId: { not: null } }],
-                status: BookingStatus.CANCELLED,
-              }),
-            },
-          },
-        }),
-      }),
-    );
+    const query = prisma.$queryRaw.mock.calls[0][0] as { strings: readonly string[]; values: unknown[] };
+    const sql = query.strings.join('?');
+    expect(sql).toContain('debt."allocationCount" = 0');
+    expect(sql).toContain('debt."createdAt" >=');
+    expect(query.values).toContain('%Mai%');
     expect(prisma.providerEarning.findMany).not.toHaveBeenCalled();
+  });
+
+  it('returns all-date open backlog and filtered queue totals from one summary query', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        cashSettlementSummarySqlRow({
+          globalAllocatedAmount: 70_000n,
+          globalMissingSettlementEvidenceCount: 8n,
+          globalOriginalDebtAmount: 1_070_000n,
+          globalProviderCount: 7n,
+          globalRemainingDebtAmount: 1_000_000n,
+          globalRowCount: 9n,
+          globalStaleDebtRowCount: 6n,
+          remainingDebtAmount: 0n,
+          rowCount: 0n,
+        }),
+      ]),
+      operationalPolicySetting: {
+        findUnique: vi.fn().mockResolvedValue({ value: 1_440 }),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.cashSettlementSummaryForAdmin({ queue: 'payment-check' })).resolves.toMatchObject({
+      global: {
+        allocatedAmount: 70_000,
+        missingSettlementEvidenceCount: 8,
+        originalDebtAmount: 1_070_000,
+        providerCount: 7,
+        remainingDebtAmount: 1_000_000,
+        rowCount: 9,
+        staleDebtRowCount: 6,
+      },
+      rowCount: 0,
+      totalDebtAmount: 0,
+    });
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(rawQueryText(prisma.$queryRaw)).toContain('global_open');
   });
 
   it('blocks payout batches from ledger balance even when earning aggregate is positive', async () => {
@@ -827,6 +1315,67 @@ describe('EarningsService payout batches', () => {
         },
       },
     });
+  });
+
+  it('preserves a negative Partner fee when a post-match cancellation was held by admin', async () => {
+    const earning = {
+      id: 'earning-held-1',
+      bookingId: 'booking-held-refund-1',
+      providerProfileId: 'provider-1',
+      netAmount: -30_000,
+      currency: 'VND',
+      status: EarningStatus.PENDING,
+      booking: {
+        closedReason: 'post_match_cancellation_fee_held',
+      },
+      payoutBatch: null,
+    };
+    const prisma = {
+      providerEarning: {
+        findUnique: vi.fn().mockResolvedValue(earning),
+      },
+      $transaction: vi.fn(),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.cancelForRefund('booking-held-refund-1')).resolves.toEqual({
+      skipped: true,
+      reason: 'POST_MATCH_CANCELLATION_FEE_HELD',
+      earningId: 'earning-held-1',
+      retainedFeeAmount: 30_000,
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('does not create another reversal for an earning already cancelled by post-match approval', async () => {
+    const earning = {
+      id: 'earning-approved-1',
+      bookingId: 'booking-approved-refund-1',
+      providerProfileId: 'provider-1',
+      netAmount: 0,
+      currency: 'VND',
+      status: EarningStatus.CANCELLED,
+      booking: {
+        closedReason: 'post_match_cancellation_approved',
+      },
+      payoutBatch: null,
+    };
+    const prisma = {
+      providerEarning: {
+        findUnique: vi.fn().mockResolvedValue(earning),
+      },
+      $transaction: vi.fn(),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.cancelForRefund('booking-approved-refund-1')).resolves.toEqual({
+      skipped: true,
+      reason: 'ALREADY_CANCELLED',
+      earningId: 'earning-approved-1',
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('keeps payout evidence on partner receivable ledger when refund happens after a paid payout batch', async () => {
@@ -1995,7 +2544,7 @@ describe('EarningsService payout batches', () => {
     };
     const tx = {
       providerPayoutBatch: {
-        update: vi.fn().mockResolvedValue({ ...existingBatch, status: PayoutBatchStatus.FAILED }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         findUniqueOrThrow: vi.fn().mockResolvedValue(returnedBatch),
       },
     };
@@ -2040,7 +2589,7 @@ describe('EarningsService payout batches', () => {
     };
     const tx = {
       providerPayoutBatch: {
-        update: vi.fn().mockResolvedValue(returnedBatch),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         findUniqueOrThrow: vi.fn().mockResolvedValue(returnedBatch),
       },
     };
@@ -2056,9 +2605,24 @@ describe('EarningsService payout batches', () => {
     const service = new EarningsService(prisma as never, notifications as never);
 
     await expect(
-      service.updatePayoutBatch('payout-batch-1', { notes: 'Bank reference pending' }),
+      service.updatePayoutBatch('payout-batch-1', {
+        notes: 'Bank reference pending',
+        expectedStatus: PayoutBatchStatus.DRAFT,
+        expectedTransferRef: null,
+        expectedNotes: null,
+      }),
     ).resolves.toEqual(returnedBatch);
 
+    expect(tx.providerPayoutBatch.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'payout-batch-1',
+          status: PayoutBatchStatus.DRAFT,
+          transferRef: null,
+          notes: null,
+        },
+      }),
+    );
     expect(notifications.create).not.toHaveBeenCalled();
   });
 
@@ -2460,6 +3024,7 @@ describe('EarningsService payout batches', () => {
         count: vi
           .fn()
           .mockResolvedValueOnce(6)
+          .mockResolvedValueOnce(6)
           .mockResolvedValueOnce(2)
           .mockResolvedValueOnce(1)
           .mockResolvedValueOnce(3)
@@ -2487,6 +3052,11 @@ describe('EarningsService payout batches', () => {
         range: 'all',
       }),
     ).resolves.toEqual({
+      generatedAt: expect.any(String),
+      range: 'all',
+      timeZone: 'Asia/Ho_Chi_Minh',
+      scopeCount: 6,
+      filteredTotal: 6,
       total: 6,
       requested: 2,
       reviewRequired: 1,
@@ -2596,12 +3166,22 @@ describe('EarningsService payout batches', () => {
       bankAccountId: 'bank-account-1',
       amount: 500000,
       currency: 'VND',
-      status: ProviderWalletWithdrawalRequestStatus.APPROVED,
-      transferRef: null,
-      adminNote: null,
+      status: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+      transferRef: 'BANK-OUT-001',
+      adminNote: 'Manual transfer completed',
       correctionReason: null,
       paidAt: null,
-      metadata: { requestedFrom: 'partner-app' },
+      metadata: {
+        requestedFrom: 'partner-app',
+        bankTransferEvidence: {
+          transferRef: 'BANK-OUT-001',
+          bankTransferDate: '2026-06-29T09:30:00.000Z',
+          attachmentFileId: 'file-payout-proof-1',
+          attachmentUrl: null,
+          submittedByAdminId: 'finance-maker-1',
+          submittedAt: '2026-06-29T09:31:00.000Z',
+        },
+      },
     };
     const updatedRequest = {
       ...existingRequest,
@@ -2612,13 +3192,22 @@ describe('EarningsService payout batches', () => {
       accountingJournalBatch: {
         upsert: vi.fn().mockResolvedValue({ id: 'withdrawal-journal-1' }),
       },
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'bank-account-1' }),
+      },
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 750000 } }),
+        findUnique: vi.fn().mockResolvedValue(null),
         upsert: vi.fn().mockResolvedValue({ id: 'withdrawal-ledger-1' }),
       },
       providerWalletWithdrawalRequest: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
         update: vi.fn().mockResolvedValue(updatedRequest),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(updatedRequest),
       },
     };
     const prisma = {
@@ -2636,10 +3225,6 @@ describe('EarningsService payout batches', () => {
         'withdrawal-request-1',
         {
           status: ProviderWalletWithdrawalRequestStatus.PAID,
-          transferRef: ' BANK-OUT-001 ',
-          bankTransferDate: '2026-06-29T09:30:00.000Z',
-          attachmentFileId: ' file-payout-proof-1 ',
-          adminNote: ' Manual transfer completed ',
         },
         'admin-user-1',
       ),
@@ -2668,13 +3253,17 @@ describe('EarningsService payout batches', () => {
             bankTransferDate: '2026-06-29T09:30:00.000Z',
             attachmentFileId: 'file-payout-proof-1',
             attachmentUrl: null,
+            preparedByAdminId: 'finance-maker-1',
             completedByAdminId: 'admin-user-1',
           },
         },
       }),
     });
-    expect(tx.providerWalletWithdrawalRequest.update).toHaveBeenCalledWith({
-      where: { id: 'withdrawal-request-1' },
+    expect(tx.providerWalletWithdrawalRequest.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'withdrawal-request-1',
+        status: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+      },
       data: expect.objectContaining({
         status: ProviderWalletWithdrawalRequestStatus.PAID,
         transferRef: 'BANK-OUT-001',
@@ -2689,10 +3278,11 @@ describe('EarningsService payout batches', () => {
             bankTransferDate: '2026-06-29T09:30:00.000Z',
             attachmentFileId: 'file-payout-proof-1',
             attachmentUrl: null,
+            preparedByAdminId: 'finance-maker-1',
             completedByAdminId: 'admin-user-1',
           },
           lastStatusChange: expect.objectContaining({
-            previousStatus: ProviderWalletWithdrawalRequestStatus.APPROVED,
+            previousStatus: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
             nextStatus: ProviderWalletWithdrawalRequestStatus.PAID,
             lockedAmountReleased: false,
             releasedAmount: 0,
@@ -2700,6 +3290,10 @@ describe('EarningsService payout batches', () => {
           }),
         }),
       }),
+    });
+    expect(tx.providerWalletWithdrawalRequest.update).not.toHaveBeenCalled();
+    expect(tx.providerWalletWithdrawalRequest.findUniqueOrThrow).toHaveBeenCalledWith({
+      where: { id: 'withdrawal-request-1' },
       include: expect.objectContaining({
         bankAccount: true,
       }),
@@ -2739,6 +3333,131 @@ describe('EarningsService payout batches', () => {
     );
   });
 
+  it('stops withdrawal side effects when the conditional paid claim loses a concurrent race', async () => {
+    const existingRequest = {
+      id: 'withdrawal-request-race',
+      providerProfileId: 'provider-race',
+      bankAccountId: 'bank-race',
+      amount: 500000,
+      currency: 'VND',
+      status: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+      transferRef: 'BANK-RACE',
+      adminNote: 'Transfer prepared',
+      correctionReason: null,
+      paidAt: null,
+      metadata: {
+        bankTransferEvidence: {
+          transferRef: 'BANK-RACE',
+          bankTransferDate: '2026-07-13T08:00:00.000Z',
+          attachmentUrl: 'https://storage.example/withdrawal-race.jpg',
+          submittedByAdminId: 'finance-maker-1',
+        },
+      },
+    };
+    const tx = {
+      accountingJournalBatch: { upsert: vi.fn() },
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
+      providerBankAccount: { findFirst: vi.fn().mockResolvedValue({ id: 'bank-race' }) },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 700000 } }),
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn(),
+      },
+      providerWalletWithdrawalRequest: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        findUniqueOrThrow: vi.fn(),
+        update: vi.fn(),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+    };
+    const prisma = {
+      providerWalletWithdrawalRequest: {
+        findUnique: vi.fn().mockResolvedValue(existingRequest),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never) as EarningsServiceWithWithdrawalRequests;
+
+    await expect(
+      service.updateProviderWalletWithdrawalRequestForAdmin(
+        existingRequest.id,
+        { status: ProviderWalletWithdrawalRequestStatus.PAID },
+        'finance-approver-2',
+      ),
+    ).rejects.toThrow(
+      'Partner wallet withdrawal changed while paid closeout was running. Reload and review the latest status.',
+    );
+
+    expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.accountingJournalBatch.upsert).not.toHaveBeenCalled();
+    expect(tx.providerWalletWithdrawalRequest.findUniqueOrThrow).not.toHaveBeenCalled();
+  });
+
+  it('rejects withdrawal paid closeout in a finalized monthly period before ledger or GL writes', async () => {
+    const existingRequest = {
+      id: 'withdrawal-request-closed-period',
+      providerProfileId: 'provider-closed-period',
+      bankAccountId: 'bank-closed-period',
+      amount: 500000,
+      currency: 'VND',
+      status: ProviderWalletWithdrawalRequestStatus.APPROVED,
+      transferRef: null,
+      adminNote: null,
+      correctionReason: null,
+      paidAt: null,
+    };
+    const tx = {
+      accountingJournalBatch: {
+        upsert: vi.fn(),
+      },
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({ status: MonthlyTaxClosingStatus.CLOSED }),
+      },
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'bank-closed-period' }),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 750000 } }),
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn(),
+      },
+      providerWalletWithdrawalRequest: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        update: vi.fn(),
+      },
+    };
+    const prisma = {
+      providerWalletWithdrawalRequest: {
+        findUnique: vi.fn().mockResolvedValue(existingRequest),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never) as EarningsServiceWithWithdrawalRequests;
+
+    await expect(
+      service.updateProviderWalletWithdrawalRequestForAdmin(
+        existingRequest.id,
+        {
+          status: ProviderWalletWithdrawalRequestStatus.PAID,
+          transferRef: 'BANK-CLOSED-PERIOD',
+          bankTransferDate: '2026-06-29T09:30:00.000Z',
+          attachmentUrl: 'https://storage.example/payouts/closed-period-proof.jpg',
+        },
+        'admin-user-1',
+      ),
+    ).rejects.toThrow(
+      'Partner wallet withdrawal paid closeout cannot post directly to finalized monthly period 2026-06',
+    );
+
+    expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.accountingJournalBatch.upsert).not.toHaveBeenCalled();
+    expect(tx.providerWalletWithdrawalRequest.update).not.toHaveBeenCalled();
+  });
+
   it('rejects marking withdrawal paid when other pending withdrawals already reserve the balance', async () => {
     const existingRequest = {
       id: 'withdrawal-request-1',
@@ -2756,8 +3475,12 @@ describe('EarningsService payout batches', () => {
       accountingJournalBatch: {
         upsert: vi.fn().mockResolvedValue({ id: 'withdrawal-release-journal-1' }),
       },
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'bank-account-1' }),
+      },
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 750000 } }),
+        findUnique: vi.fn().mockResolvedValue(null),
         upsert: vi.fn(),
       },
       providerWalletWithdrawalRequest: {
@@ -2837,6 +3560,10 @@ describe('EarningsService payout batches', () => {
           ...existingRequest,
           status: ProviderWalletWithdrawalRequestStatus.REJECTED,
         }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          ...existingRequest,
+          status: ProviderWalletWithdrawalRequestStatus.REJECTED,
+        }),
       },
     };
     const prisma = {
@@ -2897,6 +3624,9 @@ describe('EarningsService payout batches', () => {
           }),
         }),
       }),
+    });
+    expect(tx.providerWalletWithdrawalRequest.findUniqueOrThrow).toHaveBeenCalledWith({
+      where: { id: 'withdrawal-request-1' },
       include: expect.objectContaining({
         bankAccount: true,
       }),
@@ -2911,10 +3641,13 @@ describe('EarningsService payout batches', () => {
       bookingId: 'booking-1',
       netAmount: 380000,
       currency: 'VND',
+      status: EarningStatus.AVAILABLE,
     };
     const existingBatch = {
       id: 'payout-batch-1',
       providerProfileId: 'provider-1',
+      totalNetAmount: 380000,
+      currency: 'VND',
       status: PayoutBatchStatus.PROCESSING,
       transferRef: 'BANK-001',
       paidAt: null,
@@ -2927,6 +3660,15 @@ describe('EarningsService payout batches', () => {
       providerProfile: { user: { id: 'partner-user' } },
     };
     const tx = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'payout-journal-1' }),
+      },
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'bank-account-1' }),
+      },
       providerSanction: {
         findFirst: vi.fn().mockResolvedValue(null),
       },
@@ -2935,11 +3677,12 @@ describe('EarningsService payout batches', () => {
         updateMany: vi.fn(),
       },
       providerPayoutBatch: {
-        update: vi.fn().mockResolvedValue(paidBatch),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         findUniqueOrThrow: vi.fn().mockResolvedValue(paidBatch),
       },
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 380000 } }),
+        findFirst: vi.fn().mockResolvedValue(null),
         upsert: vi.fn(),
       },
       withholdingLog: {
@@ -2958,7 +3701,10 @@ describe('EarningsService payout batches', () => {
     const service = new EarningsService(prisma as never, notifications as never);
 
     await expect(
-      service.updatePayoutBatch('payout-batch-1', { status: PayoutBatchStatus.PAID }),
+      service.updatePayoutBatch('payout-batch-1', {
+        actorId: 'finance-maker-1',
+        status: PayoutBatchStatus.PAID,
+      }),
     ).resolves.toEqual(paidBatch);
 
     expect(tx.providerWalletLedgerEntry.aggregate).toHaveBeenCalledWith({
@@ -2972,7 +3718,7 @@ describe('EarningsService payout batches', () => {
       },
       data: {
         status: EarningStatus.PAID,
-        paidAt,
+        paidAt: expect.any(Date),
       },
     });
     expect(tx.withholdingLog.updateMany).toHaveBeenCalledWith({
@@ -2990,6 +3736,33 @@ describe('EarningsService payout batches', () => {
         }),
       }),
     );
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          sourceKey: 'accounting-journal:provider-payout-batch:payout-batch-1:paid',
+        },
+        create: expect.objectContaining({
+          createdById: 'finance-maker-1',
+          sourceType: AccountingJournalSourceType.PROVIDER_PAYOUT_BATCH,
+          totalCredit: 380000,
+          totalDebit: 380000,
+          entries: {
+            create: expect.arrayContaining([
+              expect.objectContaining({
+                side: AccountingJournalEntrySide.DEBIT,
+                accountCode: 'partner_wallet_liability',
+                amount: 380000,
+              }),
+              expect.objectContaining({
+                side: AccountingJournalEntrySide.CREDIT,
+                accountCode: 'company_bank_cash',
+                amount: 380000,
+              }),
+            ]),
+          },
+        }),
+      }),
+    );
     expect(notifications.create).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'partner-user',
@@ -2997,5 +3770,757 @@ describe('EarningsService payout batches', () => {
         body: 'Your payout batch was marked paid. Check the payout screen for details.',
       }),
     );
+  });
+
+  it('stops payout side effects when the conditional status update loses a concurrent race', async () => {
+    const existingBatch = {
+      id: 'payout-batch-race',
+      providerProfileId: 'provider-race',
+      totalNetAmount: 380000,
+      currency: 'VND',
+      status: PayoutBatchStatus.PROCESSING,
+      transferRef: 'BANK-RACE',
+      notes: null,
+      paidAt: null,
+      earnings: [
+        {
+          id: 'earning-race',
+          providerProfileId: 'provider-race',
+          bookingId: 'booking-race',
+          netAmount: 380000,
+          currency: 'VND',
+          status: EarningStatus.AVAILABLE,
+        },
+      ],
+    };
+    const tx = {
+      accountingJournalBatch: {
+        upsert: vi.fn(),
+      },
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'bank-race' }),
+      },
+      providerEarning: {
+        updateMany: vi.fn(),
+      },
+      providerPayoutBatch: {
+        findUniqueOrThrow: vi.fn(),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+      providerSanction: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 380000 } }),
+        findFirst: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn(),
+      },
+      withholdingLog: {
+        updateMany: vi.fn(),
+      },
+    };
+    const prisma = {
+      providerPayoutBatch: {
+        findUnique: vi.fn().mockResolvedValue(existingBatch),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.updatePayoutBatch(existingBatch.id, { status: PayoutBatchStatus.PAID }),
+    ).rejects.toThrow(
+      'Payout batch changed while this action was running. Reload and review the latest status.',
+    );
+
+    expect(tx.providerPayoutBatch.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: existingBatch.id,
+        status: PayoutBatchStatus.PROCESSING,
+      },
+      data: expect.objectContaining({
+        status: PayoutBatchStatus.PAID,
+        paidAt: expect.any(Date),
+      }),
+    });
+    expect(tx.providerEarning.updateMany).not.toHaveBeenCalled();
+    expect(tx.withholdingLog.updateMany).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.accountingJournalBatch.upsert).not.toHaveBeenCalled();
+    expect(tx.providerPayoutBatch.findUniqueOrThrow).not.toHaveBeenCalled();
+  });
+
+  it('rejects payout paid closeout in a finalized monthly period before status or ledger writes', async () => {
+    const existingBatch = {
+      id: 'payout-batch-closed-period',
+      providerProfileId: 'provider-closed-period',
+      totalNetAmount: 380000,
+      currency: 'VND',
+      status: PayoutBatchStatus.PROCESSING,
+      transferRef: 'BANK-CLOSED-PERIOD',
+      notes: null,
+      paidAt: null,
+      earnings: [
+        {
+          id: 'earning-closed-period',
+          providerProfileId: 'provider-closed-period',
+          bookingId: 'booking-closed-period',
+          netAmount: 380000,
+          currency: 'VND',
+          status: EarningStatus.AVAILABLE,
+        },
+      ],
+    };
+    const tx = {
+      accountingJournalBatch: {
+        upsert: vi.fn(),
+      },
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({ status: MonthlyTaxClosingStatus.CLOSED }),
+      },
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'bank-closed-period' }),
+      },
+      providerEarning: {
+        updateMany: vi.fn(),
+      },
+      providerPayoutBatch: {
+        updateMany: vi.fn(),
+      },
+      providerSanction: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 380000 } }),
+        findFirst: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn(),
+      },
+      withholdingLog: {
+        updateMany: vi.fn(),
+      },
+    };
+    const prisma = {
+      providerPayoutBatch: {
+        findUnique: vi.fn().mockResolvedValue(existingBatch),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.updatePayoutBatch(existingBatch.id, { status: PayoutBatchStatus.PAID }),
+    ).rejects.toThrow('Payout paid closeout cannot post directly to finalized monthly period');
+
+    expect(tx.providerPayoutBatch.updateMany).not.toHaveBeenCalled();
+    expect(tx.providerEarning.updateMany).not.toHaveBeenCalled();
+    expect(tx.withholdingLog.updateMany).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.accountingJournalBatch.upsert).not.toHaveBeenCalled();
+  });
+
+  it('rejects payout processing when the partner has no approved bank account', async () => {
+    const existingBatch = {
+      id: 'payout-batch-no-bank',
+      providerProfileId: 'provider-no-bank',
+      totalNetAmount: 380000,
+      currency: 'VND',
+      status: PayoutBatchStatus.DRAFT,
+      transferRef: 'BANK-NO-ACCOUNT',
+      paidAt: null,
+      earnings: [
+        {
+          id: 'earning-no-bank',
+          providerProfileId: 'provider-no-bank',
+          bookingId: 'booking-no-bank',
+          netAmount: 380000,
+          currency: 'VND',
+          status: EarningStatus.AVAILABLE,
+        },
+      ],
+    };
+    const tx = {
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      providerPayoutBatch: {
+        updateMany: vi.fn(),
+      },
+      providerSanction: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn(),
+        findFirst: vi.fn(),
+      },
+    };
+    const prisma = {
+      providerPayoutBatch: {
+        findUnique: vi.fn().mockResolvedValue(existingBatch),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.updatePayoutBatch(existingBatch.id, { status: PayoutBatchStatus.PROCESSING }),
+    ).rejects.toThrow('Partner needs an approved bank account before payout');
+
+    expect(tx.providerPayoutBatch.updateMany).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
+  });
+
+  it('rejects payout processing when linked earnings no longer match the batch total', async () => {
+    const existingBatch = {
+      id: 'payout-batch-total-drift',
+      providerProfileId: 'provider-total-drift',
+      totalNetAmount: 380000,
+      currency: 'VND',
+      status: PayoutBatchStatus.DRAFT,
+      transferRef: 'BANK-TOTAL-DRIFT',
+      paidAt: null,
+      earnings: [
+        {
+          id: 'earning-total-drift',
+          providerProfileId: 'provider-total-drift',
+          bookingId: 'booking-total-drift',
+          netAmount: 360000,
+          currency: 'VND',
+          status: EarningStatus.AVAILABLE,
+        },
+      ],
+    };
+    const tx = {
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'bank-total-drift' }),
+      },
+      providerPayoutBatch: {
+        updateMany: vi.fn(),
+      },
+      providerSanction: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn(),
+        findFirst: vi.fn(),
+      },
+    };
+    const prisma = {
+      providerPayoutBatch: {
+        findUnique: vi.fn().mockResolvedValue(existingBatch),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.updatePayoutBatch(existingBatch.id, { status: PayoutBatchStatus.PROCESSING }),
+    ).rejects.toThrow('Payout batch earning total or currency no longer matches');
+
+    expect(tx.providerPayoutBatch.updateMany).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
+  });
+
+  it('rejects payout paid closeout when wallet balance cannot cover the batch', async () => {
+    const existingBatch = {
+      id: 'payout-batch-low-wallet',
+      providerProfileId: 'provider-low-wallet',
+      totalNetAmount: 380000,
+      currency: 'VND',
+      status: PayoutBatchStatus.PROCESSING,
+      transferRef: 'BANK-LOW-WALLET',
+      paidAt: null,
+      earnings: [
+        {
+          id: 'earning-low-wallet',
+          providerProfileId: 'provider-low-wallet',
+          bookingId: 'booking-low-wallet',
+          netAmount: 380000,
+          currency: 'VND',
+          status: EarningStatus.AVAILABLE,
+        },
+      ],
+    };
+    const tx = {
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'bank-low-wallet' }),
+      },
+      providerPayoutBatch: {
+        updateMany: vi.fn(),
+      },
+      providerSanction: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 379999 } }),
+        findFirst: vi.fn(),
+      },
+    };
+    const prisma = {
+      providerPayoutBatch: {
+        findUnique: vi.fn().mockResolvedValue(existingBatch),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.updatePayoutBatch(existingBatch.id, { status: PayoutBatchStatus.PAID }),
+    ).rejects.toThrow('Partner wallet ledger balance cannot cover payout batch');
+
+    expect(tx.providerPayoutBatch.updateMany).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('rejects payout paid closeout when payout ledger evidence already exists', async () => {
+    const existingBatch = {
+      id: 'payout-batch-duplicate-ledger',
+      providerProfileId: 'provider-duplicate-ledger',
+      totalNetAmount: 380000,
+      currency: 'VND',
+      status: PayoutBatchStatus.PROCESSING,
+      transferRef: 'BANK-DUPLICATE',
+      paidAt: null,
+      earnings: [
+        {
+          id: 'earning-duplicate-ledger',
+          providerProfileId: 'provider-duplicate-ledger',
+          bookingId: 'booking-duplicate-ledger',
+          netAmount: 380000,
+          currency: 'VND',
+          status: EarningStatus.AVAILABLE,
+        },
+      ],
+    };
+    const tx = {
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'bank-duplicate-ledger' }),
+      },
+      providerPayoutBatch: {
+        updateMany: vi.fn(),
+      },
+      providerSanction: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 380000 } }),
+        findFirst: vi.fn().mockResolvedValue({ id: 'existing-payout-ledger' }),
+      },
+    };
+    const prisma = {
+      providerPayoutBatch: {
+        findUnique: vi.fn().mockResolvedValue(existingBatch),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.updatePayoutBatch(existingBatch.id, { status: PayoutBatchStatus.PAID }),
+    ).rejects.toThrow('Payout wallet ledger evidence already exists while the batch is still open');
+
+    expect(tx.providerPayoutBatch.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('rejects withdrawal paid closeout when bank approval or ledger uniqueness is missing', async () => {
+    const existingRequest = {
+      id: 'withdrawal-request-preflight',
+      providerProfileId: 'provider-withdrawal-preflight',
+      bankAccountId: 'bank-withdrawal-preflight',
+      amount: 500000,
+      currency: 'VND',
+      status: ProviderWalletWithdrawalRequestStatus.APPROVED,
+      transferRef: null,
+      adminNote: null,
+      correctionReason: null,
+      paidAt: null,
+    };
+    const paidInput = {
+      status: ProviderWalletWithdrawalRequestStatus.PAID,
+      transferRef: 'BANK-WITHDRAWAL-PREFLIGHT',
+      bankTransferDate: '2026-06-29T09:30:00.000Z',
+      attachmentUrl: 'https://storage.example/payouts/withdrawal-proof.jpg',
+    };
+    const createService = (bankAccount: { id: string } | null, paidLedger: { id: string } | null) => {
+      const tx = {
+        accountingJournalBatch: {
+          upsert: vi.fn(),
+        },
+        providerBankAccount: {
+          findFirst: vi.fn().mockResolvedValue(bankAccount),
+        },
+        providerWalletLedgerEntry: {
+          aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 750000 } }),
+          findUnique: vi.fn().mockResolvedValue(paidLedger),
+          upsert: vi.fn(),
+        },
+        providerWalletWithdrawalRequest: {
+          aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+          update: vi.fn(),
+        },
+      };
+      const prisma = {
+        providerWalletWithdrawalRequest: {
+          findUnique: vi.fn().mockResolvedValue(existingRequest),
+        },
+        $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+        ),
+      };
+      return {
+        service: new EarningsService(prisma as never) as EarningsServiceWithWithdrawalRequests,
+        tx,
+      };
+    };
+
+    const missingBank = createService(null, null);
+    await expect(
+      missingBank.service.updateProviderWalletWithdrawalRequestForAdmin(
+        existingRequest.id,
+        paidInput,
+        'admin-user-1',
+      ),
+    ).rejects.toThrow('Partner needs an approved bank account before withdrawal paid closeout');
+    expect(missingBank.tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(missingBank.tx.providerWalletWithdrawalRequest.update).not.toHaveBeenCalled();
+
+    const duplicateLedger = createService({ id: existingRequest.bankAccountId }, { id: 'existing-ledger' });
+    await expect(
+      duplicateLedger.service.updateProviderWalletWithdrawalRequestForAdmin(
+        existingRequest.id,
+        paidInput,
+        'admin-user-1',
+      ),
+    ).rejects.toThrow(
+      'Withdrawal paid wallet ledger evidence already exists while the request is still open',
+    );
+    expect(duplicateLedger.tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(duplicateLedger.tx.providerWalletWithdrawalRequest.update).not.toHaveBeenCalled();
+  });
+
+  it('reverses a paid payout into the open period without mutating the original payout', async () => {
+    const payoutBatch = {
+      id: 'payout-batch-reversal',
+      providerProfileId: 'provider-reversal',
+      totalNetAmount: 380000,
+      currency: 'VND',
+      status: PayoutBatchStatus.PAID,
+      transferRef: 'BANK-PAID-001',
+      notes: null,
+      paidAt: new Date('2026-06-30T09:30:00.000Z'),
+    };
+    const originalJournal = {
+      id: 'journal-payout-paid',
+      sourceKey: `accounting-journal:provider-payout-batch:${payoutBatch.id}:paid`,
+      sourceType: AccountingJournalSourceType.PROVIDER_PAYOUT_BATCH,
+      sourceId: payoutBatch.id,
+      currency: 'VND',
+      status: 'POSTED',
+      totalDebit: 380000,
+      totalCredit: 380000,
+      entries: [
+        {
+          id: 'entry-wallet-liability',
+          side: AccountingJournalEntrySide.DEBIT,
+          accountCode: 'partner_wallet_liability',
+          accountName: 'Partner wallet liability',
+          amount: 380000,
+          currency: 'VND',
+        },
+        {
+          id: 'entry-bank',
+          side: AccountingJournalEntrySide.CREDIT,
+          accountCode: 'company_bank_cash',
+          accountName: 'Company bank / cash',
+          amount: 380000,
+          currency: 'VND',
+        },
+      ],
+    };
+    const reversalLedger = {
+      id: 'ledger-payout-reversal',
+      amount: 380000,
+      sourceKey: `provider-payout-batch:${payoutBatch.id}:reversal`,
+    };
+    const reversalJournal = {
+      id: 'journal-payout-reversal',
+      entries: [],
+    };
+    const tx = {
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({
+          _count: { _all: 1 },
+          _sum: { amount: -380000 },
+        }),
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue(reversalLedger),
+      },
+      accountingJournalBatch: {
+        findUnique: vi
+          .fn()
+          .mockImplementation(({ where }: { where: { sourceKey: string } }) =>
+            Promise.resolve(where.sourceKey === originalJournal.sourceKey ? originalJournal : null),
+          ),
+        create: vi.fn().mockResolvedValue(reversalJournal),
+      },
+      providerPayoutBatch: {
+        updateMany: vi.fn(),
+      },
+      providerEarning: {
+        updateMany: vi.fn(),
+      },
+      withholdingLog: {
+        updateMany: vi.fn(),
+      },
+    };
+    const prisma = {
+      providerPayoutBatch: {
+        findUnique: vi.fn().mockResolvedValue(payoutBatch),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.reversePaidPayoutBatchForAdmin(payoutBatch.id, {
+        actorId: 'finance-maker-1',
+        approvalAdminId: 'finance-approver-2',
+        reason: 'Bank transfer was rejected and funds returned',
+        reversalReference: 'BANK-RETURN-001',
+        occurredAt: '2026-07-13T10:00:00.000Z',
+        attachmentUrl: 'https://storage.example/payouts/return-proof.jpg',
+      }),
+    ).resolves.toEqual({
+      payoutBatch,
+      reversalJournalBatch: reversalJournal,
+      reversalWalletLedgerEntry: reversalLedger,
+    });
+
+    expect(tx.providerWalletLedgerEntry.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        amount: 380000,
+        providerProfileId: 'provider-reversal',
+        sourceKey: `provider-payout-batch:${payoutBatch.id}:reversal`,
+        type: ProviderWalletLedgerType.ADMIN_ADJUSTMENT,
+      }),
+    });
+    expect(tx.accountingJournalBatch.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        sourceKey: `accounting-journal:provider-payout-batch:${payoutBatch.id}:reversal`,
+        totalDebit: 380000,
+        totalCredit: 380000,
+        entries: {
+          create: expect.arrayContaining([
+            expect.objectContaining({
+              side: AccountingJournalEntrySide.CREDIT,
+              accountCode: 'partner_wallet_liability',
+              amount: 380000,
+            }),
+            expect.objectContaining({
+              side: AccountingJournalEntrySide.DEBIT,
+              accountCode: 'company_bank_cash',
+              amount: 380000,
+            }),
+          ]),
+        },
+      }),
+      include: { entries: true },
+    });
+    expect(tx.providerPayoutBatch.updateMany).not.toHaveBeenCalled();
+    expect(tx.providerEarning.updateMany).not.toHaveBeenCalled();
+    expect(tx.withholdingLog.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('reverses both lock and paid journals when restoring a paid withdrawal to the wallet', async () => {
+    const withdrawalRequest = {
+      id: 'withdrawal-reversal',
+      providerProfileId: 'provider-withdrawal-reversal',
+      amount: 500000,
+      currency: 'VND',
+      status: ProviderWalletWithdrawalRequestStatus.PAID,
+      metadata: null,
+    };
+    const journal = (phase: 'lock' | 'paid', debitAccountCode: string, creditAccountCode: string) => ({
+      id: `journal-${phase}`,
+      sourceKey: `accounting-journal:provider-withdrawal:${withdrawalRequest.id}:${phase}`,
+      sourceType: AccountingJournalSourceType.PROVIDER_WITHDRAWAL,
+      sourceId: withdrawalRequest.id,
+      currency: 'VND',
+      status: 'POSTED',
+      totalDebit: 500000,
+      totalCredit: 500000,
+      entries: [
+        {
+          id: `entry-${phase}-debit`,
+          side: AccountingJournalEntrySide.DEBIT,
+          accountCode: debitAccountCode,
+          accountName: debitAccountCode,
+          amount: 500000,
+          currency: 'VND',
+        },
+        {
+          id: `entry-${phase}-credit`,
+          side: AccountingJournalEntrySide.CREDIT,
+          accountCode: creditAccountCode,
+          accountName: creditAccountCode,
+          amount: 500000,
+          currency: 'VND',
+        },
+      ],
+    });
+    const lockJournal = journal('lock', 'partner_wallet_liability', 'partner_withdrawal_payable');
+    const paidJournal = journal('paid', 'partner_withdrawal_payable', 'company_bank_cash');
+    const reversedRequest = {
+      ...withdrawalRequest,
+      status: ProviderWalletWithdrawalRequestStatus.REVERSED,
+    };
+    const reversalLedger = { id: 'ledger-withdrawal-reversal', amount: 500000 };
+    const reversalJournal = { id: 'journal-withdrawal-reversal', entries: [] };
+    const tx = {
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      providerWalletLedgerEntry: {
+        findUnique: vi
+          .fn()
+          .mockImplementation(({ where }: { where: { sourceKey: string } }) =>
+            Promise.resolve(
+              where.sourceKey === `partner-wallet-withdrawal:${withdrawalRequest.id}:paid`
+                ? { id: 'ledger-withdrawal-paid', amount: -500000 }
+                : null,
+            ),
+          ),
+        create: vi.fn().mockResolvedValue(reversalLedger),
+      },
+      accountingJournalBatch: {
+        findUnique: vi.fn().mockImplementation(({ where }: { where: { sourceKey: string } }) => {
+          if (where.sourceKey === lockJournal.sourceKey) return Promise.resolve(lockJournal);
+          if (where.sourceKey === paidJournal.sourceKey) return Promise.resolve(paidJournal);
+          return Promise.resolve(null);
+        }),
+        create: vi.fn().mockResolvedValue(reversalJournal),
+      },
+      providerWalletWithdrawalRequest: {
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(reversedRequest),
+      },
+    };
+    const prisma = {
+      providerWalletWithdrawalRequest: {
+        findUnique: vi.fn().mockResolvedValue(withdrawalRequest),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.reversePaidProviderWalletWithdrawalForAdmin(withdrawalRequest.id, {
+        actorId: 'finance-maker-1',
+        approvalAdminId: 'finance-approver-2',
+        reason: 'Bank rejected the transfer and returned the funds',
+        reversalReference: 'BANK-RETURN-002',
+        occurredAt: '2026-07-13T10:00:00.000Z',
+        attachmentFileId: 'evidence-file-1',
+      }),
+    ).resolves.toEqual({
+      withdrawalRequest: reversedRequest,
+      reversalJournalBatch: reversalJournal,
+      reversalWalletLedgerEntry: reversalLedger,
+    });
+
+    expect(tx.providerWalletLedgerEntry.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        amount: 500000,
+        sourceKey: `provider-wallet-withdrawal:${withdrawalRequest.id}:reversal`,
+        type: ProviderWalletLedgerType.ADMIN_ADJUSTMENT,
+      }),
+    });
+    expect(tx.accountingJournalBatch.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        sourceKey: `accounting-journal:provider-withdrawal:${withdrawalRequest.id}:reversal`,
+        totalDebit: 1000000,
+        totalCredit: 1000000,
+        entries: { create: expect.arrayContaining([expect.objectContaining({ amount: 500000 })]) },
+      }),
+      include: { entries: true },
+    });
+    expect(tx.providerWalletWithdrawalRequest.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: withdrawalRequest.id,
+        status: ProviderWalletWithdrawalRequestStatus.PAID,
+      },
+      data: expect.objectContaining({
+        status: ProviderWalletWithdrawalRequestStatus.REVERSED,
+        correctionReason: 'Bank rejected the transfer and returned the funds',
+        reviewedByAdminId: 'finance-maker-1',
+      }),
+    });
+  });
+
+  it('blocks paid disbursement reversal when the new posting period is finalized', async () => {
+    const payoutBatch = {
+      id: 'payout-closed-reversal',
+      providerProfileId: 'provider-closed-reversal',
+      totalNetAmount: 250000,
+      currency: 'VND',
+      status: PayoutBatchStatus.PAID,
+    };
+    const tx = {
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({ status: MonthlyTaxClosingStatus.CLOSED }),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn(),
+        create: vi.fn(),
+      },
+      accountingJournalBatch: {
+        findUnique: vi.fn(),
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      providerPayoutBatch: {
+        findUnique: vi.fn().mockResolvedValue(payoutBatch),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.reversePaidPayoutBatchForAdmin(payoutBatch.id, {
+        actorId: 'finance-maker-1',
+        approvalAdminId: 'finance-approver-2',
+        reason: 'Returned transfer must be reversed in an open period',
+        reversalReference: 'BANK-RETURN-CLOSED',
+        occurredAt: '2026-07-13T10:00:00.000Z',
+        attachmentUrl: 'https://storage.example/payouts/closed-proof.jpg',
+      }),
+    ).rejects.toThrow('Payout batch reversal cannot post directly to finalized monthly period');
+
+    expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
+    expect(tx.accountingJournalBatch.create).not.toHaveBeenCalled();
   });
 });

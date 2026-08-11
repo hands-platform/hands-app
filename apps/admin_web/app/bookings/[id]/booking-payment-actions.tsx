@@ -1,11 +1,9 @@
-import { AdminFormControlButton, AdminFormInput, AdminFormSelect } from '../../../components/admin-form-controls';
-import { AdminInlineNotice } from '../../../components/admin-inline-notice';
+import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminActionFormCard } from '../../../components/admin-surface';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import type { AdminBookingDetail } from '../../../lib/admin-api';
 import { formatMoney, shortId } from '../../../lib/admin-format';
-import type { FinanceApproverOption } from '../../finance-tax/finance-approver-options';
 import { settleBookingCashDebt } from './actions';
 
 type BookingPaymentActionReadout = {
@@ -25,8 +23,6 @@ export function BookingPaymentAction({
   readout,
   evidenceHint,
   ruleHint,
-  requiresApproval = false,
-  financeApproverOptions = [],
 }: {
   action: (...args: [FormData]) => Promise<void>;
   bookingId: string;
@@ -36,11 +32,7 @@ export function BookingPaymentAction({
   readout?: BookingPaymentActionReadout;
   evidenceHint?: string;
   ruleHint?: string;
-  requiresApproval?: boolean;
-  financeApproverOptions?: readonly FinanceApproverOption[];
 }) {
-  const approvalUnavailable = requiresApproval && financeApproverOptions.length === 0;
-
   return (
     <AdminActionFormCard action={action} className={readout?.className}>
       <input type="hidden" name="bookingId" value={bookingId} />
@@ -54,21 +46,7 @@ export function BookingPaymentAction({
           {evidenceHint ?? readout?.evidence ?? 'Payment action state is derived from the booking.'}
         </p>
       </div>
-      {requiresApproval ? (
-        <AdminFormSelect
-          disabled={approvalUnavailable}
-          label="Separate Finance approver"
-          name="approvalAdminId"
-          options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}
-          required
-        />
-      ) : null}
-      {approvalUnavailable ? (
-        <AdminInlineNotice role="alert" tone="warning">
-          No other Finance approver is available. Refund execution is disabled.
-        </AdminInlineNotice>
-      ) : null}
-      <AdminFormControlButton disabled={disabled || approvalUnavailable} type="submit">
+      <AdminFormControlButton disabled={disabled} type="submit">
         {label}
       </AdminFormControlButton>
       <small>{ruleHint ?? readout?.operatorRule ?? 'Use retained booking evidence before changing payment state.'}</small>

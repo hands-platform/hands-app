@@ -1,7 +1,10 @@
 import jwt from 'jsonwebtoken';
+import { randomUUID } from 'node:crypto';
 import {
   AccountingJournalBatchStatus,
   AccountingJournalSourceType,
+  AdminOperatorPermissionCategory,
+  BookingStatus,
   CompanyBankAccountStatus,
   PaymentFeePayer,
   PaymentFeeRuleType,
@@ -15,9 +18,18 @@ import {
 } from '@prisma/client';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
+import {
+  createApiSmokeBookingTracker,
+  installApiSmokeProcessFailureHandlers,
+  isStaleApiSmokeAddress,
+  summarizeStaleApiSmokeBookings,
+} from './lib/stale-api-smoke-bookings.mjs';
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const { env } = loadMergedEnv(envFile);
+const apiSmokeStartedAt = new Date();
+const apiSmokeBookingTracker = createApiSmokeBookingTracker();
+let apiSmokeCleanupPromise;
 if (env.DATABASE_URL && !process.env.DATABASE_URL) {
   process.env.DATABASE_URL = env.DATABASE_URL;
 }
@@ -39,7 +51,9 @@ function jwtAccessSecretFromEnv(sourceEnv) {
   return 'dev-access-secret';
 }
 
-async function createSmokeAdminAuth(phone = env.API_SMOKE_ADMIN_PHONE ?? env.ADMIN_DEMO_PHONE ?? '+84900000099') {
+async function createSmokeAdminAuth(
+  phone = env.API_SMOKE_ADMIN_PHONE ?? env.ADMIN_DEMO_PHONE ?? '+84900000099',
+) {
   const prisma = new PrismaClient();
 
   try {
@@ -49,14 +63,18 @@ async function createSmokeAdminAuth(phone = env.API_SMOKE_ADMIN_PHONE ?? env.ADM
           where: { id: existing.id },
           data: {
             fullName: existing.fullName ?? 'HANDS Smoke Admin',
-            roles: { set: Array.from(new Set([...existing.roles, Role.ADMIN, Role.FINANCE_APPROVER])) },
+            roles: {
+              set: Array.from(
+                new Set([...existing.roles, Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN]),
+              ),
+            },
           },
         })
       : await prisma.user.create({
           data: {
             phone,
             fullName: 'HANDS Smoke Admin',
-            roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+            roles: [Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN],
           },
         });
 
@@ -94,6 +112,12 @@ async function createSmokeAdminOnlyAuth(phone = env.API_SMOKE_ADMIN_ONLY_PHONE ?
           },
         });
 
+    await prisma.adminOperatorPermission.upsert({
+      where: { userId: user.id },
+      create: { userId: user.id, categories: [AdminOperatorPermissionCategory.FINANCE] },
+      update: { categories: { set: [AdminOperatorPermissionCategory.FINANCE] } },
+    });
+
     return {
       user,
       accessToken: jwt.sign(
@@ -105,6 +129,117 @@ async function createSmokeAdminOnlyAuth(phone = env.API_SMOKE_ADMIN_ONLY_PHONE ?
   } finally {
     await prisma.$disconnect();
   }
+}
+
+async function expireResidualActiveApiSmokeBookings({
+  customerProfileId,
+  closedNote = 'Expired after a successful API smoke run.',
+  closedReason = 'api_smoke_fixture_complete',
+} = {}) {
+  if (apiSmokeCleanupPromise) return apiSmokeCleanupPromise;
+
+  apiSmokeCleanupPromise = expireResidualActiveApiSmokeBookingsOnce({
+    closedNote,
+    closedReason,
+    customerProfileId,
+  });
+  return apiSmokeCleanupPromise;
+}
+
+async function expireResidualActiveApiSmokeBookingsOnce({ closedNote, closedReason, customerProfileId }) {
+  const prisma = new PrismaClient();
+  const activeStatuses = [
+    BookingStatus.OPEN_MATCHING,
+    BookingStatus.MATCHED,
+    BookingStatus.PROVIDER_ON_THE_WAY,
+    BookingStatus.ARRIVED,
+    BookingStatus.IN_SERVICE,
+  ];
+  const trackedBookingIds = apiSmokeBookingTracker.snapshot();
+  const candidateClauses = trackedBookingIds.length > 0 ? [{ id: { in: trackedBookingIds } }] : [];
+  if (customerProfileId) {
+    candidateClauses.push(
+      {
+        customerProfileId,
+        addressSnapshot: {
+          addressText: { endsWith: ' smoke flow', mode: 'insensitive' },
+        },
+      },
+      {
+        customerProfileId,
+        addressSnapshot: {
+          addressText: { startsWith: 'Realtime smoke ', mode: 'insensitive' },
+        },
+      },
+    );
+  }
+
+  if (candidateClauses.length === 0) {
+    await prisma.$disconnect();
+    return { addresses: [], affectedProviderCount: 0, expired: 0, sources: [], statuses: [], total: 0 };
+  }
+
+  try {
+    const broadCandidates = await prisma.booking.findMany({
+      where: {
+        createdAt: { gte: apiSmokeStartedAt },
+        status: { in: activeStatuses },
+        OR: candidateClauses,
+      },
+      select: {
+        id: true,
+        selectedProviderId: true,
+        status: true,
+        addressSnapshot: { select: { addressText: true } },
+      },
+    });
+    const candidates = broadCandidates.flatMap((booking) => {
+      const tracked = apiSmokeBookingTracker.has(booking.id);
+      const explicitSmokeAddress = isStaleApiSmokeAddress(booking.addressSnapshot?.addressText);
+      if (!tracked && !explicitSmokeAddress) return [];
+      return [
+        {
+          ...booking,
+          cleanupSource: tracked ? 'tracked_booking_id' : 'explicit_smoke_address',
+        },
+      ];
+    });
+    const candidateIds = candidates.map((booking) => booking.id);
+    const expired = candidateIds.length
+      ? (
+          await prisma.booking.updateMany({
+            where: { id: { in: candidateIds }, status: { in: activeStatuses } },
+            data: {
+              closedAt: new Date(),
+              closedByRole: Role.SYSTEM,
+              closedNote,
+              closedReason,
+              status: BookingStatus.EXPIRED,
+            },
+          })
+        ).count
+      : 0;
+
+    return {
+      expired,
+      ...summarizeStaleApiSmokeBookings(candidates),
+    };
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+function installApiSmokeFailureCleanup() {
+  installApiSmokeProcessFailureHandlers({
+    cleanup: (origin) =>
+      expireResidualActiveApiSmokeBookings({
+        closedNote: `Expired after API smoke ${origin}.`,
+        closedReason: 'api_smoke_fixture_interrupted',
+      }),
+    exit: (exitCode) => process.exit(exitCode),
+    processTarget: process,
+    report: (payload) => console.error(JSON.stringify(payload, null, 2)),
+  });
 }
 
 async function ensureSmokeCompanyBankAccount() {
@@ -375,7 +510,9 @@ async function assertWithholdingRemittanceLifecycle({
         'Partner withholding remittance paid closeout requires approval from a different admin',
       )
     ) {
-      throw new Error(`Withholding remittance same-admin guard returned unexpected message: ${sameAdminFailure}`);
+      throw new Error(
+        `Withholding remittance same-admin guard returned unexpected message: ${sameAdminFailure}`,
+      );
     }
     const nonFinanceFailure = await expectRequestFailure(
       'Withholding remittance paid closeout rejects non-finance approver',
@@ -396,7 +533,9 @@ async function assertWithholdingRemittanceLifecycle({
         'Partner withholding remittance paid closeout requires approval from a finance approver',
       )
     ) {
-      throw new Error(`Withholding remittance non-finance guard returned unexpected message: ${nonFinanceFailure}`);
+      throw new Error(
+        `Withholding remittance non-finance guard returned unexpected message: ${nonFinanceFailure}`,
+      );
     }
     const closing = await patchJson(`/admin/monthly-tax-closings/${period}/status`, adminAccessToken, {
       status: 'PAID',
@@ -417,7 +556,9 @@ async function assertWithholdingRemittanceLifecycle({
       closing.remittanceMetadata?.approvedByAdminId !== financeApproverId ||
       closing.remittanceMetadata?.remittedByAdminId !== remittedByAdminId
     ) {
-      throw new Error(`Withholding remittance paid closeout response is incomplete: ${JSON.stringify(closing)}`);
+      throw new Error(
+        `Withholding remittance paid closeout response is incomplete: ${JSON.stringify(closing)}`,
+      );
     }
 
     const remittanceJournalSummary = (
@@ -506,15 +647,52 @@ const patchJson = (path, accessToken, body) =>
     body: JSON.stringify(body),
   });
 
-const postJson = (path, accessToken, body = {}) =>
-  request(path, {
+const postJson = async (path, accessToken, body = {}) => {
+  const response = await request(path, {
     method: 'POST',
     headers: { authorization: `Bearer ${accessToken}` },
     body: JSON.stringify(applyBookingAttemptLocationDefaults(path, body)),
   });
+  apiSmokeBookingTracker.record(path, response);
+  return response;
+};
 
-async function startAndCompleteBooking(bookingId, providerAccessToken) {
-  await postJson(`/provider/bookings/${bookingId}/start`, providerAccessToken);
+function createSmokeUploadBody(contentType, sizeBytes) {
+  const body = Buffer.alloc(sizeBytes);
+  if (contentType === 'image/jpeg') {
+    Buffer.from([0xff, 0xd8, 0xff]).copy(body);
+  } else if (contentType === 'image/png') {
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(body);
+  } else if (contentType === 'image/webp') {
+    body.write('RIFF', 0, 'ascii');
+    body.write('WEBP', 8, 'ascii');
+  } else if (contentType === 'video/mp4') {
+    body.write('ftyp', 4, 'ascii');
+  }
+  return body;
+}
+
+async function completeSmokeUpload(upload, accessToken, sizeBytes) {
+  if (upload.storageMode !== 'placeholder') {
+    const contentType = upload.upload?.headers?.['content-type'] ?? upload.file?.contentType;
+    const uploadUrl = upload.upload?.url;
+    if (!contentType || !uploadUrl) {
+      throw new Error(`Presigned upload contract is incomplete: ${JSON.stringify(upload)}`);
+    }
+    const response = await fetch(new URL(uploadUrl, apiBaseUrl), {
+      method: upload.upload.method ?? 'PUT',
+      headers: upload.upload.headers,
+      body: createSmokeUploadBody(contentType, sizeBytes),
+    });
+    if (!response.ok) {
+      throw new Error(`Storage upload failed: ${response.status} ${await response.text()}`);
+    }
+  }
+
+  return postJson(`/files/${upload.file.id}/complete`, accessToken, { sizeBytes });
+}
+
+async function completeBooking(bookingId, providerAccessToken) {
   return postJson(`/provider/bookings/${bookingId}/complete`, providerAccessToken, {
     lat: 10.7769,
     lng: 106.7009,
@@ -592,11 +770,16 @@ async function assertOperationalPolicyMetadata(accessToken) {
   }
 }
 
-const patchOperationalPolicyValue = (accessToken, key, value) =>
-  patchJson(operationalPolicyPath(key), accessToken, {
+const patchOperationalPolicyValue = async (accessToken, key, value) => {
+  const expectedValue = await getOperationalPolicyValue(accessToken, key);
+  if (expectedValue === value) return;
+
+  await patchJson(operationalPolicyPath(key), accessToken, {
+    expectedValue,
     value,
     reason: `Automated smoke coverage for ${key}`,
   });
+};
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -632,7 +815,7 @@ function assertNegativeWalletBlockResponse(label, message) {
     '"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"',
     '"walletBlocked":true',
     '"marketplaceVisibilityBlocked":false',
-    '"marketplaceJoinBlocked":false',
+    '"marketplaceJoinBlocked":true',
     '"directFirstPickBlocked":false',
     '"alreadyMatchedServiceBlocked":true',
     '"payoutReleaseBlocked":true',
@@ -640,9 +823,9 @@ function assertNegativeWalletBlockResponse(label, message) {
     '"walletSettlementRequired":true',
     '"walletSettlementMethod":"PROVIDER_DEPOSIT_OR_ADMIN_OFFSET"',
     '"walletSettlementReference":"HANDS-WALLET-',
-    '"displayMessage":"Unpaid HANDS fees must be settled before final acceptance or service start."',
-    'Marketplace requests stay visible and participation is allowed',
-    'Final acceptance, service start, and payout release resume',
+    '"displayMessage":"Phí HANDS chưa được thanh toán nên bạn không thể tham gia đặt lịch này."',
+    'Bạn vẫn có thể xem yêu cầu đặt lịch và phản hồi yêu cầu chỉ định trực tiếp',
+    'Quyền tham gia đặt lịch và nhận tiền chi trả',
   ];
   const missingMarkers = requiredMarkers.filter((marker) => !message.includes(marker));
   if (missingMarkers.length) {
@@ -659,7 +842,7 @@ async function approvePartnerBookingReadiness(providerAuth, adminAccessToken, la
   const providerProfileId = providerAuth.user.providerProfile.id;
   await postJson(`/admin/partners/${providerProfileId}/approve`, adminAccessToken);
 
-  let onboarding = await getJson('/provider/onboarding', providerAuth.accessToken);
+  const onboarding = await getJson('/provider/onboarding', providerAuth.accessToken);
   if (onboarding.kyc?.status !== 'APPROVED') {
     const requiredDocumentTypes = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
     const documentPayload = [];
@@ -673,9 +856,7 @@ async function approvePartnerBookingReadiness(providerAuth, adminAccessToken, la
           visibility: 'PRIVATE',
           purpose: 'provider-verification',
         });
-        await postJson(`/files/${upload.file.id}/complete`, providerAuth.accessToken, {
-          sizeBytes: 1024,
-        });
+        await completeSmokeUpload(upload, providerAuth.accessToken, 1024);
         documentPayload.push({ fileId: upload.file.id, type });
       }
     }
@@ -684,13 +865,6 @@ async function approvePartnerBookingReadiness(providerAuth, adminAccessToken, la
       cccdNumber: '000000000000',
       documents: documentPayload,
     });
-    onboarding = await getJson('/provider/onboarding', providerAuth.accessToken);
-    for (const type of requiredDocumentTypes) {
-      const document = onboarding.documents?.find((item) => item.type === type && item.status !== 'APPROVED');
-      if (document) {
-        await postJson(`/admin/partner-documents/${document.id}/approve`, adminAccessToken);
-      }
-    }
     await postJson(`/admin/partners/${providerProfileId}/kyc/approve`, adminAccessToken);
   }
 
@@ -698,7 +872,23 @@ async function approvePartnerBookingReadiness(providerAuth, adminAccessToken, la
   if (ready.kyc?.status !== 'APPROVED') {
     throw new Error(`${label} partner booking readiness setup failed: ${JSON.stringify(ready)}`);
   }
+  assertRequiredKycDocumentsApproved(label, ready);
   return ready;
+}
+
+function assertRequiredKycDocumentsApproved(label, onboarding) {
+  const requiredDocumentTypes = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
+  const unapprovedTypes = requiredDocumentTypes.filter(
+    (type) =>
+      !onboarding.documents?.some((document) => document.type === type && document.status === 'APPROVED'),
+  );
+  if (unapprovedTypes.length > 0) {
+    throw new Error(
+      `${label} overall KYC approval did not approve every required document: ${JSON.stringify({
+        unapprovedTypes,
+      })}`,
+    );
+  }
 }
 
 function firstBookingServiceLine(booking) {
@@ -753,26 +943,13 @@ function assertBookingMatchingWindow(label, booking, expectedMinutes) {
   }
 }
 
+installApiSmokeFailureCleanup();
+
 const health = await request('/health');
 const readiness = await request('/health/ready');
 if (!health.ok || !readiness.ok) {
   throw new Error(`API is not ready: ${JSON.stringify({ health, readiness })}`);
 }
-const externalReadiness = await request('/health/external');
-const expectedExternalCategories = ['mobile', 'supabase', 'maps', 'payments', 'storage', 'sms', 'push'];
-const externalCategories = new Set((externalReadiness.checks ?? []).map((check) => check.category));
-const missingExternalCategories = expectedExternalCategories.filter(
-  (category) => !externalCategories.has(category),
-);
-if (missingExternalCategories.length > 0) {
-  throw new Error(
-    `External readiness is missing categories: ${JSON.stringify({
-      missingExternalCategories,
-      externalReadiness,
-    })}`,
-  );
-}
-
 const customerAuth = await request('/auth/verify-otp', {
   method: 'POST',
   body: JSON.stringify({ phone: '+84900000001', otp: '123456', role: 'CUSTOMER' }),
@@ -849,6 +1026,22 @@ const withdrawalProviderAuth = await request('/auth/verify-otp', {
 });
 
 const adminAuth = await createSmokeAdminAuth();
+const externalReadiness = await request('/health/external', {
+  headers: { authorization: `Bearer ${adminAuth.accessToken}` },
+});
+const expectedExternalCategories = ['mobile', 'supabase', 'maps', 'payments', 'storage', 'sms', 'push'];
+const externalCategories = new Set((externalReadiness.checks ?? []).map((check) => check.category));
+const missingExternalCategories = expectedExternalCategories.filter(
+  (category) => !externalCategories.has(category),
+);
+if (missingExternalCategories.length > 0) {
+  throw new Error(
+    `External readiness is missing categories: ${JSON.stringify({
+      missingExternalCategories,
+      externalReadiness,
+    })}`,
+  );
+}
 const financeApproverAuth = await createSmokeAdminAuth(
   env.API_SMOKE_FINANCE_APPROVER_PHONE ?? '+84900000098',
 );
@@ -905,19 +1098,77 @@ const providerWalletWithdrawalTransferRef = `SMOKE-WITHDRAWAL-${Date.now()}`;
 const providerWalletWithdrawalBankTransferDate = new Date().toISOString();
 const providerWalletWithdrawalEvidenceUrl =
   'https://evidence.example.test/api-smoke/provider-wallet-withdrawal.pdf';
-const providerWalletWithdrawalSameAdminFailure = await expectRequestFailure(
-  'Provider wallet withdrawal paid closeout rejects same-admin approval',
+const providerWalletWithdrawalMissingTransferFailure = await expectRequestFailure(
+  'Provider wallet withdrawal transfer submission requires transfer ref',
   () =>
     patchJson(
       `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
       adminAuth.accessToken,
       {
-        approvalAdminId: adminAuth.user.id,
         attachmentUrl: providerWalletWithdrawalEvidenceUrl,
         bankTransferDate: providerWalletWithdrawalBankTransferDate,
-        status: 'PAID',
+        status: 'BANK_TRANSFER_PENDING',
+      },
+    ),
+  400,
+);
+if (
+  !providerWalletWithdrawalMissingTransferFailure.includes(
+    'Provider wallet withdrawal bank transfer request requires a transfer reference',
+  )
+) {
+  throw new Error(
+    `Provider wallet withdrawal missing transfer guard returned unexpected message: ${providerWalletWithdrawalMissingTransferFailure}`,
+  );
+}
+const providerWalletWithdrawalMissingEvidenceFailure = await expectRequestFailure(
+  'Provider wallet withdrawal transfer submission requires bank evidence',
+  () =>
+    patchJson(
+      `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
+      adminAuth.accessToken,
+      {
+        bankTransferDate: providerWalletWithdrawalBankTransferDate,
+        status: 'BANK_TRANSFER_PENDING',
         transferRef: providerWalletWithdrawalTransferRef,
       },
+    ),
+  400,
+);
+if (
+  !providerWalletWithdrawalMissingEvidenceFailure.includes(
+    'Provider wallet withdrawal bank transfer request requires attached bank evidence',
+  )
+) {
+  throw new Error(
+    `Provider wallet withdrawal missing evidence guard returned unexpected message: ${providerWalletWithdrawalMissingEvidenceFailure}`,
+  );
+}
+const providerWalletWithdrawalPending = await patchJson(
+  `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
+  adminAuth.accessToken,
+  {
+    attachmentUrl: providerWalletWithdrawalEvidenceUrl,
+    bankTransferDate: providerWalletWithdrawalBankTransferDate,
+    adminNote: 'API smoke withdrawal bank transfer pending.',
+    status: 'BANK_TRANSFER_PENDING',
+    transferRef: providerWalletWithdrawalTransferRef,
+  },
+);
+if (providerWalletWithdrawalPending.status !== 'BANK_TRANSFER_PENDING') {
+  throw new Error(
+    `Provider wallet withdrawal request was not moved to bank-transfer pending: ${JSON.stringify(
+      providerWalletWithdrawalPending,
+    )}`,
+  );
+}
+const providerWalletWithdrawalSameAdminFailure = await expectRequestFailure(
+  'Provider wallet withdrawal paid closeout rejects its maker',
+  () =>
+    patchJson(
+      `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
+      adminAuth.accessToken,
+      { status: 'PAID' },
     ),
   400,
 );
@@ -931,18 +1182,12 @@ if (
   );
 }
 const providerWalletWithdrawalNonFinanceFailure = await expectRequestFailure(
-  'Provider wallet withdrawal paid closeout rejects non-finance approver',
+  'Provider wallet withdrawal paid closeout rejects a non-finance operator',
   () =>
     patchJson(
       `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
-      adminAuth.accessToken,
-      {
-        approvalAdminId: nonFinanceAdminAuth.user.id,
-        attachmentUrl: providerWalletWithdrawalEvidenceUrl,
-        bankTransferDate: providerWalletWithdrawalBankTransferDate,
-        status: 'PAID',
-        transferRef: providerWalletWithdrawalTransferRef,
-      },
+      nonFinanceAdminAuth.accessToken,
+      { status: 'PAID' },
     ),
   400,
 );
@@ -956,87 +1201,17 @@ if (
   );
 }
 providerWalletWithdrawalDualApprovalGuardsReady = true;
-const providerWalletWithdrawalMissingTransferFailure = await expectRequestFailure(
-  'Provider wallet withdrawal paid closeout requires transfer ref',
-  () =>
-    patchJson(
-      `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
-      adminAuth.accessToken,
-      {
-        approvalAdminId: financeApproverAuth.user.id,
-        attachmentUrl: providerWalletWithdrawalEvidenceUrl,
-        bankTransferDate: providerWalletWithdrawalBankTransferDate,
-        status: 'PAID',
-      },
-    ),
-  400,
-);
-if (
-  !providerWalletWithdrawalMissingTransferFailure.includes(
-    'Transfer reference is required before marking a withdrawal request paid',
-  )
-) {
-  throw new Error(
-    `Provider wallet withdrawal missing transfer guard returned unexpected message: ${providerWalletWithdrawalMissingTransferFailure}`,
-  );
-}
-const providerWalletWithdrawalMissingEvidenceFailure = await expectRequestFailure(
-  'Provider wallet withdrawal paid closeout requires bank transfer evidence',
-  () =>
-    patchJson(
-      `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
-      adminAuth.accessToken,
-      {
-        approvalAdminId: financeApproverAuth.user.id,
-        bankTransferDate: providerWalletWithdrawalBankTransferDate,
-        status: 'PAID',
-        transferRef: providerWalletWithdrawalTransferRef,
-      },
-    ),
-  400,
-);
-if (
-  !providerWalletWithdrawalMissingEvidenceFailure.includes(
-    'Bank transfer evidence is required before marking a withdrawal request paid',
-  )
-) {
-  throw new Error(
-    `Provider wallet withdrawal missing evidence guard returned unexpected message: ${providerWalletWithdrawalMissingEvidenceFailure}`,
-  );
-}
-const providerWalletWithdrawalPending = await patchJson(
-  `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
-  adminAuth.accessToken,
-  {
-    adminNote: 'API smoke withdrawal bank transfer pending.',
-    status: 'BANK_TRANSFER_PENDING',
-    transferRef: providerWalletWithdrawalTransferRef,
-  },
-);
-if (providerWalletWithdrawalPending.status !== 'BANK_TRANSFER_PENDING') {
-  throw new Error(
-    `Provider wallet withdrawal request was not moved to bank-transfer pending: ${JSON.stringify(
-      providerWalletWithdrawalPending,
-    )}`,
-  );
-}
 const providerWalletWithdrawalPaid = await patchJson(
   `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
-  adminAuth.accessToken,
-  {
-    adminNote: 'API smoke withdrawal paid after manual bank evidence.',
-    approvalAdminId: financeApproverAuth.user.id,
-    attachmentUrl: providerWalletWithdrawalEvidenceUrl,
-    bankTransferDate: providerWalletWithdrawalBankTransferDate,
-    status: 'PAID',
-    transferRef: providerWalletWithdrawalTransferRef,
-  },
+  financeApproverAuth.accessToken,
+  { status: 'PAID' },
 );
 if (
   providerWalletWithdrawalPaid.status !== 'PAID' ||
   providerWalletWithdrawalPaid.transferRef !== providerWalletWithdrawalTransferRef ||
   providerWalletWithdrawalPaid.metadata?.bankPayout?.attachmentUrl !== providerWalletWithdrawalEvidenceUrl ||
-  providerWalletWithdrawalPaid.metadata?.bankPayout?.completedByAdminId !== adminAuth.user.id
+  providerWalletWithdrawalPaid.metadata?.bankPayout?.preparedByAdminId !== adminAuth.user.id ||
+  providerWalletWithdrawalPaid.metadata?.bankPayout?.completedByAdminId !== financeApproverAuth.user.id
 ) {
   throw new Error(
     `Provider wallet withdrawal paid closeout response is incomplete: ${JSON.stringify(
@@ -1716,9 +1891,9 @@ function assertJournalEntry(label, journal, expected) {
     );
   }
 }
-const adminServiceCatalogAfterProviderPriceUpdate = (await getJson('/admin/services', adminAuth.accessToken)).find(
-  (item) => item.id === service.id,
-);
+const adminServiceCatalogAfterProviderPriceUpdate = (
+  await getJson('/admin/services', adminAuth.accessToken)
+).find((item) => item.id === service.id);
 if (
   !adminServiceCatalogAfterProviderPriceUpdate?.payoutRules?.some(
     (rule) => rule.customerPrice === higherCustomerPrice && rule.active,
@@ -1738,12 +1913,17 @@ if ('providers' in (adminServiceCatalogAfterProviderPriceUpdate ?? {})) {
   );
 }
 const couponCode = `smoke${Date.now()}`;
+const couponSmokeStartedAt = new Date(Date.now() - 60_000).toISOString();
+const couponSmokeEndsAt = new Date(Date.now() + 15 * 60_000).toISOString();
 const coupon = await postJson('/admin/coupons', adminAuth.accessToken, {
   code: couponCode,
   description: 'Smoke test checkout discount',
   discount: { type: 'percent', value: 10 },
-  active: true,
+  active: false,
+  startsAt: couponSmokeStartedAt,
+  endsAt: couponSmokeEndsAt,
 });
+await patchJson(`/admin/coupons/${coupon.id}`, adminAuth.accessToken, { active: true });
 const couponPreview = await postJson('/customer/coupons/preview', customerAuth.accessToken, {
   code: couponCode.toLowerCase(),
   serviceId: service.id,
@@ -1764,10 +1944,10 @@ const verificationUpload = await postJson('/files/presign', providerAuth.accessT
   visibility: 'PRIVATE',
   purpose: 'provider-verification',
 });
-const completedVerificationUpload = await postJson(
-  `/files/${verificationUpload.file.id}/complete`,
+const completedVerificationUpload = await completeSmokeUpload(
+  verificationUpload,
   providerAuth.accessToken,
-  { sizeBytes: 2048 },
+  2048,
 );
 if (
   completedVerificationUpload.uploadStatus !== 'UPLOADED' ||
@@ -1848,9 +2028,7 @@ const publicProfileImageUpload = await postJson('/files/presign', providerAuth.a
   visibility: 'PUBLIC',
   purpose: 'profile-image',
 });
-await postJson(`/files/${publicProfileImageUpload.file.id}/complete`, providerAuth.accessToken, {
-  sizeBytes: 4096,
-});
+await completeSmokeUpload(publicProfileImageUpload, providerAuth.accessToken, 4096);
 await postJson(
   `/admin/files/${publicProfileImageUpload.file.id}/approve-public-media`,
   adminAuth.accessToken,
@@ -1860,9 +2038,7 @@ const publicGalleryImageUpload = await postJson('/files/presign', providerAuth.a
   visibility: 'PUBLIC',
   purpose: 'provider-gallery',
 });
-await postJson(`/files/${publicGalleryImageUpload.file.id}/complete`, providerAuth.accessToken, {
-  sizeBytes: 8192,
-});
+await completeSmokeUpload(publicGalleryImageUpload, providerAuth.accessToken, 8192);
 await postJson(
   `/admin/files/${publicGalleryImageUpload.file.id}/approve-public-media`,
   adminAuth.accessToken,
@@ -1881,9 +2057,7 @@ const duplicateKycFileUpload = await postJson('/files/presign', kycNegativeProvi
   visibility: 'PRIVATE',
   purpose: 'provider-verification',
 });
-await postJson(`/files/${duplicateKycFileUpload.file.id}/complete`, kycNegativeProviderAuth.accessToken, {
-  sizeBytes: 1024,
-});
+await completeSmokeUpload(duplicateKycFileUpload, kycNegativeProviderAuth.accessToken, 1024);
 await expectRequestFailure(
   'KYC submit rejects duplicate file ids across document types',
   () =>
@@ -1904,24 +2078,13 @@ for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
     visibility: 'PRIVATE',
     purpose: 'provider-verification',
   });
-  await postJson(`/files/${upload.file.id}/complete`, kycNegativeProviderAuth.accessToken, {
-    sizeBytes: 1024,
-  });
+  await completeSmokeUpload(upload, kycNegativeProviderAuth.accessToken, 1024);
   pendingKycDocumentUploads.push({ fileId: upload.file.id, type });
 }
 await postJson('/provider/onboarding/kyc/submit', kycNegativeProviderAuth.accessToken, {
   cccdNumber: '000000000000',
   documents: pendingKycDocumentUploads,
 });
-await expectRequestFailure(
-  'KYC approve before required documents are approved',
-  () =>
-    postJson(
-      `/admin/partners/${kycNegativeProviderAuth.user.providerProfile.id}/kyc/approve`,
-      adminAuth.accessToken,
-    ),
-  400,
-);
 await postJson(
   `/admin/partners/${kycNegativeProviderAuth.user.providerProfile.id}/approve`,
   adminAuth.accessToken,
@@ -1947,19 +2110,12 @@ const unapprovedKycBookingGateError = await expectRequestFailure(
 if (!unapprovedKycBookingGateError.includes('Partner KYC must be approved')) {
   throw new Error(`KYC booking gate returned the wrong message: ${unapprovedKycBookingGateError}`);
 }
-const pendingKycOnboarding = await getJson('/provider/onboarding', kycNegativeProviderAuth.accessToken);
-for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
-  const document = pendingKycOnboarding.documents.find(
-    (item) => item.type === type && item.status !== 'APPROVED',
-  );
-  if (document) {
-    await postJson(`/admin/partner-documents/${document.id}/approve`, adminAuth.accessToken);
-  }
-}
 await postJson(
   `/admin/partners/${kycNegativeProviderAuth.user.providerProfile.id}/kyc/approve`,
   adminAuth.accessToken,
 );
+const approvedKycOnboarding = await getJson('/provider/onboarding', kycNegativeProviderAuth.accessToken);
+assertRequiredKycDocumentsApproved('KYC booking gate Partner', approvedKycOnboarding);
 const bankDeferredBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   providerId: kycNegativeProviderAuth.user.providerProfile.id,
@@ -1982,23 +2138,16 @@ for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
     visibility: 'PRIVATE',
     purpose: 'provider-verification',
   });
-  await postJson(`/files/${upload.file.id}/complete`, providerAuth.accessToken, { sizeBytes: 1024 });
+  await completeSmokeUpload(upload, providerAuth.accessToken, 1024);
   kycDocumentUploads.push({ fileId: upload.file.id, type });
 }
 await postJson('/provider/onboarding/kyc/submit', providerAuth.accessToken, {
   cccdNumber: '000000000000',
   documents: kycDocumentUploads,
 });
-const kycSubmittedOnboarding = await getJson('/provider/onboarding', providerAuth.accessToken);
-for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
-  const document = kycSubmittedOnboarding.documents.find(
-    (item) => item.type === type && item.status !== 'APPROVED',
-  );
-  if (document) {
-    await postJson(`/admin/partner-documents/${document.id}/approve`, adminAuth.accessToken);
-  }
-}
 await postJson(`/admin/partners/${providerAuth.user.providerProfile.id}/kyc/approve`, adminAuth.accessToken);
+const kycApprovedProviderOnboarding = await getJson('/provider/onboarding', providerAuth.accessToken);
+assertRequiredKycDocumentsApproved('Primary smoke Partner', kycApprovedProviderOnboarding);
 const onboardingBankAccount = await postJson('/provider/onboarding/bank-accounts', providerAuth.accessToken, {
   bankName: 'Vietcombank',
   accountNumber: '000012345678',
@@ -2053,7 +2202,12 @@ const taxPolicyVersions = await getJson('/admin/tax-policy-versions', adminAuth.
 if (!Array.isArray(taxPolicyVersions)) {
   throw new Error(`Tax policy version list did not return an array: ${JSON.stringify(taxPolicyVersions)}`);
 }
+const taxPolicyApproval = {
+  approvalAdminId: financeApproverAuth.user.id,
+  operatorReason: 'API smoke verified tax policy dual-control evidence.',
+};
 const smokeTaxPolicy = await postJson('/admin/tax-policy-versions', adminAuth.accessToken, {
+  ...taxPolicyApproval,
   name: `Smoke withholding ${Date.now()}`,
   status: 'ACTIVE',
   effectiveFrom: new Date(Date.now() - 60_000).toISOString(),
@@ -2063,6 +2217,7 @@ const smokeTaxRule = await postJson(
   `/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`,
   adminAuth.accessToken,
   {
+    ...taxPolicyApproval,
     scope: 'DEFAULT',
     rateBps: 500,
     fixedAmount: 0,
@@ -2073,6 +2228,7 @@ await expectRequestFailure(
   'Duplicate active default tax rule is rejected',
   () =>
     postJson(`/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`, adminAuth.accessToken, {
+      ...taxPolicyApproval,
       scope: 'DEFAULT',
       rateBps: 600,
       fixedAmount: 0,
@@ -2084,6 +2240,7 @@ const smokeAmountBandTaxRule = await postJson(
   `/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`,
   adminAuth.accessToken,
   {
+    ...taxPolicyApproval,
     scope: 'AMOUNT_BAND',
     minGrossAmount: 0,
     maxGrossAmount: 500000,
@@ -2099,6 +2256,7 @@ await expectRequestFailure(
   'Overlapping amount-band tax rule is rejected',
   () =>
     postJson(`/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`, adminAuth.accessToken, {
+      ...taxPolicyApproval,
       scope: 'AMOUNT_BAND',
       minGrossAmount: 400000,
       maxGrossAmount: 600000,
@@ -2109,6 +2267,7 @@ await expectRequestFailure(
   400,
 );
 const updatedSmokeTaxRule = await patchJson(`/admin/tax-rules/${smokeTaxRule.id}`, adminAuth.accessToken, {
+  ...taxPolicyApproval,
   scope: 'DEFAULT',
   rateBps: 500,
   fixedAmount: 0,
@@ -2118,6 +2277,7 @@ if (updatedSmokeTaxRule.active !== false || updatedSmokeTaxRule.rateBps !== 500)
   throw new Error(`Tax rule update failed: ${JSON.stringify(updatedSmokeTaxRule)}`);
 }
 await patchJson(`/admin/tax-rules/${smokeTaxRule.id}`, adminAuth.accessToken, {
+  ...taxPolicyApproval,
   active: true,
 });
 
@@ -2348,8 +2508,14 @@ const farCurrentLocationBookingError = await expectRequestFailure(
     }),
   400,
 );
-if (!farCurrentLocationBookingError.includes("Booking address must be within 50km of the customer's current location")) {
-  throw new Error(`Far customer GPS booking gate returned the wrong message: ${farCurrentLocationBookingError}`);
+if (
+  !farCurrentLocationBookingError.includes(
+    "Booking address must be within 50km of the customer's current location",
+  )
+) {
+  throw new Error(
+    `Far customer GPS booking gate returned the wrong message: ${farCurrentLocationBookingError}`,
+  );
 }
 await postJson('/provider/location', distanceGateProviderAuth.accessToken, {
   lat: 16.0471,
@@ -2371,7 +2537,9 @@ const preferredPartnerDistanceGateError = await expectRequestFailure(
     }),
   400,
 );
-if (!preferredPartnerDistanceGateError.includes('Preferred partner must be within 50km of the booking address')) {
+if (
+  !preferredPartnerDistanceGateError.includes('Preferred partner must be within 50km of the booking address')
+) {
   throw new Error(
     `Preferred partner distance gate returned the wrong message: ${preferredPartnerDistanceGateError}`,
   );
@@ -2463,14 +2631,20 @@ if (
     )}`,
   );
 }
+if ('metadata' in bookingDetail) {
+  throw new Error(
+    `Customer booking detail must not expose internal metadata: ${JSON.stringify(bookingDetail.metadata)}`,
+  );
+}
+const adminBookingGateDetail = await getJson(`/admin/bookings/${booking.id}`, adminAuth.accessToken);
 if (
-  bookingDetail.metadata?.bookingGate?.gatePassed !== true ||
-  bookingDetail.metadata?.bookingGate?.customerToBookingAddressDistanceMeters !== 0 ||
-  bookingDetail.metadata?.bookingGate?.customerDistanceLimitMeters !== 50000
+  adminBookingGateDetail.metadata?.bookingGate?.gatePassed !== true ||
+  adminBookingGateDetail.metadata?.bookingGate?.customerToBookingAddressDistanceMeters !== 0 ||
+  adminBookingGateDetail.metadata?.bookingGate?.customerDistanceLimitMeters !== 50000
 ) {
   throw new Error(
-    `Customer booking detail should expose the booking distance gate snapshot: ${JSON.stringify(
-      bookingDetail.metadata?.bookingGate,
+    `Admin booking detail should expose the booking distance gate snapshot: ${JSON.stringify(
+      adminBookingGateDetail.metadata?.bookingGate,
     )}`,
   );
 }
@@ -2595,7 +2769,7 @@ const preferredAcceptModeBeforeSmoke = await getOperationalPolicyValue(
 await patchOperationalPolicyValue(
   adminAuth.accessToken,
   'matching.preferred_accept_mode',
-  'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+  'FIRST_PICK_MATCHES_ON_ACCEPT',
 );
 try {
   await postJson('/provider/online', preferredAcceptProviderAuth.accessToken);
@@ -2636,7 +2810,11 @@ try {
       ),
     400,
   );
-  if (!preferredBeforeAcceptSelectionError.includes('Partner must participate or accept before customer selection')) {
+  if (
+    !preferredBeforeAcceptSelectionError.includes(
+      'Partner must participate or accept before customer selection',
+    )
+  ) {
     throw new Error(
       `Preferred partner selection before acceptance returned an unexpected error: ${preferredBeforeAcceptSelectionError}`,
     );
@@ -2648,12 +2826,13 @@ try {
   const preferredAcceptPolicyMatchedBooking =
     preferredAcceptPolicyMatched.booking ?? preferredAcceptPolicyMatched;
   if (
-    preferredAcceptPolicyMatched.status !== 'MATCHED' ||
+    preferredAcceptPolicyMatched.status !== 'IN_SERVICE' ||
     preferredAcceptPolicyMatched.matchSource !== 'FIRST_PICK_ACCEPTED_FIRST' ||
-    preferredAcceptPolicyMatchedBooking.selectedProviderId !== preferredAcceptProviderAuth.user.providerProfile.id
+    preferredAcceptPolicyMatchedBooking.selectedProviderId !==
+      preferredAcceptProviderAuth.user.providerProfile.id
   ) {
     throw new Error(
-      `First-pick valid acceptance should match the preferred partner first: ${JSON.stringify(
+      `First-pick valid acceptance should enter service with the preferred partner: ${JSON.stringify(
         preferredAcceptPolicyMatched,
       )}`,
     );
@@ -2700,7 +2879,7 @@ try {
   await patchOperationalPolicyValue(
     adminAuth.accessToken,
     'matching.preferred_accept_mode',
-    preferredAcceptModeBeforeSmoke ?? 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+    preferredAcceptModeBeforeSmoke ?? 'FIRST_PICK_MATCHES_ON_ACCEPT',
   );
 }
 
@@ -2728,9 +2907,10 @@ try {
     paymentMethod: 'CASH',
   });
   const narrowRadiusOpenBookings = await getJson('/provider/bookings/open', backupProviderAuth.accessToken);
-  if (narrowRadiusOpenBookings.some((item) => item.id === narrowRadiusBooking.id)) {
+  const narrowRadiusOpenBooking = narrowRadiusOpenBookings.find((item) => item.id === narrowRadiusBooking.id);
+  if (!narrowRadiusOpenBooking || narrowRadiusOpenBooking.distanceMeters <= 1000) {
     throw new Error(
-      `Narrow marketplace radius should hide far marketplace participant request: ${JSON.stringify(
+      `Public booking list should show the distant request and its distance before participation: ${JSON.stringify(
         narrowRadiusOpenBookings,
       )}`,
     );
@@ -2796,15 +2976,24 @@ try {
       )}`,
     );
   }
-  if (typeof legacyDelayedRequest.distanceMeters !== 'number' || legacyDelayedRequest.distanceMeters > 10000) {
+  if (
+    typeof legacyDelayedRequest.distanceMeters !== 'number' ||
+    legacyDelayedRequest.distanceMeters > 10000
+  ) {
     throw new Error(
       `Legacy delayed marketplace request should keep 10km distance metadata: ${JSON.stringify(
         legacyDelayedRequest,
       )}`,
     );
   }
-  await postJson(`/provider/bookings/${legacyDelayedMarketplaceBooking.id}/join`, backupProviderAuth.accessToken);
-  await postJson(`/provider/bookings/${legacyDelayedMarketplaceBooking.id}/reject`, backupProviderAuth.accessToken);
+  await postJson(
+    `/provider/bookings/${legacyDelayedMarketplaceBooking.id}/join`,
+    backupProviderAuth.accessToken,
+  );
+  await postJson(
+    `/provider/bookings/${legacyDelayedMarketplaceBooking.id}/reject`,
+    backupProviderAuth.accessToken,
+  );
   const rejectedMarketplaceSelectionError = await expectRequestFailure(
     'Customer final selection rejects inactive marketplace participant',
     () =>
@@ -2815,7 +3004,11 @@ try {
       ),
     400,
   );
-  if (!rejectedMarketplaceSelectionError.includes('Partner must participate or accept before customer selection')) {
+  if (
+    !rejectedMarketplaceSelectionError.includes(
+      'Partner must participate or accept before customer selection',
+    )
+  ) {
     throw new Error(
       `Rejected marketplace participant should not be selectable by customer: ${rejectedMarketplaceSelectionError}`,
     );
@@ -2883,14 +3076,10 @@ try {
       adminAuth.accessToken,
     );
     fcmPolicyNotificationCandidate = adminNotifications.find(
-      (item) =>
-        item.type === 'booking.requested' &&
-        item.data?.bookingId === fcmPolicyBooking.id,
+      (item) => item.type === 'booking.requested' && item.data?.bookingId === fcmPolicyBooking.id,
     );
     fcmPolicyNotification =
-      (fcmPolicyNotificationCandidate?.deliveries?.length ?? 0) > 0
-        ? fcmPolicyNotificationCandidate
-        : null;
+      (fcmPolicyNotificationCandidate?.deliveries?.length ?? 0) > 0 ? fcmPolicyNotificationCandidate : null;
     if (fcmPolicyNotification?.deliveries?.some((delivery) => delivery.provider === 'FCM')) {
       break;
     }
@@ -2945,6 +3134,7 @@ if (couponPayment?.amount !== expectedCouponTotal) {
     })}`,
   );
 }
+await patchJson(`/admin/coupons/${coupon.id}`, adminAuth.accessToken, { active: false });
 
 const cancellableMomoBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
@@ -2961,12 +3151,25 @@ if (cancelledMomoBooking.status !== 'CANCELLED' || cancelledMomoBooking.payment?
   throw new Error(`Cancelled booking did not release payment hold: ${JSON.stringify(cancelledMomoBooking)}`);
 }
 if (
-  cancelledMomoBooking.closedByRole !== 'CUSTOMER' ||
-  cancelledMomoBooking.closedReason !== 'customer_cancelled' ||
+  cancelledMomoBooking.cancellation?.reasonCode !== 'CUSTOMER_CANCELLED_BEFORE_MATCH' ||
+  cancelledMomoBooking.cancellation?.paymentOutcome !== 'RELEASED' ||
   !cancelledMomoBooking.closedAt
 ) {
   throw new Error(
-    `Cancelled booking did not record customer closure metadata: ${JSON.stringify(cancelledMomoBooking)}`,
+    `Cancelled booking did not expose the customer-safe cancellation result: ${JSON.stringify(cancelledMomoBooking)}`,
+  );
+}
+const cancelledMomoAdminBooking = await getJson(
+  `/admin/bookings/${cancellableMomoBooking.id}`,
+  adminAuth.accessToken,
+);
+if (
+  cancelledMomoAdminBooking.closedByRole !== 'CUSTOMER' ||
+  cancelledMomoAdminBooking.closedReason !== 'customer_cancelled' ||
+  !cancelledMomoAdminBooking.closedAt
+) {
+  throw new Error(
+    `Cancelled booking did not retain admin closure evidence: ${JSON.stringify(cancelledMomoAdminBooking)}`,
   );
 }
 const cancelledPaymentBeforeSync = await getJson('/admin/payments', adminAuth.accessToken).then((payments) =>
@@ -3021,27 +3224,17 @@ try {
     `/provider/bookings/${afterMatchCancellationBooking.id}/accept`,
     afterMatchCancellationProviderAuth.accessToken,
   );
-  const matchedAfterMatchCancellation =
-    acceptedAfterMatchCancellation.status === 'MATCHED'
-      ? acceptedAfterMatchCancellation
-      : await postJson(
-          `/customer/bookings/${afterMatchCancellationBooking.id}/select-provider`,
-          customerAuth.accessToken,
-          {
-            providerId: afterMatchCancellationProviderAuth.user.providerProfile.id,
-          },
-        );
-  if (matchedAfterMatchCancellation.status !== 'MATCHED') {
+  if (acceptedAfterMatchCancellation.status !== 'IN_SERVICE') {
     throw new Error(
-      `After-match cancellation smoke booking was not matched before cancel: ${JSON.stringify(
-        matchedAfterMatchCancellation,
+      `After-match cancellation smoke booking did not enter service before cancel: ${JSON.stringify(
+        acceptedAfterMatchCancellation,
       )}`,
     );
   }
   const afterMatchCancellationError = await expectRequestFailure(
     'Matched booking customer direct cancel is blocked',
     () => postJson(`/customer/bookings/${afterMatchCancellationBooking.id}/cancel`, customerAuth.accessToken),
-    400,
+    409,
   );
   if (!afterMatchCancellationError.includes('Matched bookings cannot be cancelled directly')) {
     throw new Error(
@@ -3146,7 +3339,9 @@ const expiredCustomerCancelError = await expectRequestFailure(
   400,
 );
 if (!expiredCustomerCancelError.includes('Booking cannot be cancelled in its current state')) {
-  throw new Error(`Expired booking direct cancel returned an unexpected error: ${expiredCustomerCancelError}`);
+  throw new Error(
+    `Expired booking direct cancel returned an unexpected error: ${expiredCustomerCancelError}`,
+  );
 }
 
 await postJson(`/provider/bookings/${booking.id}/join`, providerAuth.accessToken);
@@ -3174,6 +3369,11 @@ const hybridMatched = await postJson(
     providerId: backupProviderAuth.user.providerProfile.id,
   },
 );
+if (hybridMatched.status !== 'IN_SERVICE') {
+  throw new Error(
+    `Marketplace customer selection should enter service immediately: ${JSON.stringify(hybridMatched)}`,
+  );
+}
 
 const walletDebtJoinedBeforeDebtBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
@@ -3226,12 +3426,12 @@ const acceptedWalletDebtBooking = await postJson(
   `/provider/bookings/${walletDebtBooking.id}/accept`,
   walletDebtProviderAuth.accessToken,
 );
-if (acceptedWalletDebtBooking.status !== 'MATCHED') {
-  await postJson(`/customer/bookings/${walletDebtBooking.id}/select-provider`, customerAuth.accessToken, {
-    providerId: walletDebtProviderAuth.user.providerProfile.id,
-  });
+if (acceptedWalletDebtBooking.status !== 'IN_SERVICE') {
+  throw new Error(
+    `Direct acceptance should enter service immediately: ${JSON.stringify(acceptedWalletDebtBooking)}`,
+  );
 }
-await startAndCompleteBooking(walletDebtBooking.id, walletDebtProviderAuth.accessToken);
+await completeBooking(walletDebtBooking.id, walletDebtProviderAuth.accessToken);
 await postJson('/provider/online', walletDebtServiceGateProviderAuth.accessToken);
 await postJson('/provider/location', walletDebtServiceGateProviderAuth.accessToken, {
   lat: 10.7783,
@@ -3249,37 +3449,12 @@ const acceptedWalletDebtServiceGateDebtBooking = await postJson(
   `/provider/bookings/${walletDebtServiceGateDebtBooking.id}/accept`,
   walletDebtServiceGateProviderAuth.accessToken,
 );
-if (acceptedWalletDebtServiceGateDebtBooking.status !== 'MATCHED') {
-  await postJson(
-    `/customer/bookings/${walletDebtServiceGateDebtBooking.id}/select-provider`,
-    customerAuth.accessToken,
-    {
-      providerId: walletDebtServiceGateProviderAuth.user.providerProfile.id,
-    },
+if (acceptedWalletDebtServiceGateDebtBooking.status !== 'IN_SERVICE') {
+  throw new Error(
+    `Direct acceptance should enter service immediately: ${JSON.stringify(acceptedWalletDebtServiceGateDebtBooking)}`,
   );
 }
-await startAndCompleteBooking(walletDebtServiceGateDebtBooking.id, walletDebtServiceGateProviderAuth.accessToken);
-const walletDebtServiceStartGateBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
-  serviceId: service.id,
-  providerId: walletDebtServiceGateProviderAuth.user.providerProfile.id,
-  address: { line1: 'Negative wallet service start smoke flow' },
-  lat: 10.7783,
-  lng: 106.6994,
-  paymentMethod: 'MOMO',
-});
-const acceptedWalletDebtServiceStartGateBooking = await postJson(
-  `/provider/bookings/${walletDebtServiceStartGateBooking.id}/accept`,
-  walletDebtServiceGateProviderAuth.accessToken,
-);
-if (acceptedWalletDebtServiceStartGateBooking.status !== 'MATCHED') {
-  await postJson(
-    `/customer/bookings/${walletDebtServiceStartGateBooking.id}/select-provider`,
-    customerAuth.accessToken,
-    {
-      providerId: walletDebtServiceGateProviderAuth.user.providerProfile.id,
-    },
-  );
-}
+await completeBooking(walletDebtServiceGateDebtBooking.id, walletDebtServiceGateProviderAuth.accessToken);
 const walletDebtProviderNotifications = await getJson('/notifications', walletDebtProviderAuth.accessToken);
 if (
   !walletDebtProviderNotifications.some(
@@ -3304,7 +3479,7 @@ if (
   walletDebtProviderEarningsSummary.walletBalance >= 0 ||
   walletDebtProviderEarningsSummary.walletBlocked !== true ||
   walletDebtProviderEarningsSummary.marketplaceVisibilityBlocked !== false ||
-  walletDebtProviderEarningsSummary.marketplaceJoinBlocked !== false ||
+  walletDebtProviderEarningsSummary.marketplaceJoinBlocked !== true ||
   walletDebtProviderEarningsSummary.directFirstPickBlocked !== false ||
   walletDebtProviderEarningsSummary.alreadyMatchedServiceBlocked !== true ||
   walletDebtProviderEarningsSummary.payoutReleaseBlocked !== true ||
@@ -3343,7 +3518,7 @@ if (
   );
 }
 const expectedProviderWalletBlockReason =
-  'Outstanding HANDS fee settlement must be completed before final acceptance, service start, or payout release.';
+  'Outstanding HANDS fee settlement must be completed before marketplace participation, service start, or payout release.';
 if (walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWalletBlockReason) {
   throw new Error(
     `Negative wallet block reason should be readable and operator-approved: ${JSON.stringify(
@@ -3353,7 +3528,7 @@ if (walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWall
 }
 if (
   walletDebtProviderEarningsSummary.walletBlockDisplayMessage !==
-  'Unpaid HANDS fees must be settled before final acceptance or service start.'
+  'Phí HANDS chưa được thanh toán nên bạn không thể tham gia đặt lịch này.'
 ) {
   throw new Error(
     `Negative wallet summary should include the wallet block display message: ${JSON.stringify(
@@ -3377,22 +3552,19 @@ assertNegativeWalletBlockResponse(
 const negativeWalletMarketplaceSelectionError = await expectRequestFailure(
   'Negative provider wallet blocks customer final selection of marketplace participant',
   () =>
-    postJson(`/customer/bookings/${walletDebtJoinedBeforeDebtBooking.id}/select-provider`, customerAuth.accessToken, {
-      providerId: walletDebtProviderAuth.user.providerProfile.id,
-    }),
-  400,
-);
-assertNegativeWalletBlockResponse('marketplace final selection after debt appears', negativeWalletMarketplaceSelectionError);
-const negativeWalletServiceStartError = await expectRequestFailure(
-  'Negative wallet blocks starting a booking that is already matched',
-  () =>
     postJson(
-      `/provider/bookings/${walletDebtServiceStartGateBooking.id}/start`,
-      walletDebtServiceGateProviderAuth.accessToken,
+      `/customer/bookings/${walletDebtJoinedBeforeDebtBooking.id}/select-provider`,
+      customerAuth.accessToken,
+      {
+        providerId: walletDebtProviderAuth.user.providerProfile.id,
+      },
     ),
   400,
 );
-assertNegativeWalletBlockResponse('already matched service start', negativeWalletServiceStartError);
+assertNegativeWalletBlockResponse(
+  'marketplace final selection after debt appears',
+  negativeWalletMarketplaceSelectionError,
+);
 const blockedOpenMatchingBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   address: { line1: 'Negative wallet open matching smoke flow' },
@@ -3413,39 +3585,25 @@ if (
   negativeWalletVisibleMarketplaceBooking.distanceMeters > 10000
 ) {
   throw new Error(
-    `Negative wallet partner should still see marketplace request before settlement and can join before final acceptance: ${JSON.stringify(
-      {
-        expectedBookingId: blockedOpenMatchingBooking.id,
-        visibleBooking: negativeWalletVisibleMarketplaceBooking,
-        sample: negativeWalletVisibleMarketplaceBookings[0],
-      },
-    )}`,
+    `Negative wallet partner should still see marketplace request before settlement: ${JSON.stringify({
+      expectedBookingId: blockedOpenMatchingBooking.id,
+      visibleBooking: negativeWalletVisibleMarketplaceBooking,
+      sample: negativeWalletVisibleMarketplaceBookings[0],
+    })}`,
   );
 }
-await postJson(
-  `/provider/bookings/${blockedOpenMatchingBooking.id}/join`,
-  walletDebtProviderAuth.accessToken,
+const negativeWalletMarketplaceJoinError = await expectRequestFailure(
+  'Negative wallet marketplace join is blocked before settlement',
+  () =>
+    postJson(`/provider/bookings/${blockedOpenMatchingBooking.id}/join`, walletDebtProviderAuth.accessToken),
+  400,
 );
-const adminBookingAfterBlockedMarketplaceJoin = (
-  await getJson('/admin/bookings', adminAuth.accessToken)
-).find((booking) => booking.id === blockedOpenMatchingBooking.id);
-const blockedMarketplaceParticipant =
-  adminBookingAfterBlockedMarketplaceJoin?.participants?.find(
-    (participant) =>
-      participant.providerProfileId === walletDebtProviderAuth.user.providerProfile.id,
-  );
-if (!blockedMarketplaceParticipant || blockedMarketplaceParticipant.status !== 'JOINED') {
-  throw new Error(
-    `Negative wallet marketplace join should create a participant record before final acceptance: ${JSON.stringify(
-      blockedMarketplaceParticipant,
-    )}`,
-  );
-}
+assertNegativeWalletBlockResponse('marketplace join before settlement', negativeWalletMarketplaceJoinError);
 const directAcceptedWithDebt = await postJson(
   `/provider/bookings/${blockedDirectBooking.id}/accept`,
   walletDebtProviderAuth.accessToken,
 );
-if (!['OPEN_MATCHING', 'MATCHED'].includes(directAcceptedWithDebt.status)) {
+if (directAcceptedWithDebt.status !== 'IN_SERVICE') {
   throw new Error(
     `Negative wallet should not block preferred direct request acceptance: ${JSON.stringify(directAcceptedWithDebt)}`,
   );
@@ -3655,9 +3813,8 @@ if (
   );
 }
 if (
-  cashDebtDepositDetail.auditLogs?.filter(
-    (log) => log.action === 'partner_bank_deposit.cash_debt_allocate',
-  ).length !== 1
+  cashDebtDepositDetail.auditLogs?.filter((log) => log.action === 'partner_bank_deposit.cash_debt_allocate')
+    .length !== 1
 ) {
   throw new Error(
     `Cash fee deposit allocation audit evidence was not visible: ${JSON.stringify(
@@ -3675,9 +3832,7 @@ if (settledCashDebtEarning?.settlementRef !== cashDebtSettlementRef) {
   );
 }
 if (settledCashDebtEarning?.settlementMethod !== 'PARTNER_DEPOSIT') {
-  throw new Error(
-    `Cash fee settlement method was not persisted: ${JSON.stringify(settledCashDebtEarning)}`,
-  );
+  throw new Error(`Cash fee settlement method was not persisted: ${JSON.stringify(settledCashDebtEarning)}`);
 }
 const cashDebtSettlementLedger = settledCashDebtEarning.walletLedgerEntries?.find(
   (entry) => entry.type === 'CASH_FEE_DEBT_SETTLED',
@@ -3707,13 +3862,14 @@ if (
     )}`,
   );
 }
-if (directAcceptedWithDebt.status === 'OPEN_MATCHING') {
-  await postJson(`/provider/bookings/${blockedDirectBooking.id}/accept`, walletDebtProviderAuth.accessToken);
-}
-
 const matched = await postJson(`/customer/bookings/${booking.id}/select-provider`, customerAuth.accessToken, {
   providerId: providerAuth.user.providerProfile.id,
 });
+if (matched.status !== 'IN_SERVICE') {
+  throw new Error(
+    `Marketplace customer selection should enter service immediately: ${JSON.stringify(matched)}`,
+  );
+}
 
 const customerBookings = await getJson('/customer/bookings', customerAuth.accessToken);
 const providerBookings = await getJson('/provider/bookings', providerAuth.accessToken);
@@ -3746,9 +3902,13 @@ if (!repairedMatchedChatDetail.auditLogs?.some((log) => log.action === 'booking.
 const partnerResponseAfterMatchError = await expectRequestFailure(
   'Partner response after matching is blocked',
   () => postJson(`/provider/bookings/${booking.id}/reject`, providerAuth.accessToken),
-  400,
+  409,
 );
-if (!partnerResponseAfterMatchError.includes('Booking is not open for partner responses')) {
+if (
+  !partnerResponseAfterMatchError.includes(
+    'Booking is already matched or no longer open for partner response',
+  )
+) {
   throw new Error(
     `Partner response after matching returned an unexpected error: ${partnerResponseAfterMatchError}`,
   );
@@ -3768,23 +3928,7 @@ const chatMessage = await postJson(`/chat/rooms/${chatRoomId}/messages`, custome
   body: 'Hello, see you soon.',
 });
 
-const completeBeforeStartError = await expectRequestFailure(
-  'Partner cannot complete before service start',
-  () =>
-    postJson(`/provider/bookings/${booking.id}/complete`, providerAuth.accessToken, {
-      lat: 10.7769,
-      lng: 106.7009,
-      addressText: 'District 1, Ho Chi Minh City',
-    }),
-  400,
-);
-if (!completeBeforeStartError.includes('Invalid booking status transition from MATCHED')) {
-  throw new Error(
-    `Completing before service start returned an unexpected error: ${completeBeforeStartError}`,
-  );
-}
-
-await startAndCompleteBooking(booking.id, providerAuth.accessToken);
+await completeBooking(booking.id, providerAuth.accessToken);
 
 const completedAdminChatDetail = await getJson(`/admin/bookings/${booking.id}`, adminAuth.accessToken);
 if (
@@ -3960,10 +4104,9 @@ const completedSettlementSnapshotDetail = await getJson(
   `/admin/booking-settlement-snapshots/${completedSettlementSnapshot.id}`,
   adminAuth.accessToken,
 );
-const completedSettlementJournalSummary =
-  completedSettlementSnapshotDetail.accountingJournalBatches?.find(
-    (journal) => journal.sourceType === 'BOOKING_SETTLEMENT' && journal.status === 'POSTED',
-  );
+const completedSettlementJournalSummary = completedSettlementSnapshotDetail.accountingJournalBatches?.find(
+  (journal) => journal.sourceType === 'BOOKING_SETTLEMENT' && journal.status === 'POSTED',
+);
 if (
   !completedSettlementJournalSummary ||
   completedSettlementJournalSummary.totalDebit !== completedSettlementJournalSummary.totalCredit
@@ -4048,7 +4191,7 @@ if (!manualWalletLegacyBypassFailure.includes(`request ${manualWalletLegacyBypas
 const manualWalletAdjustmentRequest = await postJson(
   '/admin/wallet-adjustment-requests',
   adminAuth.accessToken,
-  manualWalletAdjustmentPayload,
+  { ...manualWalletAdjustmentPayload, idempotencyKey: randomUUID() },
 );
 if (
   manualWalletAdjustmentRequest.status !== 'REQUESTED' ||
@@ -4072,7 +4215,9 @@ const manualWalletSameAdminFailure = await expectRequestFailure(
     ),
   400,
 );
-if (!manualWalletSameAdminFailure.includes('Manual wallet adjustment requires approval from a different admin')) {
+if (
+  !manualWalletSameAdminFailure.includes('Manual wallet adjustment requires approval from a different admin')
+) {
   throw new Error(
     `Manual wallet adjustment same-admin guard returned unexpected message: ${manualWalletSameAdminFailure}`,
   );
@@ -4087,7 +4232,11 @@ const manualWalletNonFinanceFailure = await expectRequestFailure(
     ),
   400,
 );
-if (!manualWalletNonFinanceFailure.includes('Manual wallet adjustment requires approval from a finance approver')) {
+if (
+  !manualWalletNonFinanceFailure.includes(
+    'Manual wallet adjustment requires approval from a finance approver',
+  )
+) {
   throw new Error(
     `Manual wallet adjustment non-finance guard returned unexpected message: ${manualWalletNonFinanceFailure}`,
   );
@@ -4142,8 +4291,7 @@ const manualWalletAdjustmentRows = await getJson(
 );
 const manualWalletAdjustmentRow = manualWalletAdjustmentRows.find(
   (row) =>
-    row.id === manualWalletAdjustmentResult.ledger.id &&
-    row.approvalId === manualWalletAdjustmentApprovalId,
+    row.id === manualWalletAdjustmentResult.ledger.id && row.approvalId === manualWalletAdjustmentApprovalId,
 );
 if (
   !manualWalletAdjustmentRow ||
@@ -4188,6 +4336,209 @@ assertJournalEntry('Manual wallet adjustment journal', manualWalletAdjustmentJou
   amount: manualWalletAdjustmentAmount,
   side: 'CREDIT',
 });
+const companyBankAccountLifecycleSeed = Date.now();
+const companyBankAccountLifecycleName = `Smoke staged account ${companyBankAccountLifecycleSeed}`;
+const companyBankAccountLifecycleUpdatedName = `${companyBankAccountLifecycleName} approved`;
+const companyBankAccountLifecycleRequest = await postJson(
+  '/admin/company-bank-accounts',
+  adminAuth.accessToken,
+  {
+    accountNumberLast4: String(companyBankAccountLifecycleSeed % 10000).padStart(4, '0'),
+    accountNumberMasked: `****${String(companyBankAccountLifecycleSeed % 10000).padStart(4, '0')}`,
+    bankName: `Smoke lifecycle bank ${companyBankAccountLifecycleSeed}`,
+    currency: 'VND',
+    name: companyBankAccountLifecycleName,
+    operatorReason: 'Reviewed staged company bank account ownership evidence.',
+  },
+);
+const companyBankAccountCreateApproval = companyBankAccountLifecycleRequest.metadata?.pendingApproval;
+if (
+  companyBankAccountLifecycleRequest.status !== 'INACTIVE' ||
+  companyBankAccountCreateApproval?.operation !== 'CREATE' ||
+  companyBankAccountCreateApproval?.requestedByAdminId !== adminAuth.user.id ||
+  !companyBankAccountCreateApproval?.requestId
+) {
+  throw new Error(
+    `Company bank account create did not stage inactive maker evidence: ${JSON.stringify(
+      companyBankAccountLifecycleRequest,
+    )}`,
+  );
+}
+const companyBankAccountMakerQueue = await getJson(
+  '/admin/finance-approval-queue?take=25',
+  adminAuth.accessToken,
+);
+const companyBankAccountMakerQueueRequest = companyBankAccountMakerQueue.companyBankAccountRequests?.find(
+  (request) => request.requestId === companyBankAccountCreateApproval.requestId,
+);
+if (
+  companyBankAccountMakerQueue.summary?.companyBankAccountPendingCount < 1 ||
+  companyBankAccountMakerQueueRequest?.reviewState !== 'BLOCKED'
+) {
+  throw new Error(
+    `Company bank account request was not blocked for its maker in the central approval queue: ${JSON.stringify(
+      companyBankAccountMakerQueue,
+    )}`,
+  );
+}
+const companyBankAccountFinanceOverview = await getJson(
+  '/admin/finance-overview?range=today',
+  adminAuth.accessToken,
+);
+const companyBankAccountStartShift = await getJson(
+  '/admin/dashboard/start-shift-summary?dateRange=today',
+  adminAuth.accessToken,
+);
+if (
+  companyBankAccountFinanceOverview.companyBankAccountApprovalSummary?.pendingCount < 1 ||
+  companyBankAccountStartShift.financeReviewWorkload?.companyBankAccounts?.pendingCount < 1
+) {
+  throw new Error(
+    `Company bank account approval request was missing from Finance command summaries: ${JSON.stringify({
+      financeOverview: companyBankAccountFinanceOverview.companyBankAccountApprovalSummary,
+      startShift: companyBankAccountStartShift.financeReviewWorkload?.companyBankAccounts,
+    })}`,
+  );
+}
+const companyBankAccountApproverQueue = await getJson(
+  '/admin/finance-approval-queue?take=25',
+  financeApproverAuth.accessToken,
+);
+const companyBankAccountApproverQueueRequest =
+  companyBankAccountApproverQueue.companyBankAccountRequests?.find(
+    (request) => request.requestId === companyBankAccountCreateApproval.requestId,
+  );
+if (
+  companyBankAccountApproverQueueRequest?.reviewState !== 'READY' ||
+  companyBankAccountApproverQueueRequest?.proposed?.name !== companyBankAccountLifecycleName
+) {
+  throw new Error(
+    `Company bank account request was not ready for a different approver in the central queue: ${JSON.stringify(
+      companyBankAccountApproverQueue,
+    )}`,
+  );
+}
+const companyBankAccountSelfApprovalFailure = await expectRequestFailure(
+  'Company bank account approval rejects the request maker',
+  () =>
+    postJson(
+      `/admin/company-bank-accounts/${companyBankAccountLifecycleRequest.id}/approval-decision`,
+      adminAuth.accessToken,
+      {
+        decision: 'APPROVE',
+        operatorReason: 'Attempting to approve the same operator request.',
+        requestId: companyBankAccountCreateApproval.requestId,
+      },
+    ),
+  400,
+);
+if (!companyBankAccountSelfApprovalFailure.includes('requires a different Finance approver')) {
+  throw new Error(
+    `Company bank account self-approval guard returned unexpected message: ${companyBankAccountSelfApprovalFailure}`,
+  );
+}
+const companyBankAccountCreated = await postJson(
+  `/admin/company-bank-accounts/${companyBankAccountLifecycleRequest.id}/approval-decision`,
+  financeApproverAuth.accessToken,
+  {
+    decision: 'APPROVE',
+    operatorReason: 'Verified staged account ownership and import purpose.',
+    requestId: companyBankAccountCreateApproval.requestId,
+  },
+);
+if (companyBankAccountCreated.status !== 'ACTIVE' || companyBankAccountCreated.metadata?.pendingApproval) {
+  throw new Error(
+    `Company bank account create approval did not activate exact proposal: ${JSON.stringify(
+      companyBankAccountCreated,
+    )}`,
+  );
+}
+const companyBankAccountQueueAfterApproval = await getJson(
+  '/admin/finance-approval-queue?take=25',
+  financeApproverAuth.accessToken,
+);
+if (
+  companyBankAccountQueueAfterApproval.companyBankAccountRequests?.some(
+    (request) => request.requestId === companyBankAccountCreateApproval.requestId,
+  )
+) {
+  throw new Error('Approved company bank account request remained in the central approval queue');
+}
+const companyBankAccountUpdateRequest = await patchJson(
+  `/admin/company-bank-accounts/${companyBankAccountLifecycleRequest.id}`,
+  adminAuth.accessToken,
+  {
+    name: companyBankAccountLifecycleUpdatedName,
+    operatorReason: 'Reviewed staged company bank account display name change.',
+  },
+);
+const companyBankAccountUpdateApproval = companyBankAccountUpdateRequest.metadata?.pendingApproval;
+if (
+  companyBankAccountUpdateRequest.name !== companyBankAccountLifecycleName ||
+  companyBankAccountUpdateApproval?.operation !== 'UPDATE' ||
+  companyBankAccountUpdateApproval?.proposed?.name !== companyBankAccountLifecycleUpdatedName
+) {
+  throw new Error(
+    `Company bank account update changed managed fields before approval: ${JSON.stringify(
+      companyBankAccountUpdateRequest,
+    )}`,
+  );
+}
+const companyBankAccountUpdated = await postJson(
+  `/admin/company-bank-accounts/${companyBankAccountLifecycleRequest.id}/approval-decision`,
+  financeApproverAuth.accessToken,
+  {
+    decision: 'APPROVE',
+    operatorReason: 'Verified the staged account display name change.',
+    requestId: companyBankAccountUpdateApproval.requestId,
+  },
+);
+if (
+  companyBankAccountUpdated.name !== companyBankAccountLifecycleUpdatedName ||
+  companyBankAccountUpdated.metadata?.pendingApproval
+) {
+  throw new Error(
+    `Company bank account update approval did not apply exact proposal: ${JSON.stringify(
+      companyBankAccountUpdated,
+    )}`,
+  );
+}
+const companyBankAccountStatusRequest = await patchJson(
+  `/admin/company-bank-accounts/${companyBankAccountLifecycleRequest.id}`,
+  adminAuth.accessToken,
+  {
+    operatorReason: 'Archive completed staged account lifecycle smoke evidence.',
+    status: 'INACTIVE',
+  },
+);
+const companyBankAccountStatusApproval = companyBankAccountStatusRequest.metadata?.pendingApproval;
+if (
+  companyBankAccountStatusRequest.status !== 'ACTIVE' ||
+  companyBankAccountStatusApproval?.proposed?.status !== 'INACTIVE'
+) {
+  throw new Error(
+    `Company bank account status changed before approval: ${JSON.stringify(companyBankAccountStatusRequest)}`,
+  );
+}
+const companyBankAccountArchived = await postJson(
+  `/admin/company-bank-accounts/${companyBankAccountLifecycleRequest.id}/approval-decision`,
+  financeApproverAuth.accessToken,
+  {
+    decision: 'APPROVE',
+    operatorReason: 'Verified the staged account archive request.',
+    requestId: companyBankAccountStatusApproval.requestId,
+  },
+);
+if (
+  companyBankAccountArchived.status !== 'INACTIVE' ||
+  companyBankAccountArchived.metadata?.pendingApproval
+) {
+  throw new Error(
+    `Company bank account status approval did not archive exact proposal: ${JSON.stringify(
+      companyBankAccountArchived,
+    )}`,
+  );
+}
 const smokeCompanyBankAccount = await ensureSmokeCompanyBankAccount();
 const bankReconciliationTransferRef = `SMOKE-BANK-${Date.now()}`;
 const completedPaymentClearingCurrency = completedPaymentClearingEntry.currency ?? 'VND';
@@ -4195,7 +4546,6 @@ const smokeBankTransaction = await postJson(
   '/admin/bank-reconciliation/transactions',
   adminAuth.accessToken,
   {
-    approvalAdminId: financeApproverAuth.user.id,
     amount: completedPaymentClearingEntry.amount,
     bankAccountId: smokeCompanyBankAccount.id,
     confirmPotentialDuplicate: true,
@@ -4214,13 +4564,29 @@ if (
   smokeBankTransaction.amount !== completedPaymentClearingEntry.amount ||
   smokeBankTransaction.transferRef !== bankReconciliationTransferRef
 ) {
-  throw new Error(`Manual bank transaction import did not return an unmatched row: ${JSON.stringify(smokeBankTransaction)}`);
+  throw new Error(
+    `Manual bank transaction import did not return an unmatched row: ${JSON.stringify(smokeBankTransaction)}`,
+  );
+}
+const smokeBankReconciliationAssignment = await postJson(
+  `/admin/bank-reconciliation/${smokeBankTransaction.id}/review-assignment`,
+  adminAuth.accessToken,
+  {
+    assigneeAdminId: adminAuth.user.id,
+    reason: 'API smoke assigned bank reconciliation evidence review.',
+  },
+);
+if (smokeBankReconciliationAssignment.assignee?.id !== adminAuth.user.id) {
+  throw new Error(
+    `Bank reconciliation review owner assignment failed: ${JSON.stringify(
+      smokeBankReconciliationAssignment,
+    )}`,
+  );
 }
 const smokeBankReconciliationMatch = await postJson(
   `/admin/bank-reconciliation/${smokeBankTransaction.id}/matches`,
-  adminAuth.accessToken,
+  financeApproverAuth.accessToken,
   {
-    approvalAdminId: financeApproverAuth.user.id,
     amount: completedPaymentClearingEntry.amount,
     currency: completedPaymentClearingCurrency,
     notes: 'API smoke payment clearing match.',
@@ -4263,9 +4629,8 @@ if (
 }
 const smokeBankReconciliationReverse = await postJson(
   `/admin/bank-reconciliation/${smokeBankTransaction.id}/matches/${smokeBankReconciliationMatch.match.id}/reverse`,
-  adminAuth.accessToken,
+  financeApproverAuth.accessToken,
   {
-    approvalAdminId: financeApproverAuth.user.id,
     reason: 'API smoke reversal after confirming reconciliation match.',
   },
 );
@@ -4279,6 +4644,95 @@ if (
   throw new Error(
     `Bank reconciliation reversal did not reopen the bank and payment clearing rows: ${JSON.stringify(
       smokeBankReconciliationReverse,
+    )}`,
+  );
+}
+const smokeBankBatchSeed = Date.now();
+const smokeBankBatchAmount = 1_000_000_000 + (smokeBankBatchSeed % 1_000_000_000);
+const smokeBankBatchTransferRef = `SMOKE-BANK-BATCH-${smokeBankBatchSeed}`;
+const smokeBankBatchOccurredAt = new Date().toISOString();
+const smokeBankBatchRows = [
+  {
+    amount: String(smokeBankBatchAmount),
+    bankAccountId: smokeCompanyBankAccount.id,
+    counterpartyName: `HANDS batch smoke ${smokeBankBatchSeed}`,
+    description: 'Reviewed batch evidence for staged reconciliation smoke.',
+    occurredAt: smokeBankBatchOccurredAt,
+    rowNumber: 1,
+    transferRef: smokeBankBatchTransferRef,
+    type: 'INFLOW',
+    valueDate: smokeBankBatchOccurredAt,
+  },
+];
+const smokeBankBatchPreview = await postJson(
+  '/admin/bank-reconciliation/transactions/batch-preview',
+  adminAuth.accessToken,
+  { rows: smokeBankBatchRows },
+);
+if (smokeBankBatchPreview.summary?.new !== 1 || smokeBankBatchPreview.rows?.[0]?.classification !== 'NEW') {
+  throw new Error(
+    `Bank statement batch preview did not classify unique evidence as new: ${JSON.stringify(
+      smokeBankBatchPreview,
+    )}`,
+  );
+}
+const smokeBankBatchImport = await postJson(
+  '/admin/bank-reconciliation/transactions/batch-import',
+  adminAuth.accessToken,
+  {
+    mappingPreset: 'GENERIC',
+    operatorReason: 'Reviewed unique batch bank evidence before importing.',
+    rows: smokeBankBatchRows,
+    sourceFileName: 'api-smoke-bank-statement.csv',
+    sourceFileSha256: smokeBankBatchSeed.toString(16).padStart(64, '0'),
+  },
+);
+const smokeBankBatchTransactionId = smokeBankBatchImport.results?.[0]?.transactionId;
+if (
+  smokeBankBatchImport.importedCount !== 1 ||
+  smokeBankBatchImport.skippedCount !== 0 ||
+  !smokeBankBatchTransactionId
+) {
+  throw new Error(`Bank statement batch import failed: ${JSON.stringify(smokeBankBatchImport)}`);
+}
+const smokeBankBatchDetail = await getJson(
+  `/admin/bank-reconciliation/${smokeBankBatchTransactionId}`,
+  adminAuth.accessToken,
+);
+if (
+  smokeBankBatchDetail.status !== 'UNMATCHED' ||
+  smokeBankBatchDetail.creationEvidence?.importedByAdminId !== adminAuth.user.id ||
+  smokeBankBatchDetail.creationEvidence?.approvalAdminId
+) {
+  throw new Error(
+    `Bank statement batch evidence did not retain maker-only import provenance: ${JSON.stringify(
+      smokeBankBatchDetail,
+    )}`,
+  );
+}
+await postJson(
+  `/admin/bank-reconciliation/${smokeBankBatchTransactionId}/review-assignment`,
+  adminAuth.accessToken,
+  {
+    assigneeAdminId: adminAuth.user.id,
+    reason: 'API smoke assigned batch bank evidence reconciliation review.',
+  },
+);
+const smokeBankBatchIgnore = await postJson(
+  `/admin/bank-reconciliation/${smokeBankBatchTransactionId}/ignore`,
+  financeApproverAuth.accessToken,
+  {
+    reason: 'API smoke closes synthetic batch evidence after lifecycle verification.',
+  },
+);
+if (
+  smokeBankBatchIgnore.bankTransaction?.status !== 'IGNORED' ||
+  smokeBankBatchIgnore.auditLog?.actorId !== financeApproverAuth.user.id ||
+  smokeBankBatchIgnore.auditLog?.metadata?.reviewOwnerAdminId !== adminAuth.user.id
+) {
+  throw new Error(
+    `Bank statement batch evidence did not close with separated review and approval: ${JSON.stringify(
+      smokeBankBatchIgnore,
     )}`,
   );
 }
@@ -4386,22 +4840,12 @@ const acceptedDirectCustomPrice = await postJson(
   `/provider/bookings/${directCustomPriceBooking.id}/accept`,
   providerAuth.accessToken,
 );
-const matchedDirectCustomPrice =
-  acceptedDirectCustomPrice.status === 'MATCHED'
-    ? acceptedDirectCustomPrice
-    : await postJson(
-        `/customer/bookings/${directCustomPriceBooking.id}/select-provider`,
-        customerAuth.accessToken,
-        {
-          providerId: providerAuth.user.providerProfile.id,
-        },
-      );
-if (matchedDirectCustomPrice.status !== 'MATCHED') {
+if (acceptedDirectCustomPrice.status !== 'IN_SERVICE') {
   throw new Error(
-    `Custom-price direct booking did not match the selected partner: ${JSON.stringify(matchedDirectCustomPrice)}`,
+    `Custom-price direct booking did not enter service with the selected partner: ${JSON.stringify(acceptedDirectCustomPrice)}`,
   );
 }
-await startAndCompleteBooking(directCustomPriceBooking.id, providerAuth.accessToken);
+await completeBooking(directCustomPriceBooking.id, providerAuth.accessToken);
 const customPriceCloseout = await postJson(
   `/admin/bookings/${directCustomPriceBooking.id}/closeout`,
   adminAuth.accessToken,
@@ -4516,6 +4960,11 @@ if (!payoutBatch.withholdingLogs?.length) {
   throw new Error(`Draft payout batch should include withholding logs: ${JSON.stringify(payoutBatch)}`);
 }
 const payoutBatchUpdate = await patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken, {
+  confirmationPayoutBatchId: payoutBatch.id,
+  expectedStatus: payoutBatch.status,
+  expectedTransferRef: payoutBatch.transferRef,
+  expectedNotes: payoutBatch.notes,
+  reason: 'API smoke updates reviewed payout transfer evidence.',
   transferRef: `${payoutBatch.transferRef}-UPDATED`,
   notes: 'Updated by smoke test',
 });
@@ -4523,49 +4972,31 @@ if (payoutBatchUpdate.transferRef !== `${payoutBatch.transferRef}-UPDATED`) {
   throw new Error(`Payout batch transfer reference was not updated: ${JSON.stringify(payoutBatchUpdate)}`);
 }
 await patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken, {
-  transferRef: '',
+  confirmationPayoutBatchId: payoutBatch.id,
+  expectedStatus: payoutBatchUpdate.status,
+  expectedTransferRef: payoutBatchUpdate.transferRef,
+  expectedNotes: payoutBatchUpdate.notes,
+  reason: 'API smoke verifies missing payout transfer reference guard.',
+  transferRef: null,
   notes: 'Missing transfer reference guard',
 });
 await expectRequestFailure(
-  'Payout paid status requires transfer reference',
+  'Payout processing requires transfer reference',
   () =>
     patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken, {
-      status: 'PAID',
+      status: 'PROCESSING',
     }),
   400,
 );
 await patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken, {
+  confirmationPayoutBatchId: payoutBatch.id,
+  expectedStatus: 'DRAFT',
+  expectedTransferRef: null,
+  expectedNotes: 'Missing transfer reference guard',
+  reason: 'API smoke restores reviewed payout transfer evidence.',
   transferRef: payoutBatchUpdate.transferRef,
   notes: 'Updated by smoke test',
 });
-let payoutBatchDualApprovalGuardsReady = false;
-const payoutBatchSameAdminFailure = await expectRequestFailure(
-  'Payout batch paid closeout rejects same-admin approval',
-  () =>
-    patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken, {
-      approvalAdminId: adminAuth.user.id,
-      status: 'PAID',
-      transferRef: payoutBatchUpdate.transferRef,
-    }),
-  400,
-);
-if (!payoutBatchSameAdminFailure.includes('Payout batch paid closeout requires approval from a different admin')) {
-  throw new Error(`Payout batch same-admin guard returned unexpected message: ${payoutBatchSameAdminFailure}`);
-}
-const payoutBatchNonFinanceFailure = await expectRequestFailure(
-  'Payout batch paid closeout rejects non-finance approver',
-  () =>
-    patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken, {
-      approvalAdminId: nonFinanceAdminAuth.user.id,
-      status: 'PAID',
-      transferRef: payoutBatchUpdate.transferRef,
-    }),
-  400,
-);
-if (!payoutBatchNonFinanceFailure.includes('Payout batch paid closeout requires approval from a finance approver')) {
-  throw new Error(`Payout batch non-finance guard returned unexpected message: ${payoutBatchNonFinanceFailure}`);
-}
-payoutBatchDualApprovalGuardsReady = true;
 const payoutBatchProcessing = await patchJson(
   `/admin/payout-batches/${payoutBatch.id}`,
   adminAuth.accessToken,
@@ -4578,11 +5009,47 @@ if (payoutBatchProcessing.status !== 'PROCESSING' || payoutBatchProcessing.paidA
     `Payout batch should move to processing without paidAt: ${JSON.stringify(payoutBatchProcessing)}`,
   );
 }
-const payoutBatchPaid = await patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken, {
-  approvalAdminId: financeApproverAuth.user.id,
-  status: 'PAID',
-  transferRef: payoutBatchUpdate.transferRef,
-});
+let payoutBatchDualApprovalGuardsReady = false;
+const payoutBatchSameAdminFailure = await expectRequestFailure(
+  'Payout batch paid closeout rejects same-admin approval',
+  () =>
+    patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken, {
+      status: 'PAID',
+    }),
+  400,
+);
+if (
+  !payoutBatchSameAdminFailure.includes('Payout batch paid closeout requires approval from a different admin')
+) {
+  throw new Error(
+    `Payout batch same-admin guard returned unexpected message: ${payoutBatchSameAdminFailure}`,
+  );
+}
+const payoutBatchNonFinanceFailure = await expectRequestFailure(
+  'Payout batch paid closeout rejects non-finance approver',
+  () =>
+    patchJson(`/admin/payout-batches/${payoutBatch.id}`, nonFinanceAdminAuth.accessToken, {
+      status: 'PAID',
+    }),
+  400,
+);
+if (
+  !payoutBatchNonFinanceFailure.includes(
+    'Payout batch paid closeout requires approval from a finance approver',
+  )
+) {
+  throw new Error(
+    `Payout batch non-finance guard returned unexpected message: ${payoutBatchNonFinanceFailure}`,
+  );
+}
+payoutBatchDualApprovalGuardsReady = true;
+const payoutBatchPaid = await patchJson(
+  `/admin/payout-batches/${payoutBatch.id}`,
+  financeApproverAuth.accessToken,
+  {
+    status: 'PAID',
+  },
+);
 if (
   payoutBatchPaid.status !== 'PAID' ||
   !payoutBatchPaid.paidAt ||
@@ -4824,10 +5291,13 @@ const releasedMomo = momoPayment
 const capturedCash = couponPayment
   ? await postJson(`/admin/payments/${couponPayment.id}/capture`, adminAuth.accessToken)
   : null;
-const refund = payment
-  ? await postJson(`/admin/payments/${payment.id}/refund`, adminAuth.accessToken, {
-      approvalAdminId: financeApproverAuth.user.id,
+const refundRequest = payment
+  ? await postJson(`/admin/payments/${payment.id}/refund-request`, adminAuth.accessToken, {
+      reason: 'API smoke completed booking refund',
     })
+  : null;
+const refund = payment
+  ? await postJson(`/admin/payments/${payment.id}/refund`, financeApproverAuth.accessToken, {})
   : null;
 const adminRefunds = await getJson('/admin/refunds', adminAuth.accessToken);
 let refundAfterPayoutReceivableReady = false;
@@ -4844,9 +5314,7 @@ if (refund) {
     await getJson('/admin/booking-payment-clearing?range=all&review=reversed&take=100', adminAuth.accessToken)
   ).find(
     (entry) =>
-      entry.bookingId === booking.id &&
-      entry.type === 'REFUND_REVERSAL' &&
-      entry.status === 'REVERSED',
+      entry.bookingId === booking.id && entry.type === 'REFUND_REVERSAL' && entry.status === 'REVERSED',
   );
   if (
     !refundReversalJournalSummary ||
@@ -4909,7 +5377,9 @@ if (refund) {
   refundAfterPayoutReceivableReady = true;
 }
 if (!refundAfterPayoutReceivableReady) {
-  throw new Error(`Refund after paid payout receivable smoke did not run: ${JSON.stringify({ payment, refund })}`);
+  throw new Error(
+    `Refund after paid payout receivable smoke did not run: ${JSON.stringify({ payment, refund })}`,
+  );
 }
 const notifications = await getJson('/notifications', customerAuth.accessToken);
 const notificationToRetry = notifications[0];
@@ -4986,6 +5456,10 @@ if (!financeDualApprovalRoleSeparationReady) {
   );
 }
 
+const residualSmokeBookingCleanup = await expireResidualActiveApiSmokeBookings({
+  customerProfileId: customerAuth.user.customerProfile.id,
+});
+
 console.log({
   ok: true,
   bookingId: booking.id,
@@ -5007,6 +5481,14 @@ console.log({
   providerWalletWithdrawalRequestId: providerWalletWithdrawalRequest.id,
   providerWalletWithdrawalLedgerId: providerWalletWithdrawalLedger.id,
   providerWalletWithdrawalPaidLifecycleReady,
+  companyBankAccountStagedApprovalReady:
+    companyBankAccountArchived.status === 'INACTIVE' && !companyBankAccountArchived.metadata?.pendingApproval,
+  companyBankAccountCentralApprovalQueueReady:
+    companyBankAccountMakerQueueRequest?.reviewState === 'BLOCKED' &&
+    companyBankAccountApproverQueueRequest?.reviewState === 'READY',
+  companyBankAccountCommandSummariesReady:
+    companyBankAccountFinanceOverview.companyBankAccountApprovalSummary?.pendingCount >= 1 &&
+    companyBankAccountStartShift.financeReviewWorkload?.companyBankAccounts?.pendingCount >= 1,
   bankReconciliationTransactionId: smokeBankTransaction.id,
   bankReconciliationMatchId: smokeBankReconciliationMatch.match.id,
   bankReconciliationMatchAmount: smokeBankReconciliationMatch.match.amount,
@@ -5015,6 +5497,8 @@ console.log({
   bankReconciliationReversedStatus: smokeBankReconciliationReverse.bankTransaction.status,
   bankReconciliationPaymentClearingReopened:
     smokeBankReconciliationReverse.paymentClearingEntry.status === 'OPEN',
+  bankStatementBatchImportId: smokeBankBatchImport.batchImportId,
+  bankStatementBatchIgnoreReady: smokeBankBatchIgnore.bankTransaction.status === 'IGNORED',
   monthlyCloseOpenJournalDeltaBlocked,
   withholdingRemittancePaidLifecycleReady,
   financeDualApprovalRoleSeparationReady,
@@ -5051,7 +5535,7 @@ console.log({
   backupAcceptNotificationObserved,
   backupDeclineNotificationObserved,
   preferredAcceptPolicyBookingId: preferredAcceptPolicyBooking?.id ?? null,
-  preferredAcceptPolicyMatched: preferredAcceptPolicyMatched?.status === 'MATCHED',
+  preferredAcceptPolicyMatched: preferredAcceptPolicyMatched?.status === 'IN_SERVICE',
   firstPickMatchAuditSourceObserved,
   savedSelectedLocationId: savedSelectedLocation.id,
   nearbyProviderDistanceMeters: nearbyProvider.distanceMeters,
@@ -5078,6 +5562,7 @@ console.log({
   refundId: refund?.refunds?.at(-1)?.id ?? null,
   refundCount: adminRefunds.length,
   refundAfterPayoutReceivableReady,
+  residualSmokeBookingCleanup,
   verificationFileId: verificationUpload.file.id,
   verificationUploadStatus: completedVerificationUpload.uploadStatus,
   verificationReadStorageMode: verificationReadUrl.storageMode,

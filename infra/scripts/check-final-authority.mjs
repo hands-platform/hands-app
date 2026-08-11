@@ -200,7 +200,7 @@ function checkCustomerFinalSelectionContract() {
 
   rejectMarker('apps/api/src/matching/matching.policy.ts', policy, 'AUTO_MATCH_ON_ACCEPT');
   requireMarkers('apps/api/src/matching/matching.policy.ts', policy, [
-    "export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';",
+    "export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'FIRST_PICK_MATCHES_ON_ACCEPT';",
     'return PREFERRED_ACCEPT_CUSTOMER_CONFIRM;',
     'First-pick partner acceptance can match first under API rules',
   ]);
@@ -218,7 +218,7 @@ function checkCustomerFinalSelectionContract() {
     'The customer selected you for this booking.',
   ]);
   requireMarkers('infra/scripts/api-smoke.mjs', smoke, [
-    'First-pick valid acceptance should match the preferred partner first',
+    'First-pick valid acceptance should enter service with the preferred partner',
     'preferredAcceptPolicyMatched.status !==',
     'selectedProviderId !== providerAuth.user.providerProfile.id',
   ]);
@@ -389,8 +389,6 @@ function checkLegacyRiskRoutesAreRedirectOnly() {
     "source: '/provider-risk'",
     "source: '/partner-risk'",
     "destination: '/partner-controls'",
-    "source: '/providers/:path*'",
-    "destination: '/partners/:path*'",
   ]);
 
   for (const dir of ['apps/admin_web/app/provider-risk', 'apps/admin_web/app/partner-risk']) {
@@ -416,6 +414,8 @@ function checkLegacyRiskRoutesAreRedirectOnly() {
 function checkMobileVisibleCopyGuardIsStrict() {
   const source = read('infra/scripts/check-mobile-visible-copy.mjs');
   requireMarkers('infra/scripts/check-mobile-visible-copy.mjs', source, [
+    "...listFiles('apps/customer_app/lib', '.dart')",
+    "...listFiles('apps/provider_app/lib', '.dart')",
     'non-English Hangul visible copy',
     '\\u3131-\\u318e\\uac00-\\ud7a3',
     'legacy provider display wording',
@@ -424,7 +424,16 @@ function checkMobileVisibleCopyGuardIsStrict() {
     'gratuity',
     'people scoring wording',
     'partner hierarchy wording',
+    "value.includes('${') && !/\\s/.test(value)",
   ]);
+  for (const testRoot of ["listFiles('apps/customer_app/test'", "listFiles('apps/provider_app/test'"]) {
+    if (source.includes(testRoot)) {
+      fail(
+        'infra/scripts/check-mobile-visible-copy.mjs',
+        'Mobile visible-copy guard must inspect production app sources rather than test descriptions.',
+      );
+    }
+  }
 }
 
 function checkAdminVisibleCopyGuardIsStrict() {
@@ -484,6 +493,7 @@ function checkAdminPeopleManagementIsFactual() {
   const customerDetail = [
     read('apps/admin_web/app/customers/[id]/page.tsx'),
     read('apps/admin_web/app/customers/[id]/customer-booking-operation-board.tsx'),
+    read('apps/admin_web/app/customers/[id]/customer-detail-overview-shell.tsx'),
   ].join('\n');
   const partnerList = [
     read('apps/admin_web/app/partners/page.tsx'),
@@ -499,11 +509,11 @@ function checkAdminPeopleManagementIsFactual() {
     'Total customers',
     'Customer directory',
     'completed work',
-    'Last Login Date',
+    'Last activity',
   ]);
   requireMarkers('apps/admin_web/app/customers/[id]/page.tsx', customerDetail, [
-    'Customer operating picture',
-    'Customer booking situation board',
+    'Profile and contact',
+    'Booking history',
     'Current / In Progress',
     'Pre-match Cancellations',
     'Partner Cancellations',
@@ -537,9 +547,8 @@ function checkAdminPeopleManagementIsFactual() {
     'operator risk scoring wording',
     'operator risk exposure wording',
     'List-first partner control view',
-    'Customer booking situation board',
-    'Customer operating picture',
-    'Partner operating ledger',
+    'Profile and contact',
+    'Booking history',
   ]);
 }
 
@@ -548,18 +557,20 @@ function checkAdminDashboardOperationsCoverage() {
   const dashboardDoc = read('docs/architecture/operations-dashboard.md');
   const adminSmoke = read('infra/scripts/admin-web-smoke.mjs');
   const requiredKpis = [
-    'Booking requests',
-    'Waiting for Partner',
-    'Completed',
-    'Cancelled',
-    'No-show evidence',
-    'Customers in app',
-    'Partners in app',
+    'Start Shift',
+    'Needs action now',
+    'Live now',
+    'Money status',
+    'Additional work',
+    'Today result',
+    'Customer and Partner leaders',
+    'Demand and supply',
+    'Matching now',
+    'Customer choice',
+    'In service',
     'Ready Partners',
-    'Hourly booking demand',
-    'Regional booking demand',
-    'Shift command briefing',
-    'Opening shift checklist',
+    'Payment holds',
+    'Cash debt',
   ];
 
   requireMarkers('apps/admin_web/app/page.tsx', dashboard, requiredKpis);
@@ -620,7 +631,7 @@ function checkOperationsPolicyControlPlane() {
     "export const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';",
     "export const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';",
     "export const WALLET_NEGATIVE_BALANCE_GATE_KEY = 'wallet.negative_balance_gate';",
-    "export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';",
+    "export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'FIRST_PICK_MATCHES_ON_ACCEPT';",
     'First-pick partner acceptance can match first under API rules',
     'No policy can automatically assign the final partner.',
   ]);

@@ -14,7 +14,10 @@ import {
 const now = new Date();
 
 const emptyFilters: ProviderFilters = {
+  age: 'all',
   activity: '',
+  approvalMissing: '',
+  approvalRisk: '',
   page: 1,
   pageSize: 10,
   q: '',
@@ -256,6 +259,44 @@ describe('partner list query', () => {
         deps,
       ),
     ).toBe(true);
+  });
+
+  it('matches the approval-pending queue only for submitted verification or pending KYC', () => {
+    expect(
+      partnerMatchesReviewQueue(
+        partner({ verification: { id: 'verification-submitted', status: 'SUBMITTED' } }),
+        'approval-pending',
+        DEFAULT_PROVIDER_OPS_POLICY,
+        deps,
+      ),
+    ).toBe(true);
+    expect(
+      partnerMatchesReviewQueue(
+        partner({ kyc: { id: 'kyc-pending', status: 'PENDING' } }),
+        'approval-pending',
+        DEFAULT_PROVIDER_OPS_POLICY,
+        deps,
+      ),
+    ).toBe(true);
+    expect(
+      partnerMatchesReviewQueue(
+        approvedPartner(),
+        'approval-pending',
+        DEFAULT_PROVIDER_OPS_POLICY,
+        deps,
+      ),
+    ).toBe(false);
+    expect(
+      partnerMatchesReviewQueue(
+        partner({
+          verification: { id: 'verification-rejected', status: 'REJECTED' },
+          kyc: { id: 'kyc-rejected', status: 'REJECTED' },
+        }),
+        'approval-pending',
+        DEFAULT_PROVIDER_OPS_POLICY,
+        deps,
+      ),
+    ).toBe(false);
   });
 
   it('matches booking flow queues from server booking summaries when relation rows are capped', () => {

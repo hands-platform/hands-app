@@ -1,193 +1,311 @@
-import { ExternalLink } from 'lucide-react';
-import type { ReactNode } from 'react';
-import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
-import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
-import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
-  PartnerDetailVuexyTableFooter,
-  PartnerDetailVuexyTablePanel,
-  partnerDetailReviewTableClassName,
-} from './partner-detail-vuexy-table';
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  ExternalLink,
+  Image as ImageIcon,
+  PauseCircle,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+import type { CSSProperties } from 'react';
+
+import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminIconButton } from '../../../components/admin-icon-button';
+import { AdminIconLink } from '../../../components/admin-icon-link';
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormFile,
+  AdminFormSelect,
+} from '../../../components/admin-form-controls';
+import { AdminErrorState } from '../../../components/admin-surface';
+import { StatusBadgeFromPillClass } from '../../../components/status-badge';
+import { marketplaceDisplayText } from '../../../lib/admin-copy';
+import { reorderPartnerPublicMedia, uploadPartnerPublicMedia } from '../actions';
+import type { PartnerDecisionQueue } from '../partner-review-mode';
+import { partnerReviewActionConfirmHref } from '../partner-review-action-confirmation';
 
 export type PartnerTypedDocumentRow = {
-  readonly assetLabel: string;
-  readonly assetLabelNode?: ReactNode;
   readonly fileHref?: string;
-  readonly fileLabel: string;
   readonly id: string;
+  readonly previewable?: boolean;
   readonly rejectionReason?: string | null;
-  readonly reviewActions: readonly ActionMenuItem[];
   readonly reviewHint: string;
-  readonly reviewLabel: string;
   readonly status: string;
   readonly statusTone: string;
   readonly typeLabel: string;
 };
 
 export type PartnerPublicMediaRow = {
-  readonly detailLabel: string;
-  readonly detailLabelNode?: ReactNode;
   readonly fileHref?: string | null;
-  readonly fileLabel: string;
   readonly id: string;
+  readonly previewable?: boolean;
   readonly reviewActions: readonly ActionMenuItem[];
   readonly reviewLabel: string;
-  readonly reviewedLabel?: string | null;
-  readonly reviewedLabelNode?: ReactNode;
-  readonly reviewReason?: string | null;
   readonly reviewStatus: string;
   readonly reviewStatusTone: string;
-  readonly uploadStatus: string;
   readonly typeLabel: string;
 };
 
 type PartnerDetailTypedDocumentsCardProps = {
+  readonly canApprove: boolean;
+  readonly canReview: boolean;
+  readonly hasKycRecord: boolean;
+  readonly holdReason?: string | null;
+  readonly kycStatus?: string | null;
+  readonly partnerId: string;
+  readonly decisionQueue?: PartnerDecisionQueue | null;
   readonly rows: readonly PartnerTypedDocumentRow[];
 };
 
 type PartnerDetailPublicProfileMediaCardProps = {
+  readonly canEdit: boolean;
+  readonly canReview: boolean;
+  readonly partnerId: string;
   readonly rows: readonly PartnerPublicMediaRow[];
 };
 
-export function PartnerDetailTypedDocumentsCard({ rows }: PartnerDetailTypedDocumentsCardProps) {
+export function PartnerDetailTypedDocumentsCard({
+  canApprove,
+  canReview,
+  hasKycRecord,
+  holdReason,
+  kycStatus,
+  partnerId,
+  decisionQueue = null,
+  rows,
+}: PartnerDetailTypedDocumentsCardProps) {
+  const approved = kycStatus === 'APPROVED';
+  const evidenceHref = `/partners/${partnerId}?section=dossier&dossier=evidence${
+    decisionQueue ? `&decisionQueue=${decisionQueue}` : ''
+  }`;
+
   return (
-    <PartnerDetailVuexyTablePanel
-      description="Required Partner onboarding files with review status, asset evidence, and approval actions."
-      id="documents"
-      resultLabel={`${rows.length} document(s)`}
-      title="Typed documents"
-    >
-      <AdminTableScroll>
-        <AdminDataTable
-          className={partnerDetailReviewTableClassName}
-          emptyMessage={<EvidenceEmptyState message="No typed onboarding documents yet." />}
-          headers={typedDocumentHeaders}
-          rowCount={rows.length}
-        >
+    <section className="card admin-card partner-detail-evidence-card" id="documents">
+      <div className="partner-detail-evidence-heading">
+        <div>
+          <span>KYC evidence</span>
+          <h3>Typed documents</h3>
+        </div>
+        <strong>{rows.length}</strong>
+      </div>
+
+      {rows.length ? (
+        <div className="partner-document-compact-grid">
           {rows.map((document) => (
-            <tr key={document.id}>
-              <td>
+            <div className="partner-document-compact-item" key={document.id}>
+              <PartnerEvidencePreview
+                fileHref={document.fileHref}
+                label={`Open ${document.typeLabel}`}
+                previewable={document.previewable}
+              />
+              <div className="partner-document-compact-copy">
                 <strong>{document.typeLabel}</strong>
-                <p className="muted">{document.reviewHint}</p>
-              </td>
-              <td>
-                <strong>{document.assetLabelNode ?? marketplaceDisplayText(document.assetLabel)}</strong>
-                {document.rejectionReason ? (
-                  <p className="muted">Partner app correction: {document.rejectionReason}</p>
-                ) : null}
-              </td>
-              <td>
-                <FileOpenAction
-                  fileHref={document.fileHref}
-                  fileLabel={document.fileLabel}
-                  label={`Open ${document.typeLabel}`}
-                />
-              </td>
-              <td>
+                <small>{document.reviewHint}</small>
+                {document.rejectionReason ? <p>{document.rejectionReason}</p> : null}
+              </div>
+              <div className="partner-document-compact-actions">
                 <StatusBadgeFromPillClass pillClass={document.statusTone}>
                   {document.status}
                 </StatusBadgeFromPillClass>
-              </td>
-              <td>
-                <ActionMenu
-                  actions={document.reviewActions}
-                  label={document.reviewLabel}
-                  variant="dropdown"
-                />
-              </td>
-            </tr>
+              </div>
+            </div>
           ))}
-        </AdminDataTable>
-      </AdminTableScroll>
-      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
-    </PartnerDetailVuexyTablePanel>
+        </div>
+      ) : (
+        <AdminEmptyState framed message="No typed onboarding documents yet." title={null} />
+      )}
+
+      <div className="partner-kyc-overall-decision">
+        <div className="partner-kyc-overall-decision-heading">
+          <div>
+            <span>Overall KYC review</span>
+            <h3>{approved ? 'Approved' : kycStatus === 'BLOCKED' ? 'On hold' : 'Awaiting decision'}</h3>
+          </div>
+          {canReview && !approved && canApprove ? (
+            <AdminFormControlLink
+              href={partnerReviewActionConfirmHref(partnerId, 'approve-kyc', {}, { baseHref: evidenceHref })}
+            >
+              <CheckCircle2 aria-hidden="true" size={16} />
+              Approve
+            </AdminFormControlLink>
+          ) : null}
+        </div>
+
+        {canReview && hasKycRecord && !approved ? (
+          <AdminFormControlLink
+            className="button-secondary"
+            href={partnerReviewActionConfirmHref(partnerId, 'hold-kyc', {}, { baseHref: evidenceHref })}
+          >
+            <PauseCircle aria-hidden="true" size={16} />
+            Put on hold
+          </AdminFormControlLink>
+        ) : null}
+        {holdReason ? <p className="muted">Current hold reason: {holdReason}</p> : null}
+        {!canReview ? (
+          <AdminErrorState
+            message="You do not have permission to approve or hold Partner KYC. Evidence remains read-only."
+            title="Read-only KYC evidence"
+          />
+        ) : null}
+      </div>
+    </section>
   );
 }
 
-export function PartnerDetailPublicProfileMediaCard({ rows }: PartnerDetailPublicProfileMediaCardProps) {
+export function PartnerDetailPublicProfileMediaCard({
+  canEdit,
+  canReview,
+  partnerId,
+  rows,
+}: PartnerDetailPublicProfileMediaCardProps) {
+  const orderedFileIds = rows.map((row) => row.id).join(',');
+
   return (
-    <PartnerDetailVuexyTablePanel
-      description="Marketplace-visible Partner media with upload state, review outcome, and moderation actions."
-      id="media"
-      resultLabel={`${rows.length} asset(s)`}
-      title="Public profile media"
-    >
-      <AdminTableScroll>
-        <AdminDataTable
-          className={partnerDetailReviewTableClassName}
-          emptyMessage={<EvidenceEmptyState message="No public profile image or work photos uploaded yet." />}
-          headers={publicMediaHeaders}
-          rowCount={rows.length}
-        >
-          {rows.map((file) => (
-            <tr key={file.id}>
-              <td>
-                <strong>{file.typeLabel}</strong>
-                <p className="muted">{file.detailLabelNode ?? file.detailLabel}</p>
-              </td>
-              <td>
-                <FileOpenAction
-                  fileHref={file.fileHref ?? undefined}
-                  fileLabel={file.fileLabel}
-                  label={`Open ${marketplaceDisplayText(file.fileLabel)}`}
-                />
-              </td>
-              <td>
-                <StatusBadge tone="success">{file.uploadStatus}</StatusBadge>
-              </td>
-              <td>
+    <section className="card admin-card partner-detail-public-media-card" id="media">
+      <div className="partner-detail-evidence-heading partner-public-media-heading">
+        <div>
+          <span>Customer app</span>
+          <h3>Public profile media</h3>
+        </div>
+        {canEdit ? <form action={uploadPartnerPublicMedia} className="partner-public-media-upload-form">
+          <input name="providerId" type="hidden" value={partnerId} />
+          <AdminFormSelect
+            defaultValue="provider-gallery"
+            label="Photo type"
+            labelVisibility="visible"
+            name="purpose"
+            options={[
+              { label: 'Profile image', value: 'profile-image' },
+              { label: 'Work photo', value: 'provider-gallery' },
+            ]}
+          />
+          <AdminFormFile
+            accept="image/jpeg,image/png,image/webp"
+            displayValue="Choose photo"
+            icon={<ImageIcon aria-hidden="true" size={16} />}
+            label="Photo"
+            name="photo"
+            required
+          />
+          <AdminFormControlButton type="submit">
+            <Plus aria-hidden="true" size={16} />
+            Add photo
+          </AdminFormControlButton>
+        </form> : null}
+      </div>
+
+      {rows.length ? (
+        <div className="partner-public-media-grid">
+          {rows.map((file, index) => (
+            <div className="partner-public-media-item" key={file.id}>
+              <PartnerEvidencePreview
+                fileHref={file.fileHref ?? undefined}
+                label={`Open ${file.typeLabel}`}
+                previewable={file.previewable}
+              />
+              <div className="partner-public-media-item-footer">
                 <StatusBadgeFromPillClass pillClass={file.reviewStatusTone}>
                   {file.reviewStatus}
                 </StatusBadgeFromPillClass>
-                {file.reviewedLabel || file.reviewedLabelNode ? (
-                  <p className="muted">Reviewed {file.reviewedLabelNode ?? file.reviewedLabel}</p>
-                ) : null}
-                {file.reviewReason ? <p className="muted">Review reason: {file.reviewReason}</p> : null}
-              </td>
-              <td>
-                <ActionMenu actions={file.reviewActions} label={file.reviewLabel} variant="dropdown" />
-              </td>
-            </tr>
+                <div className="partner-public-media-order-actions">
+                  {canEdit ? <form action={reorderPartnerPublicMedia}>
+                    <input name="providerId" type="hidden" value={partnerId} />
+                    <input name="fileId" type="hidden" value={file.id} />
+                    <input name="fileIds" type="hidden" value={orderedFileIds} />
+                    <input name="direction" type="hidden" value="left" />
+                    <AdminIconButton
+                      aria-label={`Move ${file.typeLabel} left`}
+                      disabled={index === 0}
+                      type="submit"
+                    >
+                      <ArrowLeft aria-hidden="true" size={16} />
+                    </AdminIconButton>
+                  </form> : null}
+                  {canEdit ? <form action={reorderPartnerPublicMedia}>
+                    <input name="providerId" type="hidden" value={partnerId} />
+                    <input name="fileId" type="hidden" value={file.id} />
+                    <input name="fileIds" type="hidden" value={orderedFileIds} />
+                    <input name="direction" type="hidden" value="right" />
+                    <AdminIconButton
+                      aria-label={`Move ${file.typeLabel} right`}
+                      disabled={index === rows.length - 1}
+                      type="submit"
+                    >
+                      <ArrowRight aria-hidden="true" size={16} />
+                    </AdminIconButton>
+                  </form> : null}
+                  {canReview ? <ActionMenu actions={file.reviewActions} label={file.reviewLabel} variant="dropdown" /> : null}
+                  {canEdit ? (
+                    <AdminIconLink
+                      aria-label={`Delete ${file.typeLabel}`}
+                      className="is-danger"
+                      href={partnerReviewActionConfirmHref(
+                        partnerId,
+                        'delete-media',
+                        { fileId: file.id },
+                        { baseHref: `/partners/${partnerId}?section=dossier&dossier=evidence` },
+                      )}
+                    >
+                      <Trash2 aria-hidden="true" size={16} />
+                    </AdminIconLink>
+                  ) : null}
+                </div>
+              </div>
+            </div>
           ))}
-        </AdminDataTable>
-      </AdminTableScroll>
-      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
-    </PartnerDetailVuexyTablePanel>
+        </div>
+      ) : (
+        <AdminEmptyState framed message="No public profile photos uploaded yet." title={null} />
+      )}
+      {!canEdit && !canReview ? (
+        <AdminErrorState
+          message="You do not have permission to edit or review public Partner media."
+          title="Read-only public profile media"
+        />
+      ) : null}
+    </section>
   );
 }
 
-const typedDocumentHeaders = ['Document', 'Evidence', 'File', 'Status', 'Actions'] as const;
-const publicMediaHeaders = ['Media', 'File', 'Upload', 'Review', 'Actions'] as const;
-
-function FileOpenAction({
+export function PartnerEvidencePreview({
   fileHref,
-  fileLabel,
   label,
+  previewable = false,
 }: {
   readonly fileHref?: string;
-  readonly fileLabel: string;
   readonly label: string;
+  readonly previewable?: boolean;
 }) {
   if (!fileHref) {
-    return <span className="muted">{marketplaceDisplayText(fileLabel)}</span>;
+    return (
+      <span className="partner-evidence-preview partner-evidence-preview-empty" aria-label="No image available">
+        <ImageIcon aria-hidden="true" size={24} />
+      </span>
+    );
   }
 
   return (
     <a
       aria-label={label}
-      className="files-open-action"
+      className={`partner-evidence-preview${previewable ? '' : ' is-file'}`}
       href={fileHref}
-      target="_blank"
       rel="noreferrer"
-      title={marketplaceDisplayText(fileLabel)}
+      style={
+        previewable
+          ? ({ '--partner-evidence-image': `url(${JSON.stringify(fileHref)})` } as CSSProperties)
+          : undefined
+      }
+      target="_blank"
     >
-      <ExternalLink size={16} aria-hidden="true" />
+      {previewable ? (
+        <ImageIcon className="partner-evidence-preview-placeholder" size={24} aria-hidden="true" />
+      ) : (
+        <ExternalLink aria-hidden="true" size={20} />
+      )}
+      <span className="sr-only">{marketplaceDisplayText(label)}</span>
     </a>
   );
-}
-
-function EvidenceEmptyState({ message }: { readonly message: string }) {
-  return <AdminEmptyState message={message} title="No evidence found" />;
 }

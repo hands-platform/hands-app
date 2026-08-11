@@ -3,9 +3,14 @@ import globals from 'globals';
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import tseslint from 'typescript-eslint';
 
-const adminNextConfig = nextVitals.map((config) => ({
+const nextAppFiles = [
+  'apps/admin_web/**/*.{js,jsx,ts,tsx}',
+  'apps/public_web/**/*.{js,jsx,ts,tsx}',
+];
+
+const nextAppConfig = nextVitals.map((config) => ({
   ...config,
-  files: ['apps/admin_web/**/*.{js,jsx,ts,tsx}'],
+  files: nextAppFiles,
 }));
 
 export default [
@@ -13,6 +18,7 @@ export default [
     ignores: [
       '**/node_modules/**',
       '**/.next/**',
+      '**/.next-*/**',
       '**/build/**',
       '**/dist/**',
       '**/.dart_tool/**',
@@ -37,9 +43,9 @@ export default [
       'no-undef': 'off',
     },
   })),
-  ...adminNextConfig,
+  ...nextAppConfig,
   {
-    files: ['apps/admin_web/**/*.{js,jsx,ts,tsx}'],
+    files: nextAppFiles,
     languageOptions: {
       parser: tseslint.parser,
       globals: {

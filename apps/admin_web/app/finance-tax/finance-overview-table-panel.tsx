@@ -8,10 +8,14 @@ import { AdminSignal, type AdminSignalTone, type StatusBadgeTone } from '../../c
 
 export type FinanceOverviewTableRow = {
   readonly actionLabel?: string;
+  readonly affectedRecords?: ReactNode;
+  readonly exposure?: ReactNode;
   readonly helper: ReactNode;
   readonly href: string;
   readonly key: string;
   readonly label: ReactNode;
+  readonly oldest?: ReactNode;
+  readonly owner?: ReactNode;
   readonly signal: ReactNode;
   readonly signalTone?: AdminSignalTone;
   readonly value: ReactNode;
@@ -20,20 +24,32 @@ export type FinanceOverviewTableRow = {
 type FinanceOverviewTablePanelProps = {
   readonly className?: string;
   readonly description: string;
+  readonly emptyMessage?: string;
+  readonly emptyTitle?: string;
   readonly resultLabel?: string;
   readonly resultTone?: StatusBadgeTone;
   readonly rows: readonly FinanceOverviewTableRow[];
   readonly title: string;
+  readonly variant?: 'controls' | 'records';
 };
 
 export function FinanceOverviewTablePanel({
   className,
   description,
+  emptyMessage = 'No finance operating rows are available.',
+  emptyTitle = 'No finance rows',
   resultLabel,
   resultTone,
   rows,
   title,
+  variant = 'records',
 }: FinanceOverviewTablePanelProps) {
+  const controls = variant === 'controls';
+  const showOldest = controls && rows.some((row) => row.oldest !== undefined && row.oldest !== null);
+  const showOwner = controls && rows.some((row) => row.owner !== undefined && row.owner !== null);
+  const headers = controls
+    ? ['Signal', 'Control', 'Affected records', 'Exposure', ...(showOldest ? ['Oldest'] : []), ...(showOwner ? ['Owner'] : []), 'Action']
+    : financeRecordTableHeaders;
   return (
     <AdminTablePanel
       className={`finance-overview-table-card admin-mb-16${className ? ` ${className}` : ''}`}
@@ -42,11 +58,11 @@ export function FinanceOverviewTablePanel({
       resultTone={resultTone}
       title={title}
     >
-      <AdminTableScroll className="finance-overview-table-wrap">
+      <AdminTableScroll ariaLabel={`${title} table`} className="finance-overview-table-wrap">
         <AdminDataTable
-          className="finance-overview-table"
-          emptyMessage={<AdminEmptyState message="No finance operating rows are available." title="No finance rows" />}
-          headers={financeOverviewTableHeaders}
+          className={`finance-overview-table is-${variant}`}
+          emptyMessage={<AdminEmptyState message={emptyMessage} title={emptyTitle} />}
+          headers={headers}
           rowCount={rows.length}
         >
           {rows.map((row) => (
@@ -60,9 +76,16 @@ export function FinanceOverviewTablePanel({
                   <p className="muted">{row.helper}</p>
                 </AdminTableSubstack>
               </td>
-              <td>
-                <strong>{row.value}</strong>
-              </td>
+              {controls ? (
+                <>
+                  <td><strong>{row.affectedRecords ?? '—'}</strong></td>
+                  <td><strong>{row.exposure ?? row.value ?? 'Not calculated'}</strong></td>
+                  {showOldest ? <td>{row.oldest}</td> : null}
+                  {showOwner ? <td>{row.owner}</td> : null}
+                </>
+              ) : (
+                <td><strong>{row.value}</strong></td>
+              )}
               <td>
                 <AdminFormControlLink className="button-secondary finance-overview-table-action" href={row.href}>
                   {row.actionLabel ?? 'Open'}
@@ -76,4 +99,4 @@ export function FinanceOverviewTablePanel({
   );
 }
 
-const financeOverviewTableHeaders = ['Signal', 'Workspace', 'Evidence', 'Action'] as const;
+const financeRecordTableHeaders = ['Signal', 'Register', 'Scope', 'Action'] as const;

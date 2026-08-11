@@ -18,6 +18,7 @@ import {
   type AdminBackgroundJobIncidentDetail,
   type AdminBackgroundJobReviewStatus,
 } from '../../../../lib/admin-api';
+import { adminWorkflowStatusLabel } from '../../../../lib/admin-copy';
 
 type BackgroundJobIncidentPageProps = {
   readonly params?: Promise<{ readonly id?: string }>;
@@ -58,7 +59,7 @@ export default async function BackgroundJobIncidentPage({
           kind: incident.status === 'OPEN' ? 'risk' : 'record',
           label: 'Incident status',
           scope: 'Episode',
-          value: incident.status,
+          value: adminWorkflowStatusLabel(incident.status),
         },
         {
           helper: 'Recurring scheduler that opened this incident.',
@@ -89,7 +90,7 @@ export default async function BackgroundJobIncidentPage({
         description="The episode boundary prevents failures from earlier or later scheduler incidents from being mixed into this record."
         status={
           <StatusBadge tone={incident.status === 'OPEN' ? 'danger' : 'success'}>
-            {incident.status}
+            {adminWorkflowStatusLabel(incident.status)}
           </StatusBadge>
         }
         title="Incident overview"
@@ -131,7 +132,9 @@ export default async function BackgroundJobIncidentPage({
             {detail.failures.map((failure) => (
               <tr key={failure.jobId}>
                 <td>
-                  <StatusBadge tone={reviewStatusTone(failure.status)}>{failure.status}</StatusBadge>
+                  <StatusBadge tone={reviewStatusTone(failure.status)}>
+                    {adminWorkflowStatusLabel(failure.status)}
+                  </StatusBadge>
                 </td>
                 <td>{failure.jobId}</td>
                 <td><DateTimeText value={failure.firstSeenAt} /></td>

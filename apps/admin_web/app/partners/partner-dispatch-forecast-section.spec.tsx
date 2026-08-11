@@ -41,7 +41,7 @@ describe('PartnerDispatchForecastSection', () => {
     expect(rendered).toContain('City supply lanes');
     expect(rendered).toContain('Ho Chi Minh City');
     expect(rendered).toContain('2 / 4 ready, 3 online, 1 need location refresh, 1 blocked.');
-    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/operations-policy', '/partners?readiness=ready']));
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/operations-policy', '/partners?review=ready-now']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-section admin-mb-16 partner-dispatch-forecast-card',
@@ -77,7 +77,7 @@ function buildForecast(): PartnerDispatchForecastSectionForecast {
       {
         count: 1,
         detail: 'Partner location is missing or stale.',
-        href: '/partners?review=location',
+        href: '/partners?review=available-blocked-location',
         label: 'Location refresh',
         tone: 'warn',
       },
@@ -95,7 +95,7 @@ function buildForecast(): PartnerDispatchForecastSectionForecast {
     totals: [
       {
         detail: 'Approved, online, fresh location, clear device checks, and push-ready partners.',
-        href: '/partners?readiness=ready',
+        href: '/partners?review=ready-now',
         label: 'Ready now',
         tone: 'ok',
         value: '3/5',

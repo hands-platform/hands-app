@@ -46,6 +46,7 @@ describe('booking action revalidation paths', () => {
       '/partners',
     ]);
     expect(BOOKING_POST_MATCH_CANCELLATION_IMPACT_PATHS).toEqual([
+      '/bookings/post-match-cancellations',
       '/earnings',
       '/cash-settlements',
       '/partner-controls',

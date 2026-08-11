@@ -1,4 +1,5 @@
 import type { AdminProvider } from '../../lib/admin-api';
+import { adminCountLabel } from '../../lib/admin-copy';
 import { partnerUnsettledWalletBalance } from './partner-activity-facts';
 import type { PartnerCommandLane } from './partner-command-center';
 import { partnerPayoutSetupNeedsReview } from './partner-finance-readiness-facts';
@@ -65,7 +66,7 @@ export function buildPartnerShiftHandoff(
       ? {
           title: 'Collect cash-fee debt before more bookings',
           scope: 'Finance gate',
-          detail: `${cashDebt.length} partner(s) have negative wallet balance from cash-service fee or tax debt.`,
+          detail: `${adminCountLabel(cashDebt.length, 'Partner')} ${cashDebt.length === 1 ? 'has' : 'have'} negative wallet balance from cash-service fee or tax debt.`,
           operatorAction:
             'Collect company fee deposit, record evidence, or offset from available earnings before final acceptance, service start, or payout release resumes.',
           href: '/partners?review=cash-debt',
@@ -77,7 +78,7 @@ export function buildPartnerShiftHandoff(
       ? {
           title: 'Approve KYC records that are ready',
           scope: 'KYC review',
-          detail: `${readyKyc.length} partner(s) have required CCCD/selfie evidence ready for admin decision.`,
+          detail: `${adminCountLabel(readyKyc.length, 'Partner')} ${readyKyc.length === 1 ? 'has' : 'have'} required CCCD/selfie evidence ready for admin decision.`,
           operatorAction:
             'Open each detail page, verify evidence, then approve or reject with a clear reason.',
           href: '/partners?review=kyc',
@@ -89,7 +90,7 @@ export function buildPartnerShiftHandoff(
       ? {
           title: 'Request KYC resubmission where evidence is blocked',
           scope: 'Identity blocker',
-          detail: `${kycBlocked.length} partner(s) cannot move forward because identity evidence is missing or rejected.`,
+          detail: `${adminCountLabel(kycBlocked.length, 'Partner')} cannot move forward because identity evidence is missing or rejected.`,
           operatorAction:
             'Use rejection reasons and resubmission guidance before the partner can become dispatch-ready.',
           href: '/partners?review=documents',
@@ -101,10 +102,10 @@ export function buildPartnerShiftHandoff(
       ? {
           title: 'Finish first-earning payout profile',
           scope: 'Payout gate',
-          detail: `${payoutSetup.length} partner(s) have revenue records but still need withdrawal address or agreement readiness.`,
+          detail: `${adminCountLabel(payoutSetup.length, 'Partner')} ${payoutSetup.length === 1 ? 'has' : 'have'} revenue records but still need withdrawal address or agreement readiness.`,
           operatorAction:
             'Ask for withdrawal address and terms only after first revenue, then review before withdrawal.',
-          href: '/partners?review=payout-setup',
+          href: '/notifications?review=payout-setup',
           tone: 'warn' as const,
           samples: partnerSampleNames(payoutSetup, deps),
         }
@@ -113,7 +114,7 @@ export function buildPartnerShiftHandoff(
       ? {
           title: 'Review device or account controls before dispatch',
           scope: 'Control gate',
-          detail: `${accountControlFollowUp.length} partner(s) have blocked devices, session checks, shared devices, or account block state.`,
+          detail: `${adminCountLabel(accountControlFollowUp.length, 'Partner')} ${accountControlFollowUp.length === 1 ? 'has' : 'have'} blocked devices, session checks, shared devices, or account block state.`,
           operatorAction: 'Open partner control history before relying on them for customer bookings.',
           href: '/partners?review=security',
           tone: 'danger' as const,
@@ -124,9 +125,9 @@ export function buildPartnerShiftHandoff(
       ? {
           title: 'Refresh partner locations for dispatch accuracy',
           scope: 'Location',
-          detail: `${locationRefresh.length} partner(s) need a current location before direct request or marketplace matching.`,
+          detail: `${adminCountLabel(locationRefresh.length, 'Partner')} ${locationRefresh.length === 1 ? 'needs' : 'need'} a current location before direct request or marketplace matching.`,
           operatorAction: `Ask partners to open the app; location must be fresh within ${opsPolicy.staleLocationMinutes} minutes.`,
-          href: '/partners?review=location',
+          href: '/partners?review=available-blocked-location',
           tone: acceptReady.length ? ('info' as const) : ('warn' as const),
           samples: partnerSampleNames(locationRefresh, deps),
         }
@@ -135,7 +136,7 @@ export function buildPartnerShiftHandoff(
       ? {
           title: 'Repair request alert readiness',
           scope: 'Alerts',
-          detail: `${pushMissing.length} partner(s) have no enabled push device, so urgent booking alerts may be missed.`,
+          detail: `${adminCountLabel(pushMissing.length, 'Partner')} ${pushMissing.length === 1 ? 'has' : 'have'} no enabled push device, so urgent booking alerts may be missed.`,
           operatorAction:
             'Ask partners to reopen the app and register notifications before relying on push outreach.',
           href: '/partners?review=push',
@@ -147,7 +148,7 @@ export function buildPartnerShiftHandoff(
       ? {
           title: 'Moderate public partner media',
           scope: 'Profile',
-          detail: `${publicMedia.length} partner(s) have profile/gallery media waiting for admin review.`,
+          detail: `${adminCountLabel(publicMedia.length, 'Partner')} ${publicMedia.length === 1 ? 'has' : 'have'} profile/gallery media waiting for admin review.`,
           operatorAction:
             'Approve original, safe media or reject unclear uploads before final visual redesign.',
           href: '/partners?review=public-media',
@@ -159,9 +160,9 @@ export function buildPartnerShiftHandoff(
       ? {
           title: 'Keep ready partners warm for live requests',
           scope: 'Dispatch supply',
-          detail: `${acceptReady.length} partner(s) can receive direct bookings now; ${backupReady.length} are also marketplace-ready.`,
+          detail: `${adminCountLabel(acceptReady.length, 'Partner')} can receive direct bookings now; ${adminCountLabel(backupReady.length, 'Partner')} ${backupReady.length === 1 ? 'is' : 'are'} also marketplace-ready.`,
           operatorAction: 'Use these partners first when matching demand spikes or customer wait time rises.',
-          href: '/partners?review=direct-ready',
+          href: '/partners?review=ready-now',
           tone: 'ok' as const,
           samples: partnerSampleNames(acceptReady, deps),
         }
@@ -197,14 +198,14 @@ export function buildPartnerShiftHandoff(
       'The active filters have no immediate Partner blocker. Keep monitoring booking demand, location freshness, and cash debt.',
     primaryAction: {
       label: topAction ? 'Open partner work queue' : 'Open dispatch-ready partners',
-      href: topAction?.href ?? '/partners?review=direct-ready',
+      href: topAction?.href ?? '/partners?review=ready-now',
     },
     stats: [
       {
         label: 'Direct request ready',
         value: acceptReady.length.toString(),
         detail: `${backupReady.length} marketplace-ready within current policy gates.`,
-        href: '/partners?review=direct-ready',
+        href: '/partners?review=ready-now',
         tone: acceptReady.length ? 'ok' : 'warn',
       },
       {
@@ -212,7 +213,7 @@ export function buildPartnerShiftHandoff(
         value: hardBlocked.length.toString(),
         detail:
           'Account, KYC, device/session, identity, or wallet settlement blockers for direct partner work.',
-        href: '/partners?review=acceptance-blocked',
+        href: '/partners?review=available-blocked',
         tone: hardBlocked.length ? 'danger' : 'ok',
       },
       {
@@ -233,14 +234,14 @@ export function buildPartnerShiftHandoff(
         label: 'Location refresh',
         value: locationRefresh.length.toString(),
         detail: `Fresh location policy is ${opsPolicy.staleLocationMinutes} minutes.`,
-        href: '/partners?review=location',
+        href: '/partners?review=available-blocked-location',
         tone: locationRefresh.length ? 'warn' : 'ok',
       },
       {
         label: 'Payout profile',
         value: payoutSetup.length.toString(),
         detail: 'First-revenue address and payout agreement review.',
-        href: '/partners?review=payout-setup',
+        href: '/notifications?review=payout-setup',
         tone: payoutSetup.length ? 'warn' : 'ok',
       },
     ],

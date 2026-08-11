@@ -114,7 +114,7 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
       evidence: `${marketplaceDisplayText(provider.legalName ?? 'No legal name')} / ${provider.user?.phone ?? 'No phone'} / ${
         provider.city ?? 'No city'
       }`,
-      href: `/partners/${provider.id}?section=full#partner-master-facts`,
+      href: `/partners/${provider.id}?section=dossier&dossier=evidence`,
     },
     {
       area: 'KYC',
@@ -126,7 +126,7 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
         missingKycDocs.length > 0
           ? `Missing: ${missingKycDocs.map(providerDocumentLabel).join(', ')}`
           : `KYC ${provider.kyc?.status ?? 'DRAFT'} / profile ${provider.verification?.status ?? 'DRAFT'}`,
-      href: `/partners/${provider.id}?section=full#kyc`,
+      href: `/partners/${provider.id}?section=dossier&dossier=evidence#documents`,
     },
     {
       area: 'Documents',
@@ -135,25 +135,25 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
           ? `${verificationFileCount + documentCount} file(s)`
           : 'No files',
       evidence: `${documentCount} typed document(s) / ${verificationFileCount} verification file(s)`,
-      href: `/partners/${provider.id}?section=full#documents`,
+      href: `/partners/${provider.id}?section=dossier&dossier=evidence#documents`,
     },
     {
       area: 'Services',
       status: `${providerServicePricing.readyCount}/${providerServicePricing.rows.length} bookable`,
       evidence: 'Prices must match admin minimum, step policy, and payout rule lines.',
-      href: `/partners/${provider.id}?section=full#service-pricing`,
+      href: `/partners/${provider.id}?section=dossier&dossier=evidence#service-pricing-title`,
     },
     {
       area: 'Bookings',
       status: `${bookingArchive.length} total`,
       evidence: `${activeBookings} active / ${completedBookings} completed / ${bookingAcceptance.primaryReason}`,
-      href: `/partners/${provider.id}?section=full#booking-chat-records`,
+      href: `/partners/${provider.id}?section=bookings&bookings=journey`,
     },
     {
       area: 'Chat',
       status: `${chatRooms} room(s)`,
       evidence: `${chatMessages} retained message(s). Admin keeps archive after mobile chat hides.`,
-      href: `/partners/${provider.id}?section=full#booking-chat-records`,
+      href: `/partners/${provider.id}?section=bookings&bookings=evidence`,
     },
     {
       area: 'Wallet',
@@ -162,13 +162,13 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
         cashDebt > 0
           ? `${formatCurrency(cashDebt)} unpaid company fee from cash booking flow.`
           : 'No negative cash-fee wallet state loaded.',
-      href: `/partners/${provider.id}?section=full#payout`,
+      href: `/partners/${provider.id}?section=dossier&dossier=finance`,
     },
     {
       area: 'Payout',
       status: payoutOps.status,
       evidence: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate clear or deferred.',
-      href: `/partners/${provider.id}?section=full#payout`,
+      href: `/partners/${provider.id}?section=dossier&dossier=finance`,
     },
     {
       area: 'Location',
@@ -176,13 +176,13 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
       evidence: latestLocationSaved
         ? 'Latest Partner location saved for dispatch checks.'
         : 'No current location pin saved.',
-      href: `/partners/${provider.id}?section=full#location`,
+      href: `/partners/${provider.id}?section=access&access=readiness`,
     },
     {
       area: 'App devices',
       status: `${enabledPushCount} push-ready`,
       evidence: `${sessionCount} session(s) / ${deviceCount} device(s)`,
-      href: `/partners/${provider.id}?section=full#app-activity`,
+      href: `/partners/${provider.id}?section=access&access=diagnostics`,
     },
     {
       area: 'Admin trail',
@@ -190,7 +190,7 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
       evidence: `${provider.reports?.length ?? 0} report(s) / ${provider.sanctions?.length ?? 0} control row(s) / ${
         provider.auditLogs?.length ?? 0
       } audit row(s)`,
-      href: `/partners/${provider.id}?section=full#partner-operator-notes`,
+      href: `/partners/${provider.id}?section=control&control=records`,
     },
   ];
 }

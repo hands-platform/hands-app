@@ -1,6 +1,6 @@
 import { Transform } from 'class-transformer';
-import { Allow, IsEmail, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
-import { Role } from '@prisma/client';
+import { Allow, IsEmail, IsEnum, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { AppUsageEventType, Role } from '@prisma/client';
 
 function trimString(value: unknown) {
   return typeof value === 'string' ? value.trim() : value;
@@ -44,6 +44,16 @@ export class RecordAppSessionDto {
   @IsOptional()
   @Allow()
   metadata?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsEnum(AppUsageEventType)
+  eventType?: AppUsageEventType;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(160)
+  clientEventId?: string;
 }
 
 export class UpdateUserProfileDto {
@@ -58,4 +68,15 @@ export class UpdateUserProfileDto {
   @IsEmail()
   @MaxLength(254)
   email?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsIn(['female', 'male', 'other', 'not_specified'])
+  gender?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(80)
+  nationality?: string;
 }

@@ -7,7 +7,7 @@ import {
   AdminTableScroll,
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFormControlButton } from '../../components/admin-form-controls';
+import { AdminFormControlButton, AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import {
   AdminAvatarStatusDot,
@@ -27,30 +27,43 @@ import {
   type AdminAvatarStatus,
 } from '../../lib/admin-avatar-status';
 import type { AdminBooking, AdminChatMessage } from '../../lib/admin-api';
-import { readPlainRecord, shortId } from '../../lib/admin-format';
+import { adminCountLabel } from '../../lib/admin-copy';
+import { formatMoney, readPlainRecord, shortId } from '../../lib/admin-format';
 import type { BookingListActionChip } from '../../lib/booking-list-action-chips';
 import type { BookingListStage } from '../../lib/booking-list-stage';
 import { readAddressText, serviceAddressAreaLabel } from './booking-address-readers';
 import { bookingChatMessageCount } from './booking-chat-message-count';
-import { formatBookingDate } from './booking-list-time';
 import {
   bookingPostMatchChatEvidenceRows,
   bookingPostMatchEvidenceLabel,
 } from './booking-post-match-chat-evidence';
 import {
+  postMatchCancellationActorLabel,
+  postMatchCancellationDecisionSourceLabel,
   postMatchCancellationFeeStateLabel,
   postMatchCancellationMinutesLabel,
   postMatchCancellationResolutionLabel,
 } from './booking-post-match-cancellation-display';
+import {
+  postMatchCancellationDetail,
+  postMatchCancellationReasonDisplay,
+} from './booking-post-match-cancellation-reason';
 import {
   isPostMatchCancellationAutoApproved,
   isPostMatchCancellationBooking,
   isPostMatchCancellationManualReviewRequired,
   isPostMatchCancellationReviewBooking,
   postMatchCancellationFeeState,
+  postMatchCancellationDecisionAt,
+  postMatchCancellationDecisionSource,
+  postMatchCancellationDecisionSla,
   postMatchCancellationMinutesAfterMatch,
   postMatchCancellationResolution,
 } from './booking-post-match-cancellations-model';
+import { relativeTimeLabel } from './booking-list-time';
+import { bookingMonitorDetailHrefSuffix } from './booking-monitor-operation-links';
+import type { BookingPageView } from './booking-page-params';
+import { BOOKING_RECORD_VIEWS } from './booking-monitor-realtime';
 
 type BookingMonitorPillDetail = {
   readonly detail: string;
@@ -115,6 +128,7 @@ export type BookingMonitorListRow = {
   readonly firstCheckTitle: string | null;
   readonly firstPickPhoneLabel: string;
   readonly hasMatchingPolicySnapshot: boolean;
+  readonly issueChips?: readonly { readonly label: string; readonly tone: string }[];
   readonly location: {
     readonly pillLabel: string;
     readonly signalLabel: string;
@@ -124,6 +138,7 @@ export type BookingMonitorListRow = {
   readonly matchingRuleSnapshot: BookingMonitorMatchingRuleSnapshot;
   readonly marketplaceParticipantOverflowCount: number;
   readonly marketplaceParticipants: readonly BookingMonitorParticipantPill[];
+  readonly nextActionHelper: string;
   readonly nextActionLabel: string;
   readonly expiresAtLabel: string | null;
   readonly openedDateLabel: string;
@@ -135,7 +150,13 @@ export type BookingMonitorListRow = {
     readonly status: string;
     readonly tone: string;
   };
-  readonly recencyLabel: string;
+  readonly statusEvent: {
+    readonly clockLabel: string | null;
+    readonly dateLabel: string;
+    readonly label: string;
+    readonly relativeLabel: string;
+  };
+  readonly terminalWaitingLabel?: string;
   readonly selectedFinalPartnerPillLabel: string | null;
   readonly selection: {
     readonly label: string;
@@ -150,9 +171,32 @@ export type BookingMonitorListRow = {
 
 type BookingMonitorListSectionProps = {
   readonly emptyMessage: string;
+  readonly emptyResetHref?: string;
   readonly hideEmptyGroups?: boolean;
+  readonly loadFailed?: boolean;
+  readonly operationsWorkspace?: BookingOperationsWorkspace;
+  readonly nowMs?: number;
+  readonly retryHref?: string;
+  readonly returnHref?: string;
   readonly rows: readonly BookingMonitorListRow[];
+  readonly serverPagination?: BookingServerPagination;
   readonly visibleGroupKeys?: readonly BookingTableGroupKey[];
+};
+
+type BookingOperationsWorkspace = {
+  readonly description: string;
+  readonly detailPagePath: string;
+  readonly detailView: BookingPageView;
+  readonly title: string;
+  readonly tone: 'danger' | 'info' | 'neutral' | 'success' | 'warning';
+};
+
+type BookingServerPagination = {
+  readonly hrefForPage: (page: number) => string;
+  readonly page: number;
+  readonly pageSize: number;
+  readonly totalPages: number;
+  readonly totalRows: number;
 };
 
 export type BookingTableGroupKey =
@@ -185,7 +229,7 @@ type BookingNeedsReviewMetric = {
 type BookingReviewReasonPill = {
   readonly label: string;
   readonly title: string;
-  readonly tone: 'pill-danger' | 'pill-info' | 'pill-warn';
+  readonly tone: 'pill-danger' | 'pill-info' | 'pill-neutral' | 'pill-success' | 'pill-warn';
 };
 
 type BookingParticipantTableRow = {
@@ -252,6 +296,37 @@ const BOOKING_POST_MATCH_IN_PROGRESS_HEADERS = [
   'Address',
   'State',
 ] as const;
+const BOOKING_OPERATIONS_HEADERS = [
+  'Status',
+  'Booking · Customer',
+  'Partner · Matching',
+  'Service · Area',
+  'Last activity',
+  'Next action',
+] as const;
+const BOOKING_RECORDS_HEADERS = [
+  'Booking · Customer',
+  'Status · Closed',
+  'Partner · Service',
+  'Area · Payment',
+  'Follow-up',
+] as const;
+const BOOKING_CLOSEOUT_OPERATIONS_HEADERS = [
+  'Priority · Issue',
+  'Booking · Customer',
+  'Completed service',
+  'Payment',
+  'Partner · Closeout',
+  'Next action',
+] as const;
+const BOOKING_POST_MATCH_OPERATIONS_HEADERS = [
+  'Decision · SLA',
+  'Booking · Actor',
+  'Reason · Evidence',
+  'Payment',
+  'Partner fee',
+  'Next action',
+] as const;
 
 const BOOKING_TABLE_GROUPS: readonly BookingTableGroupDefinition[] = [
   {
@@ -309,19 +384,44 @@ const BOOKING_WORKING_AVATAR_STATUSES = new Set<string>([
 
 export function BookingMonitorListSection({
   emptyMessage,
+  emptyResetHref,
   hideEmptyGroups = false,
+  loadFailed = false,
+  operationsWorkspace,
+  nowMs = 0,
+  retryHref = '/bookings',
+  returnHref,
   rows,
+  serverPagination,
   visibleGroupKeys,
 }: BookingMonitorListSectionProps) {
-  const groupedRows = useMemo(
-    () => {
-      const groups = buildBookingTableGroups(rows, visibleGroupKeys);
-      return hideEmptyGroups && rows.length > 0
-        ? groups.filter((group) => group.rows.length > 0)
-        : groups;
-    },
-    [hideEmptyGroups, rows, visibleGroupKeys],
-  );
+  if (loadFailed) {
+    return (
+      <AdminErrorState
+        action={<AdminTextLink href={retryHref}>Retry booking records</AdminTextLink>}
+        message="Booking records could not be loaded. No empty booking queue is shown until the list source is available."
+        title="Booking records unavailable"
+      />
+    );
+  }
+
+  if (operationsWorkspace) {
+    return (
+      <BookingMonitorOperationsTable
+        emptyMessage={emptyMessage}
+        emptyResetHref={emptyResetHref}
+        pagination={serverPagination}
+        nowMs={nowMs}
+        returnHref={returnHref}
+        rows={rows}
+        workspace={operationsWorkspace}
+      />
+    );
+  }
+
+  const groups = buildBookingTableGroups(rows, visibleGroupKeys);
+  const groupedRows =
+    hideEmptyGroups && rows.length > 0 ? groups.filter((group) => group.rows.length > 0) : groups;
   return (
     <>
       {groupedRows.map((group, index) => (
@@ -329,18 +429,430 @@ export function BookingMonitorListSection({
           emptyMessage={rows.length === 0 && index === 0 ? emptyMessage : group.emptyMessage}
           group={group}
           key={group.key}
+          returnHref={returnHref}
         />
       ))}
     </>
   );
 }
 
+function BookingMonitorOperationsTable({
+  emptyMessage,
+  emptyResetHref,
+  pagination,
+  nowMs,
+  returnHref,
+  rows,
+  workspace,
+}: {
+  readonly emptyMessage: string;
+  readonly emptyResetHref?: string;
+  readonly pagination?: BookingServerPagination;
+  readonly nowMs: number;
+  readonly returnHref?: string;
+  readonly rows: readonly BookingMonitorListRow[];
+  readonly workspace: BookingOperationsWorkspace;
+}) {
+  const activePage = pagination?.page ?? 1;
+  const pageSize = pagination?.pageSize ?? Math.max(rows.length, 1);
+  const totalRows = pagination?.totalRows ?? rows.length;
+  const from = totalRows === 0 ? 0 : (activePage - 1) * pageSize + 1;
+  const to = totalRows === 0 ? 0 : Math.min(totalRows, from + rows.length - 1);
+  const isCloseoutWorkspace = workspace.detailPagePath === '/bookings/completed';
+  const isPostMatchWorkspace = workspace.detailPagePath === '/bookings/post-match-cancellations';
+  const isRecordsWorkspace =
+    workspace.detailPagePath === '/bookings' && BOOKING_RECORD_VIEWS.has(workspace.detailView);
+
+  if (rows.length === 0) {
+    return (
+      <AdminTablePanel
+        description={workspace.description}
+        id="booking-table-operations"
+        resultLabel={isPostMatchWorkspace ? `Current result: ${adminCountLabel(totalRows, 'booking')}` : adminCountLabel(totalRows, 'booking')}
+        resultTone={workspace.tone}
+        title={workspace.title}
+      >
+        <AdminEmptyState message={emptyMessage} title={null} />
+        {emptyResetHref ? (
+          <AdminFormControlLink className="button-secondary admin-mt-12" href={emptyResetHref}>
+            {isRecordsWorkspace ? 'Clear search' : 'Reset filters'}
+          </AdminFormControlLink>
+        ) : null}
+      </AdminTablePanel>
+    );
+  }
+
+  return (
+    <AdminTablePanel
+      description={workspace.description}
+      id="booking-table-operations"
+      resultLabel={isPostMatchWorkspace ? `Current result: ${adminCountLabel(totalRows, 'booking')}` : adminCountLabel(totalRows, 'booking')}
+      resultTone={workspace.tone}
+      title={workspace.title}
+    >
+      <AdminTableScroll ariaLabel={`${workspace.title} booking table`}>
+        <AdminDataTable
+          className={
+            isRecordsWorkspace
+              ? 'vuexy-booking-operations-table vuexy-booking-records-table'
+              : isCloseoutWorkspace
+                ? 'vuexy-booking-operations-table booking-closeout-operations-table'
+                : isPostMatchWorkspace
+                  ? 'vuexy-booking-operations-table booking-post-match-operations-table'
+                  : 'vuexy-booking-operations-table'
+          }
+          emptyMessage={emptyMessage}
+          headers={
+            isCloseoutWorkspace
+              ? BOOKING_CLOSEOUT_OPERATIONS_HEADERS
+              : isPostMatchWorkspace
+                ? BOOKING_POST_MATCH_OPERATIONS_HEADERS
+                : isRecordsWorkspace
+                  ? BOOKING_RECORDS_HEADERS
+                  : BOOKING_OPERATIONS_HEADERS
+          }
+          rowCount={rows.length}
+        >
+          {rows.map((row) => (
+            isCloseoutWorkspace ? (
+              <BookingMonitorCloseoutTableRow
+                detailPagePath={workspace.detailPagePath}
+                detailView={workspace.detailView}
+                key={row.booking.id}
+                returnHref={returnHref}
+                row={row}
+              />
+            ) : isPostMatchWorkspace ? (
+              <BookingMonitorPostMatchTableRow
+                detailPagePath={workspace.detailPagePath}
+                detailView={workspace.detailView}
+                key={row.booking.id}
+                nowMs={nowMs}
+                returnHref={returnHref}
+                row={row}
+              />
+            ) : isRecordsWorkspace ? (
+              <BookingMonitorRecordsTableRow
+                key={row.booking.id}
+                returnHref={returnHref}
+                row={row}
+              />
+            ) : (
+              <BookingMonitorOperationsTableRow
+                detailPagePath={workspace.detailPagePath}
+                detailView={workspace.detailView}
+                key={row.booking.id}
+                returnHref={returnHref}
+                row={row}
+              />
+            )
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
+      <AdminTablePaginationFooter
+        activePage={activePage}
+        ariaLabel={`${workspace.title} pages`}
+        from={from}
+        hrefForPage={pagination?.hrefForPage}
+        to={to}
+        totalPages={pagination?.totalPages ?? 1}
+        totalRows={totalRows}
+      />
+    </AdminTablePanel>
+  );
+}
+
+function BookingMonitorPostMatchTableRow({
+  detailPagePath,
+  detailView,
+  nowMs,
+  returnHref,
+  row,
+}: {
+  readonly detailPagePath: string;
+  readonly detailView: BookingPageView;
+  readonly nowMs: number;
+  readonly returnHref?: string;
+  readonly row: BookingMonitorListRow;
+}) {
+  const { booking } = row;
+  const source = postMatchCancellationDecisionSource(booking);
+  const decisionAt = postMatchCancellationDecisionAt(booking);
+  const decisionSla = postMatchCancellationDecisionSla(booking, nowMs);
+  const reason = postMatchCancellationReasonDisplay(booking);
+  const detail = postMatchCancellationDetail(booking);
+  const feeState = postMatchCancellationFeeState(booking);
+  const detailHrefSuffix = bookingMonitorDetailHrefSuffix(detailPagePath, detailView, booking.status);
+  const anchoredReturnHref = returnHref
+    ? `${returnHref.split('#', 1)[0]}#booking-${encodeURIComponent(booking.id)}`
+    : undefined;
+  const actionLabel = postMatchCancellationActionLabel(booking, source);
+  const locationRecorded = Boolean(
+    booking.selectedProvider?.currentLocationUpdatedAt ||
+      booking.selectedProvider?.locationSnapshots?.length ||
+      booking.addressSnapshot,
+  );
+
+  return (
+    <tr id={`booking-${booking.id}`}>
+      <td data-label="Decision · SLA">
+        <div className="booking-closeout-stack">
+          <StatusBadge tone={source === 'open' ? 'warning' : 'success'}>
+            {source === 'open' ? 'Pending' : 'Resolved'}
+          </StatusBadge>
+          {source === 'open' ? (
+            <StatusBadge tone={decisionSla.overdue ? 'danger' : 'info'}>{decisionSla.label}</StatusBadge>
+          ) : (
+            <StatusBadge tone="neutral">{postMatchCancellationDecisionSourceLabel(source)}</StatusBadge>
+          )}
+          {decisionAt ? <DateTimeText value={decisionAt} /> : <span>Decision time unavailable</span>}
+          <span className="muted">
+            {decisionAt && nowMs > 0 ? relativeTimeLabel(decisionAt, nowMs) : 'Decision age unavailable'}
+          </span>
+        </div>
+      </td>
+      <td data-label="Booking · Actor">
+        <div className="booking-closeout-stack">
+          <AdminTextLink
+            href={bookingDetailHref(booking.id, '', anchoredReturnHref)}
+            title={`Open booking ${booking.id}`}
+          >
+            <Eye aria-hidden="true" size={14} />
+            {shortId(booking.id)}
+            <span className="sr-only">Full booking ID {booking.id}</span>
+          </AdminTextLink>
+          <strong>{postMatchCancellationActorLabel(booking.closedByRole)}</strong>
+          <span className="muted">{postMatchCancellationMinutesLabel(postMatchCancellationMinutesAfterMatch(booking))}</span>
+        </div>
+      </td>
+      <td data-label="Reason · Evidence">
+        <div className="booking-closeout-stack">
+          <StatusBadgeFromPillClass pillClass={reason?.tone ?? 'pill-neutral'}>
+            {reason?.label ?? 'No structured reason'}
+          </StatusBadgeFromPillClass>
+          {detail ? (
+            <span className="booking-closeout-wrap" title={detail}>
+              {detail}
+            </span>
+          ) : null}
+          <span className="muted">
+            {adminCountLabel(bookingChatMessageCount(booking), 'chat message')} ·{' '}
+            {locationRecorded ? 'Location evidence recorded' : 'No location evidence'}
+          </span>
+        </div>
+      </td>
+      <td data-label="Payment">
+        <div className="booking-closeout-stack">
+          {booking.payment ? (
+            <>
+              <div>
+                <StatusBadge tone={closeoutPaymentTone(booking.payment.status)}>{booking.payment.method}</StatusBadge>
+                <strong>{booking.payment.status}</strong>
+              </div>
+              <span>{formatMoney(Number(booking.payment.amount ?? 0), booking.payment.currency)}</span>
+            </>
+          ) : (
+            <AdminInlineFallback>No payment record</AdminInlineFallback>
+          )}
+        </div>
+      </td>
+      <td data-label="Partner fee">
+        <div className="booking-closeout-stack">
+          <StatusBadge tone={feeState === 'restored' ? 'success' : feeState === 'held' ? 'danger' : 'neutral'}>
+            {postMatchCancellationFeeStateLabel(feeState)}
+          </StatusBadge>
+          {booking.earning ? (
+            <span>{formatMoney(Number(booking.earning.netAmount ?? 0), booking.earning.currency)}</span>
+          ) : (
+            <span className="muted">No Partner fee record</span>
+          )}
+          <span className="muted">{postMatchCancellationDecisionSourceLabel(source)}</span>
+        </div>
+      </td>
+      <td data-label="Next action">
+        <div className="vuexy-booking-next-action-cell">
+          <AdminTextLink href={bookingDetailHref(booking.id, detailHrefSuffix, anchoredReturnHref)}>
+            {actionLabel}
+          </AdminTextLink>
+          <span className="muted">Read evidence and money outcome in booking detail.</span>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function postMatchCancellationActionLabel(
+  booking: AdminBooking,
+  source: ReturnType<typeof postMatchCancellationDecisionSource>,
+) {
+  if (source === 'open') {
+    return booking.status === 'NO_SHOW' ? 'Review no-show outcome' : 'Review cancellation decision';
+  }
+  if (!booking.earning) return 'View cancellation outcome';
+  if (source === 'admin-held') return 'View kept fee record';
+  if (source === 'admin-approved' || source === 'auto-resolved') return 'View waived fee record';
+  return 'View legacy decision record';
+}
+
+function BookingMonitorCloseoutTableRow({
+  detailPagePath,
+  detailView,
+  returnHref,
+  row,
+}: {
+  readonly detailPagePath: string;
+  readonly detailView: BookingPageView;
+  readonly returnHref?: string;
+  readonly row: BookingMonitorListRow;
+}) {
+  const { booking } = row;
+  const payment = booking.payment;
+  const earning = booking.earning;
+  const partner = booking.selectedProvider ?? booking.preferredProvider ?? null;
+  const partnerId =
+    booking.selectedProvider?.id ??
+    booking.selectedProviderId ??
+    booking.preferredProvider?.id ??
+    booking.preferredProviderId ??
+    null;
+  const detailHrefSuffix = bookingMonitorDetailHrefSuffix(detailPagePath, detailView, booking.status);
+  const address = bookingAddressDisplay(booking);
+  const service = bookingServiceDisplay(row.serviceOptionLabel);
+  const refunds = [...(booking.refunds ?? []), ...(payment?.refunds ?? [])];
+
+  return (
+    <tr id={`booking-${booking.id}`}>
+      <td data-label="Priority · Issue">
+        <div className="booking-closeout-priority-cell">
+          <div>
+            <StatusBadge tone={['all', 'expired'].includes(detailView) ? 'neutral' : 'warning'}>
+              {['all', 'expired'].includes(detailView) ? 'Record' : 'Action'}
+            </StatusBadge>
+            <strong>{row.terminalWaitingLabel ?? 'Waiting time unavailable'}</strong>
+          </div>
+          <span className="muted">
+            {row.statusEvent.label} · {row.statusEvent.dateLabel}
+          </span>
+          <div className="booking-closeout-issue-chips" aria-label="Queue inclusion reasons">
+            {(row.issueChips ?? []).map((issue) => (
+              <StatusBadgeFromPillClass key={issue.label} pillClass={issue.tone}>
+                {issue.label}
+              </StatusBadgeFromPillClass>
+            ))}
+          </div>
+        </div>
+      </td>
+      <td data-label="Booking · Customer">
+        <div className="booking-closeout-stack">
+          <AdminTextLink href={bookingDetailHref(booking.id, '', returnHref)} title="Open booking detail">
+            <Eye aria-hidden="true" size={14} />
+            {shortId(booking.id)}
+          </AdminTextLink>
+          {bookingCustomerHref(booking) ? (
+            <AdminTextLink href={bookingCustomerHref(booking) ?? '/customers'}>
+              {bookingCustomerLabel(booking)}
+            </AdminTextLink>
+          ) : (
+            <strong>{bookingCustomerLabel(booking)}</strong>
+          )}
+          <span className="muted">{booking.customerProfile?.user?.phone ?? 'No phone'}</span>
+        </div>
+      </td>
+      <td data-label="Completed service">
+        <div className="booking-closeout-stack">
+          <strong>{service.fullLabel}</strong>
+          <span>{address.fullLabel}</span>
+          <span className="muted">{closeoutServicePriceLabel(row.servicePriceLabel, detailView)}</span>
+        </div>
+      </td>
+      <td data-label="Payment">
+        <div className="booking-closeout-stack">
+          {payment ? (
+            <>
+              <div>
+                <StatusBadge tone={closeoutPaymentTone(payment.status)}>{payment.method}</StatusBadge>
+                <strong>{payment.status}</strong>
+              </div>
+              <span>{formatMoney(Number(payment.amount ?? 0), payment.currency)}</span>
+              {payment.method !== 'CASH' && (payment.providerRef || payment.status === 'AUTHORIZED') && (
+                <span className="muted">
+                  {payment.providerRef ? 'Reference saved' : 'Gateway ref missing'}
+                </span>
+              )}
+              {refunds.length > 0 && (
+                <span className="muted">
+                  Refund · {refunds[0]?.status ?? 'unknown'} ({refunds.length})
+                </span>
+              )}
+            </>
+          ) : (
+            <AdminInlineFallback>No payment record</AdminInlineFallback>
+          )}
+        </div>
+      </td>
+      <td data-label="Partner · Closeout">
+        <div className="booking-closeout-stack">
+          {partner ? (
+            <AdminTextLink href={bookingPartnerHref(partnerId) ?? '/partners'}>
+              {providerTableLabel(partner)}
+            </AdminTextLink>
+          ) : (
+            <AdminInlineFallback>No final Partner</AdminInlineFallback>
+          )}
+          {earning ? (
+            <>
+              <span>
+                {row.cashDebtNeedsOps && row.cashDebtAmountLabel
+                  ? `Partner owes HANDS ${row.cashDebtAmountLabel}`
+                  : `Earning ${earning.status} · ${formatMoney(Number(earning.netAmount ?? 0), earning.currency)}`}
+              </span>
+              <div className="booking-closeout-ledger-chips" aria-label="Closeout records">
+                <CloseoutRecordBadge exists={Boolean(earning.platformFeeLogs?.length)} label="Fee" />
+                <CloseoutRecordBadge exists={Boolean(earning.taxLogs?.length)} label="Tax" />
+                <CloseoutRecordBadge exists={Boolean(earning.walletLedgerEntries?.length)} label="Wallet" />
+              </div>
+            </>
+          ) : (
+            <StatusBadge tone="danger">Earning missing</StatusBadge>
+          )}
+        </div>
+      </td>
+      <td data-label="Next action">
+        <div className="vuexy-booking-next-action-cell">
+          <AdminTextLink href={bookingDetailHref(booking.id, detailHrefSuffix, returnHref)}>
+            {row.nextActionLabel}
+          </AdminTextLink>
+          <span className="muted">{row.nextActionHelper}</span>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function CloseoutRecordBadge({ exists, label }: { readonly exists: boolean; readonly label: string }) {
+  return <StatusBadge tone={exists ? 'success' : 'warning'}>{label} {exists ? 'recorded' : 'missing'}</StatusBadge>;
+}
+
+function closeoutPaymentTone(status: string) {
+  if (['CAPTURED', 'RELEASED', 'REFUNDED'].includes(status)) return 'success' as const;
+  if (status === 'AUTHORIZED' || status === 'PENDING') return 'warning' as const;
+  return 'neutral' as const;
+}
+
+function closeoutServicePriceLabel(label: string, view: BookingPageView) {
+  return view === 'pricing'
+    ? label.replace(' / Minimum ', ' / Catalog minimum ')
+    : label.split(' / Minimum ', 1)[0];
+}
+
 function BookingMonitorTableGroup({
   emptyMessage,
   group,
+  returnHref,
 }: {
   readonly emptyMessage: string;
   readonly group: BookingTableGroup;
+  readonly returnHref?: string;
 }) {
   const [page, setPage] = useState(1);
   const rowKey = group.rows.map((row) => row.booking.id).join('|');
@@ -379,12 +891,12 @@ function BookingMonitorTableGroup({
     <AdminTablePanel
       description={group.description}
       id={`booking-table-${group.key}`}
-      resultLabel={`${group.rows.length} booking(s)`}
+      resultLabel={adminCountLabel(group.rows.length, 'booking')}
       resultTone={bookingTableGroupResultTone(group)}
       title={group.title}
     >
       {needsReviewMetrics.length > 0 && <BookingNeedsReviewSummary metrics={needsReviewMetrics} />}
-      <AdminTableScroll>
+      <AdminTableScroll ariaLabel={`${group.title} booking table`}>
         <AdminDataTable
           className="vuexy-booking-table"
           emptyMessage={emptyMessage}
@@ -392,7 +904,12 @@ function BookingMonitorTableGroup({
           rowCount={visibleRows.length}
         >
           {visibleRows.map((row) => (
-            <BookingMonitorListTableRow groupKey={group.key} key={row.booking.id} row={row} />
+            <BookingMonitorListTableRow
+              groupKey={group.key}
+              key={row.booking.id}
+              returnHref={returnHref}
+              row={row}
+            />
           ))}
         </AdminDataTable>
       </AdminTableScroll>
@@ -447,9 +964,11 @@ function BookingNeedsReviewSummary({ metrics }: { readonly metrics: readonly Boo
 
 function BookingMonitorListTableRow({
   groupKey,
+  returnHref,
   row,
 }: {
   readonly groupKey: BookingTableGroupKey;
+  readonly returnHref?: string;
   readonly row: BookingMonitorListRow;
 }) {
   const { booking } = row;
@@ -457,7 +976,7 @@ function BookingMonitorListTableRow({
   const addressDisplay = bookingAddressDisplay(booking);
   const countryDisplay = bookingCountryDisplay(bookingDeviceLanguageLabel(booking));
   const serviceDisplay = bookingServiceDisplay(row.serviceOptionLabel);
-  const stateChange = bookingStatusChangeState(booking);
+  const stateChange = row.statusEvent;
   const cancellationReviewSignal = bookingCancellationReviewSignal(booking);
   const reviewReasonPills = bookingReviewReasonPills(booking);
   const requestedPartner = booking.preferredProvider ?? booking.selectedProvider ?? null;
@@ -472,7 +991,7 @@ function BookingMonitorListTableRow({
     <tr id={`booking-${booking.id}`}>
       <td>
         <div className="vuexy-booking-id-line">
-          <AdminTextLink href={`/bookings/${booking.id}`} title="Open booking detail">
+          <AdminTextLink href={bookingDetailHref(booking.id, '', returnHref)} title="Open booking detail">
             <Eye aria-hidden="true" size={14} />
             {shortId(booking.id)}
           </AdminTextLink>
@@ -528,6 +1047,243 @@ function BookingMonitorListTableRow({
       </td>
     </tr>
   );
+}
+
+function BookingMonitorOperationsTableRow({
+  detailPagePath,
+  detailView,
+  returnHref,
+  row,
+}: {
+  readonly detailPagePath: string;
+  readonly detailView: BookingPageView;
+  readonly returnHref?: string;
+  readonly row: BookingMonitorListRow;
+}) {
+  const { booking } = row;
+  const addressDisplay = bookingAddressDisplay(booking);
+  const serviceDisplay = bookingServiceDisplay(row.serviceOptionLabel);
+  const stateChange = row.statusEvent;
+  const cancellationReviewSignal = bookingCancellationReviewSignal(booking);
+  const reviewReasonPills = bookingReviewReasonPills(booking);
+  const partner = booking.selectedProvider ?? booking.preferredProvider ?? null;
+  const partnerId =
+    booking.selectedProvider?.id ??
+    booking.selectedProviderId ??
+    booking.preferredProvider?.id ??
+    booking.preferredProviderId ??
+    null;
+  const participantCount = booking.participants?.length ?? 0;
+  const detailHrefSuffix = bookingMonitorDetailHrefSuffix(detailPagePath, detailView, booking.status);
+
+  return (
+    <tr id={`booking-${booking.id}`}>
+      <td data-label="Status">
+        <BookingStateChangedCell
+          cancellationReviewSignal={cancellationReviewSignal}
+          closureState={row.closureState}
+          reviewReasonPills={reviewReasonPills}
+          showDate={false}
+          stateChange={stateChange}
+        />
+      </td>
+      <td data-label="Booking / Customer">
+        <div className="vuexy-booking-id-line">
+          <AdminTextLink href={bookingDetailHref(booking.id, '', returnHref)} title="Open booking detail">
+            <Eye aria-hidden="true" size={14} />
+            {shortId(booking.id)}
+          </AdminTextLink>
+          <span className="muted">{row.openedDateLabel}</span>
+        </div>
+        <BookingPersonCell
+          avatarStatus={bookingCustomerAvatarStatus(booking)}
+          helper={booking.customerProfile?.user?.phone ?? 'No phone'}
+          href={bookingCustomerHref(booking)}
+          label={bookingCustomerLabel(booking)}
+          tone="customer"
+        />
+      </td>
+      <td data-label="Partner / Matching">
+        {partner ? (
+          <BookingPersonCell
+            avatarStatus={bookingRequestedPartnerAvatarStatus(booking, partner)}
+            helper={participantCount > 0 ? adminCountLabel(participantCount, 'participant') : 'No participants yet'}
+            href={bookingPartnerHref(partnerId)}
+            label={providerTableLabel(partner)}
+            tone="partner"
+          />
+        ) : (
+          <AdminInlineFallback>
+            {participantCount > 0 ? adminCountLabel(participantCount, 'participant') : 'Waiting for Partner'}
+          </AdminInlineFallback>
+        )}
+      </td>
+      <td data-label="Service / Area">
+        <div className="vuexy-booking-service-area-cell">
+          <BookingServiceCell amount={row.servicePriceLabel} service={serviceDisplay} />
+          <BookingAddressCell address={addressDisplay} />
+        </div>
+      </td>
+      <td data-label="Last activity">
+        <BookingCompactCell
+          ariaPrefix="Last activity"
+          className="vuexy-booking-age-cell"
+          fullLabel={row.statusEvent.relativeLabel}
+          shortLabel={row.statusEvent.relativeLabel}
+        >
+          <div className="muted" title={row.statusEvent.dateLabel}>
+            {row.statusEvent.dateLabel}
+          </div>
+        </BookingCompactCell>
+      </td>
+      <td data-label="Next action">
+        <div className="vuexy-booking-next-action-cell">
+          <StatusBadge tone={bookingCheckSignalTone(row.checkSignal.label)}>
+            {row.checkSignal.label}
+          </StatusBadge>
+          <AdminTextLink href={bookingDetailHref(booking.id, detailHrefSuffix, returnHref)}>
+            {row.nextActionLabel}
+          </AdminTextLink>
+          <span className="muted">{row.nextActionHelper}</span>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function BookingMonitorRecordsTableRow({
+  returnHref,
+  row,
+}: {
+  readonly returnHref?: string;
+  readonly row: BookingMonitorListRow;
+}) {
+  const { booking } = row;
+  const partner = booking.selectedProvider ?? booking.preferredProvider ?? null;
+  const partnerId =
+    booking.selectedProvider?.id ??
+    booking.selectedProviderId ??
+    booking.preferredProvider?.id ??
+    booking.preferredProviderId ??
+    null;
+  const service = bookingServiceDisplay(row.serviceOptionLabel);
+  const address = bookingAddressDisplay(booking);
+  const needsFollowUp = row.checkSignal.label !== 'Checks clear';
+  const payment = booking.payment;
+
+  return (
+    <tr id={`booking-${booking.id}`}>
+      <td data-label="Booking · Customer">
+        <div className="booking-records-cell">
+          <AdminTextLink href={bookingDetailHref(booking.id, '', returnHref)} title={`Booking ${booking.id}`}>
+            {shortId(booking.id)}
+            <span className="sr-only">Full booking ID {booking.id}</span>
+          </AdminTextLink>
+          <span className="muted">Requested {row.openedDateLabel}</span>
+          {bookingCustomerHref(booking) ? (
+            <AdminTextLink href={bookingCustomerHref(booking) ?? '/customers'}>
+              {bookingCustomerLabel(booking)}
+            </AdminTextLink>
+          ) : (
+            <strong>{bookingCustomerLabel(booking)}</strong>
+          )}
+          <span className="muted">{booking.customerProfile?.user?.phone ?? 'Phone unavailable'}</span>
+        </div>
+      </td>
+      <td data-label="Status · Closed">
+        <div className="booking-records-cell">
+          <StatusBadge tone={bookingRecordStatusTone(booking.status)}>{booking.status}</StatusBadge>
+          <span>{row.statusEvent.dateLabel}</span>
+          {row.closureState ? (
+            <StatusBadgeFromPillClass pillClass={row.closureState.tone}>
+              {row.closureState.label}
+            </StatusBadgeFromPillClass>
+          ) : null}
+        </div>
+      </td>
+      <td data-label="Partner · Service">
+        <div className="booking-records-cell">
+          {partner ? (
+            <AdminTextLink href={bookingPartnerHref(partnerId) ?? '/partners'}>
+              {providerTableLabel(partner)}
+            </AdminTextLink>
+          ) : (
+            <AdminInlineFallback>No final Partner</AdminInlineFallback>
+          )}
+          <strong>{service.fullLabel}</strong>
+          <span className="muted">{bookingRecordPriceLabel(row.servicePriceLabel)}</span>
+          <span className="muted">{bookingRecordPayoutLabel(row.servicePayoutLabel)}</span>
+        </div>
+      </td>
+      <td data-label="Area · Payment">
+        <div className="booking-records-cell">
+          {address.tone === 'pill-warn' ? (
+            <StatusBadge tone="warning">Service address missing</StatusBadge>
+          ) : (
+            <span title={address.fullLabel}>{address.fullLabel}</span>
+          )}
+          {payment ? (
+            <>
+              <StatusBadge tone={closeoutPaymentTone(payment.status)}>
+                {payment.method} · {payment.status}
+              </StatusBadge>
+              <span className="muted">
+                {formatMoney(Number(payment.amount ?? 0), payment.currency)}
+              </span>
+            </>
+          ) : (
+            <AdminInlineFallback>No payment record</AdminInlineFallback>
+          )}
+        </div>
+      </td>
+      <td data-label="Follow-up">
+        <div className="booking-records-cell">
+          <StatusBadge tone={needsFollowUp ? 'warning' : 'success'}>
+            {needsFollowUp ? 'Needs follow-up' : 'No follow-up'}
+          </StatusBadge>
+          <AdminTextLink href={bookingDetailHref(booking.id, '', returnHref)}>
+            {needsFollowUp ? row.nextActionLabel : 'View booking record'}
+          </AdminTextLink>
+          {needsFollowUp ? (
+            <span className="muted">{row.firstCheckTitle ?? row.nextActionHelper}</span>
+          ) : null}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function bookingRecordStatusTone(status: string) {
+  if (status === 'COMPLETED') return 'success' as const;
+  if (status === 'CANCELLED' || status === 'NO_SHOW') return 'danger' as const;
+  if (status === 'EXPIRED') return 'warning' as const;
+  if (status === 'REFUNDED') return 'info' as const;
+  return 'neutral' as const;
+}
+
+function bookingRecordPriceLabel(label: string) {
+  return label.replace(' / Minimum ', ' / Partner minimum ');
+}
+
+function bookingRecordPayoutLabel(label: string | null) {
+  return label ? label.replace(/^Payout /u, 'Partner payout ') : 'Partner payout unavailable';
+}
+
+function bookingCheckSignalTone(label: BookingMonitorSignal['label']) {
+  if (label === 'Action') return 'danger' as const;
+  if (label === 'Watch') return 'info' as const;
+  return 'success' as const;
+}
+
+function bookingDetailHref(bookingId: string, suffix: string, returnHref?: string) {
+  const baseHref = `/bookings/${encodeURIComponent(bookingId)}`;
+  if (!returnHref) {
+    return `${baseHref}${suffix}`;
+  }
+  const [queryPart = '', fragment] = suffix.split('#', 2);
+  const params = new URLSearchParams(queryPart.startsWith('?') ? queryPart.slice(1) : '');
+  params.set('returnTo', returnHref);
+  return `${baseHref}?${params.toString()}${fragment ? `#${fragment}` : ''}`;
 }
 
 function bookingTableHeaders(groupKey: BookingTableGroupKey) {
@@ -697,27 +1453,40 @@ function BookingStateChangedCell({
   cancellationReviewSignal,
   closureState,
   reviewReasonPills,
+  showDate = true,
   stateChange,
 }: {
   readonly cancellationReviewSignal: { readonly label: string; readonly tone: string } | null;
   readonly closureState: BookingMonitorPillDetail | null;
   readonly reviewReasonPills: readonly BookingReviewReasonPill[];
-  readonly stateChange: { readonly dateLabel: string; readonly label: string };
+  readonly showDate?: boolean;
+  readonly stateChange: {
+    readonly clockLabel: string | null;
+    readonly dateLabel: string;
+    readonly label: string;
+  };
 }) {
+  const displayLabel =
+    !showDate && stateChange.clockLabel
+      ? `${stateChange.label} · ${stateChange.clockLabel}`
+      : stateChange.label;
+
   return (
     <BookingCompactCell
       ariaPrefix="State changed"
       className="vuexy-booking-state-cell"
-      fullLabel={stateChange.label}
-      shortLabel={stateChange.label}
+      fullLabel={displayLabel}
+      shortLabel={displayLabel}
     >
-      <div
-        aria-label={`State changed at: ${stateChange.dateLabel}`}
-        className="muted"
-        title={stateChange.dateLabel}
-      >
-        {stateChange.dateLabel}
-      </div>
+      {showDate && (
+        <div
+          aria-label={`State changed at: ${stateChange.dateLabel}`}
+          className="muted"
+          title={stateChange.dateLabel}
+        >
+          {stateChange.dateLabel}
+        </div>
+      )}
       {closureState && (
         <div className="vuexy-booking-closure-evidence">
           <div className="vuexy-booking-closure-pills">
@@ -736,11 +1505,7 @@ function BookingStateChangedCell({
       {reviewReasonPills.length > 0 && (
         <div className="vuexy-booking-review-reasons" aria-label="Cancellation review reasons">
           {reviewReasonPills.map((reason) => (
-            <StatusBadgeFromPillClass
-              key={reason.label}
-              pillClass={reason.tone}
-              title={reason.title}
-            >
+            <StatusBadgeFromPillClass key={reason.label} pillClass={reason.tone} title={reason.title}>
               {reason.label}
             </StatusBadgeFromPillClass>
           ))}
@@ -810,6 +1575,10 @@ function BookingAddressCell({
     readonly tone: 'pill-neutral' | 'pill-warn';
   };
 }) {
+  if (address.tone === 'pill-warn') {
+    return <StatusBadge tone="warning">Service address missing</StatusBadge>;
+  }
+
   return (
     <BookingCompactCell
       ariaPrefix="Service address"
@@ -817,7 +1586,6 @@ function BookingAddressCell({
       fullLabel={address.fullLabel}
       shortLabel={address.shortLabel}
     >
-      {address.tone === 'pill-warn' && <StatusBadge tone="warning">Address missing</StatusBadge>}
     </BookingCompactCell>
   );
 }
@@ -907,7 +1675,13 @@ function BookingParticipantAvatar({ participant }: { readonly participant: Booki
   }
 
   return (
-    <Link aria-label={label} className={className} href={participant.partnerHref} prefetch={false} title={label}>
+    <Link
+      aria-label={label}
+      className={className}
+      href={participant.partnerHref}
+      prefetch={false}
+      title={label}
+    >
       {adminPersonInitials(participant.partnerLabel)}
       <AdminAvatarStatusDot status={participant.avatarStatus} />
     </Link>
@@ -1096,9 +1870,7 @@ function countryFlagFromRegion(region: string) {
     return null;
   }
 
-  return String.fromCodePoint(
-    ...region.split('').map((letter) => 127397 + letter.charCodeAt(0)),
-  );
+  return String.fromCodePoint(...region.split('').map((letter) => 127397 + letter.charCodeAt(0)));
 }
 
 function bookingAddressDisplay(booking: AdminBooking) {
@@ -1108,13 +1880,14 @@ function bookingAddressDisplay(booking: AdminBooking) {
     readAddressText(booking.addressSnapshot?.addressText) ??
     readAddressText(booking.addressSnapshot?.address) ??
     readAddressText(booking.addressSnapshot);
-  const fullLabel = apiAddress ?? legacyAddress ?? snapshotAddress ?? 'No address';
-  const displayLabel = fullLabel === 'No address' ? fullLabel : serviceAddressAreaLabel(fullLabel);
+  const sourceLabel = apiAddress ?? legacyAddress ?? snapshotAddress ?? 'Service address missing';
+  const displayLabel =
+    sourceLabel === 'Service address missing' ? sourceLabel : serviceAddressAreaLabel(sourceLabel);
 
   return {
-    fullLabel,
+    fullLabel: displayLabel,
     shortLabel: compactTableLabel(displayLabel),
-    tone: fullLabel === 'No address' ? 'pill-warn' : 'pill-neutral',
+    tone: sourceLabel === 'Service address missing' ? 'pill-warn' : 'pill-neutral',
   } as const;
 }
 
@@ -1129,68 +1902,6 @@ function bookingServiceDisplay(label: string) {
 
 function compactTableLabel(value: string) {
   return value.length > 58 ? `${value.slice(0, 55)}...` : value;
-}
-
-function bookingStatusChangeState(booking: AdminBooking) {
-  const timestamp = booking.statusChangedAt ?? bookingStatusChangedTimestamp(booking);
-
-  return {
-    dateLabel: formatBookingDate(timestamp),
-    label: booking.statusChangedLabel?.trim() || bookingStatusChangedLabel(booking),
-  };
-}
-
-function bookingStatusChangedTimestamp(booking: AdminBooking) {
-  switch (booking.status) {
-    case 'CREATED':
-    case 'OPEN_MATCHING':
-      return booking.openedAt ?? booking.createdAt ?? booking.updatedAt ?? null;
-    case 'MATCHED':
-      return booking.matchedAt ?? booking.updatedAt ?? null;
-    case 'PROVIDER_ON_THE_WAY':
-    case 'ARRIVED':
-    case 'IN_SERVICE':
-      return booking.updatedAt ?? booking.matchedAt ?? null;
-    case 'COMPLETED':
-    case 'CANCELLED':
-    case 'NO_SHOW':
-      return booking.closedAt ?? booking.updatedAt ?? null;
-    case 'EXPIRED':
-      return booking.closedAt ?? booking.expiresAt ?? booking.updatedAt ?? null;
-    case 'REFUNDED':
-      return booking.updatedAt ?? booking.closedAt ?? null;
-    default:
-      return booking.updatedAt ?? booking.createdAt ?? null;
-  }
-}
-
-function bookingStatusChangedLabel(booking: AdminBooking) {
-  switch (booking.status) {
-    case 'CREATED':
-      return 'Requested at';
-    case 'OPEN_MATCHING':
-      return 'Matching opened at';
-    case 'MATCHED':
-      return 'Matched at';
-    case 'PROVIDER_ON_THE_WAY':
-      return 'Partner on the way at';
-    case 'ARRIVED':
-      return 'Arrived at';
-    case 'IN_SERVICE':
-      return 'Service started at';
-    case 'COMPLETED':
-      return 'Completed at';
-    case 'CANCELLED':
-      return bookingHasPostMatchEvidence(booking) ? 'Partner cancelled at' : 'Cancelled at';
-    case 'NO_SHOW':
-      return 'No-show marked at';
-    case 'EXPIRED':
-      return 'Expired at';
-    case 'REFUNDED':
-      return 'Refunded at';
-    default:
-      return 'Updated at';
-  }
 }
 
 function bookingCancellationReviewSignal(booking: AdminBooking) {
@@ -1246,14 +1957,14 @@ function buildBookingTableGroups(
 ): readonly BookingTableGroup[] {
   const visibleKeySet = visibleGroupKeys ? new Set(visibleGroupKeys) : null;
 
-  return BOOKING_TABLE_GROUPS.filter(
-    (definition) => !visibleKeySet || visibleKeySet.has(definition.key),
-  ).map((definition) => ({
-    ...definition,
-    rows: rows
-      .filter((row) => bookingTableGroupKey(row.booking) === definition.key)
-      .sort(compareBookingTableRows),
-  }));
+  return BOOKING_TABLE_GROUPS.filter((definition) => !visibleKeySet || visibleKeySet.has(definition.key)).map(
+    (definition) => ({
+      ...definition,
+      rows: rows
+        .filter((row) => bookingTableGroupKey(row.booking) === definition.key)
+        .sort(compareBookingTableRows),
+    }),
+  );
 }
 
 function bookingPostMatchNeedsReviewMetrics(
@@ -1300,7 +2011,16 @@ function bookingReviewReasonPills(booking: AdminBooking): readonly BookingReview
   }
 
   const chatCount = bookingChatMessageCount(booking);
-  const reasons: BookingReviewReasonPill[] = [];
+  const cancellationReason = postMatchCancellationReasonDisplay(booking);
+  const reasons: BookingReviewReasonPill[] = cancellationReason
+    ? [
+        {
+          label: cancellationReason.label,
+          title: cancellationReason.title,
+          tone: cancellationReason.tone,
+        },
+      ]
+    : [];
 
   if (booking.status === 'NO_SHOW') {
     reasons.push({
@@ -1321,7 +2041,7 @@ function bookingReviewReasonPills(booking: AdminBooking): readonly BookingReview
   }
 
   if (!isPostMatchCancellationBooking(booking) || postMatchCancellationResolution(booking) !== 'pending') {
-    return [];
+    return reasons;
   }
 
   if (isPostMatchCancellationManualReviewRequired(booking)) {
@@ -1375,7 +2095,7 @@ function compareBookingTableRows(left: BookingMonitorListRow, right: BookingMoni
 }
 
 function bookingTableStateChangedTime(booking: AdminBooking) {
-  return safeBookingTime(booking.statusChangedAt ?? bookingStatusChangedTimestamp(booking));
+  return safeBookingTime(booking.statusChangedAt ?? booking.updatedAt ?? booking.createdAt);
 }
 
 function bookingRequestTime(booking: AdminBooking) {

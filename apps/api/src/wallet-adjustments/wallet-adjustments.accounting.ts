@@ -1,3 +1,8 @@
+import {
+  assertManualWalletAdjustmentCombinationAllowed,
+  type ManualWalletAdjustmentPeriodStatus,
+} from './manual-wallet-adjustment-policy';
+
 export type ManualWalletAdjustmentDirection = 'CREDIT' | 'DEBIT';
 
 export type ManualWalletAdjustmentOwnerType = 'CUSTOMER' | 'PARTNER';
@@ -22,7 +27,8 @@ export type ManualWalletAdjustmentInput = {
   readonly currentBalance: number;
   readonly direction: ManualWalletAdjustmentDirection;
   readonly highAmountThreshold?: number;
-  readonly monthlyPeriodStatus?: 'DRAFT' | 'REVIEWED' | 'DECLARED' | 'PAID' | 'CLOSED';
+  readonly monthlyPeriod?: string | null;
+  readonly monthlyPeriodStatus?: ManualWalletAdjustmentPeriodStatus | null;
   readonly ownerType: ManualWalletAdjustmentOwnerType;
   readonly reason: string;
 };
@@ -64,17 +70,17 @@ export type ManualWalletAdjustmentPreview = ManualWalletAdjustmentInput & {
 export type ManualWalletAdjustmentReversalInput = {
   readonly adminId: string;
   readonly approvalId: string;
+  readonly attachmentUrl?: string | null;
   readonly currentBalance: number;
+  readonly monthlyPeriod: string | null;
+  readonly monthlyPeriodStatus: ManualWalletAdjustmentPeriodStatus | null;
   readonly original: ManualWalletAdjustmentPreview;
   readonly reason: string;
 };
 
 export function buildManualWalletAdjustmentPreview(input: ManualWalletAdjustmentInput): ManualWalletAdjustmentPreview {
   assertManualWalletAdjustmentInput(input);
-
-  if (input.adjustmentType === 'CASH_BOOKING_DEDUCTION') {
-    throw new Error('Cash booking deductions must use booking settlement logic.');
-  }
+  assertManualWalletAdjustmentCombinationAllowed(input);
 
   const beforeBalance = input.currentBalance;
   const walletDelta = input.direction === 'CREDIT' ? input.amount : -input.amount;
@@ -140,8 +146,11 @@ export function buildManualWalletAdjustmentReversal(
     adminId: input.adminId,
     amount: original.amount,
     approvalId: input.approvalId,
+    attachmentUrl: input.attachmentUrl,
     currentBalance: input.currentBalance,
     direction,
+    monthlyPeriod: input.monthlyPeriod,
+    monthlyPeriodStatus: input.monthlyPeriodStatus,
     ownerType: original.ownerType,
     reason: input.reason,
     accountingEntries: original.accountingEntries.map((entry) => ({
@@ -332,9 +341,6 @@ function assertManualWalletAdjustmentInput(input: ManualWalletAdjustmentInput) {
   assertPositiveWholeVnd(input.amount, 'Amount');
   assertWholeVnd(input.currentBalance, 'Current balance');
 
-  if (input.monthlyPeriodStatus === 'CLOSED' && input.adjustmentType !== 'MANUAL_REVERSAL') {
-    throw new Error('Closed monthly periods require a reversal entry instead of direct edit.');
-  }
 }
 
 function assertNonEmpty(value: string, label: string) {

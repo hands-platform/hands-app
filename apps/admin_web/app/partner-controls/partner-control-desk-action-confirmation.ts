@@ -2,6 +2,7 @@ import type { AdminProviderSanction } from '../../lib/admin-api';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { shortId } from '../../lib/admin-format';
 import type { StatusBadgeTone } from '../../components/status-badge';
+import { partnerControlHref } from './partner-control-page-load-plan';
 
 export type PartnerControlDeskConfirmationAction = 'lift-control';
 
@@ -13,14 +14,26 @@ export type PartnerControlDeskActionConfirmation = {
   readonly disabled: boolean;
   readonly hiddenInputs: readonly { readonly name: string; readonly value: string }[];
   readonly sanctionId: string;
+  readonly textInputs: readonly {
+    readonly label: string;
+    readonly maxLength: number;
+    readonly minLength: number;
+    readonly name: string;
+    readonly placeholder: string;
+    readonly required: boolean;
+  }[];
   readonly title: string;
   readonly tone: StatusBadgeTone;
 };
 
 type PartnerControlDeskFilters = {
+  readonly controlType?: string;
+  readonly details?: string;
   readonly q?: string;
   readonly sanction?: string;
+  readonly sanctionPage?: string;
   readonly severity?: string;
+  readonly sort?: string;
   readonly status?: string;
 };
 
@@ -29,15 +42,15 @@ type PartnerControlDeskTarget = PartnerControlDeskFilters & {
 };
 
 export function partnerControlDeskActionConfirmHref(target: PartnerControlDeskTarget) {
-  return `/partner-controls?${partnerControlDeskActionSearchParams(target).toString()}`;
+  return partnerControlHref(target, {
+    controlAction: 'lift-control',
+    details: 'sanctions',
+    sanctionId: target.sanctionId,
+  });
 }
 
 export function partnerControlDeskCancelHref(filters: PartnerControlDeskFilters = {}) {
-  const params = new URLSearchParams();
-  appendFilterParams(params, filters);
-  const query = params.toString();
-
-  return query ? `/partner-controls?${query}` : '/partner-controls';
+  return partnerControlHref(filters, { controlAction: undefined, sanctionId: undefined });
 }
 
 export function readPartnerControlDeskConfirmationAction(
@@ -61,7 +74,8 @@ export function buildPartnerControlDeskActionConfirmation(
     return null;
   }
 
-  const disabledReason = sanction.status === 'ACTIVE' ? '' : `Control is already ${sanction.status.toLowerCase()}.`;
+  const disabledReason =
+    sanction.status === 'ACTIVE' ? '' : `Control is already ${sanction.status.toLowerCase()}.`;
   const partnerLabel = providerLabel(sanction);
 
   return {
@@ -77,25 +91,21 @@ export function buildPartnerControlDeskActionConfirmation(
       { name: 'sanctionId', value: sanction.id },
     ],
     sanctionId: sanction.id,
+    textInputs: disabledReason
+      ? []
+      : [
+          {
+            label: 'Lift reason and evidence',
+            maxLength: 500,
+            minLength: 12,
+            name: 'reason',
+            placeholder: 'State what was resolved and which evidence was verified',
+            required: true,
+          },
+        ],
     title: `Lift control ${shortId(sanction.id)}?`,
     tone: disabledReason ? 'neutral' : 'warning',
   };
-}
-
-function partnerControlDeskActionSearchParams(target: PartnerControlDeskTarget) {
-  const params = new URLSearchParams({
-    controlAction: 'lift-control',
-    sanctionId: target.sanctionId,
-  });
-  appendFilterParams(params, target);
-  return params;
-}
-
-function appendFilterParams(params: URLSearchParams, filters: PartnerControlDeskFilters) {
-  if (filters.q) params.set('q', filters.q);
-  if (filters.status) params.set('status', filters.status);
-  if (filters.severity) params.set('severity', filters.severity);
-  if (filters.sanction) params.set('sanction', filters.sanction);
 }
 
 function providerLabel(sanction: AdminProviderSanction) {

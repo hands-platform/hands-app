@@ -15,8 +15,10 @@ describe('BookingCompletedCloseoutSection', () => {
     const markup = renderToStaticMarkup(<BookingCompletedCloseoutSection />);
     const rendered = normalizedText(markup);
 
+    expect(markup).toContain('<details');
+    expect(markup).not.toContain('<details open=""');
+    expect(rendered).toContain('How to review closeout');
     expect(rendered).toContain('Completed closeout flow');
-    expect(rendered).toContain('Completed bookings stay here until service evidence');
     expect(rendered).toContain('1. Confirm service record');
     expect(rendered).toContain('Completion evidence');
     expect(rendered).toContain('Partner completion location');
@@ -26,7 +28,7 @@ describe('BookingCompletedCloseoutSection', () => {
     expect(rendered).toContain('Completed detail');
     expect(rendered).toContain('Admin handling rule');
     expect(rendered).toContain('normal closeout review');
-    expect(markup).toContain('admin-section');
+    expect(markup).toContain('admin-disclosure');
     expect(markup).toContain('booking-completed-closeout-card');
     expect(markup).toContain('aria-label="Completed closeout flow"');
     expect(markup).toContain('booking-post-match-decision-flow');

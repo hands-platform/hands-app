@@ -6,7 +6,7 @@ import 'provider_onboarding_form_inputs.dart';
 import 'provider_onboarding_form_widgets.dart';
 
 const partnerBankCorrectionDefaultReason =
-    'Withdrawal bank information is incorrect, so the payout cannot be sent.';
+    'Thông tin ngân hàng nhận tiền không chính xác nên chưa thể chuyển khoản.';
 
 Future<ProviderBasicProfileInput?> showProviderBasicProfileSheet(
   BuildContext context, {
@@ -166,69 +166,69 @@ class _BasicProfileFormState extends State<_BasicProfileForm> {
   @override
   Widget build(BuildContext context) {
     return ProviderOnboardingSheetFrame(
-      title: 'Partner basic profile',
+      title: 'Hồ sơ cơ bản',
       child: Form(
         key: _formKey,
         child: Column(
           children: [
             ProviderOnboardingField(
-                controller: legalName, label: 'Legal name', required: true),
+                controller: legalName, label: 'Họ tên pháp lý', required: true),
             ProviderOnboardingField(
-                controller: displayName, label: 'Public display name'),
+                controller: displayName, label: 'Tên hiển thị công khai'),
             ProviderOnboardingField(
               controller: dateOfBirth,
-              label: 'Date of birth',
-              hint: 'YYYY-MM-DD',
+              label: 'Ngày sinh',
+              hint: 'NNNN-TT-NG',
               required: true,
             ),
             ProviderOnboardingField(
               controller: gender,
-              label: 'Gender',
-              hint: 'female, male, other',
+              label: 'Giới tính',
+              hint: 'nữ, nam, khác',
             ),
+            ProviderOnboardingField(controller: facebookId, label: 'Facebook'),
             ProviderOnboardingField(
-                controller: facebookId, label: 'Facebook ID'),
+                controller: activityNickname, label: 'Tên hoạt động'),
             ProviderOnboardingField(
-                controller: activityNickname, label: 'Activity nickname'),
-            ProviderOnboardingField(controller: bio, label: 'Bio', maxLines: 3),
+                controller: bio, label: 'Giới thiệu', maxLines: 3),
             ProviderOnboardingField(
               controller: experienceYears,
-              label: 'Experience years',
+              label: 'Số năm kinh nghiệm',
               hint: '4',
               keyboardType: TextInputType.number,
             ),
             ProviderOnboardingField(
               controller: specialties,
-              label: 'Specialties',
-              hint: 'Foot massage, Swedish massage',
+              label: 'Chuyên môn',
+              hint: 'Massage chân, massage Thụy Điển',
             ),
             ProviderOnboardingField(
               controller: languages,
-              label: 'Languages',
-              hint: 'Vietnamese, English, Korean',
+              label: 'Ngôn ngữ',
+              hint: 'Tiếng Việt, tiếng Anh',
             ),
             ProviderOnboardingField(
               controller: serviceStyle,
-              label: 'Service style',
-              hint: 'Quiet, professional, hotel-friendly',
+              label: 'Phong cách phục vụ',
+              hint: 'Yên tĩnh, chuyên nghiệp, phù hợp khách sạn',
               maxLines: 2,
             ),
             ProviderOnboardingField(
               controller: residentialAddress,
-              label: 'Residential / tax address',
-              hint: 'Required after first earning, before withdrawal',
+              label: 'Địa chỉ cư trú',
+              hint: 'Cần sau thu nhập đầu tiên, trước khi rút tiền',
               maxLines: 2,
             ),
             ProviderOnboardingField(
-                controller: city, label: 'City / province', required: true),
+                controller: city, label: 'Tỉnh / thành phố', required: true),
             ProviderOnboardingField(
               controller: serviceCities,
-              label: 'Service cities',
-              hint: 'Ho Chi Minh City, Da Nang',
+              label: 'Khu vực phục vụ',
+              hint: 'TP. Hồ Chí Minh, Đà Nẵng',
             ),
             const SizedBox(height: 12),
             ProviderOnboardingSubmitButton(
-              label: 'Save basic profile',
+              label: 'Lưu hồ sơ cơ bản',
               onPressed: () {
                 if (!_formKey.currentState!.validate()) return;
                 Navigator.of(context).pop(
@@ -243,7 +243,7 @@ class _BasicProfileFormState extends State<_BasicProfileForm> {
                     bio: bio.text.trim(),
                     experienceYears: int.tryParse(experienceYears.text.trim()),
                     specialties: _splitCsv(specialties.text, ''),
-                    languages: _splitCsv(languages.text, 'Vietnamese'),
+                    languages: _splitCsv(languages.text, 'Tiếng Việt'),
                     serviceStyle: serviceStyle.text.trim(),
                     residentialAddress: residentialAddress.text.trim(),
                     city: city.text.trim(),
@@ -279,27 +279,27 @@ class _KycFormState extends State<_KycForm> {
   @override
   Widget build(BuildContext context) {
     return ProviderOnboardingSheetFrame(
-      title: 'KYC identity check',
+      title: 'Xác minh danh tính KYC',
       description:
-          'Enter the partner CCCD/CMND number after the front, back, and selfie photos are ready.',
+          'Nhập số CCCD/CMND sau khi đã chuẩn bị mặt trước, mặt sau và ảnh chân dung.',
       child: Form(
         key: _formKey,
         child: Column(
           children: [
             ProviderOnboardingField(
               controller: cccdNumber,
-              label: 'CCCD / CMND number',
+              label: 'Số CCCD / CMND',
               keyboardType: TextInputType.number,
               required: true,
               validator: (value) {
                 final text = value?.trim() ?? '';
-                if (text.length < 9) return 'Enter a valid ID number.';
+                if (text.length < 9) return 'Vui lòng nhập số giấy tờ hợp lệ.';
                 return null;
               },
             ),
             const SizedBox(height: 12),
             ProviderOnboardingSubmitButton(
-              label: 'Submit KYC for review',
+              label: 'Gửi KYC để xét duyệt',
               onPressed: () {
                 if (!_formKey.currentState!.validate()) return;
                 Navigator.of(context).pop(
@@ -360,7 +360,7 @@ class _BankAccountFormState extends State<_BankAccountForm> {
   @override
   Widget build(BuildContext context) {
     return ProviderOnboardingSheetFrame(
-      title: 'Payout bank account',
+      title: 'Tài khoản ngân hàng nhận tiền',
       description: bankAccountFormDescription(
         status: widget.status,
         rejectionReason: widget.rejectionReason,
@@ -371,28 +371,28 @@ class _BankAccountFormState extends State<_BankAccountForm> {
           children: [
             ProviderOnboardingField(
               controller: bankName,
-              label: 'Vietnam bank name',
+              label: 'Tên ngân hàng Việt Nam',
               required: true,
             ),
             ProviderOnboardingField(
               controller: accountNumber,
-              label: 'Bank account number',
+              label: 'Số tài khoản ngân hàng',
               keyboardType: TextInputType.number,
               required: true,
             ),
             ProviderOnboardingField(
               controller: accountHolderName,
-              label: 'Account holder legal name',
+              label: 'Họ tên chủ tài khoản',
               required: true,
             ),
             ProviderOnboardingField(
               controller: qrBankingProvider,
-              label: 'QR banking provider / VietQR',
+              label: 'Nhà cung cấp QR / VietQR',
               hint: 'vietqr',
             ),
             const SizedBox(height: 12),
             ProviderOnboardingSubmitButton(
-              label: 'Submit bank account',
+              label: 'Gửi thông tin ngân hàng',
               onPressed: () {
                 if (!_formKey.currentState!.validate()) return;
                 Navigator.of(context).pop(
@@ -464,7 +464,7 @@ class _TaxProfileFormState extends State<_TaxProfileForm> {
   @override
   Widget build(BuildContext context) {
     return ProviderOnboardingSheetFrame(
-      title: 'Tax profile',
+      title: 'Thông tin thuế',
       description: taxProfileFormDescription(
         status: widget.status,
         rejectionReason: widget.rejectionReason,
@@ -474,18 +474,18 @@ class _TaxProfileFormState extends State<_TaxProfileForm> {
         child: Column(
           children: [
             ProviderOnboardingField(
-                controller: taxCode, label: 'MST / personal tax code'),
+                controller: taxCode, label: 'MST / mã số thuế cá nhân'),
             ProviderOnboardingField(
-                controller: legalName, label: 'Legal name', required: true),
+                controller: legalName, label: 'Họ tên pháp lý', required: true),
             ProviderOnboardingField(
               controller: registeredAddress,
-              label: 'Registered address',
+              label: 'Địa chỉ đăng ký',
               required: true,
               maxLines: 2,
             ),
             const SizedBox(height: 12),
             ProviderOnboardingSubmitButton(
-              label: 'Submit tax profile',
+              label: 'Gửi thông tin thuế',
               onPressed: () {
                 if (!_formKey.currentState!.validate()) return;
                 Navigator.of(context).pop(
@@ -551,19 +551,19 @@ class _AgreementsFormState extends State<_AgreementsForm> {
   @override
   Widget build(BuildContext context) {
     return ProviderOnboardingSheetFrame(
-      title: 'Required agreements',
+      title: 'Thỏa thuận bắt buộc',
       description:
-          'Agreement versions are saved so future policy changes can request re-consent.',
+          'Phiên bản thỏa thuận được lưu để yêu cầu đồng ý lại khi chính sách thay đổi.',
       child: Form(
         key: _formKey,
         child: Column(
           children: [
             ProviderOnboardingField(
-                controller: version, label: 'Agreement version'),
+                controller: version, label: 'Phiên bản thỏa thuận'),
             ProviderOnboardingField(
               controller: deviceId,
-              label: 'Device ID',
-              hint: 'Optional',
+              label: 'Mã thiết bị',
+              hint: 'Không bắt buộc',
             ),
             const SizedBox(height: 8),
             for (final type in widget.requiredTypes)
@@ -573,13 +573,13 @@ class _AgreementsFormState extends State<_AgreementsForm> {
                   selected[type] = value ?? false;
                 }),
                 title: Text(_agreementLabel(type)),
-                subtitle: Text('Type: $type'),
+                subtitle: Text('Loại: $type'),
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
               ),
             const SizedBox(height: 12),
             ProviderOnboardingSubmitButton(
-              label: 'Accept selected agreements',
+              label: 'Chấp nhận thỏa thuận đã chọn',
               onPressed: () {
                 final chosen = selected.entries
                     .where((entry) => entry.value)
@@ -588,7 +588,7 @@ class _AgreementsFormState extends State<_AgreementsForm> {
                 if (chosen.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Select at least one agreement.')),
+                        content: Text('Hãy chọn ít nhất một thỏa thuận.')),
                   );
                   return;
                 }
@@ -645,15 +645,15 @@ String _firstText(List<Object?> values) {
 String _agreementLabel(String type) {
   switch (type) {
     case 'TERMS':
-      return 'Service terms';
+      return 'Điều khoản dịch vụ';
     case 'PRIVACY':
-      return 'Privacy collection';
+      return 'Thu thập dữ liệu riêng tư';
     case 'LOCATION':
-      return 'Location usage';
+      return 'Sử dụng vị trí';
     case 'PAYOUT':
-      return 'Payout policy';
+      return 'Chính sách thanh toán';
     case 'TAX':
-      return 'Tax processing';
+      return 'Xử lý thuế';
     default:
       return type;
   }
@@ -667,16 +667,16 @@ String bankAccountFormDescription({
     final reason = rejectionReason?.trim();
     final prefix = reason == null || reason.isEmpty
         ? partnerBankCorrectionDefaultReason
-        : 'Rejected: $reason.';
-    return '$prefix Correct the Vietnamese bank account details and submit again for admin approval.';
+        : 'Bị từ chối: $reason.';
+    return '$prefix Hãy sửa thông tin tài khoản ngân hàng Việt Nam và gửi lại.';
   }
   if (status == 'PENDING_REVIEW') {
-    return 'This bank account is waiting for admin approval. You can update details if the partner changed accounts.';
+    return 'Tài khoản ngân hàng đang chờ xét duyệt. Bạn có thể cập nhật nếu đã đổi tài khoản.';
   }
   if (status == 'APPROVED') {
-    return 'This bank account is approved for payout. Submit again only when account details change.';
+    return 'Tài khoản ngân hàng đã được duyệt. Chỉ gửi lại khi thông tin thay đổi.';
   }
-  return 'Use the partner own Vietnamese bank account. Admin approval is required before payout.';
+  return 'Hãy dùng tài khoản ngân hàng Việt Nam chính chủ. Cần được duyệt trước khi nhận tiền.';
 }
 
 String taxProfileFormDescription({
@@ -685,15 +685,16 @@ String taxProfileFormDescription({
 }) {
   if (status == 'REJECTED') {
     final reason = rejectionReason?.trim();
-    final prefix =
-        reason == null || reason.isEmpty ? 'Rejected.' : 'Rejected: $reason.';
-    return '$prefix Correct MST, legal name, and registered address before withdrawal.';
+    final prefix = reason == null || reason.isEmpty
+        ? 'Bị từ chối.'
+        : 'Bị từ chối: $reason.';
+    return '$prefix Hãy sửa MST, họ tên pháp lý và địa chỉ đăng ký trước khi rút tiền.';
   }
   if (status == 'PENDING_REVIEW') {
-    return 'This tax profile is waiting for admin review. Rates are still managed by admin policy.';
+    return 'Thông tin thuế đang chờ xét duyệt. Mức thuế vẫn theo chính sách của HANDS.';
   }
   if (status == 'APPROVED') {
-    return 'This tax profile is approved. Update only if the partner tax details change.';
+    return 'Thông tin thuế đã được duyệt. Chỉ cập nhật khi thông tin thay đổi.';
   }
-  return 'Tax profile is requested after the first revenue is earned. Rates are managed by admin policy.';
+  return 'Thông tin thuế được yêu cầu sau khi có thu nhập đầu tiên. Mức thuế do HANDS quản lý.';
 }

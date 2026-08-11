@@ -88,7 +88,7 @@ export const FCM_NOTIFICATION_REVIEW_COMMANDS = [
   'Open http://localhost:3101/notifications?review=failed',
   'Open http://localhost:3101/notifications?review=disabled-device',
   'Open http://localhost:3101/notifications?review=stale-device',
-  'Open http://localhost:3101/notifications?review=pending',
+  'Open http://localhost:3101/notifications?review=unattempted',
 ] as const;
 
 export const FCM_OPERATIONS_HANDOFF_COMMAND = 'Open http://localhost:3101/operations-handoff';

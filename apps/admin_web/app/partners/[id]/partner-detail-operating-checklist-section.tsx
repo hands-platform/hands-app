@@ -7,17 +7,9 @@ import {
   PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
+import type { PartnerOperatingChecklistRow } from './partner-detail-operating-checklist-model';
 
-type PartnerChecklistTone = 'blocked' | 'done' | 'pending';
-
-export type PartnerOperatingChecklistRow = {
-  readonly area: string;
-  readonly detail: string;
-  readonly href: string;
-  readonly nextAction: string;
-  readonly status: string;
-  readonly tone: PartnerChecklistTone;
-};
+type PartnerChecklistTone = PartnerOperatingChecklistRow['tone'];
 
 type PartnerDetailOperatingChecklistSectionProps = {
   readonly pillClassForTone: (tone: PartnerChecklistTone) => string;

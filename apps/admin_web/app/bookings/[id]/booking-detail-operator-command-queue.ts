@@ -2,12 +2,15 @@ import type { AdminBookingDetail, AdminChatMessage, AdminLocationSnapshot } from
 import type { AttentionFlag } from '../../../lib/admin-attention-flags';
 import { canCloseoutCompletedBooking } from '../../../lib/booking-closeout-policy';
 import { bookingOperatorCommandQueue as buildBookingOperatorCommandQueue } from '../../../lib/booking-operator-command-queue';
-import { canExpireBooking, canMarkNoShow } from '../../../lib/booking-operator-action-rules';
+import { canMarkNoShow } from '../../../lib/booking-operator-action-rules';
 import { bookingOpsTaskCards as buildBookingOpsTaskCards } from '../../../lib/booking-ops-task-cards';
 import { bookingCashDebtNeedsSettlement } from './booking-cash-wallet-gate';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { formatDate } from './booking-formatters';
-import { bookingCustomerSelectableParticipantsForFinalChoice } from './booking-participant-rules';
+import {
+  bookingCustomerSelectableParticipantsForFinalChoice,
+  bookingDetailExpiryEligibility,
+} from './booking-participant-rules';
 import { bookingDetailProviderLocationMetricHelper } from './booking-provider-location-metric';
 import { latestProviderLocationFreshness } from './booking-status-location';
 
@@ -44,7 +47,7 @@ export function bookingDetailOperatorCommandQueue({
     paymentStatus: booking.payment?.status ?? 'NONE',
     cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
     closeoutAvailable: canCloseoutCompletedBooking(booking),
-    canExpire: canExpireBooking(booking.status),
+    canExpire: bookingDetailExpiryEligibility(booking).allowed,
     canMarkNoShow: canMarkNoShow(booking.status),
     attentionFlagCount: attentionFlags.length,
     pendingTask: pendingTasks[0] ?? null,

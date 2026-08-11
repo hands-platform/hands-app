@@ -1,0 +1,438 @@
+{
+  "capturedAt": "2026-08-08T04:51:13.461Z",
+  "consoleMessages": [],
+  "drilldown": {
+    "destinationUrl": "http://localhost:3101/partners?review=available-blocked",
+    "destinationHasPartnerDirectory": true,
+    "destinationSummary": "HANDS\nPartner Operations\nPartner directory\nSearch\nCtrl K\nPartner directory\n\nSearch by partner name, phone, or ID, then open a profile to review status and restrictions.\n\nUpdated 8 Aug 2026, 11:51\nRefresh\nLoad operations analysis\nDirectory\nApprovals\nOnboarding blockers\nWallet debt\nPartner directory filters\n10 on this page / 187 total\nSearch Partner\nState\nAll states\nOnline available\nOnline busy\nAvailable soon\nOffline\nApp activity\nAll activity\nApp active 7D\nApp inactive 7D+\nApp not tracked\nNo factual activity 7D\nNo factual activity 30D\nNo recorded session\nVerification\nAll verification\nApproved\nSubmitted\nPending\nRejected\nBlocked\nKYC\nAll KYC\nApproved\nPending\nRejected\nDraft\nMissing\nBooking flow\nAll booking flows\nHas active booking\nFirst-pick booking\nMarketplace participant\nCustomer final choice\nChat room opened\nMatched but chat missing\nCompleted work\nNo completed work\nExport current page (10)\nApply\nSort\nNewest\nOldest\nName\nShowing 10 of 187 matching partners under the active filters - sorted by newest first\nReview: Available but blocked\nLocation freshness: 90m\nClear filters\nPartner directory\n\nSearch by partner name, phone, or ID, then open a profile to review status and restrictions.\n\n187 matching Partners\nPARTNER\tAVAILABILITY\tONBOARDING\tACTIVITY\tWALLET\tACCOUNT / ACTION\n\nP8\nPartner 8283\nPartner ID 6l92xnso · Phone saved\n\t\nReady now\nUnknown platform\nToo old\nUpdated 110h ago.\n\t\nLevel 1 signup\nKYC Approved\nwithdrawal address missing\nterms 0/5\n+5 more\n\t\nApp not tracked\nApp\nnot tracked\nSession\nnot recorded\n1 total\n1 completed / 0 closed\n0 no-shows / 0 reviews\n\t\n-80.000 VND\nSettlement required\nPending -80.000 VND / available 0 VND\n\t\nAccount clear\nNormal account\n3 memos or events\nOpen profile\n\n\nP0\nPartner 0282\nPartner ID dg8u3ifx · Phone saved\n\t\nReady now\nUnknown platform\nToo old\nUpdated 96h ago.\n\t\nLevel 1 signup\nKYC Approved\nlocation expired\ndevice missing\n+2 more\n\t\nApp not tracked\nApp\nnot tracked\nSession\nnot recorded\n2 total\n0 completed / 2 closed\n0 no-shows / 0 reviews\n\t\n0 VND",
+    "sourceCardText": "Pending\nOnline but not bookable\n187 partners\nCan stay visible and join requests, but final acceptance is blocked\nReview blockers",
+    "sourceHref": "/partners?review=available-blocked"
+  },
+  "states": [
+    {
+      "actionLinks": [
+        {
+          "href": "/partners?review=available-blocked",
+          "text": "PendingOnline but not bookable187 partnersCan stay visible and join requests, but final acceptance is blockedReview blockers"
+        },
+        {
+          "href": "/partners?review=approval-incomplete",
+          "text": "PendingPending verification161 partnersPartner verification or KYC evidence still needs an operator decision.Review verification"
+        },
+        {
+          "href": "/partners?review=unsettled",
+          "text": "Needs actionWallet risk124 partnersNegative wallet Partners can still join requests, but final booking acceptance may be blocked by wallet policy.Review wallet"
+        }
+      ],
+      "area": {
+        "bottom": 2396,
+        "height": 306,
+        "left": 310,
+        "right": 1905,
+        "top": 2090,
+        "width": 1595
+      },
+      "areaHeaders": [
+        "Area",
+        "Status",
+        "Partners",
+        "Online available",
+        "Fresh location",
+        "Bookable now",
+        "Open demand",
+        "Non-completed",
+        "Non-completed share",
+        "Response"
+      ],
+      "currentUrl": "http://localhost:3101/partners/overview",
+      "financeOverlapPairs": [],
+      "filterRowCount": 1,
+      "filterRows": [
+        385,
+        404
+      ],
+      "heading": "Partner Operations",
+      "horizontalOverflow": false,
+      "label": "today-1692",
+      "pageClientWidth": 1692,
+      "pageScrollWidth": 1692,
+      "selection": null,
+      "selectionHeaders": [],
+      "textContracts": {
+        "appTelemetryCoverage": true,
+        "bookableNow": true,
+        "currentReadinessSnapshot": true,
+        "negativeWalletVisibilityBlocker": false,
+        "nonCompleted": true,
+        "onlineAvailable": true,
+        "partnerOperations": true,
+        "visibleInCustomerApp": true
+      },
+      "viewport": {
+        "height": 1272,
+        "width": 1692
+      }
+    },
+    {
+      "actionLinks": [
+        {
+          "href": "/partners?review=available-blocked",
+          "text": "PendingOnline but not bookable187 partnersCan stay visible and join requests, but final acceptance is blockedReview blockers"
+        },
+        {
+          "href": "/partners?review=approval-incomplete",
+          "text": "PendingPending verification161 partnersPartner verification or KYC evidence still needs an operator decision.Review verification"
+        },
+        {
+          "href": "/partners?review=unsettled",
+          "text": "Needs actionWallet risk124 partnersNegative wallet Partners can still join requests, but final booking acceptance may be blocked by wallet policy.Review wallet"
+        },
+        {
+          "href": "/partners?review=quality-all&qualityRange=7d",
+          "text": "Needs actionQuality risk56 partnersNon-completed bookings, no-show, low-review, and service-quality follow-up queue.Review quality"
+        }
+      ],
+      "area": {
+        "bottom": 2737,
+        "height": 306,
+        "left": 310,
+        "right": 1905,
+        "top": 2431,
+        "width": 1595
+      },
+      "areaHeaders": [
+        "Area",
+        "Status",
+        "Partners",
+        "Online available",
+        "Fresh location",
+        "Bookable now",
+        "Open demand",
+        "Non-completed",
+        "Non-completed share",
+        "Response"
+      ],
+      "currentUrl": "http://localhost:3101/partners/overview?range=7d",
+      "financeOverlapPairs": [],
+      "filterRowCount": 1,
+      "filterRows": [
+        427,
+        446
+      ],
+      "heading": "Partner Operations",
+      "horizontalOverflow": false,
+      "label": "7d-1440",
+      "pageClientWidth": 1440,
+      "pageScrollWidth": 1440,
+      "selection": {
+        "bottom": 7370,
+        "height": 466,
+        "left": 310,
+        "right": 1424,
+        "top": 6904,
+        "width": 1114
+      },
+      "selectionHeaders": [
+        "Partner",
+        "Demand signal",
+        "Bookable status and blockers",
+        "Response",
+        "Conversion",
+        "Recommended action"
+      ],
+      "textContracts": {
+        "appTelemetryCoverage": true,
+        "bookableNow": true,
+        "currentReadinessSnapshot": true,
+        "negativeWalletVisibilityBlocker": false,
+        "nonCompleted": true,
+        "onlineAvailable": true,
+        "partnerOperations": true,
+        "visibleInCustomerApp": true
+      },
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      }
+    },
+    {
+      "actionLinks": [
+        {
+          "href": "/partners?review=available-blocked",
+          "text": "PendingOnline but not bookable187 partnersCan stay visible and join requests, but final acceptance is blockedReview blockers"
+        },
+        {
+          "href": "/partners?review=approval-incomplete",
+          "text": "PendingPending verification161 partnersPartner verification or KYC evidence still needs an operator decision.Review verification"
+        },
+        {
+          "href": "/partners?review=unsettled",
+          "text": "Needs actionWallet risk124 partnersNegative wallet Partners can still join requests, but final booking acceptance may be blocked by wallet policy.Review wallet"
+        },
+        {
+          "href": "/partners?review=quality-all&qualityRange=30d",
+          "text": "Needs actionQuality risk428 partnersNon-completed bookings, no-show, low-review, and service-quality follow-up queue.Review quality"
+        }
+      ],
+      "area": {
+        "bottom": 2737,
+        "height": 306,
+        "left": 310,
+        "right": 1905,
+        "top": 2431,
+        "width": 1595
+      },
+      "areaHeaders": [
+        "Area",
+        "Status",
+        "Partners",
+        "Online available",
+        "Fresh location",
+        "Bookable now",
+        "Open demand",
+        "Non-completed",
+        "Non-completed share",
+        "Response"
+      ],
+      "currentUrl": "http://localhost:3101/partners/overview?range=30d",
+      "financeOverlapPairs": [],
+      "filterRowCount": 1,
+      "filterRows": [
+        427,
+        446
+      ],
+      "heading": "Partner Operations",
+      "horizontalOverflow": false,
+      "label": "30d-1440",
+      "pageClientWidth": 1440,
+      "pageScrollWidth": 1440,
+      "selection": {
+        "bottom": 7701,
+        "height": 740,
+        "left": 310,
+        "right": 1513,
+        "top": 6961,
+        "width": 1203
+      },
+      "selectionHeaders": [
+        "Partner",
+        "Demand signal",
+        "Bookable status and blockers",
+        "Response",
+        "Conversion",
+        "Recommended action"
+      ],
+      "textContracts": {
+        "appTelemetryCoverage": true,
+        "bookableNow": true,
+        "currentReadinessSnapshot": true,
+        "negativeWalletVisibilityBlocker": false,
+        "nonCompleted": true,
+        "onlineAvailable": true,
+        "partnerOperations": true,
+        "visibleInCustomerApp": true
+      },
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      }
+    },
+    {
+      "actionLinks": [
+        {
+          "href": "/partners?review=available-blocked",
+          "text": "PendingOnline but not bookable187 partnersCan stay visible and join requests, but final acceptance is blockedReview blockers"
+        },
+        {
+          "href": "/partners?review=approval-incomplete",
+          "text": "PendingPending verification161 partnersPartner verification or KYC evidence still needs an operator decision.Review verification"
+        },
+        {
+          "href": "/partners?review=unsettled",
+          "text": "Needs actionWallet risk124 partnersNegative wallet Partners can still join requests, but final booking acceptance may be blocked by wallet policy.Review wallet"
+        },
+        {
+          "href": "/partners?review=quality-all&qualityRange=90d",
+          "text": "Needs actionQuality risk429 partnersNon-completed bookings, no-show, low-review, and service-quality follow-up queue.Review quality"
+        }
+      ],
+      "area": {
+        "bottom": 2718,
+        "height": 306,
+        "left": 310,
+        "right": 1905,
+        "top": 2412,
+        "width": 1595
+      },
+      "areaHeaders": [
+        "Area",
+        "Status",
+        "Partners",
+        "Online available",
+        "Fresh location",
+        "Bookable now",
+        "Open demand",
+        "Non-completed",
+        "Non-completed share",
+        "Response"
+      ],
+      "currentUrl": "http://localhost:3101/partners/overview?range=90d",
+      "financeOverlapPairs": [],
+      "filterRowCount": 1,
+      "filterRows": [
+        427,
+        446
+      ],
+      "heading": "Partner Operations",
+      "horizontalOverflow": false,
+      "label": "90d-1440",
+      "pageClientWidth": 1440,
+      "pageScrollWidth": 1440,
+      "selection": {
+        "bottom": 7682,
+        "height": 740,
+        "left": 310,
+        "right": 1513,
+        "top": 6942,
+        "width": 1203
+      },
+      "selectionHeaders": [
+        "Partner",
+        "Demand signal",
+        "Bookable status and blockers",
+        "Response",
+        "Conversion",
+        "Recommended action"
+      ],
+      "textContracts": {
+        "appTelemetryCoverage": true,
+        "bookableNow": true,
+        "currentReadinessSnapshot": true,
+        "negativeWalletVisibilityBlocker": false,
+        "nonCompleted": true,
+        "onlineAvailable": true,
+        "partnerOperations": true,
+        "visibleInCustomerApp": true
+      },
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      }
+    },
+    {
+      "actionLinks": [
+        {
+          "href": "/partners?review=available-blocked&walletStatus=negative",
+          "text": "PendingOnline but not bookable19 partnersCan stay visible and join requests, but final acceptance is blockedReview blockers"
+        },
+        {
+          "href": "/partners?review=approval-incomplete&walletStatus=negative",
+          "text": "PendingPending verification1 partnerPartner verification or KYC evidence still needs an operator decision.Review verification"
+        },
+        {
+          "href": "/partners?review=unsettled&walletStatus=negative",
+          "text": "Needs actionWallet risk124 partnersNegative wallet Partners can still join requests, but final booking acceptance may be blocked by wallet policy.Review wallet"
+        }
+      ],
+      "area": {
+        "bottom": 2552,
+        "height": 306,
+        "left": 310,
+        "right": 1905,
+        "top": 2246,
+        "width": 1595
+      },
+      "areaHeaders": [
+        "Area",
+        "Status",
+        "Partners",
+        "Online available",
+        "Fresh location",
+        "Bookable now",
+        "Open demand",
+        "Non-completed",
+        "Non-completed share",
+        "Response"
+      ],
+      "currentUrl": "http://localhost:3101/partners/overview?range=today&walletStatus=negative",
+      "financeOverlapPairs": [],
+      "filterRowCount": 1,
+      "filterRows": [
+        427,
+        446
+      ],
+      "heading": "Partner Operations",
+      "horizontalOverflow": false,
+      "label": "negative-wallet-1440",
+      "pageClientWidth": 1440,
+      "pageScrollWidth": 1440,
+      "selection": null,
+      "selectionHeaders": [],
+      "textContracts": {
+        "appTelemetryCoverage": true,
+        "bookableNow": true,
+        "currentReadinessSnapshot": true,
+        "negativeWalletVisibilityBlocker": false,
+        "nonCompleted": true,
+        "onlineAvailable": true,
+        "partnerOperations": true,
+        "visibleInCustomerApp": true
+      },
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      }
+    },
+    {
+      "actionLinks": [],
+      "area": {
+        "bottom": 2422,
+        "height": 306,
+        "left": 310,
+        "right": 1905,
+        "top": 2116,
+        "width": 1595
+      },
+      "areaHeaders": [
+        "Area",
+        "Status",
+        "Partners",
+        "Online available",
+        "Fresh location",
+        "Bookable now",
+        "Open demand",
+        "Non-completed",
+        "Non-completed share",
+        "Response"
+      ],
+      "currentUrl": "http://localhost:3101/partners/overview?range=7d&city=__verification_no_match__",
+      "financeOverlapPairs": [],
+      "filterRowCount": 1,
+      "filterRows": [
+        427,
+        446
+      ],
+      "heading": "Partner Operations",
+      "horizontalOverflow": false,
+      "label": "no-data-1440",
+      "pageClientWidth": 1440,
+      "pageScrollWidth": 1440,
+      "selection": null,
+      "selectionHeaders": [],
+      "textContracts": {
+        "appTelemetryCoverage": true,
+        "bookableNow": true,
+        "currentReadinessSnapshot": true,
+        "negativeWalletVisibilityBlocker": false,
+        "nonCompleted": true,
+        "onlineAvailable": false,
+        "partnerOperations": true,
+        "visibleInCustomerApp": true
+      },
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      }
+    }
+  ]
+}

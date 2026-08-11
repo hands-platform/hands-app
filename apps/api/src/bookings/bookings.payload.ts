@@ -1,13 +1,18 @@
-import { BookingStatus, Prisma, Role } from '@prisma/client';
+import { BookingStatus, ParticipantStatus, Prisma, Role } from '@prisma/client';
 
-export function normalizeBookingAddress(address: Prisma.InputJsonValue | undefined, addressText: string) {
-  if (address && typeof address === 'object' && !Array.isArray(address)) {
-    return { ...(address as Record<string, unknown>), addressText } as Prisma.InputJsonValue;
-  }
-  if (typeof address === 'string' && address.trim()) {
-    return { addressText: address.trim() } as Prisma.InputJsonValue;
-  }
-  return { addressText } as Prisma.InputJsonValue;
+export function normalizeBookingAddress(
+  address: Prisma.InputJsonValue | undefined,
+  addressText: string,
+  customer?: { name: string; phone: string },
+) {
+  const normalized =
+    address && typeof address === 'object' && !Array.isArray(address)
+      ? { ...(address as Record<string, unknown>), addressText }
+      : { addressText: typeof address === 'string' && address.trim() ? address.trim() : addressText };
+  return {
+    ...normalized,
+    ...(customer ? { name: customer.name, phone: customer.phone } : {}),
+  } as Prisma.InputJsonValue;
 }
 
 export function bookingAddressSnapshotCreate(input: {
@@ -50,11 +55,16 @@ export function toJson(value: unknown): Prisma.InputJsonValue {
 export function customerCancellationCloseData(now = new Date()) {
   return {
     status: BookingStatus.CANCELLED,
-    expiresAt: now,
     closedAt: now,
     closedByRole: Role.CUSTOMER,
     closedReason: 'customer_cancelled',
     closedNote: 'Customer cancelled before partner commitment.',
+    participants: {
+      updateMany: {
+        where: { status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] } },
+        data: { status: ParticipantStatus.EXPIRED, respondedAt: now },
+      },
+    },
   };
 }
 

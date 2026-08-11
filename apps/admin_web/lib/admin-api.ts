@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { cache } from 'react';
 
 import { getAdminWebSession } from './admin-session';
 import { createAdminWebApiToken } from './admin-api-token';
@@ -9,6 +10,7 @@ import {
   hasAdminOperatorCategory,
   type AdminOperatorPermissionCategory,
 } from './admin-operator-access-model';
+import type { AdminQueueAgeCounts, AdminQueueSlaSummary } from './admin-queue-list';
 
 const API_BASE_URL = process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api';
 
@@ -203,13 +205,26 @@ export type AdminReferralReward = {
   latestDecision?: AdminReferralRewardLatestDecision | null;
   qualifyingBookingId?: string | null;
   status: AdminReferralRewardStatus;
+  updatedAt: string;
   walletLedgerReference?: string | null;
+};
+
+export type AdminCustomerReferralRewardQueueRow = AdminReferralReward & {
+  attribution: {
+    createdAt: string;
+    fraudReviewStatus: string;
+    id: string;
+    status: string;
+  };
+  detailHref?: string | null;
+  parent: AdminReferralCashoutPerson;
+  referred: AdminReferralCashoutPerson;
 };
 
 export type AdminReferralRewardQueueSummary = {
   amount: number;
   count: number;
-  reward: 'all' | 'available' | 'credited' | 'pending' | 'held';
+  reward: 'all' | 'attention' | 'available' | 'credited' | 'pending' | 'held';
 };
 
 export type AdminReferralCashoutQueueStatus = 'requested' | 'approved' | 'tax-review' | 'paid';
@@ -268,6 +283,7 @@ export type AdminReferralCashoutQueueRow = AdminReferralReward & {
 };
 
 export type AdminReferralParentSummary = {
+  referralCount: number;
   rewardQueueSummaries: AdminReferralRewardQueueSummary[];
   totalCount: number;
 };
@@ -386,7 +402,12 @@ export type AdminAppSessionSummary = {
 };
 
 export type AdminDashboardSummary = {
+  dataClass?: 'live' | 'backlog' | 'anomaly' | 'test';
   generatedAt: string;
+  lastEventAt?: string | null;
+  scopeEnd?: string | null;
+  scopeStart?: string | null;
+  sourceUpdatedAt?: string | null;
   actionQueue?: {
     completedPaymentHolds: number;
     completedWithoutSettlement: number;
@@ -435,6 +456,7 @@ export type AdminDashboardSummary = {
     firstRevenue: number;
     kycApproved: number;
     level2Active: number;
+    approvalPending: number;
     liveSessions: number;
     noLocation: number;
     offline: number;
@@ -450,20 +472,184 @@ export type AdminDashboardSummary = {
   };
 };
 
-export type AdminStartShiftSummary = {
-  cashSettlements: AdminCashSettlementSummary | null;
-  earnings: AdminEarningSummary | null;
+export type AdminStartShiftAnalytics = {
+  buckets: Array<{
+    bookingRequests: number | null;
+    cashFeeDebtAmount: number | null;
+    cancelled: number | null;
+    companyOutputVat: number | null;
+    completed: number | null;
+    customerPaymentAmount: number | null;
+    failedPaymentAmount: number | null;
+    grossAmount: number | null;
+    isFuture: boolean;
+    key: string;
+    label: string;
+    matchRate: number | null;
+    matched: number | null;
+    medianMatchMinutes: number | null;
+    noShow: number | null;
+    partnerNetAmount: number | null;
+    partnerPayoutAmount: number | null;
+    partnerWithholdingTotal: number | null;
+    paymentProcessingFee: number | null;
+    platformFee: number | null;
+    platformNetRevenue: number | null;
+    previousRequests: number | null;
+    refundAmount: number | null;
+    serviceStarted: number | null;
+  }>;
+  comparison: {
+    completedByNow: number;
+    completedPreviousDay: number;
+    grossByNow: number;
+    grossPreviousDay: number;
+    matchedByNow: number;
+    matchedPreviousDay: number;
+    requestsByNow: number;
+    requestsPreviousDay: number;
+  } | null;
+  customerPulse: {
+    activeCustomerRecords: number;
+    appOpenEvents: number;
+    bookingCustomers: number;
+    completedBookings: number;
+    failedPaymentCustomers: number;
+    firstBookingCustomers: number;
+    highIntentNoBookingCustomers: number;
+    matchingFailureCustomers: number;
+    openMatchAverageWaitMinutes: number;
+    preferredRequests: number;
+    providerProfileViews: number;
+    recentActiveCustomers: number;
+    repeatCustomers: number;
+    sessionStartEvents: number;
+  };
+  customerRankings: {
+    highestValue: AdminStartShiftCustomerRanking[];
+    mostActive: AdminStartShiftCustomerRanking[];
+    mostCompleted: AdminStartShiftCustomerRanking[];
+    needsAttention: AdminStartShiftCustomerRanking[];
+  };
+  demandSupply: {
+    failureRegions: Array<{
+      id: string;
+      label: string;
+      matchingFailureCount: number;
+    }>;
+    services: Array<{
+      demandCount: number;
+      id: string;
+      label: string;
+      matchingFailureCount: number;
+      readyPartnerCount: number;
+    }>;
+  };
   generatedAt: string;
+  granularity: 'hour' | 'day' | 'month';
+  needsAction: Array<{
+    ageing: {
+      fourToTwentyFourHours: number;
+      oneToFourHours: number;
+      overTwentyFourHours: number;
+      underOneHour: number;
+    };
+    amount: number;
+    count: number;
+    href: string;
+    key: string;
+    label: string;
+    nextCases?: {
+      current: string[];
+      legacy: string[];
+      overdue: string[];
+    };
+    oldestAt: string | null;
+    operatorAction: string;
+    overdueCount?: number;
+    slaMinutes: number;
+  }>;
+  partnerRankings: {
+    fastestResponse: AdminStartShiftPartnerRanking[];
+    highestRated: AdminStartShiftPartnerRanking[];
+    mostActive: AdminStartShiftPartnerRanking[];
+    mostCompleted: AdminStartShiftPartnerRanking[];
+    needsAttention: AdminStartShiftPartnerRanking[];
+  };
+  range: 'today' | '7d' | '30d' | '90d' | 'all';
+  timezone: 'Asia/Ho_Chi_Minh';
+};
+
+export type AdminStartShiftCustomerRanking = {
+  activeRecords: number;
+  appOpenEvents: number;
+  completedBookings: number;
+  customerProfileId: string;
+  displayName: string;
+  href: string;
+  issueBreakdown: {
+    cancellation: number;
+    matching: number;
+    payment: number;
+    refund: number;
+  };
+  issueCount: number;
+  lastActiveAt: string | null;
+  rank: number;
+  providerProfileViews: number;
+  sessionStartEvents: number;
+  spendAmount: number;
+};
+
+export type AdminStartShiftPartnerRanking = {
+  acceptanceRate: number;
+  activeRecords: number;
+  appOpenEvents: number;
+  completedBookings: number;
+  displayName: string;
+  earningsAmount: number;
+  href: string;
+  issueBreakdown: {
+    blocked: number;
+    cancellation: number;
+    inactive: number;
+  };
+  issueCount: number;
+  lastActiveAt: string | null;
+  medianResponseMinutes: number | null;
+  providerProfileId: string;
+  rank: number;
+  rating: number;
+  sessionStartEvents: number;
+  status: string;
+};
+
+export type AdminStartShiftSummary = {
+  analytics: AdminStartShiftAnalytics | null;
+  cashSettlements: AdminCashSettlementSummary | null;
+  dataClass?: 'live' | 'backlog' | 'anomaly' | 'test';
+  earnings: AdminEarningSummary | null;
+  financeReviewWorkload: {
+    bankReconciliation: AdminFinanceReviewOwnerWorkloadSummary | null;
+    companyBankAccounts?: AdminCompanyBankAccountApprovalSummary | null;
+    partnerBankDeposits: AdminFinanceReviewOwnerWorkloadSummary | null;
+    paymentClearing: AdminFinanceReviewOwnerWorkloadSummary | null;
+  };
+  generatedAt: string;
+  lastEventAt?: string | null;
   notifications: AdminNotificationBoardSummary | null;
   operations: AdminDashboardSummary | null;
   payments: AdminPaymentSummary | null;
   payoutBatches: AdminPayoutBatchSummary | null;
   range: string;
   refunds: AdminRefundSummary | null;
+  scopeEnd?: string | null;
+  scopeStart?: string | null;
+  sourceUpdatedAt?: string | null;
   unavailableSources: string[];
 };
 
-export type AdminUsageOverviewRange = 'today' | 'yesterday' | '7d' | 'month' | 'all';
+export type AdminUsageOverviewRange = 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'custom';
 
 export type AdminUsageOverviewRankRow = {
   rank: number;
@@ -483,7 +669,12 @@ export type AdminUsageOverviewRegionRow = {
   shortName: string;
   customerSessionCount: number;
   bookingRequestCount: number;
+  cancellationCount: number;
   completedBookingCount: number;
+  expiredCount: number;
+  noShowCount: number;
+  refundedCount: number;
+  unresolvedCount: number;
 };
 
 export type AdminUsageOverviewPaymentMethodRow = {
@@ -525,25 +716,118 @@ export type AdminUsageOverviewPartnerDiscoveryRow = {
   viewCount: number;
   requestCount: number;
   completedCount: number;
-  viewToRequestRate: number;
-  requestToCompleteRate: number;
+  viewToRequestRate: number | null;
+  requestToCompleteRate: number | null;
   lastActivityAt?: string | null;
 };
 
+export type AdminUsageOverviewTrendRow = {
+  appOpenCount: number;
+  bookingRequestCount: number;
+  completedBookingCount: number;
+  label: string;
+  periodStart?: string | null;
+  providerProfileViewCount: number;
+  sessionStartCount: number;
+};
+
+export type AdminUsageOverviewRetentionRow = {
+  eligibleCustomerCount: number;
+  milestone: 1 | 7 | 30;
+  rate: number | null;
+  returnedCustomerCount: number;
+};
+
+export type AdminUsageOverviewFunnelRow = {
+  conversionRate: number | null;
+  count: number;
+  key: 'active' | 'viewed' | 'booking' | 'completed';
+  label: string;
+};
+
+export type AdminUsageOverviewCustomerRankingRow = {
+  appOpenCount: number;
+  completedBookingCount: number;
+  href: string;
+  id: string;
+  issueCount: number;
+  label: string;
+  lastActivityAt?: string | null;
+  providerProfileViewCount: number;
+  rank: number;
+  secondary?: string | null;
+  sessionStartCount: number;
+  totalEventCount: number;
+  userId: string;
+};
+
+export type AdminUsageOverviewPartnerRankingRow = {
+  completedCount: number;
+  href: string;
+  id: string;
+  label: string;
+  lastActivityAt?: string | null;
+  rank: number;
+  requestCount: number;
+  secondary?: string | null;
+  viewCount: number;
+};
+
 export type AdminUsageOverview = {
+  dataThroughAt?: string | null;
+  freshness: {
+    bookingActivityThroughAt: string | null;
+    reportGeneratedAt: string;
+    reviewActivityThroughAt: string | null;
+    refundActivityThroughAt: string | null;
+    usageAggregatedThroughAt: string | null;
+    usageStatus: 'fresh' | 'delayed' | 'unknown';
+  };
   generatedAt: string;
-  refreshSeconds: number;
   source: 'stored-usage-aggregates';
+  timeZone: 'Asia/Ho_Chi_Minh';
   range: AdminUsageOverviewRange;
   rangeLabel: string;
   windowStartAt?: string | null;
   windowEndAt?: string | null;
+  appliedRange: {
+    dayCount: number;
+    fromDate: string | null;
+    granularity: 'hourly' | 'daily';
+    toDate: string | null;
+  };
   totals: {
+    activeCustomerCount: number;
+    appOpenCount: number;
+    bookingCustomerCount: number;
     customerSessionCount: number;
     completedBookingCount: number;
+    completedCustomerCount: number;
     partnerProfileViewCount: number;
     partnerBookingRequestCount: number;
+    totalEventCount: number;
   };
+  comparison: {
+    fromDate?: string | null;
+    rangeLabel: string;
+    toDate?: string | null;
+    totals: {
+      activeCustomerCount: number;
+      appOpenCount: number;
+      cancellationCount: number;
+      completedBookingCount: number;
+      createdBookingCount: number;
+      newCustomerCount: number;
+      partnerBookingRequestCount: number;
+      partnerProfileViewCount: number;
+      sessionStartCount: number;
+      unresolvedCount: number;
+    };
+    windowStartAt?: string | null;
+    windowEndAt?: string | null;
+  };
+  funnel: AdminUsageOverviewFunnelRow[];
+  retention: AdminUsageOverviewRetentionRow[];
   customerLifecycle: {
     newCustomerCount: number;
     activeCustomerCount: number;
@@ -558,7 +842,10 @@ export type AdminUsageOverview = {
   bookingQuality: {
     createdBookingCount: number;
     cancellationCount: number;
+    expiredCount: number;
+    noShowCount: number;
     refundCount: number;
+    unresolvedCount: number;
     lowReviewCount: number;
   };
   paymentAndCoupon: {
@@ -579,7 +866,10 @@ export type AdminUsageOverview = {
   behavior: {
     popularServices: AdminUsageOverviewPopularServiceRow[];
     hourlyActivity: AdminUsageOverviewHourlyActivityRow[];
+    trend: AdminUsageOverviewTrendRow[];
   };
+  customerRankings: AdminUsageOverviewCustomerRankingRow[];
+  partnerRankings: AdminUsageOverviewPartnerRankingRow[];
   customerUsage: {
     mostActiveCustomers: AdminUsageOverviewRankRow[];
     completedBookingCustomers: AdminUsageOverviewRankRow[];
@@ -592,6 +882,11 @@ export type AdminUsageOverview = {
     mostViewedPartners: AdminUsageOverviewRankRow[];
     requestedPartners: AdminUsageOverviewRankRow[];
     completedPartners: AdminUsageOverviewRankRow[];
+  };
+  provenance: {
+    bookingFixtures: 'explicit-markers-excluded';
+    unknownAggregateCount: number;
+    usageFixtures: 'guaranteed' | 'not-guaranteed';
   };
 };
 
@@ -616,8 +911,8 @@ export type AdminPartnerOverviewAreaRow = {
   locationFreshPartners: number;
   eligiblePartners: number;
   openRequests: number;
-  failedRequests: number;
-  matchingFailureRate: number;
+  nonCompletedOutcomes: number;
+  nonCompletedShare: number | null;
   averageResponseSeconds: number | null;
   status: string;
   riskLevel: AdminPartnerOverviewRiskLevel;
@@ -631,7 +926,7 @@ export type AdminPartnerOverviewServiceRow = {
   eligiblePartners: number;
   openRequests: number;
   completedBookings: number;
-  completionRate: number;
+  completionRate: number | null;
   avgRating: number | null;
   status: string;
   riskLevel: AdminPartnerOverviewRiskLevel;
@@ -719,6 +1014,38 @@ export type AdminPartnerOverviewOperatingStatusCard = {
   tone: 'success' | 'warning' | 'danger' | 'info' | 'neutral';
 };
 
+export type AdminPartnerOverviewAvailableBlockedReason = {
+  key: 'account' | 'location' | 'service' | 'wallet';
+  label: string;
+  count: number;
+  detail: string;
+  href: string;
+  tone: 'warning' | 'danger';
+};
+
+export type AdminPartnerOverviewCustomerDiscoveryBlocker = {
+  key: 'documents' | 'service';
+  label: string;
+  count: number;
+  detail: string;
+  href: string;
+  tone: 'warning' | 'danger';
+};
+
+export type AdminPartnerOverviewAppActivityRow = {
+  partnerId: string;
+  partnerName: string;
+  area: string;
+  status: string;
+  appOpenCount: number;
+  sessionStartCount: number;
+  activeRecordCount: number;
+  lastActiveAt: string | null;
+  inactivityDays: number | null;
+  activityStatus: 'active' | 'inactive_7d' | 'never_tracked';
+  href: string;
+};
+
 export type AdminPartnerOverviewSegment = {
   key: string;
   label: string;
@@ -732,11 +1059,32 @@ export type AdminPartnerOverviewSegment = {
 export type AdminPartnerOverview = {
   generatedAt: string;
   refreshSeconds: number;
-  source: 'stored-partner-supply-aggregates';
+  source: 'live-summary-backed-partner-operational-query';
+  timeZone: 'Asia/Ho_Chi_Minh';
   range: AdminPartnerOverviewRange;
   rangeLabel: string;
   windowStartAt: string | null;
   windowEndAt: string | null;
+  comparison: {
+    rangeLabel: string;
+    windowStartAt: string | null;
+    windowEndAt: string | null;
+    totals: {
+      appOpenCount: number;
+      cancellationCount: number;
+      completedBookingCount: number;
+      sessionStartCount: number;
+    };
+  };
+  queryScope: {
+    actionListCountScope: 'full-population' | 'bounded-risk-filter';
+    appActivityCountScope: 'full-population' | 'bounded-risk-filter';
+    operatingStatusCountScope: 'full-population' | 'bounded-risk-filter';
+    providerScanLimit: number;
+    walletBalancePartnerCount: number;
+    walletBalanceScopeTruncated: boolean;
+    walletStatusFilterBounded: boolean;
+  };
   filters: {
     city: string | null;
     onlineStatus: string | null;
@@ -747,9 +1095,23 @@ export type AdminPartnerOverview = {
     verificationStatus: string | null;
     walletStatus: string | null;
   };
+  filterOptions: {
+    services: Array<{
+      durationMin: number;
+      id: string;
+      name: string;
+    }>;
+  };
   summaryKpis: AdminPartnerOverviewKpi[];
   operatingStatus: {
+    locationFreshnessMinutes: number;
+    customerDiscovery: {
+      visibleNow: number;
+      visibleHref: string;
+      blockers: AdminPartnerOverviewCustomerDiscoveryBlocker[];
+    };
     cards: AdminPartnerOverviewOperatingStatusCard[];
+    availableBlockedReasons: AdminPartnerOverviewAvailableBlockedReason[];
   };
   supplyHealth: {
     areas: AdminPartnerOverviewAreaRow[];
@@ -761,8 +1123,14 @@ export type AdminPartnerOverview = {
   activityRetention: {
     cards: AdminPartnerOverviewKpi[];
   };
+  appActivity: {
+    kpis: AdminPartnerOverviewKpi[];
+    mostActive: AdminPartnerOverviewAppActivityRow[];
+    inactivePartners: AdminPartnerOverviewAppActivityRow[];
+  };
   bookingQuality: {
     kpis: AdminPartnerOverviewKpi[];
+    riskPartnerCount: number;
     riskPartners: AdminPartnerOverviewRiskPartner[];
   };
   financeWalletRisk: {
@@ -840,6 +1208,63 @@ export type AdminMarketingDimensionRow = AdminMarketingStats & {
   campaignName?: string | null;
 };
 
+export type AdminMarketingAttributionQuality = {
+  attributedFirstOpens: number;
+  unknownFirstOpens: number;
+  firstOpenCoverageRate: number;
+  attributedSignups: number;
+  unknownSignups: number;
+  signupCoverageRate: number;
+};
+
+export type AdminMarketingUnknownAttributionReason =
+  | 'NO_CUSTOMER_SESSION'
+  | 'NO_MARKETING_METADATA'
+  | 'UNSUPPORTED_SOURCE';
+
+export type AdminMarketingUnknownAttributionDiagnostics = {
+  totalUnknownSignups: number;
+  rows: Array<{
+    platform: AdminMarketingPlatform;
+    appVersion: string | null;
+    reason: AdminMarketingUnknownAttributionReason;
+    signupCount: number;
+  }>;
+  recentAccounts: Array<{
+    customerUserId: string;
+    customerProfileId: string;
+    signupAt: string;
+    platform: AdminMarketingPlatform;
+    appVersion: string | null;
+    reason: AdminMarketingUnknownAttributionReason;
+  }>;
+};
+
+export type AdminMarketingComparisonMetric = {
+  current: number;
+  previous: number;
+  delta: number;
+  deltaPercent: number | null;
+};
+
+export type AdminMarketingComparison = {
+  previousRangeLabel: string;
+  firstOpens: AdminMarketingComparisonMetric;
+  signups: AdminMarketingComparisonMetric;
+  bookingCompleted: AdminMarketingComparisonMetric;
+  adSpend: AdminMarketingComparisonMetric;
+  platformFeeRevenue: AdminMarketingComparisonMetric;
+};
+
+export type AdminMarketingTrendPoint = {
+  date: string;
+  firstOpens: number;
+  signups: number;
+  bookingCreated: number;
+  bookingCompleted: number;
+  adSpend: number;
+};
+
 export type AdminMarketingDimensionKey = 'source' | 'platform' | 'region' | 'campaign';
 
 export type AdminMarketingOverview = {
@@ -856,12 +1281,17 @@ export type AdminMarketingOverview = {
     regionCode?: string | null;
     campaignId?: string | null;
   };
+  breakdownFilters?: {
+    regionCode?: string | null;
+  };
   totals: AdminMarketingStats;
   funnel: AdminMarketingFunnelStep[];
   bySource: AdminMarketingDimensionRow[];
   byPlatform: AdminMarketingDimensionRow[];
   byRegion: AdminMarketingDimensionRow[];
   byCampaign: AdminMarketingDimensionRow[];
+  attributionQuality: AdminMarketingAttributionQuality;
+  campaignEfficiency: AdminMarketingDimensionRow[];
   topInsights: string[];
   dataGaps: string[];
 };
@@ -869,7 +1299,11 @@ export type AdminMarketingOverview = {
 export type AdminMarketingSummary = Omit<
   AdminMarketingOverview,
   'bySource' | 'byPlatform' | 'byRegion' | 'byCampaign'
->;
+> & {
+  comparison: AdminMarketingComparison;
+  trend: AdminMarketingTrendPoint[];
+  unknownAttributionDiagnostics: AdminMarketingUnknownAttributionDiagnostics;
+};
 
 export type AdminMarketingDimensionPage = Pick<
   AdminMarketingOverview,
@@ -889,6 +1323,45 @@ export type AdminMarketingDimensionPage = Pick<
   totalCount: number;
 };
 
+export type AdminMarketingCouponSummary = {
+  generatedAt: string;
+  source: 'booking-payment-coupon-metadata';
+  range: AdminMarketingOverviewRange;
+  rangeLabel: string;
+  windowStartAt: string;
+  windowEndAt: string;
+  appliedBookingCount: number;
+  completedBookingCount: number;
+  cancelledBookingCount: number;
+  refundedBookingCount: number;
+  realizedDiscountAmount: number;
+  completedBookingValue: number;
+  completedConversionRate: number;
+  cancellationRate: number;
+  refundRate: number;
+  averageDiscountAmount: number;
+};
+
+export type AdminMarketingCouponPerformanceRow = Omit<
+  AdminMarketingCouponSummary,
+  'generatedAt' | 'range' | 'rangeLabel' | 'source' | 'windowEndAt' | 'windowStartAt'
+> & {
+  couponCode: string;
+  couponId: string | null;
+  couponState: 'LIVE' | 'SCHEDULED' | 'PAUSED' | 'EXPIRED' | 'HISTORICAL';
+  latestCheckoutAt: string | null;
+};
+
+export type AdminMarketingCouponPerformancePage = Pick<
+  AdminMarketingCouponSummary,
+  'generatedAt' | 'range' | 'rangeLabel' | 'source' | 'windowEndAt' | 'windowStartAt'
+> & {
+  rows: AdminMarketingCouponPerformanceRow[];
+  skip: number;
+  take: number;
+  totalCount: number;
+};
+
 export type AdminCustomer = {
   id: string;
   userId: string;
@@ -898,13 +1371,21 @@ export type AdminCustomer = {
     activeBookingCount?: number;
     adminClosedBookingCount?: number;
     bookingCount: number;
+    capturedSpend?: number;
     closedBookingCount?: number;
     completedBookingCount: number;
+    customerWalletBalance?: number;
     customerClosedBookingCount?: number;
+    currentBookingUpdatedAt?: string | null;
     lastBookingAt?: string | null;
     lastCompletedBookingAt?: string | null;
     noShowBookingCount?: number;
+    openMatchingBookingCount?: number;
     partnerClosedBookingCount?: number;
+    paymentIssueCount?: number;
+    refundRequestCount?: number;
+    reportedReviewCount?: number;
+    serviceLiveBookingCount?: number;
   };
   user?: {
     id?: string;
@@ -994,6 +1475,8 @@ export type AdminCustomerDirectoryRow = Omit<AdminCustomer, 'selectedLocations' 
 };
 
 export type AdminCustomerSummary = {
+  activeBookingCount?: number;
+  completedBookingCount?: number;
   generatedAt?: string;
   genderBreakdown?: {
     female: number;
@@ -1008,6 +1491,8 @@ export type AdminCustomerSummary = {
     other: number;
     unknown: number;
   };
+  needsActionCount?: number;
+  pushReachableCount?: number;
   todayJoined?: number;
   todayJoinedGenderBreakdown?: {
     female: number;
@@ -1023,10 +1508,53 @@ export type AdminCustomerSummary = {
     unknown: number;
   };
   totalCount: number;
+  viewCounts?: {
+    activeToday: number;
+    all: number;
+    needsAction: number;
+    newToday: number;
+  };
 };
 
 export type AdminCustomerDetail = AdminCustomer & {
+  activeBooking?: AdminBookingDetail | null;
   bookings?: AdminBookingDetail[];
+  operatorNotes?: AdminAuditLog[];
+  referralCodes?: AdminReferralCode[];
+  referralsMade?: AdminCustomerReferralAttribution[];
+  referralsReceived?: AdminCustomerReferralAttribution[];
+  sessionSummary?: {
+    deviceLanguage?: string | null;
+    lastSeenAt?: string | null;
+  } | null;
+};
+
+export type AdminCustomerReferralAttribution = {
+  id: string;
+  createdAt: string;
+  fraudReviewStatus: string;
+  installSource?: string | null;
+  platform?: string | null;
+  referralCode: AdminReferralCode;
+  referredCustomerProfile?: {
+    id: string;
+    user?: AdminReferralUserSummary | null;
+  } | null;
+  referrerCustomerProfile?: {
+    id: string;
+    user?: AdminReferralUserSummary | null;
+  } | null;
+  rewards: Array<{
+    id: string;
+    amount: number;
+    availableAt?: string | null;
+    currency: string;
+    qualifyingBookingId?: string | null;
+    status: string;
+    walletOwnerCustomerProfileId?: string | null;
+    createdAt: string;
+  }>;
+  status: string;
 };
 
 export type AdminProviderBookingSummary = {
@@ -1050,6 +1578,8 @@ export type AdminProviderBookingSummary = {
 
 export type AdminProviderSummary = {
   generatedAt?: string;
+  queueAgeCounts?: AdminQueueAgeCounts;
+  queueSla?: AdminQueueSlaSummary;
   totalCount: number;
 };
 
@@ -1093,6 +1623,12 @@ export type AdminProvider = {
   facebookId?: string | null;
   activityNickname?: string | null;
   bio?: string | null;
+  bioTranslations?: {
+    en?: string | null;
+    ja?: string | null;
+    ko?: string | null;
+    zh?: string | null;
+  } | null;
   experienceYears?: number | null;
   specialties?: unknown;
   languages?: unknown;
@@ -1101,10 +1637,70 @@ export type AdminProvider = {
   city?: string | null;
   serviceArea?: unknown;
   status: string;
+  availabilityIntent?: 'OFFLINE' | 'AVAILABLE';
+  availabilityReason?:
+    | 'SYSTEM_DEFAULT'
+    | 'MANUAL_AVAILABLE'
+    | 'MANUAL_OFFLINE'
+    | 'OUTSIDE_WORKING_HOURS'
+    | 'ACTIVE_BOOKING'
+    | 'INACTIVE_7D';
+  availabilityChangedAt?: string | null;
+  workingHoursTimezone?: string | null;
+  workingHours?: Array<{
+    weekday: number;
+    enabled: boolean;
+    startMinute: number;
+    endMinute: number;
+  }>;
+  availabilitySummary?: {
+    activeBookingCount: number;
+    availabilityChangedAt: string | null;
+    availabilityIntent: 'OFFLINE' | 'AVAILABLE';
+    availabilityReason:
+      | 'SYSTEM_DEFAULT'
+      | 'MANUAL_AVAILABLE'
+      | 'MANUAL_OFFLINE'
+      | 'OUTSIDE_WORKING_HOURS'
+      | 'ACTIVE_BOOKING'
+      | 'INACTIVE_7D';
+    currentMinute: number;
+    currentWeekday: number;
+    persistedReason: string;
+    scheduleConfigured: boolean;
+    status: AdminProviderStatus;
+    timezone: string;
+    todayWindowLabel: string;
+    withinWorkingHours: boolean;
+    workingHours: Array<{
+      weekday: number;
+      enabled: boolean;
+      startMinute: number;
+      endMinute: number;
+    }>;
+  };
   ratingAvg?: string | number | null;
   reviewCount?: number | null;
   blockedAt?: string | null;
   blockedReason?: string | null;
+  controlRisk?: {
+    kind:
+      | 'ACCOUNT_BLOCK'
+      | 'NEGATIVE_WALLET'
+      | 'PAYOUT_HOLD'
+      | 'URGENT_REPORT'
+      | 'OVERDUE_REPORT'
+      | 'OPEN_REPORT'
+      | 'KYC_READINESS'
+      | 'BANK_APPROVAL'
+      | 'STALE_LOCATION';
+    ownerLabel: string;
+    overdue: boolean;
+    priority: number;
+    providerId: string;
+    slaHours: number | null;
+    startedAt: string | null;
+  };
   currentLat?: string | number | null;
   currentLng?: string | number | null;
   currentLocationUpdatedAt?: string | null;
@@ -1259,6 +1855,16 @@ export type AdminProvider = {
     platformFee: number;
     walletBalance: number;
   };
+  attentionSignals?: {
+    bankPending: boolean;
+    cashDebt: boolean;
+    kycPending: boolean;
+    locationStale: boolean;
+  };
+  appActivitySummary?: {
+    activityStatus: 'active' | 'inactive_7d' | 'never_tracked';
+    lastActiveAt?: string | null;
+  };
   bookingSummary?: AdminProviderBookingSummary;
   earnings?: AdminEarning[];
   walletWithdrawalRequests?: AdminProviderWalletWithdrawalRequest[];
@@ -1285,6 +1891,7 @@ export type AdminProvider = {
       reviewReason?: string | null;
       uploadedAt?: string | null;
       sizeBytes?: number | null;
+      sortOrder?: number | null;
       createdAt?: string;
     }>;
     pushDevices?: Array<{
@@ -1312,6 +1919,34 @@ export type AdminProvider = {
       }>;
     }>;
   };
+};
+
+export type AdminOperationsHandoffProviderPage = {
+  items: AdminProvider[];
+  skip: number;
+  take: number;
+  totalCount: number;
+};
+
+export type AdminPartnerControlProviderPage = {
+  items: AdminProvider[];
+  skip: number;
+  take: number;
+  totalCount: number;
+};
+
+export type AdminProviderReportPage = {
+  items: AdminProviderReport[];
+  skip: number;
+  take: number;
+  totalCount: number;
+};
+
+export type AdminProviderSanctionPage = {
+  items: AdminProviderSanction[];
+  skip: number;
+  take: number;
+  totalCount: number;
 };
 
 export type AdminProviderReport = {
@@ -1349,6 +1984,7 @@ export type AdminProviderSanction = {
   startsAt: string;
   expiresAt?: string | null;
   liftedAt?: string | null;
+  metadata?: Record<string, unknown> | null;
   createdAt?: string;
   updatedAt?: string;
   providerProfile?: {
@@ -1396,6 +2032,7 @@ export function providerDocumentReviewHint(type?: string | null) {
 }
 
 export type AdminBooking = {
+  dataClass?: 'live' | 'backlog' | 'anomaly' | 'test';
   id: string;
   customerProfileId?: string;
   preferredProviderId?: string | null;
@@ -1411,6 +2048,10 @@ export type AdminBooking = {
   matchSource?: AdminBookingMatchSource | null;
   matchingEvidence?: AdminBookingMatchingEvidence;
   serviceAddressText?: string | null;
+  lastEventAt?: string | null;
+  scopeEnd?: string | null;
+  scopeStart?: string | null;
+  sourceUpdatedAt?: string | null;
   statusChangedAt?: string | null;
   statusChangedLabel?: string | null;
   closedAt?: string | null;
@@ -1512,37 +2153,111 @@ export type AdminBooking = {
     _count?: { messages?: number };
     messages?: AdminChatMessage[];
   } | null;
+  review?: AdminReview | null;
 };
 
+export type AdminBookingPage = {
+  items: AdminBooking[];
+  queueAgeCounts?: AdminQueueAgeCounts;
+  queueSla?: AdminQueueSlaSummary;
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    totalRows: number;
+  };
+};
+
+export type AdminBookingMonitorSummary = {
+  activeBookings: number;
+  anomalyBookings?: number;
+  blockedCreateAttemptsToday: number;
+  chatMissingCount?: number;
+  dataClass?: 'live' | 'backlog' | 'anomaly' | 'test';
+  generatedAt: string;
+  lastEventAt?: string | null;
+  matchingDelays?: number;
+  matchedHandoff?: number;
+  matchingNow: number;
+  needsAction: number;
+  openMatching?: number;
+  oldestChatMissingAt?: string | null;
+  oldestMatchingAt?: string | null;
+  scopeEnd?: string | null;
+  scopeStart?: string | null;
+  serviceInProgress: number;
+  preferredPending?: number;
+  customerChoice?: number;
+  supplyIntervention?: number;
+  sourceUpdatedAt?: string | null;
+};
+
+export type AdminCompletedBookingOperationsSummary = {
+  cashDebt: number;
+  closeoutChecks: number;
+  expired: number;
+  generatedAt: string;
+  oldestCloseoutAt: string | null;
+  paymentChecks: number;
+  pricingChecks: number;
+  refundReview: number;
+  totalRecords: number;
+};
+
+export type AdminPostMatchCancellationOperationsSummary = {
+  adminApprovedCount: number;
+  adminHeldCount: number;
+  autoResolvedCount: number;
+  generatedAt: string;
+  needsDecisionCount: number;
+  noShowReviewCount: number;
+  overdueOpenCount: number;
+  resolvedCount: number;
+  unknownLegacyCount: number;
+};
+
+export type AdminChatArchiveMessage = {
+  id: string;
+  body: string;
+  attachmentCount: number;
+  createdAt: string;
+  sender?: { id: string; fullName?: string | null; roles?: string[] };
+  chatRoom: {
+    id: string;
+    booking: {
+      id: string;
+      customerProfileId?: string;
+      status: string;
+      customerProfile?: {
+        id?: string;
+        user?: { fullName?: string | null };
+      };
+      preferredProvider?: {
+        id?: string;
+        displayName?: string | null;
+        user?: { fullName?: string | null };
+      };
+      selectedProvider?: {
+        id?: string;
+        displayName?: string | null;
+        user?: { fullName?: string | null };
+      };
+      services?: Array<{
+        service?: {
+          name?: string;
+          durationMin?: number;
+        };
+      }>;
+    };
+  };
+};
+
+// Legacy in-memory shape retained by the Operations Handoff activity adapter.
 export type AdminChatArchiveBooking = {
   id: string;
-  customerProfileId?: string;
   status: string;
-  createdAt?: string;
-  updatedAt?: string;
-  customerProfile?: {
-    id?: string;
-    user?: { fullName?: string | null; phone?: string };
-  };
-  preferredProvider?: {
-    id?: string;
-    displayName?: string | null;
-    user?: { fullName?: string | null; phone?: string };
-  };
-  selectedProvider?: {
-    id?: string;
-    displayName?: string | null;
-    user?: { fullName?: string | null; phone?: string };
-  };
-  services?: Array<{
-    service?: {
-      name?: string;
-      durationMin?: number;
-    };
-  }>;
   chatRoom?: {
     id: string;
-    _count?: { messages?: number };
     messages?: AdminChatMessage[];
   } | null;
 };
@@ -1576,6 +2291,20 @@ export type AdminBookingDetail = AdminBooking & {
   platformFeeLogs?: AdminProviderPlatformFeeLog[];
   taxLogs?: AdminProviderTaxLog[];
   walletLedgerEntries?: AdminProviderWalletLedgerEntry[];
+  providerRequestEvents?: Array<{
+    id: string;
+    providerProfileId: string;
+    bookingId?: string | null;
+    eventType: string;
+    visibleBookingCount?: number | null;
+    metadata?: unknown;
+    createdAt: string;
+    providerProfile?: {
+      id?: string;
+      displayName?: string | null;
+      user?: { phone?: string; fullName?: string | null };
+    };
+  }>;
   auditLogs?: AdminAuditLog[];
 };
 
@@ -1616,12 +2345,26 @@ export type AdminPayment = {
   bookingId: string;
   providerRef?: string | null;
   rawMeta?: unknown;
+  actionDecisions?: AdminPaymentActionDecision[];
+  availableActions?: AdminPaymentActionDecision['action'][];
+  blockedActions?: AdminPaymentActionDecision['action'][];
+  evaluatedAt?: string;
+  evidence?: AdminPaymentEvidenceSummary;
+  primaryAction?: AdminPaymentActionDecision | null;
+  primaryQueue?: AdminPaymentPrimaryQueue;
   callbackAttempts?: AdminPaymentCallbackAttempt[];
   booking?: {
     createdAt?: string;
+    updatedAt?: string;
     status?: string;
     customerProfile?: { user?: { phone?: string; fullName?: string | null } };
     selectedProvider?: { displayName?: string | null };
+    customerWalletLedgerEntries?: Array<{
+      amount: number;
+      createdAt?: string | null;
+      sourceKey?: string | null;
+      updatedAt?: string | null;
+    }>;
     earning?: {
       id: string;
       status: string;
@@ -1638,18 +2381,83 @@ export type AdminPayment = {
   refunds?: Array<{ id: string; amount: number; status: string; createdAt?: string }>;
 };
 
+export type AdminPaymentActionDecision = {
+  action: 'SYNC' | 'CAPTURE' | 'RELEASE' | 'REQUEST_REFUND';
+  state: 'AVAILABLE' | 'REVIEW_REQUIRED' | 'BLOCKED';
+  recommended: boolean;
+  reasonCode: string;
+  reason: string;
+  requiredEvidence: string[];
+  verifiedAt: string | null;
+  policyVersion: string;
+};
+
+export type AdminPaymentPrimaryQueue =
+  | 'evidence-conflict'
+  | 'missing-gateway-evidence'
+  | 'capture-ready'
+  | 'release-recommended'
+  | 'terminal-cash-cleanup'
+  | 'completed-authorization-blocked'
+  | 'cash-debt'
+  | 'active-cash'
+  | 'failed-active'
+  | 'needs-action'
+  | 'authorized-diagnostic'
+  | 'history-captured'
+  | 'history-refunded'
+  | 'history-released';
+
+export type AdminPaymentEvidenceSummary = {
+  state: 'VERIFIED' | 'MISSING' | 'CONFLICT' | 'NOT_APPLICABLE';
+  label: string;
+  reason: string;
+  verifiedAt: string | null;
+};
+
 export type AdminPaymentSummary = {
+  activeCashCollection: number;
   authorized: number;
+  captureReady: number;
   callbackReview: number;
   callbackVerified: number;
   captured: number;
   cashDebt: number;
+  evidenceConflicts: number;
   generatedAt?: string;
+  evaluatedAt?: string;
+  currentQueueTotal?: number;
+  globalActionMetrics?: {
+    activeCashCollection: number;
+    captureReady: number;
+    completedAuthorizationBlocked: number;
+    evidenceConflicts: number;
+    missingGatewayEvidence: number;
+    releaseRecommended: number;
+    terminalCashCleanup: number;
+  };
   linkedRefunds: number;
   needsAction: number;
   pendingCash: number;
+  queueAgeCounts?: AdminQueueAgeCounts;
+  queueCounts?: Partial<Record<AdminPaymentPrimaryQueue, number>>;
+  queueSla?: AdminQueueSlaSummary;
   refunded: number;
+  releaseRecommended: number;
+  staleMismatch: number;
   totalCount: number;
+  scope?: { currentQueue: string; range: string };
+};
+
+export type AdminPaymentActionReceipt = {
+  action: 'SYNC' | 'CAPTURE' | 'RELEASE' | 'REQUEST_REFUND';
+  actorId: string;
+  after: { bookingStatus: string; paymentStatus: string };
+  auditId: string;
+  before: { bookingStatus: string; paymentStatus: string };
+  completedAt: string;
+  idempotencyKey: string;
+  paymentId: string;
 };
 
 export type AdminPaymentDetail = Omit<AdminPayment, 'booking' | 'refunds' | 'callbackAttempts'> & {
@@ -1701,6 +2509,9 @@ export type AdminEarning = {
   settlementNotes?: string | null;
   settlementMethod?: string | null;
   createdAt?: string;
+  originalDebtAmount?: number;
+  allocatedAmount?: number;
+  remainingDebtAmount?: number;
   providerProfile?: { displayName?: string | null; user?: { phone?: string; fullName?: string | null } };
   booking?: {
     status?: string;
@@ -1729,6 +2540,20 @@ export type AdminEarning = {
   platformFeeLogs?: AdminProviderPlatformFeeLog[];
   taxLogs?: AdminProviderTaxLog[];
   walletLedgerEntries?: AdminProviderWalletLedgerEntry[];
+  bankDepositCashDebtAllocations?: Array<{
+    id: string;
+    amount: number;
+    currency: string;
+    createdAt: string;
+    partnerBankDepositRequest: {
+      id: string;
+      bankTransactionId: string;
+      status: AdminPartnerBankDepositRequestStatus;
+      ledgerEntryId?: string | null;
+      journalBatchId?: string | null;
+      executedAt?: string | null;
+    };
+  }>;
 };
 
 export type AdminProviderWalletLedgerEntry = {
@@ -1872,6 +2697,17 @@ export type AdminPartnerBankDepositRequestDetail = {
 
 export type AdminManualWalletAdjustmentOwnerType = 'CUSTOMER' | 'PARTNER';
 
+export type AdminManualWalletAdjustmentOwnerOption = {
+  accountStatus: string;
+  currency: string;
+  currentBalance: number;
+  displayName: string;
+  maskedPhone: string;
+  ownerId: string;
+  ownerType: AdminManualWalletAdjustmentOwnerType;
+  reference: string;
+};
+
 export type AdminManualWalletAdjustmentDirection = 'CREDIT' | 'DEBIT';
 
 export type AdminManualWalletAdjustmentType =
@@ -1884,6 +2720,33 @@ export type AdminManualWalletAdjustmentType =
   | 'CASH_BOOKING_DEDUCTION'
   | 'RECEIVABLE_WRITE_OFF'
   | 'MANUAL_REVERSAL';
+
+export type AdminManualWalletAdjustmentPolicy = {
+  allowedCombinations: Array<{
+    adjustmentTypes: AdminManualWalletAdjustmentType[];
+    direction: AdminManualWalletAdjustmentDirection;
+    ownerType: AdminManualWalletAdjustmentOwnerType;
+  }>;
+  constraints: {
+    amountMax: number;
+    attachmentRequiredAt: number;
+    attachmentUrlMaxLength: number;
+    reasonMaxLength: number;
+  };
+  openPeriodStatuses: Array<'DRAFT' | 'REVIEWED'>;
+  specialFlows: {
+    cashBookingDeduction: 'SETTLEMENT_ROUTE_REQUIRED';
+    manualReversal: 'SOURCE_REQUEST_REQUIRED';
+  };
+};
+
+export type AdminManualWalletAdjustmentOpenPeriod = {
+  currency: string;
+  id: string;
+  period: string;
+  status: 'DRAFT' | 'REVIEWED';
+  updatedAt: string;
+};
 
 export type AdminManualWalletAdjustmentAccountingEntry = {
   accountCredit: string;
@@ -1907,20 +2770,25 @@ export type AdminManualWalletAdjustmentPreview = {
   amount: number;
   approvalAdminId?: string | null;
   approvalId?: string;
+  attachmentFileId?: string | null;
   attachmentUrl?: string | null;
   bankCashAmount: number;
   beforeBalance: number;
   companyOutputVat: number;
   currency: string;
+  caseReference?: string | null;
   direction: AdminManualWalletAdjustmentDirection;
   expenseAmount: number;
   expenseContraAmount?: number;
   monthlyPeriod?: string | null;
+  monthlyPeriodStatus?: 'DRAFT' | 'REVIEWED' | 'DECLARED' | 'PAID' | 'CLOSED' | null;
+  operationalCause?: string | null;
   ownerId: string;
   ownerType: AdminManualWalletAdjustmentOwnerType;
   partnerReceivableDecrease?: number;
   partnerReceivableIncrease?: number;
   platformRevenueAmount: number;
+  expectedCorrection?: string | null;
   reason: string;
   requiresApproval: boolean;
   requiresAttachment: boolean;
@@ -1943,6 +2811,7 @@ export type AdminManualWalletAdjustmentResult = {
 };
 
 export type AdminManualWalletAdjustmentRow = {
+  accountingEntries?: AdminManualWalletAdjustmentAccountingEntry[];
   adjustmentType: string;
   affects?: Record<string, unknown>;
   afterBalance?: number | null;
@@ -1955,17 +2824,22 @@ export type AdminManualWalletAdjustmentRow = {
   approvalAdminId?: string | null;
   approvalId?: string | null;
   attachmentUrl?: string | null;
+  attachmentFileId?: string | null;
   beforeBalance?: number | null;
+  caseReference?: string | null;
   createdAt?: string;
   currency: string;
   direction: string;
   id: string;
   ledgerType: string;
   monthlyPeriod?: string | null;
+  monthlyPeriodStatus?: string | null;
+  operationalCause?: string | null;
   ownerId: string;
   ownerLabel: string;
   ownerPhone: string;
   ownerType: AdminManualWalletAdjustmentOwnerType;
+  expectedCorrection?: string | null;
   reason?: string | null;
   requestedBy?: AdminOperatorIdentity | null;
   requestedByAdminId?: string | null;
@@ -1978,24 +2852,109 @@ export type AdminManualWalletAdjustmentSummary = {
   total: number;
 };
 
-export type AdminManualWalletAdjustmentRequestStatus =
-  | 'REQUESTED'
-  | 'EXECUTED'
-  | 'REJECTED'
-  | 'CANCELLED';
+export type AdminManualWalletAdjustmentWorkspaceSummary = {
+  awaitingApproval: number;
+  history: number;
+  needsRecreation: number;
+  staleOrBlocked: number;
+};
+
+export type AdminCustomerWalletLedgerType =
+  | 'REFERRAL_REWARD'
+  | 'CUSTOMER_REFERRAL_EARNED'
+  | 'CUSTOMER_REFERRAL_TAX_WITHHELD'
+  | 'CUSTOMER_REFERRAL_USED_FOR_SERVICE'
+  | 'CUSTOMER_REFERRAL_CASHOUT'
+  | 'CUSTOMER_REFERRAL_REVERSED'
+  | 'CUSTOMER_WALLET_PAYMENT'
+  | 'REFUND'
+  | 'ADMIN_ADJUSTMENT';
+
+export type AdminCustomerWalletLedgerRow = {
+  afterBalance: number;
+  amount: number;
+  beforeBalance: number;
+  bookingId?: string | null;
+  createdAt: string;
+  currency: string;
+  direction: 'CREDIT' | 'DEBIT';
+  id: string;
+  notes?: string | null;
+  reference?: string | null;
+  referralRewardId?: string | null;
+  sourceKey: string;
+  type: AdminCustomerWalletLedgerType;
+};
+
+export type AdminCustomerWalletLedgerPage = {
+  pagination: {
+    skip: number;
+    take: number;
+  };
+  rows: AdminCustomerWalletLedgerRow[];
+  summary: {
+    balance: number;
+    currency: string;
+    moneyIn: number;
+    moneyOut: number;
+    totalCount: number;
+  };
+};
+
+export type AdminManualWalletAdjustmentRequestStatus = 'REQUESTED' | 'EXECUTED' | 'REJECTED' | 'CANCELLED';
+
+export type AdminFinanceApprovalRequestPreflight = {
+  blockers: Array<{
+    code:
+      | 'ATTACHMENT_REQUIRED'
+      | 'FINANCE_APPROVER_REQUIRED'
+      | 'MAKER_CANNOT_APPROVE'
+      | 'POLICY_MIGRATION_REQUIRED'
+      | 'REQUEST_INVALID'
+      | 'WALLET_ADJUSTMENT_PERIOD_NOT_FOUND'
+      | 'WALLET_ADJUSTMENT_PERIOD_NOT_OPEN'
+      | 'WALLET_ADJUSTMENT_PERIOD_REQUIRED'
+      | 'WALLET_BALANCE_CHANGED'
+      | string;
+    message: string;
+  }>;
+  canApprove: boolean;
+  canCancel?: boolean;
+  canReject: boolean;
+  currentAfterBalance: number | null;
+  currentBeforeBalance: number | null;
+  ready: boolean;
+  warnings: Array<{ code: string; message: string }>;
+};
 
 export type AdminManualWalletAdjustmentRequest = {
   id: string;
   ownerType: AdminManualWalletAdjustmentOwnerType;
   ownerId: string;
-  ownerName?: string;
+  ownerName?: string | null;
+  ownerMaskedPhone?: string | null;
+  ownerReference?: string | null;
   direction: AdminManualWalletAdjustmentDirection;
   adjustmentType: AdminManualWalletAdjustmentType;
   amount: number;
   currency: string;
   reason: string;
+  operationalCause?: string | null;
+  expectedCorrection?: string | null;
+  caseReference?: string | null;
   monthlyPeriod?: string | null;
+  monthlyPeriodStatus?: 'DRAFT' | 'REVIEWED' | 'DECLARED' | 'PAID' | 'CLOSED' | null;
+  attachmentFileId?: string | null;
   attachmentUrl?: string | null;
+  attachmentFile?: {
+    contentType: string;
+    id: string;
+    originalName?: string | null;
+    reviewStatus: string;
+    sizeBytes?: number | null;
+    uploadStatus: string;
+    uploadedAt?: string | null;
+  } | null;
   requestedBeforeBalance: number;
   requestedAfterBalance: number;
   requestedWalletDelta?: number;
@@ -2025,6 +2984,8 @@ export type AdminManualWalletAdjustmentRequest = {
   ledgerEntryId?: string | null;
   executedAt?: string | null;
   rejectedAt?: string | null;
+  reviewState?: 'BLOCKED' | 'READY' | 'STALE';
+  preflight?: AdminFinanceApprovalRequestPreflight;
   createdAt: string;
   updatedAt?: string;
 };
@@ -2047,7 +3008,27 @@ export type AdminCashSettlementSummary = {
   currency: string;
   rowCount: number;
   providerCount: number;
+  global?: {
+    allocatedAmount: number;
+    missingSettlementEvidenceCount: number;
+    originalDebtAmount: number;
+    providerCount: number;
+    remainingDebtAmount: number;
+    rowCount: number;
+    staleDebtRowCount: number;
+  };
+  queueCounts?: {
+    all: number;
+    highDebt: number;
+    missingEvidence: number;
+    paymentCheck: number;
+    stale: number;
+  };
+  queueAgeCounts?: AdminQueueAgeCounts;
+  queueSla?: AdminQueueSlaSummary;
   totalCompanyCouponOffset: number;
+  totalOriginalDebtAmount?: number;
+  totalAllocatedAmount?: number;
   totalDebtAmount: number;
   totalPlatformFee: number;
   totalTaxAmount: number;
@@ -2056,6 +3037,7 @@ export type AdminCashSettlementSummary = {
   staleDebtRowCount: number;
   highDebtProviderCount: number;
   missingPaymentEvidenceCount: number;
+  missingSettlementEvidenceCount?: number;
   cashPaymentRowCount: number;
   topProviderGroups: Array<{
     providerProfileId: string;
@@ -2072,31 +3054,108 @@ export type AdminCashSettlementSummary = {
   }>;
 };
 
+export type AdminCashSettlementDetail = {
+  earning: AdminEarning;
+  originalDebtAmount: number;
+  allocatedAmount: number;
+  remainingDebtAmount: number;
+  walletBalance: number;
+  availableDeposits: Array<
+    AdminPartnerBankDepositRequest & {
+      allocatedAmount: number;
+      remainingReceivableRecovery: number;
+    }
+  >;
+  auditLogs: AdminAuditLog[];
+};
+
 export type AdminRefund = {
   id: string;
   bookingId: string;
   paymentId: string;
   amount: number;
+  currency?: string;
+  metadata?: unknown;
   reason?: string | null;
   status: string;
   createdAt: string;
   booking?: {
+    id?: string;
     status?: string;
-    customerProfile?: { user?: { phone?: string; fullName?: string | null } };
+    customerProfile?: {
+      id?: string;
+      user?: { phone?: string; fullName?: string | null };
+    };
     selectedProvider?: { displayName?: string | null };
   };
-  payment?: { method: string; status: string; currency: string };
+  payment?: {
+    amount?: number;
+    bookingId?: string;
+    callbackAttempts?: Array<{
+      createdAt: string;
+      errorCode?: string | null;
+      errorMessage?: string | null;
+      gatewayTransactionId?: string | null;
+      id: string;
+      outcome: string;
+      providerStatus?: string | null;
+      signatureVerified?: boolean | null;
+    }>;
+    currency: string;
+    id?: string;
+    method: string;
+    providerRef?: string | null;
+    status: string;
+  };
+};
+
+export type AdminRefundOperationalStage =
+  | 'STATE_MISMATCH'
+  | 'AWAITING_DECISION'
+  | 'PAYMENT_PROCESSING'
+  | 'CLOSED'
+  | 'REJECTED'
+  | 'REVIEW_REQUIRED';
+
+export type AdminRefundOperationsRow = AdminRefund & {
+  assignee: string | null;
+  nextAction: string;
+  operationalStage: AdminRefundOperationalStage;
+  stateMismatchReason: string | null;
+};
+
+export type AdminRefundQueueAge = 'all' | 'under-1h' | '1-4h' | '4-24h' | '1-3d' | '3-7d' | 'over-7d';
+
+export type AdminRefundQueueMeta = {
+  completedCount: number;
+  generatedAt: string;
+  globalOpenCount: number;
+  oldestOpenAt?: string | null;
+  openCount: number;
+  processingCount: number;
+  queueAgeCounts: Record<AdminRefundQueueAge, number>;
+  queueSla: AdminQueueSlaSummary;
+  rejectedCount: number;
+  requestedCount: number;
+  reviewRequiredCount: number;
+  selectedTotal: number;
+  stateMismatchCount: number;
 };
 
 export type AdminRefundSummary = {
   totalCount: number;
   generatedAt?: string;
   requestedCount: number;
+  processingCount?: number;
   refundedBookingCount: number;
   needsUpdateCount: number;
+  stateMismatchCount?: number;
   completedCount: number;
   openCount: number;
+  oldestOpenAt?: string | null;
   outcomeLinkedCount: number;
+  queueAgeCounts?: AdminQueueAgeCounts;
+  queueSla?: AdminQueueSlaSummary;
 };
 
 export type AdminPayoutBatch = {
@@ -2115,6 +3174,8 @@ export type AdminPayoutBatch = {
   lastUpdatedBy?: AdminOperatorIdentity | null;
   paidByAdminId?: string | null;
   paidBy?: AdminOperatorIdentity | null;
+  paidCloseoutRequestedByAdminId?: string | null;
+  paidCloseoutRequestedBy?: AdminOperatorIdentity | null;
   approvalAdminId?: string | null;
   approvalAdmin?: AdminOperatorIdentity | null;
   providerProfile?: {
@@ -2128,6 +3189,7 @@ export type AdminPayoutBatch = {
       isPrimary: boolean;
       reviewedAt?: string | null;
       rejectionReason?: string | null;
+      deletedAt?: string | null;
       createdAt?: string | null;
       updatedAt?: string | null;
     }>;
@@ -2138,6 +3200,59 @@ export type AdminPayoutBatch = {
   };
   earnings?: AdminEarning[];
   withholdingLogs?: AdminWithholdingLog[];
+  preflight?: AdminPayoutBatchPreflight;
+  riskModel?: AdminPayoutBatchRiskModel;
+  bankReconciliation?: {
+    matchedAmount: number;
+    paidAt: string | null;
+    period: string;
+    remainingAmount: number;
+    targetAmount: number;
+  } | null;
+};
+
+export type AdminFinanceExecutionPreflightMessage = {
+  code: string;
+  message: string;
+};
+
+export type AdminPayoutBatchPreflight = {
+  actionAvailability?: {
+    markFailed: AdminPayoutActionAvailability;
+    markPaid: AdminPayoutActionAvailability;
+    reversePaid: AdminPayoutActionAvailability;
+    startProcessing: AdminPayoutActionAvailability;
+  };
+  actorCanApprovePaidCloseout?: boolean;
+  approvedBankAccountId: string | null;
+  blockers: AdminFinanceExecutionPreflightMessage[];
+  canMarkFailed: boolean;
+  canMarkPaid: boolean;
+  canReversePaid?: boolean;
+  canStartProcessing: boolean;
+  independentApproverAvailable: boolean;
+  paidCloseoutRequestedByAdminId?: string | null;
+  paidLedgerAmount: number;
+  paidLedgerEntryCount: number;
+  payableAmount: number;
+  payoutJournalPosted: boolean;
+  reversalJournalPosted?: boolean;
+  reversalLedgerRecorded?: boolean;
+  ready: boolean;
+  requiredAmount: number;
+  walletBalance: number;
+  warnings: AdminFinanceExecutionPreflightMessage[];
+};
+
+export type AdminPayoutActionAvailability = {
+  allowed: boolean;
+  blockers: AdminFinanceExecutionPreflightMessage[];
+};
+
+export type AdminPayoutBatchRiskModel = {
+  phase: 'PRE_RELEASE' | 'IN_TRANSFER' | 'POST_PAYMENT' | 'ARCHIVED';
+  releasePreflight: AdminPayoutBatchPreflight | null;
+  reconciliationFindings: AdminFinanceExecutionPreflightMessage[];
 };
 
 export type AdminOperatorIdentity = {
@@ -2148,6 +3263,9 @@ export type AdminOperatorIdentity = {
 
 export type AdminPayoutBatchSummary = {
   generatedAt: string;
+  range?: string;
+  timeZone?: string;
+  scopeCount?: number;
   total: number;
   needsReview: number;
   inProgress: number;
@@ -2158,6 +3276,26 @@ export type AdminPayoutBatchSummary = {
   totalNetAmount: number;
   withholdingAmount: number;
   currency: string;
+  postPaymentRepairCount?: number;
+  bankReconciliationCandidateCount?: number;
+  bankReconciliationRemainingAmount?: number;
+  bankReconciliationPeriod?: string;
+  moneyFlow?: {
+    scope: string;
+    scopeBatchCount: number;
+    totalBatchCount: number;
+    evidenceBatchCount: number;
+    grossAmount: number;
+    payoutNetAmount: number;
+    evidenceNetAmount: number;
+    platformFeeAmount: number;
+    withholdingAmount: number;
+    cashDebtAmount: number;
+    netGap: number;
+    completeness: 'COMPLETE' | 'PARTIAL' | 'UNAVAILABLE';
+    verdict: 'MATCHED' | 'MISMATCH' | 'NOT_EVALUATED';
+    generatedAt: string;
+  };
 };
 
 export type AdminProviderWalletWithdrawalRequestStatus =
@@ -2173,10 +3311,7 @@ export type AdminProviderWalletWithdrawalRequestStatus =
   | 'FAILED'
   | 'REVERSED';
 
-export type AdminProviderWalletWithdrawalReconciliationState =
-  | 'NOT_APPLICABLE'
-  | 'UNMATCHED'
-  | 'MATCHED';
+export type AdminProviderWalletWithdrawalReconciliationState = 'NOT_APPLICABLE' | 'UNMATCHED' | 'MATCHED';
 
 export type AdminProviderWalletWithdrawalRequest = {
   id: string;
@@ -2219,10 +3354,39 @@ export type AdminProviderWalletWithdrawalRequest = {
     accountNumberLast4?: string | null;
     status: string;
     isPrimary?: boolean;
+    deletedAt?: string | null;
   } | null;
+  preflight?: AdminProviderWalletWithdrawalPreflight;
+};
+
+export type AdminProviderWalletWithdrawalPreflight = {
+  actorCanApprovePaidCloseout?: boolean;
+  availableBalance: number;
+  bankAccountApproved: boolean;
+  blockers: AdminFinanceExecutionPreflightMessage[];
+  canApprove: boolean;
+  canMarkBankTransferPending: boolean;
+  canMarkPaid: boolean;
+  canReversePaid?: boolean;
+  canReject: boolean;
+  independentApproverAvailable: boolean;
+  paidCloseoutRequestedByAdminId?: string | null;
+  lockJournalPosted: boolean;
+  paidJournalPosted: boolean;
+  paidLedgerRecorded: boolean;
+  reversalJournalPosted?: boolean;
+  reversalLedgerRecorded?: boolean;
+  ready: boolean;
+  walletBalance: number;
+  warnings: AdminFinanceExecutionPreflightMessage[];
 };
 
 export type AdminProviderWalletWithdrawalRequestSummary = {
+  generatedAt?: string;
+  range?: string;
+  timeZone?: string;
+  scopeCount?: number;
+  filteredTotal?: number;
   total: number;
   requested: number;
   reviewRequired: number;
@@ -2238,6 +3402,7 @@ export type AdminProviderWalletWithdrawalRequestSummary = {
   paidUnreconciledAmount?: number;
   paidReconciled?: number;
   paidReconciledAmount?: number;
+  oldestOpenAt?: string | null;
   currency: string;
 };
 
@@ -2272,6 +3437,7 @@ export type AdminWithholdingLog = {
 export type AdminReview = {
   id: string;
   bookingId?: string;
+  createdByAdminId?: string | null;
   rating: number;
   comment?: string | null;
   status: string;
@@ -2319,6 +3485,7 @@ export type AdminPartnerCustomerReview = {
   comment?: string | null;
   status?: string | null;
   reportReason?: string | null;
+  moderatedAt?: string | null;
   createdAt?: string;
   customerProfileId?: string;
   providerProfileId?: string;
@@ -2326,18 +3493,11 @@ export type AdminPartnerCustomerReview = {
     id?: string;
     user?: {
       fullName?: string | null;
-      phone?: string;
-      appSessions?: AdminAppSession[];
-      pushDevices?: AdminUser['pushDevices'];
     };
   };
   providerProfile?: {
     id?: string;
     displayName?: string | null;
-    status?: string | null;
-    user?: AdminProvider['user'];
-    sessions?: AdminProvider['sessions'];
-    devices?: AdminProvider['devices'];
   };
   booking?: {
     id?: string;
@@ -2345,10 +3505,22 @@ export type AdminPartnerCustomerReview = {
     createdAt?: string;
     services?: AdminBooking['services'];
   };
+  latestModeration?: {
+    actor?: {
+      id?: string;
+      email?: string | null;
+      fullName?: string | null;
+    } | null;
+    createdAt?: string;
+    reason?: string | null;
+  } | null;
 };
 
 export type AdminPartnerCustomerReviewSummary = {
   generatedAt?: string;
+  needsReview: number;
+  restricted: number;
+  retained: number;
   totalCount: number;
 };
 
@@ -2366,6 +3538,7 @@ export type AdminCoupon = {
 
 export type AdminCouponSummary = {
   expiredCount: number;
+  filteredCount?: number;
   generatedAt?: string;
   liveCount: number;
   pausedCount: number;
@@ -2528,7 +3701,8 @@ export type AdminAccountingJournalSourceType =
   | 'REFERRAL_REWARD'
   | 'REFUND'
   | 'PAYMENT_CALLBACK'
-  | 'BANK_RECONCILIATION_ADJUSTMENT';
+  | 'BANK_RECONCILIATION_ADJUSTMENT'
+  | 'WITHHOLDING_REMITTANCE';
 export type AdminBookingPaymentClearingEntryType =
   | 'CUSTOMER_PAYMENT_CAPTURED'
   | 'SETTLEMENT_POSTED'
@@ -2538,6 +3712,14 @@ export type AdminBookingPaymentClearingEntryType =
   | 'MANUAL_ADJUSTMENT';
 export type AdminBookingPaymentClearingStatus = 'OPEN' | 'PARTIALLY_CLEARED' | 'CLEARED' | 'REVERSED';
 export type AdminCompanyBankTransactionType = 'INFLOW' | 'OUTFLOW';
+export type AdminBankReconciliationEvidenceSource =
+  | 'PAYMENT_CLEARING'
+  | 'PARTNER_DEPOSIT'
+  | 'WITHDRAWAL'
+  | 'PAYOUT'
+  | 'REFUND'
+  | 'OTHER_JOURNAL'
+  | 'UNCLASSIFIED';
 
 export type AdminCompanyBankTransactionBatchClassification =
   | 'NEW'
@@ -2759,6 +3941,14 @@ export type AdminBookingSettlementGapSummary = {
   manualReview: number;
   oldestGapAt?: string | null;
   recent: number;
+  scope?: {
+    age: string;
+    paymentMethod: string;
+    period: string;
+    q: string;
+    track: string;
+  };
+  sourceStatus?: 'AVAILABLE';
   total: number;
 };
 
@@ -2789,6 +3979,7 @@ export type AdminBookingSettlementDryRunCounts = {
   platformVatUnexplainedZero: number;
   platformVatZeroFromPolicy: number;
   reconciliationReview: number;
+  reviewRequired: number;
 };
 
 export type AdminBookingSettlementDryRunTotals = Omit<
@@ -2813,6 +4004,9 @@ export type AdminBookingSettlementGapDryRun = {
     paymentFeePolicyVersionId?: string | null;
     paymentFeeRuleStatus: 'MATCHED_POLICY_RULE' | 'DEFAULTED' | 'UNAVAILABLE';
     paymentMethod?: string | null;
+    policyDecision: 'APPROVED' | 'BLOCKED' | 'REVIEW_REQUIRED';
+    policyExceptionCodes: string[];
+    policyReasons: string[];
     platformFeePolicyVersionId?: string | null;
     platformVatEvidenceStatus:
       | 'EXPLICIT_ZERO_SERVICE_PAYOUT_RULE'
@@ -2821,6 +4015,7 @@ export type AdminBookingSettlementGapDryRun = {
       | 'ZERO_FROM_POLICY'
       | 'ZERO_UNEXPLAINED';
     platformVatRateBps?: number | null;
+    technicalEligibility: boolean;
   }>;
   paymentMethods: Record<string, number>;
   policyGate: {
@@ -2849,6 +4044,7 @@ export type AdminBookingSettlementGapRepairPreview = {
   bookingStatus: string;
   completedAt: string;
   currency: string;
+  generatedAt: string;
   monthlyPeriod: string;
   monthlyClosingStatus?: string | null;
   customer?: {
@@ -2904,10 +4100,22 @@ export type AdminBookingSettlementGapRepairPreview = {
     platformFeeRuleSnapshot?: unknown;
     platformVatRateBps?: number;
   } | null;
+  policyDecision: 'APPROVED' | 'BLOCKED' | 'REVIEW_REQUIRED';
+  policyExceptionCodes: string[];
+  policyReasons: string[];
+  policyVersion: string;
   settlementSnapshotId?: string | null;
   serviceCount: number;
   repairMode: 'CANONICAL_COMPLETION_SETTLEMENT' | 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION';
   preservesExistingEarningLifecycle: boolean;
+  sourceVersion: string;
+  technicalEligibility: boolean;
+};
+
+export type AdminBookingSettlementGapRepairPreviewBatch = {
+  generatedAt: string;
+  items: AdminBookingSettlementGapRepairPreview[];
+  requested: number;
 };
 
 export type AdminBookingSettlementRepairCheckpoint = {
@@ -2922,26 +4130,128 @@ export type AdminBookingSettlementRepairCheckpoint = {
     passed: boolean;
   }>;
   passed: boolean;
-  repairMode:
-    | 'CANONICAL_COMPLETION_SETTLEMENT'
-    | 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION'
-    | null;
+  repairMode: 'CANONICAL_COMPLETION_SETTLEMENT' | 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION' | null;
   snapshotId: string | null;
   status: 'PASSED' | 'FAILED';
 };
 
 export type AdminBookingSettlementGapRepairResult = {
+  actorId: string;
   approvalAdminId: string;
   auditLogId: string;
   bookingId: string;
   checkpoint: AdminBookingSettlementRepairCheckpoint;
+  completedAt: string;
   earningId: string;
+  policyDecision: 'APPROVED';
+  policyVersion: string;
   repairMode: 'CANONICAL_COMPLETION_SETTLEMENT' | 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION';
   repaired: true;
   settlementSnapshotId: string;
+  sourceVersion: string;
+};
+
+export type AdminSettlementAuditCheckState = 'PASS' | 'FAIL' | 'UNKNOWN' | 'NOT_APPLICABLE';
+
+export type AdminSettlementAuditBlockerCode =
+  | 'ALLOCATION_DELTA'
+  | 'BANK_MATCH_INCOMPLETE'
+  | 'CANONICAL_CLEARING_DUPLICATE'
+  | 'CANONICAL_CLEARING_MISSING'
+  | 'CANONICAL_JOURNAL_DUPLICATE'
+  | 'CANONICAL_JOURNAL_MISSING'
+  | 'CANONICAL_JOURNAL_NOT_POSTED'
+  | 'CLEARING_AMOUNT_MISMATCH'
+  | 'CLEARING_STILL_OPEN'
+  | 'COUPON_EVIDENCE_MISSING'
+  | 'JOURNAL_ENTRY_UNBALANCED'
+  | 'JOURNAL_HEADER_ENTRY_MISMATCH'
+  | 'JOURNAL_HEADER_UNBALANCED'
+  | 'PAYMENT_FEE_POLICY_MISSING'
+  | 'RECONCILIATION_DELTA_ENTRY'
+  | 'REVERSAL_AMOUNT_MISMATCH'
+  | 'REVERSAL_CLEARING_MISSING'
+  | 'REVERSAL_EVIDENCE_INCONSISTENT'
+  | 'REVERSAL_JOURNAL_MISSING'
+  | 'REVERSAL_LEDGER_MISSING'
+  | 'TAX_PERIOD_MISMATCH';
+
+export type AdminSettlementAuditHealth = {
+  allocation: {
+    companyCouponExpense: number;
+    customerPaymentAmount: number;
+    delta: number;
+    partnerPayoutAmount: number;
+    partnerWithholdingTotal: number;
+    platformFeeGross: number;
+  };
+  blockers: Array<{
+    amount?: number;
+    blockingCloseout?: boolean;
+    code: AdminSettlementAuditBlockerCode;
+    dueAt?: string | null;
+    nextAction: string;
+    owner?: string;
+    ownerTeam: string;
+    priority?: number;
+    remediationHref?: string;
+    severity: 'BLOCKER' | 'WARNING';
+  }>;
+  checkedAt: string;
+  checks: {
+    allocation: AdminSettlementAuditCheckState;
+    bankMatch: AdminSettlementAuditCheckState;
+    canonicalClearing: AdminSettlementAuditCheckState;
+    canonicalJournal: AdminSettlementAuditCheckState;
+    couponPolicy: AdminSettlementAuditCheckState;
+    paymentFeePolicy: AdminSettlementAuditCheckState;
+    reversal: AdminSettlementAuditCheckState;
+    reversalClearing?: AdminSettlementAuditCheckState;
+    reversalLedger?: AdminSettlementAuditCheckState;
+    taxPeriod: AdminSettlementAuditCheckState;
+  };
+  evidence: {
+    canonicalClearing: {
+      count: number;
+      ids: string[];
+      matchedAmount: number;
+      required: boolean;
+      state: AdminSettlementAuditCheckState;
+      unmatchedAmount: number;
+    };
+    canonicalJournal: {
+      count: number;
+      ids: string[];
+      state: AdminSettlementAuditCheckState;
+    };
+    reversal: {
+      clearingCount: number;
+      clearingRequired?: boolean;
+      count: number;
+      ids: string[];
+      journalCount: number;
+      ledgerEvidence?: AdminSettlementAuditCheckState;
+      ledgerType?: 'CASH_RECEIVABLE_JOURNAL' | 'CUSTOMER_WALLET_REFUND' | 'EXTERNAL_CLEARING' | 'NONE';
+      lifecycle: 'NONE' | 'OPEN_PERIOD' | 'CLOSED_PERIOD';
+      reason?: string | null;
+      reversedAt?: string | null;
+      reversalPeriod?: string | null;
+      state: AdminSettlementAuditCheckState;
+    };
+  };
+  formulaVersion: 'CUSTOMER_PLUS_COMPANY_COUPON_V1';
+  state: 'CLEAR' | 'ACTION_REQUIRED' | 'REVERSED_CLEAR' | 'UNKNOWN';
+  workflow?: {
+    dueAt: string | null;
+    reason: string;
+    state: 'TAX_OPEN' | 'TAX_DECLARED' | 'TAX_PAID' | 'TAX_CLOSED' | 'REVERSED' | 'UNKNOWN';
+    urgency: 'NORMAL' | 'DUE_SOON' | 'OVERDUE' | 'BLOCKED' | 'UNKNOWN';
+  };
 };
 
 export type AdminBookingSettlementSnapshot = {
+  auditAmountAtRisk?: number;
+  auditCursor?: string;
   id: string;
   bookingId: string;
   customerProfileId: string;
@@ -2971,7 +4281,10 @@ export type AdminBookingSettlementSnapshot = {
   monthlyPeriod: string;
   postedAt: string;
   closedAt?: string | null;
+  reversedById?: string | null;
+  reversalReason?: string | null;
   metadata?: unknown;
+  settlementAuditHealth: AdminSettlementAuditHealth;
   booking?: {
     id: string;
     createdAt: string;
@@ -2981,12 +4294,12 @@ export type AdminBookingSettlementSnapshot = {
   } | null;
   customerProfile?: {
     id: string;
-    user?: { id: string; fullName?: string | null; phone?: string | null } | null;
+    user?: { id?: string; fullName?: string | null; phone?: string | null } | null;
   } | null;
   providerProfile?: {
     id: string;
     displayName?: string | null;
-    user?: { id: string; fullName?: string | null; phone?: string | null } | null;
+    user?: { id?: string; fullName?: string | null; phone?: string | null } | null;
   } | null;
   accountingJournalBatches?: Array<{
     id: string;
@@ -2996,6 +4309,11 @@ export type AdminBookingSettlementSnapshot = {
     totalDebit: number;
     totalCredit: number;
     postedAt: string;
+    entries?: Array<{
+      accountCode: string;
+      amount: number;
+      side: 'CREDIT' | 'DEBIT';
+    }>;
   }>;
   paymentClearingEntries?: Array<{
     id: string;
@@ -3005,12 +4323,19 @@ export type AdminBookingSettlementSnapshot = {
     amount: number;
     currency: string;
     occurredAt: string;
+    bankReconciliationMatches?: Array<{
+      amount: number;
+      matchedAt: string;
+      status: string;
+    }>;
   }>;
   reversalEntries?: Array<{
     id: string;
     sourceKey: string;
     settlementStatus: AdminBookingSettlementStatus;
     taxStatus: AdminBookingSettlementTaxStatus;
+    monthlyPeriod?: string | null;
+    originalMonthlyPeriod?: string | null;
     occurredAt: string;
     reason?: string | null;
     accountingJournalBatches?: Array<{
@@ -3032,17 +4357,46 @@ export type AdminBookingSettlementSnapshot = {
 };
 
 export type AdminBookingSettlementSnapshotSummary = {
+  actionRequiredCount: number;
+  allocationMismatchCount: number;
+  amountAtRisk: number;
+  checkedAt: string;
+  clearCount: number;
+  clearingEvidenceIssueCount: number;
+  closedTaxCount: number;
   count: number;
+  couponEvidenceIssueCount: number;
   currency: string;
   customerPaymentAmount: number;
+  declaredTaxCount: number;
+  feeEvidenceIssueCount: number;
+  journalEvidenceIssueCount: number;
+  integrityReasonCount?: number;
+  needsActionCount: number;
+  oldestActionRequiredAt?: string | null;
+  oldestNeedsActionAt?: string | null;
   partnerPayoutAmount: number;
   partnerWithholdingTotal: number;
+  paymentEvidenceCount?: number;
   platformFeeGross: number;
   platformFeeNetRevenue: number;
   companyOutputVat: number;
   paymentProcessingFee: number;
+  paymentFeeEvidenceIssueCount: number;
   openTaxCount: number;
+  overdueTaxCount?: number;
   paidTaxCount: number;
+  resolvedCount: number;
+  reversalEvidenceCompleteCount?: number;
+  reversalEvidenceIncompleteCount?: number;
+  reversalIncompleteCount: number;
+  reversedClearCount: number;
+  reversedCount: number;
+  reversedWithOtherBlockersCount?: number;
+  taxDueDateUnknownCount?: number;
+  taxEvidenceIssueCount: number;
+  taxWorkflowCount?: number;
+  unknownCount: number;
 };
 
 export type AdminBookingSettlementReversalEntry = {
@@ -3149,6 +4503,7 @@ export type AdminAccountingJournalBatch = {
   metadata?: unknown;
   createdAt: string;
   updatedAt: string;
+  integrity?: AdminAccountingJournalIntegrity;
   _count?: { entries: number };
   booking?: { id: string; status: string; createdAt?: string; closedAt?: string | null } | null;
   customerProfile?: {
@@ -3160,6 +4515,34 @@ export type AdminAccountingJournalBatch = {
     displayName?: string | null;
     user?: { id: string; fullName?: string | null; phone?: string | null } | null;
   } | null;
+};
+
+export type AdminAccountingJournalIntegrity = {
+  blockerCodes: Array<
+    | 'ENTRY_UNBALANCED'
+    | 'FORMULA_DELTA'
+    | 'FORMULA_EVIDENCE_MISSING'
+    | 'HEADER_ENTRY_MISMATCH'
+    | 'HEADER_UNBALANCED'
+    | 'PERIOD_EVIDENCE_MISSING'
+    | 'PERIOD_MISMATCH'
+    | 'POSTED_WITHOUT_ENTRIES'
+  >;
+  checkedAt: string;
+  checks: {
+    entriesBalanced: 'FAIL' | 'NOT_APPLICABLE' | 'PASS' | 'UNKNOWN';
+    formula: 'FAIL' | 'NOT_APPLICABLE' | 'PASS' | 'UNKNOWN';
+    headerBalanced: 'FAIL' | 'NOT_APPLICABLE' | 'PASS' | 'UNKNOWN';
+    headerMatchesEntries: 'FAIL' | 'NOT_APPLICABLE' | 'PASS' | 'UNKNOWN';
+    monthlyPeriod: 'FAIL' | 'NOT_APPLICABLE' | 'PASS' | 'UNKNOWN';
+    postedEntries: 'FAIL' | 'NOT_APPLICABLE' | 'PASS' | 'UNKNOWN';
+  };
+  discrepancyAmount: number;
+  entryCount: number;
+  entryCredit: number;
+  entryDebit: number;
+  formulaDelta?: number | null;
+  state: 'BLOCKED' | 'CLEAR' | 'UNKNOWN';
 };
 
 export type AdminAccountingJournalEntry = {
@@ -3230,6 +4613,11 @@ export type AdminAccountingJournalBatchDetail = AdminAccountingJournalBatch & {
   > | null;
   settlementReversalEntry?: {
     id: string;
+    createdById?: string | null;
+    originalSettlementSnapshotId: string;
+    originalMonthlyPeriod: string;
+    originalMonthlyClosingId: string;
+    metadata?: unknown;
     paymentMethod: AdminPaymentMethod;
     customerPaymentAmount: number;
     partnerPayoutAmount: number;
@@ -3247,12 +4635,30 @@ export type AdminAccountingJournalBatchDetail = AdminAccountingJournalBatch & {
 };
 
 export type AdminAccountingJournalBatchSummary = {
+  balancedCount: number;
+  blockedAmount: number;
+  blockedCount: number;
+  clearCount: number;
   count: number;
   currency: string;
+  draftCount: number;
+  entryMismatchCount: number;
+  formulaDeltaCount: number;
+  generatedAt: string;
+  headerEntryMismatchCount: number;
+  headerMismatchCount: number;
+  needsActionCount: number;
+  oldestBlockerAt?: string | null;
+  oldestDraftAt?: string | null;
+  oldestUnbalancedAt?: string | null;
   postedCount: number;
+  postedWithoutEntryCount: number;
   reversedCount: number;
   totalCredit: number;
   totalDebit: number;
+  unbalancedAmount: number;
+  unbalancedCount: number;
+  unknownCount: number;
 };
 
 export type AdminBookingPaymentClearingEntry = {
@@ -3273,16 +4679,33 @@ export type AdminBookingPaymentClearingEntry = {
   updatedAt: string;
   booking?: { id: string; status: string; createdAt?: string; closedAt?: string | null } | null;
   payment?: {
-    id: string;
+    id?: string;
     method: AdminPaymentMethod;
     status: AdminPaymentStatus;
     amount: number;
     currency: string;
+    providerRef?: string | null;
   } | null;
+  bankReconciliationMatches?: Array<{ amount: number }>;
+  matchedAmount?: number;
+  remainingAmount?: number;
+  reviewAssignment?: {
+    assignedAt: string;
+    assignedByAdminId: string | null;
+    assignee?: AdminOperatorIdentity | null;
+    assigneeAdminId: string;
+    reason: string | null;
+  };
   _count?: { bankReconciliationMatches?: number };
 };
 
-export type AdminBookingPaymentClearingEntryDetail = AdminBookingPaymentClearingEntry & {
+export type AdminBookingPaymentClearingEntryDetail = Omit<
+  AdminBookingPaymentClearingEntry,
+  'bankReconciliationMatches'
+> & {
+  assignmentHistory?: AdminFinanceReviewAssignmentHistoryEntry[];
+  bankTransactionCandidates?: AdminCompanyBankTransaction[];
+  expectedBankDirection?: AdminCompanyBankTransactionType | null;
   settlementSnapshot?: AdminAccountingJournalBatchDetail['settlementSnapshot'];
   settlementReversalEntry?: AdminAccountingJournalBatchDetail['settlementReversalEntry'];
   bankReconciliationMatches?: AdminPaymentClearingBankReconciliationMatch[];
@@ -3320,10 +4743,21 @@ export type AdminPaymentClearingBankReconciliationMatch = {
 
 export type AdminBookingPaymentClearingSummary = {
   amount: number;
+  assignedCount: number;
   clearedCount: number;
   count: number;
   currency: string;
+  oldestOpenAt?: string | null;
+  oldestPartiallyClearedAt?: string | null;
+  oldestUnassignedOpenAt?: string | null;
+  over48hAmount: number;
+  over48hCount: number;
+  openAmount: number;
   openCount: number;
+  partiallyClearedAmount: number;
+  partiallyClearedCount: number;
+  reversedCount: number;
+  unassignedCount: number;
 };
 
 export type AdminBackgroundJobQueueStatus = 'ATTENTION' | 'HEALTHY' | 'RUNNING' | 'STALE';
@@ -3349,10 +4783,10 @@ export type AdminBackgroundJobHealth = {
     failedAt: string | null;
     failure: string;
     id: string | null;
-      name: string;
-      queueName: string;
-      reference: AdminBackgroundJobReference | null;
-      review: {
+    name: string;
+    queueName: string;
+    reference: AdminBackgroundJobReference | null;
+    review: {
       actor: { id: string; email?: string | null; fullName?: string | null } | null;
       reason: string | null;
       status: AdminBackgroundJobReviewStatus;
@@ -3467,7 +4901,9 @@ export type AdminCompanyBankAccount = {
   accountNumberMasked?: string | null;
   accountNumberLast4?: string | null;
   currency: string;
+  metadata?: unknown;
   status: string;
+  updatedAt?: string;
 };
 
 export type AdminCompanyBankTransaction = {
@@ -3486,6 +4922,11 @@ export type AdminCompanyBankTransaction = {
   metadata?: unknown;
   createdAt: string;
   updatedAt: string;
+  reconciliationActiveMatchCount?: number;
+  reconciliationMatchedAmount?: number;
+  reconciliationRemainingAmount?: number;
+  reconciliationReversedMatchCount?: number;
+  reconciliationSources?: AdminBankReconciliationEvidenceSource[];
   _count?: { reconciliationMatches: number };
   bankAccount?: AdminCompanyBankAccount | null;
   reviewAssignment?: {
@@ -3569,6 +5010,61 @@ export type AdminBankReconciliationTransactionDetail = AdminCompanyBankTransacti
     reason: string;
   } | null;
   reconciliationMatches?: AdminBankReconciliationMatch[];
+  preflight?: {
+    activeMatchCount: number;
+    actions: {
+      createMatch: {
+        allowed: boolean;
+        blockers: Array<{ code: string; message: string }>;
+      };
+      ignore: {
+        allowed: boolean;
+        blockers: Array<{ code: string; message: string }>;
+      };
+      reverse: {
+        allowedMatchIds: string[];
+        blockers: Array<{ code: string; message: string }>;
+      };
+    };
+    checkedForAdminId: string | null;
+    matchedAmount: number;
+    remainingAmount: number;
+    requiresSeparateFinanceApprover: boolean;
+  };
+  paymentClearingCandidates?: Array<{
+    amount: number;
+    amountDelta: number;
+    bookingId: string;
+    bookingStatus: string;
+    confidence: 'STRONG' | 'REVIEW';
+    currency: string;
+    customerLabel: string;
+    dateDeltaDays: number;
+    eligible: boolean;
+    exclusionReasons: string[];
+    expectedBankDirection?: AdminCompanyBankTransactionType | null;
+    exactAmount: boolean;
+    id: string;
+    matchedAmount: number;
+    occurredAt: string;
+    originalAmount: number;
+    paymentId?: string | null;
+    paymentMethod?: string | null;
+    paymentProviderRef?: string | null;
+    paymentStatus?: string | null;
+    reasons: string[];
+    remainingAmount: number;
+    sourceKey: string;
+    status: AdminBookingPaymentClearingStatus;
+    transferRefMatch: boolean;
+    type: AdminBookingPaymentClearingEntryType;
+  }>;
+  paymentClearingCandidatePage?: {
+    hasNext: boolean;
+    hasPrevious: boolean;
+    page: number;
+    take: number;
+  };
   withdrawalCandidates?: Array<{
     id: string;
     providerProfileId: string;
@@ -3588,10 +5084,59 @@ export type AdminBankReconciliationTransactionDetail = AdminCompanyBankTransacti
 
 export type AdminBankReconciliationSummary = {
   amount: number;
+  assignedCount: number;
   count: number;
   currency: string;
+  ignoredCount: number;
+  matchedAmount: number;
   matchedCount: number;
+  oldestPartiallyMatchedAt?: string | null;
+  oldestUnassignedAt?: string | null;
+  oldestUnmatchedAt?: string | null;
+  openExposureAmount: number;
+  partiallyMatchedAmount: number;
+  partiallyMatchedCount: number;
+  reversedCount: number;
+  unassignedCount: number;
+  unassignedOver48hAmount: number;
+  unassignedOver48hCount: number;
+  unmatchedAmount: number;
   unmatchedCount: number;
+};
+
+export type AdminFinanceReviewOwnerWorkloadSummary = {
+  currency: string;
+  openAmount: number;
+  openCount: number;
+  owners: Array<{
+    assignee: { id: string; email: string | null; fullName: string | null };
+    assigneeAdminId: string;
+    oldestOccurredAt: string | null;
+    openAmount: number;
+    openCount: number;
+    over48hAmount: number;
+    over48hCount: number;
+  }>;
+  unassigned: {
+    oldestOccurredAt: string | null;
+    openAmount: number;
+    openCount: number;
+    over48hAmount: number;
+    over48hCount: number;
+  };
+};
+
+export type AdminBankReconciliationReviewOwnerSummary = AdminFinanceReviewOwnerWorkloadSummary;
+
+export type AdminBankReconciliationEvidenceSourceSummary = {
+  amount: number;
+  count: number;
+  currency: string;
+  sources: Array<{
+    amount: number;
+    count: number;
+    source: AdminBankReconciliationEvidenceSource;
+  }>;
 };
 
 export type AdminBankReconciliationWithdrawalCandidateSummary = {
@@ -3642,6 +5187,8 @@ export type AdminPartnerWithholdingTaxRow = {
   period: string;
   currency: string;
   completedBookingCount: number;
+  postedSettlementCount?: number;
+  reversalCount?: number;
   grossServiceRevenue: number;
   partnerPayoutTotal: number;
   partnerVatWithheldTotal: number;
@@ -3654,6 +5201,8 @@ export type AdminPartnerWithholdingTaxSummary = {
   currency: string;
   partnerCountWithRevenue: number;
   taxableBookingCount: number;
+  postedSettlementCount?: number;
+  reversalCount?: number;
   grossServiceRevenue: number;
   partnerPayoutTotal: number;
   partnerVatWithheldTotal: number;
@@ -3694,12 +5243,45 @@ export type AdminMonthlyTaxClosingRemittanceMetadata = {
   approvedByAdminId?: string | null;
 };
 
+export type AdminMonthlyTaxClosingPreflightBlockerCode =
+  | 'NEGATIVE_WITHHOLDING'
+  | 'NET_REVENUE_DELTA'
+  | 'PARTNER_DEPOSIT_RECONCILIATION'
+  | 'PAYOUT_BANK_OUTFLOW_RECONCILIATION'
+  | 'PAYOUT_RETURN_INFLOW_RECONCILIATION'
+  | 'PAYMENT_FEE_EVIDENCE'
+  | 'POSTED_JOURNAL_DELTA'
+  | 'RECONCILIATION_DELTA'
+  | 'REMITTANCE_AMOUNT_MISMATCH'
+  | 'REMITTANCE_EVIDENCE'
+  | 'REMITTANCE_JOURNAL';
+
+export type AdminMonthlyTaxClosingPreflight = {
+  blockers: Array<{
+    code: AdminMonthlyTaxClosingPreflightBlockerCode;
+    message: string;
+  }>;
+  nextStatus: AdminMonthlyTaxClosingStatus | null;
+  ready: boolean;
+};
+
+export type AdminMonthlyTaxClosingPeriodState =
+  | AdminMonthlyTaxClosingStatus
+  | 'FUTURE_PERIOD'
+  | 'NOT_STARTED';
+
 export type AdminMonthlyTaxClosingSummary = {
+  generatedAt?: string | null;
+  hasActivity?: boolean;
   id?: string | null;
+  journalReconciliationIssueCount: number;
+  monthlyClosingHistoryCount: number;
   period: string;
+  periodState?: AdminMonthlyTaxClosingPeriodState;
   currency: string;
   status: AdminMonthlyTaxClosingStatus;
   settlementCount: number;
+  reversalCount?: number;
   customerPaymentAmountTotal: number;
   partnerPayoutTotal: number;
   platformFeeGrossTotal: number;
@@ -3712,7 +5294,12 @@ export type AdminMonthlyTaxClosingSummary = {
   paymentFeeReviewFlagCount: number;
   partnerDepositReconciliationOpenCount: number;
   partnerDepositReconciliationOpenAmount: number;
+  payoutBankOutflowReconciliationOpenCount: number;
+  payoutBankOutflowReconciliationOpenAmount: number;
+  payoutReturnInflowReconciliationOpenCount: number;
+  payoutReturnInflowReconciliationOpenAmount: number;
   couponSettlementCount: number;
+  couponReversalCount?: number;
   couponDiscountAmountTotal: number;
   companyCouponExpenseTotal: number;
   partnerFundedCouponAmountTotal: number;
@@ -3725,6 +5312,7 @@ export type AdminMonthlyTaxClosingSummary = {
   paidTaxCount: number;
   reconciliationDelta: number;
   netRevenueDelta: number;
+  preflight?: AdminMonthlyTaxClosingPreflight;
   declaredAt?: string | null;
   paidAt?: string | null;
   closedAt?: string | null;
@@ -3736,6 +5324,7 @@ export type AdminPlatformVatRateBreakdown = {
   category: 'REDUCED_8' | 'STANDARD_10' | 'MANUAL_REVIEW';
   platformVatRateBps: number;
   settlementCount: number;
+  reversalCount: number;
   platformFeeGrossTotal: number;
   platformFeeNetRevenueTotal: number;
   companyOutputVatTotal: number;
@@ -3745,6 +5334,8 @@ export type AdminPlatformVatSummary = {
   period: string;
   currency: string;
   settlementCount: number;
+  reversalCount: number;
+  manualReviewCount: number;
   platformFeeGrossTotal: number;
   platformFeeNetRevenueTotal: number;
   companyOutputVatTotal: number;
@@ -3755,6 +5346,7 @@ export type AdminPlatformVatSummary = {
 export type AdminPaymentFeeMethodBreakdown = {
   paymentMethod: AdminPaymentMethod;
   settlementCount: number;
+  reversalCount: number;
   evidenceReviewCount: number;
   customerPaymentAmountTotal: number;
   evidenceCustomerPaymentAmountTotal: number;
@@ -3767,6 +5359,7 @@ export type AdminPaymentFeeMethodBreakdown = {
 export type AdminPaymentFeePayerBreakdown = {
   paymentFeePayer: 'HANDS' | 'CUSTOMER' | 'PARTNER' | 'SHARED';
   settlementCount: number;
+  reversalCount: number;
   customerPaymentAmountTotal: number;
   paymentProcessingFeeTotal: number;
 };
@@ -3774,6 +5367,7 @@ export type AdminPaymentFeePayerBreakdown = {
 export type AdminPaymentFeeTreatmentBreakdown = {
   paymentFeeTreatment: 'OPERATING_EXPENSE' | 'PASS_THROUGH' | 'MANUAL_REVIEW';
   settlementCount: number;
+  reversalCount: number;
   customerPaymentAmountTotal: number;
   paymentProcessingFeeTotal: number;
 };
@@ -3782,6 +5376,7 @@ export type AdminPaymentFeeSummary = {
   period: string;
   currency: string;
   settlementCount: number;
+  reversalCount: number;
   customerPaymentAmountTotal: number;
   paymentProcessingFeeTotal: number;
   byPaymentMethod: AdminPaymentFeeMethodBreakdown[];
@@ -3897,11 +5492,50 @@ export type AdminPaymentFeePolicyApproval = {
   reason: string | null;
 };
 
+export type AdminFinanceApprovalRefundRequest = {
+  id: string;
+  paymentId: string;
+  bookingId: string;
+  amount: number;
+  currency: string;
+  reason?: string | null;
+  status: string;
+  source?: string | null;
+  requestedAt: string;
+  requestedByAdminId?: string | null;
+  paymentMethod: AdminPaymentMethod;
+  paymentStatus: AdminPaymentStatus;
+  bookingStatus: string;
+  mismatchReason?: string | null;
+  reviewState: 'BLOCKED' | 'READY' | 'STATE_MISMATCH';
+  blockers: Array<{
+    code: string;
+    message: string;
+  }>;
+  canApprove: boolean;
+  canReject: boolean;
+  createdAt: string;
+};
+
 export type AdminFinanceApprovalQueue = {
   generatedAt: string;
   limit: number;
+  pagination?: {
+    hasNext: boolean;
+    hasPrevious: boolean;
+    page: number;
+    review: string;
+    totalCount: number;
+  };
+  currentApprover?: AdminOperatorIdentity | null;
   summary: {
+    totalOpenCount: number;
+    readyCount: number;
+    blockedCount: number;
+    staleCount: number;
+    stateMismatchCount: number;
     paymentFeePolicyPendingCount: number;
+    companyBankAccountPendingCount: number;
     withdrawalOpenCount: number;
     withdrawalRequestedCount: number;
     withdrawalReviewRequiredCount: number;
@@ -3910,8 +5544,21 @@ export type AdminFinanceApprovalQueue = {
     withdrawalCurrency: string;
     walletAdjustmentLast7dCount: number;
     walletAdjustmentPendingCount: number;
+    walletAdjustmentReadyCount: number;
+    walletAdjustmentBlockedCount: number;
+    walletAdjustmentStaleCount: number;
     partnerBankDepositPendingCount: number;
     partnerBankDepositLast7dCount: number;
+    refundPendingCount: number;
+    refundReadyCount: number;
+    refundBlockedCount: number;
+    refundStateMismatchCount: number;
+    payoutBatchPendingCount: number;
+    payoutBatchReadyCount: number;
+    payoutBatchBlockedCount: number;
+    withdrawalPaidCloseoutPendingCount: number;
+    withdrawalPaidCloseoutReadyCount: number;
+    withdrawalPaidCloseoutBlockedCount: number;
   };
   paymentFeePolicyRequests: Array<{
     requestId: string;
@@ -3927,6 +5574,33 @@ export type AdminFinanceApprovalQueue = {
       fullName?: string | null;
     };
   }>;
+  companyBankAccountRequests: Array<{
+    id: string;
+    name: string;
+    bankName: string;
+    accountNumberMasked?: string | null;
+    accountNumberLast4?: string | null;
+    currency: string;
+    status: string;
+    operation: 'CREATE' | 'UPDATE';
+    operatorReason: string;
+    requestedAt: string;
+    requestId: string;
+    requestedBy: {
+      id: string;
+      email?: string | null;
+      fullName?: string | null;
+    };
+    proposed: {
+      name: string;
+      bankName: string;
+      accountNumberMasked?: string | null;
+      accountNumberLast4?: string | null;
+      currency: string;
+      status: string;
+    };
+    reviewState: 'BLOCKED' | 'READY';
+  }>;
   withdrawalRequests: Array<{
     id: string;
     providerProfileId: string;
@@ -3934,9 +5608,12 @@ export type AdminFinanceApprovalQueue = {
     amount: number;
     currency: string;
     status: AdminProviderWalletWithdrawalRequestStatus;
+    transferRef?: string | null;
     hasBankAccount: boolean;
     createdAt: string;
     updatedAt: string;
+    reviewState: 'BLOCKED' | 'READY' | 'REVIEW';
+    preflight?: AdminProviderWalletWithdrawalPreflight;
   }>;
   walletAdjustmentRequests: AdminManualWalletAdjustmentRequest[];
   walletAdjustmentEvidence: {
@@ -3959,12 +5636,33 @@ export type AdminFinanceApprovalQueue = {
     requestedAfterBalance: number;
     requestedReceivableRecovery: number;
     requestedWalletLiabilityIncrease: number;
+    preflight?: AdminFinanceApprovalRequestPreflight;
     createdAt: string;
     requestedBy: {
       id: string;
       email?: string | null;
       fullName?: string | null;
     };
+  }>;
+  refundRequests: AdminFinanceApprovalRefundRequest[];
+  refundFocus?: {
+    request: AdminFinanceApprovalRefundRequest | null;
+    requestId: string;
+    state: 'FOUND' | 'NOT_FOUND_OR_CHANGED';
+  } | null;
+  payoutBatchRequests: Array<{
+    id: string;
+    providerProfileId: string;
+    partnerName: string;
+    totalNetAmount: number;
+    currency: string;
+    status: string;
+    transferRef?: string | null;
+    createdAt: string;
+    paidCloseoutRequestedByAdminId?: string | null;
+    paidCloseoutRequestedBy?: AdminOperatorIdentity | null;
+    reviewState: 'BLOCKED' | 'READY';
+    preflight?: AdminPayoutBatchPreflight;
   }>;
 };
 
@@ -3980,16 +5678,71 @@ export type AdminFinanceOverviewWalletSummary = {
 
 export type AdminFinanceOverviewAmountSummary = {
   currency: string;
+  refundPendingCount: number;
   refundPendingAmount: number;
+  refundCompletedCount: number;
   refundCompletedAmount: number;
+  paymentFailedCount: number;
   paymentFailedAmount: number;
 };
 
 export type AdminFinanceOverviewReviewSlaSummary = {
+  assignedCount?: number;
+  assignments?: Array<{
+    assignee?: AdminOperatorIdentity | null;
+    assigneeAdminId: string;
+    count: number;
+  }>;
+  oldestOpenAt?: string | null;
   open48To72Count: number;
   openOverdueCount: number;
   openOver72Count: number;
   resolvedInRangeCount: number;
+  unassignedCount?: number;
+};
+
+export type AdminFinanceOverviewPartnerDepositQueueSummary = {
+  assignedCount: number;
+  assignments: Array<{
+    assignee?: AdminOperatorIdentity | null;
+    assigneeAdminId: string;
+    count: number;
+  }>;
+  currency: string;
+  oldestOpenAt: string | null;
+  openAmount: number;
+  openCount: number;
+  unassignedCount: number;
+};
+
+export type AdminFinanceOverviewTaxProfileSummary = {
+  actionRequiredCount: number;
+  approvedCount: number;
+  missingCount: number;
+  pendingReviewCount: number;
+  rejectedCount: number;
+  relevantPartnerCount: number;
+};
+
+export type AdminFinanceOverviewComparisonMetric = {
+  current: number;
+  previous: number;
+  delta: number;
+  deltaPercent: number | null;
+};
+
+export type AdminFinanceOverviewComparisonSummary = {
+  previousRangeLabel: string;
+  settlementCount: AdminFinanceOverviewComparisonMetric;
+  customerPaymentAmount: AdminFinanceOverviewComparisonMetric;
+  partnerPayoutAmount: AdminFinanceOverviewComparisonMetric;
+  platformFeeNetRevenue: AdminFinanceOverviewComparisonMetric;
+};
+
+export type AdminCompanyBankAccountApprovalSummary = {
+  oldestRequestedAt: string | null;
+  over48hCount: number;
+  pendingCount: number;
 };
 
 export type AdminFinanceOverviewSummary = {
@@ -4001,16 +5754,21 @@ export type AdminFinanceOverviewSummary = {
   bankWithdrawalCandidateSummary: AdminBankReconciliationWithdrawalCandidateSummary;
   cashSummary: AdminCashSettlementSummary | null;
   clearingSummary: AdminBookingPaymentClearingSummary;
+  comparisonSummary?: AdminFinanceOverviewComparisonSummary;
+  companyBankAccountApprovalSummary?: AdminCompanyBankAccountApprovalSummary;
   couponSummary: AdminCouponFinanceSummary;
   earningsSummary: AdminEarningSummary | null;
   financeReviewSlaSummary?: AdminFinanceOverviewReviewSlaSummary;
+  generalLedgerSummary: AdminAccountingJournalBatchSummary;
   monthlyClosingSummary: AdminMonthlyTaxClosingSummary;
+  partnerDepositQueueSummary?: AdminFinanceOverviewPartnerDepositQueueSummary;
   partnerWithholdingSummary: AdminPartnerWithholdingTaxSummary;
   paymentFeeSummary: AdminPaymentFeeSummary | null;
   paymentSummary: AdminPaymentSummary | null;
   payoutSummary: AdminPayoutBatchSummary | null;
   refundSummary: AdminRefundSummary | null;
   settlementSummary: AdminBookingSettlementSnapshotSummary;
+  taxProfileSummary?: AdminFinanceOverviewTaxProfileSummary;
   walletSummary: AdminFinanceOverviewWalletSummary;
   withdrawalSummary: AdminProviderWalletWithdrawalRequestSummary;
 };
@@ -4022,6 +5780,81 @@ export type AdminAuditLog = {
   metadata?: unknown;
   createdAt: string;
   actor?: { id?: string; email?: string | null; phone?: string; fullName?: string | null };
+};
+
+export type AdminAuditLogPage = {
+  items: AdminAuditLog[];
+  skip: number;
+  take: number;
+  totalCount: number;
+};
+
+export type AdminShiftHandoffOperator = {
+  id: string;
+  email?: string | null;
+  phone?: string | null;
+  fullName?: string | null;
+};
+
+export type AdminHandoffPagination = {
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  totalRows: number;
+};
+
+export type AdminShiftHandoff = {
+  id: string;
+  acknowledgedAt: string | null;
+  acknowledgedBy: AdminShiftHandoffOperator | null;
+  createdAt: string;
+  followUpOwner?: string | null;
+  followUpOwnerId?: string | null;
+  incomingOperator: string;
+  incomingOperatorId?: string | null;
+  note: string;
+  outgoingOperator: AdminShiftHandoffOperator;
+  outgoingShift: string;
+  owner: string;
+  ownerId?: string | null;
+  unresolvedCases?: Array<{ caseId: string; queueKey: string }>;
+  unresolvedCaseIds: string[];
+};
+
+export type AdminShiftHandoffPage = {
+  items: AdminShiftHandoff[];
+  openCount: number;
+  pagination?: AdminHandoffPagination;
+  totalCount: number;
+};
+
+export type AdminOperationsHandoffOpenCase = {
+  ageMinutes: number;
+  amount: number;
+  caseId: string;
+  currency: string | null;
+  href: string;
+  occurredAt: string;
+  overdue: boolean;
+  owner: string | null;
+  priority: number;
+  queueKey: string;
+  queueLabel: string;
+  requiredCategory: string;
+  slaMinutes: number;
+  state: string;
+};
+
+export type AdminOperationsHandoffOpenCasePage = {
+  items: AdminOperationsHandoffOpenCase[];
+  openCount: number;
+  pagination: AdminHandoffPagination;
+};
+
+export type AdminOperationsHandoffOperator = AdminShiftHandoffOperator & {
+  categories: string[];
+  queueKeys: string[];
+  roles: string[];
 };
 
 export type AdminOperationalPolicySetting = {
@@ -4052,11 +5885,17 @@ type AdminNotificationPushDevice = {
 };
 
 export type AdminNotification = {
+  dataClass?: 'live' | 'backlog' | 'anomaly' | 'test';
+  dataScope?: 'production' | 'synthetic' | 'unknown';
   id: string;
   type: string;
   title: string;
   body: string;
   createdAt: string;
+  lastEventAt?: string | null;
+  scopeEnd?: string | null;
+  scopeStart?: string | null;
+  sourceUpdatedAt?: string | null;
   readAt?: string | null;
   data?: unknown;
   user?: {
@@ -4070,6 +5909,7 @@ export type AdminNotification = {
   };
   deliveries?: Array<{
     id?: string;
+    pushDeviceId?: string | null;
     provider: string;
     status: string;
     attemptedAt: string;
@@ -4084,33 +5924,159 @@ export type AdminNotification = {
   }>;
 };
 
+export type AdminOperationsHandoffActivityReason =
+  | 'BOOKING_STATE'
+  | 'FINANCE_UNPAID'
+  | 'MISSING_SETTLEMENT'
+  | 'NOTIFICATION_FAILURE'
+  | 'PAYMENT'
+  | 'RECORD';
+
+export type AdminOperationsHandoffActivityEvent = (
+  | {
+      id: string;
+      kind: 'BOOKING';
+      occurredAt: string;
+      booking: AdminBooking;
+    }
+  | {
+      id: string;
+      kind: 'CHAT';
+      occurredAt: string;
+      message: {
+        id: string;
+        body: string;
+        createdAt: string;
+        sender?: {
+          id: string;
+          fullName?: string | null;
+          phone?: string;
+          roles?: string[];
+        };
+        chatRoom: {
+          id: string;
+          bookingId: string;
+        };
+      };
+    }
+  | {
+      id: string;
+      kind: 'AUDIT';
+      occurredAt: string;
+      auditLog: AdminAuditLog;
+    }
+  | {
+      id: string;
+      kind: 'NOTIFICATION';
+      occurredAt: string;
+      notification: AdminNotification;
+    }
+  | {
+      id: string;
+      kind: 'FINANCE';
+      occurredAt: string;
+      earning: AdminEarning;
+    }
+) & {
+  reason: AdminOperationsHandoffActivityReason;
+};
+
+export type AdminOperationsHandoffActivityPage = {
+  backlogCounts: {
+    all: number;
+    current: number;
+    legacy: number;
+  };
+  items: AdminOperationsHandoffActivityEvent[];
+  over24hCounts: {
+    all: number;
+    bookingState: number;
+    financeUnpaid: number;
+    missingSettlement: number;
+    notificationFailure: number;
+    payment: number;
+  };
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    totalRows: number;
+  };
+  reasonCounts: {
+    all: number;
+    bookingState: number;
+    financeUnpaid: number;
+    missingSettlement: number;
+    notificationFailure: number;
+    payment: number;
+  };
+};
+
 export type AdminNotificationBoardSummary = {
+  awaitingWorker?: number;
+  currentDeliveryGaps?: number;
+  currentFailed?: number;
+  currentNoPushPathNotificationCount?: number;
+  currentNoPushPathRecipientCount?: number;
+  currentStaleRouteNotifications?: number;
+  dataClass?: 'live' | 'backlog' | 'anomaly' | 'test';
+  deliveryGaps?: number;
+  deliveryIncidentHistoricalCutoffHours?: number;
+  deliveryIncidentNotificationCount?: number;
+  deliveryIncidentWindowMinutes?: number;
   disabledDevices?: number;
+  disabledDeviceUsers?: number;
   failed?: number;
+  failedAttempts?: number;
   fcmDeliveries?: number;
   financeReviewOwnerSummary?: Array<{
     count: number;
     ownerAdminId: string | null;
   }>;
   generatedAt: string;
+  lastEventAt?: string | null;
   inAppDeliveries?: number;
+  historicalDeliveryIncidentCount?: number;
+  historicalDeliveryOldestAt?: string | null;
+  historicalDeliveryGaps?: number;
+  historicalFailed?: number;
+  historicalNoPushPathNotificationCount?: number;
+  historicalNoPushPathRecipientCount?: number;
+  historicalStaleRouteNotifications?: number;
   legacySystemIncidentCount?: number;
   needsRetry?: number;
   noShow?: number;
+  noPushPath?: number;
+  noPushPathNotificationCount?: number;
+  noPushPathRecipientCount?: number;
+  oldestFailedAt?: string | null;
+  openDeliveryIncidentCount?: number;
   openSystemIncidentCount?: number;
   partnerAlertCount?: number;
   payoutSetup?: number;
   pending?: number;
+  queueAgeCounts?: AdminQueueAgeCounts;
+  queueSla?: AdminQueueSlaSummary;
   recoveredSystemIncidentCount?: number;
   reviewedSystemIncidentCount?: number;
   sent?: number;
+  scopeEnd?: string | null;
+  scopeStart?: string | null;
   skipped?: number;
   staleDevices?: number;
+  staleDeviceUsers?: number;
+  staleRouteNotifications?: number;
   systemIncidentCount?: number;
   systemIncidentNotificationCount?: number;
   systemIncidentSourceSummaryComplete?: boolean;
   systemIncidentSourceTotalCount?: number;
   totalCount: number;
+  productionDataCount?: number;
+  selectedDataScope?: 'production' | 'synthetic' | 'unknown';
+  syntheticDataCount?: number;
+  unknownDataCount?: number;
+  unattempted?: number;
+  sourceUpdatedAt?: string | null;
 };
 
 export type AdminNotificationTemplateTranslation = {
@@ -4130,6 +6096,7 @@ export type AdminNotificationTemplate = {
   channel: string;
   description?: string | null;
   variables?: unknown;
+  requiredVariables?: unknown;
   enabled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -4218,12 +6185,22 @@ export type AdminVietnamOverviewRegion = {
   shortName: string;
   customerCount: number;
   activeCustomerCount: number;
+  customersSeenIn30DaysCount: number;
   partnerCount: number;
   onlinePartnerCount: number;
+  readyPartnerCount: number;
+  busyPartnerCount: number;
+  offlinePartnerCount: number;
+  stalePartnerCount: number;
   activeBookingCount: number;
+  needsSupplyNowCount: number;
+  assignedOrInServiceCount: number;
+  staleActiveRecordCount: number;
+  supplyShortageCount: number;
   completedBookingCount: number;
   cancellationCount: number;
   revenueAmount: number;
+  paidVolumeAvailable: boolean;
   currency: string;
 };
 
@@ -4232,15 +6209,26 @@ export type AdminVietnamOverviewPointKind =
   | 'active'
   | 'partners'
   | 'online'
+  | 'busy-partners'
   | 'offline-partners'
   | 'stale-partners'
-  | 'bookings'
+  | 'needs-supply'
+  | 'assigned-bookings'
+  | 'stale-bookings'
   | 'done'
   | 'cancel';
 
 export type AdminVietnamOverviewRealtimePointKind = Extract<
   AdminVietnamOverviewPointKind,
-  'customers' | 'active' | 'online' | 'offline-partners' | 'stale-partners' | 'bookings'
+  | 'customers'
+  | 'active'
+  | 'online'
+  | 'busy-partners'
+  | 'offline-partners'
+  | 'stale-partners'
+  | 'needs-supply'
+  | 'assigned-bookings'
+  | 'stale-bookings'
 >;
 
 export type AdminVietnamOverviewPoint = {
@@ -4249,13 +6237,26 @@ export type AdminVietnamOverviewPoint = {
   label: string;
   latitude: number;
   longitude: number;
-  occurredAt: string;
+  occurredAt: string | null;
+  activityAt?: string | null;
+  createdAt?: string | null;
+  locationOccurredAt?: string | null;
   regionCode: string;
   source: string;
   addressText?: string | null;
   bookingId?: string | null;
   customerProfileId?: string | null;
   providerProfileId?: string | null;
+  status?: string | null;
+};
+
+export type AdminVietnamOverviewSampleSource = {
+  key: 'customers' | 'partners' | 'period-bookings' | 'active-bookings';
+  mappedPointCount: number;
+  returnedCount: number;
+  total: number | null;
+  totalUnavailable: boolean;
+  truncated: boolean;
 };
 
 export type AdminVietnamOverviewRealtimePoint = AdminVietnamOverviewPoint & {
@@ -4264,22 +6265,39 @@ export type AdminVietnamOverviewRealtimePoint = AdminVietnamOverviewPoint & {
 
 export type AdminVietnamOverview = {
   generatedAt: string;
+  refreshMode: 'manual';
   refreshSeconds: number;
   source: 'stored-address-aggregates';
+  timeZone: 'Asia/Ho_Chi_Minh';
   range: 'today' | 'yesterday' | '7d' | '30d' | 'all';
   rangeLabel: string;
   windowStartAt: string | null;
   windowEndAt: string | null;
   regionalSampleLimit?: number;
+  partnerLocationFreshnessMinutes: number;
+  sample: {
+    limitPerSource: number;
+    sources: AdminVietnamOverviewSampleSource[];
+  };
   totals: {
     customerCount: number;
     activeCustomerCount: number;
+    customersSeenIn30DaysCount: number;
     partnerCount: number;
     onlinePartnerCount: number;
+    readyPartnerCount: number;
+    busyPartnerCount: number;
+    offlinePartnerCount: number;
+    stalePartnerCount: number;
     activeBookingCount: number;
+    needsSupplyNowCount: number;
+    assignedOrInServiceCount: number;
+    staleActiveRecordCount: number;
+    supplyShortageCount: number;
     completedBookingCount: number;
     cancellationCount: number;
     revenueAmount: number;
+    paidVolumeAvailable: boolean;
     currency: string;
   };
   regions: AdminVietnamOverviewRegion[];
@@ -4291,7 +6309,19 @@ export type AdminVietnamOverviewSummary = Omit<AdminVietnamOverview, 'points' | 
 
 export type AdminVietnamOverviewRealtimePointFeed = Pick<
   AdminVietnamOverview,
-  'generatedAt' | 'refreshSeconds' | 'source' | 'range' | 'rangeLabel' | 'windowStartAt' | 'windowEndAt'
+  | 'generatedAt'
+  | 'refreshMode'
+  | 'refreshSeconds'
+  | 'source'
+  | 'timeZone'
+  | 'range'
+  | 'rangeLabel'
+  | 'windowStartAt'
+  | 'windowEndAt'
+  | 'partnerLocationFreshnessMinutes'
+  | 'sample'
+  | 'totals'
+  | 'regions'
 > & {
   realtimePoints: AdminVietnamOverviewRealtimePoint[];
 };
@@ -4329,22 +6359,56 @@ export async function apiGet<T>(path: string, fallback: T): Promise<T> {
   }
 }
 
-export async function adminGet<T>(path: string, fallback: T): Promise<T> {
+export type AdminGetResult<T> = {
+  data: T;
+  ok: boolean;
+  status: number | null;
+};
+
+export type AdminGetFreshness = 'live' | 'aggregate' | 'stable';
+
+export type AdminGetOptions = {
+  freshness?: AdminGetFreshness;
+  revalidateSeconds?: number;
+  tags?: string[];
+};
+
+export async function adminGetResult<T>(
+  path: string,
+  fallback: T,
+  options: AdminGetOptions = {},
+): Promise<AdminGetResult<T>> {
   try {
     const token = await getAdminAccessToken();
+    const freshness = options.freshness ?? 'live';
     const response = await fetch(`${API_BASE_URL}${path}`, {
       headers: { authorization: `Bearer ${token}` },
-      cache: 'no-store',
+      ...(freshness === 'live'
+        ? { cache: 'no-store' as const }
+        : {
+            next: {
+              revalidate: options.revalidateSeconds ?? (freshness === 'aggregate' ? 30 : 600),
+              ...(options.tags?.length ? { tags: options.tags } : {}),
+            },
+          }),
     });
 
     if (!response.ok) {
-      return fallback;
+      return { data: fallback, ok: false, status: response.status };
     }
 
-    return (await response.json()) as T;
+    return {
+      data: (await response.json()) as T,
+      ok: true,
+      status: response.status,
+    };
   } catch {
-    return fallback;
+    return { data: fallback, ok: false, status: null };
   }
+}
+
+export async function adminGet<T>(path: string, fallback: T, options?: AdminGetOptions): Promise<T> {
+  return (await adminGetResult(path, fallback, options)).data;
 }
 
 export async function adminPost<T>(path: string, body: unknown, fallback: T): Promise<T> {
@@ -4510,13 +6574,13 @@ export function adminRealtimeSocketBaseUrl() {
   return (explicitSocketBaseUrl ?? fallbackSocketBaseUrl).replace(/\/$/, '');
 }
 
-export async function getAdminAccessToken() {
+export const getAdminAccessToken = cache(async function getAdminAccessToken() {
   const operatorIdentity = await currentAdminWebSessionIdentity();
   if (!operatorIdentity) {
     throw new Error('Admin Web session is required for Admin API access');
   }
   return createAdminWebApiToken(operatorIdentity);
-}
+});
 
 export class AdminApiRequestError extends Error {
   constructor(

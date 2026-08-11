@@ -1,0 +1,558 @@
+- generic [ref=f2e3]:
+  - complementary [ref=f2e4]:
+    - strong [ref=f2e6]: HANDS Admin
+    - navigation "Admin navigation" [ref=f2e7]:
+      - group [ref=f2e8]:
+        - generic "Shift command" [ref=f2e9] [cursor=pointer]
+        - link "Shift command" [ref=f2e27] [cursor=pointer]:
+          - /url: /
+      - group [ref=f2e31]:
+        - generic "Live Operations" [ref=f2e32] [cursor=pointer]
+      - group [ref=f2e49]:
+        - generic "Customer Support" [ref=f2e50] [cursor=pointer]
+        - generic [ref=f2e67]:
+          - link "Customers" [ref=f2e68] [cursor=pointer]:
+            - /url: /customers
+          - link "Customer Reviews" [ref=f2e74] [cursor=pointer]:
+            - /url: /reviews
+          - link "Partner-to-Customer Evaluations" [ref=f2e78] [cursor=pointer]:
+            - /url: /reviews/partner-customer-evaluations
+          - link "Chat Evidence" [ref=f2e82] [cursor=pointer]:
+            - /url: /chat-archive
+          - link "Customer Notifications" [ref=f2e86] [cursor=pointer]:
+            - /url: /notifications
+          - link "Customer Usage" [ref=f2e90] [cursor=pointer]:
+            - /url: /usage-overview
+      - group [ref=f2e94]:
+        - generic "Partner Operations" [ref=f2e95] [cursor=pointer]
+      - group [ref=f2e112]:
+        - generic "Finance Today" [ref=f2e113] [cursor=pointer]
+      - group [ref=f2e120]:
+        - generic "Finance Records" [ref=f2e121] [cursor=pointer]
+      - group [ref=f2e138]:
+        - generic "Growth & Content" [ref=f2e139] [cursor=pointer]
+      - group [ref=f2e156]:
+        - generic "Tax & Monthly Close" [ref=f2e157] [cursor=pointer]
+      - group [ref=f2e164]:
+        - generic "Restricted Settings" [ref=f2e165] [cursor=pointer]
+      - group [ref=f2e172]:
+        - generic "Admin & System" [ref=f2e173] [cursor=pointer]
+      - group [ref=f2e190]:
+        - generic "Developer / System" [ref=f2e191] [cursor=pointer]
+  - main [ref=f2e199]:
+    - generic "Admin workspace" [ref=f2e200]:
+      - navigation "Breadcrumb" [ref=f2e202]:
+        - link "HANDS" [ref=f2e203] [cursor=pointer]:
+          - /url: /
+        - generic [ref=f2e206]: Customer Support
+        - generic [ref=f2e209]: Customers
+      - generic "Workspace actions" [ref=f2e210]:
+        - button "Search Ctrl K" [ref=f2e212] [cursor=pointer]:
+          - generic [ref=f2e213]: Search
+          - generic [ref=f2e217]: Ctrl K
+        - group "Theme mode" [ref=f2e218]:
+          - button "Light mode" [pressed] [ref=f2e219] [cursor=pointer]
+          - button "Dark mode" [ref=f2e226] [cursor=pointer]
+        - link "Operations Policy" [ref=f2e229] [cursor=pointer]:
+          - /url: /operations-policy
+        - button "Open operation alerts" [ref=f2e234] [cursor=pointer]
+        - button "Sign out" [ref=f2e239] [cursor=pointer]
+    - generic [ref=f2e243]:
+      - generic [ref=f2e244]:
+        - generic [ref=f2e245]:
+          - heading "Customers" [level=1] [ref=f2e246]
+          - paragraph [ref=f2e247]: Find a customer and resolve booking, payment, wallet, or review issues.
+        - generic "Page actions" [ref=f2e248]:
+          - link "Open bookings" [ref=f2e249] [cursor=pointer]:
+            - /url: /bookings
+          - link "Open payments" [ref=f2e254] [cursor=pointer]:
+            - /url: /payments
+          - link "Open reviews" [ref=f2e255] [cursor=pointer]:
+            - /url: /reviews
+      - generic [ref=f2e258]:
+        - generic [ref=f2e264]:
+          - generic [ref=f2e265]: Needs action
+          - paragraph [ref=f2e266]: Needs attention
+          - generic [ref=f2e267]:
+            - generic [ref=f2e268]: "Needs attention:"
+            - text: "0"
+          - generic [ref=f2e269]: Payment, refund, or reported-review issues.
+        - generic [ref=f2e275]:
+          - generic [ref=f2e276]: Live
+          - paragraph [ref=f2e277]: Active booking
+          - generic [ref=f2e278]:
+            - generic [ref=f2e279]: "Active booking:"
+            - text: "0"
+          - generic [ref=f2e280]: Matching or in service.
+        - generic [ref=f2e286]:
+          - generic [ref=f2e287]: Today
+          - paragraph [ref=f2e288]: New today
+          - generic [ref=f2e289]:
+            - generic [ref=f2e290]: "New today:"
+            - text: "0"
+          - generic [ref=f2e291]: Profiles created today in Vietnam time.
+      - region "Customer filters" [ref=f2e292]:
+        - generic [ref=f2e293]:
+          - generic "Customer operational views" [ref=f2e294]:
+            - generic [ref=f2e295]: Operational view
+            - generic "Customer operational view" [ref=f2e296]:
+              - link "All customers 33" [ref=f2e297] [cursor=pointer]:
+                - /url: /customers
+              - link "Needs action 0" [ref=f2e298] [cursor=pointer]:
+                - /url: /customers?view=needs-action
+              - link "New today 0" [ref=f2e299] [cursor=pointer]:
+                - /url: /customers?view=new-today
+              - link "Active today 0" [ref=f2e300] [cursor=pointer]:
+                - /url: /customers?view=active-today
+          - generic [ref=f2e301]:
+            - generic [ref=f2e302]:
+              - generic "Customer directory filters" [ref=f2e303]:
+                - generic [ref=f2e304]:
+                  - generic [ref=f2e308]: Search customer
+                  - searchbox "Search customer" [ref=f2e309]
+                - generic [ref=f2e310] [cursor=pointer]:
+                  - generic [ref=f2e311]: Customer segment
+                  - combobox "Customer segment" [ref=f2e312]:
+                    - option "All customer segments" [selected]
+                    - option "Never booked"
+                    - option "Has booking history"
+                    - option "Completed customers"
+                    - option "Cancellation / no-show history"
+                    - option "Inactive 30 days"
+              - generic "Customer filter actions" [ref=f2e313]:
+                - button "Apply filters" [ref=f2e314] [cursor=pointer]
+            - group [ref=f2e315]:
+              - generic "More filters Activity date, app locale, and profile attributes" [ref=f2e316] [cursor=pointer]:
+                - generic [ref=f2e317]: More filters
+                - generic [ref=f2e319]: Activity date, app locale, and profile attributes
+              - option "Last active date" [selected]
+              - option "Joined date"
+              - option "Last booking date"
+              - option "All dates" [selected]
+              - option "Today"
+              - option "Previous day"
+              - option "Last 7 days"
+              - option "Last 30 days"
+              - option "Custom dates"
+              - option "All app locales" [selected]
+              - option "Vietnamese"
+              - option "Korean"
+              - option "Japanese"
+              - option "Chinese"
+              - option "Singapore English"
+              - option "Unknown locale"
+              - option "All genders" [selected]
+              - option "Female"
+              - option "Male"
+              - option "Other"
+              - option "Not captured"
+      - region [ref=f2e320]:
+        - generic [ref=f2e321]:
+          - generic [ref=f2e322]:
+            - heading "Customer directory" [level=2] [ref=f2e323]
+            - paragraph [ref=f2e324]: Sorted by newest customers
+          - generic [ref=f2e325]: 33 customer(s)
+        - generic [ref=f2e327]:
+          - table [ref=f2e329]:
+            - rowgroup [ref=f2e330]:
+              - row [ref=f2e331]:
+                - columnheader "Customer" [ref=f2e332]
+                - columnheader "Profile" [ref=f2e333]
+                - columnheader "Sign-up Date" [ref=f2e334]
+                - columnheader "Last activity" [ref=f2e335]
+                - columnheader "Last address" [ref=f2e336]
+                - columnheader "Bookings" [ref=f2e337]
+                - columnheader "Attention" [ref=f2e338]
+                - columnheader "Customer value" [ref=f2e339]
+            - rowgroup [ref=f2e340]:
+              - row [ref=f2e341]:
+                - cell "App offline +84865907184 +84865907184" [ref=f2e342]:
+                  - generic [ref=f2e343]:
+                    - generic [ref=f2e344]:
+                      - generic [ref=f2e345]: +
+                      - img "App offline"
+                    - generic [ref=f2e346]:
+                      - link "+84865907184" [ref=f2e347] [cursor=pointer]:
+                        - /url: /customers/cmrknir6a0001vyyszyh4kex4
+                      - generic [ref=f2e348]: "+84865907184"
+                - cell "Unknown country Unknown country Not captured" [ref=f2e351]:
+                  - generic [ref=f2e352]:
+                    - generic [ref=f2e353]:
+                      - img "Unknown country" [ref=f2e354]: "--"
+                      - strong [ref=f2e355]: Unknown country
+                    - generic [ref=f2e356]: Not captured
+                - cell [ref=f2e357]:
+                  - time [ref=f2e358]: 14 Jul 2026, 19:52
+                - cell "Never active No activity recorded" [ref=f2e359]:
+                  - generic [ref=f2e360]:
+                    - generic [ref=f2e361]: Never active
+                    - generic [ref=f2e362]: No activity recorded
+                - cell [ref=f2e363]:
+                  - strong [ref=f2e364]: Not captured
+                - cell "0/0 completed No completed booking" [ref=f2e365]:
+                  - generic [ref=f2e366]:
+                    - strong [ref=f2e367]: 0/0 completed
+                    - generic [ref=f2e368]: No completed booking
+                - cell "No attention needed" [ref=f2e369]: "-"
+                - cell "Total paid 0 VND Wallet 0 VND" [ref=f2e370]:
+                  - generic [ref=f2e371]:
+                    - generic [ref=f2e372]:
+                      - generic [ref=f2e373]: Total paid
+                      - strong [ref=f2e374]: 0 VND
+                    - generic [ref=f2e375]:
+                      - generic [ref=f2e376]: Wallet
+                      - strong [ref=f2e377]: 0 VND
+              - row [ref=f2e378]:
+                - cell "App offline +84531610679 +84531610679" [ref=f2e379]:
+                  - generic [ref=f2e380]:
+                    - generic [ref=f2e381]:
+                      - generic [ref=f2e382]: +
+                      - img "App offline"
+                    - generic [ref=f2e383]:
+                      - link "+84531610679" [ref=f2e384] [cursor=pointer]:
+                        - /url: /customers/cmrkmcwu80042vytc0wtwrkpx
+                      - generic [ref=f2e385]: "+84531610679"
+                - cell "Unknown country Unknown country Not captured" [ref=f2e388]:
+                  - generic [ref=f2e389]:
+                    - generic [ref=f2e390]:
+                      - img "Unknown country" [ref=f2e391]: "--"
+                      - strong [ref=f2e392]: Unknown country
+                    - generic [ref=f2e393]: Not captured
+                - cell [ref=f2e394]:
+                  - time [ref=f2e395]: 14 Jul 2026, 19:20
+                - cell "Never active No activity recorded" [ref=f2e396]:
+                  - generic [ref=f2e397]:
+                    - generic [ref=f2e398]: Never active
+                    - generic [ref=f2e399]: No activity recorded
+                - cell [ref=f2e400]:
+                  - strong [ref=f2e401]: Not captured
+                - cell "0/0 completed No completed booking" [ref=f2e402]:
+                  - generic [ref=f2e403]:
+                    - strong [ref=f2e404]: 0/0 completed
+                    - generic [ref=f2e405]: No completed booking
+                - cell "No attention needed" [ref=f2e406]: "-"
+                - cell "Total paid 0 VND Wallet 0 VND" [ref=f2e407]:
+                  - generic [ref=f2e408]:
+                    - generic [ref=f2e409]:
+                      - generic [ref=f2e410]: Total paid
+                      - strong [ref=f2e411]: 0 VND
+                    - generic [ref=f2e412]:
+                      - generic [ref=f2e413]: Wallet
+                      - strong [ref=f2e414]: 0 VND
+              - row [ref=f2e415]:
+                - cell "App offline +84731610658 +84731610658" [ref=f2e416]:
+                  - generic [ref=f2e417]:
+                    - generic [ref=f2e418]:
+                      - generic [ref=f2e419]: +
+                      - img "App offline"
+                    - generic [ref=f2e420]:
+                      - link "+84731610658" [ref=f2e421] [cursor=pointer]:
+                        - /url: /customers/cmrkmcwtn0040vytc6je4htye
+                      - generic [ref=f2e422]: "+84731610658"
+                - cell "Unknown country Unknown country Not captured" [ref=f2e425]:
+                  - generic [ref=f2e426]:
+                    - generic [ref=f2e427]:
+                      - img "Unknown country" [ref=f2e428]: "--"
+                      - strong [ref=f2e429]: Unknown country
+                    - generic [ref=f2e430]: Not captured
+                - cell [ref=f2e431]:
+                  - time [ref=f2e432]: 14 Jul 2026, 19:20
+                - cell "Never active No activity recorded" [ref=f2e433]:
+                  - generic [ref=f2e434]:
+                    - generic [ref=f2e435]: Never active
+                    - generic [ref=f2e436]: No activity recorded
+                - cell [ref=f2e437]:
+                  - strong [ref=f2e438]: Not captured
+                - cell "0/0 completed No completed booking" [ref=f2e439]:
+                  - generic [ref=f2e440]:
+                    - strong [ref=f2e441]: 0/0 completed
+                    - generic [ref=f2e442]: No completed booking
+                - cell "No attention needed" [ref=f2e443]: "-"
+                - cell "Total paid 0 VND Wallet 0 VND" [ref=f2e444]:
+                  - generic [ref=f2e445]:
+                    - generic [ref=f2e446]:
+                      - generic [ref=f2e447]: Total paid
+                      - strong [ref=f2e448]: 0 VND
+                    - generic [ref=f2e449]:
+                      - generic [ref=f2e450]: Wallet
+                      - strong [ref=f2e451]: 0 VND
+              - row [ref=f2e452]:
+                - cell "App offline +84931610430 +84931610430" [ref=f2e453]:
+                  - generic [ref=f2e454]:
+                    - generic [ref=f2e455]:
+                      - generic [ref=f2e456]: +
+                      - img "App offline"
+                    - generic [ref=f2e457]:
+                      - link "+84931610430" [ref=f2e458] [cursor=pointer]:
+                        - /url: /customers/cmrkmcwpg003vvytctbr8henp
+                      - generic [ref=f2e459]: "+84931610430"
+                - cell "Unknown country Unknown country Not captured" [ref=f2e462]:
+                  - generic [ref=f2e463]:
+                    - generic [ref=f2e464]:
+                      - img "Unknown country" [ref=f2e465]: "--"
+                      - strong [ref=f2e466]: Unknown country
+                    - generic [ref=f2e467]: Not captured
+                - cell [ref=f2e468]:
+                  - time [ref=f2e469]: 14 Jul 2026, 19:20
+                - cell "Never active No activity recorded" [ref=f2e470]:
+                  - generic [ref=f2e471]:
+                    - generic [ref=f2e472]: Never active
+                    - generic [ref=f2e473]: No activity recorded
+                - cell [ref=f2e474]:
+                  - strong [ref=f2e475]: Not captured
+                - cell "0/0 completed No completed booking" [ref=f2e476]:
+                  - generic [ref=f2e477]:
+                    - strong [ref=f2e478]: 0/0 completed
+                    - generic [ref=f2e479]: No completed booking
+                - cell "No attention needed" [ref=f2e480]: "-"
+                - cell "Total paid 0 VND Wallet 0 VND" [ref=f2e481]:
+                  - generic [ref=f2e482]:
+                    - generic [ref=f2e483]:
+                      - generic [ref=f2e484]: Total paid
+                      - strong [ref=f2e485]: 0 VND
+                    - generic [ref=f2e486]:
+                      - generic [ref=f2e487]: Wallet
+                      - strong [ref=f2e488]: 0 VND
+              - row [ref=f2e489]:
+                - cell "App offline +84561437020 +84561437020" [ref=f2e490]:
+                  - generic [ref=f2e491]:
+                    - generic [ref=f2e492]:
+                      - generic [ref=f2e493]: +
+                      - img "App offline"
+                    - generic [ref=f2e494]:
+                      - link "+84561437020" [ref=f2e495] [cursor=pointer]:
+                        - /url: /customers/cmqunin380013vyu8thhepptd
+                      - generic [ref=f2e496]: "+84561437020"
+                - cell "Unknown country Unknown country Not captured" [ref=f2e499]:
+                  - generic [ref=f2e500]:
+                    - generic [ref=f2e501]:
+                      - img "Unknown country" [ref=f2e502]: "--"
+                      - strong [ref=f2e503]: Unknown country
+                    - generic [ref=f2e504]: Not captured
+                - cell [ref=f2e505]:
+                  - time [ref=f2e506]: 26 Jun 2026, 15:10
+                - cell "Never active No activity recorded" [ref=f2e507]:
+                  - generic [ref=f2e508]:
+                    - generic [ref=f2e509]: Never active
+                    - generic [ref=f2e510]: No activity recorded
+                - cell [ref=f2e511]:
+                  - strong [ref=f2e512]: Not captured
+                - cell "0/0 completed No completed booking" [ref=f2e513]:
+                  - generic [ref=f2e514]:
+                    - strong [ref=f2e515]: 0/0 completed
+                    - generic [ref=f2e516]: No completed booking
+                - cell "No attention needed" [ref=f2e517]: "-"
+                - cell "Total paid 0 VND Wallet 0 VND" [ref=f2e518]:
+                  - generic [ref=f2e519]:
+                    - generic [ref=f2e520]:
+                      - generic [ref=f2e521]: Total paid
+                      - strong [ref=f2e522]: 0 VND
+                    - generic [ref=f2e523]:
+                      - generic [ref=f2e524]: Wallet
+                      - strong [ref=f2e525]: 0 VND
+              - row [ref=f2e526]:
+                - cell "App offline +84761437003 +84761437003" [ref=f2e527]:
+                  - generic [ref=f2e528]:
+                    - generic [ref=f2e529]:
+                      - generic [ref=f2e530]: +
+                      - img "App offline"
+                    - generic [ref=f2e531]:
+                      - link "+84761437003" [ref=f2e532] [cursor=pointer]:
+                        - /url: /customers/cmqunin2r0011vyu819u9ybkx
+                      - generic [ref=f2e533]: "+84761437003"
+                - cell "Unknown country Unknown country Not captured" [ref=f2e536]:
+                  - generic [ref=f2e537]:
+                    - generic [ref=f2e538]:
+                      - img "Unknown country" [ref=f2e539]: "--"
+                      - strong [ref=f2e540]: Unknown country
+                    - generic [ref=f2e541]: Not captured
+                - cell [ref=f2e542]:
+                  - time [ref=f2e543]: 26 Jun 2026, 15:10
+                - cell "Never active No activity recorded" [ref=f2e544]:
+                  - generic [ref=f2e545]:
+                    - generic [ref=f2e546]: Never active
+                    - generic [ref=f2e547]: No activity recorded
+                - cell [ref=f2e548]:
+                  - strong [ref=f2e549]: Not captured
+                - cell "0/0 completed No completed booking" [ref=f2e550]:
+                  - generic [ref=f2e551]:
+                    - strong [ref=f2e552]: 0/0 completed
+                    - generic [ref=f2e553]: No completed booking
+                - cell "No attention needed" [ref=f2e554]: "-"
+                - cell "Total paid 0 VND Wallet 0 VND" [ref=f2e555]:
+                  - generic [ref=f2e556]:
+                    - generic [ref=f2e557]:
+                      - generic [ref=f2e558]: Total paid
+                      - strong [ref=f2e559]: 0 VND
+                    - generic [ref=f2e560]:
+                      - generic [ref=f2e561]: Wallet
+                      - strong [ref=f2e562]: 0 VND
+              - row [ref=f2e563]:
+                - cell "App offline +84961436833 +84961436833" [ref=f2e564]:
+                  - generic [ref=f2e565]:
+                    - generic [ref=f2e566]:
+                      - generic [ref=f2e567]: +
+                      - img "App offline"
+                    - generic [ref=f2e568]:
+                      - link "+84961436833" [ref=f2e569] [cursor=pointer]:
+                        - /url: /customers/cmqunimzx000wvyu85gfhj4yf
+                      - generic [ref=f2e570]: "+84961436833"
+                - cell "Unknown country Unknown country Not captured" [ref=f2e573]:
+                  - generic [ref=f2e574]:
+                    - generic [ref=f2e575]:
+                      - img "Unknown country" [ref=f2e576]: "--"
+                      - strong [ref=f2e577]: Unknown country
+                    - generic [ref=f2e578]: Not captured
+                - cell [ref=f2e579]:
+                  - time [ref=f2e580]: 26 Jun 2026, 15:10
+                - cell "Never active No activity recorded" [ref=f2e581]:
+                  - generic [ref=f2e582]:
+                    - generic [ref=f2e583]: Never active
+                    - generic [ref=f2e584]: No activity recorded
+                - cell [ref=f2e585]:
+                  - strong [ref=f2e586]: Not captured
+                - cell "0/0 completed No completed booking" [ref=f2e587]:
+                  - generic [ref=f2e588]:
+                    - strong [ref=f2e589]: 0/0 completed
+                    - generic [ref=f2e590]: No completed booking
+                - cell "No attention needed" [ref=f2e591]: "-"
+                - cell "Total paid 0 VND Wallet 0 VND" [ref=f2e592]:
+                  - generic [ref=f2e593]:
+                    - generic [ref=f2e594]:
+                      - generic [ref=f2e595]: Total paid
+                      - strong [ref=f2e596]: 0 VND
+                    - generic [ref=f2e597]:
+                      - generic [ref=f2e598]: Wallet
+                      - strong [ref=f2e599]: 0 VND
+              - row [ref=f2e600]:
+                - cell "App offline +84545739531 +84545739531" [ref=f2e601]:
+                  - generic [ref=f2e602]:
+                    - generic [ref=f2e603]:
+                      - generic [ref=f2e604]: +
+                      - img "App offline"
+                    - generic [ref=f2e605]:
+                      - link "+84545739531" [ref=f2e606] [cursor=pointer]:
+                        - /url: /customers/cmqfic2dv0009vyvc741zli9e
+                      - generic [ref=f2e607]: "+84545739531"
+                - cell "Unknown country Unknown country Not captured" [ref=f2e610]:
+                  - generic [ref=f2e611]:
+                    - generic [ref=f2e612]:
+                      - img "Unknown country" [ref=f2e613]: "--"
+                      - strong [ref=f2e614]: Unknown country
+                    - generic [ref=f2e615]: Not captured
+                - cell [ref=f2e616]:
+                  - time [ref=f2e617]: 16 Jun 2026, 00:48
+                - cell "Never active No activity recorded" [ref=f2e618]:
+                  - generic [ref=f2e619]:
+                    - generic [ref=f2e620]: Never active
+                    - generic [ref=f2e621]: No activity recorded
+                - cell [ref=f2e622]:
+                  - strong [ref=f2e623]: Not captured
+                - cell "0/0 completed No completed booking" [ref=f2e624]:
+                  - generic [ref=f2e625]:
+                    - strong [ref=f2e626]: 0/0 completed
+                    - generic [ref=f2e627]: No completed booking
+                - cell "No attention needed" [ref=f2e628]: "-"
+                - cell "Total paid 0 VND Wallet 0 VND" [ref=f2e629]:
+                  - generic [ref=f2e630]:
+                    - generic [ref=f2e631]:
+                      - generic [ref=f2e632]: Total paid
+                      - strong [ref=f2e633]: 0 VND
+                    - generic [ref=f2e634]:
+                      - generic [ref=f2e635]: Wallet
+                      - strong [ref=f2e636]: 0 VND
+              - row [ref=f2e637]:
+                - cell "App offline +84745739514 +84745739514" [ref=f2e638]:
+                  - generic [ref=f2e639]:
+                    - generic [ref=f2e640]:
+                      - generic [ref=f2e641]: +
+                      - img "App offline"
+                    - generic [ref=f2e642]:
+                      - link "+84745739514" [ref=f2e643] [cursor=pointer]:
+                        - /url: /customers/cmqfic2de0007vyvcrq8gjuta
+                      - generic [ref=f2e644]: "+84745739514"
+                - cell "Unknown country Unknown country Not captured" [ref=f2e647]:
+                  - generic [ref=f2e648]:
+                    - generic [ref=f2e649]:
+                      - img "Unknown country" [ref=f2e650]: "--"
+                      - strong [ref=f2e651]: Unknown country
+                    - generic [ref=f2e652]: Not captured
+                - cell [ref=f2e653]:
+                  - time [ref=f2e654]: 16 Jun 2026, 00:48
+                - cell "Never active No activity recorded" [ref=f2e655]:
+                  - generic [ref=f2e656]:
+                    - generic [ref=f2e657]: Never active
+                    - generic [ref=f2e658]: No activity recorded
+                - cell [ref=f2e659]:
+                  - strong [ref=f2e660]: Not captured
+                - cell "0/0 completed No completed booking" [ref=f2e661]:
+                  - generic [ref=f2e662]:
+                    - strong [ref=f2e663]: 0/0 completed
+                    - generic [ref=f2e664]: No completed booking
+                - cell "No attention needed" [ref=f2e665]: "-"
+                - cell "Total paid 0 VND Wallet 0 VND" [ref=f2e666]:
+                  - generic [ref=f2e667]:
+                    - generic [ref=f2e668]:
+                      - generic [ref=f2e669]: Total paid
+                      - strong [ref=f2e670]: 0 VND
+                    - generic [ref=f2e671]:
+                      - generic [ref=f2e672]: Wallet
+                      - strong [ref=f2e673]: 0 VND
+              - row [ref=f2e674]:
+                - cell "App offline +84945739323 +84945739323" [ref=f2e675]:
+                  - generic [ref=f2e676]:
+                    - generic [ref=f2e677]:
+                      - generic [ref=f2e678]: +
+                      - img "App offline"
+                    - generic [ref=f2e679]:
+                      - link "+84945739323" [ref=f2e680] [cursor=pointer]:
+                        - /url: /customers/cmqfic2ag0002vyvcackyqlq4
+                      - generic [ref=f2e681]: "+84945739323"
+                - cell "Unknown country Unknown country Not captured" [ref=f2e684]:
+                  - generic [ref=f2e685]:
+                    - generic [ref=f2e686]:
+                      - img "Unknown country" [ref=f2e687]: "--"
+                      - strong [ref=f2e688]: Unknown country
+                    - generic [ref=f2e689]: Not captured
+                - cell [ref=f2e690]:
+                  - time [ref=f2e691]: 16 Jun 2026, 00:48
+                - cell "Never active No activity recorded" [ref=f2e692]:
+                  - generic [ref=f2e693]:
+                    - generic [ref=f2e694]: Never active
+                    - generic [ref=f2e695]: No activity recorded
+                - cell [ref=f2e696]:
+                  - strong [ref=f2e697]: Not captured
+                - cell "0/0 completed No completed booking" [ref=f2e698]:
+                  - generic [ref=f2e699]:
+                    - strong [ref=f2e700]: 0/0 completed
+                    - generic [ref=f2e701]: No completed booking
+                - cell "No attention needed" [ref=f2e702]: "-"
+                - cell "Total paid 0 VND Wallet 0 VND" [ref=f2e703]:
+                  - generic [ref=f2e704]:
+                    - generic [ref=f2e705]:
+                      - generic [ref=f2e706]: Total paid
+                      - strong [ref=f2e707]: 0 VND
+                    - generic [ref=f2e708]:
+                      - generic [ref=f2e709]: Wallet
+                      - strong [ref=f2e710]: 0 VND
+          - generic [ref=f2e711]:
+            - generic [ref=f2e712]: Showing 1 to 10 of 33 entries
+            - navigation "Customer directory pages" [ref=f2e713]:
+              - generic "First page"
+              - generic "Previous page"
+              - link "Page 1" [ref=f2e714] [cursor=pointer]:
+                - /url: /customers
+                - text: "1"
+              - link "Page 2" [ref=f2e715] [cursor=pointer]:
+                - /url: /customers?page=2
+                - text: "2"
+              - link "Page 3" [ref=f2e716] [cursor=pointer]:
+                - /url: /customers?page=3
+                - text: "3"
+              - link "Page 4" [ref=f2e717] [cursor=pointer]:
+                - /url: /customers?page=4
+                - text: "4"
+              - link "Next page" [ref=f2e718] [cursor=pointer]:
+                - /url: /customers?page=2
+              - link "Last page" [ref=f2e721] [cursor=pointer]:
+                - /url: /customers?page=4

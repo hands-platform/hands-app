@@ -26,24 +26,24 @@ class PartnerJobsSummary extends StatelessWidget {
         SizedBox(
           width: 150,
           child: RequestSummaryCard(
-            label: 'Active',
-            value: '$active live',
+            label: 'Đang hoạt động',
+            value: '$active công việc',
             tone: const Color(0xFFEAF2FF),
           ),
         ),
         SizedBox(
           width: 150,
           child: RequestSummaryCard(
-            label: 'Done',
-            value: '$completed complete',
+            label: 'Đã hoàn tất',
+            value: '$completed bản ghi',
             tone: const Color(0xFFEAF5E3),
           ),
         ),
         SizedBox(
           width: 150,
           child: RequestSummaryCard(
-            label: 'Closed',
-            value: '$closed closed',
+            label: 'Đã đóng',
+            value: '$closed bản ghi',
             tone: const Color(0xFFF8ECD4),
           ),
         ),
@@ -53,9 +53,18 @@ class PartnerJobsSummary extends StatelessWidget {
 }
 
 class PartnerJobsCard extends StatelessWidget {
-  const PartnerJobsCard({super.key, required this.booking});
+  const PartnerJobsCard({
+    super.key,
+    required this.booking,
+    this.actionBusy = false,
+    this.onOpenChat,
+    this.onCompleteService,
+  });
 
   final Map<String, dynamic> booking;
+  final bool actionBusy;
+  final VoidCallback? onOpenChat;
+  final VoidCallback? onCompleteService;
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +74,7 @@ class PartnerJobsCard extends StatelessWidget {
     final snapshotAddress = asMap(addressSnapshot?['address']);
     final payment = asMap(booking['payment']);
     final selectedProvider = asMap(booking['selectedProvider']);
+    final customer = asMap(booking['customer']);
     final isAssigned = selectedProvider != null;
     final amount = payment?['amount'] ?? service?['basePrice'];
     final serviceAddress = addressSnapshot?['addressText']?.toString() ??
@@ -72,7 +82,7 @@ class PartnerJobsCard extends StatelessWidget {
         snapshotAddress?['addressPreview']?.toString() ??
         address?['line1']?.toString() ??
         address?['addressPreview']?.toString() ??
-        'Guest area pending';
+        'Chưa có khu vực của khách hàng';
 
     return Card(
       child: Padding(
@@ -91,7 +101,7 @@ class PartnerJobsCard extends StatelessWidget {
                   ),
                 ),
                 ProviderRequestTag(
-                  label: booking['status']?.toString() ?? 'UNKNOWN',
+                  label: providerBookingStatusLabel(booking['status']),
                   highlighted: isAssigned,
                 ),
               ],
@@ -103,18 +113,43 @@ class PartnerJobsCard extends StatelessWidget {
               children: [
                 ProviderRequestTag(
                   label:
-                      'Opened ${formatRequestOpenedMoment(providerBookingRequestOpenedAt(booking))}',
+                      'Mở lúc ${formatRequestOpenedMoment(providerBookingRequestOpenedAt(booking))}',
                 ),
                 ProviderRequestTag(
                     label: providerServiceDurationLabel(service)),
                 ProviderRequestTag(label: '${formatCurrency(amount)} VND'),
                 ProviderRequestTag(
-                  label: payment?['status']?.toString() ?? 'NO_PAYMENT',
+                  label: providerPaymentStatusLabel(payment?['status']),
                 ),
               ],
             ),
             const SizedBox(height: 10),
             Text(serviceAddress),
+            if (customer != null) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ProviderRequestTag(
+                    label: customer['fullName']?.toString().trim().isNotEmpty ==
+                            true
+                        ? customer['fullName'].toString()
+                        : 'Chưa có tên khách hàng',
+                  ),
+                  if (customer['phone']?.toString().trim().isNotEmpty == true)
+                    ProviderRequestTag(label: customer['phone'].toString()),
+                  ProviderRequestTag(
+                    label:
+                        'Giới tính: ${customer['gender'] ?? 'Chưa cung cấp'}',
+                  ),
+                  ProviderRequestTag(
+                    label:
+                        'Quốc tịch: ${customer['nationality'] ?? 'Chưa cung cấp'}',
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 6),
             Text(
               partnerJobNextAction(booking),
@@ -123,6 +158,27 @@ class PartnerJobsCard extends StatelessWidget {
                   .bodyMedium
                   ?.copyWith(color: Colors.black54),
             ),
+            if (onOpenChat != null || onCompleteService != null) ...[
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (onOpenChat != null)
+                    OutlinedButton.icon(
+                      onPressed: actionBusy ? null : onOpenChat,
+                      icon: const Icon(Icons.chat_bubble_outline),
+                      label: const Text('Mở trò chuyện'),
+                    ),
+                  if (onCompleteService != null)
+                    FilledButton.icon(
+                      onPressed: actionBusy ? null : onCompleteService,
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text('Hoàn tất dịch vụ'),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

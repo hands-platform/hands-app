@@ -100,7 +100,7 @@ describe('bookingDetailLifecycleListRows', () => {
       'Post-match cancellation needs admin review',
     ]);
     expect(items[0]?.meta.find((meta) => meta.label === 'Service')?.value).toBe(
-      'Aromatherapy Massage / 90 min / 500.000 VND',
+      'Aromatherapy Massage / 90 min / price 500.000 VND',
     );
     expect(items[0]?.meta.find((meta) => meta.label === 'Requested')?.value).toBe('Not selected');
     expect(items[1]?.meta.find((meta) => meta.label === 'Participating')?.value).toBe('1 Partner');
@@ -213,12 +213,12 @@ describe('bookingDetailLifecycleListRows', () => {
       />,
     );
 
-    expect(rendered).toContain('Booking lifecycle timeline');
+    expect(rendered).toContain('Activity');
     expect(rendered).toContain('card admin-section booking-detail-lifecycle-list admin-mb-16');
     expect(rendered).toContain('vuexy-basic-timeline');
     expect(rendered).toContain('Post-match cancellation needs admin review');
-    expect(rendered).toContain('aria-label="Customer: Customer Nguyen"');
-    expect(rendered).toContain('<span>Customer</span> <strong>Customer Nguyen</strong>');
+    expect(rendered).toContain('aria-label="Matched Partner: Partner Matched"');
+    expect(rendered).not.toContain('aria-label="Customer:');
     expect(rendered).not.toContain('<table');
   });
 
@@ -240,7 +240,9 @@ describe('bookingDetailLifecycleListRows', () => {
     expect(completed?.detail).toContain('Service completed; closeout reconciliation still needs review.');
     expect(completed?.detail).not.toContain('provider closure /');
     expect(completed?.detail).not.toContain('Smoke:');
-    expect(completed?.meta.find((meta) => meta.label === 'Payment')?.value).toBe('500.000 VND / CAPTURED');
+    expect(completed?.meta.find((meta) => meta.label === 'Payment')?.value).toBe(
+      'price 500.000 VND / CAPTURED',
+    );
     expect(completed?.meta.map((meta) => meta.label)).toEqual([
       'Matched Partner',
       'Completion location',

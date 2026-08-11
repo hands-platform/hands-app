@@ -1,0 +1,696 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e3]:
+    - complementary [ref=f2e4]:
+      - strong [ref=f2e6]: HANDS Admin
+      - navigation "Admin navigation" [ref=f2e7]:
+        - group [ref=f2e8]:
+          - generic "Shift Operations" [ref=f2e9] [cursor=pointer]
+          - generic [ref=f2e16]:
+            - link "Start Shift" [ref=f2e17] [cursor=pointer]:
+              - /url: /
+            - link "Calendar" [ref=f2e22] [cursor=pointer]:
+              - /url: /calendar
+            - link "Operations History" [ref=f2e26] [cursor=pointer]:
+              - /url: /operations-handoff
+        - group [ref=f2e30]:
+          - generic "Bookings" [ref=f2e31] [cursor=pointer]
+        - group [ref=f2e40]:
+          - generic "Customers" [ref=f2e41] [cursor=pointer]
+        - group [ref=f2e50]:
+          - generic "Partners" [ref=f2e51] [cursor=pointer]
+        - group [ref=f2e58]:
+          - generic "Analytics" [ref=f2e59] [cursor=pointer]
+        - group [ref=f2e89]:
+          - generic "Growth & Communications" [ref=f2e90] [cursor=pointer]
+        - group [ref=f2e100]:
+          - generic "Finance" [ref=f2e101] [cursor=pointer]
+        - group [ref=f2e108]:
+          - generic "Tax & Accounting" [ref=f2e109] [cursor=pointer]
+        - group [ref=f2e116]:
+          - generic "Policies" [ref=f2e117] [cursor=pointer]
+        - group [ref=f2e125]:
+          - generic "Admin Control" [ref=f2e126] [cursor=pointer]
+        - group [ref=f2e143]:
+          - generic "Developer / System" [ref=f2e144] [cursor=pointer]
+    - main [ref=f2e152]:
+      - generic "Admin workspace" [ref=f2e153]:
+        - generic [ref=f2e154]:
+          - navigation "Breadcrumb" [ref=f2e155]:
+            - link "HANDS" [ref=f2e156] [cursor=pointer]:
+              - /url: /
+            - generic [ref=f2e162]: Partners
+          - strong [ref=f2e163]: Partners
+        - generic "Workspace actions" [ref=f2e164]:
+          - button "Search Ctrl K" [ref=f2e166] [cursor=pointer]:
+            - generic [ref=f2e167]: Search
+            - generic [ref=f2e171]: Ctrl K
+          - group "Theme mode" [ref=f2e172]:
+            - button "Light mode" [pressed] [ref=f2e173] [cursor=pointer]
+            - button "Dark mode" [ref=f2e180] [cursor=pointer]
+          - link "Help" [ref=f2e183] [cursor=pointer]:
+            - /url: /operations-policy
+          - button [ref=f2e188] [cursor=pointer]
+          - generic [ref=f2e192]: Vietnam Operations
+          - generic [ref=f2e197]: Live Workspace
+          - button "Sign out" [ref=f2e202] [cursor=pointer]
+      - generic [ref=f2e206]:
+        - generic [ref=f2e1967]:
+          - generic [ref=f2e1968]:
+            - heading "Partners" [level=1] [ref=f2e1969]
+            - paragraph [ref=f2e1970]: Partner directory aligned to the Vuexy management table using live onboarding, wallet, app session, location, and booking data.
+          - generic "Page actions" [ref=f2e1971]:
+            - link "Load operations analysis" [ref=f2e1972] [cursor=pointer]:
+              - /url: /partners?review=available-blocked-location&details=all
+        - generic [ref=f2e1973]:
+          - generic "Partner list pages" [ref=f2e1974]:
+            - link "Partners" [ref=f2e1975] [cursor=pointer]:
+              - /url: /partners
+            - link "Unapproved Partners" [ref=f2e1976] [cursor=pointer]:
+              - /url: /partners?review=unapproved
+            - link "Unsettled Partners" [ref=f2e1977] [cursor=pointer]:
+              - /url: /partners?review=unsettled
+          - region [ref=f2e1978]:
+            - generic [ref=f2e1979]:
+              - generic [ref=f2e1980]:
+                - heading "Partner operations filters" [level=2] [ref=f2e1981]
+                - paragraph [ref=f2e1982]: Separate ready-now Partners, offline risk, approval work, booking flow, and partner records.
+              - generic [ref=f2e1983]: 10 visible / 98 total
+            - generic [ref=f2e1986]:
+              - generic [ref=f2e1987]:
+                - generic "Partner list filters" [ref=f2e1988]:
+                  - generic [ref=f2e1989]:
+                    - generic [ref=f2e1993]: Search Partner
+                    - searchbox "Search Partner" [ref=f2e1994]
+                  - generic [ref=f2e1995] [cursor=pointer]:
+                    - generic [ref=f2e1996]: State
+                    - combobox "State" [ref=f2e1997]:
+                      - option "All states" [selected]
+                      - option "Online available"
+                      - option "Online busy"
+                      - option "Available soon"
+                      - option "Offline"
+                  - generic [ref=f2e1998] [cursor=pointer]:
+                    - generic [ref=f2e1999]: App activity
+                    - combobox "App activity" [ref=f2e2000]:
+                      - option "All activity" [selected]
+                      - option "App active 7D"
+                      - option "App inactive 7D+"
+                      - option "App not tracked"
+                      - option "No factual activity 7D"
+                      - option "No factual activity 30D"
+                      - option "No recorded session"
+                  - generic [ref=f2e2001] [cursor=pointer]:
+                    - generic [ref=f2e2002]: Verification
+                    - combobox "Verification" [ref=f2e2003]:
+                      - option "All verification" [selected]
+                      - option "Approved"
+                      - option "Submitted"
+                      - option "Pending"
+                      - option "Rejected"
+                      - option "Blocked"
+                  - generic [ref=f2e2004] [cursor=pointer]:
+                    - generic [ref=f2e2005]: KYC
+                    - combobox "KYC" [ref=f2e2006]:
+                      - option "All KYC" [selected]
+                      - option "Approved"
+                      - option "Pending"
+                      - option "Rejected"
+                      - option "Draft"
+                      - option "Missing"
+                - generic "Partner filter actions" [ref=f2e2007]:
+                  - link "Export" [ref=f2e2008] [cursor=pointer]:
+                    - /url: /api/admin/partners/export?review=available-blocked-location
+                  - button "Apply" [ref=f2e2012] [cursor=pointer]
+              - generic "Partner sort filters" [ref=f2e2013]:
+                - generic [ref=f2e2014]: Ready now / Records sort
+                - generic "Partner sort" [ref=f2e2015]:
+                  - link "Checklist" [ref=f2e2016] [cursor=pointer]:
+                    - /url: /partners?review=available-blocked-location
+                  - link "Oldest pending" [ref=f2e2017] [cursor=pointer]:
+                    - /url: /partners?review=available-blocked-location&sort=oldest
+                  - link "Last work" [ref=f2e2018] [cursor=pointer]:
+                    - /url: /partners?review=available-blocked-location&sort=last-work
+                  - link "Bookings" [ref=f2e2019] [cursor=pointer]:
+                    - /url: /partners?review=available-blocked-location&sort=booking-count
+                  - link "Completed" [ref=f2e2020] [cursor=pointer]:
+                    - /url: /partners?review=available-blocked-location&sort=completed-count
+                  - link "Revenue" [ref=f2e2021] [cursor=pointer]:
+                    - /url: /partners?review=available-blocked-location&sort=gross-revenue
+                  - link "Wallet debt" [ref=f2e2022] [cursor=pointer]:
+                    - /url: /partners?review=available-blocked-location&sort=wallet-debt
+                  - link "Name" [ref=f2e2023] [cursor=pointer]:
+                    - /url: /partners?review=available-blocked-location&sort=name
+              - generic [ref=f2e2024]:
+                - generic [ref=f2e2025]:
+                  - generic [ref=f2e2026]: Age
+                  - generic "Queue age" [ref=f2e2027]:
+                    - link "All ages (98)" [ref=f2e2028] [cursor=pointer]:
+                      - /url: /partners?review=available-blocked-location
+                    - link "Under 1h (1)" [ref=f2e2029] [cursor=pointer]:
+                      - /url: /partners?age=under-1h&review=available-blocked-location
+                    - link "1-4h (0)" [ref=f2e2030] [cursor=pointer]:
+                      - /url: /partners?age=1-4h&review=available-blocked-location
+                    - link "4-24h (0)" [ref=f2e2031] [cursor=pointer]:
+                      - /url: /partners?age=4-24h&review=available-blocked-location
+                    - link "24h+ (97)" [ref=f2e2032] [cursor=pointer]:
+                      - /url: /partners?age=over-24h&review=available-blocked-location
+                - generic [ref=f2e2033]:
+                  - generic [ref=f2e2034]: Order
+                  - generic "Queue sort order" [ref=f2e2035]:
+                    - link "Oldest first" [ref=f2e2036] [cursor=pointer]:
+                      - /url: /partners?review=available-blocked-location&sort=oldest
+                    - link "Newest first" [ref=f2e2037] [cursor=pointer]:
+                      - /url: /partners?review=available-blocked-location
+              - generic "Partner filter status" [ref=f2e2038]:
+                - generic [ref=f2e2039]: Showing 10 of 98 matching partners under the active filters
+                - 'link "Location freshness: 90m" [ref=f2e2040] [cursor=pointer]':
+                  - /url: /operations-policy
+            - generic [ref=f2e2043]:
+              - generic "Active partner filters" [ref=f2e2044]: "Review: Stale location"
+              - link "Clear filters" [ref=f2e2046] [cursor=pointer]:
+                - /url: /partners
+          - region [ref=f2e2047]:
+            - generic [ref=f2e2048]:
+              - generic [ref=f2e2049]:
+                - heading "Partners" [level=2] [ref=f2e2050]
+                - paragraph [ref=f2e2051]: Partner identity, app activity, operating state, location, work, wallet, payout, and account status.
+              - generic [ref=f2e2052]: 98 matching partner(s)
+            - generic [ref=f2e2054]:
+              - table [ref=f2e2056]:
+                - rowgroup [ref=f2e2057]:
+                  - row [ref=f2e2058]:
+                    - columnheader "Partner" [ref=f2e2059]
+                    - columnheader "Gender" [ref=f2e2060]
+                    - columnheader "State" [ref=f2e2061]
+                    - columnheader "Level" [ref=f2e2062]
+                    - columnheader "Access" [ref=f2e2063]
+                    - columnheader "Location" [ref=f2e2064]
+                    - columnheader "Work" [ref=f2e2065]
+                    - columnheader "Wallet" [ref=f2e2066]
+                    - columnheader "Account" [ref=f2e2067]
+                - rowgroup [ref=f2e2068]:
+                  - row [ref=f2e2069]:
+                    - cell "App online Partner 7899 Legal name not saved" [ref=f2e2070]:
+                      - generic [ref=f2e2071]:
+                        - generic [ref=f2e2072]:
+                          - generic [ref=f2e2073]: P7
+                          - img "App online"
+                        - generic [ref=f2e2074]:
+                          - link "Partner 7899" [ref=f2e2075] [cursor=pointer]:
+                            - /url: /partners/cmrqv1c6n008pvyow1po4cvn3
+                          - generic [ref=f2e2076]: Legal name not saved
+                    - cell "Not saved" [ref=f2e2079]
+                    - cell "ONLINE_AVAILABLE Unknown platform" [ref=f2e2080]:
+                      - generic [ref=f2e2081]:
+                        - generic [ref=f2e2082]: ONLINE_AVAILABLE
+                        - generic [ref=f2e2083]: Unknown platform
+                    - cell "LEVEL_1_SIGNUP KYC APPROVED" [ref=f2e2084]:
+                      - generic [ref=f2e2085]:
+                        - strong [ref=f2e2086]: LEVEL_1_SIGNUP
+                        - generic [ref=f2e2087]: KYC APPROVED
+                    - cell "App not tracked App not tracked Session not recorded" [ref=f2e2088]:
+                      - generic [ref=f2e2089]:
+                        - generic [ref=f2e2090]: App not tracked
+                        - generic [ref=f2e2091]:
+                          - text: App
+                          - generic [ref=f2e2092]: not tracked
+                        - generic [ref=f2e2093]:
+                          - text: Session
+                          - generic [ref=f2e2094]: not recorded
+                    - cell "Too old Updated 34h ago." [ref=f2e2095]:
+                      - generic [ref=f2e2096]:
+                        - strong [ref=f2e2097]: Too old
+                        - generic [ref=f2e2098]: Updated 34h ago.
+                    - cell "2 total 1 completed / 1 closed 0 no-show / 0 review(s)" [ref=f2e2099]:
+                      - generic [ref=f2e2100]:
+                        - strong [ref=f2e2101]: 2 total
+                        - generic [ref=f2e2102]: 1 completed / 1 closed
+                        - generic [ref=f2e2103]: 0 no-show / 0 review(s)
+                    - cell "-80.000 VND Settlement required Pending -80.000 VND / available 0 VND" [ref=f2e2104]:
+                      - generic [ref=f2e2105]:
+                        - strong [ref=f2e2106]: "-80.000 VND"
+                        - generic [ref=f2e2107]: Settlement required
+                        - generic [ref=f2e2108]: Pending -80.000 VND / available 0 VND
+                    - cell "Account clear Normal account 7 approval need(s) 3 memo/event(s)" [ref=f2e2109]:
+                      - generic [ref=f2e2110]:
+                        - generic [ref=f2e2111]: Account clear
+                        - generic [ref=f2e2112]: Normal account
+                        - generic [ref=f2e2113]: 7 approval need(s)
+                        - generic [ref=f2e2114]: 3 memo/event(s)
+                  - row [ref=f2e2115]:
+                    - cell "App online Partner 1898 Legal name not saved" [ref=f2e2116]:
+                      - generic [ref=f2e2117]:
+                        - generic [ref=f2e2118]:
+                          - generic [ref=f2e2119]: P1
+                          - img "App online"
+                        - generic [ref=f2e2120]:
+                          - link "Partner 1898" [ref=f2e2121] [cursor=pointer]:
+                            - /url: /partners/cmrqv1c68008kvyowc0g2uk44
+                          - generic [ref=f2e2122]: Legal name not saved
+                    - cell "Not saved" [ref=f2e2125]
+                    - cell "ONLINE_AVAILABLE Unknown platform" [ref=f2e2126]:
+                      - generic [ref=f2e2127]:
+                        - generic [ref=f2e2128]: ONLINE_AVAILABLE
+                        - generic [ref=f2e2129]: Unknown platform
+                    - cell "LEVEL_1_SIGNUP KYC APPROVED" [ref=f2e2130]:
+                      - generic [ref=f2e2131]:
+                        - strong [ref=f2e2132]: LEVEL_1_SIGNUP
+                        - generic [ref=f2e2133]: KYC APPROVED
+                    - cell "App not tracked App not tracked Session not recorded" [ref=f2e2134]:
+                      - generic [ref=f2e2135]:
+                        - generic [ref=f2e2136]: App not tracked
+                        - generic [ref=f2e2137]:
+                          - text: App
+                          - generic [ref=f2e2138]: not tracked
+                        - generic [ref=f2e2139]:
+                          - text: Session
+                          - generic [ref=f2e2140]: not recorded
+                    - cell "Too old Updated 34h ago." [ref=f2e2141]:
+                      - generic [ref=f2e2142]:
+                        - strong [ref=f2e2143]: Too old
+                        - generic [ref=f2e2144]: Updated 34h ago.
+                    - cell "1 total 0 completed / 1 closed 0 no-show / 0 review(s)" [ref=f2e2145]:
+                      - generic [ref=f2e2146]:
+                        - strong [ref=f2e2147]: 1 total
+                        - generic [ref=f2e2148]: 0 completed / 1 closed
+                        - generic [ref=f2e2149]: 0 no-show / 0 review(s)
+                    - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f2e2150]:
+                      - generic [ref=f2e2151]:
+                        - strong [ref=f2e2152]: 0 VND
+                        - generic [ref=f2e2153]: No negative balance
+                        - generic [ref=f2e2154]: Pending 0 VND / available 0 VND
+                    - cell "Account clear Normal account 4 approval need(s) 3 memo/event(s)" [ref=f2e2155]:
+                      - generic [ref=f2e2156]:
+                        - generic [ref=f2e2157]: Account clear
+                        - generic [ref=f2e2158]: Normal account
+                        - generic [ref=f2e2159]: 4 approval need(s)
+                        - generic [ref=f2e2160]: 3 memo/event(s)
+                  - row [ref=f2e2161]:
+                    - cell "App online Partner 4897 Legal name not saved" [ref=f2e2162]:
+                      - generic [ref=f2e2163]:
+                        - generic [ref=f2e2164]:
+                          - generic [ref=f2e2165]: P4
+                          - img "App online"
+                        - generic [ref=f2e2166]:
+                          - link "Partner 4897" [ref=f2e2167] [cursor=pointer]:
+                            - /url: /partners/cmrqv1c5r008fvyowbnoddfnw
+                          - generic [ref=f2e2168]: Legal name not saved
+                    - cell "Not saved" [ref=f2e2171]
+                    - cell "ONLINE_AVAILABLE Unknown platform" [ref=f2e2172]:
+                      - generic [ref=f2e2173]:
+                        - generic [ref=f2e2174]: ONLINE_AVAILABLE
+                        - generic [ref=f2e2175]: Unknown platform
+                    - cell "LEVEL_1_SIGNUP KYC APPROVED" [ref=f2e2176]:
+                      - generic [ref=f2e2177]:
+                        - strong [ref=f2e2178]: LEVEL_1_SIGNUP
+                        - generic [ref=f2e2179]: KYC APPROVED
+                    - cell "App not tracked App not tracked Session not recorded" [ref=f2e2180]:
+                      - generic [ref=f2e2181]:
+                        - generic [ref=f2e2182]: App not tracked
+                        - generic [ref=f2e2183]:
+                          - text: App
+                          - generic [ref=f2e2184]: not tracked
+                        - generic [ref=f2e2185]:
+                          - text: Session
+                          - generic [ref=f2e2186]: not recorded
+                    - cell "Too old Updated 34h ago." [ref=f2e2187]:
+                      - generic [ref=f2e2188]:
+                        - strong [ref=f2e2189]: Too old
+                        - generic [ref=f2e2190]: Updated 34h ago.
+                    - cell "1 total 0 completed / 1 closed 0 no-show / 0 review(s)" [ref=f2e2191]:
+                      - generic [ref=f2e2192]:
+                        - strong [ref=f2e2193]: 1 total
+                        - generic [ref=f2e2194]: 0 completed / 1 closed
+                        - generic [ref=f2e2195]: 0 no-show / 0 review(s)
+                    - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f2e2196]:
+                      - generic [ref=f2e2197]:
+                        - strong [ref=f2e2198]: 0 VND
+                        - generic [ref=f2e2199]: No negative balance
+                        - generic [ref=f2e2200]: Pending 0 VND / available 0 VND
+                    - cell "Account clear Normal account 4 approval need(s) 3 memo/event(s)" [ref=f2e2201]:
+                      - generic [ref=f2e2202]:
+                        - generic [ref=f2e2203]: Account clear
+                        - generic [ref=f2e2204]: Normal account
+                        - generic [ref=f2e2205]: 4 approval need(s)
+                        - generic [ref=f2e2206]: 3 memo/event(s)
+                  - row [ref=f2e2207]:
+                    - cell "App online Partner 7896 Legal name not saved" [ref=f2e2208]:
+                      - generic [ref=f2e2209]:
+                        - generic [ref=f2e2210]:
+                          - generic [ref=f2e2211]: P7
+                          - img "App online"
+                        - generic [ref=f2e2212]:
+                          - link "Partner 7896" [ref=f2e2213] [cursor=pointer]:
+                            - /url: /partners/cmrqv1c5a008avyowt6bd0l91
+                          - generic [ref=f2e2214]: Legal name not saved
+                    - cell "Not saved" [ref=f2e2217]
+                    - cell "ONLINE_AVAILABLE Unknown platform" [ref=f2e2218]:
+                      - generic [ref=f2e2219]:
+                        - generic [ref=f2e2220]: ONLINE_AVAILABLE
+                        - generic [ref=f2e2221]: Unknown platform
+                    - cell "LEVEL_1_SIGNUP KYC APPROVED" [ref=f2e2222]:
+                      - generic [ref=f2e2223]:
+                        - strong [ref=f2e2224]: LEVEL_1_SIGNUP
+                        - generic [ref=f2e2225]: KYC APPROVED
+                    - cell "App not tracked App not tracked Session not recorded" [ref=f2e2226]:
+                      - generic [ref=f2e2227]:
+                        - generic [ref=f2e2228]: App not tracked
+                        - generic [ref=f2e2229]:
+                          - text: App
+                          - generic [ref=f2e2230]: not tracked
+                        - generic [ref=f2e2231]:
+                          - text: Session
+                          - generic [ref=f2e2232]: not recorded
+                    - cell "Too old Updated 34h ago." [ref=f2e2233]:
+                      - generic [ref=f2e2234]:
+                        - strong [ref=f2e2235]: Too old
+                        - generic [ref=f2e2236]: Updated 34h ago.
+                    - cell "1 total 0 completed / 1 closed 0 no-show / 0 review(s)" [ref=f2e2237]:
+                      - generic [ref=f2e2238]:
+                        - strong [ref=f2e2239]: 1 total
+                        - generic [ref=f2e2240]: 0 completed / 1 closed
+                        - generic [ref=f2e2241]: 0 no-show / 0 review(s)
+                    - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f2e2242]:
+                      - generic [ref=f2e2243]:
+                        - strong [ref=f2e2244]: 0 VND
+                        - generic [ref=f2e2245]: No negative balance
+                        - generic [ref=f2e2246]: Pending 0 VND / available 0 VND
+                    - cell "Account clear Normal account 4 approval need(s) 3 memo/event(s)" [ref=f2e2247]:
+                      - generic [ref=f2e2248]:
+                        - generic [ref=f2e2249]: Account clear
+                        - generic [ref=f2e2250]: Normal account
+                        - generic [ref=f2e2251]: 4 approval need(s)
+                        - generic [ref=f2e2252]: 3 memo/event(s)
+                  - row [ref=f2e2253]:
+                    - cell "App online Partner 1895 Legal name not saved" [ref=f2e2254]:
+                      - generic [ref=f2e2255]:
+                        - generic [ref=f2e2256]:
+                          - generic [ref=f2e2257]: P1
+                          - img "App online"
+                        - generic [ref=f2e2258]:
+                          - link "Partner 1895" [ref=f2e2259] [cursor=pointer]:
+                            - /url: /partners/cmrqv1c4u0085vyowynkvys2j
+                          - generic [ref=f2e2260]: Legal name not saved
+                    - cell "Not saved" [ref=f2e2263]
+                    - cell "ONLINE_AVAILABLE Unknown platform" [ref=f2e2264]:
+                      - generic [ref=f2e2265]:
+                        - generic [ref=f2e2266]: ONLINE_AVAILABLE
+                        - generic [ref=f2e2267]: Unknown platform
+                    - cell "LEVEL_1_SIGNUP KYC APPROVED" [ref=f2e2268]:
+                      - generic [ref=f2e2269]:
+                        - strong [ref=f2e2270]: LEVEL_1_SIGNUP
+                        - generic [ref=f2e2271]: KYC APPROVED
+                    - cell "App not tracked App not tracked Session not recorded" [ref=f2e2272]:
+                      - generic [ref=f2e2273]:
+                        - generic [ref=f2e2274]: App not tracked
+                        - generic [ref=f2e2275]:
+                          - text: App
+                          - generic [ref=f2e2276]: not tracked
+                        - generic [ref=f2e2277]:
+                          - text: Session
+                          - generic [ref=f2e2278]: not recorded
+                    - cell "Too old Updated 34h ago." [ref=f2e2279]:
+                      - generic [ref=f2e2280]:
+                        - strong [ref=f2e2281]: Too old
+                        - generic [ref=f2e2282]: Updated 34h ago.
+                    - cell "1 total 0 completed / 1 closed 0 no-show / 0 review(s)" [ref=f2e2283]:
+                      - generic [ref=f2e2284]:
+                        - strong [ref=f2e2285]: 1 total
+                        - generic [ref=f2e2286]: 0 completed / 1 closed
+                        - generic [ref=f2e2287]: 0 no-show / 0 review(s)
+                    - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f2e2288]:
+                      - generic [ref=f2e2289]:
+                        - strong [ref=f2e2290]: 0 VND
+                        - generic [ref=f2e2291]: No negative balance
+                        - generic [ref=f2e2292]: Pending 0 VND / available 0 VND
+                    - cell "Account clear Normal account 4 approval need(s) 3 memo/event(s)" [ref=f2e2293]:
+                      - generic [ref=f2e2294]:
+                        - generic [ref=f2e2295]: Account clear
+                        - generic [ref=f2e2296]: Normal account
+                        - generic [ref=f2e2297]: 4 approval need(s)
+                        - generic [ref=f2e2298]: 3 memo/event(s)
+                  - row [ref=f2e2299]:
+                    - cell "App online Partner 3894 Legal name not saved" [ref=f2e2300]:
+                      - generic [ref=f2e2301]:
+                        - generic [ref=f2e2302]:
+                          - generic [ref=f2e2303]: P3
+                          - img "App online"
+                        - generic [ref=f2e2304]:
+                          - link "Partner 3894" [ref=f2e2305] [cursor=pointer]:
+                            - /url: /partners/cmrqv1c4c0080vyoww2qb48d0
+                          - generic [ref=f2e2306]: Legal name not saved
+                    - cell "Not saved" [ref=f2e2309]
+                    - cell "ONLINE_AVAILABLE Unknown platform" [ref=f2e2310]:
+                      - generic [ref=f2e2311]:
+                        - generic [ref=f2e2312]: ONLINE_AVAILABLE
+                        - generic [ref=f2e2313]: Unknown platform
+                    - cell "LEVEL_1_SIGNUP KYC APPROVED" [ref=f2e2314]:
+                      - generic [ref=f2e2315]:
+                        - strong [ref=f2e2316]: LEVEL_1_SIGNUP
+                        - generic [ref=f2e2317]: KYC APPROVED
+                    - cell "App not tracked App not tracked Session not recorded" [ref=f2e2318]:
+                      - generic [ref=f2e2319]:
+                        - generic [ref=f2e2320]: App not tracked
+                        - generic [ref=f2e2321]:
+                          - text: App
+                          - generic [ref=f2e2322]: not tracked
+                        - generic [ref=f2e2323]:
+                          - text: Session
+                          - generic [ref=f2e2324]: not recorded
+                    - cell "Too old Updated 34h ago." [ref=f2e2325]:
+                      - generic [ref=f2e2326]:
+                        - strong [ref=f2e2327]: Too old
+                        - generic [ref=f2e2328]: Updated 34h ago.
+                    - cell "1 total 0 completed / 1 closed 0 no-show / 0 review(s)" [ref=f2e2329]:
+                      - generic [ref=f2e2330]:
+                        - strong [ref=f2e2331]: 1 total
+                        - generic [ref=f2e2332]: 0 completed / 1 closed
+                        - generic [ref=f2e2333]: 0 no-show / 0 review(s)
+                    - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f2e2334]:
+                      - generic [ref=f2e2335]:
+                        - strong [ref=f2e2336]: 0 VND
+                        - generic [ref=f2e2337]: No negative balance
+                        - generic [ref=f2e2338]: Pending 0 VND / available 0 VND
+                    - cell "Account clear Normal account 4 approval need(s) 3 memo/event(s)" [ref=f2e2339]:
+                      - generic [ref=f2e2340]:
+                        - generic [ref=f2e2341]: Account clear
+                        - generic [ref=f2e2342]: Normal account
+                        - generic [ref=f2e2343]: 4 approval need(s)
+                        - generic [ref=f2e2344]: 3 memo/event(s)
+                  - row [ref=f2e2345]:
+                    - cell "App online Partner 4893 Legal name not saved" [ref=f2e2346]:
+                      - generic [ref=f2e2347]:
+                        - generic [ref=f2e2348]:
+                          - generic [ref=f2e2349]: P4
+                          - img "App online"
+                        - generic [ref=f2e2350]:
+                          - link "Partner 4893" [ref=f2e2351] [cursor=pointer]:
+                            - /url: /partners/cmrqv1c3u007vvyow7fv5sc5i
+                          - generic [ref=f2e2352]: Legal name not saved
+                    - cell "Not saved" [ref=f2e2355]
+                    - cell "ONLINE_AVAILABLE Unknown platform" [ref=f2e2356]:
+                      - generic [ref=f2e2357]:
+                        - generic [ref=f2e2358]: ONLINE_AVAILABLE
+                        - generic [ref=f2e2359]: Unknown platform
+                    - cell "LEVEL_1_SIGNUP KYC APPROVED" [ref=f2e2360]:
+                      - generic [ref=f2e2361]:
+                        - strong [ref=f2e2362]: LEVEL_1_SIGNUP
+                        - generic [ref=f2e2363]: KYC APPROVED
+                    - cell "App not tracked App not tracked Session not recorded" [ref=f2e2364]:
+                      - generic [ref=f2e2365]:
+                        - generic [ref=f2e2366]: App not tracked
+                        - generic [ref=f2e2367]:
+                          - text: App
+                          - generic [ref=f2e2368]: not tracked
+                        - generic [ref=f2e2369]:
+                          - text: Session
+                          - generic [ref=f2e2370]: not recorded
+                    - cell "Too old Updated 34h ago." [ref=f2e2371]:
+                      - generic [ref=f2e2372]:
+                        - strong [ref=f2e2373]: Too old
+                        - generic [ref=f2e2374]: Updated 34h ago.
+                    - cell "0 total 0 completed / 0 closed 0 no-show / 0 review(s)" [ref=f2e2375]:
+                      - generic [ref=f2e2376]:
+                        - strong [ref=f2e2377]: 0 total
+                        - generic [ref=f2e2378]: 0 completed / 0 closed
+                        - generic [ref=f2e2379]: 0 no-show / 0 review(s)
+                    - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f2e2380]:
+                      - generic [ref=f2e2381]:
+                        - strong [ref=f2e2382]: 0 VND
+                        - generic [ref=f2e2383]: No negative balance
+                        - generic [ref=f2e2384]: Pending 0 VND / available 0 VND
+                    - cell "Account clear Normal account 4 approval need(s) 3 memo/event(s)" [ref=f2e2385]:
+                      - generic [ref=f2e2386]:
+                        - generic [ref=f2e2387]: Account clear
+                        - generic [ref=f2e2388]: Normal account
+                        - generic [ref=f2e2389]: 4 approval need(s)
+                        - generic [ref=f2e2390]: 3 memo/event(s)
+                  - row [ref=f2e2391]:
+                    - cell "App online Partner 6892 Legal name not saved" [ref=f2e2392]:
+                      - generic [ref=f2e2393]:
+                        - generic [ref=f2e2394]:
+                          - generic [ref=f2e2395]: P6
+                          - img "App online"
+                        - generic [ref=f2e2396]:
+                          - link "Partner 6892" [ref=f2e2397] [cursor=pointer]:
+                            - /url: /partners/cmrqv1c3b007qvyowm471n4g2
+                          - generic [ref=f2e2398]: Legal name not saved
+                    - cell "Not saved" [ref=f2e2401]
+                    - cell "ONLINE_AVAILABLE Unknown platform" [ref=f2e2402]:
+                      - generic [ref=f2e2403]:
+                        - generic [ref=f2e2404]: ONLINE_AVAILABLE
+                        - generic [ref=f2e2405]: Unknown platform
+                    - cell "LEVEL_1_SIGNUP KYC APPROVED" [ref=f2e2406]:
+                      - generic [ref=f2e2407]:
+                        - strong [ref=f2e2408]: LEVEL_1_SIGNUP
+                        - generic [ref=f2e2409]: KYC APPROVED
+                    - cell "App not tracked App not tracked Session not recorded" [ref=f2e2410]:
+                      - generic [ref=f2e2411]:
+                        - generic [ref=f2e2412]: App not tracked
+                        - generic [ref=f2e2413]:
+                          - text: App
+                          - generic [ref=f2e2414]: not tracked
+                        - generic [ref=f2e2415]:
+                          - text: Session
+                          - generic [ref=f2e2416]: not recorded
+                    - cell "Too old Updated 34h ago." [ref=f2e2417]:
+                      - generic [ref=f2e2418]:
+                        - strong [ref=f2e2419]: Too old
+                        - generic [ref=f2e2420]: Updated 34h ago.
+                    - cell "4 total 1 completed / 3 closed 0 no-show / 0 review(s)" [ref=f2e2421]:
+                      - generic [ref=f2e2422]:
+                        - strong [ref=f2e2423]: 4 total
+                        - generic [ref=f2e2424]: 1 completed / 3 closed
+                        - generic [ref=f2e2425]: 0 no-show / 0 review(s)
+                    - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f2e2426]:
+                      - generic [ref=f2e2427]:
+                        - strong [ref=f2e2428]: 0 VND
+                        - generic [ref=f2e2429]: No negative balance
+                        - generic [ref=f2e2430]: Pending 0 VND / available 0 VND
+                    - cell "Account clear Normal account 6 approval need(s) 3 memo/event(s)" [ref=f2e2431]:
+                      - generic [ref=f2e2432]:
+                        - generic [ref=f2e2433]: Account clear
+                        - generic [ref=f2e2434]: Normal account
+                        - generic [ref=f2e2435]: 6 approval need(s)
+                        - generic [ref=f2e2436]: 3 memo/event(s)
+                  - row [ref=f2e2437]:
+                    - cell "App online Partner 9891 Legal name not saved" [ref=f2e2438]:
+                      - generic [ref=f2e2439]:
+                        - generic [ref=f2e2440]:
+                          - generic [ref=f2e2441]: P9
+                          - img "App online"
+                        - generic [ref=f2e2442]:
+                          - link "Partner 9891" [ref=f2e2443] [cursor=pointer]:
+                            - /url: /partners/cmrqv1c2u007lvyowev36guel
+                          - generic [ref=f2e2444]: Legal name not saved
+                    - cell "Not saved" [ref=f2e2447]
+                    - cell "ONLINE_AVAILABLE Unknown platform" [ref=f2e2448]:
+                      - generic [ref=f2e2449]:
+                        - generic [ref=f2e2450]: ONLINE_AVAILABLE
+                        - generic [ref=f2e2451]: Unknown platform
+                    - cell "LEVEL_1_SIGNUP KYC APPROVED" [ref=f2e2452]:
+                      - generic [ref=f2e2453]:
+                        - strong [ref=f2e2454]: LEVEL_1_SIGNUP
+                        - generic [ref=f2e2455]: KYC APPROVED
+                    - cell "App not tracked App not tracked Session not recorded" [ref=f2e2456]:
+                      - generic [ref=f2e2457]:
+                        - generic [ref=f2e2458]: App not tracked
+                        - generic [ref=f2e2459]:
+                          - text: App
+                          - generic [ref=f2e2460]: not tracked
+                        - generic [ref=f2e2461]:
+                          - text: Session
+                          - generic [ref=f2e2462]: not recorded
+                    - cell "Too old Updated 34h ago." [ref=f2e2463]:
+                      - generic [ref=f2e2464]:
+                        - strong [ref=f2e2465]: Too old
+                        - generic [ref=f2e2466]: Updated 34h ago.
+                    - cell "1 total 0 completed / 1 closed 0 no-show / 0 review(s)" [ref=f2e2467]:
+                      - generic [ref=f2e2468]:
+                        - strong [ref=f2e2469]: 1 total
+                        - generic [ref=f2e2470]: 0 completed / 1 closed
+                        - generic [ref=f2e2471]: 0 no-show / 0 review(s)
+                    - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f2e2472]:
+                      - generic [ref=f2e2473]:
+                        - strong [ref=f2e2474]: 0 VND
+                        - generic [ref=f2e2475]: No negative balance
+                        - generic [ref=f2e2476]: Pending 0 VND / available 0 VND
+                    - cell "Account clear Normal account 4 approval need(s) 3 memo/event(s)" [ref=f2e2477]:
+                      - generic [ref=f2e2478]:
+                        - generic [ref=f2e2479]: Account clear
+                        - generic [ref=f2e2480]: Normal account
+                        - generic [ref=f2e2481]: 4 approval need(s)
+                        - generic [ref=f2e2482]: 3 memo/event(s)
+                  - row [ref=f2e2483]:
+                    - cell "App online Partner 9890 Legal name not saved" [ref=f2e2484]:
+                      - generic [ref=f2e2485]:
+                        - generic [ref=f2e2486]:
+                          - generic [ref=f2e2487]: P9
+                          - img "App online"
+                        - generic [ref=f2e2488]:
+                          - link "Partner 9890" [ref=f2e2489] [cursor=pointer]:
+                            - /url: /partners/cmrqv1c2c007gvyowcn2j1lag
+                          - generic [ref=f2e2490]: Legal name not saved
+                    - cell "Not saved" [ref=f2e2493]
+                    - cell "ONLINE_AVAILABLE android" [ref=f2e2494]:
+                      - generic [ref=f2e2495]:
+                        - generic [ref=f2e2496]: ONLINE_AVAILABLE
+                        - generic [ref=f2e2497]: android
+                    - cell "LEVEL_1_SIGNUP KYC APPROVED" [ref=f2e2498]:
+                      - generic [ref=f2e2499]:
+                        - strong [ref=f2e2500]: LEVEL_1_SIGNUP
+                        - generic [ref=f2e2501]: KYC APPROVED
+                    - cell "App not tracked App not tracked Session 19 Jul 2026, 04:09" [ref=f2e2502]:
+                      - generic [ref=f2e2503]:
+                        - generic [ref=f2e2504]: App not tracked
+                        - generic [ref=f2e2505]:
+                          - text: App
+                          - generic [ref=f2e2506]: not tracked
+                        - generic [ref=f2e2507]:
+                          - text: Session
+                          - time [ref=f2e2508]: 19 Jul 2026, 04:09
+                    - cell "Too old Updated 34h ago." [ref=f2e2509]:
+                      - generic [ref=f2e2510]:
+                        - strong [ref=f2e2511]: Too old
+                        - generic [ref=f2e2512]: Updated 34h ago.
+                    - cell "2 total 0 completed / 2 closed 0 no-show / 0 review(s)" [ref=f2e2513]:
+                      - generic [ref=f2e2514]:
+                        - strong [ref=f2e2515]: 2 total
+                        - generic [ref=f2e2516]: 0 completed / 2 closed
+                        - generic [ref=f2e2517]: 0 no-show / 0 review(s)
+                    - cell "0 VND No negative balance Pending 0 VND / available 0 VND" [ref=f2e2518]:
+                      - generic [ref=f2e2519]:
+                        - strong [ref=f2e2520]: 0 VND
+                        - generic [ref=f2e2521]: No negative balance
+                        - generic [ref=f2e2522]: Pending 0 VND / available 0 VND
+                    - cell "Account clear Normal account 4 approval need(s) 5 memo/event(s)" [ref=f2e2523]:
+                      - generic [ref=f2e2524]:
+                        - generic [ref=f2e2525]: Account clear
+                        - generic [ref=f2e2526]: Normal account
+                        - generic [ref=f2e2527]: 4 approval need(s)
+                        - generic [ref=f2e2528]: 5 memo/event(s)
+              - generic [ref=f2e2529]:
+                - generic [ref=f2e2530]: Showing 1 to 10 of 98 entries
+                - navigation "Partners pages" [ref=f2e2531]:
+                  - generic "First page"
+                  - generic "Previous page"
+                  - link "Page 1" [ref=f2e2532] [cursor=pointer]:
+                    - /url: /partners?review=available-blocked-location
+                    - text: "1"
+                  - link "Page 2" [ref=f2e2533] [cursor=pointer]:
+                    - /url: /partners?review=available-blocked-location&page=2
+                    - text: "2"
+                  - link "Page 3" [ref=f2e2534] [cursor=pointer]:
+                    - /url: /partners?review=available-blocked-location&page=3
+                    - text: "3"
+                  - link "Page 4" [ref=f2e2535] [cursor=pointer]:
+                    - /url: /partners?review=available-blocked-location&page=4
+                    - text: "4"
+                  - link "Page 5" [ref=f2e2536] [cursor=pointer]:
+                    - /url: /partners?review=available-blocked-location&page=5
+                    - text: "5"
+                  - link "Next page" [ref=f2e2537] [cursor=pointer]:
+                    - /url: /partners?review=available-blocked-location&page=2
+                  - link "Last page" [ref=f2e2540] [cursor=pointer]:
+                    - /url: /partners?review=available-blocked-location&page=10
+  - alert [ref=f2e1966]

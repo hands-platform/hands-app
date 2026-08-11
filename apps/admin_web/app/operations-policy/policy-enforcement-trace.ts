@@ -3,6 +3,7 @@ import {
   ADMIN_OPERATIONS_POLICY_DEFAULTS,
   LEGACY_OPERATIONAL_POLICY_KEYS,
   OPERATIONAL_POLICY_KEYS,
+  adminPreferredAcceptModeUsesFirstPickPriority,
   adminWalletGateBlocksFinalGate,
   normalizeAdminMarketplaceOpenMode,
 } from '../../lib/operations-policy';
@@ -143,7 +144,7 @@ function buildCustomerChoiceTraceItem(preferredAcceptMode: string): PolicyEnforc
   return {
     scope: 'Customer choice',
     title:
-      preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT'
+      adminPreferredAcceptModeUsesFirstPickPriority(preferredAcceptMode)
         ? 'First-pick priority with customer fallback'
         : 'Customer final selection policy conflict',
     detail:

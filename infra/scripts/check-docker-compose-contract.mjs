@@ -53,6 +53,10 @@ const requiredMarkers = [
     marker: 'http://127.0.0.1:3000/login',
   },
   {
+    name: 'application containers prevent privilege escalation',
+    marker: 'no-new-privileges:true',
+  },
+  {
     name: 'nginx origin defaults to loopback behind TLS termination',
     marker: '${HANDS_NGINX_BIND_ADDRESS:-127.0.0.1}:${HANDS_NGINX_HTTP_PORT:-80}:80',
   },
@@ -104,6 +108,18 @@ const dockerfileChecks = [
   {
     name: 'Admin Docker dependency install uses a retryable BuildKit cache',
     ok: adminDockerfile.includes(dependencyInstallMarker),
+  },
+  {
+    name: 'API runtime uses the non-root Node user',
+    ok: apiDockerfile.includes('USER node'),
+  },
+  {
+    name: 'Admin runtime uses the non-root Node user',
+    ok: adminDockerfile.includes('USER node'),
+  },
+  {
+    name: 'application containers drop Linux capabilities',
+    ok: (compose.match(/cap_drop:\s*\r?\n\s*-\s*ALL/gu) ?? []).length >= 2,
   },
 ];
 const failedDockerfileChecks = dockerfileChecks.filter((item) => !item.ok);

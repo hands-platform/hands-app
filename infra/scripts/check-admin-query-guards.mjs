@@ -197,11 +197,11 @@ if (!adminServiceSource.includes('take: adminChatArchiveListTake(query.take),'))
   });
 }
 
-if (!adminServiceSource.includes('where: adminChatArchiveWhere(query),')) {
+if (!adminServiceSource.includes('where: adminChatArchiveMessageWhere(query),')) {
   violations.push({
     area: 'admin chat archive query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Chat archive list query must apply server-side audit filters.',
+    message: 'Chat archive list query must apply the server-side message evidence predicate.',
   });
 }
 
@@ -213,15 +213,11 @@ if (!chatArchivePageModelSource.includes('const CHAT_ARCHIVE_DEFAULT_TAKE = 10;'
   });
 }
 
-const chatArchiveDefaultsToToday =
-  chatArchivePageModelSource.includes("normalizedParams.range = 'today';") ||
-  chatArchivePageModelSource.includes("normalizedParams.range = directBookingId ? 'all' : 'today';");
-
-if (!chatArchiveDefaultsToToday) {
+if (!chatArchivePageModelSource.includes("? range : 'all';")) {
   violations.push({
     area: 'admin chat archive page',
     file: 'apps/admin_web/app/chat-archive/chat-archive-page-model.ts',
-    message: 'Chat archive page must default audit loading to today.',
+    message: 'Chat archive page must default evidence search to all dates.',
   });
 }
 

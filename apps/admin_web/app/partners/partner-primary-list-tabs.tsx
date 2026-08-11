@@ -10,9 +10,10 @@ const PARTNER_PRIMARY_LIST_TABS: Array<{
   label: string;
   mode: PartnerPrimaryListMode;
 }> = [
-  { href: '/partners', label: 'Partners', mode: 'partners' },
-  { href: '/partners?review=unapproved', label: 'Unapproved Partners', mode: 'unapproved' },
-  { href: '/partners?review=unsettled', label: 'Unsettled Partners', mode: 'unsettled' },
+  { href: '/partners', label: 'Directory', mode: 'partners' },
+  { href: '/partners?review=approval-pending&sort=oldest', label: 'Approvals', mode: 'approval-pending' },
+  { href: '/partners?review=unapproved', label: 'Onboarding blockers', mode: 'unapproved' },
+  { href: '/partners?review=unsettled', label: 'Wallet debt', mode: 'unsettled' },
 ];
 
 export function PartnerPrimaryListTabs({ activeMode }: PartnerPrimaryListTabsProps) {

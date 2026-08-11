@@ -80,6 +80,7 @@ const row: AdminReferralCashoutQueueRow = {
     phone: '+84000000002',
   },
   status: 'CASHOUT_APPROVED',
+  updatedAt: createdAt,
   walletLedgerReference: 'wallet-credit-ledger-1',
 };
 
@@ -239,7 +240,7 @@ describe('Referral cashout queue', () => {
     );
   });
 
-  it('renders a finance-ready cashout queue with actions and rounded pagination', () => {
+  it('renders a finance-ready cashout queue with actions and a one-page summary', () => {
     const markup = renderToStaticMarkup(
       <ReferralCashoutQueuePage
         currentPage={2}
@@ -272,6 +273,7 @@ describe('Referral cashout queue', () => {
     expect(markup).toContain('Request bank correction');
     expect(markup).toContain('type="hidden" name="bankAccountId" value="bank-1"');
     expect(markup).toContain('href="/referrals/cashouts?status=approved&amp;q=parent"');
-    expect(markup).toContain('aria-label="Referral cashout queue pages"');
+    expect(markup).toContain('Showing 1 to 1 of 4 entries');
+    expect(markup).not.toContain('aria-label="Referral cashout queue pages"');
   });
 });

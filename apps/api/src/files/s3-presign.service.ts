@@ -3,13 +3,19 @@ import { ConfigService } from '@nestjs/config';
 import { createHmac, createHash } from 'crypto';
 
 type PresignInput = {
-  method: 'GET' | 'PUT';
+  method: 'DELETE' | 'GET' | 'HEAD' | 'PUT';
   key: string;
   bucket?: string;
   expiresInSeconds?: number;
+  headers?: Record<string, string>;
 };
 
 export type StorageMode = 's3-compatible-presigned' | 'supabase-storage-s3' | 'placeholder';
+export type StoredObjectInspection = {
+  contentType: string;
+  prefix: Uint8Array;
+  sizeBytes: number;
+};
 
 @Injectable()
 export class S3PresignService {
@@ -22,6 +28,10 @@ export class S3PresignService {
       this.config.get<string>('S3_ACCESS_KEY') &&
       this.config.get<string>('S3_SECRET_KEY'),
     );
+  }
+
+  allowsPlaceholderStorage() {
+    return this.config.get<string>('NODE_ENV')?.trim().toLowerCase() !== 'production';
   }
 
   storageMode(): StorageMode {
@@ -81,21 +91,22 @@ export class S3PresignService {
     const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
     const objectPath = `/${bucket}/${encodePath(input.key)}`;
     const host = endpoint.host;
+    const canonicalHeaders = canonicalSignedHeaders(host, input.headers);
 
     const query = new URLSearchParams({
       'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
       'X-Amz-Credential': `${accessKey}/${credentialScope}`,
       'X-Amz-Date': amzDate,
       'X-Amz-Expires': expires,
-      'X-Amz-SignedHeaders': 'host',
+      'X-Amz-SignedHeaders': canonicalHeaders.names,
     });
 
     const canonicalRequest = [
       input.method,
       objectPath,
       canonicalQuery(query),
-      `host:${host}\n`,
-      'host',
+      canonicalHeaders.values,
+      canonicalHeaders.names,
       'UNSIGNED-PAYLOAD',
     ].join('\n');
     const stringToSign = ['AWS4-HMAC-SHA256', amzDate, credentialScope, sha256(canonicalRequest)].join('\n');
@@ -105,6 +116,64 @@ export class S3PresignService {
     return `${endpoint.origin}${objectPath}?${query.toString()}`;
   }
 
+  async inspectObject(key: string, visibility: 'PUBLIC' | 'PRIVATE'): Promise<StoredObjectInspection | null> {
+    const bucket = this.bucketForVisibility(visibility);
+    const headUrl = this.presign({ method: 'HEAD', key, bucket, expiresInSeconds: 120 });
+    if (!headUrl) {
+      return null;
+    }
+
+    const headResponse = await fetch(headUrl, { method: 'HEAD' });
+    if (headResponse.status === 404) {
+      return null;
+    }
+    if (!headResponse.ok) {
+      throw new Error(`Storage object inspection failed with status ${headResponse.status}`);
+    }
+
+    const sizeBytes = Number(headResponse.headers.get('content-length'));
+    const contentType = normalizeResponseContentType(headResponse.headers.get('content-type'));
+    if (!Number.isSafeInteger(sizeBytes) || sizeBytes < 0 || !contentType) {
+      throw new Error('Storage object metadata is incomplete');
+    }
+
+    const readUrl = this.presign({ method: 'GET', key, bucket, expiresInSeconds: 120 });
+    if (!readUrl) {
+      throw new Error('Storage object signature inspection is unavailable');
+    }
+    const readResponse = await fetch(readUrl, {
+      method: 'GET',
+      headers: { range: 'bytes=0-15' },
+    });
+    if (!readResponse.ok) {
+      throw new Error(`Storage object signature inspection failed with status ${readResponse.status}`);
+    }
+
+    return {
+      contentType,
+      prefix: await readResponsePrefix(readResponse, 16),
+      sizeBytes,
+    };
+  }
+
+  async deleteObject(key: string, visibility: 'PUBLIC' | 'PRIVATE') {
+    const url = this.presign({
+      method: 'DELETE',
+      key,
+      bucket: this.bucketForVisibility(visibility),
+      expiresInSeconds: 300,
+    });
+    if (!url) {
+      return { deleted: false, storageMode: this.storageMode() };
+    }
+
+    const response = await fetch(url, { method: 'DELETE' });
+    if (!response.ok && response.status !== 404) {
+      throw new Error(`Storage object deletion failed with status ${response.status}`);
+    }
+    return { deleted: true, storageMode: this.storageMode() };
+  }
+
   private defaultBucket() {
     return this.config.get<string>('S3_BUCKET')?.trim();
   }
@@ -112,8 +181,8 @@ export class S3PresignService {
   private hasBucketConfiguration() {
     return Boolean(
       this.defaultBucket() ||
-        (this.config.get<string>('S3_PRIVATE_BUCKET')?.trim() &&
-          this.config.get<string>('S3_PUBLIC_BUCKET')?.trim()),
+      (this.config.get<string>('S3_PRIVATE_BUCKET')?.trim() &&
+        this.config.get<string>('S3_PUBLIC_BUCKET')?.trim()),
     );
   }
 }
@@ -125,8 +194,54 @@ function canonicalQuery(query: URLSearchParams) {
     .join('&');
 }
 
+function canonicalSignedHeaders(host: string, headers?: Record<string, string>) {
+  const values = new Map<string, string>([['host', host]]);
+  for (const [name, value] of Object.entries(headers ?? {})) {
+    const normalizedName = name.trim().toLowerCase();
+    if (!normalizedName || normalizedName === 'host') {
+      continue;
+    }
+    values.set(normalizedName, value.trim().replace(/\s+/g, ' '));
+  }
+  const entries = [...values.entries()].sort(([a], [b]) => a.localeCompare(b));
+  return {
+    names: entries.map(([name]) => name).join(';'),
+    values: `${entries.map(([name, value]) => `${name}:${value}`).join('\n')}\n`,
+  };
+}
+
 function encodePath(path: string) {
   return path.split('/').map(encodeURIComponent).join('/');
+}
+
+function normalizeResponseContentType(contentType: string | null) {
+  return contentType?.split(';')[0]?.trim().toLowerCase() ?? '';
+}
+
+async function readResponsePrefix(response: Response, limit: number) {
+  const reader = response.body?.getReader();
+  if (!reader) {
+    return new Uint8Array();
+  }
+
+  const chunks: number[] = [];
+  try {
+    while (chunks.length < limit) {
+      const result = await reader.read();
+      if (result.done) {
+        break;
+      }
+      for (const byte of result.value) {
+        chunks.push(byte);
+        if (chunks.length === limit) {
+          break;
+        }
+      }
+    }
+  } finally {
+    await reader.cancel().catch(() => undefined);
+  }
+  return Uint8Array.from(chunks);
 }
 
 function toAmzDate(date: Date) {

@@ -1,0 +1,1221 @@
+- generic [ref=f1e3]:
+  - complementary [ref=f1e4]:
+    - strong [ref=f1e6]: HANDS Admin
+    - navigation "Admin navigation" [ref=f1e7]:
+      - group [ref=f1e8]:
+        - generic "Shift command" [ref=f1e9] [cursor=pointer]
+        - link "Shift command" [ref=f1e27] [cursor=pointer]:
+          - /url: /
+      - group [ref=f1e31]:
+        - generic "Live Operations" [ref=f1e32] [cursor=pointer]
+        - generic [ref=f1e49]:
+          - link "Live Bookings" [ref=f1e50] [cursor=pointer]:
+            - /url: /bookings
+          - link "Calendar" [ref=f1e56] [cursor=pointer]:
+            - /url: /calendar
+          - link "Completed Bookings" [ref=f1e60] [cursor=pointer]:
+            - /url: /bookings/completed
+          - link "Post-match Cancellations" [ref=f1e64] [cursor=pointer]:
+            - /url: /bookings/post-match-cancellations
+          - link "Operations History" [ref=f1e71] [cursor=pointer]:
+            - /url: /operations-handoff
+          - link "Vietnam Overview" [ref=f1e75] [cursor=pointer]:
+            - /url: /vietnam-overview
+      - group [ref=f1e81]:
+        - generic "Customer Support" [ref=f1e82] [cursor=pointer]
+      - group [ref=f1e99]:
+        - generic "Partner Operations" [ref=f1e100] [cursor=pointer]
+      - group [ref=f1e117]:
+        - generic "Finance Today" [ref=f1e118] [cursor=pointer]
+      - group [ref=f1e125]:
+        - generic "Finance Records" [ref=f1e126] [cursor=pointer]
+      - group [ref=f1e143]:
+        - generic "Growth & Content" [ref=f1e144] [cursor=pointer]
+      - group [ref=f1e161]:
+        - generic "Tax & Monthly Close" [ref=f1e162] [cursor=pointer]
+      - group [ref=f1e169]:
+        - generic "Restricted Settings" [ref=f1e170] [cursor=pointer]
+      - group [ref=f1e177]:
+        - generic "Admin & System" [ref=f1e178] [cursor=pointer]
+      - group [ref=f1e195]:
+        - generic "Developer / System" [ref=f1e196] [cursor=pointer]
+  - main [ref=f1e204]:
+    - generic "Admin workspace" [ref=f1e205]:
+      - navigation "Breadcrumb" [ref=f1e207]:
+        - link "HANDS" [ref=f1e208] [cursor=pointer]:
+          - /url: /
+        - generic [ref=f1e211]: Live Operations
+        - generic [ref=f1e214]: Live Bookings
+      - generic "Workspace actions" [ref=f1e215]:
+        - button "Search Ctrl K" [ref=f1e217] [cursor=pointer]:
+          - generic [ref=f1e218]: Search
+          - generic [ref=f1e222]: Ctrl K
+        - group "Theme mode" [ref=f1e223]:
+          - button "Light mode" [pressed] [ref=f1e224] [cursor=pointer]
+          - button "Dark mode" [ref=f1e231] [cursor=pointer]
+        - link "Operations Policy" [ref=f1e234] [cursor=pointer]:
+          - /url: /operations-policy
+        - button "Open operation alerts" [ref=f1e239] [cursor=pointer]
+        - button "Sign out" [ref=f1e244] [cursor=pointer]
+    - generic [ref=f1e248]:
+      - generic [ref=f1e249]:
+        - generic [ref=f1e250]:
+          - heading "Booking cmscuamh" [level=1] [ref=f1e251]
+          - paragraph [ref=f1e252]: Foot Massage / 45 min - CANCELLED
+        - generic "Page actions" [ref=f1e253]:
+          - link "Back to booking monitor from Foot Massage / 45 min" [ref=f1e254] [cursor=pointer]:
+            - /url: /bookings
+            - text: Back to booking monitor
+      - generic [ref=f1e257]:
+        - region [ref=f1e258]:
+          - generic [ref=f1e260]:
+            - heading "Booking sections" [level=2] [ref=f1e261]
+            - paragraph [ref=f1e262]: Jump to one part of this booking without leaving the complete record.
+          - group "Booking detail sections" [ref=f1e264]:
+            - link "Needs action" [ref=f1e265] [cursor=pointer]:
+              - /url: "#booking-needs-action"
+            - link "Booking summary" [ref=f1e266] [cursor=pointer]:
+              - /url: "#booking-unified-detail"
+            - link "Customer / Partner / Chat" [ref=f1e267] [cursor=pointer]:
+              - /url: "#booking-people-and-communication"
+            - link "Payment & settlement" [ref=f1e268] [cursor=pointer]:
+              - /url: "#booking-finance-system-detail"
+            - link "Booking timeline" [ref=f1e269] [cursor=pointer]:
+              - /url: "#booking-detail-lifecycle-list"
+            - link "Reviews & notes" [ref=f1e270] [cursor=pointer]:
+              - /url: "#booking-review-records"
+            - link "Operational records" [ref=f1e271] [cursor=pointer]:
+              - /url: "#booking-operational-records"
+            - link "Developer/System" [ref=f1e272] [cursor=pointer]:
+              - /url: /bookings/cmscuamha005dvy14z41nnz07?section=diagnostics#booking-developer-system
+        - region [ref=f1e274]:
+          - generic [ref=f1e275]:
+            - generic [ref=f1e276]:
+              - heading "Needs action" [level=2] [ref=f1e277]
+              - paragraph [ref=f1e278]: No manual action is required for the current booking state.
+            - generic [ref=f1e279]: Clear
+          - generic [ref=f1e282]:
+            - generic [ref=f1e283]: No action
+            - generic [ref=f1e284]:
+              - strong [ref=f1e285]: Cancelled booking is operationally clear
+              - generic [ref=f1e286]: No exception needs operator handling.
+        - region [ref=f1e287]:
+          - generic [ref=f1e288]:
+            - generic [ref=f1e289]:
+              - heading "Booking result" [level=2] [ref=f1e290]
+              - paragraph [ref=f1e291]: Final booking state, people, service, schedule, address, and money outcome.
+            - generic [ref=f1e292]: Post-match cancellation resolved
+          - generic [ref=f1e295]:
+            - link "Customer Demo Customer +84900000001" [ref=f1e296] [cursor=pointer]:
+              - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+              - generic [ref=f1e297]: Customer
+              - strong [ref=f1e298]: Demo Customer
+              - generic [ref=f1e299]: "+84900000001"
+            - link "Matched Partner Smoke Partner +84903728677 / No chat messages" [ref=f1e300] [cursor=pointer]:
+              - /url: /partners/cmrkqcd890003vyw4e4ys82l6
+              - generic [ref=f1e301]: Matched Partner
+              - strong [ref=f1e302]: Smoke Partner
+              - generic [ref=f1e303]: +84903728677 / No chat messages
+            - generic [ref=f1e304]:
+              - generic [ref=f1e305]: Scheduled service
+              - strong [ref=f1e306]: 3 Aug 2026, 13:19
+              - generic [ref=f1e307]: District 1, Ho Chi Minh City, Vietnam
+            - generic [ref=f1e308]:
+              - generic [ref=f1e309]: Service
+              - strong [ref=f1e310]: Foot Massage / 45 min
+              - generic [ref=f1e311]: "[2026-08-03T06:25:47.556Z] Partner post-match cancellation auto-approved: Customer requested cancellation: Customer_requested_in_chat_for_smoke_test"
+            - generic [ref=f1e312]:
+              - generic [ref=f1e313]: Customer payment
+              - strong [ref=f1e314]: 400.000 VND
+              - generic [ref=f1e315]: CASH / RELEASED
+            - generic [ref=f1e316]:
+              - generic [ref=f1e317]: Partner payout
+              - strong [ref=f1e318]: 320.000 VND
+              - generic [ref=f1e319]: Not created net / Not created withholding
+        - generic [ref=f1e320]:
+          - region [ref=f1e321]:
+            - generic [ref=f1e322]:
+              - generic [ref=f1e323]:
+                - heading "Customer detail" [level=2] [ref=f1e324]
+                - paragraph [ref=f1e325]: Customer identity, service request, saved address, and latest location.
+              - generic [ref=f1e326]: 6 fields
+            - generic [ref=f1e329]:
+              - generic [ref=f1e330]:
+                - generic [ref=f1e331]: Request time
+                - strong [ref=f1e332]:
+                  - time [ref=f1e333]: 3 Aug 2026, 13:19
+                - paragraph [ref=f1e334]: Customer booking request opened.
+              - generic [ref=f1e335]:
+                - generic [ref=f1e336]: Customer
+                - generic [ref=f1e337]:
+                  - generic [ref=f1e338]:
+                    - generic [ref=f1e339]: DC
+                    - img "App offline"
+                  - generic [ref=f1e340]:
+                    - link "Demo Customer" [ref=f1e341] [cursor=pointer]:
+                      - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+                    - generic [ref=f1e342]: "+84900000001"
+                - link "Open customer record" [ref=f1e343] [cursor=pointer]:
+                  - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+              - generic [ref=f1e344]:
+                - generic [ref=f1e345]: Device language
+                - strong [ref=f1e346]: Unknown
+                - paragraph [ref=f1e347]: Customer app session language.
+              - generic [ref=f1e348]:
+                - generic [ref=f1e349]: Service address
+                - strong [ref=f1e350]: District 1, Ho Chi Minh City, Vietnam
+                - paragraph [ref=f1e351]: Confirmed service address saved.
+              - generic [ref=f1e352]:
+                - generic [ref=f1e353]: Live customer location
+                - strong [ref=f1e354]: Live customer location captured
+                - paragraph [ref=f1e355]: Within 0 m of the reservation address. Raw coordinates are hidden in the admin UI.
+              - generic [ref=f1e356]:
+                - generic [ref=f1e357]: Service request
+                - strong [ref=f1e358]: Foot Massage / 45 min
+                - paragraph [ref=f1e359]: "[2026-08-03T06:25:47.556Z] Partner post-match cancellation auto-approved: Customer requested cancellation: Customer_requested_in_chat_for_smoke_test"
+          - region [ref=f1e360]:
+            - generic [ref=f1e361]:
+              - generic [ref=f1e362]:
+                - heading "Matched Partner detail" [level=2] [ref=f1e363]
+                - paragraph [ref=f1e364]: Requested and selected Partner, matching source, participation, and latest location.
+              - generic [ref=f1e365]: 9 fields
+            - generic [ref=f1e368]:
+              - generic [ref=f1e369]:
+                - generic [ref=f1e370]: Requested
+                - generic [ref=f1e371]:
+                  - generic [ref=f1e372]:
+                    - generic [ref=f1e373]: SP
+                    - img "Requested"
+                  - generic [ref=f1e374]:
+                    - link "Smoke Partner" [ref=f1e375] [cursor=pointer]:
+                      - /url: /partners/cmrkqcd890003vyw4e4ys82l6
+                    - generic [ref=f1e376]: "+84903728677"
+                - link "Open record" [ref=f1e377] [cursor=pointer]:
+                  - /url: /partners/cmrkqcd890003vyw4e4ys82l6
+              - generic [ref=f1e378]:
+                - generic [ref=f1e379]: Matched
+                - generic [ref=f1e380]:
+                  - generic [ref=f1e381]:
+                    - generic [ref=f1e382]: SP
+                    - img "App offline"
+                  - generic [ref=f1e383]:
+                    - link "Smoke Partner" [ref=f1e384] [cursor=pointer]:
+                      - /url: /partners/cmrkqcd890003vyw4e4ys82l6
+                    - generic [ref=f1e385]: "+84903728677"
+                - link "Open record" [ref=f1e386] [cursor=pointer]:
+                  - /url: /partners/cmrkqcd890003vyw4e4ys82l6
+              - generic [ref=f1e387]:
+                - generic [ref=f1e388]: Profile
+                - strong [ref=f1e389]: Ready now
+                - paragraph [ref=f1e390]: Partner cmrkqcd8
+              - generic [ref=f1e391]:
+                - generic [ref=f1e392]: Match source
+                - strong [ref=f1e393]: First-pick Partner accepted first
+                - paragraph [ref=f1e394]:
+                  - time [ref=f1e395]: 3 Aug 2026, 13:21
+              - generic [ref=f1e396]:
+                - generic [ref=f1e397]: Matching location
+                - strong [ref=f1e398]: Location address not recorded
+                - paragraph [ref=f1e399]:
+                  - text: State
+                  - time [ref=f1e400]: 3 Aug 2026, 13:21
+                  - text: / No linked Partner location
+              - generic [ref=f1e401]:
+                - generic [ref=f1e402]: Completion location
+                - strong [ref=f1e403]: Not completed
+                - paragraph [ref=f1e404]: The Partner has not completed this booking yet.
+              - generic [ref=f1e405]:
+                - generic [ref=f1e406]: Cancellation location
+                - strong [ref=f1e407]: District 1, Ho Chi Minh City, Vietnam
+                - paragraph [ref=f1e408]:
+                  - text: State
+                  - time [ref=f1e409]: 3 Aug 2026, 13:25
+                  - text: / Action
+                  - time [ref=f1e410]: 3 Aug 2026, 13:21
+                  - text: / Latest Partner location is within 0 m of the reservation address.
+              - generic [ref=f1e411]:
+                - generic [ref=f1e412]: Participating
+                - strong [ref=f1e413]: 1 Partner
+                - paragraph [ref=f1e414]: Partner rows that joined, accepted, or responded during matching.
+                - generic [ref=f1e415]:
+                  - generic "Participating Partners" [ref=f1e416]:
+                    - link "SP Matched" [ref=f1e417] [cursor=pointer]:
+                      - /url: /partners/cmrkqcd890003vyw4e4ys82l6
+                      - text: SP
+                      - img "Matched"
+                  - generic [ref=f1e419]:
+                    - link "Smoke Partner" [ref=f1e420] [cursor=pointer]:
+                      - /url: /partners/cmrkqcd890003vyw4e4ys82l6
+                    - generic [ref=f1e421]: Matched / 0 m / Responded 3 Aug 2026, 13:21
+              - generic [ref=f1e422]:
+                - generic [ref=f1e423]: Latest location
+                - strong [ref=f1e424]: District 1, Ho Chi Minh City, Vietnam
+                - paragraph [ref=f1e425]: Latest Partner location is within 0 m of the reservation address. Recorded 3 Aug 2026, 15:43
+          - region [ref=f1e427]:
+            - generic [ref=f1e428]:
+              - generic [ref=f1e429]:
+                - heading "Customer and Partner chat history" [level=2] [ref=f1e430]
+                - paragraph [ref=f1e431]: Read-only retained booking chat transcript.
+              - generic [ref=f1e432]: No messages
+            - generic [ref=f1e435]:
+              - generic [ref=f1e437]:
+                - generic [ref=f1e438]: H
+                - generic [ref=f1e440]:
+                  - strong [ref=f1e441]: Booking chat evidence
+                  - generic [ref=f1e442]: Customer / Partner transcript
+              - status [ref=f1e444]:
+                - paragraph [ref=f1e445]: No retained chat yet.
+        - region [ref=f1e447]:
+          - generic [ref=f1e448]:
+            - generic [ref=f1e449]:
+              - heading "Money result" [level=2] [ref=f1e450]
+              - paragraph [ref=f1e451]: Customer payment, refund, Partner payout, HANDS fee, tax, wallet, and reconciliation result.
+            - generic [ref=f1e452]: 7 fields
+          - generic [ref=f1e454]:
+            - generic [ref=f1e455]:
+              - generic [ref=f1e456]:
+                - generic [ref=f1e457]: Payment record
+                - link "400.000 VND" [ref=f1e458] [cursor=pointer]:
+                  - /url: /payments/cmscuamha005ivy14e7d8nbjl
+                - paragraph [ref=f1e459]: CASH / RELEASED / ref no provider ref
+                - link "Open record" [ref=f1e460] [cursor=pointer]:
+                  - /url: /payments/cmscuamha005ivy14e7d8nbjl
+              - generic [ref=f1e461]:
+                - generic [ref=f1e462]: Partner earning
+                - strong [ref=f1e463]: 320.000 VND
+                - paragraph [ref=f1e464]: Not created / Active rule cmq7v7qe
+              - generic [ref=f1e465]:
+                - generic [ref=f1e466]: HANDS fee and costs
+                - strong [ref=f1e467]: 80.000 VND
+                - paragraph [ref=f1e468]: 0 VND VAT / 0 VND other / 80.000 VND before withholding
+            - generic [ref=f1e469]:
+              - generic [ref=f1e470]:
+                - generic [ref=f1e471]: Closeout decision
+                - strong [ref=f1e473]: post_match_cancellation_approved
+                - paragraph [ref=f1e474]: "Customer requested cancellation: Customer_requested_in_chat_for_smoke_test"
+              - generic [ref=f1e475]:
+                - generic [ref=f1e476]: Tax withholding
+                - strong [ref=f1e478]: Not created
+                - paragraph [ref=f1e479]: 80.000 VND company fee after tax
+              - generic [ref=f1e480]:
+                - generic [ref=f1e481]: Wallet impact
+                - strong [ref=f1e483]: No entry
+                - paragraph [ref=f1e484]: 0 wallet row(s) / Partner wallet impact
+              - generic [ref=f1e485]:
+                - generic [ref=f1e486]: Refunds
+                - strong [ref=f1e488]: "0"
+                - paragraph [ref=f1e489]: 0 VND refunded / payment amount 400.000 VND
+        - generic [ref=f1e490]:
+          - region [ref=f1e491]:
+            - generic [ref=f1e492]:
+              - generic [ref=f1e493]:
+                - heading "Activity" [level=2] [ref=f1e494]
+                - paragraph [ref=f1e495]: Latest business milestones and outcomes. Full technical events remain in Developer/System.
+              - generic [ref=f1e496]: 3 stage(s)
+            - generic [ref=f1e499]:
+              - generic [ref=f1e504]:
+                - generic [ref=f1e505]:
+                  - generic [ref=f1e506]:
+                    - generic [ref=f1e507]: Preferred pending
+                    - heading "Realtime booking request" [level=3] [ref=f1e508]
+                  - time [ref=f1e510]: 3 Aug 2026, 13:19
+                - paragraph [ref=f1e511]: Monitor Partner response, wallet gate, push delivery, and KYC status.
+                - generic [ref=f1e512]:
+                  - 'generic "Requested: Smoke Partner" [ref=f1e513]':
+                    - generic [ref=f1e514]: Requested
+                    - strong [ref=f1e515]: Smoke Partner
+                  - 'generic "Address: District 1, Ho Chi Minh City, Vietnam" [ref=f1e516]':
+                    - generic [ref=f1e517]: Address
+                    - strong [ref=f1e518]: District 1, Ho Chi Minh City, Vietnam
+              - generic [ref=f1e523]:
+                - generic [ref=f1e524]:
+                  - generic [ref=f1e525]:
+                    - generic [ref=f1e526]: Post-match
+                    - heading "Partner matched and service is moving" [level=3] [ref=f1e527]
+                  - time [ref=f1e529]: 3 Aug 2026, 13:21
+                - paragraph [ref=f1e530]: Chat and service handoff are available.
+                - generic [ref=f1e531]:
+                  - 'generic "Matched Partner: Smoke Partner" [ref=f1e532]':
+                    - generic [ref=f1e533]: Matched Partner
+                    - strong [ref=f1e534]: Smoke Partner
+                  - 'generic "Next action: Track completion and payment capture." [ref=f1e535]':
+                    - generic [ref=f1e536]: Next action
+                    - strong [ref=f1e537]: Track completion and payment capture.
+                  - 'generic "Partner gate: Blocked until completion" [ref=f1e538]':
+                    - generic [ref=f1e539]: Partner gate
+                    - strong [ref=f1e540]: Blocked until completion
+              - generic [ref=f1e544]:
+                - generic [ref=f1e545]:
+                  - generic [ref=f1e546]:
+                    - generic [ref=f1e547]: Resolved
+                    - heading "Post-match cancellation resolved" [level=3] [ref=f1e548]
+                  - time [ref=f1e550]: 3 Aug 2026, 13:25
+                - paragraph [ref=f1e551]: "Post Match Cancellation Approved / Customer requested cancellation: Customer_requested_in_chat_for_smoke_test Cancellation location is captured only when the Partner cancels after match."
+                - generic [ref=f1e552]:
+                  - 'generic "Closed reason: post_match_cancellation_approved" [ref=f1e553]':
+                    - generic [ref=f1e554]: Closed reason
+                    - strong [ref=f1e555]: post_match_cancellation_approved
+                  - 'generic "Fee state: Closed 3 Aug 2026, 13:25" [ref=f1e556]':
+                    - generic [ref=f1e557]: Fee state
+                    - strong [ref=f1e558]: Closed 3 Aug 2026, 13:25
+                  - 'generic "Matched Partner: Smoke Partner" [ref=f1e559]':
+                    - generic [ref=f1e560]: Matched Partner
+                    - strong [ref=f1e561]: Smoke Partner
+          - region [ref=f1e562]:
+            - generic [ref=f1e563]:
+              - generic [ref=f1e564]:
+                - heading "Booking chronological activity" [level=2] [ref=f1e565]
+                - paragraph [ref=f1e566]: Latest date-sorted operational event trail for this booking.
+              - generic [ref=f1e567]: 20 event(s)
+            - generic [ref=f1e569]:
+              - generic [ref=f1e570]:
+                - generic [ref=f1e571]:
+                  - generic [ref=f1e572]: Current filters
+                  - generic [ref=f1e573]: Range
+                  - strong [ref=f1e574]:
+                    - time [ref=f1e575]: 3 Aug 2026, 13:25
+                  - generic [ref=f1e576]:
+                    - text: "Oldest loaded:"
+                    - time [ref=f1e577]: 3 Aug 2026, 13:19
+                - generic [ref=f1e578]:
+                  - generic [ref=f1e579]: Current filters
+                  - generic [ref=f1e580]: Matching
+                  - strong [ref=f1e581]: "6"
+                  - generic [ref=f1e582]: Booking creation, wait window, Partner participation, and final selection.
+                - generic [ref=f1e583]:
+                  - generic [ref=f1e584]: Current filters
+                  - generic [ref=f1e585]: Chat
+                  - strong [ref=f1e586]: "1"
+                  - generic [ref=f1e587]: Loaded Customer and Partner messages kept for admin archive.
+                - generic [ref=f1e588]:
+                  - generic [ref=f1e589]: Needs action
+                  - generic [ref=f1e590]: Finance
+                  - strong [ref=f1e591]: "1"
+                  - generic [ref=f1e592]: Payment, refund, earning, tax, fee, and wallet impact rows.
+                - generic [ref=f1e593]:
+                  - generic [ref=f1e594]: Live
+                  - generic [ref=f1e595]: Ops and alerts
+                  - strong [ref=f1e596]: "7"
+                  - generic [ref=f1e597]: Operator notes, audit events, and notification delivery events.
+                - generic [ref=f1e598]:
+                  - generic [ref=f1e599]: All records
+                  - generic [ref=f1e600]: Location
+                  - strong [ref=f1e601]: "2"
+                  - generic [ref=f1e602]: Booking action and Partner location records linked to this booking.
+              - generic [ref=f1e603]:
+                - generic [ref=f1e604]:
+                  - generic [ref=f1e605]: ALERT
+                  - generic [ref=f1e606]:
+                    - link [ref=f1e607] [cursor=pointer]:
+                      - /url: /notifications?booking=cmscuamha005dvy14z41nnz07
+                      - strong [ref=f1e608]: Booking Cancelled
+                    - paragraph [ref=f1e609]: Booking cancelled / SENT 3 Aug 2026, 13:25 / unread
+                  - time [ref=f1e611]: 3 Aug 2026, 13:25
+                - generic [ref=f1e612]:
+                  - generic [ref=f1e613]: ALERT
+                  - generic [ref=f1e614]:
+                    - link [ref=f1e615] [cursor=pointer]:
+                      - /url: /notifications?booking=cmscuamha005dvy14z41nnz07
+                      - strong [ref=f1e616]: Payment Updated
+                    - paragraph [ref=f1e617]: Payment updated / SENT 3 Aug 2026, 13:25 / unread
+                  - time [ref=f1e619]: 3 Aug 2026, 13:25
+                - generic [ref=f1e620]:
+                  - generic [ref=f1e621]: LOCATION
+                  - generic [ref=f1e622]:
+                    - link [ref=f1e623] [cursor=pointer]:
+                      - /url: "#location"
+                      - strong [ref=f1e624]: Partner booking action location
+                    - paragraph [ref=f1e625]: Booking action record / Thành phố Hồ Chí Minh, Hồ Chí Minh
+                  - time [ref=f1e627]: 3 Aug 2026, 13:25
+                - generic [ref=f1e628]:
+                  - generic [ref=f1e629]: MATCHED
+                  - generic [ref=f1e630]:
+                    - link [ref=f1e631] [cursor=pointer]:
+                      - /url: /partners/cmrkqcd890003vyw4e4ys82l6
+                      - strong [ref=f1e632]: Preferred Partner accepted and matched
+                    - paragraph [ref=f1e633]: Smoke Partner / chat created
+                  - time [ref=f1e635]: 3 Aug 2026, 13:25
+                - generic [ref=f1e636]:
+                  - generic [ref=f1e637]: CHAT
+                  - generic [ref=f1e638]:
+                    - link [ref=f1e639] [cursor=pointer]:
+                      - /url: "#chat"
+                      - strong [ref=f1e640]: Chat room cmscud52 available
+                    - paragraph [ref=f1e641]: 0 message(s) archived for admin.
+                  - time [ref=f1e643]: 3 Aug 2026, 13:25
+                - generic [ref=f1e644]:
+                  - generic [ref=f1e645]: PAYMENT
+                  - generic [ref=f1e646]:
+                    - link [ref=f1e647] [cursor=pointer]:
+                      - /url: /payments#payment-cmscuamha005ivy14e7d8nbjl
+                      - strong [ref=f1e648]: RELEASED CASH payment
+                    - paragraph [ref=f1e649]: 400.000 VND / ref no gateway ref
+                  - time [ref=f1e651]: 3 Aug 2026, 13:25
+                - generic [ref=f1e652]:
+                  - generic [ref=f1e653]: OPS
+                  - generic [ref=f1e654]:
+                    - link [ref=f1e655] [cursor=pointer]:
+                      - /url: "#structured-ops-status"
+                      - strong [ref=f1e656]: DONE PAYMENT_REVIEWED
+                    - paragraph [ref=f1e657]: "Customer requested cancellation: Customer_requested_in_chat_for_smoke_test / actor +84903728677"
+                  - time [ref=f1e659]: 3 Aug 2026, 13:25
+                - generic [ref=f1e660]:
+                  - generic [ref=f1e661]: CLOSURE
+                  - generic [ref=f1e662]:
+                    - link [ref=f1e663] [cursor=pointer]:
+                      - /url: "#booking-activity"
+                      - strong [ref=f1e664]: "Booking closure: 3 Aug 2026, 13:25"
+                    - paragraph [ref=f1e665]: "provider closure / Post Match Cancellation Approved / Customer requested cancellation: Customer_requested_in_chat_for_smoke_test"
+                  - time [ref=f1e667]: 3 Aug 2026, 13:25
+                - generic [ref=f1e668]:
+                  - generic [ref=f1e669]: REQUEST
+                  - generic [ref=f1e670]:
+                    - link [ref=f1e671] [cursor=pointer]:
+                      - /url: /partners/cmrkqcd890003vyw4e4ys82l6
+                      - strong [ref=f1e672]: Smoke Partner closed the booking request
+                    - paragraph [ref=f1e673]: Preferred request / 0 m / viewed 64s / response 123s after opening
+                  - time [ref=f1e675]: 3 Aug 2026, 13:21
+                - generic [ref=f1e676]:
+                  - generic [ref=f1e677]: LOCATION
+                  - generic [ref=f1e678]:
+                    - link [ref=f1e679] [cursor=pointer]:
+                      - /url: "#location"
+                      - strong [ref=f1e680]: Partner booking action location
+                    - paragraph [ref=f1e681]: Booking action record / Location recorded without readable address
+                  - time [ref=f1e683]: 3 Aug 2026, 13:21
+                - generic [ref=f1e684]:
+                  - generic [ref=f1e685]: ALERT
+                  - generic [ref=f1e686]:
+                    - link [ref=f1e687] [cursor=pointer]:
+                      - /url: /notifications?booking=cmscuamha005dvy14z41nnz07
+                      - strong [ref=f1e688]: Booking Matched
+                    - paragraph [ref=f1e689]: Partner matched / SKIPPED 3 Aug 2026, 13:21 / unread
+                  - time [ref=f1e691]: 3 Aug 2026, 13:21
+                - generic [ref=f1e692]:
+                  - generic [ref=f1e693]: ALERT
+                  - generic [ref=f1e694]:
+                    - link [ref=f1e695] [cursor=pointer]:
+                      - /url: /notifications?booking=cmscuamha005dvy14z41nnz07
+                      - strong [ref=f1e696]: Booking Matched
+                    - paragraph [ref=f1e697]: Partner matched / SKIPPED 3 Aug 2026, 13:21 / unread
+                  - time [ref=f1e699]: 3 Aug 2026, 13:21
+                - generic [ref=f1e700]:
+                  - generic [ref=f1e701]: PARTNER
+                  - generic [ref=f1e702]:
+                    - link [ref=f1e703] [cursor=pointer]:
+                      - /url: /partners/cmrkqcd890003vyw4e4ys82l6
+                      - strong [ref=f1e704]: Smoke Partner responded
+                    - paragraph [ref=f1e705]: Selected / customer can select from participating or accepted Partners.
+                  - time [ref=f1e707]: 3 Aug 2026, 13:21
+                - generic [ref=f1e708]:
+                  - generic [ref=f1e709]: REQUEST
+                  - generic [ref=f1e710]:
+                    - link [ref=f1e711] [cursor=pointer]:
+                      - /url: /partners/cmrkqcd890003vyw4e4ys82l6
+                      - strong [ref=f1e712]: "Smoke Partner request event: OPEN_REQUEST_DETAIL_HEARTBEAT"
+                    - paragraph [ref=f1e713]: Preferred request / 0 m / viewed 48s / response 107s after opening
+                  - time [ref=f1e715]: 3 Aug 2026, 13:21
+                - generic [ref=f1e716]:
+                  - generic [ref=f1e717]: ALERT
+                  - generic [ref=f1e718]:
+                    - link [ref=f1e719] [cursor=pointer]:
+                      - /url: /notifications?booking=cmscuamha005dvy14z41nnz07
+                      - strong [ref=f1e720]: Booking Requested
+                    - paragraph [ref=f1e721]: New direct booking request / SKIPPED 3 Aug 2026, 13:19 / unread
+                  - time [ref=f1e723]: 3 Aug 2026, 13:19
+                - generic [ref=f1e724]:
+                  - generic [ref=f1e725]: ALERT
+                  - generic [ref=f1e726]:
+                    - link [ref=f1e727] [cursor=pointer]:
+                      - /url: /notifications?booking=cmscuamha005dvy14z41nnz07
+                      - strong [ref=f1e728]: Booking Opened
+                    - paragraph [ref=f1e729]: Booking opened / SENT 3 Aug 2026, 13:19 / unread
+                  - time [ref=f1e731]: 3 Aug 2026, 13:19
+              - paragraph [ref=f1e732]: Showing latest 16 of 20 events in-page. Use the activity CSV or linked audit/notification boards for the full operational trail.
+        - region [ref=f1e733]:
+          - generic [ref=f1e734]:
+            - generic [ref=f1e735]:
+              - heading "Reviews and notes" [level=2] [ref=f1e736]
+              - paragraph [ref=f1e737]: Customer review, Partner evaluation, and retained notes attached to this booking.
+            - generic [ref=f1e738]: 0 record(s)
+          - generic [ref=f1e741]:
+            - region [ref=f1e742]:
+              - generic [ref=f1e743]:
+                - generic [ref=f1e744]:
+                  - heading "Customer reviews" [level=2] [ref=f1e745]
+                  - paragraph [ref=f1e746]: Customer-facing review content. Moderation stays on the Reviews page.
+                - generic [ref=f1e747]: 0 review(s)
+              - table [ref=f1e750]:
+                - rowgroup [ref=f1e751]:
+                  - row [ref=f1e752]:
+                    - columnheader "Request Time" [ref=f1e753]
+                    - columnheader "Partner" [ref=f1e754]
+                    - columnheader "Customer" [ref=f1e755]
+                    - columnheader "Review" [ref=f1e756]
+                    - columnheader "Visibility" [ref=f1e757]
+                - rowgroup [ref=f1e758]:
+                  - row [ref=f1e759]:
+                    - cell [ref=f1e760]:
+                      - status [ref=f1e761]:
+                        - paragraph [ref=f1e762]: No customer review connected to this record.
+            - region [ref=f1e763]:
+              - generic [ref=f1e764]:
+                - generic [ref=f1e765]:
+                  - heading "Partner evaluations" [level=2] [ref=f1e766]
+                  - paragraph [ref=f1e767]: Read-only internal records. These do not publish to the customer app.
+                - generic [ref=f1e768]: 0 evaluation(s)
+              - table [ref=f1e771]:
+                - rowgroup [ref=f1e772]:
+                  - row [ref=f1e773]:
+                    - columnheader "Request Time" [ref=f1e774]
+                    - columnheader "Partner" [ref=f1e775]
+                    - columnheader "Customer" [ref=f1e776]
+                    - columnheader "Customer evaluation" [ref=f1e777]
+                - rowgroup [ref=f1e778]:
+                  - row [ref=f1e779]:
+                    - cell [ref=f1e780]:
+                      - status [ref=f1e781]:
+                        - paragraph [ref=f1e782]: No Partner evaluation connected to this record.
+        - region [ref=f1e783]:
+          - generic [ref=f1e784]:
+            - generic [ref=f1e785]:
+              - heading "Operator notes" [level=2] [ref=f1e786]
+              - paragraph [ref=f1e787]: Keep short internal notes for the booking audit trail.
+            - generic [ref=f1e788]: 1 note
+          - generic [ref=f1e790]:
+            - paragraph [ref=f1e792]: "[2026-08-03T06:25:47.556Z] Partner post-match cancellation auto-approved: Customer requested cancellation: Customer_requested_in_chat_for_smoke_test"
+            - generic [ref=f1e794]:
+              - generic [ref=f1e795]:
+                - generic [ref=f1e796]:
+                  - generic [ref=f1e797]: Operator note
+                  - textbox "Operator note" [ref=f1e798]:
+                    - /placeholder: Add a short operator note.
+                - generic [ref=f1e799]: Use one short note per action or decision.
+              - button "Add note" [ref=f1e801] [cursor=pointer]
+        - region [ref=f1e802]:
+          - generic [ref=f1e803]:
+            - generic [ref=f1e804]: Records
+            - generic [ref=f1e805]:
+              - strong [ref=f1e806]: Operational records
+              - generic [ref=f1e807]: Closeout, connected records, decision evidence, and matching policy.
+          - generic [ref=f1e808]:
+            - generic [ref=f1e809]:
+              - generic [ref=f1e810]: Core
+              - generic [ref=f1e811]:
+                - strong [ref=f1e812]: Closeout and connected records
+                - generic [ref=f1e813]: Permanent booking links and the factual closeout record.
+            - region [ref=f1e814]:
+              - generic [ref=f1e815]:
+                - generic [ref=f1e816]:
+                  - heading "Post-match cancellation processing" [level=2] [ref=f1e817]
+                  - paragraph [ref=f1e818]: Review retained chat, closeout evidence, and operator notes before choosing the final Partner fee outcome.
+                - generic [ref=f1e820]:
+                  - generic [ref=f1e821]: Post-match cancellation
+                  - link "Open review queue" [ref=f1e822] [cursor=pointer]:
+                    - /url: /bookings/post-match-cancellations?view=post-match-cancellations#booking-cmscuamha005dvy14z41nnz07
+              - generic [ref=f1e823]:
+                - generic [ref=f1e824]:
+                  - generic [ref=f1e825]:
+                    - strong [ref=f1e826]: 1. Why cancelled
+                    - generic "Post-match cancellation reason" [ref=f1e827]:
+                      - link "Cancellation reason Customer requested Customer_requested_in_chat_for_smoke_test" [ref=f1e828] [cursor=pointer]:
+                        - /url: "#booking-post-match-cancellation-decision"
+                        - generic [ref=f1e829]: Cancellation reason
+                        - strong [ref=f1e831]: Customer requested
+                        - generic [ref=f1e832]: Customer_requested_in_chat_for_smoke_test
+                  - generic [ref=f1e833]:
+                    - strong [ref=f1e834]: 2. Evidence available
+                    - generic "Post-match cancellation evidence checklist" [ref=f1e835]:
+                      - link "Chat evidence No messages No retained chat is attached. Treat the evidence as incomplete." [ref=f1e836] [cursor=pointer]:
+                        - /url: "#chat"
+                        - generic [ref=f1e837]: Chat evidence
+                        - strong [ref=f1e839]: No messages
+                        - generic [ref=f1e840]: No retained chat is attached. Treat the evidence as incomplete.
+                      - link "Location evidence Cancellation location saved Thành phố Hồ Chí Minh, Hồ Chí Minh / Approx. 0 m from booking address / Recorded 3 Aug 2026, 13:25" [ref=f1e841] [cursor=pointer]:
+                        - /url: "#location"
+                        - generic [ref=f1e842]: Location evidence
+                        - strong [ref=f1e844]: Cancellation location saved
+                        - generic [ref=f1e845]: Thành phố Hồ Chí Minh, Hồ Chí Minh / Approx. 0 m from booking address / Recorded 3 Aug 2026, 13:25
+                  - generic [ref=f1e846]:
+                    - strong [ref=f1e847]: 3. Money outcome
+                    - generic "Post-match cancellation money outcome" [ref=f1e848]:
+                      - link "Customer money No company funds moved Cash was not collected through HANDS before service completion." [ref=f1e849] [cursor=pointer]:
+                        - /url: "#payment"
+                        - generic [ref=f1e850]: Customer money
+                        - strong [ref=f1e852]: No company funds moved
+                        - generic [ref=f1e853]: Cash was not collected through HANDS before service completion.
+                      - link "Partner fee No Partner payable No Partner earning or payout was created for this cancellation." [ref=f1e854] [cursor=pointer]:
+                        - /url: "#payment"
+                        - generic [ref=f1e855]: Partner fee
+                        - strong [ref=f1e857]: No Partner payable
+                        - generic [ref=f1e858]: No Partner earning or payout was created for this cancellation.
+                - generic [ref=f1e859]:
+                  - generic [ref=f1e860]:
+                    - generic [ref=f1e861]: 4. Admin decision
+                    - generic [ref=f1e862]:
+                      - generic [ref=f1e863]: Auto-approved
+                      - generic [ref=f1e864]: No earning
+                      - generic [ref=f1e865]: Auto-approved
+                    - paragraph [ref=f1e866]: This booking is already cancelled. Choose only the final Partner fee outcome after checking the retained evidence and customer payment state above.
+                  - generic [ref=f1e867]: This cancellation decision is already closed.
+          - generic [ref=f1e868]:
+            - generic [ref=f1e869]:
+              - generic [ref=f1e870]: Evidence
+              - generic [ref=f1e871]:
+                - strong [ref=f1e872]: Decision evidence
+                - generic [ref=f1e873]: Chat, evidence packet, and the operator decision queue.
+            - region [ref=f1e874]:
+              - generic [ref=f1e875]:
+                - generic [ref=f1e876]:
+                  - heading "Decision evidence guardrails" [level=2] [ref=f1e877]
+                  - paragraph [ref=f1e878]: Required, supporting, and finance records for admin-only outcome work. Use this before cancellation, no-show, refund, release, cash settlement, or completed-service closeout.
+                - generic [ref=f1e879]: 8 guardrail row(s)
+              - generic "Decision evidence guardrail rows" [ref=f1e882]:
+                - generic [ref=f1e883]:
+                  - generic [ref=f1e884]:
+                    - generic [ref=f1e885]: "Required: confirmed service address"
+                    - paragraph [ref=f1e886]: Use the confirmed booking address for marketplace distance and support review.
+                  - generic [ref=f1e887]: Ready
+                  - paragraph [ref=f1e888]: District 1, Ho Chi Minh City, Vietnam / confirmed service address saved
+                  - paragraph [ref=f1e889]: Use this address for Partner radius, support, and settlement review.
+                  - link "Open" [ref=f1e890] [cursor=pointer]:
+                    - /url: "#address-radius-contract"
+                - generic [ref=f1e891]:
+                  - generic [ref=f1e892]:
+                    - generic [ref=f1e893]: "Required: customer final Partner choice"
+                    - paragraph [ref=f1e894]: HANDS does not auto-assign; customer choice creates the final handoff.
+                  - generic [ref=f1e895]: Final Partner saved
+                  - paragraph [ref=f1e896]: Smoke Partner
+                  - paragraph [ref=f1e897]: Confirm chat, location, and payment handoff.
+                  - link "Open" [ref=f1e898] [cursor=pointer]:
+                    - /url: "#participants"
+                - generic [ref=f1e899]:
+                  - generic [ref=f1e900]:
+                    - generic [ref=f1e901]: "Required after match: retained chat"
+                    - paragraph [ref=f1e902]: Matched bookings need customer-Partner chat; admin keeps the record after mobile closeout.
+                  - generic [ref=f1e903]: Chat record ready
+                  - paragraph [ref=f1e904]: Room cmscud52 / 0 message(s)
+                  - paragraph [ref=f1e905]: Use the retained transcript for support and outcome review.
+                  - link "Open" [ref=f1e906] [cursor=pointer]:
+                    - /url: "#chat"
+                - generic [ref=f1e907]:
+                  - generic [ref=f1e908]:
+                    - generic [ref=f1e909]: "Supporting: communication and movement context"
+                    - paragraph [ref=f1e910]: Chat messages, Partner pin, alerts, and notes explain what happened without judging either side.
+                  - generic [ref=f1e911]: Context loaded
+                  - paragraph [ref=f1e912]:
+                    - text: 0 message(s) / location
+                    - time [ref=f1e913]: 3 Aug 2026, 15:43
+                    - text: / 6 alert row(s) / 1 note(s)
+                  - paragraph [ref=f1e914]: Review the factual context before outcome changes.
+                  - link "Open" [ref=f1e915] [cursor=pointer]:
+                    - /url: "#booking-chat-evidence-decision-board"
+                - generic [ref=f1e916]:
+                  - generic [ref=f1e917]:
+                    - generic [ref=f1e918]: "Finance: payment and refund path"
+                    - paragraph [ref=f1e919]: Payment, refund, release, and capture actions must match the booking outcome state.
+                  - generic [ref=f1e920]: RELEASED
+                  - paragraph [ref=f1e921]: CASH / 400.000 VND / 0 refund row(s)
+                  - paragraph [ref=f1e922]: Use payment status with chat, notes, and closeout state before money actions.
+                  - link "Open" [ref=f1e923] [cursor=pointer]:
+                    - /url: "#payment"
+                - generic [ref=f1e924]:
+                  - generic [ref=f1e925]:
+                    - generic [ref=f1e926]: "Finance: cash fee debt gate"
+                    - paragraph [ref=f1e927]: Cash bookings can create Partner fee debt; negative wallet gates final acceptance, service start, and payout release.
+                  - generic [ref=f1e928]: Cash clear
+                  - paragraph [ref=f1e929]: 80.000 VND HANDS fee / Not created withholding / No entry
+                  - paragraph [ref=f1e930]: No cash-fee settlement action is needed from this booking state.
+                  - link "Open" [ref=f1e931] [cursor=pointer]:
+                    - /url: "#finance"
+                - generic [ref=f1e932]:
+                  - generic [ref=f1e933]:
+                    - generic [ref=f1e934]: "Finance: completion closeout ledger"
+                    - paragraph [ref=f1e935]: Completed service closeout should align earning, fee, tax, wallet, and payment rows.
+                  - generic [ref=f1e936]: Aligned
+                  - paragraph [ref=f1e937]: 0 finance ledger row(s) / 320.000 VND Partner payout
+                  - paragraph [ref=f1e938]: Finance records are aligned for this booking stage.
+                  - link "Open" [ref=f1e939] [cursor=pointer]:
+                    - /url: "#completed-closeout"
+                - generic [ref=f1e940]:
+                  - generic [ref=f1e941]:
+                    - generic [ref=f1e942]: "Operations: task and audit trail"
+                    - paragraph [ref=f1e943]: Structured tasks and audit rows preserve who changed what and why.
+                  - generic [ref=f1e944]: Trail retained
+                  - paragraph [ref=f1e945]: Task or audit trail retained
+                  - paragraph [ref=f1e946]: Use the trail to explain the current booking state.
+                  - link "Open" [ref=f1e947] [cursor=pointer]:
+                    - /url: "#booking-activity"
+            - region [ref=f1e948]:
+              - generic [ref=f1e949]:
+                - generic [ref=f1e950]:
+                  - heading "Evidence packet for admin decision" [level=2] [ref=f1e951]
+                  - paragraph [ref=f1e952]: Cancellation, no-show, refund, and settlement decisions should use retained booking evidence. This packet groups chat, location, payment, alerts, notes, and audit records as factual decision context for the Customer and Partner.
+                - generic [ref=f1e953]: Evidence ready
+              - generic [ref=f1e955]:
+                - paragraph [ref=f1e956]: Admin can review 9 retained evidence item(s) before changing booking outcome.
+                - generic [ref=f1e957]:
+                  - generic [ref=f1e958]:
+                    - generic [ref=f1e959]: Current filters
+                    - generic [ref=f1e960]: Chat evidence
+                    - strong [ref=f1e961]: 0 message(s)
+                    - generic [ref=f1e962]: Matched booking chat is retained in admin even after mobile closeout.
+                  - generic [ref=f1e963]:
+                    - generic [ref=f1e964]: All records
+                    - generic [ref=f1e965]: Location evidence
+                    - strong [ref=f1e966]:
+                      - time [ref=f1e967]: 3 Aug 2026, 15:43
+                    - generic [ref=f1e968]: Location recorded without readable address latest Partner location.
+                  - generic [ref=f1e969]:
+                    - generic [ref=f1e970]: Current filters
+                    - generic [ref=f1e971]: Payment evidence
+                    - strong [ref=f1e972]: RELEASED
+                    - generic [ref=f1e973]: CASH / 400.000 VND
+                  - generic [ref=f1e974]:
+                    - generic [ref=f1e975]: Needs action
+                    - generic [ref=f1e976]: Refund evidence
+                    - strong [ref=f1e977]: 0 refund row(s)
+                    - generic [ref=f1e978]: No refund record in packet.
+                  - generic [ref=f1e979]:
+                    - generic [ref=f1e980]: Live
+                    - generic [ref=f1e981]: Alert evidence
+                    - strong [ref=f1e982]: 6 alert(s)
+                    - generic [ref=f1e983]: 0 failed delivery row(s), 1 marketplace batch(es).
+                  - generic [ref=f1e984]:
+                    - generic [ref=f1e985]: Current filters
+                    - generic [ref=f1e986]: Operator note evidence
+                    - strong [ref=f1e987]: 1 note(s)
+                    - generic [ref=f1e988]: "[2026-08-03T06:25:47.556Z] Partner post-match cancellation auto-approved: Customer requested cancellation: Customer_requested_in_chat_for_smoke_test"
+                - generic "Evidence packet records" [ref=f1e989]:
+                  - generic [ref=f1e990]:
+                    - generic [ref=f1e991]: Address
+                    - generic [ref=f1e992]:
+                      - strong [ref=f1e993]: Address evidence
+                      - paragraph [ref=f1e994]: "Confirmed service address: District 1, Ho Chi Minh City, Vietnam."
+                    - paragraph [ref=f1e995]: Confirmed service address District 1, Ho Chi Minh City, Vietnam
+                    - generic [ref=f1e996]: Record
+                    - link "Open" [ref=f1e997] [cursor=pointer]:
+                      - /url: "#address-radius-contract"
+                  - generic [ref=f1e998]:
+                    - generic [ref=f1e999]: Chat
+                    - generic [ref=f1e1000]:
+                      - strong [ref=f1e1001]: Chat evidence
+                      - paragraph [ref=f1e1002]: Room cmscud52 keeps 0 retained message(s).
+                    - paragraph [ref=f1e1003]: No chat message evidence.
+                    - generic [ref=f1e1004]: Record
+                    - link "Open" [ref=f1e1005] [cursor=pointer]:
+                      - /url: "#chat"
+                  - generic [ref=f1e1006]:
+                    - generic [ref=f1e1007]: Location
+                    - generic [ref=f1e1008]:
+                      - strong [ref=f1e1009]: Location evidence
+                      - paragraph [ref=f1e1010]: Latest Partner location is Location recorded without readable address.
+                    - paragraph [ref=f1e1011]:
+                      - text: Recorded
+                      - time [ref=f1e1012]: 3 Aug 2026, 15:43
+                    - generic [ref=f1e1013]: Record
+                    - link "Open" [ref=f1e1014] [cursor=pointer]:
+                      - /url: "#location"
+                  - generic [ref=f1e1015]:
+                    - generic [ref=f1e1016]: Payment
+                    - generic [ref=f1e1017]:
+                      - strong [ref=f1e1018]: Payment evidence
+                      - paragraph [ref=f1e1019]: CASH payment is RELEASED.
+                    - paragraph [ref=f1e1020]: 400.000 VND / No entry wallet impact.
+                    - generic [ref=f1e1021]: Record
+                    - link "Open" [ref=f1e1022] [cursor=pointer]:
+                      - /url: "#payment"
+                  - generic [ref=f1e1023]:
+                    - generic [ref=f1e1024]: Refund
+                    - generic [ref=f1e1025]:
+                      - strong [ref=f1e1026]: Refund evidence
+                      - paragraph [ref=f1e1027]: Refund record not attached.
+                    - paragraph [ref=f1e1028]: No refund action recorded.
+                    - generic [ref=f1e1029]: Record
+                    - link "Open" [ref=f1e1030] [cursor=pointer]:
+                      - /url: "#payment"
+                  - generic [ref=f1e1031]:
+                    - generic [ref=f1e1032]: Alerts
+                    - generic [ref=f1e1033]:
+                      - strong [ref=f1e1034]: Alert evidence
+                      - paragraph [ref=f1e1035]: 6 notification row(s) and 1 marketplace batch(es).
+                    - paragraph [ref=f1e1036]: No failed delivery row in this packet.
+                    - generic [ref=f1e1037]: Record
+                    - link "Open" [ref=f1e1038] [cursor=pointer]:
+                      - /url: "#alerts"
+                  - generic [ref=f1e1039]:
+                    - generic [ref=f1e1040]: Notes
+                    - generic [ref=f1e1041]:
+                      - strong [ref=f1e1042]: Operator note evidence
+                      - paragraph [ref=f1e1043]: Internal support notes are attached to this booking.
+                    - paragraph [ref=f1e1044]: "[2026-08-03T06:25:47.556Z] Partner post-match cancellation auto-approved: Customer requested cancellation: Customer_requested_in_chat_for_smoke_test"
+                    - generic [ref=f1e1045]: Record
+                    - link "Open" [ref=f1e1046] [cursor=pointer]:
+                      - /url: "#operator-notes"
+                  - generic [ref=f1e1047]:
+                    - generic [ref=f1e1048]: Ops
+                    - generic [ref=f1e1049]:
+                      - strong [ref=f1e1050]: Operations evidence
+                      - paragraph [ref=f1e1051]: 1 task row(s), 0 audit row(s).
+                    - paragraph [ref=f1e1052]: "[2026-08-03T06:25:47.556Z] Partner post-match cancellation auto-approved: Customer requested cancellation: Customer_requested_in_chat_for_smoke_test"
+                    - generic [ref=f1e1053]: Record
+                    - link "Open" [ref=f1e1054] [cursor=pointer]:
+                      - /url: "#structured-ops-status"
+                  - generic [ref=f1e1055]:
+                    - generic [ref=f1e1056]: Audit
+                    - generic [ref=f1e1057]:
+                      - strong [ref=f1e1058]: Audit evidence
+                      - paragraph [ref=f1e1059]: 0 audit row(s), 20 timeline event(s).
+                    - paragraph [ref=f1e1060]:
+                      - text: "Latest event: Booking Cancelled /"
+                      - time [ref=f1e1061]: 3 Aug 2026, 13:25
+                    - generic [ref=f1e1062]: Record
+                    - link "Open" [ref=f1e1063] [cursor=pointer]:
+                      - /url: "#booking-activity"
+            - region [ref=f1e1064]:
+              - generic [ref=f1e1065]:
+                - generic [ref=f1e1066]:
+                  - heading "Chat evidence decision board" [level=2] [ref=f1e1067]
+                  - paragraph [ref=f1e1068]: Retained chat evidence is the first place operators should look before cancellation, no-show, refund, release, or completed-work closeout. This board keeps the view limited to factual records and operator context.
+                - generic [ref=f1e1069]: Chat evidence ready
+              - generic [ref=f1e1071]:
+                - paragraph [ref=f1e1072]: This booking can hide chat in mobile after closeout, but admin keeps the retained transcript for operations review.
+                - generic [ref=f1e1073]:
+                  - generic [ref=f1e1074]:
+                    - generic [ref=f1e1075]: Current filters
+                    - generic [ref=f1e1076]: Chat room
+                    - strong [ref=f1e1077]: cmscud52
+                    - generic [ref=f1e1078]: 0 retained message(s) in admin archive.
+                  - generic [ref=f1e1079]:
+                    - generic [ref=f1e1080]: Current filters
+                    - generic [ref=f1e1081]: Latest message
+                    - strong [ref=f1e1082]: No message
+                    - generic [ref=f1e1083]: No customer or Partner message has been retained yet.
+                  - generic [ref=f1e1084]:
+                    - generic [ref=f1e1085]: All records
+                    - generic [ref=f1e1086]: Location handoff
+                    - strong [ref=f1e1087]:
+                      - time [ref=f1e1088]: 3 Aug 2026, 15:43
+                    - generic [ref=f1e1089]: Location recorded without readable address latest Partner location.
+                  - generic [ref=f1e1090]:
+                    - generic [ref=f1e1091]: Current filters
+                    - generic [ref=f1e1092]: Alerts and notes
+                    - strong [ref=f1e1093]: 6 alert(s) / 1 note(s)
+                    - generic [ref=f1e1094]: "[2026-08-03T06:25:47.556Z] Partner post-match cancellation auto-approved: Customer requested cancellation: Customer_requested_in_chat_for_smoke_test"
+                - generic "Chat evidence decision rows" [ref=f1e1095]:
+                  - generic [ref=f1e1096]:
+                    - generic [ref=f1e1097]:
+                      - generic [ref=f1e1098]: Chat room creation
+                      - paragraph [ref=f1e1099]: Final Partner selection should create a retained customer-Partner room.
+                    - generic [ref=f1e1100]: Archived
+                    - paragraph [ref=f1e1101]: Room cmscud52 / 0 message(s).
+                    - paragraph [ref=f1e1102]: Repair a missing room before service coordination, refund review, or no-show decision.
+                    - link "Open" [ref=f1e1103] [cursor=pointer]:
+                      - /url: /chat-archive?q=cmscuamha005dvy14z41nnz07
+                  - generic [ref=f1e1104]:
+                    - generic [ref=f1e1105]:
+                      - generic [ref=f1e1106]: Conversation evidence
+                      - paragraph [ref=f1e1107]: Messages explain what customer and Partner actually communicated.
+                    - generic [ref=f1e1108]: No messages yet
+                    - paragraph [ref=f1e1109]: No message body retained.
+                    - paragraph [ref=f1e1110]: Use the transcript before cancellation, no-show, payment, refund, or support messaging.
+                    - link "Open" [ref=f1e1111] [cursor=pointer]:
+                      - /url: /chat-archive?q=cmscuamha005dvy14z41nnz07
+                  - generic [ref=f1e1112]:
+                    - generic [ref=f1e1113]:
+                      - generic [ref=f1e1114]: Movement evidence
+                      - paragraph [ref=f1e1115]: Partner location can support arrival, delay, or no-show context.
+                    - generic [ref=f1e1116]: Location retained
+                    - paragraph [ref=f1e1117]: Location recorded without readable address / 3 Aug 2026, 15:43
+                    - paragraph [ref=f1e1118]: Use movement context with chat and alerts; do not judge either side from one signal alone.
+                    - link "Open" [ref=f1e1119] [cursor=pointer]:
+                      - /url: "#location"
+                  - generic [ref=f1e1120]:
+                    - generic [ref=f1e1121]:
+                      - generic [ref=f1e1122]: Retained review context
+                      - paragraph [ref=f1e1123]: Alerts, audit rows, and operator notes preserve support context after mobile chat closes.
+                    - generic [ref=f1e1124]: Context loaded
+                    - paragraph [ref=f1e1125]: 6 notification row(s), 0 audit row(s), 1 note(s).
+                    - paragraph [ref=f1e1126]: Add a factual note when chat is quiet, missing, or insufficient for an outcome change.
+                    - link "Open" [ref=f1e1127] [cursor=pointer]:
+                      - /url: "#operator-notes"
+            - region [ref=f1e1128]:
+              - generic [ref=f1e1129]:
+                - generic [ref=f1e1130]:
+                  - heading "Manual outcome decision board" [level=2] [ref=f1e1131]
+                  - paragraph [ref=f1e1132]: Operations-only decision board for cancellation, no-show, refund/release, cash fee settlement, and completed closeout. It keeps the decision factual and evidence-based.
+                - generic [ref=f1e1134]:
+                  - link "Open manual queue" [ref=f1e1135] [cursor=pointer]:
+                    - /url: /bookings?view=manual-decision
+                  - generic [ref=f1e1136]: 5 decision lane(s)
+              - generic [ref=f1e1137]:
+                - generic "Manual decision rows" [ref=f1e1138]:
+                  - generic [ref=f1e1139]:
+                    - generic [ref=f1e1140]:
+                      - generic [ref=f1e1141]: Customer cancellation or closure
+                      - paragraph [ref=f1e1142]: After direct matching, customer outcome changes are handled by operations evidence review.
+                    - generic [ref=f1e1143]: 3 Aug 2026, 13:25
+                    - paragraph [ref=f1e1144]: no chat messages / location 3 Aug 2026, 15:43 / 6 alert row(s) / 1 operator note(s)
+                    - paragraph [ref=f1e1145]: Use retained chat, alerts, location, and operator notes before changing customer-facing booking outcome.
+                    - link "Open" [ref=f1e1146] [cursor=pointer]:
+                      - /url: "#booking-evidence-packet"
+                  - generic [ref=f1e1147]:
+                    - generic [ref=f1e1148]:
+                      - generic [ref=f1e1149]: No-show decision
+                      - paragraph [ref=f1e1150]: No-show is an admin decision based on communication and service movement context.
+                    - generic [ref=f1e1151]: Locked
+                    - paragraph [ref=f1e1152]: no chat messages / location 3 Aug 2026, 15:43 / 6 alert row(s) / 1 operator note(s)
+                    - paragraph [ref=f1e1153]: Check chat, alert delivery, Partner location, and notes before using the no-show action.
+                    - link "Open" [ref=f1e1154] [cursor=pointer]:
+                      - /url: "#no-show-handling"
+                  - generic [ref=f1e1155]:
+                    - generic [ref=f1e1156]:
+                      - generic [ref=f1e1157]: Refund or payment release
+                      - paragraph [ref=f1e1158]: Payment outcome must match booking closure and customer communication.
+                    - generic [ref=f1e1159]: No payment action
+                    - paragraph [ref=f1e1160]: RELEASED / No refund action recorded. / no chat messages / location 3 Aug 2026, 15:43 / 6 alert row(s) / 1 operator note(s)
+                    - paragraph [ref=f1e1161]: Use payment status, refund rows, and evidence packet before release, refund, or capture decisions.
+                    - link "Open" [ref=f1e1162] [cursor=pointer]:
+                      - /url: "#payment-actions"
+                  - generic [ref=f1e1163]:
+                    - generic [ref=f1e1164]:
+                      - generic [ref=f1e1165]: Cash fee settlement
+                      - paragraph [ref=f1e1166]: Cash bookings can create partner fee debt; debt blocks final acceptance, service start, and payout release until settled.
+                    - generic [ref=f1e1167]: Cash ledger clear
+                    - paragraph [ref=f1e1168]: CASH / RELEASED
+                    - paragraph [ref=f1e1169]: If debt exists, confirm company fee deposit or admin offset before final acceptance, service start, or payout release resumes.
+                    - link "Open" [ref=f1e1170] [cursor=pointer]:
+                      - /url: "#finance"
+                  - generic [ref=f1e1171]:
+                    - generic [ref=f1e1172]:
+                      - generic [ref=f1e1173]: Completed work closeout
+                      - paragraph [ref=f1e1174]: Completed bookings need payment, earning, tax, platform fee, and wallet records aligned.
+                    - generic [ref=f1e1175]: Ready
+                    - paragraph [ref=f1e1176]: All factual records needed for this booking stage are aligned.
+                    - paragraph [ref=f1e1177]: Use this before weekly/monthly/admin-date settlement batches and payout reporting.
+                    - link "Open" [ref=f1e1178] [cursor=pointer]:
+                      - /url: "#booking-closeout-readiness"
+                - generic [ref=f1e1179]:
+                  - generic [ref=f1e1180]:
+                    - generic [ref=f1e1181]:
+                      - heading "Decision note presets" [level=2] [ref=f1e1182]
+                      - paragraph [ref=f1e1183]: Fast factual notes for missing evidence, payment review, cash fee settlement, and closeout handling. Use these before changing booking outcomes.
+                    - generic [ref=f1e1184]: 2 preset(s)
+                  - generic [ref=f1e1186]:
+                    - generic [ref=f1e1187]:
+                      - generic [ref=f1e1188]: Chat
+                      - generic [ref=f1e1189]:
+                        - strong [ref=f1e1190]: Chat evidence is empty
+                        - paragraph [ref=f1e1191]: Use when a manual outcome is being reviewed but no customer/Partner messages are loaded.
+                      - button "Add note" [ref=f1e1193] [cursor=pointer]
+                    - generic [ref=f1e1194]:
+                      - generic [ref=f1e1195]: Money
+                      - generic [ref=f1e1196]:
+                        - strong [ref=f1e1197]: Payment or refund review
+                        - paragraph [ref=f1e1198]: CASH / RELEASED / 0 refund row(s).
+                      - button "Add note" [ref=f1e1200] [cursor=pointer]
+            - region [ref=f1e1201]:
+              - generic [ref=f1e1202]:
+                - generic [ref=f1e1203]:
+                  - heading "Booking full evidence bundle" [level=2] [ref=f1e1204]
+                  - paragraph [ref=f1e1205]: Single booking command view that ties the customer, Partner, confirmed service address, chat record, payment, earning, wallet, location, alerts, and operator notes into one factual bundle.
+                - generic [ref=f1e1206]: 8 evidence lane(s)
+              - generic "Booking full evidence bundle rows" [ref=f1e1209]:
+                - generic [ref=f1e1210]:
+                  - generic [ref=f1e1211]:
+                    - generic [ref=f1e1212]: Customer
+                    - paragraph [ref=f1e1213]: cmpb9dvq
+                  - generic [ref=f1e1214]: Linked
+                  - paragraph [ref=f1e1215]: Demo Customer / +84900000001
+                  - paragraph [ref=f1e1216]: Open the customer record to review bookings, wallet, addresses, and retained chat history.
+                  - link "Open" [ref=f1e1217] [cursor=pointer]:
+                    - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+                - generic [ref=f1e1218]:
+                  - generic [ref=f1e1219]:
+                    - generic [ref=f1e1220]: Address
+                    - paragraph [ref=f1e1221]: Confirmed service address
+                  - generic [ref=f1e1222]: Locked
+                  - paragraph [ref=f1e1223]: District 1, Ho Chi Minh City, Vietnam / BookingAddressSnapshot
+                  - paragraph [ref=f1e1224]: Use this confirmed service address for Partner radius checks and service evidence.
+                  - link "Open" [ref=f1e1225] [cursor=pointer]:
+                    - /url: "#address-radius-contract"
+                - generic [ref=f1e1226]:
+                  - generic [ref=f1e1227]:
+                    - generic [ref=f1e1228]: Partner
+                    - paragraph [ref=f1e1229]: cmrkqcd8
+                  - generic [ref=f1e1230]: Selected
+                  - paragraph [ref=f1e1231]: Smoke Partner / Too old
+                  - paragraph [ref=f1e1232]: Confirm the customer final Partner selection and marketplace/payout settlement requirements.
+                  - link "Open" [ref=f1e1233] [cursor=pointer]:
+                    - /url: /partners/cmrkqcd890003vyw4e4ys82l6
+                - generic [ref=f1e1234]:
+                  - generic [ref=f1e1235]:
+                    - generic [ref=f1e1236]: Chat
+                    - paragraph [ref=f1e1237]: cmscud52
+                  - generic [ref=f1e1238]: Archived
+                  - paragraph [ref=f1e1239]: 0 retained message(s), latest none
+                  - paragraph [ref=f1e1240]: Use the transcript for service handoff, cancellation, no-show, and refund context.
+                  - link "Open" [ref=f1e1241] [cursor=pointer]:
+                    - /url: /chat-archive?q=cmscuamha005dvy14z41nnz07
+                - generic [ref=f1e1242]:
+                  - generic [ref=f1e1243]:
+                    - generic [ref=f1e1244]: Money
+                    - paragraph [ref=f1e1245]: cmscuamh
+                  - generic [ref=f1e1246]: RELEASED
+                  - paragraph [ref=f1e1247]: CASH / customer 400.000 VND / Partner 320.000 VND / wallet No entry
+                  - paragraph [ref=f1e1248]: Check payment, earning, tax, fee, refund, payout, and cash settlement records together.
+                  - link "Open" [ref=f1e1249] [cursor=pointer]:
+                    - /url: "#finance"
+                - generic [ref=f1e1250]:
+                  - generic [ref=f1e1251]:
+                    - generic [ref=f1e1252]: Location
+                    - paragraph [ref=f1e1253]: cmsczf31
+                  - generic [ref=f1e1254]: Too old
+                  - paragraph [ref=f1e1255]:
+                    - text: Location recorded without readable address /
+                    - time [ref=f1e1256]: 3 Aug 2026, 15:43
+                  - paragraph [ref=f1e1257]: Use location rows only as operational history; routing and live tracking are not required for MVP.
+                  - link "Open" [ref=f1e1258] [cursor=pointer]:
+                    - /url: "#location"
+                - generic [ref=f1e1259]:
+                  - generic [ref=f1e1260]:
+                    - generic [ref=f1e1261]: Alerts
+                    - paragraph [ref=f1e1262]: 6 notification row(s)
+                  - generic [ref=f1e1263]: Loaded
+                  - paragraph [ref=f1e1264]: 3 Partner alert(s), 1 marketplace batch(es)
+                  - paragraph [ref=f1e1265]: Check whether customer and Partner app notifications were created, delivered, read, or retried.
+                  - link "Open" [ref=f1e1266] [cursor=pointer]:
+                    - /url: /notifications?booking=cmscuamha005dvy14z41nnz07
+                - generic [ref=f1e1267]:
+                  - generic [ref=f1e1268]:
+                    - generic [ref=f1e1269]: Operator trail
+                    - paragraph [ref=f1e1270]: 20 event(s)
+                  - generic [ref=f1e1271]: Retained
+                  - paragraph [ref=f1e1272]:
+                    - text: Booking Cancelled /
+                    - time [ref=f1e1273]: 3 Aug 2026, 13:25
+                  - paragraph [ref=f1e1274]: Use notes and audit rows before manual closeout, no-show, refund, or settlement actions.
+                  - link "Open" [ref=f1e1275] [cursor=pointer]:
+                    - /url: "#booking-activity"
+            - region [ref=f1e1276]:
+              - generic [ref=f1e1277]:
+                - generic [ref=f1e1278]:
+                  - heading "Operator command queue" [level=2] [ref=f1e1279]
+                  - paragraph [ref=f1e1280]: Same-shift actions queued for operator handling.
+                - generic [ref=f1e1281]: 1 action(s)
+              - generic [ref=f1e1283]:
+                - generic [ref=f1e1284]:
+                  - generic [ref=f1e1285]:
+                    - generic [ref=f1e1286]: Live
+                    - generic [ref=f1e1287]: Active commands
+                    - strong [ref=f1e1288]: "2"
+                    - generic [ref=f1e1289]: 1 need same-shift attention.
+                  - generic [ref=f1e1290]:
+                    - generic [ref=f1e1291]: Current filters
+                    - generic [ref=f1e1292]: Partner
+                    - strong [ref=f1e1293]: Smoke Partner
+                    - generic [ref=f1e1294]: Preferred/final Partner context.
+                  - generic [ref=f1e1295]:
+                    - generic [ref=f1e1296]: Current filters
+                    - generic [ref=f1e1297]: Chat
+                    - strong [ref=f1e1298]: Retained
+                    - generic [ref=f1e1299]: 0 message(s) in admin archive.
+                  - generic [ref=f1e1300]:
+                    - generic [ref=f1e1301]: Current filters
+                    - generic [ref=f1e1302]: Attention flags
+                    - strong [ref=f1e1303]: "0"
+                    - generic [ref=f1e1304]: Factual handling checks only.
+                - generic [ref=f1e1305]:
+                  - generic [ref=f1e1306]:
+                    - generic [ref=f1e1307]: LOC
+                    - generic [ref=f1e1308]:
+                      - strong [ref=f1e1309]: Refresh stale Partner location
+                      - paragraph [ref=f1e1310]: Updated 35h ago
+                      - text: Dispatch operator
+                    - button "Reset check" [ref=f1e1312] [cursor=pointer]
+                  - generic [ref=f1e1313]:
+                    - generic [ref=f1e1314]: TASK
+                    - generic [ref=f1e1315]:
+                      - strong [ref=f1e1316]: Finish customer contacted
+                      - paragraph [ref=f1e1317]: Confirm the guest has been updated when waiting, switching partner, cancelling, or resolving payment.
+                      - text: Operations
+                    - button "Mark done" [ref=f1e1319] [cursor=pointer]
+            - region [ref=f1e1320]:
+              - generic [ref=f1e1321]:
+                - generic [ref=f1e1322]:
+                  - heading "Operator action availability" [level=2] [ref=f1e1323]
+                  - paragraph [ref=f1e1324]: Manual action availability and the linked destination for each action.
+                - generic [ref=f1e1325]: 1/8 available
+              - table [ref=f1e1329]:
+                - rowgroup [ref=f1e1330]:
+                  - row [ref=f1e1331]:
+                    - columnheader "Action" [ref=f1e1332]
+                    - columnheader "Availability" [ref=f1e1333]
+                    - columnheader "Evidence" [ref=f1e1334]
+                    - columnheader "Operator rule" [ref=f1e1335]
+                    - columnheader "Open" [ref=f1e1336]
+                - rowgroup [ref=f1e1337]:
+                  - row [ref=f1e1338]:
+                    - cell "Payment sync" [ref=f1e1339]
+                    - cell "Locked" [ref=f1e1340]
+                    - cell "No payment gateway reference to sync." [ref=f1e1342]
+                    - cell "Use for gateway reconciliation only. Do not change customer outcome from sync alone." [ref=f1e1343]
+                    - cell [ref=f1e1344]:
+                      - link "Open action forms" [ref=f1e1345] [cursor=pointer]:
+                        - /url: "#booking-ops"
+                  - row [ref=f1e1346]:
+                    - cell "Capture payment" [ref=f1e1347]
+                    - cell "Locked" [ref=f1e1348]
+                    - cell "Payment status is RELEASED." [ref=f1e1350]
+                    - cell "Capture only after service completion is confirmed by retained booking, chat, and closeout evidence." [ref=f1e1351]
+                    - cell [ref=f1e1352]:
+                      - link "Open action forms" [ref=f1e1353] [cursor=pointer]:
+                        - /url: "#booking-ops"
+                  - row [ref=f1e1354]:
+                    - cell "Release or refund" [ref=f1e1355]
+                    - cell "Locked" [ref=f1e1356]
+                    - cell "CANCELLED / payment RELEASED." [ref=f1e1358]
+                    - cell "Release or refund only after cancellation, expiry, or no-show evidence has been reviewed." [ref=f1e1359]
+                    - cell [ref=f1e1360]:
+                      - link "Open action forms" [ref=f1e1361] [cursor=pointer]:
+                        - /url: "#booking-ops"
+                  - row [ref=f1e1362]:
+                    - cell "Settle cash fee debt" [ref=f1e1363]
+                    - cell "Locked" [ref=f1e1364]
+                    - cell "Cash booking has no active negative wallet block." [ref=f1e1366]
+                    - cell "Settle only when company fee deposit or admin offset evidence is available for this cash booking." [ref=f1e1367]
+                    - cell [ref=f1e1368]:
+                      - link "Open action forms" [ref=f1e1369] [cursor=pointer]:
+                        - /url: "#booking-ops"
+                  - row [ref=f1e1370]:
+                    - cell "Reconcile completed booking" [ref=f1e1371]
+                    - cell "Locked" [ref=f1e1372]
+                    - cell "Closeout available after completion" [ref=f1e1374]
+                    - cell "Run after payment, earning, tax, platform fee, wallet, and chat archive records are aligned." [ref=f1e1375]
+                    - cell [ref=f1e1376]:
+                      - link "Open closeout" [ref=f1e1377] [cursor=pointer]:
+                        - /url: "#completed-closeout"
+                  - row [ref=f1e1378]:
+                    - cell "Expire matching" [ref=f1e1379]
+                    - cell "Locked" [ref=f1e1380]
+                    - cell "Expire unavailable for CANCELLED." [ref=f1e1382]
+                    - cell "Expire only when the customer should stop waiting and the payment hold can be released or reviewed." [ref=f1e1383]
+                    - cell [ref=f1e1384]:
+                      - link "Open expiry" [ref=f1e1385] [cursor=pointer]:
+                        - /url: "#matching-expiry"
+                  - row [ref=f1e1386]:
+                    - cell "Mark no-show" [ref=f1e1387]
+                    - cell "Locked" [ref=f1e1388]
+                    - cell "No-show unavailable for CANCELLED." [ref=f1e1390]
+                    - cell "Mark no-show only from factual chat, alert, location, and operator-note evidence. Keep the record descriptive." [ref=f1e1391]
+                    - cell [ref=f1e1392]:
+                      - link "Open no-show" [ref=f1e1393] [cursor=pointer]:
+                        - /url: "#no-show-handling"
+                  - row [ref=f1e1394]:
+                    - cell "Add operator note" [ref=f1e1395]
+                    - cell "Available" [ref=f1e1396]
+                    - cell "1 note line(s) currently retained." [ref=f1e1398]
+                    - cell "Use notes to record what happened, who was contacted, and what evidence supports the next decision." [ref=f1e1399]
+                    - cell [ref=f1e1400]:
+                      - link "Open notes" [ref=f1e1401] [cursor=pointer]:
+                        - /url: "#operator-notes"

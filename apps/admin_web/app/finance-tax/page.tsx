@@ -1,54 +1,28 @@
-import { AlertTriangle, Landmark, ReceiptText, Scale } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 import { ActionMenu } from '../../components/action-menu';
-import type {
-  AdminBankReconciliationSummary,
-  AdminBookingPaymentClearingSummary,
-  AdminBookingSettlementSnapshotSummary,
-  AdminCouponFinanceSummary,
-  AdminMonthlyTaxClosingSummary,
-  AdminPartnerWithholdingTaxSummary,
-  AdminProviderWalletWithdrawalRequestSummary,
-} from '../../lib/admin-api';
-import { adminGet } from '../../lib/admin-api';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminDisclosure, AdminSection } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
-import { readSearchParam } from '../../lib/date-range';
+import type { AdminMonthlyTaxClosingSummary } from '../../lib/admin-api';
+import { adminGetResult } from '../../lib/admin-api';
+import { formatDateTime } from '../../lib/admin-format';
 import { FinanceOverviewTablePanel, type FinanceOverviewTableRow } from './finance-overview-table-panel';
-import { renderFinancePriorityValue } from './finance-priority-value';
-import { FinanceListCommandBoard, FinanceListCommandCard } from './finance-list-command-card';
-import { FinanceStageList } from './finance-stage-list';
-import { TaxFinanceWorkflowActions } from './tax-finance-workflow-actions';
+import { FinancePeriodFilterForm } from './finance-period-filter-form';
 import {
   bookingSettlementAuditHref,
-  buildBankReconciliationSummaryApiHref,
-  buildBookingPaymentClearingSummaryApiHref,
-  buildBookingSettlementSnapshotSummaryApiHref,
-  buildCouponFinanceSummaryApiHref,
+  buildMonthlyTaxClosingPreflightLinks,
+  buildMonthlyTaxClosingRiskLinks,
   buildMonthlyTaxClosingSummaryApiHref,
-  buildPartnerWithholdingTaxSummaryApiHref,
-  buildProviderWalletWithdrawalRequestSummaryApiHref,
-  buildTaxFinanceWorkflowLinks,
-  buildFinanceOperationsPriorityLinks,
-  buildFinanceOperationsSummaryFilters,
-  buildFinancePayoutPriorityLinks,
-  emptyBankReconciliationSummary,
-  emptyBookingPaymentClearingSummary,
-  emptyBookingSettlementSummary,
-  emptyCouponFinanceSummary,
   emptyMonthlyTaxClosingSummary,
-  emptyPartnerWithholdingTaxSummary,
-  emptyProviderWalletWithdrawalRequestSummary,
+  generalLedgerHref,
   monthlyTaxClosingHref,
-  paymentClearingHref,
-  partnerWithholdingTaxHref,
-  platformVatHref,
   readBookingSettlementFilters,
   readFinanceAccountingFilters,
   readMonthlyTaxClosingFilters,
-  readPartnerWithholdingTaxFilters,
-  type TaxFinanceWorkflowLink,
+  resolveMonthlyTaxClosingPreflight,
 } from './tax-settlement-page-model';
 
 type FinanceTaxPageProps = {
@@ -57,564 +31,339 @@ type FinanceTaxPageProps = {
 
 export default async function FinanceTaxPage({ searchParams }: FinanceTaxPageProps) {
   const params = searchParams ? await searchParams : {};
-  const settlementFilters = readBookingSettlementFilters(params);
-  const accountingFilters = readFinanceAccountingFilters(params, 'all');
-  const { bankFilters, clearingFilters } = buildFinanceOperationsSummaryFilters(accountingFilters);
-  const withholdingFilters = readPartnerWithholdingTaxFilters(params);
-  const monthlyClosingFilters = readMonthlyTaxClosingFilters(params);
-  const showFullSummaryView = readSearchParam(params.view) === 'full';
-  const [
-    settlementSummary,
-    couponFinanceSummary,
-    withholdingSummary,
-    withdrawalRequestSummary,
-    clearingSummary,
-    bankSummary,
-    monthlyClosingSummary,
-  ] =
-    await Promise.all([
-      adminGet<AdminBookingSettlementSnapshotSummary>(
-        buildBookingSettlementSnapshotSummaryApiHref(settlementFilters),
-        emptyBookingSettlementSummary(),
-      ),
-      showFullSummaryView
-        ? adminGet<AdminCouponFinanceSummary>(
-            buildCouponFinanceSummaryApiHref(settlementFilters),
-            emptyCouponFinanceSummary(),
-          )
-        : Promise.resolve(emptyCouponFinanceSummary()),
-      adminGet<AdminPartnerWithholdingTaxSummary>(
-        buildPartnerWithholdingTaxSummaryApiHref(withholdingFilters),
-        emptyPartnerWithholdingTaxSummary(withholdingFilters.period),
-      ),
-      showFullSummaryView
-        ? adminGet<AdminProviderWalletWithdrawalRequestSummary>(
-            buildProviderWalletWithdrawalRequestSummaryApiHref(settlementFilters),
-            emptyProviderWalletWithdrawalRequestSummary(),
-          )
-        : Promise.resolve(emptyProviderWalletWithdrawalRequestSummary()),
-      adminGet<AdminBookingPaymentClearingSummary>(
-        buildBookingPaymentClearingSummaryApiHref(clearingFilters),
-        emptyBookingPaymentClearingSummary(),
-      ),
-      adminGet<AdminBankReconciliationSummary>(
-        buildBankReconciliationSummaryApiHref(bankFilters),
-        emptyBankReconciliationSummary(),
-      ),
-      adminGet<AdminMonthlyTaxClosingSummary>(
-        buildMonthlyTaxClosingSummaryApiHref(monthlyClosingFilters),
-        emptyMonthlyTaxClosingSummary(monthlyClosingFilters.period),
-      ),
-    ]);
+  const monthlyFilters = readMonthlyTaxClosingFilters(params);
+  const settlementFilters = {
+    ...readBookingSettlementFilters(params),
+    page: 1,
+    period: monthlyFilters.period,
+    range: 'all' as const,
+  };
+  const accountingFilters = {
+    ...readFinanceAccountingFilters(params, 'posted'),
+    page: 1,
+    period: monthlyFilters.period,
+    range: 'all' as const,
+    returnTo: `/finance-tax?${new URLSearchParams({ period: monthlyFilters.period }).toString()}`,
+  };
+  const summaryResult = await adminGetResult<AdminMonthlyTaxClosingSummary>(
+    buildMonthlyTaxClosingSummaryApiHref(monthlyFilters),
+    emptyMonthlyTaxClosingSummary(monthlyFilters.period),
+  );
 
-  const currency = settlementSummary.currency || withholdingSummary.currency || 'VND';
-  const monthlyFormulaIssueCount =
-    (monthlyClosingSummary.reconciliationDelta !== 0 ? 1 : 0) +
-    (monthlyClosingSummary.netRevenueDelta !== 0 ? 1 : 0);
-  const openFinanceRiskCount =
-    settlementSummary.openTaxCount +
-    clearingSummary.openCount +
-    bankSummary.unmatchedCount +
-    monthlyClosingSummary.couponReviewFlagCount +
-    monthlyClosingSummary.paymentFeeReviewFlagCount +
-    monthlyClosingSummary.partnerDepositReconciliationOpenCount +
-    monthlyFormulaIssueCount;
-  const monthlyScope = `Period ${monthlyClosingFilters.period}`;
-  const settlementScope = 'Active queue';
-  const workflowLinks = buildTaxFinanceWorkflowLinks({
-    current: 'overview',
-    accountingFilters,
-    monthlyFilters: monthlyClosingFilters,
+  if (!summaryResult.ok) {
+    return <TaxCloseUnavailable period={monthlyFilters.period} status={summaryResult.status} />;
+  }
+
+  const summary = summaryResult.data;
+  const preflight = resolveMonthlyTaxClosingPreflight(summary);
+  const hardBlockerControls = buildMonthlyTaxClosingPreflightLinks(
+    summary,
     settlementFilters,
-    withholdingFilters,
+    monthlyFilters,
+  );
+  const hardBlockerKeys = new Set(hardBlockerControls.map((item) => item.key));
+  const riskLinks = buildMonthlyTaxClosingRiskLinks(summary, settlementFilters, monthlyFilters);
+  const reviewFlags = riskLinks.filter(
+    (item) => !hardBlockerKeys.has(item.key) && hasPriorityWork(item),
+  );
+  const activeControls = [
+    ...hardBlockerControls.map((item) => ({ ...item, controlType: 'BLOCKER' as const })),
+    ...reviewFlags.map((item) => ({ ...item, controlType: 'REVIEW' as const })),
+  ];
+  const noSignalControls = riskLinks.filter((item) => !hasPriorityWork(item));
+  const periodState = summary.periodState ?? summary.status;
+  const generatedLabel = formatDateTime(summary.generatedAt, 'Generation time unavailable');
+  const closeoutRows = buildCloseoutRows(activeControls, summary);
+  const recordRows = buildRecordRows({
+    accountingFilters,
+    monthlyFilters,
+    settlementFilters,
   });
-  const headerWorkflowLinks = workflowLinks.filter((link) => isFinanceOverviewHeaderLink(link.key));
-  const priorityRows = buildFinanceOperationsPriorityLinks({
-    accountingFilters,
-    bankSummary,
-    clearingSummary,
-    monthlyClosingFilters,
-    monthlyClosingSummary,
-    settlementFilters,
-    settlementSummary,
-  }).map((link) => ({
-    actionLabel: 'Review',
-    helper: link.helper,
-    href: link.href,
-    key: link.key,
-    label: link.label,
-    signal: link.signal,
-    signalTone: 'warn' as const,
-    value: renderFinancePriorityValue(link),
-  }));
-  const workspaceRows = [
-    ...workflowLinks.map((link) =>
-      financeWorkspaceRowForLink(link, {
-        companyOutputVat: settlementSummary.companyOutputVat,
-        couponReviewFlagCount: monthlyClosingSummary.couponReviewFlagCount,
-        currency,
-        monthlyPeriod: monthlyClosingFilters.period,
-        partnerTaxWithheld: withholdingSummary.totalPartnerTaxWithheld,
-        paymentProcessingFee: settlementSummary.paymentProcessingFee,
-        settlementOpenTaxCount: settlementSummary.openTaxCount,
-      }),
-    ),
+  const transitionActionLabel = closeTransitionActionLabel(periodState, Boolean(summary.hasActivity));
+  const showOperationalControls = periodState !== 'FUTURE_PERIOD' && summary.hasActivity;
+  const headerActions = [
     {
-      actionLabel: 'Open',
-      helper: 'Manage company bank account records used by manual bank reconciliation.',
-      href: '/finance-tax/company-bank-accounts',
-      key: 'company-bank-accounts',
-      label: 'Company Bank Accounts',
-      signal: 'BANKS',
-      value: 'Accounts',
+      href: `/finance-tax?${new URLSearchParams({ period: summary.period }).toString()}`,
+      kind: 'link' as const,
+      label: 'Refresh now',
+      tone: 'info' as const,
     },
-    {
-      actionLabel: 'Open',
-      helper: 'Configure versioned tax rules. Historical settlement records keep their own tax values.',
-      href: '/tax-policy',
-      key: 'tax-policy',
-      label: 'Tax Policy',
-      signal: 'RULES',
-      value: 'Policy',
-    },
+    ...(transitionActionLabel
+      ? [{
+          href: monthlyTaxClosingHref(monthlyFilters),
+          kind: 'link' as const,
+          label: transitionActionLabel,
+          tone: 'neutral' as const,
+        }]
+      : []),
   ];
 
   return (
     <AdminPageTemplate
       actions={
-        <TaxFinanceWorkflowActions
-          links={headerWorkflowLinks}
+        <ActionMenu
+          actions={headerActions}
+          label="Tax and period close actions"
+          variant="button-list"
         />
       }
-      description="Tax, fee, VAT, PIT, payment fee, and posted booking settlement record control view."
-      metrics={[
-        {
-          helper: 'Posted booking settlement records matching the active queue.',
-          href: '/finance-tax/booking-settlement-audit',
-          kind: 'record',
-          label: 'Snapshot rows',
-          scope: settlementScope,
-          value: settlementSummary.count,
-        },
-        {
-          helper: 'Snapshot rows still waiting for declaration, payment, or closeout.',
-          href: '/finance-tax/booking-settlement-audit?review=open',
-          kind: 'risk',
-          label: 'Open tax rows',
-          scope: 'Needs action',
-          value: settlementSummary.openTaxCount,
-        },
-        {
-          helper: 'Customer payment amount captured by posted settlement records.',
-          kind: 'period',
-          label: 'Customer paid',
-          scope: settlementScope,
-          value: <MoneyText amount={settlementSummary.customerPaymentAmount} currency={currency} />,
-        },
-        {
-          helper: 'Partner payout amount before monthly payout execution.',
-          kind: 'action',
-          label: 'Partner payout',
-          scope: 'Pending',
-          value: <MoneyText amount={settlementSummary.partnerPayoutAmount} currency={currency} />,
-        },
-        {
-          helper: 'VAT plus PIT withheld for the selected monthly tax period.',
-          href: partnerWithholdingTaxHref({ ...withholdingFilters, page: 1 }),
-          kind: 'period',
-          label: 'Partner tax withheld',
-          scope: monthlyScope,
-          value: <MoneyText amount={withholdingSummary.totalPartnerTaxWithheld} currency={withholdingSummary.currency || currency} />,
-        },
-        {
-          helper: 'Output VAT component from HANDS platform fee records.',
-          kind: 'period',
-          label: 'Company VAT',
-          scope: monthlyScope,
-          value: <MoneyText amount={settlementSummary.companyOutputVat} currency={currency} />,
-        },
-        {
-          helper: 'Payment processing fee cost recorded on settlement records.',
-          kind: 'period',
-          label: 'Payment fees',
-          scope: settlementScope,
-          value: <MoneyText amount={settlementSummary.paymentProcessingFee} currency={currency} />,
-        },
-        {
-          helper: 'Partners with taxable settlement rows in the selected period.',
-          href: partnerWithholdingTaxHref({ ...withholdingFilters, page: 1 }),
-          kind: 'period',
-          label: 'Partners with revenue',
-          scope: monthlyScope,
-          value: withholdingSummary.partnerCountWithRevenue,
-        },
-      ]}
-      title="Tax Overview"
+      contentClassName="finance-tax-close-cockpit"
+      description="Monthly close controls, tax exposure, reconciliation evidence, and accounting registers for one Vietnam period."
+      title="Tax & Period Close"
     >
-      <FinanceListCommandBoard ariaLabel="Tax command board">
-        <FinanceListCommandCard
-          detail="Open tax, payment clearing, bank reconciliation, coupon, and monthly formula signals."
-          href={paymentClearingHref({ ...clearingFilters, page: 1, review: 'open' })}
-          icon={AlertTriangle}
-          label="Open finance risk"
-          scope={openFinanceRiskCount > 0 ? 'Needs action' : monthlyScope}
-          tone={openFinanceRiskCount > 0 ? 'danger' : 'success'}
-          value={String(openFinanceRiskCount)}
-        />
-        <FinanceListCommandCard
-          detail="Company output VAT from HANDS platform fee snapshots."
-          href={platformVatHref(monthlyClosingFilters)}
-          icon={ReceiptText}
-          label="Platform VAT"
-          scope={monthlyScope}
-          tone={settlementSummary.companyOutputVat > 0 ? 'warning' : 'neutral'}
-          value={<MoneyText amount={settlementSummary.companyOutputVat} currency={currency} />}
-        />
-        <FinanceListCommandCard
-          detail="Partner VAT/PIT withholding payable for the active monthly period."
-          href={partnerWithholdingTaxHref(withholdingFilters)}
-          icon={Landmark}
-          label="Partner withholding"
-          scope={monthlyScope}
-          tone={withholdingSummary.totalPartnerTaxWithheld > 0 ? 'warning' : 'neutral'}
-          value={<MoneyText amount={withholdingSummary.totalPartnerTaxWithheld} currency={withholdingSummary.currency} />}
-        />
-        <FinanceListCommandCard
-          detail="Monthly tax closing state and formula readiness."
-          href={monthlyTaxClosingHref(monthlyClosingFilters)}
-          icon={Scale}
-          label="Monthly close"
-          scope={monthlyScope}
-          tone={monthlyClosingSummary.status === 'CLOSED' ? 'success' : openFinanceRiskCount > 0 ? 'warning' : 'info'}
-          value={monthlyClosingSummary.status}
-        />
-      </FinanceListCommandBoard>
-
-      <AdminSection
-        className="admin-mb-16"
-        description="Use the summary APIs first. Open the bounded audit lists only when a finance operator needs booking-level evidence."
-        statusLabel="Summary API"
-        statusTone="success"
-        title="Tax finance operating model"
+      <AdminFilterPanel
+        className="admin-mb-16 finance-tax-period-control"
+        description={`Generated ${generatedLabel} · Asia/Ho_Chi_Minh. Changing the month updates every control and register on this page.`}
+        resultLabel={`${summary.period} · ${formatPeriodState(periodState)}`}
+        resultTone={periodState === 'CLOSED' ? 'success' : periodState === 'FUTURE_PERIOD' ? 'neutral' : 'info'}
+        title="Accounting month"
       >
-        <FinanceStageList
-          items={[
-            {
-              helper:
-                'Completed booking settlement stores customer payment, Partner payout, VAT/PIT, payment fee, and company VAT values at posting time.',
-              key: 'booking-snapshot',
-              label: 'Booking settlement record is immutable',
-              signal: '1',
-              value: `${settlementSummary.count} rows`,
-            },
-            {
-              helper: `Partner withholding is grouped by month and Partner. Current period: ${withholdingSummary.period}.`,
-              key: 'partner-tax-monthly',
-              label: 'Partner tax is monthly',
-              signal: '2',
-              value: `${withholdingSummary.partnerCountWithRevenue} partners`,
-            },
-            {
-              helper: (
-                <>
-                  Company net fee is{' '}
-                  <MoneyText amount={settlementSummary.platformFeeNetRevenue} currency={currency} /> before payment
-                  processing cost of <MoneyText amount={settlementSummary.paymentProcessingFee} currency={currency} />.
-                </>
-              ),
-              key: 'snapshot-totals',
-              label: 'Finance uses posted totals',
-              signal: '3',
-              value: (
-                <>
-                  <MoneyText amount={settlementSummary.companyOutputVat} currency={currency} /> VAT
-                </>
-              ),
-            },
-          ]}
+        <FinancePeriodFilterForm
+          action="/finance-tax"
+          period={monthlyFilters.period}
+          submitLabel="Apply month"
         />
-      </AdminSection>
+      </AdminFilterPanel>
 
-      <FinanceOverviewTablePanel
-        description="Summary-only command desk for today's finance work. Open bounded lists only when a row-level review is needed."
-        resultLabel="Needs action first"
-        resultTone="warning"
-        rows={priorityRows}
-        title="Finance operations priority desk"
-      />
+      {periodState === 'FUTURE_PERIOD' ? (
+        <AdminInlineNotice className="admin-mb-16" role="status" tone="info">
+          <strong>Future period — monitoring not started.</strong> No transition or close workload is available for this month.
+        </AdminInlineNotice>
+      ) : !summary.hasActivity ? (
+        <AdminInlineNotice className="admin-mb-16" role="status" tone="info">
+          <strong>No activity — no close record.</strong> No settlement, reversal, or reconciliation activity exists for this month.
+        </AdminInlineNotice>
+      ) : null}
 
-      {showFullSummaryView ? (
+      {showOperationalControls ? (
         <>
-          <AdminSection
-            className="admin-mb-16"
-            description="Company-funded coupons are marketing expense, not reduced platform-fee revenue. This summary reads posted settlement record metadata only."
-            statusLabel="Coupon summary API"
-            statusTone="info"
-            title="Coupon finance summary"
-          >
-            <FinanceStageList
-              items={[
-                {
-                  helper: 'Bookings with coupon metadata in the selected finance range and active queue.',
-                  href: bookingSettlementAuditHref(settlementFilters),
-                  key: 'coupon-settlement-rows',
-                  label: 'Coupon settlement rows',
-                  signal: 'COUPON',
-                  value: `${couponFinanceSummary.couponSettlementCount} rows`,
-                },
-                {
-                  helper: 'Discount applied to customer payment while settlement keeps the pre-coupon service amount.',
-                  key: 'customer-discount',
-                  label: 'Customer discount',
-                  signal: 'DISC',
-                  value: <MoneyText amount={couponFinanceSummary.couponDiscountAmount} currency={couponFinanceSummary.currency} />,
-                },
-                {
-                  helper: 'Actual customer payment after coupon discount. This feeds clearing and is not platform revenue.',
-                  key: 'customer-paid',
-                  label: 'Customer paid amount',
-                  signal: 'PAID',
-                  value: <MoneyText amount={couponFinanceSummary.customerPaidAmount} currency={couponFinanceSummary.currency} />,
-                },
-                {
-                  helper: 'Pre-coupon service amount used for Partner payout, withholding, and platform fee records.',
-                  key: 'settlement-base',
-                  label: 'Settlement base',
-                  signal: 'BASE',
-                  value: (
-                    <MoneyText
-                      amount={couponFinanceSummary.settlementBaseAmount || couponFinanceSummary.bookingServiceAmount}
-                      currency={couponFinanceSummary.currency}
-                    />
-                  ),
-                },
-                {
-                  helper: 'Company-funded coupon amount to review as marketing expense, separate from revenue and VAT.',
-                  key: 'company-coupon-expense',
-                  label: 'Company coupon expense',
-                  signal: 'EXP',
-                  value: <MoneyText amount={couponFinanceSummary.companyCouponExpense} currency={couponFinanceSummary.currency} />,
-                },
-                {
-                  helper: 'Rows where coupon metadata needs finance review before closing.',
-                  key: 'coupon-review-flags',
-                  label: 'Coupon review flags',
-                  signal: 'FLAG',
-                  value: `${couponFinanceSummary.couponReviewFlagCount} flags`,
-                },
-                {
-                  helper: 'Refund or reversal metadata for coupon discount and company coupon expense recovery.',
-                  key: 'reversed-coupon-amount',
-                  label: 'Reversed coupon amount',
-                  signal: 'REV',
-                  value: (
-                    <MoneyText
-                      amount={couponFinanceSummary.reversedCouponDiscountAmount}
-                      currency={couponFinanceSummary.currency}
-                    />
-                  ),
-                },
-              ]}
-            />
-          </AdminSection>
+          <AdminInlineNotice className="admin-mb-12 finance-tax-decision-summary" role="status" tone={preflight.blockers.length > 0 ? 'danger' : 'warning'}>
+            <strong>{formatCount(preflight.blockers.length, 'hard blocker')}</strong> ·{' '}
+            {formatCount(reviewFlags.length, 'review flag')} ·{' '}
+            {formatCount(activeControls.length, 'active control')}. Server preflight is the only hard-blocker source.
+          </AdminInlineNotice>
+
+          <FinanceOverviewTablePanel
+            description="Server-enforced blockers appear before advisory review controls. Counts can overlap; financial exposure is shown only when calculated."
+            emptyMessage="No hard blocker or review signal is open for the selected accounting month."
+            emptyTitle="No open close controls"
+            resultLabel={preflight.blockers.length > 0
+              ? formatCount(preflight.blockers.length, 'hard blocker')
+              : formatCount(reviewFlags.length, 'review flag')}
+            resultTone={preflight.blockers.length > 0 ? 'danger' : reviewFlags.length > 0 ? 'warning' : 'success'}
+            rows={closeoutRows}
+            title="Active close controls"
+            variant="controls"
+          />
 
           <AdminSection
-            className="admin-mb-16"
-            description="This overview stays summary-only. Open the bounded payout and cash-debt queues only when finance needs request-level evidence."
-            statusLabel="Priority links"
-            statusTone="info"
-            title="Payout and wallet priority desk"
+            className="admin-mb-16 finance-tax-no-signal-section"
+            description="These controls have no open signal for the selected month. This is not a verified-clear record."
+            statusLabel={formatCount(noSignalControls.length, 'no open signal')}
+            statusTone="neutral"
+            title="Controls with no open signal"
           >
-            <FinanceStageList
-              items={buildFinancePayoutPriorityLinks(settlementFilters, withdrawalRequestSummary).map((link) => ({
-                helper: link.helper,
-                href: link.href,
-                key: link.key,
-                label: link.label,
-                signal: link.signal,
-                value: renderFinancePriorityValue(link),
-              }))}
-            />
+            <AdminDisclosure className="finance-tax-cleared-controls">
+              <summary>
+                <span className="finance-tax-disclosure-show">Show controls with no open signal</span>
+                <span className="finance-tax-disclosure-hide">Hide controls with no open signal</span>
+              </summary>
+              <p className="muted">
+                {noSignalControls.length > 0
+                  ? noSignalControls.map((item) => item.label).join(' · ')
+                  : 'Every evaluated control has an open signal.'}
+              </p>
+            </AdminDisclosure>
           </AdminSection>
         </>
-      ) : (
-        <AdminSection
-          className="admin-mb-16"
-          description="Default view keeps finance overview focused on current action counts. Open the full summary only when coupon and payout rollups are needed."
-          statusLabel="Compact default"
-          statusTone="info"
-          title="Finance optional summary desk"
-        >
-          <ActionMenu
-            actions={[
-              {
-                href: '/finance-tax?view=full',
-                kind: 'link',
-                label: 'Open full finance summary view',
-                tone: 'info',
-              },
-            ]}
-            label="Finance optional summary actions"
-            variant="button-list"
-          />
-        </AdminSection>
-      )}
+      ) : null}
 
-      <FinanceOverviewTablePanel
-        description="Keep summary, evidence, tax, reconciliation, and policy workspaces separate so operators open row-level data only when needed."
-        resultLabel={`${workspaceRows.length} workspaces`}
-        resultTone="info"
-        rows={workspaceRows}
-        title="Finance tax workspaces"
-      />
+      <AdminSection
+        className="admin-mb-16 finance-tax-related-registers"
+        description="Open the selected month in the authoritative accounting, settlement, reversal, and policy registers."
+        title="Related registers"
+      >
+        <ActionMenu
+          actions={recordRows.map((row) => ({
+            href: row.href,
+            kind: 'link' as const,
+            label: `${String(row.label)} · ${String(row.value)}`,
+            tone: 'neutral' as const,
+          }))}
+          label="Related accounting registers"
+          variant="button-list"
+        />
+      </AdminSection>
     </AdminPageTemplate>
   );
 }
 
-function isFinanceOverviewHeaderLink(key: TaxFinanceWorkflowLink['key']) {
-  return key === 'payment-clearing' || key === 'general-ledger' || key === 'bank-reconciliation';
+function TaxCloseUnavailable({
+  period,
+  status,
+}: {
+  readonly period: string;
+  readonly status: number | null;
+}) {
+  return (
+    <AdminPageTemplate
+      description={`Monthly tax and close totals for ${period} could not be loaded.`}
+      title="Tax & Period Close"
+    >
+      <AdminSection
+        actions={<AlertTriangle aria-hidden="true" size={18} />}
+        className="admin-mb-16"
+        description="Tax amounts and closeout counts are intentionally hidden so unavailable data is never mistaken for 0 VND or zero pending records."
+        statusLabel={status ? `API ${status}` : 'API unavailable'}
+        statusTone="danger"
+        title="Tax and close data unavailable"
+      >
+        <ActionMenu
+          actions={[
+            {
+              href: `/finance-tax?${new URLSearchParams({ period }).toString()}`,
+              kind: 'link',
+              label: 'Retry tax and close overview',
+              tone: 'danger',
+            },
+            {
+              href: '/finance-overview',
+              kind: 'link',
+              label: 'Open Finance Overview',
+              tone: 'info',
+            },
+          ]}
+          label="Tax and close unavailable actions"
+          variant="button-list"
+        />
+      </AdminSection>
+    </AdminPageTemplate>
+  );
 }
 
-function financeWorkspaceRowForLink(
-  link: TaxFinanceWorkflowLink,
-  values: {
-    readonly companyOutputVat: number;
-    readonly couponReviewFlagCount: number;
-    readonly currency: string;
-    readonly monthlyPeriod: string;
-    readonly partnerTaxWithheld: number;
-    readonly paymentProcessingFee: number;
-    readonly settlementOpenTaxCount: number;
-  },
-): FinanceOverviewTableRow {
-  switch (link.key) {
-    case 'approval-queue':
-      return {
-        actionLabel: 'Review',
-        helper: 'Current payment fee policy reviews and Partner withdrawal actions, separated from completed wallet evidence.',
-        href: link.href,
-        key: link.key,
-        label: link.label,
-        signal: 'QUEUE',
-        value: 'Pending',
-      };
-    case 'booking-settlement-audit':
-      return {
-        actionLabel: 'Review',
-        helper: 'Today/needs-action by default. Review posted, cash, non-cash, declared, paid, and reversed records.',
-        href: link.href,
-        key: link.key,
-        label: link.label,
-        signal: 'AUDIT',
-        value: `${values.settlementOpenTaxCount} open`,
-      };
-    case 'settlement-reversals':
-      return {
-        actionLabel: 'Review',
-        helper: 'Refund, closed-period, and accounting reversal evidence for posted settlement records.',
-        href: link.href,
-        key: link.key,
-        label: link.label,
-        signal: 'REV',
-        value: 'Reversals',
-      };
-    case 'general-ledger':
-      return {
-        helper: 'Bounded journal batch lookup for posting, reversal, refund, and adjustment evidence.',
-        href: link.href,
-        key: link.key,
-        label: link.label,
-        signal: 'GL',
-        value: 'Journal',
-      };
-    case 'finance-approvers':
-      return {
-        actionLabel: 'Manage',
-        helper: 'Maker/checker finance role separation and approval policy controls.',
-        href: link.href,
-        key: link.key,
-        label: link.label,
-        signal: 'APPROVE',
-        value: 'Policy',
-      };
-    case 'payment-clearing':
-      return {
-        actionLabel: 'Review',
-        helper: 'Customer payment capture, settlement posting, refund, payment fee, and coupon offset queue.',
-        href: link.href,
-        key: link.key,
-        label: link.label,
-        signal: 'CLEAR',
-        value: 'Clearing',
-      };
-    case 'bank-reconciliation':
-      return {
-        actionLabel: 'Match',
-        helper: 'Company bank transaction lookup for manual matching against accounting evidence.',
-        href: link.href,
-        key: link.key,
-        label: link.label,
-        signal: 'BANK',
-        value: 'Reconcile',
-      };
-    case 'coupon-finance':
-      return {
-        actionLabel: 'Review',
-        helper: 'Company-funded coupon expense, discount, reversal, and closeout review flags.',
-        href: link.href,
-        key: link.key,
-        label: link.label,
-        signal: 'COUPON',
-        value: `${values.couponReviewFlagCount} flags`,
-      };
-    case 'monthly-tax-closing':
-      return {
-        actionLabel: 'Close',
-        helper: 'Preview platform VAT, Partner withholding, payment fee, cash debt, and reconciliation deltas.',
-        href: link.href,
-        key: link.key,
-        label: link.label,
-        signal: 'CLOSE',
-        value: values.monthlyPeriod,
-      };
-    case 'platform-vat':
-      return {
-        actionLabel: 'Review',
-        helper: 'Review company output VAT by platform fee rate bucket.',
-        href: link.href,
-        key: link.key,
-        label: link.label,
-        signal: 'VAT',
-        value: <MoneyText amount={values.companyOutputVat} currency={values.currency} />,
-      };
-    case 'payment-fees':
-      return {
-        actionLabel: 'Review',
-        helper: 'Review processing fee totals by method, payer, and treatment.',
-        href: link.href,
-        key: link.key,
-        label: link.label,
-        signal: 'FEE',
-        value: <MoneyText amount={values.paymentProcessingFee} currency={values.currency} />,
-      };
-    case 'partner-withholding-tax':
-      return {
-        actionLabel: 'Review',
-        helper: 'Monthly Partner VAT/PIT totals for manual tax and payout closeout review.',
-        href: link.href,
-        key: link.key,
-        label: link.label,
-        signal: 'TAX',
-        value: <MoneyText amount={values.partnerTaxWithheld} currency={values.currency} />,
-      };
-    case 'overview':
-      return {
-        helper: 'Finance and tax summary dashboard.',
-        href: link.href,
-        key: link.key,
-        label: link.label,
-        signal: 'HOME',
-        value: 'Overview',
-      };
-  }
+function buildCloseoutRows(
+  controls: ReadonlyArray<
+    ReturnType<typeof buildMonthlyTaxClosingRiskLinks>[number] & {
+      readonly controlType: 'BLOCKER' | 'REVIEW';
+    }
+  >,
+  summary: AdminMonthlyTaxClosingSummary,
+): FinanceOverviewTableRow[] {
+  return controls.map((control) => ({
+    actionLabel: closeControlActionLabel(control.key),
+    affectedRecords: control.count === null ? 'Not counted' : formatCount(control.count, 'record'),
+    exposure:
+      control.amount !== null && control.currency
+        ? <MoneyText amount={control.amount} currency={control.currency} />
+        : 'Not calculated',
+    helper: control.helper,
+    href: control.href,
+    key: `${control.controlType.toLowerCase()}-${control.key}`,
+    label: control.label,
+    signal: control.controlType === 'BLOCKER' ? 'Hard blocker' : 'Review flag',
+    signalTone: 'warn',
+    value: control.amount !== null
+      ? <MoneyText amount={control.amount} currency={control.currency ?? summary.currency} />
+      : '—',
+  }));
+}
+
+function hasPriorityWork(item: ReturnType<typeof buildMonthlyTaxClosingRiskLinks>[number]) {
+  return (item.count ?? 0) > 0 || Math.abs(item.amount ?? 0) > 0;
+}
+
+function closeControlActionLabel(key: string) {
+  if (key.includes('deposit')) return 'Match deposits';
+  if (key.includes('outflow')) return 'Match payouts';
+  if (key.includes('inflow')) return 'Match returns';
+  if (key.includes('coupon')) return 'Review coupons';
+  if (key.includes('payment-fee')) return 'Review fee evidence';
+  if (key.includes('tax')) return 'Review tax rows';
+  if (key.includes('journal')) return 'Review journals';
+  if (key.includes('cash-debt')) return 'Review cash debt';
+  return 'Review formula';
+}
+
+function formatPeriodState(state: NonNullable<AdminMonthlyTaxClosingSummary['periodState']> | string) {
+  return state.replaceAll('_', ' ').toLowerCase().replace(/^./u, (value) => value.toUpperCase());
+}
+
+function closeTransitionActionLabel(
+  periodState: NonNullable<AdminMonthlyTaxClosingSummary['periodState']> | string,
+  hasActivity: boolean,
+) {
+  if (!hasActivity || periodState === 'FUTURE_PERIOD') return null;
+  if (periodState === 'CLOSED') return 'View closed period';
+  if (periodState === 'REVIEWED') return 'Prepare tax declaration';
+  if (periodState === 'DECLARED') return 'Record tax payment';
+  if (periodState === 'PAID') return 'Run final close checks';
+  return 'Review monthly totals';
+}
+
+function formatCount(count: number, singular: string) {
+  return `${count.toLocaleString('en-US')} ${count === 1 ? singular : `${singular}s`}`;
+}
+
+function buildRecordRows({
+  accountingFilters,
+  monthlyFilters,
+  settlementFilters,
+}: {
+  readonly accountingFilters: ReturnType<typeof readFinanceAccountingFilters>;
+  readonly monthlyFilters: ReturnType<typeof readMonthlyTaxClosingFilters>;
+  readonly settlementFilters: ReturnType<typeof readBookingSettlementFilters>;
+}): FinanceOverviewTableRow[] {
+  const returnTo = `/finance-tax?${new URLSearchParams({ period: monthlyFilters.period }).toString()}`;
+  return [
+    {
+      actionLabel: 'Open',
+      helper: 'Posted booking amounts, payment method, Partner payout, VAT/PIT, and fee evidence.',
+      href: bookingSettlementAuditHref({
+        ...settlementFilters,
+        page: 1,
+        period: monthlyFilters.period,
+        range: 'all',
+        returnTo,
+        review: 'all',
+        sort: 'oldest',
+      }),
+      key: 'settlements',
+      label: 'Booking settlement records',
+      signal: 'SETTLE',
+      value: monthlyFilters.period,
+    },
+    {
+      actionLabel: 'Open',
+      helper:
+        'Balanced debit and credit batches created by settlement, refund, payout, and adjustment flows.',
+      href: generalLedgerHref(accountingFilters),
+      key: 'ledger',
+      label: 'General ledger',
+      signal: 'GL',
+      value: monthlyFilters.period,
+    },
+    {
+      actionLabel: 'Open',
+      helper: 'Closed-period corrections and refunds retained without editing the original settlement.',
+      href: `/finance-tax/settlement-reversals?${new URLSearchParams({
+        period: monthlyFilters.period,
+        range: 'all',
+        review: 'all',
+        returnTo,
+      }).toString()}`,
+      key: 'reversals',
+      label: 'Settlement reversals',
+      signal: 'REV',
+      value: monthlyFilters.period,
+    },
+    {
+      actionLabel: 'Open',
+      helper: 'Versioned Vietnam tax rules. Historical settlement values remain immutable.',
+      href: '/tax-policy',
+      key: 'tax-policy',
+      label: 'Tax policy',
+      signal: 'RULES',
+      value: 'Global',
+    },
+  ];
 }

@@ -1,9 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { FilePurpose, FileUploadStatus, FileVisibility, Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
+import { chatNotificationRoutingData } from '../notifications/notification-push-payload';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { MAX_CHAT_ATTACHMENTS_JSON_LENGTH, MAX_CHAT_MESSAGE_BODY_LENGTH } from './chat.policy';
+import {
+  MAX_CHAT_ATTACHMENT_COUNT,
+  MAX_CHAT_ATTACHMENTS_JSON_LENGTH,
+  MAX_CHAT_MESSAGE_BODY_LENGTH,
+} from './chat.policy';
 
 @Injectable()
 export class ChatService {
@@ -34,9 +39,11 @@ export class ChatService {
     }
     const trimmedBody = body.trim();
     if (trimmedBody.length > MAX_CHAT_MESSAGE_BODY_LENGTH) {
-      throw new BadRequestException(`Message body must be ${MAX_CHAT_MESSAGE_BODY_LENGTH} characters or fewer`);
+      throw new BadRequestException(
+        `Message body must be ${MAX_CHAT_MESSAGE_BODY_LENGTH} characters or fewer`,
+      );
     }
-    const attachments = serializeChatAttachments(input.attachments);
+    const attachments = await this.resolveChatAttachments(user.id, input.attachments);
 
     const message = await this.prisma.chatMessage.create({
       data: {
@@ -138,13 +145,43 @@ export class ChatService {
         type: 'chat.message.created',
         title: 'New chat message',
         body: 'A new message is available in your booking chat.',
-        data: { bookingId: chatRoom.bookingId, chatRoomId },
+        data: chatNotificationRoutingData({
+          bookingId: chatRoom.bookingId,
+          chatRoomId,
+        }),
       });
     }
   }
+
+  private async resolveChatAttachments(ownerUserId: string, attachments: unknown) {
+    const fileIds = parseChatAttachmentIds(attachments);
+    if (fileIds === undefined) {
+      return undefined;
+    }
+    if (fileIds.length === 0) {
+      return [];
+    }
+
+    const ownedFiles = await this.prisma.fileAsset.findMany({
+      where: {
+        id: { in: fileIds },
+        ownerUserId,
+        purpose: FilePurpose.CHAT_ATTACHMENT,
+        uploadStatus: FileUploadStatus.UPLOADED,
+        visibility: FileVisibility.PRIVATE,
+      },
+      select: { id: true },
+    });
+    const ownedFileIds = new Set(ownedFiles.map((file) => file.id));
+    if (fileIds.some((fileId) => !ownedFileIds.has(fileId))) {
+      throw new BadRequestException('Chat attachments must be uploaded private files owned by the sender');
+    }
+
+    return fileIds.map((id) => ({ id }));
+  }
 }
 
-function serializeChatAttachments(attachments: unknown) {
+function parseChatAttachmentIds(attachments: unknown) {
   if (attachments === undefined) {
     return undefined;
   }
@@ -154,6 +191,31 @@ function serializeChatAttachments(attachments: unknown) {
     throw new BadRequestException('Chat attachment metadata is too large');
   }
 
-  return JSON.parse(serialized);
-}
+  if (!Array.isArray(attachments)) {
+    throw new BadRequestException('Chat attachments must be a list of uploaded file references');
+  }
+  if (attachments.length > MAX_CHAT_ATTACHMENT_COUNT) {
+    throw new BadRequestException(`Chat messages support at most ${MAX_CHAT_ATTACHMENT_COUNT} attachments`);
+  }
 
+  const fileIds = attachments.map((attachment) => {
+    if (
+      !attachment ||
+      typeof attachment !== 'object' ||
+      Array.isArray(attachment) ||
+      Object.keys(attachment).some((key) => key !== 'id')
+    ) {
+      throw new BadRequestException('Chat attachments may contain only a file id');
+    }
+    const id = 'id' in attachment && typeof attachment.id === 'string' ? attachment.id.trim() : '';
+    if (!id || id.length > 128) {
+      throw new BadRequestException('Chat attachment file ids must be between 1 and 128 characters');
+    }
+    return id;
+  });
+
+  if (new Set(fileIds).size !== fileIds.length) {
+    throw new BadRequestException('Chat attachment file ids must be unique');
+  }
+  return fileIds;
+}

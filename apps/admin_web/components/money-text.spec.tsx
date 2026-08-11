@@ -35,7 +35,7 @@ describe('MoneyText', () => {
     const moneyBlock = cssRuleBlock(globals, '.money-text {');
 
     expect(globals).toContain('.money-text {');
-    expect(moneyBlock).toContain('font-feature-settings: "tnum" 1;');
+    expect(moneyBlock).toContain("font-feature-settings: 'tnum' 1;");
     expect(moneyBlock).toContain('font-variant-numeric: tabular-nums;');
     expect(moneyBlock).toContain('font-weight: 600;');
     expect(moneyBlock).toContain('letter-spacing: 0;');

@@ -1,7 +1,6 @@
 import { CalendarDays } from 'lucide-react';
 
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import type { AdminDateRange } from '../../lib/date-range';
 import { dateRangeLabel } from '../../lib/date-range';
@@ -47,11 +46,6 @@ export function OperationsHandoffDateRangeSection({
           );
         })}
       </div>
-      <AdminFilterSummary
-        ariaLabel="Active operations handoff filters"
-        labels={[`Range: ${dateRangeLabel(range)}`, `Detail mode: ${detailsMode === 'all' ? 'All records' : 'Summary'}`]}
-        tone="info"
-      />
     </AdminFilterPanel>
   );
 }

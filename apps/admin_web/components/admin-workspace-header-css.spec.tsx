@@ -19,7 +19,7 @@ describe('Admin workspace header CSS', () => {
     expect(hoverBlock).not.toContain('background: var(--admin-sidebar-hover)');
   });
 
-  it('keeps theme mode buttons aligned with Vuexy medium IconButton sizing', () => {
+  it('keeps the theme control aligned with Vuexy medium IconButton sizing', () => {
     const toggleButtonIndex = globalsCss.indexOf('.theme-toggle-button {');
     const toggleButtonBlock = cssRuleBlockAt(toggleButtonIndex);
 

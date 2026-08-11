@@ -22,7 +22,7 @@ describe('PartnerOverviewPage', () => {
     mockedAdminGet.mockReset();
   });
 
-  it('renders operator action rows with descriptive open controls and forwards filters', async () => {
+  it('renders compact action queue summaries with descriptive open controls and forwards filters', async () => {
     mockedAdminGet.mockResolvedValue(partnerOverviewFixture);
 
     const page = await PartnerOverviewPage({
@@ -37,10 +37,11 @@ describe('PartnerOverviewPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/partners/overview?range=7d&riskStatus=high&walletStatus=negative&selectionIssue=availability&selectionSort=response',
-      expect.any(Object),
+      '/admin/partners/overview?range=7d&includeActionRows=false&previewLimit=5&riskStatus=high&walletStatus=negative&selectionIssue=availability&selectionSort=response',
+      null,
     );
-    expect(markup).toContain('Risk and action queues');
+    expect(markup).toContain('Detailed action queues');
+    expect(markup).toContain('Risk analysis: latest 500');
     expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('class="partner-overview-page"');
     expect(markup).not.toContain('usage-overview-page');
@@ -52,19 +53,27 @@ describe('PartnerOverviewPage', () => {
     expect(markup).not.toContain('class="admin-form-control"');
     expect(markup).toContain('class="admin-form-input admin-form-control-labeled"');
     expect(markup).toContain('class="admin-form-select admin-form-control-labeled"');
+    expect(markup).toContain('<option value="service-1">Deep Tissue Massage · 90 min</option>');
+    expect(markup).not.toContain('placeholder="service id"');
     expect(markup).toContain('class="admin-form-control-button button button-primary"');
     expect(markup).toContain('class="metric-card-scope is-live"');
     expect(markup).toContain('Live');
     expect(pageSource).toContain('AdminFormGrid');
     expect(pageSource).not.toContain('<form className="partner-overview-filter-grid"');
-    expect(pageSource).not.toContain('<form action="/partners/overview" className="partner-overview-selection-sort-form">');
-    expect(markup).toContain('card admin-section partner-overview-section-card partner-overview-operating-board');
+    expect(pageSource).not.toContain(
+      '<form action="/partners/overview" className="partner-overview-selection-sort-form">',
+    );
+    expect(markup).toContain(
+      'card admin-section partner-overview-section-card partner-overview-operating-board',
+    );
     expect(markup).toContain('admin-section-body partner-overview-operating-grid');
-    expect(markup).toContain('card admin-card partner-overview-operating-card');
+    expect(markup).toContain('card admin-card partner-overview-command-card partner-overview-operating-card');
     expect(pageSource).not.toContain('className={`card admin-card partner-overview-operating-card');
-    expect(pageSource).toContain('baseClassName="partner-overview-operating-card"');
+    expect(pageSource).toContain('baseClassName="partner-overview-command-card partner-overview-operating-card"');
     expect(pageSource).not.toContain('AdminLinkCard');
-    expect(markup).toContain('card admin-section partner-overview-section-card partner-overview-priority-board');
+    expect(markup).toContain(
+      'card admin-section partner-overview-section-card partner-overview-priority-board',
+    );
     expect(markup).not.toContain('usage-overview-funnel-card');
     expect(markup).toContain('admin-section-body partner-overview-priority-grid');
     expect(markup).toContain('card admin-card partner-overview-command-card partner-overview-priority-card');
@@ -72,18 +81,18 @@ describe('PartnerOverviewPage', () => {
     expect(markup).not.toContain('usage-overview-command-card');
     expect(markup).not.toContain('usage-overview-command-icon');
     expect(markup).not.toContain('<article class="card admin-card partner-overview-command-card');
-    expect(markup).toContain('card admin-card partner-overview-action-card');
-    expect(markup).not.toContain('<article class="card admin-card partner-overview-action-card');
-    expect(markup).toContain('ops-section-header admin-section-header admin-card-header');
-    expect(pageSource).toContain('AdminCardHeader');
-    expect(pageSource).toContain('AdminCardGrid');
-    expect(pageSource).not.toContain('<div className="partner-overview-action-card-header">');
-    expect(pageSource).not.toContain('<div className="partner-overview-action-rows">');
+    expect(markup).toContain('partner-overview-action-table');
+    expect(markup).not.toContain('partner-overview-action-card');
+    expect(pageSource).not.toContain('AdminCardHeader');
+    expect(pageSource).not.toContain('AdminCardGrid');
+    expect(pageSource).not.toContain('function ActionRow');
     expect(markup).toContain('admin-section-body partner-overview-funnel-steps');
-    expect(markup).toContain('admin-section-body partner-overview-action-grid');
+    expect(markup).toContain('admin-section-body partner-overview-action-table-body');
     expect(markup).toContain('card admin-section partner-overview-table-card');
     expect(markup).toContain('admin-table-scroll partner-overview-table-wrap');
-    expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table partner-overview-table');
+    expect(markup).toContain(
+      'table vuexy-data-table vuexy-booking-table admin-data-table partner-overview-table',
+    );
     expect(markup).not.toContain('usage-overview-table-card');
     expect(markup).not.toContain('usage-overview-table-wrap');
     expect(markup).not.toContain('usage-overview-table');
@@ -91,7 +100,7 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).toContain('AdminTableScroll');
     expect(pageSource).not.toContain('PillClassBadge');
     expect(pageSource).toContain('AdminFormControlLink');
-    expect(pageSource).toContain('AdminRowLink');
+    expect(pageSource).not.toContain('AdminRowLink');
     expect(pageSource).toContain('AdminOverviewCommandGrid');
     expect(pageSource).toContain('AdminOverviewGrid');
     expect(pageSource).toContain('AdminMiniMetricStrip');
@@ -113,77 +122,114 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).not.toContain('className="usage-overview-table-wrap"');
     expect(pageSource).not.toContain('className="usage-overview-table"');
     expect(pageSource).not.toContain('Supply health');
-    expect(pageSource).not.toContain('Partner readiness funnel');
+    expect(pageSource).toContain('Current readiness snapshot');
     expect(pageSource).not.toContain('Area supply health');
     expect(pageSource).not.toContain('Service supply health');
     expect(pageSource).not.toContain('<a\n      aria-label={`${row.partnerName}');
     expect(pageSource).not.toContain('<a aria-label={`${row.recommendedAction} for ${row.partnerName}`}');
-    expect(pageSource).not.toContain('<a aria-label={`Open ${list.title}`} className="button button-secondary"');
+    expect(pageSource).not.toContain(
+      '<a aria-label={`Open ${list.title}`} className="button button-secondary"',
+    );
     expect(markup).toContain('admin-section-body partner-overview-risk-card-body');
     expect(markup).toContain('admin-section-body partner-overview-selection-body');
     expect(pageSource).toContain('AdminOverviewCommandCard');
     expect(pageSource).not.toContain('<AdminCard className={`usage-overview-command-card is-${tone}`}');
-    expect(pageSource).not.toContain('<AdminCard className={`usage-overview-command-card is-${segment.tone}`}');
+    expect(pageSource).not.toContain(
+      '<AdminCard className={`usage-overview-command-card is-${segment.tone}`}',
+    );
     expect(pageSource).toContain('baseClassName="partner-overview-command-card"');
     expect(pageSource).toContain('iconClassName="partner-overview-command-icon"');
     expect(markup).toContain('aria-label="Remove Risk filter High"');
     expect(markup).toContain('aria-label="Remove Wallet filter Negative"');
     expect(markup).toContain('aria-label="Remove Selection issue filter Availability"');
     expect(markup).toContain('aria-label="Remove Selection sort filter Response time"');
-    expect(markup).toContain('aria-label="Open Pending Verification"');
+    expect(markup).toContain('aria-label="Open full queue for Pending Verification"');
     expect(markup).toContain('Fresh location');
+    expect(markup).toContain('Online available');
+    expect(markup).toContain('Bookable now');
     expect(markup).toContain('Response');
     expect(markup).toContain('1m 35s');
     expect(markup).toContain('Ho Chi Minh City');
-    expect(markup).toContain('Completion');
-    expect(markup).toContain('Avg rating');
+    expect(markup).toContain('Completed share');
+    expect(markup).toContain('Lifetime Partner rating');
     expect(markup).toContain('87%');
     expect(markup).toContain('4.70');
     expect(markup).toContain('aria-label="Review reports for Quality Partner"');
     expect(markup).toContain('href="/partners/quality-partner?section=full"');
-    expect(markup).toContain('Available soon · Low rating reviews');
-    expect(markup).toContain('Smoke Partner');
-    expect(markup).toContain('+84900001111 · Ho Chi Minh City');
-    expect(markup).toContain('Online available · Last activity');
+    expect(markup).toContain('Available soon · Review follow-up');
     expect(markup).toContain('date-time-text');
-    expect(markup).toContain(
-      'aria-label="Smoke Partner, +84900001111, Ho Chi Minh City, Online available, last activity 27 Jun 2026, 03:39, Verification incomplete, Finish KYC approval"',
-    );
-    expect(markup).toContain('Finish KYC approval');
-    expect(markup).toContain('Partner operating status');
-    expect(markup).toContain('Ready now');
+    expect(markup).toContain('Open Partners');
+    expect(markup).toContain('Open full queue');
+    expect(markup).toContain('Current supply');
+    expect(markup).toContain('Location &lt;= 90m');
+    expect(markup).toContain('Bookable now');
     expect(markup).toContain('Approved, online, fresh location, active services, and wallet eligible');
-    expect(markup).toContain('aria-label="Ready now, 0 Partners. Open filtered Partners list"');
-    expect(markup).toContain('Open filtered list');
+    expect(markup).toContain(
+      'aria-label="Bookable now, 0 Partners. Open full queue; bounded Risk filter is not applied"',
+    );
+    expect(markup).toContain('Available but blocked');
+    expect(markup).toContain('href="/partners?review=available-blocked&amp;walletStatus=negative"');
+    expect(markup).toContain('aria-label="Customer App Partner visibility"');
+    expect(markup).toContain('Visible in customer app: 4');
+    expect(markup).toContain('href="/partners?review=customer-visible-now&amp;walletStatus=negative"');
+    expect(markup).toContain('Approved public profiles with active services · blocker counts can overlap');
+    expect(markup).not.toContain('Bank approval missing');
+    expect(markup).toContain('Payout bank not approved');
+    expect(markup).toContain('Blocking signals');
+    expect(markup).toContain('Signals can overlap');
+    expect(markup).toContain('Stale location');
+    expect(markup).toContain(
+      'href="/partners?review=customer-visibility-documents&amp;walletStatus=negative"',
+    );
+    expect(markup).toContain('No active service');
+    expect(markup).toContain(
+      'href="/partners?review=customer-visibility-service&amp;walletStatus=negative"',
+    );
+    expect(markup).toContain('Negative wallet');
+    expect(markup).toContain(
+      'href="/partners?review=available-blocked-wallet&amp;walletStatus=negative"',
+    );
+    expect(markup).toContain('Account blocked');
+    expect(markup).toContain(
+      'href="/partners?review=available-blocked-account&amp;walletStatus=negative"',
+    );
     expect(markup).toContain('Available soon');
     expect(markup).toContain('Auto-offline follow-up queue for approved partners');
-    expect(markup).toContain('Partner operations priority');
-    expect(markup).toContain('Ready supply');
+    expect(markup).toContain('Action required');
+    expect(markup).not.toContain('Ready supply');
     expect(markup).toContain('card admin-card partner-overview-funnel-step');
-    expect(markup).toContain('partner-overview-funnel-bar');
+    expect(markup).not.toContain('partner-overview-funnel-bar');
     expect(markup).not.toContain('usage-overview-funnel-step');
     expect(markup).not.toContain('usage-overview-funnel-bar');
     expect(pageSource).not.toContain('usage-overview-funnel-step');
     expect(pageSource).not.toContain('usage-overview-funnel-bar');
-    expect(markup).toContain('Selection drop-off');
-    expect(markup).toContain('2 issues');
-    expect(markup).toContain('Wallet risk');
-    expect(markup).toContain('0 partners');
+    expect(markup).toContain('Online but not bookable');
+    expect(markup).toContain('Pending verification');
+    expect(markup).not.toContain('Wallet risk');
     expect(markup).toContain('Quality risk');
     expect(markup).toContain('1 partner');
-    expect(markup).toContain('Review friction');
-    expect(markup).toContain('Review wallet');
-    expect(markup).toContain('Review quality');
-    expect(markup).toContain('href="/partners?review=unsettled"');
+    expect(markup).toContain(
+      'aria-label="Online but not bookable, 2 partners. Open full queue; bounded Risk filter is not applied"',
+    );
+    expect(markup).not.toContain('Review wallet');
+    expect(markup).toContain(
+      'aria-label="Quality risk, 1 partner. Open full queue; bounded Risk filter is not applied"',
+    );
+    expect(markup).not.toContain('href="/partners?review=unsettled"');
+    expect(markup).toContain(
+      'href="/partners?review=quality-all&amp;walletStatus=negative&amp;qualityRange=7d"',
+    );
     expect(markup).toContain('Selection friction');
     expect(markup).toContain('Selection issue');
     expect(markup).toContain('Availability (1)');
     expect(markup).toContain('Profile (2)');
     expect(markup).toContain('Service (0)');
-    expect(markup).toContain('href="/partners/overview?range=7d&amp;riskStatus=high&amp;walletStatus=negative&amp;selectionIssue=price&amp;selectionSort=response"');
+    expect(markup).toContain(
+      'href="/partners/overview?range=7d&amp;riskStatus=high&amp;walletStatus=negative&amp;selectionIssue=price&amp;selectionSort=response"',
+    );
     expect(markup).toContain('<option value="response" selected="">Response time</option>');
     expect(markup).toContain('Viewed Not Booked');
-    expect(markup).toContain('<small>Online available</small>');
+    expect(markup).toContain('Ho Chi Minh City · Online available');
     expect(markup).toContain('18 views');
     expect(markup).toContain('3 favorites');
     expect(markup).toContain('0% selected');
@@ -191,17 +237,25 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('550.000 VND');
     expect(markup).toContain('3m');
     expect(markup).toContain('Available soon');
-    expect(markup).toContain('27 Jun 2026, 13:30');
+    expect(markup).toContain('Profile and service details');
     expect(markup).toContain('No approved profile image');
     expect(markup).toContain('High partner price');
     expect(markup).toContain('Review profile pricing and photos');
-    expect(markup).toContain('Partner segments');
-    expect(markup).not.toContain('ONLINE_AVAILABLE');
+    expect(markup).toContain('aria-label="Area supply table"');
+    expect(markup).toContain('aria-label="Service supply table"');
+    expect(markup).toContain('aria-label="Booking quality risk table"');
+    expect(markup).toContain('aria-label="Finance wallet risk table"');
+    expect(markup).toContain('aria-label="Selection friction table"');
+    expect(markup).toContain('Bookable status and blockers');
+    expect(markup).toContain('Recommended action');
+    expect(markup).not.toContain('Partner segments');
+    expect(markup).not.toContain('Data notes');
+    expect(markup).not.toMatch(/>ONLINE_AVAILABLE(?:_SOON)?</);
     expect(pageSource).toContain('StatusBadge');
     expect(pageSource).toContain('StatusBadgeFromPillClass');
     expect(pageSource).not.toContain('statusBadgeToneFromPillClass');
     expect(pageSource).toContain('DateTimeText');
-    expect(pageSource).toContain('formatDateTime,');
+    expect(pageSource).not.toContain('formatDateTime,');
     expect(pageSource).not.toContain('const generatedAt = formatDateTime(overview.generatedAt);');
     expect(pageSource).not.toContain('<small>Next {formatDateTime(row.nextAvailableAt)}</small>');
     expect(pageSource).not.toContain('{partnerStatus} · Last activity {lastActivity}');
@@ -211,15 +265,22 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).not.toContain('PillClassBadge');
     expect(pageSource).not.toContain('<span className="pill pill-success">Vietnam supply</span>');
     expect(pageSource).not.toContain('<span className="pill pill-info">Generated {generatedAt}</span>');
-    expect(pageSource).not.toContain('<span className="pill pill-info">{formatDurationSeconds(row.averageResponseSeconds)}</span>');
-    expect(pageSource).not.toContain('<span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.status}</span>');
-    expect(pageSource).not.toContain('<span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.mainReason}</span>');
+    expect(pageSource).not.toContain(
+      '<span className="pill pill-info">{formatDurationSeconds(row.averageResponseSeconds)}</span>',
+    );
+    expect(pageSource).not.toContain(
+      '<span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.status}</span>',
+    );
+    expect(pageSource).not.toContain(
+      '<span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.mainReason}</span>',
+    );
   });
 
   it('omits empty aggregate grids while keeping actionable empty-state sections', async () => {
     mockedAdminGet.mockResolvedValue({
       ...partnerOverviewFixture,
       activityRetention: { cards: [] },
+      appActivity: { inactivePartners: [], kpis: [], mostActive: [] },
       actionLists: [
         {
           ...partnerOverviewFixture.actionLists[0],
@@ -227,7 +288,7 @@ describe('PartnerOverviewPage', () => {
           totalCount: 0,
         },
       ],
-      operatingStatus: { cards: [] },
+      operatingStatus: { availableBlockedReasons: [], cards: [], locationFreshnessMinutes: 90 },
       segments: [],
       summaryKpis: [],
     });
@@ -241,13 +302,37 @@ describe('PartnerOverviewPage', () => {
 
     expect(markup).not.toContain('aria-label="Partner supply summary"');
     expect(markup).not.toContain('aria-label="Partner activity and retention"');
+    expect(markup).not.toContain('Partner app activity');
     expect(markup).not.toContain('aria-label="Partner segments"');
-    expect(markup).toContain('Partner operations priority');
-    expect(markup).toContain('Partner operating status');
-    expect(markup).toContain('Risk and action queues');
+    expect(markup).toContain('Action required');
+    expect(markup).toContain('Current supply');
+    expect(markup).toContain('Detailed action queues');
     expect(markup).toContain('No operating status data is available yet.');
-    expect(markup).toContain('No Partners need this action right now.');
     expect(markup).toContain('class="empty-state');
+  });
+
+  it('requests count-only action queues for the initial overview payload', async () => {
+    mockedAdminGet.mockResolvedValue({
+      ...partnerOverviewFixture,
+      actionLists: partnerOverviewFixture.actionLists.map((list) => ({
+        ...list,
+        rows: [],
+      })),
+    });
+
+    const page = await PartnerOverviewPage({
+      searchParams: Promise.resolve({ range: '30d' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/partners/overview?range=30d&includeActionRows=false&previewLimit=5',
+      null,
+    );
+    expect(markup).toContain('Pending Verification');
+    expect(markup).toContain('1 Partners');
+    expect(markup).not.toContain('Smoke Partner');
+    expect(markup).not.toContain('No Partners need this action right now.');
   });
 
   it('uses the shared money atom for partner overview money values', () => {
@@ -270,11 +355,38 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).toContain('AdminKpiCard');
     expect(pageSource).toContain('<AdminKpiCard');
     expect(markup).toContain('card admin-kpi-card partner-overview-kpi-card');
-    expect(markup).not.toContain('aria-label="Partner supply summary"><div class="card admin-card partner-overview-command-card');
-    expect(markup).not.toContain('aria-label="Partner activity and retention"><div class="card admin-card partner-overview-command-card');
+    expect(markup).toContain('+10% vs previous');
+    expect(markup).not.toContain(
+      'aria-label="Partner supply summary"><div class="card admin-card partner-overview-command-card',
+    );
+    expect(markup).not.toContain(
+      'aria-label="Partner activity and retention"><div class="card admin-card partner-overview-command-card',
+    );
   });
 
-  it('labels partner operating, priority, and segment cards by operating scope', async () => {
+  it('renders actual Partner App activity separately from booking performance', async () => {
+    mockedAdminGet.mockResolvedValue(partnerOverviewFixture);
+
+    const page = await PartnerOverviewPage({
+      searchParams: Promise.resolve({ range: '7d' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Partner app activity');
+    expect(markup).toContain('Actual Partner App opens and authenticated session starts');
+    expect(markup).toContain('Most active');
+    expect(markup).toContain('App telemetry inactive 7D+ / untracked');
+    expect(markup).toContain('Active Partner');
+    expect(markup).toContain('Inactive Partner');
+    expect(markup).toContain('App opens');
+    expect(markup).toContain('Usage');
+    expect(markup).toContain('4 sessions');
+    expect(markup).toContain('href="/partners?activity=app-inactive-7d"');
+    expect(markup).toContain('href="/partners?activity=app-not-tracked"');
+    expect(markup).toContain('App telemetry inactive 7D+');
+  });
+
+  it('labels partner operating and priority cards by operating scope', async () => {
     mockedAdminGet.mockResolvedValue(partnerOverviewFixture);
 
     const page = await PartnerOverviewPage({
@@ -283,20 +395,35 @@ describe('PartnerOverviewPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toMatch(
-      /partner-overview-operating-card[\s\S]*metric-card-scope is-live">Live[\s\S]*Ready now/,
+      /partner-overview-operating-card[\s\S]*metric-card-scope is-record">No action[\s\S]*Bookable now/,
     );
     expect(markup).toMatch(
-      /partner-overview-operating-card[\s\S]*metric-card-scope is-risk">Needs action[\s\S]*Inactive 7D/,
+      /partner-overview-operating-card[\s\S]*metric-card-scope is-record">No action[\s\S]*No operational activity in 7D/,
     );
     expect(markup).toMatch(
-      /partner-overview-priority-card[\s\S]*metric-card-scope is-action">Pending[\s\S]*Selection drop-off/,
+      /partner-overview-operating-card[\s\S]*metric-card-scope is-risk">Needs action[\s\S]*Available but blocked/,
+    );
+    expect(markup).toMatch(
+      /partner-overview-priority-card[\s\S]*metric-card-scope is-action">Pending[\s\S]*Online but not bookable/,
     );
     expect(markup).toMatch(
       /partner-overview-priority-card[\s\S]*metric-card-scope is-risk">Needs action[\s\S]*Quality risk/,
     );
-    expect(markup).toMatch(
-      /partner-overview-command-card is-warning[\s\S]*metric-card-scope is-action">Pending[\s\S]*New Pending/,
-    );
+  });
+
+  it('shows an explicit unavailable state instead of rendering fallback zero metrics', async () => {
+    mockedAdminGet.mockResolvedValue(null);
+
+    const page = await PartnerOverviewPage({
+      searchParams: Promise.resolve({ range: '7d' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Partner data unavailable');
+    expect(markup).toContain('Source unavailable');
+    expect(markup).toContain('Retry Partner Overview');
+    expect(markup).not.toContain('Action required');
+    expect(markup).not.toContain('Ready supply');
   });
 
   it('scopes partner KPI icon tones to direct MetricCard icon slots', () => {
@@ -326,6 +453,9 @@ describe('PartnerOverviewPage', () => {
     expect(css).toContain('.partner-overview-operating-card > div > small');
     expect(css).toContain('.partner-overview-operating-card > div > em');
     expect(css).toContain('.partner-overview-priority-card > div > em');
+    expect(css).toMatch(
+      /\.partner-overview-priority-card > div > strong\s*\{[\s\S]*?white-space:\s*normal/,
+    );
     expect(css).toContain('.partner-overview-selection-toolbar > div > strong');
     expect(css).not.toContain('.partner-overview-operating-card span {');
     expect(css).not.toContain('.partner-overview-operating-card strong {');
@@ -333,6 +463,26 @@ describe('PartnerOverviewPage', () => {
     expect(css).not.toContain('.partner-overview-operating-card em {');
     expect(css).not.toContain('.partner-overview-priority-card em {');
     expect(css).not.toContain('.partner-overview-selection-toolbar strong {');
+  });
+
+  it('keeps Partner operations tables full-width and the 720px app tables in one column', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toMatch(
+      /\.partner-overview-supply-grid,\s*\.partner-overview-quality-grid\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/,
+    );
+    expect(css).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
+    expect(css).toMatch(
+      /@media \(max-width: 900px\)[\s\S]*?\.partner-overview-priority-grid,[\s\S]*?grid-template-columns:\s*1fr/,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 1150px\)[\s\S]*?\.partner-overview-filter-panel > \.admin-filter-panel-header\s*\{[\s\S]*?flex-direction:\s*column/,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 1180px\)[\s\S]*?\.usage-overview-insight-grid\.partner-overview-app-activity-grid\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\)/,
+    );
+    expect(css).toContain('.partner-overview-page .partner-overview-table > thead > tr > th:first-child');
+    expect(css).toContain('position: sticky;');
   });
 
   it('scopes partner overview typography to direct Vuexy card slots', () => {
@@ -362,27 +512,43 @@ describe('PartnerOverviewPage', () => {
     expect(css).not.toContain('.partner-overview-action-row small {');
   });
 
-  it('scopes partner funnel meter tones to direct bar slots', () => {
+  it('does not render period-style conversion meters in the current readiness snapshot', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
-    expect(css).toContain('.partner-overview-funnel-bar > i');
-    expect(css).not.toContain('.partner-overview-funnel-bar i {');
-
-    for (const tone of ['info', 'success', 'warning']) {
-      expect(css).toContain(`.partner-overview-funnel-step.is-${tone} > .partner-overview-funnel-bar > i`);
-      expect(css).not.toContain(`.partner-overview-funnel-step.is-${tone} .partner-overview-funnel-bar i`);
-    }
+    expect(pageSource).not.toContain('partner-overview-funnel-bar');
+    expect(css).not.toContain('.partner-overview-funnel-bar > i');
   });
 });
 
 const partnerOverviewFixture: AdminPartnerOverview = {
   generatedAt: '2026-07-02T03:29:00.000Z',
   refreshSeconds: 60,
-  source: 'stored-partner-supply-aggregates',
+  source: 'live-summary-backed-partner-operational-query',
+  timeZone: 'Asia/Ho_Chi_Minh',
   range: '7d',
   rangeLabel: 'Last 7 days',
   windowStartAt: '2026-06-26T00:00:00.000Z',
   windowEndAt: '2026-07-02T00:00:00.000Z',
+  comparison: {
+    rangeLabel: 'Previous last 7 days',
+    windowStartAt: '2026-06-19T00:00:00.000Z',
+    windowEndAt: '2026-06-26T00:00:00.000Z',
+    totals: {
+      appOpenCount: 8,
+      cancellationCount: 1,
+      completedBookingCount: 10,
+      sessionStartCount: 3,
+    },
+  },
+  queryScope: {
+    actionListCountScope: 'full-population',
+    appActivityCountScope: 'full-population',
+    operatingStatusCountScope: 'full-population',
+    providerScanLimit: 500,
+    walletBalancePartnerCount: 2,
+    walletBalanceScopeTruncated: true,
+    walletStatusFilterBounded: false,
+  },
   filters: {
     city: null,
     onlineStatus: null,
@@ -393,40 +559,122 @@ const partnerOverviewFixture: AdminPartnerOverview = {
     verificationStatus: null,
     walletStatus: null,
   },
+  filterOptions: {
+    services: [
+      {
+        durationMin: 90,
+        id: 'service-1',
+        name: 'Deep Tissue Massage',
+      },
+    ],
+  },
   summaryKpis: [
     {
-      key: 'eligibleToAccept',
-      label: 'Eligible To Accept',
-      value: 12,
-      detail: 'Can accept a booking now',
-      unit: 'count',
+      key: 'averageResponseTime',
+      label: 'Average Response Time',
+      value: 95,
+      detail: 'Filtered participant responses',
+      unit: 'seconds',
+      deltaPercent: null,
+    },
+    {
+      key: 'averageRating',
+      label: 'Average Rating',
+      value: 4.7,
+      detail: 'Published reviews in range',
+      unit: 'rating',
       deltaPercent: null,
     },
   ],
   operatingStatus: {
+    locationFreshnessMinutes: 90,
+    customerDiscovery: {
+      visibleNow: 4,
+      visibleHref: '/partners?review=customer-visible-now',
+      blockers: [
+        {
+          key: 'documents',
+          label: 'Public documents missing',
+          count: 2,
+          detail: 'Required public profile documents are incomplete',
+          href: '/partners?review=customer-visibility-documents',
+          tone: 'warning',
+        },
+        {
+          key: 'service',
+          label: 'No bookable service',
+          count: 1,
+          detail: 'Profile can be approved but cannot take a reservation',
+          href: '/partners?review=customer-visibility-service',
+          tone: 'danger',
+        },
+      ],
+    },
+    availableBlockedReasons: [
+      {
+        key: 'location',
+        label: 'Stale location',
+        count: 2,
+        detail: 'No location update in the last 90 minutes',
+        href: '/partners?review=available-blocked-location',
+        tone: 'warning',
+      },
+      {
+        key: 'service',
+        label: 'No active service',
+        count: 1,
+        detail: 'No active service can be offered to customers',
+        href: '/partners?review=available-blocked-service',
+        tone: 'warning',
+      },
+      {
+        key: 'wallet',
+        label: 'Negative wallet',
+        count: 1,
+        detail: 'Partner receivable requires Finance review before dispatch',
+        href: '/partners?review=available-blocked-wallet',
+        tone: 'danger',
+      },
+      {
+        key: 'account',
+        label: 'Account blocked',
+        count: 0,
+        detail: 'An active account block prevents dispatch',
+        href: '/partners?review=available-blocked-account',
+        tone: 'danger',
+      },
+    ],
     cards: [
       {
         key: 'ready-now',
-        label: 'Ready now',
+        label: 'Bookable now',
         count: 0,
         detail: 'Approved, online, fresh location, active services, and wallet eligible',
-        href: '/partners?review=marketplace-ready&onlineStatus=available',
+        href: '/partners?review=ready-now',
         tone: 'success',
+      },
+      {
+        key: 'available-blocked',
+        label: 'Available but blocked',
+        count: 2,
+        detail: 'Online available, but location, service, account, or wallet gates prevent booking',
+        href: '/partners?review=available-blocked',
+        tone: 'warning',
       },
       {
         key: 'available-soon',
         label: 'Available soon',
         count: 1,
         detail: 'Partner marked available soon instead of ready now',
-        href: '/partners?review=marketplace-ready&onlineStatus=soon',
+        href: '/partners?verification=APPROVED&kyc=APPROVED&providerStatus=ONLINE_AVAILABLE_SOON',
         tone: 'info',
       },
       {
         key: 'inactive-7d',
-        label: 'Inactive 7D',
+        label: 'No operational activity in 7D',
         count: 0,
         detail: 'Auto-offline follow-up queue for approved partners',
-        href: '/partners?review=marketplace-ready&activity=inactive-7d',
+        href: '/partners?review=ready-now&activity=inactive-7d',
         tone: 'danger',
       },
     ],
@@ -441,10 +689,10 @@ const partnerOverviewFixture: AdminPartnerOverview = {
         locationFreshPartners: 6,
         eligiblePartners: 4,
         openRequests: 3,
-        failedRequests: 1,
-        matchingFailureRate: 25,
+        nonCompletedOutcomes: 1,
+        nonCompletedShare: 25,
         averageResponseSeconds: 95,
-        status: 'High Failure',
+        status: 'High non-completed share',
         riskLevel: 'high',
       },
     ],
@@ -467,11 +715,27 @@ const partnerOverviewFixture: AdminPartnerOverview = {
   funnel: {
     steps: [
       {
-        key: 'signed-up',
-        label: 'Signed Up',
+        key: 'registered',
+        label: 'Registered',
         count: 21,
         conversionRate: 100,
         dropoffRate: 0,
+        dataStatus: 'available',
+      },
+      {
+        key: 'approved',
+        label: 'Approved',
+        count: 16,
+        conversionRate: 76,
+        dropoffRate: 24,
+        dataStatus: 'available',
+      },
+      {
+        key: 'ready-now',
+        label: 'Bookable now',
+        count: 8,
+        conversionRate: 38,
+        dropoffRate: 50,
         dataStatus: 'available',
       },
     ],
@@ -479,8 +743,84 @@ const partnerOverviewFixture: AdminPartnerOverview = {
   activityRetention: {
     cards: [],
   },
+  appActivity: {
+    kpis: [
+      {
+        deltaPercent: 10,
+        detail: 'Last 7 days',
+        key: 'partnerAppOpens',
+        label: 'App Opens',
+        unit: 'count',
+        value: 12,
+      },
+      {
+        deltaPercent: null,
+        detail: 'Approved Partners with old app activity',
+        key: 'partnerAppInactive7d',
+        label: 'App telemetry inactive 7D+',
+        unit: 'count',
+        value: 1,
+      },
+      {
+        deltaPercent: null,
+        detail: '12 / 1,235 approved Partners (1%)',
+        key: 'partnerTelemetryCoverage',
+        label: 'Telemetry coverage',
+        unit: 'count',
+        value: 12,
+      },
+    ],
+    mostActive: [
+      {
+        activeRecordCount: 12,
+        activityStatus: 'active',
+        appOpenCount: 8,
+        area: 'Ho Chi Minh City',
+        href: '/partners/active-partner',
+        inactivityDays: 0,
+        lastActiveAt: '2026-07-02T03:20:00.000Z',
+        partnerId: 'active-partner',
+        partnerName: 'Active Partner',
+        sessionStartCount: 4,
+        status: 'ONLINE_AVAILABLE',
+      },
+    ],
+    inactivePartners: [
+      {
+        activeRecordCount: 0,
+        activityStatus: 'inactive_7d',
+        appOpenCount: 0,
+        area: 'Ha Noi',
+        href: '/partners/inactive-partner',
+        inactivityDays: 12,
+        lastActiveAt: '2026-06-20T03:20:00.000Z',
+        partnerId: 'inactive-partner',
+        partnerName: 'Inactive Partner',
+        sessionStartCount: 0,
+        status: 'OFFLINE',
+      },
+    ],
+  },
   bookingQuality: {
-    kpis: [],
+    kpis: [
+      {
+        deltaPercent: 10,
+        detail: 'Completed Partner cohort',
+        key: 'completionRate',
+        label: 'Completion Rate',
+        unit: 'percent',
+        value: 87,
+      },
+      {
+        deltaPercent: null,
+        detail: 'Cancelled + no-show + expired / completed + non-completed',
+        key: 'nonCompletedBookingRate',
+        label: 'Non-completed booking rate',
+        unit: 'percent',
+        value: 13,
+      },
+    ],
+    riskPartnerCount: 1,
     riskPartners: [
       {
         partnerId: 'quality-partner',
@@ -489,7 +829,7 @@ const partnerOverviewFixture: AdminPartnerOverview = {
         area: 'Ho Chi Minh City',
         status: 'ONLINE_AVAILABLE_SOON',
         lastActivityAt: '2026-06-26T20:39:00.000Z',
-        mainReason: 'Low rating reviews',
+        mainReason: 'Review follow-up',
         recommendedAction: 'Review reports',
         href: '/partners/quality-partner?section=full',
         riskLevel: 'high',
@@ -507,7 +847,16 @@ const partnerOverviewFixture: AdminPartnerOverview = {
     ],
   },
   financeWalletRisk: {
-    kpis: [],
+    kpis: [
+      {
+        deltaPercent: null,
+        detail: 'Current withdrawal bank review',
+        key: 'payoutBankNotApprovedPartners',
+        label: 'Payout bank not approved',
+        unit: 'count',
+        value: 1,
+      },
+    ],
     negativeWalletPartners: [],
     policyNote: 'Ledger-backed Partner wallet exposure.',
   },

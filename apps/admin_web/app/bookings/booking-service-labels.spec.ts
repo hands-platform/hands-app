@@ -32,7 +32,7 @@ describe('booking service label adapters', () => {
     expect(bookingServiceOptionLabel(booking)).toContain('Swedish Massage');
     expect(bookingServiceOptionLabel(booking)).toContain('90 min');
     expect(bookingServicePriceLabel(booking)).toContain('400.000 VND');
-    expect(bookingServicePriceLabel(booking)).toContain('min 300.000 VND');
+    expect(bookingServicePriceLabel(booking)).toContain('Minimum 300.000 VND');
     expect(bookingServicePayoutRuleLabel(booking)).toContain('Payout 320.000 VND');
   });
 
