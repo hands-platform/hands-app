@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 
@@ -13,21 +14,28 @@ if (env.DATABASE_URL && !process.env.DATABASE_URL) {
 }
 
 const databaseUrl = requiredDatabaseUrl();
+assertLocalDatabase(databaseUrl);
+
 const runId = `provider_wallet_summary_concurrency_${randomUUID()}`;
+const schema = `provider_wallet_concurrency_${randomUUID().replaceAll('-', '')}`;
+const smokeDatabaseUrl = databaseUrlWithSchema(databaseUrl, schema);
 const ids = {
   providerProfile: `${runId}_provider`,
   providerUser: `${runId}_user`,
 };
-const clients = Array.from(
-  { length: 8 },
-  () => new PrismaClient({ datasources: { db: { url: databaseUrl } } }),
-);
-const owner = clients[0];
-
-assertLocalDatabase(databaseUrl);
+const admin = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+let clients = [];
+let owner;
 
 try {
-  await cleanup();
+  await admin.$executeRawUnsafe(`CREATE SCHEMA ${quotedSchema(schema)}`);
+  deployMigrations(smokeDatabaseUrl);
+  clients = Array.from(
+    { length: 8 },
+    () => new PrismaClient({ datasources: { db: { url: smokeDatabaseUrl } } }),
+  );
+  owner = clients[0];
+
   await owner.user.create({
     data: {
       id: ids.providerUser,
@@ -65,31 +73,39 @@ try {
   );
   await assertSummaryMatchesLedger('concurrent inserts');
 
-  const updates = initialEntries.slice(0, 8);
-  const deletes = initialEntries.slice(8, 16);
-  const replacements = Array.from({ length: 8 }, (_, index) => ({
+  const reversals = initialEntries.slice(0, 8).map((entry, index) => ({
+    amount: -entry.amount,
+    id: `${runId}_reversal_${index}`,
+    sourceKey: `${runId}:reversal:${index}`,
+  }));
+  const adjustments = Array.from({ length: 8 }, (_, index) => ({
     amount: -(index + 1) * 2_500,
-    id: `${runId}_replacement_${index}`,
-    sourceKey: `${runId}:replacement:${index}`,
+    id: `${runId}_adjustment_${index}`,
+    sourceKey: `${runId}:adjustment:${index}`,
   }));
   await Promise.all([
-    runConcurrently(updates, (client, entry, index) =>
-      client.providerWalletLedgerEntry.update({
-        where: { id: entry.id },
-        data: { amount: -(index + 1) * 1_500 },
+    runConcurrently(reversals, (client, entry) =>
+      client.providerWalletLedgerEntry.create({
+        data: {
+          amount: entry.amount,
+          currency: 'VND',
+          id: entry.id,
+          metadata: { localSmoke: true, reversal: true, runId },
+          notes: 'Concurrent summary smoke compensating reversal entry.',
+          providerProfileId: ids.providerProfile,
+          sourceKey: entry.sourceKey,
+          type: ProviderWalletLedgerType.REFUND_REVERSAL,
+        },
       }),
     ),
-    runConcurrently(deletes, (client, entry) =>
-      client.providerWalletLedgerEntry.delete({ where: { id: entry.id } }),
-    ),
-    runConcurrently(replacements, (client, entry) =>
+    runConcurrently(adjustments, (client, entry) =>
       client.providerWalletLedgerEntry.create({
         data: {
           amount: entry.amount,
           currency: 'VND',
           id: entry.id,
           metadata: { localSmoke: true, runId },
-          notes: 'Concurrent summary smoke replacement entry.',
+          notes: 'Concurrent summary smoke append-only adjustment entry.',
           providerProfileId: ids.providerProfile,
           sourceKey: entry.sourceKey,
           type: ProviderWalletLedgerType.ADMIN_ADJUSTMENT,
@@ -97,7 +113,18 @@ try {
       }),
     ),
   ]);
-  const result = await assertSummaryMatchesLedger('mixed concurrent mutations');
+  const result = await assertSummaryMatchesLedger('concurrent append-only corrections');
+
+  await assertAppendOnlyRejection(() =>
+    owner.providerWalletLedgerEntry.update({
+      where: { id: initialEntries[0].id },
+      data: { amount: initialEntries[0].amount + 1 },
+    }),
+  );
+  await assertAppendOnlyRejection(() =>
+    owner.providerWalletLedgerEntry.delete({ where: { id: initialEntries[1].id } }),
+  );
+  await assertSummaryMatchesLedger('rejected mutable operations');
 
   console.log(
     JSON.stringify(
@@ -105,7 +132,9 @@ try {
         ok: true,
         checks: {
           concurrentInsertSummary: true,
-          mixedMutationSummary: true,
+          appendOnlyCorrectionSummary: true,
+          updateRejected: true,
+          deleteRejected: true,
           finalBalance: result.balance.toString(),
           finalEntryCount: result.entryCount,
         },
@@ -127,15 +156,16 @@ try {
   );
   process.exitCode = 1;
 } finally {
-  await cleanup().catch((error) => {
+  await Promise.all(clients.map((client) => client.$disconnect()));
+  await admin.$executeRawUnsafe(`DROP SCHEMA IF EXISTS ${quotedSchema(schema)} CASCADE`).catch((error) => {
     console.error(
-      `Provider wallet summary concurrency smoke cleanup failed: ${
+      `Provider wallet summary concurrency smoke schema cleanup failed: ${
         error instanceof Error ? error.message : String(error)
       }`,
     );
     process.exitCode = 1;
   });
-  await Promise.all(clients.map((client) => client.$disconnect()));
+  await admin.$disconnect();
 }
 
 function runConcurrently(entries, operation) {
@@ -143,6 +173,7 @@ function runConcurrently(entries, operation) {
 }
 
 async function assertSummaryMatchesLedger(stage) {
+  assertCondition(owner, 'Disposable Prisma client is not initialized.');
   const [summary, ledger] = await Promise.all([
     owner.providerWalletBalanceSummary.findUnique({
       where: {
@@ -170,16 +201,17 @@ async function assertSummaryMatchesLedger(stage) {
   return { balance, entryCount: ledger._count._all };
 }
 
-async function cleanup() {
-  await owner.providerWalletLedgerEntry.deleteMany({
-    where: { providerProfileId: ids.providerProfile },
-  });
-  const summaryCount = await owner.providerWalletBalanceSummary.count({
-    where: { providerProfileId: ids.providerProfile },
-  });
-  assertCondition(summaryCount === 0, 'Summary remained after all ledger entries were deleted.');
-  await owner.providerProfile.deleteMany({ where: { id: ids.providerProfile } });
-  await owner.user.deleteMany({ where: { id: ids.providerUser } });
+async function assertAppendOnlyRejection(operation) {
+  try {
+    await operation();
+  } catch (error) {
+    assertCondition(
+      error instanceof Error && error.message.includes('append-only'),
+      `Expected append-only database rejection, received ${error instanceof Error ? error.message : String(error)}.`,
+    );
+    return;
+  }
+  throw new Error('Expected append-only database rejection, but the mutation succeeded.');
 }
 
 function requiredDatabaseUrl() {
@@ -198,6 +230,33 @@ function assertLocalDatabase(value) {
     new Set(['127.0.0.1', 'localhost', '::1']).has(url.hostname),
     'Provider wallet summary concurrency smoke refuses remote databases.',
   );
+}
+
+function databaseUrlWithSchema(value, schemaName) {
+  const url = new URL(value);
+  url.searchParams.set('schema', schemaName);
+  return url.toString();
+}
+
+function deployMigrations(targetDatabaseUrl) {
+  const prismaCli = resolve(repoRoot, 'node_modules', 'prisma', 'build', 'index.js');
+  const schemaPath = resolve(repoRoot, 'apps', 'api', 'prisma', 'schema.prisma');
+  const result = spawnSync(process.execPath, [prismaCli, 'migrate', 'deploy', '--schema', schemaPath], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: { ...process.env, DATABASE_URL: targetDatabaseUrl },
+  });
+  if (result.status !== 0) {
+    throw new Error(`Disposable schema migration failed: ${result.stderr || result.stdout || 'unknown error'}`);
+  }
+}
+
+function quotedSchema(value) {
+  assertCondition(
+    /^provider_wallet_concurrency_[a-f0-9]{32}$/u.test(value),
+    'Refusing to use a non-disposable provider wallet concurrency schema.',
+  );
+  return `"${value}"`;
 }
 
 function assertCondition(condition, message) {
