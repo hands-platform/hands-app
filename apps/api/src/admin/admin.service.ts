@@ -25102,8 +25102,13 @@ export class AdminService {
       where: { period_currency: { period, currency: 'VND' } },
       });
 
-      if (existing?.status === MonthlyTaxClosingStatus.CLOSED && status !== MonthlyTaxClosingStatus.CLOSED) {
+      if (existing?.status === MonthlyTaxClosingStatus.CLOSED) {
         throw new BadRequestException('Closed monthly periods require reversal entries, not direct edits.');
+      }
+      if (existing?.status === MonthlyTaxClosingStatus.DECLARED && status === MonthlyTaxClosingStatus.DECLARED) {
+        throw new ConflictException(
+          'Declared monthly tax closing evidence is immutable; advance the period to paid or use a reversal entry.',
+        );
       }
       if (existing?.status === MonthlyTaxClosingStatus.PAID && status === MonthlyTaxClosingStatus.PAID) {
         throw new ConflictException(

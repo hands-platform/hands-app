@@ -30050,6 +30050,42 @@ describe('AdminService query orchestration', () => {
     expect(prisma.bookingSettlementSnapshot.aggregate).not.toHaveBeenCalled();
   });
 
+  it.each([
+    [
+      MonthlyTaxClosingStatus.DECLARED,
+      'Declared monthly tax closing evidence is immutable; advance the period to paid or use a reversal entry.',
+    ],
+    [MonthlyTaxClosingStatus.CLOSED, 'Closed monthly periods require reversal entries, not direct edits.'],
+  ])('does not allow %s monthly tax closing evidence to be overwritten', async (status, message) => {
+    const prisma = {
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: `closing-${status.toLowerCase()}`,
+          period: '2026-06',
+          currency: 'VND',
+          status,
+        }),
+        upsert: vi.fn(),
+      },
+      bookingSettlementSnapshot: {
+        aggregate: vi.fn(),
+        count: vi.fn(),
+        groupBy: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
+        status,
+        notes: 'Replacement evidence',
+      }),
+    ).rejects.toThrow(message);
+
+    expect(prisma.bookingSettlementSnapshot.aggregate).not.toHaveBeenCalled();
+    expect(prisma.monthlyTaxClosing.upsert).not.toHaveBeenCalled();
+  });
+
   it('blocks final close when withholding remittance is missing, unposted, or stale after reversals', async () => {
     const matchingEntries = [
       {
