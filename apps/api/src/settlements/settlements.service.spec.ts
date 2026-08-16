@@ -397,6 +397,107 @@ describe('SettlementsService', () => {
     expect(prisma.bookingPaymentClearingEntry.upsert).not.toHaveBeenCalled();
   });
 
+  it('rejects a settlement journal replay with different immutable financial evidence', async () => {
+    const prisma = {
+      accountingJournalBatch: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'journal-batch-existing-1',
+          entries: [],
+          totalDebit: 1,
+        }),
+        upsert: vi.fn().mockResolvedValue({ id: 'journal-batch-existing-1' }),
+      },
+      bookingPaymentClearingEntry: {
+        upsert: vi.fn(),
+      },
+      bookingSettlementSnapshot: {
+        upsert: vi.fn().mockResolvedValue({
+          id: 'settlement-journal-replay-1',
+          bookingId: 'booking-journal-replay-1',
+          currency: 'VND',
+          metadata: null,
+          monthlyPeriod: '2026-06',
+          postedAt: new Date('2026-06-13T03:02:00.000Z'),
+        }),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await expect(
+      service.upsertBookingSettlementSnapshot({
+        bookingId: 'booking-journal-replay-1',
+        customerProfileId: 'customer-1',
+        providerProfileId: 'provider-1',
+        paymentId: 'payment-1',
+        providerEarningId: 'earning-1',
+        paymentMethod: 'CARD',
+        currency: 'VND',
+        customerPaymentAmount: 600_000,
+        partnerPayoutAmount: 430_000,
+        platformFeeGross: 128_000,
+        partnerVatRateBps: 500,
+        partnerPitRateBps: 200,
+        platformVatRateBps: 800,
+        occurredAt: new Date('2026-06-13T03:02:00.000Z'),
+      }),
+    ).rejects.toThrow(
+      'A settlement journal already exists with different financial evidence.',
+    );
+
+    expect(prisma.accountingJournalBatch.findUnique).toHaveBeenCalledWith({
+      where: { sourceKey: 'accounting-journal:booking-settlement:booking-journal-replay-1' },
+      include: { entries: true },
+    });
+    expect(prisma.bookingPaymentClearingEntry.upsert).not.toHaveBeenCalled();
+  });
+
+  it('rejects a payment clearing replay with different immutable financial evidence', async () => {
+    const prisma = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'journal-batch-1' }),
+      },
+      bookingPaymentClearingEntry: {
+        upsert: vi.fn().mockResolvedValue({ id: 'clearing-existing-1', amount: 1 }),
+      },
+      bookingSettlementSnapshot: {
+        upsert: vi.fn().mockResolvedValue({
+          id: 'settlement-clearing-replay-1',
+          bookingId: 'booking-clearing-replay-1',
+          currency: 'VND',
+          metadata: null,
+          monthlyPeriod: '2026-06',
+          postedAt: new Date('2026-06-13T03:02:00.000Z'),
+        }),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await expect(
+      service.upsertBookingSettlementSnapshot({
+        bookingId: 'booking-clearing-replay-1',
+        customerProfileId: 'customer-1',
+        providerProfileId: 'provider-1',
+        paymentId: 'payment-1',
+        providerEarningId: 'earning-1',
+        paymentMethod: 'CARD',
+        currency: 'VND',
+        customerPaymentAmount: 600_000,
+        partnerPayoutAmount: 430_000,
+        platformFeeGross: 128_000,
+        partnerVatRateBps: 500,
+        partnerPitRateBps: 200,
+        platformVatRateBps: 800,
+        occurredAt: new Date('2026-06-13T03:02:00.000Z'),
+      }),
+    ).rejects.toThrow(
+      'A payment clearing entry already exists with different financial evidence.',
+    );
+
+    expect(prisma.bookingPaymentClearingEntry.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ update: {} }),
+    );
+  });
+
   it('stores coupon accounting policy metadata while keeping paid amount separate from taxable base', async () => {
     const prisma = {
       accountingJournalBatch: {
@@ -752,6 +853,42 @@ describe('SettlementsService', () => {
     });
   });
 
+  it.each([
+    MonthlyTaxClosingStatus.DECLARED,
+    MonthlyTaxClosingStatus.PAID,
+    MonthlyTaxClosingStatus.CLOSED,
+  ])('rejects refund settlement reversal into a %s target period', async (status) => {
+    const existing = {
+      id: 'settlement-1',
+      bookingId: 'booking-1',
+      currency: 'VND',
+      monthlyClosingId: 'original-closing-1',
+      monthlyPeriod: '2026-06',
+      settlementStatus: BookingSettlementStatus.POSTED,
+    };
+    const prisma = {
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue(existing),
+        update: vi.fn(),
+      },
+      bookingSettlementReversalEntry: { upsert: vi.fn() },
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue({ status }) },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await expect(
+      service.reverseBookingSettlementSnapshotForRefund({
+        actorId: 'admin-1',
+        bookingId: 'booking-1',
+        occurredAt: new Date('2026-07-14T03:02:00.000Z'),
+        reason: 'Admin refund',
+      }),
+    ).rejects.toThrow('Refund settlement reversals require an open monthly period.');
+
+    expect(prisma.bookingSettlementSnapshot.update).not.toHaveBeenCalled();
+    expect(prisma.bookingSettlementReversalEntry.upsert).not.toHaveBeenCalled();
+  });
+
   it('reverses customer wallet settlement journals without creating bank payment clearing', async () => {
     const existing = {
       id: 'settlement-wallet-1',
@@ -866,6 +1003,64 @@ describe('SettlementsService', () => {
     expect(prisma.bookingPaymentClearingEntry.upsert).toHaveBeenCalledWith(
       expect.objectContaining({ update: {} }),
     );
+  });
+
+  it('rejects a refund reversal journal replay with different immutable financial evidence', async () => {
+    const existing = {
+      id: 'settlement-journal-replay-1',
+      bookingId: 'booking-journal-replay-1',
+      companyOutputVat: 0,
+      customerPaymentAmount: 600_000,
+      customerProfileId: 'customer-1',
+      currency: 'VND',
+      metadata: {},
+      monthlyClosingId: null,
+      monthlyPeriod: '2026-06',
+      partnerPayoutAmount: 430_000,
+      partnerWithholdingTotal: 42_000,
+      paymentId: 'payment-journal-replay-1',
+      paymentMethod: 'MOMO',
+      paymentProcessingFee: 0,
+      platformFeeNetRevenue: 128_000,
+      providerEarningId: 'earning-1',
+      providerProfileId: 'provider-1',
+      settlementStatus: BookingSettlementStatus.POSTED,
+      taxStatus: BookingSettlementTaxStatus.OPEN,
+    };
+    const prisma = {
+      accountingJournalBatch: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'journal-reversal-existing-1',
+          entries: [],
+          totalCredit: 1,
+        }),
+        upsert: vi.fn().mockResolvedValue({ id: 'journal-reversal-existing-1' }),
+      },
+      bookingPaymentClearingEntry: {
+        upsert: vi.fn(),
+      },
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue(existing),
+        update: vi.fn().mockResolvedValue({
+          ...existing,
+          settlementStatus: BookingSettlementStatus.REVERSED,
+        }),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await expect(
+      service.reverseBookingSettlementSnapshotForRefund({
+        actorId: 'admin-1',
+        bookingId: 'booking-journal-replay-1',
+        occurredAt: new Date('2026-06-14T03:02:00.000Z'),
+        reason: 'Refund journal replay',
+      }),
+    ).rejects.toThrow(
+      'A settlement reversal journal already exists with different financial evidence.',
+    );
+
+    expect(prisma.bookingPaymentClearingEntry.upsert).not.toHaveBeenCalled();
   });
 
   it('moves refund after paid partner payout to partner receivable instead of wallet liability', async () => {

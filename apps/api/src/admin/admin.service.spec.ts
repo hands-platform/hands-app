@@ -24920,7 +24920,11 @@ describe('AdminService query orchestration', () => {
     const adminAuditLog = {
       create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
     };
-    const tx = { companyBankTransaction, adminAuditLog };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ lockResult: null }]),
+      companyBankTransaction,
+      adminAuditLog,
+    };
     const prisma = {
       $transaction: vi.fn(async (callback: (transaction: typeof tx) => unknown) => callback(tx)),
       companyBankAccount: {
@@ -24987,6 +24991,9 @@ describe('AdminService query orchestration', () => {
       }),
     });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      companyBankTransaction.findMany.mock.invocationCallOrder[0],
+    );
   });
 
   it('blocks fixture company bank accounts from production transaction imports', async () => {
@@ -25043,7 +25050,11 @@ describe('AdminService query orchestration', () => {
       create: vi.fn().mockResolvedValue({ id: 'bank-tx-new', amount: 900000 }),
     };
     const adminAuditLog = { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) };
-    const tx = { companyBankTransaction, adminAuditLog };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ lockResult: null }]),
+      companyBankTransaction,
+      adminAuditLog,
+    };
     const prisma = {
       $transaction: vi.fn(async (callback: (transaction: typeof tx) => unknown) => callback(tx)),
       companyBankAccount: {

@@ -23327,36 +23327,39 @@ export class AdminService {
     const transferRef = normalizeNullable(input.transferRef);
     const counterpartyName = normalizeNullable(input.counterpartyName);
     const description = normalizeNullable(input.description);
-    const duplicateCandidates = await this.prisma.companyBankTransaction.findMany({
-      where: companyBankTransactionDuplicateCandidateWhere({
-        amount,
-        bankAccountId,
-        counterpartyName,
-        currency,
-        occurredAt,
-        transferRef,
-        type,
-      }),
-      orderBy: { occurredAt: 'desc' },
-      take: 5,
-      select: {
-        id: true,
-        amount: true,
-        counterpartyName: true,
-        occurredAt: true,
-        status: true,
-        transferRef: true,
-      },
-    });
-    if (duplicateCandidates.length > 0 && input.confirmPotentialDuplicate !== true) {
-      throw new ConflictException({
-        code: 'BANK_TRANSACTION_POTENTIAL_DUPLICATE',
-        message: 'Potential duplicate bank transaction requires explicit operator review',
-        candidates: duplicateCandidates,
-      });
-    }
-    const duplicateCandidateIds = duplicateCandidates.map((candidate) => candidate.id);
     return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`company-bank-transaction-import:${bankAccountId}`}, 0))::text AS "lockResult"`,
+      );
+      const duplicateCandidates = await tx.companyBankTransaction.findMany({
+        where: companyBankTransactionDuplicateCandidateWhere({
+          amount,
+          bankAccountId,
+          counterpartyName,
+          currency,
+          occurredAt,
+          transferRef,
+          type,
+        }),
+        orderBy: { occurredAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          amount: true,
+          counterpartyName: true,
+          occurredAt: true,
+          status: true,
+          transferRef: true,
+        },
+      });
+      if (duplicateCandidates.length > 0 && input.confirmPotentialDuplicate !== true) {
+        throw new ConflictException({
+          code: 'BANK_TRANSACTION_POTENTIAL_DUPLICATE',
+          message: 'Potential duplicate bank transaction requires explicit operator review',
+          candidates: duplicateCandidates,
+        });
+      }
+      const duplicateCandidateIds = duplicateCandidates.map((candidate) => candidate.id);
       const transaction = await tx.companyBankTransaction.create({
         data: {
           amount,

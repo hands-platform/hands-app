@@ -2301,10 +2301,14 @@ export class EarningsService {
         where: {
           id: payoutBatchId,
           status: input.expectedStatus ?? existing.status,
-          ...(input.expectedTransferRef !== undefined
-            ? { transferRef: normalizeNullable(input.expectedTransferRef) }
-            : {}),
-          ...(input.expectedNotes !== undefined ? { notes: normalizeNullable(input.expectedNotes) } : {}),
+          transferRef:
+            input.expectedTransferRef === undefined
+              ? normalizeNullable(existing.transferRef ?? null)
+              : normalizeNullable(input.expectedTransferRef),
+          notes:
+            input.expectedNotes === undefined
+              ? normalizeNullable(existing.notes ?? null)
+              : normalizeNullable(input.expectedNotes),
         },
         data: {
           status: nextStatus,

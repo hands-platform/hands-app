@@ -4202,7 +4202,9 @@ describe('EarningsService payout batches', () => {
     expect(tx.providerPayoutBatch.updateMany).toHaveBeenCalledWith({
       where: {
         id: existingBatch.id,
+        notes: null,
         status: PayoutBatchStatus.PROCESSING,
+        transferRef: 'BANK-RACE',
       },
       data: expect.objectContaining({
         status: PayoutBatchStatus.PAID,

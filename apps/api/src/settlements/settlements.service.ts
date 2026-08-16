@@ -323,6 +323,11 @@ export class SettlementsService {
     if (existing.settlementStatus === BookingSettlementStatus.REVERSED) {
       return existing;
     }
+    await assertSettlementReversalTargetPeriodOpen(
+      client,
+      settlementMonthlyPeriod(input.occurredAt),
+      existing.currency,
+    );
     if (existing.monthlyClosingId) {
       return this.upsertClosedSettlementReversalEntry(
         { ...existing, monthlyClosingId: existing.monthlyClosingId },
@@ -462,31 +467,38 @@ export class SettlementsService {
       settlementReversalEntryId: reversalEntryId ?? null,
     } satisfies Prisma.InputJsonObject;
 
-    await client.accountingJournalBatch.upsert({
+    const journalData = {
+      bookingId: snapshot.bookingId,
+      currency: snapshot.currency,
+      customerProfileId: snapshot.customerProfileId,
+      entries: {
+        create: journalEntries,
+      },
+      metadata: journalMetadata,
+      monthlyPeriod: settlementMonthlyPeriod(input.occurredAt),
+      paymentId: snapshot.paymentId ?? null,
+      postedAt: input.occurredAt,
+      providerProfileId: snapshot.providerProfileId,
+      settlementReversalEntryId: reversalEntryId ?? null,
+      settlementSnapshotId: snapshot.id,
+      sourceId,
+      sourceKey,
+      sourceType: 'BOOKING_SETTLEMENT_REVERSAL' as const,
+      status: 'POSTED' as const,
+      totalCredit: journal.totalDebit,
+      totalDebit: journal.totalCredit,
+    };
+    const journalBatch = await client.accountingJournalBatch.upsert({
       where: { sourceKey },
       update: {},
-      create: {
-        bookingId: snapshot.bookingId,
-        currency: snapshot.currency,
-        customerProfileId: snapshot.customerProfileId,
-        entries: {
-          create: journalEntries,
-        },
-        metadata: journalMetadata,
-        monthlyPeriod: settlementMonthlyPeriod(input.occurredAt),
-        paymentId: snapshot.paymentId ?? null,
-        postedAt: input.occurredAt,
-        providerProfileId: snapshot.providerProfileId,
-        settlementReversalEntryId: reversalEntryId ?? null,
-        settlementSnapshotId: snapshot.id,
-        sourceId,
-        sourceKey,
-        sourceType: 'BOOKING_SETTLEMENT_REVERSAL',
-        status: 'POSTED',
-        totalCredit: journal.totalDebit,
-        totalDebit: journal.totalCredit,
-      },
+      create: journalData,
     });
+    const journalReplay = await accountingJournalReplayRecord(client, sourceKey, journalBatch);
+    if (!accountingJournalReplayMatches(journalReplay, journalData, journalEntries)) {
+      throw new ConflictException(
+        'A settlement reversal journal already exists with different financial evidence.',
+      );
+    }
 
     if (!settlementReversalEvidencePolicy(snapshot.paymentMethod).externalClearingRequired) {
       return;
@@ -576,56 +588,75 @@ export class SettlementsService {
       settlementSnapshotId: snapshot.id,
     } satisfies Prisma.InputJsonObject;
 
-    await client.accountingJournalBatch.upsert({
+    const journalData = {
+      bookingId: input.bookingId,
+      currency,
+      customerProfileId: input.customerProfileId,
+      entries: {
+        create: journalEntries,
+      },
+      metadata: journalMetadata,
+      monthlyPeriod: snapshot.monthlyPeriod,
+      paymentId: input.paymentId ?? null,
+      postedAt: snapshot.postedAt,
+      providerProfileId: input.providerProfileId,
+      settlementSnapshotId: snapshot.id,
+      sourceId: snapshot.id,
+      sourceKey: journalSourceKey,
+      sourceType: 'BOOKING_SETTLEMENT' as const,
+      status: 'POSTED' as const,
+      totalCredit: journal.totalCredit,
+      totalDebit: journal.totalDebit,
+    };
+    const journalBatch = await client.accountingJournalBatch.upsert({
       where: { sourceKey: journalSourceKey },
       update: {},
-      create: {
-        bookingId: input.bookingId,
-        currency,
-        customerProfileId: input.customerProfileId,
-        entries: {
-          create: journalEntries,
-        },
-        metadata: journalMetadata,
-        monthlyPeriod: snapshot.monthlyPeriod,
-        paymentId: input.paymentId ?? null,
-        postedAt: snapshot.postedAt,
-        providerProfileId: input.providerProfileId,
-        settlementSnapshotId: snapshot.id,
-        sourceId: snapshot.id,
-        sourceKey: journalSourceKey,
-        sourceType: 'BOOKING_SETTLEMENT',
-        status: 'POSTED',
-        totalCredit: journal.totalCredit,
-        totalDebit: journal.totalDebit,
-      },
+      create: journalData,
     });
+    const journalReplay = await accountingJournalReplayRecord(client, journalSourceKey, journalBatch);
+    if (!accountingJournalReplayMatches(journalReplay, journalData, journalEntries)) {
+      throw new ConflictException(
+        'A settlement journal already exists with different financial evidence.',
+      );
+    }
 
     if (input.paymentMethod === 'CASH' || input.paymentMethod === PaymentMethod.CUSTOMER_WALLET) {
       return;
     }
 
-    await client.bookingPaymentClearingEntry.upsert({
+    const clearingData = {
+      amount: input.customerPaymentAmount,
+      bookingId: input.bookingId,
+      currency,
+      metadata: {
+        bookingId: input.bookingId,
+        journalBatchSourceKey: journalSourceKey,
+        ...paymentFeeEvidence,
+        settlementSnapshotId: snapshot.id,
+      } satisfies Prisma.InputJsonObject,
+      occurredAt: snapshot.postedAt,
+      paymentId: input.paymentId ?? null,
+      settlementSnapshotId: snapshot.id,
+      sourceKey: bookingPaymentClearingSourceKey(input.bookingId),
+      status: 'OPEN' as const,
+      type: 'SETTLEMENT_POSTED' as const,
+    };
+    const clearingEntry = await client.bookingPaymentClearingEntry.upsert({
       where: { sourceKey: bookingPaymentClearingSourceKey(input.bookingId) },
       update: {},
-      create: {
-        amount: input.customerPaymentAmount,
-        bookingId: input.bookingId,
-        currency,
-        metadata: {
-          bookingId: input.bookingId,
-          journalBatchSourceKey: journalSourceKey,
-          ...paymentFeeEvidence,
-          settlementSnapshotId: snapshot.id,
-        } satisfies Prisma.InputJsonObject,
-        occurredAt: snapshot.postedAt,
-        paymentId: input.paymentId ?? null,
-        settlementSnapshotId: snapshot.id,
-        sourceKey: bookingPaymentClearingSourceKey(input.bookingId),
-        status: 'OPEN',
-        type: 'SETTLEMENT_POSTED',
-      },
+      create: clearingData,
     });
+    if (
+      !immutableFinancialReplayMatches(
+        clearingEntry,
+        clearingData,
+        BOOKING_PAYMENT_CLEARING_REPLAY_FIELDS,
+      )
+    ) {
+      throw new ConflictException(
+        'A payment clearing entry already exists with different financial evidence.',
+      );
+    }
   }
 
   private async customerWalletLedgerEntryIdsForSettlement(
@@ -673,6 +704,120 @@ export class SettlementsService {
     return [...new Set([...existingIds, ledger.id])];
   }
 }
+
+async function assertSettlementReversalTargetPeriodOpen(
+  client: SettlementPrismaClient,
+  period: string,
+  currency: string,
+) {
+  const monthlyTaxClosing = client.monthlyTaxClosing as unknown as
+    | {
+        findUnique?: (args: {
+          where: { period_currency: { period: string; currency: string } };
+          select: { status: true };
+        }) => Promise<{ status: MonthlyTaxClosingStatus } | null>;
+      }
+    | undefined;
+  if (!monthlyTaxClosing?.findUnique) {
+    return;
+  }
+
+  const targetClosing = await monthlyTaxClosing.findUnique({
+    where: { period_currency: { period, currency } },
+    select: { status: true },
+  });
+  if (
+    targetClosing?.status === MonthlyTaxClosingStatus.DECLARED ||
+    targetClosing?.status === MonthlyTaxClosingStatus.PAID ||
+    targetClosing?.status === MonthlyTaxClosingStatus.CLOSED
+  ) {
+    throw new BadRequestException(
+      'Refund settlement reversals require an open monthly period.',
+    );
+  }
+}
+
+async function accountingJournalReplayRecord(
+  client: SettlementPrismaClient,
+  sourceKey: string,
+  fallback: object,
+) {
+  const accountingJournalBatch = client.accountingJournalBatch as unknown as {
+    findUnique?: (args: {
+      where: { sourceKey: string };
+      include: { entries: true };
+    }) => Promise<object | null>;
+  };
+  if (!accountingJournalBatch.findUnique) {
+    return fallback;
+  }
+  return (
+    (await accountingJournalBatch.findUnique({
+      where: { sourceKey },
+      include: { entries: true },
+    })) ?? fallback
+  );
+}
+
+function accountingJournalReplayMatches(
+  existing: object,
+  expectedBatch: object,
+  expectedEntries: readonly object[],
+) {
+  if (!immutableFinancialReplayMatches(existing, expectedBatch, ACCOUNTING_JOURNAL_REPLAY_FIELDS)) {
+    return false;
+  }
+  const entries = (existing as { entries?: unknown }).entries;
+  if (!Array.isArray(entries)) {
+    return true;
+  }
+  if (entries.length !== expectedEntries.length) {
+    return false;
+  }
+
+  const unmatched = [...entries] as object[];
+  for (const expectedEntry of expectedEntries) {
+    const matchIndex = unmatched.findIndex((entry) =>
+      immutableFinancialReplayMatches(entry, expectedEntry, ACCOUNTING_JOURNAL_ENTRY_REPLAY_FIELDS),
+    );
+    if (matchIndex < 0) {
+      return false;
+    }
+    unmatched.splice(matchIndex, 1);
+  }
+  return unmatched.length === 0;
+}
+
+const ACCOUNTING_JOURNAL_REPLAY_FIELDS = [
+  'sourceKey',
+  'sourceType',
+  'sourceId',
+  'bookingId',
+  'customerProfileId',
+  'providerProfileId',
+  'paymentId',
+  'settlementSnapshotId',
+  'settlementReversalEntryId',
+  'monthlyPeriod',
+  'currency',
+  'status',
+  'totalDebit',
+  'totalCredit',
+  'postedAt',
+  'metadata',
+] as const;
+
+const ACCOUNTING_JOURNAL_ENTRY_REPLAY_FIELDS = [
+  'side',
+  'accountCode',
+  'accountName',
+  'amount',
+  'currency',
+  'memo',
+  'sourceType',
+  'sourceId',
+  'metadata',
+] as const;
 
 const BOOKING_SETTLEMENT_REPLAY_FIELDS = [
   'bookingId',
@@ -725,6 +870,7 @@ const BOOKING_PAYMENT_CLEARING_REPLAY_FIELDS = [
   'settlementReversalEntryId',
   'settlementSnapshotId',
   'sourceKey',
+  'status',
   'type',
 ] as const;
 

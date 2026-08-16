@@ -6,6 +6,7 @@ import {
   BookingStatus,
   EarningStatus,
   ParticipantStatus,
+  PaymentAdminOperationStatus,
   PaymentMethod,
   PaymentStatus,
   Prisma,
@@ -1524,6 +1525,7 @@ describe('BookingsService provider service lifecycle', () => {
       status: EarningStatus.PENDING,
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
       booking: {
         findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
@@ -1540,6 +1542,7 @@ describe('BookingsService provider service lifecycle', () => {
         update: vi.fn().mockResolvedValue({ ...earning, status: EarningStatus.CANCELLED, netAmount: 0 }),
       },
       providerWalletLedgerEntry: { upsert: vi.fn() },
+      paymentAdminOperationClaim: { findFirst: vi.fn().mockResolvedValue(null) },
       adminAuditLog: { create: vi.fn() },
     };
     const prisma = {
@@ -1694,6 +1697,55 @@ describe('BookingsService provider service lifecycle', () => {
     expect(prisma.locationSnapshot.create).not.toHaveBeenCalled();
   });
 
+  it('blocks partner cancellation while a booking payment operation is active', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      booking: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.IN_SERVICE,
+          notes: null,
+          matchedAt: new Date('2026-06-01T10:00:00.000Z'),
+          selectedProviderId: 'partner-1',
+          earning: null,
+          opsTasks: [],
+        }),
+        updateMany: vi.fn(),
+      },
+      paymentAdminOperationClaim: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'claim-1',
+          status: PaymentAdminOperationStatus.IN_PROGRESS,
+        }),
+      },
+    };
+    const prisma = {
+      providerProfile: { findUnique: vi.fn().mockResolvedValue(approvedPartner()) },
+      $transaction: vi.fn((callback) => callback(tx)),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      service.cancelProviderBooking('booking-1', 'partner-user-1', {
+        reasonCode: 'CUSTOMER_REQUESTED',
+        note: 'Customer requested cancellation in chat.',
+        lat: 10.7769,
+        lng: 106.7009,
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'BOOKING_PAYMENT_OPERATION_IN_PROGRESS' }),
+    });
+
+    expect(tx.booking.updateMany).not.toHaveBeenCalled();
+  });
+
   it.each([
     {
       caseName: 'after the 15-minute approval window',
@@ -1722,6 +1774,7 @@ describe('BookingsService provider service lifecycle', () => {
         status: PaymentStatus.PENDING,
       };
       const tx = {
+        $queryRaw: vi.fn().mockResolvedValue([]),
         booking: {
           findUniqueOrThrow: vi.fn().mockResolvedValue({
             id: 'booking-1',
@@ -1736,6 +1789,7 @@ describe('BookingsService provider service lifecycle', () => {
         },
         providerEarning: { update: vi.fn() },
         providerWalletLedgerEntry: { upsert: vi.fn() },
+        paymentAdminOperationClaim: { findFirst: vi.fn().mockResolvedValue(null) },
         adminAuditLog: { create: vi.fn() },
       };
       const prisma = {
@@ -1834,9 +1888,83 @@ describe('BookingsService provider service lifecycle', () => {
 });
 
 describe('BookingsService service completion', () => {
+  it('reserves gateway capture and releases the claim only with the completed booking transaction', async () => {
+    const completedBooking = completedBookingWithAddressSnapshot();
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(prisma)),
+      providerProfile: { findUnique: vi.fn().mockResolvedValue(approvedPartner()) },
+      booking: {
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'booking-1',
+            selectedProviderId: 'partner-1',
+            status: BookingStatus.IN_SERVICE,
+          })
+          .mockResolvedValueOnce({
+            selectedProviderId: 'partner-1',
+            status: BookingStatus.IN_SERVICE,
+          })
+          .mockResolvedValueOnce(completedBooking)
+          .mockResolvedValueOnce({ customerProfile: { userId: 'customer-user-1' } }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        count: vi.fn().mockResolvedValue(1),
+      },
+      locationSnapshot: { create: vi.fn().mockResolvedValue({ id: 'snapshot-1' }) },
+      payment: {
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'payment-1',
+            method: PaymentMethod.MOMO,
+            status: PaymentStatus.AUTHORIZED,
+          })
+          .mockResolvedValueOnce({ id: 'payment-1', method: PaymentMethod.MOMO })
+          .mockResolvedValueOnce({ id: 'payment-1', status: PaymentStatus.CAPTURED }),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+      paymentAdminOperationClaim: {
+        create: vi.fn().mockResolvedValue({ id: 'claim-1' }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    const payments = {
+      confirmGatewayCaptureForBookingCompletion: vi.fn().mockResolvedValue({}),
+      paymentRequiresGatewayCaptureForBookingCompletion: vi.fn().mockReturnValue(true),
+    };
+    const earnings = { createForCompletedBooking: vi.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      { completeBooking: vi.fn().mockReturnValue(completedBooking) } as never,
+      { emitServiceCompleted: vi.fn() } as never,
+      payments as never,
+      { create: vi.fn() } as never,
+      earnings as never,
+      { reconcile: vi.fn() } as never,
+    );
+
+    await service.complete('booking-1', 'partner-user-1', { lat: 10.7769, lng: 106.7009 });
+
+    expect(prisma.paymentAdminOperationClaim.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'BOOKING_COMPLETION_CAPTURE',
+          paymentId: 'payment-1',
+        }),
+      }),
+    );
+    expect(prisma.paymentAdminOperationClaim.updateMany).toHaveBeenCalledWith({
+      where: { id: 'claim-1', status: PaymentAdminOperationStatus.IN_PROGRESS },
+      data: expect.objectContaining({ status: PaymentAdminOperationStatus.SUCCEEDED }),
+    });
+    expect(earnings.createForCompletedBooking).toHaveBeenCalled();
+  });
+
   it('loads the immutable address snapshot before emitting the completed booking', async () => {
     const completedBooking = completedBookingWithAddressSnapshot();
     const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
       $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(prisma)),
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue(approvedPartner()),
@@ -1864,6 +1992,11 @@ describe('BookingsService service completion', () => {
       payment: {
         findUniqueOrThrow: vi
           .fn()
+          .mockResolvedValueOnce({
+            id: 'payment-1',
+            method: PaymentMethod.CASH,
+            status: PaymentStatus.PENDING,
+          })
           .mockResolvedValueOnce({ id: 'payment-1', method: PaymentMethod.CASH })
           .mockResolvedValueOnce({ id: 'payment-1', status: PaymentStatus.CAPTURED }),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -1879,7 +2012,10 @@ describe('BookingsService service completion', () => {
     const matchingGateway = { emitServiceCompleted: vi.fn() };
     const notifications = { create: vi.fn() };
     const earnings = { createForCompletedBooking: vi.fn() };
-    const payments = { confirmGatewayCaptureForBookingCompletion: vi.fn().mockResolvedValue({}) };
+    const payments = {
+      confirmGatewayCaptureForBookingCompletion: vi.fn().mockResolvedValue({}),
+      paymentRequiresGatewayCaptureForBookingCompletion: vi.fn().mockReturnValue(false),
+    };
     const providerAvailabilityLifecycle = { markBusy: vi.fn(), reconcile: vi.fn() };
     const service = new BookingsService(
       prisma as never,
@@ -1936,6 +2072,7 @@ describe('BookingsService service completion', () => {
   it('records a booking-linked partner action location before completion when provided', async () => {
     const completedBooking = completedBookingWithAddressSnapshot();
     const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
       $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(prisma)),
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue(approvedPartner()),
@@ -1963,6 +2100,11 @@ describe('BookingsService service completion', () => {
       payment: {
         findUniqueOrThrow: vi
           .fn()
+          .mockResolvedValueOnce({
+            id: 'payment-1',
+            method: PaymentMethod.CASH,
+            status: PaymentStatus.PENDING,
+          })
           .mockResolvedValueOnce({ id: 'payment-1', method: PaymentMethod.CASH })
           .mockResolvedValueOnce({ id: 'payment-1', status: PaymentStatus.CAPTURED }),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -1978,7 +2120,10 @@ describe('BookingsService service completion', () => {
     const matchingGateway = { emitServiceCompleted: vi.fn() };
     const notifications = { create: vi.fn() };
     const earnings = { createForCompletedBooking: vi.fn() };
-    const payments = { confirmGatewayCaptureForBookingCompletion: vi.fn().mockResolvedValue({}) };
+    const payments = {
+      confirmGatewayCaptureForBookingCompletion: vi.fn().mockResolvedValue({}),
+      paymentRequiresGatewayCaptureForBookingCompletion: vi.fn().mockReturnValue(false),
+    };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -2008,6 +2153,7 @@ describe('BookingsService service completion', () => {
 
   it('does not publish completion side effects when the booking state claim is stale', async () => {
     const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
       $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(prisma)),
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue(approvedPartner()),
@@ -2026,6 +2172,11 @@ describe('BookingsService service completion', () => {
       payment: {
         findUniqueOrThrow: vi
           .fn()
+          .mockResolvedValueOnce({
+            id: 'payment-1',
+            method: PaymentMethod.CASH,
+            status: PaymentStatus.PENDING,
+          })
           .mockResolvedValueOnce({ id: 'payment-1', method: PaymentMethod.CASH })
           .mockResolvedValueOnce({ id: 'payment-1', status: PaymentStatus.CAPTURED }),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -2035,7 +2186,10 @@ describe('BookingsService service completion', () => {
     const matchingGateway = { emitServiceCompleted: vi.fn() };
     const notifications = { create: vi.fn() };
     const earnings = { createForCompletedBooking: vi.fn() };
-    const payments = { confirmGatewayCaptureForBookingCompletion: vi.fn().mockResolvedValue({}) };
+    const payments = {
+      confirmGatewayCaptureForBookingCompletion: vi.fn().mockResolvedValue({}),
+      paymentRequiresGatewayCaptureForBookingCompletion: vi.fn().mockReturnValue(false),
+    };
     const providerAvailabilityLifecycle = { reconcile: vi.fn() };
     const service = new BookingsService(
       prisma as never,
@@ -2058,7 +2212,8 @@ describe('BookingsService service completion', () => {
 
   it('does not start completion accounting when gateway capture cannot be confirmed', async () => {
     const prisma = {
-      $transaction: vi.fn(),
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(prisma)),
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
@@ -2069,11 +2224,23 @@ describe('BookingsService service completion', () => {
           status: BookingStatus.IN_SERVICE,
         }),
       },
+      payment: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'payment-1',
+          method: PaymentMethod.MOMO,
+          status: PaymentStatus.AUTHORIZED,
+        }),
+      },
+      paymentAdminOperationClaim: {
+        create: vi.fn().mockResolvedValue({ id: 'claim-1' }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
     };
     const payments = {
       confirmGatewayCaptureForBookingCompletion: vi
         .fn()
         .mockRejectedValue(new Error('gateway capture unavailable')),
+      paymentRequiresGatewayCaptureForBookingCompletion: vi.fn().mockReturnValue(true),
     };
     const earnings = { createForCompletedBooking: vi.fn() };
     const service = new BookingsService(
@@ -2089,7 +2256,13 @@ describe('BookingsService service completion', () => {
       service.complete('booking-1', 'partner-user-1', { lat: 10.7769, lng: 106.7009 }),
     ).rejects.toThrow('gateway capture unavailable');
 
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.paymentAdminOperationClaim.updateMany).toHaveBeenCalledWith({
+      where: { id: 'claim-1', status: PaymentAdminOperationStatus.IN_PROGRESS },
+      data: expect.objectContaining({
+        errorCode: 'BOOKING_COMPLETION_CAPTURE_REQUIRES_REVIEW',
+        status: PaymentAdminOperationStatus.REVIEW_REQUIRED,
+      }),
+    });
     expect(earnings.createForCompletedBooking).not.toHaveBeenCalled();
   });
 

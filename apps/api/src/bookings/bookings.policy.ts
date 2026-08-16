@@ -112,7 +112,7 @@ export function assertProviderLifecycleTransitionAllowed(current: BookingStatus,
   }
 }
 
-export function providerLifecycleAllowedPreviousStatuses(next: BookingStatus) {
+export function providerLifecycleAllowedPreviousStatuses(next: BookingStatus): BookingStatus[] | null {
   if (next === BookingStatus.ARRIVED) {
     return [BookingStatus.MATCHED, BookingStatus.PROVIDER_ON_THE_WAY];
   }

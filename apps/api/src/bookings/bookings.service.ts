@@ -7,6 +7,7 @@ import {
   CustomerWalletLedgerType,
   ParticipantStatus,
   PaymentMethod,
+  PaymentAdminOperationStatus,
   PaymentStatus,
   Prisma,
   ProviderStatus,
@@ -216,6 +217,8 @@ const PROVIDER_OPEN_REQUEST_LIST_VIEWED_EVENT = 'OPEN_REQUEST_LIST_VIEWED';
 const PROVIDER_OPEN_REQUEST_DETAIL_VIEWED_EVENT = 'OPEN_REQUEST_DETAIL_VIEWED';
 const PROVIDER_OPEN_REQUEST_DETAIL_HEARTBEAT_EVENT = 'OPEN_REQUEST_DETAIL_HEARTBEAT';
 const PROVIDER_OPEN_REQUEST_DETAIL_CLOSED_EVENT = 'OPEN_REQUEST_DETAIL_CLOSED';
+const BOOKING_COMPLETION_CAPTURE_ACTION = 'BOOKING_COMPLETION_CAPTURE';
+const BOOKING_COMPLETION_CAPTURE_IDEMPOTENCY_KEY = 'booking-completion-capture';
 
 const matchedBookingForClientInclude = {
   services: { include: { service: true } },
@@ -2754,6 +2757,7 @@ export class BookingsService {
     const reasonLabel = providerCancellationReasonLabel(input.reasonCode);
 
     const result = await this.prisma.$transaction(async (tx) => {
+      await lockBookingLifecycle(tx, input.bookingId);
       const booking = await tx.booking.findUniqueOrThrow({
         where: { id: input.bookingId },
         select: {
@@ -2799,6 +2803,25 @@ export class BookingsService {
           reasonCode: input.reasonCode,
           reasonLabel,
         };
+      }
+      const activePaymentOperation = await tx.paymentAdminOperationClaim.findFirst({
+        where: {
+          payment: { bookingId: input.bookingId },
+          status: {
+            in: [
+              PaymentAdminOperationStatus.IN_PROGRESS,
+              PaymentAdminOperationStatus.REVIEW_REQUIRED,
+            ],
+          },
+        },
+        select: { id: true, status: true },
+      });
+      if (activePaymentOperation) {
+        throw new ConflictException({
+          code: 'BOOKING_PAYMENT_OPERATION_IN_PROGRESS',
+          message: 'A payment operation is in progress for this booking. Reload before cancelling.',
+          operationClaimId: activePaymentOperation.id,
+        });
       }
       if (!providerPostMatchCancellableStatuses.includes(booking.status)) {
         throw new BadRequestException(`Booking status ${booking.status} cannot be cancelled by Partner`);
@@ -3004,45 +3027,92 @@ export class BookingsService {
   ) {
     const provider = await this.requireProviderCanCompleteBooking(bookingId, providerUserId);
     this.assertProviderBookingActionLocationInput(input);
-    await this.payments.confirmGatewayCaptureForBookingCompletion(providerUserId, bookingId);
-    const booking = await this.prisma.$transaction(async (tx) => {
-      await this.recordProviderBookingActionLocation({
-        bookingId,
-        providerProfileId: provider.id,
-        addressText: input.addressText,
-        lat: input.lat,
-        lng: input.lng,
-      }, tx);
-      const payment = await tx.payment.findUniqueOrThrow({
-        where: { bookingId },
-        select: { id: true, method: true },
-      });
-      await transitionPaymentStatus(tx, {
-        data: { status: PaymentStatus.CAPTURED },
-        fromStatuses: paymentCaptureSourceStatuses(payment.method),
-        paymentId: payment.id,
-        targetStatus: PaymentStatus.CAPTURED,
-      });
-      const allowedPreviousStatuses =
-        providerLifecycleAllowedPreviousStatuses(BookingStatus.COMPLETED) ?? [BookingStatus.IN_SERVICE];
-      const completedAt = new Date();
-      const transition = await tx.booking.updateMany({
-        where: {
-          id: bookingId,
-          selectedProviderId: provider.id,
-          status: { in: allowedPreviousStatuses },
-        },
-        data: bookingCompletedUpdateData(completedAt),
-      });
-      if (transition.count !== 1) {
-        throw this.bookingStateChangedError();
-      }
-      await this.earnings.createForCompletedBooking(bookingId, provider.id, { occurredAt: completedAt }, tx);
-      return tx.booking.findUniqueOrThrow({
-        where: { id: bookingId },
-        include: completedBookingInclude,
-      });
+    const paymentBeforeCapture = await this.prisma.payment.findUniqueOrThrow({
+      where: { bookingId },
+      select: { id: true, method: true, status: true },
     });
+    const requiresGatewayCapture = this.payments.paymentRequiresGatewayCaptureForBookingCompletion(
+      paymentBeforeCapture.method,
+      paymentBeforeCapture.status,
+    );
+    const operationClaim = requiresGatewayCapture
+      ? await this.createBookingCompletionCaptureClaim({
+          actorId: providerUserId,
+          bookingId,
+          paymentId: paymentBeforeCapture.id,
+          providerProfileId: provider.id,
+        })
+      : null;
+
+    let booking: Prisma.BookingGetPayload<{ include: typeof completedBookingInclude }>;
+    try {
+      await this.payments.confirmGatewayCaptureForBookingCompletion(providerUserId, bookingId);
+      booking = await this.prisma.$transaction(async (tx) => {
+        await lockBookingLifecycle(tx, bookingId);
+        await this.recordProviderBookingActionLocation({
+          bookingId,
+          providerProfileId: provider.id,
+          addressText: input.addressText,
+          lat: input.lat,
+          lng: input.lng,
+        }, tx);
+        const payment = await tx.payment.findUniqueOrThrow({
+          where: { bookingId },
+          select: { id: true, method: true },
+        });
+        await transitionPaymentStatus(tx, {
+          data: { status: PaymentStatus.CAPTURED },
+          fromStatuses: paymentCaptureSourceStatuses(payment.method),
+          paymentId: payment.id,
+          targetStatus: PaymentStatus.CAPTURED,
+        });
+        const allowedPreviousStatuses =
+          providerLifecycleAllowedPreviousStatuses(BookingStatus.COMPLETED) ?? [BookingStatus.IN_SERVICE];
+        const completedAt = new Date();
+        const transition = await tx.booking.updateMany({
+          where: {
+            id: bookingId,
+            selectedProviderId: provider.id,
+            status: { in: allowedPreviousStatuses },
+          },
+          data: bookingCompletedUpdateData(completedAt),
+        });
+        if (transition.count !== 1) {
+          throw this.bookingStateChangedError();
+        }
+        await this.earnings.createForCompletedBooking(
+          bookingId,
+          provider.id,
+          { occurredAt: completedAt },
+          tx,
+        );
+        if (operationClaim) {
+          const completedClaim = await tx.paymentAdminOperationClaim.updateMany({
+            where: {
+              id: operationClaim.id,
+              status: PaymentAdminOperationStatus.IN_PROGRESS,
+            },
+            data: {
+              completedAt,
+              receipt: toJson({ bookingId, completedAt: completedAt.toISOString() }),
+              status: PaymentAdminOperationStatus.SUCCEEDED,
+            },
+          });
+          if (completedClaim.count !== 1) {
+            throw new ConflictException('Booking completion payment claim is no longer active');
+          }
+        }
+        return tx.booking.findUniqueOrThrow({
+          where: { id: bookingId },
+          include: completedBookingInclude,
+        });
+      });
+    } catch (error) {
+      if (operationClaim) {
+        await this.markBookingCompletionCaptureClaimForReview(operationClaim.id, error);
+      }
+      throw error;
+    }
     await this.reconcileProviderAvailability(provider.id);
     const result = this.matching.completeBooking(bookingId, clientBookingResponse(booking));
     await this.announceServiceCompleted({
@@ -3052,6 +3122,68 @@ export class BookingsService {
       matchingPayload: result,
     });
     return result;
+  }
+
+  private async createBookingCompletionCaptureClaim(input: {
+    actorId: string;
+    bookingId: string;
+    paymentId: string;
+    providerProfileId: string;
+  }) {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        await lockBookingLifecycle(tx, input.bookingId);
+        const booking = await tx.booking.findUniqueOrThrow({
+          where: { id: input.bookingId },
+          select: { selectedProviderId: true, status: true },
+        });
+        const allowedPreviousStatuses =
+          providerLifecycleAllowedPreviousStatuses(BookingStatus.COMPLETED) ?? [BookingStatus.IN_SERVICE];
+        if (
+          booking.selectedProviderId !== input.providerProfileId ||
+          !allowedPreviousStatuses.includes(booking.status)
+        ) {
+          throw this.bookingStateChangedError();
+        }
+        return tx.paymentAdminOperationClaim.create({
+          data: {
+            action: BOOKING_COMPLETION_CAPTURE_ACTION,
+            actorId: input.actorId,
+            idempotencyKey: BOOKING_COMPLETION_CAPTURE_IDEMPOTENCY_KEY,
+            paymentId: input.paymentId,
+            reason: 'Gateway capture reserved for booking completion',
+            requestHash: `${input.bookingId}:${input.providerProfileId}:${input.paymentId}`,
+          },
+          select: { id: true },
+        });
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException({
+          code: 'BOOKING_PAYMENT_OPERATION_IN_PROGRESS',
+          message: 'Another payment operation is already active for this booking.',
+        });
+      }
+      throw error;
+    }
+  }
+
+  private async markBookingCompletionCaptureClaimForReview(claimId: string, error: unknown) {
+    try {
+      await this.prisma.paymentAdminOperationClaim.updateMany({
+        where: { id: claimId, status: PaymentAdminOperationStatus.IN_PROGRESS },
+        data: {
+          errorCode: 'BOOKING_COMPLETION_CAPTURE_REQUIRES_REVIEW',
+          errorMessage: safeBookingCompletionErrorMessage(error),
+          status: PaymentAdminOperationStatus.REVIEW_REQUIRED,
+        },
+      });
+    } catch (claimError) {
+      this.logger.error(
+        `Could not mark booking completion payment claim ${claimId} for review`,
+        claimError instanceof Error ? claimError.stack : undefined,
+      );
+    }
   }
 
   async createProviderCustomerReview(bookingId: string, providerUserId: string, input: { comment: string }) {
@@ -3422,6 +3554,17 @@ function cleanOptionalLocationAddress(value: string | null | undefined) {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed.slice(0, 500) : null;
+}
+
+async function lockBookingLifecycle(tx: Prisma.TransactionClient, bookingId: string) {
+  await tx.$queryRaw(
+    Prisma.sql`SELECT "id" FROM "Booking" WHERE "id" = ${bookingId} FOR UPDATE`,
+  );
+}
+
+function safeBookingCompletionErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : 'Booking completion failed after capture reservation';
+  return message.replace(/[\r\n\t]+/g, ' ').trim().slice(0, 500);
 }
 
 function appendDatedBookingNote(existingNotes: string | null | undefined, message: string, now = new Date()) {

@@ -1543,6 +1543,18 @@ describe('PaymentsService conditional transitions', () => {
       where: { id: 'payment-1', status: { in: [PaymentStatus.CAPTURED] } },
     });
     expect(settlements.reverseBookingSettlementSnapshotForRefund).toHaveBeenCalledOnce();
+    const reversalOccurredAt = settlements.reverseBookingSettlementSnapshotForRefund.mock.calls[0]?.[0]
+      ?.occurredAt as Date;
+    expect(reversalOccurredAt).toBeInstanceOf(Date);
+    expect(reversalOccurredAt.toISOString()).not.toBe('2026-07-14T07:00:00.000Z');
+    expect(prisma.refund.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'refund-1', status: 'GATEWAY_CONFIRMED' },
+        data: expect.objectContaining({
+          metadata: expect.objectContaining({ completedAt: reversalOccurredAt.toISOString() }),
+        }),
+      }),
+    );
     expect(earnings.cancelForRefund).toHaveBeenCalledOnce();
     expect(admin.writeAudit).toHaveBeenCalledWith(
       'finance-admin-2',

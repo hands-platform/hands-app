@@ -203,6 +203,10 @@ export class PaymentsService {
     return this.adapterFor(method).mode === 'GATEWAY' && method === PaymentMethod.VNPAY;
   }
 
+  paymentRequiresGatewayCaptureForBookingCompletion(method: PaymentMethod, status: PaymentStatus) {
+    return this.adapterFor(method).mode === 'GATEWAY' && status !== PaymentStatus.CAPTURED;
+  }
+
   buildAuthorization(
     method: PaymentMethod,
     amount: number,
@@ -1045,10 +1049,11 @@ export class PaymentsService {
       }
     }
 
+    const finalizedAt = new Date();
     await this.finalizeRefund({
       actorId: audit.actorId,
       approvalAdminId: audit.approvalAdminId,
-      occurredAt: audit.occurredAt,
+      occurredAt: finalizedAt,
       paymentId: refund.paymentId,
       refund: refundForFinalization,
       requestedByAdminId: audit.requestedByAdminId,
@@ -1089,7 +1094,7 @@ export class PaymentsService {
           status: 'COMPLETED',
           metadata: toJsonOrUndefined({
             ...asJsonObject(refund.metadata),
-            completedAt: new Date().toISOString(),
+            completedAt: occurredAt.toISOString(),
           }),
         },
       });
