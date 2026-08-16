@@ -548,6 +548,17 @@ export class PaymentsService {
     });
   }
 
+  async confirmGatewayCaptureForBookingCompletion(actorId: string, bookingId: string) {
+    const current = await this.prisma.payment.findUnique({ where: { bookingId } });
+    if (!current) {
+      throw new BadRequestException(`Payment for booking ${bookingId} was not found`);
+    }
+    if (this.adapterFor(current.method).mode !== 'GATEWAY' || current.status === PaymentStatus.CAPTURED) {
+      return current;
+    }
+    return this.capture(actorId, current.id);
+  }
+
   async capture(actorId: string, paymentId: string) {
     const current = await this.prisma.payment.findUnique({ where: { id: paymentId } });
     if (!current) {
@@ -1138,11 +1149,12 @@ export class PaymentsService {
       await this.prisma.refund.updateMany({
         where: { id: refund.id, status: 'APPROVAL_PROCESSING' },
         data: {
-          status: 'REQUESTED',
           metadata: toJsonOrUndefined({
             ...asJsonObject(refund.metadata),
             gatewayLastError: errorMessage(error),
             gatewayLastErrorAt: new Date().toISOString(),
+            gatewayRecoveryRequired: true,
+            gatewayResultUncertain: true,
           }),
         },
       });

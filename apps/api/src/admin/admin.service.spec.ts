@@ -546,6 +546,10 @@ function createAdminService(
         refundRequested: false,
         released: true,
       }),
+      confirmGatewayCaptureForBookingCompletion: vi.fn().mockResolvedValue({
+        id: 'payment-1',
+        status: PaymentStatus.CAPTURED,
+      }),
     }) as never,
     undefined,
     (deps.campaignQueue ?? undefined) as never,
@@ -10618,7 +10622,7 @@ describe('AdminService query orchestration', () => {
     expect(referrals.payRewardCashout).not.toHaveBeenCalled();
   });
 
-  it('expires an elapsed matching booking atomically and releases only its open payment', async () => {
+  it('expires an elapsed matching booking before closing its payment through the canonical resolver', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-05T10:00:00.000Z'));
     const updated = { id: 'booking-1', status: BookingStatus.EXPIRED };
@@ -10633,37 +10637,36 @@ describe('AdminService query orchestration', () => {
           preferredProviderId: 'preferred-1',
           selectedProviderId: null,
           status: BookingStatus.OPEN_MATCHING,
+          closedReason: null,
           participants: [{ providerProfileId: 'marketplace-1', status: ParticipantStatus.JOINED }],
           payment: { id: 'payment-1', status: PaymentStatus.AUTHORIZED },
         }),
         update: vi.fn().mockResolvedValue(updated),
-      },
-      payment: {
-        findUniqueOrThrow: vi.fn().mockResolvedValue({
-          id: 'payment-1',
-          status: PaymentStatus.RELEASED,
-        }),
-        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     };
     const prisma = {
       $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
     };
     const redisState = { closeMatching: vi.fn().mockResolvedValue(undefined) };
-    const service = createAdminService(prisma, { redisState });
+    const payments = {
+      closeUnmatchedBookingPayment: vi.fn().mockResolvedValue({
+        payment: { id: 'payment-1', status: PaymentStatus.RELEASED },
+        refundRequested: false,
+        released: true,
+      }),
+    };
+    const service = createAdminService(prisma, { payments, redisState });
 
     await expect(
       service.expireBooking('admin-1', 'booking-1', { reason: 'Deadline reviewed' }),
     ).resolves.toEqual(updated);
 
     expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
-    expect(tx.payment.updateMany).toHaveBeenCalledWith({
-      data: { status: PaymentStatus.RELEASED },
-      where: {
-        id: 'payment-1',
-        status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] },
-      },
-    });
+    expect(payments.closeUnmatchedBookingPayment).toHaveBeenCalledWith(
+      'payment-1',
+      'Deadline reviewed',
+      { requestedByAdminId: 'admin-1', source: 'ADMIN_MATCHING_EXPIRED' },
+    );
     expect(tx.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -10677,12 +10680,70 @@ describe('AdminService query orchestration', () => {
       data: expect.objectContaining({
         action: 'booking.expire.manual',
         metadata: expect.objectContaining({
-          paymentReleased: true,
+          paymentClosurePending: true,
           staleSelectableResponseCount: 1,
         }),
       }),
     });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'booking.expire.payment_close',
+        metadata: expect.objectContaining({
+          paymentStatus: PaymentStatus.RELEASED,
+          released: true,
+        }),
+      }),
+    });
     vi.useRealTimers();
+  });
+
+  it('retries only payment closure after an admin-expired booking was already committed', async () => {
+    const updated = { id: 'booking-1', status: BookingStatus.EXPIRED };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'booking-1' }]),
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+      booking: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'booking-1',
+          expiresAt: new Date('2026-08-05T09:50:00.000Z'),
+          notes: null,
+          preferredProviderId: null,
+          selectedProviderId: null,
+          status: BookingStatus.EXPIRED,
+          closedReason: 'admin_expired',
+          participants: [],
+          payment: { id: 'payment-1', status: PaymentStatus.AUTHORIZED },
+        }),
+        update: vi.fn().mockResolvedValue(updated),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const payments = {
+      closeUnmatchedBookingPayment: vi.fn().mockResolvedValue({
+        payment: { id: 'payment-1', status: PaymentStatus.RELEASED },
+        refundRequested: false,
+        released: true,
+      }),
+    };
+    const redisState = { closeMatching: vi.fn().mockResolvedValue(undefined) };
+    const service = createAdminService(prisma, { payments, redisState });
+
+    await expect(service.expireBooking('admin-1', 'booking-1', {})).resolves.toEqual(updated);
+
+    expect(tx.booking.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: BookingStatus.EXPIRED }) }),
+    );
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ action: 'booking.expire.manual' }) }),
+    );
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'booking.expire.payment_close',
+        metadata: expect.objectContaining({ paymentClosureRetry: true }),
+      }),
+    });
   });
 
   it('does not mutate a matching booking before its stored deadline', async () => {
@@ -10698,6 +10759,7 @@ describe('AdminService query orchestration', () => {
           preferredProviderId: null,
           selectedProviderId: null,
           status: BookingStatus.OPEN_MATCHING,
+          closedReason: null,
           participants: [],
           payment: null,
         }),
@@ -10751,7 +10813,13 @@ describe('AdminService query orchestration', () => {
         partnerReward: null,
       }),
     };
-    const service = createAdminService(prisma, { earnings, referrals });
+    const payments = {
+      confirmGatewayCaptureForBookingCompletion: vi.fn().mockResolvedValue({
+        id: 'payment-1',
+        status: PaymentStatus.CAPTURED,
+      }),
+    };
+    const service = createAdminService(prisma, { earnings, payments, referrals });
 
     await expect(
       service.closeoutCompletedBooking('admin-1', 'booking-1', {
@@ -10762,6 +10830,10 @@ describe('AdminService query orchestration', () => {
     expect(earnings.createForCompletedBooking).toHaveBeenCalledWith('booking-1', 'partner-1', {
       preserveExistingLifecycle: true,
     });
+    expect(payments.confirmGatewayCaptureForBookingCompletion).toHaveBeenCalledWith(
+      'admin-1',
+      'booking-1',
+    );
     expect(referrals.createRewardsForCompletedBooking).toHaveBeenCalledWith('booking-1');
     expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -28983,6 +29055,22 @@ describe('AdminService query orchestration', () => {
         groupBy: vi.fn().mockResolvedValue([{ providerProfileId: 'provider-1' }]),
       },
     };
+    Object.assign(tx, {
+      $queryRaw: vi.fn(async (query: { sql?: string }) => {
+        if ((query.sql ?? '').includes('pg_advisory_xact_lock')) {
+          return [{ lockResult: '' }];
+        }
+        return prisma.$queryRaw(query);
+      }),
+      accountingJournalBatch: prisma.accountingJournalBatch,
+    });
+    Object.assign(tx.monthlyTaxClosing, {
+      findUnique: prisma.monthlyTaxClosing.findUnique,
+    });
+    Object.assign(tx.bookingSettlementSnapshot, {
+      aggregate: prisma.bookingSettlementSnapshot.aggregate,
+      count: prisma.bookingSettlementSnapshot.count,
+    });
     const service = createAdminService(prisma);
 
     await expect(
@@ -28991,6 +29079,10 @@ describe('AdminService query orchestration', () => {
         notes: ' Submitted to tax portal ',
       }),
     ).resolves.toEqual(updatedClosing);
+
+    expect((tx as typeof tx & { $queryRaw: ReturnType<typeof vi.fn> }).$queryRaw).toHaveBeenCalledWith(
+      expect.objectContaining({ values: ['settlement-month:2026-06:VND'] }),
+    );
 
     expect(tx.monthlyTaxClosing.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -29060,7 +29152,6 @@ describe('AdminService query orchestration', () => {
             platformFeeDiscountAmount: 0n,
         },
       ]),
-      $transaction: vi.fn(),
       monthlyTaxClosing: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'closing-1',
@@ -29114,12 +29205,11 @@ describe('AdminService query orchestration', () => {
       }),
     ).rejects.toThrow('Monthly close requires reconciliation delta to be zero before status can advance');
 
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
   });
 
   it('blocks monthly tax closeout status changes while net revenue delta remains open', async () => {
     const prisma = {
-      $transaction: vi.fn(),
       accountingJournalBatch: {
         findFirst: vi.fn(),
       },
@@ -29145,12 +29235,11 @@ describe('AdminService query orchestration', () => {
     ).rejects.toThrow('Monthly close requires net revenue delta to be zero before status can advance.');
 
     expect(prisma.accountingJournalBatch.findFirst).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
   });
 
   it('blocks declaration while settlement payment fee policy evidence remains unresolved', async () => {
     const prisma = {
-      $transaction: vi.fn(),
       monthlyTaxClosing: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'closing-1',
@@ -29177,12 +29266,11 @@ describe('AdminService query orchestration', () => {
     ).rejects.toThrow('Monthly close has 2 settlement(s) without resolved payment fee policy evidence.');
 
     expect(prisma.accountingJournalBatch.findFirst).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
   });
 
   it('blocks declaration while executed Partner bank deposits remain unreconciled', async () => {
     const prisma = {
-      $transaction: vi.fn(),
       monthlyTaxClosing: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'closing-1',
@@ -29212,12 +29300,11 @@ describe('AdminService query orchestration', () => {
     );
 
     expect(prisma.accountingJournalBatch.findFirst).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
   });
 
   it('blocks declaration while paid Partner payout bank outflows remain unreconciled', async () => {
     const prisma = {
-      $transaction: vi.fn(),
       monthlyTaxClosing: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'closing-1',
@@ -29249,12 +29336,11 @@ describe('AdminService query orchestration', () => {
     );
 
     expect(prisma.accountingJournalBatch.findFirst).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
   });
 
   it('blocks declaration while Partner payout return bank inflows remain unreconciled', async () => {
     const prisma = {
-      $transaction: vi.fn(),
       monthlyTaxClosing: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'closing-1',
@@ -29286,7 +29372,7 @@ describe('AdminService query orchestration', () => {
     );
 
     expect(prisma.accountingJournalBatch.findFirst).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
   });
 
   it('blocks monthly tax closeout status changes while posted journal reconciliation deltas remain open', async () => {
@@ -29302,7 +29388,6 @@ describe('AdminService query orchestration', () => {
           platformFeeDiscountAmount: 0n,
         },
       ]),
-      $transaction: vi.fn(),
       monthlyTaxClosing: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'closing-1',
@@ -29362,7 +29447,7 @@ describe('AdminService query orchestration', () => {
     const integrityQueryText = integrityQuery.sql ?? integrityQuery.text ?? '';
     expect(integrityQueryText).toContain('journal_integrity');
     expect(integrityQueryText).toContain('integrity."integrityState" <> \'CLEAR\'');
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
   });
 
   it('requires separate approval and evidence before marking partner withholding remittance paid', async () => {
@@ -29550,6 +29635,17 @@ describe('AdminService query orchestration', () => {
         groupBy: vi.fn(),
       },
     };
+    Object.assign(tx, {
+      $queryRaw: vi.fn(async (query: { sql?: string }) =>
+        (query.sql ?? '').includes('pg_advisory_xact_lock') ? [{ lockResult: '' }] : [],
+      ),
+    });
+    Object.assign(tx.monthlyTaxClosing, {
+      findUnique: prisma.monthlyTaxClosing.findUnique,
+    });
+    Object.assign(tx.accountingJournalBatch, {
+      findFirst: prisma.accountingJournalBatch.findFirst,
+    });
     const service = createAdminService(prisma);
     vi.spyOn(service, 'monthlyTaxClosingSummary').mockResolvedValue({
       currency: 'VND',

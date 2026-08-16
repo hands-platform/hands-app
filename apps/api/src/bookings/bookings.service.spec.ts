@@ -1879,12 +1879,13 @@ describe('BookingsService service completion', () => {
     const matchingGateway = { emitServiceCompleted: vi.fn() };
     const notifications = { create: vi.fn() };
     const earnings = { createForCompletedBooking: vi.fn() };
+    const payments = { confirmGatewayCaptureForBookingCompletion: vi.fn().mockResolvedValue({}) };
     const providerAvailabilityLifecycle = { markBusy: vi.fn(), reconcile: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
       matchingGateway as never,
-      {} as never,
+      payments as never,
       notifications as never,
       earnings as never,
       providerAvailabilityLifecycle as never,
@@ -1896,6 +1897,10 @@ describe('BookingsService service completion', () => {
     });
 
     expect(providerAvailabilityLifecycle.reconcile).toHaveBeenCalledWith('partner-1');
+    expect(payments.confirmGatewayCaptureForBookingCompletion).toHaveBeenCalledWith(
+      'partner-user-1',
+      'booking-1',
+    );
 
     expect(prisma.booking.findUniqueOrThrow).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -1971,11 +1976,12 @@ describe('BookingsService service completion', () => {
     const matchingGateway = { emitServiceCompleted: vi.fn() };
     const notifications = { create: vi.fn() };
     const earnings = { createForCompletedBooking: vi.fn() };
+    const payments = { confirmGatewayCaptureForBookingCompletion: vi.fn().mockResolvedValue({}) };
     const service = new BookingsService(
       prisma as never,
       matching as never,
       matchingGateway as never,
-      {} as never,
+      payments as never,
       notifications as never,
       earnings as never,
     );
@@ -2027,12 +2033,13 @@ describe('BookingsService service completion', () => {
     const matchingGateway = { emitServiceCompleted: vi.fn() };
     const notifications = { create: vi.fn() };
     const earnings = { createForCompletedBooking: vi.fn() };
+    const payments = { confirmGatewayCaptureForBookingCompletion: vi.fn().mockResolvedValue({}) };
     const providerAvailabilityLifecycle = { reconcile: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
       matchingGateway as never,
-      {} as never,
+      payments as never,
       notifications as never,
       earnings as never,
       providerAvailabilityLifecycle as never,
@@ -2045,6 +2052,43 @@ describe('BookingsService service completion', () => {
     expect(matching.completeBooking).not.toHaveBeenCalled();
     expect(matchingGateway.emitServiceCompleted).not.toHaveBeenCalled();
     expect(providerAvailabilityLifecycle.reconcile).not.toHaveBeenCalled();
+  });
+
+  it('does not start completion accounting when gateway capture cannot be confirmed', async () => {
+    const prisma = {
+      $transaction: vi.fn(),
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
+      },
+      booking: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'booking-1',
+          selectedProviderId: 'partner-1',
+          status: BookingStatus.IN_SERVICE,
+        }),
+      },
+    };
+    const payments = {
+      confirmGatewayCaptureForBookingCompletion: vi
+        .fn()
+        .mockRejectedValue(new Error('gateway capture unavailable')),
+    };
+    const earnings = { createForCompletedBooking: vi.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      payments as never,
+      {} as never,
+      earnings as never,
+    );
+
+    await expect(
+      service.complete('booking-1', 'partner-user-1', { lat: 10.7769, lng: 106.7009 }),
+    ).rejects.toThrow('gateway capture unavailable');
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(earnings.createForCompletedBooking).not.toHaveBeenCalled();
   });
 
   it('rejects completion before closeout when Partner action location is missing', async () => {

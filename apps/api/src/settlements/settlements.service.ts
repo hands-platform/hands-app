@@ -121,6 +121,11 @@ export class SettlementsService {
   ) {
     const preview = this.previewBookingSettlementSnapshot(input);
     const { amounts, currency, metadata, monthlyPeriod, paymentFeeFixedAmount, paymentFeeRateBps } = preview;
+    if (client !== this.prisma) {
+      await lockSettlementMonthlyPeriodsInTransaction(client as Prisma.TransactionClient, [
+        { period: monthlyPeriod, currency },
+      ]);
+    }
     await this.ensureSnapshotIsEditable(input.bookingId, monthlyPeriod, currency, client);
     const sourceKey = bookingSettlementSourceKey(input.bookingId);
     const customerWalletLedgerEntryIds = await this.customerWalletLedgerEntryIdsForSettlement(
@@ -267,7 +272,7 @@ export class SettlementsService {
     input: ReverseBookingSettlementSnapshotInput,
     client: SettlementPrismaClient = this.prisma,
   ) {
-    const existing = await client.bookingSettlementSnapshot.findUnique({
+    let existing = await client.bookingSettlementSnapshot.findUnique({
       include: {
         providerEarning: {
           select: {
@@ -287,6 +292,33 @@ export class SettlementsService {
     });
     if (!existing) {
       return { skipped: true, reason: 'NO_SETTLEMENT_SNAPSHOT' };
+    }
+    if (client !== this.prisma) {
+      await lockSettlementMonthlyPeriodsInTransaction(client as Prisma.TransactionClient, [
+        { period: existing.monthlyPeriod, currency: existing.currency },
+        { period: settlementMonthlyPeriod(input.occurredAt), currency: existing.currency },
+      ]);
+      existing = await client.bookingSettlementSnapshot.findUnique({
+        include: {
+          providerEarning: {
+            select: {
+              id: true,
+              payoutBatch: {
+                select: {
+                  id: true,
+                  status: true,
+                },
+              },
+              payoutBatchId: true,
+              status: true,
+            },
+          },
+        },
+        where: { bookingId: input.bookingId },
+      });
+      if (!existing) {
+        return { skipped: true, reason: 'NO_SETTLEMENT_SNAPSHOT' };
+      }
     }
     if (existing.settlementStatus === BookingSettlementStatus.REVERSED) {
       return existing;
@@ -721,6 +753,18 @@ export function customerWalletPaymentSourceKey(bookingId: string) {
 }
 
 export const VIETNAM_TIME_ZONE = 'Asia/Ho_Chi_Minh';
+
+export async function lockSettlementMonthlyPeriodsInTransaction(
+  client: Prisma.TransactionClient,
+  periods: Array<{ period: string; currency: string }>,
+) {
+  const keys = [...new Set(periods.map(({ period, currency }) => `${period}:${currency}`))].sort();
+  for (const key of keys) {
+    await client.$queryRaw(
+      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`settlement-month:${key}`}, 0))::text AS "lockResult"`,
+    );
+  }
+}
 
 export function settlementMonthlyPeriod(date: Date, timeZone = VIETNAM_TIME_ZONE) {
   const parts = new Intl.DateTimeFormat('en-CA', {

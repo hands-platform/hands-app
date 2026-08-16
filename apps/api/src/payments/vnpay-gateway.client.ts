@@ -107,7 +107,7 @@ export class VnpayGatewayClient {
       hashSecret: settings.hashSecret,
       ipAddress: settings.serverIp,
       orderInfo: `Refund HANDS booking ${input.bookingId}`,
-      requestId: vnpayRequestId(input.refundId, 'r', now),
+      requestId: vnpayRefundRequestId(input.refundId),
       tmnCode: settings.tmnCode,
       transactionDate: input.transactionDate,
       transactionNo: input.transactionNo,
@@ -195,6 +195,10 @@ export function vnpayPaymentStatus(transactionStatus: string) {
 function vnpayRequestId(reference: string, operation: 'q' | 'r', date: Date) {
   const digest = createHash('sha256').update(reference).digest('hex').slice(0, 15);
   return `${digest}${operation}${vnpayVietnamDate(date)}`;
+}
+
+function vnpayRefundRequestId(refundId: string) {
+  return createHash('sha256').update(`refund:${refundId}`).digest('hex').slice(0, 30);
 }
 
 function assertVnpayOperationResponse(

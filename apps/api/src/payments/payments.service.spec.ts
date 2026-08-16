@@ -979,7 +979,7 @@ describe('PaymentsService conditional transitions', () => {
     expect(service.paymentRequiresCaptureBeforeMatching(PaymentMethod.VNPAY)).toBe(true);
   });
 
-  it('confirms gateway capture before committing the captured payment state', async () => {
+  it('confirms gateway capture before booking completion can commit the captured payment state', async () => {
     const adapter = gatewayAdapter(PaymentMethod.MOMO);
     adapter.capture.mockResolvedValueOnce({
       status: PaymentStatus.CAPTURED,
@@ -1000,7 +1000,9 @@ describe('PaymentsService conditional transitions', () => {
       updatedPayment: captured,
     });
 
-    await expect(service.capture('admin-1', 'payment-1')).resolves.toEqual(captured);
+    await expect(
+      service.confirmGatewayCaptureForBookingCompletion('partner-user-1', 'booking-1'),
+    ).resolves.toEqual(captured);
 
     expect(adapter.capture).toHaveBeenCalledWith({
       amount: 300000,
@@ -1022,6 +1024,22 @@ describe('PaymentsService conditional transitions', () => {
       },
       where: { id: 'payment-1', status: { in: [PaymentStatus.AUTHORIZED] } },
     });
+  });
+
+  it('leaves internal booking payments for the completion transaction to capture', async () => {
+    const internal = payment({ method: PaymentMethod.CASH, status: PaymentStatus.PENDING });
+    const adapter = cashAdapter();
+    const { prisma, service } = createService({
+      cashPaymentAdapter: adapter,
+      existingPayment: internal,
+    });
+
+    await expect(
+      service.confirmGatewayCaptureForBookingCompletion('partner-user-1', 'booking-1'),
+    ).resolves.toEqual(internal);
+
+    expect(adapter.capture).not.toHaveBeenCalled();
+    expect(prisma.payment.updateMany).not.toHaveBeenCalled();
   });
 
   it('captures an internal cash payment from pending', async () => {
@@ -1260,7 +1278,7 @@ describe('PaymentsService conditional transitions', () => {
     });
   });
 
-  it('keeps a failed gateway refund requested without changing payment or booking state', async () => {
+  it('keeps an uncertain gateway refund in recovery state without changing payment or booking state', async () => {
     const adapter = gatewayAdapter(PaymentMethod.MOMO);
     adapter.refund.mockRejectedValueOnce(new Error('gateway timeout'));
     const { prisma, service } = createService({
@@ -1283,10 +1301,11 @@ describe('PaymentsService conditional transitions', () => {
     expect(prisma.refund.updateMany).toHaveBeenCalledWith({
       where: { id: 'refund-1', status: 'APPROVAL_PROCESSING' },
       data: expect.objectContaining({
-        status: 'REQUESTED',
         metadata: expect.objectContaining({
           gatewayLastError: 'gateway timeout',
           gatewayLastErrorAt: expect.any(String),
+          gatewayRecoveryRequired: true,
+          gatewayResultUncertain: true,
         }),
       }),
     });

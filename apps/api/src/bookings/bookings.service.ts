@@ -3004,6 +3004,7 @@ export class BookingsService {
   ) {
     const provider = await this.requireProviderCanCompleteBooking(bookingId, providerUserId);
     this.assertProviderBookingActionLocationInput(input);
+    await this.payments.confirmGatewayCaptureForBookingCompletion(providerUserId, bookingId);
     const booking = await this.prisma.$transaction(async (tx) => {
       await this.recordProviderBookingActionLocation({
         bookingId,

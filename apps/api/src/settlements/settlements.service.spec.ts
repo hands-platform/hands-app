@@ -8,6 +8,7 @@ import {
   PayoutBatchStatus,
 } from '@prisma/client';
 import {
+  lockSettlementMonthlyPeriodsInTransaction,
   settlementMonthlyPeriod,
   SettlementsService,
   VIETNAM_TIME_ZONE,
@@ -22,6 +23,66 @@ describe('settlementMonthlyPeriod', () => {
 });
 
 describe('SettlementsService', () => {
+  it('locks unique settlement periods in stable order inside the caller transaction', async () => {
+    const client = { $queryRaw: vi.fn().mockResolvedValue([{ lockResult: '' }]) };
+
+    await lockSettlementMonthlyPeriodsInTransaction(client as never, [
+      { period: '2026-07', currency: 'VND' },
+      { period: '2026-06', currency: 'VND' },
+      { period: '2026-07', currency: 'VND' },
+    ]);
+
+    expect(client.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(client.$queryRaw.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ values: ['settlement-month:2026-06:VND'] }),
+    );
+    expect(client.$queryRaw.mock.calls[1]?.[0]).toEqual(
+      expect.objectContaining({ values: ['settlement-month:2026-07:VND'] }),
+    );
+  });
+
+  it('locks the target period before checking whether a settlement snapshot is editable', async () => {
+    const prisma = {};
+    const transactionClient = {
+      $queryRaw: vi.fn().mockResolvedValue([{ lockResult: '' }]),
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'settlement-closed-1',
+          monthlyClosingId: 'closing-1',
+          monthlyClosing: { status: MonthlyTaxClosingStatus.CLOSED },
+        }),
+        upsert: vi.fn(),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await expect(
+      service.upsertBookingSettlementSnapshot(
+        {
+          bookingId: 'booking-closed-1',
+          customerProfileId: 'customer-1',
+          providerProfileId: 'provider-1',
+          paymentMethod: 'CARD',
+          currency: 'VND',
+          customerPaymentAmount: 600_000,
+          partnerPayoutAmount: 430_000,
+          platformFeeGross: 128_000,
+          partnerVatRateBps: 500,
+          partnerPitRateBps: 200,
+          platformVatRateBps: 800,
+          occurredAt: new Date('2026-07-13T03:02:00.000Z'),
+        },
+        transactionClient as never,
+      ),
+    ).rejects.toThrow('Closed monthly periods require reversal entries, not direct settlement snapshot edits.');
+
+    expect(transactionClient.$queryRaw).toHaveBeenCalledOnce();
+    expect(transactionClient.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      transactionClient.bookingSettlementSnapshot.findUnique.mock.invocationCallOrder[0],
+    );
+    expect(transactionClient.bookingSettlementSnapshot.upsert).not.toHaveBeenCalled();
+  });
+
   it('builds a read-only settlement and journal dry-run without touching Prisma', () => {
     const prisma = {
       accountingJournalBatch: { upsert: vi.fn() },

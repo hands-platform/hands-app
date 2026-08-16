@@ -193,7 +193,11 @@ import {
   referralAdminFixtureRewardWhere,
 } from '../referrals/referral-fixture';
 import { referralRewardEvidenceBlocker } from '../referrals/referral-reward-evidence';
-import { settlementMonthlyPeriod, VIETNAM_TIME_ZONE } from '../settlements/settlements.service';
+import {
+  lockSettlementMonthlyPeriodsInTransaction,
+  settlementMonthlyPeriod,
+  VIETNAM_TIME_ZONE,
+} from '../settlements/settlements.service';
 import { bpsAmount } from '../settlements/settlement-calculator';
 import {
   settlementAllocationIdentity,
@@ -15943,67 +15947,120 @@ export class AdminService {
           preferredProviderId: true,
           selectedProviderId: true,
           status: true,
+          closedReason: true,
           participants: { select: { providerProfileId: true, status: true } },
           payment: { select: { id: true, status: true } },
         },
       });
 
-      if (booking.status !== BookingStatus.OPEN_MATCHING) {
+      const paymentClosureRetry =
+        booking.status === BookingStatus.EXPIRED &&
+        booking.closedReason === 'admin_expired' &&
+        !booking.selectedProviderId;
+      if (!paymentClosureRetry && booking.status !== BookingStatus.OPEN_MATCHING) {
         throw new BadRequestException(`Booking status ${booking.status} cannot be expired`);
       }
       if (booking.selectedProviderId) {
         throw new ConflictException('Booking already has a final Partner selection');
       }
-      if (!booking.expiresAt || booking.expiresAt.getTime() > now.getTime()) {
+      if (!paymentClosureRetry && (!booking.expiresAt || booking.expiresAt.getTime() > now.getTime())) {
         throw new ConflictException('Booking matching deadline has not passed');
       }
 
       const selectableBeforeDeadline = booking.participants.filter((participant) =>
         isCustomerSelectableParticipantForFinalChoice(participant, booking.preferredProviderId),
       ).length;
-      const selectableNow = booking.expiresAt.getTime() > now.getTime() ? selectableBeforeDeadline : 0;
+      const selectableNow =
+        !paymentClosureRetry && booking.expiresAt && booking.expiresAt.getTime() > now.getTime()
+          ? selectableBeforeDeadline
+          : 0;
       if (selectableNow > 0) {
         throw new ConflictException('Booking still has a customer-selectable Partner response');
       }
 
-      const notes = appendDatedAdminNote(
-        booking.notes,
-        `Matching expired by operations${reason ? `: ${reason}` : '.'}`,
-      );
-      const releasePayment =
-        booking.payment?.status === PaymentStatus.PENDING ||
-        booking.payment?.status === PaymentStatus.AUTHORIZED;
-      if (booking.payment && releasePayment) {
-        await transitionPaymentStatus(tx, {
-          data: { status: PaymentStatus.RELEASED },
-          fromStatuses: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED],
-          paymentId: booking.payment.id,
-          targetStatus: PaymentStatus.RELEASED,
+      if (!paymentClosureRetry) {
+        const notes = appendDatedAdminNote(
+          booking.notes,
+          `Matching expired by operations${reason ? `: ${reason}` : '.'}`,
+        );
+        await tx.booking.update({
+          where: { id: bookingId },
+          data: {
+            status: BookingStatus.EXPIRED,
+            expiresAt: now,
+            closedAt: now,
+            closedByRole: Role.ADMIN,
+            closedReason: 'admin_expired',
+            closedNote: reason ?? 'Matching expired; customer communication should be confirmed.',
+            notes,
+            opsTasks: {
+              upsert: {
+                where: { bookingId_type: { bookingId, type: BookingOpsTaskType.CUSTOMER_CONTACTED } },
+                update: {
+                  status: BookingOpsTaskStatus.PENDING,
+                  note: reason ?? 'Matching expired; customer communication should be confirmed.',
+                  actorId,
+                },
+                create: {
+                  type: BookingOpsTaskType.CUSTOMER_CONTACTED,
+                  status: BookingOpsTaskStatus.PENDING,
+                  note: reason ?? 'Matching expired; customer communication should be confirmed.',
+                  actorId,
+                },
+              },
+            },
+          },
         });
+
+        await this.writeAudit(actorId, 'booking.expire.manual', `booking:${bookingId}`, {
+          bookingId,
+          previousStatus: booking.status,
+          paymentId: booking.payment?.id ?? null,
+          paymentClosurePending: Boolean(booking.payment),
+          staleSelectableResponseCount: selectableBeforeDeadline,
+          reason,
+        }, undefined, tx);
       }
 
+      return {
+        payment: booking.payment,
+        paymentClosureRetry,
+        previousStatus: booking.status,
+        selectableBeforeDeadline,
+      };
+    });
+
+    await this.redisState.closeMatching(bookingId);
+    if (result.payment && !this.payments) {
+      throw new ServiceUnavailableException('Booking expiration payment resolver is unavailable');
+    }
+    const closure = result.payment
+      ? await this.payments!.closeUnmatchedBookingPayment(
+          result.payment.id,
+          reason ?? 'Matching expired without a Partner selection',
+          { requestedByAdminId: actorId, source: 'ADMIN_MATCHING_EXPIRED' },
+        )
+      : null;
+    return this.prisma.$transaction(async (tx) => {
       const updated = await tx.booking.update({
         where: { id: bookingId },
         data: {
-          status: BookingStatus.EXPIRED,
-          expiresAt: now,
-          closedAt: now,
-          closedByRole: Role.ADMIN,
-          closedReason: 'admin_expired',
-          closedNote: reason ?? 'Matching expired; customer communication should be confirmed.',
-          notes,
           opsTasks: {
             upsert: {
-              where: { bookingId_type: { bookingId, type: BookingOpsTaskType.CUSTOMER_CONTACTED } },
+              where: { bookingId_type: { bookingId, type: BookingOpsTaskType.PAYMENT_REVIEWED } },
               update: {
-                status: BookingOpsTaskStatus.PENDING,
-                note: reason ?? 'Matching expired; customer communication should be confirmed.',
+                status: closure?.refundRequested ? BookingOpsTaskStatus.PENDING : BookingOpsTaskStatus.DONE,
+                note: closure?.refundRequested
+                  ? 'Captured payment refund is pending finance review.'
+                  : 'Payment closure completed after matching expiration.',
                 actorId,
               },
               create: {
-                type: BookingOpsTaskType.CUSTOMER_CONTACTED,
-                status: BookingOpsTaskStatus.PENDING,
-                note: reason ?? 'Matching expired; customer communication should be confirmed.',
+                type: BookingOpsTaskType.PAYMENT_REVIEWED,
+                status: closure?.refundRequested ? BookingOpsTaskStatus.PENDING : BookingOpsTaskStatus.DONE,
+                note: closure?.refundRequested
+                  ? 'Captured payment refund is pending finance review.'
+                  : 'Payment closure completed after matching expiration.',
                 actorId,
               },
             },
@@ -16011,28 +16068,17 @@ export class AdminService {
         },
         select: adminBookingDetailSelect,
       });
-
-      await this.writeAudit(actorId, 'booking.expire.manual', `booking:${bookingId}`, {
+      await this.writeAudit(actorId, 'booking.expire.payment_close', `booking:${bookingId}`, {
         bookingId,
-        previousStatus: booking.status,
-        paymentId: booking.payment?.id ?? null,
-        paymentReleased: releasePayment,
-        staleSelectableResponseCount: selectableBeforeDeadline,
+        paymentId: closure?.payment.id ?? null,
+        paymentStatus: closure?.payment.status ?? null,
+        released: closure?.released ?? false,
+        refundRequested: closure?.refundRequested ?? false,
+        paymentClosureRetry: result.paymentClosureRetry,
         reason,
       }, undefined, tx);
-
-      return {
-        paymentId: booking.payment?.id ?? null,
-        paymentReleased: releasePayment,
-        previousStatus: booking.status,
-        selectableBeforeDeadline,
-        updated,
-      };
+      return updated;
     });
-
-    await this.redisState.closeMatching(bookingId);
-
-    return result.updated;
   }
 
   async closeoutCompletedBooking(actorId: string, bookingId: string, input: { note?: string }) {
@@ -16055,6 +16101,12 @@ export class AdminService {
       throw new BadRequestException('Completed booking requires a selected partner before closeout');
     }
 
+    if (booking.payment) {
+      if (!this.payments) {
+        throw new ServiceUnavailableException('Payment service is unavailable for booking closeout');
+      }
+      await this.payments.confirmGatewayCaptureForBookingCompletion(actorId, bookingId);
+    }
     const capturedPayment = booking.payment
       ? (
           await transitionPaymentStatus(this.prisma, {
@@ -24551,7 +24603,10 @@ export class AdminService {
     });
   }
 
-  async monthlyTaxClosingSummary(options: AdminMonthlyTaxClosingQuery = {}) {
+  async monthlyTaxClosingSummary(
+    options: AdminMonthlyTaxClosingQuery = {},
+    client: PrismaService | Prisma.TransactionClient = this.prisma,
+  ) {
     const period = adminPartnerWithholdingTaxPeriod(options.period);
     const where: Prisma.BookingSettlementSnapshotWhereInput = {
       monthlyPeriod: period,
@@ -24568,10 +24623,10 @@ export class AdminService {
       paidTaxCount,
       couponTotals,
     ] = await Promise.all([
-      this.prisma.monthlyTaxClosing.findUnique({
+      client.monthlyTaxClosing.findUnique({
         where: { period_currency: { period, currency: 'VND' } },
       }),
-      this.prisma.bookingSettlementSnapshot.aggregate({
+      client.bookingSettlementSnapshot.aggregate({
         where,
         _count: { _all: true },
         _sum: {
@@ -24586,19 +24641,19 @@ export class AdminService {
           paymentProcessingFee: true,
         },
       }),
-      this.prisma.$queryRaw<Array<{ cashDebtTotal: bigint | number | null }>>(Prisma.sql`
+      client.$queryRaw<Array<{ cashDebtTotal: bigint | number | null }>>(Prisma.sql`
         WITH ${cashSettlementDebtCteSql()}
         SELECT COALESCE(SUM(debt."remainingDebtAmount"), 0)::bigint AS "cashDebtTotal"
         FROM cash_settlement_debt debt
         WHERE ${cashSettlementDebtFilterSql({ period })}
       `),
-      this.prisma.bookingSettlementSnapshot.aggregate({
+      client.bookingSettlementSnapshot.aggregate({
         where: { ...where, paymentMethod: { not: PaymentMethod.CASH } },
         _sum: {
           partnerPayoutAmount: true,
         },
       }),
-      this.prisma.$queryRaw<
+      client.$queryRaw<
         Array<{
           monthlyClosingHistoryCount: bigint | number | null;
           partnerCountWithRevenue: bigint | number | null;
@@ -24682,7 +24737,7 @@ export class AdminService {
           FROM "BookingSettlementSnapshot"
           ${adminPartnerWithholdingTaxSqlWhere(period)}
         `),
-      this.prisma.$queryRaw<Array<{ journalReconciliationIssueCount: bigint | number | null }>>(
+      client.$queryRaw<Array<{ journalReconciliationIssueCount: bigint | number | null }>>(
         Prisma.sql`
           ${adminAccountingJournalIntegrityCte({ period, review: 'posted' })}
           SELECT COUNT(*) FILTER (
@@ -24691,13 +24746,13 @@ export class AdminService {
           FROM journal_integrity integrity
         `,
       ),
-      this.prisma.bookingSettlementSnapshot.count({
+      client.bookingSettlementSnapshot.count({
         where: { ...where, taxStatus: BookingSettlementTaxStatus.OPEN },
       }),
-      this.prisma.bookingSettlementSnapshot.count({
+      client.bookingSettlementSnapshot.count({
         where: { ...where, taxStatus: BookingSettlementTaxStatus.PAID },
       }),
-      this.prisma.$queryRaw<
+      client.$queryRaw<
         Array<{
           companyCouponExpense: bigint | number | null;
           couponDiscountAmount: bigint | number | null;
@@ -24798,7 +24853,7 @@ export class AdminService {
     const nextStatus = monthlyTaxClosingNextStatus(status);
     const withholdingRemittanceJournal =
       nextStatus === MonthlyTaxClosingStatus.CLOSED && partnerWithholdingTotal > 0
-        ? await this.prisma.accountingJournalBatch.findUnique({
+        ? await client.accountingJournalBatch.findUnique({
             where: {
               sourceKey: `accounting-journal:withholding-remittance:${period}:${closing?.currency ?? 'VND'}`,
             },
@@ -24925,62 +24980,63 @@ export class AdminService {
     const period = adminPartnerWithholdingTaxPeriod(periodInput);
     const status = monthlyTaxClosingStatus(input.status);
     const notes = normalizeNullable(input.notes);
-    const existing = await this.prisma.monthlyTaxClosing.findUnique({
-      where: { period_currency: { period, currency: 'VND' } },
-    });
-
-    if (existing?.status === MonthlyTaxClosingStatus.CLOSED && status !== MonthlyTaxClosingStatus.CLOSED) {
-      throw new BadRequestException('Closed monthly periods require reversal entries, not direct edits.');
-    }
-    if (existing?.status === MonthlyTaxClosingStatus.PAID && status === MonthlyTaxClosingStatus.PAID) {
-      throw new ConflictException(
-        'Paid partner withholding remittance evidence is immutable; advance the period to closed or use a reversal entry.',
-      );
-    }
-    assertMonthlyTaxClosingStatusTransition(existing?.status ?? MonthlyTaxClosingStatus.DRAFT, status);
-    const remittance = monthlyTaxClosingRemittanceMetadata(status, input, actorId);
-    if (remittance?.approvedByAdminId) {
-      await assertFinanceActionApprovalAdmin(
-        this.prisma,
-        remittance.approvedByAdminId,
-        'Partner withholding remittance paid closeout',
-      );
-    }
-
-    const summary = await this.monthlyTaxClosingSummary({ period });
-    assertMonthlyTaxClosingReconciliationIsBalanced(summary, status);
-    assertMonthlyTaxClosingPaymentFeeEvidenceIsReady(summary, status);
-    assertMonthlyTaxClosingPartnerDepositReconciliationIsReady(summary, status);
-    assertMonthlyTaxClosingPartnerPayoutReconciliationIsReady(summary, status);
-    await assertMonthlyTaxClosingPostedJournalsAreBalanced(this.prisma, period, status);
-    await assertMonthlyTaxClosingWithholdingRemittanceIsReady(this.prisma, {
-      currency: summary.currency,
-      existing,
-      nextStatus: status,
-      partnerWithholdingTotal: summary.partnerWithholdingTotal,
-      period,
-    });
-    const now = new Date();
-    const statusData = monthlyTaxClosingStatusMutationData(status, actorId, remittance?.paidAtDate ?? now);
-    const remittanceData = remittance
-      ? {
-          remittanceMetadata: toJson(remittance.metadata),
-        }
-      : {};
-    const totalsData = {
-      platformFeeGrossTotal: summary.platformFeeGrossTotal,
-      platformFeeNetRevenueTotal: summary.platformFeeNetRevenueTotal,
-      companyOutputVatTotal: summary.companyOutputVatTotal,
-      partnerVatWithheldTotal: summary.partnerVatWithheldTotal,
-      partnerPitWithheldTotal: summary.partnerPitWithheldTotal,
-      partnerWithholdingTotal: summary.partnerWithholdingTotal,
-      paymentProcessingFeeTotal: summary.paymentProcessingFeeTotal,
-      cashDebtTotal: summary.cashDebtTotal,
-      nonCashPartnerPayoutTotal: summary.nonCashPartnerPayoutTotal,
-      settlementCount: summary.settlementCount,
-    };
-
     return this.prisma.$transaction(async (tx) => {
+      await lockSettlementMonthlyPeriodsInTransaction(tx, [{ period, currency: 'VND' }]);
+      const existing = await tx.monthlyTaxClosing.findUnique({
+      where: { period_currency: { period, currency: 'VND' } },
+      });
+
+      if (existing?.status === MonthlyTaxClosingStatus.CLOSED && status !== MonthlyTaxClosingStatus.CLOSED) {
+        throw new BadRequestException('Closed monthly periods require reversal entries, not direct edits.');
+      }
+      if (existing?.status === MonthlyTaxClosingStatus.PAID && status === MonthlyTaxClosingStatus.PAID) {
+        throw new ConflictException(
+          'Paid partner withholding remittance evidence is immutable; advance the period to closed or use a reversal entry.',
+        );
+      }
+      assertMonthlyTaxClosingStatusTransition(existing?.status ?? MonthlyTaxClosingStatus.DRAFT, status);
+      const remittance = monthlyTaxClosingRemittanceMetadata(status, input, actorId);
+      if (remittance?.approvedByAdminId) {
+        await assertFinanceActionApprovalAdmin(
+          tx,
+          remittance.approvedByAdminId,
+          'Partner withholding remittance paid closeout',
+        );
+      }
+
+      const summary = await this.monthlyTaxClosingSummary({ period }, tx);
+      assertMonthlyTaxClosingReconciliationIsBalanced(summary, status);
+      assertMonthlyTaxClosingPaymentFeeEvidenceIsReady(summary, status);
+      assertMonthlyTaxClosingPartnerDepositReconciliationIsReady(summary, status);
+      assertMonthlyTaxClosingPartnerPayoutReconciliationIsReady(summary, status);
+      await assertMonthlyTaxClosingPostedJournalsAreBalanced(tx, period, status);
+      await assertMonthlyTaxClosingWithholdingRemittanceIsReady(tx, {
+        currency: summary.currency,
+        existing,
+        nextStatus: status,
+        partnerWithholdingTotal: summary.partnerWithholdingTotal,
+        period,
+      });
+      const now = new Date();
+      const statusData = monthlyTaxClosingStatusMutationData(status, actorId, remittance?.paidAtDate ?? now);
+      const remittanceData = remittance
+        ? {
+            remittanceMetadata: toJson(remittance.metadata),
+          }
+        : {};
+      const totalsData = {
+        platformFeeGrossTotal: summary.platformFeeGrossTotal,
+        platformFeeNetRevenueTotal: summary.platformFeeNetRevenueTotal,
+        companyOutputVatTotal: summary.companyOutputVatTotal,
+        partnerVatWithheldTotal: summary.partnerVatWithheldTotal,
+        partnerPitWithheldTotal: summary.partnerPitWithheldTotal,
+        partnerWithholdingTotal: summary.partnerWithholdingTotal,
+        paymentProcessingFeeTotal: summary.paymentProcessingFeeTotal,
+        cashDebtTotal: summary.cashDebtTotal,
+        nonCashPartnerPayoutTotal: summary.nonCashPartnerPayoutTotal,
+        settlementCount: summary.settlementCount,
+      };
+
       const closing = await tx.monthlyTaxClosing.upsert({
         where: {
           period_currency: {

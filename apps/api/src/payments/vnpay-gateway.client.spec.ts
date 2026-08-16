@@ -94,7 +94,10 @@ describe('VnpayGatewayClient', () => {
   });
 
   it('records a signed refund response as provider accepted rather than bank completed', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(signedResponse('refund', '05'))));
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(async () => jsonResponse(signedResponse('refund', '05')));
+    vi.stubGlobal('fetch', fetchMock);
     const client = new VnpayGatewayClient(config() as never);
 
     await expect(
@@ -118,6 +121,22 @@ describe('VnpayGatewayClient', () => {
         gatewayTransactionStatus: '05',
       }),
     });
+
+    await client.requestRefund(
+      {
+        amountVnd: 120000,
+        bookingId: 'booking-1',
+        createBy: 'finance-admin-2',
+        refundId: 'refund-1',
+        transactionDate: '20260714120000',
+        transactionNo: '14226112',
+      },
+      new Date('2026-07-14T06:00:00.000Z'),
+    );
+    const first = JSON.parse(fetchMock.mock.calls[0][1].body as string) as Record<string, unknown>;
+    const retry = JSON.parse(fetchMock.mock.calls[1][1].body as string) as Record<string, unknown>;
+    expect(first.vnp_RequestId).toBe(retry.vnp_RequestId);
+    expect(String(first.vnp_RequestId)).toHaveLength(30);
   });
 
   it('fails closed before network access when VNPay configuration is incomplete', async () => {
