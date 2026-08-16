@@ -3025,18 +3025,19 @@ export class BookingsService {
       });
       const allowedPreviousStatuses =
         providerLifecycleAllowedPreviousStatuses(BookingStatus.COMPLETED) ?? [BookingStatus.IN_SERVICE];
+      const completedAt = new Date();
       const transition = await tx.booking.updateMany({
         where: {
           id: bookingId,
           selectedProviderId: provider.id,
           status: { in: allowedPreviousStatuses },
         },
-        data: bookingCompletedUpdateData(),
+        data: bookingCompletedUpdateData(completedAt),
       });
       if (transition.count !== 1) {
         throw this.bookingStateChangedError();
       }
-      await this.earnings.createForCompletedBooking(bookingId, provider.id, undefined, tx);
+      await this.earnings.createForCompletedBooking(bookingId, provider.id, { occurredAt: completedAt }, tx);
       return tx.booking.findUniqueOrThrow({
         where: { id: bookingId },
         include: completedBookingInclude,

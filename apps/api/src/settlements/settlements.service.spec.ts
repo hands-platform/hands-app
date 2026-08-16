@@ -742,10 +742,7 @@ describe('SettlementsService', () => {
     expect(prisma.accountingJournalBatch.upsert.mock.calls[0]?.[0]?.update).toEqual({});
     expect(prisma.bookingPaymentClearingEntry.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'booking-payment-clearing:booking-coupon-1:refund-reversal' },
-      update: expect.objectContaining({
-        amount: -540_000,
-        status: 'REVERSED',
-      }),
+      update: {},
       create: expect.objectContaining({
         amount: -540_000,
         bookingId: 'booking-coupon-1',
@@ -815,6 +812,60 @@ describe('SettlementsService', () => {
       }),
     );
     expect(prisma.bookingPaymentClearingEntry.upsert).not.toHaveBeenCalled();
+  });
+
+  it('rejects a refund clearing replay with different immutable financial evidence', async () => {
+    const existing = {
+      id: 'settlement-replay-1',
+      bookingId: 'booking-replay-1',
+      companyOutputVat: 0,
+      customerPaymentAmount: 600_000,
+      customerProfileId: 'customer-1',
+      currency: 'VND',
+      metadata: {},
+      monthlyClosingId: null,
+      monthlyPeriod: '2026-06',
+      partnerPayoutAmount: 430_000,
+      partnerWithholdingTotal: 42_000,
+      paymentId: 'payment-replay-1',
+      paymentMethod: 'MOMO',
+      paymentProcessingFee: 0,
+      platformFeeNetRevenue: 128_000,
+      providerEarningId: 'earning-1',
+      providerProfileId: 'provider-1',
+      settlementStatus: BookingSettlementStatus.POSTED,
+      taxStatus: BookingSettlementTaxStatus.OPEN,
+    };
+    const prisma = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'journal-reversal-replay-1' }),
+      },
+      bookingPaymentClearingEntry: {
+        upsert: vi.fn().mockResolvedValue({ id: 'clearing-reversal-replay-1', amount: -599_999 }),
+      },
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue(existing),
+        update: vi.fn().mockResolvedValue({
+          ...existing,
+          settlementStatus: BookingSettlementStatus.REVERSED,
+        }),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await expect(
+      service.reverseBookingSettlementSnapshotForRefund({
+        actorId: 'admin-1',
+        bookingId: 'booking-replay-1',
+        occurredAt: new Date('2026-06-14T03:02:00.000Z'),
+        reason: 'Refund replay',
+      }),
+    ).rejects.toThrow(
+      'A payment clearing refund reversal already exists with different financial evidence.',
+    );
+    expect(prisma.bookingPaymentClearingEntry.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ update: {} }),
+    );
   });
 
   it('moves refund after paid partner payout to partner receivable instead of wallet liability', async () => {
@@ -1050,19 +1101,7 @@ describe('SettlementsService', () => {
     });
     expect(prisma.bookingPaymentClearingEntry.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'booking-payment-clearing:booking-closed-1:refund-reversal' },
-      update: expect.objectContaining({
-        amount: -540_000,
-        metadata: expect.objectContaining({
-          paymentFeeFixedAmount: 1_000,
-          paymentFeePayer: PaymentFeePayer.HANDS,
-          paymentFeePolicyVersionId: 'payment-fee-policy-1',
-          paymentFeeRateBps: 150,
-          paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
-          paymentProcessingFee: 10_000,
-        }),
-        settlementReversalEntryId: 'reversal-entry-1',
-        status: 'REVERSED',
-      }),
+      update: {},
       create: expect.objectContaining({
         amount: -540_000,
         bookingId: 'booking-closed-1',

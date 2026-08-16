@@ -492,44 +492,42 @@ export class SettlementsService {
       return;
     }
 
-    await client.bookingPaymentClearingEntry.upsert({
-      where: { sourceKey: bookingPaymentClearingRefundReversalSourceKey(snapshot.bookingId) },
-      update: {
-        amount: -snapshot.customerPaymentAmount,
-        currency: snapshot.currency,
-        metadata: {
-          bookingId: snapshot.bookingId,
-          journalBatchSourceKey: sourceKey,
-          originalSettlementSnapshotId: snapshot.id,
-          ...paymentFeeEvidence,
-          settlementReversalEntryId: reversalEntryId ?? null,
-        } satisfies Prisma.InputJsonObject,
-        occurredAt: input.occurredAt,
-        paymentId: snapshot.paymentId ?? null,
-        settlementReversalEntryId: reversalEntryId ?? null,
-        settlementSnapshotId: snapshot.id,
-        status: 'REVERSED',
-      },
-      create: {
-        amount: -snapshot.customerPaymentAmount,
+    const clearingSourceKey = bookingPaymentClearingRefundReversalSourceKey(snapshot.bookingId);
+    const clearingData = {
+      amount: -snapshot.customerPaymentAmount,
+      bookingId: snapshot.bookingId,
+      currency: snapshot.currency,
+      metadata: {
         bookingId: snapshot.bookingId,
-        currency: snapshot.currency,
-        metadata: {
-          bookingId: snapshot.bookingId,
-          journalBatchSourceKey: sourceKey,
-          originalSettlementSnapshotId: snapshot.id,
-          ...paymentFeeEvidence,
-          settlementReversalEntryId: reversalEntryId ?? null,
-        } satisfies Prisma.InputJsonObject,
-        occurredAt: input.occurredAt,
-        paymentId: snapshot.paymentId ?? null,
+        journalBatchSourceKey: sourceKey,
+        originalSettlementSnapshotId: snapshot.id,
+        ...paymentFeeEvidence,
         settlementReversalEntryId: reversalEntryId ?? null,
-        settlementSnapshotId: snapshot.id,
-        sourceKey: bookingPaymentClearingRefundReversalSourceKey(snapshot.bookingId),
-        status: 'REVERSED',
-        type: 'REFUND_REVERSAL',
-      },
+      } satisfies Prisma.InputJsonObject,
+      occurredAt: input.occurredAt,
+      paymentId: snapshot.paymentId ?? null,
+      settlementReversalEntryId: reversalEntryId ?? null,
+      settlementSnapshotId: snapshot.id,
+      sourceKey: clearingSourceKey,
+      status: 'REVERSED' as const,
+      type: 'REFUND_REVERSAL' as const,
+    };
+    const clearingEntry = await client.bookingPaymentClearingEntry.upsert({
+      where: { sourceKey: clearingSourceKey },
+      update: {},
+      create: clearingData,
     });
+    if (
+      !immutableFinancialReplayMatches(
+        clearingEntry,
+        clearingData,
+        BOOKING_PAYMENT_CLEARING_REPLAY_FIELDS,
+      )
+    ) {
+      throw new ConflictException(
+        'A payment clearing refund reversal already exists with different financial evidence.',
+      );
+    }
   }
 
   private async upsertBookingSettlementAccountingRecords(
@@ -715,6 +713,19 @@ const BOOKING_SETTLEMENT_REPLAY_FIELDS = [
   'metadata',
   'monthlyPeriod',
   'postedAt',
+] as const;
+
+const BOOKING_PAYMENT_CLEARING_REPLAY_FIELDS = [
+  'amount',
+  'bookingId',
+  'currency',
+  'metadata',
+  'occurredAt',
+  'paymentId',
+  'settlementReversalEntryId',
+  'settlementSnapshotId',
+  'sourceKey',
+  'type',
 ] as const;
 
 const CUSTOMER_WALLET_REPLAY_FIELDS = [

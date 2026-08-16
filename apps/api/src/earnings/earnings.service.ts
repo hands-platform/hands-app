@@ -53,7 +53,11 @@ import { POST_MATCH_CANCELLATION_HELD_REASON } from '../bookings/post-match-canc
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 import { bookingServiceAmount, buildCouponSettlementContext } from '../settlements/coupon-settlement';
 import { analyzeHistoricalSettlementEvidence } from '../settlements/historical-settlement-reconstruction';
-import { settlementMonthlyPeriod, SettlementsService } from '../settlements/settlements.service';
+import {
+  lockSettlementMonthlyPeriodsInTransaction,
+  settlementMonthlyPeriod,
+  SettlementsService,
+} from '../settlements/settlements.service';
 import {
   immutableFinancialReplayMatches,
   PROVIDER_WALLET_LEDGER_REPLAY_FIELDS,
@@ -1049,15 +1053,19 @@ export class EarningsService {
   async createForCompletedBooking(
     bookingId: string,
     providerProfileId: string,
-    _options?: { preserveExistingLifecycle?: boolean },
+    options?: { occurredAt?: Date; preserveExistingLifecycle?: boolean },
     transactionClient?: TxClient,
   ) {
-    void _options;
     if (transactionClient) {
-      return this.createForCompletedBookingWithClient(transactionClient, bookingId, providerProfileId);
+      return this.createForCompletedBookingWithClient(
+        transactionClient,
+        bookingId,
+        providerProfileId,
+        options,
+      );
     }
     return this.prisma.$transaction((tx) =>
-      this.createForCompletedBookingWithClient(tx, bookingId, providerProfileId),
+      this.createForCompletedBookingWithClient(tx, bookingId, providerProfileId, options),
     );
   }
 
@@ -1065,6 +1073,7 @@ export class EarningsService {
     tx: TxClient,
     bookingId: string,
     providerProfileId: string,
+    options?: { occurredAt?: Date; preserveExistingLifecycle?: boolean },
   ) {
     await this.lockBookingSettlement(tx, bookingId);
     const booking = await tx.booking.findUniqueOrThrow({
@@ -1093,6 +1102,13 @@ export class EarningsService {
       return existingEarning;
     }
 
+    const occurredAt = options?.occurredAt ?? booking.closedAt;
+    if (!occurredAt) {
+      throw new BadRequestException(
+        'Completed booking requires an authoritative completion time before financial settlement',
+      );
+    }
+
     const bookingServiceGrossAmount = bookingServiceAmount(booking.services);
     const customerPaymentAmount = booking.payment?.amount ?? bookingServiceGrossAmount;
     const couponSettlement = buildCouponSettlementContext({
@@ -1101,7 +1117,7 @@ export class EarningsService {
       paymentRawMeta: booking.payment?.rawMeta,
     });
     const grossAmount = couponSettlement.settlementBaseAmount;
-    const availableAt = new Date(Date.now() + 24 * 60 * 60_000);
+    const availableAt = new Date(occurredAt.getTime() + 24 * 60 * 60_000);
     const currency = booking.payment?.currency ?? 'VND';
     const serviceTypes = booking.services.flatMap((item) =>
       [item.serviceId, item.service?.name].filter(Boolean),
@@ -1121,7 +1137,7 @@ export class EarningsService {
       currency,
       serviceTypes,
       services: pricedServices,
-      occurredAt: booking.updatedAt ?? new Date(),
+      occurredAt,
     });
     const tax = await this.calculateWithholding(tx, {
       providerProfileId,
@@ -1129,7 +1145,7 @@ export class EarningsService {
       grossAmount,
       currency,
       serviceTypes,
-      occurredAt: booking.updatedAt ?? new Date(),
+      occurredAt,
     });
     const walletDeltaPlatformFee =
       booking.payment?.method === PaymentMethod.CASH
@@ -1174,7 +1190,7 @@ export class EarningsService {
         : Math.max(0, netAmount);
     const paymentFee = await this.calculatePaymentFee(tx, {
       customerPaymentAmount: couponSettlement.customerPaymentAmount,
-      occurredAt: booking.updatedAt ?? new Date(),
+      occurredAt,
       paymentMethod,
     });
     const platformFeeGross = Math.max(0, grossAmount - partnerPayoutAmount - tax.withholdingAmount);
@@ -1209,7 +1225,7 @@ export class EarningsService {
         providerPlatformFeeLogId: platformFeeLog?.id ?? null,
         providerWalletLedgerEntryIds: walletLedgerEntries.map((entry) => entry.id),
         metadata: couponSettlement.metadata,
-        occurredAt: booking.updatedAt ?? new Date(),
+        occurredAt,
       },
       tx,
     );
@@ -2263,9 +2279,13 @@ export class EarningsService {
       nextStatus === PayoutBatchStatus.PROCESSING && existing.status !== PayoutBatchStatus.PROCESSING;
     const shouldMarkPaid =
       nextStatus === PayoutBatchStatus.PAID && existing.status !== PayoutBatchStatus.PAID;
+    const paidAt = shouldMarkPaid ? new Date() : undefined;
 
     const updated = await this.prisma.$transaction(async (tx) => {
       let executionEarnings = existing.earnings;
+      if (paidAt) {
+        await this.ensureFinancePostingPeriodOpen(tx, paidAt, existing.currency, 'Payout paid closeout');
+      }
       if (shouldStartProcessing || shouldMarkPaid) {
         await this.lockProviderWallet(tx, existing.providerProfileId, existing.currency);
         executionEarnings = await tx.providerEarning.findMany({
@@ -2276,10 +2296,6 @@ export class EarningsService {
           ...existing,
           earnings: executionEarnings,
         });
-      }
-      const paidAt = shouldMarkPaid ? new Date() : undefined;
-      if (shouldMarkPaid && paidAt) {
-        await this.ensureFinancePostingPeriodOpen(tx, paidAt, existing.currency, 'Payout paid closeout');
       }
       const mutation = await tx.providerPayoutBatch.updateMany({
         where: {
@@ -2396,8 +2412,15 @@ export class EarningsService {
     }
     assertPaidDisbursementReversalEvidence(input);
     const occurredAt = normalizeFinanceReversalOccurredAt(input.occurredAt);
+    const reversalCurrency = existing.currency;
 
     return this.prisma.$transaction(async (tx) => {
+      await this.ensureFinancePostingPeriodOpen(
+        tx,
+        occurredAt,
+        reversalCurrency,
+        'Payout batch reversal',
+      );
       await this.lockFinanceMutation(tx, `provider-payout-reversal:${payoutBatchId}`);
       const existing = await tx.providerPayoutBatch.findUnique({
         where: { id: payoutBatchId },
@@ -2408,7 +2431,6 @@ export class EarningsService {
       if (existing.status !== PayoutBatchStatus.PAID) {
         throw new BadRequestException('Only a paid payout batch can be reversed');
       }
-      await this.ensureFinancePostingPeriodOpen(tx, occurredAt, existing.currency, 'Payout batch reversal');
       const originalJournal = await requirePostedFinanceJournalForReversal(
         tx,
         `accounting-journal:provider-payout-batch:${existing.id}:paid`,
@@ -2680,9 +2702,30 @@ export class EarningsService {
   ) {
     const provider = await this.requireProviderProfile(userId);
     const request = normalizeProviderWalletWithdrawalRequestInput(input);
+    const requestedAt = new Date();
+    const assertMatchingReplay = <T extends {
+      amount: number;
+      metadata: Prisma.JsonValue | null;
+      requestNote: string | null;
+    }>(replay: T) => {
+      const replayMetadata = jsonObjectOrEmpty(replay.metadata);
+      const replayRequestedBankAccountId =
+        typeof replayMetadata.requestedBankAccountId === 'string'
+          ? replayMetadata.requestedBankAccountId
+          : null;
+      if (
+        replay.amount !== request.amount ||
+        replay.requestNote !== (request.requestNote ?? null) ||
+        replayRequestedBankAccountId !== (request.bankAccountId ?? null)
+      ) {
+        throw new ConflictException(
+          'Idempotency key was already used for a different withdrawal request',
+        );
+      }
+      return replay;
+    };
 
     return this.prisma.$transaction(async (tx) => {
-      await this.lockProviderWallet(tx, provider.id, 'VND');
       const replay = await tx.providerWalletWithdrawalRequest.findUnique({
         where: {
           providerProfileId_idempotencyKey: {
@@ -2692,21 +2735,25 @@ export class EarningsService {
         },
       });
       if (replay) {
-        const replayMetadata = jsonObjectOrEmpty(replay.metadata);
-        const replayRequestedBankAccountId =
-          typeof replayMetadata.requestedBankAccountId === 'string'
-            ? replayMetadata.requestedBankAccountId
-            : null;
-        if (
-          replay.amount !== request.amount ||
-          replay.requestNote !== (request.requestNote ?? null) ||
-          replayRequestedBankAccountId !== (request.bankAccountId ?? null)
-        ) {
-          throw new ConflictException(
-            'Idempotency key was already used for a different withdrawal request',
-          );
-        }
-        return replay;
+        return assertMatchingReplay(replay);
+      }
+      await this.ensureFinancePostingPeriodOpen(
+        tx,
+        requestedAt,
+        'VND',
+        'Partner wallet withdrawal request',
+      );
+      await this.lockProviderWallet(tx, provider.id, 'VND');
+      const lockedReplay = await tx.providerWalletWithdrawalRequest.findUnique({
+        where: {
+          providerProfileId_idempotencyKey: {
+            providerProfileId: provider.id,
+            idempotencyKey: request.idempotencyKey,
+          },
+        },
+      });
+      if (lockedReplay) {
+        return assertMatchingReplay(lockedReplay);
       }
       const bankAccount = await tx.providerBankAccount.findFirst({
         where: {
@@ -2743,6 +2790,7 @@ export class EarningsService {
           currency: 'VND',
           status: ProviderWalletWithdrawalRequestStatus.REQUESTED,
           requestNote: request.requestNote,
+          createdAt: requestedAt,
           metadata: {
             currentWalletBalance,
             pendingWithdrawalAmount,
@@ -2757,7 +2805,7 @@ export class EarningsService {
         actorId: userId,
         amount: created.amount,
         currency: created.currency,
-        occurredAt: created.createdAt ?? new Date(),
+        occurredAt: requestedAt,
         phase: 'LOCK',
         providerProfileId: created.providerProfileId,
         requestId: created.id,
@@ -2912,7 +2960,30 @@ export class EarningsService {
 
     return this.prisma.$transaction(async (tx) => {
       if (shouldMarkPaid) {
+        await this.ensureFinancePostingPeriodsOpen(tx, [
+          {
+            actionLabel: 'Partner wallet withdrawal lock closeout',
+            currency: existing.currency,
+            occurredAt: reviewedAt,
+          },
+          {
+            actionLabel: 'Partner wallet withdrawal paid closeout',
+            currency: existing.currency,
+            occurredAt: update.bankTransferDate ?? reviewedAt,
+          },
+        ]);
+      } else if (statusChangeMetadata?.lockedAmountReleased) {
+        await this.ensureFinancePostingPeriodOpen(
+          tx,
+          reviewedAt,
+          existing.currency,
+          'Partner wallet withdrawal release',
+        );
+      }
+      if (shouldMarkPaid || activeMembershipChanges) {
         await this.lockProviderWallet(tx, existing.providerProfileId, existing.currency);
+      }
+      if (shouldMarkPaid) {
         const approvedBankAccount = existing.bankAccountId
           ? await tx.providerBankAccount.findFirst({
               where: {
@@ -2952,12 +3023,6 @@ export class EarningsService {
         if (existing.amount > availableWalletBalance) {
           throw new BadRequestException('Withdrawal amount exceeds available partner wallet balance');
         }
-        await this.ensureFinancePostingPeriodOpen(
-          tx,
-          update.bankTransferDate ?? reviewedAt,
-          existing.currency,
-          'Partner wallet withdrawal paid closeout',
-        );
         const claimedRequest = await tx.providerWalletWithdrawalRequest.updateMany({
           where: {
             id: existing.id,
@@ -3003,8 +3068,6 @@ export class EarningsService {
           requestId: existing.id,
           transferRef: nextTransferRef,
         });
-      } else if (activeMembershipChanges) {
-        await this.lockProviderWallet(tx, existing.providerProfileId, existing.currency);
       }
 
       if (!shouldMarkPaid && statusChangeMetadata?.lockedAmountReleased) {
@@ -3082,8 +3145,15 @@ export class EarningsService {
     }
     assertPaidDisbursementReversalEvidence(input);
     const occurredAt = normalizeFinanceReversalOccurredAt(input.occurredAt);
+    const reversalCurrency = existing.currency;
 
     return this.prisma.$transaction(async (tx) => {
+      await this.ensureFinancePostingPeriodOpen(
+        tx,
+        occurredAt,
+        reversalCurrency,
+        'Partner wallet withdrawal reversal',
+      );
       await this.lockFinanceMutation(tx, `provider-withdrawal-reversal:${requestId}`);
       const existing = await tx.providerWalletWithdrawalRequest.findUnique({
         where: { id: requestId },
@@ -3097,12 +3167,6 @@ export class EarningsService {
       ) {
         throw new BadRequestException('Only a paid partner wallet withdrawal can be reversed');
       }
-      await this.ensureFinancePostingPeriodOpen(
-        tx,
-        occurredAt,
-        existing.currency,
-        'Partner wallet withdrawal reversal',
-      );
       const originalLockJournal = await requirePostedFinanceJournalForReversal(
         tx,
         `accounting-journal:provider-withdrawal:${existing.id}:lock`,
@@ -3955,19 +4019,38 @@ export class EarningsService {
     currency: string,
     actionLabel: string,
   ) {
-    const period = settlementMonthlyPeriod(occurredAt);
-    const closing = await client.monthlyTaxClosing.findUnique({
-      where: { period_currency: { period, currency } },
-      select: { status: true },
-    });
-    if (
-      closing?.status === MonthlyTaxClosingStatus.DECLARED ||
-      closing?.status === MonthlyTaxClosingStatus.PAID ||
-      closing?.status === MonthlyTaxClosingStatus.CLOSED
-    ) {
-      throw new BadRequestException(
-        `${actionLabel} cannot post directly to finalized monthly period ${period}; use a reversal entry in an open period.`,
-      );
+    await this.ensureFinancePostingPeriodsOpen(client, [{ occurredAt, currency, actionLabel }]);
+  }
+
+  private async ensureFinancePostingPeriodsOpen(
+    client: TxClient,
+    postings: Array<{ occurredAt: Date; currency: string; actionLabel: string }>,
+  ) {
+    const periods = [
+      ...new Map(
+        postings.map((posting) => {
+          const period = settlementMonthlyPeriod(posting.occurredAt);
+          return [`${period}:${posting.currency}`, { ...posting, period }] as const;
+        }),
+      ).values(),
+    ].sort((left, right) =>
+      `${left.period}:${left.currency}`.localeCompare(`${right.period}:${right.currency}`),
+    );
+    await lockSettlementMonthlyPeriodsInTransaction(client, periods);
+    for (const posting of periods) {
+      const closing = await client.monthlyTaxClosing.findUnique({
+        where: { period_currency: { period: posting.period, currency: posting.currency } },
+        select: { status: true },
+      });
+      if (
+        closing?.status === MonthlyTaxClosingStatus.DECLARED ||
+        closing?.status === MonthlyTaxClosingStatus.PAID ||
+        closing?.status === MonthlyTaxClosingStatus.CLOSED
+      ) {
+        throw new BadRequestException(
+          `${posting.actionLabel} cannot post directly to finalized monthly period ${posting.period}; use a reversal entry in an open period.`,
+        );
+      }
     }
   }
 

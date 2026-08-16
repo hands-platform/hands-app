@@ -151,12 +151,12 @@ export function FinanceCloseoutSettlementRepairDrawer({
                 <AdminFormStaticValue
                   label="Completed"
                   labelVisibility="visible"
-                  value={formatDateTime(preview.completedAt)}
+                  value={preview.completedAt ? formatDateTime(preview.completedAt) : 'Unavailable'}
                 />
                 <AdminFormStaticValue
                   label="Monthly period"
                   labelVisibility="visible"
-                  value={preview.monthlyPeriod}
+                  value={preview.monthlyPeriod ?? 'Unavailable'}
                 />
                 <AdminFormStaticValue
                   label="Monthly close"
@@ -399,7 +399,9 @@ function settlementBlockerRemediation(
       responsibleTeam: 'Finance Close & Tax',
       missingEvidence: 'The monthly close state does not permit this settlement repair.',
       nextAction: 'Review the monthly close and its retained evidence before requesting another preview.',
-      href: `/finance-tax/monthly-tax-closing?period=${encodeURIComponent(preview.monthlyPeriod)}`,
+      href: preview.monthlyPeriod
+        ? `/finance-tax/monthly-tax-closing?period=${encodeURIComponent(preview.monthlyPeriod)}`
+        : bookingHref,
       linkLabel: 'Open monthly close',
     };
   }
@@ -426,7 +428,9 @@ function settlementBlockerRemediation(
       responsibleTeam: 'Finance Close & Tax',
       missingEvidence: 'Platform VAT evidence or the applicable VAT rate is incomplete.',
       nextAction: 'Reconcile the period VAT evidence, then return and recheck.',
-      href: `/finance-tax/platform-vat?period=${encodeURIComponent(preview.monthlyPeriod)}`,
+      href: preview.monthlyPeriod
+        ? `/finance-tax/platform-vat?period=${encodeURIComponent(preview.monthlyPeriod)}`
+        : bookingHref,
       linkLabel: 'Open platform VAT',
     };
   }
@@ -435,7 +439,9 @@ function settlementBlockerRemediation(
       responsibleTeam: 'Finance Close & Tax',
       missingEvidence: 'Partner withholding evidence or the applicable tax rate is incomplete.',
       nextAction: 'Reconcile the Partner tax evidence for this period, then recheck.',
-      href: `/finance-tax/partner-withholding-tax?period=${encodeURIComponent(preview.monthlyPeriod)}`,
+      href: preview.monthlyPeriod
+        ? `/finance-tax/partner-withholding-tax?period=${encodeURIComponent(preview.monthlyPeriod)}`
+        : bookingHref,
       linkLabel: 'Open Partner withholding',
     };
   }

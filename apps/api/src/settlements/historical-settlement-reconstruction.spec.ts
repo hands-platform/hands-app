@@ -49,6 +49,19 @@ describe('historical settlement reconstruction evidence', () => {
     );
   });
 
+  it('blocks reconstruction when the authoritative completion time is missing', () => {
+    const booking = paidBookingEvidence();
+    booking.closedAt = null;
+
+    const result = analyzeHistoricalSettlementEvidence(booking, 'partner-1');
+
+    expect(result.canReconstruct).toBe(false);
+    expect(result.evidence).toBeNull();
+    expect(result.blockers).toContainEqual(
+      expect.objectContaining({ code: 'COMPLETION_TIME_EVIDENCE_MISSING' }),
+    );
+  });
+
   it('blocks wallet evidence that does not offset the paid earning', () => {
     const booking = paidBookingEvidence();
     booking.earning.walletLedgerEntries[1].amount = -290_000;

@@ -4383,10 +4383,10 @@ export type AdminBookingSettlementGapDryRun = {
     blockers: Array<{ code: string; message: string }>;
     bookingId: string;
     canRepair: boolean;
-    completedAt: string;
+    completedAt: string | null;
     expected: AdminBookingSettlementExpectedDryRun | null;
     monthlyClosingStatus?: string | null;
-    monthlyPeriod: string;
+    monthlyPeriod: string | null;
     paymentFeeDefaultReason?: string | null;
     paymentFeePolicyVersionId?: string | null;
     paymentFeeRuleStatus: 'MATCHED_POLICY_RULE' | 'DEFAULTED' | 'UNAVAILABLE';
@@ -4429,10 +4429,10 @@ export type AdminBookingSettlementGapRepairPreview = {
   canRepair: boolean;
   blockers: Array<{ code: string; message: string }>;
   bookingStatus: string;
-  completedAt: string;
+  completedAt: string | null;
   currency: string;
   generatedAt: string;
-  monthlyPeriod: string;
+  monthlyPeriod: string | null;
   monthlyClosingStatus?: string | null;
   customer?: {
     id: string;

@@ -122,6 +122,12 @@ export function analyzeHistoricalSettlementEvidence(
   if (booking.status !== BookingStatus.COMPLETED) {
     blockers.push({ code: 'BOOKING_NOT_COMPLETED', message: 'Booking is not completed.' });
   }
+  if (!booking.closedAt) {
+    blockers.push({
+      code: 'COMPLETION_TIME_EVIDENCE_MISSING',
+      message: 'Authoritative booking completion time is missing.',
+    });
+  }
   if (!booking.selectedProviderId || booking.selectedProviderId !== providerProfileId) {
     blockers.push({ code: 'PARTNER_EVIDENCE_MISMATCH', message: 'Selected Partner evidence does not match.' });
   }
@@ -154,6 +160,7 @@ export function analyzeHistoricalSettlementEvidence(
     earning.status !== EarningStatus.PAID ||
     !earning.paidAt ||
     !booking.payment ||
+    !booking.closedAt ||
     platformFeeLogs.length !== 1 ||
     taxLogs.length !== 1
   ) {
@@ -303,7 +310,7 @@ export function analyzeHistoricalSettlementEvidence(
         historicalReconstructionSource: 'PAID_EARNING_EVIDENCE',
         paidAt: earning.paidAt.toISOString(),
       },
-      occurredAt: booking.closedAt ?? booking.updatedAt,
+      occurredAt: booking.closedAt,
     },
     evidenceSummary,
   };

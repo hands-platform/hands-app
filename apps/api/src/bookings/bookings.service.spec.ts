@@ -1923,10 +1923,12 @@ describe('BookingsService service completion', () => {
       data: { status: PaymentStatus.CAPTURED },
       where: { id: 'payment-1', status: { in: [PaymentStatus.PENDING] } },
     });
+    const completedAt = prisma.booking.updateMany.mock.calls[0]?.[0]?.data.closedAt;
+    expect(completedAt).toBeInstanceOf(Date);
     expect(earnings.createForCompletedBooking).toHaveBeenCalledWith(
       'booking-1',
       'partner-1',
-      undefined,
+      { occurredAt: completedAt },
       prisma,
     );
   });

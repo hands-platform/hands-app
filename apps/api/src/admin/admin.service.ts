@@ -1138,10 +1138,10 @@ type AdminBookingSettlementDryRunPreview = {
   readonly blockers: Array<{ code: string; message: string }>;
   readonly bookingId: string;
   readonly canRepair: boolean;
-  readonly completedAt: string;
+  readonly completedAt: string | null;
   readonly historicalSettlementDryRun: AdminHistoricalSettlementDryRun | null;
   readonly monthlyClosingStatus: MonthlyTaxClosingStatus | null;
-  readonly monthlyPeriod: string;
+  readonly monthlyPeriod: string | null;
   readonly payment: { method: PaymentMethod } | null;
   readonly policyDecision: 'APPROVED' | 'BLOCKED' | 'REVIEW_REQUIRED';
   readonly policyExceptionCodes: readonly string[];
@@ -16089,6 +16089,7 @@ export class AdminService {
         id: true,
         status: true,
         notes: true,
+        closedAt: true,
         selectedProviderId: true,
         payment: { select: { id: true, method: true, status: true } },
       },
@@ -16099,6 +16100,11 @@ export class AdminService {
     }
     if (!booking.selectedProviderId) {
       throw new BadRequestException('Completed booking requires a selected partner before closeout');
+    }
+    if (!booking.closedAt) {
+      throw new BadRequestException(
+        'Completed booking requires an authoritative completion time before financial closeout',
+      );
     }
 
     if (booking.payment) {
@@ -16119,6 +16125,7 @@ export class AdminService {
       : null;
 
     const earning = await this.earnings.createForCompletedBooking(bookingId, booking.selectedProviderId, {
+      occurredAt: booking.closedAt,
       preserveExistingLifecycle: true,
     });
     const notes = appendDatedAdminNote(
@@ -17578,13 +17585,15 @@ export class AdminService {
       throw new NotFoundException('Booking not found');
     }
 
-    const occurredAt = booking.closedAt ?? booking.updatedAt;
+    const occurredAt = booking.closedAt;
     const currency = booking.payment?.currency ?? booking.earning?.currency ?? 'VND';
-    const monthlyPeriod = settlementMonthlyPeriod(occurredAt);
-    const monthlyClosing = await this.prisma.monthlyTaxClosing.findUnique({
-      where: { period_currency: { period: monthlyPeriod, currency } },
-      select: { status: true },
-    });
+    const monthlyPeriod = occurredAt ? settlementMonthlyPeriod(occurredAt) : null;
+    const monthlyClosing = monthlyPeriod
+      ? await this.prisma.monthlyTaxClosing.findUnique({
+          where: { period_currency: { period: monthlyPeriod, currency } },
+          select: { status: true },
+        })
+      : null;
     const blockers: Array<{ code: string; message: string }> = [];
     let repairMode = 'CANONICAL_COMPLETION_SETTLEMENT';
     let historicalEvidenceSummary: {
@@ -17598,6 +17607,12 @@ export class AdminService {
 
     if (booking.status !== BookingStatus.COMPLETED) {
       blockers.push({ code: 'BOOKING_NOT_COMPLETED', message: 'Booking is not completed.' });
+    }
+    if (!occurredAt) {
+      blockers.push({
+        code: 'COMPLETION_TIME_EVIDENCE_MISSING',
+        message: 'Authoritative booking completion time is missing.',
+      });
     }
     if (!booking.selectedProviderId || !booking.selectedProvider) {
       blockers.push({ code: 'PARTNER_MISSING', message: 'Selected Partner evidence is missing.' });
@@ -17636,9 +17651,10 @@ export class AdminService {
       });
     }
     if (
-      monthlyClosing?.status === MonthlyTaxClosingStatus.DECLARED ||
-      monthlyClosing?.status === MonthlyTaxClosingStatus.PAID ||
-      monthlyClosing?.status === MonthlyTaxClosingStatus.CLOSED
+      monthlyPeriod &&
+      (monthlyClosing?.status === MonthlyTaxClosingStatus.DECLARED ||
+        monthlyClosing?.status === MonthlyTaxClosingStatus.PAID ||
+        monthlyClosing?.status === MonthlyTaxClosingStatus.CLOSED)
     ) {
       blockers.push({
         code: 'MONTHLY_PERIOD_FINALIZED',
@@ -17654,6 +17670,7 @@ export class AdminService {
     });
     const generatedAt = new Date().toISOString();
     const sourceVersion = [
+      booking.closedAt?.toISOString() ?? 'NO_COMPLETION_TIME',
       booking.updatedAt.toISOString(),
       booking.payment?.status ?? 'NO_PAYMENT',
       booking.earning?.status ?? 'NO_EARNING',
@@ -17667,7 +17684,7 @@ export class AdminService {
       canRepair: technicalEligibility && policy.decision === 'APPROVED',
       blockers,
       bookingStatus: booking.status,
-      completedAt: occurredAt.toISOString(),
+      completedAt: occurredAt?.toISOString() ?? null,
       currency,
       monthlyPeriod,
       monthlyClosingStatus: monthlyClosing?.status ?? null,
@@ -17732,7 +17749,6 @@ export class AdminService {
           );
           throw new BadRequestException(reason || 'Booking settlement repair is not eligible.');
         }
-
         const target = `booking:${preview.bookingId}`;
         const writeLockedAudit = (
           auditActorId: string,
@@ -17803,6 +17819,9 @@ export class AdminService {
             'Booking settlement repair requires approval from a different verified Finance operator',
           );
         }
+        if (!preview.completedAt || !preview.monthlyPeriod) {
+          throw new BadRequestException('Authoritative booking completion time is required for settlement repair');
+        }
 
         const approvalAdminId = actorId;
         const requestReason = jsonString(latestRequestMetadata.reason) ?? input.reason;
@@ -17816,6 +17835,7 @@ export class AdminService {
             : {
                 earningId: (
                   await this.earnings.createForCompletedBooking(preview.bookingId, preview.partner.id, {
+                    occurredAt: new Date(preview.completedAt),
                     preserveExistingLifecycle: true,
                   })
                 ).id,
@@ -23746,6 +23766,16 @@ export class AdminService {
         if (sourceRemainingAmount !== undefined && Math.abs(input.amount) > sourceRemainingAmount) {
           throw new BadRequestException('Match amount exceeds remaining reconciliation source amount');
         }
+        await this.lockBankReconciliationPeriodsOpen(tx, {
+          actionLabel: 'Bank reconciliation match',
+          bankOccurredAt: bankTransaction.occurredAt,
+          bankCurrency: bankTransaction.currency,
+          accountingJournalEntryId:
+            source.accountingJournalEntryId ??
+            (source.field === 'accountingJournalEntryId' ? source.id : undefined),
+          paymentClearingEntryId:
+            source.field === 'paymentClearingEntryId' ? source.id : undefined,
+        });
         if (sourceRemainingAmount === undefined) {
           const currentSourceMatched = await tx.bankReconciliationMatch.aggregate({
             where: {
@@ -23890,11 +23920,13 @@ export class AdminService {
             paymentClearingEntryId: true,
             status: true,
             amount: true,
+            accountingJournalEntryId: true,
             currency: true,
             bankTransaction: {
               select: {
                 amount: true,
                 currency: true,
+                occurredAt: true,
                 status: true,
               },
             },
@@ -23909,6 +23941,13 @@ export class AdminService {
         if (match.status === BankReconciliationStatus.REVERSED) {
           throw new BadRequestException('Bank reconciliation match is already reversed');
         }
+        await this.lockBankReconciliationPeriodsOpen(tx, {
+          actionLabel: 'Bank reconciliation match reversal',
+          bankOccurredAt: match.bankTransaction.occurredAt,
+          bankCurrency: match.bankTransaction.currency,
+          accountingJournalEntryId: match.accountingJournalEntryId ?? undefined,
+          paymentClearingEntryId: match.paymentClearingEntryId ?? undefined,
+        });
 
         const reason = normalizeNullable(input.reason);
         const reversalClaim = await tx.bankReconciliationMatch.updateMany({
@@ -24000,6 +24039,7 @@ export class AdminService {
             amount: true,
             currency: true,
             metadata: true,
+            occurredAt: true,
             status: true,
           },
         });
@@ -24009,7 +24049,6 @@ export class AdminService {
         if (bankTransaction.status !== BankReconciliationStatus.UNMATCHED) {
           throw new BadRequestException('Only an unmatched bank transaction can be ignored');
         }
-
         const activeMatchCount = await tx.bankReconciliationMatch.count({
           where: {
             bankTransactionId,
@@ -24021,6 +24060,11 @@ export class AdminService {
             'Reverse active reconciliation matches before ignoring this bank transaction',
           );
         }
+        await this.lockBankReconciliationPeriodsOpen(tx, {
+          actionLabel: 'Bank transaction ignore',
+          bankOccurredAt: bankTransaction.occurredAt,
+          bankCurrency: bankTransaction.currency,
+        });
 
         const reason = input.reason.trim();
         const ignoredAt = new Date();
@@ -24069,6 +24113,75 @@ export class AdminService {
 
         return { auditLog, bankTransaction: updatedBankTransaction };
       });
+  }
+
+  private async lockBankReconciliationPeriodsOpen(
+    tx: Prisma.TransactionClient,
+    input: {
+      actionLabel: string;
+      bankOccurredAt: Date;
+      bankCurrency: string;
+      accountingJournalEntryId?: string;
+      paymentClearingEntryId?: string;
+    },
+  ) {
+    const periods = [
+      {
+        period: settlementMonthlyPeriod(input.bankOccurredAt),
+        currency: input.bankCurrency,
+      },
+    ];
+    if (input.accountingJournalEntryId) {
+      const journalEntry = await tx.accountingJournalEntry.findUnique({
+        where: { id: input.accountingJournalEntryId },
+        select: {
+          currency: true,
+          batch: { select: { monthlyPeriod: true, postedAt: true } },
+        },
+      });
+      if (!journalEntry) {
+        throw new NotFoundException('Accounting journal entry not found');
+      }
+      periods.push({
+        period: journalEntry.batch.monthlyPeriod ?? settlementMonthlyPeriod(journalEntry.batch.postedAt),
+        currency: journalEntry.currency,
+      });
+    }
+    if (input.paymentClearingEntryId) {
+      const clearingEntry = await tx.bookingPaymentClearingEntry.findUnique({
+        where: { id: input.paymentClearingEntryId },
+        select: { occurredAt: true, currency: true },
+      });
+      if (!clearingEntry) {
+        throw new NotFoundException('Booking payment clearing entry not found');
+      }
+      periods.push({
+        period: settlementMonthlyPeriod(clearingEntry.occurredAt),
+        currency: clearingEntry.currency,
+      });
+    }
+
+    const uniquePeriods = [
+      ...new Map(periods.map((item) => [`${item.period}:${item.currency}`, item] as const)).values(),
+    ].sort((left, right) =>
+      `${left.period}:${left.currency}`.localeCompare(`${right.period}:${right.currency}`),
+    );
+    await lockSettlementMonthlyPeriodsInTransaction(tx, uniquePeriods);
+    for (const { period, currency } of uniquePeriods) {
+      const closing = await tx.monthlyTaxClosing.findUnique({
+        where: { period_currency: { period, currency } },
+        select: { status: true },
+      });
+      if (
+        closing?.status === MonthlyTaxClosingStatus.DECLARED ||
+        closing?.status === MonthlyTaxClosingStatus.PAID ||
+        closing?.status === MonthlyTaxClosingStatus.CLOSED
+      ) {
+        throw new BadRequestException(
+          `${input.actionLabel} cannot change evidence in finalized monthly period ${period}.`,
+        );
+      }
+    }
   }
 
   private async runBankReconciliationSerializable<T>(
@@ -29249,6 +29362,11 @@ export class AdminService {
       await assertFinanceActionApprovalAdmin(tx, actorId, 'Manual wallet adjustment');
       if (expectedLegacyInput) {
         assertLegacyManualWalletAdjustmentRequestMatches(request, expectedLegacyInput);
+      }
+      if (request.monthlyPeriod) {
+        await lockSettlementMonthlyPeriodsInTransaction(tx, [
+          { period: request.monthlyPeriod, currency: request.currency },
+        ]);
       }
       await this.lockManualWalletAdjustmentOwner(
         tx,

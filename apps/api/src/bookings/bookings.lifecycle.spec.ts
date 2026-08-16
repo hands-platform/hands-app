@@ -53,8 +53,11 @@ describe('booking lifecycle update helpers', () => {
   });
 
   it('builds the completed booking update without bypassing the payment state guard', () => {
-    expect(bookingCompletedUpdateData()).toEqual({
+    const completedAt = new Date('2026-08-17T03:00:00.000Z');
+
+    expect(bookingCompletedUpdateData(completedAt)).toEqual({
       status: BookingStatus.COMPLETED,
+      closedAt: completedAt,
     });
   });
 });

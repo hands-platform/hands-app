@@ -50,7 +50,9 @@ export function FinanceCloseoutSettlementBatchPreviewSection({
                   />
                 </span>
                 <span>{customerLabel(preview)} · {partnerLabel(preview)}</span>
-                <span className="muted">Completed {formatDateTime(preview.completedAt)}</span>
+                <span className="muted">
+                  Completed {preview.completedAt ? formatDateTime(preview.completedAt) : 'Unavailable'}
+                </span>
               </AdminTableSubstack>
             </td>
             <td>

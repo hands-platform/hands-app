@@ -10782,6 +10782,7 @@ describe('AdminService query orchestration', () => {
   });
 
   it('creates referral reward candidates after completed booking closeout', async () => {
+    const completedAt = new Date('2026-08-17T03:00:00.000Z');
     const prisma = {
       adminAuditLog: {
         create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
@@ -10791,6 +10792,7 @@ describe('AdminService query orchestration', () => {
           id: 'booking-1',
           status: BookingStatus.COMPLETED,
           notes: null,
+          closedAt: completedAt,
           selectedProviderId: 'partner-1',
           payment: { id: 'payment-1', status: PaymentStatus.CAPTURED },
         }),
@@ -10828,6 +10830,7 @@ describe('AdminService query orchestration', () => {
     ).resolves.toEqual({ id: 'booking-1' });
 
     expect(earnings.createForCompletedBooking).toHaveBeenCalledWith('booking-1', 'partner-1', {
+      occurredAt: completedAt,
       preserveExistingLifecycle: true,
     });
     expect(payments.confirmGatewayCaptureForBookingCompletion).toHaveBeenCalledWith(
@@ -18042,6 +18045,13 @@ describe('AdminService query orchestration', () => {
         reference: 'wallet-request-1',
       }),
     });
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.$queryRaw.mock.invocationCallOrder[1],
+    );
+    expect(tx.$queryRaw.mock.invocationCallOrder[1]).toBeLessThan(
+      tx.providerWalletLedgerEntry.create.mock.invocationCallOrder[0],
+    );
     expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledTimes(1);
   });
 
@@ -20524,6 +20534,51 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('blocks settlement repair preview when authoritative completion time evidence is missing', async () => {
+    const updatedAt = new Date('2026-07-10T03:00:00.000Z');
+    const prisma = {
+      booking: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'booking-missing-completion-time',
+          customerProfileId: 'customer-1',
+          selectedProviderId: 'partner-1',
+          status: BookingStatus.COMPLETED,
+          createdAt: updatedAt,
+          updatedAt,
+          closedAt: null,
+          customerProfile: { id: 'customer-1', user: { fullName: 'Customer', phone: '0901' } },
+          selectedProvider: {
+            id: 'partner-1',
+            displayName: 'Partner',
+            user: { fullName: null, phone: '0902' },
+          },
+          payment: {
+            id: 'payment-1',
+            amount: 400_000,
+            currency: 'VND',
+            method: PaymentMethod.MOMO,
+            status: PaymentStatus.CAPTURED,
+          },
+          earning: null,
+          settlementSnapshot: null,
+          _count: { services: 1 },
+        }),
+      },
+      monthlyTaxClosing: { findUnique: vi.fn() },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.previewBookingSettlementGapRepair('booking-missing-completion-time'),
+    ).resolves.toMatchObject({
+      canRepair: false,
+      completedAt: null,
+      monthlyPeriod: null,
+      blockers: [expect.objectContaining({ code: 'COMPLETION_TIME_EVIDENCE_MISSING' })],
+    });
+    expect(prisma.monthlyTaxClosing.findUnique).not.toHaveBeenCalled();
+  });
+
   it('rejects repair when settlement evidence changed after preview', async () => {
     const prisma = {
       user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
@@ -20725,9 +20780,10 @@ describe('AdminService query orchestration', () => {
       status: 'PASSED',
     });
 
+    const sourceVersion = `${occurredAt.toISOString()}:${occurredAt.toISOString()}:CAPTURED:AVAILABLE:NO_SNAPSHOT:NO_MONTHLY_CLOSE:APPROVED`;
     const repairInput = {
       reason: 'Restore missing completion settlement',
-      sourceVersion: `${occurredAt.toISOString()}:CAPTURED:AVAILABLE:NO_SNAPSHOT:NO_MONTHLY_CLOSE:APPROVED`,
+      sourceVersion,
     };
     await expect(service.repairBookingSettlementGap('admin-1', 'booking-gap-1', repairInput)).resolves.toMatchObject({
       actorId: 'admin-1',
@@ -20750,6 +20806,7 @@ describe('AdminService query orchestration', () => {
     });
 
     expect(earnings.createForCompletedBooking).toHaveBeenCalledWith('booking-gap-1', 'partner-1', {
+      occurredAt,
       preserveExistingLifecycle: true,
     });
     expect(earnings.createForCompletedBooking).toHaveBeenCalledTimes(1);
@@ -20761,7 +20818,7 @@ describe('AdminService query orchestration', () => {
         metadata: expect.objectContaining({
           repairPolicyDecision: 'APPROVED',
           repairPolicyVersion: 'CANONICAL_COMPLETION_SETTLEMENT_V1',
-          repairSourceVersion: `${occurredAt.toISOString()}:CAPTURED:AVAILABLE:NO_SNAPSHOT:NO_MONTHLY_CLOSE:APPROVED`,
+          repairSourceVersion: sourceVersion,
           settlementSnapshotId: 'settlement-1',
         }),
       }),
@@ -20894,7 +20951,7 @@ describe('AdminService query orchestration', () => {
 
     const repairInput = {
       reason: 'Reconstruct historical paid settlement evidence',
-      sourceVersion: `${occurredAt.toISOString()}:CAPTURED:PAID:NO_SNAPSHOT:NO_MONTHLY_CLOSE:APPROVED`,
+      sourceVersion: `${occurredAt.toISOString()}:${occurredAt.toISOString()}:CAPTURED:PAID:NO_SNAPSHOT:NO_MONTHLY_CLOSE:APPROVED`,
     };
     await expect(
       service.repairBookingSettlementGap('admin-1', 'booking-gap-paid', repairInput),
@@ -27219,11 +27276,14 @@ describe('AdminService query orchestration', () => {
 
   it('retries a serialization conflict before creating a manual bank reconciliation match', async () => {
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: true }]),
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
       companyBankTransaction: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'bank-tx-1',
           amount: 900000,
           currency: 'VND',
+          occurredAt: new Date('2026-07-15T05:00:00.000Z'),
           status: BankReconciliationStatus.UNMATCHED,
           type: CompanyBankTransactionType.INFLOW,
         }),
@@ -27234,6 +27294,7 @@ describe('AdminService query orchestration', () => {
           id: 'clearing-1',
           amount: 900000,
           currency: 'VND',
+          occurredAt: new Date('2026-07-15T05:00:00.000Z'),
           status: BookingPaymentClearingStatus.OPEN,
           type: BookingPaymentClearingEntryType.CUSTOMER_PAYMENT_CAPTURED,
         }),
@@ -27326,13 +27387,67 @@ describe('AdminService query orchestration', () => {
     });
   });
 
-  it('resolves an executed Partner bank deposit request to its bank cash journal debit', async () => {
+  it('rejects a bank reconciliation match before mutation when its evidence month is finalized', async () => {
+    const occurredAt = new Date('2026-07-15T05:00:00.000Z');
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: true }]),
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({ status: MonthlyTaxClosingStatus.CLOSED }),
+      },
+      companyBankTransaction: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-tx-closed',
+          amount: 900000,
+          currency: 'VND',
+          occurredAt,
+          status: BankReconciliationStatus.UNMATCHED,
+          type: CompanyBankTransactionType.INFLOW,
+        }),
+      },
+      bookingPaymentClearingEntry: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'clearing-closed',
+          amount: 900000,
+          currency: 'VND',
+          occurredAt,
+          status: BookingPaymentClearingStatus.OPEN,
+          type: 'SETTLEMENT_POSTED',
+        }),
+      },
+      bankReconciliationMatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        create: vi.fn(),
+      },
+      adminAuditLog: { create: vi.fn() },
+    };
+    const prisma = {
+      ...bankReconciliationApprovalFixture(),
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createBankReconciliationMatch('admin-user-1', 'bank-tx-closed', {
+        paymentClearingEntryId: 'clearing-closed',
+        amount: 900000,
+      }),
+    ).rejects.toThrow('Bank reconciliation match cannot change evidence in finalized monthly period 2026-07');
+
+    expect(tx.bankReconciliationMatch.create).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('resolves an executed Partner bank deposit request to its bank cash journal debit', async () => {
+    const occurredAt = new Date('2026-07-14T03:00:00.000Z');
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: true }]),
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
       companyBankTransaction: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'bank-tx-1',
           amount: 150000,
           currency: 'VND',
+          occurredAt,
           status: BankReconciliationStatus.UNMATCHED,
           type: CompanyBankTransactionType.INFLOW,
         }),
@@ -27353,7 +27468,11 @@ describe('AdminService query orchestration', () => {
           currency: 'VND',
           side: AccountingJournalEntrySide.DEBIT,
           accountCode: 'company_bank_cash',
-          batch: { sourceType: AccountingJournalSourceType.PROVIDER_BANK_DEPOSIT },
+          batch: {
+            monthlyPeriod: '2026-07',
+            postedAt: occurredAt,
+            sourceType: AccountingJournalSourceType.PROVIDER_BANK_DEPOSIT,
+          },
         }),
       },
       bankReconciliationMatch: {
@@ -27478,12 +27597,16 @@ describe('AdminService query orchestration', () => {
   });
 
   it('links a paid Provider payout outflow to both the batch and its paid bank cash journal', async () => {
+    const occurredAt = new Date('2026-07-14T03:00:00.000Z');
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: true }]),
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
       companyBankTransaction: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'bank-tx-1',
           amount: 430000,
           currency: 'VND',
+          occurredAt,
           status: BankReconciliationStatus.UNMATCHED,
           type: CompanyBankTransactionType.OUTFLOW,
         }),
@@ -27502,6 +27625,10 @@ describe('AdminService query orchestration', () => {
       },
       accountingJournalEntry: {
         findFirst: vi.fn().mockResolvedValue({ id: 'payout-bank-credit-1' }),
+        findUnique: vi.fn().mockResolvedValue({
+          currency: 'VND',
+          batch: { monthlyPeriod: '2026-07', postedAt: occurredAt },
+        }),
       },
       bankReconciliationMatch: {
         aggregate: vi
@@ -27564,12 +27691,16 @@ describe('AdminService query orchestration', () => {
   });
 
   it('links a payout reversal bank inflow to both the reversal journal and payout batch', async () => {
+    const occurredAt = new Date('2026-07-14T03:00:00.000Z');
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: true }]),
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
       companyBankTransaction: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'bank-return-1',
           amount: 430000,
           currency: 'VND',
+          occurredAt,
           status: BankReconciliationStatus.UNMATCHED,
           type: CompanyBankTransactionType.INFLOW,
         }),
@@ -27591,6 +27722,10 @@ describe('AdminService query orchestration', () => {
             side: AccountingJournalEntrySide.DEBIT,
             accountCode: 'company_bank_cash',
             batch: { sourceType: AccountingJournalSourceType.PROVIDER_PAYOUT_BATCH },
+          })
+          .mockResolvedValueOnce({
+            currency: 'VND',
+            batch: { monthlyPeriod: '2026-07', postedAt: occurredAt },
           }),
       },
       bankReconciliationMatch: {
@@ -27650,6 +27785,8 @@ describe('AdminService query orchestration', () => {
       }),
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: true }]),
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
       companyBankTransaction: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'bank-tx-1',
@@ -27742,6 +27879,8 @@ describe('AdminService query orchestration', () => {
       transferRef: 'VCB-OUT-120',
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: true }]),
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
       companyBankTransaction: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'bank-tx-1',
@@ -27759,6 +27898,13 @@ describe('AdminService query orchestration', () => {
       },
       accountingJournalEntry: {
         findFirst: vi.fn().mockResolvedValue({ id: 'withdrawal-bank-credit-1' }),
+        findUnique: vi.fn().mockResolvedValue({
+          currency: 'VND',
+          batch: {
+            monthlyPeriod: '2026-07',
+            postedAt: new Date('2026-07-14T02:00:00.000Z'),
+          },
+        }),
       },
       bankReconciliationMatch: {
         aggregate: vi
@@ -28066,11 +28212,14 @@ describe('AdminService query orchestration', () => {
 
   it('rejects manual bank reconciliation matches that exceed the remaining bank transaction amount', async () => {
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: true }]),
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
       companyBankTransaction: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'bank-tx-1',
           amount: 900000,
           currency: 'VND',
+          occurredAt: new Date('2026-07-15T05:00:00.000Z'),
           status: BankReconciliationStatus.PARTIALLY_MATCHED,
           type: CompanyBankTransactionType.INFLOW,
         }),
@@ -28081,6 +28230,7 @@ describe('AdminService query orchestration', () => {
           id: 'clearing-1',
           amount: 300000,
           currency: 'VND',
+          occurredAt: new Date('2026-07-15T05:00:00.000Z'),
           status: BookingPaymentClearingStatus.OPEN,
           type: BookingPaymentClearingEntryType.CUSTOMER_PAYMENT_CAPTURED,
         }),
@@ -28119,11 +28269,14 @@ describe('AdminService query orchestration', () => {
 
   it('rejects manual bank reconciliation matches that exceed the remaining reconciliation source amount', async () => {
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: true }]),
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
       companyBankTransaction: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'bank-tx-1',
           amount: 900000,
           currency: 'VND',
+          occurredAt: new Date('2026-07-15T05:00:00.000Z'),
           status: BankReconciliationStatus.PARTIALLY_MATCHED,
           type: CompanyBankTransactionType.INFLOW,
         }),
@@ -28134,6 +28287,7 @@ describe('AdminService query orchestration', () => {
           id: 'clearing-1',
           amount: 900000,
           currency: 'VND',
+          occurredAt: new Date('2026-07-15T05:00:00.000Z'),
           status: BookingPaymentClearingStatus.PARTIALLY_CLEARED,
           type: BookingPaymentClearingEntryType.CUSTOMER_PAYMENT_CAPTURED,
         }),
@@ -28169,6 +28323,8 @@ describe('AdminService query orchestration', () => {
 
   it('reverses a bank reconciliation match and recalculates linked statuses in one transaction', async () => {
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: true }]),
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
       bankReconciliationMatch: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'match-1',
@@ -28180,6 +28336,7 @@ describe('AdminService query orchestration', () => {
           bankTransaction: {
             amount: 900000,
             currency: 'VND',
+            occurredAt: new Date('2026-07-15T05:00:00.000Z'),
             status: BankReconciliationStatus.MATCHED,
           },
         }),
@@ -28202,6 +28359,8 @@ describe('AdminService query orchestration', () => {
       bookingPaymentClearingEntry: {
         findUnique: vi.fn().mockResolvedValue({
           amount: 900000,
+          currency: 'VND',
+          occurredAt: new Date('2026-07-15T05:00:00.000Z'),
         }),
         update: vi.fn().mockResolvedValue({
           id: 'clearing-1',
@@ -28269,8 +28428,58 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('rejects a reconciliation reversal before mutation when its evidence month is finalized', async () => {
+    const occurredAt = new Date('2026-07-15T05:00:00.000Z');
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: true }]),
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({ status: MonthlyTaxClosingStatus.PAID }),
+      },
+      bankReconciliationMatch: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'match-closed',
+          bankTransactionId: 'bank-tx-closed',
+          accountingJournalEntryId: null,
+          paymentClearingEntryId: 'clearing-closed',
+          status: BankReconciliationStatus.MATCHED,
+          amount: 500000,
+          currency: 'VND',
+          bankTransaction: {
+            amount: 500000,
+            currency: 'VND',
+            occurredAt,
+            status: BankReconciliationStatus.MATCHED,
+          },
+        }),
+        updateMany: vi.fn(),
+      },
+      bookingPaymentClearingEntry: {
+        findUnique: vi.fn().mockResolvedValue({ currency: 'VND', occurredAt }),
+      },
+      adminAuditLog: { create: vi.fn() },
+    };
+    const prisma = {
+      ...bankReconciliationApprovalFixture(),
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.reverseBankReconciliationMatch('admin-user-1', 'bank-tx-closed', 'match-closed', {
+        reason: 'Incorrect source',
+      }),
+    ).rejects.toThrow(
+      'Bank reconciliation match reversal cannot change evidence in finalized monthly period 2026-07',
+    );
+
+    expect(tx.bankReconciliationMatch.updateMany).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
   it('rejects a duplicate reconciliation reversal before creating downstream side effects', async () => {
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: true }]),
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
       bankReconciliationMatch: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'match-1',
@@ -28282,6 +28491,7 @@ describe('AdminService query orchestration', () => {
           bankTransaction: {
             amount: 500000,
             currency: 'VND',
+            occurredAt: new Date('2026-07-15T05:00:00.000Z'),
             status: BankReconciliationStatus.MATCHED,
           },
         }),
@@ -28336,12 +28546,15 @@ describe('AdminService query orchestration', () => {
 
   it('ignores an unmatched bank transaction with separate approval, persistent evidence, and an audit log', async () => {
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: true }]),
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
       companyBankTransaction: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'bank-tx-1',
           amount: 500000,
           currency: 'VND',
           metadata: { importedManually: true },
+          occurredAt: new Date('2026-07-15T05:00:00.000Z'),
           status: BankReconciliationStatus.UNMATCHED,
         }),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -28411,14 +28624,61 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('rejects ignoring a bank transaction before mutation when its month is finalized', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: true }]),
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({ status: MonthlyTaxClosingStatus.DECLARED }),
+      },
+      companyBankTransaction: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-tx-closed',
+          amount: 500000,
+          currency: 'VND',
+          metadata: null,
+          occurredAt: new Date('2026-07-15T05:00:00.000Z'),
+          status: BankReconciliationStatus.UNMATCHED,
+        }),
+        updateMany: vi.fn(),
+      },
+      bankReconciliationMatch: { count: vi.fn() },
+      adminAuditLog: { create: vi.fn() },
+    };
+    const prisma = {
+      ...bankReconciliationApprovalFixture(),
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.ignoreCompanyBankTransaction('admin-user-1', 'bank-tx-closed', {
+        reason: 'Duplicate statement evidence',
+      }),
+    ).rejects.toThrow('Bank transaction ignore cannot change evidence in finalized monthly period 2026-07');
+
+    expect(tx.bankReconciliationMatch.count).toHaveBeenCalledWith({
+      where: {
+        bankTransactionId: 'bank-tx-closed',
+        status: {
+          in: [BankReconciliationStatus.MATCHED, BankReconciliationStatus.PARTIALLY_MATCHED],
+        },
+      },
+    });
+    expect(tx.companyBankTransaction.updateMany).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
   it('rejects a duplicate bank transaction ignore before creating audit side effects', async () => {
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: true }]),
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
       companyBankTransaction: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'bank-tx-1',
           amount: 500000,
           currency: 'VND',
           metadata: null,
+          occurredAt: new Date('2026-07-15T05:00:00.000Z'),
           status: BankReconciliationStatus.UNMATCHED,
         }),
         updateMany: vi.fn().mockResolvedValue({ count: 0 }),

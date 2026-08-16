@@ -37,8 +37,9 @@ export function bookingServiceStartedUpdateData() {
   };
 }
 
-export function bookingCompletedUpdateData() {
+export function bookingCompletedUpdateData(completedAt = new Date()) {
   return {
     status: BookingStatus.COMPLETED,
+    closedAt: completedAt,
   };
 }
