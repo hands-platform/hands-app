@@ -9,12 +9,98 @@ import {
   buildOperationalHealthRows,
   buildSetupGroupDetails,
   buildSummary,
+  externalServicesFromReadiness,
   isReadinessUnavailable,
+  parseSetupWorkspaceQuery,
+  setupWorkspaceCanonicalHref,
+  setupServicesForView,
+  setupWorkspaceCounts,
   type ExternalRegistrationPlanItem,
   type SetupOrderItem,
 } from './setup-page-model';
 
 describe('setup page model', () => {
+  it('round-trips workspace modes and saved views with stable defaults', () => {
+    expect(parseSetupWorkspaceQuery({})).toEqual({ mode: 'runtime', view: 'active' });
+    expect(parseSetupWorkspaceQuery({ mode: 'readiness', view: 'deferred' })).toEqual({
+      mode: 'readiness',
+      view: 'deferred',
+    });
+    expect(parseSetupWorkspaceQuery({ mode: 'runtime', view: 'evidence-gaps' })).toEqual({
+      mode: 'runtime',
+      view: 'evidence-gaps',
+    });
+    expect(parseSetupWorkspaceQuery({ mode: 'runtime', view: 'deferred' })).toEqual({
+      mode: 'readiness',
+      view: 'deferred',
+    });
+    expect(parseSetupWorkspaceQuery({ mode: 'readiness', view: 'evidence-gaps' })).toEqual({
+      mode: 'runtime',
+      view: 'evidence-gaps',
+    });
+    expect(parseSetupWorkspaceQuery({ mode: 'broken', view: 'broken' })).toEqual({
+      mode: 'runtime',
+      view: 'active',
+    });
+    expect(setupWorkspaceCanonicalHref({ mode: 'runtime', view: 'evidence-gaps' })).toBeNull();
+    expect(setupWorkspaceCanonicalHref({ mode: 'runtime', view: 'deferred' })).toBe(
+      '/setup?mode=readiness&view=deferred',
+    );
+    expect(setupWorkspaceCanonicalHref({ mode: 'readiness', view: 'evidence-gaps' })).toBe(
+      '/setup?mode=runtime&view=evidence-gaps',
+    );
+    expect(setupWorkspaceCanonicalHref({ mode: 'broken', view: 'broken' })).toBe(
+      '/setup?mode=runtime&view=active',
+    );
+  });
+
+  it('keeps legacy READY configuration as runtime not monitored', () => {
+    const services = externalServicesFromReadiness(readinessFixture({
+      checks: [{
+        category: 'maps',
+        name: 'Maps and geocoding',
+        status: 'READY',
+        configured: ['MAPTILER_API_KEY'],
+        missing: [],
+        detail: 'Maps are configured.',
+        scope: 'CURRENT_STAGE',
+      }],
+    }));
+
+    expect(services[0]).toMatchObject({
+      configurationStatus: 'CONFIGURED',
+      runtimeStatus: 'NOT_MONITORED',
+      lastProbeAt: null,
+      lastSuccessAt: null,
+      safeOperatorAction: 'Review recent operational evidence before relying on this service.',
+    });
+  });
+
+  it('filters action, active, evidence-gap, and deferred services without mixing scopes', () => {
+    const services = [
+      externalService({ id: 'down', runtimeStatus: 'DOWN' }),
+      externalService({ id: 'active' }),
+      externalService({ id: 'deferred', configurationStatus: 'DEFERRED', enabled: false, requiredForCurrentLaunch: false }),
+    ];
+
+    expect(setupWorkspaceCounts(services)).toEqual({
+      needsAction: 1,
+      launchBlockers: 0,
+      degraded: 0,
+      unknown: 0,
+      notMonitored: 1,
+      evidenceGaps: 1,
+      deferred: 1,
+      required: 2,
+      configurationReady: 2,
+      runtimeVerified: 0,
+    });
+    expect(setupServicesForView(services, 'runtime', 'needs-action').map((service) => service.id)).toEqual(['down']);
+    expect(setupServicesForView(services, 'runtime', 'active').map((service) => service.id)).toEqual(['down', 'active']);
+    expect(setupServicesForView(services, 'runtime', 'evidence-gaps').map((service) => service.id)).toEqual(['active']);
+    expect(setupServicesForView(services, 'readiness', 'active').map((service) => service.id)).toEqual(['down', 'active']);
+    expect(setupServicesForView(services, 'readiness', 'deferred').map((service) => service.id)).toEqual(['deferred']);
+  });
   it('builds current-stage and deferred setup signals from readiness checks', () => {
     const readiness = readinessFixture({
       checks: [
@@ -288,6 +374,34 @@ function readinessFixture(overrides: Partial<AdminExternalReadiness>): AdminExte
     ok: false,
     timestamp: new Date(0).toISOString(),
     checks: [],
+    ...overrides,
+  };
+}
+
+function externalService(
+  overrides: Partial<NonNullable<AdminExternalReadiness['services']>[number]>,
+): NonNullable<AdminExternalReadiness['services']>[number] {
+  return {
+    id: 'service',
+    name: 'External service',
+    category: 'maps',
+    enabled: true,
+    requiredForCurrentLaunch: true,
+    configurationStatus: 'CONFIGURED',
+    configurationCheckedAt: '2026-08-12T03:00:00.000Z',
+    runtimeStatus: 'NOT_MONITORED',
+    probeType: 'CONFIG',
+    lastProbeAt: null,
+    lastSuccessAt: null,
+    failureSince: null,
+    latencyMs: null,
+    isStale: false,
+    evidenceSummary: 'Configuration checked.',
+    impactSummary: 'No confirmed impact.',
+    ownerTeam: 'Operations',
+    escalationRoute: '/app-sessions',
+    runbookUrl: null,
+    safeOperatorAction: 'No configuration action required.',
     ...overrides,
   };
 }

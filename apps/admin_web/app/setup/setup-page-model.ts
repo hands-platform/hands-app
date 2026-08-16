@@ -1,4 +1,7 @@
-import type { AdminExternalReadiness } from '../../lib/admin-api';
+import type {
+  AdminExternalReadiness,
+  AdminExternalServiceStatus,
+} from '../../lib/admin-api';
 import type { SetupGroupDetail } from './setup-group-detail-section';
 import { setupReadinessDisplayText } from './setup-readiness-copy';
 
@@ -44,6 +47,254 @@ export type SetupOperationalHealthRow = {
   readonly status: 'Blocked' | 'Limited' | 'Operational' | 'Unavailable';
   readonly tone: 'danger' | 'info' | 'success' | 'warning';
 };
+
+export type SetupWorkspaceMode = 'runtime' | 'readiness';
+export type SetupWorkspaceView = 'needs-action' | 'active' | 'evidence-gaps' | 'deferred';
+
+export function parseSetupWorkspaceQuery(
+  params: Record<string, string | string[] | undefined>,
+): { mode: SetupWorkspaceMode; view: SetupWorkspaceView } {
+  const rawMode = singleSetupParam(params.mode);
+  const rawView = singleSetupParam(params.view);
+  let mode: SetupWorkspaceMode = rawMode === 'readiness' ? 'readiness' : 'runtime';
+  if (rawView === 'deferred') mode = 'readiness';
+  if (rawView === 'evidence-gaps') mode = 'runtime';
+
+  const allowedViews = mode === 'runtime'
+    ? ['needs-action', 'active', 'evidence-gaps']
+    : ['needs-action', 'active', 'deferred'];
+  const view: SetupWorkspaceView = allowedViews.includes(rawView)
+    ? (rawView as SetupWorkspaceView)
+    : mode === 'runtime'
+      ? 'active'
+      : 'needs-action';
+  return { mode, view };
+}
+
+export function setupWorkspaceCanonicalHref(
+  params: Record<string, string | string[] | undefined>,
+) {
+  const rawMode = singleSetupParam(params.mode);
+  const rawView = singleSetupParam(params.view);
+  const modeIsValid = rawMode === '' || rawMode === 'runtime' || rawMode === 'readiness';
+  const globalViewIsValid = rawView === '' || ['needs-action', 'active', 'evidence-gaps', 'deferred'].includes(rawView);
+  const requestedMode = rawMode === 'readiness' ? 'readiness' : 'runtime';
+  const viewIsValidForMode = rawView === '' || (
+    requestedMode === 'runtime'
+      ? ['needs-action', 'active', 'evidence-gaps'].includes(rawView)
+      : ['needs-action', 'active', 'deferred'].includes(rawView)
+  );
+
+  if (modeIsValid && globalViewIsValid && viewIsValidForMode) return null;
+
+  const workspace = parseSetupWorkspaceQuery(params);
+  return `/setup?mode=${workspace.mode}&view=${workspace.view}`;
+}
+
+export function externalServicesFromReadiness(
+  readiness: AdminExternalReadiness,
+): AdminExternalServiceStatus[] {
+  if (readiness.services) {
+    return readiness.services;
+  }
+
+  return readiness.checks
+    .filter(isOperatorHealthCheck)
+    .map((check, index) => {
+      const deferred = check.scope === 'DEFERRED' || check.deferred === true;
+      const deferredMetadata = deferred ? legacyDeferredMetadata(check.name) : null;
+      return {
+        id: `${check.category}-${index}`,
+        name: setupReadinessDisplayText(check.name),
+        category: legacyExternalCategory(check.category),
+        launchScope: deferred ? 'DEFERRED' : 'CURRENT_STAGE',
+        enabled: !deferred,
+        requiredForCurrentLaunch: !deferred,
+        configurationStatus: deferred
+          ? 'DEFERRED'
+          : check.status === 'READY'
+            ? 'CONFIGURED'
+            : 'INCOMPLETE',
+        configurationCheckedAt: readiness.timestamp || null,
+        runtimeStatus: 'NOT_MONITORED',
+        probeType: 'CONFIG',
+        evidenceLevel: 'CONFIGURATION_ONLY',
+        lastVerifiedAt: readiness.timestamp || null,
+        verificationMethod: 'Legacy configuration check; no safe runtime probe.',
+        lastProbeAt: null,
+        lastSuccessAt: null,
+        failureSince: null,
+        latencyMs: null,
+        isStale: false,
+        evidenceSummary: 'Configuration was checked. Runtime evidence is not available.',
+        impactSummary: 'No confirmed impact.',
+        ownerTeam: ownerTeamForCategory(check.category),
+        evidenceHref: null,
+        relatedWorkspaceHref: escalationRouteForCategory(check.category),
+        runbookHref: null,
+        escalationRoute: escalationRouteForCategory(check.category),
+        runbookUrl: null,
+        deferredReason: deferredMetadata?.deferredReason ?? null,
+        futureReadiness: deferredMetadata ? 'NOT_STARTED' : null,
+        reentryChecks: deferredMetadata?.reentryChecks ?? [],
+        reviewTrigger: deferredMetadata?.reviewTrigger ?? null,
+        reviewedAt: null,
+        platformScope: deferredMetadata?.platformScope ?? null,
+        safeOperatorAction: deferred
+          ? deferredMetadata?.operatorAction ?? 'Review this capability when its launch trigger is reached.'
+          : check.status === 'READY'
+            ? 'Review recent operational evidence before relying on this service.'
+            : setupReadinessDisplayText(check.operatorAction ?? check.detail),
+        evidenceGap: !deferred,
+      } satisfies AdminExternalServiceStatus;
+    });
+}
+
+export function setupServiceNeedsAction(service: AdminExternalServiceStatus) {
+  return (
+    (service.requiredForCurrentLaunch && service.configurationStatus === 'INCOMPLETE') ||
+    (service.enabled && ['DOWN', 'DEGRADED'].includes(service.runtimeStatus))
+  );
+}
+
+export function setupServicesForView(
+  services: readonly AdminExternalServiceStatus[],
+  mode: SetupWorkspaceMode,
+  view: SetupWorkspaceView,
+) {
+  return services
+    .filter((service) => {
+      if (view === 'deferred') return service.configurationStatus === 'DEFERRED';
+      if (view === 'needs-action') {
+        return mode === 'runtime'
+          ? setupServiceNeedsAction(service)
+          : service.requiredForCurrentLaunch && service.configurationStatus === 'INCOMPLETE';
+      }
+      if (view === 'evidence-gaps') return setupServiceHasEvidenceGap(service);
+      return mode === 'runtime'
+        ? service.enabled && service.configurationStatus !== 'DEFERRED'
+        : service.requiredForCurrentLaunch && service.configurationStatus !== 'DEFERRED';
+    })
+    .sort((left, right) => setupServicePriority(left) - setupServicePriority(right) || left.name.localeCompare(right.name));
+}
+
+export function setupWorkspaceCounts(services: readonly AdminExternalServiceStatus[]) {
+  return {
+    needsAction: services.filter(setupServiceNeedsAction).length,
+    launchBlockers: services.filter(
+      (service) => service.requiredForCurrentLaunch && service.configurationStatus === 'INCOMPLETE',
+    ).length,
+    degraded: services.filter((service) => service.enabled && service.runtimeStatus === 'DEGRADED').length,
+    unknown: services.filter((service) => service.enabled && service.runtimeStatus === 'UNKNOWN').length,
+    notMonitored: services.filter((service) => service.enabled && service.runtimeStatus === 'NOT_MONITORED').length,
+    evidenceGaps: services.filter(setupServiceHasEvidenceGap).length,
+    deferred: services.filter((service) => service.configurationStatus === 'DEFERRED').length,
+    required: services.filter((service) => service.requiredForCurrentLaunch).length,
+    configurationReady: services.filter(
+      (service) => service.requiredForCurrentLaunch && service.configurationStatus === 'CONFIGURED',
+    ).length,
+    runtimeVerified: services.filter(
+      (service) =>
+        service.requiredForCurrentLaunch &&
+        (service.evidenceLevel ?? evidenceLevelFromProbe(service.probeType)) !== 'CONFIGURATION_ONLY' &&
+        (service.lastVerifiedAt ?? service.lastProbeAt) !== null,
+    ).length,
+  };
+}
+
+export function setupServiceHasEvidenceGap(service: AdminExternalServiceStatus) {
+  return service.evidenceGap ?? (
+    service.requiredForCurrentLaunch &&
+    service.enabled &&
+    ['UNKNOWN', 'NOT_MONITORED'].includes(service.runtimeStatus)
+  );
+}
+
+function setupServicePriority(service: AdminExternalServiceStatus) {
+  if (setupServiceNeedsAction(service)) return 0;
+  if (service.runtimeStatus === 'DOWN') return 1;
+  if (service.runtimeStatus === 'DEGRADED') return 2;
+  if (service.runtimeStatus === 'UNKNOWN') return 3;
+  if (service.runtimeStatus === 'NOT_MONITORED') return 4;
+  if (service.runtimeStatus === 'HEALTHY') return 5;
+  return 6;
+}
+
+function evidenceLevelFromProbe(probeType: AdminExternalServiceStatus['probeType']) {
+  if (probeType === 'CONNECTIVITY') return 'CONNECTIVITY' as const;
+  if (probeType === 'FUNCTIONAL_E2E') return 'FUNCTIONAL' as const;
+  return 'CONFIGURATION_ONLY' as const;
+}
+
+function singleSetupParam(value: string | string[] | undefined) {
+  return (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase() ?? '';
+}
+
+function legacyExternalCategory(category: string): AdminExternalServiceStatus['category'] {
+  if (category === 'supabase') return 'core';
+  if (category === 'supabase-auth') return 'auth';
+  if (category === 'payments') return 'payments';
+  if (category === 'storage') return 'storage';
+  if (category === 'referrals') return 'referrals';
+  if (category === 'push' || category === 'sms') return 'messaging';
+  return 'maps';
+}
+
+function ownerTeamForCategory(category: string) {
+  if (category === 'payments') return 'Finance operations';
+  if (category === 'referrals') return 'Growth operations';
+  if (category === 'supabase' || category === 'storage') return 'Platform operations';
+  if (category === 'maps') return 'Marketplace operations';
+  if (category === 'supabase-auth') return 'Identity operations';
+  return 'Customer operations';
+}
+
+function escalationRouteForCategory(category: string) {
+  if (category === 'payments') return '/payments';
+  if (category === 'referrals') return '/referrals/customers#referral-link-readiness';
+  if (category === 'push') return '/notifications';
+  if (category === 'maps') return '/vietnam-overview';
+  if (category === 'storage') return '/partners';
+  return '/app-sessions';
+}
+
+function legacyDeferredMetadata(name: string) {
+  if (name === 'MoMo payments') {
+    return {
+      deferredReason: 'Online payments are outside the current cash-only launch.',
+      operatorAction: 'Review the MoMo re-entry checklist when online payments enter scope.',
+      platformScope: null,
+      reentryChecks: [
+        { label: 'Merchant sandbox connection', status: 'PENDING' as const },
+        { label: 'Public HTTPS callback and signed-flow smoke', status: 'PENDING' as const },
+      ],
+      reviewTrigger: 'When the online-payment phase is approved.',
+    };
+  }
+  if (name === 'VNPay payments') {
+    return {
+      deferredReason: 'VNPay is intentionally disabled during the cash-only launch.',
+      operatorAction: 'Review the VNPay re-entry checklist when online payments enter scope.',
+      platformScope: null,
+      reentryChecks: [
+        { label: 'Merchant sandbox and signing configuration', status: 'PENDING' as const },
+        { label: 'Public return route, IPN, query, and refund smoke', status: 'PENDING' as const },
+      ],
+      reviewTrigger: 'After the online-payment phase and public DNS/TLS are approved.',
+    };
+  }
+  return {
+    deferredReason: 'Public referral sharing and store routing are outside the current launch stage.',
+    operatorAction: 'Review referral link readiness before public sharing is enabled.',
+    platformScope: 'ANDROID_MVP' as const,
+    reentryChecks: [
+      { label: 'Public referral base and Android destinations', status: 'PENDING' as const },
+      { label: 'Android device-routing smoke', status: 'PENDING' as const },
+      { label: 'Customer and Partner iOS destinations', status: 'FUTURE' as const },
+    ],
+    reviewTrigger: 'Before public referral sharing or an Android store release begins.',
+  };
+}
 
 export function buildOperationalHealthRows(
   readiness: AdminExternalReadiness,

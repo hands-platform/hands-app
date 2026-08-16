@@ -8,6 +8,11 @@ const TERMINAL_PAYMENT_STATUSES = new Set<PaymentStatus>([
   PaymentStatus.RELEASED,
 ]);
 const REDACTED_PAYMENT_CALLBACK_VALUE = '[REDACTED]';
+const TRUNCATED_PAYMENT_CALLBACK_VALUE = '[TRUNCATED]';
+const PAYMENT_CALLBACK_MAX_ARRAY_ITEMS = 20;
+const PAYMENT_CALLBACK_MAX_DEPTH = 4;
+const PAYMENT_CALLBACK_MAX_KEYS = 40;
+const PAYMENT_CALLBACK_MAX_STRING_LENGTH = 512;
 const REDACTED_PAYMENT_CALLBACK_KEYS = new Set([
   'accesskey',
   'apikey',
@@ -19,13 +24,40 @@ const REDACTED_PAYMENT_CALLBACK_KEYS = new Set([
   'vnpsecurehash',
   'vnpsecurehashtype',
 ]);
+const PAYMENT_CALLBACK_EVIDENCE_KEYS = new Set([
+  'amount',
+  'gatewayPayDate',
+  'gatewayTransactionId',
+  'gatewayTransactionStatus',
+  'gatewayTransactionType',
+  'message',
+  'orderId',
+  'partnerCode',
+  'payType',
+  'providerRef',
+  'requestId',
+  'responseTime',
+  'resultCode',
+  'status',
+  'transId',
+  'vnp_Amount',
+  'vnp_BankCode',
+  'vnp_CardType',
+  'vnp_PayDate',
+  'vnp_ResponseCode',
+  'vnp_TmnCode',
+  'vnp_TransactionNo',
+  'vnp_TransactionStatus',
+  'vnp_TransactionType',
+  'vnp_TxnRef',
+]);
 
 export function callbackRawMeta(
   rawMeta: Record<string, unknown>,
   verification: { verified: boolean; mode: string },
 ) {
   return {
-    ...redactPaymentCallbackPayload(rawMeta),
+    ...paymentCallbackEvidencePayload(rawMeta),
     callbackReceivedAt: new Date().toISOString(),
     callbackSignatureVerified: verification.verified,
     callbackVerificationMode: verification.mode,
@@ -96,15 +128,27 @@ export function callbackAttemptCreateData(input: PaymentCallbackAttemptInput) {
     callbackAmount: input.callbackAmount ?? undefined,
     errorCode: input.errorCode ?? undefined,
     errorMessage: input.errorMessage ?? undefined,
-    rawPayload: toJsonOrUndefined(redactPaymentCallbackPayload(input.rawPayload ?? {})),
+    rawPayload: toJsonOrUndefined(paymentCallbackEvidencePayload(input.rawPayload ?? {})),
   };
+}
+
+export function paymentCallbackEvidencePayload(
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
+  return redactPaymentCallbackPayload(
+    Object.fromEntries(
+      Object.entries(payload).filter(([key]) => PAYMENT_CALLBACK_EVIDENCE_KEYS.has(key)),
+    ),
+  );
 }
 
 export function redactPaymentCallbackPayload(payload: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
-    Object.entries(payload).map(([key, value]) => [
+    Object.entries(payload).slice(0, PAYMENT_CALLBACK_MAX_KEYS).map(([key, value]) => [
       key,
-      isRedactedPaymentCallbackKey(key) ? REDACTED_PAYMENT_CALLBACK_VALUE : redactPaymentCallbackValue(value),
+      isRedactedPaymentCallbackKey(key)
+        ? REDACTED_PAYMENT_CALLBACK_VALUE
+        : redactPaymentCallbackValue(value, 1),
     ]),
   );
 }
@@ -147,6 +191,30 @@ export function errorMessage(error: unknown) {
     return error.message;
   }
   return 'Payment callback processing failed';
+}
+
+export function callbackEvidenceErrorMessage(error: unknown) {
+  if (error instanceof ConflictException) {
+    return 'Payment callback conflicts with the current payment state';
+  }
+  if (!(error instanceof BadRequestException)) {
+    return 'Payment callback processing failed';
+  }
+
+  const message = error.message.toLowerCase();
+  if (message.includes('signature') || message.includes('secure hash') || message.includes('secret')) {
+    return 'Payment callback authentication rejected';
+  }
+  if (message.includes('amount')) {
+    return 'Payment callback amount rejected';
+  }
+  if (message.includes('provider reference')) {
+    return 'Payment callback provider reference rejected';
+  }
+  if (message.includes('method') || message.includes('partner code') || message.includes('merchant code')) {
+    return 'Payment callback binding rejected';
+  }
+  return 'Payment callback request rejected';
 }
 
 export function stringValue(value: unknown) {
@@ -234,17 +302,36 @@ function phpUrlEncode(value: string) {
   return encodeURIComponent(value).replace(/%20/g, '+');
 }
 
-function redactPaymentCallbackValue(value: unknown): unknown {
+function redactPaymentCallbackValue(value: unknown, depth: number): unknown {
+  if (depth > PAYMENT_CALLBACK_MAX_DEPTH) {
+    return TRUNCATED_PAYMENT_CALLBACK_VALUE;
+  }
   if (Array.isArray(value)) {
-    return value.map(redactPaymentCallbackValue);
+    return value
+      .slice(0, PAYMENT_CALLBACK_MAX_ARRAY_ITEMS)
+      .map((item) => redactPaymentCallbackValue(item, depth + 1));
   }
   if (value instanceof Date) {
     return value;
   }
+  if (typeof value === 'string') {
+    return value.length > PAYMENT_CALLBACK_MAX_STRING_LENGTH
+      ? `${value.slice(0, PAYMENT_CALLBACK_MAX_STRING_LENGTH)}${TRUNCATED_PAYMENT_CALLBACK_VALUE}`
+      : value;
+  }
   if (!value || typeof value !== 'object') {
     return value;
   }
-  return redactPaymentCallbackPayload(value as Record<string, unknown>);
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .slice(0, PAYMENT_CALLBACK_MAX_KEYS)
+      .map(([key, nestedValue]) => [
+        key,
+        isRedactedPaymentCallbackKey(key)
+          ? REDACTED_PAYMENT_CALLBACK_VALUE
+          : redactPaymentCallbackValue(nestedValue, depth + 1),
+      ]),
+  );
 }
 
 function isRedactedPaymentCallbackKey(key: string) {

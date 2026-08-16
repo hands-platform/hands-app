@@ -67,16 +67,7 @@ export function customerAppSessionMetadata(
   const attribution =
     normalizeCustomerMarketingAttribution(existing.marketingAttribution) ??
     normalizeCustomerMarketingAttribution(incoming.marketingAttribution);
-  const merged = {
-    ...existing,
-    ...incoming,
-  };
-  delete merged.marketingAttribution;
-  if (attribution) {
-    merged.marketingAttribution = attribution;
-  }
-  return Object.keys(merged).length > 0
-    ? (merged as Prisma.InputJsonObject)
+  return attribution
+    ? ({ marketingAttribution: attribution } as Prisma.InputJsonObject)
     : undefined;
 }
-

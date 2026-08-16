@@ -1,0 +1,201 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Referrals":
+        - /url: /referrals/customers
+      - generic: Customer Referrals
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Referrals workspace":
+    - strong: Referrals
+    - generic "Referrals pages":
+      - link "Customer Referrals":
+        - /url: /referrals/customers
+      - link "Partner Referrals":
+        - /url: /referrals/partners
+      - link "Referral Cashouts":
+        - /url: /referrals/cashouts
+  - heading "Customer Referrals" [level=1]
+  - paragraph: Review customer referral rewards, integrity holds, and parent account activity.
+  - generic "Page actions":
+    - link "Open policy settings":
+      - /url: /referrals/customers?settings=policy
+  - generic: Needs action
+  - paragraph: Ready to credit
+  - generic: "Ready to credit:"
+  - text: 0 VND
+  - generic: 0 reward candidates ready for a decision.
+  - generic: Risk
+  - paragraph: On hold for review
+  - generic: "On hold for review:"
+  - text: 25.000 VND
+  - generic: 1 reward blocked for integrity or policy review.
+  - generic: Pending
+  - paragraph: Pending release
+  - generic: "Pending release:"
+  - text: 0 VND
+  - generic: 0 rewards waiting for booking or hold-period checks.
+  - generic: All records
+  - paragraph: Credited rewards
+  - generic: "Credited rewards:"
+  - text: 50.000 VND
+  - generic: 1 reward already posted to wallets.
+  - generic "Referral reward operation queue":
+    - generic "Referral reward state":
+      - link "Needs action 1 · 25.000 VND":
+        - /url: /referrals/customers
+        - generic: Needs action
+        - generic: 1 · 25.000 VND
+      - link "All records 3 · 78.704 VND":
+        - /url: /referrals/customers?reward=all
+        - generic: All records
+        - generic: 3 · 78.704 VND
+      - link "Ready to credit 0 · 0 VND":
+        - /url: /referrals/customers?reward=available
+        - generic: Ready to credit
+        - generic: 0 · 0 VND
+      - link "Pending checks 0 · 0 VND":
+        - /url: /referrals/customers?reward=pending
+        - generic: Pending checks
+        - generic: 0 · 0 VND
+      - link "On-hold review 1 · 25.000 VND":
+        - /url: /referrals/customers?reward=held
+        - generic: On-hold review
+        - generic: 1 · 25.000 VND
+      - link "Credited 1 · 50.000 VND":
+        - /url: /referrals/customers?reward=credited
+        - generic: Credited
+        - generic: 1 · 50.000 VND
+  - generic "Referral list filters":
+    - generic: Search referrals
+    - searchbox "Search referrals"
+    - generic: Attribution
+    - combobox "Attribution":
+      - option "All statuses" [selected]
+      - option "Qualified"
+      - option "Pending"
+      - option "Blocked"
+    - generic: Integrity review
+    - combobox "Integrity review":
+      - option "All review states" [selected]
+      - option "Clear"
+      - option "Flagged"
+      - option "On hold"
+    - generic: Referral period
+    - combobox "Referral period":
+      - option "All referral dates" [selected]
+      - option "Today (Vietnam)"
+      - option "Last 7 days"
+      - option "Last 30 days"
+  - generic "Referral filter actions":
+    - link "Clear":
+      - /url: /referrals/customers
+    - button "Apply"
+  - generic "Active referral filters":
+    - generic: "Reward: Ready rewards"
+  - heading "Needs action" [level=2]
+  - paragraph: Review one reward at a time. Open the parent detail to confirm booking, policy, integrity, and wallet evidence before changing state.
+  - generic: 0 rewards
+  - region "Customer referral reward queue":
+    - table:
+      - rowgroup:
+        - row "Parent Referred customer Reward Decision evidence State Action":
+          - columnheader "Parent"
+          - columnheader "Referred customer"
+          - columnheader "Reward"
+          - columnheader "Decision evidence"
+          - columnheader "State"
+          - columnheader "Action"
+      - rowgroup:
+        - row:
+          - cell:
+            - status:
+              - strong: No matching reward records
+              - paragraph: No reward records match the current filters.
+              - link "Clear referral filters":
+                - /url: /referrals/customers
+  - generic "All parent records"
+  - heading "Referral accounting guardrails" [level=2]
+  - generic: Accounting
+  - generic: Current filters
+  - generic: Expense treatment
+  - strong: Acquisition cost
+  - generic: Referral rewards are company marketing/acquisition expenses, not reductions of platform fee revenue.
+  - generic: All records
+  - generic: Wallet offsets
+  - strong: No revenue netting
+  - generic: Wallet offsets settle payable and receivable balances. They must not reduce revenue.
+  - generic: Pending
+  - generic: Customer cashout
+  - strong: Approval required
+  - generic: Customer referral cashout requires admin approval and tax review.
+  - generic: Current filters
+  - generic: Tax policy
+  - strong: Accounting owned
+  - generic: Tax policies are configurable and must be confirmed by accounting before production use.
+  - heading "Referral link readiness" [level=2]
+  - generic: Setup blocked
+  - generic: Audience
+  - strong: Customer
+  - generic: Customer referral links route visitors to the correct store before attribution starts.
+  - generic: Public route
+  - strong: /r/customer/:code
+  - generic: Android and iOS visitors must land on the matching app download page.
+  - generic: Setup status
+  - strong: Environment check
+  - group "Referral store setup":
+    - generic: Public link base missing
+    - generic: Android store missing
+    - generic: iOS store missing
+  - paragraph: One or more required public or store destinations are not configured.
+  - link "Open Developer setup":
+    - /url: /setup#referrals
+- button "Open Next.js Dev Tools":
+- alert

@@ -4,6 +4,8 @@ import { AdminOperatorPermissionCategory, Prisma, Role } from '@prisma/client';
 import type { Job, Queue } from 'bullmq';
 import { BOOKING_TIMEOUT_QUEUE_NAME } from '../matching/booking-timeout.queue';
 import { NOTIFICATION_SEND_QUEUE_NAME } from '../notifications/notification-send.queue';
+import { notificationDataWithDeliveryContract } from '../notifications/notification-data-scope';
+import { toJson } from '../notifications/notification-push-payload';
 import { PAYMENT_REFUND_STATUS_QUEUE_NAME } from '../payments/payment-refund-status.queue';
 import { PAYMENT_STATUS_CHECK_QUEUE_NAME } from '../payments/payment-status.queue';
 import { PrismaService } from '../prisma/prisma.service';
@@ -39,6 +41,14 @@ const BACKGROUND_JOB_QUEUE_STALE_ALERT_ACTION = 'admin.background_jobs.queue_sta
 const BACKGROUND_JOB_QUEUE_STALE_RECOVERED_ACTION = 'admin.background_jobs.queue_stale_recovered';
 const BACKGROUND_JOB_RECURRING_INCIDENT_OPENED_ACTION = 'admin.background_jobs.recurring_incident_opened';
 const BACKGROUND_JOB_RECURRING_INCIDENT_RECOVERED_ACTION = 'admin.background_jobs.recurring_incident_recovered';
+const SYSTEM_MONITOR_AUDIT_FIELDS = {
+  actorId: null,
+  actorKey: 'background-job-monitor',
+  actorLabelSnapshot: 'HANDS background monitor',
+  actorType: 'SYSTEM' as const,
+  area: 'SYSTEM' as const,
+  source: 'system_monitor',
+} as const;
 const BACKGROUND_JOB_FAILURE_REVIEW_ACTIONS = [
   BACKGROUND_JOB_FAILURE_ALERT_ACTION,
   BACKGROUND_JOB_FAILURE_REGISTERED_ACTION,
@@ -640,8 +650,10 @@ export class AdminBackgroundJobsService {
         if (latestIncident?.action === BACKGROUND_JOB_RECURRING_INCIDENT_OPENED_ACTION) {
           await tx.adminAuditLog.create({
             data: {
-              actorId: latestIncident.actorId,
+              ...SYSTEM_MONITOR_AUDIT_FIELDS,
               action: BACKGROUND_JOB_FAILURE_REGISTERED_ACTION,
+              outcome: 'RECORDED',
+              severity: 'INFO',
               target,
               metadata: {
                 failedAt: failure.failedAt,
@@ -668,8 +680,10 @@ export class AdminBackgroundJobsService {
       const incident = incidentTarget
         ? await tx.adminAuditLog.create({
             data: {
-              actorId: recipients[0].id,
+              ...SYSTEM_MONITOR_AUDIT_FIELDS,
               action: BACKGROUND_JOB_RECURRING_INCIDENT_OPENED_ACTION,
+              outcome: 'OPENED',
+              severity: 'REVIEW',
               target: incidentTarget,
               metadata: {
                 firstFailureAt: failure.failedAt,
@@ -692,7 +706,7 @@ export class AdminBackgroundJobsService {
             type: 'admin.system.background_job.failed',
             title: 'Background job needs attention',
             body: `${failure.label} has a failed job that needs review.`,
-            data: {
+            data: toJson(notificationDataWithDeliveryContract({
               destination: incident
                 ? `/background-jobs/incidents/${encodeURIComponent(incident.id)}`
                 : '/background-jobs',
@@ -704,7 +718,7 @@ export class AdminBackgroundJobsService {
               jobId: failure.id,
               queueName: failure.queueName,
               source: 'background_job_failure_monitor',
-            },
+            }, 'IN_APP_ONLY')),
           },
           select: { id: true },
         });
@@ -713,8 +727,10 @@ export class AdminBackgroundJobsService {
 
       await tx.adminAuditLog.create({
         data: {
-          actorId: recipients[0].id,
+          ...SYSTEM_MONITOR_AUDIT_FIELDS,
           action: BACKGROUND_JOB_FAILURE_ALERT_ACTION,
+          outcome: 'OPENED',
+          severity: 'REVIEW',
           target,
           metadata: {
             attemptsMade: failure.attemptsMade,
@@ -794,7 +810,6 @@ export class AdminBackgroundJobsService {
           .map((job) => backgroundFailureTarget(definition.queue.name, job.id ? String(job.id) : null))
           .filter((target): target is string => Boolean(target));
         const recovered = await this.recoverRecurringFailureIncident({
-          actorId: incident.actorId,
           completedAt,
           failureTargets: [...new Set(failureTargets)],
           incidentTarget: incident.target,
@@ -809,7 +824,6 @@ export class AdminBackgroundJobsService {
   }
 
   private recoverRecurringFailureIncident(input: {
-    actorId: string;
     completedAt: string;
     failureTargets: string[];
     incidentTarget: string;
@@ -850,8 +864,10 @@ export class AdminBackgroundJobsService {
         if (backgroundFailureReviewStatus(latestReviewByTarget.get(target)) === 'RESOLVED') continue;
         await tx.adminAuditLog.create({
           data: {
-            actorId: latestIncident.actorId,
+            ...SYSTEM_MONITOR_AUDIT_FIELDS,
             action: BACKGROUND_JOB_FAILURE_RESOLVED_ACTION,
+            outcome: 'RESOLVED',
+            severity: 'NOTICE',
             target,
             metadata: {
               completedAt: input.completedAt,
@@ -866,8 +882,10 @@ export class AdminBackgroundJobsService {
       }
       await tx.adminAuditLog.create({
         data: {
-          actorId: latestIncident.actorId,
+          ...SYSTEM_MONITOR_AUDIT_FIELDS,
           action: BACKGROUND_JOB_RECURRING_INCIDENT_RECOVERED_ACTION,
+          outcome: 'RESOLVED',
+          severity: 'NOTICE',
           target: input.incidentTarget,
           metadata: {
             completedAt: input.completedAt,
@@ -927,8 +945,10 @@ export class AdminBackgroundJobsService {
         if (latest?.action !== BACKGROUND_JOB_QUEUE_STALE_ALERT_ACTION) return 'SKIPPED' as const;
         await tx.adminAuditLog.create({
           data: {
-            actorId: latest.actorId,
+            ...SYSTEM_MONITOR_AUDIT_FIELDS,
             action: BACKGROUND_JOB_QUEUE_STALE_RECOVERED_ACTION,
+            outcome: 'RESOLVED',
+            severity: 'NOTICE',
             target,
             metadata: {
               detectedAt: detectedAt.toISOString(),
@@ -959,11 +979,11 @@ export class AdminBackgroundJobsService {
             type: 'admin.system.background_job.queue_stale',
             title: 'Background queue is stale',
             body: `${queue.label} has exceeded its queue processing SLA.`,
-            data: {
+            data: toJson(notificationDataWithDeliveryContract({
               destination: `/background-jobs?queue=${encodeURIComponent(queue.name)}&review=OPEN&range=ALL`,
               queueName: queue.name,
               source: 'background_job_queue_health_monitor',
-            },
+            }, 'IN_APP_ONLY')),
           },
           select: { id: true },
         });
@@ -971,8 +991,10 @@ export class AdminBackgroundJobsService {
       }
       await tx.adminAuditLog.create({
         data: {
-          actorId: recipients[0].id,
+          ...SYSTEM_MONITOR_AUDIT_FIELDS,
           action: BACKGROUND_JOB_QUEUE_STALE_ALERT_ACTION,
+          outcome: 'OPENED',
+          severity: 'REVIEW',
           target,
           metadata: {
             detectedAt: detectedAt.toISOString(),
@@ -1471,7 +1493,7 @@ function jsonNonNegativeNumber(value: Prisma.JsonValue | undefined) {
 
 function backgroundQueueHealthEvent(row: {
   action: string;
-  actor: { email: string | null; fullName: string | null; id: string };
+  actor: { email: string | null; fullName: string | null; id: string } | null;
   createdAt: Date;
   id: string;
   metadata: Prisma.JsonValue | null;
@@ -1494,7 +1516,7 @@ function backgroundQueueHealthEvent(row: {
 }
 
 type BackgroundRecurringIncidentAuditRow = {
-  actor: { email: string | null; fullName: string | null; id: string };
+  actor: { email: string | null; fullName: string | null; id: string } | null;
   createdAt: Date;
   id: string;
   metadata: Prisma.JsonValue | null;
@@ -1526,7 +1548,7 @@ function backgroundRecurringIncidentFailure(
   origin: BackgroundRecurringIncidentAuditRow & { action: string },
   latestReview: {
     action: string;
-    actor: { email: string | null; fullName: string | null; id: string };
+    actor: { email: string | null; fullName: string | null; id: string } | null;
     createdAt: Date;
     metadata: Prisma.JsonValue | null;
     target: string;

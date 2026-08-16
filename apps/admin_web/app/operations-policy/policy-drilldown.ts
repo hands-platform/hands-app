@@ -10,6 +10,7 @@ import {
 } from './policy-booking-format';
 import type { PolicyDrilldownListView, PolicyDrilldownRow } from './operations-policy-drilldown-section';
 import { bookingPolicySnapshotDrift } from './policy-snapshot';
+import { policyCountLabel } from './policy-copy';
 
 export function buildPolicyDrilldown(
   bookings: readonly AdminBooking[],
@@ -71,7 +72,7 @@ function buildOpenMatchingRows(bookings: readonly AdminBooking[]): PolicyDrilldo
         pills: [
           { label: booking.status, className: 'pill-warn' },
           {
-            label: `${participantCount} participant(s)`,
+            label: policyCountLabel(participantCount, 'participant'),
             className: participantCount ? 'pill-info' : 'pill-neutral',
           },
           {

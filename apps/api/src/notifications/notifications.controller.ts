@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -21,7 +32,7 @@ export class NotificationsController {
 
   @Get()
   list(@CurrentUser() user: AuthenticatedUser) {
-    return this.notifications.listForUser(user.id);
+    return this.notifications.listForUser(user.id, notificationRoleForUser(user));
   }
 
   @Get('customer-inbox')
@@ -50,7 +61,7 @@ export class NotificationsController {
 
   @Patch(':id/read')
   markRead(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
-    return this.notifications.markRead(user.id, id);
+    return this.notifications.markRead(user.id, id, notificationRoleForUser(user));
   }
 
   @Patch('device-token/register')
@@ -76,4 +87,17 @@ export class NotificationsController {
   disableDeviceToken(@CurrentUser() user: AuthenticatedUser, @Body() body: DeleteDeviceTokenDto) {
     return this.notifications.disableDeviceToken(user, body);
   }
+}
+
+function notificationRoleForUser(user: AuthenticatedUser) {
+  if (user.roles.includes(Role.ADMIN)) return undefined;
+  if (user.activeRole === Role.CUSTOMER || user.activeRole === Role.PROVIDER) {
+    return user.activeRole;
+  }
+  const mobileRoles = user.roles.filter(
+    (role): role is Extract<Role, 'CUSTOMER' | 'PROVIDER'> =>
+      role === Role.CUSTOMER || role === Role.PROVIDER,
+  );
+  if (mobileRoles.length === 1) return mobileRoles[0];
+  throw new UnauthorizedException('An explicit mobile role is required for notifications');
 }

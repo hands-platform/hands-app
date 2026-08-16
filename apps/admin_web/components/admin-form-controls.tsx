@@ -83,12 +83,14 @@ type AdminFormInputProps = {
   | 'defaultValue'
   | 'autoComplete'
   | 'disabled'
+  | 'inputMode'
   | 'max'
   | 'maxLength'
   | 'min'
   | 'minLength'
   | 'onChange'
   | 'placeholder'
+  | 'pattern'
   | 'required'
   | 'step'
   | 'type'
@@ -126,6 +128,8 @@ type AdminFormStaticValueProps = {
 };
 
 type AdminFormCheckboxProps = {
+  readonly ariaDescribedBy?: string;
+  readonly ariaInvalid?: boolean;
   readonly children?: ReactNode;
   readonly className?: string;
   readonly label: string;
@@ -450,6 +454,7 @@ export function AdminFormInput({
   className,
   defaultValue,
   disabled,
+  inputMode,
   label,
   labelVisibility = 'hidden',
   max,
@@ -459,6 +464,7 @@ export function AdminFormInput({
   name,
   onChange,
   placeholder,
+  pattern,
   required,
   step,
   type = 'text',
@@ -499,6 +505,7 @@ export function AdminFormInput({
         className={dateTimeNativeInputClass(type)}
         defaultValue={defaultValue}
         disabled={disabled}
+        inputMode={inputMode}
         max={max}
         maxLength={maxLength}
         min={min}
@@ -506,6 +513,7 @@ export function AdminFormInput({
         name={name}
         onChange={onChange}
         placeholder={placeholder}
+        pattern={pattern}
         required={required}
         step={step}
         type={type}
@@ -573,6 +581,8 @@ export function AdminFormTextarea({
 }
 
 export function AdminFormCheckbox({
+  ariaDescribedBy,
+  ariaInvalid,
   checked,
   children,
   className,
@@ -587,6 +597,8 @@ export function AdminFormCheckbox({
   return (
     <label className={joinClassNames('admin-form-checkbox admin-form-control-labeled', className)}>
       <input
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
         aria-label={children ? undefined : label}
         checked={checked}
         className="admin-form-checkbox-input"

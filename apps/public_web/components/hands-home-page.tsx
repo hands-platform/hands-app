@@ -7,33 +7,16 @@ import {
 } from '../lib/public-partners';
 import type { PublicSiteLocale } from '../lib/site-content';
 import { CustomerStoriesSection } from './customer-stories-section';
+import { CreativeWellnessClone } from './creative-wellness-clone';
 import { HandsSiteFooter, HandsSiteHeader } from './hands-site-chrome';
 import { HeroVideoCard } from './hero-video-card';
 import { HomeEditorialSections } from './home-editorial-sections';
 import { HowStepsShowcase } from './how-steps-showcase';
 
-const faqs = [
-  {
-    question: 'HANDS는 어떤 서비스인가요?',
-    answer:
-      '고객이 원하는 장소와 시간에 검증된 웰니스 마사지 테라피스트를 찾고 예약할 수 있는 온디맨드 플랫폼입니다.',
-  },
-  {
-    question: '마사지 테라피스트 정보는 어떻게 확인하나요?',
-    answer:
-      '프로필, 제공 서비스, 이용 가격, 고객 리뷰와 운영 검증 상태를 한 화면에서 확인할 수 있습니다.',
-  },
-  {
-    question: '예약 후에는 어떻게 진행되나요?',
-    answer:
-      '마사지 테라피스트가 예약을 수락하면 채팅과 실시간 상태를 통해 이동부터 서비스 완료까지 확인할 수 있습니다.',
-  },
-  {
-    question: '안전 문제가 생기면 어떻게 하나요?',
-    answer:
-      '예약 기록과 채팅, 위치 기록을 기반으로 HANDS 고객지원이 신고와 분쟁 처리를 지원합니다.',
-  },
-];
+type HomeFaqItem = {
+  readonly answer: string;
+  readonly question: string;
+};
 
 const howSteps = [
   {
@@ -56,7 +39,10 @@ const howSteps = [
   },
 ] as const;
 
-const localizedFaqs: Record<Exclude<PublicSiteLocale, 'ko'>, typeof faqs> = {
+const localizedFaqs: Record<
+  Exclude<PublicSiteLocale, 'ko'>,
+  readonly HomeFaqItem[]
+> = {
   vi: [
     {
       question: 'HANDS là dịch vụ gì?',
@@ -127,80 +113,9 @@ export function HandsHomePage({
   }
 
   return (
-    <div className="hands-site hands-home">
+    <div className="hands-site hands-home creative-wellness-shell">
       <HandsSiteHeader locale={locale} theme="overlay" />
-
-      <main>
-        <section className="hero" id="top">
-          <div className="media-placeholder hero-media" aria-label="히어로 이미지 자리">
-            <span>HERO MEDIA</span>
-          </div>
-          <div className="hero-shade" aria-hidden="true" />
-          <div className="hero-content">
-            <p className="eyebrow">HANDS · WELLNESS AT YOUR DOOR</p>
-            <h1>당신이 있는 곳이 가장 편안한 웰니스 공간이 됩니다.</h1>
-            <p className="hero-copy">
-              가까운 전문 마사지 테라피스트를 찾고, 원하는 서비스를 선택하고, 익숙한 공간에서
-              편안하게 시작하세요.
-            </p>
-            <div className="hero-actions">
-              <a className="button button-light" href="#download">
-                HANDS 시작하기
-              </a>
-              <a className="text-button" href="#partners">
-                마사지 테라피스트 둘러보기 <span aria-hidden="true">↗</span>
-              </a>
-            </div>
-          </div>
-          <HeroVideoCard
-            subtitle="예약부터 완료까지 연결되는 과정을 확인하세요."
-            title="사람이 직접 전하는 마사지 테라피스트 1:1 웰니스 코칭"
-          />
-        </section>
-
-        <section className="statement-section reveal">
-          <p className="eyebrow dark">A BETTER WAY TO FEEL BETTER</p>
-          <h2>
-            집에서,
-            <br />
-            여행지에서,
-            <br />
-            지금 필요한 순간에.
-          </h2>
-          <div className="value-grid">
-            <article>
-              <span>01</span>
-              <h3>가까운 마사지 테라피스트</h3>
-              <p>현재 위치를 기준으로 이용 가능한 마사지 테라피스트를 한눈에 비교합니다.</p>
-            </article>
-            <article>
-              <span>02</span>
-              <h3>투명한 선택</h3>
-              <p>서비스, 가격, 리뷰를 확인하고 나에게 맞는 마사지 테라피스트를 선택합니다.</p>
-            </article>
-            <article>
-              <span>03</span>
-              <h3>연결된 경험</h3>
-              <p>예약, 채팅, 결제와 고객지원을 하나의 흐름으로 연결합니다.</p>
-            </article>
-          </div>
-        </section>
-
-        <HomeEditorialSections />
-
-        <HowStepsShowcase actionLabel="HANDS 시작하기" steps={howSteps} />
-
-        <CustomerStoriesSection />
-
-        <HomeFaqSection faqs={faqs} title="자주 묻는 질문" />
-
-        <HomePartnerStrip locale={locale} partners={partners} />
-
-        <HomeFinalCta locale={locale} />
-
-      </main>
-
-      <HandsSiteFooter locale={locale} />
+      <CreativeWellnessClone />
     </div>
   );
 }

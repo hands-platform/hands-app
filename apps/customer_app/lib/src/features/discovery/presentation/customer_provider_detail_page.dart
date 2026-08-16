@@ -96,7 +96,10 @@ class _ProviderDetailPageState extends State<ProviderDetailPage> {
           final galleryImageUrls = _partnerMediaUrls(detail);
           final availability = _partnerAvailability(detail);
           final city = detail['city']?.toString().trim() ?? '';
-          final serviceGroups = customerServiceOptionGroups(services);
+          final serviceGroups = customerServiceOptionGroups(
+            services,
+            requestedLocale: Localizations.localeOf(context).languageCode,
+          );
 
           return CustomScrollView(
             slivers: [
@@ -172,8 +175,8 @@ class _ProviderDetailPageState extends State<ProviderDetailPage> {
                           ),
                           PartnerMetaItem(
                             icon: Icons.location_on_outlined,
-                            label: formatDistance(asDouble(
-                                widget.providerPreview['distanceMeters'])),
+                            label:
+                                providerDistanceLabel(widget.providerPreview),
                           ),
                           if (city.isNotEmpty)
                             PartnerMetaItem(

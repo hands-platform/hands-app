@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, Optional, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisStateService } from '../redis/redis-state.service';
 import { AuthenticatedUser } from './auth.types';
 import {
   adminRealtimeTokenSecretFromConfig,
@@ -13,10 +14,14 @@ import { normalizeVietnamPhoneIdentifier } from './phone-number';
 
 type NestJwtPayload = {
   activeRole?: Role;
+  exp?: number;
+  familyId?: string;
   role?: Role;
   sub?: string;
   roles?: Role[];
 };
+
+type NestAuthenticatedUser = AuthenticatedUser & { sessionFamilyId: string };
 
 type SupabaseJwtPayload = {
   sub?: string;
@@ -24,6 +29,7 @@ type SupabaseJwtPayload = {
   iss?: string;
   phone?: string;
   email?: string;
+  exp?: number;
   app_metadata?: {
     role?: string;
     roles?: string[];
@@ -39,6 +45,7 @@ type AdminRealtimeJwtPayload = {
   role?: Role;
   jti?: string;
   exp?: number;
+  developmentFallback?: boolean;
 };
 
 type AdminWebApiJwtPayload = AdminRealtimeJwtPayload;
@@ -50,13 +57,19 @@ const ADMIN_WEB_API_TOKEN_TYPE = 'admin-web-api';
 const ADMIN_WEB_API_TOKEN_AUDIENCE = 'hands-api';
 const ADMIN_WEB_API_TOKEN_SCOPE = 'admin:api';
 const SUPABASE_MOBILE_ROLES = new Set<Role>([Role.CUSTOMER, Role.PROVIDER]);
+const DEFAULT_ADMIN_WEB_SESSION_IDLE_TIMEOUT_SECONDS = 30 * 60;
+const ADMIN_AUTHENTICATION_DENIAL_AUDIT_WINDOW_MS = 60_000;
 
 @Injectable()
 export class AuthTokenService {
+  private readonly logger = new Logger(AuthTokenService.name);
+  private readonly localAuthenticationDenialAuditAt = new Map<string, number>();
+
   constructor(
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
+    @Optional() private readonly redisState?: RedisStateService,
   ) {}
 
   async authenticateBearerToken(token: string): Promise<AuthenticatedUser> {
@@ -67,10 +80,11 @@ export class AuthTokenService {
 
     const nestUser = this.tryVerifyNestJwt(token);
     if (nestUser) {
-      return nestUser;
+      const currentNestUser = await this.verifyCurrentMobileUser(nestUser);
+      if (currentNestUser) return currentNestUser;
     }
 
-    const supabaseUser = await this.tryVerifySupabaseJwt(token);
+    const supabaseUser = await this.tryVerifySupabaseJwt(token, [], true);
     if (supabaseUser) {
       return supabaseUser;
     }
@@ -81,8 +95,13 @@ export class AuthTokenService {
   async authenticateSupabaseBearerToken(
     token: string,
     requestedRoles: Role[] = [],
+    options: { requireAuthServer?: boolean } = {},
   ): Promise<AuthenticatedUser> {
-    const supabaseUser = await this.tryVerifySupabaseJwt(token, requestedRoles);
+    const supabaseUser = await this.tryVerifySupabaseJwt(
+      token,
+      requestedRoles,
+      options.requireAuthServer ?? false,
+    );
     if (!supabaseUser) {
       throw new UnauthorizedException('Invalid Supabase bearer token');
     }
@@ -102,13 +121,14 @@ export class AuthTokenService {
     return user;
   }
 
-  private tryVerifyNestJwt(token: string): AuthenticatedUser | null {
+  private tryVerifyNestJwt(token: string): NestAuthenticatedUser | null {
     try {
       const payload = this.jwt.verify<NestJwtPayload>(token, {
+        algorithms: ['HS256'],
         secret: jwtAccessSecretFromConfig(this.config),
       });
 
-      if (!payload.sub) {
+      if (!payload.sub || !payload.exp || !payload.familyId || nestJwtCarriesAdminRole(payload)) {
         return null;
       }
 
@@ -117,9 +137,68 @@ export class AuthTokenService {
         activeRole: payload.activeRole ?? payload.role,
         roles: payload.roles ?? [],
         authProvider: 'nest',
+        sessionFamilyId: payload.familyId,
+        ...(payload.exp ? { tokenExpiresAt: payload.exp * 1000 } : {}),
       };
     } catch {
       return null;
+    }
+  }
+
+  private async verifyCurrentMobileUser(
+    tokenUser: NestAuthenticatedUser,
+  ): Promise<AuthenticatedUser | null> {
+    if (!(await this.isMobileSessionFamilyActive(tokenUser.sessionFamilyId))) {
+      return null;
+    }
+    const claimedRoles = tokenUser.roles.filter((role) => SUPABASE_MOBILE_ROLES.has(role));
+    if (
+      claimedRoles.length === 0 ||
+      claimedRoles.length !== tokenUser.roles.length ||
+      (tokenUser.activeRole && !claimedRoles.includes(tokenUser.activeRole))
+    ) {
+      return null;
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: tokenUser.id },
+      select: {
+        id: true,
+        roles: true,
+        customerProfile: { select: { id: true } },
+        providerProfile: { select: { id: true, deletedAt: true } },
+      },
+    });
+    if (!user || user.roles.some((role) => !SUPABASE_MOBILE_ROLES.has(role))) {
+      return null;
+    }
+
+    const currentRoles = claimedRoles.filter((role) => user.roles.includes(role));
+    if (
+      currentRoles.length !== claimedRoles.length ||
+      (currentRoles.includes(Role.CUSTOMER) && !user.customerProfile) ||
+      (currentRoles.includes(Role.PROVIDER) && (!user.providerProfile || user.providerProfile.deletedAt))
+    ) {
+      return null;
+    }
+
+    return {
+      ...tokenUser,
+      activeRole: tokenUser.activeRole ?? currentRoles[0],
+      roles: currentRoles,
+    };
+  }
+
+  private async isMobileSessionFamilyActive(familyId: string) {
+    if (!this.redisState) {
+      this.logger.warn('Mobile access-token revocation state is unavailable');
+      return false;
+    }
+    try {
+      return !(await this.redisState.isRefreshFamilyRevoked(familyId));
+    } catch {
+      this.logger.warn('Mobile access-token revocation check failed');
+      return false;
     }
   }
 
@@ -131,6 +210,7 @@ export class AuthTokenService {
     let payload: AdminRealtimeJwtPayload;
     try {
       payload = this.jwt.verify<AdminRealtimeJwtPayload>(token, {
+        algorithms: ['HS256'],
         secret: adminRealtimeTokenSecretFromConfig(this.config),
       });
     } catch {
@@ -141,7 +221,9 @@ export class AuthTokenService {
       !payload.sub ||
       payload.typ !== ADMIN_REALTIME_TOKEN_TYPE ||
       payload.scope !== ADMIN_REALTIME_TOKEN_SCOPE ||
-      payload.role !== Role.ADMIN
+      payload.role !== Role.ADMIN ||
+      !payload.jti ||
+      !payload.exp
     ) {
       return null;
     }
@@ -151,28 +233,7 @@ export class AuthTokenService {
       return null;
     }
 
-    const user = await this.prisma.user.findFirst({
-      where: {
-        roles: { has: Role.ADMIN },
-        OR: [
-          { id: payload.sub },
-          { email: payload.sub },
-          { phone: payload.sub },
-          { adminOperatorCredential: { is: { email: payload.sub } } },
-        ],
-      },
-      select: { id: true, roles: true },
-    });
-    if (!user) {
-      return null;
-    }
-
-    return {
-      id: user.id,
-      activeRole: Role.ADMIN,
-      roles: user.roles,
-      authProvider: 'admin-realtime',
-    };
+    return this.verifyAdminWebSession(payload, 'admin-realtime');
   }
 
   private async tryVerifyAdminWebApiJwt(token: string): Promise<AuthenticatedUser | null> {
@@ -183,6 +244,7 @@ export class AuthTokenService {
     let payload: AdminWebApiJwtPayload;
     try {
       payload = this.jwt.verify<AdminWebApiJwtPayload>(token, {
+        algorithms: ['HS256'],
         secret: adminWebApiTokenSecretFromConfig(this.config),
       });
     } catch {
@@ -195,11 +257,174 @@ export class AuthTokenService {
       payload.typ !== ADMIN_WEB_API_TOKEN_TYPE ||
       payload.scope !== ADMIN_WEB_API_TOKEN_SCOPE ||
       payload.role !== Role.ADMIN ||
+      !payload.jti ||
+      !payload.exp ||
       !audiences.includes(ADMIN_WEB_API_TOKEN_AUDIENCE)
     ) {
       return null;
     }
 
+    return this.verifyAdminWebSession(payload, 'admin-web');
+  }
+
+  private async verifyAdminWebSession(
+    payload: AdminWebApiJwtPayload,
+    authProvider: 'admin-realtime' | 'admin-web',
+  ): Promise<AuthenticatedUser | null> {
+    if (!payload.sub || !payload.jti) {
+      return null;
+    }
+    const session = await this.prisma.adminWebSession.findUnique({
+      where: { id: payload.jti },
+      select: {
+        id: true,
+        userId: true,
+        expiresAt: true,
+        mfaVerifiedAt: true,
+        revokedAt: true,
+        lastSeenAt: true,
+        user: {
+          select: {
+            id: true,
+            roles: true,
+            adminOperatorPermission: { select: { id: true, categories: true, version: true } },
+            adminOperatorCredential: { select: { disabledAt: true, lockedUntil: true } },
+          },
+        },
+      },
+    });
+    const now = new Date();
+    const idleTimeoutMs = this.adminWebSessionIdleTimeoutMs();
+    const denialReason = !session
+      ? 'SESSION_NOT_FOUND'
+      : session.userId !== payload.sub
+        ? 'SESSION_IDENTITY_MISMATCH'
+        : session.revokedAt
+          ? 'SESSION_REVOKED'
+          : session.expiresAt <= now
+            ? 'SESSION_EXPIRED'
+            : now.getTime() - session.lastSeenAt.getTime() >= idleTimeoutMs
+              ? 'SESSION_IDLE_EXPIRED'
+              : !session.user.roles.includes(Role.ADMIN)
+              ? 'ADMIN_ROLE_REVOKED'
+              : !session.user.adminOperatorPermission
+                ? 'ADMIN_PERMISSION_MISSING'
+                : !session.user.adminOperatorCredential
+                  ? 'ADMIN_CREDENTIAL_MISSING'
+                  : session.user.adminOperatorCredential.disabledAt
+                    ? 'ADMIN_CREDENTIAL_DISABLED'
+                    : (session.user.adminOperatorCredential.lockedUntil?.getTime() ?? 0) > now.getTime()
+                      ? 'ADMIN_CREDENTIAL_LOCKED'
+                      : null;
+    if (denialReason) {
+      if (authProvider === 'admin-realtime' && payload.developmentFallback === true) {
+        const fallback = await this.tryVerifyDevelopmentAdminRealtimeFallback(payload);
+        if (fallback) return fallback;
+      }
+      await this.recordAdminAuthenticationDenial(authProvider, payload.jti, denialReason);
+      return null;
+    }
+    if (!session || !session.user.adminOperatorPermission || !session.user.adminOperatorCredential) {
+      return null;
+    }
+    if (authProvider === 'admin-realtime' && !session.mfaVerifiedAt) {
+      await this.recordAdminAuthenticationDenial(authProvider, payload.jti, 'SESSION_MFA_UNVERIFIED');
+      return null;
+    }
+    if (now.getTime() - session.lastSeenAt.getTime() >= 60_000) {
+      await this.prisma.adminWebSession.update({ where: { id: session.id }, data: { lastSeenAt: now } });
+    }
+
+    return {
+      id: session.user.id,
+      activeRole: Role.ADMIN,
+      roles: session.user.roles,
+      authProvider,
+      sessionId: session.id,
+      adminPermissionCategories: session.user.adminOperatorPermission.categories,
+      adminPermissionVersion: session.user.adminOperatorPermission.version,
+      adminMfaEnrollmentRequired: !session.mfaVerifiedAt,
+      ...(payload.exp ? { tokenExpiresAt: payload.exp * 1000 } : {}),
+    };
+  }
+
+  private adminWebSessionIdleTimeoutMs() {
+    const configured = Number(this.config.get<string>('ADMIN_WEB_SESSION_IDLE_TIMEOUT_SECONDS'));
+    const seconds = Number.isFinite(configured) && configured >= 60
+      ? configured
+      : DEFAULT_ADMIN_WEB_SESSION_IDLE_TIMEOUT_SECONDS;
+    return seconds * 1000;
+  }
+
+  private async recordAdminAuthenticationDenial(
+    authProvider: 'admin-realtime' | 'admin-web',
+    sessionId: string,
+    reason: string,
+  ) {
+    if (!(await this.shouldRecordAdminAuthenticationDenial(authProvider, sessionId, reason))) return;
+    try {
+      await this.prisma.adminAuditLog.create({
+        data: {
+          actorId: null,
+          action: authProvider === 'admin-realtime'
+            ? 'admin_operator.realtime.authentication_denied'
+            : 'admin_operator.rest.authentication_denied',
+          target: `admin_web_session:${sessionId}`,
+          metadata: { authProvider, reason, sessionId },
+        },
+      });
+    } catch {
+      this.logger.warn('Could not record Admin authentication denial');
+    }
+  }
+
+  private async shouldRecordAdminAuthenticationDenial(
+    authProvider: 'admin-realtime' | 'admin-web',
+    sessionId: string,
+    reason: string,
+  ) {
+    const key = `${authProvider}:${sessionId}:${reason}`;
+    if (this.redisState) {
+      try {
+        const result = await this.redisState.consumeRateLimit(
+          `audit:admin-authentication-denial:${key}`,
+          ADMIN_AUTHENTICATION_DENIAL_AUDIT_WINDOW_MS,
+        );
+        return result.count === 1;
+      } catch {
+        this.logger.warn('Admin authentication denial audit limiter unavailable');
+      }
+    }
+
+    const now = Date.now();
+    const lastRecordedAt = this.localAuthenticationDenialAuditAt.get(key) ?? 0;
+    if (now - lastRecordedAt < ADMIN_AUTHENTICATION_DENIAL_AUDIT_WINDOW_MS) return false;
+    this.localAuthenticationDenialAuditAt.set(key, now);
+    if (this.localAuthenticationDenialAuditAt.size > 1_000) {
+      for (const [candidate, recordedAt] of this.localAuthenticationDenialAuditAt) {
+        if (now - recordedAt >= ADMIN_AUTHENTICATION_DENIAL_AUDIT_WINDOW_MS) {
+          this.localAuthenticationDenialAuditAt.delete(candidate);
+        }
+      }
+      while (this.localAuthenticationDenialAuditAt.size > 1_000) {
+        const oldestKey = this.localAuthenticationDenialAuditAt.keys().next().value;
+        if (typeof oldestKey !== 'string') break;
+        this.localAuthenticationDenialAuditAt.delete(oldestKey);
+      }
+    }
+    return true;
+  }
+
+  private async tryVerifyDevelopmentAdminRealtimeFallback(
+    payload: AdminRealtimeJwtPayload,
+  ): Promise<AuthenticatedUser | null> {
+    if (
+      this.config.get<string>('NODE_ENV') === 'production' ||
+      this.config.get<string>('ADMIN_WEB_ALLOW_DEV_REALTIME_TOKEN') !== 'true' ||
+      !payload.sub
+    ) {
+      return null;
+    }
     const user = await this.prisma.user.findFirst({
       where: {
         roles: { has: Role.ADMIN },
@@ -210,25 +435,34 @@ export class AuthTokenService {
           { adminOperatorCredential: { is: { email: payload.sub } } },
         ],
       },
-      select: { id: true, roles: true },
+      select: {
+        id: true,
+        roles: true,
+        adminOperatorPermission: { select: { categories: true, version: true } },
+      },
     });
     if (!user) {
       return null;
     }
-
     return {
       id: user.id,
       activeRole: Role.ADMIN,
       roles: user.roles,
-      authProvider: 'admin-web',
+      authProvider: 'admin-realtime',
+      adminPermissionCategories: user.adminOperatorPermission?.categories ?? [],
+      adminPermissionVersion: user.adminOperatorPermission?.version,
+      ...(payload.exp ? { tokenExpiresAt: payload.exp * 1000 } : {}),
     };
   }
 
   private async tryVerifySupabaseJwt(
     token: string,
     requestedRoles: Role[] = [],
+    requireAuthServer = false,
   ): Promise<AuthenticatedUser | null> {
-    const payload = await this.verifySupabaseJwt(token);
+    const payload = requireAuthServer
+      ? await this.verifySupabaseJwtWithAuthServer(token)
+      : await this.verifySupabaseJwt(token);
 
     if (!payload?.sub) {
       return null;
@@ -245,6 +479,7 @@ export class AuthTokenService {
       roles: tokenRoles,
       authProvider: 'supabase',
       externalUserId: payload.sub,
+      ...(payload.exp ? { tokenExpiresAt: payload.exp * 1000 } : {}),
     };
   }
 
@@ -253,6 +488,7 @@ export class AuthTokenService {
     if (supabaseJwtSecret) {
       try {
         return this.jwt.verify<SupabaseJwtPayload>(token, {
+          algorithms: ['HS256'],
           secret: supabaseJwtSecret,
         });
       } catch {
@@ -433,6 +669,14 @@ export class AuthTokenService {
       },
     });
   }
+}
+
+function nestJwtCarriesAdminRole(payload: NestJwtPayload) {
+  return (
+    payload.activeRole === Role.ADMIN ||
+    payload.role === Role.ADMIN ||
+    payload.roles?.includes(Role.ADMIN) === true
+  );
 }
 
 function assertSupabaseMobileIdentityBoundary(roles: Role[]) {

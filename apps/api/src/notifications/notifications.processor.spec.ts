@@ -1,12 +1,74 @@
 import { Role } from '@prisma/client';
 import { chatNotificationRoutingData } from './notification-push-payload';
 import {
+  adminPushDeliveryState,
+  adminPushLatestDeliveryCounts,
   NotificationRetryProcessor,
   notificationSendPushDeviceOrder,
 } from './notifications.processor';
 import { NotificationsService } from './notifications.service';
 
+function createNotificationRetryProcessor(
+  prisma: {
+    notification: { findUnique: ReturnType<typeof vi.fn> };
+    pushDevice?: { findMany?: ReturnType<typeof vi.fn> };
+  },
+  pushDelivery: Record<string, unknown>,
+) {
+  prisma.pushDevice ??= {};
+  prisma.pushDevice.findMany ??= vi.fn(async (input: {
+    take?: number;
+    where?: {
+      id?: { in?: string[] };
+      locale?: { startsWith?: string };
+      role?: Role;
+    };
+  }) => {
+    const latestLookup = prisma.notification.findUnique.mock.results.at(-1)?.value;
+    const notification = latestLookup ? await latestLookup : null;
+    const devices = (notification?.user?.pushDevices ?? []).filter(
+      (device: { id: string; role?: Role; locale?: string }) =>
+        (!input.where?.role || device.role === input.where.role) &&
+        (!input.where?.id?.in || input.where.id.in.includes(device.id)) &&
+        (!input.where?.locale?.startsWith ||
+          device.locale?.toLowerCase().startsWith(input.where.locale.startsWith.toLowerCase())),
+    );
+    return devices.slice(0, input.take);
+  });
+  return new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+}
+
 describe('NotificationRetryProcessor', () => {
+  it('skips an ambiguous notification without querying or sending to app devices', async () => {
+    const prisma = {
+      notification: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'notification-ambiguous',
+          userId: 'user-1',
+          title: 'New message',
+          body: 'A new message is available.',
+          type: 'chat.message.created',
+          data: { chatRoomId: 'chat-1' },
+          deliveries: [],
+        }),
+      },
+      pushDevice: { findMany: vi.fn() },
+    };
+    const pushDelivery = { send: vi.fn() };
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
+
+    await expect(
+      processor.process({ data: { notificationId: 'notification-ambiguous' } } as never),
+    ).resolves.toEqual({
+      skipped: true,
+      reason: 'MISSING_TARGET_ROLE',
+      notificationId: 'notification-ambiguous',
+    });
+
+    expect(prisma.pushDevice.findMany).not.toHaveBeenCalled();
+    expect(pushDelivery.send).not.toHaveBeenCalled();
+  });
+
   it('preserves the Partner chat contract from persistence through queued FCM delivery', async () => {
     let storedNotification: Record<string, unknown> | undefined;
     const tx = {
@@ -70,7 +132,7 @@ describe('NotificationRetryProcessor', () => {
       }),
     };
     const notifications = new NotificationsService(prisma as never, queue as never);
-    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
 
     await notifications.create({
       userId: 'partner-user-1',
@@ -115,6 +177,7 @@ describe('NotificationRetryProcessor', () => {
         destination: 'chat',
         bookingId: 'booking-1',
         chatRoomId: 'chat-room-1',
+        targetRole: Role.PROVIDER,
         type: 'chat.message.created',
         notificationId: 'notification-chat-1',
       },
@@ -132,7 +195,7 @@ describe('NotificationRetryProcessor', () => {
       },
     };
     const pushDelivery = { send: vi.fn() };
-    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
 
     await expect(processor.process({ data: { notificationId: 'missing' } } as never)).resolves.toEqual({
       skipped: true,
@@ -161,7 +224,7 @@ describe('NotificationRetryProcessor', () => {
       },
     };
     const pushDelivery = { send: vi.fn() };
-    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
 
     await expect(
       processor.process({ data: { notificationId: 'notification-1' } } as never),
@@ -174,23 +237,11 @@ describe('NotificationRetryProcessor', () => {
 
     expect(prisma.operationalPolicySetting.findUnique).not.toHaveBeenCalled();
     expect(pushDelivery.send).not.toHaveBeenCalled();
-    expect(prisma.notification.findUnique).toHaveBeenCalledWith(
+    expect(prisma.pushDevice.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        include: expect.objectContaining({
-          deliveries: {
-            where: { status: 'SENT' },
-            select: { pushDeviceId: true },
-          },
-          user: {
-            include: {
-              pushDevices: expect.objectContaining({
-                orderBy: notificationSendPushDeviceOrder,
-                take: 10,
-                where: { enabled: true },
-              }),
-            },
-          },
-        }),
+        orderBy: notificationSendPushDeviceOrder,
+        take: 10,
+        where: expect.objectContaining({ enabled: true, role: Role.PROVIDER, userId: 'user-1' }),
       }),
     );
   });
@@ -228,7 +279,7 @@ describe('NotificationRetryProcessor', () => {
         response: { messageId: 'fcm-message-1' },
       }),
     };
-    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
 
     await processor.process({ data: { notificationId: 'notification-1' } } as never);
 
@@ -272,7 +323,7 @@ describe('NotificationRetryProcessor', () => {
         response: { reason: 'FCM push not enabled for partner alerts.' },
       }),
     };
-    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
 
     await processor.process({ data: { notificationId: 'notification-1' } } as never);
 
@@ -316,7 +367,7 @@ describe('NotificationRetryProcessor', () => {
         response: { messageId: 'fcm-message-1' },
       }),
     };
-    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
 
     await processor.process({ data: { notificationId: 'notification-1' } } as never);
 
@@ -366,7 +417,7 @@ describe('NotificationRetryProcessor', () => {
         response: { messageId: 'fcm-message-1' },
       }),
     };
-    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
 
     await expect(
       processor.process({ data: { notificationId: 'notification-1' } } as never),
@@ -436,7 +487,7 @@ describe('NotificationRetryProcessor', () => {
         response: { messageId: 'fcm-message-1' },
       }),
     };
-    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
 
     await expect(
       processor.process({ data: { notificationId: 'notification-1' } } as never),
@@ -483,7 +534,7 @@ describe('NotificationRetryProcessor', () => {
       },
     };
     const pushDelivery = { send: vi.fn() };
-    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
 
     await expect(
       processor.process({ data: { notificationId: 'notification-1' } } as never),
@@ -537,7 +588,7 @@ describe('NotificationRetryProcessor', () => {
         response: { messageId: 'fcm-message-1' },
       }),
     };
-    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
 
     await expect(
       processor.process({ data: { notificationId: 'notification-1' } } as never),
@@ -603,7 +654,7 @@ describe('NotificationRetryProcessor', () => {
           response: { reason: 'temporary provider error for fcm-token-2' },
         }),
     };
-    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
 
     await expect(
       processor.process({ data: { notificationId: 'notification-1' } } as never),
@@ -662,11 +713,16 @@ describe('NotificationRetryProcessor', () => {
           title: 'Booking update',
           body: 'A booking update is available.',
           type: 'chat.message.created',
-          data: { chatRoomId: 'chat-1', internalNote: 'do not send' },
+          data: {
+            chatRoomId: 'chat-1',
+            internalNote: 'do not send',
+            targetRole: Role.PROVIDER,
+          },
           user: {
             pushDevices: [
               {
                 id: 'device-1',
+                role: Role.PROVIDER,
                 token: 'fcm-token-1',
               },
             ],
@@ -686,7 +742,7 @@ describe('NotificationRetryProcessor', () => {
         response: { reason: 'registration token fcm-token-1 leaked from provider response' },
       }),
     };
-    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
 
     await expect(
       processor.process({ data: { notificationId: 'notification-1' } } as never),
@@ -710,6 +766,7 @@ describe('NotificationRetryProcessor', () => {
       body: 'A booking update is available.',
       data: {
         chatRoomId: 'chat-1',
+        targetRole: Role.PROVIDER,
         type: 'chat.message.created',
         notificationId: 'notification-1',
       },
@@ -731,6 +788,69 @@ describe('NotificationRetryProcessor', () => {
     expect(tx.pushDevice.update).toHaveBeenCalledWith({
       where: { id: 'device-1' },
       data: { enabled: false, lastSeenAt: expect.any(Date) },
+    });
+  });
+});
+
+describe('adminPushDeliveryState', () => {
+  it.each([
+    {
+      label: 'keeps the campaign processing while any device is pending',
+      input: {
+        eligibleDeviceCount: 3,
+        deliveredDeviceCount: 1,
+        failedDeviceCount: 0,
+        skippedDeviceCount: 0,
+      },
+      expected: { pendingDeviceCount: 2, status: 'PROCESSING' },
+    },
+    {
+      label: 'completes only when every eligible device succeeded',
+      input: {
+        eligibleDeviceCount: 2,
+        deliveredDeviceCount: 2,
+        failedDeviceCount: 0,
+        skippedDeviceCount: 0,
+      },
+      expected: { pendingDeviceCount: 0, status: 'COMPLETED' },
+    },
+    {
+      label: 'records a partial failure when success and terminal failure coexist',
+      input: {
+        eligibleDeviceCount: 3,
+        deliveredDeviceCount: 1,
+        failedDeviceCount: 1,
+        skippedDeviceCount: 1,
+      },
+      expected: { pendingDeviceCount: 0, status: 'PARTIAL_FAILED' },
+    },
+    {
+      label: 'fails when no eligible device succeeded',
+      input: {
+        eligibleDeviceCount: 2,
+        deliveredDeviceCount: 0,
+        failedDeviceCount: 2,
+        skippedDeviceCount: 0,
+      },
+      expected: { pendingDeviceCount: 0, status: 'FAILED' },
+    },
+  ])('$label', ({ input, expected }) => {
+    expect(adminPushDeliveryState(input)).toEqual(expected);
+  });
+});
+
+describe('adminPushLatestDeliveryCounts', () => {
+  it('uses only the latest attempt per device after a controlled retry', () => {
+    expect(
+      adminPushLatestDeliveryCounts([
+        { pushDeviceId: 'device-1', status: 'SENT' },
+        { pushDeviceId: 'device-1', status: 'FAILED' },
+        { pushDeviceId: 'device-2', status: 'SKIPPED' },
+      ]),
+    ).toEqual({
+      deliveredDeviceCount: 1,
+      failedDeviceCount: 0,
+      recordedSkippedDeviceCount: 1,
     });
   });
 });

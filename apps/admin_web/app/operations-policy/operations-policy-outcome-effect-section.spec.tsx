@@ -32,24 +32,24 @@ describe('OperationsPolicyOutcomeEffectSection', () => {
         ],
         metrics: [
           {
-            helper: '2/3 sampled booking(s) reached a selected or active Partner.',
+            helper: '2/3 sampled bookings reached a selected or active Partner.',
             label: 'Matched rate',
             value: '67%',
           },
         ],
         rows: [
           {
-            avgBackupInvites: '2 partner(s)',
-            avgParticipants: '3 partner(s)',
+            avgBackupInvites: '2 Partners',
+            avgParticipants: '3 Partners',
             completedRate: '33%',
             key: 'Marketplace policy:10 km',
             matchedRate: '67%',
-            outcomeDetail: '0 closed outcome(s) to review / live value now 10 km.',
+            outcomeDetail: '0 closed outcomes to review / live value now 10 km.',
             outcomeLabel: 'On track',
             outcomePill: 'pill-success',
             operatorRead: 'This cohort is currently performing at or above average.',
             policy: 'Marketplace policy',
-            sample: '3 booking(s)',
+            sample: '3 bookings',
             sampleRaw: 3,
             value: '10 km',
           },
@@ -62,7 +62,7 @@ describe('OperationsPolicyOutcomeEffectSection', () => {
 
     expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
     expect(rendered).toContain('Policy outcome effect');
-    expect(rendered).toContain('3 booking(s) with saved policy');
+    expect(rendered).toContain('3 bookings with saved policy');
     expect(rendered).toContain('Matched rate');
     expect(rendered).toContain('Marketplace policy');
     expect(rendered).toContain('Policy snapshots are measurable');
@@ -80,7 +80,7 @@ describe('OperationsPolicyOutcomeEffectSection', () => {
       }),
     );
 
-    expect(rendered).toContain('0 booking(s) with saved policy');
+    expect(rendered).toContain('0 bookings with saved policy');
     expect(rendered).toContain('No policy snapshots are available yet');
     expect(rendered).toContain('Partners accept, reject, or complete');
   });
@@ -101,8 +101,8 @@ describe('OperationsPolicyOutcomeEffectSection', () => {
         metrics: [],
         rows: [
           {
-            avgBackupInvites: '2 partner(s)',
-            avgParticipants: '3 partner(s)',
+            avgBackupInvites: '2 Partners',
+            avgParticipants: '3 Partners',
             completedRate: '33%',
             key: 'Marketplace policy:10 km',
             matchedRate: '67%',
@@ -111,7 +111,7 @@ describe('OperationsPolicyOutcomeEffectSection', () => {
             outcomePill: 'pill pill-info',
             operatorRead: 'This cohort needs more evidence.',
             policy: 'Marketplace policy',
-            sample: '3 booking(s)',
+            sample: '3 bookings',
             sampleRaw: 3,
             value: '10 km',
           },

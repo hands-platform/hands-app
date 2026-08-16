@@ -3,14 +3,15 @@ import { readSearchParam } from '../../../lib/date-range';
 export type PushCampaignDateRange = 'all' | 'today' | 'yesterday' | '7d' | '30d';
 
 const PUSH_CAMPAIGN_API_TAKE = 20;
+const ICT_OFFSET_MS = 7 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const pushCampaignDateRangeLinks = [
   { label: 'Today', range: 'today' },
-  { label: 'Previous day', range: 'yesterday' },
-  { label: 'Last 7 days', range: '7d' },
-  { label: 'Last 30 days', range: '30d' },
-  { label: 'All loaded', range: 'all' },
+  { label: 'Yesterday', range: 'yesterday' },
+  { label: '7 days', range: '7d' },
+  { label: '30 days', range: '30d' },
+  { label: 'All history', range: 'all' },
 ] as const satisfies readonly { label: string; range: PushCampaignDateRange }[];
 
 export function buildPushCampaignApiHref(params: Record<string, string | string[] | undefined>) {
@@ -18,54 +19,23 @@ export function buildPushCampaignApiHref(params: Record<string, string | string[
   const page = normalizePushCampaignPage(readSearchParam(params.campaignPage));
   const query = new URLSearchParams({ take: String(PUSH_CAMPAIGN_API_TAKE) });
   const skip = (page - 1) * PUSH_CAMPAIGN_API_TAKE;
-  if (skip > 0) {
-    query.set('skip', String(skip));
-  }
-  const window = pushCampaignDateRangeWindow(range);
-  if (window.from) {
-    query.set('from', window.from.toISOString());
-  }
-  if (window.to) {
-    query.set('to', window.to.toISOString());
-  }
+  if (skip) query.set('skip', String(skip));
+  appendRange(query, range);
   return `/admin/notifications/push-campaigns?${query.toString()}`;
 }
 
 export function buildPushCampaignSummaryApiHref(params: Record<string, string | string[] | undefined>) {
-  const range = normalizePushCampaignDateRange(readSearchParam(params.campaignRange));
   const query = new URLSearchParams();
-  const window = pushCampaignDateRangeWindow(range);
-  if (window.from) {
-    query.set('from', window.from.toISOString());
-  }
-  if (window.to) {
-    query.set('to', window.to.toISOString());
-  }
-  const value = query.toString();
-  return value ? `/admin/notifications/push-campaigns/summary?${value}` : '/admin/notifications/push-campaigns/summary';
+  appendRange(query, normalizePushCampaignDateRange(readSearchParam(params.campaignRange)));
+  return query.size
+    ? `/admin/notifications/push-campaigns/summary?${query.toString()}`
+    : '/admin/notifications/push-campaigns/summary';
 }
 
-export function buildPushCampaignListHref(
-  range: PushCampaignDateRange,
-  params: Record<string, string | string[] | undefined> = {},
-) {
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (key === 'campaignRange' || key === 'campaignPage' || key === 'preview') {
-      continue;
-    }
-    const values = Array.isArray(value) ? value : [value];
-    for (const item of values) {
-      if (typeof item === 'string' && item.trim()) {
-        query.append(key, item);
-      }
-    }
-  }
-  if (range !== 'today') {
-    query.set('campaignRange', range);
-  }
-  const value = query.toString();
-  return value ? `/notifications/push-send?${value}` : '/notifications/push-send';
+export function buildPushCampaignListHref(range: PushCampaignDateRange) {
+  return range === 'today'
+    ? '/notifications/push-send'
+    : `/notifications/push-send?campaignRange=${range}`;
 }
 
 export function buildPushCampaignPageHref(
@@ -73,127 +43,62 @@ export function buildPushCampaignPageHref(
   params: Record<string, string | string[] | undefined> = {},
 ) {
   const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (key === 'campaignPage' || key === 'preview') {
-      continue;
-    }
-    const values = Array.isArray(value) ? value : [value];
-    for (const item of values) {
-      if (typeof item === 'string' && item.trim()) {
-        query.append(key, item);
-      }
-    }
-  }
+  const range = normalizePushCampaignDateRange(readSearchParam(params.campaignRange));
+  if (range !== 'today') query.set('campaignRange', range);
   const normalizedPage = Math.max(1, Math.trunc(page));
-  if (normalizedPage > 1) {
-    query.set('campaignPage', String(normalizedPage));
-  }
-  const value = query.toString();
-  return value ? `/notifications/push-send?${value}` : '/notifications/push-send';
+  if (normalizedPage > 1) query.set('campaignPage', String(normalizedPage));
+  return query.size ? `/notifications/push-send?${query.toString()}` : '/notifications/push-send';
 }
 
 export function pushCampaignDateRangeLabel(range: PushCampaignDateRange) {
-  if (range === 'today') {
-    return 'Today';
-  }
-  if (range === 'yesterday') {
-    return 'Previous day';
-  }
-  if (range === '7d') {
-    return 'Last 7 days';
-  }
-  if (range === '30d') {
-    return 'Last 30 days';
-  }
-  return 'All loaded';
+  return pushCampaignDateRangeLinks.find((item) => item.range === range)?.label ?? 'Today';
 }
 
 export function normalizePushCampaignDateRange(value: string): PushCampaignDateRange {
-  if (value === 'all' || value === 'today' || value === 'yesterday' || value === '7d' || value === '30d') {
-    return value;
-  }
-  return 'today';
+  return value === 'all' || value === 'yesterday' || value === '7d' || value === '30d'
+    ? value
+    : 'today';
 }
 
 export function normalizePushCampaignPage(value: string) {
   const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return 1;
-  }
-  return Math.min(parsed, 500);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 500) : 1;
 }
 
-export function shouldRequestPushCampaignPreview(params: Record<string, string | string[] | undefined>) {
-  return (
-    readSearchParam(params.preview) === '1' &&
-    Boolean(readSearchParam(params.title).trim()) &&
-    Boolean(readSearchParam(params.body).trim())
-  );
+export function pushCampaignStatusView(status: string) {
+  const views: Record<string, { label: string; tone: 'danger' | 'info' | 'neutral' | 'success' | 'warning' }> = {
+    COMPLETED: { label: 'Completed', tone: 'success' },
+    FAILED: { label: 'Failed', tone: 'danger' },
+    PARTIAL_FAILED: { label: 'Partial failure', tone: 'warning' },
+    PROCESSING: { label: 'Processing', tone: 'info' },
+    QUEUED: { label: 'Queued', tone: 'neutral' },
+  };
+  return views[status] ?? { label: status, tone: 'neutral' as const };
 }
 
-export function buildPushRecipientSearchApiHref(role: 'CUSTOMER' | 'PROVIDER', query: string) {
-  const search = new URLSearchParams({ q: query.trim(), take: '8' });
-  if (role === 'CUSTOMER') {
-    search.set('skip', '0');
-    return `/admin/customers?${search.toString()}`;
-  }
-  return `/admin/partners/list-providers?${search.toString()}`;
-}
-
-export function buildPushRecipientSelectionHref(
-  params: Record<string, string | string[] | undefined>,
-  update: {
-    readonly recipientSearch?: string;
-    readonly targetRole?: 'CUSTOMER' | 'PROVIDER';
-    readonly targetUserId?: string | null;
-  },
-) {
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (['campaignId', 'notice', 'preview', 'recipientSearch', 'targetRole', 'targetUserId'].includes(key)) {
-      continue;
-    }
-    for (const item of Array.isArray(value) ? value : [value]) {
-      if (typeof item === 'string' && item.trim()) {
-        query.append(key, item);
-      }
-    }
-  }
-
-  const targetRole = update.targetRole ?? (readSearchParam(params.targetRole) === 'PROVIDER' ? 'PROVIDER' : 'CUSTOMER');
-  query.set('targetRole', targetRole);
-  const recipientSearch = update.recipientSearch ?? readSearchParam(params.recipientSearch);
-  if (recipientSearch.trim()) {
-    query.set('recipientSearch', recipientSearch.trim());
-  }
-  if (update.targetUserId) {
-    query.set('targetUserId', update.targetUserId);
-  }
-
-  return `/notifications/push-send?${query.toString()}`;
+function appendRange(query: URLSearchParams, range: PushCampaignDateRange) {
+  const window = pushCampaignDateRangeWindow(range);
+  if (window.from) query.set('from', window.from.toISOString());
+  if (window.to) query.set('to', window.to.toISOString());
 }
 
 function pushCampaignDateRangeWindow(range: PushCampaignDateRange, now = new Date()) {
-  const todayStart = startOfLocalDay(now);
+  if (range === 'all') return {};
+  const todayStart = vietnamDayStart(now);
   const tomorrowStart = new Date(todayStart.getTime() + DAY_MS);
-
-  if (range === 'today') {
-    return { from: todayStart, to: tomorrowStart };
-  }
-  if (range === 'yesterday') {
-    return { from: new Date(todayStart.getTime() - DAY_MS), to: todayStart };
-  }
-  if (range === '7d') {
-    return { from: new Date(todayStart.getTime() - 6 * DAY_MS), to: tomorrowStart };
-  }
-  if (range === '30d') {
-    return { from: new Date(todayStart.getTime() - 29 * DAY_MS), to: tomorrowStart };
-  }
-  return {};
+  if (range === 'today') return { from: todayStart, to: tomorrowStart };
+  if (range === 'yesterday') return { from: new Date(todayStart.getTime() - DAY_MS), to: todayStart };
+  const days = range === '7d' ? 7 : 30;
+  return { from: new Date(todayStart.getTime() - (days - 1) * DAY_MS), to: tomorrowStart };
 }
 
-function startOfLocalDay(value: Date) {
-  const date = new Date(value);
-  date.setHours(0, 0, 0, 0);
-  return date;
+function vietnamDayStart(value: Date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+  }).formatToParts(value);
+  const part = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((item) => item.type === type)?.value);
+  return new Date(Date.UTC(part('year'), part('month') - 1, part('day')) - ICT_OFFSET_MS);
 }

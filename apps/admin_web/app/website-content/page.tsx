@@ -21,8 +21,8 @@ import { adminGetResult } from '../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
 import { hasAdminOperatorCategory } from '../../lib/admin-operator-access-model';
 import {
-  createPublicSiteNewsArticle,
-  createPublicSitePage,
+  createPublicSiteNewsArticleState,
+  createPublicSitePageState,
   createPublicSiteSection,
   deletePublicSitePage,
   deletePublicSiteSection,
@@ -30,14 +30,17 @@ import {
   openPublicSiteDraft,
   publishPublicSiteDraft,
   rollbackPublicSiteRevision,
+  takePublicSitePageOffline,
   updatePublicSiteNewsArticle,
   updatePublicSitePage,
   updatePublicSiteSection,
 } from './actions';
+import { WebsiteContentActionForm } from './website-content-action-form';
 import type {
   PublicSiteListResult,
   PublicSitePageDetail,
   PublicSitePageSummary,
+  PublicSiteOwnership,
   PublicSitePreviewLink,
   PublicSiteRouteGroup,
   PublicSiteSection,
@@ -61,7 +64,7 @@ const emptyList = <T,>(): PublicSiteListResult<T> => ({
   take: 20,
   total: 0,
   totalPages: 1,
-  summary: { routes: 0, live: 0, draftChanges: 0, needsAttention: 0, missingTranslations: 0, recentlyPublished: 0 },
+  summary: { routes: 0, live: 0, draftChanges: 0, ready: 0, needsAttention: 0, missingRoutes: 0, missingTranslations: 0, staleTranslations: 0, recentlyPublished: 0, scope: { contentType: 'pages', site: null, locale: null, q: null, status: 'all' }, generatedAt: '' },
   summaryAvailable: false,
 });
 
@@ -80,10 +83,10 @@ export default async function WebsiteContentPage({ searchParams }: { searchParam
     ]);
     return (
       <AdminPageTemplate
-        actions={<AdminFormControlLink className="button-secondary" href={listHref({ ...params, pageId: undefined, workspace: undefined })}>Back to {view === 'news' ? 'News' : 'Pages'}</AdminFormControlLink>}
+        actions={<AdminFormControlLink className="button-secondary" href={listHref(listQuery(params, { view, pageId: undefined, workspace: undefined }))}>Back to {view === 'news' ? 'News' : 'Pages'}</AdminFormControlLink>}
         contentClassName="website-content-workspace"
-        description="Edit Draft content without interrupting the current Live website."
-        title="Website Content"
+        description={detailResult.data ? `${siteLabel(detailResult.data.site)}${detailResult.data.path} · ${ownershipLabel(detailResult.data.ownership)} · ${detailResult.data.draftRevision ? 'Draft open' : 'No Draft changes'}` : 'Edit Draft content without interrupting the current Live website.'}
+        title={detailResult.data ? `${detailResult.data.manifestLabel ?? detailResult.data.internalName} · ${detailResult.data.locale.toUpperCase()}` : 'Website Content'}
       >
         {notice(value(params.status))}
         {!detailResult.ok || !detailResult.data ? (
@@ -105,12 +108,12 @@ export default async function WebsiteContentPage({ searchParams }: { searchParam
   if (mode === 'new') {
     return (
       <AdminPageTemplate
-        actions={<AdminFormControlLink className="button-secondary" href={listHref({ ...params, mode: undefined })}>Cancel</AdminFormControlLink>}
+        actions={<AdminFormControlLink className="button-secondary" href={listHref(listQuery(params, { view, mode: undefined }))}>Cancel</AdminFormControlLink>}
         contentClassName="website-content-workspace"
         description={view === 'news' ? 'Create a complete article Draft. Publishing is a separate reviewed action.' : 'Create a Draft-only route. It remains unavailable to the public until published.'}
         title={view === 'news' ? 'New article' : 'New page'}
       >
-        {view === 'news' ? <NewsDraftForm canEdit={can.edit} returnTo={listHref(params)} /> : <NewPageForm canEdit={can.edit} returnTo={listHref(params)} />}
+        {view === 'news' ? <NewsDraftForm canEdit={can.edit} returnTo={listHref(listQuery(params, { mode: undefined }))} /> : <NewPageForm canEdit={can.edit} returnTo={listHref(listQuery(params, { mode: undefined }))} />}
       </AdminPageTemplate>
     );
   }
@@ -126,39 +129,51 @@ async function ContentDirectory({ canCreate, params, view }: { canCreate: boolea
   }
   const statusFilter = value(params.statusFilter);
   if (['all', 'live', 'draft', 'attention'].includes(statusFilter ?? '')) api.set('status', statusFilter!);
+  const readiness = value(params.readiness);
+  if (['UNKNOWN', 'READY', 'BLOCKED'].includes(readiness ?? '')) api.set('readiness', readiness!);
+  const ownership = value(params.ownership);
+  if (['CMS_LIVE', 'CODE_FALLBACK', 'NOT_SERVED', 'OWNERSHIP_CONFLICT'].includes(ownership ?? '')) api.set('ownership', ownership!);
   const fallback = view === 'pages' ? emptyList<PublicSiteRouteGroup>() : emptyList<PublicSitePageSummary>();
   const result = await adminGetResult<typeof fallback>(`/admin/site-pages?${api}`, fallback);
   const summary = result.data.summary;
-  const hasFilters = Boolean(value(params.site) || value(params.locale) || value(params.q) || statusFilter);
+  const hasFilters = Boolean(value(params.site) || value(params.locale) || value(params.q) || statusFilter || readiness || ownership);
 
   return (
     <AdminPageTemplate
-      actions={canCreate ? <AdminFormControlLink className="button-primary" href={listHref({ ...params, view, mode: 'new' })}>{view === 'news' ? 'New article' : 'New page'}</AdminFormControlLink> : null}
+      actions={canCreate ? <AdminFormControlLink className="button-primary" href={listHref(listQuery(params, { view, mode: 'new' }))}>{view === 'news' ? 'New article' : 'New page'}</AdminFormControlLink> : null}
       contentClassName="website-content-directory"
-      description="Operate Live routes, Draft changes, publishing readiness and translation coverage."
-      metrics={result.ok && summary ? [
-        { label: 'Live', value: summary.live, scope: 'Active revisions', helper: 'Routes currently available to the public.' },
-        { label: 'Draft changes', value: summary.draftChanges, scope: 'Unpublished work', helper: 'Routes with an editable Draft revision.' },
-        { label: 'Needs attention', value: summary.needsAttention, scope: 'Blocked Drafts', helper: 'Drafts that do not pass publishing readiness.' },
-        { label: 'Missing translations', value: summary.missingTranslations, scope: 'Required languages', helper: 'Page routes missing one or more KO, EN, VI, JA or ZH versions.' },
-        { label: 'Recently published', value: summary.recentlyPublished, scope: 'Last 7 days', helper: 'Routes activated during the latest seven days.' },
+      description="Find pages by name or address, then narrow the workspace by site, language and delivery state."
+      metrics={result.ok && summary ? view === 'news' ? [
+        { label: 'Live articles', value: summary.live, scope: 'This News view', helper: 'Articles with an active revision in the current filter.' },
+        { label: 'Draft articles', value: summary.draftChanges, scope: 'This News view', helper: 'Articles with unpublished Draft work.' },
+        { label: 'Blocked articles', value: summary.needsAttention, scope: 'This News view', helper: 'Article Drafts that cannot be published yet.' },
+        { label: 'Recently published', value: summary.recentlyPublished, scope: 'Last 7 days', helper: 'Articles activated during the latest seven days.' },
+      ] : [
+        { href: listHref(listQuery(params, { readiness: 'BLOCKED', routePage: undefined })), label: 'Blocked', value: summary.needsAttention, scope: 'Publish queue', helper: 'Draft language pages that do not pass publishing readiness.' },
+        { href: listHref(listQuery(params, { readiness: 'UNKNOWN', routePage: undefined })), label: 'Needs validation', value: Math.max(0, summary.draftChanges - summary.ready - summary.needsAttention), scope: 'Legacy Drafts', helper: 'Draft language pages whose readiness has not been evaluated.' },
+        { href: listHref(listQuery(params, { routePage: undefined })), label: 'Missing routes', value: summary.missingRoutes, scope: 'Canonical manifest', helper: 'Required route groups with no managed language page.' },
+        { href: listHref(listQuery(params, { routePage: undefined })), label: 'Missing translations', value: summary.missingTranslations + summary.staleTranslations, scope: 'Canonical language matrix', helper: `${summary.missingTranslations} missing · ${summary.staleTranslations} stale.` },
+        { label: 'Recently published', value: summary.recentlyPublished, scope: 'Last 7 days', helper: 'Language pages activated during the latest seven days.' },
       ] : []}
       metricsClassName="website-content-summary-grid"
       title="Website Content"
     >
       {notice(value(params.status))}
+      {result.ok && summary?.generatedAt ? <p className="muted website-content-generated">Summary generated <DateTimeText value={summary.generatedAt} />. Counts use the filters on this view.</p> : null}
       {result.ok && !summary ? <AdminNoticeCard tone="warning"><strong>Content summary is unavailable</strong><p>The route list is still available. Retry before using summary counts for publishing work.</p></AdminNoticeCard> : null}
       <nav aria-label="Website content type" className="website-content-tabs">
         <Link aria-current={view === 'pages' ? 'page' : undefined} href={listHref({ view: 'pages' })} prefetch={false}>Pages</Link>
         <Link aria-current={view === 'news' ? 'page' : undefined} href={listHref({ view: 'news' })} prefetch={false}>News</Link>
       </nav>
-      <AdminSection className="admin-mb-16" title="Filters" description="Search and pagination run on the server; section content is loaded only after opening a route.">
+      <AdminSection className="admin-mb-16" title="Filters" description="Search by page name or address and narrow the current work queue.">
         <form action="/website-content" className="website-content-filter-grid">
           <input name="view" type="hidden" value={view} />
           <AdminFormInput defaultValue={value(params.q)} label="Name or route" labelVisibility="visible" name="q" type="search" />
           <AdminFormSelect defaultValue={value(params.site) ?? ''} label="Website" labelVisibility="visible" name="site" options={[{ label: 'All websites', value: '' }, ...publicSiteOptions]} />
           <AdminFormSelect defaultValue={value(params.locale) ?? ''} label="Language" labelVisibility="visible" name="locale" options={[{ label: 'All languages', value: '' }, ...publicSiteLocaleOptions]} />
           <AdminFormSelect defaultValue={statusFilter ?? 'all'} label="Status" labelVisibility="visible" name="statusFilter" options={[{ label: 'All states', value: 'all' }, { label: 'Live', value: 'live' }, { label: 'Draft changes', value: 'draft' }, { label: 'Needs attention', value: 'attention' }]} />
+          {view === 'pages' ? <AdminFormSelect defaultValue={readiness ?? ''} label="Readiness" labelVisibility="visible" name="readiness" options={[{ label: 'All readiness states', value: '' }, { label: 'Ready', value: 'READY' }, { label: 'Blocked', value: 'BLOCKED' }, { label: 'Needs validation', value: 'UNKNOWN' }]} /> : null}
+          {view === 'pages' ? <AdminFormSelect defaultValue={ownership ?? ''} label="Delivery" labelVisibility="visible" name="ownership" options={[{ label: 'All delivery states', value: '' }, { label: 'CMS Live', value: 'CMS_LIVE' }, { label: 'Code fallback', value: 'CODE_FALLBACK' }, { label: 'Not served', value: 'NOT_SERVED' }, { label: 'Ownership conflict', value: 'OWNERSHIP_CONFLICT' }]} /> : null}
           <AdminFormActionRow className="website-content-filter-actions" wide={false}>
             <AdminFormControlButton className="button-primary" type="submit">Apply</AdminFormControlButton>
             <AdminFormControlLink className="button-secondary" href={listHref({ view })}>Clear filters</AdminFormControlLink>
@@ -166,7 +181,7 @@ async function ContentDirectory({ canCreate, params, view }: { canCreate: boolea
         </form>
       </AdminSection>
       {!result.ok ? (
-        <AdminNoticeCard tone="danger"><strong>{view === 'news' ? 'News could not be loaded' : 'Pages could not be loaded'}</strong><p>Retry this view. The result is unavailable, not an empty content library.</p><AdminFormControlLink className="button-secondary" href={listHref(params)}>Retry</AdminFormControlLink></AdminNoticeCard>
+        <AdminNoticeCard tone="danger"><strong>{view === 'news' ? 'News could not be loaded' : 'Pages could not be loaded'}</strong><p>Retry this view. The result is unavailable, not an empty content library.</p><AdminFormControlLink className="button-secondary" href={listHref(listQuery(params))}>Retry</AdminFormControlLink></AdminNoticeCard>
       ) : (
         <AdminSection statusLabel={`${result.data.total} ${view === 'news' ? 'articles' : 'route groups'}`} title={view === 'news' ? 'News articles' : 'Managed pages'}>
           {view === 'pages' ? <PageGroupTable groups={result.data.items as PublicSiteRouteGroup[]} params={params} hasFilters={hasFilters} /> : <NewsTable pages={result.data.items as PublicSitePageSummary[]} params={params} hasFilters={hasFilters} />}
@@ -174,7 +189,7 @@ async function ContentDirectory({ canCreate, params, view }: { canCreate: boolea
             activePage={result.data.page}
             ariaLabel={`${view === 'news' ? 'News' : 'Page route'} pages`}
             from={result.data.total ? (result.data.page - 1) * result.data.take + 1 : 0}
-            hrefForPage={(page) => listHref({ ...params, routePage: page > 1 ? String(page) : undefined })}
+            hrefForPage={(page) => listHref(listQuery(params, { routePage: page > 1 ? String(page) : undefined }))}
             itemLabel={view === 'news' ? 'articles' : 'route groups'}
             to={Math.min(result.data.page * result.data.take, result.data.total)}
             totalPages={result.data.totalPages}
@@ -192,26 +207,26 @@ function PageGroupTable({ groups, params, hasFilters }: { groups: PublicSiteRout
       <AdminDataTable
         className="website-content-route-table"
         emptyMessage={<AdminEmptyState message={hasFilters ? 'Clear filters to return to all managed pages.' : 'Create the first Draft route.'} title={hasFilters ? 'No pages match these filters' : 'No managed pages yet'} />}
-        headers={['Route', 'Website', 'KO', 'EN', 'VI', 'JA', 'ZH']}
+        headers={['Page', 'Delivery', 'KO', 'EN', 'VI', 'JA', 'ZH', 'Recent change']}
         rowCount={groups.length}
       >
-        {groups.map((group) => <tr key={group.groupKey}><td><strong>{group.translations[0]?.internalName ?? group.path}</strong><code>{group.path}</code></td><td className="website-content-domain">{siteLabel(group.site)}</td>{['ko', 'en', 'vi', 'ja', 'zh'].map((locale) => <td key={locale}><LocaleCell page={group.translations.find((item) => item.locale === locale)} params={params} /></td>)}</tr>)}
+        {groups.map((group) => <tr key={group.groupKey}><td><strong>{group.label}</strong><span className="muted">{siteLabel(group.site)}</span><code>{group.path}</code></td><td className="website-content-domain"><OwnershipBadge ownership={group.ownership} /></td>{['ko', 'en', 'vi', 'ja', 'zh'].map((locale) => <td key={locale}><LocaleCell label={group.label} locale={locale} page={group.translations.find((item) => item.locale === locale)} params={params} /></td>)}<td><DateTimeText fallback="No managed page" value={latestRouteChange(group)} /></td></tr>)}
       </AdminDataTable>
     </AdminTableScroll>
   );
 }
 
-function LocaleCell({ page, params }: { page?: PublicSitePageSummary; params: Record<string, string | string[] | undefined> }) {
-  if (!page) return <span className="muted">Missing</span>;
+function LocaleCell({ label, locale, page, params }: { label: string; locale: string; page?: PublicSitePageSummary; params: Record<string, string | string[] | undefined> }) {
+  if (!page) return <span className="muted" aria-label={`${label} · ${locale.toUpperCase()} · Missing`}>Missing</span>;
   const state = page.draftRevision?.readinessState !== 'READY' ? 'Needs content' : page.draftRevision ? 'Draft changes' : page.activeRevision ? 'Live' : 'Draft';
-  return <AdminFormControlLink className="website-content-locale-link" href={listHref({ ...params, pageId: page.id, workspace: 'overview' })}><StatusBadge tone={state === 'Live' ? 'success' : state === 'Needs content' ? 'warning' : 'neutral'}>{state}</StatusBadge></AdminFormControlLink>;
+  return <AdminFormControlLink aria-label={`${label} · ${locale.toUpperCase()} · ${state}`} className="website-content-locale-link" href={listHref(detailQuery(params, { pageId: page.id, view: 'pages', workspace: 'overview' }))}><StatusBadge tone={state === 'Live' ? 'success' : state === 'Needs content' ? 'warning' : 'neutral'}>{state}</StatusBadge></AdminFormControlLink>;
 }
 
 function NewsTable({ pages, params, hasFilters }: { pages: PublicSitePageSummary[]; params: Record<string, string | string[] | undefined>; hasFilters: boolean }) {
   return (
     <AdminTableScroll ariaLabel="News article list">
       <AdminDataTable emptyMessage={<AdminEmptyState message={hasFilters ? 'Clear filters to return to all articles.' : 'Create the first article Draft.'} title={hasFilters ? 'No news matches these filters' : 'No news articles yet'} />} headers={['Article', 'Website', 'Language', 'Live', 'Draft', 'Updated', 'Action']} rowCount={pages.length}>
-        {pages.map((page) => <tr key={page.id}><td><strong>{page.internalName.replace(/^News:\s*/u, '')}</strong><code>{page.path}</code></td><td className="website-content-domain">{siteLabel(page.site)}</td><td>{page.locale.toUpperCase()}</td><td>{page.activeRevision ? <StatusBadge tone="success">Live</StatusBadge> : <span className="muted">Not live</span>}</td><td>{page.draftRevision ? <StatusBadge tone={page.draftRevision.readinessState === 'READY' ? 'neutral' : 'warning'}>{page.draftRevision.readinessState === 'READY' ? 'Ready' : 'Needs content'}</StatusBadge> : <span className="muted">No changes</span>}</td><td><DateTimeText value={page.draftRevision?.updatedAt ?? page.updatedAt} /></td><td><AdminFormControlLink className="button-secondary" href={listHref({ ...params, pageId: page.id, workspace: 'overview' })}>Edit article</AdminFormControlLink></td></tr>)}
+        {pages.map((page) => <tr key={page.id}><td><strong>{page.internalName.replace(/^News:\s*/u, '')}</strong><code>{page.path}</code></td><td className="website-content-domain">{siteLabel(page.site)}</td><td>{page.locale.toUpperCase()}</td><td>{page.activeRevision ? <StatusBadge tone="success">Live</StatusBadge> : <span className="muted">Not live</span>}</td><td>{page.draftRevision ? <StatusBadge tone={page.draftRevision.readinessState === 'READY' ? 'neutral' : 'warning'}>{page.draftRevision.readinessState === 'READY' ? 'Ready' : 'Needs content'}</StatusBadge> : <span className="muted">No changes</span>}</td><td><DateTimeText value={page.draftRevision?.updatedAt ?? page.updatedAt} /></td><td><AdminFormControlLink className="button-secondary" href={listHref(detailQuery(params, { pageId: page.id, view: 'news', workspace: 'overview' }))}>Edit article</AdminFormControlLink></td></tr>)}
       </AdminDataTable>
     </AdminTableScroll>
   );
@@ -220,7 +235,7 @@ function NewsTable({ pages, params, hasFilters }: { pages: PublicSitePageSummary
 function PageWorkspace({ can, page, params, preview, view, workspace }: { can: Awaited<ReturnType<typeof permissions>>; page: PublicSitePageDetail; params: Record<string, string | string[] | undefined>; preview: PublicSitePreviewLink | null; view: ContentView; workspace: Workspace }) {
   const draft = page.draftRevision;
   const live = page.activeRevision;
-  const base = listHref({
+  const base = listHref(detailQuery(params, {
     ...params,
     pageId: page.id,
     view,
@@ -230,34 +245,36 @@ function PageWorkspace({ can, page, params, preview, view, workspace }: { can: A
     deletePageId: undefined,
     deleteSectionId: undefined,
     rollbackRevisionId: undefined,
+    takeOffline: undefined,
     sectionId: undefined,
-  });
+  }));
   const liveHref = publicUrl(page);
-  const previewHref = preview ? `${liveHref}${liveHref.includes('?') ? '&' : '?'}cmsPreview=${encodeURIComponent(preview.token)}` : null;
+  const previewHref = preview ? `${liveHref}#cmsPreview=${encodeURIComponent(preview.token)}` : null;
   const deletingPage = value(params.deletePageId) === page.id;
+  const takingOffline = value(params.takeOffline) === '1';
   const discardingDraft = value(params.discardDraft) === '1';
   const confirmingPublish = value(params.confirmPublish) === '1';
   const deletingSection = draft?.sections.find((section) => section.id === value(params.deleteSectionId));
   const rollback = page.revisions.find((revision) => revision.id === value(params.rollbackRevisionId));
   const section = draft?.sections.find((item) => item.id === value(params.sectionId));
-  const publishIssues = draftReadinessIssues(draft);
   const changes = draftChangeSummary(page);
 
   return <>
-    {deletingPage ? <ConfirmDialog action={deletePublicSitePage} cancelHref={base} confirmLabel="Delete Draft route" description={`Delete ${page.internalName}. Live routes cannot be deleted.`} hiddenInputs={[{ name: 'pageId', value: page.id }, { name: 'confirmationId', value: page.id }, { name: 'returnTo', value: base }]} id={`delete-page-${page.id}`} title="Delete Draft route?" /> : null}
+    {deletingPage ? <ConfirmDialog action={deletePublicSitePage} cancelHref={base} confirmLabel="Delete Draft route" description={<div className="website-content-confirm-summary"><p>This permanently removes a Draft-only route with no Live history.</p><dl><div><dt>Website</dt><dd>{siteLabel(page.site)}</dd></div><div><dt>Language</dt><dd>{page.locale.toUpperCase()}</dd></div><div><dt>Current path</dt><dd><code>{page.path}</code></dd></div><div><dt>Draft sections</dt><dd>{draft?.sections.length ?? 0}</dd></div><div><dt>Delivery after deletion</dt><dd>{ownershipLabel(page.ownership)}</dd></div></dl></div>} hiddenInputs={[{ name: 'pageId', value: page.id }, { name: 'returnTo', value: base }]} id={`delete-page-${page.id}`} requireValidForm textInputs={[{ name: 'confirmationPath', label: `Type ${page.path} to confirm`, required: true }, { name: 'reason', label: 'Deletion reason', minLength: 5, maxLength: 500, required: true }]} title="Delete this Draft route?" /> : null}
+    {takingOffline && live && can.publish ? <ConfirmDialog action={takePublicSitePageOffline} cancelHref={base} confirmLabel="Take page offline" description={<div className="website-content-confirm-summary"><p>The CMS revision will stop serving immediately. Visitors will see <strong>{page.offlineVisitorOutcome === 'CODE_FALLBACK' ? 'the code fallback page' : 'a not found response'}</strong>.</p><dl><div><dt>Website</dt><dd>{siteLabel(page.site)}</dd></div><div><dt>Language</dt><dd>{page.locale.toUpperCase()}</dd></div><div><dt>Current path</dt><dd><code>{page.path}</code></dd></div><div><dt>Current Live</dt><dd>Revision {live.revisionNumber}</dd></div></dl></div>} hiddenInputs={[{ name: 'pageId', value: page.id }, { name: 'returnTo', value: base }]} id={`take-offline-${page.id}`} requireValidForm textInputs={[{ name: 'confirmationPath', label: `Type ${page.path} to confirm`, required: true }, { name: 'reason', label: 'Reason for taking offline', minLength: 5, maxLength: 500, required: true }]} title="Take this page offline?" tone="danger" /> : null}
     {discardingDraft && draft && live && can.edit ? <ConfirmDialog action={discardPublicSiteDraft} cancelHref={`${base}&workspace=${workspace}`} confirmLabel="Discard Draft changes" description={`Discard Draft revision ${draft.revisionNumber}. The current Live revision ${live.revisionNumber} will remain unchanged.`} hiddenInputs={[{ name: 'pageId', value: page.id }, { name: 'confirmationId', value: page.id }, { name: 'returnTo', value: `${base}&workspace=${workspace}` }]} id={`discard-draft-${page.id}`} title="Discard this Draft?" /> : null}
-    {confirmingPublish && draft && can.publish ? <ConfirmDialog action={publishPublicSiteDraft} cancelHref={`${base}&workspace=publishing#publish-draft`} confirmLabel={`Publish revision ${draft.revisionNumber}`} description={<div className="website-content-confirm-summary"><p>Readiness is checked again before the active revision switches.</p><dl><div><dt>Website</dt><dd>{siteLabel(page.site)}</dd></div><div><dt>Language</dt><dd>{page.locale.toUpperCase()}</dd></div><div><dt>Public URL</dt><dd>{liveHref}</dd></div><div><dt>Revision change</dt><dd>{live ? `${live.revisionNumber} → ${draft.revisionNumber}` : `Not live → ${draft.revisionNumber}`}</dd></div><div><dt>Canonical</dt><dd>{draft.canonicalPath ?? page.path}</dd></div><div><dt>Search indexing</dt><dd>{draft.noIndex ? 'Hidden from search engines' : 'Eligible for search indexing'}</dd></div><div><dt>Translation coverage</dt><dd>Verify the KO/EN/VI/JA/ZH matrix before publishing.</dd></div></dl><strong>Draft changes</strong><ul>{changes.map((change) => <li key={change}>{change}</li>)}</ul>{publishIssues.length ? <><strong>Blocking issues</strong><ul>{publishIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul></> : null}</div>} disabled={draft.readinessState !== 'READY'} hiddenInputs={[{ name: 'pageId', value: page.id }, { name: 'revisionId', value: draft.id }, { name: 'expectedVersion', value: draft.version }, { name: 'returnTo', value: `${base}&workspace=publishing` }]} id={`publish-draft-${draft.id}`} title="Publish this Draft?" tone="warning" /> : null}
+    {confirmingPublish && draft?.readinessState === 'READY' && can.publish ? <ConfirmDialog action={publishPublicSiteDraft} cancelHref={`${base}&workspace=publishing#publish-draft`} confirmLabel={`Publish revision ${draft.revisionNumber}`} description={<div className="website-content-confirm-summary"><p>Readiness is checked again before the active revision switches.</p>{!live && page.ownership === 'CODE_FALLBACK' ? <p className="website-content-publish-warning"><strong>First CMS publish:</strong> this revision will replace the code fallback for visitors. The fallback source is not deleted.</p> : null}<dl><div><dt>Website</dt><dd>{siteLabel(page.site)}</dd></div><div><dt>Language</dt><dd>{page.locale.toUpperCase()}</dd></div><div><dt>Public URL</dt><dd>{liveHref}</dd></div><div><dt>Revision change</dt><dd>{live ? `${live.revisionNumber} → ${draft.revisionNumber}` : `Not live → ${draft.revisionNumber}`}</dd></div><div><dt>Canonical</dt><dd>{draft.canonicalPath ?? page.path}</dd></div><div><dt>Search indexing</dt><dd>{draft.noIndex ? 'Hidden from search engines' : 'Eligible for search indexing'}</dd></div><div><dt>Translation coverage</dt><dd>Verify the KO/EN/VI/JA/ZH matrix before publishing.</dd></div></dl><strong>Draft changes</strong><ul>{changes.map((change) => <li key={change}>{change}</li>)}</ul></div>} hiddenInputs={[{ name: 'pageId', value: page.id }, { name: 'revisionId', value: draft.id }, { name: 'expectedVersion', value: draft.version }, { name: 'returnTo', value: `${base}&workspace=publishing` }]} id={`publish-draft-${draft.id}`} title="Publish this Draft?" tone="warning" /> : null}
     {deletingSection ? <ConfirmDialog action={deletePublicSiteSection} cancelHref={base} confirmLabel="Delete section" description={`Delete ${deletingSection.key} from this Draft.`} hiddenInputs={[{ name: 'pageId', value: page.id }, { name: 'sectionId', value: deletingSection.id }, { name: 'confirmationId', value: deletingSection.id }, { name: 'returnTo', value: base }]} id={`delete-section-${deletingSection.id}`} title="Delete Draft section?" /> : null}
-    {rollback && can.publish ? <ConfirmDialog action={rollbackPublicSiteRevision} cancelHref={base} confirmLabel={`Restore revision ${rollback.revisionNumber}`} description={<div className="website-content-confirm-summary"><p>The selected previous Live revision will become current. The existing Live revision remains in history.</p><dl><div><dt>Public URL</dt><dd>{liveHref}</dd></div><div><dt>Current Live</dt><dd>{live ? `Revision ${live.revisionNumber}` : 'Not live'}</dd></div><div><dt>Restore</dt><dd>Revision {rollback.revisionNumber}</dd></div><div><dt>Previously published</dt><dd>{rollback.publishedAt ? <DateTimeText value={rollback.publishedAt} /> : 'Not recorded'}</dd></div><div><dt>Publisher</dt><dd>{rollback.publishedById ?? 'Unknown'}</dd></div><div><dt>SEO title</dt><dd>{rollback.seoTitle ?? 'Not set'}</dd></div></dl></div>} hiddenInputs={[{ name: 'pageId', value: page.id }, { name: 'revisionId', value: rollback.id }, { name: 'returnTo', value: base }]} id={`rollback-${rollback.id}`} title="Restore previous Live revision?" /> : null}
-    <AdminCard className="website-content-route-brief" ariaLabel="Route status"><div><span>Website</span><strong>{siteLabel(page.site)}</strong></div><div><span>Language</span><strong>{page.locale.toUpperCase()}</strong></div><div><span>Public URL</span><a href={liveHref} rel="noreferrer" target="_blank">{liveHref}</a></div><div><span>Live</span>{live ? <StatusBadge tone="success">Revision {live.revisionNumber}</StatusBadge> : <StatusBadge tone="neutral">Not live</StatusBadge>}</div><div><span>Draft</span>{draft ? <StatusBadge tone={draft.readinessState === 'READY' ? 'success' : 'warning'}>{draft.readinessState === 'READY' ? `Ready · v${draft.version}` : 'Needs content'}</StatusBadge> : <StatusBadge tone="neutral">No changes</StatusBadge>}</div></AdminCard>
+    {rollback && can.publish ? <ConfirmDialog action={rollbackPublicSiteRevision} cancelHref={base} confirmLabel={`Restore revision ${rollback.revisionNumber}`} description={<div className="website-content-confirm-summary"><p>The selected previous Live revision will become current. The existing Live revision remains in history.</p><dl><div><dt>Public URL</dt><dd>{liveHref}</dd></div><div><dt>Current Live</dt><dd>{live ? `Revision ${live.revisionNumber}` : 'Not live'}</dd></div><div><dt>Restore</dt><dd>Revision {rollback.revisionNumber}</dd></div><div><dt>Previously published</dt><dd>{rollback.publishedAt ? <DateTimeText value={rollback.publishedAt} /> : 'Not recorded'}</dd></div><div><dt>Original publisher</dt><dd>{rollback.publishedById ?? 'Unknown'}</dd></div><div><dt>SEO title</dt><dd>{rollback.seoTitle ?? 'Not set'}</dd></div></dl></div>} hiddenInputs={[{ name: 'pageId', value: page.id }, { name: 'revisionId', value: rollback.id }, { name: 'returnTo', value: base }]} id={`rollback-${rollback.id}`} requireValidForm textInputs={[{ name: 'reason', label: 'Rollback reason', minLength: 5, maxLength: 500, required: true }]} title="Restore previous Live revision?" /> : null}
+    <AdminCard className="website-content-route-brief" ariaLabel="Route status"><div><span>Website</span><strong>{siteLabel(page.site)}</strong></div><div><span>Language</span><strong>{page.locale.toUpperCase()}</strong></div><div><span>Public URL</span><a href={liveHref} rel="noreferrer" target="_blank">{liveHref}</a></div><div><span>Delivery</span><OwnershipBadge ownership={page.ownership} /></div><div><span>Live</span>{live ? <StatusBadge tone="success">Revision {live.revisionNumber}</StatusBadge> : <StatusBadge tone="neutral">Not live</StatusBadge>}</div><div><span>Draft</span>{draft ? <StatusBadge tone={draft.readinessState === 'READY' ? 'success' : 'warning'}>{draft.readinessState === 'READY' ? `Ready · v${draft.version}` : 'Needs content'}</StatusBadge> : <StatusBadge tone="neutral">No changes</StatusBadge>}</div></AdminCard>
     <div className="website-content-workspace-actions">{!draft && live && can.edit ? <form action={openPublicSiteDraft}><input name="pageId" type="hidden" value={page.id} /><input name="returnTo" type="hidden" value={`${base}&workspace=${workspace}`} /><AdminFormControlButton className="button-secondary" type="submit">Open Draft</AdminFormControlButton></form> : null}{previewHref ? <a className="button-secondary" href={previewHref} rel="noreferrer" target="_blank">Preview Draft</a> : null}{live ? <a className="button-secondary" href={liveHref} rel="noreferrer" target="_blank">Open Live page</a> : null}{draft && can.publish ? <AdminFormControlLink className="button-primary" href={`${base}&workspace=publishing#publish-draft`}>Review Publish</AdminFormControlLink> : null}</div>
-    <nav aria-label="Page workspace" className="website-content-tabs">{(['overview', 'content', 'publishing', 'activity'] as Workspace[]).map((item) => <Link aria-current={workspace === item ? 'page' : undefined} href={listHref({ ...params, pageId: page.id, workspace: item })} key={item} prefetch={false}>{item === 'publishing' ? 'SEO & publishing' : titleCase(item)}</Link>)}</nav>
+    <nav aria-label="Page workspace" className="website-content-tabs">{(['overview', 'content', 'publishing', 'activity'] as Workspace[]).map((item) => <Link aria-current={workspace === item ? 'page' : undefined} href={listHref(detailQuery(params, { pageId: page.id, view, workspace: item }))} key={item} prefetch={false}>{item === 'publishing' ? 'SEO & publishing' : titleCase(item)}</Link>)}</nav>
     {!can.edit ? <AdminNoticeCard tone="info"><strong>View-only access</strong><p>CONTENT_EDIT is required to save Draft changes. Publishing and deletion require separate permissions.</p></AdminNoticeCard> : null}
     {workspace === 'overview' ? <Overview canEdit={can.edit} page={page} previewHref={previewHref} liveHref={liveHref} returnTo={base} /> : null}
     {workspace === 'content' ? (page.path.startsWith('/news/') ? <NewsEditor canEdit={can.edit} page={page} returnTo={base} /> : <ContentEditor canDelete={can.delete} canEdit={can.edit} page={page} returnTo={base} selected={section} />) : null}
     {workspace === 'publishing' ? <Publishing canEdit={can.edit} canPublish={can.publish} page={page} returnTo={base} /> : null}
     {workspace === 'activity' ? <Activity canPublish={can.publish} page={page} returnTo={base} /> : null}
-    {can.delete && !live ? <AdminSection className="website-content-danger-zone" title="Delete Draft route" description="Only routes that have never been Live can be deleted."><AdminFormControlLink className="button-danger" href={`${base}&deletePageId=${encodeURIComponent(page.id)}`}>Review deletion</AdminFormControlLink></AdminSection> : null}
+    {(can.publish && live) || (can.delete && !live && !page.firstPublishedAt) ? <AdminDisclosure className="website-content-danger-zone"><summary>More · risky operations</summary><div className="website-content-inline-actions">{can.publish && live ? <AdminFormControlLink className="button-danger" href={`${base}&takeOffline=1`}>Review take offline</AdminFormControlLink> : null}{can.delete && !live && !page.firstPublishedAt ? <AdminFormControlLink className="button-danger" href={`${base}&deletePageId=${encodeURIComponent(page.id)}`}>Review deletion</AdminFormControlLink> : null}</div></AdminDisclosure> : null}
   </>;
 }
 
@@ -269,7 +286,7 @@ function Overview({ canEdit, page, previewHref, liveHref, returnTo }: { canEdit:
 function ContentEditor({ canDelete, canEdit, page, returnTo, selected }: { canDelete: boolean; canEdit: boolean; page: PublicSitePageDetail; returnTo: string; selected?: PublicSiteSection }) {
   const draft = page.draftRevision;
   if (!draft) return <AdminNoticeCard tone="info"><strong>No open Draft</strong><p>Use Open Draft above to copy the current Live revision before editing content.</p></AdminNoticeCard>;
-  return <div className="website-content-editor-layout"><AdminSection title="Draft sections" description="Edit one section at a time. Move order with numeric sort order; raw JSON is optional."><ol className="website-content-section-list">{draft.sections.map((item) => <li key={item.id}><div><strong>{item.key}</strong><span>{sectionKindLabel(item.kind)} · {item.enabled ? 'Visible in Draft' : 'Hidden in Draft'}</span></div><div><AdminFormControlLink className="button-secondary" href={`${returnTo}&workspace=content&sectionId=${encodeURIComponent(item.id)}`}>Edit</AdminFormControlLink>{canDelete ? <AdminFormControlLink className="button-secondary" href={`${returnTo}&workspace=content&deleteSectionId=${encodeURIComponent(item.id)}`}>Delete</AdminFormControlLink> : null}</div></li>)}</ol>{canEdit ? <AdminDisclosure className="website-content-disclosure"><summary>Add section</summary><AdminFormGrid action={createPublicSiteSection}><input name="pageId" type="hidden" value={page.id} /><input name="returnTo" type="hidden" value={`${returnTo}&workspace=content`} /><AdminFormInput label="Section key" labelVisibility="visible" name="key" placeholder="hero" required /><AdminFormSelect defaultValue="APP_OVERVIEW" label="Section type" labelVisibility="visible" name="kind" options={publicSiteSectionKindOptions} /><AdminFormInput defaultValue={String(draft.sections.length * 10)} label="Sort order" labelVisibility="visible" name="sortOrder" type="number" /><AdminFormActionRow><AdminFormControlButton className="button-primary" type="submit">Add to Draft</AdminFormControlButton></AdminFormActionRow></AdminFormGrid></AdminDisclosure> : null}</AdminSection>{selected ? <SectionEditor canEdit={canEdit} page={page} returnTo={returnTo} section={selected} /> : <AdminSection title="Section editor" description="Choose a Draft section to edit its visible fields."><AdminEmptyState title="No section selected" message="Select Edit beside a section." /></AdminSection>}</div>;
+  return <div className="website-content-editor-layout"><AdminSection title="Draft sections" description="Choose a section to edit. Sections are shown in their current visitor order."><ol className="website-content-section-list">{draft.sections.map((item) => <li key={item.id}><div><strong>{sectionKindLabel(item.kind)}</strong><span>{item.enabled ? 'Visible in Draft' : 'Hidden in Draft'}</span></div><div><AdminFormControlLink className="button-secondary" href={`${returnTo}&workspace=content&sectionId=${encodeURIComponent(item.id)}`}>Edit</AdminFormControlLink>{canDelete ? <AdminFormControlLink className="button-secondary" href={`${returnTo}&workspace=content&deleteSectionId=${encodeURIComponent(item.id)}`}>Delete</AdminFormControlLink> : null}</div></li>)}</ol>{canEdit ? <AdminDisclosure className="website-content-disclosure"><summary>Add section</summary><AdminFormGrid action={createPublicSiteSection}><input name="pageId" type="hidden" value={page.id} /><input name="returnTo" type="hidden" value={`${returnTo}&workspace=content`} /><input name="sortOrder" type="hidden" value={String(draft.sections.length * 10)} /><AdminFormSelect defaultValue="APP_OVERVIEW" label="Section type" labelVisibility="visible" name="kind" options={publicSiteSectionKindOptions} /><AdminFormActionRow><AdminFormControlButton className="button-primary" type="submit">Add to Draft</AdminFormControlButton></AdminFormActionRow></AdminFormGrid></AdminDisclosure> : null}</AdminSection>{selected ? <SectionEditor canEdit={canEdit} page={page} returnTo={returnTo} section={selected} /> : <AdminSection title="Section editor" description="Choose a Draft section to edit its visible fields."><AdminEmptyState title="No section selected" message="Select Edit beside a section." /></AdminSection>}</div>;
 }
 
 function SectionEditor({ canEdit, page, returnTo, section }: { canEdit: boolean; page: PublicSitePageDetail; returnTo: string; section: PublicSiteSection }) {
@@ -294,7 +311,7 @@ function SectionEditor({ canEdit, page, returnTo, section }: { canEdit: boolean;
         <input name="expectedVersion" type="hidden" value={page.draftRevision?.version} />
         <input name="returnTo" type="hidden" value={`${returnTo}&workspace=content&sectionId=${encodeURIComponent(section.id)}`} />
         {section.kind !== 'FAQ' && items.length ? <input name="itemsJson" type="hidden" value={JSON.stringify(items)} /> : null}
-        <AdminFormInput defaultValue={section.key} disabled={!canEdit} label="Section key" labelVisibility="visible" name="key" required />
+        <input name="key" type="hidden" value={section.key} />
         <AdminFormSelect defaultValue={section.kind} disabled={!canEdit} label="Section type" labelVisibility="visible" name="kind" options={publicSiteSectionKindOptions} />
         <AdminFormInput defaultValue={text(content.eyebrow)} disabled={!canEdit} label="Eyebrow" labelVisibility="visible" name="eyebrow" />
         <AdminFormInput defaultValue={text(content.title)} disabled={!canEdit} label="Title" labelVisibility="visible" name="title" />
@@ -304,11 +321,12 @@ function SectionEditor({ canEdit, page, returnTo, section }: { canEdit: boolean;
         <AdminFormInput defaultValue={text(content.imageUrl)} disabled={!canEdit} label="Image URL · relative path or HTTPS" labelVisibility="visible" name="imageUrl" placeholder="/images/example.jpg or https://..." />
         <AdminFormInput defaultValue={text(content.actionLabel)} disabled={!canEdit} label="Action label" labelVisibility="visible" name="actionLabel" />
         <AdminFormInput defaultValue={text(content.actionHref)} disabled={!canEdit} label="Action URL · relative path or HTTPS" labelVisibility="visible" name="actionHref" placeholder="/path or https://..." />
-        <AdminFormInput defaultValue={String(section.sortOrder)} disabled={!canEdit} label="Sort order" labelVisibility="visible" name="sortOrder" type="number" />
+        <input name="sortOrder" type="hidden" value={String(section.sortOrder)} />
         <AdminFormCheckbox defaultChecked={section.enabled} disabled={!canEdit} label="Draft visibility" name="enabled">Show this section in the Draft</AdminFormCheckbox>
         <AdminDisclosure className="website-content-disclosure form-grid-wide">
           <summary>Advanced JSON</summary>
           <p className="muted">Select the override only when the field editor cannot represent the required structure.</p>
+          <dl className="website-content-section-internals"><div><dt>Internal section ID</dt><dd><code>{section.key}</code></dd></div><div><dt>Current order</dt><dd>{section.sortOrder}</dd></div></dl>
           <AdminFormCheckbox disabled={!canEdit} label="Advanced mode" name="useAdvancedJson">Replace the field values above with this JSON</AdminFormCheckbox>
           <AdminFormTextarea defaultValue={JSON.stringify(content, null, 2)} disabled={!canEdit} label="Section JSON" labelVisibility="visible" name="advancedContentJson" rows={14} />
         </AdminDisclosure>
@@ -321,16 +339,17 @@ function SectionEditor({ canEdit, page, returnTo, section }: { canEdit: boolean;
 function Publishing({ canEdit, canPublish, page, returnTo }: { canEdit: boolean; canPublish: boolean; page: PublicSitePageDetail; returnTo: string }) {
   const draft = page.draftRevision;
   const issues = draftReadinessIssues(draft);
-  return <div className="website-content-publishing-grid"><AdminSection title="SEO & indexing" description={page.activeRevision ? 'Route identity is locked while this URL is Live. SEO edits update the Draft only.' : 'The route remains Draft-only until a publisher activates it.'}>{draft ? <AdminFormGrid action={updatePublicSitePage}><input name="pageId" type="hidden" value={page.id} /><input name="expectedVersion" type="hidden" value={draft.version} /><input name="returnTo" type="hidden" value={`${returnTo}&workspace=publishing`} /><AdminFormInput defaultValue={page.internalName} disabled={!canEdit} label="Operator label" labelVisibility="visible" name="internalName" required /><AdminFormInput defaultValue={draft.seoTitle ?? ''} disabled={!canEdit} label="SEO title" labelVisibility="visible" maxLength={160} name="seoTitle" /><AdminFormTextarea defaultValue={draft.seoDescription ?? ''} disabled={!canEdit} label="SEO description" labelVisibility="visible" maxLength={320} name="seoDescription" rows={3} /><AdminFormInput defaultValue={draft.canonicalPath ?? page.path} disabled={!canEdit} label="Canonical path" labelVisibility="visible" name="canonicalPath" /><AdminFormCheckbox defaultChecked={draft.noIndex} disabled={!canEdit} label="Search indexing" name="noIndex">Ask search engines not to show this live page in results.</AdminFormCheckbox>{canEdit ? <AdminFormActionRow><AdminFormControlButton className="button-primary" type="submit">Save Draft changes</AdminFormControlButton></AdminFormActionRow> : null}</AdminFormGrid> : <p>No Draft is open. Use Open Draft above before changing SEO.</p>}</AdminSection><AdminSection id="publish-draft" title="Publish Draft" description="Publishing validates readiness and switches the active revision in one transaction." statusLabel={draft?.readinessState ?? 'NO DRAFT'} statusTone={issues.length ? 'warning' : 'success'}>{issues.length ? <ul className="website-content-issue-list">{issues.map((issue) => <li key={issue}>{issue}</li>)}</ul> : <p>{draft ? `Draft revision ${draft.revisionNumber}, version ${draft.version}, is ready for review.` : 'There is no Draft to publish.'}</p>}{draft && canPublish ? <AdminFormControlLink className="button-primary" aria-disabled={issues.length > 0 ? 'true' : undefined} href={issues.length > 0 ? `${returnTo}&workspace=publishing#publish-draft` : `${returnTo}&workspace=publishing&confirmPublish=1#publish-draft`}>Review and publish revision {draft.revisionNumber}</AdminFormControlLink> : draft ? <p className="muted">CONTENT_PUBLISH permission is required.</p> : null}</AdminSection></div>;
+  return <div className="website-content-publishing-grid"><AdminSection title="SEO & indexing" description={page.activeRevision ? 'Route identity is locked while this URL is Live. SEO edits update the Draft only.' : 'The route remains Draft-only until a publisher activates it.'}>{draft ? <AdminFormGrid action={updatePublicSitePage}><input name="pageId" type="hidden" value={page.id} /><input name="expectedVersion" type="hidden" value={draft.version} /><input name="returnTo" type="hidden" value={`${returnTo}&workspace=publishing`} /><AdminFormInput defaultValue={page.internalName} disabled={!canEdit} label="Operator label" labelVisibility="visible" name="internalName" required /><AdminFormInput defaultValue={draft.seoTitle ?? ''} disabled={!canEdit} label="SEO title" labelVisibility="visible" maxLength={160} name="seoTitle" /><AdminFormTextarea defaultValue={draft.seoDescription ?? ''} disabled={!canEdit} label="SEO description" labelVisibility="visible" maxLength={320} name="seoDescription" rows={3} /><AdminFormInput defaultValue={draft.canonicalPath ?? page.path} disabled={!canEdit} label="Canonical path" labelVisibility="visible" name="canonicalPath" /><AdminFormCheckbox defaultChecked={draft.noIndex} disabled={!canEdit} label="Search indexing" name="noIndex">Ask search engines not to show this live page in results.</AdminFormCheckbox>{canEdit ? <AdminFormActionRow><AdminFormControlButton className="button-primary" type="submit">Save Draft changes</AdminFormControlButton></AdminFormActionRow> : null}</AdminFormGrid> : <p>No Draft is open. Use Open Draft above before changing SEO.</p>}</AdminSection><AdminSection id="publish-draft" title="Publish Draft" description="Publishing validates readiness and switches the active revision in one transaction." statusLabel={draft?.readinessState ?? 'NO DRAFT'} statusTone={issues.length ? 'warning' : 'success'}>{issues.length ? <ul className="website-content-issue-list">{issues.map((issue) => <li key={issue}>{issue}</li>)}</ul> : <p>{draft ? `Draft revision ${draft.revisionNumber}, version ${draft.version}, is ready for review.` : 'There is no Draft to publish.'}</p>}{draft && canPublish ? issues.length ? <AdminFormControlButton className="button-secondary" disabled type="button">Publishing blocked · resolve {issues.length} issue{issues.length === 1 ? '' : 's'}</AdminFormControlButton> : <AdminFormControlLink className="button-primary" href={`${returnTo}&workspace=publishing&confirmPublish=1#publish-draft`}>Review and publish revision {draft.revisionNumber}</AdminFormControlLink> : draft ? <p className="muted">CONTENT_PUBLISH permission is required.</p> : null}</AdminSection></div>;
 }
 
 function Activity({ canPublish, page, returnTo }: { canPublish: boolean; page: PublicSitePageDetail; returnTo: string }) {
   const revisions = page.revisions;
-  return <AdminSection title="Revision history" description="Only revisions that were previously Live are eligible for rollback."><AdminTableScroll ariaLabel="Website revision history"><AdminDataTable emptyMessage="No published revision history." headers={['Revision', 'State', 'Readiness', 'Published', 'Publisher', 'Action']} rowCount={revisions.length}>{revisions.map((revision) => <tr key={revision.id}><td><strong>Revision {revision.revisionNumber}</strong><span className="muted">Version {revision.version}</span></td><td><StatusBadge tone={revision.state === 'ACTIVE' ? 'success' : 'neutral'}>{revision.state === 'ACTIVE' ? 'Current Live' : 'Previous Live'}</StatusBadge></td><td>{revision.readinessState}</td><td>{revision.publishedAt ? <DateTimeText value={revision.publishedAt} /> : 'Not recorded'}</td><td><code>{revision.publishedById ?? 'Unknown'}</code></td><td>{revision.state === 'ARCHIVED' && canPublish ? <AdminFormControlLink className="button-secondary" href={`${returnTo}&workspace=activity&rollbackRevisionId=${encodeURIComponent(revision.id)}`}>Review rollback</AdminFormControlLink> : <span className="muted">Current</span>}</td></tr>)}</AdminDataTable></AdminTableScroll></AdminSection>;
+  const activity = page.activity ?? [];
+  return <div className="website-content-activity"><AdminSection title="Content activity" description="Publishing, rollback, offline and deletion attempts are recorded with operator and reason.">{activity.length ? <ol className="website-content-activity-list">{activity.map((event) => <li key={event.id}><div><strong>{auditActionLabel(event.action)}</strong><span>{event.actor?.label ?? 'System or unavailable operator'} · <DateTimeText value={event.createdAt} /></span></div><dl><div><dt>Reason</dt><dd>{auditMetadata(event.metadata, 'reason') ?? 'No reason recorded'}</dd></div><div><dt>Event ID</dt><dd><code>{auditMetadata(event.metadata, 'requestId') ?? event.id}</code></dd></div></dl></li>)}</ol> : <AdminEmptyState message="Publishing and high-risk content actions will appear here." title="No content activity recorded" />}</AdminSection><AdminSection title="Revision history" description="Only revisions that were previously Live are eligible for rollback."><AdminTableScroll ariaLabel="Website revision history"><AdminDataTable emptyMessage="No published revision history." headers={['Revision', 'State', 'Readiness', 'Published', 'Original publisher', 'Action']} rowCount={revisions.length}>{revisions.map((revision) => <tr key={revision.id}><td><strong>Revision {revision.revisionNumber}</strong><span className="muted">Version {revision.version}</span></td><td><StatusBadge tone={revision.state === 'ACTIVE' ? 'success' : 'neutral'}>{revision.state === 'ACTIVE' ? 'Current Live' : 'Previous Live'}</StatusBadge></td><td>{readinessLabel(revision.readinessState)}</td><td>{revision.publishedAt ? <DateTimeText value={revision.publishedAt} /> : 'Not recorded'}</td><td><code>{revision.publishedById ?? 'Unknown'}</code></td><td>{revision.state === 'ARCHIVED' && canPublish ? <AdminFormControlLink className="button-secondary" href={`${returnTo}&workspace=activity&rollbackRevisionId=${encodeURIComponent(revision.id)}`}>Review rollback</AdminFormControlLink> : <span className="muted">Current</span>}</td></tr>)}</AdminDataTable></AdminTableScroll></AdminSection></div>;
 }
 
 function NewsDraftForm({ canEdit, returnTo }: { canEdit: boolean; returnTo: string }) {
-  return <AdminSection title="Article Draft" description="Slug uses lowercase letters, numbers and hyphens. Final URL: hands.vn/{language}/news/{slug}"><AdminFormGrid action={createPublicSiteNewsArticle}><input name="returnTo" type="hidden" value={returnTo} /><AdminFormSelect defaultValue="vi" disabled={!canEdit} label="Language" labelVisibility="visible" name="locale" options={publicSiteLocaleOptions} /><AdminFormInput disabled={!canEdit} label="URL slug" labelVisibility="visible" name="slug" placeholder="welcome-to-hands" required /><AdminFormInput disabled={!canEdit} label="Title" labelVisibility="visible" maxLength={160} name="title" required /><AdminFormTextarea disabled={!canEdit} label="Subtitle" labelVisibility="visible" maxLength={320} name="subtitle" required rows={3} /><AdminFormInput disabled={!canEdit} label="Thumbnail URL" labelVisibility="visible" name="imageUrl" placeholder="/images/news/article.jpg" /><AdminFormTextarea disabled={!canEdit} label="Article body" labelVisibility="visible" maxLength={50000} name="body" required rows={14} />{canEdit ? <AdminFormActionRow><AdminFormControlButton className="button-primary" type="submit">Save article Draft</AdminFormControlButton></AdminFormActionRow> : null}</AdminFormGrid></AdminSection>;
+  return <AdminSection title="Article Draft" description="Slug uses lowercase letters, numbers and hyphens. Final URL: hands.vn/{language}/news/{slug}">{canEdit ? <WebsiteContentActionForm action={createPublicSiteNewsArticleState} submitLabel="Save article Draft"><input name="returnTo" type="hidden" value={returnTo} /><AdminFormSelect defaultValue="vi" label="Language" labelVisibility="visible" name="locale" options={publicSiteLocaleOptions} /><AdminFormInput label="URL slug" labelVisibility="visible" name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="welcome-to-hands" required /><AdminFormInput label="Title" labelVisibility="visible" maxLength={160} name="title" required /><AdminFormTextarea label="Subtitle" labelVisibility="visible" maxLength={320} name="subtitle" required rows={3} /><AdminFormInput label="Thumbnail URL" labelVisibility="visible" name="imageUrl" placeholder="/images/news/article.jpg" /><AdminFormTextarea className="website-content-long-field" label="Article body" labelVisibility="visible" maxLength={50000} name="body" required rows={14} /></WebsiteContentActionForm> : <p className="muted">CONTENT_EDIT permission is required.</p>}</AdminSection>;
 }
 
 function NewsEditor({ canEdit, page, returnTo }: { canEdit: boolean; page: PublicSitePageDetail; returnTo: string }) {
@@ -342,7 +361,7 @@ function NewsEditor({ canEdit, page, returnTo }: { canEdit: boolean; page: Publi
 }
 
 function NewPageForm({ canEdit, returnTo }: { canEdit: boolean; returnTo: string }) {
-  return <AdminSection title="Route identity" description="New routes start as Draft and stay hidden from search. Add content, verify preview, then publish separately."><AdminFormGrid action={createPublicSitePage}><input name="returnTo" type="hidden" value={returnTo} /><AdminFormSelect defaultValue="MAIN" disabled={!canEdit} label="Website" labelVisibility="visible" name="site" options={publicSiteOptions} /><AdminFormSelect defaultValue="vi" disabled={!canEdit} label="Language" labelVisibility="visible" name="locale" options={publicSiteLocaleOptions} /><AdminFormInput disabled={!canEdit} label="Route path" labelVisibility="visible" name="path" placeholder="/about" required /><AdminFormInput disabled={!canEdit} label="Operator label" labelVisibility="visible" name="internalName" required /><AdminFormInput disabled={!canEdit} label="SEO title" labelVisibility="visible" name="seoTitle" /><AdminFormTextarea disabled={!canEdit} label="SEO description" labelVisibility="visible" name="seoDescription" rows={3} /><AdminFormInput disabled={!canEdit} label="Canonical path" labelVisibility="visible" name="canonicalPath" />{canEdit ? <AdminFormActionRow><AdminFormControlButton className="button-primary" type="submit">Create Draft route</AdminFormControlButton></AdminFormActionRow> : null}</AdminFormGrid></AdminSection>;
+  return <AdminSection title="Route identity" description="New routes start as Draft and stay hidden from search. Add content, verify preview, then publish separately.">{canEdit ? <WebsiteContentActionForm action={createPublicSitePageState} submitLabel="Create Draft route"><input name="returnTo" type="hidden" value={returnTo} /><AdminFormInput className="website-content-identity-field" label="Management page name · not shown to visitors" labelVisibility="visible" name="internalName" required /><AdminFormSelect defaultValue="MAIN" label="Website" labelVisibility="visible" name="site" options={publicSiteOptions} /><AdminFormSelect defaultValue="vi" label="Language" labelVisibility="visible" name="locale" options={publicSiteLocaleOptions} /><AdminFormInput label="Route path" labelVisibility="visible" name="path" pattern="/(?:[a-z0-9-]+|\[(?:city|district|slug)\])(?:/(?:[a-z0-9-]+|\[(?:city|district|slug)\]))*|/" placeholder="/about" required /><AdminFormInput label="SEO title" labelVisibility="visible" maxLength={160} name="seoTitle" /><AdminFormTextarea className="website-content-long-field" label="SEO description" labelVisibility="visible" maxLength={320} name="seoDescription" rows={3} /><AdminFormInput label="Canonical path" labelVisibility="visible" name="canonicalPath" placeholder="/about" /></WebsiteContentActionForm> : <p className="muted">CONTENT_EDIT permission is required.</p>}</AdminSection>;
 }
 
 async function permissions() {
@@ -361,9 +380,17 @@ function notice(status?: string) {
     'draft-opened': { tone: 'success', title: 'Draft opened', detail: 'Edits now apply to a copy of the current Live revision.' },
     'draft-discarded': { tone: 'success', title: 'Draft discarded', detail: 'The current Live revision was not changed.' },
     published: { tone: 'success', title: 'Draft published', detail: 'The selected revision is now Live.' },
+    'offline-fallback': { tone: 'warning', title: 'CMS page taken offline', detail: 'Visitors now receive the code fallback for this route.' },
+    'offline-not-served': { tone: 'warning', title: 'CMS page taken offline', detail: 'Visitors now receive a not found response for this route.' },
+    deleted: { tone: 'success', title: 'Draft route deleted', detail: 'The Draft-only route was permanently removed.' },
     'rolled-back': { tone: 'success', title: 'Previous revision restored', detail: 'The restored revision is now Live.' },
     'draft-conflict': { tone: 'warning', title: 'Draft changed', detail: 'Reload and compare before saving again.' },
     'permission-denied': { tone: 'warning', title: 'Action not permitted', detail: 'Your operator role does not include this content action.' },
+    'session-expired': { tone: 'warning', title: 'Session expired', detail: 'Sign in again before changing content.' },
+    'validation-failed': { tone: 'warning', title: 'Content validation failed', detail: 'Review the entered values before trying again.' },
+    'not-found': { tone: 'warning', title: 'Content changed or no longer exists', detail: 'Reload the current page before continuing.' },
+    'rate-limited': { tone: 'warning', title: 'Too many requests', detail: 'Wait before trying this content action again.' },
+    'temporary-failure': { tone: 'danger', title: 'Content service unavailable', detail: 'Reload the current state before retrying; the mutation result is uncertain.' },
     'invalid-content': { tone: 'warning', title: 'Content is invalid', detail: 'Correct the section fields or Advanced JSON and try again.' },
     failed: { tone: 'danger', title: 'Website content action failed', detail: 'No success was recorded. Reload the Draft before retrying.' },
   };
@@ -373,6 +400,8 @@ function notice(status?: string) {
 
 function publicUrl(page: PublicSitePageDetail) { const base = page.site === 'PARTNER_RECRUITMENT' ? publicRecruitmentUrl : publicMainUrl; return `${base.replace(/\/$/u, '')}/${page.locale}${page.path === '/' ? '' : page.path}`; }
 function siteLabel(site: string) { return site === 'PARTNER_RECRUITMENT' ? 'join.hands.vn' : 'hands.vn'; }
+function ownershipLabel(ownership: PublicSiteOwnership) { return ({ CMS_LIVE: 'CMS Live', CODE_FALLBACK: 'Code fallback', NOT_SERVED: 'Not served', OWNERSHIP_CONFLICT: 'Ownership conflict' } as const)[ownership]; }
+function OwnershipBadge({ ownership }: { ownership: PublicSiteOwnership }) { return <StatusBadge tone={ownership === 'CMS_LIVE' ? 'success' : ownership === 'OWNERSHIP_CONFLICT' ? 'danger' : ownership === 'NOT_SERVED' ? 'warning' : 'neutral'}>{ownershipLabel(ownership)}</StatusBadge>; }
 function sectionKindLabel(kind: string) { return publicSiteSectionKindOptions.find((option) => option.value === kind)?.label ?? kind; }
 function draftReadinessIssues(draft: PublicSitePageDetail['draftRevision']) {
   const issues = readinessIssues(draft?.readinessIssues);
@@ -392,18 +421,56 @@ function draftChangeSummary(page: PublicSitePageDetail) {
   if (draft.canonicalPath !== live.canonicalPath) changes.push('Canonical path changed.');
   if (draft.noIndex !== live.noIndex) changes.push('Search indexing setting changed.');
   const liveSections = new Map(live.sections.map((section) => [section.key, section]));
-  const changedSections = draft.sections.filter((section) => {
+  for (const section of draft.sections) {
     const previous = liveSections.get(section.key);
-    return !previous || previous.kind !== section.kind || previous.enabled !== section.enabled || previous.sortOrder !== section.sortOrder || JSON.stringify(previous.content) !== JSON.stringify(section.content);
-  });
+    if (!previous) {
+      changes.push(`${section.key}: section added.`);
+      continue;
+    }
+    const sectionChanges: string[] = [];
+    if (previous.kind !== section.kind) sectionChanges.push('type');
+    if (previous.enabled !== section.enabled) sectionChanges.push(section.enabled ? 'enabled' : 'disabled');
+    if (previous.sortOrder !== section.sortOrder) sectionChanges.push('order');
+    sectionChanges.push(...changedContentFields(previous.content, section.content));
+    if (sectionChanges.length) changes.push(`${section.key}: ${sectionChanges.join(', ')} changed.`);
+  }
   const removedSections = live.sections.filter((section) => !draft.sections.some((draftSection) => draftSection.key === section.key));
-  if (changedSections.length) changes.push(`${changedSections.length} section${changedSections.length === 1 ? '' : 's'} added or changed.`);
-  if (removedSections.length) changes.push(`${removedSections.length} section${removedSections.length === 1 ? '' : 's'} removed.`);
+  for (const removed of removedSections) changes.push(`${removed.key}: section removed.`);
   return changes.length ? changes : ['No content or SEO differences detected.'];
 }
+function changedContentFields(previous: Record<string, unknown>, next: Record<string, unknown>) {
+  const keys = new Set([...Object.keys(previous), ...Object.keys(next)]);
+  return [...keys].filter((key) => stableJson(previous[key]) !== stableJson(next[key]));
+}
+function stableJson(input: unknown): string {
+  if (Array.isArray(input)) return `[${input.map(stableJson).join(',')}]`;
+  if (input && typeof input === 'object') return `{${Object.entries(input as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => `${JSON.stringify(key)}:${stableJson(item)}`).join(',')}}`;
+  return JSON.stringify(input) ?? 'undefined';
+}
+function latestRouteChange(group: PublicSiteRouteGroup) {
+  return group.translations.reduce<string | null>((latest, page) => !latest || page.updatedAt > latest ? page.updatedAt : latest, null);
+}
+function auditActionLabel(action: string) {
+  return ({ PUBLIC_SITE_DRAFT_PUBLISHED: 'Draft published', PUBLIC_SITE_REVISION_ROLLED_BACK: 'Previous revision restored', PUBLIC_SITE_PAGE_TAKEN_OFFLINE: 'Page taken offline', PUBLIC_SITE_PAGE_DELETED: 'Draft route deleted' } as Record<string, string>)[action] ?? action.toLowerCase().replaceAll('_', ' ');
+}
+function auditMetadata(metadata: unknown, key: string) {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+  const item = (metadata as Record<string, unknown>)[key];
+  return typeof item === 'string' ? item : null;
+}
+function readinessLabel(state: string) { return state === 'UNKNOWN' ? 'Needs validation' : state === 'BLOCKED' ? 'Blocked' : 'Ready'; }
 function titleCase(input: string) { return input.charAt(0).toUpperCase() + input.slice(1); }
 function text(input: unknown) { return typeof input === 'string' ? input : ''; }
 function value(input: string | string[] | undefined) { return Array.isArray(input) ? input[0] : input; }
 function positivePage(input?: string) { const parsed = Number.parseInt(input ?? '', 10); return Number.isInteger(parsed) && parsed > 0 ? parsed : 1; }
 function workspaceValue(input: string | string[] | undefined): Workspace { const item = value(input); return item === 'content' || item === 'publishing' || item === 'activity' ? item : 'overview'; }
 function listHref(values: Record<string, string | string[] | undefined>) { const params = new URLSearchParams(); for (const [key, raw] of Object.entries(values)) { const item = value(raw); if (item) params.set(key, item); } const query = params.toString(); return `/website-content${query ? `?${query}` : ''}`; }
+const listQueryKeys = ['view', 'site', 'locale', 'q', 'statusFilter', 'readiness', 'ownership', 'routePage', 'mode'] as const;
+const detailQueryKeys = ['view', 'pageId', 'workspace', 'sectionId', 'deleteSectionId', 'confirmPublish', 'discardDraft', 'deletePageId', 'rollbackRevisionId', 'takeOffline'] as const;
+function listQuery(source: Record<string, string | string[] | undefined>, overrides: Record<string, string | undefined> = {}) { return allowedQuery(source, listQueryKeys, overrides); }
+function detailQuery(source: Record<string, string | string[] | undefined>, overrides: Record<string, string | undefined> = {}) { return allowedQuery(source, detailQueryKeys, overrides); }
+function allowedQuery(source: Record<string, string | string[] | undefined>, keys: readonly string[], overrides: Record<string, string | undefined>) {
+  const result: Record<string, string | undefined> = {};
+  for (const key of keys) result[key] = value(source[key]);
+  return { ...result, ...overrides };
+}

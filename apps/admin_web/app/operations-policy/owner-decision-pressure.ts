@@ -1,5 +1,6 @@
 import type { AdminBooking, AdminProvider } from '../../lib/admin-api';
 import type { PolicySupplySensitivity } from './policy-supply-sensitivity';
+import { policyCountLabel } from './policy-copy';
 
 export type OwnerDecisionPressure = {
   readonly alertCount: number;
@@ -119,7 +120,7 @@ function buildOwnerDecisionPressureCards(stats: OwnerDecisionPressureStats): Own
       title: 'First-pick response window',
       status: stats.waitingFirstPick.length ? 'Monitor now' : 'Stable',
       detail: stats.waitingFirstPick.length
-        ? `${stats.waitingFirstPick.length} open matching booking(s) are waiting on a first-pick Partner. ${stats.acceptedButNotFinal.length} already have accepted participants awaiting final customer choice.`
+        ? `${policyCountLabel(stats.waitingFirstPick.length, 'open matching booking')} ${stats.waitingFirstPick.length === 1 ? 'is' : 'are'} waiting on a first-pick Partner. ${stats.acceptedButNotFinal.length} already have accepted participants awaiting final customer choice.`
         : 'No open booking is currently waiting on the first-pick response window.',
       operatorAction: stats.waitingFirstPick.length
         ? 'Review matching wait time before shortening or extending the timer.'
@@ -131,7 +132,7 @@ function buildOwnerDecisionPressureCards(stats: OwnerDecisionPressureStats): Own
     {
       title: 'Marketplace policy and supply',
       status: stats.currentVisibleSupply > 0 ? 'Supply visible' : 'Supply thin',
-      detail: `${stats.currentVisibleSupply} visible Partner(s) are inside the current policy sample. ${stats.backupInterest.length} open booking(s) already show marketplace interest.`,
+      detail: `${policyCountLabel(stats.currentVisibleSupply, 'visible Partner')} ${stats.currentVisibleSupply === 1 ? 'is' : 'are'} inside the current policy sample. ${policyCountLabel(stats.backupInterest.length, 'open booking')} already ${stats.backupInterest.length === 1 ? 'shows' : 'show'} marketplace interest.`,
       operatorAction:
         stats.currentVisibleSupply > 0
           ? 'Use the sensitivity table before changing the 10km radius.'
@@ -143,7 +144,7 @@ function buildOwnerDecisionPressureCards(stats: OwnerDecisionPressureStats): Own
     {
       title: 'Location freshness rule',
       status: stats.staleExcluded ? 'Refresh needed' : 'Fresh enough',
-      detail: `${stats.staleExcluded} Partner(s) are excluded only because their saved location is stale under the current freshness window.`,
+      detail: `${policyCountLabel(stats.staleExcluded, 'Partner')} ${stats.staleExcluded === 1 ? 'is' : 'are'} excluded only because ${stats.staleExcluded === 1 ? 'the saved location is' : 'their saved locations are'} stale under the current freshness window.`,
       operatorAction: stats.staleExcluded
         ? 'Ask Partners to open the app and send location before loosening freshness rules.'
         : 'Current location freshness is not excluding supply in the sample.',
@@ -154,7 +155,7 @@ function buildOwnerDecisionPressureCards(stats: OwnerDecisionPressureStats): Own
     {
       title: 'Wallet final gate pressure',
       status: stats.finalGatePressure ? 'Gate active' : 'Clear',
-      detail: `${stats.finalGatePressure} Partner final gate record(s) may require settlement, identity, withdrawal bank, or account review.`,
+      detail: `${policyCountLabel(stats.finalGatePressure, 'Partner final-gate record')} may require settlement, identity, withdrawal bank, or account review.`,
       operatorAction: stats.finalGatePressure
         ? 'Keep marketplace visibility open while finance and Partner controls clear final acceptance, service start, and payout release holds.'
         : 'No current sample pressure to relax marketplace gates.',
@@ -165,7 +166,7 @@ function buildOwnerDecisionPressureCards(stats: OwnerDecisionPressureStats): Own
     {
       title: 'Partner FCM readiness',
       status: stats.pushGap ? 'Push gap' : 'Ready',
-      detail: `${stats.enabledPushPartners}/${stats.onlinePartners} online Partner(s) have enabled push devices in the current snapshot.`,
+      detail: `${stats.enabledPushPartners}/${stats.onlinePartners} online ${stats.onlinePartners === 1 ? 'Partner has' : 'Partners have'} enabled push devices in the current snapshot.`,
       operatorAction: stats.pushGap
         ? 'Keep in-app request listing as the fallback until FCM device coverage is reliable.'
         : 'Push coverage is ready enough for production-device testing.',

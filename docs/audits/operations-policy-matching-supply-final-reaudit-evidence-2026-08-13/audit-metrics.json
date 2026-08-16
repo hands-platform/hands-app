@@ -1,0 +1,47 @@
+{
+  "auditedAt": "2026-08-13T23:12:00+07:00",
+  "viewports": [
+    "1440x1000",
+    "1600x1000"
+  ],
+  "scope": "operations-policy matching supply plus policies, simulation, audit, and editor cross-check",
+  "mutationsSubmitted": false,
+  "collapsedSupply": {
+    "documentHeightPx": 1074,
+    "tableCount": 0,
+    "tableRowCount": 0
+  },
+  "expandedSupply1440": {
+    "documentHeightPx": 6797,
+    "tableCount": 3,
+    "tableRowCount": 19,
+    "pageHorizontalOverflow": false
+  },
+  "expandedSupply1600": {
+    "documentHeightPx": 6772,
+    "tableCount": 3,
+    "tableRowCount": 19,
+    "pageHorizontalOverflow": false,
+    "nestedTableHorizontalScroll": true
+  },
+  "runtimeLifecycleCounts": {
+    "live": 28,
+    "locked": 0,
+    "planned": 0
+  },
+  "sourceContractLifecycleCounts": {
+    "live": 19,
+    "locked": 2,
+    "planned": 7
+  },
+  "runtimeAudit": "unavailable",
+  "testResults": {
+    "adminOperationsPolicy": "45 files / 147 tests passed",
+    "apiMatchingAndAuditSource": "2 files / 19 tests passed",
+    "apiOperationalPolicyTarget": "5 tests passed / 654 skipped",
+    "adminTypecheck": "passed",
+    "apiTypecheck": "passed",
+    "adminPolicyConsistency": "21 checks passed",
+    "combinedApiSelection": "677 passed / 1 unrelated push campaign test failed"
+  }
+}

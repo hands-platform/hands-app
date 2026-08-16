@@ -97,6 +97,62 @@ final result: passed
 
 ---
 
+# Creative Wellness Precision Comparison V2
+
+## Scope and evidence
+
+- Reference: `https://undsgn.com/uncode/homepages/creative-wellness/`.
+- Implementation: `http://localhost:3200/ko`.
+- Compared in the in-app browser at `1440 x 1000px` and `390 x 844px` using
+  identical document positions and settled scroll states.
+- The retained HANDS header remains the explicit scope exception. The reference
+  demo utility rail is excluded as vendor chrome.
+
+## Corrected fidelity gaps
+
+- Feature panels now match the source `928px` desktop media/copy height, exact
+  `46.875px / 56.25px` heading, `23.3751px / 35.0626px` body, bottom-aligned
+  `70px` action, and source first-image `0 0` crop.
+- Method layout now matches the source `108px 36px 144px` section padding,
+  `60px / 72px` title, `24px / 36px` body, `701px` media, `339px` statistic
+  image, `60px` statistic, `368px` partner card, and responsive mobile stack.
+- Mobile section starts and heights from manifesto through footer match within
+  `0.41px`; desktop cumulative starts match within `2.75px`, caused by the
+  reference's 12px versus local 15px scrollbar allocation.
+- Results glass panel now matches the `416 x 879.375px` desktop and
+  `267 x 469.25px` mobile geometry, including the source title, copy, action,
+  counter, and control positions.
+- Testimonial cards now match both desktop and mobile widths, row-specific
+  heights, type scale, image size, and the 36px initial horizontal inset.
+- Coaching and pricing now use the source section heights, internal gutters,
+  title scales, accordion line boxes, card dimensions, and mobile stacking.
+- Footer CTA/info geometry is exact at both viewports. Footer headings are
+  `24px / 28.8px`, links are `20px / 50px`, and the mobile footer is exactly
+  `2430.578125px` tall.
+
+## Motion verification
+
+- The community collage lays out 30 source-style nodes with overlap avoidance,
+  a protected center area, depth scaling, pointer response, and scroll-linked
+  X/Y drift. Desktop transforms changed between the section-entry and centered
+  states; mobile retains the reference reduced placement count.
+- Footer information parallax is active only at desktop widths. At the measured
+  entry state the local child transform was `translateY(-306.4px)` and resolved
+  to `translateY(0)` at maximum scroll, matching the source row-parallax
+  formula. Mobile correctly disables that transform.
+- Reduced-motion rules remove feature, testimonial, community, and footer
+  transforms.
+
+## Validation
+
+- Fresh local desktop and mobile renders completed without a new runtime error.
+- Public typecheck: passed.
+- Public lint: passed.
+- Public tests: 7 files, 16 tests passed.
+- Public production build: passed.
+
+final result: passed
+
 # Partner Support Halsa Features Clone
 
 ## Source truth and implementation
@@ -192,8 +248,6 @@ final result: passed
 - Clone placement immediately before `#benefits`: passed.
 
 final result: passed
-
----
 
 # Home Method And Draggable Stories V10
 
@@ -698,5 +752,78 @@ final result: passed
 ## Follow-up polish
 
 - No blocking or requested follow-up remains.
+
+final result: passed
+
+---
+
+# Creative Wellness Home Full Clone V1
+
+## Source and implementation
+
+- Source of visual truth: `https://undsgn.com/uncode/homepages/creative-wellness/`.
+- Implementation route: `http://localhost:3200/ko`.
+- Scope exception requested by the user: the incumbent HANDS category header,
+  logo, language control, and mobile menu remain in place; every section below
+  it follows the Creative Wellness reference.
+- Desktop source captures: `C:\dev\massage-on-demand-vn\output\creative-wellness-clone\source-desktop-00-y0.png`
+  through `source-desktop-16-y11755.png` at a `1440 x 1000px` viewport, DPR 1.
+- Mobile source captures: `C:\dev\massage-on-demand-vn\output\creative-wellness-clone\source-mobile-00-y0.png`
+  through `source-mobile-22-y13790.png` at a `390 x 844px` viewport, DPR 1.
+- Final side-by-side mobile evidence (source left, implementation right):
+  `qa-compare-hero.png`, `qa-compare-feature.png`,
+  `qa-compare-community.png`, `qa-compare-coaching.png`,
+  `qa-compare-pricing.png`, and `qa-compare-footer.png` in
+  `C:\dev\massage-on-demand-vn\output\creative-wellness-clone\`.
+- Desktop hero comparison:
+  `C:\dev\massage-on-demand-vn\output\creative-wellness-clone\compare-desktop-hero.png`.
+
+## Fidelity findings
+
+- Mobile document height is `14,423px` versus the reference `14,424px`.
+- The mobile feature heading is `30px / 36px`, `282px` wide, and begins at
+  `1536px`; the reference is `30px / 36px`, `282px`, and `1537px`.
+- `Stronger Together` matches the reference at `65px / 78px`, `282px` wide,
+  and `156px` tall. The coaching, pricing, footer CTA, and footer introduction
+  headings match the source font sizes, line heights, widths, and wraps.
+- Local Mona Sans and Inter font files reproduce the source typography. Hero,
+  story cards, community collage, method, result carousel, testimonials,
+  coaching accordions, three pricing cards, and the complete footer preserve
+  the source English copy.
+- Source photography, avatars, testimonial portraits, result imagery, and
+  footer imagery are served from local assets; the page contains no placeholder
+  graphics or source hotlinks.
+- Backgrounds, pastel plan colors, dark panels, radii, glass overlays, buttons,
+  image crops, desktop spacing, mobile gutters, and section rhythm were checked
+  against the captured reference.
+- Scroll-linked feature movement, result pagination, video dialog open/close,
+  accordion state, hover feedback, responsive reflow, and reduced-motion
+  behavior were exercised. Browser console warnings and errors: none.
+- The Uncode demo utility rail and floating vendor chrome are intentionally
+  excluded because they are template-demo controls rather than page content.
+
+## Comparison history
+
+- Pass 1 corrected the desktop coaching treatment from transparent rules to
+  the reference card accordions and restored the narrow vertical founder card.
+- Pass 2 changed pricing from an invented centered treatment to the reference
+  left-aligned hierarchy, badge, card gutters, and plan typography.
+- Pass 3 corrected mobile feature image/copy proportions, the dark-panel media
+  visibility, result/testimonial/coaching heights, and the full-page vertical
+  sequence.
+- Pass 4 matched measured source typography and coordinates: hero height and
+  controls, feature heading/body cadence, community title, coaching title,
+  pricing title, footer CTA, and footer introduction.
+- Final review found no actionable P0, P1, or P2 mismatch. The visible HANDS
+  header difference is the explicit retained-header requirement.
+
+## Validation
+
+- Public typecheck: passed.
+- Public lint: passed.
+- Public tests: 7 files, 16 tests passed.
+- Public production build: passed.
+- Protected backend, admin, database, API, customer app, and provider app areas
+  were not modified by this work.
 
 final result: passed

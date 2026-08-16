@@ -28,7 +28,7 @@ describe('Admin calendar event detail route', () => {
     process.env = {
       ...process.env,
       ADMIN_WEB_ALLOW_DEV_REALTIME_TOKEN: undefined,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       NODE_ENV: 'production',
     };
     const { PATCH } = await import('./route');
@@ -36,6 +36,7 @@ describe('Admin calendar event detail route', () => {
     const response = await PATCH(
       new Request('http://localhost/api/admin/calendar-events/calendar-1', {
         body: JSON.stringify({ title: 'Updated closeout' }),
+        headers: { origin: 'http://localhost' },
         method: 'PATCH',
       }),
       { params: Promise.resolve({ id: 'calendar-1' }) },
@@ -50,7 +51,7 @@ describe('Admin calendar event detail route', () => {
   });
 
   it('passes operator identity through update requests so the API can enforce author-only edits', async () => {
-    const sessionSecret = 'test-admin-session-secret';
+    const sessionSecret = 'test-admin-session-secret-with-32-chars';
     process.env = {
       ...process.env,
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
@@ -79,7 +80,10 @@ describe('Admin calendar event detail route', () => {
     const response = await PATCH(
       new Request('http://localhost/api/admin/calendar-events/calendar-1', {
         body: JSON.stringify({ title: 'Updated closeout' }),
-        headers: { cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookie}` },
+        headers: {
+          cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookie}`,
+          origin: 'http://localhost',
+        },
         method: 'PATCH',
       }),
       { params: Promise.resolve({ id: 'calendar-1' }) },
@@ -96,7 +100,7 @@ describe('Admin calendar event detail route', () => {
   });
 
   it('passes operator identity through delete requests so the API can enforce author-only deletes', async () => {
-    const sessionSecret = 'test-admin-session-secret';
+    const sessionSecret = 'test-admin-session-secret-with-32-chars';
     process.env = {
       ...process.env,
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
@@ -112,7 +116,10 @@ describe('Admin calendar event detail route', () => {
 
     const response = await DELETE(
       new Request('http://localhost/api/admin/calendar-events/calendar-1', {
-        headers: { cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookie}` },
+        headers: {
+          cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookie}`,
+          origin: 'http://localhost',
+        },
         method: 'DELETE',
       }),
       { params: Promise.resolve({ id: 'calendar-1' }) },

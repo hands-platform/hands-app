@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { AppUsageEventType, AppUsageOrigin, Role } from '@prisma/client';
 
 import { UsersService } from './users.service';
@@ -8,6 +8,28 @@ describe('UsersService app usage events', () => {
     id: 'user-1',
     roles: [Role.CUSTOMER],
   };
+
+  it('rejects Admin identities at the mobile app session boundary', async () => {
+    const service = new UsersService({} as never);
+
+    await expect(
+      service.recordAppSession(
+        { id: 'admin-user', roles: [Role.ADMIN] },
+        { deviceId: 'admin-device', role: Role.ADMIN },
+      ),
+    ).rejects.toThrow(new ForbiddenException('Admin operators cannot record mobile app sessions'));
+  });
+
+  it('rejects a mobile role that is not present in the authenticated token', async () => {
+    const service = new UsersService({} as never);
+
+    await expect(
+      service.recordAppSession(authenticatedCustomer, {
+        deviceId: 'customer-device',
+        role: Role.PROVIDER,
+      }),
+    ).rejects.toThrow(new ForbiddenException('Requested mobile app role is not authorized'));
+  });
 
   it('records a session start once while preserving the AppSession response', async () => {
     const now = new Date('2026-07-18T10:00:00.000Z');
@@ -153,6 +175,36 @@ describe('UsersService app usage events', () => {
 
     expect(transaction.appUsageEvent.findUnique).not.toHaveBeenCalled();
     expect(transaction.appUsageEvent.create).not.toHaveBeenCalled();
+  });
+
+  it('does not persist arbitrary client metadata for customer or Partner sessions', async () => {
+    const transaction = {
+      appSession: { upsert: vi.fn().mockResolvedValue({ id: 'session-1' }) },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof transaction) => Promise<unknown>) =>
+        callback(transaction),
+      ),
+    };
+    const service = new UsersService(prisma as never);
+
+    await service.recordAppSession(authenticatedCustomer, {
+      deviceId: 'customer-device',
+      metadata: { accessToken: 'must-not-be-stored', arbitrary: { nested: true } },
+    });
+    await service.recordAppSession(
+      { id: 'provider-user', roles: [Role.PROVIDER] },
+      {
+        deviceId: 'provider-device',
+        metadata: { financeEvidence: 'must-not-be-stored' },
+      },
+    );
+
+    expect(transaction.appSession.upsert).toHaveBeenCalledTimes(2);
+    for (const [input] of transaction.appSession.upsert.mock.calls) {
+      expect(input.update.metadata).toBeUndefined();
+      expect(input.create.metadata).toBeUndefined();
+    }
   });
 
   it('preserves the first customer marketing attribution on later app opens', async () => {

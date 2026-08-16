@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import {
   AdminOperatorPermissionCategory,
+  AdminUserProvenance,
   BookingStatus,
   EarningStatus,
   PrismaClient,
@@ -105,6 +106,9 @@ async function createFixture(prisma, runId) {
         phone: `+84910${phoneSuffix}1`,
         fullName: 'Deposit Allocation Smoke Maker',
         roles: [Role.ADMIN],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'PARTNER_BANK_DEPOSIT_SMOKE',
+        fixtureRunId: runId,
       },
     }),
     prisma.user.create({
@@ -112,6 +116,9 @@ async function createFixture(prisma, runId) {
         phone: `+84910${phoneSuffix}2`,
         fullName: 'Deposit Allocation Smoke Approver',
         roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'PARTNER_BANK_DEPOSIT_SMOKE',
+        fixtureRunId: runId,
       },
     }),
     prisma.user.create({

@@ -7,6 +7,7 @@ import {
   isPublicSiteIndexingEnabled,
   publicSiteTemplatePath,
 } from './site-content';
+import { publicSiteRouteManifest } from './public-site-route-manifest';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -14,6 +15,12 @@ afterEach(() => {
 });
 
 describe('publicSiteTemplatePath', () => {
+  it('uses the canonical API route manifest without duplicate route keys', () => {
+    const keys = publicSiteRouteManifest.map((entry) => `${entry.site}:${entry.path}`);
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(keys).toContain('MAIN:/referrals');
+    expect(keys).not.toContain('MAIN:/partners/[city]/[slug]');
+  });
   it('maps partner directory routes to their managed templates', () => {
     expect(publicSiteTemplatePath('/partners/ho-chi-minh')).toBe('/partners/[city]');
     expect(publicSiteTemplatePath('/partners/ho-chi-minh/district-1')).toBe(
@@ -47,9 +54,13 @@ describe('publicSiteTemplatePath', () => {
 
     await fetchPublicSitePreview('signed-preview-token');
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/public/site-pages/preview?token=signed-preview-token'),
-      { cache: 'no-store' },
+      expect.stringMatching(/\/public\/site-pages\/preview$/),
+      {
+        cache: 'no-store',
+        headers: { authorization: 'Bearer signed-preview-token' },
+      },
     );
+    expect(fetchMock.mock.calls[0]?.[0]).not.toContain('signed-preview-token');
 
     fetchMock.mockResolvedValueOnce({ ok: false, status: 503 });
     await expect(fetchPublicSitePage('MAIN', 'vi', '/about')).rejects.toThrow('503');

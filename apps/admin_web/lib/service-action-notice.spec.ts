@@ -27,6 +27,20 @@ describe('service action notice', () => {
     });
   });
 
+  it('links a group command receipt to its exact audit target', () => {
+    expect(
+      serviceActionNotice({
+        group: 'foot',
+        reason: 'service-menu-published',
+        status: 'saved',
+      }),
+    ).toMatchObject({
+      actionHref: '/audit-log?target=service_group%3Afoot',
+      actionLabel: 'Open audit change set',
+      title: 'Service group published',
+    });
+  });
+
   it('returns stable fallbacks for unknown reasons and ignores unknown statuses', () => {
     expect(serviceActionNotice({ reason: 'unknown', status: 'saved' })?.title).toBe(
       'Service option updated',

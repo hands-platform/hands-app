@@ -5,6 +5,7 @@ import {
   callbackAmountVnd,
   callbackAttemptCreateData,
   callbackAttemptEvidence,
+  callbackEvidenceErrorMessage,
   callbackFailureOutcome,
   callbackProviderRef,
   callbackRawMeta,
@@ -13,6 +14,7 @@ import {
   hmacHex,
   isTerminalPaymentStatus,
   momoSignatureCandidates,
+  paymentCallbackEvidencePayload,
   redactPaymentCallbackPayload,
   secureEqualHex,
   sortedKeyValueString,
@@ -36,7 +38,6 @@ describe('payment callback helpers', () => {
       ),
     ).toEqual({
       providerRef: 'momo-booking-1',
-      signature: '[REDACTED]',
       callbackReceivedAt: '2026-06-11T00:00:00.000Z',
       callbackSignatureVerified: true,
       callbackVerificationMode: 'momo-hmac',
@@ -110,11 +111,27 @@ describe('payment callback helpers', () => {
       errorCode: undefined,
       errorMessage: undefined,
       rawPayload: {
-        recordedAt: '2026-06-11T00:00:00.000Z',
-        vnp_SecureHash: '[REDACTED]',
       },
       signatureVerified: undefined,
       verificationMode: undefined,
+    });
+  });
+
+  it('persists only allowlisted callback evidence fields', () => {
+    expect(
+      paymentCallbackEvidencePayload({
+        amount: '300000',
+        customerEmail: 'customer@example.com',
+        extraData: 'opaque-provider-data',
+        orderId: 'booking-1',
+        orderInfo: 'Customer booking details',
+        signature: 'gateway-signature',
+        transId: 'transaction-1',
+      }),
+    ).toEqual({
+      amount: '300000',
+      orderId: 'booking-1',
+      transId: 'transaction-1',
     });
   });
 
@@ -146,6 +163,29 @@ describe('payment callback helpers', () => {
     });
   });
 
+  it('bounds untrusted callback evidence before persistence', () => {
+    const keys = Object.fromEntries(Array.from({ length: 45 }, (_, index) => [`key${index}`, index]));
+    const result = redactPaymentCallbackPayload({
+      ...keys,
+      longValue: 'x'.repeat(700),
+      nested: { one: { two: { three: { four: { five: 'too-deep' } } } } },
+      values: Array.from({ length: 25 }, (_, index) => index),
+    });
+
+    expect(Object.keys(result)).toHaveLength(40);
+    expect(result.key39).toBe(39);
+    expect(result.key40).toBeUndefined();
+
+    const bounded = redactPaymentCallbackPayload({
+      longValue: 'x'.repeat(700),
+      nested: { one: { two: { three: { four: { five: 'too-deep' } } } } },
+      values: Array.from({ length: 25 }, (_, index) => index),
+    });
+    expect(String(bounded.longValue)).toHaveLength(523);
+    expect(bounded.values).toEqual(Array.from({ length: 20 }, (_, index) => index));
+    expect(bounded.nested).toEqual({ one: { two: { three: { four: '[TRUNCATED]' } } } });
+  });
+
   it('classifies callback errors for audit evidence', () => {
     expect(errorCode(new BadRequestException('bad'))).toBe('BAD_REQUEST');
     expect(errorCode(new ConflictException('conflict'))).toBe('CONFLICT');
@@ -155,6 +195,17 @@ describe('payment callback helpers', () => {
     expect(callbackFailureOutcome(new BadRequestException('bad'))).toBe('REJECTED');
     expect(errorMessage(new Error('boom'))).toBe('boom');
     expect(errorMessage('boom')).toBe('Payment callback processing failed');
+    expect(callbackEvidenceErrorMessage(new BadRequestException('Invalid MoMo callback signature'))).toBe(
+      'Payment callback authentication rejected',
+    );
+    expect(
+      callbackEvidenceErrorMessage(
+        new Error('postgres://operator:secret@database.internal/payment-callbacks'),
+      ),
+    ).toBe('Payment callback processing failed');
+    expect(callbackEvidenceErrorMessage(new ConflictException('private state details'))).toBe(
+      'Payment callback conflicts with the current payment state',
+    );
     expect(stringValue(null)).toBe('');
   });
 

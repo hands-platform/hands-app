@@ -17,7 +17,9 @@ import {
   CreateProviderBankAccountDto,
   CreateTaxPolicyVersionDto,
   CreateTaxRuleDto,
+  DecideTaxPolicyApprovalRequestDto,
   ProviderOnboardingReasonDto,
+  SubmitTaxPolicyApprovalRequestDto,
   SubmitProviderKycDto,
   UpdateProviderBasicProfileDto,
   UpdateTaxPolicyVersionDto,
@@ -88,8 +90,113 @@ export class ProviderOnboardingController {
 
   @Get('admin/tax-policy-versions')
   @Roles(Role.ADMIN)
-  taxPolicyVersions(@Query('take') take?: string, @Query('skip') skip?: string) {
-    return this.onboarding.listTaxPolicyVersions({ skip, take });
+  taxPolicyVersions(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('effectiveFrom') effectiveFrom?: string,
+    @Query('effectiveTo') effectiveTo?: string,
+    @Query('view') view?: string,
+    @Query('id') id?: string,
+    @Query('lifecycle') lifecycle?: string,
+    @Query('provenance') provenance?: string,
+    @Query('q') q?: string,
+    @Query('sort') sort?: string,
+    @Query('source') source?: string,
+  ) {
+    return this.onboarding.listTaxPolicyVersions({
+      effectiveFrom,
+      effectiveTo,
+      id,
+      lifecycle,
+      provenance,
+      q,
+      skip,
+      sort,
+      source,
+      take,
+      view,
+    });
+  }
+
+  @Get('admin/tax-policy-capabilities')
+  @Roles(Role.ADMIN)
+  taxPolicyCapabilities(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('policyVersionId') policyVersionId?: string,
+  ) {
+    return this.onboarding.taxPolicyCapabilities(
+      user.id,
+      { sessionId: user.sessionId },
+      policyVersionId,
+    );
+  }
+
+  @Get('admin/tax-policy-workspace-summary')
+  @Roles(Role.ADMIN)
+  taxPolicyWorkspaceSummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.onboarding.taxPolicyWorkspaceSummary(user.id);
+  }
+
+  @Get('admin/tax-policy-audit-logs')
+  @Roles(Role.ADMIN)
+  taxPolicyAuditLogs(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('action') action?: string,
+    @Query('actorId') actorId?: string,
+    @Query('eventId') eventId?: string,
+    @Query('from') from?: string,
+    @Query('policyVersionId') policyVersionId?: string,
+    @Query('source') source?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.onboarding.listTaxPolicyAuditLogs(user.id, {
+      action,
+      actorId,
+      eventId,
+      from,
+      policyVersionId,
+      skip,
+      source,
+      take,
+      to,
+    });
+  }
+
+  @Get('admin/tax-policy-versions/:id/simulation')
+  @Roles(Role.ADMIN)
+  simulateTaxPolicyVersion(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') policyVersionId: string,
+    @Query('grossAmount') grossAmount?: string,
+    @Query('serviceType') serviceType?: string,
+  ) {
+    return this.onboarding.simulateTaxPolicyVersion(user.id, policyVersionId, {
+      grossAmount,
+      serviceType,
+    });
+  }
+
+  @Get('admin/tax-policy-integrity-summary')
+  @Roles(Role.ADMIN)
+  taxPolicyIntegritySummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.onboarding.taxPolicyIntegritySummary(user.id);
+  }
+
+  @Get('admin/tax-policy-integrity-records')
+  @Roles(Role.ADMIN)
+  taxPolicyIntegrityRecords(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('from') from?: string,
+    @Query('issue') issue?: string,
+    @Query('sort') sort?: string,
+    @Query('source') source?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.onboarding.taxPolicyIntegrityRecords(user.id, { from, issue, skip, sort, source, take, to });
   }
 
   @Post('admin/tax-policy-versions')
@@ -98,7 +205,7 @@ export class ProviderOnboardingController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: CreateTaxPolicyVersionDto,
   ) {
-    return this.onboarding.createTaxPolicyVersion(user.id, body);
+    return this.onboarding.createTaxPolicyVersion(user.id, body, { sessionId: user.sessionId });
   }
 
   @Patch('admin/tax-policy-versions/:id')
@@ -108,7 +215,7 @@ export class ProviderOnboardingController {
     @Param('id') id: string,
     @Body() body: UpdateTaxPolicyVersionDto,
   ) {
-    return this.onboarding.updateTaxPolicyVersion(user.id, id, body);
+    return this.onboarding.updateTaxPolicyVersion(user.id, id, body, { sessionId: user.sessionId });
   }
 
   @Post('admin/tax-policy-versions/:id/rules')
@@ -118,7 +225,7 @@ export class ProviderOnboardingController {
     @Param('id') policyVersionId: string,
     @Body() body: CreateTaxRuleDto,
   ) {
-    return this.onboarding.createTaxRule(user.id, policyVersionId, body);
+    return this.onboarding.createTaxRule(user.id, policyVersionId, body, { sessionId: user.sessionId });
   }
 
   @Patch('admin/tax-rules/:id')
@@ -128,7 +235,52 @@ export class ProviderOnboardingController {
     @Param('id') id: string,
     @Body() body: UpdateTaxRuleDto,
   ) {
-    return this.onboarding.updateTaxRule(user.id, id, body);
+    return this.onboarding.updateTaxRule(user.id, id, body, { sessionId: user.sessionId });
+  }
+
+  @Get('admin/tax-policy-approval-requests')
+  @Roles(Role.ADMIN)
+  taxPolicyApprovalRequests(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('policyVersionId') policyVersionId?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.onboarding.listTaxPolicyApprovalRequests(user.id, {
+      policyVersionId,
+      skip,
+      take,
+    });
+  }
+
+  @Post('admin/tax-policy-versions/:id/approval-requests')
+  @Roles(Role.ADMIN)
+  submitTaxPolicyApprovalRequest(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') policyVersionId: string,
+    @Body() body: SubmitTaxPolicyApprovalRequestDto,
+  ) {
+    return this.onboarding.submitTaxPolicyApprovalRequest(
+      user.id,
+      policyVersionId,
+      body,
+      { sessionId: user.sessionId },
+    );
+  }
+
+  @Post('admin/tax-policy-approval-requests/:id/decision')
+  @Roles(Role.ADMIN)
+  decideTaxPolicyApprovalRequest(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') requestId: string,
+    @Body() body: DecideTaxPolicyApprovalRequestDto,
+  ) {
+    return this.onboarding.decideTaxPolicyApprovalRequest(
+      user.id,
+      requestId,
+      body,
+      { sessionId: user.sessionId },
+    );
   }
 
   @Post('admin/providers/:id/kyc/approve')

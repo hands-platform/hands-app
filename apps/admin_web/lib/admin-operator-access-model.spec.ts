@@ -23,7 +23,7 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForPath('/finance-tax/partner-bank-deposits/deposit-1')).toBe(
       'FINANCE_WALLET_ADJUSTMENTS',
     );
-    expect(adminOperatorCategoryForPath('/finance-tax/company-bank-accounts')).toBe('SYSTEM_POLICY');
+    expect(adminOperatorCategoryForPath('/finance-tax/company-bank-accounts')).toBe('FINANCE_BANK_RECONCILIATION');
     expect(adminOperatorCategoryForPath('/finance-tax/coupon-finance')).toBe('FINANCE_TAX');
     expect(adminOperatorCategoryForPath('/finance-tax/finance-approvers')).toBe('SYSTEM_ADMIN_OPERATORS');
     expect(adminOperatorCategoryForPath('/referrals/customers')).toBe('CUSTOMERS');
@@ -49,6 +49,15 @@ describe('admin operator access model', () => {
   });
 
   it('maps write API calls to operator permission categories', () => {
+    expect(
+      adminOperatorCategoryForAdminApiPath('POST', '/admin/finance-approver-governance/requests'),
+    ).toBe('SYSTEM_ADMIN_OPERATORS');
+    expect(
+      adminOperatorCategoryForAdminApiPath(
+        'POST',
+        '/admin/finance-approver-governance/requests/request-1/decision',
+      ),
+    ).toBe('SYSTEM_POLICY');
     expect(
       adminOperatorCategoryForAdminApiPath(
         'PATCH',
@@ -104,9 +113,9 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/partners/provider-1/approve')).toBe('PARTNERS_DETAIL');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/partner-documents/document-1/approve')).toBe('PARTNERS_KYC');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/partner-bank-accounts/bank-1/reject')).toBe('PARTNERS_KYC');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/tax-policy-versions')).toBe('SYSTEM_POLICY');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/tax-policy-versions')).toBe('FINANCE_TAX');
     expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/service-payout-rules/rule-1')).toBe('SYSTEM_SERVICES');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/marketing/spend-daily')).toBe('GROWTH_MARKETING');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/marketing/spend-daily')).toBe('GROWTH_MARKETING_SPEND');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/calendar-events')).toBe('BOOKINGS_REALTIME');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/notifications/push-campaigns')).toBe('NOTIFICATIONS_PUSH');
     expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/notifications/templates/booking.matched')).toBe(
@@ -148,6 +157,11 @@ describe('admin operator access model', () => {
     expect(hasAdminOperatorCategory({ categories: [], roles: ['MASTER_ADMIN'] }, 'DEVELOPER_SETUP')).toBe(true);
     expect(hasAdminOperatorCategory({ categories: ['DEVELOPER_SYSTEM'] }, 'DEVELOPER_SETUP')).toBe(true);
     expect(hasAdminOperatorCategory({ categories: ['GROWTH'] }, 'GROWTH_MARKETING')).toBe(true);
+    expect(hasAdminOperatorCategory({ categories: ['GROWTH'] }, 'GROWTH_MARKETING_SPEND')).toBe(false);
+    expect(hasAdminOperatorCategory({ categories: ['GROWTH_MARKETING'] }, 'GROWTH_MARKETING_SPEND')).toBe(false);
+    expect(hasAdminOperatorCategory({ categories: ['GROWTH_MARKETING_SPEND'] }, 'GROWTH_MARKETING_SPEND')).toBe(true);
+    expect(hasAdminOperatorCategory({ categories: ['NOTIFICATIONS'] }, 'NOTIFICATIONS_PUSH')).toBe(false);
+    expect(hasAdminOperatorCategory({ categories: ['NOTIFICATIONS_PUSH'] }, 'NOTIFICATIONS_PUSH')).toBe(true);
     expect(hasAdminOperatorCategory({ categories: [], roles: ['MASTER_ADMIN'] }, 'BOOKINGS_REALTIME')).toBe(true);
   });
 });

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import {
+  AdminUserProvenance,
   AccountingJournalSourceType,
   BookingStatus,
   MonthlyTaxClosingStatus,
@@ -244,9 +245,33 @@ try {
 async function seed() {
   await prisma.user.createMany({
     data: [
-      { id: ids.actor, phone: smokePhone('01'), fullName: 'Withholding Smoke Master', roles: [Role.ADMIN, Role.MASTER_ADMIN] },
-      { id: ids.approver, phone: smokePhone('02'), fullName: 'Withholding Smoke Finance Approver', roles: [Role.ADMIN, Role.FINANCE_APPROVER] },
-      { id: ids.nonFinance, phone: smokePhone('03'), fullName: 'Withholding Smoke Non Finance', roles: [Role.ADMIN] },
+      {
+        id: ids.actor,
+        phone: smokePhone('01'),
+        fullName: 'Withholding Smoke Master',
+        roles: [Role.ADMIN, Role.MASTER_ADMIN],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'WITHHOLDING_SMOKE',
+        fixtureRunId: runId,
+      },
+      {
+        id: ids.approver,
+        phone: smokePhone('02'),
+        fullName: 'Withholding Smoke Finance Approver',
+        roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'WITHHOLDING_SMOKE',
+        fixtureRunId: runId,
+      },
+      {
+        id: ids.nonFinance,
+        phone: smokePhone('03'),
+        fullName: 'Withholding Smoke Non Finance',
+        roles: [Role.ADMIN],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'WITHHOLDING_SMOKE',
+        fixtureRunId: runId,
+      },
       { id: ids.customerUser, phone: smokePhone('04'), fullName: 'Withholding Smoke Customer', roles: [Role.CUSTOMER] },
       { id: ids.providerUser, phone: smokePhone('05'), fullName: 'Withholding Smoke Partner', roles: [Role.PROVIDER] },
     ],

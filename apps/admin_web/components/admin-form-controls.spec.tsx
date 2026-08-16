@@ -431,6 +431,8 @@ describe('Admin form controls', () => {
 
   it('renders checkbox controls with the same field contract', () => {
     const checkbox = AdminFormCheckbox({
+      ariaDescribedBy: 'active60-error',
+      ariaInvalid: true,
       children: 'Enabled',
       className: 'service-enabled-toggle',
       defaultChecked: true,
@@ -442,6 +444,8 @@ describe('Admin form controls', () => {
     expect(checkbox.props.className).toBe('admin-form-checkbox admin-form-control-labeled service-enabled-toggle');
     expect(textContent(checkbox)).toContain('Enabled');
     expect(checkbox.props.children[0].props).toMatchObject({
+      'aria-describedby': 'active60-error',
+      'aria-invalid': true,
       className: 'admin-form-checkbox-input',
       defaultChecked: true,
       name: 'active60',

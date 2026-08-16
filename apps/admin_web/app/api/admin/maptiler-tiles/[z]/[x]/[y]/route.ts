@@ -5,6 +5,7 @@ import {
   VIETNAM_MAPTILER_TILE_VIEW,
 } from '../../../../../../vietnam-overview/vietnam-overview-model';
 import { requireAdminWebAccess } from '../../../../../../../lib/admin-session';
+import { verifyAdminWebSessionWithApi } from '../../../../../../../lib/admin-session-api';
 
 const tileCacheSeconds = 60 * 60 * 24;
 const noStoreHeaders = { 'cache-control': 'no-store' };
@@ -23,6 +24,12 @@ export async function GET(request: Request, context: RouteContext) {
   const access = requireAdminWebAccess(request);
   if (!access.allowed) {
     return NextResponse.json({ error: access.error }, { headers: noStoreHeaders, status: access.status });
+  }
+  if (access.session && !(await verifyAdminWebSessionWithApi(access.session))) {
+    return NextResponse.json(
+      { error: 'ADMIN_WEB_ACCESS_REQUIRED' },
+      { headers: noStoreHeaders, status: 401 },
+    );
   }
 
   const params = await context.params;

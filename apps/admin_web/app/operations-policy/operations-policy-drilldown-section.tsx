@@ -10,6 +10,7 @@ import {
   AdminTaskGrid,
 } from '../../components/admin-surface';
 import { StatusBadgeFromPillClass } from '../../components/status-badge';
+import { policyCountLabel } from './policy-copy';
 
 export type PolicyDrilldownPill = {
   readonly label: string;
@@ -47,7 +48,7 @@ export function OperationsPolicyDrilldownSection({ drilldown }: OperationsPolicy
     <AdminSection
       className="admin-mb-16"
       description="Click into the exact bookings and Partner records operators should review before changing live matching, wallet, or response-window policy."
-      statusLabel={`${drilldown.totalCount} item(s) to review`}
+      statusLabel={`${policyCountLabel(drilldown.totalCount, 'item')} to review`}
       statusTone="info"
       title="Policy impact drill-down"
     >
@@ -67,7 +68,7 @@ function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView 
       detail={list.helper}
       leading={
         <StatusBadgeFromPillClass pillClass={list.pillClass}>
-          {list.rows.length} item(s)
+          {policyCountLabel(list.rows.length, 'item')}
         </StatusBadgeFromPillClass>
       }
       title={list.title}

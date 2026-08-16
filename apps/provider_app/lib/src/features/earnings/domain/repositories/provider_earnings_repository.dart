@@ -9,6 +9,7 @@ abstract class ProviderEarningsRepository {
 
   Future<Map<String, dynamic>> createWalletWithdrawalRequest({
     required int amount,
+    String? idempotencyKey,
     String? bankAccountId,
     String? requestNote,
   });

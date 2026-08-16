@@ -24,6 +24,54 @@ export class AdminBankRoutes extends AdminLedgerRoutes {
     return this.admin.listCompanyBankAccounts({ status });
   }
 
+  @Get('company-bank-accounts/recent-changes')
+  companyBankAccountRecentChanges(@Query('take') take?: string) {
+    return this.admin.companyBankAccountRecentChanges(take);
+  }
+
+  @Get('company-bank-accounts/operations-page')
+  companyBankAccountOperationsPage(
+    @Query('view') view?: string,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+    @Query('purpose') purpose?: string,
+    @Query('currency') currency?: string,
+    @Query('verification') verification?: string,
+    @Query('health') health?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.admin.companyBankAccountOperationsPage({
+      currency,
+      health,
+      purpose,
+      skip,
+      status,
+      take,
+      verification,
+      view,
+    });
+  }
+
+  @Get('company-bank-accounts/approver-readiness')
+  companyBankAccountApproverReadiness(@CurrentUser() user: AuthenticatedUser) {
+    return this.admin.companyBankAccountApproverReadiness(user.id);
+  }
+
+  @Get('company-bank-accounts/:id/status-preflight')
+  companyBankAccountStatusPreflight(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query('nextStatus') nextStatus?: string,
+    @Query('replacementAccountId') replacementAccountId?: string,
+  ) {
+    return this.admin.companyBankAccountStatusPreflight(
+      user.id,
+      id,
+      nextStatus,
+      replacementAccountId,
+    );
+  }
+
   @Post('company-bank-accounts')
   createCompanyBankAccount(
     @CurrentUser() user: AuthenticatedUser,

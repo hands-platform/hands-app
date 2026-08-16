@@ -10,6 +10,7 @@ import {
 } from '@prisma/client';
 import {
   assertProviderCanReceiveBooking,
+  assertProviderCanViewOpenBookingMarketplace,
   assertProviderOffersRequestedService,
   REQUIRED_BOOKING_DOCUMENT_TYPES,
 } from './bookings.provider-readiness';
@@ -25,6 +26,20 @@ describe('booking provider readiness helpers', () => {
 
   it('accepts a partner with approved verification, KYC, and required documents', () => {
     expect(() => assertProviderCanReceiveBooking(readyProvider())).not.toThrow();
+  });
+
+  it('requires approved identity evidence before exposing open marketplace bookings', () => {
+    expect(() =>
+      assertProviderCanViewOpenBookingMarketplace(
+        readyProvider({ verification: { status: VerificationStatus.SUBMITTED } }),
+      ),
+    ).toThrow(new BadRequestException('Partner verification must be approved before receiving bookings'));
+
+    expect(() =>
+      assertProviderCanViewOpenBookingMarketplace(
+        readyProvider({ kyc: { status: ProviderKycStatus.PENDING } }),
+      ),
+    ).toThrow(new BadRequestException('Partner KYC must be approved before receiving bookings'));
   });
 
   it('rejects blocked partners with the admin reason when present', () => {

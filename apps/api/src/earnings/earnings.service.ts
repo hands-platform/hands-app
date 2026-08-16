@@ -55,6 +55,10 @@ import { bookingServiceAmount, buildCouponSettlementContext } from '../settlemen
 import { analyzeHistoricalSettlementEvidence } from '../settlements/historical-settlement-reconstruction';
 import { settlementMonthlyPeriod, SettlementsService } from '../settlements/settlements.service';
 import {
+  immutableFinancialReplayMatches,
+  PROVIDER_WALLET_LEDGER_REPLAY_FIELDS,
+} from '../settlements/immutable-financial-replay';
+import {
   allocatePartnerBankDeposit,
   calculateCashBookingPartnerDue,
   calculateProviderWalletDelta,
@@ -84,9 +88,12 @@ import {
   cashSettlementDebtFilterSql,
   type CashSettlementDebtFilter,
 } from './cash-settlement-query';
+import {
+  calculateCappedBpsAmount,
+  calculatePartnerTaxLine,
+  calculatePartnerTaxWithholding,
+} from './tax-policy-withholding';
 
-type TaxPolicyWithRules = Prisma.TaxPolicyVersionGetPayload<{ include: { rules: true } }>;
-type TaxRuleRecord = TaxPolicyWithRules['rules'][number];
 type PlatformFeePolicyWithRules = Prisma.PlatformFeePolicyVersionGetPayload<{ include: { rules: true } }>;
 type PlatformFeeRuleRecord = PlatformFeePolicyWithRules['rules'][number];
 type PaymentFeePolicyWithRules = Prisma.PaymentFeePolicyVersionGetPayload<{ include: { rules: true } }>;
@@ -97,7 +104,53 @@ type PricedBookingService = {
   serviceName?: string | null;
   price: number;
   quantity: number;
+  payoutRuleIdSnapshot?: string | null;
+  providerPayoutAmountSnapshot?: number | null;
+  payoutRuleSnapshot?: Prisma.JsonValue | null;
 };
+
+function bookingServicePayoutSnapshot(service: PricedBookingService) {
+  const snapshot =
+    service.payoutRuleSnapshot &&
+    typeof service.payoutRuleSnapshot === 'object' &&
+    !Array.isArray(service.payoutRuleSnapshot)
+      ? service.payoutRuleSnapshot
+      : null;
+  const ruleId = snapshot && typeof snapshot.id === 'string' ? snapshot.id : service.payoutRuleIdSnapshot;
+  const customerPrice = snapshot && typeof snapshot.customerPrice === 'number' ? snapshot.customerPrice : null;
+  const providerPayoutAmount = service.providerPayoutAmountSnapshot;
+  const vatBps = snapshot && typeof snapshot.vatBps === 'number' ? snapshot.vatBps : null;
+  const otherCostAmount =
+    snapshot && typeof snapshot.otherCostAmount === 'number' ? snapshot.otherCostAmount : null;
+  const currency = snapshot && typeof snapshot.currency === 'string' ? snapshot.currency : null;
+
+  if (
+    !ruleId ||
+    customerPrice !== service.price ||
+    !Number.isInteger(providerPayoutAmount) ||
+    (providerPayoutAmount ?? -1) < 0 ||
+    providerPayoutAmount! > service.price ||
+    !Number.isInteger(vatBps) ||
+    (vatBps ?? -1) < 0 ||
+    !Number.isInteger(otherCostAmount) ||
+    (otherCostAmount ?? -1) < 0 ||
+    !currency
+  ) {
+    throw new BadRequestException(
+      `Booking payout snapshot is missing or invalid for service ${service.serviceId}`,
+    );
+  }
+
+  return {
+    id: ruleId,
+    serviceId: service.serviceId,
+    customerPrice,
+    providerPayoutAmount: providerPayoutAmount!,
+    vatBps: vatBps!,
+    otherCostAmount: otherCostAmount!,
+    currency,
+  };
+}
 
 const historicalPaidSettlementBookingSelect = {
   id: true,
@@ -996,9 +1049,25 @@ export class EarningsService {
   async createForCompletedBooking(
     bookingId: string,
     providerProfileId: string,
-    options: { preserveExistingLifecycle?: boolean } = {},
+    _options?: { preserveExistingLifecycle?: boolean },
+    transactionClient?: TxClient,
   ) {
-    const booking = await this.prisma.booking.findUniqueOrThrow({
+    void _options;
+    if (transactionClient) {
+      return this.createForCompletedBookingWithClient(transactionClient, bookingId, providerProfileId);
+    }
+    return this.prisma.$transaction((tx) =>
+      this.createForCompletedBookingWithClient(tx, bookingId, providerProfileId),
+    );
+  }
+
+  private async createForCompletedBookingWithClient(
+    tx: TxClient,
+    bookingId: string,
+    providerProfileId: string,
+  ) {
+    await this.lockBookingSettlement(tx, bookingId);
+    const booking = await tx.booking.findUniqueOrThrow({
       where: { id: bookingId },
       include: {
         services: { include: { service: true } },
@@ -1012,6 +1081,16 @@ export class EarningsService {
     }
     if (booking.selectedProviderId !== providerProfileId) {
       throw new BadRequestException('Partner is not selected for this booking');
+    }
+
+    const existingEarning = await tx.providerEarning.findUnique({
+      where: { bookingId },
+    });
+    if (existingEarning) {
+      if (existingEarning.providerProfileId !== providerProfileId) {
+        throw new BadRequestException('Completed booking earning belongs to another Partner');
+      }
+      return existingEarning;
     }
 
     const bookingServiceGrossAmount = bookingServiceAmount(booking.services);
@@ -1032,127 +1111,109 @@ export class EarningsService {
       serviceName: item.service?.name,
       price: item.price,
       quantity: item.quantity,
+      payoutRuleIdSnapshot: item.payoutRuleIdSnapshot,
+      providerPayoutAmountSnapshot: item.providerPayoutAmountSnapshot,
+      payoutRuleSnapshot: item.payoutRuleSnapshot,
     }));
 
-    return this.prisma.$transaction(async (tx) => {
-      const existingEarning = options.preserveExistingLifecycle
-        ? await tx.providerEarning.findUnique({
-            where: { bookingId },
-            select: { id: true },
-          })
-        : null;
-      const platformFee = await this.calculatePlatformFee(tx, {
-        grossAmount,
-        currency,
-        serviceTypes,
-        services: pricedServices,
-        occurredAt: booking.updatedAt ?? new Date(),
-      });
-      const tax = await this.calculateWithholding(tx, {
-        providerProfileId,
-        bookingId,
-        grossAmount,
-        currency,
-        serviceTypes,
-        occurredAt: booking.updatedAt ?? new Date(),
-      });
-      const walletDeltaPlatformFee =
-        booking.payment?.method === PaymentMethod.CASH
-          ? Math.max(0, platformFee.platformFeeAmount - tax.withholdingAmount)
-          : platformFee.platformFeeAmount;
-      const netAmount = calculateProviderWalletDelta({
-        paymentMethod: booking.payment?.method,
-        grossAmount,
-        platformFee: walletDeltaPlatformFee,
-        withholdingAmount: tax.withholdingAmount,
-        companyCouponExpense: couponSettlement.companyCouponExpense,
-      });
-      const earning = await tx.providerEarning.upsert({
-        where: { bookingId },
-        update: {
-          providerProfileId,
-          grossAmount,
-          platformFee: platformFee.platformFeeAmount,
-          withholdingAmount: tax.withholdingAmount,
-          netAmount,
-          currency,
-          ...(!existingEarning
-            ? {
-                status: EarningStatus.PENDING,
-                availableAt,
-              }
-            : {}),
-        },
-        create: {
-          bookingId,
-          providerProfileId,
-          grossAmount,
-          platformFee: platformFee.platformFeeAmount,
-          withholdingAmount: tax.withholdingAmount,
-          netAmount,
-          currency,
-          status: EarningStatus.PENDING,
-          availableAt,
-        },
-      });
-
-      const platformFeeLog = await this.upsertPlatformFeeLog(tx, earning, platformFee);
-      const taxLog = await this.upsertTaxLog(tx, earning, tax);
-      const walletLedgerEntries = await this.upsertEarningWalletLedger(
-        tx,
-        earning,
-        booking.payment?.method,
-        platformFee.vatRateBps,
-        { companyCouponExpense: couponSettlement.companyCouponExpense },
-      );
-      const paymentMethod = booking.payment?.method ?? PaymentMethod.MANUAL;
-      const partnerPayoutAmount =
-        paymentMethod === PaymentMethod.CASH
-          ? Math.max(0, grossAmount - platformFee.platformFeeAmount)
-          : Math.max(0, netAmount);
-      const paymentFee = await this.calculatePaymentFee(tx, {
-        customerPaymentAmount: couponSettlement.customerPaymentAmount,
-        occurredAt: booking.updatedAt ?? new Date(),
-        paymentMethod,
-      });
-      const platformFeeGross = Math.max(0, grossAmount - partnerPayoutAmount - tax.withholdingAmount);
-
-      await this.settlements?.upsertBookingSettlementSnapshot(
-        {
-          bookingId,
-          customerProfileId: booking.customerProfileId,
-          providerProfileId,
-          paymentId: booking.payment?.id ?? null,
-          providerEarningId: earning.id,
-          paymentMethod,
-          currency,
-          customerPaymentAmount: couponSettlement.customerPaymentAmount,
-          partnerPayoutAmount,
-          partnerTaxableRevenueAmount: couponSettlement.partnerTaxableRevenueAmount,
-          platformFeeGross,
-          partnerVatRateBps: tax.partnerVatRateBps,
-          partnerPitRateBps: tax.partnerPitRateBps,
-          platformVatRateBps: platformFee.vatRateBps,
-          paymentFeeRateBps: paymentFee.rateBps,
-          paymentFeeFixedAmount: paymentFee.fixedAmount,
-          paymentFeePayer: paymentFee.payer,
-          paymentFeeTreatment: paymentFee.treatment,
-          taxPolicyVersionId: tax.policyVersionId ?? null,
-          platformFeePolicyVersionId: platformFee.policyVersionId ?? null,
-          paymentFeePolicyVersionId: paymentFee.policyVersionId ?? null,
-          taxRuleSnapshot: tax.ruleSnapshot,
-          platformFeeRuleSnapshot: platformFee.ruleSnapshot,
-          paymentFeeRuleSnapshot: paymentFee.ruleSnapshot,
-          providerTaxLogIds: taxLog?.id ? [taxLog.id] : [],
-          providerPlatformFeeLogId: platformFeeLog?.id ?? null,
-          providerWalletLedgerEntryIds: walletLedgerEntries.map((entry) => entry.id),
-          metadata: couponSettlement.metadata,
-          occurredAt: booking.updatedAt ?? new Date(),
-        },
-        tx,
-      );
-      return earning;
+    const platformFee = await this.calculatePlatformFee(tx, {
+      grossAmount,
+      currency,
+      serviceTypes,
+      services: pricedServices,
+      occurredAt: booking.updatedAt ?? new Date(),
     });
+    const tax = await this.calculateWithholding(tx, {
+      providerProfileId,
+      bookingId,
+      grossAmount,
+      currency,
+      serviceTypes,
+      occurredAt: booking.updatedAt ?? new Date(),
+    });
+    const walletDeltaPlatformFee =
+      booking.payment?.method === PaymentMethod.CASH
+        ? Math.max(0, platformFee.platformFeeAmount - tax.withholdingAmount)
+        : platformFee.platformFeeAmount;
+    const netAmount = calculateProviderWalletDelta({
+      paymentMethod: booking.payment?.method,
+      grossAmount,
+      platformFee: walletDeltaPlatformFee,
+      withholdingAmount: tax.withholdingAmount,
+      companyCouponExpense: couponSettlement.companyCouponExpense,
+    });
+    const earning = await tx.providerEarning.upsert({
+      where: { bookingId },
+      update: {},
+      create: {
+        bookingId,
+        providerProfileId,
+        grossAmount,
+        platformFee: platformFee.platformFeeAmount,
+        withholdingAmount: tax.withholdingAmount,
+        netAmount,
+        currency,
+        status: EarningStatus.PENDING,
+        availableAt,
+      },
+    });
+
+    const platformFeeLog = await this.upsertPlatformFeeLog(tx, earning, platformFee);
+    const taxLog = await this.upsertTaxLog(tx, earning, tax);
+    const walletLedgerEntries = await this.upsertEarningWalletLedger(
+      tx,
+      earning,
+      booking.payment?.method,
+      platformFee.vatRateBps,
+      { companyCouponExpense: couponSettlement.companyCouponExpense },
+    );
+    const paymentMethod = booking.payment?.method ?? PaymentMethod.MANUAL;
+    const partnerPayoutAmount =
+      paymentMethod === PaymentMethod.CASH
+        ? Math.max(0, grossAmount - platformFee.platformFeeAmount)
+        : Math.max(0, netAmount);
+    const paymentFee = await this.calculatePaymentFee(tx, {
+      customerPaymentAmount: couponSettlement.customerPaymentAmount,
+      occurredAt: booking.updatedAt ?? new Date(),
+      paymentMethod,
+    });
+    const platformFeeGross = Math.max(0, grossAmount - partnerPayoutAmount - tax.withholdingAmount);
+
+    await this.settlements?.upsertBookingSettlementSnapshot(
+      {
+        bookingId,
+        customerProfileId: booking.customerProfileId,
+        providerProfileId,
+        paymentId: booking.payment?.id ?? null,
+        providerEarningId: earning.id,
+        paymentMethod,
+        currency,
+        customerPaymentAmount: couponSettlement.customerPaymentAmount,
+        partnerPayoutAmount,
+        partnerTaxableRevenueAmount: couponSettlement.partnerTaxableRevenueAmount,
+        platformFeeGross,
+        partnerVatRateBps: tax.partnerVatRateBps,
+        partnerPitRateBps: tax.partnerPitRateBps,
+        platformVatRateBps: platformFee.vatRateBps,
+        paymentFeeRateBps: paymentFee.rateBps,
+        paymentFeeFixedAmount: paymentFee.fixedAmount,
+        paymentFeePayer: paymentFee.payer,
+        paymentFeeTreatment: paymentFee.treatment,
+        taxPolicyVersionId: tax.policyVersionId ?? null,
+        platformFeePolicyVersionId: platformFee.policyVersionId ?? null,
+        paymentFeePolicyVersionId: paymentFee.policyVersionId ?? null,
+        taxRuleSnapshot: tax.ruleSnapshot,
+        platformFeeRuleSnapshot: platformFee.ruleSnapshot,
+        paymentFeeRuleSnapshot: paymentFee.ruleSnapshot,
+        providerTaxLogIds: taxLog?.id ? [taxLog.id] : [],
+        providerPlatformFeeLogId: platformFeeLog?.id ?? null,
+        providerWalletLedgerEntryIds: walletLedgerEntries.map((entry) => entry.id),
+        metadata: couponSettlement.metadata,
+        occurredAt: booking.updatedAt ?? new Date(),
+      },
+      tx,
+    );
+    return earning;
   }
 
   async previewPaidBookingSettlementReconstruction(bookingId: string, providerProfileId: string) {
@@ -1197,6 +1258,7 @@ export class EarningsService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      await this.lockBookingSettlement(tx, bookingId);
       const booking = await tx.booking.findUnique({
         where: { id: bookingId },
         select: historicalPaidSettlementBookingSelect,
@@ -1657,6 +1719,7 @@ export class EarningsService {
     const sourceKey = partnerBankDepositSourceKey(deposit.providerProfileId, deposit.bankTransactionId);
 
     const recordDeposit = async (tx: Prisma.TransactionClient) => {
+      await this.lockProviderWallet(tx, deposit.providerProfileId, 'VND');
       const provider = await tx.providerProfile.findUnique({
         where: { id: deposit.providerProfileId },
         select: { id: true },
@@ -1712,13 +1775,23 @@ export class EarningsService {
     providerProfileId: string;
     transferRef?: string;
     notes?: string;
-  }) {
+  }, beforeCommit?: (
+    tx: TxClient,
+    batch: {
+      id: string;
+      providerProfileId: string;
+      totalNetAmount: number;
+      transferRef: string | null;
+      earnings: unknown[];
+    },
+  ) => Promise<void>) {
     const provider = await this.prisma.providerProfile.findUnique({ where: { id: input.providerProfileId } });
     if (!provider) {
       throw new NotFoundException('Partner profile not found');
     }
 
     return this.prisma.$transaction(async (tx) => {
+      await this.lockProviderPayoutAssignment(tx, input.providerProfileId);
       await this.ensurePayoutEligible(tx, input.providerProfileId);
       const earnings = await tx.providerEarning.findMany({
         where: {
@@ -1746,12 +1819,21 @@ export class EarningsService {
         },
       });
 
-      await tx.providerEarning.updateMany({
-        where: { id: { in: earnings.map((earning) => earning.id) } },
+      const assignment = await tx.providerEarning.updateMany({
+        where: {
+          id: { in: earnings.map((earning) => earning.id) },
+          payoutBatchId: null,
+          status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        },
         data: {
           payoutBatchId: batch.id,
         },
       });
+      if (assignment.count !== earnings.length) {
+        throw new ConflictException(
+          'Partner earnings changed while the payout batch was being created. Reload and try again.',
+        );
+      }
       const taxLogs = await tx.providerTaxLog.findMany({
         where: { earningId: { in: earnings.map((earning) => earning.id) }, withholdingAmount: { gt: 0 } },
       });
@@ -1771,7 +1853,7 @@ export class EarningsService {
         });
       }
 
-      return tx.providerPayoutBatch.findUniqueOrThrow({
+      const result = await tx.providerPayoutBatch.findUniqueOrThrow({
         where: { id: batch.id },
         include: {
           providerProfile: { include: this.providerPayoutInclude() },
@@ -1787,6 +1869,8 @@ export class EarningsService {
           withholdingLogs: true,
         },
       });
+      await beforeCommit?.(tx, result);
+      return result;
     });
   }
 
@@ -2146,6 +2230,17 @@ export class EarningsService {
       expectedTransferRef?: string | null;
       expectedNotes?: string | null;
     },
+    beforeCommit?: (
+      tx: TxClient,
+      batch: {
+        id: string;
+        providerProfileId: string;
+        status: PayoutBatchStatus;
+        transferRef: string | null;
+        notes: string | null;
+        earnings: unknown[];
+      },
+    ) => Promise<void>,
   ) {
     const existing = await this.prisma.providerPayoutBatch.findUnique({
       where: { id: payoutBatchId },
@@ -2170,9 +2265,17 @@ export class EarningsService {
       nextStatus === PayoutBatchStatus.PAID && existing.status !== PayoutBatchStatus.PAID;
 
     const updated = await this.prisma.$transaction(async (tx) => {
+      let executionEarnings = existing.earnings;
       if (shouldStartProcessing || shouldMarkPaid) {
+        await this.lockProviderWallet(tx, existing.providerProfileId, existing.currency);
+        executionEarnings = await tx.providerEarning.findMany({
+          where: { payoutBatchId },
+        });
         await this.ensureNoActivePayoutHold(tx, existing.providerProfileId);
-        await this.ensurePayoutBatchExecutionReady(tx, existing);
+        await this.ensurePayoutBatchExecutionReady(tx, {
+          ...existing,
+          earnings: executionEarnings,
+        });
       }
       const paidAt = shouldMarkPaid ? new Date() : undefined;
       if (shouldMarkPaid && paidAt) {
@@ -2208,21 +2311,27 @@ export class EarningsService {
       };
 
       if (shouldMarkPaid) {
-        await tx.providerEarning.updateMany({
+        const earningMutation = await tx.providerEarning.updateMany({
           where: {
+            id: { in: executionEarnings.map((earning) => earning.id) },
             payoutBatchId,
-            status: { not: EarningStatus.CANCELLED },
+            status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
           },
           data: {
             status: EarningStatus.PAID,
             paidAt: batch.paidAt,
           },
         });
+        if (earningMutation.count !== executionEarnings.length) {
+          throw new ConflictException(
+            'Payout earnings changed while this action was running. Reload and review the latest status.',
+          );
+        }
         await tx.withholdingLog.updateMany({
           where: { payoutBatchId },
           data: { status: 'PAID' },
         });
-        for (const earning of existing.earnings) {
+        for (const earning of executionEarnings) {
           await this.upsertPaidWalletLedger(tx, earning, {
             payoutBatchId,
             reference: batch.transferRef,
@@ -2240,7 +2349,7 @@ export class EarningsService {
         });
       }
 
-      return tx.providerPayoutBatch.findUniqueOrThrow({
+      const result = await tx.providerPayoutBatch.findUniqueOrThrow({
         where: { id: payoutBatchId },
         include: {
           providerProfile: { include: this.providerPayoutInclude() },
@@ -2256,13 +2365,26 @@ export class EarningsService {
           withholdingLogs: true,
         },
       });
+      await beforeCommit?.(tx, result);
+      return result;
     });
     const changedStatus = payoutStatusChanged(existing.status, nextStatus) ? nextStatus : undefined;
     await this.notifyPayoutBatchUpdated(updated, changedStatus);
     return updated;
   }
 
-  async reversePaidPayoutBatchForAdmin(payoutBatchId: string, input: PaidDisbursementReversalInput) {
+  async reversePaidPayoutBatchForAdmin(
+    payoutBatchId: string,
+    input: PaidDisbursementReversalInput,
+    beforeCommit?: (
+      tx: TxClient,
+      result: {
+        payoutBatch: { id: string; totalNetAmount: number; currency: string };
+        reversalJournalBatch: { id: string };
+        reversalWalletLedgerEntry: { id: string };
+      },
+    ) => Promise<void>,
+  ) {
     const existing = await this.prisma.providerPayoutBatch.findUnique({
       where: { id: payoutBatchId },
     });
@@ -2276,6 +2398,16 @@ export class EarningsService {
     const occurredAt = normalizeFinanceReversalOccurredAt(input.occurredAt);
 
     return this.prisma.$transaction(async (tx) => {
+      await this.lockFinanceMutation(tx, `provider-payout-reversal:${payoutBatchId}`);
+      const existing = await tx.providerPayoutBatch.findUnique({
+        where: { id: payoutBatchId },
+      });
+      if (!existing) {
+        throw new NotFoundException('Payout batch not found');
+      }
+      if (existing.status !== PayoutBatchStatus.PAID) {
+        throw new BadRequestException('Only a paid payout batch can be reversed');
+      }
       await this.ensureFinancePostingPeriodOpen(tx, occurredAt, existing.currency, 'Payout batch reversal');
       const originalJournal = await requirePostedFinanceJournalForReversal(
         tx,
@@ -2308,11 +2440,13 @@ export class EarningsService {
           existingReversalLedger.amount === existing.totalNetAmount &&
           financeJournalIsBalancedForAmount(existingReversalJournal, existing.totalNetAmount)
         ) {
-          return {
+          const result = {
             payoutBatch: existing,
             reversalJournalBatch: existingReversalJournal,
             reversalWalletLedgerEntry: existingReversalLedger,
           };
+          await beforeCommit?.(tx, result);
+          return result;
         }
         throw new ConflictException('Payout reversal evidence is incomplete or inconsistent');
       }
@@ -2350,11 +2484,13 @@ export class EarningsService {
         sourceType: AccountingJournalSourceType.PROVIDER_PAYOUT_BATCH,
       });
 
-      return {
+      const result = {
         payoutBatch: existing,
         reversalJournalBatch,
         reversalWalletLedgerEntry,
       };
+      await beforeCommit?.(tx, result);
+      return result;
     });
   }
 
@@ -2546,6 +2682,32 @@ export class EarningsService {
     const request = normalizeProviderWalletWithdrawalRequestInput(input);
 
     return this.prisma.$transaction(async (tx) => {
+      await this.lockProviderWallet(tx, provider.id, 'VND');
+      const replay = await tx.providerWalletWithdrawalRequest.findUnique({
+        where: {
+          providerProfileId_idempotencyKey: {
+            providerProfileId: provider.id,
+            idempotencyKey: request.idempotencyKey,
+          },
+        },
+      });
+      if (replay) {
+        const replayMetadata = jsonObjectOrEmpty(replay.metadata);
+        const replayRequestedBankAccountId =
+          typeof replayMetadata.requestedBankAccountId === 'string'
+            ? replayMetadata.requestedBankAccountId
+            : null;
+        if (
+          replay.amount !== request.amount ||
+          replay.requestNote !== (request.requestNote ?? null) ||
+          replayRequestedBankAccountId !== (request.bankAccountId ?? null)
+        ) {
+          throw new ConflictException(
+            'Idempotency key was already used for a different withdrawal request',
+          );
+        }
+        return replay;
+      }
       const bankAccount = await tx.providerBankAccount.findFirst({
         where: {
           ...(request.bankAccountId ? { id: request.bankAccountId } : {}),
@@ -2566,7 +2728,8 @@ export class EarningsService {
         throw new BadRequestException('Withdrawal amount exceeds partner wallet balance');
       }
       const pendingWithdrawalAmount = await this.providerPendingWithdrawalAmount(tx, provider.id);
-      const availableWalletBalance = currentWalletBalance - pendingWithdrawalAmount;
+      const pendingPayoutAmount = await this.providerPendingPayoutAmount(tx, provider.id);
+      const availableWalletBalance = currentWalletBalance - pendingWithdrawalAmount - pendingPayoutAmount;
       if (request.amount > availableWalletBalance) {
         throw new BadRequestException('Withdrawal amount exceeds available partner wallet balance');
       }
@@ -2574,6 +2737,7 @@ export class EarningsService {
       const created = await tx.providerWalletWithdrawalRequest.create({
         data: {
           providerProfileId: provider.id,
+          idempotencyKey: request.idempotencyKey,
           bankAccountId: bankAccount.id,
           amount: request.amount,
           currency: 'VND',
@@ -2582,7 +2746,9 @@ export class EarningsService {
           metadata: {
             currentWalletBalance,
             pendingWithdrawalAmount,
+            pendingPayoutAmount,
             availableWalletBalance,
+            requestedBankAccountId: request.bankAccountId ?? null,
             source: 'PARTNER_APP_WALLET_WITHDRAWAL_REQUEST',
           },
         },
@@ -2604,6 +2770,18 @@ export class EarningsService {
     requestId: string,
     input: ProviderWalletWithdrawalRequestUpdateInput,
     adminId: string,
+    beforeCommit?: (
+      tx: TxClient,
+      request: {
+        id: string;
+        providerProfileId: string;
+        amount: number;
+        currency: string;
+        status: ProviderWalletWithdrawalRequestStatus;
+        transferRef: string | null;
+        metadata: Prisma.JsonValue | null;
+      },
+    ) => Promise<void>,
   ) {
     const existing = await this.prisma.providerWalletWithdrawalRequest.findUnique({
       where: { id: requestId },
@@ -2644,6 +2822,11 @@ export class EarningsService {
     const shouldMarkPaid =
       update.status === ProviderWalletWithdrawalRequestStatus.PAID &&
       existing.status !== ProviderWalletWithdrawalRequestStatus.PAID;
+    const activeMembershipChanges = Boolean(
+      update.status &&
+        isActiveWithdrawalRequestStatus(existing.status) !==
+          isActiveWithdrawalRequestStatus(update.status),
+    );
     const reviewedAt = new Date();
     const nextTransferRef = update.transferRef ?? existing.transferRef;
     const nextAdminNote = update.adminNote ?? existing.adminNote;
@@ -2729,6 +2912,7 @@ export class EarningsService {
 
     return this.prisma.$transaction(async (tx) => {
       if (shouldMarkPaid) {
+        await this.lockProviderWallet(tx, existing.providerProfileId, existing.currency);
         const approvedBankAccount = existing.bankAccountId
           ? await tx.providerBankAccount.findFirst({
               where: {
@@ -2763,7 +2947,8 @@ export class EarningsService {
           existing.providerProfileId,
           existing.id,
         );
-        const availableWalletBalance = currentWalletBalance - pendingWithdrawalAmount;
+        const pendingPayoutAmount = await this.providerPendingPayoutAmount(tx, existing.providerProfileId);
+        const availableWalletBalance = currentWalletBalance - pendingWithdrawalAmount - pendingPayoutAmount;
         if (existing.amount > availableWalletBalance) {
           throw new BadRequestException('Withdrawal amount exceeds available partner wallet balance');
         }
@@ -2785,32 +2970,18 @@ export class EarningsService {
             'Partner wallet withdrawal changed while paid closeout was running. Reload and review the latest status.',
           );
         }
-        await tx.providerWalletLedgerEntry.upsert({
-          where: { sourceKey: partnerWalletWithdrawalPaidSourceKey(existing.id) },
-          update: {
-            amount: -existing.amount,
-            currency: existing.currency,
-            reference: nextTransferRef,
-            notes: nextAdminNote,
-            metadata: {
-              withdrawalRequestId: existing.id,
-              adminId,
-              bankPayout: bankPayoutMetadata,
-            },
-          },
-          create: {
-            providerProfileId: existing.providerProfileId,
-            type: ProviderWalletLedgerType.PARTNER_WALLET_WITHDRAWAL_PAID,
-            sourceKey: partnerWalletWithdrawalPaidSourceKey(existing.id),
-            amount: -existing.amount,
-            currency: existing.currency,
-            reference: nextTransferRef,
-            notes: nextAdminNote,
-            metadata: {
-              withdrawalRequestId: existing.id,
-              adminId,
-              bankPayout: bankPayoutMetadata,
-            },
+        await this.upsertImmutableProviderWalletLedger(tx, {
+          providerProfileId: existing.providerProfileId,
+          type: ProviderWalletLedgerType.PARTNER_WALLET_WITHDRAWAL_PAID,
+          sourceKey: partnerWalletWithdrawalPaidSourceKey(existing.id),
+          amount: -existing.amount,
+          currency: existing.currency,
+          reference: nextTransferRef,
+          notes: nextAdminNote,
+          metadata: {
+            withdrawalRequestId: existing.id,
+            adminId,
+            bankPayout: bankPayoutMetadata,
           },
         });
         await upsertProviderWithdrawalJournal(tx, {
@@ -2832,7 +3003,11 @@ export class EarningsService {
           requestId: existing.id,
           transferRef: nextTransferRef,
         });
-      } else if (statusChangeMetadata?.lockedAmountReleased) {
+      } else if (activeMembershipChanges) {
+        await this.lockProviderWallet(tx, existing.providerProfileId, existing.currency);
+      }
+
+      if (!shouldMarkPaid && statusChangeMetadata?.lockedAmountReleased) {
         await upsertProviderWithdrawalJournal(tx, {
           actorId: adminId,
           amount: existing.amount,
@@ -2854,13 +3029,18 @@ export class EarningsService {
       }
 
       if (!shouldMarkPaid) {
-        await tx.providerWalletWithdrawalRequest.update({
-          where: { id: existing.id },
+        const claimedRequest = await tx.providerWalletWithdrawalRequest.updateMany({
+          where: { id: existing.id, status: existing.status },
           data: requestUpdateData,
         });
+        if (claimedRequest.count !== 1) {
+          throw new ConflictException(
+            'Partner wallet withdrawal changed while this action was running. Reload and review the latest status.',
+          );
+        }
       }
 
-      return tx.providerWalletWithdrawalRequest.findUniqueOrThrow({
+      const result = await tx.providerWalletWithdrawalRequest.findUniqueOrThrow({
         where: { id: existing.id },
         include: {
           providerProfile: {
@@ -2871,10 +3051,23 @@ export class EarningsService {
           bankAccount: true,
         },
       });
+      await beforeCommit?.(tx, result);
+      return result;
     });
   }
 
-  async reversePaidProviderWalletWithdrawalForAdmin(requestId: string, input: PaidDisbursementReversalInput) {
+  async reversePaidProviderWalletWithdrawalForAdmin(
+    requestId: string,
+    input: PaidDisbursementReversalInput,
+    beforeCommit?: (
+      tx: TxClient,
+      result: {
+        withdrawalRequest: { id: string; amount: number; currency: string };
+        reversalJournalBatch: { id: string };
+        reversalWalletLedgerEntry: { id: string };
+      },
+    ) => Promise<void>,
+  ) {
     const existing = await this.prisma.providerWalletWithdrawalRequest.findUnique({
       where: { id: requestId },
     });
@@ -2891,6 +3084,19 @@ export class EarningsService {
     const occurredAt = normalizeFinanceReversalOccurredAt(input.occurredAt);
 
     return this.prisma.$transaction(async (tx) => {
+      await this.lockFinanceMutation(tx, `provider-withdrawal-reversal:${requestId}`);
+      const existing = await tx.providerWalletWithdrawalRequest.findUnique({
+        where: { id: requestId },
+      });
+      if (!existing) {
+        throw new NotFoundException('Partner wallet withdrawal request not found');
+      }
+      if (
+        existing.status !== ProviderWalletWithdrawalRequestStatus.PAID &&
+        existing.status !== ProviderWalletWithdrawalRequestStatus.REVERSED
+      ) {
+        throw new BadRequestException('Only a paid partner wallet withdrawal can be reversed');
+      }
       await this.ensureFinancePostingPeriodOpen(
         tx,
         occurredAt,
@@ -2935,11 +3141,13 @@ export class EarningsService {
           existingReversalLedger.amount === existing.amount &&
           financeJournalIsBalancedForAmount(existingReversalJournal, expectedJournalAmount)
         ) {
-          return {
+          const result = {
             withdrawalRequest: existing,
             reversalJournalBatch: existingReversalJournal,
             reversalWalletLedgerEntry: existingReversalLedger,
           };
+          await beforeCommit?.(tx, result);
+          return result;
         }
         throw new ConflictException('Withdrawal reversal evidence is incomplete or inconsistent');
       }
@@ -3008,17 +3216,40 @@ export class EarningsService {
         where: { id: existing.id },
       });
 
-      return {
+      const result = {
         withdrawalRequest,
         reversalJournalBatch,
         reversalWalletLedgerEntry,
       };
+      await beforeCommit?.(tx, result);
+      return result;
     });
   }
 
   async cancelForRefund(bookingId: string, transactionClient?: TxClient) {
-    const client = transactionClient ?? this.prisma;
-    const earning = await client.providerEarning.findUnique({
+    return transactionClient
+      ? this.cancelForRefundInTransaction(bookingId, transactionClient)
+      : this.prisma.$transaction((tx) => this.cancelForRefundInTransaction(bookingId, tx));
+  }
+
+  private async cancelForRefundInTransaction(bookingId: string, transactionClient: TxClient) {
+    const locator = await transactionClient.providerEarning.findUnique({
+      where: { bookingId },
+      select: {
+        currency: true,
+        providerProfileId: true,
+      },
+    });
+    if (!locator) {
+      return { skipped: true, reason: 'NO_EARNING' };
+    }
+
+    await this.lockProviderWallet(
+      transactionClient,
+      locator.providerProfileId,
+      locator.currency,
+    );
+    const earning = await transactionClient.providerEarning.findUnique({
       where: { bookingId },
       include: {
         booking: {
@@ -3065,36 +3296,21 @@ export class EarningsService {
         ...payoutEvidence.metadata,
       } satisfies Prisma.InputJsonObject;
       const createReceivableLedger = async (tx: TxClient | PrismaService) => {
-        await tx.providerWalletLedgerEntry.upsert({
-          where: { sourceKey: `earning:${earning.id}:paid-refund-receivable` },
-          update: {
-            amount: -receivableAmount,
-            currency: earning.currency,
-            ...(payoutEvidence.payoutBatchId ? { payoutBatchId: payoutEvidence.payoutBatchId } : {}),
-            ...(payoutEvidence.reference ? { reference: payoutEvidence.reference } : {}),
-            notes: 'Paid earning converted to partner receivable by refund workflow',
-            metadata,
-          },
-          create: {
-            providerProfileId: earning.providerProfileId,
-            bookingId: earning.bookingId,
-            earningId: earning.id,
-            ...(payoutEvidence.payoutBatchId ? { payoutBatchId: payoutEvidence.payoutBatchId } : {}),
-            type: ProviderWalletLedgerType.REFUND_REVERSAL,
-            sourceKey: `earning:${earning.id}:paid-refund-receivable`,
-            amount: -receivableAmount,
-            currency: earning.currency,
-            ...(payoutEvidence.reference ? { reference: payoutEvidence.reference } : {}),
-            notes: 'Paid earning converted to partner receivable by refund workflow',
-            metadata,
-          },
+        await this.upsertImmutableProviderWalletLedger(tx, {
+          providerProfileId: earning.providerProfileId,
+          bookingId: earning.bookingId,
+          earningId: earning.id,
+          ...(payoutEvidence.payoutBatchId ? { payoutBatchId: payoutEvidence.payoutBatchId } : {}),
+          type: ProviderWalletLedgerType.REFUND_REVERSAL,
+          sourceKey: `earning:${earning.id}:paid-refund-receivable`,
+          amount: -receivableAmount,
+          currency: earning.currency,
+          ...(payoutEvidence.reference ? { reference: payoutEvidence.reference } : {}),
+          notes: 'Paid earning converted to partner receivable by refund workflow',
+          metadata,
         });
       };
-      if (transactionClient) {
-        await createReceivableLedger(transactionClient);
-      } else {
-        await this.prisma.$transaction(async (tx) => createReceivableLedger(tx));
-      }
+      await createReceivableLedger(transactionClient);
 
       return {
         skipped: false,
@@ -3105,38 +3321,36 @@ export class EarningsService {
     }
 
     const cancelUnpaidEarning = async (tx: TxClient | PrismaService) => {
-      const updated = await tx.providerEarning.update({
-        where: { bookingId },
+      const mutation = await tx.providerEarning.updateMany({
+        where: {
+          bookingId,
+          status: earning.status,
+          netAmount: earning.netAmount,
+        },
         data: {
           status: EarningStatus.CANCELLED,
           netAmount: 0,
         },
       });
-      await tx.providerWalletLedgerEntry.upsert({
-        where: { sourceKey: `earning:${earning.id}:refund-reversal` },
-        update: {
-          amount: -earning.netAmount,
-          currency: earning.currency,
-          notes: 'Unpaid earning cancelled by refund workflow',
-          metadata: { previousNetAmount: earning.netAmount },
-        },
-        create: {
-          providerProfileId: earning.providerProfileId,
-          bookingId: earning.bookingId,
-          earningId: earning.id,
-          type: ProviderWalletLedgerType.REFUND_REVERSAL,
-          sourceKey: `earning:${earning.id}:refund-reversal`,
-          amount: -earning.netAmount,
-          currency: earning.currency,
-          notes: 'Unpaid earning cancelled by refund workflow',
-          metadata: { previousNetAmount: earning.netAmount },
-        },
+      if (mutation.count !== 1) {
+        throw new ConflictException(
+          'Partner earning changed while the refund was being finalized. Reload and try again.',
+        );
+      }
+      await this.upsertImmutableProviderWalletLedger(tx, {
+        providerProfileId: earning.providerProfileId,
+        bookingId: earning.bookingId,
+        earningId: earning.id,
+        type: ProviderWalletLedgerType.REFUND_REVERSAL,
+        sourceKey: `earning:${earning.id}:refund-reversal`,
+        amount: -earning.netAmount,
+        currency: earning.currency,
+        notes: 'Unpaid earning cancelled by refund workflow',
+        metadata: { previousNetAmount: earning.netAmount },
       });
-      return updated;
+      return tx.providerEarning.findUniqueOrThrow({ where: { bookingId } });
     };
-    const cancelled = transactionClient
-      ? await cancelUnpaidEarning(transactionClient)
-      : await this.prisma.$transaction(async (tx) => cancelUnpaidEarning(tx));
+    const cancelled = await cancelUnpaidEarning(transactionClient);
 
     return { skipped: false, earning: cancelled };
   }
@@ -3230,11 +3444,7 @@ export class EarningsService {
 
     const ledger = await tx.providerWalletLedgerEntry.upsert({
       where: { sourceKey: `earning:${earning.id}:booking` },
-      update: {
-        amount: earning.netAmount,
-        currency: earning.currency,
-        metadata: this.earningLedgerMetadata(earning, paymentMethod),
-      },
+      update: {},
       create: {
         providerProfileId: earning.providerProfileId,
         bookingId: earning.bookingId,
@@ -3292,15 +3502,7 @@ export class EarningsService {
     const ledgerWrites = [
       tx.providerWalletLedgerEntry.upsert({
         where: { sourceKey: `earning:${earning.id}:cash-platform-fee-net` },
-        update: {
-          amount: -partnerDue.walletDeductionPlatformFeeNetRevenue,
-          currency: earning.currency,
-          metadata: {
-            ...metadataBase,
-            accountingComponent: 'PLATFORM_FEE_NET_REVENUE',
-            accountingComponentAmount: partnerDue.platformFeeNetRevenue,
-          },
-        },
+        update: {},
         create: {
           ...base,
           type: providerWalletLedgerType('CASH_BOOKING_PLATFORM_FEE_DEDUCTED'),
@@ -3316,15 +3518,7 @@ export class EarningsService {
       }),
       tx.providerWalletLedgerEntry.upsert({
         where: { sourceKey: `earning:${earning.id}:cash-company-output-vat` },
-        update: {
-          amount: -partnerDue.walletDeductionCompanyOutputVat,
-          currency: earning.currency,
-          metadata: {
-            ...metadataBase,
-            accountingComponent: 'COMPANY_OUTPUT_VAT_PAYABLE',
-            accountingComponentAmount: partnerDue.companyOutputVat,
-          },
-        },
+        update: {},
         create: {
           ...base,
           type: providerWalletLedgerType('CASH_BOOKING_COMPANY_OUTPUT_VAT_DEDUCTED'),
@@ -3340,15 +3534,7 @@ export class EarningsService {
       }),
       tx.providerWalletLedgerEntry.upsert({
         where: { sourceKey: `earning:${earning.id}:cash-partner-tax` },
-        update: {
-          amount: -partnerDue.walletDeductionPartnerTaxPayable,
-          currency: earning.currency,
-          metadata: {
-            ...metadataBase,
-            accountingComponent: 'PARTNER_VAT_PIT_PAYABLE',
-            accountingComponentAmount: partnerDue.partnerTaxPayable,
-          },
-        },
+        update: {},
         create: {
           ...base,
           type: providerWalletLedgerType('CASH_BOOKING_PARTNER_TAX_DEDUCTED'),
@@ -3367,15 +3553,7 @@ export class EarningsService {
       ledgerWrites.push(
         tx.providerWalletLedgerEntry.upsert({
           where: { sourceKey: `earning:${earning.id}:cash-company-coupon-subsidy` },
-          update: {
-            amount: partnerDue.partnerCouponSubsidyPayable,
-            currency: earning.currency,
-            metadata: {
-              ...metadataBase,
-              accountingComponent: 'PARTNER_COUPON_SUBSIDY_PAYABLE',
-              accountingComponentAmount: partnerDue.partnerCouponSubsidyPayable,
-            },
-          },
+          update: {},
           create: {
             ...base,
             type: ProviderWalletLedgerType.BOOKING_EARNING,
@@ -3412,37 +3590,41 @@ export class EarningsService {
     const sourceKey = input.payoutBatchId
       ? `earning:${earning.id}:payout:${input.payoutBatchId}`
       : `earning:${earning.id}:paid`;
-    return tx.providerWalletLedgerEntry.upsert({
-      where: { sourceKey },
-      update: {
-        amount: -earning.netAmount,
-        currency: earning.currency,
-        reference: cleanOptionalText(input.reference),
-        notes: cleanOptionalText(input.notes),
-        metadata: {
-          earningNetAmount: earning.netAmount,
-          payoutBatchId: input.payoutBatchId ?? null,
-        },
-      },
-      create: {
-        providerProfileId: earning.providerProfileId,
-        bookingId: earning.bookingId,
-        earningId: earning.id,
+    return this.upsertImmutableProviderWalletLedger(tx, {
+      providerProfileId: earning.providerProfileId,
+      bookingId: earning.bookingId,
+      earningId: earning.id,
+      payoutBatchId: input.payoutBatchId ?? null,
+      type: isDebtSettlement
+        ? ProviderWalletLedgerType.CASH_FEE_DEBT_SETTLED
+        : ProviderWalletLedgerType.PAYOUT_PAID,
+      sourceKey,
+      amount: -earning.netAmount,
+      currency: earning.currency,
+      reference: cleanOptionalText(input.reference),
+      notes: cleanOptionalText(input.notes),
+      metadata: {
+        earningNetAmount: earning.netAmount,
         payoutBatchId: input.payoutBatchId ?? null,
-        type: isDebtSettlement
-          ? ProviderWalletLedgerType.CASH_FEE_DEBT_SETTLED
-          : ProviderWalletLedgerType.PAYOUT_PAID,
-        sourceKey,
-        amount: -earning.netAmount,
-        currency: earning.currency,
-        reference: cleanOptionalText(input.reference),
-        notes: cleanOptionalText(input.notes),
-        metadata: {
-          earningNetAmount: earning.netAmount,
-          payoutBatchId: input.payoutBatchId ?? null,
-        },
       },
     });
+  }
+
+  private async upsertImmutableProviderWalletLedger(
+    client: TxClient | PrismaService,
+    data: Prisma.ProviderWalletLedgerEntryUncheckedCreateInput,
+  ) {
+    const ledger = await client.providerWalletLedgerEntry.upsert({
+      where: { sourceKey: data.sourceKey },
+      update: {},
+      create: data,
+    });
+    if (!immutableFinancialReplayMatches(ledger, data, PROVIDER_WALLET_LEDGER_REPLAY_FIELDS)) {
+      throw new ConflictException(
+        'A Partner wallet entry already exists with different financial evidence.',
+      );
+    }
+    return ledger;
   }
 
   private earningLedgerMetadata(
@@ -3600,15 +3782,7 @@ export class EarningsService {
       return null;
     }
 
-    const payoutRules = await tx.servicePayoutRule.findMany({
-      where: {
-        active: true,
-        OR: input.services.map((service) => ({
-          serviceId: service.serviceId,
-          customerPrice: service.price,
-        })),
-      },
-    });
+    const payoutRules = input.services.map((service) => bookingServicePayoutSnapshot(service));
     const servicePayoutFee = calculateServicePayoutFeeFromRules({
       grossAmount: input.grossAmount,
       currency: input.currency,
@@ -3616,7 +3790,7 @@ export class EarningsService {
       payoutRules,
     });
     if (!servicePayoutFee) {
-      return null;
+      throw new BadRequestException('Booking payout snapshot does not match the booked service price');
     }
     return {
       ...servicePayoutFee,
@@ -3751,7 +3925,14 @@ export class EarningsService {
     }
 
     const walletBalance = await this.providerWalletLedgerBalance(client, batch.providerProfileId);
-    if (walletBalance < batch.totalNetAmount) {
+    const pendingWithdrawalAmount = await this.providerPendingWithdrawalAmount(client, batch.providerProfileId);
+    const pendingPayoutAmount = await this.providerPendingPayoutAmount(
+      client,
+      batch.providerProfileId,
+      batch.id,
+    );
+    const availableWalletBalance = walletBalance - pendingWithdrawalAmount - pendingPayoutAmount;
+    if (availableWalletBalance < batch.totalNetAmount) {
       throw new BadRequestException('Partner wallet ledger balance cannot cover payout batch');
     }
 
@@ -3796,6 +3977,50 @@ export class EarningsService {
       _sum: { amount: true },
     });
     return wallet._sum.amount ?? 0;
+  }
+
+  private async lockProviderWallet(
+    client: TxClient,
+    providerProfileId: string,
+    currency: string,
+  ) {
+    await client.$queryRaw(
+      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`${providerProfileId}:${currency}`}, 0))`,
+    );
+  }
+
+  private async lockProviderPayoutAssignment(client: TxClient, providerProfileId: string) {
+    await client.$queryRaw(
+      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`provider-payout-assignment:${providerProfileId}`}, 0))`,
+    );
+  }
+
+  private async lockBookingSettlement(client: TxClient, bookingId: string) {
+    await client.$queryRaw(
+      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`booking-settlement:${bookingId}`}, 0))`,
+    );
+  }
+
+  private async lockFinanceMutation(client: TxClient, key: string) {
+    await client.$queryRaw(
+      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`,
+    );
+  }
+
+  private async providerPendingPayoutAmount(
+    client: TxClient,
+    providerProfileId: string,
+    excludedPayoutBatchId?: string,
+  ) {
+    const pending = await client.providerPayoutBatch.aggregate({
+      where: {
+        providerProfileId,
+        status: PayoutBatchStatus.PROCESSING,
+        ...(excludedPayoutBatchId ? { id: { not: excludedPayoutBatchId } } : {}),
+      },
+      _sum: { totalNetAmount: true },
+    });
+    return pending._sum.totalNetAmount ?? 0;
   }
 
   private async providerPendingWithdrawalAmount(
@@ -3856,15 +4081,11 @@ export class EarningsService {
       };
     }
 
-    const partnerVatLine = calculatePartnerTaxLine(policy.rules, input, PartnerTaxLineKind.PARTNER_VAT);
-    const partnerPitLine = calculatePartnerTaxLine(policy.rules, input, PartnerTaxLineKind.PARTNER_PIT);
-    const splitWithholdingAmount = partnerVatLine.amount + partnerPitLine.amount;
-    const combinedLine =
-      splitWithholdingAmount > 0
-        ? null
-        : calculatePartnerTaxLine(policy.rules, input, PartnerTaxLineKind.PARTNER_WITHHOLDING_COMBINED);
-    const withholdingAmount =
-      splitWithholdingAmount > 0 ? splitWithholdingAmount : (combinedLine?.amount ?? 0);
+    const calculation = calculatePartnerTaxWithholding(policy.rules, input);
+    const partnerVatLine = calculation.vat;
+    const partnerPitLine = calculation.pit;
+    const combinedLine = calculation.combined;
+    const withholdingAmount = calculation.amount;
 
     return {
       taxableAmount,
@@ -3879,7 +4100,7 @@ export class EarningsService {
       ruleSnapshot: {
         policyName: policy.name,
         lines:
-          splitWithholdingAmount > 0
+          combinedLine === null
             ? [
                 partnerTaxLineSnapshot(PartnerTaxLineKind.PARTNER_VAT, partnerVatLine),
                 partnerTaxLineSnapshot(PartnerTaxLineKind.PARTNER_PIT, partnerPitLine),
@@ -4338,10 +4559,6 @@ function paidRefundReceivablePayoutEvidence(earning: {
   };
 }
 
-function calculateCappedBpsAmount(baseAmount: number, rateBps: number, fixedAmount: number) {
-  return Math.max(0, Math.min(baseAmount, Math.round((baseAmount * rateBps) / 10_000) + fixedAmount));
-}
-
 function payoutStatusChanged(
   currentStatus: PayoutBatchStatus,
   nextStatus: PayoutBatchStatus | undefined,
@@ -4484,18 +4701,6 @@ function partnerWalletWithdrawalPaidSourceKey(requestId: string) {
   return `partner-wallet-withdrawal:${requestId}:paid`;
 }
 
-function calculatePartnerTaxLine(
-  rules: TaxRuleRecord[],
-  input: { grossAmount: number; serviceTypes: string[] },
-  taxKind: PartnerTaxLineKind,
-) {
-  const rule = selectTaxRule(rules, input, taxKind);
-  const rateBps = rule?.rateBps ?? 0;
-  const fixedAmount = rule?.fixedAmount ?? 0;
-  const amount = rule ? calculateCappedBpsAmount(input.grossAmount, rateBps, fixedAmount) : 0;
-  return { amount, fixedAmount, rateBps, rule };
-}
-
 function partnerTaxLineSnapshot(
   taxKind: PartnerTaxLineKind,
   line: ReturnType<typeof calculatePartnerTaxLine> | null,
@@ -4511,21 +4716,6 @@ function partnerTaxLineSnapshot(
     rateBps: line?.rateBps ?? 0,
     fixedAmount: line?.fixedAmount ?? 0,
   };
-}
-
-function selectTaxRule(
-  rules: TaxRuleRecord[],
-  input: { grossAmount: number; serviceTypes: string[] },
-  taxKind?: PartnerTaxLineKind,
-) {
-  const serviceTypes = new Set(input.serviceTypes.map((value) => value.toLowerCase()));
-  const candidates = taxKind ? rules.filter((rule) => rule.taxKind === taxKind) : rules;
-  const prioritized = [...candidates].sort(
-    (left, right) =>
-      taxRulePriority(right, serviceTypes, input.grossAmount) -
-      taxRulePriority(left, serviceTypes, input.grossAmount),
-  );
-  return prioritized.find((rule) => taxRulePriority(rule, serviceTypes, input.grossAmount) > 0) ?? null;
 }
 
 function selectPlatformFeeRule(
@@ -4548,21 +4738,6 @@ function platformFeeRulePriority(
   serviceTypes: Set<string>,
   grossAmount: number,
 ) {
-  if (rule.scope === TaxRuleScope.SERVICE_TYPE) {
-    return rule.serviceType && serviceTypes.has(rule.serviceType.toLowerCase()) ? 30 : 0;
-  }
-  if (rule.scope === TaxRuleScope.AMOUNT_BAND) {
-    const aboveMin = rule.minGrossAmount === null || grossAmount >= rule.minGrossAmount;
-    const belowMax = rule.maxGrossAmount === null || grossAmount <= rule.maxGrossAmount;
-    return aboveMin && belowMax ? 20 : 0;
-  }
-  if (rule.scope === TaxRuleScope.DEFAULT) {
-    return 10;
-  }
-  return 0;
-}
-
-function taxRulePriority(rule: TaxRuleRecord, serviceTypes: Set<string>, grossAmount: number) {
   if (rule.scope === TaxRuleScope.SERVICE_TYPE) {
     return rule.serviceType && serviceTypes.has(rule.serviceType.toLowerCase()) ? 30 : 0;
   }

@@ -23,7 +23,7 @@ describe('Admin private file open route', () => {
     process.env = {
       ...process.env,
       ADMIN_WEB_ALLOW_DEV_REALTIME_TOKEN: undefined,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       NODE_ENV: 'production',
     };
     mockedAdminGet.mockResolvedValue({});
@@ -41,7 +41,7 @@ describe('Admin private file open route', () => {
   });
 
   it('redirects to a private read URL for a signed Admin Web session', async () => {
-    const sessionSecret = 'test-admin-session-secret';
+    const sessionSecret = 'test-admin-session-secret-with-32-chars';
     process.env = {
       ...process.env,
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,

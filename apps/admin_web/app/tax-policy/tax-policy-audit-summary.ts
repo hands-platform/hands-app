@@ -19,7 +19,7 @@ export type TaxPolicyAuditSummaryRow = {
   readonly toneClassName: 'pill-info' | 'pill-neutral' | 'pill-success' | 'pill-warn';
 };
 
-const TAX_POLICY_AUDIT_ROW_LIMIT = 8;
+const TAX_POLICY_AUDIT_ROW_LIMIT = 25;
 
 export function buildTaxPolicyAuditSummary(logs: readonly AdminAuditLog[]): TaxPolicyAuditSummary {
   const taxLogs = logs
@@ -55,8 +55,18 @@ function taxPolicyActionLabel(action: string) {
   const labels: Record<string, string> = {
     'tax_policy.create': 'Policy created',
     'tax_policy.update': 'Policy updated',
+    'tax_policy.draft_created': 'Draft created',
+    'tax_policy.draft_updated': 'Draft updated',
+    'tax_policy.approval_requested': 'Approval requested',
+    'tax_policy.approval_approved': 'Approval approved',
+    'tax_policy.approval_scheduled': 'Activation scheduled',
+    'tax_policy.approval_rejected': 'Approval rejected',
+    'tax_policy.activated': 'Policy activated',
+    'tax_policy.activation_blocked': 'Activation blocked',
     'tax_rule.create': 'Rule created',
     'tax_rule.update': 'Rule updated',
+    'tax_rule.draft_created': 'Draft rule created',
+    'tax_rule.draft_updated': 'Draft rule updated',
   };
   return labels[action] ?? humanizeAuditAction(action);
 }
@@ -69,7 +79,11 @@ function taxPolicyAuditDetail(log: AdminAuditLog) {
   const rateBps = readNumber(metadata.rateBps);
   const active = readBoolean(metadata.active);
   const deactivatedOtherActivePolicies = readNumber(metadata.deactivatedOtherActivePolicies);
-  const approvalAdminId = readString(metadata.approvalAdminId);
+  const makerId = readString(metadata.makerId);
+  const checkerId = readString(metadata.checkerId);
+  const legacyApprovalAdminId = readString(metadata.approvalAdminId);
+  const scheduledFor = readString(metadata.scheduledFor);
+  const failureCode = readString(metadata.failureCode);
   const operatorReason = readString(metadata.operatorReason);
 
   if (status) {
@@ -89,9 +103,11 @@ function taxPolicyAuditDetail(log: AdminAuditLog) {
       `${deactivatedOtherActivePolicies} other active ${deactivatedOtherActivePolicies === 1 ? 'policy' : 'policies'} deactivated`,
     );
   }
-  if (approvalAdminId) {
-    parts.push(`Finance approval ${shortDisplayId(approvalAdminId)}`);
-  }
+  if (makerId) parts.push(`Maker ${shortDisplayId(makerId)}`);
+  if (checkerId) parts.push(`Checker ${shortDisplayId(checkerId)}`);
+  if (legacyApprovalAdminId) parts.push(`Legacy Finance approval ${shortDisplayId(legacyApprovalAdminId)}`);
+  if (scheduledFor) parts.push(`Scheduled ${scheduledFor}`);
+  if (failureCode) parts.push(`Failure ${failureCode}`);
   if (operatorReason) {
     parts.push(`Evidence: ${operatorReason}`);
   }
@@ -103,10 +119,10 @@ function taxPolicyAuditTone(log: AdminAuditLog): TaxPolicyAuditSummaryRow['toneC
   const metadata = readPlainRecord(log.metadata) ?? {};
   const status = readString(metadata.status);
   const active = readBoolean(metadata.active);
-  if (status === 'ACTIVE' || active === true) {
+  if (log.action === 'tax_policy.activated' || status === 'ACTIVE' || active === true) {
     return 'pill-success';
   }
-  if (status === 'ARCHIVED' || active === false) {
+  if (log.action.includes('rejected') || log.action.includes('blocked') || status === 'ARCHIVED' || active === false) {
     return 'pill-warn';
   }
   if (log.action.startsWith('tax_rule.')) {

@@ -13,7 +13,8 @@ export class UsersController {
   constructor(private readonly users: UsersService) {}
 
   @Post('app/session')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER, Role.PROVIDER)
   recordAppSession(
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: { ip?: string },

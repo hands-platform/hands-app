@@ -1,0 +1,181 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - link "Customers":
+      - /url: /customers
+      - generic: Customers
+    - link "Customer Signals":
+      - /url: /reviews
+      - generic: Customer Signals
+    - link "Chat Evidence":
+      - /url: /chat-archive
+      - generic: Chat Evidence
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Customer Support
+      - generic: Customers
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - heading "Customers" [level=1]
+  - paragraph: Find customer accounts and resolve payment, refund, or reported-review issues.
+  - generic "Page actions":
+    - text: Updated
+    - time: 12 Aug 2026, 16:13
+    - link "Refresh":
+      - /url: /customers?view=all&segment=usage-new-unbooked&dateField=joined&dateRange=custom&dateFrom=2026-08-06&dateTo=2026-08-12
+      - text: Refresh
+  - region "Customer filters":
+    - generic "Customer operational views":
+      - generic: Operational view
+      - generic "Customer operational view":
+        - link "Payment & review, 0 customers":
+          - /url: /customers?segment=usage-new-unbooked&dateField=joined&dateRange=custom&dateFrom=2026-08-06&dateTo=2026-08-12
+          - text: Payment & review 0
+        - link "All customers, 2 customers":
+          - /url: /customers?view=all&segment=usage-new-unbooked&dateField=joined&dateRange=custom&dateFrom=2026-08-06&dateTo=2026-08-12
+          - text: All customers 2
+        - link "New today, 0 customers":
+          - /url: /customers?view=new-today&segment=usage-new-unbooked&dateField=joined&dateRange=custom&dateFrom=2026-08-06&dateTo=2026-08-12
+          - text: New today 0
+        - link "App seen today, 0 customers":
+          - /url: /customers?view=active-today&segment=usage-new-unbooked&dateField=joined&dateRange=custom&dateFrom=2026-08-06&dateTo=2026-08-12
+          - text: App seen today 0
+    - generic "Customer directory filters":
+      - generic: Search customer
+      - searchbox "Search customer"
+      - generic: Customer segment
+      - combobox "Customer segment":
+        - option "All customer segments" [selected]
+        - option "Never booked"
+        - option "Has booking history"
+        - option "Completed customers"
+        - option "Cancellation / no-show history"
+        - option "Inactive 30 days"
+      - generic: Sort customers
+      - combobox "Sort customers":
+        - option "Newest first" [selected]
+        - option "Customer name"
+        - option "Most bookings"
+    - generic "Customer filter actions":
+      - button "Apply filters"
+    - generic "More filters (1) Session activity period, recorded app language, and profile attributes":
+      - text: More filters (1)
+      - generic: Session activity period, recorded app language, and profile attributes
+    - generic: Date field
+    - combobox "Date field":
+      - option "Session activity period"
+      - option "Joined date" [selected]
+      - option "Last booking activity"
+    - generic: Period
+    - combobox "Period":
+      - option "All dates"
+      - option "Today"
+      - option "Previous day"
+      - option "Last 7 days"
+      - option "Last 30 days"
+      - option "Custom dates" [selected]
+    - generic: Recorded app language
+    - combobox "Recorded app language":
+      - option "All app languages" [selected]
+      - option "Vietnamese"
+      - option "Korean"
+      - option "Japanese"
+      - option "Chinese"
+      - option "English"
+      - option "Unknown language"
+    - generic: Gender
+    - combobox "Gender":
+      - option "All genders" [selected]
+      - option "Female"
+      - option "Male"
+      - option "Other"
+      - option "Not captured"
+    - generic: From
+    - textbox "From": 2026-08-06
+    - generic: To
+    - textbox "To": 2026-08-12
+    - generic "Active customer filters":
+      - generic: "Segment: New in period · no production booking"
+      - generic: "Joined date: 2026-08-06 - 2026-08-12"
+    - link "Clear filters":
+      - /url: /customers?view=all
+  - region "Customer directory":
+    - heading "Customer directory" [level=2]
+    - paragraph: Sorted by Newest first
+    - generic: 2 customers · Newest first
+    - region "Customer directory table":
+      - table:
+        - rowgroup:
+          - row "Customer Current situation Booking history Open work Payments & wallet":
+            - columnheader "Customer"
+            - columnheader "Current situation"
+            - columnheader "Booking history"
+            - columnheader "Open work"
+            - columnheader "Payments & wallet"
+        - rowgroup:
+          - row "App offline Audit Cancellation Customer +84*******01· ID audit_po...file No booking · No app activity 0 completed · 6 total None Captured payments 400.000 VND Wallet balance -800.000 VND":
+            - cell "App offline Audit Cancellation Customer +84*******01· ID audit_po...file":
+              - generic: AC
+              - img "App offline"
+              - link "Audit Cancellation Customer":
+                - /url: /customers/audit_post_match_customer_profile?returnTo=%2Fcustomers%3Fview%3Dall%26segment%3Dusage-new-unbooked%26dateField%3Djoined%26dateRange%3Dcustom%26dateFrom%3D2026-08-06%26dateTo%3D2026-08-12
+                - text: Audit Cancellation Customer
+              - generic: +84*******01·
+              - generic: ID audit_po...file
+            - cell "No booking · No app activity"
+            - cell "0 completed · 6 total":
+              - strong: 0 completed · 6 total
+            - cell "None"
+            - cell "Captured payments 400.000 VND Wallet balance -800.000 VND":
+              - generic: Captured payments
+              - strong: 400.000 VND
+              - generic: Wallet balance
+              - strong: "-800.000 VND"
+          - row "App offline Unnamed customer +84*******01· ID cmsiv8xx...2rng No booking · No app activity No bookings yet None Captured payments 0 VND Wallet balance 0 VND":
+            - cell "App offline Unnamed customer +84*******01· ID cmsiv8xx...2rng":
+              - generic: UC
+              - img "App offline"
+              - link "Unnamed customer":
+                - /url: /customers/cmsiv8xxy001wvy1sxrv82rng?returnTo=%2Fcustomers%3Fview%3Dall%26segment%3Dusage-new-unbooked%26dateField%3Djoined%26dateRange%3Dcustom%26dateFrom%3D2026-08-06%26dateTo%3D2026-08-12
+                - text: Unnamed customer
+              - generic: +84*******01·
+              - generic: ID cmsiv8xx...2rng
+            - cell "No booking · No app activity"
+            - cell "No bookings yet"
+            - cell "None"
+            - cell "Captured payments 0 VND Wallet balance 0 VND":
+              - generic: Captured payments
+              - strong: 0 VND
+              - generic: Wallet balance
+              - strong: 0 VND
+    - generic: Showing 1 to 2 of 2 entries
+- alert: Customers | HANDS Admin · HANDS Admin

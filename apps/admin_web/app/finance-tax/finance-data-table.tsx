@@ -5,12 +5,13 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 type FinanceDataTableProps = Omit<ComponentProps<typeof AdminDataTable>, 'className'> & {
   readonly ariaLabel?: string;
   readonly scrollClassName?: string;
+  readonly tableClassName?: string;
 };
 
-export function FinanceDataTable({ ariaLabel, scrollClassName, ...props }: FinanceDataTableProps) {
+export function FinanceDataTable({ ariaLabel, scrollClassName, tableClassName, ...props }: FinanceDataTableProps) {
   return (
     <AdminTableScroll ariaLabel={ariaLabel} className={scrollClassName}>
-      <AdminDataTable {...props} />
+      <AdminDataTable {...props} className={tableClassName} />
     </AdminTableScroll>
   );
 }

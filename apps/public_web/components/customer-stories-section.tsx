@@ -48,6 +48,51 @@ const customerStories = [
   },
 ] as const;
 
+const sourceCustomerStories = [
+  {
+    title: 'Weight Loss Journey',
+    quote: "Healtify is the best platform I've ever used. The coaches bring a rare balance of expert guidance, daily support, and the motivation I needed to transform.",
+    name: 'Sarah Mitchell',
+    meta: 'Member since Jan 2026',
+    image: '/images/testimonials/sarah.jpg',
+  },
+  {
+    title: 'Athletic Performance',
+    quote: 'The level of accountability is uncompromising. My trainer knows exactly how to push me while ensuring my recovery and nutrition are always on point for success.',
+    name: 'Elena Rossi',
+    meta: 'Member since Nov 2025',
+    image: '/images/testimonials/elena.webp',
+  },
+  {
+    title: 'Lifestyle Coaching',
+    quote: "It's not just a workout app, it's a real human connection. My coach adapts my plan every single week based on my busy schedule and my actual energy levels.",
+    name: 'Marcus Chen',
+    meta: 'Member since Dec 2025',
+    image: '/images/testimonials/marcus.webp',
+  },
+  {
+    title: 'Muscle Building Plan',
+    quote: 'Having a professional coach in my pocket changed everything. The workouts are perfectly tailored to my goals and the feedback is always precise and helpful.',
+    name: 'David Thompson',
+    meta: 'Member since Feb 2026',
+    image: '/images/testimonials/david.jpg',
+  },
+  {
+    title: 'Strength & Conditioning',
+    quote: "Finally, a fitness service that delivers what it promises. The transition from generic gym routines to elite personalized training was the best choice I've made.",
+    name: 'Sophia Williams',
+    meta: 'Member since Jan 2026',
+    image: '/images/testimonials/sophia.jpg',
+  },
+  {
+    title: 'Posture & Mobility',
+    quote: "I never thought digital coaching could be this effective. The video feedback from my trainer is better than any in-person session I've had in the past decade.",
+    name: 'James Peterson',
+    meta: 'Member since Mar 2026',
+    image: '/images/testimonials/james.webp',
+  },
+] as const;
+
 export function getCustomerStoryOffset(scrollY: number, cycle: number, rowIndex: number) {
   const offset = (scrollY * 0.326) % cycle;
   return rowIndex === 0 ? -offset : -(cycle - offset);
@@ -58,8 +103,9 @@ export function normalizeCustomerStoryOffset(offset: number, cycle: number) {
   return -(((-offset % cycle) + cycle) % cycle);
 }
 
-export function CustomerStoriesSection() {
+export function CustomerStoriesSection({ sourceExact = false }: { readonly sourceExact?: boolean }) {
   const sectionRef = useRef<HTMLElement>(null);
+  const storiesForPage = sourceExact ? sourceCustomerStories : customerStories;
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -158,10 +204,10 @@ export function CustomerStoriesSection() {
     >
       <div className="customer-stories-heading">
         <p>
-          <span aria-hidden="true">●</span> CUSTOMER STORIES
+          <span aria-hidden="true">●</span> {sourceExact ? 'Testimonials' : 'CUSTOMER STORIES'}
         </p>
       </div>
-      {[customerStories.slice(0, 3), customerStories.slice(3)].map((stories) => (
+      {[storiesForPage.slice(0, 3), storiesForPage.slice(3)].map((stories) => (
         <div
           aria-label={`${stories[0].name} customer stories`}
           className="customer-stories-window"

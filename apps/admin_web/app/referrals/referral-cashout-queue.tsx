@@ -32,7 +32,6 @@ import type {
 } from '../../lib/admin-api';
 import { readSearchParam } from '../../lib/date-range';
 import { referralRewardCreditState } from '../../lib/referral-reward-credit-state';
-import type { FinanceApproverOption } from '../finance-tax/finance-approver-options';
 import {
   approveReferralRewardCashout,
   markReferralRewardCashoutPaid,
@@ -52,7 +51,6 @@ export type ReferralCashoutFilters = {
 type ReferralCashoutQueuePageProps = {
   readonly currentPage: number;
   readonly filters: ReferralCashoutFilters;
-  readonly financeApproverOptions?: readonly FinanceApproverOption[];
   readonly rows: readonly AdminReferralCashoutQueueRow[];
   readonly summary: AdminReferralCashoutQueueSummary;
 };
@@ -61,7 +59,6 @@ type ReferralCashoutAction = {
   readonly action: (formData: FormData) => Promise<void>;
   readonly formNoValidate?: boolean;
   readonly label: string;
-  readonly requiresApproval?: boolean;
 };
 
 const referralCashoutPageSize = 10;
@@ -91,7 +88,6 @@ const emptyReferralCashoutSummary: AdminReferralCashoutQueueSummary = {
 export function ReferralCashoutQueuePage({
   currentPage,
   filters,
-  financeApproverOptions = [],
   rows,
   summary,
 }: ReferralCashoutQueuePageProps) {
@@ -206,11 +202,7 @@ export function ReferralCashoutQueuePage({
               rowCount={rows.length}
             >
               {rows.map((row) => (
-              <ReferralCashoutTableRow
-                financeApproverOptions={financeApproverOptions}
-                key={row.id}
-                row={row}
-              />
+              <ReferralCashoutTableRow key={row.id} row={row} />
               ))}
             </AdminDataTable>
           </AdminTableScroll>
@@ -228,13 +220,7 @@ export function ReferralCashoutQueuePage({
   );
 }
 
-function ReferralCashoutTableRow({
-  financeApproverOptions,
-  row,
-}: {
-  readonly financeApproverOptions: readonly FinanceApproverOption[];
-  readonly row: AdminReferralCashoutQueueRow;
-}) {
+function ReferralCashoutTableRow({ row }: { readonly row: AdminReferralCashoutQueueRow }) {
   const creditState = referralRewardCreditState(row);
 
   return (
@@ -290,7 +276,7 @@ function ReferralCashoutTableRow({
         )}
       </td>
       <td>
-        <ReferralCashoutActions financeApproverOptions={financeApproverOptions} row={row} />
+        <ReferralCashoutActions row={row} />
       </td>
     </tr>
   );
@@ -344,19 +330,12 @@ function referralCashoutPayoutProfileTone(status: AdminReferralCashoutPayoutProf
   return 'warning';
 }
 
-function ReferralCashoutActions({
-  financeApproverOptions,
-  row,
-}: {
-  readonly financeApproverOptions: readonly FinanceApproverOption[];
-  readonly row: AdminReferralCashoutQueueRow;
-}) {
+function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQueueRow }) {
   const actions = referralCashoutActionsForRow(row);
   if (actions.length === 0) {
     return <span className="muted">Closed</span>;
   }
   const bankAccountId = referralCashoutBankCorrectionAccountId(row);
-  const paidApprovalUnavailable = row.status === 'CASHOUT_APPROVED' && financeApproverOptions.length === 0;
 
   return (
     <ActionMenuDropdownSurface
@@ -381,22 +360,10 @@ function ReferralCashoutActions({
         </div>
         {row.status === 'CASHOUT_APPROVED' ? (
           <>
-            <div className="referral-reward-action-reason">
-              <span>Approving admin</span>
-              <AdminFormSelect
-                className="referral-reward-action-reason-input"
-                disabled={paidApprovalUnavailable}
-                label="Separate Finance approver"
-                name="approvalAdminId"
-                options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}
-                required
-              />
-            </div>
-            {paidApprovalUnavailable ? (
-              <AdminInlineNotice role="alert" tone="warning">
-                No other Finance approver is available. Mark paid remains disabled.
-              </AdminInlineNotice>
-            ) : null}
+            <AdminInlineNotice tone="info">
+              The signed-in Finance operator is recorded as the paid closeout approver. The API enforces separation
+              from the cashout request approver.
+            </AdminInlineNotice>
             <div className="referral-reward-action-reason">
               <span>Transfer reference</span>
               <AdminFormInput
@@ -413,7 +380,6 @@ function ReferralCashoutActions({
           {actions.map((item) => (
             <AdminFormControlButton
               className="button-secondary admin-action-item admin-action-button"
-              disabled={item.requiresApproval && paidApprovalUnavailable}
               formAction={item.action}
               formNoValidate={item.formNoValidate}
               key={item.label}
@@ -450,7 +416,7 @@ function referralCashoutActionsForStatus(status: AdminReferralRewardStatus): Ref
   }
   if (status === 'CASHOUT_APPROVED') {
     return [
-      { action: markReferralRewardCashoutPaid, label: 'Mark paid', requiresApproval: true },
+      { action: markReferralRewardCashoutPaid, label: 'Mark paid' },
       { action: requireReferralRewardTaxReview, formNoValidate: true, label: 'Require tax review' },
     ];
   }

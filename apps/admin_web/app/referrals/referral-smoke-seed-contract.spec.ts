@@ -20,6 +20,9 @@ describe('referral smoke seed contract', () => {
     expect(scriptSource).toContain('ReferralRewardStatus.AVAILABLE');
     expect(scriptSource).toContain('walletLedgerReference: null');
     expect(scriptSource).toContain('sourceKey');
-    expect(scriptSource).toContain('referralCodeId: { in: [ids.customerCode, ids.partnerCode] }');
+    expect(scriptSource).toContain('REFERRAL_SMOKE_ALLOW_MUTATION');
+    expect(scriptSource).toContain('fixtureRunId');
+    expect(scriptSource).not.toContain('seedPolicies()');
+    expect(scriptSource).not.toContain('customerWalletLedgerEntry.deleteMany');
   });
 });

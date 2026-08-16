@@ -1,6 +1,9 @@
 import { headers } from 'next/headers';
 
+import { publicSiteTemplatePathFromManifest } from './public-site-route-manifest';
+
 export const publicSiteLocales = ['vi', 'ko', 'en', 'ja', 'zh'] as const;
+export const CMS_PREVIEW_COOKIE = 'hands_cms_preview';
 
 export type PublicSiteLocale = (typeof publicSiteLocales)[number];
 export type PublicSiteKey = 'MAIN' | 'PARTNER_RECRUITMENT';
@@ -83,7 +86,7 @@ export async function fetchPublicSitePage(
   locale: PublicSiteLocale,
   requestedPath: string,
 ) {
-  const path = publicSiteTemplatePath(requestedPath);
+  const path = publicSiteTemplatePath(requestedPath, site);
   const query = new URLSearchParams({ site, locale, path });
   const response = await fetch(`${API_BASE_URL}/public/site-pages/resolve?${query}`, {
     next: { revalidate: 300 },
@@ -98,10 +101,10 @@ export async function fetchPublicSitePage(
 }
 
 export async function fetchPublicSitePreview(token: string) {
-  const response = await fetch(
-    `${API_BASE_URL}/public/site-pages/preview?${new URLSearchParams({ token })}`,
-    { cache: 'no-store' },
-  );
+  const response = await fetch(`${API_BASE_URL}/public/site-pages/preview`, {
+    cache: 'no-store',
+    headers: { authorization: `Bearer ${token}` },
+  });
   if (!response.ok) {
     throw new Error(`Public site preview request failed with ${response.status}`);
   }
@@ -123,15 +126,6 @@ export async function fetchPublishedRoutes(site: PublicSiteKey, locale: PublicSi
   }
 }
 
-export function publicSiteTemplatePath(path: string) {
-  if (/^\/partners\/[^/]+\/[^/]+\/[^/]+$/u.test(path)) {
-    return '/partners/[city]/[district]/[slug]';
-  }
-  if (/^\/partners\/[^/]+\/[^/]+$/u.test(path)) {
-    return '/partners/[city]/[district]';
-  }
-  if (/^\/partners\/[^/]+$/u.test(path)) {
-    return '/partners/[city]';
-  }
-  return path;
+export function publicSiteTemplatePath(path: string, site: PublicSiteKey = 'MAIN') {
+  return publicSiteTemplatePathFromManifest(site, path);
 }

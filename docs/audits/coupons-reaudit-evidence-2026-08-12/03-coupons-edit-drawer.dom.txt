@@ -1,0 +1,421 @@
+- link:
+  - /url: "#admin-main-content"
+  - text: Skip to main content
+- complementary:
+  - strong: HANDS Admin
+  - navigation:
+    - link:
+      - /url: /
+      - generic: Shift Command
+    - generic: Booking Operations
+    - generic: Customer Support
+    - generic: Partner Operations
+    - generic: Finance Operations
+    - generic: Finance Records & Close
+    - generic: Growth & Communications
+    - link:
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link:
+      - /url: /coupons
+      - generic: Coupons
+    - link:
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link:
+      - /url: /notifications
+      - generic: Messaging
+    - link:
+      - /url: /website-content
+      - generic: Website Content
+    - generic: Administration & Settings
+- main:
+  - navigation:
+    - link:
+      - /url: /
+      - text: HANDS
+    - generic: Growth & Communications
+    - generic: Coupons
+  - button:
+    - text: Search
+    - generic: Ctrl K
+  - button:
+  - link:
+    - /url: /operations-policy
+  - button:
+  - button:
+  - heading [level=1]: Coupons
+  - paragraph: Growth campaign windows and booking usage. All times use ICT (UTC+7). Updated 12 Aug 2026, 13:17 ICT.
+  - link:
+    - /url: /coupons
+    - text: Refresh now
+  - link:
+    - /url: /coupons?drawer=create
+    - text: Create coupon
+  - generic: Current
+  - paragraph: Live checkout codes
+  - generic: "Live checkout codes:"
+  - text: "84"
+  - generic: Coupons available in customer checkout now.
+  - generic: Current
+  - paragraph: Scheduled launches
+  - generic: "Scheduled launches:"
+  - text: "0"
+  - generic: Active coupons waiting for their ICT start time.
+  - generic: Current
+  - paragraph: Inactive records
+  - generic: "Inactive records:"
+  - text: "0"
+  - generic: Paused and expired coupons retained for operations and audit.
+  - region:
+    - heading [level=2]: Coupon filters
+    - generic: 84 matching
+    - generic: Operational view
+    - link:
+      - /url: /coupons
+      - text: Live 84
+    - link:
+      - /url: /coupons?view=scheduled
+      - text: Scheduled 0
+    - link:
+      - /url: /coupons?view=records
+      - text: Records 0
+    - link:
+      - /url: /coupons?view=all
+      - text: All 84
+    - generic: Search coupons
+    - searchbox
+    - button: Apply filters
+    - link:
+      - /url: /coupons
+      - text: Reset
+  - heading [level=2]: Coupon list
+  - paragraph: Compare checkout availability, campaign windows, and operator actions without opening each coupon.
+  - generic: 10 shown
+  - region:
+    - table:
+      - rowgroup:
+        - row:
+          - columnheader: Coupon
+          - columnheader: Discount
+          - columnheader: Checkout window (ICT)
+          - columnheader: Status
+          - columnheader: Usage
+          - columnheader: Actions
+      - rowgroup:
+        - row:
+          - rowheader:
+            - strong: FFF
+            - generic: "-"
+          - cell:
+            - strong: 2% off
+          - cell:
+            - generic: 28 Jul 2025, 06:14 ICT · 28 Jul 2027, 06:14 ICT
+            - generic: Live for booking checkout.
+          - cell:
+            - generic: ACTIVE
+            - generic: Available at checkout now.
+          - cell:
+            - link:
+              - /url: /coupons?usageCouponId=cmqw7d52t000pvyr46t7wlj17
+              - text: View usage
+          - cell:
+            - link:
+              - /url: /coupons?confirm=toggle&couponId=cmqw7d52t000pvyr46t7wlj17&returnTo=%2Fcoupons
+              - text: Pause
+            - link:
+              - /url: /coupons?editCouponId=cmqw7d52t000pvyr46t7wlj17
+              - text: Edit
+            - navigation:
+              - link:
+                - /url: /coupons?confirm=delete&couponId=cmqw7d52t000pvyr46t7wlj17&returnTo=%2Fcoupons
+                - text: Delete coupon
+        - row:
+          - rowheader:
+            - strong: SMOKE1782981597626
+            - generic: Smoke test checkout discount
+          - cell:
+            - strong: 10% off
+          - cell:
+            - generic: Starts immediately · No end date
+            - generic: Live for booking checkout.
+          - cell:
+            - generic: ACTIVE
+            - generic: Available at checkout now.
+          - cell:
+            - link:
+              - /url: /coupons?usageCouponId=cmr397hkt009kvyjg1a987071
+              - text: View usage
+          - cell:
+            - link:
+              - /url: /coupons?confirm=toggle&couponId=cmr397hkt009kvyjg1a987071&returnTo=%2Fcoupons
+              - text: Pause
+            - link:
+              - /url: /coupons?editCouponId=cmr397hkt009kvyjg1a987071
+              - text: Edit
+            - navigation:
+              - link:
+                - /url: /coupons?confirm=delete&couponId=cmr397hkt009kvyjg1a987071&returnTo=%2Fcoupons
+                - text: Delete coupon
+        - row:
+          - rowheader:
+            - strong: SMOKE1782981799991
+            - generic: Smoke test checkout discount
+          - cell:
+            - strong: 10% off
+          - cell:
+            - generic: Starts immediately · No end date
+            - generic: Live for booking checkout.
+          - cell:
+            - generic: ACTIVE
+            - generic: Available at checkout now.
+          - cell:
+            - link:
+              - /url: /coupons?usageCouponId=cmr39btq201j8vyjg2csgorei
+              - text: View usage
+          - cell:
+            - link:
+              - /url: /coupons?confirm=toggle&couponId=cmr39btq201j8vyjg2csgorei&returnTo=%2Fcoupons
+              - text: Pause
+            - link:
+              - /url: /coupons?editCouponId=cmr39btq201j8vyjg2csgorei
+              - text: Edit
+            - navigation:
+              - link:
+                - /url: /coupons?confirm=delete&couponId=cmr39btq201j8vyjg2csgorei&returnTo=%2Fcoupons
+                - text: Delete coupon
+        - row:
+          - rowheader:
+            - strong: SMOKE1782981937064
+            - generic: Smoke test checkout discount
+          - cell:
+            - strong: 10% off
+          - cell:
+            - generic: Starts immediately · No end date
+            - generic: Live for booking checkout.
+          - cell:
+            - generic: ACTIVE
+            - generic: Available at checkout now.
+          - cell:
+            - link:
+              - /url: /coupons?usageCouponId=cmr39erho03aavyjg6w1vqw43
+              - text: View usage
+          - cell:
+            - link:
+              - /url: /coupons?confirm=toggle&couponId=cmr39erho03aavyjg6w1vqw43&returnTo=%2Fcoupons
+              - text: Pause
+            - link:
+              - /url: /coupons?editCouponId=cmr39erho03aavyjg6w1vqw43
+              - text: Edit
+            - navigation:
+              - link:
+                - /url: /coupons?confirm=delete&couponId=cmr39erho03aavyjg6w1vqw43&returnTo=%2Fcoupons
+                - text: Delete coupon
+        - row:
+          - rowheader:
+            - strong: SMOKE1782982214978
+            - generic: Smoke test checkout discount
+          - cell:
+            - strong: 10% off
+          - cell:
+            - generic: Starts immediately · No end date
+            - generic: Live for booking checkout.
+          - cell:
+            - generic: ACTIVE
+            - generic: Available at checkout now.
+          - cell:
+            - link:
+              - /url: /coupons?usageCouponId=cmr39kpxh04fgvyjgkz3z90us
+              - text: View usage
+          - cell:
+            - link:
+              - /url: /coupons?confirm=toggle&couponId=cmr39kpxh04fgvyjgkz3z90us&returnTo=%2Fcoupons
+              - text: Pause
+            - link:
+              - /url: /coupons?editCouponId=cmr39kpxh04fgvyjgkz3z90us
+              - text: Edit
+            - navigation:
+              - link:
+                - /url: /coupons?confirm=delete&couponId=cmr39kpxh04fgvyjgkz3z90us&returnTo=%2Fcoupons
+                - text: Delete coupon
+        - row:
+          - rowheader:
+            - strong: SMOKE1782982341850
+            - generic: Smoke test checkout discount
+          - cell:
+            - strong: 10% off
+          - cell:
+            - generic: Starts immediately · No end date
+            - generic: Live for booking checkout.
+          - cell:
+            - generic: ACTIVE
+            - generic: Available at checkout now.
+          - cell:
+            - link:
+              - /url: /coupons?usageCouponId=cmr39nftp05oavyjgapgxjdiy
+              - text: View usage
+          - cell:
+            - link:
+              - /url: /coupons?confirm=toggle&couponId=cmr39nftp05oavyjgapgxjdiy&returnTo=%2Fcoupons
+              - text: Pause
+            - link:
+              - /url: /coupons?editCouponId=cmr39nftp05oavyjgapgxjdiy
+              - text: Edit
+            - navigation:
+              - link:
+                - /url: /coupons?confirm=delete&couponId=cmr39nftp05oavyjgapgxjdiy&returnTo=%2Fcoupons
+                - text: Delete coupon
+        - row:
+          - rowheader:
+            - strong: SMOKE1782982533575
+            - generic: Smoke test checkout discount
+          - cell:
+            - strong: 10% off
+          - cell:
+            - generic: Starts immediately · No end date
+            - generic: Live for booking checkout.
+          - cell:
+            - generic: ACTIVE
+            - generic: Available at checkout now.
+          - cell:
+            - link:
+              - /url: /coupons?usageCouponId=cmr39rjrg073cvyjgduaqp3ov
+              - text: View usage
+          - cell:
+            - link:
+              - /url: /coupons?confirm=toggle&couponId=cmr39rjrg073cvyjgduaqp3ov&returnTo=%2Fcoupons
+              - text: Pause
+            - link:
+              - /url: /coupons?editCouponId=cmr39rjrg073cvyjgduaqp3ov
+              - text: Edit
+            - navigation:
+              - link:
+                - /url: /coupons?confirm=delete&couponId=cmr39rjrg073cvyjgduaqp3ov&returnTo=%2Fcoupons
+                - text: Delete coupon
+        - row:
+          - rowheader:
+            - strong: SMOKE1782982603286
+            - generic: Smoke test checkout discount
+          - cell:
+            - strong: 10% off
+          - cell:
+            - generic: Starts immediately · No end date
+            - generic: Live for booking checkout.
+          - cell:
+            - generic: ACTIVE
+            - generic: Available at checkout now.
+          - cell:
+            - link:
+              - /url: /coupons?usageCouponId=cmr39t1ju09zqvyjgi9w5j8a1
+              - text: View usage
+          - cell:
+            - link:
+              - /url: /coupons?confirm=toggle&couponId=cmr39t1ju09zqvyjgi9w5j8a1&returnTo=%2Fcoupons
+              - text: Pause
+            - link:
+              - /url: /coupons?editCouponId=cmr39t1ju09zqvyjgi9w5j8a1
+              - text: Edit
+            - navigation:
+              - link:
+                - /url: /coupons?confirm=delete&couponId=cmr39t1ju09zqvyjgi9w5j8a1&returnTo=%2Fcoupons
+                - text: Delete coupon
+        - row:
+          - rowheader:
+            - strong: SMOKE1782982684714
+            - generic: Smoke test checkout discount
+          - cell:
+            - strong: 10% off
+          - cell:
+            - generic: Starts immediately · No end date
+            - generic: Live for booking checkout.
+          - cell:
+            - generic: ACTIVE
+            - generic: Available at checkout now.
+          - cell:
+            - link:
+              - /url: /coupons?usageCouponId=cmr39usdq0cn6vyjgha8wv4ye
+              - text: View usage
+          - cell:
+            - link:
+              - /url: /coupons?confirm=toggle&couponId=cmr39usdq0cn6vyjgha8wv4ye&returnTo=%2Fcoupons
+              - text: Pause
+            - link:
+              - /url: /coupons?editCouponId=cmr39usdq0cn6vyjgha8wv4ye
+              - text: Edit
+            - navigation:
+              - link:
+                - /url: /coupons?confirm=delete&couponId=cmr39usdq0cn6vyjgha8wv4ye&returnTo=%2Fcoupons
+                - text: Delete coupon
+        - row:
+          - rowheader:
+            - strong: SMOKE1782982872863
+            - generic: Smoke test checkout discount
+          - cell:
+            - strong: 10% off
+          - cell:
+            - generic: Starts immediately · No end date
+            - generic: Live for booking checkout.
+          - cell:
+            - generic: ACTIVE
+            - generic: Available at checkout now.
+          - cell:
+            - link:
+              - /url: /coupons?usageCouponId=cmr39ytk20ifuvyjgq012b5ap
+              - text: View usage
+          - cell:
+            - link:
+              - /url: /coupons?confirm=toggle&couponId=cmr39ytk20ifuvyjgq012b5ap&returnTo=%2Fcoupons
+              - text: Pause
+            - link:
+              - /url: /coupons?editCouponId=cmr39ytk20ifuvyjgq012b5ap
+              - text: Edit
+            - navigation:
+              - link:
+                - /url: /coupons?confirm=delete&couponId=cmr39ytk20ifuvyjgq012b5ap&returnTo=%2Fcoupons
+                - text: Delete coupon
+  - generic: Showing 1 to 10 of 84 entries
+  - navigation:
+    - link:
+      - /url: /coupons
+      - text: "1"
+    - link:
+      - /url: /coupons?couponPage=2
+      - text: "2"
+    - link:
+      - /url: /coupons?couponPage=3
+      - text: "3"
+    - link:
+      - /url: /coupons?couponPage=4
+      - text: "4"
+    - link:
+      - /url: /coupons?couponPage=5
+      - text: "5"
+    - link:
+      - /url: /coupons?couponPage=2
+    - link:
+      - /url: /coupons?couponPage=9
+  - button "Close coupon workspace"
+  - dialog "Edit FFF":
+    - generic: Campaign configuration
+    - heading "Edit FFF" [level=2]
+    - paragraph: Times are shown and edited in ICT (UTC+7).
+    - button "Close coupon workspace" [active]:
+    - generic: ACTIVE
+    - generic: Pause or activate from the list so lifecycle changes always receive a separate confirmation.
+    - generic: Campaign description
+    - textbox "Campaign description"
+    - generic: Discount percent
+    - spinbutton "Discount percent": "2"
+    - strong: Checkout status
+    - generic: Available at checkout now.
+    - generic: Starts (ICT)
+    - textbox "Starts (ICT)": 2025-07-28 6:14 AM
+    - generic: Ends (ICT)
+    - textbox "Ends (ICT)": 2027-07-28 6:14 AM
+    - checkbox "No end date"
+    - generic: No end date
+    - link "Cancel":
+      - /url: /coupons
+    - button "Save configuration"
+- button "Open Next.js Dev Tools":
+- alert

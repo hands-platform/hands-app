@@ -1,0 +1,34 @@
+{
+  "dark1440": {
+    "document": {
+      "clientWidth": 1425,
+      "scrollHeight": 1625,
+      "scrollWidth": 1425
+    },
+    "horizontalOverflow": false,
+    "theme": "dark",
+    "viewport": {
+      "height": 1000,
+      "width": 1440
+    }
+  },
+  "light1600": {
+    "document": {
+      "clientWidth": 1585,
+      "scrollHeight": 1640,
+      "scrollWidth": 1585
+    },
+    "horizontalOverflow": false,
+    "theme": "light",
+    "viewport": {
+      "height": 1000,
+      "width": 1600
+    }
+  },
+  "tabKeyboard": {
+    "arrowRightSelected": "true"
+  },
+  "validation": {
+    "saveEnabledWithInvalid": false
+  }
+}

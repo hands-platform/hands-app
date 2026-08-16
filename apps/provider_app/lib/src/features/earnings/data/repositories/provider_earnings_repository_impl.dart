@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:math';
+
 import '../../../../core/api_client.dart';
 import '../../domain/repositories/provider_earnings_repository.dart';
 
@@ -34,12 +37,15 @@ class ProviderEarningsRepositoryImpl implements ProviderEarningsRepository {
   @override
   Future<Map<String, dynamic>> createWalletWithdrawalRequest({
     required int amount,
+    String? idempotencyKey,
     String? bankAccountId,
     String? requestNote,
   }) async {
+    final requestKey = idempotencyKey ?? _withdrawalRequestKey();
     final result = await _api.postJson(
       '/partner/earnings/wallet-withdrawal-requests',
       {
+        'idempotencyKey': requestKey,
         'amount': amount,
         if (bankAccountId != null) 'bankAccountId': bankAccountId,
         if (requestNote != null && requestNote.trim().isNotEmpty)
@@ -47,5 +53,11 @@ class ProviderEarningsRepositoryImpl implements ProviderEarningsRepository {
       },
     );
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
+  }
+
+  String _withdrawalRequestKey() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(18, (_) => random.nextInt(256));
+    return 'withdrawal-${base64UrlEncode(bytes).replaceAll('=', '')}';
   }
 }

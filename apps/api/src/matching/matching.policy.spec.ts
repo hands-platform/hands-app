@@ -78,9 +78,46 @@ describe('matching policy', () => {
   });
 
   it('keeps operational policy copy factual instead of scoring people', () => {
-    const serializedPolicyCopy = JSON.stringify(OPERATIONAL_POLICY_DEFINITIONS);
+    const serializedPolicyCopy = JSON.stringify(
+      OPERATIONAL_POLICY_DEFINITIONS.map(({ description, label, options }) => ({ description, label, options })),
+    );
 
     expect(serializedPolicyCopy).not.toMatch(/\b(penalty|penalties|risk|score|rank)\b/i);
+  });
+
+  it('derives editable lifecycle from actual runtime consumer contracts', () => {
+    const lifecycleKeys = (lifecycle: 'live' | 'locked' | 'planned') =>
+      OPERATIONAL_POLICY_DEFINITIONS.filter((definition) => definition.lifecycle === lifecycle)
+        .map((definition) => definition.key)
+        .sort();
+
+    expect(lifecycleKeys('planned')).toEqual([
+      'cancellation.after_match_policy',
+      'cash.settlement_clearance_policy',
+      'decision.action_evidence_gate_mode',
+      'matching.first_pick_expiry_action_policy',
+      'no_show.evidence_requirement_policy',
+      'payout.batch_cycle_policy',
+      'wallet.negative_balance_gate',
+    ]);
+    expect(lifecycleKeys('locked')).toEqual([
+      'matching.marketplace_open_mode',
+      'matching.preferred_accept_mode',
+    ]);
+    expect(lifecycleKeys('live')).toHaveLength(19);
+    expect(
+      OPERATIONAL_POLICY_DEFINITIONS.filter((definition) => definition.lifecycle === 'live').every(
+        (definition) =>
+          definition.enforced &&
+          definition.consumerContract.consumerIds.length > 0 &&
+          definition.consumerContract.integrationTestIds.length > 0,
+      ),
+    ).toBe(true);
+    expect(
+      OPERATIONAL_POLICY_DEFINITIONS.filter((definition) => definition.lifecycle !== 'live').every(
+        (definition) => !definition.enforced,
+      ),
+    ).toBe(true);
   });
 
   it('registers editable Start Shift queue SLAs with bounded minute values', () => {

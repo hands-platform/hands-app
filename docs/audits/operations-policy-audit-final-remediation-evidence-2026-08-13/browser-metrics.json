@@ -1,0 +1,61 @@
+{
+  "verifiedAt": "2026-08-14T06:34:00+07:00",
+  "route": "/operations-policy?details=audit",
+  "viewports": [
+    "1440x1000",
+    "1600x1000"
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "sourceStates": {
+    "operator": {
+      "count": 0,
+      "message": "No authenticated operator policy changes are recorded."
+    },
+    "automated_smoke": {
+      "count": 0,
+      "message": "No server-verified automated smoke policy changes are recorded."
+    },
+    "legacy_unknown": {
+      "hasRows": true,
+      "trustedSourceInference": false
+    }
+  },
+  "table": {
+    "columnsPxAt1440": [148, 240, 200, 190, 240, 104],
+    "rowHeightsPx": [107, 107, 107, 107, 107, 107, 107, 106],
+    "nativeDetailsCount": 0,
+    "pageHorizontalOverflow": false,
+    "scopedTableHorizontalScroll": true,
+    "evidenceColumnSticky": true
+  },
+  "pagination": {
+    "page3Verified": true,
+    "controls": ["First page", "Newer records", "Older records"],
+    "boundedHistoryVerified": true,
+    "sourceChangeResetsHistory": true
+  },
+  "fullAudit": {
+    "scope": "Operations / Policy",
+    "range": "all",
+    "sort": "newest",
+    "eventCount": 1325,
+    "visibleActionsMatch": "operational_policy.*",
+    "csvPreservesBucket": true,
+    "jsonPreservesBucket": true,
+    "refreshPreservesBucket": true,
+    "facetsPreserveBucket": true,
+    "paginationPreservesBucket": true
+  },
+  "evidenceDrawer": {
+    "compactEventIdMatchesDrawer": true,
+    "policyEvidenceVisible": true,
+    "legacySourceRemainsUnverified": true,
+    "rawJsonDisplayTransform": false
+  },
+  "consoleWarnings": 0,
+  "consoleErrors": 0,
+  "dataMutationPerformed": false
+}

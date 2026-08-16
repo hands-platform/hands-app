@@ -216,6 +216,18 @@ describe('client booking response helpers', () => {
     });
   });
 
+  it('does not reuse a single free-form address as a pre-match coarse preview', () => {
+    const response = partnerOpenBookingResponse({
+      id: 'booking-1',
+      address: { addressText: '123 Nguyen Hue Street' },
+      addressSnapshot: { addressText: '123 Nguyen Hue Street' },
+    });
+
+    expect(JSON.stringify(response)).not.toContain('123 Nguyen Hue Street');
+    expect(response.address).toEqual({});
+    expect(response.addressSnapshot).toEqual({});
+  });
+
   it('marks a first-pick request without exposing the preferred provider user id', () => {
     const response = partnerOpenBookingResponse(
       {
@@ -247,6 +259,8 @@ describe('client booking response helpers', () => {
     );
 
     expect(response.participationStatus).toBe('JOINED');
+    expect(response).not.toHaveProperty('participants');
+    expect(JSON.stringify(response)).not.toContain('provider-2');
   });
 
   it('only exposes the exact service address to the selected partner booking response', () => {

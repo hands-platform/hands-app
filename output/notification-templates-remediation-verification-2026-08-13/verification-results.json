@@ -1,0 +1,37 @@
+{
+  "catalog": {
+    "managedEvents": 24,
+    "needsTranslation": 96,
+    "needsReview": 0,
+    "routingErrors": 0,
+    "managedCopyOff": 0
+  },
+  "desktop": {
+    "1440x1000": {
+      "theme": "dark",
+      "horizontalOverflow": false
+    },
+    "1600x1000": {
+      "theme": "light",
+      "horizontalOverflow": false
+    }
+  },
+  "interaction": {
+    "languageTabArrowNavigation": true,
+    "pushPreview": true,
+    "inAppPreview": true,
+    "unknownPlaceholderBlocksSave": true,
+    "dirtyNavigationConfirmation": true
+  },
+  "recovery": {
+    "loadFailureHasRetry": true,
+    "permissionFailureIsDistinct": true,
+    "incompleteCatalogBlocksEditor": true,
+    "optimisticConflictPreservesDraft": true,
+    "optimisticConflictHasReloadLatest": true,
+    "optimisticConflictHasCopyDraft": true
+  },
+  "consoleIssueCount": 0,
+  "writesPerformedDuringBrowserVerification": 0,
+  "realPushesSent": 0
+}

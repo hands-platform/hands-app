@@ -1,0 +1,182 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Messaging":
+        - /url: /notifications
+      - generic: Push Send
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to light mode" [active]:
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Messaging workspace":
+    - strong: Messaging
+    - generic "Messaging pages":
+      - link "Notification Delivery":
+        - /url: /notifications
+      - link "Notification Templates":
+        - /url: /notifications/templates
+      - link "Push Send":
+        - /url: /notifications/push-send
+  - heading "Push Send" [level=1]
+  - paragraph: Manual notification delivery with account selection and a required recipient preview before sending.
+  - generic: Today
+  - paragraph: Campaigns
+  - generic: "Campaigns:"
+  - text: "0"
+  - generic: Manual push campaigns in this period.
+  - generic: Delivery history
+  - paragraph: Last send
+  - generic: "Last send:"
+  - text: "-"
+  - generic: Most recent manual push record.
+  - generic: Today
+  - paragraph: Recipients
+  - generic: "Recipients:"
+  - text: "0"
+  - generic: Recipient total across campaigns in this period. 0 notifications.
+  - heading "Create push campaign" [level=2]
+  - paragraph: Find an account by name or phone when targeting one person. The internal account id remains hidden.
+  - generic: 1 ready
+  - generic: Account role
+  - combobox "Account role":
+    - option "Customers" [selected]
+    - option "Partners"
+  - generic: Find account by name or phone
+  - searchbox "Find account by name or phone"
+  - button "Search accounts"
+  - status: Enter at least 2 characters to search. Leave the account unselected to use the audience filter.
+  - generic: Target role
+  - strong: Customers
+  - generic: Audience filter
+  - combobox "Audience filter":
+    - option "All customers with push devices" [selected]
+    - option "Completed booking in last 7 days"
+    - option "Completed before, inactive 30 days"
+    - option "Never booked"
+    - option "Active in last 3 days, no booking"
+    - option "Referral parent customers"
+  - generic: Open page
+  - combobox "Open page":
+    - option "Home / Notification center" [selected]
+    - option "Bookings"
+    - option "Chat"
+    - option "Partners"
+    - option "Profile"
+  - generic: Language
+  - combobox "Language":
+    - option "Default language"
+    - option "English"
+    - option "Vietnamese" [selected]
+    - option "Korean"
+    - option "Japanese"
+    - option "Chinese"
+  - generic: Specific account
+  - strong: All accounts matching the audience filter
+  - generic: Push title
+  - textbox "Push title": Lịch trống hôm nay
+  - generic: Push body
+  - textbox "Push body": Kiểm tra bản xem trước dành cho vận hành.
+  - button "Preview recipients"
+  - generic "Active push send filters":
+    - generic: "Target: Customers"
+    - generic: "Audience: All customers with push devices"
+    - generic: "Open page: Home / Notification center"
+    - generic: "Language: Vietnamese"
+    - generic: "Campaign rows: Today"
+  - generic: Target role
+  - strong: Customers
+  - generic: Audience filter
+  - strong: All customers with push devices
+  - generic: Specific account
+  - strong: Audience filter
+  - generic: Opens page
+  - strong: Home / Notification center
+  - generic: Language
+  - strong: Vietnamese
+  - generic: Recipient count
+  - strong: "1"
+  - generic: Will send
+  - strong: "1"
+  - generic: Excluded by send limit
+  - strong: "0"
+  - generic: Limit
+  - strong: "100"
+  - generic: Ready
+  - strong: Smoke Referral Referred Customer
+  - generic: +84******011
+  - generic: android
+  - button "Send push"
+  - heading "Recent push campaigns / Today" [level=2]
+  - generic: 0 loaded of 0 total
+  - generic "Push campaign date range":
+    - link "Today":
+      - /url: /notifications/push-send?targetRole=CUSTOMER&targetSegment=all&appDestination=notificationCenter&locale=vi&title=L%E1%BB%8Bch+tr%E1%BB%91ng+h%C3%B4m+nay&body=Ki%E1%BB%83m+tra+b%E1%BA%A3n+xem+tr%C6%B0%E1%BB%9Bc+d%C3%A0nh+cho+v%E1%BA%ADn+h%C3%A0nh.
+    - link "Previous day":
+      - /url: /notifications/push-send?targetRole=CUSTOMER&targetSegment=all&appDestination=notificationCenter&locale=vi&title=L%E1%BB%8Bch+tr%E1%BB%91ng+h%C3%B4m+nay&body=Ki%E1%BB%83m+tra+b%E1%BA%A3n+xem+tr%C6%B0%E1%BB%9Bc+d%C3%A0nh+cho+v%E1%BA%ADn+h%C3%A0nh.&campaignRange=yesterday
+    - link "Last 7 days":
+      - /url: /notifications/push-send?targetRole=CUSTOMER&targetSegment=all&appDestination=notificationCenter&locale=vi&title=L%E1%BB%8Bch+tr%E1%BB%91ng+h%C3%B4m+nay&body=Ki%E1%BB%83m+tra+b%E1%BA%A3n+xem+tr%C6%B0%E1%BB%9Bc+d%C3%A0nh+cho+v%E1%BA%ADn+h%C3%A0nh.&campaignRange=7d
+    - link "Last 30 days":
+      - /url: /notifications/push-send?targetRole=CUSTOMER&targetSegment=all&appDestination=notificationCenter&locale=vi&title=L%E1%BB%8Bch+tr%E1%BB%91ng+h%C3%B4m+nay&body=Ki%E1%BB%83m+tra+b%E1%BA%A3n+xem+tr%C6%B0%E1%BB%9Bc+d%C3%A0nh+cho+v%E1%BA%ADn+h%C3%A0nh.&campaignRange=30d
+    - link "All loaded":
+      - /url: /notifications/push-send?targetRole=CUSTOMER&targetSegment=all&appDestination=notificationCenter&locale=vi&title=L%E1%BB%8Bch+tr%E1%BB%91ng+h%C3%B4m+nay&body=Ki%E1%BB%83m+tra+b%E1%BA%A3n+xem+tr%C6%B0%E1%BB%9Bc+d%C3%A0nh+cho+v%E1%BA%ADn+h%C3%A0nh.&campaignRange=all
+  - region "Scrollable data table":
+    - table:
+      - rowgroup:
+        - row "Sent Target / Filter App page Title Recipients Status":
+          - columnheader "Sent"
+          - columnheader "Target / Filter"
+          - columnheader "App page"
+          - columnheader "Title"
+          - columnheader "Recipients"
+          - columnheader "Status"
+      - rowgroup:
+        - row:
+          - cell:
+            - status:
+              - paragraph: No manual push campaigns yet.
+- alert

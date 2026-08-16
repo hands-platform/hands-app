@@ -65,6 +65,23 @@ describe('payment gateway authorization readiness', () => {
 });
 
 describe('payment gateway callback security', () => {
+  it.each([
+    PaymentMethod.CASH,
+    PaymentMethod.CARD,
+    PaymentMethod.BANK_TRANSFER,
+    PaymentMethod.CUSTOMER_WALLET,
+    PaymentMethod.MANUAL,
+  ])('rejects the internal %s method at the public callback boundary', async (method) => {
+    const { prisma, service } = createGatewayService(PaymentMethod.MOMO, {});
+
+    await expect(service.handleCallback(method, { providerRef: 'payment-1' })).rejects.toThrow(
+      'Payment method does not support public callbacks',
+    );
+
+    expect(prisma.payment.findUnique).not.toHaveBeenCalled();
+    expect(prisma.paymentCallbackAttempt.create).not.toHaveBeenCalled();
+  });
+
   it('rejects a MoMo callback without a secret by default', async () => {
     const { prisma, service } = createGatewayService(PaymentMethod.MOMO, {});
 
@@ -91,12 +108,7 @@ describe('payment gateway callback security', () => {
         orderId: 'momo-booking-1',
         resultCode: 0,
       }),
-    ).resolves.toEqual(
-      expect.objectContaining({
-        ok: true,
-        replay: false,
-      }),
-    );
+    ).resolves.toEqual({ ok: true, replay: false });
 
     expect(prisma.payment.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -145,15 +157,74 @@ describe('payment gateway callback security', () => {
       NODE_ENV: 'production',
     });
 
-    await expect(service.handleCallback(PaymentMethod.MOMO, payload)).resolves.toEqual(
-      expect.objectContaining({ ok: true }),
-    );
+    await expect(service.handleCallback(PaymentMethod.MOMO, payload)).resolves.toEqual({
+      ok: true,
+      replay: false,
+    });
     expect(prisma.paymentCallbackAttempt.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         signatureVerified: true,
         verificationMode: 'momo-hmac-sha256',
       }),
     });
+  });
+
+  it('acknowledges a terminal callback replay without returning the internal payment row', async () => {
+    const secret = 'momo-test-secret';
+    const accessKey = 'momo-test-access';
+    const payload: Record<string, unknown> = {
+      amount: 300000,
+      orderId: 'momo-booking-1',
+      partnerCode: 'HANDS_TEST',
+      requestId: 'request-1',
+      resultCode: 0,
+      transId: 'momo-transaction-1',
+    };
+    payload.signature = hmacHex('sha256', secret, momoSignatureCandidates(payload, accessKey)[0]);
+    const { prisma, service } = createGatewayService(PaymentMethod.MOMO, {
+      MOMO_ACCESS_KEY: accessKey,
+      MOMO_PARTNER_CODE: 'HANDS_TEST',
+      MOMO_SECRET_KEY: secret,
+      NODE_ENV: 'production',
+    });
+    prisma.payment.findUnique.mockResolvedValue({
+      amount: 300000,
+      bookingId: 'booking-1',
+      currency: 'VND',
+      id: 'payment-1',
+      method: PaymentMethod.MOMO,
+      providerRef: 'momo-booking-1',
+      rawMeta: { internalEvidence: 'must-not-leak' },
+      status: PaymentStatus.CAPTURED,
+    });
+
+    await expect(service.handleCallback(PaymentMethod.MOMO, payload)).resolves.toEqual({
+      ok: true,
+      replay: true,
+    });
+  });
+
+  it('rejects a signed MoMo callback that omits the configured Partner code', async () => {
+    const secret = 'momo-test-secret';
+    const accessKey = 'momo-test-access';
+    const payload: Record<string, unknown> = {
+      amount: 300000,
+      orderId: 'momo-booking-1',
+      requestId: 'request-1',
+      resultCode: 0,
+    };
+    payload.signature = hmacHex('sha256', secret, momoSignatureCandidates(payload, accessKey)[0]);
+    const { prisma, service } = createGatewayService(PaymentMethod.MOMO, {
+      MOMO_ACCESS_KEY: accessKey,
+      MOMO_PARTNER_CODE: 'HANDS_TEST',
+      MOMO_SECRET_KEY: secret,
+      NODE_ENV: 'production',
+    });
+
+    await expect(service.handleCallback(PaymentMethod.MOMO, payload)).rejects.toThrow(
+      'MoMo callback partner code is required',
+    );
+    expect(prisma.payment.updateMany).not.toHaveBeenCalled();
   });
 
   it('accepts a correctly signed VNPay callback', async () => {
@@ -172,15 +243,67 @@ describe('payment gateway callback security', () => {
       VNPAY_TMN_CODE: 'HANDS_TEST',
     });
 
-    await expect(service.handleCallback(PaymentMethod.VNPAY, payload)).resolves.toEqual(
-      expect.objectContaining({ ok: true }),
-    );
+    await expect(service.handleCallback(PaymentMethod.VNPAY, payload)).resolves.toEqual({
+      ok: true,
+      replay: false,
+    });
     expect(prisma.paymentCallbackAttempt.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         signatureVerified: true,
         verificationMode: 'vnpay-hmac-sha512',
       }),
     });
+  });
+
+  it('rejects a signed VNPay callback when its merchant code is not configured', async () => {
+    const secret = 'vnpay-test-secret';
+    const payload: Record<string, unknown> = {
+      vnp_Amount: 30000000,
+      vnp_ResponseCode: '00',
+      vnp_TmnCode: 'HANDS_TEST',
+      vnp_TxnRef: 'vnpay-booking-1',
+    };
+    payload.vnp_SecureHash = hmacHex('sha512', secret, vnpaySignatureCandidates(payload)[0]);
+    const { prisma, service } = createGatewayService(PaymentMethod.VNPAY, {
+      NODE_ENV: 'production',
+      VNPAY_HASH_SECRET: secret,
+    });
+
+    await expect(service.handleCallback(PaymentMethod.VNPAY, payload)).rejects.toThrow(
+      'VNPay callback merchant code is not configured',
+    );
+    expect(prisma.payment.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('rejects a valid callback signature when the stored payment method differs', async () => {
+    const secret = 'vnpay-test-secret';
+    const payload: Record<string, unknown> = {
+      vnp_Amount: 30000000,
+      vnp_ResponseCode: '00',
+      vnp_TmnCode: 'HANDS_TEST',
+      vnp_TxnRef: 'shared-provider-reference',
+    };
+    payload.vnp_SecureHash = hmacHex('sha512', secret, vnpaySignatureCandidates(payload)[0]);
+    const { prisma, service } = createGatewayService(PaymentMethod.VNPAY, {
+      NODE_ENV: 'production',
+      VNPAY_HASH_SECRET: secret,
+      VNPAY_TMN_CODE: 'HANDS_TEST',
+    });
+    prisma.payment.findUnique.mockResolvedValue({
+      amount: 300000,
+      bookingId: 'booking-1',
+      currency: 'VND',
+      id: 'payment-1',
+      method: PaymentMethod.MOMO,
+      providerRef: 'shared-provider-reference',
+      rawMeta: {},
+      status: PaymentStatus.AUTHORIZED,
+    });
+
+    await expect(service.handleCallback(PaymentMethod.VNPAY, payload)).rejects.toThrow(
+      'Payment callback method does not match the stored payment',
+    );
+    expect(prisma.payment.updateMany).not.toHaveBeenCalled();
   });
 });
 
@@ -198,6 +321,7 @@ function createGatewayService(method: PaymentMethod.MOMO | PaymentMethod.VNPAY, 
   };
   const updatedPayment = { ...storedPayment, status: PaymentStatus.CAPTURED };
   const prisma = {
+    $transaction: vi.fn(async (callback: (client: unknown) => Promise<unknown>) => callback(prisma)),
     payment: {
       findUnique: vi.fn().mockResolvedValue(storedPayment),
       findUniqueOrThrow: vi.fn().mockResolvedValue(updatedPayment),

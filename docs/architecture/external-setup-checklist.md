@@ -45,6 +45,26 @@ The command succeeds only when strict external configuration and live public DNS
 | Android signing | Local helper ready                                                                                         | Production keystores stay in secrets folder                         |
 | Payments        | Cash active, MoMo/VNPay adapters exist                                                                     | Merchant sandbox credentials last                                   |
 
+## Deferred capability ledger
+
+The authenticated Admin Setup workspace at `/setup?mode=readiness&view=deferred` is the operator ledger for future external work. The current `CASH_ONLY` launch manifest contains exactly three deferred capabilities: MoMo payments, VNPay payments, and Referral app links. They remain visible for planning but do not contribute to the current-stage blocker count.
+
+`FutureReadiness` has three states:
+
+- `NOT_STARTED`: no current re-entry prerequisite is verified.
+- `PARTIAL`: at least one current prerequisite is verified, but one or more remain pending.
+- `READY_FOR_REENTRY`: every prerequisite in the current release profile is verified. Future-platform checks are excluded until that profile is activated.
+
+Review triggers:
+
+- MoMo: the online-payment phase is approved.
+- VNPay: the online-payment phase and public DNS/TLS are approved.
+- Referral links: public referral sharing, an Android store release, or a referral campaign enters scope.
+
+The Referral release profile is currently `ANDROID_MVP`. It requires the public base URL and both Android store destinations; Android device routing must still be smoke-verified before re-entry. iOS destinations stay future work until `IOS_RELEASE` is activated. A configured URL is configuration evidence only and does not replace device-routing or functional payment smoke evidence.
+
+All operator review times and audit timestamps for this workflow are interpreted and reported in Vietnam local time, `Asia/Ho_Chi_Minh` (`UTC+7`).
+
 ## Required Env Groups
 
 ```dotenv

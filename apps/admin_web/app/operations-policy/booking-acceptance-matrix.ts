@@ -20,7 +20,9 @@ import {
   readPolicyString,
   readPolicyStringFromKeys,
 } from '../../lib/operations-policy';
-import { formatDistance } from './policy-simulation';
+import { formatDistance } from './policy-distance-format';
+import { policyCountLabel } from './policy-copy';
+import type { MetricCardKind } from '../../components/metric-card';
 
 type BookingAcceptancePolicy = {
   readonly backupLocationFreshnessMinutes: number;
@@ -52,6 +54,7 @@ export function buildBookingAcceptanceMatrix(
 
   return {
     blockingCount: cards.filter((card) => card.blocking).length,
+    sampledPartnerCount: providerRows.length,
     summary: buildBookingAcceptanceSummary(policy),
     cards,
     impact,
@@ -113,7 +116,7 @@ function buildBookingAcceptanceCards(policy: BookingAcceptancePolicy, baseline: 
     {
       title: 'First-pick response window',
       status: baseline.timer ? 'HANDS baseline' : 'Owner override',
-      detail: `The first selected partner has ${policy.responseWindowMinutes} minute(s) before the request needs operator attention.`,
+      detail: `The first selected Partner has ${policyCountLabel(policy.responseWindowMinutes, 'minute')} before the request needs operator attention.`,
       operatorAction: baseline.timer
         ? 'Keep this at 10 minutes until live response-rate data says otherwise.'
         : 'Monitor customer wait complaints and first-pick acceptance rate before keeping this override.',
@@ -137,7 +140,7 @@ function buildBookingAcceptanceCards(policy: BookingAcceptancePolicy, baseline: 
       status: baseline.locationFreshness
         ? `${ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes}m default`
         : 'Custom freshness',
-      detail: `Marketplace Partner location freshness is checked at ${policy.backupLocationFreshnessMinutes} minute(s) for operator confidence.`,
+      detail: `Marketplace Partner location freshness is checked at ${policyCountLabel(policy.backupLocationFreshnessMinutes, 'minute')} for operator confidence.`,
       operatorAction: baseline.locationFreshness
         ? 'This matches the low-cost stale threshold. Idle partners refresh at 60 minutes or 3000m movement; active bookings refresh every 30 minutes.'
         : 'If this is loosened, monitor stale-location participation and partner no-response rates.',
@@ -176,7 +179,7 @@ function buildBookingAcceptanceCards(policy: BookingAcceptancePolicy, baseline: 
       status: policy.pushReady ? 'Push enabled' : 'In-app first',
       detail: policy.pushReady
         ? 'Partner booking and marketplace participation alerts are ready to route through FCM.'
-        : 'FCM live smoke and token recovery passed; Partner booking and marketplace alerts stay in-app until monitoring stays clean and the owner enables push routing.',
+        : 'FCM readiness is not verified in this workspace; Partner booking and marketplace alerts stay in-app until monitoring evidence is available and the owner enables push routing.',
       operatorAction: policy.pushReady
         ? 'Monitor delivery failures, disabled devices, stale tokens, and retry audit evidence on the Notifications board.'
         : 'Keep this on in-app-first while operators watch notification monitoring and retry audit evidence; SMS stays under the deferred Phone Auth step.',
@@ -233,7 +236,13 @@ function buildBookingAcceptanceSummary(policy: BookingAcceptancePolicy) {
 function buildPartnerAcceptancePolicyImpact(
   providers: readonly AdminProvider[],
   policy: { readonly backupLocationFreshnessMinutes: number; readonly hardWalletBlock: boolean },
-) {
+): Array<{
+  helper: string;
+  kind: MetricCardKind;
+  label: string;
+  scope: string;
+  value: string;
+}> {
   const onlinePartners = providers.filter((provider) => provider.status.startsWith('ONLINE'));
   const finalGateReadyPartners = providers.filter((provider) =>
     adminPartnerCanCompleteFinalGate(provider, {
@@ -261,7 +270,9 @@ function buildPartnerAcceptancePolicyImpact(
     {
       label: 'Marketplace ready',
       value: finalGateReadyPartners.length.toString(),
-      helper: `${onlinePartners.length} online partner(s), filtered by marketplace, location, push, and control readiness.`,
+      scope: finalGateReadyPartners.length ? 'Sample result' : 'Blocked',
+      kind: finalGateReadyPartners.length ? 'record' : 'risk',
+      helper: `${policyCountLabel(onlinePartners.length, 'online Partner')}, filtered by marketplace, location, push, and control readiness.`,
     },
     {
       label: 'Final gate held',
@@ -270,11 +281,15 @@ function buildPartnerAcceptancePolicyImpact(
           adminPartnerMarketplaceBlocked(provider, { hardWalletBlock: policy.hardWalletBlock }),
         )
         .length.toString(),
+      scope: 'Needs action',
+      kind: 'risk',
       helper: 'Account controls, identity failure, or negative wallet can hold final matching controls.',
     },
     {
       label: 'Cash debt gate',
       value: walletGateHeld.length.toString(),
+      scope: walletGateHeld.length ? 'Needs action' : 'No follow-up',
+      kind: walletGateHeld.length ? 'risk' : 'record',
       helper: policy.hardWalletBlock
         ? 'Negative wallet gates final acceptance, service start, and payout release.'
         : 'Negative wallet still needs settlement before final acceptance, service start, and payout release.',
@@ -282,32 +297,44 @@ function buildPartnerAcceptancePolicyImpact(
     {
       label: 'Identity block',
       value: identityBlocked.length.toString(),
+      scope: identityBlocked.length ? 'Needs action' : 'No follow-up',
+      kind: identityBlocked.length ? 'risk' : 'record',
       helper: 'Partner approval, KYC, and required CCCD/selfie documents are not all approved.',
     },
     {
       label: 'Bank review',
       value: bankReview.length.toString(),
+      scope: 'Sample review',
+      kind: bankReview.length ? 'action' : 'record',
       helper: 'Bank details are reviewed when the Partner requests wallet withdrawal or deposit support.',
     },
     {
       label: 'Location block',
       value: locationBlocked.length.toString(),
-      helper: `Missing or older than ${policy.backupLocationFreshnessMinutes} minute(s), so marketplace matching should request a fresh location.`,
+      scope: locationBlocked.length ? 'Needs action' : 'No follow-up',
+      kind: locationBlocked.length ? 'risk' : 'record',
+      helper: `Missing or older than ${policyCountLabel(policy.backupLocationFreshnessMinutes, 'minute')}, so marketplace matching should request a fresh location.`,
     },
     {
       label: 'Push gap',
       value: pushGaps.length.toString(),
+      scope: pushGaps.length ? 'Needs action' : 'No follow-up',
+      kind: pushGaps.length ? 'action' : 'record',
       helper: 'Partner may not receive first-pick or marketplace participation alerts.',
     },
     {
       label: 'Account follow-up',
       value: accountFollowUps.length.toString(),
+      scope: accountFollowUps.length ? 'Needs action' : 'No follow-up',
+      kind: accountFollowUps.length ? 'risk' : 'record',
       helper:
         'Blocked account, active admin hold, blocked device, session follow-up, or shared device record.',
     },
     {
       label: 'Readiness follow-up',
       value: softRecovery.length.toString(),
+      scope: softRecovery.length ? 'Needs action' : 'No follow-up',
+      kind: softRecovery.length ? 'action' : 'record',
       helper: 'Not ready now, but can be made ready through app open, push refresh, or manual follow-up.',
     },
   ];

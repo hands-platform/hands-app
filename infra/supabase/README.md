@@ -48,13 +48,45 @@ granted to current objects:
 C:\dev\massage-on-demand-vn\infra\supabase\patches\2026-07-14-restrict-default-postgrest-privileges.sql
 ```
 
-Existing projects must also restrict public review reads to `PUBLISHED` rows
-and remove direct browser Storage writes. File uploads remain server-mediated
-through the NestJS presigned upload flow:
+Existing projects must also restrict direct review-table reads and remove
+direct browser Storage writes. File uploads remain server-mediated through the
+NestJS presigned upload flow:
 
 ```text
 C:\dev\massage-on-demand-vn\infra\supabase\patches\2026-07-29-restrict-review-and-storage-writes.sql
 ```
+
+Projects created before 2026-08-16 must also remove anonymous raw review reads
+and restrict exact booking/address rows to the booking customer, selected
+Partner, or Admin. Public review summaries remain available through the NestJS
+API:
+
+```text
+C:\dev\massage-on-demand-vn\infra\supabase\patches\2026-08-16-restrict-booking-address-and-review-reads.sql
+```
+
+Existing projects must also prevent pending or rejected public-media metadata
+from appearing through the authenticated Data API:
+
+```text
+C:\dev\massage-on-demand-vn\infra\supabase\patches\2026-08-16-restrict-public-file-metadata.sql
+```
+
+Existing projects must replace the deprecated Storage `owner` predicate with
+`storage.objects.owner_id`. Private objects uploaded with the service role have
+no Storage owner and remain accessible only through the server-mediated file
+flow:
+
+```text
+C:\dev\massage-on-demand-vn\infra\supabase\patches\2026-08-16-use-storage-owner-id.sql
+```
+
+`npm.cmd run supabase:schema:check` verifies that both the current core schema
+and these existing-project patches retain the required privacy policies.
+`npm.cmd run supabase:sql:pack` includes the idempotent patches in the reviewed
+setup bundle so new environments cannot omit them accidentally. Existing
+projects still require the patches to be applied through the approved SQL
+change process and verified in that project.
 
 ## After Applying SQL
 

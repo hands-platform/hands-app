@@ -1,0 +1,1449 @@
+@font-face {
+  font-family: 'Creative Mona';
+  src: url('/fonts/creative-wellness/mona-regular.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Creative Mona';
+  src: url('/fonts/creative-wellness/mona-500.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Creative Inter';
+  src: url('/fonts/creative-wellness/inter-regular.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Creative Inter';
+  src: url('/fonts/creative-wellness/inter-500.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+.creative-wellness-shell {
+  --cw-ink: #303133;
+  --cw-dark: #141618;
+  --cw-white: #fff;
+  color: var(--cw-ink);
+  background: var(--cw-white);
+}
+
+.creative-wellness-shell > main,
+.creative-wellness {
+  background: var(--cw-white);
+}
+
+.creative-wellness,
+.creative-wellness-shell > .wellness-footer {
+  color: var(--cw-ink);
+  font-family: 'Creative Inter', Inter, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+.creative-wellness h1,
+.creative-wellness h2,
+.creative-wellness h3,
+.creative-wellness-shell > .wellness-footer h2,
+.creative-wellness-shell > .wellness-footer h3 {
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+}
+
+.creative-wellness .cw-hero {
+  min-height: calc(100svh - 36px);
+  margin: 18px;
+  background: #777c81;
+  border-radius: 27px;
+}
+
+.creative-wellness .cw-hero-media,
+.creative-wellness .cw-hero-shade {
+  position: absolute;
+  inset: 0;
+}
+
+.creative-wellness .cw-hero-media {
+  background: url('/images/creative-wellness/hero.webp') center / cover no-repeat;
+}
+
+.creative-wellness .cw-hero-shade {
+  background: linear-gradient(90deg, rgba(8, 10, 12, 0.13), transparent 64%);
+}
+
+.creative-wellness .cw-hero-content {
+  top: 50%;
+  left: 72px;
+  width: min(780px, calc(100% - 144px));
+  transform: translateY(-42%);
+}
+
+.creative-wellness .cw-hero h1 {
+  max-width: none;
+  margin: 0;
+  color: #fff;
+  font-size: clamp(76px, 7.35vw, 112px);
+  font-weight: 500;
+  line-height: 0.96;
+  letter-spacing: -0.052em;
+  text-wrap: initial;
+}
+
+.creative-wellness .cw-hero .hero-copy {
+  max-width: 760px;
+  margin: 32px 0 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.62;
+  letter-spacing: -0.02em;
+}
+
+.cw-pill-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 70px;
+  margin-top: 34px;
+  padding: 0 14px 0 26px;
+  color: #fff;
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 170px;
+  backdrop-filter: blur(12px);
+  transition:
+    background-color 240ms ease,
+    transform 240ms ease;
+}
+
+.cw-pill-button:hover {
+  background: rgba(20, 22, 24, 0.88);
+  transform: scale(0.98);
+}
+
+.cw-pill-arrow {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  color: var(--cw-dark);
+  font-size: 20px;
+  background: #fff;
+  border-radius: 50%;
+}
+
+.creative-wellness .cw-hero-trust {
+  position: absolute;
+  z-index: 2;
+  bottom: 72px;
+  left: 72px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  color: #fff;
+}
+
+.cw-avatar-stack {
+  display: flex;
+}
+
+.cw-avatar-stack img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border: 2px solid #fff;
+  border-radius: 50%;
+}
+
+.cw-avatar-stack img + img {
+  margin-left: -9px;
+}
+
+.cw-hero-trust > div:last-child {
+  display: grid;
+  gap: 5px;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.cw-stars {
+  font-size: 15px;
+  letter-spacing: 0.08em;
+}
+
+.creative-wellness .cw-hero .hero-video-column {
+  right: 72px;
+  bottom: 72px;
+  width: min(410px, calc((100vw - 120px) / 3));
+  padding-left: 0;
+}
+
+.creative-wellness .cw-hero .hero-video-card {
+  min-height: 220px;
+  padding: 18px;
+  border-radius: 16px;
+}
+
+.creative-wellness .cw-hero .hero-video-copy strong {
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+  font-size: 28px;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.creative-wellness .cw-hero .hero-video-copy small {
+  font-size: 13px;
+  line-height: 1.42;
+}
+
+.creative-wellness .cw-inline-statement {
+  display: grid;
+  min-height: 542px;
+  padding: 120px 48px;
+  place-items: center;
+  background: #fff;
+}
+
+.creative-wellness .cw-inline-statement h2 {
+  max-width: 1300px;
+  margin: 0;
+  color: var(--cw-ink);
+  font-size: clamp(60px, 6.15vw, 92px);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.05em;
+  text-align: center;
+  text-wrap: initial;
+}
+
+.creative-wellness .cw-inline-statement img {
+  display: inline-block;
+  width: clamp(94px, 8.75vw, 132px);
+  height: clamp(58px, 5.25vw, 79px);
+  margin: 0 0.13em -0.12em;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.creative-wellness .home-feature-rail {
+  background: #fff;
+}
+
+.creative-wellness .home-feature-sticky {
+  width: calc(100% - 36px);
+  margin-inline: 18px;
+}
+
+.creative-wellness .home-feature-track {
+  gap: 18px;
+}
+
+.creative-wellness .home-feature-panel {
+  height: calc(100vh - 72px);
+  min-height: 670px;
+  border-radius: 27px;
+}
+
+.creative-wellness .home-feature-panel:first-child .home-feature-image {
+  background-position: 0 0;
+}
+
+.creative-wellness .home-feature-copy {
+  padding: 54px 36px;
+}
+
+.creative-wellness .home-feature-copy h2 {
+  max-width: 720px;
+  color: var(--cw-ink);
+  font-size: 46.875px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+  text-wrap: initial;
+}
+
+.creative-wellness .home-feature-copy p {
+  max-width: 570px;
+  margin: 36px 0 0;
+  color: var(--cw-ink);
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+  font-size: 23.3751px;
+  line-height: 1.5;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness .home-feature-copy .home-editorial-button {
+  min-height: 70px;
+  margin-top: auto;
+  padding-right: 20px;
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: normal;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness .home-method-section {
+  max-width: 1596px;
+  min-height: 0;
+  margin-inline: auto;
+  padding: 108px 36px 144px;
+  background: #fff;
+}
+
+.creative-wellness .home-method-kicker {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.creative-wellness .home-method-copy h2 {
+  max-width: 650px;
+  font-size: 60px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+  text-wrap: initial;
+}
+
+.creative-wellness.creative-wellness p.home-method-body {
+  max-width: none;
+  margin-top: 18px;
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+  font-size: 24px;
+  line-height: 1.5;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness .home-method-stat {
+  grid-template-columns: 50% calc(50% - 36px);
+  column-gap: 18px;
+  width: calc(100% + 36px);
+  height: 302px;
+  margin-left: -18px;
+}
+
+.creative-wellness .home-method-stat-image {
+  align-self: center;
+  height: auto;
+  aspect-ratio: 1;
+  transform: translateY(-18px);
+}
+
+.creative-wellness .home-method-stat > div {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 0;
+}
+
+.creative-wellness-shell .creative-wellness.creative-wellness .home-method-stat strong {
+  align-self: stretch;
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+  font-size: 60px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness.creative-wellness .home-method-stat p {
+  max-width: none;
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+  font-size: 19.3751px;
+  line-height: 1.5;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness .home-method-media {
+  min-height: 701px;
+}
+
+.creative-wellness .home-method-media-copy h3 {
+  font-size: 50px;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness .home-method-media-copy p,
+.creative-wellness .home-method-partner strong,
+.creative-wellness .home-method-partner span {
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+  font-size: 19.3751px;
+  line-height: 1.5;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness .home-method-media-copy {
+  max-width: 267px;
+}
+
+.creative-wellness .home-method-partner {
+  width: 368px;
+  min-height: 145px;
+  backdrop-filter: blur(50px);
+}
+
+.creative-wellness .home-method-partner img {
+  width: 110px;
+  height: 110px;
+}
+
+.creative-wellness .cw-community {
+  position: relative;
+  display: grid;
+  min-height: 85vh;
+  margin: 0 18px;
+  overflow: hidden;
+  color: #fff;
+  background: var(--cw-dark);
+  border-radius: 27px;
+  place-items: center;
+}
+
+.cw-community-content {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 36px;
+}
+
+.creative-wellness .cw-community h2 {
+  max-width: none;
+  margin: 0;
+  color: #fff;
+  font-size: clamp(65px, 6.633vw, 94.5312px);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+  text-wrap: initial;
+}
+
+.creative-wellness.creative-wellness .cw-community .cw-pill-button {
+  min-height: 70px;
+  margin-top: 0;
+  padding-right: 20px;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: normal;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness .cw-community .cw-pill-arrow {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+}
+
+.cw-community-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: clamp(80px, 10vw, 200px);
+  height: auto;
+  object-fit: cover;
+  aspect-ratio: 1;
+  border-radius: 5%;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  user-select: none;
+  will-change: transform;
+}
+
+.creative-wellness .cw-manifesto {
+  display: grid;
+  min-height: 721.6875px;
+  padding: 144px 48px;
+  background: #fff;
+  place-items: start center;
+}
+
+.creative-wellness .cw-manifesto h2 {
+  width: 959.40625px;
+  max-width: 100%;
+  margin: 0;
+  color: var(--cw-ink);
+  font-size: 58.75px;
+  font-weight: 400;
+  line-height: 71.6146px;
+  letter-spacing: -0.05em;
+  text-align: center;
+  text-wrap: initial;
+}
+
+.creative-wellness .how-showcase {
+  min-height: 1023.375px;
+  margin: 0 18px 18px;
+  border-radius: 27px;
+}
+
+.creative-wellness .how-story-card {
+  top: 72px;
+  bottom: 72px;
+  left: 72px;
+  width: 416px;
+  padding: 36px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+}
+
+.creative-wellness-shell .creative-wellness.creative-wellness .how-story-index {
+  font-size: 50px;
+  line-height: 60px;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness-shell .creative-wellness.creative-wellness .how-story-kicker {
+  font-size: 20px;
+  line-height: 24px;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness .how-story-card h2 {
+  max-width: none;
+  font-size: 36.5625px;
+  line-height: 43.875px;
+  letter-spacing: -0.05em;
+  text-wrap: initial;
+}
+
+.creative-wellness .how-story-content > .button {
+  border: 0;
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+  font-size: 17px;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness .how-story-content > .button::after {
+  display: grid;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  margin-left: 12.25px;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  background: var(--cw-dark);
+  border-radius: 50%;
+  content: '↗';
+  place-items: center;
+}
+
+.creative-wellness .customer-stories-section {
+  padding-bottom: 144px;
+  background: #fff;
+}
+
+.creative-wellness .customer-stories-track {
+  padding-inline: 36px;
+}
+
+.creative-wellness .customer-story-card {
+  height: 334.890625px;
+}
+
+.creative-wellness .customer-stories-heading p {
+  max-width: none;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.creative-wellness .customer-story-card h3 {
+  font-size: 24px;
+  line-height: 28.8px;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness .customer-story-card p {
+  max-width: none;
+  font-size: 17.5312px;
+  line-height: 26.2968px;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness .customer-story-card footer strong,
+.creative-wellness .customer-story-card footer span {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.creative-wellness .cw-coaching {
+  min-height: 893.578125px;
+  margin: 0 18px;
+  background: var(--cw-dark);
+  border-radius: 27px;
+}
+
+.creative-wellness .cw-coaching .faq-panel {
+  min-height: 893.578125px;
+  gap: 72px;
+  padding: 72px;
+}
+
+.creative-wellness .cw-coaching .faq-content {
+  justify-content: flex-start;
+  padding: 0;
+}
+
+.creative-wellness .cw-coaching .faq-heading {
+  max-width: none;
+  margin-bottom: 159.1875px;
+}
+
+.creative-wellness .cw-coaching .faq-heading h2 {
+  max-width: none;
+  color: #fff;
+  font-size: 60px;
+  font-weight: 500;
+  line-height: 72px;
+  letter-spacing: -0.05em;
+  text-wrap: initial;
+}
+
+.creative-wellness .cw-coaching .faq-heading p {
+  display: none;
+}
+
+.creative-wellness .cw-coaching .faq-list {
+  gap: 9px;
+}
+
+.creative-wellness .cw-coaching .faq-list details {
+  padding: 0 36px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.creative-wellness .cw-coaching .faq-list details[open] {
+  margin-bottom: 36px;
+}
+
+.creative-wellness .cw-coaching .faq-list summary {
+  min-height: 100.796875px;
+  color: #fff;
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 28.8px;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness .cw-coaching .faq-list p {
+  max-width: none;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.64);
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+  font-size: 20px;
+  line-height: 30px;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness .cw-coaching-media {
+  align-self: stretch;
+  min-height: 749.578125px;
+  aspect-ratio: auto;
+  background: #555 url('/images/creative-wellness/coaching-runner.webp') center / cover no-repeat;
+  border-radius: 16px;
+}
+
+@media (min-width: 761px) {
+  .creative-wellness .home-method-stat > div {
+    transform: translateY(-18px);
+  }
+
+  .creative-wellness .how-story-content {
+    position: absolute;
+    top: 417px;
+    right: 36px;
+    left: 36px;
+  }
+
+  .creative-wellness-shell .creative-wellness.creative-wellness .how-story-kicker {
+    margin-bottom: 36px;
+  }
+
+  .creative-wellness .how-story-content > .button {
+    margin-top: 36px;
+  }
+}
+
+.creative-wellness .cw-founder-card {
+  right: 36px;
+  bottom: 36px;
+  display: grid;
+  gap: 10px;
+  width: 160px;
+  padding: 18px;
+  border: 0;
+}
+
+.creative-wellness .cw-founder-card strong {
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.12;
+}
+
+.creative-wellness .cw-founder-card span {
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.creative-wellness .cw-founder-card img {
+  width: 124px;
+  height: 124px;
+  margin-top: 6px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.creative-wellness .cw-pricing {
+  padding-bottom: 0;
+  background: #fff;
+}
+
+.creative-wellness .cw-pricing > header {
+  display: grid;
+  min-height: 453px;
+  padding: 144px 36px 36px;
+  align-content: start;
+  text-align: left;
+}
+
+.creative-wellness .cw-pricing > header p {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  max-width: none;
+  margin: 0 0 36px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.creative-wellness .cw-pricing > header p span {
+  color: #ffe1d6;
+}
+
+.creative-wellness .cw-pricing > header h2 {
+  width: 544px;
+  max-width: 100%;
+  margin: 0;
+  color: var(--cw-ink);
+  font-size: 60px;
+  font-weight: 500;
+  line-height: 72px;
+  letter-spacing: -0.05em;
+  text-wrap: initial;
+}
+
+.cw-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  padding: 36px 36px 144px;
+}
+
+.creative-wellness .cw-pricing-grid article {
+  display: flex;
+  flex-direction: column;
+  min-height: 720.375px;
+  padding: 36px;
+  color: var(--cw-ink);
+  border-radius: 16px;
+}
+
+.cw-plan-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.creative-wellness .cw-plan-heading h3 {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.cw-plan-heading span {
+  padding: 8px 12px;
+  color: var(--cw-ink);
+  font-size: 13px;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.48);
+  border-radius: 30px;
+}
+
+.creative-wellness .cw-pricing-grid article > p:not(.cw-price) {
+  max-width: 410px;
+  margin: 26px 0 34px;
+  font-size: 16px;
+  line-height: 1.58;
+}
+
+.creative-wellness .cw-price {
+  max-width: none;
+  margin: 0 0 36px;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.creative-wellness .cw-price strong {
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+  font-size: 58px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness .cw-pricing-grid ul {
+  display: grid;
+  gap: 13px;
+  margin: 0 0 36px;
+  padding: 0;
+  list-style: none;
+}
+
+.creative-wellness .cw-pricing-grid li {
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.creative-wellness .cw-pricing-grid li::before {
+  margin-right: 10px;
+  content: '·';
+}
+
+.cw-plan-button {
+  display: grid;
+  width: 100%;
+  min-height: 68px;
+  margin-top: auto;
+  color: var(--cw-ink);
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
+  background: #fff;
+  border-radius: 100px;
+  place-items: center;
+  transition:
+    background-color 220ms ease,
+    color 220ms ease;
+}
+
+.cw-plan-button:hover {
+  color: #fff;
+  background: var(--cw-dark);
+}
+
+.cw-pricing-grid small {
+  margin-top: 17px;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.creative-wellness-shell > .wellness-footer {
+  width: calc(100% + 3px);
+  margin-left: -1.5px;
+  font-family: 'Creative Mona', 'Mona Sans', sans-serif;
+}
+
+.creative-wellness-shell > .wellness-footer .wellness-footer-cta {
+  height: 70vh;
+  aspect-ratio: auto;
+}
+
+.creative-wellness-shell > .wellness-footer .wellness-footer-cta h2 {
+  max-width: 900px;
+  font-size: clamp(48px, 4.25vw, 64px);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+}
+
+.creative-wellness-shell > .wellness-footer .wellness-footer-button {
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.creative-wellness-shell > .wellness-footer .wellness-footer-intro h2 {
+  max-width: 540px;
+  font-size: 40px;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness-shell > .wellness-footer .wellness-footer-info {
+  min-height: 0;
+}
+
+.creative-wellness-shell > .wellness-footer .wellness-footer-info > * {
+  transform: translate3d(0, var(--wellness-footer-info-y, 0px), 0);
+  will-change: transform;
+}
+
+.creative-wellness-shell > .wellness-footer .wellness-footer-intro > p {
+  font-size: 20px;
+  line-height: 30px;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness-shell > .wellness-footer .wellness-footer-rating {
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.creative-wellness-shell > .wellness-footer .wellness-footer-column h3 {
+  font-size: 24px;
+  line-height: 28.8px;
+  letter-spacing: -0.05em;
+}
+
+.creative-wellness-shell > .wellness-footer .wellness-footer-column a {
+  font-size: 20px;
+  line-height: 50px;
+  letter-spacing: -0.05em;
+}
+
+@media (max-width: 1100px) {
+  .creative-wellness .home-feature-rail {
+    padding: 18px;
+  }
+
+  .creative-wellness .home-feature-panel {
+    height: auto;
+  }
+
+  .creative-wellness .home-feature-sticky {
+    width: 100%;
+    margin: 0;
+  }
+
+  .creative-wellness .home-method-section {
+    min-height: 0;
+  }
+
+  .cw-pricing-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .creative-wellness .cw-hero {
+    min-height: 821px;
+    margin: 18px;
+    border-radius: 27px;
+  }
+
+  .creative-wellness .cw-hero-media {
+    background-position: 54% center;
+  }
+
+  .creative-wellness .cw-hero-shade {
+    background: linear-gradient(180deg, rgba(8, 10, 12, 0.06), rgba(8, 10, 12, 0.25));
+  }
+
+  .creative-wellness .cw-hero-content {
+    top: 104px;
+    left: 34px;
+    bottom: auto;
+    width: min(275px, calc(100% - 68px));
+    transform: none;
+  }
+
+  .creative-wellness .cw-hero h1 {
+    font-size: clamp(52px, 16.7vw, 65px);
+    line-height: 0.98;
+  }
+
+  .creative-wellness .cw-hero .hero-copy {
+    max-width: 240px;
+    margin-top: 34px;
+    font-size: 17px;
+    line-height: 1.58;
+  }
+
+  .creative-wellness .cw-hero .cw-pill-button {
+    min-width: 205px;
+    min-height: 60px;
+    margin-top: 80px;
+    padding-left: 22px;
+  }
+
+  .creative-wellness .cw-hero .cw-pill-arrow {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .creative-wellness .cw-hero-trust {
+    bottom: 70px;
+    left: 34px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 19px;
+  }
+
+  .creative-wellness .cw-hero-trust > div:last-child {
+    order: -1;
+  }
+
+  .cw-avatar-stack img {
+    width: 40px;
+    height: 40px;
+  }
+
+  .creative-wellness .cw-inline-statement {
+    min-height: 385px;
+    padding: 72px 24px;
+  }
+
+  .creative-wellness .cw-inline-statement h2 {
+    font-size: 40px;
+    line-height: 1.18;
+    transform: translateY(-32px);
+  }
+
+  .creative-wellness .cw-inline-statement img {
+    width: 30px;
+    height: 20px;
+    border-radius: 3px;
+  }
+
+  .creative-wellness .home-feature-rail {
+    padding: 36px 18px;
+  }
+
+  .creative-wellness .home-feature-track {
+    gap: 18px;
+  }
+
+  .creative-wellness .home-feature-panel {
+    min-height: 0;
+    border-radius: 18px;
+  }
+
+  .creative-wellness .home-feature-image {
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+  }
+
+  .creative-wellness .home-feature-copy {
+    justify-content: flex-start;
+    min-height: 0;
+    padding: 54px 36px;
+  }
+
+  .creative-wellness .home-feature-copy h2 {
+    font-size: 30px;
+    line-height: 1.2;
+  }
+
+  .creative-wellness .home-feature-copy p {
+    margin: 18px 0 36px;
+    font-size: 20px;
+    line-height: 1.5;
+  }
+
+  .creative-wellness .home-feature-copy .home-editorial-button {
+    margin-top: 0;
+    font-weight: 500;
+  }
+
+  .creative-wellness .home-method-section {
+    gap: 36px;
+    padding: 72px 36px;
+  }
+
+  .creative-wellness .home-method-copy {
+    min-height: 662px;
+  }
+
+  .creative-wellness .home-method-copy h2 {
+    font-size: 35px;
+    line-height: 1.2;
+  }
+
+  .creative-wellness.creative-wellness p.home-method-body {
+    font-size: 24px;
+    line-height: 1.5;
+  }
+
+  .creative-wellness .home-method-stat {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 36px;
+    width: 100%;
+    height: auto;
+    margin-left: 0;
+  }
+
+  .creative-wellness .home-method-stat-image {
+    align-self: start;
+    width: calc(100% + 16px);
+    height: auto;
+    transform: translate(-8px, -8px);
+  }
+
+  .creative-wellness-shell .creative-wellness.creative-wellness .home-method-stat strong {
+    font-size: 35px;
+    line-height: 1;
+    letter-spacing: -0.05em;
+  }
+
+  .creative-wellness.creative-wellness .home-method-stat p {
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: -0.05em;
+  }
+
+  .creative-wellness .home-method-media-copy h3 {
+    font-size: 33.3333px;
+    line-height: 1.2;
+  }
+
+  .creative-wellness .home-method-media {
+    min-height: 559px;
+  }
+
+  .creative-wellness .home-method-media-copy p,
+  .creative-wellness .home-method-partner strong,
+  .creative-wellness .home-method-partner span {
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: -0.05em;
+  }
+
+  .creative-wellness .home-method-partner {
+    align-items: flex-start;
+    right: 36px;
+    bottom: 36px;
+    left: 36px;
+    width: auto;
+    min-height: 173px;
+  }
+
+  .creative-wellness .home-method-partner img {
+    width: 85px;
+    height: 85px;
+  }
+
+  .creative-wellness .cw-community {
+    min-height: calc(65vh + 144px);
+    margin: 0 18px;
+    border-radius: 18px;
+  }
+
+  .creative-wellness .cw-community h2 {
+    width: 267px;
+    font-size: 65px;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .creative-wellness .cw-community .cw-community-content {
+    transform: none;
+  }
+
+  .creative-wellness .cw-community .cw-pill-button {
+    min-height: 60px;
+  }
+
+  .creative-wellness .cw-manifesto {
+    min-height: 426.125px;
+    padding: 72px 28px;
+    place-items: start center;
+  }
+
+  .creative-wellness .cw-manifesto h2 {
+    width: 274.640625px;
+    font-size: 25px;
+    font-weight: 400;
+    line-height: 30.9028px;
+    letter-spacing: -0.05em;
+  }
+
+  .creative-wellness .how-showcase {
+    min-height: 613.25px;
+    margin: 0 18px 18px;
+    border-radius: 18px;
+  }
+
+  .creative-wellness .how-story-card {
+    top: 72px;
+    right: 36px;
+    bottom: 72px;
+    left: 36px;
+    width: auto;
+    min-height: 0;
+    padding: 72px 36px 36px;
+  }
+
+  .creative-wellness .how-story-card h2 {
+    font-size: 18px;
+    line-height: 21.6px;
+    letter-spacing: -0.05em;
+  }
+
+  .creative-wellness .how-story-kicker {
+    margin-bottom: 36px;
+    font-size: 20px;
+    line-height: 24px;
+  }
+
+  .creative-wellness .how-story-content > .button {
+    box-sizing: border-box;
+    justify-content: space-between;
+    width: 195px;
+    min-height: 93.875px;
+    margin-top: 36px;
+    padding: 22.95px 25.5px;
+    font-size: 17px;
+    line-height: 24px;
+    white-space: normal;
+  }
+
+  .creative-wellness .how-slide-controls {
+    margin-top: 38px;
+  }
+
+  .creative-wellness .customer-story-card {
+    flex-basis: 300px;
+    width: 300px;
+    height: 341.6875px;
+  }
+
+  .creative-wellness .customer-stories-section {
+    min-height: 0;
+    padding-bottom: 72px;
+  }
+
+  .creative-wellness .customer-stories-track {
+    padding-inline: 36px;
+  }
+
+  .creative-wellness .customer-stories-window {
+    scroll-padding-inline: 36px;
+  }
+
+  .creative-wellness .customer-story-card {
+    scroll-snap-align: none;
+  }
+
+  .creative-wellness .customer-stories-window + .customer-stories-window .customer-story-card {
+    height: 370.484375px;
+  }
+
+  .creative-wellness .customer-story-card h3 {
+    font-size: 24px;
+    line-height: 28.8px;
+  }
+
+  .creative-wellness .customer-story-card p {
+    font-size: 15px;
+    line-height: 22.5px;
+    letter-spacing: -0.05em;
+  }
+
+  .creative-wellness .customer-story-card footer img {
+    width: 54.546875px;
+    height: 54.546875px;
+  }
+
+  .creative-wellness .cw-coaching {
+    min-height: 1215.578125px;
+    margin: 0 18px;
+    border-radius: 18px;
+  }
+
+  .creative-wellness .cw-coaching .faq-panel {
+    min-height: 1215.578125px;
+    gap: 0;
+    padding: 72px 36px;
+  }
+
+  .creative-wellness .cw-coaching .faq-content {
+    justify-content: flex-start;
+    padding: 0;
+  }
+
+  .creative-wellness .cw-coaching .faq-heading {
+    margin-bottom: 234px;
+  }
+
+  .creative-wellness .cw-coaching .faq-heading h2 {
+    font-size: 35px;
+    line-height: 42px;
+    letter-spacing: -0.05em;
+  }
+
+  .creative-wellness .cw-coaching .faq-list summary {
+    min-height: 129.59375px;
+    font-size: 24px;
+    line-height: 28.8px;
+  }
+
+  .creative-wellness .cw-coaching .faq-list details[open] summary {
+    min-height: 158.390625px;
+  }
+
+  .creative-wellness .cw-coaching .faq-list p {
+    min-height: 0;
+    padding: 0;
+    font-size: 20px;
+    line-height: 30px;
+  }
+
+  .creative-wellness .cw-coaching-media {
+    display: none;
+  }
+
+  .creative-wellness .cw-founder-card {
+    right: 18px;
+    bottom: 18px;
+    width: 150px;
+  }
+
+  .creative-wellness .cw-pricing {
+    padding-bottom: 0;
+  }
+
+  .creative-wellness .cw-pricing > header {
+    min-height: 291px;
+    padding: 72px 36px 36px;
+  }
+
+  .creative-wellness .cw-pricing > header h2 {
+    width: 303px;
+    font-size: 35px;
+    line-height: 42px;
+    letter-spacing: -0.05em;
+  }
+
+  .cw-pricing-grid {
+    gap: 18px;
+    padding: 36px 36px 72px;
+  }
+
+  .creative-wellness .cw-pricing-grid article {
+    min-height: 750.375px;
+    padding: 54px 36px;
+  }
+
+  .creative-wellness .cw-pricing-grid article:nth-child(3) {
+    min-height: 775.875px;
+  }
+
+  .creative-wellness .cw-plan-heading h3 {
+    font-size: 35px;
+    line-height: 42px;
+    letter-spacing: -0.05em;
+  }
+
+  .creative-wellness .cw-pricing-grid article > p:not(.cw-price) {
+    margin: 18px 0 0;
+    font-size: 20px;
+    line-height: 30px;
+    letter-spacing: -0.05em;
+  }
+
+  .creative-wellness .cw-price {
+    margin: 45px 0 0;
+    font-size: 17px;
+    line-height: 42px;
+  }
+
+  .creative-wellness .cw-price strong {
+    font-size: 35px;
+    line-height: 42px;
+  }
+
+  .creative-wellness .cw-pricing-grid ul {
+    gap: 0;
+    margin: 36px 0 0;
+  }
+
+  .creative-wellness .cw-pricing-grid li {
+    font-size: 17px;
+    line-height: 25.5px;
+    letter-spacing: -0.05em;
+  }
+
+  .creative-wellness .cw-plan-button {
+    min-height: 69.875px;
+    margin-top: 54px;
+    font-size: 17px;
+  }
+
+  .creative-wellness .cw-pricing-grid small {
+    margin-top: 39px;
+    font-size: 14px;
+    line-height: 16.8px;
+    letter-spacing: -0.05em;
+  }
+
+  .creative-wellness-shell > .wellness-footer .wellness-footer-cta h2 {
+    width: 282px;
+    max-width: 100%;
+    font-size: 35px;
+    line-height: 1.2;
+  }
+
+  .creative-wellness-shell > .wellness-footer .wellness-footer-intro h2 {
+    width: 100%;
+    max-width: 100%;
+    font-size: 26.6667px;
+    line-height: 32px;
+  }
+
+  .creative-wellness-shell > .wellness-footer .wellness-footer-intro > p {
+    font-size: 20px;
+    line-height: 30px;
+  }
+
+  .creative-wellness-shell > .wellness-footer .wellness-footer-info {
+    padding-bottom: 69.25px;
+  }
+
+  .creative-wellness-shell > .wellness-footer .wellness-footer-columns {
+    position: relative;
+    top: -2.75px;
+  }
+
+  .creative-wellness-shell > .wellness-footer {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .creative-wellness-shell > .wellness-footer .wellness-footer-cta {
+    height: 481.6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .creative-wellness .home-feature-track,
+  .creative-wellness .customer-stories-track,
+  .creative-wellness-shell > .wellness-footer .wellness-footer-cta-image,
+  .creative-wellness-shell > .wellness-footer .wellness-footer-info > * {
+    transform: none !important;
+  }
+}

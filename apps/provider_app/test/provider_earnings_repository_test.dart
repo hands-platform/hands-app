@@ -41,12 +41,14 @@ void main() {
     expect(
       await repository.createWalletWithdrawalRequest(
         amount: 500000,
+        idempotencyKey: 'withdrawal-request-test-1',
         bankAccountId: 'bank-1',
         requestNote: '  Monthly withdrawal  ',
       ),
       {
         'id': 'withdrawal-1',
         'status': 'REQUESTED',
+        'idempotencyKey': 'withdrawal-request-test-1',
         'amount': 500000,
         'bankAccountId': 'bank-1',
         'requestNote': 'Monthly withdrawal',
@@ -57,6 +59,7 @@ void main() {
       'POST /partner/earnings/wallet-withdrawal-requests',
     ]);
     expect(createBody, {
+      'idempotencyKey': 'withdrawal-request-test-1',
       'amount': 500000,
       'bankAccountId': 'bank-1',
       'requestNote': 'Monthly withdrawal',

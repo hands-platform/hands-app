@@ -6,7 +6,7 @@ import {
   normalizeAdminMarketplaceOpenMode,
 } from '../../lib/operations-policy';
 import { bookingWalletLedgerTotal } from './policy-booking-format';
-import { formatDistance } from './policy-simulation';
+import { formatDistance } from './policy-distance-format';
 import {
   bookingPolicySnapshotDrift,
   formatSnapshotPolicyValue,
@@ -14,6 +14,7 @@ import {
   summarizeSnapshotValues,
 } from './policy-snapshot';
 import { policyDisplayByKey } from './policy-value-display';
+import { policyCountLabel } from './policy-copy';
 
 export type PolicyChangeImpactDashboard = {
   readonly metrics: readonly { readonly label: string; readonly value: string; readonly helper: string }[];
@@ -155,7 +156,7 @@ function buildPolicySnapshotSummary(
       value: `${stats.openMatchingWithSnapshot.length}/${stats.openMatching.length}`,
       helper:
         stats.openMatchingWithoutSnapshot > 0
-          ? `${stats.openMatchingWithoutSnapshot} open booking(s) without snapshots still need manual policy interpretation.`
+          ? `${policyCountLabel(stats.openMatchingWithoutSnapshot, 'open booking')} without snapshots still need manual policy interpretation.`
           : 'Every open matching booking in this sample has a saved policy snapshot.',
     },
     {
@@ -164,7 +165,7 @@ function buildPolicySnapshotSummary(
       value: stats.snapshotCoverage,
       helper: `${stats.withSnapshot.length}/${
         stats.withSnapshot.length + stats.withoutSnapshot.length
-      } sampled booking(s) include metadata.matchingPolicy.`,
+      } sampled ${stats.withSnapshot.length === 1 ? 'booking includes' : 'bookings include'} a saved matching policy.`,
     },
     {
       scope: 'Review',
@@ -185,7 +186,7 @@ function buildPolicyImpactCards(stats: PolicyImpactStats): PolicyChangeImpactDas
         'Changing the first-pick Partner response window affects new booking expiry and Redis TTL. Existing bookings keep their saved expiresAt value.',
       operatorAction:
         stats.openMatching.length > 0
-          ? `There are ${stats.openMatching.length} open booking(s); do not expect their countdown to recalculate.`
+          ? `${policyCountLabel(stats.openMatching.length, 'open booking')} ${stats.openMatching.length === 1 ? 'is' : 'are'} active; do not expect ${stats.openMatching.length === 1 ? 'its' : 'their'} countdown to recalculate.`
           : 'No open matching bookings are waiting right now.',
       className: 'ops-task-done',
       pillClass: 'pill-success',
@@ -211,7 +212,7 @@ function buildPolicyImpactCards(stats: PolicyImpactStats): PolicyChangeImpactDas
         'Partners with unpaid cash-fee debt can still see marketplace requests, but final acceptance, service start, and payout release wait until settlement is posted.',
       operatorAction:
         stats.negativeCashDebtBookings.length > 0
-          ? `${stats.negativeCashDebtBookings.length} recent booking(s) have negative wallet state to review.`
+          ? `${policyCountLabel(stats.negativeCashDebtBookings.length, 'recent booking')} ${stats.negativeCashDebtBookings.length === 1 ? 'has' : 'have'} negative wallet state to review.`
           : 'No negative wallet booking state was found in the current sample.',
       className: stats.negativeCashDebtBookings.length > 0 ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: stats.negativeCashDebtBookings.length > 0 ? 'pill-danger' : 'pill-success',
@@ -223,7 +224,7 @@ function buildPolicyImpactCards(stats: PolicyImpactStats): PolicyChangeImpactDas
         'Bookings created after this change keep response window, marketplace radius, accept mode, marketplace-open mode, and travel buffer in metadata.',
       operatorAction:
         stats.snapshotDrift.length > 0
-          ? `${stats.snapshotDrift.length} booking(s) differ from current policy; review booking detail before manual action.`
+          ? `${policyCountLabel(stats.snapshotDrift.length, 'booking')} ${stats.snapshotDrift.length === 1 ? 'differs' : 'differ'} from current policy; review booking detail before manual action.`
           : 'Current booking snapshots are aligned with the live policy sample.',
       className: stats.snapshotDrift.length > 0 ? 'ops-task-pending' : 'ops-task-done',
       pillClass: stats.snapshotDrift.length > 0 ? 'pill-warn' : 'pill-success',
@@ -306,7 +307,7 @@ function buildSnapshotRows(
         (value) => `${value} min`,
       ),
       operatorMeaning:
-        'Used for availability explanations and partner supply planning around back-to-back bookings.',
+        'Used to explain availability and assess Partner supply around back-to-back bookings.',
     },
   ];
 }

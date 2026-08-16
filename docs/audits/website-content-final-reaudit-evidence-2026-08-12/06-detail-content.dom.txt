@@ -1,0 +1,125 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - generic: Website Content
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - heading "Website Content" [level=1]
+  - paragraph: Edit Draft content without interrupting the current Live website.
+  - generic "Page actions":
+    - link "Back to Pages":
+      - /url: /website-content?view=pages
+  - region "Route status":
+    - generic: Website
+    - strong: hands.vn
+    - generic: Language
+    - strong: KO
+    - generic: Public URL
+    - link "http://localhost:3200/ko":
+      - /url: http://localhost:3200/ko
+    - generic: Live
+    - generic: Not live
+    - generic: Draft
+    - generic: Needs content
+  - link "Preview Draft":
+    - /url: http://localhost:3200/ko?cmsPreview=[REDACTED]
+  - link "Review Publish":
+    - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=publishing#publish-draft
+  - navigation "Page workspace":
+    - link "Overview":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=overview
+    - link "Content" [active]:
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=content
+    - link "SEO & publishing":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=publishing
+    - link "Activity":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=activity
+  - heading "Draft sections" [level=2]
+  - paragraph: Edit one section at a time. Move order with numeric sort order; raw JSON is optional.
+  - list:
+    - strong: hero-1
+    - generic: Hero · Visible in Draft
+    - link "Edit":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=content&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6
+    - link "Delete":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=content&deleteSectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6
+    - strong: app-overview-2
+    - generic: App overview · Visible in Draft
+    - link "Edit":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=content&sectionId=legacy-revision-section-cms6bst3r000svynoc5gsnn1g
+    - link "Delete":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=content&deleteSectionId=legacy-revision-section-cms6bst3r000svynoc5gsnn1g
+    - strong: cta-3
+    - generic: CTA · Visible in Draft
+    - link "Edit":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=content&sectionId=legacy-revision-section-cms6bst3r000tvynoakacowjw
+    - link "Delete":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=content&deleteSectionId=legacy-revision-section-cms6bst3r000tvynoakacowjw
+  - generic "Add section"
+  - option "Hero"
+  - option "App overview" [selected]
+  - option "Partner directory"
+  - option "Partner detail"
+  - option "Recruitment benefits"
+  - option "Recruitment process"
+  - option "Company information"
+  - option "Contact"
+  - option "Legal document"
+  - option "FAQ"
+  - option "CTA"
+  - heading "Section editor" [level=2]
+  - paragraph: Choose a Draft section to edit its visible fields.
+  - strong: No section selected
+  - paragraph: Select Edit beside a section.
+  - heading "Delete Draft route" [level=2]
+  - paragraph: Only routes that have never been Live can be deleted.
+  - link "Review deletion":
+    - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&deletePageId=cms6bst3r000qvynovauef2ej
+- alert

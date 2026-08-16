@@ -69,6 +69,24 @@ void main() {
     expect(intent.hasBooking, isTrue);
   });
 
+  test('Partner manual Push allowlist destinations route without required ids', () {
+    const destinations = {
+      'notificationCenter': PushNotificationOpenDestination.notificationCenter,
+      'booking': PushNotificationOpenDestination.booking,
+      'jobs': PushNotificationOpenDestination.jobs,
+      'earnings': PushNotificationOpenDestination.earnings,
+      'profile': PushNotificationOpenDestination.profile,
+    };
+
+    for (final entry in destinations.entries) {
+      final intent = PushNotificationOpenIntent.fromData({
+        'destination': entry.key,
+        'source': 'admin_manual_push',
+      });
+      expect(intent.destination, entry.value);
+    }
+  });
+
   test('Partner chat destination without room falls back to Jobs', () {
     final intent = PushNotificationOpenIntent.fromData({
       'destination': 'chat',

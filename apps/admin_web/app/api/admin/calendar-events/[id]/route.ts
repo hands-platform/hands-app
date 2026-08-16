@@ -6,6 +6,7 @@ import {
   type AdminCalendarEvent,
 } from '../../../../../lib/admin-api';
 import { requireAdminWebAccess } from '../../../../../lib/admin-session';
+import { isSameOriginMutationRequest } from '../../../../../lib/same-origin-request';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -22,6 +23,12 @@ type RouteContext = {
 };
 
 export async function PATCH(request: Request, context: RouteContext) {
+  if (!isSameOriginMutationRequest(request)) {
+    return NextResponse.json(
+      { error: 'CROSS_SITE_REQUEST_REJECTED' },
+      { headers: NO_STORE_HEADERS, status: 403 },
+    );
+  }
   const access = requireAdminWebAccess(request);
   if (!access.allowed) {
     return NextResponse.json({ error: access.error }, { headers: NO_STORE_HEADERS, status: access.status });
@@ -42,6 +49,12 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
+  if (!isSameOriginMutationRequest(request)) {
+    return NextResponse.json(
+      { error: 'CROSS_SITE_REQUEST_REJECTED' },
+      { headers: NO_STORE_HEADERS, status: 403 },
+    );
+  }
   const access = requireAdminWebAccess(request);
   if (!access.allowed) {
     return NextResponse.json({ error: access.error }, { headers: NO_STORE_HEADERS, status: access.status });

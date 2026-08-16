@@ -47,12 +47,12 @@ describe('buildOwnerDecisionPressure', () => {
       ]),
     );
     expect(pressure.cards[0].detail).toContain('first-pick Partner');
-    expect(pressure.cards[1].detail).toContain('0 visible Partner(s)');
+    expect(pressure.cards[1].detail).toContain('0 visible Partners');
     expect(pressure.cards[3]).toMatchObject({
       title: 'Wallet final gate pressure',
       operatorAction:
         'Keep marketplace visibility open while finance and Partner controls clear final acceptance, service start, and payout release holds.',
     });
-    expect(pressure.cards[4].detail).toContain('1/2 online Partner(s)');
+    expect(pressure.cards[4].detail).toContain('1/2 online Partners');
   });
 });

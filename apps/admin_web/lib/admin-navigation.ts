@@ -298,8 +298,8 @@ const systemHealthLinks = [
     'system-health-setup',
     'settings',
     '/setup',
-    'Setup Readiness',
-    'Review external integration credentials and production launch checks.',
+    'External Services',
+    'Review external service evidence and launch requirements.',
   ),
   navLink(
     'system-health-sessions',

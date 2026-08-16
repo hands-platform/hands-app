@@ -6,7 +6,7 @@ import { AsymmetricVisionClone } from './asymmetric-vision-clone';
 
 export function PartnerRecruitmentPage() {
   return (
-    <div className="hands-site recruitment-page">
+    <div className="recruitment-page" lang="vi">
       <HandsSiteHeader locale="vi" site="recruitment" theme="overlay" />
       <main>
         <section className="recruitment-hero" id="top">

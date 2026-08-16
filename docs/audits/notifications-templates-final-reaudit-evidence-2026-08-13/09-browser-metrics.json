@@ -1,0 +1,37 @@
+{
+  "auditDate": "2026-08-13",
+  "route": "/notifications/templates",
+  "viewports": [
+    { "width": 1440, "height": 1000, "horizontalOverflow": false, "scrollWidth": 1425 },
+    { "width": 1600, "height": 1000, "horizontalOverflow": false, "scrollWidth": 1585 }
+  ],
+  "console": { "warnings": 0, "errors": 0 },
+  "keyboardTabs": {
+    "result": "pass",
+    "scenario": "ArrowRight moved focus and selection from Vietnamese to Korean and updated the URL locale"
+  },
+  "runtimeStates": {
+    "initialStatusText": ["Not saved"],
+    "readyFilterEmptyMessage": true,
+    "editorStillVisibleWhenReadyFilterEmpty": true,
+    "unchangedSourceCopyCanEnableSave": true,
+    "databaseVariableCanEnableSaveWithoutClientValidationError": true
+  },
+  "computedControlStyles": {
+    "selectedCatalogRow": {
+      "background": "rgba(47, 43, 61, 0.06)",
+      "text": "rgb(255, 255, 255)",
+      "finding": "selected label is nearly invisible"
+    },
+    "unselectedCatalogRow": {
+      "background": "rgb(115, 103, 240)",
+      "text": "rgb(255, 255, 255)",
+      "finding": "unselected rows look primary/selected"
+    }
+  },
+  "safety": {
+    "saveSubmitted": false,
+    "notificationSent": false,
+    "databaseMutationPerformed": false
+  }
+}

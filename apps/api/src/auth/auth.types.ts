@@ -1,4 +1,4 @@
-import { Role } from '@prisma/client';
+import { AdminOperatorPermissionCategory, Role } from '@prisma/client';
 
 export type AuthenticatedUser = {
   id: string;
@@ -6,4 +6,10 @@ export type AuthenticatedUser = {
   roles: Role[];
   authProvider?: 'nest' | 'supabase' | 'admin-realtime' | 'admin-web';
   externalUserId?: string;
+  sessionId?: string;
+  sessionFamilyId?: string;
+  tokenExpiresAt?: number;
+  adminPermissionCategories?: AdminOperatorPermissionCategory[];
+  adminPermissionVersion?: number;
+  adminMfaEnrollmentRequired?: boolean;
 };

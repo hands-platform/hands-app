@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import {
   PRICE_STEP_UNIT_VND,
   normalizeServiceDurationSetInput,
+  normalizeServiceCatalogGroupCommand,
   normalizeServiceInput,
   normalizeServicePayoutRuleInput,
 } from './admin-service-input';
@@ -115,4 +116,81 @@ describe('admin service input helpers', () => {
       ),
     ).toThrow(new BadRequestException('Partner payout amount cannot exceed customer price'));
   });
+
+  it('allows incomplete drafts but requires publish localization, reason, and explicit safe payouts', () => {
+    const draft = normalizeServiceCatalogGroupCommand('aroma_massage', {
+      requestId: 'request-draft-1',
+      expectedVersion: 0,
+      intent: 'SAVE_DRAFT',
+      nameTranslations: { en: 'Aroma Massage' },
+      priceStep: 100000,
+      displayOrder: 10,
+      durations: standardCatalogDurations(),
+    });
+    expect(draft.intent).toBe('SAVE_DRAFT');
+
+    expect(() =>
+      normalizeServiceCatalogGroupCommand('aroma_massage', {
+        requestId: 'request-publish-1',
+        expectedVersion: 0,
+        intent: 'PUBLISH',
+        reason: 'Publish pricing safely',
+        nameTranslations: { en: 'Aroma Massage', vi: 'Massage hương thơm' },
+        priceStep: 100000,
+        displayOrder: 10,
+        durations: standardCatalogDurations({ providerPayoutAmount: 600000 }),
+      }),
+    ).toThrow(
+      expect.objectContaining({
+        response: expect.objectContaining({
+          fieldErrors: expect.objectContaining({
+            'duration60.providerPayoutAmount': 'Partner payout cannot exceed customer price.',
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('accepts an explicit zero payout and rejects missing standard duration rows', () => {
+    expect(
+      normalizeServiceCatalogGroupCommand('aroma_massage', {
+        requestId: 'request-zero-payout',
+        expectedVersion: 2,
+        intent: 'PUBLISH',
+        reason: 'Publish zero payout test',
+        nameTranslations: { en: 'Aroma Massage', vi: 'Massage hương thơm' },
+        priceStep: 100000,
+        displayOrder: 10,
+        durations: standardCatalogDurations({ providerPayoutAmount: 0 }),
+      }).durations[0]?.providerPayoutAmount,
+    ).toBe(0);
+
+    expect(() =>
+      normalizeServiceCatalogGroupCommand('aroma_massage', {
+        requestId: 'request-missing-duration',
+        expectedVersion: 0,
+        intent: 'SAVE_DRAFT',
+        priceStep: 100000,
+        displayOrder: 10,
+        durations: standardCatalogDurations().slice(0, 2),
+      }),
+    ).toThrow(BadRequestException);
+  });
 });
+
+function standardCatalogDurations(
+  overrides: Partial<{
+    basePrice: number;
+    enabled: boolean;
+    providerPayoutAmount: number;
+  }> = {},
+) {
+  return [60, 90, 120].map((durationMin) => ({
+    durationMin,
+    enabled: durationMin === 60,
+    basePrice: 500000,
+    providerPayoutAmount: 300000,
+    displayOrder: durationMin,
+    ...overrides,
+  }));
+}

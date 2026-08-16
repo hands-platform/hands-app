@@ -7,8 +7,10 @@ import {
   CreatePublicSiteNewsDraftDto,
   CreatePublicSitePageDto,
   CreatePublicSiteSectionDto,
+  DeletePublicSitePageDto,
   PublishPublicSiteDraftDto,
   RollbackPublicSiteRevisionDto,
+  TakePublicSitePageOfflineDto,
   UpdatePublicSiteNewsDraftDto,
   UpdatePublicSitePageDto,
   UpdatePublicSiteSectionDto,
@@ -17,6 +19,7 @@ import {
   BulkUpsertServicePayoutRulesDto,
   CreateAdminServiceDto,
   CreateServiceDurationSetDto,
+  SaveServiceCatalogGroupDto,
   UpdateAdminServiceDto,
   UpdateServicePayoutRuleDto,
   UpsertServicePayoutRuleDto,
@@ -24,6 +27,11 @@ import {
 import { AdminFinanceRoutes } from './admin-finance.routes';
 
 export class AdminCatalogRoutes extends AdminFinanceRoutes {
+  @Get('site-pages/readiness-dry-run')
+  publicSiteReadinessDryRun() {
+    return this.admin.publicSiteReadinessDryRun();
+  }
+
   @Get('site-pages')
   publicSitePages(@Query() query: AdminPublicSitePageListQueryDto) {
     return this.admin.listPublicSitePages(query);
@@ -98,6 +106,15 @@ export class AdminCatalogRoutes extends AdminFinanceRoutes {
     return this.admin.rollbackPublicSiteRevision(user.id, pageId, body);
   }
 
+  @Post('site-pages/:id/take-offline')
+  takePublicSitePageOffline(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') pageId: string,
+    @Body() body: TakePublicSitePageOfflineDto,
+  ) {
+    return this.admin.takePublicSitePageOffline(user.id, pageId, body);
+  }
+
   @Patch('site-pages/:id')
   updatePublicSitePage(
     @CurrentUser() user: AuthenticatedUser,
@@ -111,8 +128,9 @@ export class AdminCatalogRoutes extends AdminFinanceRoutes {
   deletePublicSitePage(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') pageId: string,
+    @Body() body: DeletePublicSitePageDto,
   ) {
-    return this.admin.deletePublicSitePage(user.id, pageId);
+    return this.admin.deletePublicSitePage(user.id, pageId, body);
   }
 
   @Post('site-pages/:id/sections')
@@ -147,8 +165,27 @@ export class AdminCatalogRoutes extends AdminFinanceRoutes {
   }
 
   @Get('services/groups')
-  serviceGroups() {
-    return this.admin.listServiceGroups();
+  serviceGroups(@Query('scope') scope?: string) {
+    return this.admin.listServiceGroups({ scope });
+  }
+
+  @Get('services/health')
+  serviceCatalogHealth() {
+    return this.admin.serviceCatalogHealth();
+  }
+
+  @Get('services/groups/:groupKey/impact')
+  serviceCatalogGroupImpact(@Param('groupKey') groupKey: string) {
+    return this.admin.serviceCatalogGroupImpact(groupKey);
+  }
+
+  @Patch('services/groups/:groupKey')
+  saveServiceCatalogGroup(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('groupKey') groupKey: string,
+    @Body() body: SaveServiceCatalogGroupDto,
+  ) {
+    return this.admin.saveServiceCatalogGroup(user.id, groupKey, body);
   }
 
   @Post('services/duration-sets')

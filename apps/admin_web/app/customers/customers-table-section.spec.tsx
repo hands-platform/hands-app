@@ -240,6 +240,21 @@ describe('CustomersTableSection', () => {
     expect(textContent(section)).toContain('Customer detail access required');
     expect(hrefsIn(section)).not.toContain('/customers/customer-1');
   });
+
+  it('distinguishes verified production booking absence from excluded booking records', () => {
+    const rendered = textContent(
+      CustomersTableSection({
+        allCustomerCount: 1,
+        filters: buildFilters({ segment: 'usage-new-unbooked', view: 'all' }),
+        pagination: pagination([{ ...buildRow(), bookingCount: 6, completedBookings: 0 }]),
+        sortLabel: 'Newest first',
+      }),
+    );
+
+    expect(rendered).toContain('No verified production booking');
+    expect(rendered).toContain('6 unverified or non-production records excluded');
+    expect(rendered).not.toContain('0 completed · 6 total');
+  });
 });
 
 function buildRow(): CustomerManagementTableRow {

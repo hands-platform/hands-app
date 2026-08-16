@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { Allow, IsEmail, IsEnum, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEmail, IsEnum, IsIn, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
 import { AppUsageEventType, Role } from '@prisma/client';
 
 function trimString(value: unknown) {
@@ -42,7 +42,7 @@ export class RecordAppSessionDto {
   lastLoginAddress?: string;
 
   @IsOptional()
-  @Allow()
+  @IsObject()
   metadata?: Record<string, unknown>;
 
   @IsOptional()

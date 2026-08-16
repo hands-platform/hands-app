@@ -2,19 +2,22 @@ import type { AdminAuditLog } from '../../lib/admin-api';
 import { operationalPolicyAuditRows } from './policy-audit-rows';
 
 describe('operations policy audit row builder', () => {
-  it('keeps raw policy keys internal while exposing an operator policy context', () => {
+  it('reads the API before/after metadata contract and exposes operator context', () => {
     const rows = operationalPolicyAuditRows([
       {
         action: 'operational_policy.update',
         actor: { fullName: 'Ops Lead' },
         createdAt: '2026-06-13T03:05:00.000Z',
         id: 'audit-policy-1',
+        policyDefinition: { category: 'Notification delivery', label: 'Partner alert channel' },
         metadata: {
           enforced: true,
           key: 'notification.partner_alert_channel',
-          previousValue: 'IN_APP_WITH_PUSH_LATER',
+          before: 'IN_APP_WITH_PUSH_LATER',
+          after: 'FCM_FOR_ALL_BOOKINGS',
+          environment: 'production',
           reason: 'FCM rollout',
-          value: 'FCM_FOR_ALL_BOOKINGS',
+          source: 'operator',
         },
         target: 'operational_policy:notification.partner_alert_channel',
       },
@@ -22,12 +25,27 @@ describe('operations policy audit row builder', () => {
 
     expect(rows[0]).toMatchObject({
       key: 'notification.partner_alert_channel',
-      label: 'Notification / partner alert channel',
-      policyContext: 'Controls partner booking alert delivery route',
+      label: 'Partner alert channel',
+      policyContext: 'Notification delivery',
       previousValue: 'In App With Push Later',
       reason: 'FCM rollout',
       value: 'FCM For All Bookings',
+      source: 'operator',
     });
+  });
+
+  it('keeps legacy previousValue/value audit rows readable', () => {
+    const rows = operationalPolicyAuditRows([
+      auditLog({
+        metadata: {
+          key: 'matching.provider_response_window_minutes',
+          previousValue: 10,
+          value: 12,
+        },
+      }),
+    ]);
+
+    expect(rows[0]).toMatchObject({ previousValue: '10', value: '12' });
   });
 
   it('normalizes raw policy keys inside audit reasons', () => {
@@ -71,7 +89,39 @@ describe('operations policy audit row builder', () => {
     });
   });
 
-  it('sorts newest changes first and limits rows to the recent audit window', () => {
+  it('preserves trusted source metadata and classifies missing metadata as legacy unknown', () => {
+    const logs = [
+      auditLog({
+        id: 'operator-row',
+        metadata: { key: 'matching.provider_response_window_minutes', source: 'operator' },
+      }),
+      auditLog({
+        id: 'smoke-row',
+        metadata: {
+          environment: 'test',
+          key: 'matching.provider_response_window_minutes',
+          restoration: true,
+          runId: 'run-123',
+          source: 'automated_smoke',
+        },
+      }),
+    ];
+
+    expect(operationalPolicyAuditRows(logs).map((row) => row.source)).toEqual([
+      'operator',
+      'automated_smoke',
+    ]);
+    expect(operationalPolicyAuditRows([logs[1]!])[0]).toMatchObject({
+      environment: 'test',
+      id: 'smoke-row',
+      restoration: true,
+      runId: 'run-123',
+      source: 'automated_smoke',
+    });
+    expect(operationalPolicyAuditRows([auditLog({ id: 'legacy-row' })])[0]?.source).toBe('legacy_unknown');
+  });
+
+  it('sorts server-filtered audit rows newest first without client-side truncation', () => {
     const rows = operationalPolicyAuditRows(
       Array.from({ length: 10 }, (_, index) =>
         auditLog({
@@ -81,9 +131,9 @@ describe('operations policy audit row builder', () => {
       ),
     );
 
-    expect(rows).toHaveLength(8);
+    expect(rows).toHaveLength(10);
     expect(rows[0]?.id).toBe('audit-policy-9');
-    expect(rows.at(-1)?.id).toBe('audit-policy-2');
+    expect(rows.at(-1)?.id).toBe('audit-policy-0');
   });
 });
 

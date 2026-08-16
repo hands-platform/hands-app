@@ -1,5 +1,6 @@
 import { Role } from '@prisma/client';
 import {
+  isRoleNeutralNotificationType,
   notificationDataWithTargetRole,
   notificationTargetRole,
   pushDeviceMatchesTargetRole,
@@ -27,6 +28,12 @@ describe('notification target role helpers', () => {
   it('matches devices only when a target role is known', () => {
     expect(pushDeviceMatchesTargetRole({ role: Role.PROVIDER }, Role.PROVIDER)).toBe(true);
     expect(pushDeviceMatchesTargetRole({ role: Role.CUSTOMER }, Role.PROVIDER)).toBe(false);
-    expect(pushDeviceMatchesTargetRole({ role: Role.CUSTOMER }, null)).toBe(true);
+    expect(pushDeviceMatchesTargetRole({ role: Role.CUSTOMER }, null)).toBe(false);
+  });
+
+  it('recognizes only explicit role-neutral notification types', () => {
+    expect(isRoleNeutralNotificationType('system.notice')).toBe(true);
+    expect(isRoleNeutralNotificationType('chat.message.created')).toBe(false);
+    expect(isRoleNeutralNotificationType(undefined)).toBe(false);
   });
 });

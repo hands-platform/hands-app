@@ -4,6 +4,7 @@ import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/adm
 import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { PolicyOutcomeEffectAnalysis } from './policy-outcome-effect';
+import { policyCountLabel } from './policy-copy';
 
 type OperationsPolicyOutcomeEffectSectionProps = {
   readonly analysis: PolicyOutcomeEffectAnalysis;
@@ -25,7 +26,7 @@ export function OperationsPolicyOutcomeEffectSection({
     <AdminSection
       className="admin-mb-16"
       description="Groups real bookings by the policy record saved at booking open. Use this before changing the 10 minute response window, marketplace policy, invite cap, or marketplace opening mode."
-      statusLabel={`${analysis.sampleCount} booking(s) with saved policy`}
+      statusLabel={`${policyCountLabel(analysis.sampleCount, 'booking')} with saved policy`}
       statusTone={analysis.sampleCount ? 'info' : 'warning'}
       title="Policy outcome effect"
     >

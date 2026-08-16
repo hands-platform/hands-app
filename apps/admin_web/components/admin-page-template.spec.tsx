@@ -98,7 +98,7 @@ describe('AdminPageTemplate', () => {
       'Customers',
       'Customer Usage Overview',
       'Service Catalog',
-      'Setup Readiness',
+      'External Services',
     ]);
   });
 

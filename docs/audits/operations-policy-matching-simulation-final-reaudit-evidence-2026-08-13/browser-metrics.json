@@ -1,0 +1,67 @@
+{
+  "activeWorkspace": "Operations Policy",
+  "activeWorkspaceStyle": {
+    "backgroundColor": "rgba(0, 0, 0, 0)",
+    "border": "0px none rgb(255, 255, 255)",
+    "boxShadow": "rgba(115, 103, 240, 0.3) 0px 2px 6px 0px",
+    "color": "rgb(255, 255, 255)",
+    "fontWeight": "400"
+  },
+  "alertCount": 1,
+  "bodyText": "blocked-prerequisites-visible",
+  "document": {
+    "clientWidth": 1425,
+    "scrollHeight": 1019,
+    "scrollWidth": 1425
+  },
+  "landmarks": {
+    "main": 2,
+    "navigation": 2
+  },
+  "statusCount": 2,
+  "tables": 0,
+  "title": "HANDS Admin",
+  "url": "http://localhost:3101/operations-policy?details=matching&matching=simulation",
+  "viewport": {
+    "innerHeight": 1000,
+    "innerWidth": 1440
+  },
+  "workspaceStyles": [
+    {
+      "ariaCurrent": null,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(47, 43, 61, 0.12)",
+      "boxShadow": "none",
+      "color": "rgba(47, 43, 61, 0.9)",
+      "fontWeight": "500",
+      "label": "Policies"
+    },
+    {
+      "ariaCurrent": null,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(47, 43, 61, 0.12)",
+      "boxShadow": "none",
+      "color": "rgba(47, 43, 61, 0.9)",
+      "fontWeight": "500",
+      "label": "Supply"
+    },
+    {
+      "ariaCurrent": "page",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(47, 43, 61, 0.12)",
+      "boxShadow": "none",
+      "color": "rgba(47, 43, 61, 0.9)",
+      "fontWeight": "500",
+      "label": "Simulation"
+    },
+    {
+      "ariaCurrent": null,
+      "backgroundColor": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(47, 43, 61, 0.12)",
+      "boxShadow": "none",
+      "color": "rgba(47, 43, 61, 0.9)",
+      "fontWeight": "500",
+      "label": "Audit"
+    }
+  ]
+}

@@ -37,9 +37,13 @@ drop policy if exists "owner public media delete" on storage.objects;
 drop policy if exists "private media owner read" on storage.objects;
 create policy "private media owner read"
   on storage.objects for select
+  to authenticated
   using (
     bucket_id = 'hands-private'
-    and (owner = auth.uid() or public.is_admin())
+    and (
+      owner_id = (select auth.uid()::text)
+      or (select public.is_admin())
+    )
   );
 
 drop policy if exists "private media owner insert" on storage.objects;

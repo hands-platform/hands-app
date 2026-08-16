@@ -1,6 +1,7 @@
 const {
   PrismaClient,
   Role,
+  AdminUserProvenance,
   AdminOperatorPermissionCategory,
   AccountingJournalBatchStatus,
   AccountingJournalEntrySide,
@@ -104,6 +105,9 @@ async function seedAdminAccessTokenActor() {
     update: {
       fullName: 'Local Admin Web Actor',
       roles: { set: roles },
+      adminUserProvenance: AdminUserProvenance.FIXTURE,
+      fixtureKind: 'PRISMA_SEED',
+      fixtureRunId: 'prisma-seed',
     },
     create: {
       id: actorId,
@@ -111,6 +115,9 @@ async function seedAdminAccessTokenActor() {
       email: process.env.ADMIN_WEB_LOGIN_EMAIL?.trim() || null,
       fullName: 'Local Admin Web Actor',
       roles,
+      adminUserProvenance: AdminUserProvenance.FIXTURE,
+      fixtureKind: 'PRISMA_SEED',
+      fixtureRunId: 'prisma-seed',
     },
   });
 
@@ -280,32 +287,32 @@ async function main() {
   );
 
   for (const service of services) {
-    await prisma.servicePayoutRule.upsert({
-      where: {
-        serviceId_customerPrice: {
+    const existingPayoutRule = await prisma.servicePayoutRule.findFirst({
+      where: { serviceId: service.id, customerPrice: service.basePrice, active: true },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
+    const payoutRuleData = {
+      providerPayoutAmount: Math.max(0, service.basePrice - Math.round(service.basePrice * 0.2)),
+      vatBps: 0,
+      otherCostAmount: 0,
+      currency: 'VND',
+      active: true,
+      notes: 'Default MVP payout rule generated from the 20% platform fee baseline.',
+    };
+    if (existingPayoutRule) {
+      await prisma.servicePayoutRule.update({
+        where: { id: existingPayoutRule.id },
+        data: payoutRuleData,
+      });
+    } else {
+      await prisma.servicePayoutRule.create({
+        data: {
           serviceId: service.id,
           customerPrice: service.basePrice,
+          ...payoutRuleData,
         },
-      },
-      update: {
-        providerPayoutAmount: Math.max(0, service.basePrice - Math.round(service.basePrice * 0.2)),
-        vatBps: 0,
-        otherCostAmount: 0,
-        currency: 'VND',
-        active: true,
-        notes: 'Default MVP payout rule generated from the 20% platform fee baseline.',
-      },
-      create: {
-        serviceId: service.id,
-        customerPrice: service.basePrice,
-        providerPayoutAmount: Math.max(0, service.basePrice - Math.round(service.basePrice * 0.2)),
-        vatBps: 0,
-        otherCostAmount: 0,
-        currency: 'VND',
-        active: true,
-        notes: 'Default MVP payout rule generated from the 20% platform fee baseline.',
-      },
-    });
+      });
+    }
   }
 
   const customer = await prisma.user.upsert({
@@ -471,6 +478,9 @@ async function main() {
       phone: '+84900000099',
       fullName: 'Demo Admin',
       roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+      adminUserProvenance: AdminUserProvenance.FIXTURE,
+      fixtureKind: 'PRISMA_SEED',
+      fixtureRunId: 'prisma-seed',
     },
   });
 

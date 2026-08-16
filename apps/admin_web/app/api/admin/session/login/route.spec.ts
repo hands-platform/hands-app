@@ -18,13 +18,19 @@ describe('Admin web session login route', () => {
       ADMIN_WEB_LOGIN_EMAIL: undefined,
       ADMIN_WEB_LOGIN_PASSWORD_HASH: undefined,
       ADMIN_WEB_LOGIN_PASSWORD_SALT: undefined,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       ADMIN_WEB_SESSION_TTL_SECONDS: '3600',
+      ADMIN_WEB_TRUST_X_REAL_IP: 'true',
       NODE_ENV: 'production',
     };
     const fetchMock = vi.fn(async () =>
       Response.json({
         authenticated: true,
+        session: {
+          expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+          id: 'admin-web-session-1',
+          issuedAt: new Date().toISOString(),
+        },
         user: {
           email: 'operator@hands.vn',
           id: 'ops-admin-1',
@@ -40,6 +46,9 @@ describe('Admin web session login route', () => {
         headers: {
           accept: 'application/json',
           'content-type': 'application/json',
+          origin: 'http://localhost',
+          'user-agent': 'HANDS security test browser',
+          'x-real-ip': '203.0.113.41',
         },
         method: 'POST',
         body: JSON.stringify({
@@ -65,6 +74,8 @@ describe('Admin web session login route', () => {
         method: 'POST',
         headers: expect.objectContaining({
           'content-type': 'application/json',
+          'user-agent': 'HANDS security test browser',
+          'x-forwarded-for': '203.0.113.41',
         }),
       }),
     );
@@ -77,9 +88,154 @@ describe('Admin web session login route', () => {
     expect(setCookie).toContain('Secure');
     const sessionPayload = decodeSessionCookiePayload(setCookie);
     expect(sessionPayload).toMatchObject({
+      jti: 'admin-web-session-1',
       role: 'ADMIN',
       sessionVersion: 1,
       sub: 'ops-admin-1',
+    });
+  });
+
+  it('does not trust a syntactically valid client address unless the ingress proxy is explicitly trusted', async () => {
+    process.env = {
+      ...process.env,
+      ADMIN_API_BASE_URL: 'http://localhost:3000/api',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
+      ADMIN_WEB_TRUST_X_REAL_IP: undefined,
+      NODE_ENV: 'production',
+    };
+    const fetchMock = vi.fn(async () => Response.json({ authenticated: false }, { status: 401 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const { POST } = await import('./route');
+
+    await POST(
+      new Request('http://localhost/api/admin/session/login', {
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          origin: 'http://localhost',
+          'x-real-ip': '203.0.113.41',
+        },
+        method: 'POST',
+        body: JSON.stringify({ email: 'operator@hands.vn', password: 'wrong-password' }),
+      }),
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:3000/api/auth/admin-operator-login',
+      expect.objectContaining({
+        headers: expect.not.objectContaining({ 'x-forwarded-for': expect.anything() }),
+      }),
+    );
+  });
+
+  it('does not forward an invalid ingress client address to the API limiter', async () => {
+    process.env = {
+      ...process.env,
+      ADMIN_API_BASE_URL: 'http://localhost:3000/api',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
+      NODE_ENV: 'production',
+    };
+    const fetchMock = vi.fn(async () => Response.json({ authenticated: false }, { status: 401 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const { POST } = await import('./route');
+
+    await POST(
+      new Request('http://localhost/api/admin/session/login', {
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          origin: 'http://localhost',
+          'x-real-ip': '203.0.113.41, 198.51.100.2',
+        },
+        method: 'POST',
+        body: JSON.stringify({ email: 'operator@hands.vn', password: 'wrong-password' }),
+      }),
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:3000/api/auth/admin-operator-login',
+      expect.objectContaining({
+        headers: expect.not.objectContaining({ 'x-forwarded-for': expect.anything() }),
+      }),
+    );
+  });
+
+  it('preserves API login rate-limit failure and retry timing', async () => {
+    process.env = {
+      ...process.env,
+      ADMIN_API_BASE_URL: 'http://localhost:3000/api',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
+      NODE_ENV: 'production',
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json(
+          { message: 'Too many requests' },
+          { headers: { 'retry-after': '120' }, status: 429 },
+        ),
+      ),
+    );
+    const { POST } = await import('./route');
+
+    const response = await POST(
+      new Request('http://localhost/api/admin/session/login', {
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          origin: 'http://localhost',
+          'x-real-ip': '203.0.113.42',
+        },
+        method: 'POST',
+        body: JSON.stringify({ email: 'operator@hands.vn', password: 'wrong-password' }),
+      }),
+    );
+
+    await expect(response.json()).resolves.toEqual({ error: 'ADMIN_LOGIN_RATE_LIMITED' });
+    expect(response.status).toBe(429);
+    expect(response.headers.get('retry-after')).toBe('120');
+  });
+
+  it('redirects an MFA enrollment-only session to the operator security setup', async () => {
+    process.env = {
+      ...process.env,
+      ADMIN_API_BASE_URL: 'http://localhost:3000/api',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
+      NODE_ENV: 'production',
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json({
+          authenticated: true,
+          session: {
+            expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+            id: 'mfa-setup-session',
+            issuedAt: new Date().toISOString(),
+            mfaEnrollmentRequired: true,
+          },
+          user: { id: 'ops-admin-mfa', roles: ['ADMIN'] },
+        }),
+      ),
+    );
+    const { POST } = await import('./route');
+
+    const response = await POST(
+      new Request('http://localhost/api/admin/session/login?redirectTo=/finance-overview', {
+        headers: {
+          accept: 'text/html',
+          'content-type': 'application/x-www-form-urlencoded',
+          origin: 'http://localhost',
+        },
+        method: 'POST',
+        body: new URLSearchParams({ email: 'operator@hands.vn', password: 'temporary-password' }),
+      }),
+    );
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get('location')).toBe('http://localhost/admin-operators?mfa=setup');
+    expect(decodeSessionCookiePayload(response.headers.get('set-cookie') ?? '')).toMatchObject({
+      mfaEnrollmentRequired: true,
     });
   });
 
@@ -91,7 +247,7 @@ describe('Admin web session login route', () => {
       ADMIN_WEB_LOGIN_PASSWORD_HASH: hashAdminWebPasswordForEnv('correct horse battery staple', salt),
       ADMIN_WEB_LOGIN_PASSWORD_SALT: salt,
       ADMIN_WEB_ALLOW_DEV_LOGIN: 'true',
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       ADMIN_WEB_SESSION_TTL_SECONDS: '3600',
       NODE_ENV: 'test',
     };
@@ -103,6 +259,7 @@ describe('Admin web session login route', () => {
         headers: {
           accept: 'application/json',
           'content-type': 'application/json',
+          origin: 'http://localhost',
         },
         method: 'POST',
         body: JSON.stringify({
@@ -157,7 +314,7 @@ describe('Admin web session login route', () => {
       ADMIN_WEB_LOGIN_EMAIL: 'admin@hands.vn',
       ADMIN_WEB_LOGIN_PASSWORD_HASH: hashAdminWebPasswordForEnv('correct horse battery staple', salt),
       ADMIN_WEB_LOGIN_PASSWORD_SALT: salt,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       ADMIN_WEB_SESSION_TTL_SECONDS: '3600',
       NODE_ENV: 'production',
     };
@@ -174,6 +331,7 @@ describe('Admin web session login route', () => {
         headers: {
           accept: 'application/json',
           'content-type': 'application/json',
+          origin: 'http://localhost',
         },
         method: 'POST',
         body: JSON.stringify({
@@ -205,7 +363,7 @@ describe('Admin web session login route', () => {
       ADMIN_WEB_LOGIN_EMAIL: 'admin@hands.vn',
       ADMIN_WEB_LOGIN_PASSWORD_HASH: hashAdminWebPasswordForEnv('expected-password', salt),
       ADMIN_WEB_LOGIN_PASSWORD_SALT: salt,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       NODE_ENV: 'production',
     };
     vi.stubGlobal(
@@ -219,6 +377,7 @@ describe('Admin web session login route', () => {
         headers: {
           accept: 'application/json',
           'content-type': 'application/json',
+          origin: 'http://localhost',
         },
         method: 'POST',
         body: JSON.stringify({ email: 'admin@hands.vn', password: 'wrong-password' }),
@@ -251,6 +410,7 @@ describe('Admin web session login route', () => {
         headers: {
           accept: 'application/json',
           'content-type': 'application/json',
+          origin: 'http://localhost',
         },
         method: 'POST',
         body: JSON.stringify({ email: 'admin@hands.vn', password: 'password' }),
@@ -273,7 +433,7 @@ describe('Admin web session login route', () => {
       ADMIN_WEB_LOGIN_PASSWORD: 'raw-production-password',
       ADMIN_WEB_LOGIN_PASSWORD_HASH: hashAdminWebPasswordForEnv('correct horse battery staple', salt),
       ADMIN_WEB_LOGIN_PASSWORD_SALT: salt,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       NODE_ENV: 'production',
     };
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Admin API unavailable')));
@@ -284,6 +444,7 @@ describe('Admin web session login route', () => {
         headers: {
           accept: 'application/json',
           'content-type': 'application/json',
+          origin: 'http://localhost',
         },
         method: 'POST',
         body: JSON.stringify({
@@ -310,7 +471,7 @@ describe('Admin web session login route', () => {
       ADMIN_WEB_LOGIN_PASSWORD: 'raw-production-password',
       ADMIN_WEB_LOGIN_PASSWORD_HASH: undefined,
       ADMIN_WEB_LOGIN_PASSWORD_SALT: undefined,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       NODE_ENV: 'production',
     };
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Admin API unavailable')));
@@ -321,6 +482,7 @@ describe('Admin web session login route', () => {
         headers: {
           accept: 'application/json',
           'content-type': 'application/json',
+          origin: 'http://localhost',
         },
         method: 'POST',
         body: JSON.stringify({
@@ -344,7 +506,7 @@ describe('Admin web session login route', () => {
       ADMIN_WEB_ALLOW_DEV_LOGIN: 'true',
       ADMIN_WEB_LOGIN_EMAIL: 'dev-admin@hands.vn',
       ADMIN_WEB_LOGIN_PASSWORD: 'dev-only-password',
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       NODE_ENV: 'test',
     };
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Admin API unavailable')));
@@ -355,6 +517,7 @@ describe('Admin web session login route', () => {
         headers: {
           accept: 'application/json',
           'content-type': 'application/json',
+          origin: 'http://localhost',
         },
         method: 'POST',
         body: JSON.stringify({ email: 'dev-admin@hands.vn', password: 'dev-only-password' }),

@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import {
   BookingMatchSource,
   BookingOpsTaskStatus,
+  BookingOpsTaskType,
   BookingStatus,
   EarningStatus,
   ParticipantStatus,
@@ -13,6 +14,7 @@ import {
   ProviderDocumentType,
   ProviderKycStatus,
   ProviderStatus,
+  Role,
   VerificationStatus,
 } from '@prisma/client';
 
@@ -195,15 +197,16 @@ describe('BookingsService booking creation', () => {
         }),
       },
       massageService: {
-        findUniqueOrThrow: vi.fn().mockResolvedValue(massageService()),
+        findFirstOrThrow: vi.fn().mockResolvedValue(massageService()),
       },
       servicePayoutRule: {
-        findFirst: vi.fn().mockResolvedValue({ id: 'rule-1' }),
+        findFirst: vi.fn().mockResolvedValue(servicePayoutRule()),
       },
       booking: {
         create: vi.fn().mockResolvedValue(booking),
         findUnique: vi.fn().mockResolvedValue({ metadata: {} }),
         update: vi.fn().mockResolvedValue({}),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
       providerProfile: {
         findMany: vi.fn().mockResolvedValue([]),
@@ -319,6 +322,7 @@ describe('BookingsService booking creation', () => {
       matchingPolicy: matchingPolicy(),
       paymentMethod: PaymentMethod.VNPAY,
       preferredProviderDistanceMeters: null,
+      payoutRule: servicePayoutRule(),
       priceSummary: { finalAmount: 500000, paymentMetadata: {} },
       requiresPostBookingAuthorization: true,
       serviceId: 'service-1',
@@ -564,8 +568,8 @@ describe('BookingsService booking creation', () => {
       status: BookingStatus.OPEN_MATCHING,
     });
 
-    expect(prisma.booking.updateMany).toHaveBeenCalledTimes(1);
-    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+    expect(prisma.booking.updateMany).toHaveBeenCalledTimes(2);
+    expect(prisma.booking.updateMany).toHaveBeenNthCalledWith(1, {
       where: { id: 'booking-1', status: BookingStatus.CREATED },
       data: {
         status: BookingStatus.OPEN_MATCHING,
@@ -647,15 +651,16 @@ describe('BookingsService booking creation', () => {
         }),
       },
       massageService: {
-        findUniqueOrThrow: vi.fn().mockResolvedValue(massageService()),
+        findFirstOrThrow: vi.fn().mockResolvedValue(massageService()),
       },
       servicePayoutRule: {
-        findFirst: vi.fn().mockResolvedValue({ id: 'rule-1' }),
+        findFirst: vi.fn().mockResolvedValue(servicePayoutRule()),
       },
       booking: {
         create: vi.fn().mockResolvedValue(booking),
         findUnique: vi.fn().mockResolvedValue({ metadata: {} }),
         update: vi.fn().mockResolvedValue({}),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
       providerProfile: {
         findMany: vi.fn().mockResolvedValue([]),
@@ -804,15 +809,16 @@ describe('BookingsService booking creation', () => {
         }),
       },
       massageService: {
-        findUniqueOrThrow: vi.fn().mockResolvedValue(massageService()),
+        findFirstOrThrow: vi.fn().mockResolvedValue(massageService()),
       },
       servicePayoutRule: {
-        findFirst: vi.fn().mockResolvedValue({ id: 'rule-1' }),
+        findFirst: vi.fn().mockResolvedValue(servicePayoutRule()),
       },
       booking: {
         create: vi.fn().mockResolvedValue(booking),
         findUnique: vi.fn().mockResolvedValue({ metadata: {} }),
         update: vi.fn().mockResolvedValue({}),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
       providerProfile: {
         findMany: vi.fn().mockResolvedValue([cleanPartner, negativeWalletPartner]),
@@ -1356,12 +1362,15 @@ describe('BookingsService provider service lifecycle', () => {
         findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
       booking: {
-        findUniqueOrThrow: vi.fn().mockResolvedValue({
-          id: 'booking-1',
-          selectedProviderId: 'partner-1',
-          status: BookingStatus.PROVIDER_ON_THE_WAY,
-        }),
-        update: vi.fn().mockResolvedValue(arrivedBooking),
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'booking-1',
+            selectedProviderId: 'partner-1',
+            status: BookingStatus.PROVIDER_ON_THE_WAY,
+          })
+          .mockResolvedValueOnce(arrivedBooking),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     };
     const matchingGateway = { emitProviderArrived: vi.fn() };
@@ -1378,11 +1387,45 @@ describe('BookingsService provider service lifecycle', () => {
       service.updateProviderBookingStatus('booking-1', 'partner-user-1', BookingStatus.ARRIVED),
     ).resolves.toBe(arrivedBooking);
 
-    expect(prisma.booking.update).toHaveBeenCalledWith({
-      where: { id: 'booking-1' },
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'booking-1',
+        selectedProviderId: 'partner-1',
+        status: { in: [BookingStatus.MATCHED, BookingStatus.PROVIDER_ON_THE_WAY] },
+      },
       data: { status: BookingStatus.ARRIVED },
     });
     expect(matchingGateway.emitProviderArrived).toHaveBeenCalledWith('booking-1', arrivedBooking);
+  });
+
+  it('rejects a stale Partner lifecycle write before emitting an arrival event', async () => {
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
+      },
+      booking: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'booking-1',
+          selectedProviderId: 'partner-1',
+          status: BookingStatus.PROVIDER_ON_THE_WAY,
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+    };
+    const matchingGateway = { emitProviderArrived: vi.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      matchingGateway as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      service.updateProviderBookingStatus('booking-1', 'partner-user-1', BookingStatus.ARRIVED),
+    ).rejects.toThrow('Booking state changed concurrently; reload and try again');
+    expect(matchingGateway.emitProviderArrived).not.toHaveBeenCalled();
   });
 
   it('starts service with wallet gate, chat handoff, and service-started notifications', async () => {
@@ -1395,6 +1438,7 @@ describe('BookingsService provider service lifecycle', () => {
       chatRoom: { id: 'chat-room-1' },
     };
     const prisma = {
+      $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(prisma)),
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
@@ -1408,6 +1452,7 @@ describe('BookingsService provider service lifecycle', () => {
           status: BookingStatus.ARRIVED,
         }),
         update: vi.fn().mockResolvedValue(startedBooking),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     };
     const notifications = { create: vi.fn() };
@@ -1489,6 +1534,7 @@ describe('BookingsService provider service lifecycle', () => {
           earning,
         }),
         update: vi.fn().mockResolvedValue(providerCancelledBooking({ payment })),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
       providerEarning: {
         update: vi.fn().mockResolvedValue({ ...earning, status: EarningStatus.CANCELLED, netAmount: 0 }),
@@ -1497,6 +1543,9 @@ describe('BookingsService provider service lifecycle', () => {
       adminAuditLog: { create: vi.fn() },
     };
     const prisma = {
+      booking: {
+        update: vi.fn(),
+      },
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
@@ -1539,16 +1588,22 @@ describe('BookingsService provider service lifecycle', () => {
         minutesAfterMatch: 10,
         reasonCode: 'CUSTOMER_REQUESTED',
       });
-      expect(tx.booking.update).toHaveBeenCalledWith(
+      expect(tx.booking.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             status: BookingStatus.CANCELLED,
             closedReason: 'post_match_cancellation_approved',
             closedNote: 'Customer requested cancellation: Cancelled from chat',
+          }),
+        }),
+      );
+      expect(tx.booking.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
             opsTasks: expect.objectContaining({
               upsert: expect.objectContaining({
-                update: expect.objectContaining({ status: BookingOpsTaskStatus.DONE }),
-                create: expect.objectContaining({ status: BookingOpsTaskStatus.DONE }),
+                update: expect.objectContaining({ status: BookingOpsTaskStatus.PENDING }),
+                create: expect.objectContaining({ status: BookingOpsTaskStatus.PENDING }),
               }),
             }),
           }),
@@ -1567,6 +1622,18 @@ describe('BookingsService provider service lifecycle', () => {
       expect(payments.closeUnmatchedBookingPayment).toHaveBeenCalledWith(
         'payment-1',
         'Partner post-match cancellation auto-approved',
+      );
+      expect(prisma.booking.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'booking-1' },
+          data: expect.objectContaining({
+            opsTasks: expect.objectContaining({
+              upsert: expect.objectContaining({
+                update: expect.objectContaining({ status: BookingOpsTaskStatus.DONE }),
+              }),
+            }),
+          }),
+        }),
       );
       expect(result.payment).toEqual(expect.objectContaining({ status: PaymentStatus.RELEASED }));
       expect(tx.adminAuditLog.create).toHaveBeenCalledWith(
@@ -1665,6 +1732,7 @@ describe('BookingsService provider service lifecycle', () => {
             earning: null,
           }),
           update: vi.fn().mockResolvedValue(providerCancelledBooking({ payment })),
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         },
         providerEarning: { update: vi.fn() },
         providerWalletLedgerEntry: { upsert: vi.fn() },
@@ -1708,7 +1776,7 @@ describe('BookingsService provider service lifecycle', () => {
           earningResult: { skipped: true, reason: 'AWAITING_ADMIN_REVIEW' },
           reasonCode,
         });
-        expect(tx.booking.update).toHaveBeenCalledWith(
+        expect(tx.booking.updateMany).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({
               status: BookingStatus.CANCELLED,
@@ -1718,6 +1786,12 @@ describe('BookingsService provider service lifecycle', () => {
                   requiresAdminReview: true,
                 }),
               }),
+            }),
+          }),
+        );
+        expect(tx.booking.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
               opsTasks: expect.objectContaining({
                 upsert: expect.objectContaining({
                   update: expect.objectContaining({ status: BookingOpsTaskStatus.PENDING }),
@@ -1776,9 +1850,12 @@ describe('BookingsService service completion', () => {
             status: BookingStatus.IN_SERVICE,
           })
           .mockResolvedValueOnce({
+            ...completedBooking,
+          })
+          .mockResolvedValueOnce({
             customerProfile: { userId: 'customer-user-1' },
           }),
-        update: vi.fn().mockResolvedValue(completedBooking),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         count: vi.fn().mockResolvedValue(2),
       },
       locationSnapshot: {
@@ -1820,7 +1897,7 @@ describe('BookingsService service completion', () => {
 
     expect(providerAvailabilityLifecycle.reconcile).toHaveBeenCalledWith('partner-1');
 
-    expect(prisma.booking.update).toHaveBeenCalledWith(
+    expect(prisma.booking.findUniqueOrThrow).toHaveBeenCalledWith(
       expect.objectContaining({
         include: expect.objectContaining({
           addressSnapshot: true,
@@ -1841,6 +1918,12 @@ describe('BookingsService service completion', () => {
       data: { status: PaymentStatus.CAPTURED },
       where: { id: 'payment-1', status: { in: [PaymentStatus.PENDING] } },
     });
+    expect(earnings.createForCompletedBooking).toHaveBeenCalledWith(
+      'booking-1',
+      'partner-1',
+      undefined,
+      prisma,
+    );
   });
 
   it('records a booking-linked partner action location before completion when provided', async () => {
@@ -1859,9 +1942,12 @@ describe('BookingsService service completion', () => {
             status: BookingStatus.IN_SERVICE,
           })
           .mockResolvedValueOnce({
+            ...completedBooking,
+          })
+          .mockResolvedValueOnce({
             customerProfile: { userId: 'customer-user-1' },
           }),
-        update: vi.fn().mockResolvedValue(completedBooking),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         count: vi.fn().mockResolvedValue(2),
       },
       locationSnapshot: {
@@ -1909,7 +1995,56 @@ describe('BookingsService service completion', () => {
         lng: 106.7009,
       },
     });
-    expect(prisma.booking.update).toHaveBeenCalled();
+    expect(prisma.booking.updateMany).toHaveBeenCalled();
+  });
+
+  it('does not publish completion side effects when the booking state claim is stale', async () => {
+    const prisma = {
+      $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(prisma)),
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
+      },
+      booking: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'booking-1',
+          selectedProviderId: 'partner-1',
+          status: BookingStatus.IN_SERVICE,
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+      locationSnapshot: {
+        create: vi.fn().mockResolvedValue({ id: 'snapshot-1' }),
+      },
+      payment: {
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValueOnce({ id: 'payment-1', method: PaymentMethod.CASH })
+          .mockResolvedValueOnce({ id: 'payment-1', status: PaymentStatus.CAPTURED }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    const matching = { completeBooking: vi.fn() };
+    const matchingGateway = { emitServiceCompleted: vi.fn() };
+    const notifications = { create: vi.fn() };
+    const earnings = { createForCompletedBooking: vi.fn() };
+    const providerAvailabilityLifecycle = { reconcile: vi.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      {} as never,
+      notifications as never,
+      earnings as never,
+      providerAvailabilityLifecycle as never,
+    );
+
+    await expect(
+      service.complete('booking-1', 'partner-user-1', { lat: 10.7769, lng: 106.7009 }),
+    ).rejects.toThrow('Booking state changed concurrently; reload and try again');
+    expect(earnings.createForCompletedBooking).not.toHaveBeenCalled();
+    expect(matching.completeBooking).not.toHaveBeenCalled();
+    expect(matchingGateway.emitServiceCompleted).not.toHaveBeenCalled();
+    expect(providerAvailabilityLifecycle.reconcile).not.toHaveBeenCalled();
   });
 
   it('rejects completion before closeout when Partner action location is missing', async () => {
@@ -2194,6 +2329,61 @@ describe('BookingsService customer cancellation', () => {
       }),
     );
   });
+
+  it('retries payment closure for a customer cancellation left pending', async () => {
+    const cancelledBooking = {
+      ...cancelledBookingWithAddressSnapshot(),
+      closedByRole: Role.CUSTOMER,
+      closedReason: 'customer_cancelled',
+      opsTasks: [
+        {
+          type: BookingOpsTaskType.PAYMENT_REVIEWED,
+          status: BookingOpsTaskStatus.PENDING,
+        },
+      ],
+    };
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      booking: {
+        findFirstOrThrow: vi.fn().mockResolvedValue(cancelledBooking),
+        update: vi.fn(),
+      },
+    };
+    const matching = { closeBooking: vi.fn() };
+    const matchingGateway = { emitBookingExpired: vi.fn() };
+    const payments = {
+      closeUnmatchedBookingPayment: vi.fn().mockResolvedValue({
+        payment: cancelledBooking.payment,
+        refundRequested: false,
+        released: true,
+      }),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      payments as never,
+      { create: vi.fn() } as never,
+      {} as never,
+    );
+
+    await service.cancelCustomerBooking('booking-1', 'customer-user-1');
+
+    expect(payments.closeUnmatchedBookingPayment).toHaveBeenCalledOnce();
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          opsTasks: expect.objectContaining({
+            upsert: expect.objectContaining({
+              update: expect.objectContaining({ status: BookingOpsTaskStatus.DONE }),
+            }),
+          }),
+        }),
+      }),
+    );
+  });
 });
 
 describe('BookingsService marketplace participation', () => {
@@ -2286,6 +2476,30 @@ describe('BookingsService marketplace participation', () => {
     ]);
 
     expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
+  });
+
+  it('does not expose open marketplace requests before Partner identity approval', async () => {
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue(
+          approvedPartner({ verification: { status: VerificationStatus.SUBMITTED } }),
+        ),
+      },
+      booking: { findMany: vi.fn() },
+    };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(service.getOpenBookings('partner-user-1')).rejects.toThrow(
+      'Partner verification must be approved before receiving bookings',
+    );
+    expect(prisma.booking.findMany).not.toHaveBeenCalled();
   });
 
   it('bounds partner open request reads with a default limit while preserving the list response', async () => {
@@ -3221,6 +3435,18 @@ function massageService() {
     basePrice: 500000,
     priceStep: 100000,
     active: true,
+    publicationStatus: 'PUBLISHED',
+  };
+}
+
+function servicePayoutRule() {
+  return {
+    id: 'rule-1',
+    customerPrice: 500000,
+    providerPayoutAmount: 350000,
+    vatBps: 0,
+    otherCostAmount: 0,
+    currency: 'VND',
   };
 }
 
@@ -3328,6 +3554,7 @@ function walletBookingCreateInput() {
     matchingPolicy: matchingPolicy(),
     paymentMethod: PaymentMethod.CUSTOMER_WALLET,
     preferredProviderDistanceMeters: null,
+    payoutRule: servicePayoutRule(),
     priceSummary: { finalAmount: 500_000, paymentMetadata: {} },
     requiresPostBookingAuthorization: true,
     serviceId: 'service-1',
@@ -3362,3 +3589,53 @@ function attachTransaction<T extends Record<string, unknown>>(client: T) {
   Object.assign(client, { $transaction: transaction });
   return transaction;
 }
+
+describe('BookingsService backup notification evidence concurrency', () => {
+  it('re-reads booking metadata after a lost conditional update instead of dropping another trace', async () => {
+    const existingTrace = { stage: 'initial_open', createdAt: '2026-08-16T06:00:00.000Z' };
+    const nextTrace = { stage: 'first_pick_declined', createdAt: '2026-08-16T06:01:00.000Z' };
+    const prisma = {
+      booking: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValueOnce({ metadata: {}, updatedAt: new Date('2026-08-16T06:00:00.000Z') })
+          .mockResolvedValueOnce({
+            metadata: { backupNotificationTraces: [existingTrace] },
+            updatedAt: new Date('2026-08-16T06:00:01.000Z'),
+          }),
+        updateMany: vi
+          .fn()
+          .mockResolvedValueOnce({ count: 0 })
+          .mockResolvedValueOnce({ count: 1 }),
+      },
+    };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    ) as unknown as {
+      recordBackupNotificationTrace(bookingId: string, trace: unknown): Promise<void>;
+    };
+
+    await expect(
+      service.recordBackupNotificationTrace('booking-1', nextTrace),
+    ).resolves.toBeUndefined();
+
+    expect(prisma.booking.findUnique).toHaveBeenCalledTimes(2);
+    expect(prisma.booking.updateMany).toHaveBeenNthCalledWith(2, {
+      where: {
+        id: 'booking-1',
+        updatedAt: new Date('2026-08-16T06:00:01.000Z'),
+      },
+      data: {
+        metadata: expect.objectContaining({
+          backupNotificationTraces: [existingTrace, nextTrace],
+        }),
+      },
+    });
+  });
+});

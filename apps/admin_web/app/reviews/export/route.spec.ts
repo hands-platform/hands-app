@@ -19,7 +19,7 @@ describe('Admin review export route', () => {
   beforeEach(() => {
     process.env = {
       ...process.env,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       NODE_ENV: 'production',
     };
     mockedAdminGetResult.mockReset();
@@ -105,7 +105,7 @@ describe('Admin review export route', () => {
 function authenticatedRequest(url: string) {
   const sessionCookie = createAdminWebSessionCookieValue({
     expiresAtMs: Date.now() + 60_000,
-    secret: 'test-admin-session-secret',
+    secret: 'test-admin-session-secret-with-32-chars',
     sub: 'reviews.operator@hands.vn',
   });
   return new NextRequest(url, {

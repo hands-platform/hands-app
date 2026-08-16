@@ -1,194 +1,227 @@
-import { vi } from 'vitest';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { adminPatch, adminPost } from '../../lib/admin-api';
-import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
+import { vi } from 'vitest';
 
-vi.mock('next/cache', () => ({
-  revalidatePath: vi.fn(),
-}));
+import {
+  AdminApiRequestError,
+  adminPatchOrThrow,
+  adminPostOrThrow,
+} from '../../lib/admin-api';
+import {
+  createTaxPolicyVersion,
+  createTaxRule,
+  decideTaxPolicyApprovalRequest,
+  submitTaxPolicyApprovalRequest,
+  updateTaxPolicyVersion,
+} from './actions';
+import { INITIAL_TAX_POLICY_ACTION_STATE } from './action-state';
 
-vi.mock('next/navigation', () => ({
-  redirect: vi.fn(),
-}));
-
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+vi.mock('next/navigation', () => ({ redirect: vi.fn() }));
 vi.mock('../../lib/admin-api', () => ({
-  adminPatch: vi.fn(),
-  adminPost: vi.fn(),
+  AdminApiRequestError: class AdminApiRequestError extends Error {
+    constructor(
+      readonly method: string,
+      readonly path: string,
+      readonly status: number,
+      readonly payload?: unknown,
+    ) {
+      super('request failed');
+    }
+  },
+  adminPatchOrThrow: vi.fn(),
+  adminPostOrThrow: vi.fn(),
 }));
 
-const mockedAdminPatch = vi.mocked(adminPatch);
-const mockedAdminPost = vi.mocked(adminPost);
+const mockedAdminPatch = vi.mocked(adminPatchOrThrow);
+const mockedAdminPost = vi.mocked(adminPostOrThrow);
 const mockedRedirect = vi.mocked(redirect);
 const mockedRevalidatePath = vi.mocked(revalidatePath);
+
+function validPolicyForm() {
+  const formData = new FormData();
+  formData.set('name', ' Vietnam withholding 2027 ');
+  formData.set('effectiveFrom', '2027-01-01T00:00');
+  formData.set('promulgatedDate', '2026-12-01');
+  formData.set('legalSourceTitle', ' Decree 01/2027 ');
+  formData.set('legalSourceUrl', ' https://example.gov.vn/decree-01 ');
+  formData.set('taxSubject', ' Independent massage Partners ');
+  formData.set('changeSummary', ' Apply the reviewed five percent withholding rule. ');
+  formData.set('operatorReason', ' Prepared from the attached legal source and Finance review. ');
+  formData.set('defaultRatePercent', '5');
+  return formData;
+}
 
 describe('tax policy server actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedAdminPatch.mockResolvedValue(undefined);
-    mockedAdminPost.mockResolvedValue(null);
+    mockedAdminPatch.mockResolvedValue({} as never);
+    mockedAdminPost.mockResolvedValue({ id: 'policy-1' } as never);
   });
 
-  it('creates tax policy versions with API-safe effective dates', async () => {
-    const effectiveFrom = '2026-07-01T09:30';
-    const effectiveFromIso = new Date(effectiveFrom).toISOString();
-    mockedAdminPost.mockResolvedValueOnce({
-      id: 'policy-1',
-      name: 'Vietnam withholding',
-      status: 'ACTIVE',
-      effectiveFrom: effectiveFromIso,
-      effectiveTo: null,
-      notes: 'Approved policy',
-      rules: [],
+  it('creates a draft and optional default rule in one API request using Vietnam time', async () => {
+    await createTaxPolicyVersion(INITIAL_TAX_POLICY_ACTION_STATE, validPolicyForm());
+
+    expect(mockedAdminPost).toHaveBeenCalledTimes(1);
+    expect(mockedAdminPost).toHaveBeenCalledWith('/admin/tax-policy-versions', {
+      changeSummary: 'Apply the reviewed five percent withholding rule.',
+      defaultRateBps: 500,
+      effectiveFrom: '2026-12-31T17:00:00.000Z',
+      legalSourceTitle: 'Decree 01/2027',
+      legalSourceUrl: 'https://example.gov.vn/decree-01',
+      name: 'Vietnam withholding 2027',
+      notes: null,
+      operatorReason: 'Prepared from the attached legal source and Finance review.',
+      promulgatedDate: '2026-11-30T17:00:00.000Z',
+      status: 'DRAFT',
+      supersedesPolicyVersionId: null,
+      taxSubject: 'Independent massage Partners',
     });
-
-    const formData = new FormData();
-    formData.set('approvalAdminId', 'finance-admin-2');
-    formData.set('name', ' Vietnam withholding ');
-    formData.set('status', 'ACTIVE');
-    formData.set('effectiveFrom', effectiveFrom);
-    formData.set('notes', ' Approved policy ');
-    formData.set('operatorReason', 'Reviewed against the approved withholding schedule.');
-    formData.set('defaultRateBps', '500');
-
-    await createTaxPolicyVersion(formData);
-
-    expect(mockedAdminPost).toHaveBeenNthCalledWith(
-      1,
-      '/admin/tax-policy-versions',
-      {
-        approvalAdminId: 'finance-admin-2',
-        effectiveFrom: effectiveFromIso,
-        name: 'Vietnam withholding',
-        notes: 'Approved policy',
-        operatorReason: 'Reviewed against the approved withholding schedule.',
-        status: 'ACTIVE',
-      },
-      null,
-    );
-    expect(mockedAdminPost).toHaveBeenNthCalledWith(
-      2,
-      '/admin/tax-policy-versions/policy-1/rules',
-      {
-        active: true,
-        approvalAdminId: 'finance-admin-2',
-        fixedAmount: 0,
-        operatorReason: 'Reviewed against the approved withholding schedule.',
-        rateBps: 500,
-        scope: 'DEFAULT',
-      },
-      null,
-    );
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/tax-policy');
-    expect(mockedRevalidatePath).toHaveBeenCalledWith('/audit-log');
-  });
-
-  it('redirects to a form notice without creating tax policy versions when the effective date is missing', async () => {
-    const formData = new FormData();
-    formData.set('name', 'Vietnam withholding');
-
-    await createTaxPolicyVersion(formData);
-
-    expect(mockedAdminPost).not.toHaveBeenCalled();
-    expect(mockedRevalidatePath).not.toHaveBeenCalled();
     expect(mockedRedirect).toHaveBeenCalledWith(
-      '/tax-policy?taxPolicyNotice=validation&message=Effective%20from%20is%20required.',
+      '/tax-policy?taxPolicyNotice=draft-created&view=drafts&policyId=policy-1#tax-policy-policy-1',
     );
   });
 
-  it('updates tax policy versions with API-safe effective date windows', async () => {
-    const effectiveFrom = '2026-07-01T00:00';
-    const effectiveTo = '2026-12-31T23:59';
-    const effectiveFromIso = new Date(effectiveFrom).toISOString();
-    const effectiveToIso = new Date(effectiveTo).toISOString();
-
-    const formData = new FormData();
-    formData.set('approvalAdminId', 'finance-admin-2');
+  it('saves only a draft and keeps Vietnam effective window instants stable', async () => {
+    const formData = validPolicyForm();
     formData.set('policyId', 'policy-1');
-    formData.set('status', 'ACTIVE');
-    formData.set('effectiveFrom', effectiveFrom);
-    formData.set('effectiveTo', effectiveTo);
-    formData.set('notes', ' Policy reviewed ');
-    formData.set('operatorReason', 'Reviewed the policy dates and retained settlement evidence.');
+    formData.set('effectiveTo', '2027-12-31T23:59');
 
-    await updateTaxPolicyVersion(formData);
+    await updateTaxPolicyVersion(INITIAL_TAX_POLICY_ACTION_STATE, formData);
 
     expect(mockedAdminPatch).toHaveBeenCalledWith(
       '/admin/tax-policy-versions/policy-1',
-      {
-        approvalAdminId: 'finance-admin-2',
-        effectiveFrom: effectiveFromIso,
-        effectiveTo: effectiveToIso,
-        notes: 'Policy reviewed',
-        operatorReason: 'Reviewed the policy dates and retained settlement evidence.',
-        status: 'ACTIVE',
-      },
-      null,
+      expect.objectContaining({
+        status: 'DRAFT',
+        effectiveFrom: '2026-12-31T17:00:00.000Z',
+        effectiveTo: '2027-12-31T16:59:00.000Z',
+      }),
     );
-    expect(mockedRevalidatePath).toHaveBeenCalledWith('/tax-policy');
-    expect(mockedRevalidatePath).toHaveBeenCalledWith('/audit-log');
   });
 
-  it('redirects to a form notice without updating tax policy versions when effective to is before effective from', async () => {
-    const formData = new FormData();
+  it('does not call the API when the Vietnam effective window is invalid', async () => {
+    const formData = validPolicyForm();
     formData.set('policyId', 'policy-1');
-    formData.set('status', 'ACTIVE');
-    formData.set('effectiveFrom', '2026-07-01T00:00');
-    formData.set('effectiveTo', '2026-06-30T23:59');
+    formData.set('effectiveTo', '2026-12-31T23:59');
 
-    await updateTaxPolicyVersion(formData);
+    const state = await updateTaxPolicyVersion(INITIAL_TAX_POLICY_ACTION_STATE, formData);
 
     expect(mockedAdminPatch).not.toHaveBeenCalled();
-    expect(mockedRevalidatePath).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith(
-      '/tax-policy?taxPolicyNotice=validation&message=Effective%20to%20must%20be%20after%20effective%20from.',
+    expect(mockedRedirect).not.toHaveBeenCalled();
+    expect(state).toMatchObject({
+      error: 'Effective to must be after effective from.',
+      fieldErrors: { effectiveTo: 'Effective to must be after effective from.' },
+      status: 'error',
+      values: expect.objectContaining({ name: ' Vietnam withholding 2027 ', policyId: 'policy-1' }),
+    });
+  });
+
+  it('submits durable approval without a selected approver id', async () => {
+    const formData = new FormData();
+    formData.set('policyId', 'policy-1');
+    formData.set('idempotencyKey', 'tax-policy-policy-1-request-1');
+    formData.set('operatorReason', 'Submit the immutable reviewed policy payload for checker review.');
+
+    await submitTaxPolicyApprovalRequest(INITIAL_TAX_POLICY_ACTION_STATE, formData);
+
+    expect(mockedAdminPost).toHaveBeenCalledWith(
+      '/admin/tax-policy-versions/policy-1/approval-requests',
+      {
+        cleanSourceAcknowledged: false,
+        idempotencyKey: 'tax-policy-policy-1-request-1',
+        operatorReason: 'Submit the immutable reviewed policy payload for checker review.',
+      },
     );
   });
 
-  it('redirects to a form notice without creating service-type tax rules when service type is missing', async () => {
+  it('records a checker decision from the signed-in operator', async () => {
+    const formData = new FormData();
+    formData.set('requestId', 'request-1');
+    formData.set('policyId', 'policy-1');
+    formData.set('decision', 'APPROVE');
+    formData.set('decisionReason', 'Legal source and proposed rules match the approved Finance schedule.');
+
+    await decideTaxPolicyApprovalRequest(INITIAL_TAX_POLICY_ACTION_STATE, formData);
+
+    expect(mockedAdminPost).toHaveBeenCalledWith(
+      '/admin/tax-policy-approval-requests/request-1/decision',
+      {
+        decision: 'APPROVE',
+        decisionReason: 'Legal source and proposed rules match the approved Finance schedule.',
+      },
+    );
+  });
+
+  it('surfaces stable API conflict codes instead of swallowing mutation errors', async () => {
+    mockedAdminPost.mockRejectedValueOnce(
+      new AdminApiRequestError('POST', '/admin/tax-policy-versions', 409, {
+        message: {
+          code: 'TAX_POLICY_IMMUTABLE',
+          message: 'Only unreferenced draft tax policies can be edited.',
+        },
+      }),
+    );
+
+    const state = await createTaxPolicyVersion(INITIAL_TAX_POLICY_ACTION_STATE, validPolicyForm());
+
+    expect(mockedRedirect).not.toHaveBeenCalled();
+    expect(state).toMatchObject({
+      code: 'TAX_POLICY_IMMUTABLE',
+      error: 'Only unreferenced draft tax policies can be edited. Reload the selected policy and review the current receipt before retrying.',
+      status: 'error',
+      values: expect.objectContaining({ legalSourceTitle: ' Decree 01/2027 ' }),
+    });
+    expect(mockedRevalidatePath).not.toHaveBeenCalled();
+  });
+
+  it('associates clean-source acknowledgement failures with the confirmation field', async () => {
+    mockedAdminPost.mockRejectedValueOnce(
+      new AdminApiRequestError('POST', '/admin/tax-policy-versions/policy-1/approval-requests', 400, {
+        message: {
+          code: 'TAX_POLICY_CLEAN_SOURCE_ACKNOWLEDGEMENT_REQUIRED',
+          message: 'Confirm the clean production source review.',
+        },
+      }),
+    );
+    const formData = new FormData();
+    formData.set('policyId', 'policy-1');
+    formData.set('idempotencyKey', 'tax-policy-policy-1-request-2');
+    formData.set('operatorReason', 'Submit independently reviewed production evidence.');
+
+    const state = await submitTaxPolicyApprovalRequest(INITIAL_TAX_POLICY_ACTION_STATE, formData);
+
+    expect(state).toMatchObject({
+      code: 'TAX_POLICY_CLEAN_SOURCE_ACKNOWLEDGEMENT_REQUIRED',
+      fieldErrors: { cleanSourceAcknowledged: 'Confirm the clean production source review.' },
+      status: 'error',
+    });
+    expect(mockedRedirect).not.toHaveBeenCalled();
+  });
+
+  it('validates scoped rule inputs before calling the API', async () => {
     const formData = new FormData();
     formData.set('policyId', 'policy-1');
     formData.set('scope', 'SERVICE_TYPE');
-    formData.set('rateBps', '500');
+    formData.set('ratePercent', '5');
 
-    await createTaxRule(formData);
-
-    expect(mockedAdminPost).not.toHaveBeenCalled();
-    expect(mockedRevalidatePath).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith(
-      '/tax-policy?taxPolicyNotice=validation&message=SERVICE_TYPE%20tax%20rules%20require%20service%20type.',
-    );
-  });
-
-  it('redirects to a form notice without creating amount-band tax rules when amount bounds are missing', async () => {
-    const formData = new FormData();
-    formData.set('policyId', 'policy-1');
-    formData.set('scope', 'AMOUNT_BAND');
-    formData.set('rateBps', '500');
-
-    await createTaxRule(formData);
+    const state = await createTaxRule(INITIAL_TAX_POLICY_ACTION_STATE, formData);
 
     expect(mockedAdminPost).not.toHaveBeenCalled();
-    expect(mockedRevalidatePath).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith(
-      '/tax-policy?taxPolicyNotice=validation&message=AMOUNT_BAND%20tax%20rules%20require%20min%20or%20max%20amount.',
-    );
+    expect(state).toMatchObject({ status: 'error', fieldErrors: { serviceType: expect.any(String) } });
   });
 
-  it('redirects to a form notice without updating tax rules when min amount is greater than max amount', async () => {
-    const formData = new FormData();
-    formData.set('ruleId', 'rule-1');
-    formData.set('scope', 'AMOUNT_BAND');
-    formData.set('minGrossAmount', '900000');
-    formData.set('maxGrossAmount', '300000');
-    formData.set('rateBps', '500');
+  it('rejects percentage precision that cannot round-trip to basis points', async () => {
+    const formData = validPolicyForm();
+    formData.set('defaultRatePercent', '5.555');
 
-    await updateTaxRule(formData);
+    const state = await createTaxPolicyVersion(INITIAL_TAX_POLICY_ACTION_STATE, formData);
 
-    expect(mockedAdminPatch).not.toHaveBeenCalled();
-    expect(mockedRevalidatePath).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith(
-      '/tax-policy?taxPolicyNotice=validation&message=Min%20amount%20cannot%20be%20greater%20than%20max%20amount.',
-    );
+    expect(mockedAdminPost).not.toHaveBeenCalled();
+    expect(state).toMatchObject({
+      status: 'error',
+      fieldErrors: { defaultRatePercent: expect.any(String) },
+      values: expect.objectContaining({ defaultRatePercent: '5.555' }),
+    });
   });
 });

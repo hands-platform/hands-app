@@ -2,6 +2,7 @@ import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { PolicyRecommendationReview } from './policy-recommendation-review';
+import { policyCountLabel } from './policy-copy';
 
 type OperationsPolicyRecommendedValueReviewSectionProps = {
   readonly review: PolicyRecommendationReview;
@@ -18,7 +19,7 @@ export function OperationsPolicyRecommendedValueReviewSection({
       description="Compares current policy values with the HANDS recommended baseline. Differences are allowed, but operators should know the likely tradeoff before keeping them."
       status={
         <StatusBadgeFromPillClass pillClass={review.warningCount ? 'pill-warn' : 'pill-success'}>
-          {review.warningCount ? `${review.warningCount} owner choice(s)` : 'Aligned'}
+          {review.warningCount ? policyCountLabel(review.warningCount, 'documented deviation') : 'Aligned'}
         </StatusBadgeFromPillClass>
       }
       title="Recommended value review"

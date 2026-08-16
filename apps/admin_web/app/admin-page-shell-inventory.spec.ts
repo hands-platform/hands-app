@@ -3,7 +3,10 @@ import { join, relative } from 'node:path';
 
 const APP_ROOT = join(process.cwd(), 'app');
 
-const AUTH_SHELL_EXCEPTIONS = new Set(['app/login/page.tsx']);
+const AUTH_SHELL_EXCEPTIONS = new Set([
+  'app/login/page.tsx',
+  'app/operator-setup/page.tsx',
+]);
 
 const REDIRECT_PAGES = new Set([
   'app/files/page.tsx',

@@ -3,15 +3,19 @@ import { redirect } from 'next/navigation';
 import { beforeEach, vi } from 'vitest';
 
 import {
+  adminDeleteWithBodyOrThrow,
   adminDeleteOrThrow,
   adminPatchOrThrow,
   adminPostOrThrow,
 } from '../../lib/admin-api';
 import {
+  createPublicSiteNewsArticleState,
   createPublicSiteNewsArticle,
+  deletePublicSitePage,
   deletePublicSiteSection,
   discardPublicSiteDraft,
   openPublicSiteDraft,
+  takePublicSitePageOffline,
   updatePublicSiteSection,
 } from './actions';
 
@@ -21,12 +25,14 @@ vi.mock('../../lib/admin-api', () => ({
   AdminApiRequestError: class AdminApiRequestError extends Error {
     constructor(readonly status: number) { super('request failed'); }
   },
+  adminDeleteWithBodyOrThrow: vi.fn(),
   adminDeleteOrThrow: vi.fn(),
   adminPatchOrThrow: vi.fn(),
   adminPostOrThrow: vi.fn(),
 }));
 
 const mockedPatch = vi.mocked(adminPatchOrThrow);
+const mockedDeleteWithBody = vi.mocked(adminDeleteWithBodyOrThrow);
 const mockedDelete = vi.mocked(adminDeleteOrThrow);
 const mockedPost = vi.mocked(adminPostOrThrow);
 
@@ -115,6 +121,40 @@ describe('website content actions', () => {
     expect(redirect).toHaveBeenCalledWith(expect.stringContaining('status=news-draft-created'));
   });
 
+  it('keeps invalid article values in the typed action state without calling the API', async () => {
+    const formData = new FormData();
+    formData.set('locale', 'vi');
+    formData.set('slug', 'Invalid Slug');
+    formData.set('title', 'Draft title');
+    formData.set('subtitle', 'Draft subtitle');
+    formData.set('body', 'Draft body');
+
+    const state = await createPublicSiteNewsArticleState({ status: 'idle' }, formData);
+
+    expect(state).toEqual(expect.objectContaining({ status: 'error', fieldErrors: expect.objectContaining({ slug: expect.any(String) }) }));
+    expect(mockedPost).not.toHaveBeenCalled();
+    expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it('sends typed path and reason for take offline and deletion', async () => {
+    mockedPost.mockResolvedValue({ visitorOutcome: 'CODE_FALLBACK' } as never);
+    mockedDeleteWithBody.mockResolvedValue(undefined as never);
+    const offline = destructivePageForm();
+    const deletion = destructivePageForm();
+
+    await takePublicSitePageOffline(offline);
+    await deletePublicSitePage(deletion);
+
+    expect(mockedPost).toHaveBeenCalledWith('/admin/site-pages/page-1/take-offline', {
+      confirmationPath: '/about',
+      reason: 'Incorrect public content',
+    });
+    expect(mockedDeleteWithBody).toHaveBeenCalledWith('/admin/site-pages/page-1', {
+      confirmationPath: '/about',
+      reason: 'Incorrect public content',
+    });
+  });
+
   it('opens an editable Draft through the dedicated endpoint', async () => {
     mockedPost.mockResolvedValue({ id: 'page-1' } as never);
     const formData = new FormData();
@@ -148,5 +188,14 @@ function sectionForm() {
   formData.set('sortOrder', '0');
   formData.set('enabled', 'on');
   formData.set('returnTo', '/website-content?view=pages&pageId=page-1&workspace=content');
+  return formData;
+}
+
+function destructivePageForm() {
+  const formData = new FormData();
+  formData.set('pageId', 'page-1');
+  formData.set('confirmationPath', '/about');
+  formData.set('reason', 'Incorrect public content');
+  formData.set('returnTo', '/website-content?view=pages&pageId=page-1');
   return formData;
 }

@@ -4,12 +4,32 @@ type ServiceActionNoticeMessage = {
 };
 
 export type ServiceActionNotice = ServiceActionNoticeMessage & {
+  readonly actionHref?: string;
+  readonly actionLabel?: string;
   readonly tone: 'danger' | 'success';
 };
 
 type ServiceActionNoticeParams = Record<string, readonly string[] | string | undefined>;
 
 const savedMessages: Record<string, ServiceActionNoticeMessage> = {
+  'service-draft-saved': {
+    title: 'Draft saved',
+    detail: 'The draft is stored for operator review and has not changed the customer or Partner apps.',
+  },
+  'service-menu-published': {
+    title: 'Service group published',
+    detail: 'Localization, enabled durations, customer prices, and Partner payouts were published together.',
+  },
+  'service-menu-hidden': {
+    title: 'Service group hidden',
+    detail:
+      'The group is no longer returned by the public service catalog API. Open its retained draft and publish again to restore it.',
+  },
+  'service-menu-archived': {
+    title: 'Service group archived',
+    detail:
+      'The group is retained for historical records and removed from public catalog delivery. Review the retained draft and publish again to restore it.',
+  },
   'service-created': {
     title: 'Service option created',
     detail: 'The new service duration option and any base payout rule have been saved.',
@@ -86,7 +106,17 @@ export function serviceActionNotice(params: ServiceActionNoticeParams): ServiceA
   }
 
   if (status === 'saved') {
-    return { tone: 'success', ...(savedMessages[reason] ?? savedMessages['service-updated']) };
+    const group = readSingleParam(params.group);
+    return {
+      tone: 'success',
+      ...(savedMessages[reason] ?? savedMessages['service-updated']),
+      ...(group
+        ? {
+            actionHref: `/audit-log?target=${encodeURIComponent(`service_group:${group}`)}`,
+            actionLabel: 'Open audit change set',
+          }
+        : {}),
+    };
   }
   if (status === 'blocked') {
     return {

@@ -1,0 +1,196 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Insights":
+        - /url: /marketing-analytics
+      - generic: Marketing Analytics
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Insights workspace":
+    - strong: Insights
+    - generic "Insights pages":
+      - link "Marketing Analytics":
+        - /url: /marketing-analytics
+      - link "Customer Usage":
+        - /url: /usage-overview
+  - heading "Marketing Analytics" [level=1]
+  - paragraph: New-customer acquisition cohort, source, campaign, coupon, and spend performance from stored HANDS records.
+  - generic "Marketing workspace view":
+    - link "Overview":
+      - /url: /marketing-analytics?range=today
+    - link "Campaigns & spend":
+      - /url: /marketing-analytics?range=today&view=campaigns
+    - link "Attribution quality":
+      - /url: /marketing-analytics?range=today&view=attribution
+    - link "Coupons":
+      - /url: /marketing-analytics?range=today&view=coupons
+  - heading "Marketing filters" [level=2]
+  - paragraph: Range, source, platform, and campaign apply to the new-customer attribution cohort. Region does not change attribution diagnostics.
+  - generic: Today
+  - generic: Signup cohort
+  - generic: "Spend source: manual records"
+  - text: Generated
+  - time: 12 Aug 2026, 16:52
+  - generic: Range
+  - generic "Range":
+    - link "Today":
+      - /url: /marketing-analytics?range=today&view=attribution
+    - link "Yesterday":
+      - /url: /marketing-analytics?range=yesterday&view=attribution
+    - link "7 days":
+      - /url: /marketing-analytics?range=7d&view=attribution
+    - link "30 days":
+      - /url: /marketing-analytics?range=30d&view=attribution
+  - generic: Source
+  - generic "Source":
+    - link "All sources":
+      - /url: /marketing-analytics?range=today&view=attribution
+    - link "Referral":
+      - /url: /marketing-analytics?range=today&view=attribution&source=referral
+    - link "Unknown":
+      - /url: /marketing-analytics?range=today&view=attribution&source=unknown
+    - link "Meta":
+      - /url: /marketing-analytics?range=today&view=attribution&source=meta
+    - link "Google":
+      - /url: /marketing-analytics?range=today&view=attribution&source=google
+    - link "TikTok":
+      - /url: /marketing-analytics?range=today&view=attribution&source=tiktok
+    - link "Organic":
+      - /url: /marketing-analytics?range=today&view=attribution&source=organic
+    - link "Direct":
+      - /url: /marketing-analytics?range=today&view=attribution&source=direct
+  - group "Additional marketing filters":
+    - generic "More filters"
+  - generic "Active marketing filters":
+    - generic: "View: Attribution quality · Range: Today"
+    - link "Reset range":
+      - /url: /marketing-analytics?range=7d&view=attribution
+    - link "Clear all":
+      - /url: /marketing-analytics?range=7d&view=attribution
+  - heading "Decision reliability" [level=2]
+  - paragraph: Reliability checks for the selected cohort and manual spend evidence. Missing ledger dates are not treated as zero spend.
+  - generic: "Decision evidence: INSUFFICIENT"
+  - generic: Attribution coverage
+  - strong: Not available
+  - generic: Spend days recorded
+  - strong: 0 / 1
+  - generic: Campaign match
+  - strong: Not available
+  - generic: Last complete date
+  - strong: Not complete
+  - paragraph: No acquisition evidence · No spend evidence · Spend dates incomplete
+  - region "Attribution quality":
+    - heading "Attribution quality" [level=2]
+    - paragraph: Known first-touch source versus Unknown for the selected customer cohort.
+    - generic: Signup source coverage
+    - strong: 0%
+    - generic: Today
+    - progressbar "0% signup source coverage"
+    - generic: Known signups
+    - strong: "0"
+    - generic: of 0
+    - generic: Unknown signups
+    - strong: "0"
+    - generic: needs source data
+    - generic: Known entrants
+    - strong: "0"
+    - generic: 0% of 0
+    - strong: Unknown signup diagnostics
+    - generic: First customer session evidence for this signup cohort
+    - generic: 0 unknown
+    - paragraph: No unknown signup source requires client diagnosis.
+  - heading "Insights & metric scope" [level=2]
+  - paragraph: Operator-readable findings and current data gaps before paid scaling.
+  - paragraph: No material insight in this range yet.
+  - group "Metric scope and limitations":
+    - generic "Metric scope & limitations"
+  - heading "Source performance" [level=2]
+  - paragraph: Current first slice groups unknown demand separately from tracked referral attribution.
+  - generic: Showing 0 / 0
+  - region "Source performance table":
+    - table:
+      - rowgroup:
+        - row "Source Signups Completed Cancelled Ad spend CPA completed Fee revenue Gross ROAS":
+          - columnheader "Source"
+          - columnheader "Signups"
+          - columnheader "Completed"
+          - columnheader "Cancelled"
+          - columnheader "Ad spend"
+          - columnheader "CPA completed"
+          - columnheader "Fee revenue"
+          - columnheader "Gross ROAS"
+      - rowgroup:
+        - row:
+          - cell:
+            - status:
+              - strong: No source aggregate loaded.
+              - paragraph: Try a different range or remove the dimension filter.
+  - heading "Platform tracked entrants" [level=2]
+  - paragraph: First recorded app platform for authenticated entrants in the selected cohort.
+  - generic: Showing 0 / 0
+  - region "Platform tracked entrants table":
+    - table:
+      - rowgroup:
+        - row "Platform Signups Completed Cancelled Ad spend CPA completed Fee revenue Gross ROAS":
+          - columnheader "Platform"
+          - columnheader "Signups"
+          - columnheader "Completed"
+          - columnheader "Cancelled"
+          - columnheader "Ad spend"
+          - columnheader "CPA completed"
+          - columnheader "Fee revenue"
+          - columnheader "Gross ROAS"
+      - rowgroup:
+        - row:
+          - cell:
+            - status:
+              - strong: No platform entrant rows in this range.
+              - paragraph: Try a different range or remove the dimension filter.
+- alert

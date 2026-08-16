@@ -28,6 +28,11 @@ export class AdminPartnerRoutes extends AdminCustomerRoutes {
     return this.admin.listOperationsPolicyProviders({ take });
   }
 
+  @Get('operations-policy/matching-preview')
+  operationsPolicyMatchingPreview(@Query('referenceBookingId') referenceBookingId?: string) {
+    return this.admin.matchingPreview(referenceBookingId);
+  }
+
   @Get('operations-handoff/providers')
   operationsHandoffProviders(
     @Query('take') take?: string,

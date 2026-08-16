@@ -1,0 +1,116 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - generic: Coupons
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - heading "Coupons" [level=1]
+  - paragraph: Growth campaign windows and booking usage. All times use ICT (UTC+7). Updated 12 Aug 2026, 13:18 ICT.
+  - generic "Page actions":
+    - link "Refresh now":
+      - /url: /coupons?view=scheduled
+      - text: Refresh now
+    - link "Create coupon":
+      - /url: /coupons?view=scheduled&drawer=create
+      - text: Create coupon
+  - generic: Current
+  - paragraph: Live checkout codes
+  - generic: "Live checkout codes:"
+  - text: "84"
+  - generic: Coupons available in customer checkout now.
+  - generic: Current
+  - paragraph: Scheduled launches
+  - generic: "Scheduled launches:"
+  - text: "0"
+  - generic: Active coupons waiting for their ICT start time.
+  - generic: Current
+  - paragraph: Inactive records
+  - generic: "Inactive records:"
+  - text: "0"
+  - generic: Paused and expired coupons retained for operations and audit.
+  - region "Coupon filters":
+    - heading "Coupon filters" [level=2]
+    - generic: 0 matching
+    - generic "Coupon operational views":
+      - generic: Operational view
+      - generic "Coupon operational view":
+        - link "Live 84":
+          - /url: /coupons
+        - link "Scheduled 0":
+          - /url: /coupons?view=scheduled
+        - link "Records 0":
+          - /url: /coupons?view=records
+        - link "All 84":
+          - /url: /coupons?view=all
+    - generic: Search coupons
+    - searchbox "Search coupons"
+    - button "Apply filters"
+    - link "Reset":
+      - /url: /coupons
+  - heading "Coupon list" [level=2]
+  - paragraph: Compare checkout availability, campaign windows, and operator actions without opening each coupon.
+  - generic: 0 shown
+  - region "Coupon operations table":
+    - table:
+      - rowgroup:
+        - row "Coupon Discount Checkout window (ICT) Status Usage Actions":
+          - columnheader "Coupon"
+          - columnheader "Discount"
+          - columnheader "Checkout window (ICT)"
+          - columnheader "Status"
+          - columnheader "Usage"
+          - columnheader "Actions"
+      - rowgroup:
+        - row:
+          - cell:
+            - status:
+              - paragraph: No coupons match the current view and search.
+- button "Open Next.js Dev Tools":
+- alert

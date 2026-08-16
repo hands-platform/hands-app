@@ -131,13 +131,18 @@ describe('admin notification retry queries', () => {
     expect(normalizeAdminNotificationFailureCode('messaging/mismatched-credential')).toBe(
       'messaging/mismatched-credential',
     );
+    expect(normalizeAdminNotificationFailureProvider('fcm_http_v1')).toBe('FCM_HTTP_V1');
+    expect(normalizeAdminNotificationFailureProvider('onesignal')).toBe('ONESIGNAL');
+    expect(normalizeAdminNotificationFailureCode('OneSignal: invalid player id')).toBe(
+      'OneSignal: invalid player id',
+    );
   });
 
   it('rejects unsupported provider and failure-code filters', () => {
-    expect(() => adminNotificationRetryCountQuery({ failureProvider: 'OTHER' })).toThrow(
+    expect(() => adminNotificationRetryCountQuery({ failureProvider: `FCM\nHTTP` })).toThrow(
       'Notification failure provider is invalid',
     );
-    expect(() => adminNotificationRetryCountQuery({ failureCode: 'bad code' })).toThrow(
+    expect(() => adminNotificationRetryCountQuery({ failureCode: `bad\u0000code` })).toThrow(
       'Notification failure code is invalid',
     );
   });

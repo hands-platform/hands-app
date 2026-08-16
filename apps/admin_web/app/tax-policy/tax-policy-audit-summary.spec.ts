@@ -41,7 +41,7 @@ describe('buildTaxPolicyAuditSummary', () => {
         actorLabel: 'Ops Lead',
         createdAt: '2026-06-27T10:30:00.000Z',
         detail:
-          'Status ACTIVE / 1 other active policy deactivated / Finance approval finance-... / Evidence: Approved July withholding schedule.',
+          'Status ACTIVE / 1 other active policy deactivated / Legacy Finance approval finance-... / Evidence: Approved July withholding schedule.',
         id: 'audit-policy',
         targetLabel: 'tax_policy:policy-1...',
         toneClassName: 'pill-success',

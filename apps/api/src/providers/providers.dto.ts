@@ -2,6 +2,7 @@ import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
+  ArrayUnique,
   IsArray,
   IsBoolean,
   IsInt,
@@ -125,6 +126,8 @@ export class UpdateProviderServicePriceDto {
 export class SubmitProviderVerificationDto {
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(12)
+  @ArrayUnique()
   @IsString({ each: true })
   @MaxLength(128, { each: true })
   fileIds?: string[];

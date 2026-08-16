@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { adminGet, adminPostOrThrow, type AdminCalendarEvent } from '../../../../lib/admin-api';
 import { requireAdminWebAccess } from '../../../../lib/admin-session';
+import { isSameOriginMutationRequest } from '../../../../lib/same-origin-request';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -43,6 +44,12 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!isSameOriginMutationRequest(request)) {
+    return NextResponse.json(
+      { error: 'CROSS_SITE_REQUEST_REJECTED' },
+      { headers: NO_STORE_HEADERS, status: 403 },
+    );
+  }
   const access = requireAdminWebAccess(request);
   if (!access.allowed) {
     return NextResponse.json({ error: access.error }, { headers: NO_STORE_HEADERS, status: access.status });

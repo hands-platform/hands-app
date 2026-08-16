@@ -1,0 +1,1425 @@
+{
+  "generatedAt": "2026-08-12T15:50:11.483Z",
+  "mode": "dry-run",
+  "applyExecuted": false,
+  "expectedRoutes": 35,
+  "expectedRows": 175,
+  "currentRows": 85,
+  "summary": {
+    "KEEP": 80,
+    "CREATE": 90,
+    "BACKFILL_REVISION": 0,
+    "MOVE_ROUTE": 5,
+    "STALE_ROUTE": 0,
+    "CONFLICT": 0,
+    "BLOCKED": 0
+  },
+  "checksum": "7d27a6e61c791ce0a9d628f228b96c9f0a8822338b0c6508e9eb0200b235da97",
+  "items": [
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/",
+      "label": "Home",
+      "pageId": "cms6bst0c0000vynopfyq0aia"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/",
+      "label": "Home",
+      "pageId": "cms6bst3r000qvynovauef2ej"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/",
+      "label": "Home",
+      "pageId": "cms6bst66001gvynocaaazc83"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/",
+      "label": "Home",
+      "pageId": "cms6bst8k0026vynon3426jyc"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/",
+      "label": "Home",
+      "pageId": "cms6bstas002wvyno2iehmyk2"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/partners",
+      "label": "Massage therapists",
+      "pageId": "cms6bst1f0004vynoygnu586e"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/partners",
+      "label": "Massage therapists",
+      "pageId": "cms6bst3z000uvynom7r5lynb"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/partners",
+      "label": "Massage therapists",
+      "pageId": "cms6bst6f001kvynow59dmw5s"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/partners",
+      "label": "Massage therapists",
+      "pageId": "cms6bst8s002avynop4bq77f3"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/partners",
+      "label": "Massage therapists",
+      "pageId": "cms6bstb00030vynoybqeogqv"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/partners/[city]",
+      "label": "Massage therapists by city",
+      "pageId": "cms6bst1o0008vyno853ljjl5"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/partners/[city]",
+      "label": "Massage therapists by city",
+      "pageId": "cms6bst49000yvynoj0qlpryn"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/partners/[city]",
+      "label": "Massage therapists by city",
+      "pageId": "cms6bst6p001ovynoe6iqqau5"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/partners/[city]",
+      "label": "Massage therapists by city",
+      "pageId": "cms6bst90002evynoscrrbc79"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/partners/[city]",
+      "label": "Massage therapists by city",
+      "pageId": "cms6bstba0034vyno8japz1aw"
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/partners/[city]/[district]",
+      "label": "Massage therapists by district",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/partners/[city]/[district]",
+      "label": "Massage therapists by district",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/partners/[city]/[district]",
+      "label": "Massage therapists by district",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/partners/[city]/[district]",
+      "label": "Massage therapists by district",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/partners/[city]/[district]",
+      "label": "Massage therapists by district",
+      "pageId": null
+    },
+    {
+      "action": "MOVE_ROUTE",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/partners/[city]/[district]/[slug]",
+      "label": "Massage therapist profile",
+      "pageId": "cms6bst1y000bvynoblstvk1p",
+      "fromPath": "/partners/[city]/[slug]"
+    },
+    {
+      "action": "MOVE_ROUTE",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/partners/[city]/[district]/[slug]",
+      "label": "Massage therapist profile",
+      "pageId": "cms6bst4h0011vynoa9s6nq8a",
+      "fromPath": "/partners/[city]/[slug]"
+    },
+    {
+      "action": "MOVE_ROUTE",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/partners/[city]/[district]/[slug]",
+      "label": "Massage therapist profile",
+      "pageId": "cms6bst6y001rvyno1f1nob7b",
+      "fromPath": "/partners/[city]/[slug]"
+    },
+    {
+      "action": "MOVE_ROUTE",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/partners/[city]/[district]/[slug]",
+      "label": "Massage therapist profile",
+      "pageId": "cms6bst99002hvynobfh0zg3u",
+      "fromPath": "/partners/[city]/[slug]"
+    },
+    {
+      "action": "MOVE_ROUTE",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/partners/[city]/[district]/[slug]",
+      "label": "Massage therapist profile",
+      "pageId": "cms6bstbh0037vyno7e4cr2em",
+      "fromPath": "/partners/[city]/[slug]"
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/news",
+      "label": "News",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/news",
+      "label": "News",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/news",
+      "label": "News",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/news",
+      "label": "News",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/news",
+      "label": "News",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/referrals",
+      "label": "Referral program",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/referrals",
+      "label": "Referral program",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/referrals",
+      "label": "Referral program",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/referrals",
+      "label": "Referral program",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/referrals",
+      "label": "Referral program",
+      "pageId": null
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/company",
+      "label": "About HANDS",
+      "pageId": "cms6bst26000evynoo0ue9bnb"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/company",
+      "label": "About HANDS",
+      "pageId": "cms6bst4q0014vynocgzgllk3"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/company",
+      "label": "About HANDS",
+      "pageId": "cms6bst76001uvynoowzhk07p"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/company",
+      "label": "About HANDS",
+      "pageId": "cms6bst9h002kvynofr50tct0"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/company",
+      "label": "About HANDS",
+      "pageId": "cms6bstbp003avyno07ymvhmy"
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/service-areas",
+      "label": "Service areas",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/service-areas",
+      "label": "Service areas",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/service-areas",
+      "label": "Service areas",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/service-areas",
+      "label": "Service areas",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/service-areas",
+      "label": "Service areas",
+      "pageId": null
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/contact",
+      "label": "Contact",
+      "pageId": "cms6bst2g000gvynoc3y5s1c9"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/contact",
+      "label": "Contact",
+      "pageId": "cms6bst4z0016vynopzes5age"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/contact",
+      "label": "Contact",
+      "pageId": "cms6bst7g001wvynofqzjr191"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/contact",
+      "label": "Contact",
+      "pageId": "cms6bst9p002mvynoig7j3hxi"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/contact",
+      "label": "Contact",
+      "pageId": "cms6bstbx003cvynookc3m9jk"
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/support/faq",
+      "label": "Frequently asked questions",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/support/faq",
+      "label": "Frequently asked questions",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/support/faq",
+      "label": "Frequently asked questions",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/support/faq",
+      "label": "Frequently asked questions",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/support/faq",
+      "label": "Frequently asked questions",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/support/disputes",
+      "label": "Reports and disputes",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/support/disputes",
+      "label": "Reports and disputes",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/support/disputes",
+      "label": "Reports and disputes",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/support/disputes",
+      "label": "Reports and disputes",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/support/disputes",
+      "label": "Reports and disputes",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/safety",
+      "label": "Safety and trust",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/safety",
+      "label": "Safety and trust",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/safety",
+      "label": "Safety and trust",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/safety",
+      "label": "Safety and trust",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/safety",
+      "label": "Safety and trust",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/partner-policy",
+      "label": "Partner operating policy",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/partner-policy",
+      "label": "Partner operating policy",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/partner-policy",
+      "label": "Partner operating policy",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/partner-policy",
+      "label": "Partner operating policy",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/partner-policy",
+      "label": "Partner operating policy",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/legal/partner-terms",
+      "label": "Partner terms",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/legal/partner-terms",
+      "label": "Partner terms",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/legal/partner-terms",
+      "label": "Partner terms",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/legal/partner-terms",
+      "label": "Partner terms",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/legal/partner-terms",
+      "label": "Partner terms",
+      "pageId": null
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/legal/privacy",
+      "label": "Privacy policy",
+      "pageId": "cms6bst2p000ivynof07kw1tq"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/legal/privacy",
+      "label": "Privacy policy",
+      "pageId": "cms6bst580018vyno146d69pr"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/legal/privacy",
+      "label": "Privacy policy",
+      "pageId": "cms6bst7o001yvyno3itod1kc"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/legal/privacy",
+      "label": "Privacy policy",
+      "pageId": "cms6bst9x002ovynomt5zy81y"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/legal/privacy",
+      "label": "Privacy policy",
+      "pageId": "cms6bstc5003evynodghrtq44"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/legal/cookies",
+      "label": "Cookie policy",
+      "pageId": "cms6bst2x000kvynobh51159k"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/legal/cookies",
+      "label": "Cookie policy",
+      "pageId": "cms6bst5g001avynoct0fl4ve"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/legal/cookies",
+      "label": "Cookie policy",
+      "pageId": "cms6bst7w0020vynoqzbvd1sb"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/legal/cookies",
+      "label": "Cookie policy",
+      "pageId": "cms6bsta5002qvyno2bk43kl3"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/legal/cookies",
+      "label": "Cookie policy",
+      "pageId": "cms6bstcc003gvynoe867ilb8"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/legal/terms",
+      "label": "Terms of service",
+      "pageId": "cms6bst37000mvyno3u1qo8of"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/legal/terms",
+      "label": "Terms of service",
+      "pageId": "cms6bst5p001cvynoeep2r249"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/legal/terms",
+      "label": "Terms of service",
+      "pageId": "cms6bst830022vynoger309ya"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/legal/terms",
+      "label": "Terms of service",
+      "pageId": "cms6bstad002svyno5420yxii"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/legal/terms",
+      "label": "Terms of service",
+      "pageId": "cms6bstck003ivynokrvn7iny"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/legal/app",
+      "label": "App legal documents",
+      "pageId": "cms6bst3g000ovynorajcyz3p"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/legal/app",
+      "label": "App legal documents",
+      "pageId": "cms6bst5x001evynoadoi1406"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/legal/app",
+      "label": "App legal documents",
+      "pageId": "cms6bst8c0024vynoq5upq74c"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/legal/app",
+      "label": "App legal documents",
+      "pageId": "cms6bstak002uvynod2g3ilaw"
+    },
+    {
+      "action": "KEEP",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/legal/app",
+      "label": "App legal documents",
+      "pageId": "cms6bstcr003kvynozyqbcwu7"
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "vi",
+      "path": "/company-info",
+      "label": "Company information",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ko",
+      "path": "/company-info",
+      "label": "Company information",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "en",
+      "path": "/company-info",
+      "label": "Company information",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "ja",
+      "path": "/company-info",
+      "label": "Company information",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "MAIN",
+      "locale": "zh",
+      "path": "/company-info",
+      "label": "Company information",
+      "pageId": null
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "vi",
+      "path": "/",
+      "label": "Partner recruitment home",
+      "pageId": "cms6bstd0003mvynonbw5pktz"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ko",
+      "path": "/",
+      "label": "Partner recruitment home",
+      "pageId": "cms6bstel0048vynofnlksmkm"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "en",
+      "path": "/",
+      "label": "Partner recruitment home",
+      "pageId": "cms6bstg4004uvynot6n1o4t1"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ja",
+      "path": "/",
+      "label": "Partner recruitment home",
+      "pageId": "cms6bstho005gvynozdw2aedq"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "zh",
+      "path": "/",
+      "label": "Partner recruitment home",
+      "pageId": "cms6bstjj0062vynoukks0bhx"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "vi",
+      "path": "/requirements",
+      "label": "Partner requirements",
+      "pageId": "cms6bstd9003svynoivnnixrm"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ko",
+      "path": "/requirements",
+      "label": "Partner requirements",
+      "pageId": "cms6bstet004evynoxcug8uyd"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "en",
+      "path": "/requirements",
+      "label": "Partner requirements",
+      "pageId": "cms6bstgd0050vynokdtcwklv"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ja",
+      "path": "/requirements",
+      "label": "Partner requirements",
+      "pageId": "cms6bsthw005mvynoji9uf9qn"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "zh",
+      "path": "/requirements",
+      "label": "Partner requirements",
+      "pageId": "cms6bstjt0068vynostxms00q"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "vi",
+      "path": "/process",
+      "label": "Application process",
+      "pageId": "cms6bstdh003vvyno55gq0qha"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ko",
+      "path": "/process",
+      "label": "Application process",
+      "pageId": "cms6bstf1004hvynopdcsdooh"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "en",
+      "path": "/process",
+      "label": "Application process",
+      "pageId": "cms6bstgk0053vyno2d65o9wu"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ja",
+      "path": "/process",
+      "label": "Application process",
+      "pageId": "cms6bsti5005pvynor2q0h372"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "zh",
+      "path": "/process",
+      "label": "Application process",
+      "pageId": "cms6bstk1006bvynovktxc3x3"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "vi",
+      "path": "/faq",
+      "label": "Recruitment FAQ",
+      "pageId": "cms6bstdo003zvynov3wqi69q"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ko",
+      "path": "/faq",
+      "label": "Recruitment FAQ",
+      "pageId": "cms6bstf9004lvyno8ll02ugn"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "en",
+      "path": "/faq",
+      "label": "Recruitment FAQ",
+      "pageId": "cms6bstgt0057vynoinvcrobv"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ja",
+      "path": "/faq",
+      "label": "Recruitment FAQ",
+      "pageId": "cms6bstic005tvynoy6vk7g3u"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "zh",
+      "path": "/faq",
+      "label": "Recruitment FAQ",
+      "pageId": "cms6bstk8006fvynojwbogbp3"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "vi",
+      "path": "/apply",
+      "label": "Apply to HANDS",
+      "pageId": "cms6bstdx0042vynogcij6ltc"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ko",
+      "path": "/apply",
+      "label": "Apply to HANDS",
+      "pageId": "cms6bstfh004ovynorckrfd6l"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "en",
+      "path": "/apply",
+      "label": "Apply to HANDS",
+      "pageId": "cms6bsth0005avynoh55a98s5"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ja",
+      "path": "/apply",
+      "label": "Apply to HANDS",
+      "pageId": "cms6bstim005wvyno1zji9p7c"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "zh",
+      "path": "/apply",
+      "label": "Apply to HANDS",
+      "pageId": "cms6bstkg006ivynof05dn0ok"
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "vi",
+      "path": "/company",
+      "label": "About HANDS",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ko",
+      "path": "/company",
+      "label": "About HANDS",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "en",
+      "path": "/company",
+      "label": "About HANDS",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ja",
+      "path": "/company",
+      "label": "About HANDS",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "zh",
+      "path": "/company",
+      "label": "About HANDS",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "vi",
+      "path": "/service-areas",
+      "label": "Service areas",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ko",
+      "path": "/service-areas",
+      "label": "Service areas",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "en",
+      "path": "/service-areas",
+      "label": "Service areas",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ja",
+      "path": "/service-areas",
+      "label": "Service areas",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "zh",
+      "path": "/service-areas",
+      "label": "Service areas",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "vi",
+      "path": "/contact",
+      "label": "Contact",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ko",
+      "path": "/contact",
+      "label": "Contact",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "en",
+      "path": "/contact",
+      "label": "Contact",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ja",
+      "path": "/contact",
+      "label": "Contact",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "zh",
+      "path": "/contact",
+      "label": "Contact",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "vi",
+      "path": "/safety",
+      "label": "Safety and trust",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ko",
+      "path": "/safety",
+      "label": "Safety and trust",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "en",
+      "path": "/safety",
+      "label": "Safety and trust",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ja",
+      "path": "/safety",
+      "label": "Safety and trust",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "zh",
+      "path": "/safety",
+      "label": "Safety and trust",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "vi",
+      "path": "/support/disputes",
+      "label": "Reports and disputes",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ko",
+      "path": "/support/disputes",
+      "label": "Reports and disputes",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "en",
+      "path": "/support/disputes",
+      "label": "Reports and disputes",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ja",
+      "path": "/support/disputes",
+      "label": "Reports and disputes",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "zh",
+      "path": "/support/disputes",
+      "label": "Reports and disputes",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "vi",
+      "path": "/partner-policy",
+      "label": "Partner operating policy",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ko",
+      "path": "/partner-policy",
+      "label": "Partner operating policy",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "en",
+      "path": "/partner-policy",
+      "label": "Partner operating policy",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ja",
+      "path": "/partner-policy",
+      "label": "Partner operating policy",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "zh",
+      "path": "/partner-policy",
+      "label": "Partner operating policy",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "vi",
+      "path": "/legal/partner-terms",
+      "label": "Partner terms",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ko",
+      "path": "/legal/partner-terms",
+      "label": "Partner terms",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "en",
+      "path": "/legal/partner-terms",
+      "label": "Partner terms",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ja",
+      "path": "/legal/partner-terms",
+      "label": "Partner terms",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "zh",
+      "path": "/legal/partner-terms",
+      "label": "Partner terms",
+      "pageId": null
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "vi",
+      "path": "/legal/privacy",
+      "label": "Privacy policy",
+      "pageId": "cms6bste40044vynoavthjtlb"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ko",
+      "path": "/legal/privacy",
+      "label": "Privacy policy",
+      "pageId": "cms6bstfp004qvynoho6o4kvi"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "en",
+      "path": "/legal/privacy",
+      "label": "Privacy policy",
+      "pageId": "cms6bsth8005cvynopxw7ygqh"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ja",
+      "path": "/legal/privacy",
+      "label": "Privacy policy",
+      "pageId": "cms6bstiw005yvynoqx09pzar"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "zh",
+      "path": "/legal/privacy",
+      "label": "Privacy policy",
+      "pageId": "cms6bstko006kvynoaggmjsg6"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "vi",
+      "path": "/legal/terms",
+      "label": "Terms of service",
+      "pageId": "cms6bstee0046vynon4rl33hi"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ko",
+      "path": "/legal/terms",
+      "label": "Terms of service",
+      "pageId": "cms6bstfx004svynojr7ww6md"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "en",
+      "path": "/legal/terms",
+      "label": "Terms of service",
+      "pageId": "cms6bsthf005evynooh9be9fn"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ja",
+      "path": "/legal/terms",
+      "label": "Terms of service",
+      "pageId": "cms6bstj80060vynolo5xemuw"
+    },
+    {
+      "action": "KEEP",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "zh",
+      "path": "/legal/terms",
+      "label": "Terms of service",
+      "pageId": "cms6bstkw006mvynob1horro6"
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "vi",
+      "path": "/company-info",
+      "label": "Company information",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ko",
+      "path": "/company-info",
+      "label": "Company information",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "en",
+      "path": "/company-info",
+      "label": "Company information",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "ja",
+      "path": "/company-info",
+      "label": "Company information",
+      "pageId": null
+    },
+    {
+      "action": "CREATE",
+      "site": "PARTNER_RECRUITMENT",
+      "locale": "zh",
+      "path": "/company-info",
+      "label": "Company information",
+      "pageId": null
+    }
+  ]
+}

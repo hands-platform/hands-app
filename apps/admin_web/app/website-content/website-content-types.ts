@@ -1,6 +1,7 @@
 export type PublicSiteKey = 'MAIN' | 'PARTNER_RECRUITMENT';
 export type PublicSiteRevisionState = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
 export type PublicSiteReadinessState = 'READY' | 'BLOCKED' | 'UNKNOWN';
+export type PublicSiteOwnership = 'CMS_LIVE' | 'CODE_FALLBACK' | 'NOT_SERVED' | 'OWNERSHIP_CONFLICT';
 export type PublicSiteSectionKind =
   | 'HERO'
   | 'APP_OVERVIEW'
@@ -58,6 +59,16 @@ export type PublicSitePageDetail = {
   activeRevision?: PublicSiteRevision | null;
   draftRevision?: PublicSiteRevision | null;
   revisions: PublicSiteRevisionSummary[];
+  ownership: PublicSiteOwnership;
+  manifestLabel?: string | null;
+  offlineVisitorOutcome?: 'CODE_FALLBACK' | 'NOT_SERVED';
+  activity?: Array<{
+    id: string;
+    action: string;
+    createdAt: string;
+    actor?: { id: string; label: string } | null;
+    metadata?: unknown;
+  }>;
 };
 
 export type PublicSitePageSummary = {
@@ -85,12 +96,16 @@ export type PublicSitePageSummary = {
     updatedAt: string;
     _count: { sections: number };
   } | null;
+  ownership: PublicSiteOwnership;
+  manifestLabel?: string | null;
 };
 
 export type PublicSiteRouteGroup = {
   groupKey: string;
   site: PublicSiteKey;
   path: string;
+  label: string;
+  ownership: PublicSiteOwnership;
   translations: PublicSitePageSummary[];
 };
 
@@ -98,9 +113,14 @@ export type PublicSiteListSummary = {
   routes: number;
   live: number;
   draftChanges: number;
+  ready: number;
   needsAttention: number;
+  missingRoutes: number;
   missingTranslations: number;
+  staleTranslations: number;
   recentlyPublished: number;
+  scope: { contentType: 'pages' | 'news'; site: string | null; locale: string | null; q: string | null; status: string };
+  generatedAt: string;
 };
 
 export type PublicSiteListResult<T> = {

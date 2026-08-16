@@ -1,0 +1,4531 @@
+{
+  "At Healthify": null,
+  "Built on the idea that human-to-human": [
+    {
+      "cls": "box-wrapper",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "DIV"
+    },
+    {
+      "cls": "wp-singular page-template-default page page-id-172122 page-child parent-pageid-43938 wp-theme-uncode wp-child-theme-uncode-child style-color-wayh-bg theme-uncode woocommerce-js gro",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "BODY"
+    },
+    {
+      "cls": "no-touch webkit chrome chrome151 win win10 js no-hidpi screen-xxs orientation_portrait datauri lenis",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "HTML"
+    }
+  ],
+  "Connect with an elite coach": [
+    {
+      "cls": "box-wrapper",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "DIV"
+    },
+    {
+      "cls": "wp-singular page-template-default page page-id-172122 page-child parent-pageid-43938 wp-theme-uncode wp-child-theme-uncode-child style-color-wayh-bg theme-uncode woocommerce-js gro",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "BODY"
+    },
+    {
+      "cls": "no-touch webkit chrome chrome151 win win10 js no-hidpi screen-xxs orientation_portrait datauri lenis",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "HTML"
+    }
+  ],
+  "Daily Accountability": [
+    {
+      "cls": "box-wrapper",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "DIV"
+    },
+    {
+      "cls": "wp-singular page-template-default page page-id-172122 page-child parent-pageid-43938 wp-theme-uncode wp-child-theme-uncode-child style-color-wayh-bg theme-uncode woocommerce-js gro",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "BODY"
+    },
+    {
+      "cls": "no-touch webkit chrome chrome151 win win10 js no-hidpi screen-xxs orientation_portrait datauri lenis",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "HTML"
+    }
+  ],
+  "Elite Personal Training": null,
+  "Expert coaching made for your real-world lifestyle": [
+    {
+      "cls": "box-wrapper",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "DIV"
+    },
+    {
+      "cls": "wp-singular page-template-default page page-id-172122 page-child parent-pageid-43938 wp-theme-uncode wp-child-theme-uncode-child style-color-wayh-bg theme-uncode woocommerce-js gro",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "BODY"
+    },
+    {
+      "cls": "no-touch webkit chrome chrome151 win win10 js no-hidpi screen-xxs orientation_portrait datauri lenis",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "HTML"
+    }
+  ],
+  "Pricing Plans": [
+    {
+      "cls": "box-wrapper",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "DIV"
+    },
+    {
+      "cls": "wp-singular page-template-default page page-id-172122 page-child parent-pageid-43938 wp-theme-uncode wp-child-theme-uncode-child style-color-wayh-bg theme-uncode woocommerce-js gro",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "BODY"
+    },
+    {
+      "cls": "no-touch webkit chrome chrome151 win win10 js no-hidpi screen-xxs orientation_portrait datauri lenis",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "HTML"
+    }
+  ],
+  "Real human connection drives real results": [
+    {
+      "cls": "box-wrapper",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "DIV"
+    },
+    {
+      "cls": "wp-singular page-template-default page page-id-172122 page-child parent-pageid-43938 wp-theme-uncode wp-child-theme-uncode-child style-color-wayh-bg theme-uncode woocommerce-js gro",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "BODY"
+    },
+    {
+      "cls": "no-touch webkit chrome chrome151 win win10 js no-hidpi screen-xxs orientation_portrait datauri lenis",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "HTML"
+    }
+  ],
+  "Stronger Together": [
+    {
+      "cls": "box-wrapper",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "DIV"
+    },
+    {
+      "cls": "wp-singular page-template-default page page-id-172122 page-child parent-pageid-43938 wp-theme-uncode wp-child-theme-uncode-child style-color-wayh-bg theme-uncode woocommerce-js gro",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "BODY"
+    },
+    {
+      "cls": "no-touch webkit chrome chrome151 win win10 js no-hidpi screen-xxs orientation_portrait datauri lenis",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "HTML"
+    }
+  ],
+  "Testimonials": [
+    {
+      "cls": "box-wrapper",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "DIV"
+    },
+    {
+      "cls": "wp-singular page-template-default page page-id-172122 page-child parent-pageid-43938 wp-theme-uncode wp-child-theme-uncode-child style-color-wayh-bg theme-uncode woocommerce-js gro",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "BODY"
+    },
+    {
+      "cls": "no-touch webkit chrome chrome151 win win10 js no-hidpi screen-xxs orientation_portrait datauri lenis",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "HTML"
+    }
+  ],
+  "Your coaching": [
+    {
+      "cls": "box-wrapper",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "DIV"
+    },
+    {
+      "cls": "wp-singular page-template-default page page-id-172122 page-child parent-pageid-43938 wp-theme-uncode wp-child-theme-uncode-child style-color-wayh-bg theme-uncode woocommerce-js gro",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "BODY"
+    },
+    {
+      "cls": "no-touch webkit chrome chrome151 win win10 js no-hidpi screen-xxs orientation_portrait datauri lenis",
+      "id": "",
+      "images": [
+        {
+          "cls": "background-inner srcset-bg",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/10/demos-column.png",
+          "w": 0
+        },
+        {
+          "cls": "background-inner srcset-bg srcset-bg-async srcset-bg-init",
+          "h": 0,
+          "kind": "bg",
+          "tag": "DIV",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/08/mm-intro-column-bg-uai-1400x867.webp",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-nine-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/lightning-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/trophy-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/stack-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/person-simple-circle-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/clock-clockwise-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/cards-three-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/headset-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/code-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-bag-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/globe-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/star-fill.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/monitor.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/app-window-mac.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/shopping-cart.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/grid-2x2-1.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/panels-top-left.svg",
+          "w": 0
+        },
+        {
+          "cls": "attachment-full size-full",
+          "h": 0,
+          "kind": "img",
+          "tag": "IMG",
+          "url": "https://d3f86pfw66amx.cloudfront.net/uncode/wp-content/uploads/2025/07/sparkles-1.svg",
+          "w": 0
+        }
+      ],
+      "tag": "HTML"
+    }
+  ]
+}

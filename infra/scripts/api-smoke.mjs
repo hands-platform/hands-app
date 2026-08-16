@@ -1,9 +1,10 @@
 import jwt from 'jsonwebtoken';
-import { randomUUID } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import {
   AccountingJournalBatchStatus,
   AccountingJournalSourceType,
   AdminOperatorPermissionCategory,
+  AdminUserProvenance,
   BookingStatus,
   CompanyBankAccountStatus,
   PaymentFeePayer,
@@ -14,6 +15,8 @@ import {
   ProviderBankAccountStatus,
   ProviderWalletLedgerType,
   Role,
+  ServiceCatalogProvenance,
+  ServicePublicationStatus,
   TaxPolicyStatus,
 } from '@prisma/client';
 
@@ -24,15 +27,29 @@ import {
   isStaleApiSmokeAddress,
   summarizeStaleApiSmokeBookings,
 } from './lib/stale-api-smoke-bookings.mjs';
+import { assertTaxPolicyFixtureWriteTarget } from './lib/tax-policy-fixture-write-target.mjs';
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const { env } = loadMergedEnv(envFile);
 const apiSmokeStartedAt = new Date();
+const apiSmokeRunId = randomUUID();
+const apiSmokeRunKey = apiSmokeRunId.replaceAll('-', '_');
 const apiSmokeBookingTracker = createApiSmokeBookingTracker();
+const apiSmokeServiceIds = new Set();
+const apiSmokeCompanyBankAccountIds = new Set();
 let apiSmokeCleanupPromise;
+let apiSmokeCompanyBankAccountCleanupPromise;
+let apiSmokeServiceCleanupPromise;
 if (env.DATABASE_URL && !process.env.DATABASE_URL) {
   process.env.DATABASE_URL = env.DATABASE_URL;
 }
+if (env.NODE_ENV === 'production') {
+  throw new Error('API smoke cannot create or activate company bank account fixtures in production.');
+}
+assertTaxPolicyFixtureWriteTarget(
+  env.DATABASE_URL,
+  env.TAX_POLICY_FIXTURE_WRITE_ALLOWLIST,
+);
 
 const apiBaseUrl = env.API_BASE_URL ?? 'http://localhost:3000/api';
 const defaultCustomerCurrentLocation = {
@@ -58,6 +75,9 @@ async function createSmokeAdminAuth(
 
   try {
     const existing = await prisma.user.findUnique({ where: { phone } });
+    if (existing && existing.adminUserProvenance !== AdminUserProvenance.FIXTURE) {
+      throw new Error(`Refusing to add smoke roles to non-fixture admin ${existing.id}.`);
+    }
     const user = existing
       ? await prisma.user.update({
           where: { id: existing.id },
@@ -68,6 +88,9 @@ async function createSmokeAdminAuth(
                 new Set([...existing.roles, Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN]),
               ),
             },
+            adminUserProvenance: AdminUserProvenance.FIXTURE,
+            fixtureKind: 'API_SMOKE',
+            fixtureRunId: apiSmokeRunId,
           },
         })
       : await prisma.user.create({
@@ -75,6 +98,9 @@ async function createSmokeAdminAuth(
             phone,
             fullName: 'HANDS Smoke Admin',
             roles: [Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN],
+            adminUserProvenance: AdminUserProvenance.FIXTURE,
+            fixtureKind: 'API_SMOKE',
+            fixtureRunId: apiSmokeRunId,
           },
         });
 
@@ -96,12 +122,18 @@ async function createSmokeAdminOnlyAuth(phone = env.API_SMOKE_ADMIN_ONLY_PHONE ?
 
   try {
     const existing = await prisma.user.findUnique({ where: { phone } });
+    if (existing && existing.adminUserProvenance !== AdminUserProvenance.FIXTURE) {
+      throw new Error(`Refusing to replace non-fixture admin roles for ${existing.id}.`);
+    }
     const user = existing
       ? await prisma.user.update({
           where: { id: existing.id },
           data: {
             fullName: existing.fullName ?? 'HANDS Smoke Admin Without Finance Approver',
             roles: { set: [Role.ADMIN] },
+            adminUserProvenance: AdminUserProvenance.FIXTURE,
+            fixtureKind: 'API_SMOKE',
+            fixtureRunId: apiSmokeRunId,
           },
         })
       : await prisma.user.create({
@@ -109,6 +141,9 @@ async function createSmokeAdminOnlyAuth(phone = env.API_SMOKE_ADMIN_ONLY_PHONE ?
             phone,
             fullName: 'HANDS Smoke Admin Without Finance Approver',
             roles: [Role.ADMIN],
+            adminUserProvenance: AdminUserProvenance.FIXTURE,
+            fixtureKind: 'API_SMOKE',
+            fixtureRunId: apiSmokeRunId,
           },
         });
 
@@ -229,10 +264,179 @@ async function expireResidualActiveApiSmokeBookingsOnce({ closedNote, closedReas
   }
 }
 
+async function registerApiSmokeServices(services, { published = false } = {}) {
+  const ids = services.map((service) => service?.id).filter(Boolean);
+  ids.forEach((id) => apiSmokeServiceIds.add(id));
+  if (ids.length === 0) return;
+
+  const prisma = new PrismaClient();
+  try {
+    await prisma.massageService.updateMany({
+      where: { id: { in: ids } },
+      data: {
+        provenance: ServiceCatalogProvenance.SMOKE_TEST,
+        provenanceRunId: apiSmokeRunId,
+        publicationStatus: published
+          ? ServicePublicationStatus.PUBLISHED
+          : ServicePublicationStatus.DRAFT,
+      },
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function cleanupApiSmokeServices() {
+  if (apiSmokeServiceCleanupPromise) return apiSmokeServiceCleanupPromise;
+  apiSmokeServiceCleanupPromise = cleanupApiSmokeServicesOnce();
+  return apiSmokeServiceCleanupPromise;
+}
+
+async function cleanupApiSmokeServicesOnce() {
+  const ids = [...apiSmokeServiceIds];
+  if (ids.length === 0) return { archived: [], deleted: [], remainingIds: [] };
+
+  const prisma = new PrismaClient();
+  const archived = [];
+  const deleted = [];
+  try {
+    const services = await prisma.massageService.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, serviceGroupKey: true },
+    });
+    for (const service of services) {
+      const bookingReferenceCount = await prisma.bookingService.count({
+        where: { serviceId: service.id },
+      });
+      await prisma.servicePayoutRule.updateMany({
+        where: { serviceId: service.id },
+        data: { active: false },
+      });
+      if (bookingReferenceCount > 0) {
+        await prisma.massageService.update({
+          where: { id: service.id },
+          data: {
+            active: false,
+            publicationStatus: ServicePublicationStatus.ARCHIVED,
+            provenance: ServiceCatalogProvenance.SMOKE_TEST,
+            provenanceRunId: apiSmokeRunId,
+          },
+        });
+        archived.push({ id: service.id, bookingReferenceCount });
+        continue;
+      }
+
+      await prisma.providerService.deleteMany({ where: { serviceId: service.id } });
+      await prisma.servicePayoutRule.deleteMany({ where: { serviceId: service.id } });
+      await prisma.massageService.delete({ where: { id: service.id } });
+      deleted.push(service.id);
+    }
+    const groupKeys = services.map((service) => service.serviceGroupKey).filter(Boolean);
+    if (groupKeys.length > 0) {
+      await prisma.serviceCatalogDraft.deleteMany({
+        where: { serviceGroupKey: { in: groupKeys } },
+      });
+    }
+    const remainingIds = (
+      await prisma.massageService.findMany({
+        where: { id: { in: ids } },
+        select: { id: true },
+      })
+    ).map((service) => service.id);
+    if (remainingIds.some((id) => !archived.some((entry) => entry.id === id))) {
+      throw new Error(`API smoke service cleanup left unexpected rows: ${remainingIds.join(', ')}`);
+    }
+    return { archived, deleted, remainingIds };
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function registerApiSmokeCompanyBankAccount(accountId, fixtureType) {
+  apiSmokeCompanyBankAccountIds.add(accountId);
+  const prisma = new PrismaClient();
+  try {
+    const account = await prisma.companyBankAccount.findUnique({
+      where: { id: accountId },
+      select: { metadata: true },
+    });
+    if (!account) throw new Error(`API smoke company bank account not found: ${accountId}`);
+    const metadata = account.metadata && typeof account.metadata === 'object' && !Array.isArray(account.metadata)
+      ? account.metadata
+      : {};
+    await prisma.companyBankAccount.update({
+      where: { id: accountId },
+      data: {
+        dataScope: 'SYNTHETIC',
+        metadata: {
+          ...metadata,
+          fixture: true,
+          fixtureRunId: apiSmokeRunId,
+          fixtureType,
+        },
+      },
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function cleanupApiSmokeCompanyBankAccounts() {
+  if (apiSmokeCompanyBankAccountCleanupPromise) return apiSmokeCompanyBankAccountCleanupPromise;
+  apiSmokeCompanyBankAccountCleanupPromise = cleanupApiSmokeCompanyBankAccountsOnce();
+  return apiSmokeCompanyBankAccountCleanupPromise;
+}
+
+async function cleanupApiSmokeCompanyBankAccountsOnce() {
+  const ids = [...apiSmokeCompanyBankAccountIds];
+  if (ids.length === 0) return { deleted: [], retained: [] };
+  const prisma = new PrismaClient();
+  const deleted = [];
+  const retained = [];
+  try {
+    for (const id of ids) {
+      const account = await prisma.companyBankAccount.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          metadata: true,
+          _count: { select: { transactions: true } },
+        },
+      });
+      if (!account) continue;
+      const metadata = account.metadata && typeof account.metadata === 'object' && !Array.isArray(account.metadata)
+        ? account.metadata
+        : {};
+      const ownedByRun = metadata.fixture === true && metadata.fixtureRunId === apiSmokeRunId;
+      if (!ownedByRun || account._count.transactions > 0) {
+        retained.push({ id, reason: ownedByRun ? 'referenced' : 'not-owned-by-run' });
+        continue;
+      }
+      await prisma.$transaction([
+        prisma.adminAuditLog.deleteMany({ where: { target: `company_bank_account:${id}` } }),
+        prisma.companyBankAccount.delete({ where: { id } }),
+      ]);
+      deleted.push(id);
+    }
+    return { deleted, retained };
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function cleanupApiSmokeFixtures(options = {}) {
+  const [bookings, companyBankAccounts, services] = await Promise.all([
+    expireResidualActiveApiSmokeBookings(options),
+    cleanupApiSmokeCompanyBankAccounts(),
+    cleanupApiSmokeServices(),
+  ]);
+  return { bookings, companyBankAccounts, services };
+}
+
 function installApiSmokeFailureCleanup() {
   installApiSmokeProcessFailureHandlers({
     cleanup: (origin) =>
-      expireResidualActiveApiSmokeBookings({
+      cleanupApiSmokeFixtures({
         closedNote: `Expired after API smoke ${origin}.`,
         closedReason: 'api_smoke_fixture_interrupted',
       }),
@@ -255,16 +459,36 @@ async function ensureSmokeCompanyBankAccount() {
       orderBy: { createdAt: 'asc' },
     });
     if (existing) {
+      const metadata = existing.metadata && typeof existing.metadata === 'object' && !Array.isArray(existing.metadata)
+        ? existing.metadata
+        : {};
+      await prisma.companyBankAccount.update({
+        where: { id: existing.id },
+        data: {
+          metadata: {
+            ...metadata,
+            dataScope: 'synthetic',
+            fixture: true,
+            fixtureType: 'api-smoke-stable-reconciliation',
+          },
+        },
+      });
       return existing;
     }
 
     return prisma.companyBankAccount.create({
       data: {
         accountNumberLast4: '0001',
-        accountNumberMasked: '****0001',
+        accountNumberMasked: '•••• 0001',
         bankName: 'Smoke Bank',
         currency: 'VND',
-        metadata: { smoke: true },
+        metadata: {
+          dataScope: 'synthetic',
+          fixture: true,
+          fixtureRunId: apiSmokeRunId,
+          fixtureType: 'api-smoke-stable-reconciliation',
+          smoke: true,
+        },
         name: 'HANDS Smoke VND Account',
         status: CompanyBankAccountStatus.ACTIVE,
       },
@@ -640,10 +864,10 @@ async function request(path, options = {}) {
   return body;
 }
 
-const patchJson = (path, accessToken, body) =>
+const patchJson = (path, accessToken, body, extraHeaders = {}) =>
   request(path, {
     method: 'PATCH',
-    headers: { authorization: `Bearer ${accessToken}` },
+    headers: { authorization: `Bearer ${accessToken}`, ...extraHeaders },
     body: JSON.stringify(body),
   });
 
@@ -770,15 +994,41 @@ async function assertOperationalPolicyMetadata(accessToken) {
   }
 }
 
-const patchOperationalPolicyValue = async (accessToken, key, value) => {
+const patchOperationalPolicyValue = async (
+  accessToken,
+  key,
+  value,
+  { restoration = false } = {},
+) => {
   const expectedValue = await getOperationalPolicyValue(accessToken, key);
   if (expectedValue === value) return;
 
-  await patchJson(operationalPolicyPath(key), accessToken, {
-    expectedValue,
-    value,
-    reason: `Automated smoke coverage for ${key}`,
-  });
+  const smokeEnvironment = env.NODE_ENV?.trim() || 'development';
+  const smokeSecret =
+    env.API_SMOKE_AUDIT_SECRET?.trim() ||
+    (env.NODE_ENV === 'production' ? '' : jwtAccessSecretFromEnv(env));
+  if (!smokeSecret) {
+    throw new Error('API_SMOKE_AUDIT_SECRET is required for production operational policy smoke.');
+  }
+  const signature = createHmac('sha256', smokeSecret)
+    .update(`${apiSmokeRunId}\n${smokeEnvironment}\n${restoration ? 'restore' : 'change'}`)
+    .digest('hex');
+
+  await patchJson(
+    operationalPolicyPath(key),
+    accessToken,
+    {
+      expectedValue,
+      value,
+      reason: `Automated smoke coverage for ${key}`,
+    },
+    {
+      'x-hands-smoke-environment': smokeEnvironment,
+      'x-hands-smoke-restoration': restoration ? 'true' : 'false',
+      'x-hands-smoke-run-id': apiSmokeRunId,
+      'x-hands-smoke-signature': signature,
+    },
+  );
 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -1495,10 +1745,14 @@ if (!partnerControlSanctions.some((sanction) => sanction.id === liftedPartnerCon
 
 const services = await request('/services');
 const service = services[0];
-if (!service?.id || !Array.isArray(service.payoutRules) || service.priceStep !== 100000) {
-  throw new Error(`Public services should expose payout-ready pricing metadata: ${JSON.stringify(service)}`);
+if (!service?.id || service.priceStep !== 100000 || 'payoutRules' in service) {
+  throw new Error(`Public services should expose only customer catalog metadata: ${JSON.stringify(service)}`);
 }
 const serviceGroups = await request('/services/groups');
+const publicCatalogBefore = {
+  groupCount: serviceGroups.length,
+  optionCount: serviceGroups.reduce((total, group) => total + (group.options?.length ?? 0), 0),
+};
 const serviceGroup = serviceGroups.find((group) => group.options?.some((option) => option.id === service.id));
 if (
   !serviceGroup ||
@@ -1528,82 +1782,15 @@ const adminServiceGroup = adminServiceGroups.find((group) =>
 if (!adminServiceGroup || typeof adminServiceGroup.activeOptionCount !== 'number') {
   throw new Error(`Admin grouped service catalog is incomplete: ${JSON.stringify(adminServiceGroup)}`);
 }
-const higherCustomerPrice = service.basePrice + service.priceStep;
-const higherPricePayoutRule = await postJson(
-  `/admin/services/${service.id}/payout-rules`,
-  adminAuth.accessToken,
-  {
-    customerPrice: higherCustomerPrice,
-    providerPayoutAmount: Math.max(0, higherCustomerPrice - Math.round(higherCustomerPrice * 0.2)),
-    vatBps: 0,
-    otherCostAmount: 0,
-    active: true,
-    notes: 'Smoke test higher-price payout rule',
-  },
-);
-if (
-  higherPricePayoutRule.customerPrice !== higherCustomerPrice ||
-  higherPricePayoutRule.providerPayoutAmount <= 0
-) {
-  throw new Error(
-    `Higher-price payout rule was not created correctly: ${JSON.stringify(higherPricePayoutRule)}`,
-  );
-}
-const bulkPayoutStartPrice = higherCustomerPrice + service.priceStep;
-const bulkPayoutRules = await postJson(
-  `/admin/services/${service.id}/payout-rules/bulk`,
-  adminAuth.accessToken,
-  {
-    rules: [
-      {
-        customerPrice: bulkPayoutStartPrice,
-        providerPayoutAmount: Math.max(0, bulkPayoutStartPrice - Math.round(bulkPayoutStartPrice * 0.2)),
-        vatBps: 0,
-        otherCostAmount: 0,
-        active: true,
-        notes: 'Smoke test bulk payout ladder row 1',
-      },
-      {
-        customerPrice: bulkPayoutStartPrice + service.priceStep,
-        providerPayoutAmount: Math.max(
-          0,
-          bulkPayoutStartPrice +
-            service.priceStep -
-            Math.round((bulkPayoutStartPrice + service.priceStep) * 0.2),
-        ),
-        vatBps: 0,
-        otherCostAmount: 0,
-        active: true,
-        notes: 'Smoke test bulk payout ladder row 2',
-      },
-    ],
-  },
-);
-if (!Array.isArray(bulkPayoutRules) || bulkPayoutRules.length !== 2) {
-  throw new Error(`Bulk payout ladder was not created correctly: ${JSON.stringify(bulkPayoutRules)}`);
-}
-await expectRequestFailure(
-  'Admin bulk payout duplicate customer prices are rejected atomically',
-  () =>
-    postJson(`/admin/services/${service.id}/payout-rules/bulk`, adminAuth.accessToken, {
-      rules: [
-        {
-          customerPrice: bulkPayoutStartPrice + service.priceStep * 2,
-          providerPayoutAmount: 100000,
-        },
-        {
-          customerPrice: bulkPayoutStartPrice + service.priceStep * 2,
-          providerPayoutAmount: 100000,
-        },
-      ],
-    }),
-  400,
-);
-const smokeDurationSetKey = `smoke_duration_set_${Date.now()}`;
+// Catalog mutation atomicity and payout versioning are covered by focused tests.
+// The broad smoke flow reuses the published base rule so it cannot pollute the operational catalog.
+const higherCustomerPrice = service.basePrice;
+const higherPricePayoutRule = basePayoutRule;
+const smokeDurationSetKey = `smoke_duration_set_${apiSmokeRunKey}`;
 const smokeDurationSet = await postJson('/admin/services/duration-sets', adminAuth.accessToken, {
   serviceGroupKey: smokeDurationSetKey,
-  name: 'Smoke Duration Set',
-  description: 'Atomic smoke-created 60/90/120 service set.',
+  name: `Smoke Duration Set ${apiSmokeRunId.slice(0, 8)}`,
+  description: `Atomic smoke-created 60/90/120 service set for run ${apiSmokeRunId}.`,
   priceStep: 100000,
   displayOrder: 999,
   vatBps: 0,
@@ -1625,6 +1812,7 @@ if (
     `Atomic service duration set was not created correctly: ${JSON.stringify(smokeDurationSet)}`,
   );
 }
+await registerApiSmokeServices(smokeDurationSet);
 const vietnameseServiceSuffix = Date.now();
 const vietnameseServiceName = `Mát xa đá chân ${vietnameseServiceSuffix}`;
 const vietnameseServiceKey = `mat_xa_da_chan_${vietnameseServiceSuffix}`;
@@ -1647,12 +1835,13 @@ if (
     `Vietnamese service names should generate stable group keys: ${JSON.stringify(vietnameseDurationSet)}`,
   );
 }
+await registerApiSmokeServices(vietnameseDurationSet);
 await expectRequestFailure(
   'Admin duplicate service duration set is rejected atomically',
   () =>
     postJson('/admin/services/duration-sets', adminAuth.accessToken, {
       serviceGroupKey: smokeDurationSetKey,
-      name: 'Smoke Duration Set',
+      name: `Smoke Duration Set ${apiSmokeRunId.slice(0, 8)}`,
       priceStep: 100000,
       durations: [{ durationMin: 60, basePrice: 500000, providerPayoutAmount: 380000 }],
     }),
@@ -1663,7 +1852,7 @@ await expectRequestFailure(
   () =>
     postJson('/admin/services', adminAuth.accessToken, {
       serviceGroupKey: smokeDurationSetKey,
-      name: 'Smoke Duration Set',
+      name: `Smoke Duration Set ${apiSmokeRunId.slice(0, 8)}`,
       description: 'Duplicate 60 minute option should be rejected.',
       durationMin: 60,
       basePrice: 500000,
@@ -1678,7 +1867,7 @@ await expectRequestFailure(
   () =>
     patchJson(`/admin/services/${smokeDurationSet[1].id}`, adminAuth.accessToken, {
       serviceGroupKey: smokeDurationSetKey,
-      name: 'Smoke Duration Set',
+      name: `Smoke Duration Set ${apiSmokeRunId.slice(0, 8)}`,
       description: 'Updating 90 min into the existing 60 min slot should be rejected.',
       durationMin: 60,
       basePrice: 700000,
@@ -1745,15 +1934,16 @@ await expectRequestFailure(
   400,
 );
 const serviceWithoutPayoutRule = await postJson('/admin/services', adminAuth.accessToken, {
-  serviceGroupKey: `smoke_missing_payout_${Date.now()}`,
-  name: 'Smoke Missing Payout Rule',
-  description: 'Service intentionally missing a payout rule for booking guard coverage.',
+  serviceGroupKey: `smoke_missing_payout_${apiSmokeRunKey}`,
+  name: `Smoke Missing Payout Rule ${apiSmokeRunId.slice(0, 8)}`,
+  description: `Service intentionally missing a payout rule for booking guard coverage in run ${apiSmokeRunId}.`,
   durationMin: 60,
   basePrice: 100000,
   priceStep: 100000,
   displayOrder: 999,
   active: true,
 });
+await registerApiSmokeServices([serviceWithoutPayoutRule], { published: true });
 await expectRequestFailure(
   'Booking without a service payout rule is rejected',
   () =>
@@ -2202,22 +2392,40 @@ const taxPolicyVersions = await getJson('/admin/tax-policy-versions', adminAuth.
 if (!Array.isArray(taxPolicyVersions)) {
   throw new Error(`Tax policy version list did not return an array: ${JSON.stringify(taxPolicyVersions)}`);
 }
-const taxPolicyApproval = {
-  approvalAdminId: financeApproverAuth.user.id,
-  operatorReason: 'API smoke verified tax policy dual-control evidence.',
+const taxPolicyDraftEvidence = {
+  operatorReason: 'API smoke verified isolated tax policy draft evidence.',
 };
+const taxPolicyLegalEvidence = {
+  changeSummary: 'API smoke fixture for draft validation only.',
+  legalSourceTitle: 'API smoke synthetic withholding source',
+  legalSourceUrl: 'https://example.test/api-smoke/tax-policy',
+  promulgatedDate: new Date(Date.now() - 86_400_000).toISOString(),
+  taxSubject: 'Synthetic API smoke Partner income',
+};
+await expectRequestFailure(
+  'Direct ACTIVE tax policy creation is rejected',
+  () =>
+    postJson('/admin/tax-policy-versions', adminAuth.accessToken, {
+      ...taxPolicyDraftEvidence,
+      ...taxPolicyLegalEvidence,
+      name: `Forbidden active smoke withholding ${Date.now()}`,
+      status: 'ACTIVE',
+      effectiveFrom: new Date(Date.now() + 60_000).toISOString(),
+    }),
+  409,
+);
 const smokeTaxPolicy = await postJson('/admin/tax-policy-versions', adminAuth.accessToken, {
-  ...taxPolicyApproval,
+  ...taxPolicyDraftEvidence,
+  ...taxPolicyLegalEvidence,
   name: `Smoke withholding ${Date.now()}`,
-  status: 'ACTIVE',
-  effectiveFrom: new Date(Date.now() - 60_000).toISOString(),
-  notes: 'Smoke test active withholding policy',
+  effectiveFrom: new Date(Date.now() + 60_000).toISOString(),
+  notes: 'Smoke test isolated withholding draft',
 });
 const smokeTaxRule = await postJson(
   `/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`,
   adminAuth.accessToken,
   {
-    ...taxPolicyApproval,
+    ...taxPolicyDraftEvidence,
     scope: 'DEFAULT',
     rateBps: 500,
     fixedAmount: 0,
@@ -2228,7 +2436,7 @@ await expectRequestFailure(
   'Duplicate active default tax rule is rejected',
   () =>
     postJson(`/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`, adminAuth.accessToken, {
-      ...taxPolicyApproval,
+      ...taxPolicyDraftEvidence,
       scope: 'DEFAULT',
       rateBps: 600,
       fixedAmount: 0,
@@ -2240,7 +2448,7 @@ const smokeAmountBandTaxRule = await postJson(
   `/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`,
   adminAuth.accessToken,
   {
-    ...taxPolicyApproval,
+    ...taxPolicyDraftEvidence,
     scope: 'AMOUNT_BAND',
     minGrossAmount: 0,
     maxGrossAmount: 500000,
@@ -2256,7 +2464,7 @@ await expectRequestFailure(
   'Overlapping amount-band tax rule is rejected',
   () =>
     postJson(`/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`, adminAuth.accessToken, {
-      ...taxPolicyApproval,
+      ...taxPolicyDraftEvidence,
       scope: 'AMOUNT_BAND',
       minGrossAmount: 400000,
       maxGrossAmount: 600000,
@@ -2267,7 +2475,7 @@ await expectRequestFailure(
   400,
 );
 const updatedSmokeTaxRule = await patchJson(`/admin/tax-rules/${smokeTaxRule.id}`, adminAuth.accessToken, {
-  ...taxPolicyApproval,
+  ...taxPolicyDraftEvidence,
   scope: 'DEFAULT',
   rateBps: 500,
   fixedAmount: 0,
@@ -2277,7 +2485,7 @@ if (updatedSmokeTaxRule.active !== false || updatedSmokeTaxRule.rateBps !== 500)
   throw new Error(`Tax rule update failed: ${JSON.stringify(updatedSmokeTaxRule)}`);
 }
 await patchJson(`/admin/tax-rules/${smokeTaxRule.id}`, adminAuth.accessToken, {
-  ...taxPolicyApproval,
+  ...taxPolicyDraftEvidence,
   active: true,
 });
 
@@ -2880,6 +3088,7 @@ try {
     adminAuth.accessToken,
     'matching.preferred_accept_mode',
     preferredAcceptModeBeforeSmoke ?? 'FIRST_PICK_MATCHES_ON_ACCEPT',
+    { restoration: true },
   );
 }
 
@@ -2932,6 +3141,7 @@ try {
     adminAuth.accessToken,
     'matching.marketplace_partner_radius_meters',
     backupRadiusBeforeSmoke ?? 10000,
+    { restoration: true },
   );
 }
 
@@ -3032,6 +3242,7 @@ try {
     adminAuth.accessToken,
     'matching.marketplace_open_mode',
     backupOpenModeBeforeSmoke ?? 'IMMEDIATE_WITHIN_WINDOW',
+    { restoration: true },
   );
 }
 
@@ -3097,11 +3308,13 @@ try {
     adminAuth.accessToken,
     'notification.partner_alert_channel',
     partnerAlertChannelBeforeSmoke ?? 'IN_APP_WITH_PUSH_LATER',
+    { restoration: true },
   );
   await patchOperationalPolicyValue(
     adminAuth.accessToken,
     'matching.marketplace_partner_invitation_limit',
     marketplaceInvitationLimitBeforeFcmSmoke ?? 50,
+    { restoration: true },
   );
 }
 
@@ -3246,6 +3459,7 @@ try {
     adminAuth.accessToken,
     'cancellation.after_match_policy',
     cancellationAfterMatchBeforeSmoke ?? 'ADMIN_REVIEW_FOR_MVP',
+    { restoration: true },
   );
 }
 
@@ -4344,12 +4558,25 @@ const companyBankAccountLifecycleRequest = await postJson(
   adminAuth.accessToken,
   {
     accountNumberLast4: String(companyBankAccountLifecycleSeed % 10000).padStart(4, '0'),
-    accountNumberMasked: `****${String(companyBankAccountLifecycleSeed % 10000).padStart(4, '0')}`,
+    bankCode: 'VCB',
     bankName: `Smoke lifecycle bank ${companyBankAccountLifecycleSeed}`,
     currency: 'VND',
+    direction: 'BOTH',
+    evidenceObjectId: `smoke/company-bank-accounts/${companyBankAccountLifecycleSeed}`,
+    idempotencyKey: `company-bank-create-${companyBankAccountLifecycleSeed}`,
+    isPrimary: false,
+    legalOwnerName: 'HANDS Vietnam smoke evidence',
     name: companyBankAccountLifecycleName,
     operatorReason: 'Reviewed staged company bank account ownership evidence.',
+    purpose: 'RECONCILIATION',
+    statementImportTestedAt: new Date().toISOString(),
+    verificationMethod: 'API smoke ownership evidence',
+    verificationStatus: 'VERIFIED',
   },
+);
+await registerApiSmokeCompanyBankAccount(
+  companyBankAccountLifecycleRequest.id,
+  'api-smoke-company-bank-account-lifecycle',
 );
 const companyBankAccountCreateApproval = companyBankAccountLifecycleRequest.metadata?.pendingApproval;
 if (
@@ -4446,9 +4673,9 @@ const companyBankAccountCreated = await postJson(
     requestId: companyBankAccountCreateApproval.requestId,
   },
 );
-if (companyBankAccountCreated.status !== 'ACTIVE' || companyBankAccountCreated.metadata?.pendingApproval) {
+if (companyBankAccountCreated.status !== 'INACTIVE' || companyBankAccountCreated.metadata?.pendingApproval) {
   throw new Error(
-    `Company bank account create approval did not activate exact proposal: ${JSON.stringify(
+    `Company bank account create approval did not preserve the inactive activation gate: ${JSON.stringify(
       companyBankAccountCreated,
     )}`,
   );
@@ -4464,10 +4691,45 @@ if (
 ) {
   throw new Error('Approved company bank account request remained in the central approval queue');
 }
+const companyBankAccountActivationRequest = await patchJson(
+  `/admin/company-bank-accounts/${companyBankAccountLifecycleRequest.id}`,
+  adminAuth.accessToken,
+  {
+    idempotencyKey: `company-bank-activate-${companyBankAccountLifecycleSeed}`,
+    operatorReason: 'Activate after ownership verification and statement import test.',
+    status: 'ACTIVE',
+  },
+);
+const companyBankAccountActivationApproval = companyBankAccountActivationRequest.metadata?.pendingApproval;
+if (
+  companyBankAccountActivationRequest.status !== 'INACTIVE' ||
+  companyBankAccountActivationApproval?.proposed?.status !== 'ACTIVE'
+) {
+  throw new Error(
+    `Company bank account activated before checker approval: ${JSON.stringify(companyBankAccountActivationRequest)}`,
+  );
+}
+const companyBankAccountActivated = await postJson(
+  `/admin/company-bank-accounts/${companyBankAccountLifecycleRequest.id}/approval-decision`,
+  financeApproverAuth.accessToken,
+  {
+    decision: 'APPROVE',
+    operatorReason: 'Verified activation readiness and approved operational use.',
+    requestId: companyBankAccountActivationApproval.requestId,
+  },
+);
+if (companyBankAccountActivated.status !== 'ACTIVE' || companyBankAccountActivated.metadata?.pendingApproval) {
+  throw new Error(
+    `Company bank account activation approval did not apply the exact proposal: ${JSON.stringify(
+      companyBankAccountActivated,
+    )}`,
+  );
+}
 const companyBankAccountUpdateRequest = await patchJson(
   `/admin/company-bank-accounts/${companyBankAccountLifecycleRequest.id}`,
   adminAuth.accessToken,
   {
+    idempotencyKey: `company-bank-update-${companyBankAccountLifecycleSeed}`,
     name: companyBankAccountLifecycleUpdatedName,
     operatorReason: 'Reviewed staged company bank account display name change.',
   },
@@ -4507,6 +4769,7 @@ const companyBankAccountStatusRequest = await patchJson(
   `/admin/company-bank-accounts/${companyBankAccountLifecycleRequest.id}`,
   adminAuth.accessToken,
   {
+    idempotencyKey: `company-bank-archive-${companyBankAccountLifecycleSeed}`,
     operatorReason: 'Archive completed staged account lifecycle smoke evidence.',
     status: 'INACTIVE',
   },
@@ -5456,9 +5719,28 @@ if (!financeDualApprovalRoleSeparationReady) {
   );
 }
 
-const residualSmokeBookingCleanup = await expireResidualActiveApiSmokeBookings({
+const residualSmokeFixtureCleanup = await cleanupApiSmokeFixtures({
   customerProfileId: customerAuth.user.customerProfile.id,
 });
+const residualSmokeBookingCleanup = residualSmokeFixtureCleanup.bookings;
+const smokeCompanyBankAccountCleanup = residualSmokeFixtureCleanup.companyBankAccounts;
+const smokeServiceCleanup = residualSmokeFixtureCleanup.services;
+const publicServiceGroupsAfter = await request('/services/groups');
+const publicCatalogAfter = {
+  groupCount: publicServiceGroupsAfter.length,
+  optionCount: publicServiceGroupsAfter.reduce(
+    (total, group) => total + (group.options?.length ?? 0),
+    0,
+  ),
+};
+if (
+  publicCatalogAfter.groupCount !== publicCatalogBefore.groupCount ||
+  publicCatalogAfter.optionCount !== publicCatalogBefore.optionCount
+) {
+  throw new Error(
+    `API smoke changed the public service catalog: ${JSON.stringify({ publicCatalogBefore, publicCatalogAfter })}`,
+  );
+}
 
 console.log({
   ok: true,
@@ -5563,6 +5845,9 @@ console.log({
   refundCount: adminRefunds.length,
   refundAfterPayoutReceivableReady,
   residualSmokeBookingCleanup,
+  smokeCompanyBankAccountCleanup,
+  smokeServiceCleanup,
+  publicServiceCatalogInvariant: { before: publicCatalogBefore, after: publicCatalogAfter },
   verificationFileId: verificationUpload.file.id,
   verificationUploadStatus: completedVerificationUpload.uploadStatus,
   verificationReadStorageMode: verificationReadUrl.storageMode,

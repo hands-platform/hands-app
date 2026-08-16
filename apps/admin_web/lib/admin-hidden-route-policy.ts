@@ -74,6 +74,11 @@ export const intentionallyUnlistedPageRoutes = {
     primaryRoutes: ['/'],
     reason: 'Public admin login page is outside the authenticated sidebar shell.',
   },
+  '/operator-setup': {
+    kind: 'AUTH_BOUNDARY',
+    primaryRoutes: ['/admin-operators'],
+    reason: 'One-time operator setup is outside the authenticated sidebar shell and opens only from an invitation link.',
+  },
   '/partners/[id]': {
     kind: 'DETAIL_PAGE',
     primaryRoutes: ['/partners', '/bookings/[id]'],

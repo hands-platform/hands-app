@@ -1,0 +1,16 @@
+{
+  "capturedAt": "2026-08-12T08:11:03.834Z",
+  "scope": "local audit database after browser GET/reload; aggregate read-only inspection",
+  "templateCount": 22,
+  "uniqueUpdatedAtCount": 22,
+  "oldestUpdatedTemplate": {
+    "key": "booking.opened",
+    "updatedAt": "2026-08-12T08:11:03.692Z"
+  },
+  "latestUpdatedTemplate": {
+    "key": "admin.push.broadcast",
+    "updatedAt": "2026-08-12T08:11:03.834Z"
+  },
+  "updateWindowMilliseconds": 142,
+  "interpretation": "A list GET calls the default-template upsert loop and touches all 22 template updatedAt values, so last-change timestamps cannot be trusted."
+}

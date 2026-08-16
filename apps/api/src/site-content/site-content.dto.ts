@@ -11,6 +11,7 @@ import {
   Max,
   MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 import {
   PublicSiteKey,
@@ -19,7 +20,7 @@ import {
 } from '@prisma/client';
 
 const PUBLIC_SITE_PATH_PATTERN =
-  /^\/(?:(?:[a-z0-9]+(?:-[a-z0-9]+)*|\[(?:city|slug)\])(?:\/(?:[a-z0-9]+(?:-[a-z0-9]+)*|\[(?:city|slug)\]))*)?$/u;
+  /^\/(?:(?:[a-z0-9]+(?:-[a-z0-9]+)*|\[(?:city|district|slug)\])(?:\/(?:[a-z0-9]+(?:-[a-z0-9]+)*|\[(?:city|district|slug)\]))*)?$/u;
 const PUBLIC_SITE_LOCALE_PATTERN = /^(?:vi|ko|en|ja|zh)$/u;
 const PUBLIC_SITE_SECTION_KEY_PATTERN = /^[a-z][a-z0-9-]{0,79}$/u;
 
@@ -80,6 +81,14 @@ export class AdminPublicSitePageListQueryDto {
   @IsOptional()
   @IsIn(['all', 'live', 'draft', 'attention'])
   status?: 'all' | 'live' | 'draft' | 'attention';
+
+  @IsOptional()
+  @IsIn(['UNKNOWN', 'READY', 'BLOCKED'])
+  readiness?: 'UNKNOWN' | 'READY' | 'BLOCKED';
+
+  @IsOptional()
+  @IsIn(['CMS_LIVE', 'CODE_FALLBACK', 'NOT_SERVED', 'OWNERSHIP_CONFLICT'])
+  ownership?: 'CMS_LIVE' | 'CODE_FALLBACK' | 'NOT_SERVED' | 'OWNERSHIP_CONFLICT';
 
   @IsOptional()
   @Transform(({ value }) => Number(value))
@@ -257,7 +266,27 @@ export class RollbackPublicSiteRevisionDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   revisionId!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(5)
+  @MaxLength(500)
+  reason!: string;
 }
+
+export class TakePublicSitePageOfflineDto {
+  @Transform(({ value }) => trimString(value))
+  @Matches(PUBLIC_SITE_PATH_PATTERN)
+  confirmationPath!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(5)
+  @MaxLength(500)
+  reason!: string;
+}
+
+export class DeletePublicSitePageDto extends TakePublicSitePageOfflineDto {}
 
 export class CreatePublicSiteNewsDraftDto {
   @Transform(({ value }) => trimString(value))
@@ -299,10 +328,4 @@ export class UpdatePublicSiteNewsDraftDto extends CreatePublicSiteNewsDraftDto {
   @IsInt()
   @Min(1)
   expectedVersion!: number;
-}
-
-export class PublicSitePreviewQueryDto {
-  @Transform(({ value }) => trimString(value))
-  @IsString()
-  token!: string;
 }

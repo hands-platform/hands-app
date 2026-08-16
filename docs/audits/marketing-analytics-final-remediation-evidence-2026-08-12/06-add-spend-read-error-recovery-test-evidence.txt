@@ -1,0 +1,26 @@
+Marketing Analytics spend read-error recovery evidence
+Recorded: 2026-08-13
+
+This state was not manufactured in the authenticated browser because doing so would
+require changing the running API/auth environment. The behavior is covered by the
+focused Admin Web tests instead.
+
+Covered states:
+- 401: Session expired / Sign in again
+- 403: Marketing spend permission required / Review operator access
+- 404: Spend endpoint unavailable / Retry current value
+- 409: Campaign key conflict / Review ledger conflict
+- 429: Spend lookup is temporarily limited / Retry later
+- 503: Current spend could not be verified / Retry current value
+
+For every state the tests verify that:
+- the exact date/source/platform/region/campaign/amount draft is preserved;
+- Save spend is absent;
+- Retry, Edit inputs, and Cancel recovery controls remain available;
+- a bounded Request ID can be copied when supplied.
+
+Command:
+npm.cmd test --workspace @massage-vn/admin-web -- --run app/marketing-analytics/page.spec.tsx app/marketing-analytics/marketing-analytics-model.spec.ts app/marketing-analytics/actions.spec.ts lib/admin-api-contract.spec.ts
+
+Result: PASS, 4 files / 56 tests.
+

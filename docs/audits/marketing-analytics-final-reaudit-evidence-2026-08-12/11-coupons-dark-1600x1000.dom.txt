@@ -1,0 +1,109 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Insights":
+        - /url: /marketing-analytics
+      - generic: Marketing Analytics
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to light mode" [active]:
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Insights workspace":
+    - strong: Insights
+    - generic "Insights pages":
+      - link "Marketing Analytics":
+        - /url: /marketing-analytics
+      - link "Customer Usage":
+        - /url: /usage-overview
+  - heading "Marketing Analytics" [level=1]
+  - paragraph: New-customer acquisition cohort, source, campaign, coupon, and spend performance from stored HANDS records.
+  - generic "Marketing workspace view":
+    - link "Overview":
+      - /url: /marketing-analytics?range=today
+    - link "Campaigns & spend":
+      - /url: /marketing-analytics?range=today&view=campaigns
+    - link "Attribution quality":
+      - /url: /marketing-analytics?range=today&view=attribution
+    - link "Coupons":
+      - /url: /marketing-analytics?range=today&view=coupons
+  - heading "Marketing filters" [level=2]
+  - paragraph: Only Range applies to coupon results. Source, platform, campaign, and region do not filter coupons.
+  - generic: Today
+  - generic: Signup cohort
+  - generic: "Spend source: manual records"
+  - text: Generated
+  - time: 12 Aug 2026, 16:53
+  - generic: Range
+  - generic "Range":
+    - link "Today":
+      - /url: /marketing-analytics?range=today&view=coupons
+    - link "Yesterday":
+      - /url: /marketing-analytics?range=yesterday&view=coupons
+    - link "7 days":
+      - /url: /marketing-analytics?range=7d&view=coupons
+    - link "30 days":
+      - /url: /marketing-analytics?range=30d&view=coupons
+  - generic "Active marketing filters":
+    - generic: "View: Coupons · Range: Today"
+    - link "Reset range":
+      - /url: /marketing-analytics?range=7d&view=coupons
+    - link "Clear all":
+      - /url: /marketing-analytics?range=7d&view=coupons
+  - region "Coupon checkout performance":
+    - heading "Coupon checkout performance" [level=2]
+    - paragraph: Booking-created cohort for the selected range. Completed conversion excludes cancelled and refunded bookings; expense, tax, and settlement evidence remain in Coupon Finance.
+    - generic: "Scope: selected range only"
+    - link "Coupon operations":
+      - /url: /coupons
+    - link "Coupon finance":
+      - /url: /finance-tax/coupon-finance
+    - strong: No coupon checkout activity in this range
+    - paragraph: Try a longer range, review coupon operations, or load code-level rows when you need historical evidence.
+    - link "Load coupon performance":
+      - /url: /marketing-analytics?range=today&view=coupons&couponPerformance=1
+- alert

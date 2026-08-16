@@ -159,13 +159,13 @@ function isReferralRewardCashoutLifecycleStatus(status: AdminReferralReward['sta
 
 export function referralRewardDecisionLabel(action: string) {
   if (action === 'referral_reward.credit') {
-    return 'Credit';
+    return 'Wallet credit posted';
   }
   if (action === 'referral_reward.hold') {
-    return 'Hold';
+    return 'Hold placed';
   }
   if (action === 'referral_reward.reverse') {
-    return 'Reverse';
+    return 'Reward reversed';
   }
   if (action === 'referral_reward.cashout_approve') {
     return 'Approve cashout';
@@ -175,6 +175,9 @@ export function referralRewardDecisionLabel(action: string) {
   }
   if (action === 'referral_reward.tax_review_required') {
     return 'Require tax review';
+  }
+  if (action === 'referral_reward.release_hold') {
+    return 'Hold released';
   }
   return action;
 }

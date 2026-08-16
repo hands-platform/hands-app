@@ -24,9 +24,13 @@ export type TaxPolicySnapshotConsistencyRow = {
   readonly snapshotLabel: string;
   readonly statusLabel: string;
   readonly toneClassName: 'pill-danger' | 'pill-success' | 'pill-warn';
+  readonly recordIntegrityLabel: string;
+  readonly recordIntegrityTone: 'success' | 'warning' | 'danger';
+  readonly taxApplicabilityLabel: string;
+  readonly taxApplicabilityTone: 'success' | 'warning' | 'danger';
 };
 
-const TAX_POLICY_SNAPSHOT_SAMPLE_LIMIT = 8;
+const TAX_POLICY_SNAPSHOT_SAMPLE_LIMIT = 25;
 
 export function buildTaxPolicySnapshotConsistency(
   earnings: readonly AdminEarning[],
@@ -54,6 +58,7 @@ function taxPolicySnapshotConsistencyRow(earning: AdminEarning): TaxPolicySnapsh
     hasRuleSnapshot: Boolean(latestSnapshot),
     hasTaxLog: Boolean(latestTaxLog),
   });
+  const applicability = taxApplicability(latestSnapshot, latestTaxLog);
 
   return {
     bookingHref: `/bookings/${earning.bookingId}`,
@@ -65,11 +70,49 @@ function taxPolicySnapshotConsistencyRow(earning: AdminEarning): TaxPolicySnapsh
     grossAmountLabel: formatMoney(earning.grossAmount, earning.currency, '0 VND'),
     id: earning.id,
     providerLabel: providerLabel(earning),
+    recordIntegrityLabel: recordIntegrityLabel(statusLabel),
+    recordIntegrityTone: recordIntegrityTone(statusLabel),
     snapshotLabel: snapshotLabel(latestSnapshot, latestTaxLog),
     statusLabel,
+    taxApplicabilityLabel: applicability.label,
+    taxApplicabilityTone: applicability.tone,
     taxLogLabel: taxLogAmount === null ? 'No tax log' : formatMoney(taxLogAmount, earning.currency, '0 VND'),
     toneClassName: taxSnapshotToneClassName(statusLabel),
   };
+}
+
+function recordIntegrityLabel(statusLabel: string) {
+  if (statusLabel === 'Aligned') return 'Amounts match';
+  if (statusLabel === 'Check amount') return 'Amount mismatch';
+  return statusLabel;
+}
+
+function recordIntegrityTone(statusLabel: string): TaxPolicySnapshotConsistencyRow['recordIntegrityTone'] {
+  if (statusLabel === 'Aligned') return 'success';
+  if (statusLabel === 'Check amount') return 'danger';
+  return 'warning';
+}
+
+function taxApplicability(
+  snapshot: Record<string, unknown> | null,
+  taxLog: AdminProviderTaxLog | null,
+): {
+  label: string;
+  tone: TaxPolicySnapshotConsistencyRow['taxApplicabilityTone'];
+} {
+  if (!taxLog || !snapshot) return { label: 'Needs review', tone: 'warning' };
+  const reason = readString(snapshot.reason);
+  if (reason === 'NO_ACTIVE_POLICY') {
+    return { label: 'No active policy at earning time', tone: 'danger' };
+  }
+  if (reason === 'NO_APPROVED_TAX_PROFILE') {
+    return { label: 'No approved tax profile', tone: 'warning' };
+  }
+  const lines = Array.isArray(snapshot.lines) ? snapshot.lines : [];
+  if (lines.length > 0 && lines.every((line) => readPlainRecord(line)?.ruleId == null)) {
+    return { label: 'No matching rule', tone: 'warning' };
+  }
+  return { label: 'Applicable evidence present', tone: 'success' };
 }
 
 function taxSnapshotStatusLabel(input: {

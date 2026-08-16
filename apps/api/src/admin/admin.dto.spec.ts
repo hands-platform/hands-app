@@ -11,7 +11,11 @@ import {
   ReferralRewardMode,
 } from '@prisma/client';
 import { AdminController } from './admin.controller';
-import { AllocateCashSettlementDebtDto } from './admin.dto';
+import {
+  AdminPushCampaignConfirmDto,
+  AdminPushCampaignDto,
+  AllocateCashSettlementDebtDto,
+} from './admin.dto';
 
 describe('admin request DTO validation', () => {
   function bodyMetatype(methodName: keyof AdminController, bodyIndex: number) {
@@ -22,6 +26,64 @@ describe('admin request DTO validation', () => {
     ) as unknown[];
     return paramTypes?.[bodyIndex] as object | undefined;
   }
+
+  it('requires explicit role, locale, destination, and copy for manual Push preview', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const valid = {
+      appDestination: 'notificationCenter',
+      body: '  A reviewed manual Push message.  ',
+      locale: 'vi',
+      targetRole: 'PROVIDER',
+      targetSegment: 'all',
+      title: '  HANDS update  ',
+    };
+
+    await expect(
+      pipe.transform(valid, { type: 'body', metatype: AdminPushCampaignDto, data: '' }),
+    ).resolves.toMatchObject({ body: 'A reviewed manual Push message.', title: 'HANDS update' });
+    await expect(
+      pipe.transform(
+        { ...valid, locale: undefined },
+        { type: 'body', metatype: AdminPushCampaignDto, data: '' },
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('rejects the legacy send body and validates the preview confirmation receipt', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const confirmation = {
+      confirmationPhrase: '  SEND 12  ',
+      idempotencyKey: 'push-confirm-request-12',
+      previewId: 'preview-12',
+      reason: '  Send the reviewed service notice to this audience.  ',
+    };
+
+    await expect(
+      pipe.transform(confirmation, {
+        type: 'body',
+        metatype: AdminPushCampaignConfirmDto,
+        data: '',
+      }),
+    ).resolves.toEqual({
+      confirmationPhrase: 'SEND 12',
+      idempotencyKey: 'push-confirm-request-12',
+      previewId: 'preview-12',
+      reason: 'Send the reviewed service notice to this audience.',
+    });
+    await expect(
+      pipe.transform(
+        {
+          appDestination: 'notificationCenter',
+          body: 'Legacy immediate send payload',
+          locale: 'en',
+          targetRole: 'CUSTOMER',
+          targetSegment: 'all',
+          title: 'Legacy send',
+        },
+        { type: 'body', metatype: AdminPushCampaignConfirmDto, data: '' },
+      ),
+    ).rejects.toThrow();
+  });
 
   it('uses a concrete DTO for operational policy updates', () => {
     expect((bodyMetatype('updateOperationalPolicy', 2) as { name?: string })?.name).toBe(
@@ -520,9 +582,10 @@ describe('admin request DTO validation', () => {
       {
         approvalAdminId: ' finance-admin-2 ',
         operatorReason: ' Reviewed treasury account evidence ',
+        idempotencyKey: 'company-bank-create-1',
         name: ' Operations VND ',
+        bankCode: ' VCB ',
         bankName: ' VCB ',
-        accountNumberMasked: ' ****1234 ',
         accountNumberLast4: '1234',
         currency: ' vnd ',
         rawAccountNumber: 'do-not-accept',
@@ -533,8 +596,8 @@ describe('admin request DTO validation', () => {
     expect(transformed).toMatchObject({
       operatorReason: 'Reviewed treasury account evidence',
       name: 'Operations VND',
+      bankCode: 'VCB',
       bankName: 'VCB',
-      accountNumberMasked: '****1234',
       accountNumberLast4: '1234',
       currency: 'vnd',
     });
@@ -544,6 +607,7 @@ describe('admin request DTO validation', () => {
       pipe.transform(
         {
           operatorReason: 'short',
+          idempotencyKey: 'company-bank-create-2',
           name: 'Operations VND',
           bankName: 'VCB',
           accountNumberLast4: '12',
@@ -557,6 +621,7 @@ describe('admin request DTO validation', () => {
     const update = await pipe.transform(
       {
         approvalAdminId: 'browser-supplied-admin',
+        idempotencyKey: 'company-bank-update-1',
         operatorReason: 'Archive after treasury review',
         status: CompanyBankAccountStatus.INACTIVE,
       },
@@ -643,6 +708,8 @@ describe('admin request DTO validation', () => {
       pipe.transform(
         {
           enabled: true,
+          expectedUpdatedAt: '2026-08-12T10:00:00.000Z',
+          reason: 'Reviewed customer and Partner notification copy',
           translations: [
             { body: ' {partnerName} joined. ', locale: 'en', title: ' Partner joined ' },
             { body: ' {partnerName} da tham gia. ', locale: 'vi', title: ' Doi tac da tham gia ' },
@@ -652,18 +719,28 @@ describe('admin request DTO validation', () => {
       ),
     ).resolves.toEqual({
       enabled: true,
+      expectedUpdatedAt: '2026-08-12T10:00:00.000Z',
+      reason: 'Reviewed customer and Partner notification copy',
       translations: [
         { body: '{partnerName} joined.', locale: 'en', title: 'Partner joined' },
         { body: '{partnerName} da tham gia.', locale: 'vi', title: 'Doi tac da tham gia' },
       ],
     });
-    await expect(pipe.transform({ enabled: false }, { type: 'body', metatype, data: '' })).resolves.toEqual({
+    await expect(pipe.transform({
       enabled: false,
+      expectedUpdatedAt: '2026-08-12T10:00:00.000Z',
+      reason: 'Use caller fallback while managed copy is reviewed',
+    }, { type: 'body', metatype, data: '' })).resolves.toEqual({
+      enabled: false,
+      expectedUpdatedAt: '2026-08-12T10:00:00.000Z',
+      reason: 'Use caller fallback while managed copy is reviewed',
     });
     await expect(pipe.transform({}, { type: 'body', metatype, data: '' })).rejects.toThrow();
     await expect(
       pipe.transform(
         {
+          expectedUpdatedAt: '2026-08-12T10:00:00.000Z',
+          reason: 'Check duplicate locale validation',
           translations: [
             { body: 'One', locale: 'en', title: 'One' },
             { body: 'Two', locale: 'en', title: 'Two' },

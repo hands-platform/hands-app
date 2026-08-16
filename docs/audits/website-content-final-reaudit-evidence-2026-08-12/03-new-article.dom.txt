@@ -1,0 +1,81 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - generic: Website Content
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - heading "New article" [level=1]
+  - paragraph: Create a complete article Draft. Publishing is a separate reviewed action.
+  - generic "Page actions":
+    - link "Cancel":
+      - /url: /website-content?view=news
+  - heading "Article Draft" [level=2]
+  - paragraph: "Slug uses lowercase letters, numbers and hyphens. Final URL: hands.vn/{language}/news/{slug}"
+  - generic: Language
+  - combobox "Language":
+    - option "VI" [selected]
+    - option "KO"
+    - option "EN"
+    - option "JA"
+    - option "ZH"
+  - generic: URL slug
+  - textbox "URL slug":
+    - /placeholder: welcome-to-hands
+  - generic: Title
+  - textbox "Title"
+  - generic: Subtitle
+  - textbox "Subtitle"
+  - generic: Thumbnail URL
+  - textbox "Thumbnail URL":
+    - /placeholder: /images/news/article.jpg
+  - generic: Article body
+  - textbox "Article body"
+  - button "Save article Draft"
+- alert

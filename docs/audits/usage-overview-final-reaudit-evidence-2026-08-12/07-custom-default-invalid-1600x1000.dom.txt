@@ -1,0 +1,95 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Insights":
+        - /url: /marketing-analytics
+      - generic: Customer Usage
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Insights workspace":
+    - strong: Insights
+    - generic "Insights pages":
+      - link "Marketing Analytics":
+        - /url: /marketing-analytics
+      - link "Customer Usage":
+        - /url: /usage-overview
+  - heading "Customer Usage" [level=1]
+  - paragraph: Customer reach, booking outcomes, and the records that need an operator decision.
+  - heading "Reporting period" [level=2]
+  - paragraph: Applied dates use Asia/Ho_Chi_Minh. Presets compare with the immediately preceding period of equal length.
+  - generic: Unavailable
+  - generic "Usage overview range":
+    - link "Today":
+      - /url: /usage-overview?range=today
+    - link "Yesterday":
+      - /url: /usage-overview?range=yesterday
+    - link "7 days":
+      - /url: /usage-overview?range=7d
+    - link "30 days":
+      - /url: /usage-overview?range=30d
+    - link "This month":
+      - /url: /usage-overview?range=month
+    - link "Custom":
+      - /url: /usage-overview?range=custom
+  - generic: From
+  - textbox "From": 2026-08-12
+  - generic: To
+  - textbox "To": 2026-08-12
+  - button "Apply period"
+  - alert: Enter valid From and To dates.
+  - generic "Applied usage report scope":
+    - generic: Report not loaded · correct the dates
+  - status:
+    - strong: Provenance not evaluated
+    - generic: The report was not loaded, so no production-data claim is shown.
+  - alert:
+    - heading "Custom period not applied" [level=3]
+    - paragraph: Enter valid From and To dates. The requested period was not changed or loaded.
+- alert

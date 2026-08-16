@@ -1,0 +1,468 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Messaging":
+        - /url: /notifications
+      - generic: Notification Delivery
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Messaging workspace":
+    - strong: Messaging
+    - generic "Messaging pages":
+      - link "Notification Delivery":
+        - /url: /notifications
+      - link "Notification Templates":
+        - /url: /notifications/templates
+      - link "Push Send":
+        - /url: /notifications/push-send
+  - heading "Notification Delivery" [level=1]
+  - paragraph: Review unresolved mobile send issues and inspect delivery records.
+  - alert:
+    - text: One or more unsupported delivery filters were ignored.
+    - link "Reset filters":
+      - /url: /notifications
+  - generic "Notification delivery data status":
+    - generic: History · 24h+
+    - generic: Asia/Ho_Chi_Minh
+    - generic: Generated 12 Aug 2026, 14:38
+    - button "Refresh now":
+      - text: Refresh now
+    - generic: Unknown source records · 0
+  - generic "Notification data source":
+    - link "Production":
+      - /url: /notifications?issue=failed&scope=history
+    - link "Unknown source":
+      - /url: /notifications?issue=failed&scope=history&dataScope=unknown
+    - link "Synthetic":
+      - /url: /notifications?issue=failed&scope=history&dataScope=synthetic
+  - generic "Notification Delivery mode":
+    - link "Needs action":
+      - /url: /notifications?issue=failed&scope=history&dataScope=unknown
+    - link "Delivery records":
+      - /url: /notifications?mode=records&dataScope=unknown&range=all&sort=oldest
+  - region "Delivery health":
+    - heading "Delivery health" [level=2]
+    - paragraph: Current delivery debt and 24h+ backlog stay visible together. Counts are scoped to the selected data source.
+    - generic: 4 current · 2,477 history
+    - region "Current delivery debt":
+      - paragraph: CURRENT · UNDER 24H
+      - heading "Current delivery debt" [level=3]
+      - generic: 4 signals
+      - term: Failure groups
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?dataScope=unknown
+      - term: Failed
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=failed&dataScope=unknown
+      - term: No attempt
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=no-attempt&dataScope=unknown
+      - term: No route recipients
+      - definition: "4"
+      - link "Review":
+        - /url: /notifications?issue=no-route&dataScope=unknown
+      - term: Stale routes
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=stale-route&dataScope=unknown
+    - region "Historical delivery debt":
+      - paragraph: HISTORY · 24H+
+      - heading "Historical delivery debt" [level=3]
+      - generic: Open history
+      - term: Failure groups
+      - definition: "9"
+      - link "Review":
+        - /url: /notifications?scope=history&dataScope=unknown
+      - term: Failed
+      - definition: "747"
+      - link "Review":
+        - /url: /notifications?issue=failed&scope=history&dataScope=unknown
+      - term: No attempt
+      - definition: "451"
+      - link "Review":
+        - /url: /notifications?issue=no-attempt&scope=history&dataScope=unknown
+      - term: No route recipients
+      - definition: 1,270
+      - link "Review":
+        - /url: /notifications?issue=no-route&scope=history&dataScope=unknown
+      - term: Stale routes
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=stale-route&scope=history&dataScope=unknown
+      - paragraph: "Oldest failure group: 20 May 2026, 20:54 · lifecycle is read-only because Notification records do not have a persistent assignment or resolution field."
+  - generic "Notification delivery issue":
+    - link "Failure groups":
+      - /url: /notifications?scope=history&dataScope=unknown
+    - link "Failed · 747 notifications":
+      - /url: /notifications?issue=failed&scope=history&dataScope=unknown
+    - link "No send attempt after 15m":
+      - /url: /notifications?issue=no-attempt&scope=history&dataScope=unknown
+    - link "No active push route":
+      - /url: /notifications?issue=no-route&scope=history&dataScope=unknown
+    - link "App route needs refresh":
+      - /url: /notifications?issue=stale-route&scope=history&dataScope=unknown
+  - generic "Notification action age scope":
+    - link "Current · under 24h":
+      - /url: /notifications?issue=failed&dataScope=unknown
+    - link "24h+ history":
+      - /url: /notifications?issue=failed&scope=history&dataScope=unknown
+    - link "All ages":
+      - /url: /notifications?issue=failed&scope=all&dataScope=unknown
+  - region "Failed":
+    - heading "Failed" [level=2]
+    - paragraph: Notifications with at least one latest failed device path. Recovered paths are excluded.
+    - generic: 747 notifications
+    - link "Open failure groups":
+      - /url: /notifications
+    - region "Notification delivery records":
+      - table:
+        - rowgroup:
+          - row "Created Recipient Notification Send status Next action":
+            - columnheader "Created"
+            - columnheader "Recipient"
+            - columnheader "Notification"
+            - columnheader "Send status"
+            - columnheader "Next action"
+        - rowgroup:
+          - 'row "20 May 2026, 20:54 83d ago Push route: active Partner Linh Wellness Linh Wellness / ••• ••• 0002 / available Partner Verification Approved Verification approved You can now receive matching jobs. Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:54. Primary Actions for Linh Wellness · Verification approved · 20 May 2026, 20:54 Actions for Linh Wellness · Verification approved · 20 May 2026, 20:54"':
+            - cell "20 May 2026, 20:54 83d ago":
+              - time: 20 May 2026, 20:54
+              - generic: 83d ago
+            - 'cell "Push route: active Partner Linh Wellness Linh Wellness / ••• ••• 0002 / available"':
+              - generic: PL
+              - 'img "Push route: active"'
+              - link "Partner Linh Wellness":
+                - /url: /partners/cmpb9dvqx0003vyqsk8dk7ufd
+              - generic: Linh Wellness / ••• ••• 0002 / available
+            - cell "Partner Verification Approved Verification approved You can now receive matching jobs.":
+              - generic: Partner Verification Approved
+              - strong: Verification approved
+              - generic: You can now receive matching jobs.
+            - cell "Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:54.":
+              - generic: Failed
+              - generic: Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:54.
+              - generic "1 failed 1 attempt":
+                - strong: 1 failed
+                - generic: 1 attempt
+            - cell "Primary Actions for Linh Wellness · Verification approved · 20 May 2026, 20:54 Actions for Linh Wellness · Verification approved · 20 May 2026, 20:54":
+              - navigation "Primary Actions for Linh Wellness · Verification approved · 20 May 2026, 20:54":
+                - link "Audit trail":
+                  - /url: /audit-log?bucket=Notification&q=cmpe4hweq000jvyds2wiunx6q&range=all
+                  - generic: Audit trail
+              - button "Actions for Linh Wellness · Verification approved · 20 May 2026, 20:54" [expanded] [active]:
+              - menu "Actions for Linh Wellness · Verification approved · 20 May 2026, 20:54 menu":
+                - menuitem "Retry blocked" [disabled]:
+                  - generic: Retry blocked
+          - 'row "20 May 2026, 20:54 83d ago Push route: inactive Demo Customer ••• ••• 0001 Booking Opened Booking opened We are looking for nearby partners. booking cmpe4hwh Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:54. Primary Actions for Demo Customer · Booking opened · 20 May 2026, 20:54 Actions for Demo Customer · Booking opened · 20 May 2026, 20:54"':
+            - cell "20 May 2026, 20:54 83d ago":
+              - time: 20 May 2026, 20:54
+              - generic: 83d ago
+            - 'cell "Push route: inactive Demo Customer ••• ••• 0001"':
+              - generic: DC
+              - 'img "Push route: inactive"'
+              - link "Demo Customer":
+                - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+              - generic: ••• ••• 0001
+            - cell "Booking Opened Booking opened We are looking for nearby partners. booking cmpe4hwh":
+              - generic: Booking Opened
+              - strong: Booking opened
+              - generic: We are looking for nearby partners.
+              - generic: booking cmpe4hwh
+            - cell "Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:54.":
+              - generic: Failed
+              - generic: Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:54.
+              - generic "1 failed 1 attempt":
+                - strong: 1 failed
+                - generic: 1 attempt
+            - cell "Primary Actions for Demo Customer · Booking opened · 20 May 2026, 20:54 Actions for Demo Customer · Booking opened · 20 May 2026, 20:54":
+              - navigation "Primary Actions for Demo Customer · Booking opened · 20 May 2026, 20:54":
+                - link "Open recipient":
+                  - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+                  - generic: Open recipient
+              - button "Actions for Demo Customer · Booking opened · 20 May 2026, 20:54":
+          - 'row "20 May 2026, 20:56 83d ago Push route: active Partner Linh Wellness Linh Wellness / ••• ••• 0002 / available Partner Verification Approved Verification approved You can now receive matching jobs. Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:56. Primary Actions for Linh Wellness · Verification approved · 20 May 2026, 20:56 Actions for Linh Wellness · Verification approved · 20 May 2026, 20:56"':
+            - cell "20 May 2026, 20:56 83d ago":
+              - time: 20 May 2026, 20:56
+              - generic: 83d ago
+            - 'cell "Push route: active Partner Linh Wellness Linh Wellness / ••• ••• 0002 / available"':
+              - generic: PL
+              - 'img "Push route: active"'
+              - link "Partner Linh Wellness":
+                - /url: /partners/cmpb9dvqx0003vyqsk8dk7ufd
+              - generic: Linh Wellness / ••• ••• 0002 / available
+            - cell "Partner Verification Approved Verification approved You can now receive matching jobs.":
+              - generic: Partner Verification Approved
+              - strong: Verification approved
+              - generic: You can now receive matching jobs.
+            - cell "Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:56.":
+              - generic: Failed
+              - generic: Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:56.
+              - generic "1 failed 1 attempt":
+                - strong: 1 failed
+                - generic: 1 attempt
+            - cell "Primary Actions for Linh Wellness · Verification approved · 20 May 2026, 20:56 Actions for Linh Wellness · Verification approved · 20 May 2026, 20:56":
+              - navigation "Primary Actions for Linh Wellness · Verification approved · 20 May 2026, 20:56":
+                - link "Audit trail":
+                  - /url: /audit-log?bucket=Notification&q=cmpe4krt5000jvyvwa64wwzyu&range=all
+                  - generic: Audit trail
+              - button "Actions for Linh Wellness · Verification approved · 20 May 2026, 20:56":
+          - 'row "20 May 2026, 20:56 83d ago Push route: inactive Demo Customer ••• ••• 0001 Booking Opened Booking opened We are looking for nearby partners. booking cmpe4krv Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:56. Primary Actions for Demo Customer · Booking opened · 20 May 2026, 20:56 Actions for Demo Customer · Booking opened · 20 May 2026, 20:56"':
+            - cell "20 May 2026, 20:56 83d ago":
+              - time: 20 May 2026, 20:56
+              - generic: 83d ago
+            - 'cell "Push route: inactive Demo Customer ••• ••• 0001"':
+              - generic: DC
+              - 'img "Push route: inactive"'
+              - link "Demo Customer":
+                - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+              - generic: ••• ••• 0001
+            - cell "Booking Opened Booking opened We are looking for nearby partners. booking cmpe4krv":
+              - generic: Booking Opened
+              - strong: Booking opened
+              - generic: We are looking for nearby partners.
+              - generic: booking cmpe4krv
+            - cell "Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:56.":
+              - generic: Failed
+              - generic: Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:56.
+              - generic "1 failed 1 attempt":
+                - strong: 1 failed
+                - generic: 1 attempt
+            - cell "Primary Actions for Demo Customer · Booking opened · 20 May 2026, 20:56 Actions for Demo Customer · Booking opened · 20 May 2026, 20:56":
+              - navigation "Primary Actions for Demo Customer · Booking opened · 20 May 2026, 20:56":
+                - link "Open recipient":
+                  - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+                  - generic: Open recipient
+              - button "Actions for Demo Customer · Booking opened · 20 May 2026, 20:56":
+          - 'row "20 May 2026, 20:58 83d ago Push route: active Partner Linh Wellness Linh Wellness / ••• ••• 0002 / available Partner Verification Approved Verification approved You can now receive matching jobs. Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:58. Primary Actions for Linh Wellness · Verification approved · 20 May 2026, 20:58 Actions for Linh Wellness · Verification approved · 20 May 2026, 20:58"':
+            - cell "20 May 2026, 20:58 83d ago":
+              - time: 20 May 2026, 20:58
+              - generic: 83d ago
+            - 'cell "Push route: active Partner Linh Wellness Linh Wellness / ••• ••• 0002 / available"':
+              - generic: PL
+              - 'img "Push route: active"'
+              - link "Partner Linh Wellness":
+                - /url: /partners/cmpb9dvqx0003vyqsk8dk7ufd
+              - generic: Linh Wellness / ••• ••• 0002 / available
+            - cell "Partner Verification Approved Verification approved You can now receive matching jobs.":
+              - generic: Partner Verification Approved
+              - strong: Verification approved
+              - generic: You can now receive matching jobs.
+            - cell "Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:58.":
+              - generic: Failed
+              - generic: Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:58.
+              - generic "1 failed 1 attempt":
+                - strong: 1 failed
+                - generic: 1 attempt
+            - cell "Primary Actions for Linh Wellness · Verification approved · 20 May 2026, 20:58 Actions for Linh Wellness · Verification approved · 20 May 2026, 20:58":
+              - navigation "Primary Actions for Linh Wellness · Verification approved · 20 May 2026, 20:58":
+                - link "Audit trail":
+                  - /url: /audit-log?bucket=Notification&q=cmpe4nyio000jvybgxhzl8zfn&range=all
+                  - generic: Audit trail
+              - button "Actions for Linh Wellness · Verification approved · 20 May 2026, 20:58":
+          - 'row "20 May 2026, 20:58 83d ago Push route: inactive Demo Customer ••• ••• 0001 Booking Opened Booking opened We are looking for nearby partners. booking cmpe4nym Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:58. Primary Actions for Demo Customer · Booking opened · 20 May 2026, 20:58 Actions for Demo Customer · Booking opened · 20 May 2026, 20:58"':
+            - cell "20 May 2026, 20:58 83d ago":
+              - time: 20 May 2026, 20:58
+              - generic: 83d ago
+            - 'cell "Push route: inactive Demo Customer ••• ••• 0001"':
+              - generic: DC
+              - 'img "Push route: inactive"'
+              - link "Demo Customer":
+                - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+              - generic: ••• ••• 0001
+            - cell "Booking Opened Booking opened We are looking for nearby partners. booking cmpe4nym":
+              - generic: Booking Opened
+              - strong: Booking opened
+              - generic: We are looking for nearby partners.
+              - generic: booking cmpe4nym
+            - cell "Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:58.":
+              - generic: Failed
+              - generic: Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 20:58.
+              - generic "1 failed 1 attempt":
+                - strong: 1 failed
+                - generic: 1 attempt
+            - cell "Primary Actions for Demo Customer · Booking opened · 20 May 2026, 20:58 Actions for Demo Customer · Booking opened · 20 May 2026, 20:58":
+              - navigation "Primary Actions for Demo Customer · Booking opened · 20 May 2026, 20:58":
+                - link "Open recipient":
+                  - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+                  - generic: Open recipient
+              - button "Actions for Demo Customer · Booking opened · 20 May 2026, 20:58":
+          - 'row "20 May 2026, 21:01 83d ago Push route: active Partner Linh Wellness Linh Wellness / ••• ••• 0002 / available Partner Verification Approved Verification approved You can now receive matching jobs. Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 21:01. Primary Actions for Linh Wellness · Verification approved · 20 May 2026, 21:01 Actions for Linh Wellness · Verification approved · 20 May 2026, 21:01"':
+            - cell "20 May 2026, 21:01 83d ago":
+              - time: 20 May 2026, 21:01
+              - generic: 83d ago
+            - 'cell "Push route: active Partner Linh Wellness Linh Wellness / ••• ••• 0002 / available"':
+              - generic: PL
+              - 'img "Push route: active"'
+              - link "Partner Linh Wellness":
+                - /url: /partners/cmpb9dvqx0003vyqsk8dk7ufd
+              - generic: Linh Wellness / ••• ••• 0002 / available
+            - cell "Partner Verification Approved Verification approved You can now receive matching jobs.":
+              - generic: Partner Verification Approved
+              - strong: Verification approved
+              - generic: You can now receive matching jobs.
+            - cell "Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 21:01.":
+              - generic: Failed
+              - generic: Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 21:01.
+              - generic "1 failed 1 attempt":
+                - strong: 1 failed
+                - generic: 1 attempt
+            - cell "Primary Actions for Linh Wellness · Verification approved · 20 May 2026, 21:01 Actions for Linh Wellness · Verification approved · 20 May 2026, 21:01":
+              - navigation "Primary Actions for Linh Wellness · Verification approved · 20 May 2026, 21:01":
+                - link "Audit trail":
+                  - /url: /audit-log?bucket=Notification&q=cmpe4rjyk000jvyckur2e8e0z&range=all
+                  - generic: Audit trail
+              - button "Actions for Linh Wellness · Verification approved · 20 May 2026, 21:01":
+          - 'row "20 May 2026, 21:01 83d ago Push route: inactive Demo Customer ••• ••• 0001 Booking Opened Booking opened We are looking for nearby partners. booking cmpe4rk1 Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 21:01. Primary Actions for Demo Customer · Booking opened · 20 May 2026, 21:01 Actions for Demo Customer · Booking opened · 20 May 2026, 21:01"':
+            - cell "20 May 2026, 21:01 83d ago":
+              - time: 20 May 2026, 21:01
+              - generic: 83d ago
+            - 'cell "Push route: inactive Demo Customer ••• ••• 0001"':
+              - generic: DC
+              - 'img "Push route: inactive"'
+              - link "Demo Customer":
+                - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+              - generic: ••• ••• 0001
+            - cell "Booking Opened Booking opened We are looking for nearby partners. booking cmpe4rk1":
+              - generic: Booking Opened
+              - strong: Booking opened
+              - generic: We are looking for nearby partners.
+              - generic: booking cmpe4rk1
+            - cell "Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 21:01.":
+              - generic: Failed
+              - generic: Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 21:01.
+              - generic "1 failed 1 attempt":
+                - strong: 1 failed
+                - generic: 1 attempt
+            - cell "Primary Actions for Demo Customer · Booking opened · 20 May 2026, 21:01 Actions for Demo Customer · Booking opened · 20 May 2026, 21:01":
+              - navigation "Primary Actions for Demo Customer · Booking opened · 20 May 2026, 21:01":
+                - link "Open recipient":
+                  - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+                  - generic: Open recipient
+              - button "Actions for Demo Customer · Booking opened · 20 May 2026, 21:01":
+          - 'row "20 May 2026, 22:33 83d ago Push route: active Partner Linh Wellness Linh Wellness / ••• ••• 0002 / available Partner Verification Approved Verification approved You can now receive matching jobs. Partial delivery Some mobile deliveries succeeded while at least one delivery is still unresolved. Latest attempt 20 May 2026, 22:33. Primary Actions for Linh Wellness · Verification approved · 20 May 2026, 22:33 Actions for Linh Wellness · Verification approved · 20 May 2026, 22:33"':
+            - cell "20 May 2026, 22:33 83d ago":
+              - time: 20 May 2026, 22:33
+              - generic: 83d ago
+            - 'cell "Push route: active Partner Linh Wellness Linh Wellness / ••• ••• 0002 / available"':
+              - generic: PL
+              - 'img "Push route: active"'
+              - link "Partner Linh Wellness":
+                - /url: /partners/cmpb9dvqx0003vyqsk8dk7ufd
+              - generic: Linh Wellness / ••• ••• 0002 / available
+            - cell "Partner Verification Approved Verification approved You can now receive matching jobs.":
+              - generic: Partner Verification Approved
+              - strong: Verification approved
+              - generic: You can now receive matching jobs.
+            - cell "Partial delivery Some mobile deliveries succeeded while at least one delivery is still unresolved. Latest attempt 20 May 2026, 22:33.":
+              - generic: Partial delivery
+              - generic: Some mobile deliveries succeeded while at least one delivery is still unresolved. Latest attempt 20 May 2026, 22:33.
+              - generic "1 failed · 1 accepted 2 attempts":
+                - strong: 1 failed · 1 accepted
+                - generic: 2 attempts
+            - cell "Primary Actions for Linh Wellness · Verification approved · 20 May 2026, 22:33 Actions for Linh Wellness · Verification approved · 20 May 2026, 22:33":
+              - navigation "Primary Actions for Linh Wellness · Verification approved · 20 May 2026, 22:33":
+                - link "Audit trail":
+                  - /url: /audit-log?bucket=Notification&q=cmpe8258s00gnvyc8n6jmoga8&range=all
+                  - generic: Audit trail
+              - button "Actions for Linh Wellness · Verification approved · 20 May 2026, 22:33":
+          - 'row "20 May 2026, 22:33 83d ago Push route: inactive Demo Customer ••• ••• 0001 Booking Opened Booking opened We are looking for nearby partners. booking cmpe825b Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 22:33. Primary Actions for Demo Customer · Booking opened · 20 May 2026, 22:33 Actions for Demo Customer · Booking opened · 20 May 2026, 22:33"':
+            - cell "20 May 2026, 22:33 83d ago":
+              - time: 20 May 2026, 22:33
+              - generic: 83d ago
+            - 'cell "Push route: inactive Demo Customer ••• ••• 0001"':
+              - generic: DC
+              - 'img "Push route: inactive"'
+              - link "Demo Customer":
+                - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+              - generic: ••• ••• 0001
+            - cell "Booking Opened Booking opened We are looking for nearby partners. booking cmpe825b":
+              - generic: Booking Opened
+              - strong: Booking opened
+              - generic: We are looking for nearby partners.
+              - generic: booking cmpe825b
+            - cell "Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 22:33.":
+              - generic: Failed
+              - generic: Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 20 May 2026, 22:33.
+              - generic "1 failed 1 attempt":
+                - strong: 1 failed
+                - generic: 1 attempt
+            - cell "Primary Actions for Demo Customer · Booking opened · 20 May 2026, 22:33 Actions for Demo Customer · Booking opened · 20 May 2026, 22:33":
+              - navigation "Primary Actions for Demo Customer · Booking opened · 20 May 2026, 22:33":
+                - link "Open recipient":
+                  - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+                  - generic: Open recipient
+              - button "Actions for Demo Customer · Booking opened · 20 May 2026, 22:33":
+    - generic: Showing 1 to 10 of 747 entries
+    - navigation "Notification delivery pages":
+      - generic "First page":
+      - generic "Previous page":
+      - link "Page 1":
+        - /url: /notifications?issue=failed&scope=history&dataScope=unknown
+        - text: "1"
+      - link "Page 2":
+        - /url: /notifications?issue=failed&scope=history&dataScope=unknown&page=2
+        - text: "2"
+      - link "Page 3":
+        - /url: /notifications?issue=failed&scope=history&dataScope=unknown&page=3
+        - text: "3"
+      - link "Page 4":
+        - /url: /notifications?issue=failed&scope=history&dataScope=unknown&page=4
+        - text: "4"
+      - link "Page 5":
+        - /url: /notifications?issue=failed&scope=history&dataScope=unknown&page=5
+        - text: "5"
+      - link "Next page":
+        - /url: /notifications?issue=failed&scope=history&dataScope=unknown&page=2
+      - link "Last page":
+        - /url: /notifications?issue=failed&scope=history&dataScope=unknown&page=75
+- alert

@@ -3,6 +3,7 @@ import {
   BookingSettlementStatus,
   BookingStatus,
   PaymentStatus,
+  Prisma,
   ReferralAttributionStatus,
   ReferralAudience,
   ReferralFraudReviewStatus,
@@ -12,7 +13,11 @@ import {
 import { ReferralsService } from './referrals.service';
 
 function createService(prisma: unknown, notifications?: unknown) {
-  const testPrisma = prisma as { $transaction?: (callback: (tx: unknown) => Promise<unknown>) => Promise<unknown> };
+  const testPrisma = prisma as {
+    $queryRaw?: (...args: unknown[]) => Promise<unknown>;
+    $transaction?: (callback: (tx: unknown) => Promise<unknown>) => Promise<unknown>;
+  };
+  testPrisma.$queryRaw ??= vi.fn().mockResolvedValue([]);
   testPrisma.$transaction ??= vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(testPrisma));
   return new ReferralsService(testPrisma as never, notifications as never);
 }
@@ -35,7 +40,7 @@ function creditableReward<T extends {
   const customerProfileId = 'qualifying-customer-profile';
   return {
     ...reward,
-    availableAt: new Date('2026-06-24T10:00:00.000Z'),
+    availableAt: new Date('2020-06-24T10:00:00.000Z'),
     updatedAt: referralRewardUpdatedAt,
     attribution: {
       audience,
@@ -833,6 +838,7 @@ describe('ReferralsService', () => {
         }),
       }),
     );
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
   });
 
   it('creates a capped fixed customer reward when the active policy uses a fixed amount', async () => {
@@ -910,6 +916,114 @@ describe('ReferralsService', () => {
         }),
       }),
     );
+  });
+
+  it('creates customer and Partner rewards in one serializable transaction', async () => {
+    const completedAt = new Date('2026-06-24T10:00:00.000Z');
+    const transaction = vi.fn();
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      $transaction: transaction,
+      booking: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'booking-paired-reward-1',
+          status: BookingStatus.COMPLETED,
+          customerProfileId: 'referred-customer-1',
+          selectedProviderId: 'referred-partner-1',
+          updatedAt: completedAt,
+          earning: {
+            id: 'earning-paired-reward-1',
+            grossAmount: 1_000_000,
+            platformFee: 200_000,
+            currency: 'VND',
+          },
+        }),
+      },
+      providerEarning: {
+        count: vi.fn().mockResolvedValue(0),
+      },
+      referralAttribution: {
+        findFirst: vi
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'customer-attribution-paired-1',
+            audience: ReferralAudience.CUSTOMER,
+            referrerCustomerProfileId: 'referrer-customer-1',
+            referredCustomerProfileId: 'referred-customer-1',
+            referrerProviderProfileId: null,
+            referredProviderProfileId: null,
+          })
+          .mockResolvedValueOnce({
+            id: 'partner-attribution-paired-1',
+            audience: ReferralAudience.PARTNER,
+            referrerCustomerProfileId: null,
+            referredCustomerProfileId: null,
+            referrerProviderProfileId: 'referrer-partner-1',
+            referredProviderProfileId: 'referred-partner-1',
+          }),
+      },
+      referralPolicy: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValueOnce({
+            audience: ReferralAudience.CUSTOMER,
+            enabled: true,
+            rewardMode: ReferralRewardMode.FIXED_AMOUNT,
+            commissionPercentBps: null,
+            fixedRewardAmount: 20_000,
+            perRewardCapAmount: null,
+            totalRewardCapAmount: null,
+            maxRewardedReferrals: null,
+            maxRewardsPerReferred: null,
+            holdPeriodDays: 0,
+            currency: 'VND',
+            metadata: null,
+          })
+          .mockResolvedValueOnce({
+            audience: ReferralAudience.PARTNER,
+            enabled: true,
+            rewardMode: ReferralRewardMode.FIXED_AMOUNT,
+            commissionPercentBps: null,
+            fixedRewardAmount: 80_000,
+            perRewardCapAmount: null,
+            totalRewardCapAmount: null,
+            maxRewardedReferrals: null,
+            maxRewardsPerReferred: null,
+            holdPeriodDays: 0,
+            currency: 'VND',
+            metadata: null,
+          }),
+      },
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockImplementation(({ data }: { data: { amount: number; sourceKey: string } }) => ({
+          id: `reward-${data.sourceKey}`,
+          amount: data.amount,
+          sourceKey: data.sourceKey,
+        })),
+      },
+    };
+    transaction.mockImplementation(
+      async (callback: (transactionClient: typeof prisma) => Promise<unknown>) => callback(prisma),
+    );
+    const service = createService(prisma);
+
+    await expect(service.createRewardsForCompletedBooking('booking-paired-reward-1')).resolves.toMatchObject({
+      customerReward: {
+        amount: 20_000,
+        sourceKey: 'referral:CUSTOMER:customer-attribution-paired-1:booking-paired-reward-1',
+      },
+      partnerReward: {
+        amount: 80_000,
+        sourceKey: 'referral:PARTNER:partner-attribution-paired-1:booking-paired-reward-1',
+      },
+    });
+    expect(transaction).toHaveBeenCalledTimes(1);
+    expect(transaction).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.objectContaining({ isolationLevel: Prisma.TransactionIsolationLevel.Serializable }),
+    );
+    expect(prisma.referralReward.create).toHaveBeenCalledTimes(2);
   });
 
   it('caps customer referral reward by remaining lifetime reward allowance', async () => {
@@ -1146,6 +1260,7 @@ describe('ReferralsService', () => {
     expect(prisma.referralReward.updateMany).toHaveBeenCalledWith({
       data: { status: ReferralRewardStatus.AVAILABLE },
       where: {
+        NOT: expect.objectContaining({ OR: expect.any(Array) }),
         availableAt: { lte: now },
         status: ReferralRewardStatus.PENDING,
       },
@@ -1189,14 +1304,20 @@ describe('ReferralsService', () => {
 
   it('releases a held reward to available using the loaded state version', async () => {
     const now = new Date('2026-06-24T10:00:00.000Z');
+    const heldReward = creditableReward({
+      id: 'reward-held-1',
+      amount: 25_000,
+      currency: 'VND',
+      qualifyingBookingId: 'booking-held-1',
+      sourceKey: 'referral:CUSTOMER:attr-held:booking-held-1',
+      status: ReferralRewardStatus.HELD,
+      walletLedgerReference: null,
+      walletOwnerCustomerProfileId: 'customer-parent-held-1',
+      walletOwnerProviderProfileId: null,
+    });
     const prisma = {
       referralReward: {
-        findUnique: vi.fn().mockResolvedValue({
-          id: 'reward-held-1',
-          status: ReferralRewardStatus.HELD,
-          updatedAt: referralRewardUpdatedAt,
-          walletLedgerReference: null,
-        }),
+        findUnique: vi.fn().mockResolvedValue(heldReward),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'reward-held-1',
@@ -1218,6 +1339,119 @@ describe('ReferralsService', () => {
       data: { status: ReferralRewardStatus.AVAILABLE },
       where: { id: 'reward-held-1', status: ReferralRewardStatus.HELD, updatedAt: referralRewardUpdatedAt },
     });
+  });
+
+  it('retries serializable reward transitions after transient transaction conflicts', async () => {
+    const heldReward = creditableReward({
+      id: 'reward-held-retry',
+      amount: 25_000,
+      currency: 'VND',
+      qualifyingBookingId: 'booking-held-retry',
+      sourceKey: 'referral:CUSTOMER:attr-held-retry:booking-held-retry',
+      status: ReferralRewardStatus.HELD,
+      walletLedgerReference: null,
+      walletOwnerCustomerProfileId: 'customer-parent-held-retry',
+      walletOwnerProviderProfileId: null,
+    });
+    const tx = {
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue(heldReward),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          ...heldReward,
+          status: ReferralRewardStatus.AVAILABLE,
+        }),
+      },
+    };
+    const serializationFailure = () => new Prisma.PrismaClientKnownRequestError(
+      'Transaction conflict',
+      { clientVersion: 'test', code: 'P2034' },
+    );
+    const prisma = {
+      $transaction: vi
+        .fn()
+        .mockRejectedValueOnce(serializationFailure())
+        .mockRejectedValueOnce(serializationFailure())
+        .mockImplementationOnce(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = createService(prisma);
+
+    await expect(
+      service.releaseHeldRewardCandidate(
+        heldReward.id,
+        expectedRewardState(ReferralRewardStatus.HELD),
+      ),
+    ).resolves.toMatchObject({ status: ReferralRewardStatus.AVAILABLE });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(3);
+  });
+
+  it('blocks a held reward release when qualifying booking evidence is missing', async () => {
+    const prisma = {
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          ...creditableReward({
+            id: 'reward-held-missing-booking',
+            amount: 25_000,
+            currency: 'VND',
+            qualifyingBookingId: 'booking-held-missing',
+            sourceKey: 'referral:CUSTOMER:attr-held-missing:booking-held-missing',
+            status: ReferralRewardStatus.HELD,
+            walletLedgerReference: null,
+            walletOwnerCustomerProfileId: 'customer-parent-held-missing',
+            walletOwnerProviderProfileId: null,
+          }),
+          qualifyingBookingId: null,
+          qualifyingBooking: null,
+        }),
+        updateMany: vi.fn(),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(
+      service.releaseHeldRewardCandidate(
+        'reward-held-missing-booking',
+        expectedRewardState(ReferralRewardStatus.HELD),
+      ),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'QUALIFYING_BOOKING_MISSING' }),
+      status: 409,
+    });
+    expect(prisma.referralReward.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('blocks fixture reward state and wallet mutations', async () => {
+    const fixtureReward = {
+      ...creditableReward({
+        id: 'reward-fixture-1',
+        amount: 25_000,
+        currency: 'VND',
+        qualifyingBookingId: 'booking-fixture-1',
+        sourceKey: 'referral:CUSTOMER:attr-fixture:booking-fixture-1',
+        status: ReferralRewardStatus.AVAILABLE,
+        walletLedgerReference: null,
+        walletOwnerCustomerProfileId: 'customer-fixture-1',
+        walletOwnerProviderProfileId: null,
+      }),
+      metadata: { smoke: 'referral-admin' },
+    };
+    const tx = {
+      customerWalletLedgerEntry: { findUnique: vi.fn(), upsert: vi.fn() },
+      providerWalletLedgerEntry: { findUnique: vi.fn(), upsert: vi.fn() },
+      referralReward: { findUnique: vi.fn().mockResolvedValue(fixtureReward), updateMany: vi.fn() },
+    };
+    const service = createService({
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) => callback(tx)),
+    });
+
+    await expect(
+      service.creditRewardCandidate('reward-fixture-1', expectedRewardState(ReferralRewardStatus.AVAILABLE)),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'REFERRAL_FIXTURE_MUTATION_BLOCKED' }),
+      status: 409,
+    });
+    expect(tx.referralReward.updateMany).not.toHaveBeenCalled();
+    expect(tx.customerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
   });
 
   it('rejects a reward decision when the loaded state version is stale', async () => {
@@ -1329,19 +1563,13 @@ describe('ReferralsService', () => {
           sourceKey: 'referral:wallet-reversal:reward-credited-1',
           type: 'CUSTOMER_REFERRAL_REVERSED',
         }),
-        select: { id: true },
+        update: {},
       }),
     );
     expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
     expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'accounting-journal:referral-wallet-reversal:reward-credited-1' },
-      update: expect.objectContaining({
-        customerProfileId: 'customer-profile-1',
-        sourceId: 'reward-credited-1',
-        sourceType: 'REFERRAL_REWARD',
-        totalCredit: 25_000,
-        totalDebit: 25_000,
-      }),
+      update: {},
       create: expect.objectContaining({
         customerProfileId: 'customer-profile-1',
         sourceKey: 'accounting-journal:referral-wallet-reversal:reward-credited-1',
@@ -1428,7 +1656,7 @@ describe('ReferralsService', () => {
             totalWithheldAmount: 10_000,
           }),
         }),
-        select: { id: true },
+        update: {},
       }),
     );
     const journalUpsert = tx.accountingJournalBatch.upsert.mock.calls[0]?.[0];
@@ -1521,6 +1749,7 @@ describe('ReferralsService', () => {
       walletLedgerReference: creditedReward.walletLedgerReference,
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       customerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 25_000 } }),
       },
@@ -1529,6 +1758,7 @@ describe('ReferralsService', () => {
       },
       referralReward: {
         findFirst: vi.fn().mockResolvedValue(creditedReward),
+        findMany: vi.fn().mockResolvedValue([]),
         findUnique: vi.fn(),
         findUniqueOrThrow: vi.fn().mockResolvedValue(requestedReward),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -1551,9 +1781,12 @@ describe('ReferralsService', () => {
       status: cashoutRequestedReferralRewardStatus,
     });
     expect(tx.customerWalletLedgerEntry.aggregate).toHaveBeenCalledWith({
-      where: { customerProfileId: 'customer-profile-1' },
+      where: { customerProfileId: 'customer-profile-1', currency: 'VND' },
       _sum: { amount: true },
     });
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.customerWalletLedgerEntry.aggregate.mock.invocationCallOrder[0],
+    );
     expect(tx.referralReward.updateMany).toHaveBeenCalledWith({
       data: { status: cashoutRequestedReferralRewardStatus },
       where: {
@@ -1589,6 +1822,7 @@ describe('ReferralsService', () => {
       walletLedgerReference: requestedCandidate.walletLedgerReference,
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       customerWalletLedgerEntry: { aggregate: vi.fn() },
       providerWalletLedgerEntry: { aggregate: vi.fn() },
       referralReward: {
@@ -1660,12 +1894,14 @@ describe('ReferralsService', () => {
       walletOwnerProviderProfileId: 'provider-profile-1',
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       customerWalletLedgerEntry: { aggregate: vi.fn() },
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 10_000 } }),
       },
       referralReward: {
         findFirst: vi.fn().mockResolvedValue(reward),
+        findMany: vi.fn().mockResolvedValue([]),
         updateMany: vi.fn(),
       },
     };
@@ -1683,8 +1919,75 @@ describe('ReferralsService', () => {
       'Wallet balance cannot cover referral cashout',
     );
     expect(tx.providerWalletLedgerEntry.aggregate).toHaveBeenCalledWith({
-      where: { providerProfileId: 'provider-profile-1' },
+      where: { providerProfileId: 'provider-profile-1', currency: 'VND' },
       _sum: { amount: true },
+    });
+    expect(tx.referralReward.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('rejects a referral cashout when earlier requests already reserve the remaining wallet balance', async () => {
+    const reward = {
+      id: 'customer-reward-request-2',
+      amount: 50_000,
+      availableAt: new Date('2026-06-24T10:00:00.000Z'),
+      calculationSnapshot: {},
+      currency: 'VND',
+      qualifyingBookingId: 'booking-customer-request-2',
+      sourceKey: 'referral:CUSTOMER:attribution-request-2:booking-customer-request-2',
+      status: creditedReferralRewardStatus,
+      walletLedgerReference: 'customer-earned-ledger-request-2',
+      walletOwnerCustomerProfileId: 'customer-profile-1',
+      walletOwnerProviderProfileId: null,
+    };
+    const reservedReward = {
+      ...reward,
+      id: 'customer-reward-reserved-1',
+      amount: 70_000,
+      status: cashoutRequestedReferralRewardStatus,
+    };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      customerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 100_000 } }),
+      },
+      providerWalletLedgerEntry: { aggregate: vi.fn() },
+      referralReward: {
+        findFirst: vi.fn().mockResolvedValue(reward),
+        findMany: vi.fn().mockResolvedValue([reservedReward]),
+        updateMany: vi.fn(),
+      },
+    };
+    const prisma = {
+      customerProfile: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-profile-1' }),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = createService(prisma);
+
+    await expect(
+      service.requestCustomerRewardCashout('customer-user-1', reward.id),
+    ).rejects.toThrow('Wallet balance cannot cover referral cashout');
+
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.referralReward.findMany.mock.invocationCallOrder[0],
+    );
+    expect(tx.referralReward.findMany).toHaveBeenCalledWith({
+      where: {
+        id: { not: reward.id },
+        currency: 'VND',
+        status: {
+          in: [
+            cashoutRequestedReferralRewardStatus,
+            cashoutApprovedReferralRewardStatus,
+            taxReviewRequiredReferralRewardStatus,
+          ],
+        },
+        walletOwnerCustomerProfileId: 'customer-profile-1',
+      },
+      select: expect.any(Object),
     });
     expect(tx.referralReward.updateMany).not.toHaveBeenCalled();
   });
@@ -1875,13 +2178,7 @@ describe('ReferralsService', () => {
     });
     expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'accounting-journal:referral-wallet-credit:reward-1' },
-      update: expect.objectContaining({
-        customerProfileId: 'customer-profile-1',
-        sourceId: 'reward-1',
-        sourceType: 'REFERRAL_REWARD',
-        totalCredit: 25_000,
-        totalDebit: 25_000,
-      }),
+      update: {},
       create: expect.objectContaining({
         customerProfileId: 'customer-profile-1',
         sourceKey: 'accounting-journal:referral-wallet-credit:reward-1',
@@ -1891,8 +2188,7 @@ describe('ReferralsService', () => {
         totalDebit: 25_000,
       }),
     });
-    const journalUpdateEntries = tx.accountingJournalBatch.upsert.mock.calls[0]?.[0].update.entries;
-    expect(Object.keys(journalUpdateEntries)).toEqual(['deleteMany', 'create']);
+    expect(tx.accountingJournalBatch.upsert.mock.calls[0]?.[0].update).toEqual({});
   });
 
   it('rejects wallet credit when an authoritative referral ledger already exists', async () => {
@@ -2126,6 +2422,7 @@ describe('ReferralsService', () => {
     };
     const ledger = { id: 'customer-cashout-ledger-1' };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       customerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 25_000 } }),
         upsert: vi.fn().mockResolvedValue(ledger),
@@ -2137,6 +2434,7 @@ describe('ReferralsService', () => {
         upsert: vi.fn().mockResolvedValue({ id: 'referral-cashout-journal-1' }),
       },
       referralReward: {
+        findMany: vi.fn().mockResolvedValue([]),
         findUnique: vi.fn().mockResolvedValue(reward),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         update: vi.fn().mockResolvedValue({
@@ -2165,13 +2463,14 @@ describe('ReferralsService', () => {
       status: paidReferralRewardStatus,
       walletLedgerReference: 'customer-cashout-ledger-1',
     });
+    expect(tx.$queryRaw).toHaveBeenCalledOnce();
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.customerWalletLedgerEntry.aggregate.mock.invocationCallOrder[0],
+    );
     expect(tx.customerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { sourceKey: 'referral:wallet-cashout:reward-1' },
-        update: expect.objectContaining({
-          amount: -25_000,
-          reference: 'VCB-REF-001',
-        }),
+        update: {},
         create: expect.objectContaining({
           amount: -25_000,
           bookingId: 'booking-1',
@@ -2183,7 +2482,6 @@ describe('ReferralsService', () => {
           sourceKey: 'referral:wallet-cashout:reward-1',
           type: 'CUSTOMER_REFERRAL_CASHOUT',
         }),
-        select: { id: true },
       }),
     );
     expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
@@ -2197,13 +2495,7 @@ describe('ReferralsService', () => {
     });
     expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'accounting-journal:referral-wallet-cashout:reward-1' },
-      update: expect.objectContaining({
-        customerProfileId: 'customer-profile-1',
-        sourceId: 'reward-1',
-        sourceType: 'REFERRAL_REWARD',
-        totalCredit: 25_000,
-        totalDebit: 25_000,
-      }),
+      update: {},
       create: expect.objectContaining({
         customerProfileId: 'customer-profile-1',
         sourceKey: 'accounting-journal:referral-wallet-cashout:reward-1',
@@ -2232,6 +2524,7 @@ describe('ReferralsService', () => {
     };
     const ledger = { id: 'provider-cashout-ledger-1' };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       customerWalletLedgerEntry: {
         upsert: vi.fn(),
       },
@@ -2243,6 +2536,7 @@ describe('ReferralsService', () => {
         upsert: vi.fn().mockResolvedValue({ id: 'partner-referral-cashout-journal-1' }),
       },
       referralReward: {
+        findMany: vi.fn().mockResolvedValue([]),
         findUnique: vi.fn().mockResolvedValue(reward),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         update: vi.fn().mockResolvedValue({
@@ -2271,13 +2565,14 @@ describe('ReferralsService', () => {
       status: paidReferralRewardStatus,
       walletLedgerReference: 'provider-cashout-ledger-1',
     });
+    expect(tx.$queryRaw).toHaveBeenCalledOnce();
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.providerWalletLedgerEntry.aggregate.mock.invocationCallOrder[0],
+    );
     expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { sourceKey: 'referral:wallet-cashout:reward-2' },
-        update: expect.objectContaining({
-          amount: -50_000,
-          reference: 'BIDV-REF-002',
-        }),
+        update: {},
         create: expect.objectContaining({
           amount: -50_000,
           bookingId: 'booking-2',
@@ -2288,7 +2583,6 @@ describe('ReferralsService', () => {
           sourceKey: 'referral:wallet-cashout:reward-2',
           type: 'PARTNER_REFERRAL_CASHOUT',
         }),
-        select: { id: true },
       }),
     );
     expect(tx.customerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
@@ -2320,6 +2614,7 @@ describe('ReferralsService', () => {
     };
     const ledger = { id: 'provider-cashout-ledger-withheld-1' };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       customerWalletLedgerEntry: {
         upsert: vi.fn(),
       },
@@ -2331,6 +2626,7 @@ describe('ReferralsService', () => {
         upsert: vi.fn().mockResolvedValue({ id: 'partner-referral-withheld-cashout-journal-1' }),
       },
       referralReward: {
+        findMany: vi.fn().mockResolvedValue([]),
         findUnique: vi.fn().mockResolvedValue(reward),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         update: vi.fn().mockResolvedValue({
@@ -2362,15 +2658,7 @@ describe('ReferralsService', () => {
     expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { sourceKey: 'referral:wallet-cashout:reward-withheld-cashout-1' },
-        update: expect.objectContaining({
-          amount: -90_000,
-          metadata: expect.objectContaining({
-            netCashoutAmount: 90_000,
-            pitWithheldAmount: 10_000,
-            totalWithheldAmount: 10_000,
-          }),
-          reference: 'BIDV-REF-WHT-001',
-        }),
+        update: {},
         create: expect.objectContaining({
           amount: -90_000,
           metadata: expect.objectContaining({
@@ -2379,7 +2667,6 @@ describe('ReferralsService', () => {
             totalWithheldAmount: 10_000,
           }),
         }),
-        select: { id: true },
       }),
     );
     const journalUpsert = tx.accountingJournalBatch.upsert.mock.calls[0]?.[0];

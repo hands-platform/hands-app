@@ -131,6 +131,42 @@ void main() {
         'Duration not set');
   });
 
+  test(
+      'customer service names use requested, vi, en, legacy, then stable fallback',
+      () {
+    final translated = {
+      'name': 'Legacy Massage',
+      'nameTranslations': {
+        'vi': 'Massage Việt',
+        'en': 'English Massage',
+        'ko': '한국 마사지',
+        'ja': '   ',
+      },
+    };
+
+    expect(customerServiceName(translated, requestedLocale: 'ko-KR'), '한국 마사지');
+    expect(
+        customerServiceName(translated, requestedLocale: 'ja'), 'Massage Việt');
+    expect(
+        customerServiceName({
+          'name': 'Legacy Massage',
+          'nameTranslations': {'en': 'English Massage'},
+        }, requestedLocale: 'zh'),
+        'English Massage');
+    expect(
+        customerServiceName({
+          'name': 'Legacy Massage',
+          'nameTranslations': {'vi': null, 'en': ''},
+        }, requestedLocale: 'unknown'),
+        'Legacy Massage');
+    expect(
+        customerServiceName({
+          'name': '  ',
+          'nameTranslations': null,
+        }, requestedLocale: 'vi'),
+        'Service unavailable');
+  });
+
   test('customer service groups hide inactive and payout-missing options', () {
     final groups = customerServiceOptionGroups([
       {

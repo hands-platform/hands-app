@@ -31,8 +31,9 @@ Map<String, dynamic> customerBookableService(
 }
 
 List<CustomerServiceOptionGroup> customerServiceOptionGroups(
-  List<dynamic> providerServices,
-) {
+  List<dynamic> providerServices, {
+  String? requestedLocale,
+}) {
   final grouped = <String, List<Map<String, dynamic>>>{};
   final names = <String, String>{};
 
@@ -48,7 +49,13 @@ List<CustomerServiceOptionGroup> customerServiceOptionGroups(
     }
     final key = customerServiceGroupKey(service);
     grouped.putIfAbsent(key, () => <Map<String, dynamic>>[]).add(service);
-    names.putIfAbsent(key, () => service['name'] as String? ?? 'Service');
+    names.putIfAbsent(
+      key,
+      () => customerServiceName(
+        service,
+        requestedLocale: requestedLocale,
+      ),
+    );
   }
 
   return grouped.entries.map((entry) {
@@ -142,11 +149,17 @@ int customerServicePrice(Map<String, dynamic>? service) {
       0;
 }
 
-String customerServiceOptionLabel(Map<String, dynamic>? service) {
+String customerServiceOptionLabel(
+  Map<String, dynamic>? service, {
+  String? requestedLocale,
+}) {
   if (service == null) {
     return 'Selected service';
   }
-  final name = customerServiceName(service);
+  final name = customerServiceName(
+    service,
+    requestedLocale: requestedLocale,
+  );
   final duration = asNum(service['durationMin'])?.toInt();
   if (duration == null || duration <= 0) {
     return name;
@@ -154,9 +167,30 @@ String customerServiceOptionLabel(Map<String, dynamic>? service) {
   return '$name / $duration min';
 }
 
-String customerServiceName(Map<String, dynamic>? service) {
-  final name = service?['name']?.toString().trim();
-  return name == null || name.isEmpty ? 'Selected service' : name;
+String customerServiceName(
+  Map<String, dynamic>? service, {
+  String? requestedLocale,
+}) {
+  final translations = asMap(service?['nameTranslations']);
+  final requested = _normalizedServiceLocale(requestedLocale);
+  for (final locale in <String?>[requested, 'vi', 'en']) {
+    if (locale == null) continue;
+    final translated = translations?[locale]?.toString().trim();
+    if (translated != null && translated.isNotEmpty) {
+      return translated;
+    }
+  }
+
+  final legacyName = service?['name']?.toString().trim();
+  return legacyName == null || legacyName.isEmpty
+      ? 'Service unavailable'
+      : legacyName;
+}
+
+String? _normalizedServiceLocale(String? locale) {
+  final normalized = locale?.trim().toLowerCase().replaceAll('_', '-');
+  if (normalized == null || normalized.isEmpty) return null;
+  return normalized.split('-').first;
 }
 
 String customerServiceDurationLabel(Map<String, dynamic>? service) {
@@ -222,7 +256,8 @@ String customerServicePricePolicyLabel(Map<String, dynamic>? service) {
 String customerServiceOptionPriceLabel(
   Map<String, dynamic>? service, {
   dynamic amount,
+  String? requestedLocale,
 }) {
   final price = asNum(amount)?.toInt() ?? customerServicePrice(service);
-  return '${customerServiceOptionLabel(service)} / ${formatCurrency(price)} VND';
+  return '${customerServiceOptionLabel(service, requestedLocale: requestedLocale)} / ${formatCurrency(price)} VND';
 }

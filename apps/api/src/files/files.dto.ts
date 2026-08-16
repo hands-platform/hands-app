@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEnum, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { IsEnum, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { FileVisibility } from '@prisma/client';
 
 const filePurposes = [
@@ -35,6 +35,12 @@ export class CreatePresignedUploadDto {
   @IsIn(filePurposes)
   purpose!: (typeof filePurposes)[number];
 
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  @Max(10 * 1024 * 1024)
+  sizeBytes!: number;
+
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
@@ -53,5 +59,6 @@ export class CompleteUploadDto {
   @Transform(({ value }) => numberString(value))
   @IsInt()
   @Min(0)
+  @Max(10 * 1024 * 1024)
   sizeBytes?: number;
 }

@@ -28,3 +28,4 @@ ios/Pods/
 **/*.jks
 **/*.keystore
 design/figma/*.fig
+output/playwright/*-admin-storage.json

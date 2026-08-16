@@ -1,5 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { FilePurpose, FileUploadStatus, FileVisibility, Role } from '@prisma/client';
+import {
+  AdminOperatorPermissionCategory,
+  FilePurpose,
+  FileUploadStatus,
+  FileVisibility,
+  Role,
+} from '@prisma/client';
+import { adminOperatorHasRequiredCategory } from '../admin/admin-operator-category.guard';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { chatNotificationRoutingData } from '../notifications/notification-push-payload';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -76,7 +83,10 @@ export class ChatService {
     }
 
     if (user.roles.includes(Role.ADMIN)) {
-      return true;
+      return adminOperatorHasRequiredCategory(
+        user.adminPermissionCategories ?? [],
+        AdminOperatorPermissionCategory.BOOKINGS_DETAIL,
+      );
     }
 
     if (user.roles.includes(Role.CUSTOMER)) {

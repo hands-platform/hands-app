@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { PrismaClient, Role } from '@prisma/client';
+import { AdminUserProvenance, PrismaClient, Role } from '@prisma/client';
 import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
 import { io } from 'socket.io-client';
@@ -26,11 +26,14 @@ async function createSmokeAdminAccessToken() {
   const prisma = new PrismaClient();
   try {
     const user = await prisma.user.findFirst({
-      where: { roles: { has: Role.MASTER_ADMIN } },
+      where: {
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        roles: { has: Role.MASTER_ADMIN },
+      },
       orderBy: { createdAt: 'asc' },
     });
     if (!user) {
-      throw new Error('Realtime smoke requires an existing MASTER_ADMIN account.');
+      throw new Error('Realtime smoke requires an explicit fixture MASTER_ADMIN account.');
     }
     return jwt.sign(
       { sub: user.id, activeRole: Role.ADMIN, roles: user.roles },

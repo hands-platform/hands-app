@@ -94,7 +94,7 @@ export class BookingTimeoutProcessor extends WorkerHost {
 
     await this.redisState.closeMatching(booking.id);
     if (transitioned) {
-      this.gateway.emitBookingExpired(booking.id, expired);
+      await this.gateway.emitBookingExpired(booking.id, expired);
     }
 
     return { expired: true, bookingId: booking.id };

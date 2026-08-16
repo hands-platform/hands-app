@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import {
   AccountingJournalEntrySide,
   BookingSettlementStatus,
@@ -16,6 +16,7 @@ import { customerWalletPaymentSourceKey as walletPaymentSourceKey } from '../pay
 import { calculateBookingSettlementAmounts, SettlementPaymentMethod } from './settlement-calculator';
 import { settlementReversalEvidencePolicy } from './settlement-audit-health';
 import { buildBookingSettlementJournal } from './settlement-journal';
+import { immutableFinancialReplayMatches } from './immutable-financial-replay';
 
 export type UpsertBookingSettlementSnapshotInput = {
   bookingId: string;
@@ -168,14 +169,20 @@ export class SettlementsService {
       postedAt: input.occurredAt,
     };
 
+    const createData = {
+      ...data,
+      bookingId: input.bookingId,
+    };
     const snapshot = await client.bookingSettlementSnapshot.upsert({
       where: { bookingId: input.bookingId },
-      update: data,
-      create: {
-        ...data,
-        bookingId: input.bookingId,
-      },
+      update: {},
+      create: createData,
     });
+    if (!immutableFinancialReplayMatches(snapshot, createData, BOOKING_SETTLEMENT_REPLAY_FIELDS)) {
+      throw new ConflictException(
+        'A settlement snapshot already exists with different financial evidence.',
+      );
+    }
 
     await this.upsertBookingSettlementAccountingRecords(input, amounts, snapshot, client);
 
@@ -318,11 +325,7 @@ export class SettlementsService {
     } satisfies Prisma.InputJsonObject;
     const reversalEntry = await client.bookingSettlementReversalEntry.upsert({
       where: { originalSettlementSnapshotId: snapshot.id },
-      update: {
-        metadata: closedSettlementReversalMetadata(metadata, snapshot.id),
-        occurredAt: input.occurredAt,
-        reason: input.reason?.trim() || 'Payment refund',
-      },
+      update: {},
       create: {
         bookingId: snapshot.bookingId,
         companyOutputVat: -snapshot.companyOutputVat,
@@ -429,27 +432,7 @@ export class SettlementsService {
 
     await client.accountingJournalBatch.upsert({
       where: { sourceKey },
-      update: {
-        bookingId: snapshot.bookingId,
-        currency: snapshot.currency,
-        customerProfileId: snapshot.customerProfileId,
-        entries: {
-          deleteMany: {},
-          create: journalEntries,
-        },
-        metadata: journalMetadata,
-        monthlyPeriod: settlementMonthlyPeriod(input.occurredAt),
-        paymentId: snapshot.paymentId ?? null,
-        postedAt: input.occurredAt,
-        providerProfileId: snapshot.providerProfileId,
-        settlementReversalEntryId: reversalEntryId ?? null,
-        settlementSnapshotId: snapshot.id,
-        sourceId,
-        sourceType: 'BOOKING_SETTLEMENT_REVERSAL',
-        status: 'POSTED',
-        totalCredit: journal.totalDebit,
-        totalDebit: journal.totalCredit,
-      },
+      update: {},
       create: {
         bookingId: snapshot.bookingId,
         currency: snapshot.currency,
@@ -565,26 +548,7 @@ export class SettlementsService {
 
     await client.accountingJournalBatch.upsert({
       where: { sourceKey: journalSourceKey },
-      update: {
-        bookingId: input.bookingId,
-        currency,
-        customerProfileId: input.customerProfileId,
-        entries: {
-          deleteMany: {},
-          create: journalEntries,
-        },
-        metadata: journalMetadata,
-        monthlyPeriod: snapshot.monthlyPeriod,
-        paymentId: input.paymentId ?? null,
-        postedAt: snapshot.postedAt,
-        providerProfileId: input.providerProfileId,
-        settlementSnapshotId: snapshot.id,
-        sourceId: snapshot.id,
-        sourceType: 'BOOKING_SETTLEMENT',
-        status: 'POSTED',
-        totalCredit: journal.totalCredit,
-        totalDebit: journal.totalDebit,
-      },
+      update: {},
       create: {
         bookingId: input.bookingId,
         currency,
@@ -613,20 +577,7 @@ export class SettlementsService {
 
     await client.bookingPaymentClearingEntry.upsert({
       where: { sourceKey: bookingPaymentClearingSourceKey(input.bookingId) },
-      update: {
-        amount: input.customerPaymentAmount,
-        currency,
-        metadata: {
-          bookingId: input.bookingId,
-          journalBatchSourceKey: journalSourceKey,
-          ...paymentFeeEvidence,
-          settlementSnapshotId: snapshot.id,
-        } satisfies Prisma.InputJsonObject,
-        occurredAt: snapshot.postedAt,
-        paymentId: input.paymentId ?? null,
-        settlementSnapshotId: snapshot.id,
-        status: 'OPEN',
-      },
+      update: {},
       create: {
         amount: input.customerPaymentAmount,
         bookingId: input.bookingId,
@@ -658,48 +609,92 @@ export class SettlementsService {
       return existingIds.length > 0 ? existingIds : undefined;
     }
 
+    const ledgerData = {
+      amount: -customerWalletDebitAmount,
+      bookingId: input.bookingId,
+      currency: input.currency ?? 'VND',
+      customerProfileId: input.customerProfileId,
+      metadata: {
+        bookingId: input.bookingId,
+        customerPaymentAmount: input.customerPaymentAmount,
+        monthlyPeriod,
+        paymentId: input.paymentId ?? null,
+        paymentMethod: PaymentMethod.CUSTOMER_WALLET,
+        providerProfileId: input.providerProfileId,
+      } satisfies Prisma.InputJsonObject,
+      notes: 'Customer wallet payment debited for completed booking settlement.',
+      reference: input.paymentId ?? input.bookingId,
+      type: customerWalletLedgerType('CUSTOMER_WALLET_PAYMENT'),
+    };
     const ledger = await client.customerWalletLedgerEntry.upsert({
       where: { sourceKey: customerWalletPaymentSourceKey(input.bookingId) },
-      update: {
-        amount: -customerWalletDebitAmount,
-        bookingId: input.bookingId,
-        currency: input.currency ?? 'VND',
-        customerProfileId: input.customerProfileId,
-        metadata: {
-          bookingId: input.bookingId,
-          customerPaymentAmount: input.customerPaymentAmount,
-          monthlyPeriod,
-          paymentId: input.paymentId ?? null,
-          paymentMethod: PaymentMethod.CUSTOMER_WALLET,
-          providerProfileId: input.providerProfileId,
-        } satisfies Prisma.InputJsonObject,
-        notes: 'Customer wallet payment debited for completed booking settlement.',
-        reference: input.paymentId ?? input.bookingId,
-        type: customerWalletLedgerType('CUSTOMER_WALLET_PAYMENT'),
-      },
+      update: {},
       create: {
-        amount: -customerWalletDebitAmount,
-        bookingId: input.bookingId,
-        currency: input.currency ?? 'VND',
-        customerProfileId: input.customerProfileId,
-        metadata: {
-          bookingId: input.bookingId,
-          customerPaymentAmount: input.customerPaymentAmount,
-          monthlyPeriod,
-          paymentId: input.paymentId ?? null,
-          paymentMethod: PaymentMethod.CUSTOMER_WALLET,
-          providerProfileId: input.providerProfileId,
-        } satisfies Prisma.InputJsonObject,
-        notes: 'Customer wallet payment debited for completed booking settlement.',
-        reference: input.paymentId ?? input.bookingId,
+        ...ledgerData,
         sourceKey: customerWalletPaymentSourceKey(input.bookingId),
-        type: customerWalletLedgerType('CUSTOMER_WALLET_PAYMENT'),
       },
     });
+    if (!immutableFinancialReplayMatches(ledger, ledgerData, CUSTOMER_WALLET_REPLAY_FIELDS)) {
+      throw new ConflictException(
+        'A customer wallet payment entry already exists with different financial evidence.',
+      );
+    }
 
     return [...new Set([...existingIds, ledger.id])];
   }
 }
+
+const BOOKING_SETTLEMENT_REPLAY_FIELDS = [
+  'bookingId',
+  'sourceKey',
+  'customerProfileId',
+  'providerProfileId',
+  'paymentId',
+  'providerEarningId',
+  'paymentMethod',
+  'currency',
+  'customerPaymentAmount',
+  'partnerPayoutAmount',
+  'partnerTaxableRevenue',
+  'partnerVatRateBps',
+  'partnerVatAmount',
+  'partnerPitRateBps',
+  'partnerPitAmount',
+  'partnerWithholdingTotal',
+  'platformFeeGross',
+  'platformVatRateBps',
+  'platformFeeNetRevenue',
+  'companyOutputVat',
+  'paymentFeePolicyVersionId',
+  'paymentFeeRateBps',
+  'paymentFeeFixedAmount',
+  'paymentProcessingFee',
+  'paymentFeePayer',
+  'paymentFeeTreatment',
+  'taxPolicyVersionId',
+  'platformFeePolicyVersionId',
+  'taxRuleSnapshot',
+  'platformFeeRuleSnapshot',
+  'paymentFeeRuleSnapshot',
+  'providerTaxLogIds',
+  'providerPlatformFeeLogId',
+  'providerWalletLedgerEntryIds',
+  'customerWalletLedgerEntryIds',
+  'metadata',
+  'monthlyPeriod',
+  'postedAt',
+] as const;
+
+const CUSTOMER_WALLET_REPLAY_FIELDS = [
+  'amount',
+  'bookingId',
+  'currency',
+  'customerProfileId',
+  'metadata',
+  'notes',
+  'reference',
+  'type',
+] as const;
 
 export function bookingSettlementSourceKey(bookingId: string) {
   return `booking-settlement:${bookingId}`;

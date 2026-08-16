@@ -4,14 +4,16 @@ import { revalidatePath } from 'next/cache';
 import {
   AdminApiRequestError,
   adminPostOrThrow,
-  isAdminApiAuthError,
 } from '../../lib/admin-api';
 
 export type MarketingSpendActionState = {
   readonly fieldErrors?: Readonly<Record<string, string>>;
   readonly message?: string;
   readonly saved?: {
+    readonly auditId: string | null;
     readonly campaignId: string | null;
+    readonly canonicalTarget: string | null;
+    readonly outcome: 'NO_CHANGE' | 'SAVED';
     readonly platform: string | null;
     readonly reason: string;
     readonly source: string;
@@ -19,15 +21,27 @@ export type MarketingSpendActionState = {
     readonly spendDate: string;
     readonly updatedAt: string | null;
   };
-  readonly status: 'idle' | 'invalid' | 'conflict' | 'forbidden' | 'unavailable' | 'error' | 'success';
+  readonly status:
+    | 'idle'
+    | 'invalid'
+    | 'unauthorized'
+    | 'forbidden'
+    | 'conflict'
+    | 'throttled'
+    | 'unavailable'
+    | 'error'
+    | 'success';
 };
 
 type MarketingSpendSaveResult = {
+  auditId?: string | null;
   campaignId?: string | null;
+  canonicalTarget?: string | null;
   platform?: string | null;
   source?: string;
   spendAmount?: number;
   spendDate?: string;
+  status?: 'NO_CHANGE' | 'SAVED';
   updatedAt?: string | Date;
 };
 
@@ -37,13 +51,17 @@ export async function upsertMarketingSpendDaily(
 ): Promise<MarketingSpendActionState> {
   const spendDate = readFormText(formData, 'spendDate');
   const source = readFormText(formData, 'source');
+  const platform = readFormText(formData, 'platform');
   const spendAmount = parseInteger(formData.get('spendAmount'));
   const reason = readFormText(formData, 'reason');
   const fieldErrors: Record<string, string> = {};
 
   if (!spendDate) fieldErrors.spendDate = 'Spend date is required.';
   if (!source) fieldErrors.source = 'Spend source is required.';
-  if (spendAmount === null) fieldErrors.spendAmount = 'Enter a whole VND amount of zero or more.';
+  if (!platform) fieldErrors.platform = 'Spend platform is required.';
+  if (spendAmount === null || spendAmount > 2_000_000_000) {
+    fieldErrors.spendAmount = 'Enter a whole VND amount from zero to 2,000,000,000.';
+  }
   if (reason.length < 12) fieldErrors.reason = 'Explain the change in at least 12 characters.';
 
   if (Object.keys(fieldErrors).length > 0 || spendAmount === null) {
@@ -54,7 +72,6 @@ export async function upsertMarketingSpendDaily(
     };
   }
 
-  const platform = readFormText(formData, 'platform') || undefined;
   const campaignId = readFormText(formData, 'campaignId') || undefined;
 
   try {
@@ -72,14 +89,23 @@ export async function upsertMarketingSpendDaily(
       reason,
     });
 
-    revalidatePath('/marketing-analytics');
-    revalidatePath('/audit-log');
+    const outcome = saved?.status ?? 'SAVED';
+    if (outcome === 'SAVED') {
+      revalidatePath('/marketing-analytics');
+      revalidatePath('/audit-log');
+    }
 
     return {
-      message: 'Daily spend was saved and the marketing aggregates were refreshed.',
+      message:
+        outcome === 'NO_CHANGE'
+          ? 'No change was required. The reviewed value already matches the spend ledger.'
+          : 'Daily spend was saved and the marketing aggregates were refreshed.',
       saved: {
+        auditId: saved?.auditId ?? null,
         campaignId: saved?.campaignId ?? campaignId ?? null,
-        platform: saved?.platform ?? platform ?? null,
+        canonicalTarget: saved?.canonicalTarget ?? null,
+        outcome,
+        platform: saved?.platform ?? platform,
         reason,
         source: saved?.source ?? source,
         spendAmount: saved?.spendAmount ?? spendAmount,
@@ -89,9 +115,32 @@ export async function upsertMarketingSpendDaily(
       status: 'success',
     };
   } catch (error) {
-    if (isAdminApiAuthError(error)) {
+    const code = marketingSpendApiErrorCode(error);
+    const knownMessage: Record<string, string> = {
+      MARKETING_SPEND_AMOUNT_INVALID: 'Spend must be a whole VND amount from zero to 2,000,000,000.',
+      MARKETING_SPEND_CAMPAIGN_ID_AMBIGUOUS:
+        'This campaign resolves to duplicate or non-canonical spend rows. Resolve the ledger conflict before editing.',
+      MARKETING_SPEND_DATE_INVALID: 'Spend date must be a valid calendar date.',
+      MARKETING_SPEND_FUTURE_DATE: 'Future Vietnam dates cannot be recorded as spend.',
+      MARKETING_SPEND_PLATFORM_REQUIRED: 'Select the platform explicitly before saving spend.',
+      MARKETING_SPEND_VERSION_CONFLICT:
+        'This spend row changed after review. Reload the current value before saving again.',
+    };
+    if (knownMessage[code]) {
       return {
-        message: 'You do not have permission to change marketing spend.',
+        message: knownMessage[code],
+        status: code.includes('CONFLICT') || code.includes('AMBIGUOUS') ? 'conflict' : 'invalid',
+      };
+    }
+    if (error instanceof AdminApiRequestError && error.status === 401) {
+      return {
+        message: 'Your administrator session expired. Sign in again before saving spend.',
+        status: 'unauthorized',
+      };
+    }
+    if (error instanceof AdminApiRequestError && error.status === 403) {
+      return {
+        message: 'Your role can read marketing analytics but cannot manage marketing spend.',
         status: 'forbidden',
       };
     }
@@ -99,6 +148,12 @@ export async function upsertMarketingSpendDaily(
       return {
         message: 'This spend row changed after review. Reload the current value before saving again.',
         status: 'conflict',
+      };
+    }
+    if (error instanceof AdminApiRequestError && error.status === 429) {
+      return {
+        message: 'Too many spend updates were submitted. Wait briefly, then review the current row before retrying.',
+        status: 'throttled',
       };
     }
     if (!(error instanceof AdminApiRequestError) || error.status >= 500) {
@@ -131,4 +186,15 @@ function normalizeSavedAt(value: string | Date | undefined) {
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
   if (typeof value === 'string' && !Number.isNaN(new Date(value).getTime())) return value;
   return null;
+}
+
+function marketingSpendApiErrorCode(error: unknown) {
+  if (!(error instanceof AdminApiRequestError) || !isRecord(error.payload)) return '';
+  const nested = isRecord(error.payload.error) ? error.payload.error : null;
+  if (typeof nested?.code === 'string') return nested.code;
+  return typeof error.payload.code === 'string' ? error.payload.code : '';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

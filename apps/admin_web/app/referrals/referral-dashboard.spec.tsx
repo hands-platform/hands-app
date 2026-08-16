@@ -225,6 +225,12 @@ describe('ReferralDashboard', () => {
     expect(policyMarkup).toContain('SYSTEM_POLICY access, confirmation, and an audit reason');
     expect(policyMarkup).toContain('aria-label="Customer referral policy controls"');
     expect(policyMarkup).toContain('class="vuexy-customer-form referral-policy-form admin-mt-16"');
+    expect(policyMarkup).toContain('No policy values have changed.');
+    expect(policyMarkup).toContain('Change at least one policy value to enable save.');
+    expect(policyMarkup).toContain('disabled=""');
+    expect(policyMarkup).toContain('Existing reward snapshots are not changed retroactively.');
+    expect(policyMarkup).toContain('Reward percent (%)');
+    expect(policyMarkup).toContain('Total reward cap (VND)');
     expect(policyMarkup).toContain('class="admin-form-input admin-form-control-labeled admin-form-control-fluid"');
     expect(policyMarkup).toContain('class="admin-form-select admin-form-control-labeled admin-form-control-fluid"');
     expect(policyMarkup).toContain('class="admin-form-textarea admin-form-control-labeled admin-form-control-fluid admin-grid-span-2"');
@@ -256,6 +262,7 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Customer referral cashout requires admin approval and tax review');
     expect(markup).toContain('Tax policies are configurable and must be confirmed by accounting before production use');
     expect(markup).toContain('Referral link readiness');
+    expect(markup).toContain('id="referral-link-readiness"');
     expect(markup).toContain('Customer referral links route visitors to the correct store before attribution starts.');
     expect(markup).toContain('admin-directory-filter-form');
     expect(markup).toContain('admin-directory-filter-grid');
@@ -325,13 +332,57 @@ describe('ReferralDashboard', () => {
     ).replace(/\s+/g, ' ');
 
     expect(markup).toContain('aria-label="Customer referral reward queue"');
-    expect(markup).toContain('Decision evidence');
+    expect(markup).toContain('>Evidence</th>');
     expect(markup).toContain('Integrity clear');
     expect(markup).toContain('Ready to credit');
     expect(markup).not.toContain('Referral sign-ups');
-    expect(markup).toContain('Review reward');
+    expect(markup).toContain('>Review</a>');
     expect(markup).toContain('/referrals/customers/parent-customer?rewardId=reward-available-1');
     expect(markup.indexOf('Needs action')).toBeLessThan(markup.indexOf('All parent records'));
+  });
+
+  it('keeps fixture inspection in Developer/System mode with no operational action', () => {
+    const fixtureRows = [{ ...rewardRows[0], detailHref: null, isFixture: true }];
+    const markup = renderToStaticMarkup(
+      <ReferralDashboard
+        audience="customer"
+        canViewDeveloperSetup
+        fixtureRows={fixtureRows}
+        policy={policy}
+        rewardRows={[]}
+        rows={[]}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('Developer referral fixture diagnostics');
+    expect(markup).toContain('TEST FIXTURE · wallet actions disabled');
+    expect(markup).toContain('Inspection only');
+    expect(markup).not.toContain('/referrals/customers/parent-customer?rewardId=reward-available-1');
+  });
+
+  it.each([
+    ['available', 'Ready to credit', 'Nothing ready to credit', 'No rewards have completed the required evidence checks.'],
+    ['held', 'On hold', 'No held rewards', 'No rewards are currently held for review.'],
+    ['pending', 'Pending checks', 'No pending rewards', 'No rewards are waiting for the hold period or automated checks.'],
+    ['credited', 'Credited history', 'No credited rewards', 'No customer referral rewards have been posted to wallet.'],
+    ['all', 'All reward records', 'No reward records', 'No customer referral reward records are available.'],
+  ] as const)('uses queue-specific copy for %s without treating the quick queue as a search filter', (reward, title, emptyTitle, emptyMessage) => {
+    const markup = renderToStaticMarkup(
+      <ReferralDashboard
+        audience="customer"
+        filters={{ ...defaultReferralDashboardFiltersForTest(), reward }}
+        policy={policy}
+        rewardRows={[]}
+        rewardQueueSummaries={[{ amount: 0, count: 0, reward }]}
+        rows={[]}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain(`<h2>${title}</h2>`);
+    expect(markup).toContain(`<strong>${emptyTitle}</strong>`);
+    expect(markup).toContain(emptyMessage);
+    expect(markup).not.toContain('No matching reward records');
+    expect(markup).not.toContain('Clear referral filters');
   });
 
   it('shows a read failure instead of rendering zero metrics or mutable queues', () => {

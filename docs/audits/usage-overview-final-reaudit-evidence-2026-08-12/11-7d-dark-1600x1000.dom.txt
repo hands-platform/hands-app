@@ -1,0 +1,262 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Insights":
+        - /url: /marketing-analytics
+      - generic: Customer Usage
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to light mode" [active]:
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Insights workspace":
+    - strong: Insights
+    - generic "Insights pages":
+      - link "Marketing Analytics":
+        - /url: /marketing-analytics
+      - link "Customer Usage":
+        - /url: /usage-overview
+  - heading "Customer Usage" [level=1]
+  - paragraph: Customer reach, booking outcomes, and the records that need an operator decision.
+  - heading "Reporting period" [level=2]
+  - paragraph: Applied dates use Asia/Ho_Chi_Minh. Presets compare with the immediately preceding period of equal length.
+  - generic: 2026-08-06 – 2026-08-12 · 7 days · Vietnam time
+  - button "Refresh Customer Usage report":
+    - text: Refresh now
+  - status
+  - generic "Usage overview range":
+    - link "Today":
+      - /url: /usage-overview?range=today
+    - link "Yesterday":
+      - /url: /usage-overview?range=yesterday
+    - link "7 days":
+      - /url: /usage-overview?range=7d
+    - link "30 days":
+      - /url: /usage-overview?range=30d
+    - link "This month":
+      - /url: /usage-overview?range=month
+    - link "Custom":
+      - /url: /usage-overview?range=custom
+  - generic "Applied usage report scope":
+    - generic: 2026-08-06 – 2026-08-12 · 7 days · Vietnam time
+    - generic: Daily
+    - generic: Compared with 2026-07-30 – 2026-08-05
+    - generic: Report generated 12 Aug 2026, 16:13 ICT
+    - generic: Usage signal time unavailable
+  - status:
+    - strong: Synthetic usage excluded
+    - generic: Every usage total on this report reads only server-owned production aggregates.
+  - alert:
+    - strong: Production usage freshness is unknown
+    - generic: No production usage aggregate timestamp is available for this period.
+  - group "Source activity times":
+    - generic "Source activity times"
+  - heading "Needs attention" [level=2]
+  - paragraph: Counts and filters use the same reporting-period contract as their destination lists.
+  - generic: 1 queue
+  - link "Review now New customers without a booking 2 Joined in this reporting period and still have no production booking. Review 2 customers →":
+    - /url: /customers?view=all&segment=usage-new-unbooked&dateField=joined&dateRange=custom&dateFrom=2026-08-06&dateTo=2026-08-12
+    - generic: Review now
+    - generic: New customers without a booking
+    - strong: "2"
+    - generic: Joined in this reporting period and still have no production booking.
+    - generic: Review 2 customers →
+  - region "Period health":
+    - generic: Last 7 days
+    - paragraph: Active unique customers
+    - generic: "Active unique customers:"
+    - text: "0"
+    - generic: No change vs previous equal period
+    - generic: Last 7 days
+    - paragraph: Partner view events
+    - generic: "Partner view events:"
+    - text: "0"
+    - generic: No change vs previous equal period
+    - generic: Last 7 days
+    - paragraph: Booking records created
+    - generic: "Booking records created:"
+    - text: "6"
+    - generic: "-98% vs previous equal period"
+    - generic: Last 7 days
+    - paragraph: Unresolved booking records
+    - generic: "Unresolved booking records:"
+    - text: "0"
+    - generic: No change vs previous equal period
+  - heading "Unique-customer reach" [level=2]
+  - paragraph: Unique customers who reached each state in the period. This does not claim event order or event-lineage conversion.
+  - generic: Unique customers
+  - generic: Active customers
+  - strong: "0"
+  - generic: unique customers
+  - generic: Viewed a Partner
+  - strong: "0"
+  - generic: N/A · no previous-step customers
+  - generic: Created a booking
+  - strong: "0"
+  - generic: N/A · no previous-step customers
+  - generic: Completed work
+  - strong: "0"
+  - generic: N/A · no previous-step customers
+  - heading "Booking outcomes" [level=2]
+  - paragraph: Mutually exclusive current status as of report generation for booking records created in the reporting period.
+  - generic: Cohort reconciled
+  - generic: Created in period
+  - strong: "6"
+  - generic: Completed
+  - strong: "0"
+  - generic: Cancelled
+  - strong: "6"
+  - generic: No-show
+  - strong: "0"
+  - generic: Expired
+  - strong: "0"
+  - generic: Refunded
+  - strong: "0"
+  - generic: Still open / unresolved
+  - strong: "0"
+  - heading "Activity trends" [level=2]
+  - paragraph: Daily activity in Vietnam time. Customer and booking scales are separated.
+  - generic: Last 7 days
+  - status:
+    - strong: No activity in this period
+    - generic: No customer usage or booking activity was recorded for the applied dates.
+  - region "Customer period and current base":
+    - heading "Period customers" [level=2]
+    - generic: New customers
+    - strong: "3"
+    - generic: Customers with completed work
+    - strong: "0"
+    - generic: 2+ completions in period
+    - strong: "0"
+    - heading "Cohort retention" [level=2]
+    - paragraph: Customers who returned on the exact milestone day after signup.
+    - generic: D1
+    - strong: 0%
+    - generic: 0 of 4 eligible
+    - generic: D7
+    - strong: 0%
+    - generic: 0 of 2 eligible
+    - generic: D30
+    - strong: N/A
+    - generic: No eligible cohort
+    - heading "Current customer base · Usage data time unavailable" [level=2]
+    - paragraph: Usage-derived snapshot. Reporting-period comparison does not apply.
+    - generic: Never booked
+    - strong: "38"
+    - generic: Inactive 30d
+    - strong: "0"
+    - generic: Seen today
+    - strong: "0"
+    - generic: Seen in 7d
+    - strong: "0"
+    - generic: Seen in 30d
+    - strong: "0"
+  - heading "Customer activity · Top 5" [level=2]
+  - paragraph: Top five customers by production usage events. Closed issue outcomes use closedAt in the selected period and include cancelled, no-show, expired, and refunded records; they are separate from the created-cohort outcomes above. Phone numbers are masked by the API.
+  - link "View all customers":
+    - /url: /customers?view=all
+  - region "Customer activity top five table":
+    - table:
+      - rowgroup:
+        - row "Customer Events App opens Partner views Completed Closed issue outcomes Last active":
+          - columnheader "Customer"
+          - columnheader "Events"
+          - columnheader "App opens"
+          - columnheader "Partner views"
+          - columnheader "Completed"
+          - columnheader "Closed issue outcomes"
+          - columnheader "Last active"
+      - rowgroup:
+        - row "#1 Smoke Cancellation Customer +84••••••7001 0 0 0 0 0 7 Aug 2026, 19:09":
+          - rowheader "#1 Smoke Cancellation Customer +84••••••7001":
+            - link "#1 Smoke Cancellation Customer":
+              - /url: /customers/smoke_post_match_customer_profile
+            - generic: +84••••••7001
+          - cell "0"
+          - cell "0"
+          - cell "0"
+          - cell "0"
+          - cell "0":
+            - generic: "0"
+          - cell "7 Aug 2026, 19:09":
+            - time: 7 Aug 2026, 19:09
+  - heading "Partner discovery · Top 5" [level=2]
+  - paragraph: Top five Partner discovery signals. Views, preferred requests, and completed work are independent counts.
+  - link "View all Partners":
+    - /url: /partners
+  - region "Partner discovery top five table":
+    - table:
+      - rowgroup:
+        - row "Partner Views Preferred requests Completed Last active":
+          - columnheader "Partner"
+          - columnheader "Views"
+          - columnheader "Preferred requests"
+          - columnheader "Completed"
+          - columnheader "Last active"
+      - rowgroup:
+        - row:
+          - cell:
+            - status:
+              - paragraph: No Partner discovery activity in this period.
+  - region "Demand and service patterns":
+    - heading "Popular services" [level=2]
+    - generic: No service demand in this period.
+    - heading "Top regions" [level=2]
+    - paragraph: Created booking demand and current cohort outcomes for the top five regions.
+    - link "Open Vietnam Overview":
+      - /url: /vietnam-overview?view=period&range=7d
+    - generic: HCMC
+    - strong: Ho Chi Minh City
+    - strong: "6"
+    - text: created
+    - strong: "0"
+    - text: completed
+    - strong: "6"
+    - text: non-completed
+    - strong: "0"
+    - text: unresolved
+- alert

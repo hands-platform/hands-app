@@ -15,10 +15,19 @@ import { RedisStateService } from '../redis/redis-state.service';
 import { FCM_ANDROID_NOTIFICATION_CHANNEL_ID } from '../notifications/push-delivery.service';
 
 const EXTERNAL_READINESS_CACHE_TTL_MS = 5_000;
+const EXTERNAL_RUNTIME_PROBE_TIMEOUT_MS = 2_000;
+const EXTERNAL_RUNTIME_STALE_MS = 5 * 60_000;
+const CURRENT_LAUNCH_PROFILE = 'CASH_ONLY' as const;
+const CURRENT_REFERRAL_RELEASE_PROFILE = 'ANDROID_MVP' as const;
 
 @Injectable()
 export class HealthService {
   private externalReadinessCache: { expiresAt: number; value: ExternalReadinessResult } | null = null;
+  private externalServicesCache: { expiresAt: number; value: ExternalServicesOverview } | null = null;
+  private readonly runtimeEvidence = new Map<
+    string,
+    { failureSince: string | null; lastSuccessAt: string | null }
+  >();
 
   constructor(
     private readonly config: ConfigService,
@@ -66,6 +75,75 @@ export class HealthService {
     return value;
   }
 
+  async externalServicesOverview(): Promise<ExternalServicesOverview> {
+    const now = Date.now();
+    if (this.externalServicesCache && this.externalServicesCache.expiresAt > now) {
+      return this.externalServicesCache.value;
+    }
+
+    const legacy = this.externalReadiness();
+    const databaseProbe = await this.databaseRuntimeProbe();
+    const services = legacy.checks
+      .filter((check) => !['mobile', 'mobile-release'].includes(check.category))
+      .map((check) => this.externalServiceStatus(check, legacy.timestamp, databaseProbe));
+    const actionServices = services.filter(externalServiceNeedsAction);
+    const blockingCategories = uniqueCategories(actionServices.map((service) => service.category));
+    const evidenceGapServices = services.filter(externalServiceHasEvidenceGap);
+    const overview: ExternalServicesOverview = {
+      ...legacy,
+      currentStageOk: actionServices.length === 0,
+      blockingCategories,
+      deferredCategories: uniqueCategories(
+        services
+          .filter((service) => service.configurationStatus === 'DEFERRED')
+          .map((service) => service.category),
+      ),
+      launchProfile: CURRENT_LAUNCH_PROFILE,
+      referralReleaseProfile: CURRENT_REFERRAL_RELEASE_PROFILE,
+      generatedAt: new Date().toISOString(),
+      counts: {
+        total: services.length,
+        active: services.filter(
+          (service) => service.enabled && service.configurationStatus !== 'DEFERRED',
+        ).length,
+        needsAction: actionServices.length,
+        launchBlockers: services.filter(
+          (service) =>
+            service.requiredForCurrentLaunch && service.configurationStatus === 'INCOMPLETE',
+        ).length,
+        degraded: services.filter(
+          (service) => service.enabled && service.runtimeStatus === 'DEGRADED',
+        ).length,
+        unknown: services.filter(
+          (service) => service.enabled && service.runtimeStatus === 'UNKNOWN',
+        ).length,
+        notMonitored: services.filter(
+          (service) => service.enabled && service.runtimeStatus === 'NOT_MONITORED',
+        ).length,
+        evidenceGaps: evidenceGapServices.length,
+        deferred: services.filter((service) => service.configurationStatus === 'DEFERRED').length,
+        required: services.filter((service) => service.requiredForCurrentLaunch).length,
+        configurationReady: services.filter(
+          (service) =>
+            service.requiredForCurrentLaunch && service.configurationStatus === 'CONFIGURED',
+        ).length,
+        runtimeVerified: services.filter(
+          (service) =>
+            service.requiredForCurrentLaunch &&
+            service.evidenceLevel !== 'CONFIGURATION_ONLY' &&
+            service.lastVerifiedAt !== null,
+        ).length,
+      },
+      services,
+    };
+
+    this.externalServicesCache = {
+      expiresAt: now + EXTERNAL_READINESS_CACHE_TTL_MS,
+      value: overview,
+    };
+    return overview;
+  }
+
   private buildExternalReadiness(): ExternalReadinessResult {
     const rawChecks = [
       this.mobileFirebaseRemovalReadiness(),
@@ -84,11 +162,7 @@ export class HealthService {
         { key: 'GEOAPIFY_API_KEY' },
       ]),
       this.externalGroup('Referral app links', 'referrals', [
-        { key: 'REFERRAL_PUBLIC_BASE_URL', validator: 'https-url' },
-        { key: 'REFERRAL_CUSTOMER_ANDROID_STORE_URL', validator: 'https-url' },
-        { key: 'REFERRAL_CUSTOMER_IOS_STORE_URL', validator: 'https-url' },
-        { key: 'REFERRAL_PARTNER_ANDROID_STORE_URL', validator: 'https-url' },
-        { key: 'REFERRAL_PARTNER_IOS_STORE_URL', validator: 'https-url' },
+        ...referralRequirementsForProfile(CURRENT_REFERRAL_RELEASE_PROFILE),
       ]),
       this.externalGroup('MoMo payments', 'payments', [
         { key: 'MOMO_GATEWAY_ENABLED', expected: 'true' },
@@ -151,12 +225,158 @@ export class HealthService {
   }
 
   private async databaseStatus() {
-    try {
-      await this.prisma.$queryRaw`SELECT 1`;
-      return { ok: true };
-    } catch {
-      return { ok: false };
+    const probe = await this.databaseConnectivityProbe();
+    return { ok: probe.ok };
+  }
+
+  private async databaseRuntimeProbe(): Promise<RuntimeProbeResult> {
+    const lastEvidence = this.runtimeEvidence.get('supabase-core') ?? {
+      failureSince: null,
+      lastSuccessAt: null,
+    };
+    const probe = await this.databaseConnectivityProbe(EXTERNAL_RUNTIME_PROBE_TIMEOUT_MS);
+
+    if (probe.ok) {
+      const lastProbeAt = new Date().toISOString();
+      this.runtimeEvidence.set('supabase-core', {
+        failureSince: null,
+        lastSuccessAt: lastProbeAt,
+      });
+      return {
+        evidenceSummary: 'Database connectivity probe succeeded.',
+        failureSince: null,
+        isStale: false,
+        lastProbeAt,
+        lastSuccessAt: lastProbeAt,
+        latencyMs: probe.latencyMs,
+        status: 'HEALTHY',
+      };
     }
+
+    const lastProbeAt = new Date().toISOString();
+    const failureSince = probe.timedOut
+      ? lastEvidence.failureSince
+      : lastEvidence.failureSince ?? lastProbeAt;
+    this.runtimeEvidence.set('supabase-core', {
+      failureSince,
+      lastSuccessAt: lastEvidence.lastSuccessAt,
+    });
+    return {
+      evidenceSummary: probe.timedOut
+        ? 'Database connectivity probe timed out; runtime state is unknown.'
+        : 'Database connectivity probe failed.',
+      failureSince,
+      isStale: Boolean(
+        lastEvidence.lastSuccessAt &&
+          Date.now() - Date.parse(lastEvidence.lastSuccessAt) > EXTERNAL_RUNTIME_STALE_MS,
+      ),
+      lastProbeAt,
+      lastSuccessAt: lastEvidence.lastSuccessAt,
+      latencyMs: probe.latencyMs,
+      status: probe.timedOut ? 'UNKNOWN' : 'DOWN',
+    };
+  }
+
+  private async databaseConnectivityProbe(timeoutMs?: number) {
+    const startedAt = Date.now();
+    try {
+      const query = this.prisma.$queryRaw`SELECT 1`;
+      await (timeoutMs ? withTimeout(query, timeoutMs) : query);
+      return { latencyMs: Date.now() - startedAt, ok: true, timedOut: false };
+    } catch (error) {
+      return {
+        latencyMs: Date.now() - startedAt,
+        ok: false,
+        timedOut: error instanceof RuntimeProbeTimeoutError,
+      };
+    }
+  }
+
+  private externalServiceStatus(
+    check: ExternalReadinessCheck,
+    configurationCheckedAt: string,
+    databaseProbe: RuntimeProbeResult,
+  ): ExternalServiceStatus {
+    const policy = externalServicePolicy(
+      CURRENT_LAUNCH_PROFILE,
+      check,
+      this.config,
+    );
+    const runtime = check.category === 'supabase'
+      ? databaseProbe
+      : {
+          evidenceSummary:
+            'Configuration was checked. No safe side-effect-free runtime probe is configured.',
+          failureSince: null,
+          isStale: false,
+          lastProbeAt: null,
+          lastSuccessAt: null,
+          latencyMs: null,
+          status: 'NOT_MONITORED' as const,
+        };
+    const metadata = externalServiceOperatorMetadata(check.category, check.name);
+    const deferredMetadata = policy.configurationStatus === 'DEFERRED'
+      ? deferredServiceMetadata(check)
+      : null;
+    const evidenceLevel: ExternalEvidenceLevel = check.category === 'supabase'
+      ? 'CONNECTIVITY'
+      : 'CONFIGURATION_ONLY';
+    const lastVerifiedAt = check.category === 'supabase'
+      ? runtime.lastProbeAt
+      : configurationCheckedAt;
+    const runtimeNeedsAction = ['DOWN', 'DEGRADED'].includes(runtime.status);
+    const runtimeNeedsVerification = ['UNKNOWN', 'NOT_MONITORED'].includes(runtime.status);
+    const service: ExternalServiceStatus = {
+      id: externalServiceId(check),
+      name: check.name,
+      category: externalServiceCategory(check.category),
+      launchScope: policy.requiredForCurrentLaunch ? 'CURRENT_STAGE' : 'DEFERRED',
+      enabled: policy.enabled,
+      requiredForCurrentLaunch: policy.requiredForCurrentLaunch,
+      configurationStatus: policy.configurationStatus,
+      configurationCheckedAt,
+      runtimeStatus: runtime.status,
+      probeType: check.category === 'supabase' ? 'CONNECTIVITY' : 'CONFIG',
+      evidenceLevel,
+      lastVerifiedAt,
+      verificationMethod:
+        check.category === 'supabase'
+          ? 'Bounded database connectivity query.'
+          : 'Configuration keys and formats only; no safe side-effect-free runtime probe.',
+      lastProbeAt: runtime.lastProbeAt,
+      lastSuccessAt: runtime.lastSuccessAt,
+      failureSince: runtime.failureSince,
+      latencyMs: runtime.latencyMs,
+      isStale: runtime.isStale,
+      evidenceSummary: runtime.evidenceSummary,
+      impactSummary: externalServiceImpactSummary(check.category, runtime.status),
+      ownerTeam: metadata.ownerTeam,
+      evidenceHref: metadata.evidenceHref,
+      relatedWorkspaceHref: metadata.relatedWorkspaceHref,
+      runbookHref: metadata.runbookHref,
+      escalationRoute: metadata.relatedWorkspaceHref,
+      runbookUrl: metadata.runbookHref,
+      deferredReason: deferredMetadata?.deferredReason ?? null,
+      futureReadiness: deferredMetadata?.futureReadiness ?? null,
+      reentryChecks: deferredMetadata?.reentryChecks ?? [],
+      reviewTrigger: deferredMetadata?.reviewTrigger ?? null,
+      reviewedAt: null,
+      platformScope: deferredMetadata?.platformScope ?? null,
+      safeOperatorAction:
+        policy.configurationStatus === 'DEFERRED'
+          ? deferredMetadata?.operatorAction ?? 'Review this capability only when its launch trigger is reached.'
+          : policy.configurationStatus === 'INCOMPLETE'
+            ? metadata.configurationAction
+            : runtimeNeedsAction
+              ? metadata.runtimeAction
+              : runtimeNeedsVerification
+                ? metadata.runtimeAction
+                : 'No configuration action required.',
+      evidenceGap: false,
+    };
+    service.evidenceGap = externalServiceHasEvidenceGap(service);
+
+    return service;
   }
 
   private async redisStatus() {
@@ -500,7 +720,8 @@ export class HealthService {
 
   private decorateExternalCheck(check: ExternalReadinessCheck): ExternalReadinessCheck {
     const metadata = externalReadinessMetadata(check.category, check.name);
-    const deferred = isDeferredExternalCategory(check.category);
+    const policy = externalServicePolicy(CURRENT_LAUNCH_PROFILE, check, this.config);
+    const deferred = !policy.requiredForCurrentLaunch;
     return {
       ...check,
       scope: deferred ? 'DEFERRED' : 'CURRENT_STAGE',
@@ -540,6 +761,408 @@ type ExternalReadinessResult = {
   checks: ExternalReadinessCheck[];
 };
 
+type ExternalConfigurationStatus =
+  | 'CONFIGURED'
+  | 'INCOMPLETE'
+  | 'DISABLED'
+  | 'DEFERRED'
+  | 'UNKNOWN';
+
+type ExternalRuntimeStatus = 'HEALTHY' | 'DEGRADED' | 'DOWN' | 'UNKNOWN' | 'NOT_MONITORED';
+type ExternalEvidenceLevel = 'CONFIGURATION_ONLY' | 'CONNECTIVITY' | 'FUNCTIONAL';
+export type ExternalFutureReadiness = 'NOT_STARTED' | 'PARTIAL' | 'READY_FOR_REENTRY';
+export type ExternalReentryCheck = {
+  label: string;
+  status: 'VERIFIED' | 'PENDING' | 'FUTURE';
+};
+export type ReferralReleaseProfile = 'ANDROID_MVP' | 'IOS_RELEASE';
+
+type RuntimeProbeResult = {
+  evidenceSummary: string;
+  failureSince: string | null;
+  isStale: boolean;
+  lastProbeAt: string | null;
+  lastSuccessAt: string | null;
+  latencyMs: number | null;
+  status: ExternalRuntimeStatus;
+};
+
+type ExternalServiceStatus = {
+  id: string;
+  name: string;
+  category: 'auth' | 'core' | 'maps' | 'payments' | 'storage' | 'messaging' | 'referrals';
+  launchScope: 'CURRENT_STAGE' | 'DEFERRED';
+  enabled: boolean;
+  requiredForCurrentLaunch: boolean;
+  configurationStatus: ExternalConfigurationStatus;
+  configurationCheckedAt: string | null;
+  runtimeStatus: ExternalRuntimeStatus;
+  probeType: 'CONFIG' | 'CONNECTIVITY' | 'FUNCTIONAL_E2E' | 'NONE';
+  evidenceLevel: ExternalEvidenceLevel;
+  lastVerifiedAt: string | null;
+  verificationMethod: string;
+  lastProbeAt: string | null;
+  lastSuccessAt: string | null;
+  failureSince: string | null;
+  latencyMs: number | null;
+  isStale: boolean;
+  evidenceSummary: string;
+  impactSummary: string;
+  ownerTeam: string;
+  evidenceHref: string | null;
+  relatedWorkspaceHref: string | null;
+  runbookHref: string | null;
+  escalationRoute: string | null;
+  runbookUrl: string | null;
+  deferredReason: string | null;
+  futureReadiness: ExternalFutureReadiness | null;
+  reentryChecks: ExternalReentryCheck[];
+  reviewTrigger: string | null;
+  reviewedAt: string | null;
+  platformScope: ReferralReleaseProfile | null;
+  safeOperatorAction: string | null;
+  evidenceGap: boolean;
+};
+
+type ExternalServicesOverview = ExternalReadinessResult & {
+  launchProfile: typeof CURRENT_LAUNCH_PROFILE | 'ONLINE_PAYMENTS';
+  referralReleaseProfile: ReferralReleaseProfile;
+  generatedAt: string;
+  counts: {
+    total: number;
+    active: number;
+    needsAction: number;
+    launchBlockers: number;
+    degraded: number;
+    unknown: number;
+    notMonitored: number;
+    evidenceGaps: number;
+    deferred: number;
+    required: number;
+    configurationReady: number;
+    runtimeVerified: number;
+  };
+  services: ExternalServiceStatus[];
+};
+
+class RuntimeProbeTimeoutError extends Error {}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new RuntimeProbeTimeoutError()), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
+}
+
+function externalServicePolicy(
+  launchProfile: ExternalServicesOverview['launchProfile'],
+  check: ExternalReadinessCheck,
+  config: ConfigService,
+): {
+  configurationStatus: ExternalConfigurationStatus;
+  enabled: boolean;
+  requiredForCurrentLaunch: boolean;
+} {
+  const paymentGatewayKey = check.name === 'MoMo payments'
+    ? 'MOMO_GATEWAY_ENABLED'
+    : check.name === 'VNPay payments'
+      ? 'VNPAY_GATEWAY_ENABLED'
+      : null;
+  const explicitlyEnabled = paymentGatewayKey
+    ? config.get<string>(paymentGatewayKey)?.trim().toLowerCase() === 'true'
+    : check.category === 'push'
+      ? config.get<string>('PUSH_PROVIDER')?.trim().toLowerCase() === 'fcm'
+      : true;
+
+  if (['mobile', 'mobile-release', 'referrals'].includes(check.category)) {
+    return {
+      configurationStatus: 'DEFERRED',
+      enabled: false,
+      requiredForCurrentLaunch: false,
+    };
+  }
+
+  if (paymentGatewayKey && launchProfile === 'CASH_ONLY' && !explicitlyEnabled) {
+    return {
+      configurationStatus: 'DEFERRED',
+      enabled: false,
+      requiredForCurrentLaunch: false,
+    };
+  }
+
+  const requiredForCurrentLaunch =
+    !paymentGatewayKey || launchProfile === 'ONLINE_PAYMENTS' || explicitlyEnabled;
+  return {
+    configurationStatus: check.status === 'READY' ? 'CONFIGURED' : 'INCOMPLETE',
+    enabled: explicitlyEnabled,
+    requiredForCurrentLaunch,
+  };
+}
+
+export function referralRequirementsForProfile(profile: ReferralReleaseProfile) {
+  const androidRequirements = [
+    { key: 'REFERRAL_PUBLIC_BASE_URL', validator: 'https-url' as const },
+    { key: 'REFERRAL_CUSTOMER_ANDROID_STORE_URL', validator: 'https-url' as const },
+    { key: 'REFERRAL_PARTNER_ANDROID_STORE_URL', validator: 'https-url' as const },
+  ];
+
+  return profile === 'IOS_RELEASE'
+    ? [
+        ...androidRequirements,
+        { key: 'REFERRAL_CUSTOMER_IOS_STORE_URL', validator: 'https-url' as const },
+        { key: 'REFERRAL_PARTNER_IOS_STORE_URL', validator: 'https-url' as const },
+      ]
+    : androidRequirements;
+}
+
+export function futureReadinessFromChecks(
+  checks: readonly ExternalReentryCheck[],
+): ExternalFutureReadiness {
+  const currentChecks = checks.filter((check) => check.status !== 'FUTURE');
+  const verified = currentChecks.filter((check) => check.status === 'VERIFIED').length;
+  if (verified === 0) return 'NOT_STARTED';
+  return verified === currentChecks.length ? 'READY_FOR_REENTRY' : 'PARTIAL';
+}
+
+function deferredServiceMetadata(check: ExternalReadinessCheck) {
+  if (check.name === 'MoMo payments') {
+    return deferredMetadata({
+      deferredReason: 'Online payments are outside the current cash-only launch.',
+      operatorAction: 'Review the MoMo re-entry checklist when online payments enter scope.',
+      platformScope: null,
+      reentryChecks: [
+        reentryCheck(
+          'Merchant sandbox connection',
+          hasConfigured(check, ['MOMO_PARTNER_CODE', 'MOMO_ACCESS_KEY', 'MOMO_SECRET_KEY', 'MOMO_BASE_URL']),
+        ),
+        reentryCheck(
+          'Public HTTPS callback and redirect',
+          hasConfigured(check, ['MOMO_IPN_URL', 'MOMO_REDIRECT_URL']),
+        ),
+        { label: 'Signed checkout, callback, and query-recovery smoke', status: 'PENDING' },
+        { label: 'Reconciliation and refund runbook verification', status: 'PENDING' },
+      ],
+      reviewTrigger: 'When the online-payment phase is approved.',
+    });
+  }
+
+  if (check.name === 'VNPay payments') {
+    return deferredMetadata({
+      deferredReason: 'VNPay is intentionally disabled during the cash-only launch.',
+      operatorAction: 'Review the VNPay re-entry checklist when online payments enter scope.',
+      platformScope: null,
+      reentryChecks: [
+        reentryCheck(
+          'Merchant sandbox and signing configuration',
+          hasConfigured(check, ['VNPAY_TMN_CODE', 'VNPAY_HASH_SECRET', 'VNPAY_PAYMENT_URL', 'VNPAY_API_URL']),
+        ),
+        reentryCheck(
+          'Public HTTPS return route and server identity',
+          hasConfigured(check, ['VNPAY_RETURN_URL', 'VNPAY_SERVER_IP']),
+        ),
+        { label: 'Signed checkout, GET IPN, and query-recovery smoke', status: 'PENDING' },
+        { label: 'Asynchronous refund end-to-end verification', status: 'PENDING' },
+      ],
+      reviewTrigger: 'After the online-payment phase and public DNS/TLS are approved.',
+    });
+  }
+
+  return deferredMetadata({
+    deferredReason: 'Public referral sharing and store routing are outside the current launch stage.',
+    operatorAction: 'Review referral link readiness before public sharing is enabled.',
+    platformScope: CURRENT_REFERRAL_RELEASE_PROFILE,
+    reentryChecks: [
+      reentryCheck('Public referral base URL', hasConfigured(check, ['REFERRAL_PUBLIC_BASE_URL'])),
+      reentryCheck(
+        'Customer Android store destination',
+        hasConfigured(check, ['REFERRAL_CUSTOMER_ANDROID_STORE_URL']),
+      ),
+      reentryCheck(
+        'Partner Android store destination',
+        hasConfigured(check, ['REFERRAL_PARTNER_ANDROID_STORE_URL']),
+      ),
+      { label: 'Android device-routing smoke', status: 'PENDING' },
+      { label: 'Customer and Partner iOS destinations', status: 'FUTURE' },
+    ],
+    reviewTrigger: 'Before public referral sharing or an Android store release begins.',
+  });
+}
+
+function deferredMetadata(input: {
+  deferredReason: string;
+  operatorAction: string;
+  platformScope: ReferralReleaseProfile | null;
+  reentryChecks: ExternalReentryCheck[];
+  reviewTrigger: string;
+}) {
+  return {
+    ...input,
+    futureReadiness: futureReadinessFromChecks(input.reentryChecks),
+  };
+}
+
+function reentryCheck(label: string, verified: boolean): ExternalReentryCheck {
+  return { label, status: verified ? 'VERIFIED' : 'PENDING' };
+}
+
+function hasConfigured(check: ExternalReadinessCheck, keys: readonly string[]) {
+  return keys.every((key) => check.configured.includes(key));
+}
+
+function externalServiceNeedsAction(service: ExternalServiceStatus) {
+  return (
+    (service.requiredForCurrentLaunch && service.configurationStatus === 'INCOMPLETE') ||
+    (service.enabled && ['DOWN', 'DEGRADED'].includes(service.runtimeStatus))
+  );
+}
+
+function externalServiceHasEvidenceGap(service: ExternalServiceStatus) {
+  return (
+    service.requiredForCurrentLaunch &&
+    service.enabled &&
+    ['UNKNOWN', 'NOT_MONITORED'].includes(service.runtimeStatus)
+  );
+}
+
+function externalServiceId(check: ExternalReadinessCheck) {
+  return `${check.category}-${check.name}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function externalServiceCategory(category: string): ExternalServiceStatus['category'] {
+  if (category === 'supabase') return 'core';
+  if (category === 'supabase-auth') return 'auth';
+  if (category === 'push' || category === 'sms') return 'messaging';
+  if (category === 'referrals') return 'referrals';
+  if (category === 'payments') return 'payments';
+  if (category === 'storage') return 'storage';
+  return 'maps';
+}
+
+function externalServiceOperatorMetadata(category: string, name: string) {
+  if (category === 'supabase') {
+    return {
+      ownerTeam: 'Platform operations',
+      evidenceHref: null,
+      relatedWorkspaceHref: '/app-sessions',
+      runbookHref: null,
+      configurationAction: 'Escalate missing server configuration to Platform operations.',
+      runtimeAction: 'Review affected app sessions and escalate database connectivity.',
+    };
+  }
+  if (category === 'supabase-auth') {
+    return {
+      ownerTeam: 'Identity operations',
+      evidenceHref: null,
+      relatedWorkspaceHref: '/app-sessions',
+      runbookHref: null,
+      configurationAction: 'Escalate phone authentication configuration to Identity operations.',
+      runtimeAction: 'Review app sessions before asking customers or Partners to retry sign-in.',
+    };
+  }
+  if (category === 'maps') {
+    return {
+      ownerTeam: 'Marketplace operations',
+      evidenceHref: null,
+      relatedWorkspaceHref: '/vietnam-overview?view=live',
+      runbookHref: null,
+      configurationAction: 'Escalate map credential setup to Marketplace operations.',
+      runtimeAction: 'Review Vietnam operations before relying on map coverage.',
+    };
+  }
+  if (category === 'payments') {
+    return {
+      ownerTeam: 'Finance operations',
+      evidenceHref: null,
+      relatedWorkspaceHref: '/payments',
+      runbookHref: null,
+      configurationAction: `Keep ${name.replace(' payments', '')} disabled until sandbox verification is complete.`,
+      runtimeAction: 'Review payment evidence before accepting the affected payment method.',
+    };
+  }
+  if (category === 'storage') {
+    return {
+      ownerTeam: 'Platform operations',
+      evidenceHref: null,
+      relatedWorkspaceHref: '/partners',
+      runbookHref: null,
+      configurationAction: 'Escalate storage configuration before processing new documents or media.',
+      runtimeAction: 'Review affected Partner documents and escalate storage connectivity.',
+    };
+  }
+  if (category === 'referrals') {
+    return {
+      ownerTeam: 'Growth operations',
+      evidenceHref: null,
+      relatedWorkspaceHref: '/referrals/customers#referral-link-readiness',
+      runbookHref: null,
+      configurationAction: 'Prepare public links only when referral launch enters scope.',
+      runtimeAction: 'Review referral attribution evidence.',
+    };
+  }
+  return {
+    ownerTeam: 'Customer operations',
+    evidenceHref:
+      category === 'push'
+        ? '/notifications?mode=action&issue=failed&channel=fcm'
+        : null,
+    relatedWorkspaceHref: category === 'push' ? '/notifications' : '/app-sessions',
+    runbookHref: null,
+    configurationAction:
+      category === 'push'
+        ? 'Escalate push configuration; use in-app records for urgent follow-up.'
+        : 'Escalate SMS configuration before asking users to retry phone verification.',
+    runtimeAction:
+      category === 'push'
+        ? 'Review notification delivery and use in-app records for urgent follow-up.'
+        : 'Review app sessions before asking users to retry phone verification.',
+  };
+}
+
+function externalServiceImpactSummary(
+  category: string,
+  status: ExternalRuntimeStatus,
+) {
+  if (!['DOWN', 'DEGRADED'].includes(status)) {
+    return 'No confirmed impact.';
+  }
+
+  const condition = status === 'DOWN' ? 'may be unavailable' : 'may be impaired';
+  if (category === 'supabase') {
+    return `Customer, Partner, booking, and retained service records ${condition}.`;
+  }
+  if (category === 'supabase-auth') {
+    return `Sign-in and phone verification ${condition}.`;
+  }
+  if (category === 'maps') {
+    return `Address search and nearby Partner discovery ${condition}.`;
+  }
+  if (category === 'payments') {
+    return `The affected payment method ${condition}.`;
+  }
+  if (category === 'storage') {
+    return `Document and media access ${condition}.`;
+  }
+  if (category === 'referrals') {
+    return `Referral links and attribution ${condition}.`;
+  }
+  if (category === 'push') {
+    return `Push notification delivery ${condition}.`;
+  }
+  return `SMS verification delivery ${condition}.`;
+}
+
 function isHttpsUrl(value: string) {
   try {
     const url = new URL(value);
@@ -555,12 +1178,6 @@ function isSecretLikeValue(value: string) {
 
 function isSupportedSmsProvider(value: string) {
   return ['vonage', 'viettel', 'fpt', 'custom'].includes(value.trim().toLowerCase());
-}
-
-function isDeferredExternalCategory(category: string) {
-  return ['mobile-release', 'supabase-auth', 'sms', 'payments', 'push', 'storage', 'referrals'].includes(
-    category,
-  );
 }
 
 function externalCheckStatus(input: {

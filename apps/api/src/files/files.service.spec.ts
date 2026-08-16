@@ -1,4 +1,10 @@
-import { FileUploadStatus, FileVisibility, Role } from '@prisma/client';
+import {
+  AdminOperatorPermissionCategory,
+  FilePurpose,
+  FileUploadStatus,
+  FileVisibility,
+  Role,
+} from '@prisma/client';
 
 import { FilesService } from './files.service';
 
@@ -24,14 +30,17 @@ describe('FilesService upload security', () => {
       },
     };
     const s3 = {
-      bucketForVisibility: vi.fn().mockReturnValue('hands-public'),
+      bucketForVisibility: vi.fn((visibility: FileVisibility) =>
+        visibility === FileVisibility.PUBLIC ? 'hands-public' : 'hands-private'),
       configurationNote: vi.fn().mockReturnValue('Upload with PUT before the presigned URL expires.'),
+      copyObject: vi.fn().mockResolvedValue({ copied: true }),
       deleteObject: vi.fn().mockResolvedValue({ deleted: true }),
       inspectObject: vi.fn(),
       isConfigured: vi.fn().mockReturnValue(false),
       allowsPlaceholderStorage: vi.fn().mockReturnValue(true),
       presign: vi.fn().mockReturnValue('https://storage.example/upload'),
       publicUrl: vi.fn().mockImplementation((key: string) => `https://cdn.example/${key}`),
+      scanObject: vi.fn().mockResolvedValue({ clean: true, mode: 'external-scanner' }),
       storageMode: vi.fn().mockReturnValue('s3-compatible-presigned'),
     };
     return { prisma, s3, service: new FilesService(prisma as never, s3 as never) };
@@ -44,6 +53,7 @@ describe('FilesService upload security', () => {
       service.createPresignedUpload(providerUser, {
         contentType: 'image/svg+xml',
         purpose: 'profile-image',
+        sizeBytes: 1024,
         visibility: FileVisibility.PUBLIC,
       }),
     ).rejects.toThrow('Only JPEG, PNG, WebP, and MP4 uploads are allowed in MVP');
@@ -58,12 +68,13 @@ describe('FilesService upload security', () => {
       service.createPresignedUpload(providerUser, {
         contentType: ' Image/JPEG ',
         purpose: 'profile-image',
+        sizeBytes: 1024,
         visibility: FileVisibility.PUBLIC,
       }),
     ).resolves.toEqual(
       expect.objectContaining({
         upload: expect.objectContaining({
-          headers: { 'content-type': 'image/jpeg' },
+          headers: { 'content-length': '1024', 'content-type': 'image/jpeg' },
         }),
       }),
     );
@@ -71,13 +82,17 @@ describe('FilesService upload security', () => {
     expect(prisma.fileAsset.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         contentType: 'image/jpeg',
+        key: expect.stringMatching(/^private\/profile-image\//u),
         purpose: 'PROFILE_IMAGE',
+        sizeBytes: 1024,
+        url: null,
         visibility: FileVisibility.PUBLIC,
       }),
     });
     expect(s3.presign).toHaveBeenCalledWith(
       expect.objectContaining({
-        headers: { 'content-type': 'image/jpeg' },
+        bucket: 'hands-private',
+        headers: { 'content-length': '1024', 'content-type': 'image/jpeg' },
         method: 'PUT',
       }),
     );
@@ -91,6 +106,7 @@ describe('FilesService upload security', () => {
       service.createPresignedUpload(providerUser, {
         contentType: 'image/jpeg',
         purpose: 'profile-image',
+        sizeBytes: 1024,
         visibility: FileVisibility.PUBLIC,
       }),
     ).rejects.toThrow('File storage is not configured for this environment');
@@ -119,6 +135,80 @@ describe('FilesService upload security', () => {
     );
   });
 
+  it('keeps pending public Partner media behind an authenticated private read URL', async () => {
+    const { prisma, s3, service } = createService();
+    prisma.fileAsset.findUnique.mockResolvedValue({
+      id: 'file-1',
+      key: 'private/profile-image/file-1.jpg',
+      ownerUserId: providerUser.id,
+      providerVerification: null,
+      purpose: FilePurpose.PROFILE_IMAGE,
+      reviewStatus: 'PENDING_REVIEW',
+      visibility: FileVisibility.PUBLIC,
+    });
+
+    await expect(service.createReadUrl(providerUser, 'file-1')).resolves.toMatchObject({
+      read: { method: 'GET', url: 'https://storage.example/upload' },
+    });
+    expect(s3.presign).toHaveBeenCalledWith(
+      expect.objectContaining({ bucket: 'hands-private', method: 'GET' }),
+    );
+  });
+
+  it('fails closed for unreviewed legacy media still stored in the public bucket', async () => {
+    const { prisma, s3, service } = createService();
+    prisma.fileAsset.findUnique.mockResolvedValue({
+      id: 'legacy-file-1',
+      key: 'public/profile-image/legacy-file-1.jpg',
+      ownerUserId: providerUser.id,
+      providerVerification: null,
+      purpose: FilePurpose.PROFILE_IMAGE,
+      reviewStatus: 'PENDING_REVIEW',
+      visibility: FileVisibility.PUBLIC,
+    });
+
+    await expect(service.createReadUrl(providerUser, 'legacy-file-1')).rejects.toThrow(
+      'Legacy public media must be reviewed before access',
+    );
+    expect(s3.presign).not.toHaveBeenCalled();
+  });
+
+  it('returns only a public-safe file projection for approved media', async () => {
+    const { prisma, service } = createService();
+    prisma.fileAsset.findUnique.mockResolvedValue({
+      id: 'approved-file-1',
+      contentType: 'image/jpeg',
+      key: 'public/profile-image/approved-file-1.jpg',
+      originalName: 'private-name.jpg',
+      ownerUserId: 'provider-user-1',
+      providerVerification: { providerProfile: { userId: 'provider-user-1' } },
+      purpose: FilePurpose.PROFILE_IMAGE,
+      reviewReason: 'internal review note',
+      reviewStatus: 'APPROVED',
+      sizeBytes: 1024,
+      visibility: FileVisibility.PUBLIC,
+    });
+
+    const result = await service.createReadUrl(
+      { id: 'customer-user-1', roles: [Role.CUSTOMER] },
+      'approved-file-1',
+    );
+
+    expect(result.file).toEqual({
+      id: 'approved-file-1',
+      contentType: 'image/jpeg',
+      purpose: FilePurpose.PROFILE_IMAGE,
+      reviewStatus: 'APPROVED',
+      reviewedAt: null,
+      sizeBytes: 1024,
+      visibility: FileVisibility.PUBLIC,
+    });
+    expect(result.file).not.toHaveProperty('key');
+    expect(result.file).not.toHaveProperty('ownerUserId');
+    expect(result.file).not.toHaveProperty('providerVerification');
+    expect(result.file).not.toHaveProperty('reviewReason');
+  });
+
   it('does not return a private read URL to an unrelated mobile user', async () => {
     const { prisma, s3, service } = createService();
     prisma.fileAsset.findUnique.mockResolvedValue({
@@ -133,6 +223,74 @@ describe('FilesService upload security', () => {
       service.createReadUrl({ id: 'other-customer', roles: [Role.CUSTOMER] }, 'file-1'),
     ).rejects.toThrow('You do not have access to this file');
     expect(s3.presign).not.toHaveBeenCalled();
+  });
+
+  it('does not let an Admin read a private file without the purpose permission', async () => {
+    const { prisma, s3, service } = createService();
+    prisma.fileAsset.findUnique.mockResolvedValue({
+      id: 'kyc-file-1',
+      key: 'private/provider-verification/kyc-file-1.jpg',
+      ownerUserId: 'provider-user',
+      providerVerification: { providerProfile: { userId: 'provider-user' } },
+      purpose: FilePurpose.PROVIDER_VERIFICATION,
+      visibility: FileVisibility.PRIVATE,
+    });
+
+    await expect(
+      service.createReadUrl(
+        {
+          id: 'support-admin',
+          roles: [Role.ADMIN],
+          adminPermissionCategories: [AdminOperatorPermissionCategory.CUSTOMERS_DETAIL],
+        },
+        'kyc-file-1',
+      ),
+    ).rejects.toThrow('You do not have access to this file');
+    expect(s3.presign).not.toHaveBeenCalled();
+  });
+
+  it('lets a KYC Admin read a private Partner verification file', async () => {
+    const { prisma, service } = createService();
+    prisma.fileAsset.findUnique.mockResolvedValue({
+      id: 'kyc-file-1',
+      key: 'private/provider-verification/kyc-file-1.jpg',
+      ownerUserId: 'provider-user',
+      providerVerification: { providerProfile: { userId: 'provider-user' } },
+      purpose: FilePurpose.PROVIDER_VERIFICATION,
+      visibility: FileVisibility.PRIVATE,
+    });
+
+    await expect(
+      service.createReadUrl(
+        {
+          id: 'kyc-admin',
+          roles: [Role.ADMIN],
+          adminPermissionCategories: [AdminOperatorPermissionCategory.PARTNERS_KYC],
+        },
+        'kyc-file-1',
+      ),
+    ).resolves.toMatchObject({ read: { method: 'GET' } });
+  });
+
+  it('rejects Finance evidence uploads from an Admin without wallet-adjustment permission', async () => {
+    const { prisma, service } = createService();
+
+    await expect(
+      service.createPresignedUpload(
+        {
+          id: 'support-admin',
+          roles: [Role.ADMIN],
+          adminPermissionCategories: [AdminOperatorPermissionCategory.CUSTOMERS_DETAIL],
+        },
+        {
+          contentType: 'image/jpeg',
+          purpose: 'finance-evidence',
+          sizeBytes: 1024,
+          visibility: FileVisibility.PRIVATE,
+        },
+      ),
+    ).rejects.toThrow('Admin permission does not allow this file operation');
+    expect(prisma.fileAsset.create).not.toHaveBeenCalled();
   });
 
   it('returns a private chat attachment read URL to the other booking participant', async () => {
@@ -208,19 +366,19 @@ describe('FilesService upload security', () => {
 
     await expect(
       service.completeUpload(providerUser, 'file-1', {
-        sizeBytes: 50 * 1024 * 1024,
+        sizeBytes: 10 * 1024 * 1024,
       }),
     ).resolves.toEqual(
       expect.objectContaining({
         uploadStatus: FileUploadStatus.UPLOADED,
-        sizeBytes: 50 * 1024 * 1024,
+        sizeBytes: 10 * 1024 * 1024,
       }),
     );
 
     expect(prisma.fileAsset.update).toHaveBeenCalledWith({
       where: { id: 'file-1' },
       data: expect.objectContaining({
-        sizeBytes: 50 * 1024 * 1024,
+        sizeBytes: 10 * 1024 * 1024,
         uploadStatus: FileUploadStatus.UPLOADED,
       }),
     });
@@ -272,6 +430,135 @@ describe('FilesService upload security', () => {
       'private/provider-verification/file-1.jpg',
       FileVisibility.PRIVATE,
     );
+    expect(s3.scanObject).toHaveBeenCalledWith(
+      'private/provider-verification/file-1.jpg',
+      FileVisibility.PRIVATE,
+    );
+  });
+
+  it('deletes and rejects an uploaded object when malware scanning fails', async () => {
+    const { prisma, s3, service } = createService();
+    s3.isConfigured.mockReturnValue(true);
+    s3.inspectObject.mockResolvedValue({
+      contentType: 'image/jpeg',
+      prefix: Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]),
+      sizeBytes: 1024,
+    });
+    s3.scanObject.mockResolvedValue({ clean: false, mode: 'external-scanner' });
+    prisma.fileAsset.findUnique.mockResolvedValue({
+      id: 'file-1',
+      contentType: 'image/jpeg',
+      key: 'private/provider-verification/file-1.jpg',
+      ownerUserId: providerUser.id,
+      providerVerification: null,
+      purpose: FilePurpose.PROVIDER_VERIFICATION,
+      sizeBytes: 1024,
+      visibility: FileVisibility.PRIVATE,
+    });
+
+    await expect(
+      service.completeUpload(providerUser, 'file-1', { sizeBytes: 1024 }),
+    ).rejects.toThrow('Uploaded file failed the malware safety scan');
+
+    expect(s3.deleteObject).toHaveBeenCalledWith(
+      'private/provider-verification/file-1.jpg',
+      FileVisibility.PRIVATE,
+    );
+    expect(prisma.fileAsset.update).toHaveBeenCalledWith({
+      where: { id: 'file-1' },
+      data: { uploadStatus: FileUploadStatus.FAILED },
+    });
+  });
+
+  it('promotes approved Partner media from private quarantine to the public bucket', async () => {
+    const { prisma, s3, service } = createService();
+    s3.isConfigured.mockReturnValue(true);
+    const pending = {
+      id: 'file-1',
+      key: 'private/profile-image/file-1.jpg',
+      ownerUserId: providerUser.id,
+      purpose: FilePurpose.PROFILE_IMAGE,
+      reviewStatus: 'PENDING_REVIEW',
+      uploadStatus: FileUploadStatus.UPLOADED,
+      visibility: FileVisibility.PUBLIC,
+    };
+    prisma.fileAsset.findUnique.mockResolvedValue(pending);
+    prisma.fileAsset.update.mockImplementation(({ data }) => Promise.resolve({ ...pending, ...data }));
+
+    await expect(service.approvePublicMedia('file-1', 'admin-1')).resolves.toMatchObject({
+      reviewStatus: 'APPROVED',
+      reviewedById: 'admin-1',
+      url: 'https://cdn.example/private/profile-image/file-1.jpg',
+    });
+
+    expect(s3.copyObject).toHaveBeenCalledWith(
+      pending.key,
+      FileVisibility.PRIVATE,
+      FileVisibility.PUBLIC,
+    );
+    expect(s3.deleteObject).toHaveBeenCalledWith(pending.key, FileVisibility.PRIVATE);
+  });
+
+  it('approves legacy pending Partner media that was already stored in the public bucket', async () => {
+    const { prisma, s3, service } = createService();
+    s3.isConfigured.mockReturnValue(true);
+    const legacyPending = {
+      id: 'legacy-file-1',
+      key: 'public/profile-image/legacy-file-1.jpg',
+      ownerUserId: providerUser.id,
+      purpose: FilePurpose.PROFILE_IMAGE,
+      reviewStatus: 'PENDING_REVIEW',
+      uploadStatus: FileUploadStatus.UPLOADED,
+      visibility: FileVisibility.PUBLIC,
+    };
+    prisma.fileAsset.findUnique.mockResolvedValue(legacyPending);
+    prisma.fileAsset.update.mockImplementation(({ data }) =>
+      Promise.resolve({ ...legacyPending, ...data }),
+    );
+
+    await expect(service.approvePublicMedia('legacy-file-1', 'admin-1')).resolves.toMatchObject({
+      reviewStatus: 'APPROVED',
+      url: 'https://cdn.example/public/profile-image/legacy-file-1.jpg',
+    });
+
+    expect(s3.copyObject).not.toHaveBeenCalled();
+    expect(s3.deleteObject).not.toHaveBeenCalled();
+  });
+
+  it('moves rejected approved Partner media back to private quarantine', async () => {
+    const { prisma, s3, service } = createService();
+    s3.isConfigured.mockReturnValue(true);
+    const approved = {
+      id: 'file-1',
+      key: 'public/profile-image/file-1.jpg',
+      ownerUserId: providerUser.id,
+      purpose: FilePurpose.PROFILE_IMAGE,
+      reviewStatus: 'APPROVED',
+      uploadStatus: FileUploadStatus.UPLOADED,
+      visibility: FileVisibility.PUBLIC,
+    };
+    prisma.fileAsset.findUnique.mockResolvedValue(approved);
+    prisma.fileAsset.update.mockImplementation(({ data }) => Promise.resolve({ ...approved, ...data }));
+
+    await expect(
+      service.rejectPublicMedia('file-1', 'admin-1', 'Customer privacy concern'),
+    ).resolves.toMatchObject({
+      reviewReason: 'Customer privacy concern',
+      reviewStatus: 'REJECTED',
+      url: null,
+    });
+
+    expect(s3.copyObject).toHaveBeenCalledWith(
+      approved.key,
+      FileVisibility.PUBLIC,
+      FileVisibility.PRIVATE,
+      'private/profile-image/file-1.jpg',
+    );
+    expect(s3.deleteObject).toHaveBeenCalledWith(approved.key, FileVisibility.PUBLIC);
+    expect(prisma.fileAsset.update).toHaveBeenCalledWith({
+      where: { id: 'file-1' },
+      data: expect.objectContaining({ key: 'private/profile-image/file-1.jpg' }),
+    });
   });
 
   it('rejects stored objects whose bytes do not match the declared content type', async () => {

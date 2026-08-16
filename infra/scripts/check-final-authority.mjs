@@ -333,7 +333,7 @@ function checkSupabaseDraftContract() {
     'requested_at timestamptz not null default now()',
     'create table if not exists public.booking_address_snapshots',
     'feedback_label text not null default',
-    'booking address snapshots participant read',
+    'booking address snapshots owner and selected Partner read',
   ]);
 }
 

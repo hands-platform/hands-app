@@ -15,6 +15,8 @@ import type { NotificationsService } from './notifications.service';
 
 describe('NotificationsController provider chat routes', () => {
   const notifications = {
+    listForUser: vi.fn(),
+    markRead: vi.fn(),
     providerChatSummary: vi.fn(),
     markProviderChatRead: vi.fn(),
   };
@@ -76,6 +78,21 @@ describe('NotificationsController provider chat routes', () => {
     expect(notifications.markProviderChatRead).toHaveBeenCalledWith(
       'provider-user-1',
       'chat-room-1',
+    );
+  });
+
+  it('passes the active role to broad notification list and read operations', async () => {
+    notifications.listForUser.mockResolvedValue([]);
+    notifications.markRead.mockResolvedValue({ id: 'notification-1' });
+
+    await controller.list(user);
+    await controller.markRead(user, 'notification-1');
+
+    expect(notifications.listForUser).toHaveBeenCalledWith('provider-user-1', Role.PROVIDER);
+    expect(notifications.markRead).toHaveBeenCalledWith(
+      'provider-user-1',
+      'notification-1',
+      Role.PROVIDER,
     );
   });
 });

@@ -47,6 +47,25 @@ describe('AdminOperatorAccessGate', () => {
     expect(markup).not.toContain('Hidden finance page');
   });
 
+  it('separates an unavailable access API from a permission denial', async () => {
+    mockedHeaders.mockResolvedValue(new Headers({ 'x-admin-pathname': '/admin-operators' }));
+
+    const markup = renderToStaticMarkup(
+      await AdminOperatorAccessGate({
+        children: <div>Hidden operator directory</div>,
+        operatorAccess: null,
+        operatorAccessAvailable: false,
+      }),
+    );
+
+    expect(markup).toContain('Operator access unavailable');
+    expect(markup).toContain('No access denial was inferred.');
+    expect(markup).toContain('Retry');
+    expect(markup).not.toContain('Access restricted');
+    expect(markup).not.toContain('Hidden operator directory');
+    expect(mockedGetAccess).not.toHaveBeenCalled();
+  });
+
   it('uses the registry label and a safe customer return path for denied customer detail', async () => {
     mockedHeaders.mockResolvedValue(
       new Headers({

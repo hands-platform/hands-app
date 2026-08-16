@@ -23,6 +23,7 @@ describe('OperationsPolicyMatchingStageImpactSection', () => {
     const section = OperationsPolicyMatchingStageImpactSection({
       preview: {
         currentPolicyLabel: '10m / 10 km / 30m fresh',
+        openMatchingCount: 3,
         rows: [
           {
             noSupply: 0,
@@ -62,6 +63,7 @@ describe('OperationsPolicyMatchingStageImpactSection', () => {
     const section = OperationsPolicyMatchingStageImpactSection({
       preview: {
         currentPolicyLabel: '10m / 10 km / 30m fresh',
+        openMatchingCount: 3,
         rows: [
           {
             noSupply: 0,
@@ -82,5 +84,20 @@ describe('OperationsPolicyMatchingStageImpactSection', () => {
 
     expect(classNamesIn(section)).toContain('pill pill-warn');
     expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
+  });
+
+  it('does not render scenario rows when the open matching denominator is zero', () => {
+    const section = OperationsPolicyMatchingStageImpactSection({
+      preview: {
+        currentPolicyLabel: '10m / 10 km / 30m fresh',
+        openMatchingCount: 0,
+        rows: [],
+        summary: [],
+      },
+    });
+
+    const rendered = normalizedTextContent(section);
+    expect(rendered).toContain('No open matching bookings to model');
+    expect(rendered).not.toContain('Response window');
   });
 });

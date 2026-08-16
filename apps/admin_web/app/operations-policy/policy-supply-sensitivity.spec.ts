@@ -80,7 +80,7 @@ describe('policy supply sensitivity', () => {
       {
         label: 'Coordinate sample',
         value: '5',
-        helper: '5 total partner(s), 5 with saved coordinates.',
+        helper: '5 total Partners, 5 Partners with saved coordinates.',
       },
       {
         label: 'Current visible supply',

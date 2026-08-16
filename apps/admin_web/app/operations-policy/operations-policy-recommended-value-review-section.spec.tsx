@@ -60,7 +60,7 @@ describe('OperationsPolicyRecommendedValueReviewSection', () => {
       title: 'Recommended value review',
     });
     expect(rendered).toContain('Recommended value review');
-    expect(rendered).toContain('1 owner choice(s)');
+    expect(rendered).toContain('1 documented deviation');
     expect(rendered).toContain('Compared policies');
     expect(rendered).toContain('Provider response window');
     expect(rendered).not.toContain('Marketplace radius');

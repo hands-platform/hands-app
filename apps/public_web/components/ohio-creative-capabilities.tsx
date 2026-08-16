@@ -5,31 +5,27 @@ import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react
 
 const cards = [
   {
-    eyebrow: 'Connection',
-    title: ['Highly', 'accessible'],
-    description:
-      'Our approach ensures your brand story resonates consistently, whether online, in-store, or in media.',
+    eyebrow: 'Kết nối',
+    title: ['Dễ dàng', 'tiếp cận'],
+    description: 'Cách tiếp cận rõ ràng giúp trải nghiệm của đối tác luôn nhất quán trên mọi điểm chạm.',
     image: '/images/ohio-creative/connection.jpeg',
   },
   {
-    eyebrow: 'Collaboration',
-    title: ['Creative', 'networking'],
-    description:
-      'Creating a higher spacing and how people move through a unique and impactful campaign.',
+    eyebrow: 'Hợp tác',
+    title: ['Kết nối', 'chuyên nghiệp'],
+    description: 'Xây dựng mạng lưới cộng tác bền vững để mỗi đối tác có thêm cơ hội phát triển nghề nghiệp.',
     image: '/images/ohio-creative/collaboration.jpeg',
   },
   {
-    eyebrow: 'Innovations',
-    title: ['Ongoing', 'optimization'],
-    description:
-      'We track how people move through impactful campaigns that allows to discover better others.',
+    eyebrow: 'Đổi mới',
+    title: ['Liên tục', 'tối ưu'],
+    description: 'Theo dõi trải nghiệm thực tế để liên tục cải thiện quy trình và chất lượng phục vụ.',
     image: '/images/ohio-creative/innovations.jpeg',
   },
   {
-    eyebrow: 'Experience',
-    title: ['Collaborative', 'discovery'],
-    description:
-      'Spaces of each debt in the digital world can help you with overall simplest authentic.',
+    eyebrow: 'Trải nghiệm',
+    title: ['Cùng nhau', 'phát triển'],
+    description: 'Học hỏi từ cộng đồng và phát triển kỹ năng để tạo nên trải nghiệm dịch vụ đáng tin cậy.',
     image: '/images/ohio-creative/experience.jpeg',
   },
 ] as const;
@@ -106,23 +102,23 @@ export function OhioCreativeCapabilities() {
   };
 
   return (
-    <section className="ohio-creative-section" aria-label="Creative capabilities">
+    <section className="ohio-creative-section" aria-label="Năng lực và kinh nghiệm">
       <div className="ohio-creative-shell">
         <div className="ohio-section-spacer" aria-hidden="true" />
 
         <div className="ohio-intro-row">
           <div className="ohio-intro-copy">
             <h2>
-              With more than 16+ years<br className="ohio-desktop-break" />{' '}
-              of experience, our team has<br className="ohio-desktop-break" />{' '}
-              become a leader in digital<br className="ohio-desktop-break" />{' '}
-              design and innovations.
+              Kinh nghiệm thực tế
+              <br className="ohio-desktop-break" /> và quy trình rõ ràng giúp
+              <br className="ohio-desktop-break" /> đối tác tự tin phát triển
+              <br className="ohio-desktop-break" /> cùng HANDS.
             </h2>
-            <p>Grow brands through bold, strategic creative</p>
+            <p>Phát triển nghề nghiệp bằng trải nghiệm minh bạch</p>
           </div>
           <div className="ohio-intro-action">
-            <a className="ohio-text-link" href="#" target="_blank">
-              See all works
+            <a className="ohio-text-link" href="https://join.hands.vn/">
+              Tìm hiểu thêm
               <ArrowIcon />
             </a>
           </div>
@@ -130,33 +126,30 @@ export function OhioCreativeCapabilities() {
 
         <div className="ohio-story-row">
           <div className="ohio-shape-column">
-            <Image
-              alt=""
-              height={735}
-              priority
-              src="/images/ohio-creative/shape1.png"
-              width={1536}
-            />
+            <Image alt="" height={735} priority src="/images/ohio-creative/shape1.png" width={1536} />
           </div>
           <div className="ohio-story-copy ohio-story-copy-primary">
             <p>
-              Using year-over-year design approaches and the latest technologies, we will ensure that
-              your new website will be <strong>visible, accessible, and treads lightly on the environment.</strong>
+              HANDS kết nối công nghệ với kinh nghiệm dịch vụ để công việc của đối tác trở nên{' '}
+              <strong>rõ ràng, dễ tiếp cận và chủ động hơn.</strong>
             </p>
-            <p>
-              Our philosophy is built on people who are addicted on creating, learning, and growing
-              together, which allows us to discover better others miss.
-            </p>
+            <p>Chúng tôi xây dựng một cộng đồng cùng học hỏi, cải thiện kỹ năng và phát triển lâu dài.</p>
           </div>
           <div className="ohio-story-copy ohio-story-copy-secondary">
             <p>
-              Modern and cutting-edge approach for creating <strong>digital and connected brands,
-              services, and products</strong> driving digital arts and engaging experiences.
+              Quy trình hiện đại tạo nên một hệ thống{' '}
+              <strong>dịch vụ kết nối, minh bạch và đáng tin cậy</strong> cho cả đối tác và khách hàng.
             </p>
             <div className="ohio-progress" ref={progressRef}>
-              <h3>Media insights</h3>
+              <h3>Mức độ sẵn sàng</h3>
               <div className="ohio-progress-track">
-                <div className="ohio-progress-bar" role="progressbar" aria-label="Progress bar" aria-valuemax={100} aria-valuenow={83}>
+                <div
+                  className="ohio-progress-bar"
+                  role="progressbar"
+                  aria-label="Tiến độ"
+                  aria-valuemax={100}
+                  aria-valuenow={83}
+                >
                   <span className="ohio-progress-tooltip">
                     <span className="ohio-progress-value">0</span>%
                   </span>
@@ -169,9 +162,9 @@ export function OhioCreativeCapabilities() {
         <div className="ohio-section-spacer" aria-hidden="true" />
 
         <div className="ohio-capabilities-heading">
-          <h3>Capabilities</h3>
-          <a className="ohio-text-link" href="#" target="_blank">
-            See all services
+          <h3>Năng lực</h3>
+          <a className="ohio-text-link" href="https://join.hands.vn/">
+            Xem tất cả dịch vụ
             <ArrowIcon />
           </a>
         </div>
@@ -185,7 +178,12 @@ export function OhioCreativeCapabilities() {
                 onPointerLeave={resetTilt}
                 onPointerMove={tilt}
               >
-                <Image alt={card.title.join(' ')} fill sizes="(max-width: 760px) calc(100vw - 32px), 272px" src={card.image} />
+                <Image
+                  alt={card.title.join(' ')}
+                  fill
+                  sizes="(max-width: 760px) calc(100vw - 32px), 272px"
+                  src={card.image}
+                />
                 <div className="ohio-capability-overlay">
                   <div>
                     <p className="ohio-capability-eyebrow">{card.eyebrow}</p>
@@ -197,7 +195,11 @@ export function OhioCreativeCapabilities() {
                   </div>
                   <div className="ohio-capability-description">
                     <p>{card.description}</p>
-                    <a aria-label={`Open ${card.title.join(' ')}`} href="#" target="_blank">
+                    <a
+                      aria-label={`Mở ${card.title.join(' ')}`}
+                      href="https://join.hands.vn/"
+                      target="_blank"
+                    >
                       <ArrowIcon size={16} />
                     </a>
                   </div>

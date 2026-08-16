@@ -324,6 +324,7 @@ async function uploadWalletAdjustmentEvidence(formData: FormData) {
     contentType,
     fileName: file.name,
     purpose: 'finance-evidence',
+    sizeBytes: file.size,
     visibility: 'PRIVATE',
   });
   if (!/^https?:\/\//u.test(presigned.upload.url)) {

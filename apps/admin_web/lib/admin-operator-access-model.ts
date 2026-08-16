@@ -11,6 +11,7 @@ export type AdminOperatorPermissionCategory =
   | 'CUSTOMERS_REVIEWS'
   | 'GROWTH'
   | 'GROWTH_MARKETING'
+  | 'GROWTH_MARKETING_SPEND'
   | 'PARTNERS'
   | 'PARTNERS_DIRECTORY'
   | 'PARTNERS_UNAPPROVED'
@@ -127,12 +128,12 @@ const pageCategoryRules: Array<{
     prefixes: ['/finance-tax/bank-reconciliation'],
   },
   {
-    category: 'SYSTEM_POLICY',
+    category: 'FINANCE_BANK_RECONCILIATION',
     prefixes: ['/finance-tax/company-bank-accounts'],
   },
   {
     category: 'FINANCE_TAX',
-    prefixes: ['/finance-tax/coupon-finance'],
+    prefixes: ['/finance-tax/coupon-finance', '/tax-policy'],
   },
   {
     category: 'FINANCE_WALLET_ADJUSTMENTS',
@@ -184,7 +185,7 @@ const pageCategoryRules: Array<{
   },
   {
     category: 'SYSTEM_POLICY',
-    prefixes: ['/operations-policy', '/tax-policy'],
+    prefixes: ['/operations-policy'],
   },
   {
     category: 'CONTENT_VIEW',
@@ -297,6 +298,12 @@ const apiCategoryRules: Array<{
     prefixes: [
       '/admin/finance',
       '/admin/monthly-tax-closings',
+      '/admin/tax-policy-approval-requests',
+      '/admin/tax-policy-audit-logs',
+      '/admin/tax-policy-capabilities',
+      '/admin/tax-policy-integrity-records',
+      '/admin/tax-policy-integrity-summary',
+      '/admin/tax-policy-workspace-summary',
       '/admin/tax-policy-versions',
       '/admin/tax-rules',
       '/admin/tax',
@@ -337,7 +344,13 @@ const apiCategoryRules: Array<{
   },
   {
     category: 'SYSTEM_ADMIN_OPERATORS',
-    prefixes: ['/admin/users'],
+    prefixes: [
+      '/admin/users',
+      '/admin/finance-approver-governance',
+      '/admin/admin-operator-invitations',
+      '/admin/admin-operators',
+      '/admin/admin-operator-history',
+    ],
   },
   {
     category: 'SYSTEM_SERVICES',
@@ -426,6 +439,12 @@ export function adminOperatorCategoryForAdminApiPath(
   }
 
   const normalizedPath = normalizePath(path);
+  if (normalizedPath === '/admin/marketing/spend-daily') {
+    return 'GROWTH_MARKETING_SPEND';
+  }
+  if (/^\/admin\/finance-approver-governance\/requests\/[^/]+\/decision$/u.test(normalizedPath)) {
+    return 'SYSTEM_POLICY';
+  }
   if (/^\/admin\/notifications\/[^/]+\/retry$/u.test(normalizedPath)) {
     return 'NOTIFICATIONS_RETRY';
   }
@@ -442,8 +461,7 @@ export function adminOperatorCategoryForAdminApiPath(
   if (
     (normalizedPath.startsWith('/admin/payment-fee-policies') ||
       normalizedPath === '/admin/company-bank-accounts' ||
-      /^\/admin\/company-bank-accounts\/[^/]+$/u.test(normalizedPath) ||
-      normalizedPath.startsWith('/admin/tax-policy-versions')) &&
+      /^\/admin\/company-bank-accounts\/[^/]+$/u.test(normalizedPath)) &&
     !normalizedPath.endsWith('/approval-decision')
   ) {
     return 'SYSTEM_POLICY';
@@ -465,6 +483,10 @@ export function hasAdminOperatorCategory(
 ) {
   if (access?.roles?.includes('MASTER_ADMIN')) {
     return true;
+  }
+
+  if (category === 'NOTIFICATIONS_PUSH') {
+    return accessIncludesCategory(access?.categories ?? [], category);
   }
 
   const parentCategory = parentCategories[category];

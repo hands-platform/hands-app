@@ -1,6 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { adminNotificationDataScopeSql } from './admin-notification-production-data';
+import {
+  adminNotificationDataScopeSql,
+  adminNotificationPushIntentSql,
+} from './admin-notification-production-data';
 import { adminQueueAgeDateWhere, adminQueueSortDirection } from './admin-queue-list';
 
 export type AdminNotificationRetryQueryOptions = {
@@ -170,7 +173,10 @@ function adminNotificationIncidentFilteredSql(
   _windowMinutes: number,
   historicalCutoffAt: Date,
 ) {
-  const conditions: Prisma.Sql[] = [adminNotificationDataScopeSql(options.dataScope)];
+  const conditions: Prisma.Sql[] = [
+    adminNotificationDataScopeSql(options.dataScope),
+    adminNotificationPushIntentSql(),
+  ];
   const from = parseNotificationBoundary(options.from);
   const to = parseNotificationBoundary(options.to);
   if (from && to && from.getTime() >= to.getTime()) {
@@ -248,7 +254,10 @@ function adminNotificationDispositionFilteredSql(
   options: AdminNotificationRetryQueryOptions,
   disposition: AdminNotificationDeliveryDisposition,
 ) {
-  const conditions: Prisma.Sql[] = [adminNotificationDataScopeSql(options.dataScope)];
+  const conditions: Prisma.Sql[] = [
+    adminNotificationDataScopeSql(options.dataScope),
+    adminNotificationPushIntentSql(),
+  ];
   const from = parseNotificationBoundary(options.from);
   const to = parseNotificationBoundary(options.to);
   if (from && to && from.getTime() >= to.getTime()) {
@@ -364,14 +373,19 @@ function appendNotificationActionScope(
 
 export function normalizeAdminNotificationFailureProvider(value: string | undefined) {
   const normalized = normalizeQueryValue(value)?.toUpperCase();
-  return normalized === 'FCM' || normalized === 'IN_APP_ONLY' ? normalized : null;
+  return normalized && isSafeNotificationFilterValue(normalized, 80) ? normalized : null;
 }
 
 export function normalizeAdminNotificationFailureCode(value: string | undefined) {
   const normalized = normalizeQueryValue(value);
-  return normalized && normalized.length <= 160 && /^[A-Za-z0-9_./:-]+$/.test(normalized)
-    ? normalized
-    : null;
+  return normalized && isSafeNotificationFilterValue(normalized, 160) ? normalized : null;
+}
+
+function isSafeNotificationFilterValue(value: string, maxLength: number) {
+  return value.length <= maxLength && !Array.from(value).some((character) => {
+    const code = character.charCodeAt(0);
+    return code < 32 || code === 127;
+  });
 }
 
 function normalizeFailureProvider(value: string | undefined) {

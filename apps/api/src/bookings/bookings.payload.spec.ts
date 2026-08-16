@@ -81,10 +81,31 @@ describe('booking payload helpers', () => {
   });
 
   it('builds booking service line create data', () => {
-    expect(bookingServiceLineCreate({ serviceId: 'service-1', price: 500000 })).toEqual({
+    expect(bookingServiceLineCreate({
+      serviceId: 'service-1',
+      price: 500000,
+      payoutRule: {
+        id: 'rule-1',
+        customerPrice: 500000,
+        providerPayoutAmount: 350000,
+        vatBps: 0,
+        otherCostAmount: 0,
+        currency: 'VND',
+      },
+    })).toEqual({
       create: {
         serviceId: 'service-1',
         price: 500000,
+        payoutRuleIdSnapshot: 'rule-1',
+        providerPayoutAmountSnapshot: 350000,
+        payoutRuleSnapshot: {
+          id: 'rule-1',
+          customerPrice: 500000,
+          providerPayoutAmount: 350000,
+          vatBps: 0,
+          otherCostAmount: 0,
+          currency: 'VND',
+        },
       },
     });
   });

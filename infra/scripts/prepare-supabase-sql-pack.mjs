@@ -28,6 +28,33 @@ const sections = [
       /create policy "private media owner read"/i,
     ],
   },
+  {
+    title: '03 existing-project booking address and review privacy hardening',
+    source: 'infra/supabase/patches/2026-08-16-restrict-booking-address-and-review-reads.sql',
+    requiredPatterns: [
+      /create policy "bookings owner and selected Partner read"/i,
+      /create policy "booking address snapshots owner and selected Partner read"/i,
+      /create policy "reviews owner and subject read"/i,
+      /revoke select on table public\.reviews from anon/i,
+    ],
+  },
+  {
+    title: '04 existing-project public file metadata privacy hardening',
+    source: 'infra/supabase/patches/2026-08-16-restrict-public-file-metadata.sql',
+    requiredPatterns: [
+      /create policy "files owner read"/i,
+      /review_status = 'APPROVED'/i,
+    ],
+  },
+  {
+    title: '05 existing-project Storage ownership hardening',
+    source: 'infra/supabase/patches/2026-08-16-use-storage-owner-id.sql',
+    requiredPatterns: [
+      /create policy "private media owner read"/i,
+      /to authenticated/i,
+      /owner_id = \(select auth\.uid\(\)::text\)/i,
+    ],
+  },
 ];
 
 const failures = [];
@@ -62,6 +89,7 @@ const content = [
   '-- Order:',
   '-- 1. Core schema, tables, indexes, functions, RLS policies',
   '-- 2. Storage buckets and storage.objects policies',
+  '-- 3. Idempotent existing-project privacy patches',
   '--',
   '-- Notes:',
   '-- - Do not paste secrets into this SQL file.',

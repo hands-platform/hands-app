@@ -112,6 +112,10 @@ function Set-LocalServiceDefaults {
   Set-DefaultEnvIfMissing -Key "REDIS_URL" -Value "redis://localhost:6379"
   Set-DefaultEnvIfMissing -Key "SUPABASE_JWT_SECRET" -Value "dev-supabase-jwt-secret-for-local-smoke"
   Set-DefaultEnvIfMissing -Key "SUPABASE_JWT_AUDIENCE" -Value "authenticated"
+  if ([Environment]::GetEnvironmentVariable("NODE_ENV", "Process") -ne "production") {
+    Set-DefaultEnvIfMissing -Key "MOBILE_AUTH_ALLOW_DEV_OTP" -Value "true"
+    Set-DefaultEnvIfMissing -Key "DEV_OTP" -Value "123456"
+  }
   Set-DefaultEnvIfMissing -Key "STORAGE_PROVIDER" -Value "s3-compatible"
   Set-DefaultEnvIfMissing -Key "S3_ENDPOINT" -Value "http://localhost:9000"
   Set-DefaultEnvIfMissing -Key "S3_REGION" -Value "auto"

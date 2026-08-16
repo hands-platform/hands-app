@@ -6,6 +6,7 @@ import {
   adminPartnerMarketplaceBlocked,
   adminWalletGateBlocksFinalGate,
 } from '../../lib/operations-policy';
+import { policyCountLabel } from './policy-copy';
 
 export type PolicySupplySensitivity = {
   referenceLabel: string;
@@ -16,6 +17,9 @@ export type PolicySupplySensitivity = {
     eligible: number;
     fresh: number;
     finalGateHeld: number;
+    visible?: number;
+    staleExcluded?: number;
+    deltaVsCurrent?: number;
     operatorRead: string;
     pillClass: string;
   }>;
@@ -23,6 +27,9 @@ export type PolicySupplySensitivity = {
     freshnessLabel: string;
     eligible: number;
     staleExcluded: number;
+    visible?: number;
+    finalGateHeld?: number;
+    deltaVsCurrent?: number;
     operatorRead: string;
     pillClass: string;
   }>;
@@ -60,14 +67,15 @@ export function buildPolicySupplySensitivity(
   const freshnessOptions = uniqueNumbers([10, 30, policy.freshnessMinutes, 60, 120]).sort(
     (left, right) => left - right,
   );
+  const currentEligible = candidates.filter((item) => isCurrentlyVisibleSupply(item, policy)).length;
 
   return {
     referenceLabel: reference.label,
     currentPolicyLabel: `${formatDistance(policy.backupRadiusMeters)} / ${policy.freshnessMinutes}m fresh`,
     summary: buildSupplySensitivitySummary(candidates, providers.length, policy),
-    radiusRows: radiusOptions.map((radius) => buildRadiusSensitivityRow(candidates, radius, policy)),
+    radiusRows: radiusOptions.map((radius) => buildRadiusSensitivityRow(candidates, radius, policy, currentEligible)),
     freshnessRows: freshnessOptions.map((freshness) =>
-      buildFreshnessSensitivityRow(candidates, freshness, policy),
+      buildFreshnessSensitivityRow(candidates, freshness, policy, currentEligible),
     ),
   };
 }
@@ -133,7 +141,7 @@ function buildSupplySensitivitySummary(
     {
       label: 'Coordinate sample',
       value: candidates.length.toString(),
-      helper: `${providerCount} total partner(s), ${candidates.length} with saved coordinates.`,
+      helper: `${policyCountLabel(providerCount, 'total Partner')}, ${policyCountLabel(candidates.length, 'Partner')} with saved coordinates.`,
     },
     {
       label: 'Current visible supply',
@@ -158,6 +166,7 @@ function buildRadiusSensitivityRow(
   candidates: readonly SupplySensitivityCandidate[],
   radius: number,
   policy: SupplySensitivityPolicy,
+  currentEligible: number,
 ): PolicySupplySensitivity['radiusRows'][number] {
   const insideRadius = candidates.filter((item) => (item.distanceMeters ?? Infinity) <= radius);
   const eligible = insideRadius.filter(
@@ -168,11 +177,15 @@ function buildRadiusSensitivityRow(
   );
   const fresh = insideRadius.filter((item) => (item.ageMinutes ?? Infinity) <= policy.freshnessMinutes);
   const finalGateHeld = insideRadius.filter((item) => item.finalGateHeld);
+  const visible = insideRadius.filter((item) => item.online && !item.marketplaceBlocked);
   return {
     radiusLabel: formatDistance(radius),
     eligible: eligible.length,
     fresh: fresh.length,
     finalGateHeld: finalGateHeld.length,
+    visible: visible.length,
+    staleExcluded: Math.max(0, visible.length - eligible.length),
+    deltaVsCurrent: eligible.length - currentEligible,
     operatorRead: radiusSensitivityRead(radius, policy.backupRadiusMeters, eligible.length),
     pillClass:
       radius === policy.backupRadiusMeters
@@ -187,6 +200,7 @@ function buildFreshnessSensitivityRow(
   candidates: readonly SupplySensitivityCandidate[],
   freshness: number,
   policy: SupplySensitivityPolicy,
+  currentEligible: number,
 ): PolicySupplySensitivity['freshnessRows'][number] {
   const insideRadius = candidates.filter(
     (item) =>
@@ -200,6 +214,11 @@ function buildFreshnessSensitivityRow(
     freshnessLabel: `${freshness} min`,
     eligible: eligible.length,
     staleExcluded,
+    visible: insideRadius.length,
+    finalGateHeld: candidates.filter(
+      (item) => item.finalGateHeld && (item.distanceMeters ?? Infinity) <= policy.backupRadiusMeters,
+    ).length,
+    deltaVsCurrent: eligible.length - currentEligible,
     operatorRead: freshnessSensitivityRead(
       freshness,
       policy.freshnessMinutes,

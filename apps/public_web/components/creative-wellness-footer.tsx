@@ -66,26 +66,60 @@ function ArrowIcon() {
 export function CreativeWellnessFooter() {
   const footerRef = useRef<HTMLElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
+  const infoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const footer = footerRef.current;
     const cta = ctaRef.current;
+    const info = infoRef.current;
 
-    if (!footer || !cta) return;
+    if (!footer || !cta || !info) return;
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let frame = 0;
+    let infoInViewport = false;
 
     const update = () => {
       frame = 0;
       if (reducedMotion.matches) {
         footer.style.setProperty('--wellness-footer-bg-y', '0px');
+        info.style.setProperty('--wellness-footer-info-y', '0px');
         return;
       }
 
       const rect = cta.getBoundingClientRect();
       const offset = Math.min(48, Math.max(-63, rect.top * -0.1));
       footer.style.setProperty('--wellness-footer-bg-y', `${offset}px`);
+
+      if (document.documentElement.clientWidth < 960) {
+        info.style.setProperty('--wellness-footer-info-y', '0px');
+        return;
+      }
+
+      if (!infoInViewport) return;
+
+      const infoRect = info.getBoundingClientRect();
+      const scrollTop = window.scrollY;
+      const viewportHeight = window.innerHeight;
+      const documentHeight = Math.max(
+        document.body.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.clientHeight,
+        document.documentElement.scrollHeight,
+        document.documentElement.offsetHeight,
+      );
+      const distanceFromBottom = documentHeight - (scrollTop + infoRect.top + infoRect.height);
+      let infoOffset: number;
+
+      if (distanceFromBottom < viewportHeight) {
+        infoOffset = (viewportHeight - (infoRect.top + infoRect.height + distanceFromBottom)) * 0.4;
+      } else if (scrollTop + infoRect.top < viewportHeight) {
+        infoOffset = scrollTop * 0.4;
+      } else {
+        infoOffset = (viewportHeight / 2 - (infoRect.top + infoRect.height / 2)) * 0.4;
+      }
+
+      info.style.setProperty('--wellness-footer-info-y', `${infoOffset}px`);
     };
 
     const requestUpdate = () => {
@@ -93,12 +127,18 @@ export function CreativeWellnessFooter() {
     };
 
     update();
+    const infoObserver = new IntersectionObserver((entries) => {
+      infoInViewport = entries.some((entry) => entry.isIntersecting);
+      requestUpdate();
+    });
+    infoObserver.observe(info);
     window.addEventListener('scroll', requestUpdate, { passive: true });
     window.addEventListener('resize', requestUpdate);
     reducedMotion.addEventListener('change', requestUpdate);
 
     return () => {
       window.cancelAnimationFrame(frame);
+      infoObserver.disconnect();
       window.removeEventListener('scroll', requestUpdate);
       window.removeEventListener('resize', requestUpdate);
       reducedMotion.removeEventListener('change', requestUpdate);
@@ -142,7 +182,7 @@ export function CreativeWellnessFooter() {
         </div>
       </div>
 
-      <div className="wellness-footer-info">
+      <div className="wellness-footer-info" ref={infoRef}>
         <div className="wellness-footer-intro">
           <h2>Providing the world’s most sophisticated personal training experience for growth</h2>
           <p>Elite coaching. Human connection. Real results.</p>

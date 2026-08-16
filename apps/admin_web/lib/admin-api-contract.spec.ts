@@ -54,11 +54,11 @@ describe('admin api auth guard', () => {
   });
 
   it('issues a short-lived scoped token from the current operator session instead of returning the broad token', async () => {
-    const sessionSecret = 'test-session-secret';
+    const sessionSecret = 'test-session-secret-with-32-characters';
     process.env = {
       ...process.env,
       ADMIN_ACCESS_TOKEN: 'legacy-broad-admin-token',
-      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret',
+      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret-with-32-chars',
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
       NODE_ENV: 'production',
     };
@@ -96,10 +96,10 @@ describe('admin api auth guard', () => {
   });
 
   it('preserves Admin GET success state for pages that must distinguish data from fallback values', async () => {
-    const sessionSecret = 'test-session-secret';
+    const sessionSecret = 'test-session-secret-with-32-characters';
     process.env = {
       ...process.env,
-      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret',
+      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret-with-32-chars',
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
       NODE_ENV: 'production',
     };
@@ -120,11 +120,36 @@ describe('admin api auth guard', () => {
     });
   });
 
-  it('preserves Admin GET failure state instead of exposing fallback zeroes as successful data', async () => {
-    const sessionSecret = 'test-session-secret';
+  it('treats an empty successful Admin GET body as the supplied fallback', async () => {
+    const sessionSecret = 'test-session-secret-with-32-characters';
     process.env = {
       ...process.env,
-      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret',
+      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret-with-32-chars',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+      NODE_ENV: 'production',
+    };
+    const sessionCookieValue = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      secret: sessionSecret,
+      sub: 'operator-1',
+    });
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({ cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookieValue}` }) as never,
+    );
+    vi.spyOn(global, 'fetch').mockResolvedValue(new Response(null, { status: 200 }));
+
+    await expect(adminGetResult('/admin/marketing/spend-daily', null)).resolves.toEqual({
+      data: null,
+      ok: true,
+      status: 200,
+    });
+  });
+
+  it('preserves Admin GET failure state instead of exposing fallback zeroes as successful data', async () => {
+    const sessionSecret = 'test-session-secret-with-32-characters';
+    process.env = {
+      ...process.env,
+      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret-with-32-chars',
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
       NODE_ENV: 'production',
     };
@@ -146,10 +171,10 @@ describe('admin api auth guard', () => {
   });
 
   it('keeps live operator reads uncached', async () => {
-    const sessionSecret = 'test-session-secret';
+    const sessionSecret = 'test-session-secret-with-32-characters';
     process.env = {
       ...process.env,
-      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret',
+      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret-with-32-chars',
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
       NODE_ENV: 'production',
     };
@@ -172,10 +197,10 @@ describe('admin api auth guard', () => {
   });
 
   it('uses bounded Next revalidation for aggregate operator reads', async () => {
-    const sessionSecret = 'test-session-secret';
+    const sessionSecret = 'test-session-secret-with-32-characters';
     process.env = {
       ...process.env,
-      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret',
+      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret-with-32-chars',
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
       NODE_ENV: 'production',
     };
@@ -208,7 +233,7 @@ describe('admin api auth guard', () => {
   });
 
   it('allows env master admin sessions to perform categorized write actions without stored category setup', async () => {
-    const sessionSecret = 'test-session-secret';
+    const sessionSecret = 'test-session-secret-with-32-characters';
     process.env = {
       ...process.env,
       ADMIN_ACCESS_TOKEN: 'server-admin-token',
@@ -255,7 +280,7 @@ describe('admin api auth guard', () => {
   });
 
   it('keeps env master writes authorized when the stored operator row has no Master role', async () => {
-    const sessionSecret = 'test-session-secret';
+    const sessionSecret = 'test-session-secret-with-32-characters';
     process.env = {
       ...process.env,
       ADMIN_ACCESS_TOKEN: 'server-admin-token',
@@ -298,7 +323,7 @@ describe('admin api auth guard', () => {
   });
 
   it('treats an empty admin operator access response as no stored setup for env master writes', async () => {
-    const sessionSecret = 'test-session-secret';
+    const sessionSecret = 'test-session-secret-with-32-characters';
     process.env = {
       ...process.env,
       ADMIN_ACCESS_TOKEN: 'server-admin-token',
@@ -344,7 +369,7 @@ describe('admin api auth guard', () => {
   });
 
   it('fails closed when an Admin Web write route has no operator category mapping', async () => {
-    const sessionSecret = 'test-session-secret';
+    const sessionSecret = 'test-session-secret-with-32-characters';
     process.env = {
       ...process.env,
       ADMIN_ACCESS_TOKEN: 'server-admin-token',
@@ -386,7 +411,7 @@ describe('admin api auth guard', () => {
   });
 
   it('retains structured API error evidence on the server for bounded operator recovery flows', async () => {
-    const sessionSecret = 'test-session-secret';
+    const sessionSecret = 'test-session-secret-with-32-characters';
     process.env = {
       ...process.env,
       ADMIN_ACCESS_TOKEN: 'server-admin-token',

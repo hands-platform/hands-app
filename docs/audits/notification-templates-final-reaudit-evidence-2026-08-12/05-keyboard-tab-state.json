@@ -1,0 +1,39 @@
+{
+  "focusRole": "tab",
+  "focusText": "VietnameseComplete",
+  "selected": [
+    "VietnameseComplete"
+  ],
+  "tabs": [
+    {
+      "controls": null,
+      "selected": "false",
+      "tabIndex": null,
+      "text": "EnglishComplete"
+    },
+    {
+      "controls": null,
+      "selected": "true",
+      "tabIndex": null,
+      "text": "VietnameseComplete"
+    },
+    {
+      "controls": null,
+      "selected": "false",
+      "tabIndex": null,
+      "text": "KoreanComplete"
+    },
+    {
+      "controls": null,
+      "selected": "false",
+      "tabIndex": null,
+      "text": "JapaneseComplete"
+    },
+    {
+      "controls": null,
+      "selected": "false",
+      "tabIndex": null,
+      "text": "ChineseComplete"
+    }
+  ]
+}

@@ -4,7 +4,12 @@ import { EarningsController } from './earnings.controller';
 type EarningsControllerWithWithdrawalRequests = EarningsController & {
   createWalletWithdrawalRequest: (
     user: AuthenticatedUser,
-    body: { amount: number; bankAccountId?: string | null; requestNote?: string | null },
+    body: {
+      idempotencyKey: string;
+      amount: number;
+      bankAccountId?: string | null;
+      requestNote?: string | null;
+    },
   ) => Promise<unknown>;
   walletWithdrawalRequests: (user: AuthenticatedUser) => Promise<unknown>;
 };
@@ -23,6 +28,7 @@ describe('EarningsController wallet withdrawal requests', () => {
 
     await expect(
       controller.createWalletWithdrawalRequest(user, {
+        idempotencyKey: 'withdrawal-request-1',
         amount: 500000,
         bankAccountId: 'bank-account-1',
         requestNote: 'manual payout',
@@ -32,6 +38,7 @@ describe('EarningsController wallet withdrawal requests', () => {
     expect(earnings.createProviderWalletWithdrawalRequestForProviderUser).toHaveBeenCalledWith(
       'partner-user-1',
       {
+        idempotencyKey: 'withdrawal-request-1',
         amount: 500000,
         bankAccountId: 'bank-account-1',
         requestNote: 'manual payout',

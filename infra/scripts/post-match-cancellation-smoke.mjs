@@ -1,5 +1,6 @@
 import {
   AdminOperatorPermissionCategory,
+  AdminUserProvenance,
   BookingOpsTaskStatus,
   BookingOpsTaskType,
   BookingStatus,
@@ -135,7 +136,17 @@ try {
   }
 } catch (error) {
   if (!keep) {
-    await cleanupSmokeData().catch(() => undefined);
+    try {
+      await cleanupSmokeData();
+    } catch (cleanupError) {
+      console.error(JSON.stringify({
+        ok: false,
+        phase: 'cleanup',
+        error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+        residualFixtureIds: smokeUserIds,
+      }, null, 2));
+      process.exitCode = 1;
+    }
   }
   console.error(
     JSON.stringify(
@@ -195,6 +206,9 @@ async function seedSmokeData() {
       phone: `${fixturePhonePrefix}00`,
       fullName: `${fixtureLabel} Admin Maker`,
       roles: [Role.ADMIN],
+      adminUserProvenance: AdminUserProvenance.FIXTURE,
+      fixtureKind: 'POST_MATCH_CANCELLATION_SMOKE',
+      fixtureRunId: fixturePrefix,
     },
   });
 
@@ -244,6 +258,9 @@ async function seedSmokeData() {
       phone: `${fixturePhonePrefix}03`,
       fullName: `${fixtureLabel} Finance Approver`,
       roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+      adminUserProvenance: AdminUserProvenance.FIXTURE,
+      fixtureKind: 'POST_MATCH_CANCELLATION_SMOKE',
+      fixtureRunId: fixturePrefix,
     },
   });
   await prisma.adminOperatorPermission.createMany({

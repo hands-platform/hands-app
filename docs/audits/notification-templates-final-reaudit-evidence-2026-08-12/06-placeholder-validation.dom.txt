@@ -1,0 +1,159 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Messaging":
+        - /url: /notifications
+      - generic: Notification Templates
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Messaging workspace":
+    - strong: Messaging
+    - generic "Messaging pages":
+      - link "Notification Delivery":
+        - /url: /notifications
+      - link "Notification Templates":
+        - /url: /notifications/templates
+      - link "Push Send":
+        - /url: /notifications/push-send
+  - heading "Notification Templates" [level=1]
+  - paragraph: Notification copy catalog for in-app and push messages across supported app languages.
+  - generic: Template records
+  - paragraph: Templates
+  - generic: "Templates:"
+  - text: "22"
+  - generic: Notification event records in the bounded catalog.
+  - generic: Live
+  - paragraph: Enabled
+  - generic: "Enabled:"
+  - text: "22"
+  - generic: Templates currently available to operating flows.
+  - generic: Audience coverage
+  - paragraph: Customers
+  - generic: "Customers:"
+  - text: "13"
+  - generic: Customer-facing templates with language copy.
+  - generic: Audience coverage
+  - paragraph: Partners
+  - generic: "Partners:"
+  - text: "9"
+  - generic: Partner-facing templates with language copy.
+  - heading "Template catalog" [level=2]
+  - paragraph: Select one template, review every language, preview the message, then save the editing session atomically.
+  - generic: 22 templates
+  - generic: Template
+  - combobox "Template":
+    - option "HANDS update / Customer"
+    - option "Booking cancelled / Customer"
+    - option "Partner matched / Customer" [selected]
+    - option "No-show under review / Customer"
+    - option "Booking opened / Customer"
+    - option "Partner declined your booking / Customer"
+    - option "New chat message / Customer"
+    - option "Payment updated / Customer"
+    - option "Marketplace partner is ready / Customer"
+    - option "A partner joined / Customer"
+    - option "Partner declined / Customer"
+    - option "Service completed / Customer"
+    - option "Service started / Customer"
+    - option "Nearby booking available / Partner"
+    - option "You were matched / Partner"
+    - option "New direct booking request / Partner"
+    - option "Earning created / Partner"
+    - option "Partner account blocked / Partner"
+    - option "Partner account unblocked / Partner"
+    - option "Payout batch updated / Partner"
+    - option "Payout setup required / Partner"
+    - option "Service started / Partner"
+  - heading "Partner matched" [level=3]
+  - paragraph: Customer notice when a Partner is matched and chat is ready.
+  - generic: Enabled
+  - generic: Customer
+  - generic: BOTH
+  - generic "Technical details"
+  - generic: Event key
+  - code: booking.matched
+  - generic: Supported variables
+  - code: "[\"partnerName\",\"bookingId\",\"chatRoomId\"]"
+  - generic: Preview sample data
+  - code: "{\"partnerName\":\"Linh Nguyen\",\"bookingId\":\"BK-2026-0142\",\"chatRoomId\":\"CHAT-142\"}"
+  - tablist "Template languages":
+    - tab "English Complete":
+      - generic: English
+      - generic: Complete
+    - tab "Vietnamese Changed" [selected]:
+      - generic: Vietnamese
+      - generic: Changed
+    - tab "Korean Complete":
+      - generic: Korean
+      - generic: Complete
+    - tab "Japanese Complete":
+      - generic: Japanese
+      - generic: Complete
+    - tab "Chinese Complete":
+      - generic: Chinese
+      - generic: Complete
+  - tabpanel "vi notification copy":
+    - heading "Vietnamese" [level=4]
+    - checkbox "Enabled for every language" [checked]
+    - generic: Enabled for every language
+    - generic: Title
+    - textbox "Title": Partner matched
+    - generic: Message
+    - textbox "Message" [active]: "Đối tác của bạn đã sẵn sàng. {unknownValue}"
+  - generic: Message preview / VI
+  - strong: Partner matched
+  - paragraph: "Đối tác của bạn đã sẵn sàng. {unknownValue}"
+  - alert:
+    - strong: Fix placeholder errors before saving
+    - paragraph: "Vietnamese: unknown unknownValue"
+  - strong: Changes in this editing session
+  - paragraph: "Languages: VI"
+  - button "Save all changed languages" [disabled]
+- alert

@@ -15,8 +15,8 @@ List<Map<String, dynamic>> sortNearbyProvidersByDistance(
       .map((provider) => Map<String, dynamic>.from(provider))
       .toList();
   sorted.sort((left, right) {
-    final leftDistance = asDouble(left['distanceMeters']);
-    final rightDistance = asDouble(right['distanceMeters']);
+    final leftDistance = providerDistanceRank(left);
+    final rightDistance = providerDistanceRank(right);
     if (leftDistance == null && rightDistance == null) return 0;
     if (leftDistance == null) return 1;
     if (rightDistance == null) return -1;
@@ -66,8 +66,8 @@ List<Map<String, dynamic>> filterCustomerProviders(
               .compareTo(asNum(left['completedBookingCount'])?.toInt() ?? 0);
       if (countComparison != 0) return countComparison;
     }
-    final leftDistance = asDouble(left['distanceMeters']);
-    final rightDistance = asDouble(right['distanceMeters']);
+    final leftDistance = providerDistanceRank(left);
+    final rightDistance = providerDistanceRank(right);
     if (leftDistance == null && rightDistance == null) return 0;
     if (leftDistance == null) return 1;
     if (rightDistance == null) return -1;
@@ -313,7 +313,6 @@ class HandsPartnerRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.handsColors;
     final displayName = provider['displayName'] as String? ?? 'Partner';
-    final distanceMeters = asDouble(provider['distanceMeters']);
     final rating = providerAverageRating(provider);
     final reviewCount = providerReviewCount(provider);
     final availableNow = provider['status'] == 'ONLINE_AVAILABLE';
@@ -327,7 +326,7 @@ class HandsPartnerRow extends StatelessWidget {
     final height = width * 1.25;
     final metadata = [
       '${rating.toStringAsFixed(1)} ($reviewCount)',
-      formatDistance(distanceMeters),
+      providerDistanceLabel(provider),
       providerLocationFreshnessLabel(provider),
     ].join(' · ');
     final serviceSummary = hasBookableServices

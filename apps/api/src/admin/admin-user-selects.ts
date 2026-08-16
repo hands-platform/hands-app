@@ -1,5 +1,7 @@
 import { Prisma } from '@prisma/client';
 
+import { financeApproverPolicyUserSelect } from './finance-approver-policy';
+
 export const adminUserSummarySelect = {
   id: true,
   phone: true,
@@ -215,16 +217,4 @@ export const adminUserListSelect = {
   },
 } satisfies Prisma.UserSelect;
 
-export const adminFinanceApproverDirectoryUserSelect = {
-  ...adminUserSummarySelect,
-  appSessions: {
-    orderBy: { lastSeenAt: 'desc' },
-    take: 1,
-    select: adminUserListSessionSelect,
-  },
-  pushDevices: {
-    orderBy: { updatedAt: 'desc' },
-    take: 3,
-    select: adminUserListPushDeviceSelect,
-  },
-} satisfies Prisma.UserSelect;
+export const adminFinanceApproverDirectoryUserSelect = financeApproverPolicyUserSelect;

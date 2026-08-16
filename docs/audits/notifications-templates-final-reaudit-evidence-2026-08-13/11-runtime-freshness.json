@@ -1,0 +1,16 @@
+{
+  "auditDate": "2026-08-13",
+  "adminRuntime": {
+    "port": 3101,
+    "pid": 33988,
+    "startedAt": "2026-08-13T19:52:53.469+07:00"
+  },
+  "apiRuntime": {
+    "port": 3000,
+    "pid": 34616,
+    "startedAt": "2026-08-13T21:05:38.906+07:00"
+  },
+  "apiDistAdminServiceLastWrite": "2026-08-13T21:25:07.159+07:00",
+  "currentApiSourceAdminServiceLastWrite": "2026-08-13T22:45:11.481+07:00",
+  "finding": "the running API process predates both dist and current source; mutation behavior was not treated as runtime-verified"
+}

@@ -5,11 +5,14 @@ import {
   FileReviewStatus,
   FileUploadStatus,
   FileVisibility,
+  Prisma,
   ProviderAvailabilityIntent,
   ProviderAvailabilityReason,
   ProviderStatus,
   ReviewStatus,
   Role,
+  ServiceCatalogProvenance,
+  ServicePublicationStatus,
   VerificationStatus,
 } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
@@ -97,7 +100,13 @@ export class ProvidersService {
         services: {
           where: {
             active: true,
-            service: { active: true },
+            service: {
+              active: true,
+              publicationStatus: ServicePublicationStatus.PUBLISHED,
+              provenance: {
+                in: [ServiceCatalogProvenance.OPERATOR, ServiceCatalogProvenance.SEED],
+              },
+            },
           },
           include: {
             service: {
@@ -136,26 +145,36 @@ export class ProvidersService {
           provider.currentLat,
           provider.currentLng,
         );
-        const currentLocationUpdatedAt = provider.currentLocationUpdatedAt?.toISOString() ?? null;
         const bookableSummary = providerPublicBookableServiceSummary(provider.services);
         const services = publicNearbyProviderServices(provider.services);
+        const isRecentLocation = provider.currentLocationUpdatedAt
+          ? provider.currentLocationUpdatedAt >= staleBefore
+          : null;
         return {
-          ...publicProviderProfile(provider),
-          ...approximatePublicProviderLocation(provider.currentLat, provider.currentLng),
-          user: publicProviderUser(provider.user),
-          services,
-          ...publicProviderMedia(provider),
-          ...bookableSummary,
-          completedBookingCount: provider._count.selectedBookings,
-          currentLocationUpdatedAt,
-          distanceMeters: approximatePublicDistanceMeters(distanceMeters),
-          isRecentLocation: provider.currentLocationUpdatedAt
-            ? provider.currentLocationUpdatedAt >= staleBefore
-            : false,
+          distanceMeters,
+          response: {
+            ...publicProviderProfile(provider),
+            user: publicProviderUser(provider.user),
+            services,
+            ...publicProviderMedia(provider),
+            ...bookableSummary,
+            completedBookingCount: provider._count.selectedBookings,
+            ...publicProviderDistanceBucket(distanceMeters),
+            locationFreshness: isRecentLocation === null
+              ? 'UNKNOWN' as const
+              : isRecentLocation
+                ? 'FRESH' as const
+                : 'STALE' as const,
+            isRecentLocation: isRecentLocation ?? false,
+          },
         };
       })
       .filter(hasFiniteDistanceMeters)
-      .sort((a, b) => a.distanceMeters - b.distanceMeters || a.status.localeCompare(b.status));
+      .sort((a, b) =>
+        a.distanceMeters - b.distanceMeters ||
+        a.response.status.localeCompare(b.response.status),
+      )
+      .map(({ response }) => response);
   }
 
   async listPublicDirectory(options: PublicProviderDirectoryOptions = {}) {
@@ -171,7 +190,13 @@ export class ProvidersService {
       services: {
         some: {
           active: true,
-          service: { active: true },
+          service: {
+            active: true,
+            publicationStatus: ServicePublicationStatus.PUBLISHED,
+            provenance: {
+              in: [ServiceCatalogProvenance.OPERATOR, ServiceCatalogProvenance.SEED],
+            },
+          },
         },
       },
       ...(regionWhere ? { AND: regionWhere } : {}),
@@ -223,7 +248,13 @@ export class ProvidersService {
           services: {
             where: {
               active: true,
-              service: { active: true },
+              service: {
+                active: true,
+                publicationStatus: ServicePublicationStatus.PUBLISHED,
+                provenance: {
+                  in: [ServiceCatalogProvenance.OPERATOR, ServiceCatalogProvenance.SEED],
+                },
+              },
             },
             select: {
               active: true,
@@ -312,7 +343,13 @@ export class ProvidersService {
         services: {
           where: {
             active: true,
-            service: { active: true },
+            service: {
+              active: true,
+              publicationStatus: ServicePublicationStatus.PUBLISHED,
+              provenance: {
+                in: [ServiceCatalogProvenance.OPERATOR, ServiceCatalogProvenance.SEED],
+              },
+            },
           },
           include: {
             service: {
@@ -647,7 +684,14 @@ export class ProvidersService {
   async listServices(userId: string | undefined) {
     const provider = await this.requireProvider(userId);
     const services = await this.prisma.massageService.findMany({
-      where: { active: true },
+      where: {
+        active: true,
+        durationMin: { in: [60, 90, 120] },
+        publicationStatus: ServicePublicationStatus.PUBLISHED,
+        provenance: {
+          in: [ServiceCatalogProvenance.OPERATOR, ServiceCatalogProvenance.SEED],
+        },
+      },
       include: {
         providers: {
           where: { providerProfileId: provider.id },
@@ -676,6 +720,7 @@ export class ProvidersService {
         id: service.id,
         serviceGroupKey: service.serviceGroupKey,
         name: service.name,
+        nameTranslations: service.nameTranslations,
         description: service.description,
         durationMin: service.durationMin,
         basePrice: service.basePrice,
@@ -714,7 +759,14 @@ export class ProvidersService {
     const provider = await this.requireProvider(userId);
     assertProviderNotBlocked(provider);
     const service = await this.prisma.massageService.findFirst({
-      where: { id: serviceId, active: true },
+      where: {
+        id: serviceId,
+        active: true,
+        publicationStatus: ServicePublicationStatus.PUBLISHED,
+        provenance: {
+          in: [ServiceCatalogProvenance.OPERATOR, ServiceCatalogProvenance.SEED],
+        },
+      },
       include: {
         payoutRules: {
           where: { active: true },
@@ -787,33 +839,67 @@ export class ProvidersService {
 
   async submitVerification(userId: string | undefined, input: { fileIds?: string[] }) {
     const provider = await this.requireProvider(userId);
-    const verification = await this.prisma.providerVerification.upsert({
-      where: { providerProfileId: provider.id },
-      update: {
-        status: VerificationStatus.SUBMITTED,
-        submittedAt: new Date(),
-        rejectionReason: null,
-      },
-      create: {
-        providerProfileId: provider.id,
-        status: VerificationStatus.SUBMITTED,
-        submittedAt: new Date(),
-      },
-    });
+    const fileIds = input.fileIds ?? [];
 
-    if (input.fileIds?.length) {
-      await this.prisma.fileAsset.updateMany({
-        where: {
-          id: { in: input.fileIds },
-          visibility: FileVisibility.PRIVATE,
+    return this.prisma.$transaction(async (tx) => {
+      const verification = await tx.providerVerification.upsert({
+        where: { providerProfileId: provider.id },
+        update: {
+          status: VerificationStatus.SUBMITTED,
+          submittedAt: new Date(),
+          rejectionReason: null,
         },
-        data: { providerVerificationId: verification.id },
+        create: {
+          providerProfileId: provider.id,
+          status: VerificationStatus.SUBMITTED,
+          submittedAt: new Date(),
+        },
       });
-    }
 
-    return this.prisma.providerVerification.findUniqueOrThrow({
-      where: { id: verification.id },
-      include: { files: { orderBy: { createdAt: 'desc' } } },
+      if (fileIds.length) {
+        const eligibleFiles = await tx.fileAsset.findMany({
+          where: {
+            id: { in: fileIds },
+            ownerUserId: userId,
+            purpose: FilePurpose.PROVIDER_VERIFICATION,
+            visibility: FileVisibility.PRIVATE,
+            uploadStatus: FileUploadStatus.UPLOADED,
+            OR: [
+              { providerVerificationId: null },
+              { providerVerificationId: verification.id },
+            ],
+          },
+          select: { id: true },
+        });
+        if (eligibleFiles.length !== fileIds.length) {
+          throw new BadRequestException(
+            'Every verification file must be an uploaded private file owned by the authenticated partner',
+          );
+        }
+
+        const attached = await tx.fileAsset.updateMany({
+          where: {
+            id: { in: fileIds },
+            ownerUserId: userId,
+            purpose: FilePurpose.PROVIDER_VERIFICATION,
+            visibility: FileVisibility.PRIVATE,
+            uploadStatus: FileUploadStatus.UPLOADED,
+            OR: [
+              { providerVerificationId: null },
+              { providerVerificationId: verification.id },
+            ],
+          },
+          data: { providerVerificationId: verification.id },
+        });
+        if (attached.count !== fileIds.length) {
+          throw new BadRequestException('Verification files changed before they could be attached');
+        }
+      }
+
+      return tx.providerVerification.findUniqueOrThrow({
+        where: { id: verification.id },
+        include: { files: { orderBy: { createdAt: 'desc' } } },
+      });
     });
   }
 
@@ -1178,29 +1264,24 @@ function publicProviderProfile(provider: {
   };
 }
 
-function approximatePublicProviderLocation(lat: unknown, lng: unknown) {
-  const latitude = Number(lat);
-  const longitude = Number(lng);
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    return { currentLat: null, currentLng: null, locationPrecision: 'UNAVAILABLE' as const };
-  }
-  return {
-    currentLat: roundCoordinate(latitude, 2),
-    currentLng: roundCoordinate(longitude, 2),
-    locationPrecision: 'APPROXIMATE' as const,
-  };
-}
-
-function approximatePublicDistanceMeters(distanceMeters: number | null) {
+function publicProviderDistanceBucket(distanceMeters: number | null) {
   if (!Number.isFinite(distanceMeters)) {
-    return null;
+    return { distanceBucket: null, distanceBucketRank: null, distanceLabel: null };
   }
-  return Math.max(0, Math.round((distanceMeters as number) / 1000) * 1000);
-}
-
-function roundCoordinate(value: number, decimals: number) {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
+  const meters = Math.max(0, distanceMeters as number);
+  if (meters < 3_000) {
+    return { distanceBucket: 'WITHIN_3_KM' as const, distanceBucketRank: 0, distanceLabel: 'Within 3 km' };
+  }
+  if (meters < 5_000) {
+    return { distanceBucket: 'FROM_3_TO_5_KM' as const, distanceBucketRank: 1, distanceLabel: '3-5 km' };
+  }
+  if (meters < 10_000) {
+    return { distanceBucket: 'FROM_5_TO_10_KM' as const, distanceBucketRank: 2, distanceLabel: '5-10 km' };
+  }
+  if (meters < 20_000) {
+    return { distanceBucket: 'FROM_10_TO_20_KM' as const, distanceBucketRank: 3, distanceLabel: '10-20 km' };
+  }
+  return { distanceBucket: 'OVER_20_KM' as const, distanceBucketRank: 4, distanceLabel: '20+ km' };
 }
 
 function publicProviderReviews(
@@ -1279,6 +1360,7 @@ function publicNearbyProviderServices(
       id: string;
       serviceGroupKey: string | null;
       name: string;
+      nameTranslations: Prisma.JsonValue | null;
       description: string | null;
       durationMin: number;
       basePrice: number;
@@ -1312,6 +1394,7 @@ function publicNearbyProviderServices(
         id: providerService.service.id,
         serviceGroupKey: providerService.service.serviceGroupKey,
         name: providerService.service.name,
+        nameTranslations: providerService.service.nameTranslations,
         description: providerService.service.description,
         durationMin: providerService.service.durationMin,
         basePrice: providerService.service.basePrice,

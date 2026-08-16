@@ -30,13 +30,29 @@ describe('OtpDeliveryService', () => {
     const fetchMock = mockFetch();
     const logSpy = vi.spyOn(Logger.prototype, 'log').mockImplementation();
 
-    await expect(service({ SMS_PROVIDER: 'dev' }).deliverOtp('+84900000001', '123456')).resolves.toEqual({
+    await expect(service({
+      DEV_OTP: '123456',
+      MOBILE_AUTH_ALLOW_DEV_OTP: 'true',
+      NODE_ENV: 'development',
+      SMS_PROVIDER: 'dev',
+    }).deliverOtp('+84900000001', '123456')).resolves.toEqual({
       provider: 'dev',
       status: 'DELIVERED_DEV',
     });
     expect(fetchMock).not.toHaveBeenCalled();
     expect(logSpy).toHaveBeenCalledWith('Dev OTP delivery prepared for phone ending 0001.');
     expect(logSpy.mock.calls.flat().join(' ')).not.toContain('+84900000001');
+  });
+
+  it('rejects the dev SMS provider outside an explicitly enabled local or test environment', async () => {
+    await expect(
+      service({
+        DEV_OTP: '123456',
+        MOBILE_AUTH_ALLOW_DEV_OTP: 'true',
+        NODE_ENV: 'staging',
+        SMS_PROVIDER: 'dev',
+      }).deliverOtp('+84900000001', '123456'),
+    ).rejects.toThrow('SMS service is not configured');
   });
 
   it('uses the generic HTTP SMS adapter for configured custom provider aliases', async () => {

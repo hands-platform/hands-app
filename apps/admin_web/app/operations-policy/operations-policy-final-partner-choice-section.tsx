@@ -2,11 +2,18 @@ import { Users } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
+import {
+  AdminSection,
+  AdminTaskCard,
+  AdminTaskGrid,
+  type MetricCardKind,
+} from '../../components/admin-surface';
 import { StatusBadgeFromPillClass } from '../../components/status-badge';
+import { policyCountLabel } from './policy-copy';
 
 type FinalPartnerChoiceMatrix = {
   readonly blockingCount: number;
+  readonly sampledPartnerCount: number;
   readonly summary: readonly { readonly label: string; readonly value: string; readonly helper: string }[];
   readonly cards: readonly {
     readonly title: string;
@@ -16,7 +23,13 @@ type FinalPartnerChoiceMatrix = {
     readonly className: string;
     readonly pillClass: string;
   }[];
-  readonly impact: readonly { readonly label: string; readonly value: string; readonly helper: string }[];
+  readonly impact: readonly {
+    readonly helper: string;
+    readonly kind: MetricCardKind;
+    readonly label: string;
+    readonly scope: string;
+    readonly value: string;
+  }[];
 };
 
 type OperationsPolicyFinalPartnerChoiceSectionProps = {
@@ -30,7 +43,7 @@ export function OperationsPolicyFinalPartnerChoiceSection({
     <AdminSection
       className="admin-mb-16"
       description="Current owner choices for the direct booking window, marketplace participation, Partner push reach, and the negative wallet marketplace/payout gate. This is the screen operators should check before changing the mobile flow."
-      statusLabel={`${matrix.blockingCount} control choice(s)`}
+      statusLabel={policyCountLabel(matrix.blockingCount, 'policy deviation')}
       statusTone={matrix.blockingCount ? 'warning' : 'success'}
       title="Final partner choice control matrix"
     >
@@ -62,14 +75,16 @@ export function OperationsPolicyFinalPartnerChoiceSection({
           </AdminFormControlLink>
         )}
         className="admin-mt-18"
-        description="Applies the policy posture to the current Partner snapshot so operators can see who can pass marketplace and payout gates, who needs account or identity follow-up, and who only needs readiness follow-up."
+        description={`Applies the policy posture to ${policyCountLabel(matrix.sampledPartnerCount, 'sampled Partner')}. Blocker categories overlap, so do not total these cards.`}
         title="Current partner acceptance impact"
       />
       <AdminTraceSummary
         className="admin-mt-12"
         metrics={matrix.impact.map((item) => ({
           detail: item.helper,
+          kind: item.kind,
           label: item.label,
+          scope: item.scope,
           value: item.value,
         }))}
       />

@@ -7,12 +7,13 @@ describe('Admin web proxy', () => {
   afterEach(() => {
     process.env = { ...originalEnv };
     vi.resetModules();
+    vi.unstubAllGlobals();
   });
 
   it('redirects unauthenticated admin pages to login', async () => {
     process.env = {
       ...process.env,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       NODE_ENV: 'production',
     };
     const { proxy } = await import('../proxy');
@@ -27,7 +28,7 @@ describe('Admin web proxy', () => {
   it('returns 401 for unauthenticated browser-facing admin API routes', async () => {
     process.env = {
       ...process.env,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       NODE_ENV: 'production',
     };
     const { proxy } = await import('../proxy');
@@ -43,7 +44,7 @@ describe('Admin web proxy', () => {
   it('allows login and session routes without an existing session', async () => {
     process.env = {
       ...process.env,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       NODE_ENV: 'production',
     };
     const { proxy } = await import('../proxy');
@@ -56,7 +57,7 @@ describe('Admin web proxy', () => {
   });
 
   it('allows protected admin pages with a valid session cookie', async () => {
-    const sessionSecret = 'test-admin-session-secret';
+    const sessionSecret = 'test-admin-session-secret-with-32-chars';
     process.env = {
       ...process.env,
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
@@ -68,6 +69,12 @@ describe('Admin web proxy', () => {
       secret: sessionSecret,
       sub: 'admin@hands.vn',
     });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        Response.json({ authenticated: true, mfaEnrollmentRequired: false }),
+      ),
+    );
 
     const response = await proxy(
       new NextRequest('http://localhost/partners?review=approval-pending&sort=oldest', {
@@ -79,6 +86,67 @@ describe('Admin web proxy', () => {
     expect(response.headers.get('x-middleware-request-x-admin-pathname')).toBe(
       '/partners?review=approval-pending&sort=oldest',
     );
+  });
+
+  it('rejects a signed cookie after the server session is revoked', async () => {
+    const sessionSecret = 'test-admin-session-secret-with-32-chars';
+    process.env = {
+      ...process.env,
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+      NODE_ENV: 'production',
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ authenticated: false }, { status: 401 })));
+    const { proxy } = await import('../proxy');
+    const sessionCookie = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      secret: sessionSecret,
+      sub: 'admin@hands.vn',
+    });
+
+    const response = await proxy(
+      new NextRequest('http://localhost/bookings', {
+        headers: { cookie: `hands_admin_session=${sessionCookie}` },
+      }),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toContain('/login?redirectTo=%2Fbookings');
+  });
+
+  it('keeps an enrollment-only session inside the MFA setup workspace', async () => {
+    const sessionSecret = 'test-admin-session-secret-with-32-chars';
+    process.env = {
+      ...process.env,
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+      NODE_ENV: 'production',
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() =>
+        Promise.resolve(Response.json({ authenticated: true, mfaEnrollmentRequired: true })),
+      ),
+    );
+    const { proxy } = await import('../proxy');
+    const sessionCookie = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      mfaEnrollmentRequired: true,
+      secret: sessionSecret,
+      sub: 'admin@hands.vn',
+    });
+
+    const redirected = await proxy(
+      new NextRequest('http://localhost/finance-overview', {
+        headers: { cookie: `hands_admin_session=${sessionCookie}` },
+      }),
+    );
+    const setup = await proxy(
+      new NextRequest('http://localhost/admin-operators?mfa=setup', {
+        headers: { cookie: `hands_admin_session=${sessionCookie}` },
+      }),
+    );
+
+    expect(redirected.headers.get('location')).toBe('http://localhost/admin-operators?mfa=setup');
+    expect(setup.headers.get('x-middleware-next')).toBe('1');
   });
 
   it('does not middleware-block realtime token route so route-level dev fallback can apply', async () => {

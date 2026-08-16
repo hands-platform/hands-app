@@ -1,5 +1,6 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Req } from '@nestjs/common';
 import {
+  AcceptAdminOperatorInvitationDto,
   AdminOperatorLoginDto,
   RefreshTokenDto,
   RequestOtpDto,
@@ -7,6 +8,11 @@ import {
   VerifyOtpDto,
 } from './auth.dto';
 import { AuthService } from './auth.service';
+
+type AdminLoginHttpRequest = {
+  get(name: string): string | undefined;
+  ip?: string;
+};
 
 @Controller('auth')
 export class AuthController {
@@ -33,8 +39,16 @@ export class AuthController {
   }
 
   @Post('admin-operator-login')
-  verifyAdminOperatorLogin(@Body() body: AdminOperatorLoginDto) {
-    return this.auth.verifyAdminOperatorLogin(body);
+  verifyAdminOperatorLogin(@Body() body: AdminOperatorLoginDto, @Req() request: AdminLoginHttpRequest) {
+    return this.auth.verifyAdminOperatorLogin(body, {
+      sourceIp: request.ip,
+      userAgent: request.get('user-agent') ?? undefined,
+    });
+  }
+
+  @Post('admin-operator-invitations/accept')
+  acceptAdminOperatorInvitation(@Body() body: AcceptAdminOperatorInvitationDto) {
+    return this.auth.acceptAdminOperatorInvitation(body);
   }
 
   @Post('supabase/exchange')

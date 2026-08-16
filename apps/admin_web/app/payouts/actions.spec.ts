@@ -109,7 +109,7 @@ describe('payout server actions', () => {
       id: 'withdrawal-1',
       path: '/admin/provider-wallet/withdrawal-requests/withdrawal-1/reversal',
     },
-  ])('posts dual-approved bank evidence for $path', async ({ action, idField, id, path }) => {
+  ])('posts bank evidence without trusting a browser-supplied approver for $path', async ({ action, idField, id, path }) => {
     const formData = new FormData();
     formData.set(idField, id);
     formData.set('approvalAdminId', 'finance-approver-2');
@@ -120,12 +120,12 @@ describe('payout server actions', () => {
     await action(formData);
 
     expect(mockedAdminPostOrThrow).toHaveBeenCalledWith(path, {
-      approvalAdminId: 'finance-approver-2',
       reason: 'Bank returned the paid transfer to the company',
       reversalReference: 'BANK-RETURN-001',
       attachmentUrl: 'https://storage.example/reversal.jpg',
       attachmentFileId: undefined,
     });
+    expect(mockedAdminPostOrThrow.mock.calls[0]?.[1]).not.toHaveProperty('approvalAdminId');
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/finance-tax/settlement-reversals');
   });
 });

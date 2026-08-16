@@ -17,6 +17,8 @@ const PUSH_DATA_KEYS = new Set([
   'providerProfileId',
   'destination',
   'appDestination',
+  'targetRole',
+  'locale',
   'notificationId',
   'paymentId',
   'earningId',

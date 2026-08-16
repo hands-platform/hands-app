@@ -381,16 +381,15 @@ describe('PayoutsPage', () => {
     expect(source).not.toContain('<span className={`pill ${item.pillClass}`}>{item.status}</span>');
   });
 
-  it('uses the bounded Finance approver directory instead of free-text ids for paid closeout', () => {
+  it('uses the authenticated operator and server-side closeout evidence for paid reversal approval', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
 
-    expect(source).toContain("'/admin/users?take=50&role=ADMIN&view=finance-approver-directory'");
-    expect(source).toContain('buildFinanceApproverOptions');
-    expect(source).toContain("label: 'Separate Finance approver'");
-    expect(source).toContain(
-      "options: [{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]",
-    );
-    expect(source).not.toContain("label: 'Approving admin id'");
+    expect(source).toContain('The signed-in verified Finance operator is recorded as the reversal approver.');
+    expect(source).toContain('The API blocks the');
+    expect(source).toContain('operator who posted the paid closeout from reversing the same payout.');
+    expect(source).not.toContain('finance-approver-directory');
+    expect(source).not.toContain('buildFinanceApproverOptions');
+    expect(source).not.toContain('approvalAdminId');
   });
 
   it('uses the shared Vuexy trace summary atom for applied payout policy cards', () => {

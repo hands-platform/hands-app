@@ -9,6 +9,8 @@ import {
   adminBookingProductionDataWhere,
 } from './admin-booking-list-query';
 import {
+  adminNotificationDataScopeSql,
+  adminNotificationDataScopeWhere,
   adminNotificationProductionDataSql,
   adminNotificationProductionDataWhere,
 } from './admin-notification-production-data';
@@ -26,6 +28,64 @@ if (RUN_DB_CHECK && !process.env.DATABASE_URL) {
 const describeDb = RUN_DB_CHECK ? describe : describe.skip;
 
 describeDb('admin production data PostgreSQL parity', () => {
+  it('classifies missing and malformed notification scopes as Unknown without overlap', async () => {
+    const prisma = new PrismaClient();
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const userId = `notification-scope-user-${suffix}`;
+    const ids = {
+      malformed: `notification-scope-malformed-${suffix}`,
+      missing: `notification-scope-missing-${suffix}`,
+      production: `notification-scope-production-${suffix}`,
+      synthetic: `notification-scope-synthetic-${suffix}`,
+    };
+    const notificationIds = Object.values(ids);
+
+    try {
+      await prisma.user.create({
+        data: {
+          id: userId,
+          phone: `notification-scope-${suffix}`,
+          roles: ['ADMIN'],
+        },
+      });
+      await prisma.notification.createMany({
+        data: [
+          scopeFixture(ids.missing, userId, {}),
+          scopeFixture(ids.production, userId, { dataScope: 'production' }),
+          scopeFixture(ids.synthetic, userId, { dataScope: 'synthetic' }),
+          scopeFixture(ids.malformed, userId, { dataScope: 'legacy-unclassified' }),
+        ],
+      });
+
+      const counts = await Promise.all(
+        (['production', 'synthetic', 'unknown'] as const).map(async (scope) => {
+          const prismaCount = await prisma.notification.count({
+            where: { AND: [{ id: { in: notificationIds } }, adminNotificationDataScopeWhere(scope)] },
+          });
+          const [raw] = await prisma.$queryRaw<Array<{ count: number }>>(Prisma.sql`
+            SELECT COUNT(*)::int AS count
+            FROM "Notification" notification
+            WHERE notification.id IN (${Prisma.join(notificationIds)})
+              AND ${adminNotificationDataScopeSql(scope)}
+          `);
+          return [scope, { prisma: prismaCount, raw: raw.count }] as const;
+        }),
+      );
+      const byScope = Object.fromEntries(counts);
+
+      expect(byScope).toEqual({
+        production: { prisma: 1, raw: 1 },
+        synthetic: { prisma: 1, raw: 1 },
+        unknown: { prisma: 2, raw: 2 },
+      });
+      expect(Object.values(byScope).reduce((total, count) => total + count.prisma, 0)).toBe(4);
+    } finally {
+      await prisma.notification.deleteMany({ where: { id: { in: notificationIds } } });
+      await prisma.user.deleteMany({ where: { id: userId } });
+      await prisma.$disconnect();
+    }
+  });
+
   it('keeps null JSON paths and aligns Prisma counts with raw SQL', async () => {
     const queries: string[] = [];
     const prisma = new PrismaClient({ log: [{ emit: 'event', level: 'query' }] });
@@ -177,3 +237,14 @@ describeDb('admin production data PostgreSQL parity', () => {
     }
   });
 });
+
+function scopeFixture(id: string, userId: string, data: Prisma.InputJsonValue) {
+  return {
+    body: 'Scope parity fixture',
+    data,
+    id,
+    title: 'Scope parity fixture',
+    type: 'admin.test.notification_scope',
+    userId,
+  };
+}

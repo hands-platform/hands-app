@@ -35,11 +35,25 @@ export function bookingAddressSnapshotCreate(input: {
   };
 }
 
-export function bookingServiceLineCreate(input: { serviceId: string; price: number }) {
+export function bookingServiceLineCreate(input: {
+  serviceId: string;
+  price: number;
+  payoutRule: {
+    id: string;
+    customerPrice: number;
+    providerPayoutAmount: number;
+    vatBps: number;
+    otherCostAmount: number;
+    currency: string;
+  };
+}) {
   return {
     create: {
       serviceId: input.serviceId,
       price: input.price,
+      payoutRuleIdSnapshot: input.payoutRule.id,
+      providerPayoutAmountSnapshot: input.payoutRule.providerPayoutAmount,
+      payoutRuleSnapshot: toJson(input.payoutRule),
     },
   };
 }

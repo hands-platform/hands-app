@@ -66,16 +66,16 @@ describe('API smoke contract', () => {
     );
   });
 
-  it('uses separate finance approval evidence for tax policy and rule smoke writes', () => {
+  it('keeps tax policy smoke writes isolated as drafts', () => {
     const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
 
-    expect(scriptSource).toContain('const taxPolicyApproval = {');
-    expect(scriptSource).toContain('approvalAdminId: financeApproverAuth.user.id');
+    expect(scriptSource).toContain('const taxPolicyDraftEvidence = {');
     expect(scriptSource).toContain(
-      "operatorReason: 'API smoke verified tax policy dual-control evidence.'",
+      "operatorReason: 'API smoke verified isolated tax policy draft evidence.'",
     );
     expect(scriptSource).toContain("postJson('/admin/tax-policy-versions', adminAuth.accessToken, {");
-    expect(scriptSource).toContain('...taxPolicyApproval');
+    expect(scriptSource).toContain("'Direct ACTIVE tax policy creation is rejected'");
+    expect(scriptSource).not.toContain('approvalAdminId: financeApproverAuth.user.id');
   });
 
   it('asserts finance dual approval and role separation guards in live smoke', () => {

@@ -1,25 +1,17 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
+import { notFound, redirect } from 'next/navigation';
 
 import { HandsHomePage } from '../../../components/hands-home-page';
 import { PartnerDetailPage } from '../../../components/partner-detail-page';
 import { PartnerDirectoryPage } from '../../../components/partner-directory-page';
 import { PartnerRecruitmentPage } from '../../../components/partner-recruitment-page';
 import { ReferralIntroPage } from '../../../components/referral-intro-page';
-import {
-  PublicDocumentPage,
-  publicDocumentDefinition,
-} from '../../../components/public-document-page';
-import {
-  PublicNewsDetailPage,
-  PublicNewsListPage,
-} from '../../../components/public-news-pages';
+import { PublicDocumentPage, publicDocumentDefinition } from '../../../components/public-document-page';
+import { PublicNewsDetailPage, PublicNewsListPage } from '../../../components/public-news-pages';
 import { PublicSiteSection } from '../../../components/public-site-section';
 import { HandsSiteFooter, HandsSiteHeader } from '../../../components/hands-site-chrome';
-import {
-  fallbackNewsArticle,
-  newsArticleFromPage,
-} from '../../../lib/public-news';
+import { fallbackNewsArticle, newsArticleFromPage } from '../../../lib/public-news';
 import {
   fetchPublicPartner,
   fetchPublicPartners,
@@ -27,6 +19,7 @@ import {
   publicPartnerIdFromPath,
 } from '../../../lib/public-partners';
 import {
+  CMS_PREVIEW_COOKIE,
   fetchPublicSitePage,
   fetchPublicSitePreview,
   isPublicSiteLocale,
@@ -41,12 +34,10 @@ type PublicPageParams = Promise<{
 
 type PublicPageSearchParams = Promise<{
   page?: string | string[];
-  cmsPreview?: string | string[];
 }>;
 
 export async function generateMetadata({
   params,
-  searchParams,
 }: {
   params: PublicPageParams;
   searchParams: PublicPageSearchParams;
@@ -57,17 +48,20 @@ export async function generateMetadata({
   }
   const site = await publicSiteKeyForRequest();
   const path = routePath(slug);
-  const query = await searchParams;
-  const previewToken = singleValue(query.cmsPreview);
-  const page = previewToken
-    ? await previewPageForRoute(previewToken, site, locale, path)
-    : await fetchPublicSitePage(site, locale, path);
+  if ((site === 'PARTNER_RECRUITMENT' || path === '/partner-support') && locale !== 'vi') {
+    return {
+      title: 'Trở thành đối tác HANDS',
+      alternates: { canonical: 'https://join.hands.vn/' },
+      robots: { index: false, follow: true },
+    };
+  }
+  const { isPreview, page } = await managedPageForRoute(site, locale, path);
   if (!page) {
     if ((site === 'PARTNER_RECRUITMENT' && path === '/') || path === '/partner-support') {
       return {
         title: 'Trở thành đối tác HANDS',
         description: 'Chủ động thời gian, phát triển chuyên môn và kết nối với khách hàng cùng HANDS.',
-        alternates: { canonical: 'https://join.hands.vn/vi' },
+        alternates: { canonical: 'https://join.hands.vn/' },
       };
     }
     const partnerRoute = parsePartnerRoute(slug);
@@ -131,8 +125,8 @@ export async function generateMetadata({
       canonical: `${publicSiteBaseUrl(site)}/${locale}${canonicalPath === '/' ? '' : canonicalPath}`,
     },
     robots: {
-      index: !previewToken && !page.noIndex,
-      follow: !previewToken && !page.noIndex,
+      index: !isPreview && !page.noIndex,
+      follow: !isPreview && !page.noIndex,
     },
   };
 }
@@ -150,11 +144,11 @@ export default async function PublicManagedPage({
   }
   const site = await publicSiteKeyForRequest();
   const path = routePath(slug);
+  if ((site === 'PARTNER_RECRUITMENT' || path === '/partner-support') && locale !== 'vi') {
+    redirect(`/vi${path === '/' ? '' : path}`);
+  }
   const query = await searchParams;
-  const previewToken = singleValue(query.cmsPreview);
-  const page = previewToken
-    ? await previewPageForRoute(previewToken, site, locale, path)
-    : await fetchPublicSitePage(site, locale, path);
+  const { page } = await managedPageForRoute(site, locale, path);
   if (page && path.startsWith('/news/')) {
     const article = newsArticleFromPage(page);
     if (!article) notFound();
@@ -203,14 +197,7 @@ export default async function PublicManagedPage({
     }
     const definition = publicDocumentDefinition(path, locale);
     if (definition) {
-      return (
-        <PublicDocumentPage
-          definition={definition}
-          locale={locale}
-          path={path}
-          site={site}
-        />
-      );
+      return <PublicDocumentPage definition={definition} locale={locale} path={path} site={site} />;
     }
     notFound();
   }
@@ -227,10 +214,7 @@ export default async function PublicManagedPage({
           <PublicSiteSection key={section.id} section={section} />
         ))}
       </main>
-      <HandsSiteFooter
-        locale={locale}
-        site={site === 'PARTNER_RECRUITMENT' ? 'recruitment' : 'main'}
-      />
+      <HandsSiteFooter locale={locale} site={site === 'PARTNER_RECRUITMENT' ? 'recruitment' : 'main'} />
     </div>
   );
 }
@@ -245,8 +229,19 @@ async function previewPageForRoute(
   return page.site === site && page.locale === locale && page.path === path ? page : null;
 }
 
-function singleValue(value?: string | string[]) {
-  return Array.isArray(value) ? value[0] : value;
+async function managedPageForRoute(
+  site: Awaited<ReturnType<typeof publicSiteKeyForRequest>>,
+  locale: 'vi' | 'ko' | 'en' | 'ja' | 'zh',
+  path: string,
+) {
+  const previewToken = (await cookies()).get(CMS_PREVIEW_COOKIE)?.value;
+  const previewPage = previewToken
+    ? await previewPageForRoute(previewToken, site, locale, path)
+    : null;
+  return {
+    isPreview: Boolean(previewPage),
+    page: previewPage ?? await fetchPublicSitePage(site, locale, path),
+  };
 }
 
 function routePath(slug?: string[]) {
@@ -333,7 +328,8 @@ function referralPageMetadata(locale: 'vi' | 'ko' | 'en' | 'ja' | 'zh') {
     },
     vi: {
       title: 'Chương trình giới thiệu HANDS',
-      description: 'Tìm hiểu điều kiện, quy trình xét duyệt và ghi thưởng vào ví cho khách hàng và đối tác massage.',
+      description:
+        'Tìm hiểu điều kiện, quy trình xét duyệt và ghi thưởng vào ví cho khách hàng và đối tác massage.',
     },
     en: {
       title: 'HANDS Referral Program',
@@ -350,10 +346,7 @@ function referralPageMetadata(locale: 'vi' | 'ko' | 'en' | 'ja' | 'zh') {
   }[locale];
 }
 
-function partnerDetailDescription(
-  locale: 'vi' | 'ko' | 'en' | 'ja' | 'zh',
-  name: string,
-) {
+function partnerDetailDescription(locale: 'vi' | 'ko' | 'en' | 'ja' | 'zh', name: string) {
   return {
     ko: `${name} 마사지 테라피스트의 서비스, 가격과 고객 리뷰를 확인하세요.`,
     vi: `Xem dịch vụ, giá và đánh giá của đối tác ${name}.`,
@@ -363,10 +356,7 @@ function partnerDetailDescription(
   }[locale];
 }
 
-function partnerDirectoryDescription(
-  locale: 'vi' | 'ko' | 'en' | 'ja' | 'zh',
-  area: string,
-) {
+function partnerDirectoryDescription(locale: 'vi' | 'ko' | 'en' | 'ja' | 'zh', area: string) {
   return {
     ko: `${area}에서 활동하는 HANDS 마사지 테라피스트의 서비스, 가격과 리뷰를 확인하세요.`,
     vi: `Xem dịch vụ, giá và đánh giá của đối tác HANDS tại ${area}.`,

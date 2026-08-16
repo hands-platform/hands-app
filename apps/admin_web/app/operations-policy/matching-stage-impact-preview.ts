@@ -5,6 +5,7 @@ import {
   adminWalletGateBlocksFinalGate,
   buildAdminLiveOperationsPolicy,
 } from '../../lib/operations-policy';
+import { policyCountLabel } from './policy-copy';
 
 type MatchingStageImpactStats = {
   stage1: number;
@@ -30,6 +31,7 @@ type MatchingStageOptions = {
 
 export type MatchingStageImpactPreview = {
   currentPolicyLabel: string;
+  openMatchingCount: number;
   summary: Array<{ label: string; value: string; helper: string }>;
   rows: Array<{
     scenario: string;
@@ -68,6 +70,7 @@ export function buildMatchingStageImpactPreview(
 
   return {
     currentPolicyLabel: `${policy.responseWindowMinutes}m / ${formatDistance(policy.backupRadiusMeters)} / ${policy.freshnessMinutes}m fresh`,
+    openMatchingCount: openBookings.length,
     summary: buildMatchingStageImpactSummary(openBookings, liveHandoff, baseline),
     rows,
   };
@@ -160,7 +163,7 @@ function buildMatchingStageImpactSummary(
     {
       label: 'Stage 4 repair',
       value: baseline.repair.toString(),
-      helper: `${liveHandoff.length} matched/live booking(s) checked for missing chat handoff.`,
+      helper: `${policyCountLabel(liveHandoff.length, 'matched/live booking')} checked for missing chat handoff.`,
     },
   ];
 }

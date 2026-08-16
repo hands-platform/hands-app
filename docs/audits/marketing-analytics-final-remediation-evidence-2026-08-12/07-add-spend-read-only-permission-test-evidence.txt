@@ -1,0 +1,20 @@
+Marketing Analytics read-only permission evidence
+Recorded: 2026-08-13
+
+The authenticated browser operator has spend-management access, so a read-only
+operator screenshot could not be captured without mutating operator permissions.
+No permission was changed for this verification.
+
+Automated contract evidence:
+- GROWTH_MARKETING readers can open analytics and the spend ledger.
+- GROWTH_MARKETING readers do not receive the Add spend action.
+- GROWTH_MARKETING_SPEND managers can review an exact spend record.
+- MASTER_ADMIN remains allowed.
+- The API category guard rejects access without GROWTH_MARKETING_SPEND.
+- The service repeats the spend authorization check before write orchestration.
+
+Commands and results:
+- Admin focused tests: PASS, 4 files / 56 tests.
+- API marketing route/guard/controller tests: PASS, 36 executed tests.
+- API marketing service tests: PASS, 8 executed tests.
+

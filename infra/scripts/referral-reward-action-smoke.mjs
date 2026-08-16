@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import jwt from 'jsonwebtoken';
 import {
+  AdminUserProvenance,
   CustomerWalletLedgerType,
   PrismaClient,
   ProviderWalletLedgerType,
@@ -188,16 +189,25 @@ function runSeedScript() {
 
 async function createSmokeAdminAuth(phone) {
   const existing = await prisma.user.findUnique({ where: { phone } });
+  if (existing && existing.adminUserProvenance !== AdminUserProvenance.FIXTURE) {
+    throw new Error(`Refusing to grant smoke finance roles to non-fixture user ${existing.id}.`);
+  }
   const user = existing
     ? await prisma.user.update({
         where: { id: existing.id },
         data: {
+          adminUserProvenance: AdminUserProvenance.FIXTURE,
+          fixtureKind: 'REFERRAL_REWARD_ACTION_SMOKE',
+          fixtureRunId: ids.customerCreditReward,
           fullName: existing.fullName ?? 'HANDS Referral Smoke Admin',
           roles: { set: Array.from(new Set([...existing.roles, Role.ADMIN, Role.FINANCE_APPROVER])) },
         },
       })
     : await prisma.user.create({
         data: {
+          adminUserProvenance: AdminUserProvenance.FIXTURE,
+          fixtureKind: 'REFERRAL_REWARD_ACTION_SMOKE',
+          fixtureRunId: ids.customerCreditReward,
           phone,
           fullName: 'HANDS Referral Smoke Admin',
           roles: [Role.ADMIN, Role.FINANCE_APPROVER],

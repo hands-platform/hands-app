@@ -1,0 +1,157 @@
+{
+  "mode": "dry-run",
+  "generatedAt": "2026-08-12T10:36:57.380Z",
+  "cleanupApplied": false,
+  "policyRestoreApplied": false,
+  "summary": {
+    "codeCount": 2,
+    "attributionCount": 2,
+    "rewardCount": 4,
+    "ledgerBearingRewardCount": 2,
+    "totalRewardAmount": 375000
+  },
+  "codes": [
+    {
+      "id": "smoke_referral_customer_code",
+      "audience": "CUSTOMER",
+      "code": "SMOKECUSTREF",
+      "active": true,
+      "metadata": {
+        "smoke": "referral-admin"
+      },
+      "createdAt": "2026-08-03T20:32:14.646Z"
+    },
+    {
+      "id": "smoke_referral_partner_code",
+      "audience": "PARTNER",
+      "code": "SMOKEPARTREF",
+      "active": true,
+      "metadata": {
+        "smoke": "referral-admin"
+      },
+      "createdAt": "2026-08-03T20:32:14.650Z"
+    }
+  ],
+  "attributions": [
+    {
+      "id": "smoke_referral_customer_attribution",
+      "audience": "CUSTOMER",
+      "referralCodeId": "smoke_referral_customer_code",
+      "status": "QUALIFIED",
+      "fraudReviewStatus": "CLEAR",
+      "metadata": {
+        "smoke": "referral-admin"
+      },
+      "createdAt": "2026-08-03T20:32:14.655Z"
+    },
+    {
+      "id": "smoke_referral_partner_attribution",
+      "audience": "PARTNER",
+      "referralCodeId": "smoke_referral_partner_code",
+      "status": "QUALIFIED",
+      "fraudReviewStatus": "CLEAR",
+      "metadata": {
+        "smoke": "referral-admin"
+      },
+      "createdAt": "2026-08-03T20:32:14.660Z"
+    }
+  ],
+  "rewards": [
+    {
+      "id": "smoke_referral_customer_pending_reward",
+      "attributionId": "smoke_referral_customer_attribution",
+      "sourceKey": "smoke-referral:customer:pending",
+      "amount": 25000,
+      "currency": "VND",
+      "status": "HELD",
+      "metadata": {
+        "smoke": "referral-admin"
+      },
+      "qualifyingBookingId": null,
+      "walletLedgerReference": null,
+      "createdAt": "2026-08-03T20:32:14.664Z",
+      "customerWalletLedgerEntries": [],
+      "providerWalletLedgerId": null,
+      "cleanupDisposition": "REVIEW_EXACT_DELETE_CANDIDATE"
+    },
+    {
+      "id": "smoke_referral_customer_available_reward",
+      "attributionId": "smoke_referral_customer_attribution",
+      "sourceKey": "smoke-referral:customer:available",
+      "amount": 50000,
+      "currency": "VND",
+      "status": "CREDITED",
+      "metadata": {
+        "smoke": "referral-admin"
+      },
+      "qualifyingBookingId": null,
+      "walletLedgerReference": "cmsdoqr6d002gvyhc8o91dzmp",
+      "createdAt": "2026-08-03T20:32:14.669Z",
+      "customerWalletLedgerEntries": [
+        {
+          "id": "cmsdoqr6d002gvyhc8o91dzmp",
+          "sourceKey": "referral:wallet-credit:smoke_referral_customer_available_reward"
+        }
+      ],
+      "providerWalletLedgerId": null,
+      "cleanupDisposition": "RETAIN_LEDGER_BEARING_FIXTURE"
+    },
+    {
+      "id": "smoke_referral_partner_pending_reward",
+      "attributionId": "smoke_referral_partner_attribution",
+      "sourceKey": "smoke-referral:partner:pending",
+      "amount": 150000,
+      "currency": "VND",
+      "status": "REVERSED",
+      "metadata": {
+        "smoke": "referral-admin"
+      },
+      "qualifyingBookingId": null,
+      "walletLedgerReference": null,
+      "createdAt": "2026-08-03T20:32:14.674Z",
+      "customerWalletLedgerEntries": [],
+      "providerWalletLedgerId": null,
+      "cleanupDisposition": "REVIEW_EXACT_DELETE_CANDIDATE"
+    },
+    {
+      "id": "smoke_referral_partner_available_reward",
+      "attributionId": "smoke_referral_partner_attribution",
+      "sourceKey": "smoke-referral:partner:available",
+      "amount": 150000,
+      "currency": "VND",
+      "status": "CREDITED",
+      "metadata": {
+        "smoke": "referral-admin"
+      },
+      "qualifyingBookingId": null,
+      "walletLedgerReference": "cmsdoqr82002svyhcyf984eg1",
+      "createdAt": "2026-08-03T20:32:14.677Z",
+      "customerWalletLedgerEntries": [],
+      "providerWalletLedgerId": "cmsdoqr82002svyhcyf984eg1",
+      "cleanupDisposition": "RETAIN_LEDGER_BEARING_FIXTURE"
+    }
+  ],
+  "policyReview": {
+    "current": [
+      {
+        "id": "cmqrbl6at0000vydskiq4w6ev",
+        "audience": "CUSTOMER",
+        "enabled": true,
+        "notes": "Smoke policy for customer referral admin UI checks.",
+        "metadata": null,
+        "updatedAt": "2026-08-03T20:32:14.599Z"
+      },
+      {
+        "id": "cmqrbl6b10001vydsohdyjud0",
+        "audience": "PARTNER",
+        "enabled": true,
+        "notes": "Smoke policy for Partner referral admin UI checks.",
+        "metadata": null,
+        "updatedAt": "2026-08-03T20:32:14.605Z"
+      }
+    ],
+    "recentAudit": [],
+    "safeRestorePossible": false,
+    "reason": "No original policy snapshot is available from the legacy smoke run. Automatic restore is unsafe."
+  }
+}

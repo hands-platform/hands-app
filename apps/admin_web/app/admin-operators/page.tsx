@@ -1,383 +1,800 @@
-import type { AdminAuditLog, AdminUser } from '../../lib/admin-api';
-import { adminGet } from '../../lib/admin-api';
+import Link from 'next/link';
+import { History, KeyRound, RefreshCw, Shield, UserPlus, Users } from 'lucide-react';
+
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminFormCheckbox, AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
-import { AdminInlineActionForm } from '../../components/admin-inline-action-form';
-import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
-import { AdminInlineFallback } from '../../components/admin-inline-fallback';
-import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminCard, AdminCardGrid, AdminFormCard, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormSearch,
+  AdminFormSelect,
+} from '../../components/admin-form-controls';
+import { AdminInlineNotice } from '../../components/admin-inline-notice';
+import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminCard, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
-import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
+import { StatusBadge } from '../../components/status-badge';
+import { adminGetResult } from '../../lib/admin-api';
 import {
-  createAdminOperator,
-  revokeAdminOperatorAccess,
-  updateAdminOperatorAccess,
-} from './actions';
-import {
-  ADMIN_OPERATOR_BASE_ROLE,
   FINANCE_APPROVER_ROLE,
   MASTER_ADMIN_ROLE,
-  adminOperatorAssignableRoleFields,
   adminOperatorPermissionCategoryDefinitions,
   expandLegacyAdminOperatorCategories,
 } from '../../lib/admin-operator-permissions';
+import { OperatorAccessDrawer } from './operator-access-drawer';
+import { AdminMfaEnrollmentForm } from './admin-mfa-enrollment-form';
+import {
+  InviteOperatorForm,
+  InitializeOperatorPermissionForm,
+  InvitationActionForm,
+  OperatorAccessForm,
+  OffboardOperatorForm,
+  OperatorStatusForm,
+  ReauthenticateOperatorForm,
+  ResetAdminMfaForm,
+  SessionRevokeForm,
+} from './operator-access-forms';
 
-type AdminOperatorsPageProps = {
-  readonly searchParams?: Promise<{ readonly operatorNotice?: string }>;
+type PageParams = {
+  readonly category?: string;
+  readonly cursor?: string;
+  readonly cursorHistory?: string;
+  readonly invite?: string;
+  readonly operatorId?: string;
+  readonly q?: string;
+  readonly role?: string;
+  readonly status?: string;
+  readonly tab?: string;
 };
 
-export default async function AdminOperatorsPage({ searchParams }: AdminOperatorsPageProps) {
-  const params = searchParams ? await searchParams : {};
-  const [users, operatorActivityLogs] = await Promise.all([
-    adminGet<AdminUser[]>('/admin/users?take=100', []),
-    adminGet<AdminAuditLog[]>('/admin/audit-logs?bucket=Admin%20Web&take=30', []),
-  ]);
-  const adminUsers = users.filter((user) => user.roles.includes(ADMIN_OPERATOR_BASE_ROLE));
-  const masterAdminCount = adminUsers.filter((user) => user.roles.includes(MASTER_ADMIN_ROLE)).length;
-  const financeApproverCount = adminUsers.filter((user) => user.roles.includes(FINANCE_APPROVER_ROLE)).length;
-  const activeSessionCount = adminUsers.filter((user) => user.appSessions?.some((session) => session.active)).length;
+type OperatorDirectoryItem = {
+  readonly allowedActions: {
+    readonly initializeAccess: OperatorActionDecision;
+    readonly reactivate: OperatorActionDecision;
+    readonly revokeOperatorAccess: OperatorActionDecision;
+    readonly revokeSession: OperatorActionDecision;
+    readonly suspend: OperatorActionDecision;
+    readonly updateAccess: OperatorActionDecision;
+  };
+  readonly activeSessionCount: number;
+  readonly createdAt: string;
+  readonly credential: null | {
+    readonly disabledAt: string | null;
+    readonly disabledReason: string | null;
+    readonly failedLoginCount: number;
+    readonly lastLoginAt: string | null;
+    readonly lockedUntil: string | null;
+    readonly mfaState: string;
+    readonly passwordUpdatedAt: string;
+    readonly setupCompletedAt: string | null;
+  };
+  readonly email: string | null;
+  readonly fullName: string | null;
+  readonly id: string;
+  readonly lastSession: null | {
+    readonly expiresAt: string;
+    readonly id: string;
+    readonly lastSeenAt: string;
+    readonly platformSummary: string | null;
+    readonly revokedAt: string | null;
+  };
+  readonly lifecycleStatus: 'ACTIVE' | 'LOCKED' | 'MIGRATION_REQUIRED' | 'SETUP_REQUIRED' | 'SUSPENDED';
+  readonly permission: null | {
+    readonly categories: string[];
+    readonly effectiveCategories: string[];
+    readonly effectiveLeafPermissionCount: number;
+    readonly id: string;
+    readonly storedPermissionCount: number;
+    readonly updatedAt: string;
+    readonly version: number;
+  };
+  readonly phone: string;
+  readonly roles: string[];
+  readonly updatedAt: string;
+};
 
+type OperatorActionDecision = {
+  readonly allowed: boolean;
+  readonly blockedReasons: ReadonlyArray<{ readonly code: string; readonly message: string }>;
+};
+
+type OperatorDirectory = {
+  readonly items: OperatorDirectoryItem[];
+  readonly page: {
+    readonly filteredTotal: number;
+    readonly hasNextPage: boolean;
+    readonly nextCursor: string | null;
+    readonly returned: number;
+  };
+  readonly summary: {
+    readonly finance: number;
+    readonly locked: number;
+    readonly master: number;
+    readonly missingCredential: number;
+    readonly missingPermission: number;
+    readonly mfaNotConfigured: number;
+    readonly securityIncompleteDistinct: number;
+    readonly suspended: number;
+    readonly total: number;
+  };
+};
+
+type CurrentAccess = {
+  readonly categories: string[];
+  readonly id: string;
+  readonly permissionState: 'CONFIGURED' | 'MIGRATION_REQUIRED';
+  readonly roles: string[];
+};
+
+type CurrentMfa = {
+  readonly enrolledAt: string | null;
+  readonly recoveryCodesRemaining: number;
+  readonly state: string;
+};
+
+type InvitationDirectory = {
+  readonly expiredCount: number;
+  readonly items: Array<{
+    readonly acceptedAt: string | null;
+    readonly createdAt: string;
+    readonly expiresAt: string;
+    readonly fullName: string | null;
+    readonly id: string;
+    readonly normalizedEmail: string;
+    readonly revokedAt: string | null;
+    readonly status: 'ACCEPTED' | 'EXPIRED' | 'PENDING' | 'REVOKED';
+    readonly deliveryStatus: 'ACCEPTED' | 'EXPIRED' | 'PENDING' | 'REVOKED';
+  }>;
+  readonly pendingCount: number;
+  readonly totalCount: number;
+};
+
+type OperatorSession = {
+  readonly current: boolean;
+  readonly expiresAt: string;
+  readonly id: string;
+  readonly issuedAt: string;
+  readonly lastSeenAt: string;
+  readonly platformSummary: string | null;
+  readonly reauthenticatedAt: string | null;
+  readonly revokedAt: string | null;
+  readonly revocationReason: string | null;
+};
+
+type OperatorHistory = {
+  readonly items: Array<{
+    readonly action: string;
+    readonly actor: { readonly email: string | null; readonly fullName: string | null; readonly id: string };
+    readonly createdAt: string;
+    readonly id: string;
+    readonly metadata: unknown;
+    readonly target: string;
+  }>;
+  readonly totalCount: number;
+};
+
+const EMPTY_DIRECTORY: OperatorDirectory = {
+  items: [],
+  page: { filteredTotal: 0, hasNextPage: false, nextCursor: null, returned: 0 },
+  summary: {
+    finance: 0,
+    locked: 0,
+    master: 0,
+    missingCredential: 0,
+    missingPermission: 0,
+    mfaNotConfigured: 0,
+    securityIncompleteDistinct: 0,
+    suspended: 0,
+    total: 0,
+  },
+};
+const EMPTY_INVITATIONS: InvitationDirectory = { expiredCount: 0, items: [], pendingCount: 0, totalCount: 0 };
+
+export default async function AdminOperatorsPage({ searchParams }: { readonly searchParams?: Promise<PageParams> }) {
+  const params = searchParams ? await searchParams : {};
+  const currentAccessResult = await adminGetResult<CurrentAccess | null>('/admin/users/admin-operator-access', null);
+  const currentMfaResult = await adminGetResult<CurrentMfa>('/admin/admin-operators/me/mfa', {
+    enrolledAt: null,
+    recoveryCodesRemaining: 0,
+    state: 'UNAVAILABLE',
+  });
+  const currentAccess = currentAccessResult.data;
+  const isMaster = Boolean(currentAccess?.roles.includes(MASTER_ADMIN_ROLE));
+  const directoryPath = `/admin/users/admin-operators?${directoryQuery(params)}`;
+  const directoryPromise = adminGetResult<OperatorDirectory>(directoryPath, EMPTY_DIRECTORY);
+  const invitationsPromise = isMaster
+    ? adminGetResult<InvitationDirectory>('/admin/admin-operator-invitations', EMPTY_INVITATIONS)
+    : Promise.resolve({ data: EMPTY_INVITATIONS, ok: true, status: 200 } as const);
+  const selectedPromise = params.operatorId
+    ? adminGetResult<OperatorDirectoryItem | null>(
+        `/admin/users/admin-operators/${encodeURIComponent(params.operatorId)}`,
+        null,
+      )
+    : Promise.resolve({ data: null, ok: true, status: 200 } as const);
+  const sessionsPromise = isMaster && params.operatorId
+    ? adminGetResult<OperatorSession[]>(
+        `/admin/users/${encodeURIComponent(params.operatorId)}/admin-web-sessions`,
+        [],
+      )
+    : Promise.resolve({ data: [] as OperatorSession[], ok: true, status: 200 });
+  const historyPromise = isMaster && params.operatorId
+    ? adminGetResult<OperatorHistory>(
+        `/admin/admin-operator-history?targetUserId=${encodeURIComponent(params.operatorId)}&take=30`,
+        { items: [], totalCount: 0 },
+      )
+    : Promise.resolve({ data: { items: [] as OperatorHistory['items'], totalCount: 0 }, ok: true, status: 200 });
+  const [directoryResult, invitationsResult, selectedResult, sessionsResult, historyResult] = await Promise.all([
+    directoryPromise,
+    invitationsPromise,
+    selectedPromise,
+    sessionsPromise,
+    historyPromise,
+  ]);
+
+  const directory = directoryResult.data;
+  const invitations = invitationsResult.data;
+  const selectedOperator = selectedResult.data;
+  const closeHref = operatorAccessHref(params, { invite: undefined, operatorId: undefined, tab: undefined });
   return (
     <AdminPageTemplate
-      description="Master Admin workspace for operator creation, access removal, category permissions, and audited role control."
-      metrics={[
-        {
-          helper: 'Admin role users returned by the bounded Admin API.',
-          kind: 'record',
-          label: 'Admin operators',
-          scope: 'All records',
-          value: adminUsers.length,
-        },
-        {
-          helper: 'Operators with an active Admin Web or app session record.',
-          kind: 'live',
-          label: 'Active sessions',
-          scope: 'Live',
-          value: activeSessionCount,
-        },
-        {
-          helper: 'Operators allowed to manage all admin operator access.',
-          kind: 'record',
-          label: 'Master admins',
-          scope: 'Access records',
-          value: masterAdminCount,
-        },
-        {
-          helper: 'Second-control admins for money, tax, payout, and bank actions.',
-          kind: 'record',
-          label: 'Finance approvers',
-          scope: 'Role records',
-          value: financeApproverCount,
-        },
-      ]}
-      title="Admin Operators"
+      actions={(
+        <>
+          <AdminFormControlLink className="button-secondary" href={operatorAccessHref(params, { cursor: undefined })}>
+            <RefreshCw aria-hidden="true" size={15} /> Refresh now
+          </AdminFormControlLink>
+          {isMaster ? (
+            <AdminFormControlLink className="button-primary" href={operatorAccessHref(params, { invite: '1', operatorId: undefined, tab: undefined })}>
+              <UserPlus aria-hidden="true" size={15} /> Invite operator
+            </AdminFormControlLink>
+          ) : null}
+        </>
+      )}
+      contentClassName="operator-access-page"
+      description="Invite operators, review effective access, and suspend Admin Web access."
+      title="Admin operators"
     >
-      {params.operatorNotice ? <OperatorNotice notice={params.operatorNotice} /> : null}
+      {!currentAccessResult.ok ? <LoadFailure label="Your current operator access could not be verified." /> : null}
+      {currentAccess && !isMaster ? (
+        <AdminInlineNotice role="status" tone="info">
+          <Shield aria-hidden="true" size={17} />
+          <span><strong>View-only access.</strong> Master Admin access is required to invite operators or change Admin Web access.</span>
+        </AdminInlineNotice>
+      ) : null}
+      {directory.summary.missingPermission > 0 ? (
+        <AdminNoticeCard className="operator-access-risk-notice" tone="warning">
+          <strong>Permission setup required</strong>
+          <p>{directory.summary.missingPermission} Admin operator(s) have no explicit permission record. They remain deny-by-default until migrated.</p>
+          <StatusBadge tone="warning">Migration required</StatusBadge>
+        </AdminNoticeCard>
+      ) : null}
+      {currentMfaResult.ok ? (
+        <AdminMfaEnrollmentForm {...currentMfaResult.data} />
+      ) : (
+        <AdminNoticeCard className="operator-access-mfa-notice" tone="danger">
+          <strong>MFA status unavailable</strong>
+          <p>Do not perform high-risk Admin or Finance actions until MFA status can be verified.</p>
+          <StatusBadge tone="danger">Fail closed</StatusBadge>
+        </AdminNoticeCard>
+      )}
 
-      <AdminSection
-        className="admin-operator-master-card admin-mb-16"
-        description="Create admin operators, grant category access, or revoke admin access without deleting the underlying user account."
-        statusLabel="Master admin control"
-        statusTone="info"
-        title="Master admin control"
-      >
-        <AdminCardGrid ariaLabel="Operator account controls" className="admin-operator-control-grid">
-          <AdminFormCard action={createAdminOperator} className="admin-operator-control-card" ariaLabel="Add operator">
-            <div>
-              <h3>Add operator</h3>
-              <p className="muted">Creates a new operator login and grants Admin Web access by email.</p>
-            </div>
-            <AdminFormInput label="Operator email" name="email" placeholder="operator@hands.vn" required type="email" />
-            <AdminFormInput label="Temporary password" name="password" placeholder="Set initial password" required type="password" />
-            <AdminFormInput label="Operator name" name="fullName" placeholder="Full name" />
-            <div className="admin-operator-permission-toggle-row" aria-label="Operator roles">
-              {adminOperatorAssignableRoleFields.map((role) => (
-                <AdminFormCheckbox key={role.value} label={role.label} name="roles" value={role.value}>
-                  <span>{role.label}</span>
-                </AdminFormCheckbox>
+      {directoryResult.ok ? (
+        <nav aria-label="Admin operator command summary" className="operator-access-command-strip">
+          <CommandLink href="/admin-operators" label="All operators" value={directory.summary.total} />
+          <CommandLink href="/admin-operators?status=needs-action" label="Needs action" tone="warning" value={directory.summary.securityIncompleteDistinct} />
+          <CommandLink href="/admin-operators#invitations" label="Pending invitations" tone="warning" value={invitations.pendingCount} />
+          <CommandLink href="/admin-operators?status=locked" label="Locked" tone="danger" value={directory.summary.locked} />
+          <span className="operator-access-command-breakdown">
+            Permission {directory.summary.missingPermission} · Sign-in {directory.summary.missingCredential} · MFA {directory.summary.mfaNotConfigured}
+          </span>
+        </nav>
+      ) : <LoadFailure label="The operator summary could not be loaded." />}
+
+      <AdminSection className="operator-access-directory-section" title="Operator directory">
+        <AdminSectionHeader
+          description="Active, setup-required, suspended, and locked Admin Web operators from the exact server directory."
+          status={<StatusBadge tone={directoryResult.ok ? 'info' : 'danger'}>{directoryResult.ok ? `${directory.page.filteredTotal} result(s)` : 'Unavailable'}</StatusBadge>}
+          title="Find an operator"
+        />
+        <form action="/admin-operators" className="operator-access-filter-bar" method="get">
+          <AdminFormSearch defaultValue={params.q} label="Search name or admin email" name="q" placeholder="Name, email, or operator ID" />
+          <AdminFormSelect
+            defaultValue={params.status ?? ''}
+            label="Status"
+            name="status"
+            options={[
+              { label: 'All statuses', value: '' },
+              { label: 'Needs action', value: 'needs-action' },
+              { label: 'Active', value: 'active' },
+              { label: 'Setup required', value: 'setup-required' },
+              { label: 'Migration required', value: 'migration-required' },
+              { label: 'Suspended', value: 'suspended' },
+              { label: 'Locked', value: 'locked' },
+              { label: 'MFA required', value: 'mfa-required' },
+            ]}
+          />
+          <AdminFormSelect
+            defaultValue={params.role ?? ''}
+            label="Role"
+            name="role"
+            options={[
+              { label: 'All roles', value: '' },
+              { label: 'Admin', value: 'ADMIN' },
+              { label: 'Master Admin', value: MASTER_ADMIN_ROLE },
+              { label: 'Finance Approver', value: FINANCE_APPROVER_ROLE },
+            ]}
+          />
+          <AdminFormSelect
+            defaultValue={params.category ?? ''}
+            label="Access domain"
+            name="category"
+            options={[
+              { label: 'All access domains', value: '' },
+              ...adminOperatorPermissionCategoryDefinitions.map((definition) => ({
+                label: definition.label,
+                value: definition.key,
+              })),
+            ]}
+          />
+          <AdminFormControlButton className="button-primary" type="submit">Apply filters</AdminFormControlButton>
+          <AdminFormControlLink className="button-secondary" href="/admin-operators">Reset</AdminFormControlLink>
+        </form>
+      </AdminSection>
+
+      {directoryResult.ok ? (
+        <AdminTablePanel
+          description={directory.page.filteredTotal === 0 && hasDirectoryFilters(params)
+            ? 'No operators match the current filters.'
+            : 'Select one operator to review direct access, sessions, and exact lifecycle history.'}
+          resultLabel={`${directory.page.returned} shown · ${directory.page.filteredTotal} total`}
+          resultTone="info"
+          title="Admin Web operators"
+        >
+          <AdminTableScroll ariaLabel="Operator Access directory">
+            <AdminDataTable
+              className="vuexy-booking-table operator-access-table"
+              emptyMessage={hasDirectoryFilters(params) ? 'No operators match these filters.' : 'No Admin operators exist.'}
+              headers={['Operator', 'Status', 'Roles', 'Effective access', 'Security', 'Last sign-in', 'Action']}
+              rowCount={directory.items.length}
+            >
+              {directory.items.map((operator) => (
+                <OperatorRow currentUserId={currentAccess?.id} key={operator.id} operator={operator} params={params} />
               ))}
+            </AdminDataTable>
+          </AdminTableScroll>
+          {directory.page.hasNextPage && directory.page.nextCursor ? (
+            <div className="operator-access-pagination">
+              <span className="muted">Showing {directory.page.returned} records on this page · {directory.page.filteredTotal} total</span>
+              {params.cursor ? (
+                <>
+                  <AdminFormControlLink className="button-secondary" href={operatorAccessHref(params, { cursor: undefined, cursorHistory: undefined })}>
+                    First
+                  </AdminFormControlLink>
+                  <AdminFormControlLink className="button-secondary" href={previousPageHref(params)}>
+                    Previous
+                  </AdminFormControlLink>
+                </>
+              ) : null}
+              <AdminFormControlLink className="button-secondary" href={operatorAccessHref(params, { cursor: directory.page.nextCursor })}>
+                Next page
+              </AdminFormControlLink>
             </div>
-            <CategoryCheckboxGrid defaults={['BOOKINGS_REALTIME', 'CUSTOMERS_DIRECTORY', 'PARTNERS_DIRECTORY', 'NOTIFICATIONS_PUSH']} />
-            <AdminFormInput label="Reason" name="reason" placeholder="Access request reason" />
-            <AdminFormControlButton className="button-primary" type="submit">
-              Add operator
-            </AdminFormControlButton>
-          </AdminFormCard>
-        </AdminCardGrid>
-      </AdminSection>
+          ) : params.cursor ? (
+            <div className="operator-access-pagination">
+              <span className="muted">Last page · {directory.page.filteredTotal} total</span>
+              <AdminFormControlLink className="button-secondary" href={operatorAccessHref(params, { cursor: undefined, cursorHistory: undefined })}>First</AdminFormControlLink>
+              <AdminFormControlLink className="button-secondary" href={previousPageHref(params)}>Previous</AdminFormControlLink>
+            </div>
+          ) : null}
+        </AdminTablePanel>
+      ) : <LoadFailure label="Operator records could not be loaded. Retry before making access decisions." />}
 
-      <AdminSection
-        className="admin-operator-permission-card admin-mb-16"
-        description="Category permissions are stored separately from the broad Admin role so each operator can be granted only the page groups they need."
-        statusLabel={`${adminOperatorPermissionCategoryDefinitions.length} categories`}
-        statusTone="info"
-        title="Category permissions"
-      >
-        <AdminCardGrid ariaLabel="Operator permission categories" className="admin-operator-permission-grid">
-          {adminOperatorPermissionCategoryDefinitions.map((category) => (
-            <AdminCard className="admin-operator-permission-item" key={category.key}>
-              <div>
-                <strong>{category.label}</strong>
-                <StatusBadge tone="neutral">{category.group}</StatusBadge>
-                <p className="muted">{category.scope}</p>
+      {isMaster ? (
+        <AdminCard className="operator-access-invitations" id="invitations">
+          <details>
+            <summary>Invitations <StatusBadge tone={invitations.pendingCount ? 'warning' : 'neutral'}>{invitations.pendingCount} pending</StatusBadge></summary>
+            {!invitationsResult.ok ? <LoadFailure label="Invitation records could not be loaded." /> : (
+              <div className="operator-access-invitation-list">
+                <ReauthenticateOperatorForm />
+                {invitations.items.length ? invitations.items.map((invitation) => (
+                  <div key={invitation.id}>
+                    <span><strong>{invitation.fullName ?? invitation.normalizedEmail}</strong><small>{invitation.normalizedEmail}</small></span>
+                    <StatusBadge tone={invitation.status === 'PENDING' ? 'warning' : invitation.status === 'ACCEPTED' ? 'success' : 'neutral'}>{invitation.status}</StatusBadge>
+                    <DateTimeText value={invitation.expiresAt} />
+                    {invitation.status === 'PENDING' || invitation.status === 'EXPIRED' ? (
+                      <div className="operator-access-invitation-actions">
+                        {invitation.status === 'PENDING' ? (
+                          <InvitationActionForm invitationId={invitation.id} mode="revoke" operatorName={invitation.fullName ?? invitation.normalizedEmail} />
+                        ) : null}
+                        <InvitationActionForm invitationId={invitation.id} mode="resend" operatorName={invitation.fullName ?? invitation.normalizedEmail} />
+                      </div>
+                    ) : null}
+                  </div>
+                )) : <p className="muted">No operator invitations have been created.</p>}
               </div>
-              <small>{category.defaultOwner}</small>
-            </AdminCard>
-          ))}
-        </AdminCardGrid>
-      </AdminSection>
+            )}
+          </details>
+        </AdminCard>
+      ) : null}
 
-      <AdminTablePanel
-        description="Recent Admin Web page visits and server actions are stored in the shared audit log by resolved operator identity."
-        resultLabel={`${operatorActivityLogs.length} recent action(s)`}
-        resultTone="info"
-        title="Operator activity log"
-      >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table admin-operator-table"
-            emptyMessage="No Admin Web operator activity has been recorded yet."
-            headers={['Operator', 'Activity', 'Target', 'Time']}
-            rowCount={operatorActivityLogs.length}
-          >
-            {operatorActivityLogs.map((log) => (
-              <tr key={log.id}>
-                <td>
-                  <strong>{log.actor?.fullName ?? log.actor?.email ?? log.actor?.phone ?? log.actor?.id ?? 'Admin'}</strong>
-                  <div className="muted">{log.actor?.email ?? log.actor?.phone ?? log.actor?.id ?? 'Unknown operator'}</div>
-                </td>
-                <td>
-                  <strong>{operatorActivityLabel(log.action)}</strong>
-                  <div className="muted">{operatorActivityMetadataLabel(log.metadata)}</div>
-                </td>
-                <td>
-                  <span className="muted">{log.target}</span>
-                </td>
-                <td>
-                  <DateTimeText value={log.createdAt} />
-                </td>
-              </tr>
-            ))}
-          </AdminDataTable>
-        </AdminTableScroll>
-      </AdminTablePanel>
+      {params.invite === '1' && isMaster ? (
+        <OperatorAccessDrawer returnHref={closeHref} title="Invite operator">
+          <p className="muted">Create a short-lived, one-time setup link. No temporary password is stored or sent.</p>
+          <ReauthenticateOperatorForm />
+          <InviteOperatorForm />
+        </OperatorAccessDrawer>
+      ) : null}
 
-      <AdminTablePanel
-        description="This table uses the existing bounded /admin/users API and only displays users with the ADMIN role."
-        resultLabel={`${adminUsers.length} admin(s)`}
-        resultTone="info"
-        title="Operator directory"
-      >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table admin-operator-table"
-            emptyMessage="No admin operators were returned by the bounded admin user API."
-            headers={['Operator', 'Roles', 'Latest session', 'Category access', 'Actions']}
-            rowCount={adminUsers.length}
-          >
-            {adminUsers.map((user) => {
-              const isMasterAdmin = user.roles.includes(MASTER_ADMIN_ROLE);
-
-              return (
-                <tr key={user.id}>
-                  <td>
-                    <strong>{user.fullName ?? user.phone ?? user.id}</strong>
-                    <div className="muted">{user.email ?? user.phone ?? user.id}</div>
-                    <div className="muted">{user.id}</div>
-                  </td>
-                  <td>
-                    <AdminFilterChipGroup ariaLabel={`${user.id} role badges`}>
-                      {user.roles.map((role) => (
-                        <StatusBadgeFromPillClass key={role} pillClass={operatorRolePillClassName(role)}>
-                          {role}
-                        </StatusBadgeFromPillClass>
-                      ))}
-                    </AdminFilterChipGroup>
-                  </td>
-                  <td>
-                    <strong>
-                      {user.appSessions?.[0]?.lastSeenAt ? (
-                        <DateTimeText value={user.appSessions[0].lastSeenAt} />
-                      ) : (
-                        <AdminInlineFallback>No recent session</AdminInlineFallback>
-                      )}
-                    </strong>
-                    {user.appSessions?.[0]?.platform ? (
-                      <div className="muted">{user.appSessions[0].platform}</div>
-                    ) : (
-                      <AdminInlineFallback className="admin-mt-6">No platform</AdminInlineFallback>
-                    )}
-                  </td>
-                  <td>
-                    {isMasterAdmin ? (
-                      <div className="admin-operator-master-access" role="note">
-                        <StatusBadge tone="primary">All categories</StatusBadge>
-                      </div>
-                    ) : (
-                      <div className="admin-operator-access-pills">
-                        {operatorAccessLabels(user).map((label) => (
-                          <StatusBadge tone="info" key={`${user.id}:${label}`}>
-                            {label}
-                          </StatusBadge>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <div className="admin-operator-action-stack">
-                      <AdminInlineActionForm
-                        action={updateAdminOperatorAccess}
-                        className="admin-operator-inline-form"
-                      >
-                        <input name="userId" type="hidden" value={user.id} />
-                        <div className="admin-operator-permission-toggle-row" aria-label={`${user.id} roles`}>
-                          {adminOperatorAssignableRoleFields.map((role) => (
-                            <AdminFormCheckbox
-                              defaultChecked={user.roles.includes(role.value)}
-                              key={role.value}
-                              label={role.label}
-                              name="roles"
-                              value={role.value}
-                            >
-                              <span>{role.label}</span>
-                            </AdminFormCheckbox>
-                          ))}
-                        </div>
-                        {isMasterAdmin ? (
-                          null
-                        ) : (
-                          <CategoryCheckboxGrid defaults={operatorPermissionCategoryKeys(user)} compact />
-                        )}
-                        <AdminFormInput label="Update reason" name="reason" placeholder="Reason" />
-                        <div className="admin-operator-row-actions">
-                          <AdminFormControlButton className="button-secondary admin-inline-action" type="submit">
-                            Save permissions
-                          </AdminFormControlButton>
-                        </div>
-                      </AdminInlineActionForm>
-                      <AdminInlineActionForm
-                        action={revokeAdminOperatorAccess}
-                        className="admin-operator-inline-delete-form"
-                      >
-                        <input name="userId" type="hidden" value={user.id} />
-                        <input name="reason" type="hidden" value="Master Admin row action" />
-                        <AdminFormControlButton className="button-danger admin-inline-action" type="submit">
-                          Delete operator
-                        </AdminFormControlButton>
-                      </AdminInlineActionForm>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </AdminDataTable>
-        </AdminTableScroll>
-      </AdminTablePanel>
+      {params.operatorId ? (
+        <OperatorAccessDrawer
+          returnFocusHref={operatorAccessHref(params, { operatorId: params.operatorId, tab: undefined })}
+          returnHref={closeHref}
+          title={selectedOperator ? operatorIdentity(selectedOperator) : 'Operator detail'}
+        >
+          {!selectedResult.ok || !selectedOperator ? <LoadFailure label="This operator detail could not be loaded." /> : (
+            <OperatorDetail
+              currentUserId={currentAccess?.id}
+              history={historyResult.data}
+              historyOk={historyResult.ok}
+              isMaster={isMaster}
+              operator={selectedOperator}
+              params={params}
+              sessions={sessionsResult.data}
+              sessionsOk={sessionsResult.ok}
+            />
+          )}
+        </OperatorAccessDrawer>
+      ) : null}
     </AdminPageTemplate>
   );
 }
 
-function OperatorNotice({ notice }: { readonly notice: string }) {
-  const message =
-    {
-      'admin-auth': 'Admin API authentication failed. Refresh the admin session and try again.',
-      created: 'Operator access was created.',
-      failed: 'Operator access update failed. Check master admin permission, duplicate phone, or last role guard.',
-      'missing-email': 'Operator email is required.',
-      'missing-phone': 'Operator phone is required.',
-      'missing-password': 'Temporary password is required.',
-      'missing-user': 'Admin user ID is required.',
-      revoked: 'Operator access was revoked.',
-      updated: 'Operator access was updated.',
-    }[notice] ?? 'Operator action finished.';
-
+function OperatorRow({ currentUserId, operator, params }: { readonly currentUserId?: string; readonly operator: OperatorDirectoryItem; readonly params: PageParams }) {
+  const accessGroups = operatorAccessGroups(operator);
   return (
-    <AdminNoticeCard
-      className="admin-mb-16"
-      tone={notice === 'created' || notice === 'updated' || notice === 'revoked' ? 'success' : 'warning'}
-    >
-      <strong>Operator action</strong>
-      <p className="muted">{message}</p>
-      <StatusBadge tone={notice === 'created' || notice === 'updated' || notice === 'revoked' ? 'success' : 'warning'}>
-        {notice}
-      </StatusBadge>
-    </AdminNoticeCard>
+    <tr>
+      <td>
+        <strong>{operatorIdentity(operator)} {operator.id === currentUserId ? <StatusBadge tone="primary">You</StatusBadge> : null}</strong>
+        <div className="muted">{operator.email ?? 'Admin email not recorded'}</div>
+      </td>
+      <td><OperatorStatus status={operator.lifecycleStatus} /></td>
+      <td><RoleBadges roles={operator.roles} /></td>
+      <td>
+        <strong>{operator.roles.includes(MASTER_ADMIN_ROLE) ? 'All access' : accessGroups.length ? accessGroups.join(', ') : 'No direct access'}</strong>
+        <div className="muted">{operator.permission
+          ? `${formatCount(operator.permission.effectiveLeafPermissionCount, 'permission')} effective · ${operator.permission.storedPermissionCount} stored entries`
+          : 'No permission policy saved — access is blocked'}</div>
+      </td>
+      <td>
+        <strong>{operator.credential?.mfaState === 'VERIFIED' ? 'MFA verified' : 'MFA required'}</strong>
+        <div className="muted">{operator.activeSessionCount} active session(s)</div>
+      </td>
+      <td>
+        {operator.credential?.lastLoginAt ? <DateTimeText value={operator.credential.lastLoginAt} /> : <span>Never signed in</span>}
+        <div className="muted">{operator.lastSession?.platformSummary ?? 'Admin Web device not recorded'}</div>
+      </td>
+      <td>
+        <AdminFormControlLink
+          aria-label={`View access for ${operatorIdentity(operator)}`}
+          className="button-secondary"
+          href={operatorAccessHref(params, { invite: undefined, operatorId: operator.id, tab: 'overview' })}
+        >
+          View access
+        </AdminFormControlLink>
+      </td>
+    </tr>
   );
 }
 
-function CategoryCheckboxGrid({
-  compact = false,
-  defaults,
+function CommandLink({
+  href,
+  label,
+  tone = 'neutral',
+  value,
 }: {
-  readonly compact?: boolean;
-  readonly defaults: readonly string[];
+  readonly href: string;
+  readonly label: string;
+  readonly tone?: 'danger' | 'neutral' | 'warning';
+  readonly value: number;
 }) {
   return (
-    <div className={compact ? 'admin-operator-access-pills' : 'admin-operator-permission-toggle-row'}>
-      {adminOperatorPermissionCategoryDefinitions.map((category) => (
-        <AdminFormCheckbox
-          defaultChecked={defaults.includes(category.key)}
-          key={category.key}
-          label={category.label}
-          name="permissionCategories"
-          value={category.key}
-        >
-          <span>{category.label}</span>
-        </AdminFormCheckbox>
+    <Link className={`operator-access-command-link is-${tone}`} href={href} prefetch={false}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </Link>
+  );
+}
+
+function OperatorDetail({
+  currentUserId,
+  history,
+  historyOk,
+  isMaster,
+  operator,
+  params,
+  sessions,
+  sessionsOk,
+}: {
+  readonly currentUserId?: string;
+  readonly history: OperatorHistory;
+  readonly historyOk: boolean;
+  readonly isMaster: boolean;
+  readonly operator: OperatorDirectoryItem;
+  readonly params: PageParams;
+  readonly sessions: OperatorSession[];
+  readonly sessionsOk: boolean;
+}) {
+  const tab = ['access', 'sessions', 'history'].includes(params.tab ?? '') ? params.tab! : 'overview';
+  const effectiveCategories = operator.permission?.effectiveCategories
+    ?? expandLegacyAdminOperatorCategories(operator.permission?.categories ?? []);
+  return (
+    <div className="operator-access-detail">
+      <div className="operator-access-detail-identity">
+        <div><Users aria-hidden="true" size={20} /><span><strong>{operatorIdentity(operator)}</strong><small>{operator.email ?? operator.id}</small></span></div>
+        <OperatorStatus status={operator.lifecycleStatus} />
+      </div>
+      <nav aria-label="Operator detail sections" className="operator-access-tabs">
+        {['overview', 'access', 'sessions', 'history'].map((value) => (
+          <Link aria-current={tab === value ? 'page' : undefined} href={operatorAccessHref(params, { tab: value })} key={value} prefetch={false} scroll={false}>
+            {value === 'overview' ? 'Overview' : value === 'access' ? 'Access' : value === 'sessions' ? 'Sessions' : 'Change history'}
+          </Link>
+        ))}
+      </nav>
+      {tab === 'overview' ? (
+        <div className="operator-access-overview-grid">
+          <AdminCard><span className="muted">Roles</span><RoleBadges roles={operator.roles} /></AdminCard>
+          <AdminCard><span className="muted">Effective access</span><strong>{formatCount(effectiveCategories.length, 'permission')}</strong></AdminCard>
+          <AdminCard><span className="muted">Authentication</span><strong>{operator.credential ? 'Setup complete' : 'Setup required'}</strong></AdminCard>
+          <AdminCard><span className="muted">MFA</span><strong>{operator.credential?.mfaState === 'VERIFIED' ? 'Verified' : 'Required'}</strong></AdminCard>
+          <AdminCard><span className="muted">Active sessions</span><strong>{operator.activeSessionCount}</strong></AdminCard>
+          <AdminCard><span className="muted">Internal ID</span><code>{operator.id}</code></AdminCard>
+          {operator.roles.includes(FINANCE_APPROVER_ROLE) ? (
+            <AdminInlineNotice role="note" tone="info">
+              <span>Finance Approver is read-only here.</span>
+              <AdminFormControlLink className="button-secondary" href="/finance-tax/finance-approvers">Manage Finance Approver role</AdminFormControlLink>
+            </AdminInlineNotice>
+          ) : null}
+          {isMaster && currentUserId !== operator.id ? (
+            <>
+              <ReauthenticateOperatorForm />
+              {operator.credential?.mfaState === 'VERIFIED' ? (
+                <ResetAdminMfaForm operatorId={operator.id} operatorName={operatorIdentity(operator)} />
+              ) : null}
+              {operator.lifecycleStatus === 'SUSPENDED'
+                ? operator.allowedActions.reactivate.allowed
+                  ? <OperatorStatusForm activeSessionCount={operator.activeSessionCount} operatorId={operator.id} operatorName={operatorIdentity(operator)} suspended />
+                  : <ActionBlockers decision={operator.allowedActions.reactivate} label="Reactivation unavailable" />
+                : operator.allowedActions.suspend.allowed
+                  ? <OperatorStatusForm activeSessionCount={operator.activeSessionCount} operatorId={operator.id} operatorName={operatorIdentity(operator)} suspended={false} />
+                  : <ActionBlockers decision={operator.allowedActions.suspend} label="Suspension unavailable" />}
+              {operator.allowedActions.revokeOperatorAccess.allowed ? (
+                <OffboardOperatorForm operatorId={operator.id} operatorName={operatorIdentity(operator)} />
+              ) : (
+                <ActionBlockers decision={operator.allowedActions.revokeOperatorAccess} label="Offboarding preflight" />
+              )}
+            </>
+          ) : null}
+        </div>
+      ) : null}
+      {tab === 'access' ? (
+        <div>
+          {operator.permission ? (
+            <>
+              <div className="operator-access-effective-summary">
+                <strong>{operator.roles.includes(MASTER_ADMIN_ROLE) ? 'All access through Master Admin role' : `${formatCount(effectiveCategories.length, 'effective permission')}`}</strong>
+                <span className="muted">Stored entries {operator.permission.storedPermissionCount}. Finance Approver is managed separately.</span>
+              </div>
+              {isMaster && currentUserId !== operator.id && operator.allowedActions.updateAccess.allowed ? (
+                <>
+                  <ReauthenticateOperatorForm />
+                  <OperatorAccessForm
+                    activeSessionCount={operator.activeSessionCount}
+                    categories={effectiveCategories}
+                    expectedVersion={operator.permission.version}
+                    operatorId={operator.id}
+                    operatorName={operatorIdentity(operator)}
+                    roles={operator.roles}
+                  />
+                </>
+              ) : operator.allowedActions.updateAccess.blockedReasons.length
+                ? <ActionBlockers decision={operator.allowedActions.updateAccess} label="Access update unavailable" />
+                : <ReadOnlyMessage self={currentUserId === operator.id} />}
+            </>
+          ) : (
+            <>
+              <AdminInlineNotice role="alert" tone="warning">
+                <span><strong>Permission policy required.</strong> No permission policy is saved — access is blocked.</span>
+              </AdminInlineNotice>
+              {isMaster && currentUserId !== operator.id && operator.allowedActions.initializeAccess.allowed ? (
+                <>
+                  <ReauthenticateOperatorForm />
+                  <InitializeOperatorPermissionForm
+                    activeSessionCount={operator.activeSessionCount}
+                    operatorId={operator.id}
+                    operatorName={operatorIdentity(operator)}
+                  />
+                </>
+              ) : operator.allowedActions.initializeAccess.blockedReasons.length
+                ? <ActionBlockers decision={operator.allowedActions.initializeAccess} label="Permission initialization unavailable" />
+                : <ReadOnlyMessage self={currentUserId === operator.id} />}
+            </>
+          )}
+        </div>
+      ) : null}
+      {tab === 'sessions' ? (
+        !isMaster ? <ReadOnlyMessage /> : !sessionsOk ? <LoadFailure label="Admin Web sessions could not be loaded." /> : (
+          <div className="operator-access-session-list">
+            {sessions.length ? sessions.map((session) => (
+              <div key={session.id}>
+                <span>
+                  <strong>{session.current ? 'You · current session' : session.revokedAt ? 'Revoked session' : 'Admin Web session'}</strong>
+                  <small>{session.platformSummary ?? 'Device details unavailable for this sign-in'}</small>
+                </span>
+                <span><DateTimeText value={session.lastSeenAt} /><small>Last seen</small></span>
+                <StatusBadge tone={session.revokedAt ? 'neutral' : new Date(session.expiresAt) > new Date() ? 'success' : 'warning'}>
+                  {session.revokedAt ? 'Revoked' : new Date(session.expiresAt) > new Date() ? 'Active' : 'Expired'}
+                </StatusBadge>
+                {!session.revokedAt && new Date(session.expiresAt) > new Date() ? (
+                  <SessionRevokeForm current={session.current} operatorId={operator.id} sessionId={session.id} />
+                ) : null}
+              </div>
+            )) : <p className="muted">No Admin Web sessions have been recorded.</p>}
+          </div>
+        )
+      ) : null}
+      {tab === 'history' ? (
+        !isMaster ? <ReadOnlyMessage /> : !historyOk ? <LoadFailure label="Access change history could not be loaded." /> : (
+          <div className="operator-access-history-list">
+            <p className="muted">{history.totalCount} exact lifecycle event(s). Page views are excluded.</p>
+            {history.items.length ? history.items.map((event) => (
+              <div className="operator-access-history-row" key={event.id}>
+                <div><History aria-hidden="true" size={16} /><span><strong>{historyActionLabel(event.action)}</strong><small>{event.actor.fullName ?? event.actor.email ?? event.actor.id}</small></span></div>
+                <p>{historyReason(event.metadata)}</p>
+                <span><DateTimeText value={event.createdAt} /><small>Audit ID: {event.id}</small></span>
+              </div>
+            )) : <p className="muted">No operator lifecycle changes have been recorded.</p>}
+          </div>
+        )
+      ) : null}
+    </div>
+  );
+}
+
+function OperatorStatus({ status }: { readonly status: OperatorDirectoryItem['lifecycleStatus'] }) {
+  const value = {
+    ACTIVE: { label: 'Active', tone: 'success' },
+    LOCKED: { label: 'Locked', tone: 'danger' },
+    MIGRATION_REQUIRED: { label: 'Migration required', tone: 'warning' },
+    SETUP_REQUIRED: { label: 'Setup required', tone: 'warning' },
+    SUSPENDED: { label: 'Suspended', tone: 'neutral' },
+  }[status] as { label: string; tone: 'danger' | 'neutral' | 'success' | 'warning' };
+  return <StatusBadge tone={value.tone}>{value.label}</StatusBadge>;
+}
+
+function RoleBadges({ roles }: { readonly roles: readonly string[] }) {
+  return (
+    <div className="operator-access-role-badges">
+      {roles.filter((role) => [MASTER_ADMIN_ROLE, FINANCE_APPROVER_ROLE, 'ADMIN'].includes(role)).map((role) => (
+        <StatusBadge key={role} tone={role === MASTER_ADMIN_ROLE ? 'primary' : role === FINANCE_APPROVER_ROLE ? 'success' : 'neutral'}>
+          {role === MASTER_ADMIN_ROLE ? 'Master Admin' : role === FINANCE_APPROVER_ROLE ? 'Finance Approver' : 'Admin'}
+        </StatusBadge>
       ))}
     </div>
   );
 }
 
-function operatorAccessLabels(user: AdminUser) {
-  const categories = operatorPermissionCategoryKeys(user);
-  if (categories.length > 0) {
-    return categories.map(
-      (key) => adminOperatorPermissionCategoryDefinitions.find((category) => category.key === key)?.label ?? key,
-    );
-  }
-
-  if (user.roles.includes(MASTER_ADMIN_ROLE)) {
-    return adminOperatorPermissionCategoryDefinitions.map((category) => category.label);
-  }
-  if (user.roles.includes(FINANCE_APPROVER_ROLE)) {
-    return ['Bookings', 'Finance', 'Tax & Accounting'];
-  }
-
-  return ['Bookings', 'Users', 'Partners'];
+function ReadOnlyMessage({ self = false }: { readonly self?: boolean }) {
+  return (
+    <AdminInlineNotice role="status" tone="info">
+      <KeyRound aria-hidden="true" size={16} />
+      <span>{self
+        ? 'Your own operator access is read-only. Another active Master Admin must change it.'
+        : 'Master Admin access is required to change operator access.'}</span>
+    </AdminInlineNotice>
+  );
 }
 
-function operatorPermissionCategoryKeys(user: AdminUser) {
-  const categories = user.adminOperatorPermission?.categories ?? [];
-  return expandLegacyAdminOperatorCategories(categories);
+function ActionBlockers({ decision, label }: { readonly decision: OperatorActionDecision; readonly label: string }) {
+  if (decision.allowed) return null;
+  return (
+    <AdminInlineNotice role="note" tone="info">
+      <span>
+        <strong>{label}.</strong>{' '}
+        {decision.blockedReasons.map((reason) => reason.message).join(' ')}
+      </span>
+    </AdminInlineNotice>
+  );
 }
 
-function operatorRolePillClassName(role: string) {
-  if (role === MASTER_ADMIN_ROLE) {
-    return 'pill pill-primary';
-  }
-  if (role === FINANCE_APPROVER_ROLE) {
-    return 'pill pill-success';
-  }
-  return 'pill pill-neutral';
+function LoadFailure({ label }: { readonly label: string }) {
+  return (
+    <AdminInlineNotice role="alert" tone="danger">
+      <span>{label}</span>
+      <AdminFormControlLink className="button-secondary" href="/admin-operators">Retry</AdminFormControlLink>
+    </AdminInlineNotice>
+  );
 }
 
-function operatorActivityLabel(action: string) {
-  return action.replace(/^admin_web\./u, '').replace(/_/gu, ' ');
+function operatorAccessGroups(operator: OperatorDirectoryItem) {
+  const categories = new Set(
+    operator.permission?.effectiveCategories
+      ?? expandLegacyAdminOperatorCategories(operator.permission?.categories ?? []),
+  );
+  return [...new Set(adminOperatorPermissionCategoryDefinitions.filter((definition) => categories.has(definition.key)).map((definition) => definition.group))];
 }
 
-function operatorActivityMetadataLabel(metadata: unknown) {
-  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
-    return 'No metadata';
+function formatCount(value: number, singular: string) {
+  return `${value} ${singular}${value === 1 ? '' : 's'}`;
+}
+
+function operatorIdentity(operator: Pick<OperatorDirectoryItem, 'email' | 'fullName' | 'id'>) {
+  return operator.fullName || operator.email || operator.id;
+}
+
+function directoryQuery(params: PageParams) {
+  const query = new URLSearchParams();
+  if (params.q) query.set('q', params.q);
+  if (params.status) query.set('status', params.status);
+  if (params.role) query.set('role', params.role);
+  if (params.category) query.set('category', params.category);
+  if (params.cursor) query.set('cursor', params.cursor);
+  query.set('take', '25');
+  return query.toString();
+}
+
+function operatorAccessHref(params: PageParams, changes: Partial<Record<keyof PageParams, string | undefined>>) {
+  const query = new URLSearchParams();
+  const nextCursor = 'cursor' in changes ? changes.cursor : params.cursor;
+  const cursorHistory = 'cursorHistory' in changes
+    ? changes.cursorHistory
+    : ('cursor' in changes && changes.cursor && changes.cursor !== params.cursor)
+      ? encodeCursorHistory([...decodeCursorHistory(params.cursorHistory), params.cursor ?? null])
+      : params.cursorHistory;
+  for (const key of ['q', 'status', 'role', 'category', 'invite', 'operatorId', 'tab'] as const) {
+    const value = key in changes ? changes[key] : params[key];
+    if (value) query.set(key, value);
   }
+  if (nextCursor) query.set('cursor', nextCursor);
+  if (cursorHistory) query.set('cursorHistory', cursorHistory);
+  const suffix = query.toString();
+  return suffix ? `/admin-operators?${suffix}` : '/admin-operators';
+}
 
-  const record = metadata as Record<string, unknown>;
-  const parts = [
-    typeof record.category === 'string' ? record.category : null,
-    typeof record.status === 'number' ? `HTTP ${record.status}` : null,
-  ].filter((part): part is string => Boolean(part));
+function previousPageHref(params: PageParams) {
+  const history = decodeCursorHistory(params.cursorHistory);
+  const previousCursor = history.at(-1) ?? null;
+  const nextHistory = history.slice(0, -1);
+  return operatorAccessHref(params, {
+    cursor: previousCursor ?? undefined,
+    cursorHistory: nextHistory.length ? encodeCursorHistory(nextHistory) : undefined,
+  });
+}
 
-  return parts.length > 0 ? parts.join(' · ') : 'No metadata';
+function decodeCursorHistory(value: string | undefined): Array<string | null> {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(Buffer.from(value, 'base64url').toString('utf8'));
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string | null => item === null || typeof item === 'string').slice(-20)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function encodeCursorHistory(value: Array<string | null>) {
+  return Buffer.from(JSON.stringify(value.slice(-20))).toString('base64url');
+}
+
+function hasDirectoryFilters(params: PageParams) {
+  return Boolean(params.q || params.status || params.role || params.category);
+}
+
+function historyActionLabel(action: string) {
+  return action.replace(/^admin_operator\./u, '').replace(/\./gu, ' ').replace(/_/gu, ' ');
+}
+
+function historyReason(metadata: unknown) {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return 'No reason recorded';
+  const reason = (metadata as Record<string, unknown>).reason;
+  return typeof reason === 'string' && reason.trim() ? reason : 'System authentication event';
 }

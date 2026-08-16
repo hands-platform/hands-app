@@ -1,119 +1,163 @@
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { vi } from 'vitest';
 
+import { adminDeleteWithBodyOrThrow, adminPatchOrThrow, adminPostOrThrow } from '../../lib/admin-api';
 import {
-  adminDeleteWithBodyOrThrow,
-  adminPatchOrThrow,
-  adminPostOrThrow,
-} from '../../lib/admin-api';
-import {
-  createAdminOperator,
-  revokeAdminOperatorAccess,
+  inviteAdminOperator,
+  initializeAdminOperatorPermission,
+  manageAdminOperatorInvitation,
+  offboardAdminOperator,
+  revokeAdminOperatorSession,
   updateAdminOperatorAccess,
 } from './actions';
+import { INITIAL_ADMIN_OPERATOR_ACTION_STATE } from './action-state';
 
-vi.mock('next/cache', () => ({
-  revalidatePath: vi.fn(),
-}));
-
-vi.mock('next/navigation', () => ({
-  redirect: vi.fn(),
-}));
-
-vi.mock('../../lib/admin-api', () => ({
-  adminDeleteWithBodyOrThrow: vi.fn(),
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+vi.mock('../../lib/admin-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../lib/admin-api')>()),
   adminPatchOrThrow: vi.fn(),
   adminPostOrThrow: vi.fn(),
-  isAdminApiAuthError: vi.fn((error: unknown) => error instanceof Error && error.message === 'auth'),
+  adminDeleteWithBodyOrThrow: vi.fn(),
 }));
 
 const mockedAdminDeleteWithBodyOrThrow = vi.mocked(adminDeleteWithBodyOrThrow);
 const mockedAdminPatchOrThrow = vi.mocked(adminPatchOrThrow);
 const mockedAdminPostOrThrow = vi.mocked(adminPostOrThrow);
-const mockedRedirect = vi.mocked(redirect);
 const mockedRevalidatePath = vi.mocked(revalidatePath);
 
 describe('admin operator server actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedAdminDeleteWithBodyOrThrow.mockResolvedValue({ ok: true });
-    mockedAdminPatchOrThrow.mockResolvedValue({ user: { id: 'admin-2' } });
-    mockedAdminPostOrThrow.mockResolvedValue({ user: { id: 'admin-2' } });
   });
 
-  it('creates an operator through the Admin API boundary with constrained roles and categories', async () => {
-    const formData = new FormData();
-    formData.set('email', ' operator@hands.vn ');
-    formData.set('password', ' temp-password-123 ');
-    formData.set('fullName', ' Ops Admin ');
-    formData.append('roles', 'MASTER_ADMIN');
-    formData.append('roles', 'CUSTOMER');
-    formData.append('permissionCategories', 'BOOKINGS_REALTIME');
-    formData.append('permissionCategories', 'SYSTEM_ADMIN_OPERATORS');
-    formData.append('permissionCategories', 'UNKNOWN');
-    formData.set('reason', ' Launch desk ');
-
-    await createAdminOperator(formData);
-
-    expect(mockedAdminPostOrThrow).toHaveBeenCalledWith('/admin/users/admin-operators', {
-      email: 'operator@hands.vn',
-      fullName: 'Ops Admin',
-      password: 'temp-password-123',
-      permissionCategories: ['BOOKINGS_REALTIME', 'SYSTEM_ADMIN_OPERATORS'],
-      reason: 'Launch desk',
-      roles: ['ADMIN', 'MASTER_ADMIN'],
+  it('creates a one-time invitation without accepting an operator password', async () => {
+    mockedAdminPostOrThrow.mockResolvedValue({
+      auditLogId: 'audit-1',
+      invitation: { expiresAt: '2026-08-15T12:00:00.000Z', id: 'invite-1' },
+      setupToken: 'copy-once-token',
     });
+    const formData = new FormData();
+    formData.set('email', ' Operator@Hands.vn ');
+    formData.set('fullName', ' Ops Admin ');
+    formData.set('reason', ' Initial booking operator coverage ');
+    formData.append('permissionCategories', 'BOOKINGS_REALTIME');
+    formData.append('permissionCategories', 'CONTENT_VIEW');
+    formData.append('permissionCategories', 'UNKNOWN');
+
+    const state = await inviteAdminOperator(INITIAL_ADMIN_OPERATOR_ACTION_STATE, formData);
+
+    expect(mockedAdminPostOrThrow).toHaveBeenCalledWith('/admin/admin-operator-invitations', {
+      email: 'operator@hands.vn',
+      expiresInHours: 72,
+      fullName: 'Ops Admin',
+      masterAdminEnabled: false,
+      permissionCategories: ['BOOKINGS_REALTIME', 'CONTENT_VIEW'],
+      reason: 'Initial booking operator coverage',
+      targetUserId: null,
+    });
+    expect(state).toMatchObject({ status: 'success', receipt: { auditId: 'audit-1' } });
+    expect(state.receipt?.setupPath).toContain('copy-once-token');
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/admin-operators');
-    expect(mockedRevalidatePath).toHaveBeenCalledWith('/audit-log');
-    expect(mockedRedirect).toHaveBeenCalledWith('/admin-operators?operatorNotice=created');
   });
 
-  it('updates operator access without allowing product roles in the payload', async () => {
+  it('keeps an explicit empty permission selection empty and submits the version', async () => {
+    mockedAdminPatchOrThrow.mockResolvedValue({ auditLog: { id: 'audit-2' } });
     const formData = new FormData();
-    formData.set('userId', ' admin-2 ');
-    formData.append('roles', 'FINANCE_APPROVER');
-    formData.append('roles', 'PROVIDER');
-    formData.append('permissionCategories', 'FINANCE');
-    formData.set('reason', ' Finance rotation ');
+    formData.set('userId', 'admin-2');
+    formData.set('expectedVersion', '7');
+    formData.set('reason', 'Remove access after queue ownership changed');
 
-    await updateAdminOperatorAccess(formData);
+    const state = await updateAdminOperatorAccess(INITIAL_ADMIN_OPERATOR_ACTION_STATE, formData);
 
     expect(mockedAdminPatchOrThrow).toHaveBeenCalledWith('/admin/users/admin-2/admin-operator-access', {
-      permissionCategories: ['FINANCE'],
-      reason: 'Finance rotation',
-      roles: ['ADMIN', 'FINANCE_APPROVER'],
+      expectedVersion: 7,
+      permissionCategories: [],
+      reason: 'Remove access after queue ownership changed',
+      roles: ['ADMIN'],
     });
-    expect(mockedRedirect).toHaveBeenCalledWith('/admin-operators?operatorNotice=updated');
+    expect(state).toMatchObject({ status: 'success', receipt: { auditId: 'audit-2' } });
   });
 
-  it('revokes operator access with an audit reason body', async () => {
-    const formData = new FormData();
-    formData.set('userId', ' admin-2 ');
-    formData.set('reason', ' Left the operations team ');
-
-    await revokeAdminOperatorAccess(formData);
-
-    expect(mockedAdminDeleteWithBodyOrThrow).toHaveBeenCalledWith('/admin/users/admin-2/admin-operator', {
-      reason: 'Left the operations team',
-    });
-    expect(mockedRedirect).toHaveBeenCalledWith('/admin-operators?operatorNotice=revoked');
-  });
-
-  it('redirects missing email before creating an operator', async () => {
-    await createAdminOperator(new FormData());
-
-    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith('/admin-operators?operatorNotice=missing-email');
-  });
-
-  it('redirects missing password before creating an operator', async () => {
+  it('does not submit a reason shorter than twelve characters', async () => {
     const formData = new FormData();
     formData.set('email', 'operator@hands.vn');
+    formData.set('reason', 'too short');
 
-    await createAdminOperator(formData);
-
+    await expect(inviteAdminOperator(INITIAL_ADMIN_OPERATOR_ACTION_STATE, formData)).resolves.toMatchObject({
+      status: 'error',
+      fieldErrors: { reason: expect.any(String) },
+    });
     expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith('/admin-operators?operatorNotice=missing-password');
+  });
+
+  it('revokes only the selected Admin Web session with a required audit reason', async () => {
+    mockedAdminPostOrThrow.mockResolvedValue({ auditLogId: 'audit-3' });
+    const formData = new FormData();
+    formData.set('userId', 'admin-2');
+    formData.set('sessionId', 'session-2');
+    formData.set('reason', 'Master revoked operator Admin Web session');
+    formData.set('confirmation', 'confirmed');
+
+    await revokeAdminOperatorSession(INITIAL_ADMIN_OPERATOR_ACTION_STATE, formData);
+
+    expect(mockedAdminPostOrThrow).toHaveBeenCalledWith(
+      '/admin/users/admin-2/admin-web-sessions/session-2/revoke',
+      { reason: 'Master revoked operator Admin Web session' },
+    );
+  });
+
+  it('initializes an explicit empty permission policy without changing roles', async () => {
+    mockedAdminPostOrThrow.mockResolvedValue({ auditLogId: 'audit-init-1' });
+    const formData = new FormData();
+    formData.set('userId', 'admin-legacy-1');
+    formData.set('reason', 'Initialize explicit deny by default access policy');
+    formData.set('confirmation', 'confirmed');
+
+    await initializeAdminOperatorPermission(INITIAL_ADMIN_OPERATOR_ACTION_STATE, formData);
+
+    expect(mockedAdminPostOrThrow).toHaveBeenCalledWith(
+      '/admin/users/admin-legacy-1/admin-operator-access/initialize',
+      { permissionCategories: [], reason: 'Initialize explicit deny by default access policy' },
+    );
+  });
+
+  it('resends an invitation by invalidating the previous token and returning a copy-once setup path', async () => {
+    mockedAdminPostOrThrow.mockResolvedValue({
+      auditLogId: 'audit-resend-1',
+      invitation: { expiresAt: '2026-08-18T12:00:00.000Z', id: 'invite-2' },
+      setupToken: 'replacement-token',
+    });
+    const formData = new FormData();
+    formData.set('invitationId', 'invite-1');
+    formData.set('mode', 'resend');
+    formData.set('expiresInHours', '72');
+    formData.set('reason', 'Original setup link was not received securely');
+    formData.set('confirmation', 'confirmed');
+
+    const state = await manageAdminOperatorInvitation(INITIAL_ADMIN_OPERATOR_ACTION_STATE, formData);
+
+    expect(mockedAdminPostOrThrow).toHaveBeenCalledWith(
+      '/admin/admin-operator-invitations/invite-1/resend',
+      { expiresInHours: 72, reason: 'Original setup link was not received securely' },
+    );
+    expect(state.receipt?.setupPath).toContain('replacement-token');
+  });
+
+  it('permanently removes only Admin Web access after exact-name confirmation', async () => {
+    mockedAdminDeleteWithBodyOrThrow.mockResolvedValue({ auditLog: { id: 'audit-offboard-1' } });
+    const formData = new FormData();
+    formData.set('userId', 'admin-legacy-1');
+    formData.set('operatorName', 'Legacy Operator');
+    formData.set('confirmationName', 'Legacy Operator');
+    formData.set('reason', 'Operator left the company after access handoff');
+    formData.set('confirmation', 'confirmed');
+
+    const state = await offboardAdminOperator(INITIAL_ADMIN_OPERATOR_ACTION_STATE, formData);
+
+    expect(mockedAdminDeleteWithBodyOrThrow).toHaveBeenCalledWith(
+      '/admin/users/admin-legacy-1/admin-operator',
+      { reason: 'Operator left the company after access handoff' },
+    );
+    expect(state).toMatchObject({ status: 'success', receipt: { auditId: 'audit-offboard-1' } });
   });
 });

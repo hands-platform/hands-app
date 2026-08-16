@@ -70,7 +70,10 @@ const footerCopy = {
       ['HANDS', ['Giới thiệu HANDS', 'Khu vực dịch vụ', 'Liên hệ']],
       ['Hỗ trợ khách hàng', ['Câu hỏi thường gặp', 'An toàn và tin cậy', 'Báo cáo và tranh chấp']],
       ['Đối tác', ['Đăng ký đối tác', 'Chính sách hoạt động đối tác', 'Điều khoản đối tác']],
-      ['Thông tin pháp lý', ['Chính sách quyền riêng tư', 'Điều khoản dịch vụ', 'Chính sách cookie', 'Thông tin doanh nghiệp']],
+      [
+        'Thông tin pháp lý',
+        ['Chính sách quyền riêng tư', 'Điều khoản dịch vụ', 'Chính sách cookie', 'Thông tin doanh nghiệp'],
+      ],
     ],
     utility: ['Cách hoạt động', 'An toàn và tin cậy', 'Đăng ký đối tác'],
     language: 'Tiếng Việt',
@@ -127,7 +130,11 @@ export function HandsSiteHeader({
 
   return (
     <header className={`hands-header ${theme === 'solid' ? 'is-solid' : ''}`}>
-      <Link className="hands-logo" href={recruitment ? '/vi' : localized('/')} aria-label="HANDS">
+      <Link
+        className="hands-logo"
+        href={recruitment ? 'https://join.hands.vn/' : localized('/')}
+        aria-label="HANDS"
+      >
         HANDS
       </Link>
       <nav
@@ -148,17 +155,45 @@ export function HandsSiteHeader({
           <span aria-hidden="true" />
         </summary>
         <div className="mobile-nav-panel">
-          {!recruitment && (
-            <nav aria-label="모바일 메뉴">
-              <>
+          {recruitment ? (
+            <nav aria-label="Menu đối tác">
+              <a href="https://join.hands.vn/">Đăng ký đối tác</a>
+            </nav>
+          ) : (
+            <>
+              <nav aria-label="모바일 메뉴">
                 <Link href={localized('/partners')}>{copy.menu[0]}</Link>
                 <Link href={localized('/news')}>{copy.menu[1]}</Link>
                 <a href="https://join.hands.vn">{copy.menu[2]}</a>
-              </>
-            </nav>
+              </nav>
+              <div className="mobile-language-menu">
+                <strong>{copy.language}</strong>
+                <div>
+                  {languageLinks.map(([nextLocale, label]) => (
+                    <Link
+                      aria-current={nextLocale === locale ? 'page' : undefined}
+                      href={`/${nextLocale}${currentPath === '/' ? '' : currentPath}`}
+                      key={nextLocale}
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
-          <div className="mobile-language-menu">
-            <strong>{recruitment ? 'Ngôn ngữ' : copy.language}</strong>
+          <a
+            className="button button-dark"
+            href={recruitment ? 'https://join.hands.vn/' : localized('/partners#download')}
+          >
+            {recruitment ? 'Tải ứng dụng' : copy.download}
+          </a>
+        </div>
+      </details>
+      <div className="hands-header-actions">
+        {!recruitment && (
+          <details className="language-menu">
+            <summary>{copy.language}</summary>
             <div>
               {languageLinks.map(([nextLocale, label]) => (
                 <Link
@@ -170,30 +205,8 @@ export function HandsSiteHeader({
                 </Link>
               ))}
             </div>
-          </div>
-          <a
-            className="button button-dark"
-            href={recruitment ? 'https://join.hands.vn/' : localized('/partners#download')}
-          >
-            {recruitment ? 'Tải ứng dụng' : copy.download}
-          </a>
-        </div>
-      </details>
-      <div className="hands-header-actions">
-        <details className="language-menu">
-          <summary>{recruitment ? 'Ngôn ngữ' : copy.language}</summary>
-          <div>
-            {languageLinks.map(([nextLocale, label]) => (
-              <Link
-                aria-current={nextLocale === locale ? 'page' : undefined}
-                href={`/${nextLocale}${currentPath === '/' ? '' : currentPath}`}
-                key={nextLocale}
-              >
-                {label}
-              </Link>
-            ))}
-          </div>
-        </details>
+          </details>
+        )}
         <a
           className="button button-light"
           href={recruitment ? 'https://join.hands.vn/' : localized('/partners#download')}
@@ -205,18 +218,30 @@ export function HandsSiteHeader({
   );
 }
 
-export function HandsSiteFooter({ locale = 'ko' }: Pick<HandsSiteChromeProps, 'locale' | 'site'>) {
+export function HandsSiteFooter({
+  locale = 'ko',
+  site = 'main',
+}: Pick<HandsSiteChromeProps, 'locale' | 'site'>) {
+  const recruitment = site === 'recruitment';
   const copy = footerCopy[locale];
   const localized = (path: string) => `/${locale}${path === '/' ? '' : path}`;
+  const footerHref = (path: string) =>
+    recruitment && !path.startsWith('http') ? `https://join.hands.vn${path}` : path;
   const utilityPaths = ['/#how', '/safety', 'https://join.hands.vn'] as const;
 
   return (
     <footer className="hands-footer" role="contentinfo">
       <div className="hands-footer-brand">
-        <Link className="hands-footer-wordmark" href={localized('/')} aria-label="HANDS">
-          HANDS
-        </Link>
-        <p>Wellness, wherever you are.</p>
+        {recruitment ? (
+          <a className="hands-footer-wordmark" href="https://join.hands.vn/" aria-label="HANDS">
+            HANDS
+          </a>
+        ) : (
+          <Link className="hands-footer-wordmark" href={localized('/')} aria-label="HANDS">
+            HANDS
+          </Link>
+        )}
+        <p>{recruitment ? 'Wellness tại nơi bạn cần.' : 'Wellness, wherever you are.'}</p>
       </div>
 
       <nav className="hands-footer-menu" aria-label={copy.navigation}>
@@ -224,8 +249,9 @@ export function HandsSiteFooter({ locale = 'ko' }: Pick<HandsSiteChromeProps, 'l
           <div className="hands-footer-group" key={title}>
             <h2>{title}</h2>
             {links.map((label, linkIndex) => {
-              const href = footerGroupPaths[groupIndex]?.[linkIndex];
-              if (!href) return null;
+              const path = footerGroupPaths[groupIndex]?.[linkIndex];
+              if (!path) return null;
+              const href = footerHref(path);
               return href.startsWith('http') ? (
                 <a href={href} key={label}>
                   {label}
@@ -244,7 +270,7 @@ export function HandsSiteFooter({ locale = 'ko' }: Pick<HandsSiteChromeProps, 'l
         <p>© 2026 HANDS</p>
         <nav aria-label={copy.navigation}>
           {copy.utility.map((label, index) => {
-            const href = utilityPaths[index];
+            const href = footerHref(utilityPaths[index]);
             return href.startsWith('http') ? (
               <a href={href} key={label}>
                 {label}
@@ -258,7 +284,11 @@ export function HandsSiteFooter({ locale = 'ko' }: Pick<HandsSiteChromeProps, 'l
         </nav>
         <div>
           <span>{copy.language}</span>
-          <Link href={localized('/partners#download')}>{copy.download}</Link>
+          {recruitment ? (
+            <a href="https://join.hands.vn/">{copy.download}</a>
+          ) : (
+            <Link href={localized('/partners#download')}>{copy.download}</Link>
+          )}
         </div>
       </div>
     </footer>

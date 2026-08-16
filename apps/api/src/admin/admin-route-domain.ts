@@ -17,7 +17,16 @@ const ADMIN_ROUTE_DOMAIN_RULES: ReadonlyArray<{
 }> = [
   {
     domain: 'IDENTITY',
-    matches: prefixMatcher('users', 'operator-activity', 'calendar-events', 'app-sessions'),
+    matches: prefixMatcher(
+      'users',
+      'operator-activity',
+      'calendar-events',
+      'app-sessions',
+      'finance-approver-governance',
+      'admin-operator-invitations',
+      'admin-operators',
+      'admin-operator-history',
+    ),
   },
   {
     domain: 'CUSTOMER',
@@ -44,6 +53,7 @@ const ADMIN_ROUTE_DOMAIN_RULES: ReadonlyArray<{
       'providers',
       'partners',
       'operations-policy/providers',
+      'operations-policy/matching-preview',
       'operations-handoff/providers',
       'partner-controls',
       'push-devices',

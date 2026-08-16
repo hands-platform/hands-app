@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { adminRealtimeSocketBaseUrl } from '../../../../lib/admin-api';
 import { createAdminRealtimeToken } from '../../../../lib/admin-realtime-token';
 import { requireAdminWebAccess } from '../../../../lib/admin-session';
+import { getAdminWebSessionStateWithApi } from '../../../../lib/admin-session-api';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,12 +19,32 @@ export async function GET(request: Request) {
   }
 
   try {
+    if (access.session) {
+      const sessionState = await getAdminWebSessionStateWithApi(access.session);
+      if (!sessionState.valid) {
+        return NextResponse.json(
+          { error: 'ADMIN_WEB_ACCESS_REQUIRED' },
+          { headers: NO_STORE_HEADERS, status: 401 },
+        );
+      }
+      if (sessionState.mfaEnrollmentRequired) {
+        return NextResponse.json(
+          { error: 'MFA_ENROLLMENT_REQUIRED' },
+          { headers: NO_STORE_HEADERS, status: 403 },
+        );
+      }
+    }
     const subject =
       access.session?.sub ??
       process.env.ADMIN_WEB_LOGIN_EMAIL?.trim() ??
       process.env.ADMIN_DEMO_PHONE?.trim() ??
       'admin-web-dev';
-    const realtimeToken = createAdminRealtimeToken(subject);
+    const realtimeToken = createAdminRealtimeToken(
+      subject,
+      access.session?.jti,
+      new Date(),
+      access.mode === 'dev-fallback',
+    );
     return NextResponse.json(
       {
         socketBaseUrl: adminRealtimeSocketBaseUrl(),

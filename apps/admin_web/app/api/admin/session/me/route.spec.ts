@@ -3,15 +3,21 @@ import { createAdminWebSessionCookieValue } from '../../../../../lib/admin-sessi
 describe('Admin web session me route', () => {
   const originalEnv = { ...process.env };
 
+  beforeEach(() => {
+    process.env.ADMIN_WEB_API_TOKEN_SECRET = 'test-admin-web-api-secret-with-32-chars';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ ok: true })));
+  });
+
   afterEach(() => {
     process.env = { ...originalEnv };
     vi.resetModules();
+    vi.unstubAllGlobals();
   });
 
   it('returns unauthenticated when no admin session exists', async () => {
     process.env = {
       ...process.env,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       NODE_ENV: 'production',
     };
     const { GET } = await import('./route');
@@ -26,7 +32,7 @@ describe('Admin web session me route', () => {
   });
 
   it('returns the authenticated admin role for a valid session cookie', async () => {
-    const sessionSecret = 'test-admin-session-secret';
+    const sessionSecret = 'test-admin-session-secret-with-32-chars';
     process.env = {
       ...process.env,
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
@@ -52,7 +58,7 @@ describe('Admin web session me route', () => {
   });
 
   it('rejects an expired or tampered session cookie', async () => {
-    const sessionSecret = 'test-admin-session-secret';
+    const sessionSecret = 'test-admin-session-secret-with-32-chars';
     process.env = {
       ...process.env,
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
@@ -77,7 +83,7 @@ describe('Admin web session me route', () => {
   });
 
   it('rejects a signed session cookie when the payload role is not ADMIN', async () => {
-    const sessionSecret = 'test-admin-session-secret';
+    const sessionSecret = 'test-admin-session-secret-with-32-chars';
     process.env = {
       ...process.env,
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,

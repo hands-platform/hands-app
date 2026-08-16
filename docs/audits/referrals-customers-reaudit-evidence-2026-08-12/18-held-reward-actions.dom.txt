@@ -1,0 +1,310 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Referrals":
+        - /url: /referrals/customers
+      - generic: Customer Referrals
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Referrals workspace":
+    - strong: Referrals
+    - generic "Referrals pages":
+      - link "Customer Referrals":
+        - /url: /referrals/customers
+      - link "Partner Referrals":
+        - /url: /referrals/partners
+      - link "Referral Cashouts":
+        - /url: /referrals/cashouts
+  - heading "Customer referral · Smoke Referral Parent Customer" [level=1]
+  - paragraph: Single referral parent account. This page does not list unrelated customers or Partners.
+  - generic "Page actions":
+    - link "Back to referrals":
+      - /url: /referrals/customers
+    - link "Open profile":
+      - /url: /customers/smoke_referral_customer_parent_profile
+  - generic: Current filters
+  - paragraph: Referral sign-ups
+  - generic: "Referral sign-ups:"
+  - text: "1"
+  - generic: Only attributions for this parent account.
+  - generic: Pending
+  - paragraph: Reward records
+  - generic: "Reward records:"
+  - text: "2"
+  - generic: Pending, available, on-hold, reversed, or cancelled rewards.
+  - generic: Live
+  - paragraph: Available rewards
+  - generic: "Available rewards:"
+  - text: 0 VND
+  - generic: Reward candidates ready for credit, not necessarily wallet-ledgered.
+  - generic: Live
+  - paragraph: Credited rewards
+  - generic: "Credited rewards:"
+  - text: 50.000 VND
+  - generic: Rewards already posted to wallet credit records.
+  - generic: Pending
+  - paragraph: Pending / on hold
+  - generic: "Pending / on hold:"
+  - text: 0 VND / 25.000 VND
+  - generic: Amounts still blocked by policy, integrity, or completion checks.
+  - heading "Parent account" [level=2]
+  - generic: 1 referral
+  - generic: Current filters
+  - generic: Parent
+  - strong: Smoke Referral Parent Customer
+  - generic: "+84909100010"
+  - generic: SR
+  - img "App offline"
+  - link "Smoke Referral Parent Customer":
+    - /url: /customers/smoke_referral_customer_parent_profile
+  - generic: "+84909100010"
+  - generic: Current filters
+  - generic: Referral code
+  - strong: SMOKECUSTREF
+  - text: Active ·
+  - time: 4 Aug 2026, 03:32
+  - generic: Current filters
+  - generic: Share link
+  - strong: Setup blocked
+  - generic: Public link routes to the correct app store.
+  - group "Referral store setup":
+    - generic: Public link base missing
+    - generic: Android store missing
+    - generic: iOS store missing
+  - paragraph: One or more required public or store destinations are not configured.
+  - link "Open Developer setup":
+    - /url: /setup#referrals
+  - generic: All records
+  - generic: Total rewards
+  - strong: 75.000 VND
+  - generic: 2 reward record(s)
+  - heading "Referral operations board" [level=2]
+  - generic: 0 ready / 1 on hold
+  - generic: All records
+  - generic: Referred accounts
+  - strong: "1"
+  - generic: 2 reward record(s)
+  - generic: Live
+  - generic: Ready to credit
+  - strong: 0 rewards
+  - generic: 0 VND
+  - generic: Pending
+  - generic: Pending checks
+  - strong: 0 rewards
+  - generic: 0 VND
+  - generic: Current filters
+  - generic: On hold for review
+  - strong: 1 reward
+  - generic: 25.000 VND
+  - generic: Current filters
+  - generic: Ledger posted
+  - strong: 1 reward
+  - generic: 50.000 VND
+  - generic: Current filters
+  - generic: Closed rewards
+  - strong: 0 rewards
+  - generic: 0 VND
+  - generic: All records
+  - generic: Next operator action
+  - strong: Review rewards on hold before release or reversal.
+  - generic: Use the reward row action menu for the final wallet decision.
+  - heading "Reward decision timeline" [level=2]
+  - generic: 1 open reward
+  - heading "Attribution captured" [level=3]
+  - strong: 1 referred account(s)
+  - paragraph: Referral link attribution has been recorded for this parent account.
+  - 'generic "Attributions: 1"':
+    - generic: Attributions
+    - strong: "1"
+  - 'generic "Reward records: 2"':
+    - generic: Reward records
+    - strong: "2"
+  - heading "Qualification and integrity check" [level=3]
+  - strong: 1 qualified · 0 review
+  - paragraph: Only qualified and clear attributions should move toward wallet credit.
+  - 'generic "Qualified: 1"':
+    - generic: Qualified
+    - strong: "1"
+  - 'generic "Needs review: 0"':
+    - generic: Needs review
+    - strong: "0"
+  - heading "Reward queue" [level=3]
+  - strong: 0 ready · 1 on hold · 0 pending
+  - paragraph: 0 VND ready · 25.000 VND on hold · 0 VND pending
+  - 'generic "Ready: 0"':
+    - generic: Ready
+    - strong: "0"
+  - 'generic "On hold: 1"':
+    - generic: On hold
+    - strong: "1"
+  - 'generic "Pending: 0"':
+    - generic: Pending
+    - strong: "0"
+  - heading "Wallet decision" [level=3]
+  - strong: Review rewards on hold before release or reversal.
+  - paragraph: Use row actions for wallet credit, hold, or reversal.
+  - 'generic "Ledger posted: 1"':
+    - generic: Ledger posted
+    - strong: "1"
+  - 'generic "Closed: 0"':
+    - generic: Closed
+    - strong: "0"
+  - heading "Referral attributions" [level=2]
+  - generic: 1 attribution
+  - region "Referral attribution records":
+    - table:
+      - rowgroup:
+        - row "Referred Account Status Source Rewards Created":
+          - columnheader "Referred Account"
+          - columnheader "Status"
+          - columnheader "Source"
+          - columnheader "Rewards"
+          - columnheader "Created"
+      - rowgroup:
+        - row "App offline Smoke Referral Referred Customer +84909100011 referral-link android 4 Aug 2026, 03:32":
+          - cell "App offline Smoke Referral Referred Customer +84909100011":
+            - generic: SR
+            - img "App offline"
+            - link "Smoke Referral Referred Customer":
+              - /url: /customers/smoke_referral_customer_referred_profile
+            - generic: "+84909100011"
+          - cell:
+            - generic: Qualified
+            - generic: Integrity clear
+          - cell "referral-link android":
+            - strong: referral-link
+            - paragraph: android
+          - cell:
+            - generic: On hold 1
+            - generic: Credited 1
+            - paragraph: 2 rewards / 75.000 VND
+          - cell "4 Aug 2026, 03:32":
+            - time: 4 Aug 2026, 03:32
+  - heading "Reward ledger" [level=2]
+  - generic: 2 rewards
+  - region "Referral reward ledger":
+    - table:
+      - rowgroup:
+        - row "Referred Reward Status Booking Credit State Created Actions":
+          - columnheader "Referred"
+          - columnheader "Reward"
+          - columnheader "Status"
+          - columnheader "Booking"
+          - columnheader "Credit State"
+          - columnheader "Created"
+          - columnheader "Actions"
+      - rowgroup:
+        - row "App offline Smoke Referral Referred Customer +84909100011 · Attribution smoke_referral_customer_attribution 50.000 VND Eligible since 4 Aug 2026, 03:32 Credited No qualifying booking linked 4 Aug 2026, 03:32":
+          - cell "App offline Smoke Referral Referred Customer +84909100011 · Attribution smoke_referral_customer_attribution":
+            - generic: SR
+            - img "App offline"
+            - link "Smoke Referral Referred Customer":
+              - /url: /customers/smoke_referral_customer_referred_profile
+            - generic: +84909100011 · Attribution smoke_referral_customer_attribution
+          - cell "50.000 VND Eligible since 4 Aug 2026, 03:32":
+            - strong: 50.000 VND
+            - paragraph:
+              - text: Eligible since
+              - time: 4 Aug 2026, 03:32
+          - cell "Credited":
+            - generic: Credited
+          - cell "No qualifying booking linked":
+            - generic: No qualifying booking linked
+          - cell:
+            - generic: Credited
+            - paragraph: cmsdoqr6d002gvyhc8o91dzmp
+            - paragraph: Latest decision Credit by Demo Admin
+            - generic "Decision evidence"
+          - cell "4 Aug 2026, 03:32":
+            - time: 4 Aug 2026, 03:32
+          - cell:
+            - generic "Referral reward actions for smoke_referral_customer_available_reward":
+        - row "App offline Smoke Referral Referred Customer +84909100011 · Attribution smoke_referral_customer_attribution 25.000 VND On hold No qualifying booking linked 4 Aug 2026, 03:32":
+          - cell "App offline Smoke Referral Referred Customer +84909100011 · Attribution smoke_referral_customer_attribution":
+            - generic: SR
+            - img "App offline"
+            - link "Smoke Referral Referred Customer":
+              - /url: /customers/smoke_referral_customer_referred_profile
+            - generic: +84909100011 · Attribution smoke_referral_customer_attribution
+          - cell "25.000 VND":
+            - strong: 25.000 VND
+          - cell "On hold":
+            - generic: On hold
+          - cell "No qualifying booking linked":
+            - generic: No qualifying booking linked
+          - cell:
+            - generic: Held
+            - paragraph: Held for admin or fraud review before wallet credit.
+            - paragraph: Latest decision Hold by Demo Admin
+            - generic "Decision evidence"
+          - cell "4 Aug 2026, 03:32":
+            - time: 4 Aug 2026, 03:32
+          - cell:
+            - generic "Referral reward actions for smoke_referral_customer_pending_reward" [active]:
+            - menu:
+              - strong: Reward actions
+              - generic: Reason
+              - generic: Reward decision reason
+              - textbox "Reward decision reason":
+                - /placeholder: 12-500 characters describing the evidence and decision
+              - generic "Reward decision evidence":
+                - strong: Decision evidence
+                - generic: "Current state: On hold"
+                - generic: "Amount: 25.000 VND"
+                - generic: Booking evidence unavailable
+                - generic: Release returns the reward to AVAILABLE; reverse closes it without wallet credit.
+              - checkbox "I reviewed the current state, booking evidence, reason, and wallet impact."
+              - generic: I reviewed the current state, booking evidence, reason, and wallet impact.
+              - menuitem "Release hold":
+                - generic: Release hold
+              - menuitem "Reverse reward":
+                - generic: Reverse reward
+- button "Open Next.js Dev Tools":
+- alert

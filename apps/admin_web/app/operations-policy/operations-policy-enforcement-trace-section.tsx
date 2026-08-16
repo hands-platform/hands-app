@@ -2,6 +2,7 @@ import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/adm
 import { StatusBadge } from '../../components/status-badge';
 
 import type { PolicyEnforcementTraceItem } from './policy-enforcement-trace';
+import { policyCountLabel } from './policy-copy';
 
 type OperationsPolicyEnforcementTraceSectionProps = {
   readonly trace: readonly PolicyEnforcementTraceItem[];
@@ -14,7 +15,7 @@ export function OperationsPolicyEnforcementTraceSection({
     <AdminSection
       className="admin-mb-16"
       description="Shows where each operating decision is enforced today, so operators know whether a policy change affects customer matching, Partner acceptance, notifications, or finance gates."
-      statusLabel={`${trace.length} enforced lane(s)`}
+      statusLabel={policyCountLabel(trace.length, 'enforced lane')}
       statusTone="info"
       title="Policy enforcement evidence"
     >
@@ -27,8 +28,8 @@ export function OperationsPolicyEnforcementTraceSection({
             leading={<StatusBadge tone="success">{item.scope}</StatusBadge>}
             title={item.title}
           >
-            <small>{`API touchpoint: ${item.api}`}</small>
-            <small>{`Server owner: ${item.server}`}</small>
+            <small>{`Enforcement endpoint: ${item.api}`}</small>
+            <small>{`Responsible service: ${item.server}`}</small>
             <small>{item.verify}</small>
           </AdminTaskCard>
         ))}

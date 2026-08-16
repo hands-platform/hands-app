@@ -35,20 +35,12 @@ export async function requireReferralRewardTaxReview(formData: FormData) {
 }
 
 export async function markReferralRewardCashoutPaid(formData: FormData) {
-  const approvalAdminId = String(formData.get('approvalAdminId') || '').trim();
-  if (!approvalAdminId) {
-    redirectReferralDecisionValidation(
-      formData,
-      'Referral reward cashout paid closeout requires approval from a different admin',
-    );
-  }
   const transferRef = String(formData.get('transferRef') || '').trim();
   if (!transferRef) {
     redirectReferralDecisionValidation(formData, 'Referral cashout paid closeout requires a transfer reference');
   }
 
   await runReferralRewardDecision(formData, 'cashout-paid', 'Cashout marked paid with transfer evidence.', {
-    approvalAdminId,
     transferRef,
   });
 }

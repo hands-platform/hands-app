@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import {
+  AdminUserProvenance,
   AdminOperatorPermissionCategory,
   BookingOpsTaskStatus,
   BookingOpsTaskType,
@@ -441,12 +442,18 @@ async function seed() {
         phone: smokePhone('01'),
         fullName: 'Cash Booking Smoke Admin',
         roles: [Role.ADMIN],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'CASH_BOOKING_SMOKE',
+        fixtureRunId: runId,
       },
       {
         id: ids.approver,
         phone: smokePhone('02'),
         fullName: 'Cash Booking Smoke Finance Approver',
         roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'CASH_BOOKING_SMOKE',
+        fixtureRunId: runId,
       },
       {
         id: ids.customerUser,

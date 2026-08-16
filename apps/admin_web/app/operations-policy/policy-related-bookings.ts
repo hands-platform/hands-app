@@ -11,6 +11,7 @@ import {
   shortId,
 } from './policy-booking-format';
 import { readBookingMatchingPolicySnapshot } from './policy-snapshot';
+import { policyCountLabel } from './policy-copy';
 
 type PolicyRelatedBookingPill = {
   readonly label: string;
@@ -76,7 +77,7 @@ export function policyRelatedBookingRecords(
             : 'no expiry',
           className: 'pill-info',
         },
-        { label: `${booking.participants?.length ?? 0} participant row(s)`, className: 'pill-neutral' },
+        { label: policyCountLabel(booking.participants?.length ?? 0, 'participant row'), className: 'pill-neutral' },
       ],
     });
   }
@@ -103,7 +104,7 @@ export function policyRelatedBookingRecords(
       recordCount: marketplaceRows.length,
       pillBuilder: (booking) => [
         { label: booking.status, className: booking.status === 'OPEN_MATCHING' ? 'pill-warn' : 'pill-info' },
-        { label: `${booking.participants?.length ?? 0} participant(s)`, className: 'pill-info' },
+        { label: policyCountLabel(booking.participants?.length ?? 0, 'participant'), className: 'pill-info' },
         {
           label: readBookingMatchingPolicySnapshot(booking) ? 'saved policy' : 'live sample',
           className: readBookingMatchingPolicySnapshot(booking) ? 'pill-success' : 'pill-neutral',
@@ -123,7 +124,7 @@ export function policyRelatedBookingRecords(
       recordCount: acceptedButNotFinal.length,
       pillBuilder: (booking) => [
         { label: 'customer choice', className: 'pill-success' },
-        { label: `${booking.participants?.length ?? 0} participant(s)`, className: 'pill-info' },
+        { label: policyCountLabel(booking.participants?.length ?? 0, 'participant'), className: 'pill-info' },
         { label: booking.status, className: 'pill-warn' },
       ],
     });
@@ -234,7 +235,7 @@ function policyRelatedBookingRecordSet(input: {
     helper: input.helper,
     href: input.href,
     emptyText: input.emptyText,
-    recordCount: `${input.recordCount} record(s)`,
+    recordCount: policyCountLabel(input.recordCount, 'record'),
     rows: [...input.bookings]
       .sort(byNewestBooking)
       .slice(0, 3)

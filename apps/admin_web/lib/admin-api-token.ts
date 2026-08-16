@@ -7,8 +7,14 @@ export const ADMIN_WEB_API_TOKEN_TTL_SECONDS = 300;
 
 const DEV_ADMIN_WEB_API_TOKEN_SECRET = 'dev-admin-web-api-token-secret';
 const INSECURE_SECRET_VALUES = new Set(['change-me', 'changeme', 'secret', 'password']);
+const MINIMUM_PRODUCTION_SECRET_LENGTH = 32;
 
-export function createAdminWebApiToken(subject: string, now = new Date(), env = process.env) {
+export function createAdminWebApiToken(
+  subject: string,
+  now = new Date(),
+  env = process.env,
+  sessionId: string = randomUUID(),
+) {
   const iat = Math.floor(now.getTime() / 1000);
   const exp = iat + ADMIN_WEB_API_TOKEN_TTL_SECONDS;
   const payload = {
@@ -19,7 +25,7 @@ export function createAdminWebApiToken(subject: string, now = new Date(), env = 
     role: 'ADMIN',
     iat,
     exp,
-    jti: randomUUID(),
+    jti: sessionId,
   };
 
   return signJwt(payload, adminWebApiTokenSecretFromEnv(env));
@@ -31,12 +37,16 @@ export function adminWebApiTokenSecretFromEnv(env: NodeJS.ProcessEnv = process.e
     for (const [name, value] of [
       ['ADMIN_ACCESS_TOKEN', env.ADMIN_ACCESS_TOKEN],
       ['JWT_ACCESS_SECRET', env.JWT_ACCESS_SECRET],
+      ['JWT_REFRESH_SECRET', env.JWT_REFRESH_SECRET],
       ['ADMIN_REALTIME_TOKEN_SECRET', env.ADMIN_REALTIME_TOKEN_SECRET],
       ['ADMIN_WEB_SESSION_COOKIE_SECRET', env.ADMIN_WEB_SESSION_COOKIE_SECRET],
     ] as const) {
       if (value?.trim() === secret) {
         throw new Error(`ADMIN_WEB_API_TOKEN_SECRET must be separate from ${name}.`);
       }
+    }
+    if (env.NODE_ENV === 'production' && secret.length < MINIMUM_PRODUCTION_SECRET_LENGTH) {
+      throw new Error('ADMIN_WEB_API_TOKEN_SECRET must contain at least 32 characters in production.');
     }
     return secret;
   }

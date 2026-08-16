@@ -12,7 +12,6 @@ import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormInput,
-  AdminFormSelect,
   AdminFormStaticValue,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
@@ -321,20 +320,13 @@ export function FinanceCloseoutSettlementRepairDrawer({
                   <input name="settlementPeriod" type="hidden" value={returnFilters.settlementPeriod} />
                   <input name="settlementTrack" type="hidden" value={returnFilters.settlementTrack} />
                   <input name="q" type="hidden" value={returnFilters.q} />
-                  <AdminFormSelect
-                    defaultValue=""
-                    label="Approving finance admin"
-                    labelVisibility="visible"
-                    name="approvalAdminId"
-                    options={[
-                      { label: 'Select a different finance approver', value: '' },
-                      ...financeApprovers.map((approver) => ({
-                        label: `${approver.fullName || approver.email || approver.phone || approver.id} · ${approver.id}`,
-                        value: approver.id,
-                      })),
-                    ]}
-                    required
-                  />
+                  <AdminNoticeCard tone="info">
+                    <strong>Two verified Finance operators are required</strong>
+                    <p className="muted">
+                      The first signed-in operator records the repair request. A different signed-in Finance operator
+                      must reopen this evidence version and submit the action to approve and execute it.
+                    </p>
+                  </AdminNoticeCard>
                   <AdminFormTextarea
                     label="Repair reason"
                     labelVisibility="visible"
@@ -353,21 +345,21 @@ export function FinanceCloseoutSettlementRepairDrawer({
                     required
                   />
 
-                  {financeApprovers.length === 0 ? (
+                  {financeApprovers.length < 2 ? (
                     <AdminNoticeCard role="alert" tone="danger">
-                      <strong>No finance approver available</strong>
-                      <p className="muted">Grant the FINANCE_APPROVER role before attempting this repair.</p>
+                      <strong>Independent Finance approval is unavailable</strong>
+                      <p className="muted">At least two verified Finance approvers are required for settlement repair.</p>
                     </AdminNoticeCard>
                   ) : null}
 
                   <AdminDrawerActionFooter className="service-menu-dialog-footer">
                     <AdminFormControlButton
                       className="button-primary"
-                      disabled={financeApprovers.length === 0}
+                      disabled={financeApprovers.length < 2}
                       type="submit"
                     >
                       <ShieldCheck aria-hidden="true" size={16} />
-                      {isHistorical ? 'Reconstruct historical settlement' : 'Create missing settlement'}
+                      {isHistorical ? 'Request / approve reconstruction' : 'Request / approve settlement repair'}
                     </AdminFormControlButton>
                     <AdminFormControlLink className="button-secondary" href={closeHref}>
                       Cancel

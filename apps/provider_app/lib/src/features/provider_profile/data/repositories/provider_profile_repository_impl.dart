@@ -152,6 +152,7 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
       'contentType': contentType,
       'visibility': 'PUBLIC',
       'purpose': purpose,
+      'sizeBytes': bytes.length,
     });
     final contract = _asMap(uploadContract);
     final file = _asMap(contract?['file']);

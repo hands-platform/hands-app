@@ -1,5 +1,8 @@
 import { redirect } from 'next/navigation';
 
-export default function PublicSiteRootPage() {
-  redirect('/ko');
+import { publicSiteKeyForRequest } from '../lib/site-content';
+
+export default async function PublicSiteRootPage() {
+  const site = await publicSiteKeyForRequest();
+  redirect(site === 'PARTNER_RECRUITMENT' ? '/vi' : '/ko');
 }

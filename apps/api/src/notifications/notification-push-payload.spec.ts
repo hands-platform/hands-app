@@ -128,7 +128,7 @@ describe('notification push payload helpers', () => {
     });
   });
 
-  it('keeps internal targetRole out of FCM push data', () => {
+  it('keeps the allowlisted target role for manual campaign routing', () => {
     expect(
       notificationPushData({
         id: 'notification-1',
@@ -140,6 +140,7 @@ describe('notification push payload helpers', () => {
       }),
     ).toEqual({
       bookingId: 'booking-1',
+      targetRole: 'PROVIDER',
       type: 'booking.matched',
       notificationId: 'notification-1',
     });

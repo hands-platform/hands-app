@@ -30,7 +30,7 @@ describe('customer marketing attribution', () => {
     expect(normalizeCustomerMarketingAttribution({ source: 'google' })).toBeNull();
   });
 
-  it('keeps the existing first-touch attribution while merging other metadata', () => {
+  it('keeps first-touch attribution and discards unrecognized metadata keys', () => {
     expect(
       customerAppSessionMetadata(
         {
@@ -51,8 +51,6 @@ describe('customer marketing attribution', () => {
         },
       ),
     ).toEqual({
-      existingFlag: true,
-      currentFlag: true,
       marketingAttribution: {
         source: 'meta',
         campaignId: 'first-touch',
@@ -61,4 +59,3 @@ describe('customer marketing attribution', () => {
     });
   });
 });
-

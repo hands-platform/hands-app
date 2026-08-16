@@ -19,11 +19,13 @@ import type { AdminUsageOverviewTrendRow } from '../../lib/admin-api';
 
 export function UsageOverviewTrendChart({
   rows,
+  usageAvailable = true,
 }: {
   readonly rows: readonly AdminUsageOverviewTrendRow[];
+  readonly usageAvailable?: boolean;
 }) {
-  const total = rows.reduce((sum, row) => sum + row.appOpenCount + row.sessionStartCount +
-    row.providerProfileViewCount + row.bookingRequestCount + row.completedBookingCount, 0);
+  const total = rows.reduce((sum, row) => sum + (usageAvailable ? row.appOpenCount + row.sessionStartCount +
+    row.providerProfileViewCount : 0) + row.createdBookingCount + row.preferredRequestCount + row.completedBookingCount, 0);
   if (rows.length === 0 || total === 0) {
     return (
       <div className="usage-overview-chart-empty" role="status">
@@ -33,12 +35,12 @@ export function UsageOverviewTrendChart({
     );
   }
 
-  const customerTotal = rows.reduce(
+  const customerTotal = usageAvailable ? rows.reduce(
     (sum, row) => sum + row.appOpenCount + row.sessionStartCount + row.providerProfileViewCount,
     0,
-  );
+  ) : 0;
   const bookingTotal = rows.reduce(
-    (sum, row) => sum + row.bookingRequestCount + row.completedBookingCount,
+    (sum, row) => sum + row.createdBookingCount + row.preferredRequestCount + row.completedBookingCount,
     0,
   );
   const peak = (keys: Array<keyof AdminUsageOverviewTrendRow>) => rows.reduce((best, row) => {
@@ -47,26 +49,35 @@ export function UsageOverviewTrendChart({
     return seriesTotal > bestSeriesTotal ? row : best;
   }, rows[0]!);
   const customerPeak = peak(['appOpenCount', 'sessionStartCount', 'providerProfileViewCount']);
-  const bookingPeak = peak(['bookingRequestCount', 'completedBookingCount']);
+  const bookingPeak = peak(['createdBookingCount', 'preferredRequestCount', 'completedBookingCount']);
 
   return (
     <div className="usage-overview-trend-grid">
-      <TrendPanel
-        area={{ dataKey: 'appOpenCount', name: 'App opens', color: '#7367f0' }}
-        ariaLabel="Customer activity trend"
-        lines={[
-          { dataKey: 'sessionStartCount', name: 'Sessions', color: '#00bad1' },
-          { dataKey: 'providerProfileViewCount', name: 'Partner views', color: '#ff9f43' },
-        ]}
-        rows={rows}
-        summary={`Total signals ${customerTotal.toLocaleString()} · Peak ${customerPeak.label}`}
-        title="Customer activity"
-      />
+      {usageAvailable ? (
+        <TrendPanel
+          area={{ dataKey: 'appOpenCount', name: 'App opens', color: '#7367f0' }}
+          ariaLabel="Customer activity trend"
+          lines={[
+            { dataKey: 'sessionStartCount', name: 'Sessions', color: '#00bad1' },
+            { dataKey: 'providerProfileViewCount', name: 'Partner views', color: '#ff9f43' },
+          ]}
+          rows={rows}
+          summary={`Total signals ${customerTotal.toLocaleString()} · Peak ${customerPeak.label}`}
+          title="Customer activity"
+        />
+      ) : (
+        <section aria-label="Customer activity trend" className="usage-overview-trend-panel usage-overview-chart-empty">
+          <h3>Customer activity</h3>
+          <strong>Usage telemetry unavailable</strong>
+          <span>Booking activity remains available below.</span>
+        </section>
+      )}
       <TrendPanel
         ariaLabel="Booking activity trend"
         lines={[
-          { dataKey: 'bookingRequestCount', name: 'Created records', color: '#ff9f43' },
-          { dataKey: 'completedBookingCount', name: 'Closed completed', color: '#28c76f' },
+          { dataKey: 'createdBookingCount', name: 'Bookings created', color: '#ff9f43' },
+          { dataKey: 'preferredRequestCount', name: 'Preferred Partner requests', color: '#00bad1' },
+          { dataKey: 'completedBookingCount', name: 'Completed during period', color: '#28c76f' },
         ]}
         rows={rows}
         summary={`Total booking signals ${bookingTotal.toLocaleString()} · Peak ${bookingPeak.label}`}

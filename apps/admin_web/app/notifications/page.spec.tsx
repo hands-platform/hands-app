@@ -38,7 +38,7 @@ describe('Notification Delivery page contract', () => {
       expect(source).toContain(`label="${label}"`);
     }
     expect(source).toContain("{ label: 'Accepted by FCM', value: 'accepted' }");
-    expect(source).toContain('FCM acceptance is provider acknowledgement, not proof that the device received or opened');
+    expect(source).toContain('FCM acceptance is push service acknowledgement, not proof that the device received or opened');
     expect(source).not.toContain('Push delivered');
   });
 

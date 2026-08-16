@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import type { ReactNode } from 'react';
 
 import {
   AdminFormControlButton,
@@ -15,7 +16,7 @@ import { AdminSegmentedControl } from '../../components/admin-segmented-control'
 import { AdminErrorState, AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { ConfirmDialog } from '../../components/confirm-dialog';
-import { StatusBadge } from '../../components/status-badge';
+import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import {
   adminGetResult,
   type AdminNotification,
@@ -37,7 +38,9 @@ import {
   buildNotificationSummaryApiHref,
   legacyNotificationDestination,
   notificationDeliveryModelParams,
-  notificationDeliveryHealthTotals,
+  notificationDeliveryHealthState,
+  normalizeNotificationFailureCode,
+  normalizeNotificationFailureProvider,
   type NotificationDeliveryIssue,
   type NotificationDeliveryView,
 } from './notification-page-model';
@@ -100,6 +103,13 @@ export default async function NotificationsPage({
       pagination={model.notificationPagination}
       rows={model.notificationRows}
       canViewDiagnostics={canViewDiagnostics}
+      layout={
+        view.mode === 'action' && view.issue === 'groups'
+          ? 'failure-groups'
+          : view.mode === 'action' && view.issue === 'no-route'
+            ? 'route-groups'
+            : 'delivery'
+      }
     />
   ) : (
     <AdminErrorState
@@ -124,6 +134,9 @@ export default async function NotificationsPage({
           description={confirmation.description}
           hiddenInputs={confirmation.hiddenInputs}
           id={`notification-action-${confirmation.action}-${confirmation.id}`}
+          requireValidForm={Boolean(
+            confirmation.textInputs?.some((input) => input.required || (input.minLength ?? 0) > 0),
+          )}
           supportingLinks={confirmation.supportingLinks}
           textInputs={confirmation.textInputs}
           title={confirmation.title}
@@ -142,21 +155,7 @@ export default async function NotificationsPage({
       ) : null}
 
       <div className="stack notification-monitor notification-delivery-workspace">
-        <div
-          aria-label="Notification delivery data status"
-          className="admin-filter-chip-group notification-delivery-data-status"
-        >
-          <StatusBadge tone="info">
-            {view.mode === 'action' ? notificationScopeLabel(view.scope) : notificationRangeLabel(view.range)}
-          </StatusBadge>
-          <StatusBadge tone="neutral">Asia/Ho_Chi_Minh</StatusBadge>
-          <NotificationRefreshButton
-            generatedLabel={formatDateTime(summaryResult.data?.generatedAt, 'unavailable')}
-          />
-          <NotificationDataScopeStatus summary={summaryResult.data} view={view} />
-        </div>
-
-        <NotificationDataScopeSelector view={view} />
+        <NotificationDeliveryToolbar summary={summaryResult.data} view={view} />
 
         {!summaryResult.ok ? (
           <AdminErrorState
@@ -168,28 +167,10 @@ export default async function NotificationsPage({
           />
         ) : null}
 
-        <AdminSegmentedControl
-          activeValue={view.mode}
-          ariaLabel="Notification Delivery mode"
-          options={[
-            {
-              href: buildNotificationDeliveryHref(view, { mode: 'action', page: 1 }),
-              label: 'Needs action',
-              value: 'action',
-            },
-            {
-              href: buildNotificationDeliveryHref(view, { mode: 'records', page: 1 }),
-              label: 'Delivery records',
-              value: 'records',
-            },
-          ]}
-        />
-
         {view.mode === 'action' ? (
           <>
-            <NotificationDeliveryHealthOverview summary={summaryResult.data} view={view} />
+            <NotificationDeliveryHealthOverview summary={summaryResult.data} />
             <NotificationIssueSelector summary={summaryResult.data} view={view} />
-            <NotificationActionScopeSelector view={view} />
                 {view.issue === 'failed' && view.failureProvider && view.failureCode ? (
                   <div className="admin-filter-chip-group" aria-label="Active failure group filter">
                     <StatusBadge tone="warning">
@@ -206,10 +187,19 @@ export default async function NotificationsPage({
                     </AdminTextLink>
                   </div>
                 ) : null}
-                <AdminSection
-                  actions={
+                <NotificationResultsSection
+                  action={
                     view.issue === 'groups' ? null : (
-                      <AdminTextLink href="/notifications">Open failure groups</AdminTextLink>
+                      <AdminTextLink
+                        href={buildNotificationDeliveryHref(view, {
+                          failureCode: '',
+                          failureProvider: '',
+                          issue: 'groups',
+                          page: 1,
+                        })}
+                      >
+                        Open failure groups
+                      </AdminTextLink>
                     )
                   }
                   description={notificationIssueDescription(view.issue)}
@@ -219,24 +209,114 @@ export default async function NotificationsPage({
                   title={sectionTitle}
                 >
                   {recordsBoard}
-                </AdminSection>
+                </NotificationResultsSection>
           </>
         ) : (
           <>
             <NotificationRecordFilters view={view} />
-            <AdminSection
-                  description="FCM acceptance is provider acknowledgement, not proof that the device received or opened the notification."
+            <NotificationResultsSection
+                  description="FCM acceptance is push service acknowledgement, not proof that the device received or opened the notification."
                   id="notification-delivery-results"
                   statusLabel={`${model.totalCount} notification${model.totalCount === 1 ? '' : 's'}`}
                   statusTone="info"
                   title={sectionTitle}
                 >
                   {recordsBoard}
-            </AdminSection>
+            </NotificationResultsSection>
           </>
         )}
       </div>
     </AdminPageTemplate>
+  );
+}
+
+function NotificationResultsSection({
+  action,
+  children,
+  description,
+  id,
+  statusLabel,
+  statusTone,
+  title,
+}: {
+  readonly action?: ReactNode;
+  readonly children: ReactNode;
+  readonly description: string;
+  readonly id: string;
+  readonly statusLabel: string;
+  readonly statusTone: StatusBadgeTone;
+  readonly title: string;
+}) {
+  const headingId = `${id}-title`;
+  return (
+    <section aria-labelledby={headingId} className="notification-results-section" id={id}>
+      <div className="ops-section-header notification-results-header">
+        <div>
+          <h2 id={headingId}>{title}</h2>
+          <p className="muted">{description}</p>
+        </div>
+        <div className="participant-list admin-section-actions">
+          <StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>
+          {action}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function NotificationDeliveryToolbar({
+  summary,
+  view,
+}: {
+  readonly summary: AdminNotificationBoardSummary | null;
+  readonly view: NotificationDeliveryView;
+}) {
+  return (
+    <section aria-label="Notification delivery controls" className="notification-delivery-toolbar">
+      <div className="notification-delivery-toolbar-controls">
+        <div className="notification-delivery-toolbar-group">
+          <span>Source</span>
+          <NotificationDataScopeSelector view={view} />
+        </div>
+        <div className="notification-delivery-toolbar-group">
+          <span>View</span>
+          <AdminSegmentedControl
+            activeValue={view.mode}
+            ariaLabel="Notification Delivery mode"
+            options={[
+              {
+                href: buildNotificationDeliveryHref(view, { mode: 'action', page: 1 }),
+                label: 'Needs action',
+                value: 'action',
+              },
+              {
+                href: buildNotificationDeliveryHref(view, { mode: 'records', page: 1 }),
+                label: 'Delivery records',
+                value: 'records',
+              },
+            ]}
+          />
+        </div>
+        {view.mode === 'action' ? (
+          <div className="notification-delivery-toolbar-group notification-delivery-toolbar-scope">
+            <span>Age</span>
+            <NotificationActionScopeSelector view={view} />
+          </div>
+        ) : null}
+      </div>
+      <div
+        aria-label="Notification delivery data status"
+        className="admin-filter-chip-group notification-delivery-data-status"
+      >
+        <StatusBadge tone="info">
+          {view.mode === 'action' ? notificationScopeLabel(view.scope) : notificationRangeLabel(view.range)}
+        </StatusBadge>
+        <StatusBadge tone="neutral">Asia/Ho_Chi_Minh</StatusBadge>
+        <NotificationRefreshButton generatedLabel={formatDateTime(summary?.generatedAt, 'unavailable')} />
+        <NotificationDataScopeStatus summary={summary} view={view} />
+      </div>
+    </section>
   );
 }
 
@@ -367,10 +447,8 @@ function NotificationDataScopeSelector({ view }: { readonly view: NotificationDe
 
 function NotificationDeliveryHealthOverview({
   summary,
-  view,
 }: {
   readonly summary: AdminNotificationBoardSummary | null;
-  readonly view: NotificationDeliveryView;
 }) {
   const current = [
     ['Failure groups', summary?.openDeliveryIncidentCount, 'groups'],
@@ -386,21 +464,25 @@ function NotificationDeliveryHealthOverview({
     ['No route recipients', summary?.historicalNoPushPathRecipientCount, 'no-route'],
     ['Stale routes', summary?.historicalStaleRouteNotifications, 'stale-route'],
   ] as const;
-  const { current: currentTotal, history: historyTotal } = notificationDeliveryHealthTotals(summary);
+  const { current: currentHealth, history: historyHealth } = notificationDeliveryHealthState(summary);
+  const healthUnavailable = currentHealth === 'unavailable' || historyHealth === 'unavailable';
+  const needsAttention = currentHealth === 'attention' || historyHealth === 'attention';
 
   return (
     <AdminSection
       description="Current delivery debt and 24h+ backlog stay visible together. Counts are scoped to the selected data source."
       id="notification-delivery-health"
       statusLabel={
-        currentTotal === null || historyTotal === null
+        healthUnavailable
           ? 'Status unavailable'
-          : `${currentTotal.toLocaleString()} current · ${historyTotal.toLocaleString()} history`
+          : needsAttention
+            ? 'Delivery debt requires attention'
+            : 'No measured delivery debt'
       }
       statusTone={
-        currentTotal === null || historyTotal === null
+        healthUnavailable
           ? 'warning'
-          : currentTotal + historyTotal > 0
+          : needsAttention
             ? 'warning'
             : 'success'
       }
@@ -413,15 +495,15 @@ function NotificationDeliveryHealthOverview({
               <p className="eyebrow">CURRENT · UNDER 24H</p>
               <h3 id="notification-current-health-title">Current delivery debt</h3>
             </div>
-            <StatusBadge tone={currentTotal === null || currentTotal > 0 ? 'warning' : 'success'}>
-              {currentTotal === null
+            <StatusBadge tone={currentHealth === 'clear' ? 'success' : 'warning'}>
+              {currentHealth === 'unavailable'
                 ? 'Status unavailable'
-                : currentTotal > 0
-                  ? `${currentTotal.toLocaleString()} signals`
+                : currentHealth === 'attention'
+                  ? 'Review current debt'
                   : 'No new delivery issues in the last 24 hours'}
             </StatusBadge>
           </div>
-          <NotificationDeliveryHealthMetrics items={current} scope="current" view={view} />
+          <NotificationDeliveryHealthMetrics items={current} scope="current" />
         </section>
 
         <section aria-labelledby="notification-history-health-title" className="notification-delivery-health-band">
@@ -430,12 +512,16 @@ function NotificationDeliveryHealthOverview({
               <p className="eyebrow">HISTORY · 24H+</p>
               <h3 id="notification-history-health-title">Historical delivery debt</h3>
             </div>
-            <StatusBadge tone={historyTotal === null || historyTotal > 0 ? 'warning' : 'success'}>
-              {historyTotal === null ? 'Status unavailable' : historyTotal > 0 ? 'Open history' : 'No history debt'}
+            <StatusBadge tone={historyHealth === 'clear' ? 'success' : 'warning'}>
+              {historyHealth === 'unavailable'
+                ? 'Status unavailable'
+                : historyHealth === 'attention'
+                  ? 'Open history debt'
+                  : 'No history debt'}
             </StatusBadge>
           </div>
-          <NotificationDeliveryHealthMetrics items={history} scope="history" view={view} />
-          {historyTotal !== null && historyTotal > 0 ? (
+          <NotificationDeliveryHealthMetrics items={history} scope="history" />
+          {historyHealth === 'attention' ? (
             <p className="muted notification-history-meta">
               Oldest failure group: {formatDateTime(summary?.historicalDeliveryOldestAt, 'unavailable')} · lifecycle is read-only because Notification records do not have a persistent assignment or resolution field.
             </p>
@@ -449,11 +535,9 @@ function NotificationDeliveryHealthOverview({
 function NotificationDeliveryHealthMetrics({
   items,
   scope,
-  view,
 }: {
   readonly items: readonly (readonly [string, number | undefined, NotificationDeliveryIssue])[];
   readonly scope: 'current' | 'history';
-  readonly view: NotificationDeliveryView;
 }) {
   return (
     <dl className="notification-delivery-health-metrics">
@@ -461,9 +545,6 @@ function NotificationDeliveryHealthMetrics({
         <div key={`${scope}-${issue}`}>
           <dt>{label}</dt>
           <dd>{count === undefined ? 'Unavailable' : count.toLocaleString()}</dd>
-          <AdminTextLink href={buildNotificationDeliveryHref(view, { issue, mode: 'action', page: 1, scope })}>
-            Review
-          </AdminTextLink>
         </div>
       ))}
     </dl>
@@ -756,12 +837,13 @@ function hasInvalidNotificationDeliveryFilter(params: Record<string, string | st
     [readSearchParam(params.range), ['all', 'today', 'yesterday', '7d', '30d']],
     [readSearchParam(params.sort), ['newest', 'oldest']],
     [readSearchParam(params.scope), ['current', '15-60m', '1-24h', 'history', 'all']],
-    [readSearchParam(params.failureProvider), ['FCM', 'IN_APP_ONLY']],
     [readSearchParam(params.dataScope), ['production', 'unknown', 'synthetic']],
   ];
+  const failureProvider = readSearchParam(params.failureProvider);
   const failureCode = readSearchParam(params.failureCode);
   return (
     checks.some(([value, allowed]) => value && !allowed.includes(value)) ||
-    Boolean(failureCode && (failureCode.length > 160 || !/^[A-Za-z0-9_./:-]+$/.test(failureCode)))
+    Boolean(failureProvider && !normalizeNotificationFailureProvider(failureProvider)) ||
+    Boolean(failureCode && !normalizeNotificationFailureCode(failureCode))
   );
 }

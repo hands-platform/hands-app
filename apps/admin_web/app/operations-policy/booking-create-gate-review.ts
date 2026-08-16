@@ -13,7 +13,8 @@ import {
   adminOperationalPolicySettingByKey,
   readPolicyNumber,
 } from '../../lib/operations-policy';
-import { formatDistance } from './policy-simulation';
+import { formatDistance } from './policy-distance-format';
+import { policyCountLabel } from './policy-copy';
 
 export type BookingCreateGateReview = {
   readonly currentPolicyLabel: string;
@@ -158,7 +159,10 @@ function buildBookingCreateGateRows(
       operatorMeaning: policy.serviceAreaRequired
         ? 'Booking address must be inside an enabled Vietnam service area.'
         : 'Booking can be created outside configured service areas. Use only before a city launch test.',
-      evidence: `${reasonCounts.get(BOOKING_CREATE_GATE_REASONS.addressOutsideServiceArea) ?? 0} reject(s)`,
+      evidence: policyCountLabel(
+        reasonCounts.get(BOOKING_CREATE_GATE_REASONS.addressOutsideServiceArea) ?? 0,
+        'reject',
+      ),
       href: `/audit-log?query=${BOOKING_CREATE_GATE_REASONS.addressOutsideServiceArea}`,
       pillClass: policy.serviceAreaRequired ? 'pill-success' : 'pill-warn',
     },
@@ -169,7 +173,10 @@ function buildBookingCreateGateRows(
       defaultValue: '20 km',
       operatorMeaning:
         'A customer can browse globally and book from a confirmed Vietnam service address. GPS distance is retained only as optional evidence.',
-      evidence: `${reasonCounts.get(BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar) ?? 0} historical row(s)`,
+      evidence: policyCountLabel(
+        reasonCounts.get(BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar) ?? 0,
+        'historical row',
+      ),
       href: `/audit-log?query=${BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar}`,
       pillClass: policy.customerDistanceKm === 20 ? 'pill-success' : 'pill-warn',
     },
@@ -180,7 +187,10 @@ function buildBookingCreateGateRows(
       defaultValue: '50 km',
       operatorMeaning:
         'The selected first-pick Partner must be close enough to the booking address before payment authorization.',
-      evidence: `${reasonCounts.get(BOOKING_CREATE_GATE_REASONS.preferredPartnerTooFar) ?? 0} reject(s)`,
+      evidence: policyCountLabel(
+        reasonCounts.get(BOOKING_CREATE_GATE_REASONS.preferredPartnerTooFar) ?? 0,
+        'reject',
+      ),
       href: `/audit-log?query=${BOOKING_CREATE_GATE_REASONS.preferredPartnerTooFar}`,
       pillClass: policy.preferredPartnerDistanceKm === 50 ? 'pill-success' : 'pill-warn',
     },
@@ -191,7 +201,10 @@ function buildBookingCreateGateRows(
       defaultValue: '15 min',
       operatorMeaning:
         'Fresh customer GPS can be stored as optional support evidence when available. Booking authority remains the confirmed service address.',
-      evidence: `${bookingCreateGateCustomerGpsRejectCount(reasonCounts)} historical row(s)`,
+      evidence: policyCountLabel(
+        bookingCreateGateCustomerGpsRejectCount(reasonCounts),
+        'historical row',
+      ),
       href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION',
       pillClass: policy.freshnessMinutes === 15 ? 'pill-success' : 'pill-warn',
     },

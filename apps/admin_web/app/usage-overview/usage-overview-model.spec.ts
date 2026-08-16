@@ -2,6 +2,7 @@ import {
   buildUsageActionPriorities,
   usageOverviewWithDefaults,
   normalizeUsageOverviewRange,
+  usageOverviewCustomHref,
   usageOverviewHref,
   usageOverviewRangeOptions,
   validateUsageCustomRange,
@@ -22,6 +23,9 @@ describe('usage overview page model', () => {
 
   it('builds stable range links without adding search or GPS parameters', () => {
     expect(usageOverviewHref('today')).toBe('/usage-overview?range=today');
+    expect(usageOverviewCustomHref('2026-08-13')).toBe(
+      '/usage-overview?range=custom&from=2026-08-07&to=2026-08-13',
+    );
     expect(usageOverviewRangeOptions.some((option) => option.value === ('all' as never))).toBe(false);
   });
 
@@ -128,7 +132,7 @@ describe('usage overview page model', () => {
 
     expect(priorities.map((priority) => priority.key)).toEqual(['new-unbooked', 'unresolved-bookings']);
     expect(priorities[0]).toMatchObject({
-      label: 'New customers without a booking',
+      label: 'New customers without a verified production booking',
       tone: 'warning',
       value: 14,
       valueLabel: 'customers',

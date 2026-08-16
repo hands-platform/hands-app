@@ -14,6 +14,7 @@ import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { OwnerDecisionBacklogItem } from './owner-decision-backlog';
 import type { OwnerDecisionPressure } from './owner-decision-pressure';
+import { policyCountLabel } from './policy-copy';
 
 type OperationsPolicyOwnerDecisionBacklogSectionProps = {
   readonly pressure?: OwnerDecisionPressure | null;
@@ -37,7 +38,7 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
           <AdminSectionHeader
             actions={(
               <StatusBadgeFromPillClass pillClass={pressure.alertCount ? 'pill-warn' : 'pill-success'}>
-                {pressure.alertCount} active record(s)
+                {policyCountLabel(pressure.alertCount, 'active record')}
               </StatusBadgeFromPillClass>
             )}
             description="Data-driven records that tell the owner which policy choice deserves attention first. This keeps HANDS from changing flow rules without matching, supply, wallet, or push evidence."

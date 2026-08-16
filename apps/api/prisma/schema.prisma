@@ -15,6 +15,25 @@ enum Role {
   MASTER_ADMIN
 }
 
+enum AdminPushCampaignStatus {
+  PREVIEWED
+  QUEUED
+  PROCESSING
+  COMPLETED
+  PARTIAL_FAILED
+  FAILED
+  EXPIRED
+}
+
+enum AdminPushCampaignRecipientStatus {
+  SNAPSHOTTED
+  PROCESSING
+  COMPLETED
+  PARTIAL_FAILED
+  FAILED
+  SKIPPED
+}
+
 enum AppUsageEventType {
   APP_OPEN
   SESSION_START
@@ -40,6 +59,7 @@ enum AdminOperatorPermissionCategory {
   CUSTOMERS_REVIEWS
   GROWTH
   GROWTH_MARKETING
+  GROWTH_MARKETING_SPEND
   PARTNERS
   PARTNERS_DIRECTORY
   PARTNERS_UNAPPROVED
@@ -130,6 +150,20 @@ enum BookingMatchSource {
   CUSTOMER_SELECTED_PARTNER
 }
 
+enum ServicePublicationStatus {
+  DRAFT
+  PUBLISHED
+  HIDDEN
+  ARCHIVED
+}
+
+enum ServiceCatalogProvenance {
+  OPERATOR
+  SEED
+  SMOKE_TEST
+  MIGRATION
+}
+
 enum ProviderStatus {
   OFFLINE
   ONLINE_AVAILABLE
@@ -208,6 +242,35 @@ enum TaxPolicyStatus {
   ACTIVE
   INACTIVE
   ARCHIVED
+}
+
+enum TaxPolicyLifecycleStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  SCHEDULED
+  ACTIVE
+  SUPERSEDED
+  ARCHIVED
+  LEGACY_REVIEW
+}
+
+enum TaxPolicyProvenance {
+  OPERATOR
+  SEED
+  SMOKE_TEST
+  MIGRATION
+  LEGACY_UNKNOWN
+}
+
+enum TaxPolicyApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  ACTIVATED
+  FAILED
 }
 
 enum TaxRuleScope {
@@ -474,6 +537,12 @@ enum CompanyBankAccountStatus {
   DISABLED
 }
 
+enum CompanyBankAccountDataScope {
+  UNKNOWN
+  PRODUCTION
+  SYNTHETIC
+}
+
 enum CompanyBankTransactionType {
   INFLOW
   OUTFLOW
@@ -542,6 +611,17 @@ enum BookingOpsTaskStatus {
   BLOCKED
 }
 
+enum AdminUserProvenance {
+  PRODUCTION
+  FIXTURE
+}
+
+enum FinanceApproverAccessRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum ProviderReportSource {
   CUSTOMER
   PROVIDER
@@ -577,45 +657,89 @@ enum ProviderSanctionStatus {
 }
 
 model User {
-  id                        String                     @id @default(cuid())
-  supabaseUserId            String?                    @unique
-  phone                     String                     @unique
-  email                     String?
-  fullName                  String?
-  roles                     Role[]
-  createdAt                 DateTime                   @default(now())
-  updatedAt                 DateTime                   @updatedAt
-  customerProfile           CustomerProfile?
-  providerProfile           ProviderProfile?
-  notifications             Notification[]
-  pushDevices               PushDevice[]
-  chatMessages              ChatMessage[]
-  auditLogs                 AdminAuditLog[]            @relation("AdminActor")
-  bookingOpsTasks           BookingOpsTask[]           @relation("BookingOpsTaskActor")
-  appSessions               AppSession[]
-  appUsageEvents            AppUsageEvent[]
-  appUsageDailyAggregates   AppUsageDailyAggregate[]
-  fileAssets                FileAsset[]                @relation("FileAssetOwner")
-  reviewedFileAssets        FileAsset[]                @relation("FileAssetReviewer")
-  taxPolicyVersions         TaxPolicyVersion[]         @relation("TaxPolicyAuthor")
-  platformFeePolicies       PlatformFeePolicyVersion[] @relation("PlatformFeePolicyAuthor")
-  paymentFeePolicies        PaymentFeePolicyVersion[]  @relation("PaymentFeePolicyAuthor")
-  providerVerificationLogs  ProviderVerificationLog[]  @relation("ProviderVerificationLogActor")
-  providerReportsCreated    ProviderReport[]           @relation("ProviderReportCreator")
-  providerReportsAssigned   ProviderReport[]           @relation("ProviderReportAssignee")
-  providerSanctionsIssued   ProviderSanction[]         @relation("ProviderSanctionIssuer")
-  providerSanctionsLifted   ProviderSanction[]         @relation("ProviderSanctionLifter")
-  operationalPolicyUpdates  OperationalPolicySetting[] @relation("OperationalPolicySettingUpdater")
-  accountingJournalBatches  AccountingJournalBatch[]   @relation("AccountingJournalBatchCreator")
-  bankReconciliationMatches BankReconciliationMatch[]  @relation("BankReconciliationMatcher")
-  adminOperatorPermission   AdminOperatorPermission?
-  adminOperatorCredential   AdminOperatorCredential?
+  id                               String                         @id @default(cuid())
+  supabaseUserId                   String?                        @unique
+  phone                            String                         @unique
+  email                            String?
+  fullName                         String?
+  roles                            Role[]
+  createdAt                        DateTime                       @default(now())
+  updatedAt                        DateTime                       @updatedAt
+  adminUserProvenance              AdminUserProvenance?
+  fixtureKind                      String?
+  fixtureRunId                     String?
+  fixtureExpiresAt                 DateTime?
+  customerProfile                  CustomerProfile?
+  providerProfile                  ProviderProfile?
+  notifications                    Notification[]
+  pushDevices                      PushDevice[]
+  chatMessages                     ChatMessage[]
+  auditLogs                        AdminAuditLog[]                @relation("AdminActor")
+  bookingOpsTasks                  BookingOpsTask[]               @relation("BookingOpsTaskActor")
+  appSessions                      AppSession[]
+  appUsageEvents                   AppUsageEvent[]
+  appUsageDailyAggregates          AppUsageDailyAggregate[]
+  fileAssets                       FileAsset[]                    @relation("FileAssetOwner")
+  reviewedFileAssets               FileAsset[]                    @relation("FileAssetReviewer")
+  taxPolicyVersions                TaxPolicyVersion[]             @relation("TaxPolicyAuthor")
+  platformFeePolicies              PlatformFeePolicyVersion[]     @relation("PlatformFeePolicyAuthor")
+  paymentFeePolicies               PaymentFeePolicyVersion[]      @relation("PaymentFeePolicyAuthor")
+  providerVerificationLogs         ProviderVerificationLog[]      @relation("ProviderVerificationLogActor")
+  providerReportsCreated           ProviderReport[]               @relation("ProviderReportCreator")
+  providerReportsAssigned          ProviderReport[]               @relation("ProviderReportAssignee")
+  providerSanctionsIssued          ProviderSanction[]             @relation("ProviderSanctionIssuer")
+  providerSanctionsLifted          ProviderSanction[]             @relation("ProviderSanctionLifter")
+  operationalPolicyUpdates         OperationalPolicySetting[]     @relation("OperationalPolicySettingUpdater")
+  accountingJournalBatches         AccountingJournalBatch[]       @relation("AccountingJournalBatchCreator")
+  bankReconciliationMatches        BankReconciliationMatch[]      @relation("BankReconciliationMatcher")
+  adminOperatorPermission          AdminOperatorPermission?
+  adminOperatorCredential          AdminOperatorCredential?
+  adminOperatorInvitationsTargeted AdminOperatorInvitation[]      @relation("AdminOperatorInvitationTarget")
+  adminOperatorInvitationsCreated  AdminOperatorInvitation[]      @relation("AdminOperatorInvitationCreator")
+  adminWebSessions                 AdminWebSession[]              @relation("AdminWebSessionUser")
+  adminWebSessionsRevoked          AdminWebSession[]              @relation("AdminWebSessionRevoker")
+  financeApproverRequestsTargeted  FinanceApproverAccessRequest[] @relation("FinanceApproverRequestTarget")
+  financeApproverRequestsCreated   FinanceApproverAccessRequest[] @relation("FinanceApproverRequestMaker")
+  financeApproverRequestsDecided   FinanceApproverAccessRequest[] @relation("FinanceApproverRequestChecker")
+  taxPolicyApprovalRequestsCreated TaxPolicyApprovalRequest[]     @relation("TaxPolicyApprovalRequestMaker")
+  taxPolicyApprovalRequestsDecided TaxPolicyApprovalRequest[]     @relation("TaxPolicyApprovalRequestChecker")
+  taxPoliciesApproved              TaxPolicyVersion[]             @relation("TaxPolicyApprover")
+}
+
+model FinanceApproverAccessRequest {
+  id                      String                             @id @default(cuid())
+  targetUserId            String
+  requestedEnabled        Boolean
+  previousEnabled         Boolean
+  previousRoles           Role[]
+  requestedByAdminId      String
+  operatorReason          String
+  requestedAt             DateTime                           @default(now())
+  expectedTargetUpdatedAt DateTime
+  status                  FinanceApproverAccessRequestStatus @default(PENDING)
+  decidedByAdminId        String?
+  decisionReason          String?
+  decidedAt               DateTime?
+  executedAt              DateTime?
+  idempotencyKey          String                             @unique
+  pendingKey              String?                            @unique
+  createdAt               DateTime                           @default(now())
+  updatedAt               DateTime                           @updatedAt
+  targetUser              User                               @relation("FinanceApproverRequestTarget", fields: [targetUserId], references: [id], onDelete: Restrict)
+  requestedByAdmin        User                               @relation("FinanceApproverRequestMaker", fields: [requestedByAdminId], references: [id], onDelete: Restrict)
+  decidedByAdmin          User?                              @relation("FinanceApproverRequestChecker", fields: [decidedByAdminId], references: [id], onDelete: Restrict)
+
+  @@index([status, requestedAt])
+  @@index([targetUserId, requestedAt])
+  @@index([requestedByAdminId, requestedAt])
+  @@index([decidedByAdminId, decidedAt])
 }
 
 model AdminOperatorPermission {
   id         String                            @id @default(cuid())
   userId     String                            @unique
   categories AdminOperatorPermissionCategory[]
+  version    Int                               @default(1)
   createdAt  DateTime                          @default(now())
   updatedAt  DateTime                          @updatedAt
   user       User                              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -624,17 +748,73 @@ model AdminOperatorPermission {
 }
 
 model AdminOperatorCredential {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  email             String   @unique
-  passwordHash      String
-  passwordSalt      String
-  passwordUpdatedAt DateTime @default(now())
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  email                 String    @unique
+  passwordHash          String
+  passwordSalt          String
+  passwordUpdatedAt     DateTime  @default(now())
+  setupCompletedAt      DateTime?
+  failedLoginCount      Int       @default(0)
+  lockedUntil           DateTime?
+  lastLoginAt           DateTime?
+  lastFailedLoginAt     DateTime?
+  disabledAt            DateTime?
+  disabledReason        String?
+  mfaState              String    @default("NOT_CONFIGURED")
+  mfaSecretEncrypted    String?
+  mfaRecoveryCodeHashes String[]  @default([])
+  mfaEnrolledAt         DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([updatedAt])
+  @@index([disabledAt])
+  @@index([lockedUntil])
+}
+
+model AdminOperatorInvitation {
+  id                   String                            @id @default(cuid())
+  normalizedEmail      String
+  pendingKey           String?                           @unique
+  fullName             String?
+  targetUserId         String?
+  permissionCategories AdminOperatorPermissionCategory[]
+  masterAdminEnabled   Boolean                           @default(false)
+  tokenHash            String                            @unique
+  expiresAt            DateTime
+  acceptedAt           DateTime?
+  revokedAt            DateTime?
+  invitedByAdminId     String
+  reason               String
+  createdAt            DateTime                          @default(now())
+  updatedAt            DateTime                          @updatedAt
+  targetUser           User?                             @relation("AdminOperatorInvitationTarget", fields: [targetUserId], references: [id], onDelete: Restrict)
+  invitedByAdmin       User                              @relation("AdminOperatorInvitationCreator", fields: [invitedByAdminId], references: [id], onDelete: Restrict)
+
+  @@index([normalizedEmail, createdAt])
+  @@index([expiresAt])
+  @@index([targetUserId, createdAt])
+}
+
+model AdminWebSession {
+  id                String    @id
+  userId            String
+  issuedAt          DateTime  @default(now())
+  expiresAt         DateTime
+  lastSeenAt        DateTime  @default(now())
+  revokedAt         DateTime?
+  revokedByAdminId  String?
+  revocationReason  String?
+  platformSummary   String?
+  reauthenticatedAt DateTime?
+  mfaVerifiedAt     DateTime?
+  user              User      @relation("AdminWebSessionUser", fields: [userId], references: [id], onDelete: Cascade)
+  revokedByAdmin    User?     @relation("AdminWebSessionRevoker", fields: [revokedByAdminId], references: [id], onDelete: Restrict)
+
+  @@index([userId, expiresAt])
+  @@index([revokedAt, expiresAt])
 }
 
 model AppSession {
@@ -682,20 +862,20 @@ model AppUsageEvent {
 }
 
 model AppUsageDailyAggregate {
-  id                       String   @id @default(cuid())
+  id                       String         @id @default(cuid())
   userId                   String
   role                     Role
   origin                   AppUsageOrigin @default(UNKNOWN)
-  day                      DateTime @db.Date
-  totalEventCount          Int      @default(0)
-  appOpenCount             Int      @default(0)
-  sessionStartCount        Int      @default(0)
-  providerProfileViewCount Int      @default(0)
+  day                      DateTime       @db.Date
+  totalEventCount          Int            @default(0)
+  appOpenCount             Int            @default(0)
+  sessionStartCount        Int            @default(0)
+  providerProfileViewCount Int            @default(0)
   firstOccurredAt          DateTime
   lastOccurredAt           DateTime
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
-  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+  user                     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, role, day, origin])
   @@index([role, origin, day])
@@ -1081,22 +1261,51 @@ model ProviderVerification {
 }
 
 model MassageService {
-  id               String              @id @default(cuid())
-  serviceGroupKey  String?
-  name             String
-  nameTranslations Json?
-  description      String?
-  durationMin      Int
-  basePrice        Int
-  priceStep        Int                 @default(100000)
-  displayOrder     Int                 @default(0)
-  active           Boolean             @default(true)
-  providers        ProviderService[]
-  bookings         BookingService[]
-  payoutRules      ServicePayoutRule[]
+  id                String                   @id @default(cuid())
+  serviceGroupKey   String?
+  name              String
+  nameTranslations  Json?
+  description       String?
+  durationMin       Int
+  basePrice         Int
+  priceStep         Int                      @default(100000)
+  displayOrder      Int                      @default(0)
+  active            Boolean                  @default(true)
+  publicationStatus ServicePublicationStatus @default(DRAFT)
+  provenance        ServiceCatalogProvenance @default(OPERATOR)
+  provenanceRunId   String?
+  catalogVersion    Int                      @default(1)
+  lastMutationKey   String?
+  lastMutationHash  String?
+  publishedAt       DateTime?
+  publishedById     String?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  providers         ProviderService[]
+  bookings          BookingService[]
+  payoutRules       ServicePayoutRule[]
 
+  @@unique([serviceGroupKey, durationMin])
   @@index([serviceGroupKey, durationMin])
   @@index([active, displayOrder])
+  @@index([publicationStatus, active, displayOrder])
+  @@index([provenance, provenanceRunId])
+  @@index([lastMutationKey])
+}
+
+model ServiceCatalogDraft {
+  id               String   @id @default(cuid())
+  serviceGroupKey  String   @unique
+  version          Int      @default(1)
+  payload          Json
+  lastMutationKey  String?  @unique
+  lastMutationHash String?
+  createdById      String
+  updatedById      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([updatedAt])
 }
 
 model ProviderService {
@@ -1125,7 +1334,7 @@ model ServicePayoutRule {
   updatedAt            DateTime       @updatedAt
   service              MassageService @relation(fields: [serviceId], references: [id])
 
-  @@unique([serviceId, customerPrice])
+  @@index([serviceId, customerPrice, createdAt])
   @@index([serviceId, active])
 }
 
@@ -1220,8 +1429,8 @@ model ReferralCode {
   metadata               Json?
   createdAt              DateTime              @default(now())
   updatedAt              DateTime              @updatedAt
-  ownerCustomerProfile   CustomerProfile?      @relation("CustomerReferralCodeOwner", fields: [ownerCustomerProfileId], references: [id], onDelete: Cascade)
-  ownerProviderProfile   ProviderProfile?      @relation("ProviderReferralCodeOwner", fields: [ownerProviderProfileId], references: [id], onDelete: Cascade)
+  ownerCustomerProfile   CustomerProfile?      @relation("CustomerReferralCodeOwner", fields: [ownerCustomerProfileId], references: [id], onDelete: SetNull)
+  ownerProviderProfile   ProviderProfile?      @relation("ProviderReferralCodeOwner", fields: [ownerProviderProfileId], references: [id], onDelete: SetNull)
   attributions           ReferralAttribution[]
 
   @@unique([audience, ownerCustomerProfileId])
@@ -1247,10 +1456,10 @@ model ReferralAttribution {
   createdAt                 DateTime                  @default(now())
   updatedAt                 DateTime                  @updatedAt
   referralCode              ReferralCode              @relation(fields: [referralCodeId], references: [id], onDelete: Restrict)
-  referrerCustomerProfile   CustomerProfile?          @relation("CustomerReferralReferrer", fields: [referrerCustomerProfileId], references: [id], onDelete: Cascade)
-  referrerProviderProfile   ProviderProfile?          @relation("ProviderReferralReferrer", fields: [referrerProviderProfileId], references: [id], onDelete: Cascade)
-  referredCustomerProfile   CustomerProfile?          @relation("CustomerReferralReferred", fields: [referredCustomerProfileId], references: [id], onDelete: Cascade)
-  referredProviderProfile   ProviderProfile?          @relation("ProviderReferralReferred", fields: [referredProviderProfileId], references: [id], onDelete: Cascade)
+  referrerCustomerProfile   CustomerProfile?          @relation("CustomerReferralReferrer", fields: [referrerCustomerProfileId], references: [id], onDelete: SetNull)
+  referrerProviderProfile   ProviderProfile?          @relation("ProviderReferralReferrer", fields: [referrerProviderProfileId], references: [id], onDelete: SetNull)
+  referredCustomerProfile   CustomerProfile?          @relation("CustomerReferralReferred", fields: [referredCustomerProfileId], references: [id], onDelete: SetNull)
+  referredProviderProfile   ProviderProfile?          @relation("ProviderReferralReferred", fields: [referredProviderProfileId], references: [id], onDelete: SetNull)
   rewards                   ReferralReward[]
 
   @@unique([audience, referredCustomerProfileId])
@@ -1283,8 +1492,8 @@ model ReferralReward {
   updatedAt                    DateTime                    @updatedAt
   attribution                  ReferralAttribution         @relation(fields: [attributionId], references: [id], onDelete: Restrict)
   qualifyingBooking            Booking?                    @relation(fields: [qualifyingBookingId], references: [id], onDelete: SetNull)
-  walletOwnerCustomerProfile   CustomerProfile?            @relation("CustomerReferralWalletOwner", fields: [walletOwnerCustomerProfileId], references: [id], onDelete: Cascade)
-  walletOwnerProviderProfile   ProviderProfile?            @relation("ProviderReferralWalletOwner", fields: [walletOwnerProviderProfileId], references: [id], onDelete: Cascade)
+  walletOwnerCustomerProfile   CustomerProfile?            @relation("CustomerReferralWalletOwner", fields: [walletOwnerCustomerProfileId], references: [id], onDelete: SetNull)
+  walletOwnerProviderProfile   ProviderProfile?            @relation("ProviderReferralWalletOwner", fields: [walletOwnerProviderProfileId], references: [id], onDelete: SetNull)
   customerWalletLedgerEntries  CustomerWalletLedgerEntry[]
 
   @@index([status, createdAt])
@@ -1354,13 +1563,16 @@ model BookingOpsTask {
 }
 
 model BookingService {
-  id        String         @id @default(cuid())
-  bookingId String
-  serviceId String
-  quantity  Int            @default(1)
-  price     Int
-  booking   Booking        @relation(fields: [bookingId], references: [id])
-  service   MassageService @relation(fields: [serviceId], references: [id])
+  id                           String         @id @default(cuid())
+  bookingId                    String
+  serviceId                    String
+  quantity                     Int            @default(1)
+  price                        Int
+  payoutRuleIdSnapshot         String?
+  providerPayoutAmountSnapshot Int?
+  payoutRuleSnapshot           Json?
+  booking                      Booking        @relation(fields: [bookingId], references: [id])
+  service                      MassageService @relation(fields: [serviceId], references: [id])
 
   @@index([bookingId])
   @@index([serviceId])
@@ -1569,6 +1781,8 @@ model ProviderPayoutBatch {
   withholdingLogs           WithholdingLog[]
   walletLedgerEntries       ProviderWalletLedgerEntry[]
   bankReconciliationMatches BankReconciliationMatch[]
+
+  @@index([providerProfileId, createdAt])
 }
 
 model ProviderWalletLedgerEntry {
@@ -1614,6 +1828,7 @@ model ProviderWalletBalanceSummary {
 model ProviderWalletWithdrawalRequest {
   id                        String                                @id @default(cuid())
   providerProfileId         String
+  idempotencyKey            String?
   bankAccountId             String?
   amount                    Int
   currency                  String                                @default("VND")
@@ -1632,6 +1847,7 @@ model ProviderWalletWithdrawalRequest {
   bankAccount               ProviderBankAccount?                  @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   bankReconciliationMatches BankReconciliationMatch[]
 
+  @@unique([providerProfileId, idempotencyKey])
   @@index([providerProfileId, status, createdAt])
   @@index([status, createdAt])
   @@index([bankAccountId])
@@ -1763,18 +1979,71 @@ model TaxPolicyVersion {
   id                         String                      @id @default(cuid())
   name                       String
   status                     TaxPolicyStatus             @default(DRAFT)
+  lifecycleStatus            TaxPolicyLifecycleStatus    @default(DRAFT)
+  provenance                 TaxPolicyProvenance         @default(OPERATOR)
+  jurisdiction               String                      @default("VN")
+  timezone                   String                      @default("Asia/Ho_Chi_Minh")
   effectiveFrom              DateTime
   effectiveTo                DateTime?
   notes                      String?
+  legalSourceTitle           String?
+  legalSourceUrl             String?
+  promulgatedDate            DateTime?
+  taxSubject                 String?
+  changeSummary              String?
+  supersedesPolicyVersionId  String?
+  revision                   Int                         @default(1)
+  payloadHash                String?
   createdById                String?
+  approvedByAdminId          String?
+  approvedAt                 DateTime?
+  activatedAt                DateTime?
+  supersededAt               DateTime?
+  archivedAt                 DateTime?
   createdAt                  DateTime                    @default(now())
   updatedAt                  DateTime                    @updatedAt
   createdBy                  User?                       @relation("TaxPolicyAuthor", fields: [createdById], references: [id])
+  approvedBy                 User?                       @relation("TaxPolicyApprover", fields: [approvedByAdminId], references: [id], onDelete: Restrict)
+  supersedesPolicyVersion    TaxPolicyVersion?           @relation("TaxPolicySupersession", fields: [supersedesPolicyVersionId], references: [id], onDelete: Restrict)
+  supersededByPolicyVersions TaxPolicyVersion[]          @relation("TaxPolicySupersession")
   rules                      TaxRule[]
   taxLogs                    ProviderTaxLog[]
   bookingSettlementSnapshots BookingSettlementSnapshot[]
+  approvalRequests           TaxPolicyApprovalRequest[]
 
   @@index([status, effectiveFrom])
+  @@index([lifecycleStatus, effectiveFrom])
+  @@index([provenance, createdAt])
+}
+
+model TaxPolicyApprovalRequest {
+  id                 String                  @id @default(cuid())
+  policyVersionId    String
+  requestedByAdminId String
+  operatorReason     String
+  payloadHash        String
+  status             TaxPolicyApprovalStatus @default(PENDING)
+  requestedAt        DateTime                @default(now())
+  decidedByAdminId   String?
+  decisionReason     String?
+  decidedAt          DateTime?
+  scheduledFor       DateTime?
+  activationJobId    String?
+  activatedAt        DateTime?
+  failureCode        String?
+  idempotencyKey     String                  @unique
+  pendingKey         String?                 @unique
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  policyVersion      TaxPolicyVersion        @relation(fields: [policyVersionId], references: [id], onDelete: Restrict)
+  requestedByAdmin   User                    @relation("TaxPolicyApprovalRequestMaker", fields: [requestedByAdminId], references: [id], onDelete: Restrict)
+  decidedByAdmin     User?                   @relation("TaxPolicyApprovalRequestChecker", fields: [decidedByAdminId], references: [id], onDelete: Restrict)
+
+  @@index([status, requestedAt])
+  @@index([policyVersionId, requestedAt])
+  @@index([requestedByAdminId, requestedAt])
+  @@index([decidedByAdminId, decidedAt])
+  @@index([scheduledFor, status])
 }
 
 model TaxRule {
@@ -2159,19 +2428,21 @@ model BookingPaymentClearingEntry {
 }
 
 model CompanyBankAccount {
-  id                  String                   @id @default(cuid())
+  id                  String                      @id @default(cuid())
   name                String
   bankName            String
   accountNumberMasked String?
   accountNumberLast4  String?
-  currency            String                   @default("VND")
-  status              CompanyBankAccountStatus @default(ACTIVE)
+  currency            String                      @default("VND")
+  status              CompanyBankAccountStatus    @default(INACTIVE)
+  dataScope           CompanyBankAccountDataScope @default(UNKNOWN)
   metadata            Json?
-  createdAt           DateTime                 @default(now())
-  updatedAt           DateTime                 @updatedAt
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
   transactions        CompanyBankTransaction[]
 
   @@index([status, currency])
+  @@index([dataScope, status, currency])
 }
 
 model CompanyBankTransaction {
@@ -2243,6 +2514,7 @@ model WithholdingLog {
   payoutBatch      ProviderPayoutBatch? @relation(fields: [payoutBatchId], references: [id])
 
   @@index([payoutBatchId, status])
+  @@index([providerTaxLogId])
 }
 
 model Notification {
@@ -2303,6 +2575,13 @@ model NotificationDelivery {
   @@index([status, attemptedAt])
 }
 
+enum NotificationTranslationStatus {
+  SOURCE_COPIED
+  NEEDS_TRANSLATION
+  NEEDS_REVIEW
+  READY
+}
+
 model NotificationTemplate {
   id           String                            @id @default(cuid())
   key          String                            @unique
@@ -2320,48 +2599,82 @@ model NotificationTemplate {
 }
 
 model NotificationTemplateTranslation {
-  id         String               @id @default(cuid())
-  templateId String
-  locale     String
-  title      String
-  body       String
-  createdAt  DateTime             @default(now())
-  updatedAt  DateTime             @updatedAt
-  template   NotificationTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  id                String                        @id @default(cuid())
+  templateId        String
+  locale            String
+  title             String
+  body              String
+  status            NotificationTranslationStatus @default(NEEDS_TRANSLATION)
+  reviewedAt        DateTime?
+  reviewedByAdminId String?
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+  template          NotificationTemplate          @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@unique([templateId, locale])
   @@index([locale])
+  @@index([status])
 }
 
 model AdminPushCampaign {
-  id                String                       @id @default(cuid())
-  targetRole        Role
-  targetUserId      String?
-  locale            String?
-  title             String
-  body              String
-  status            String                       @default("SENT")
-  recipientCount    Int                          @default(0)
-  notificationCount Int                          @default(0)
-  createdById       String
-  metadata          Json?
-  createdAt         DateTime                     @default(now())
-  sentAt            DateTime?
-  recipients        AdminPushCampaignRecipient[]
+  id                   String                       @id @default(cuid())
+  targetRole           Role
+  targetUserId         String?
+  locale               String?
+  title                String
+  body                 String
+  status               AdminPushCampaignStatus      @default(PREVIEWED)
+  targetSegment        String                       @default("all")
+  appDestination       String                       @default("notificationCenter")
+  operatorReason       String?
+  copyHash             String?
+  criteriaHash         String?
+  recipientFingerprint String?
+  expiresAt            DateTime?
+  consumedAt           DateTime?
+  idempotencyKey       String?                      @unique
+  recipientCount       Int                          @default(0)
+  eligibleDeviceCount  Int                          @default(0)
+  excludedUserCount    Int                          @default(0)
+  excludedDeviceCount  Int                          @default(0)
+  notificationCount    Int                          @default(0)
+  deliveredDeviceCount Int                          @default(0)
+  failedDeviceCount    Int                          @default(0)
+  pendingDeviceCount   Int                          @default(0)
+  skippedDeviceCount   Int                          @default(0)
+  createdById          String
+  metadata             Json?
+  createdAt            DateTime                     @default(now())
+  sentAt               DateTime?
+  confirmedAt          DateTime?
+  queuedAt             DateTime?
+  processingAt         DateTime?
+  completedAt          DateTime?
+  failedAt             DateTime?
+  queueJobId           String?
+  recipients           AdminPushCampaignRecipient[]
 
+  @@index([status, createdAt])
   @@index([targetRole, createdAt])
   @@index([targetUserId])
   @@index([createdById, createdAt])
 }
 
 model AdminPushCampaignRecipient {
-  id             String            @id @default(cuid())
-  campaignId     String
-  userId         String
-  notificationId String?
-  status         String            @default("QUEUED")
-  createdAt      DateTime          @default(now())
-  campaign       AdminPushCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  id                   String                           @id @default(cuid())
+  campaignId           String
+  userId               String
+  notificationId       String?
+  status               AdminPushCampaignRecipientStatus @default(SNAPSHOTTED)
+  deviceIds            Json?
+  eligibleDeviceCount  Int                              @default(0)
+  deliveredDeviceCount Int                              @default(0)
+  failedDeviceCount    Int                              @default(0)
+  skippedDeviceCount   Int                              @default(0)
+  lastErrorCode        String?
+  processedAt          DateTime?
+  createdAt            DateTime                         @default(now())
+  campaign             AdminPushCampaign                @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@unique([campaignId, userId])
   @@index([userId, createdAt])
@@ -2369,29 +2682,29 @@ model AdminPushCampaignRecipient {
 }
 
 model FileAsset {
-  id                     String                @id @default(cuid())
-  key                    String                @unique
-  url                    String?
-  contentType            String
-  originalName           String?
-  purpose                FilePurpose           @default(PROVIDER_VERIFICATION)
-  visibility             FileVisibility
-  uploadStatus           FileUploadStatus      @default(PENDING)
-  reviewStatus           FileReviewStatus      @default(PENDING_REVIEW)
-  reviewedAt             DateTime?
-  reviewReason           String?
-  reviewedById           String?
-  reviewedBy             User?                 @relation("FileAssetReviewer", fields: [reviewedById], references: [id])
-  uploadedAt             DateTime?
-  sizeBytes              Int?
-  sortOrder              Int                   @default(0)
-  ownerUserId            String?
-  owner                  User?                 @relation("FileAssetOwner", fields: [ownerUserId], references: [id])
-  providerVerificationId String?
-  providerVerification   ProviderVerification? @relation(fields: [providerVerificationId], references: [id])
-  providerDocument       ProviderDocument?
+  id                             String                          @id @default(cuid())
+  key                            String                          @unique
+  url                            String?
+  contentType                    String
+  originalName                   String?
+  purpose                        FilePurpose                     @default(PROVIDER_VERIFICATION)
+  visibility                     FileVisibility
+  uploadStatus                   FileUploadStatus                @default(PENDING)
+  reviewStatus                   FileReviewStatus                @default(PENDING_REVIEW)
+  reviewedAt                     DateTime?
+  reviewReason                   String?
+  reviewedById                   String?
+  reviewedBy                     User?                           @relation("FileAssetReviewer", fields: [reviewedById], references: [id])
+  uploadedAt                     DateTime?
+  sizeBytes                      Int?
+  sortOrder                      Int                             @default(0)
+  ownerUserId                    String?
+  owner                          User?                           @relation("FileAssetOwner", fields: [ownerUserId], references: [id])
+  providerVerificationId         String?
+  providerVerification           ProviderVerification?           @relation(fields: [providerVerificationId], references: [id])
+  providerDocument               ProviderDocument?
   manualWalletAdjustmentRequests ManualWalletAdjustmentRequest[] @relation("ManualWalletAdjustmentEvidence")
-  createdAt              DateTime              @default(now())
+  createdAt                      DateTime                        @default(now())
 
   @@index([ownerUserId, purpose, createdAt])
   @@index([ownerUserId, purpose, sortOrder, createdAt])
@@ -2444,15 +2757,77 @@ model Refund {
 }
 
 model AdminAuditLog {
-  id        String   @id @default(cuid())
-  actorId   String
-  action    String
-  target    String
-  metadata  Json?
-  createdAt DateTime @default(now())
-  actor     User     @relation("AdminActor", fields: [actorId], references: [id])
+  id                  String               @id @default(cuid())
+  schemaVersion       Int                  @default(2)
+  eventId             String?              @unique
+  occurredAt          DateTime?
+  recordedAt          DateTime?
+  timelineAt          DateTime             @default(dbgenerated())
+  source              String?
+  correlationId       String?
+  requestId           String?
+  actorId             String?
+  actorType           AdminAuditActorType? @default(HUMAN)
+  actorKey            String?
+  actorLabelSnapshot  String?
+  action              String
+  target              String
+  objectType          String?
+  objectId            String?
+  objectLabelSnapshot String?
+  area                AdminAuditArea       @default(UNKNOWN)
+  severity            AdminAuditSeverity   @default(INFO)
+  outcome             AdminAuditOutcome    @default(UNKNOWN)
+  tags                String[]             @default([])
+  metadata            Json?
+  payloadHash         String?
+  correctionOfEventId String?
+  createdAt           DateTime             @default(now())
+  actor               User?                @relation("AdminActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([action, createdAt])
+  @@index([createdAt, id])
+  @@index([occurredAt, id])
+  @@index([timelineAt, id])
+  @@index([actorType, createdAt])
+  @@index([area, severity, createdAt])
+  @@index([objectType, objectId, createdAt])
+}
+
+enum AdminAuditActorType {
+  HUMAN
+  SYSTEM
+  SERVICE
+  UNKNOWN
+}
+
+enum AdminAuditArea {
+  OPERATOR
+  POLICY
+  MONEY
+  BOOKING
+  SECURITY
+  SYSTEM
+  UNKNOWN
+}
+
+enum AdminAuditSeverity {
+  INFO
+  NOTICE
+  REVIEW
+  CRITICAL
+}
+
+enum AdminAuditOutcome {
+  SUCCEEDED
+  FAILED
+  DENIED
+  SKIPPED
+  OPENED
+  ACKNOWLEDGED
+  RESOLVED
+  RECORDED
+  UNKNOWN
 }
 
 model PublicSitePage {
@@ -2486,8 +2861,8 @@ model PublicSitePage {
 
 model PublicSitePageRevision {
   id              String                           @id @default(cuid())
-  pageId         String
-  revisionNumber Int
+  pageId          String
+  revisionNumber  Int
   version         Int                              @default(1)
   state           PublicSiteRevisionState          @default(DRAFT)
   readinessState  PublicSiteRevisionReadinessState @default(UNKNOWN)
@@ -2516,11 +2891,11 @@ model PublicSiteRevisionSection {
   revisionId String
   key        String
   kind       PublicSiteSectionKind
-  content    Json                  @default("{}")
-  sortOrder  Int                   @default(0)
-  enabled    Boolean               @default(true)
-  createdAt  DateTime              @default(now())
-  updatedAt  DateTime              @updatedAt
+  content    Json                   @default("{}")
+  sortOrder  Int                    @default(0)
+  enabled    Boolean                @default(true)
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
   revision   PublicSitePageRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
 
   @@unique([revisionId, key])

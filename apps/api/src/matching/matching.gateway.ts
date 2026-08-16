@@ -1,3 +1,4 @@
+import { Optional } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -6,18 +7,24 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Role } from '@prisma/client';
+import { AdminOperatorPermissionCategory, BookingStatus, Role } from '@prisma/client';
 import { Server, Socket } from 'socket.io';
+import { adminOperatorHasRequiredCategory } from '../admin/admin-operator-category.guard';
+import type { AuthenticatedUser } from '../auth/auth.types';
 import { SocketAuthService } from '../auth/socket-auth.service';
+import { assertProviderCanViewOpenBookingMarketplace } from '../bookings/bookings.provider-readiness';
 import { SOCKET_ROOMS } from '../common/domain';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisStateService } from '../redis/redis-state.service';
 import { corsOriginFromEnv } from '../security/cors-origin';
+import { socketEventAllowed } from '../security/socket-rate-limit';
 
 @WebSocketGateway({ cors: { origin: corsOriginFromEnv(), credentials: true } })
 export class MatchingGateway implements OnGatewayConnection {
   constructor(
     private readonly socketAuth: SocketAuthService,
     private readonly prisma: PrismaService,
+    @Optional() private readonly redisState?: RedisStateService,
   ) {}
 
   @WebSocketServer()
@@ -27,11 +34,19 @@ export class MatchingGateway implements OnGatewayConnection {
     try {
       const user = await this.socketAuth.authenticate(client);
       await client.join(SOCKET_ROOMS.user(user.id));
-      if (user.roles.includes(Role.ADMIN)) {
+      if (
+        user.roles.includes(Role.ADMIN) &&
+        adminOperatorHasRequiredCategory(
+          user.adminPermissionCategories ?? [],
+          AdminOperatorPermissionCategory.BOOKINGS_REALTIME,
+        )
+      ) {
         await client.join(SOCKET_ROOMS.adminBookings());
       }
       if (user.roles.includes(Role.PROVIDER)) {
-        await client.join(SOCKET_ROOMS.providers());
+        if (await this.canReceiveProviderSignals(user.id)) {
+          await client.join(SOCKET_ROOMS.providers());
+        }
       }
     } catch {
       client.disconnect(true);
@@ -40,9 +55,19 @@ export class MatchingGateway implements OnGatewayConnection {
 
   @SubscribeMessage('booking.join_room')
   async joinBookingRoom(@ConnectedSocket() client: Socket, @MessageBody() payload: { bookingId: string }) {
-    const user = this.socketAuth.requireUser(client);
-    const allowed = await this.canAccessBookingRoom(payload.bookingId, user.id, user.roles);
+    const user = await this.socketAuth.requireCurrentUser(client);
+    if (!(await socketEventAllowed(this.redisState, user.id, 'booking.join_room', 60))) {
+      return { ok: false, error: 'BOOKING_RATE_LIMITED' };
+    }
+    const allowed = await this.canAccessBookingRoom(payload.bookingId, user);
     if (!allowed) {
+      if (user.roles.includes(Role.ADMIN)) {
+        await this.socketAuth.recordAdminAuthorizationDenial(
+          user,
+          `booking:${payload.bookingId}`,
+          'BOOKING_ROOM_FORBIDDEN',
+        );
+      }
       return { ok: false, error: 'BOOKING_ROOM_FORBIDDEN' };
     }
 
@@ -50,84 +75,146 @@ export class MatchingGateway implements OnGatewayConnection {
     return { ok: true };
   }
 
-  emitProviderJoined(bookingId: string, payload: unknown) {
-    this.emitBookingMonitorEvent(bookingId, 'provider.joined', payload);
+  async emitProviderJoined(bookingId: string, payload: unknown) {
+    await this.emitBookingMonitorEvent(bookingId, 'provider.joined', payload);
   }
 
-  emitProviderAccepted(bookingId: string, payload: unknown) {
-    this.emitBookingMonitorEvent(bookingId, 'provider.accepted', payload);
+  async emitProviderAccepted(bookingId: string, payload: unknown) {
+    await this.emitBookingMonitorEvent(bookingId, 'provider.accepted', payload);
   }
 
-  emitProviderRejected(bookingId: string, payload: unknown) {
-    this.emitBookingMonitorEvent(bookingId, 'provider.rejected', payload);
+  async emitProviderRejected(bookingId: string, payload: unknown) {
+    await this.emitBookingMonitorEvent(bookingId, 'provider.rejected', payload);
   }
 
-  emitProviderArrived(bookingId: string, payload: unknown) {
-    this.emitBookingMonitorEvent(bookingId, 'provider.arrived', payload);
+  async emitProviderArrived(bookingId: string, payload: unknown) {
+    await this.emitBookingMonitorEvent(bookingId, 'provider.arrived', payload);
   }
 
-  emitBookingOpened(bookingId: string, payload: unknown) {
-    this.emitBookingMonitorEvent(bookingId, 'booking.opened', payload);
-    this.server
-      .to(SOCKET_ROOMS.providers())
-      .emit('booking.opened', providerBookingSignal(bookingId, 'booking.opened', 'OPEN_MATCHING'));
+  async emitBookingOpened(bookingId: string, payload: unknown) {
+    await this.emitBookingMonitorEvent(bookingId, 'booking.opened', payload);
+    await this.emitProviderSignal(
+      'booking.opened',
+      providerBookingSignal(bookingId, 'booking.opened', 'OPEN_MATCHING'),
+    );
   }
 
-  emitDirectBookingRequested(userId: string, bookingId: string, payload: unknown) {
+  async emitDirectBookingRequested(userId: string, bookingId: string, payload: unknown) {
     this.server
       .to(SOCKET_ROOMS.user(userId))
       .emit('booking.opened', providerBookingSignal(bookingId, 'booking.opened', 'OPEN_MATCHING'));
-    this.emitBookingMonitorEvent(bookingId, 'booking.opened', payload);
+    await this.emitBookingMonitorEvent(bookingId, 'booking.opened', payload);
   }
 
-  emitBackupBookingAvailable(userIds: string[], bookingId: string, payload: unknown) {
+  async emitBackupBookingAvailable(userIds: string[], bookingId: string, payload: unknown) {
     const signal = providerBookingSignal(bookingId, 'booking.opened', 'OPEN_MATCHING');
     for (const userId of userIds) {
       this.server.to(SOCKET_ROOMS.user(userId)).emit('booking.opened', signal);
     }
-    this.emitBookingMonitorEvent(bookingId, 'booking.opened', payload);
+    await this.emitBookingMonitorEvent(bookingId, 'booking.opened', payload);
   }
 
-  emitBookingMatched(bookingId: string, payload: unknown) {
-    this.emitBookingMonitorEvent(bookingId, 'booking.matched', payload);
-    this.server
-      .to(SOCKET_ROOMS.providers())
-      .emit('booking.matched', providerBookingSignal(bookingId, 'booking.matched', 'MATCHED'));
+  async emitBookingMatched(bookingId: string, payload: unknown) {
+    await this.emitBookingMonitorEvent(bookingId, 'booking.matched', payload);
+    await this.emitProviderSignal(
+      'booking.matched',
+      providerBookingSignal(bookingId, 'booking.matched', 'MATCHED'),
+    );
   }
 
-  emitBookingExpired(bookingId: string, payload: unknown) {
-    this.emitBookingMonitorEvent(bookingId, 'booking.expired', payload);
-    this.server
-      .to(SOCKET_ROOMS.providers())
-      .emit('booking.expired', providerBookingSignal(bookingId, 'booking.expired', 'EXPIRED'));
+  async emitBookingExpired(bookingId: string, payload: unknown) {
+    await this.emitBookingMonitorEvent(bookingId, 'booking.expired', payload);
+    await this.emitProviderSignal(
+      'booking.expired',
+      providerBookingSignal(bookingId, 'booking.expired', 'EXPIRED'),
+    );
   }
 
-  emitServiceCompleted(bookingId: string, payload: unknown) {
-    this.emitBookingMonitorEvent(bookingId, 'service.completed', payload);
+  async emitServiceCompleted(bookingId: string, payload: unknown) {
+    await this.emitBookingMonitorEvent(bookingId, 'service.completed', payload);
   }
 
-  emitServiceStarted(bookingId: string, payload: unknown) {
-    this.emitBookingMonitorEvent(bookingId, 'service.started', payload);
+  async emitServiceStarted(bookingId: string, payload: unknown) {
+    await this.emitBookingMonitorEvent(bookingId, 'service.started', payload);
   }
 
-  private emitBookingMonitorEvent(bookingId: string, eventName: string, payload: unknown) {
-    this.server.to(SOCKET_ROOMS.booking(bookingId)).emit(eventName, payload);
+  private async emitBookingMonitorEvent(bookingId: string, eventName: string, payload: unknown) {
+    const room = SOCKET_ROOMS.booking(bookingId);
+    const clients = await this.server.in(room).fetchSockets();
+    for (const client of clients) {
+      const user = client.data.user as AuthenticatedUser | undefined;
+      if (!user || !(await this.canAccessBookingRoom(bookingId, user))) {
+        await client.leave(room);
+      }
+    }
+    this.server.to(room).emit(eventName, payload);
     this.server.to(SOCKET_ROOMS.adminBookings()).emit(eventName, payload);
   }
 
-  private async canAccessBookingRoom(bookingId: string, userId: string, roles: Role[]) {
-    if (roles.includes(Role.ADMIN)) {
-      return true;
+  private async emitProviderSignal(eventName: string, payload: unknown) {
+    const room = SOCKET_ROOMS.providers();
+    const clients = await this.server.in(room).fetchSockets();
+    const providerUserIds = Array.from(
+      new Set(
+        clients
+          .map((client) => client.data.user as AuthenticatedUser | undefined)
+          .filter((user): user is AuthenticatedUser => Boolean(user?.roles.includes(Role.PROVIDER)))
+          .map((user) => user.id),
+      ),
+    );
+    const eligibleUserIds = await this.marketplaceSignalProviderUserIds(providerUserIds);
+    for (const client of clients) {
+      const user = client.data.user as AuthenticatedUser | undefined;
+      if (!user || !eligibleUserIds.has(user.id)) {
+        await client.leave(room);
+      }
+    }
+    this.server.to(room).emit(eventName, payload);
+  }
+
+  private async canReceiveProviderSignals(userId: string) {
+    const eligible = await this.marketplaceSignalProviderUserIds([userId]);
+    return eligible.has(userId);
+  }
+
+  private async marketplaceSignalProviderUserIds(userIds: string[]) {
+    if (userIds.length === 0) return new Set<string>();
+    const providers = await this.prisma.providerProfile.findMany({
+      where: { userId: { in: userIds } },
+      include: {
+        verification: true,
+        kyc: true,
+        documents: { where: { deletedAt: null } },
+      },
+    });
+    const eligible = new Set<string>();
+    for (const provider of providers) {
+      try {
+        assertProviderCanViewOpenBookingMarketplace(provider);
+        eligible.add(provider.userId);
+      } catch {
+        // Ineligible Partners keep their personal room but lose marketplace signals.
+      }
+    }
+    return eligible;
+  }
+
+  private async canAccessBookingRoom(bookingId: string, user: AuthenticatedUser) {
+    if (user.roles.includes(Role.ADMIN)) {
+      return adminOperatorHasRequiredCategory(
+        user.adminPermissionCategories ?? [],
+        AdminOperatorPermissionCategory.BOOKINGS_DETAIL,
+      );
     }
 
-    if (roles.includes(Role.CUSTOMER)) {
-      if (await this.canCustomerAccessBookingRoom(bookingId, userId)) {
+    if (user.roles.includes(Role.CUSTOMER)) {
+      if (await this.canCustomerAccessBookingRoom(bookingId, user.id)) {
         return true;
       }
     }
 
-    if (roles.includes(Role.PROVIDER)) {
-      return this.canProviderAccessBookingRoom(bookingId, userId);
+    if (user.roles.includes(Role.PROVIDER)) {
+      return this.canProviderAccessBookingRoom(bookingId, user.id);
     }
 
     return false;
@@ -156,9 +243,14 @@ export class MatchingGateway implements OnGatewayConnection {
       where: {
         id: bookingId,
         OR: [
-          { preferredProviderId: provider.id },
           { selectedProviderId: provider.id },
-          { participants: { some: { providerProfileId: provider.id } } },
+          {
+            status: BookingStatus.OPEN_MATCHING,
+            OR: [
+              { preferredProviderId: provider.id },
+              { participants: { some: { providerProfileId: provider.id } } },
+            ],
+          },
         ],
       },
       select: { id: true },

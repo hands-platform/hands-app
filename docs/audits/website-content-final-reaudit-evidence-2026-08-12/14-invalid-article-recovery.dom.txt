@@ -1,0 +1,137 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - generic: Website Content
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - heading "Website Content" [level=1]
+  - paragraph: Operate Live routes, Draft changes, publishing readiness and translation coverage.
+  - generic "Page actions":
+    - link "New article":
+      - /url: /website-content?view=news&status=failed&mode=new
+  - generic: Active revisions
+  - paragraph: Live
+  - generic: "Live:"
+  - text: "0"
+  - generic: Routes currently available to the public.
+  - generic: Unpublished work
+  - paragraph: Draft changes
+  - generic: "Draft changes:"
+  - text: "85"
+  - generic: Routes with an editable Draft revision.
+  - generic: Blocked Drafts
+  - paragraph: Needs attention
+  - generic: "Needs attention:"
+  - text: "85"
+  - generic: Drafts that do not pass publishing readiness.
+  - generic: Required languages
+  - paragraph: Missing translations
+  - generic: "Missing translations:"
+  - text: "0"
+  - generic: Page routes missing one or more KO, EN, VI, JA or ZH versions.
+  - generic: Last 7 days
+  - paragraph: Recently published
+  - generic: "Recently published:"
+  - text: "0"
+  - generic: Routes activated during the latest seven days.
+  - status:
+    - strong: Website content action failed
+    - paragraph: No success was recorded. Reload the Draft before retrying.
+  - navigation "Website content type":
+    - link "Pages":
+      - /url: /website-content?view=pages
+    - link "News":
+      - /url: /website-content?view=news
+  - heading "Filters" [level=2]
+  - paragraph: Search and pagination run on the server; section content is loaded only after opening a route.
+  - generic: Name or route
+  - searchbox "Name or route"
+  - generic: Website
+  - combobox "Website":
+    - option "All websites" [selected]
+    - option "hands.vn"
+    - option "join.hands.vn"
+  - generic: Language
+  - combobox "Language":
+    - option "All languages" [selected]
+    - option "VI"
+    - option "KO"
+    - option "EN"
+    - option "JA"
+    - option "ZH"
+  - generic: Status
+  - combobox "Status":
+    - option "All states" [selected]
+    - option "Live"
+    - option "Draft changes"
+    - option "Needs attention"
+  - button "Apply"
+  - link "Clear filters":
+    - /url: /website-content?view=news
+  - heading "News articles" [level=2]
+  - generic: 0 articles
+  - region "News article list":
+    - table:
+      - rowgroup:
+        - row "Article Website Language Live Draft Updated Action":
+          - columnheader "Article"
+          - columnheader "Website"
+          - columnheader "Language"
+          - columnheader "Live"
+          - columnheader "Draft"
+          - columnheader "Updated"
+          - columnheader "Action"
+      - rowgroup:
+        - row:
+          - cell:
+            - status:
+              - strong: No news articles yet
+              - paragraph: Create the first article Draft.
+- alert

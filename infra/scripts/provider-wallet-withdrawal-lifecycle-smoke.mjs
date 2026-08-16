@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import {
+  AdminUserProvenance,
   AdminOperatorPermissionCategory,
   AccountingJournalSourceType,
   BankReconciliationStatus,
@@ -365,7 +366,17 @@ try {
   process.exitCode = 1;
 } finally {
   await stopApi();
-  await cleanup().catch(() => undefined);
+  try {
+    await cleanup();
+  } catch (cleanupError) {
+    console.error(JSON.stringify({
+      ok: false,
+      phase: 'cleanup',
+      error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+      residualFixtureIds: Object.values(ids),
+    }, null, 2));
+    process.exitCode = 1;
+  }
   await prisma.$disconnect();
 }
 
@@ -424,12 +435,23 @@ async function waitForHealth() {
 async function seed() {
   await prisma.user.createMany({
     data: [
-      { id: ids.actor, phone: smokePhone('01'), fullName: 'Withdrawal Smoke Actor', roles: [Role.ADMIN] },
+      {
+        id: ids.actor,
+        phone: smokePhone('01'),
+        fullName: 'Withdrawal Smoke Actor',
+        roles: [Role.ADMIN],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'PROVIDER_WITHDRAWAL_SMOKE',
+        fixtureRunId: runId,
+      },
       {
         id: ids.approver,
         phone: smokePhone('02'),
         fullName: 'Withdrawal Smoke Finance Approver',
         roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'PROVIDER_WITHDRAWAL_SMOKE',
+        fixtureRunId: runId,
       },
       {
         id: ids.providerUser,

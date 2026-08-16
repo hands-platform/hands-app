@@ -8,6 +8,7 @@ import {
   Trophy,
   Users,
 } from 'lucide-react';
+import { redirect } from 'next/navigation';
 
 import {
   type AdminUsageOverview,
@@ -43,6 +44,7 @@ import {
   normalizeUsageOverviewRange,
   usageOverviewRangeOptions,
   usageOverviewWithDefaults,
+  usageOverviewCustomHref,
   usageOverviewHref,
   validateUsageCustomRange,
 } from './usage-overview-model';
@@ -61,6 +63,9 @@ export default async function UsageOverviewPage({
   const from = stringParam(params?.from);
   const to = stringParam(params?.to);
   const today = vietnamDateInput(new Date());
+  if (range === 'custom' && !from && !to) {
+    redirect(usageOverviewCustomHref(today));
+  }
   const validationError = range === 'custom' ? validateUsageCustomRange(from, to, today) : null;
   const query = new URLSearchParams({ range });
   if (range === 'custom' && from) query.set('from', from);
@@ -84,6 +89,7 @@ export default async function UsageOverviewPage({
         overview={overview}
         range={range}
         to={to}
+        today={today}
         validationError={validationError}
       />
 
@@ -110,15 +116,16 @@ function UsageRangePanel({
   overview,
   range,
   to,
+  today,
   validationError,
 }: {
   readonly from: string | null;
   readonly overview: AdminUsageOverview | null;
   readonly range: ReturnType<typeof normalizeUsageOverviewRange>;
   readonly to: string | null;
+  readonly today: string;
   readonly validationError: string | null;
 }) {
-  const today = vietnamDateInput(new Date());
   const applied = overview?.appliedRange;
   const periodLabel =
     applied?.fromDate && applied.toDate
@@ -153,7 +160,7 @@ function UsageRangePanel({
         ariaLabel="Usage overview range"
         className="usage-overview-range-buttons"
         options={usageOverviewRangeOptions.map((option) => ({
-          href: usageOverviewHref(option.value),
+          href: option.value === 'custom' ? usageOverviewCustomHref(today) : usageOverviewHref(option.value),
           label: option.label,
           value: option.value,
         }))}
@@ -164,7 +171,7 @@ function UsageRangePanel({
           <AdminFormDate
             ariaDescribedBy={validationError ? 'usage-custom-range-error' : undefined}
             ariaInvalid={Boolean(validationError)}
-            defaultValue={from ?? today}
+            defaultValue={from ?? ''}
             label="From"
             labelVisibility="visible"
             name="from"
@@ -173,7 +180,7 @@ function UsageRangePanel({
           <AdminFormDate
             ariaDescribedBy={validationError ? 'usage-custom-range-error' : undefined}
             ariaInvalid={Boolean(validationError)}
-            defaultValue={to ?? today}
+            defaultValue={to ?? ''}
             label="To"
             labelVisibility="visible"
             name="to"
@@ -208,36 +215,36 @@ function UsageDataTrustNotice({ overview }: { readonly overview: AdminUsageOverv
     );
   }
 
-  const provenanceGuaranteed = overview.provenance.usageFixtures === 'guaranteed';
+  const usageGuaranteed = overview.provenance.usage === 'guaranteed';
+  const bookingGuaranteed = overview.provenance.booking === 'guaranteed';
   const usageTime = overview.freshness.usageAggregatedThroughAt;
   const usageDelayed = overview.freshness.usageStatus === 'delayed';
-  const usageUnknown = overview.freshness.usageStatus === 'unknown';
+  const usageUnavailable = ['unknown', 'failed'].includes(overview.freshness.usageStatus);
 
   return (
-    <div className="usage-overview-trust-stack">
-      <div
-        className={`usage-overview-trust-notice ${provenanceGuaranteed ? 'is-success' : 'is-warning'}`}
-        role={provenanceGuaranteed ? 'status' : 'alert'}
-      >
-        <strong>{provenanceGuaranteed ? 'Synthetic usage excluded' : 'Usage provenance is incomplete'}</strong>
-        <span>
-          {provenanceGuaranteed
-            ? 'Every usage total on this report reads only server-owned production aggregates.'
-            : overview.provenance.unknownAggregateCount > 0
-              ? `${number(overview.provenance.unknownAggregateCount)} unknown aggregate ${overview.provenance.unknownAggregateCount === 1 ? 'row is' : 'rows are'} excluded. Do not use the missing historical usage as a production total.`
-              : 'Legacy aggregate provenance has not been verified. Do not use these totals for production decisions.'}
-        </span>
-      </div>
-      {usageDelayed || usageUnknown ? (
-        <div className="usage-overview-trust-notice is-warning" role="alert">
-          <strong>{usageDelayed ? 'Production usage signals may be delayed' : 'Production usage freshness is unknown'}</strong>
-          <span>
-            {usageTime
-              ? `The latest production usage signal is ${formatUsageDateTime(usageTime)} ICT, beyond the named 48-hour threshold for this period.`
-              : 'No production usage aggregate timestamp is available for this period.'}
-          </span>
+    <div className="usage-overview-trust-stack" role="status" aria-label="Data health">
+      <div className="usage-overview-data-health">
+        <div>
+          <span>Usage telemetry</span>
+          <strong>{usageUnavailable ? 'Data unavailable' : usageDelayed ? 'Delayed' : 'Available'}</strong>
+          <small>{usageTime ? `Through ${formatUsageDateTime(usageTime)} ICT` : 'No production aggregate timestamp'}</small>
         </div>
-      ) : null}
+        <div>
+          <span>Usage provenance</span>
+          <strong>{usageGuaranteed ? 'Production verified' : 'Verification incomplete'}</strong>
+          <small>{overview.provenance.unknownUsageAggregateCount > 0 ? `${number(overview.provenance.unknownUsageAggregateCount)} unknown rows excluded` : 'Server-owned origin required'}</small>
+        </div>
+        <div>
+          <span>Booking records</span>
+          <strong>{bookingGuaranteed ? 'Production verified' : 'Verification incomplete'}</strong>
+          <small>{overview.provenance.unknownBookingCount > 0 ? `${number(overview.provenance.unknownBookingCount)} unknown records excluded` : 'Explicit production origin required'}</small>
+        </div>
+        <div>
+          <span>Report generated</span>
+          <strong>{formatUsageDateTime(overview.freshness.reportGeneratedAt)} ICT</strong>
+          <small>{usageDelayed ? 'Usage exceeds the 48-hour freshness threshold' : 'Booking and usage sources are evaluated separately'}</small>
+        </div>
+      </div>
       <AdminDisclosure ariaLabel="Source activity times" className="usage-overview-source-times">
         <summary>Source activity times</summary>
         <dl>
@@ -252,20 +259,21 @@ function UsageDataTrustNotice({ overview }: { readonly overview: AdminUsageOverv
 
 function UsageOverviewContent({ overview }: { readonly overview: AdminUsageOverview }) {
   const previous = overview.comparison.totals;
+  const usageAvailable = !['unknown', 'failed'].includes(overview.freshness.usageStatus);
   const kpis = [
     [
       'active-customers',
       'Active unique customers',
-      overview.totals.activeCustomerCount,
-      previous.activeCustomerCount,
+      usageAvailable ? overview.totals.activeCustomerCount : null,
+      usageAvailable ? previous.activeCustomerCount : null,
       Users,
       'primary',
     ],
     [
       'partner-views',
       'Partner view events',
-      overview.totals.partnerProfileViewCount,
-      previous.partnerProfileViewCount,
+      usageAvailable ? overview.totals.partnerProfileViewCount : null,
+      usageAvailable ? previous.partnerProfileViewCount : null,
       Eye,
       'info',
     ],
@@ -295,35 +303,35 @@ function UsageOverviewContent({ overview }: { readonly overview: AdminUsageOverv
         {kpis.map(([key, label, current, previousValue, Icon, tone]) => (
           <AdminKpiCard
             className={`usage-overview-kpi-card is-${tone}`}
-            helper={`${periodDelta(current, previousValue).label} vs previous equal period`}
+            helper={current === null || previousValue === null ? 'Data unavailable' : `${periodDelta(current, previousValue).label} vs previous equal period`}
             icon={Icon}
             iconSize={18}
             key={key}
             kind="period"
             label={label}
             scope={overview.rangeLabel}
-            value={number(current)}
+            value={current === null ? '—' : number(current)}
           />
         ))}
       </AdminOverviewCommandGrid>
 
-      <UniqueCustomerReach overview={overview} />
+      <UniqueCustomerReach overview={overview} usageAvailable={usageAvailable} />
       <BookingOutcomes overview={overview} />
 
       <AdminSection
         actions={<Activity aria-hidden="true" size={18} />}
         className="usage-overview-trend-card"
-        description={`${overview.appliedRange.granularity === 'hourly' ? 'Hourly' : 'Daily'} activity in Vietnam time. Customer and booking scales are separated.`}
+        description={`${overview.appliedRange.granularity === 'hourly' ? 'Hourly' : 'Daily'} activity in Vietnam time. Booking outcomes above are the current status of bookings created in-period; completed activity below uses closedAt.`}
         statusLabel={overview.rangeLabel}
         title="Activity trends"
       >
-        <UsageOverviewTrendChart rows={overview.behavior.trend} />
+        <UsageOverviewTrendChart rows={overview.behavior.trend} usageAvailable={usageAvailable} />
       </AdminSection>
 
       <AdminOverviewGrid ariaLabel="Customer period and current base" variant="insight">
         <PeriodCustomers overview={overview} />
-        <RetentionCard overview={overview} />
-        <CurrentCustomerBase overview={overview} />
+        <RetentionCard overview={overview} usageAvailable={usageAvailable} />
+        <CurrentCustomerBase overview={overview} usageAvailable={usageAvailable} />
       </AdminOverviewGrid>
 
       <CustomerRankingTable rows={overview.customerRankings.slice(0, 5)} />
@@ -440,7 +448,7 @@ function ActionPriorities({ overview }: { readonly overview: AdminUsageOverview 
   );
 }
 
-function UniqueCustomerReach({ overview }: { readonly overview: AdminUsageOverview }) {
+function UniqueCustomerReach({ overview, usageAvailable }: { readonly overview: AdminUsageOverview; readonly usageAvailable: boolean }) {
   return (
     <AdminSection
       actions={<MousePointerClick aria-hidden="true" size={18} />}
@@ -453,9 +461,11 @@ function UniqueCustomerReach({ overview }: { readonly overview: AdminUsageOvervi
       {overview.funnel.map((step, index) => (
         <AdminCard className="usage-overview-funnel-step" key={step.key}>
           <span>{step.label}</span>
-          <strong>{number(step.count)}</strong>
+          <strong>{usageAvailable ? number(step.count) : '—'}</strong>
           <small>
-            {index === 0
+            {!usageAvailable
+              ? 'Data unavailable'
+              : index === 0
               ? 'unique customers'
               : step.conversionRate === null
                 ? 'N/A · no previous-step customers'
@@ -519,7 +529,7 @@ function PeriodCustomers({ overview }: { readonly overview: AdminUsageOverview }
   );
 }
 
-function CurrentCustomerBase({ overview }: { readonly overview: AdminUsageOverview }) {
+function CurrentCustomerBase({ overview, usageAvailable }: { readonly overview: AdminUsageOverview; readonly usageAvailable: boolean }) {
   const usageThrough = overview.freshness.usageAggregatedThroughAt;
   return (
     <MetricSection
@@ -527,17 +537,17 @@ function CurrentCustomerBase({ overview }: { readonly overview: AdminUsageOvervi
       icon={Users}
       metrics={[
         ['Never booked', overview.customerLifecycle.neverBookedCustomerCount, 'warning'],
-        ['Inactive 30d', overview.customerLifecycle.churnRiskCustomerCount, 'danger'],
-        ['Seen today', overview.customerLifecycle.activeTodayCustomerCount, 'info'],
-        ['Seen in 7d', overview.customerLifecycle.active7dCustomerCount, 'primary'],
-        ['Seen in 30d', overview.customerLifecycle.active30dCustomerCount, 'primary'],
+        ['Inactive 30d', usageAvailable ? overview.customerLifecycle.churnRiskCustomerCount : '—', 'danger'],
+        ['Seen today', usageAvailable ? overview.customerLifecycle.activeTodayCustomerCount : '—', 'info'],
+        ['Seen in 7d', usageAvailable ? overview.customerLifecycle.active7dCustomerCount : '—', 'primary'],
+        ['Seen in 30d', usageAvailable ? overview.customerLifecycle.active30dCustomerCount : '—', 'primary'],
       ]}
       title={`Current customer base · ${usageThrough ? `As of usage data through ${formatUsageDateTime(usageThrough)} ICT` : 'Usage data time unavailable'}`}
     />
   );
 }
 
-function RetentionCard({ overview }: { readonly overview: AdminUsageOverview }) {
+function RetentionCard({ overview, usageAvailable }: { readonly overview: AdminUsageOverview; readonly usageAvailable: boolean }) {
   return (
     <AdminSection
       actions={<Repeat2 aria-hidden="true" size={18} />}
@@ -549,9 +559,9 @@ function RetentionCard({ overview }: { readonly overview: AdminUsageOverview }) 
       {overview.retention.map((row) => (
         <AdminCard className="usage-overview-retention-row" key={row.milestone}>
           <span>D{row.milestone}</span>
-          <strong>{row.rate === null ? 'N/A' : `${number(row.rate)}%`}</strong>
+          <strong>{!usageAvailable ? '—' : row.rate === null ? 'N/A' : `${number(row.rate)}%`}</strong>
           <small>
-            {row.eligibleCustomerCount === 0
+            {!usageAvailable ? 'Data unavailable' : row.eligibleCustomerCount === 0
               ? 'No eligible cohort'
               : `${number(row.returnedCustomerCount)} of ${number(row.eligibleCustomerCount)} eligible`}
           </small>
@@ -569,7 +579,7 @@ function MetricSection({
 }: {
   readonly description?: string;
   readonly icon: typeof Users;
-  readonly metrics: ReadonlyArray<readonly [string, number, string]>;
+  readonly metrics: ReadonlyArray<readonly [string, number | string, string]>;
   readonly title: string;
 }) {
   return (
@@ -581,7 +591,7 @@ function MetricSection({
     >
       <AdminMiniMetricStrip
         className="usage-overview-mini-metric-list"
-        metrics={metrics.map(([label, value, tone]) => ({ label, tone, value: number(value) }))}
+        metrics={metrics.map(([label, value, tone]) => ({ label, tone, value: typeof value === 'number' ? number(value) : value }))}
       />
     </AdminSection>
   );
@@ -593,7 +603,7 @@ function CustomerRankingTable({ rows }: { readonly rows: readonly AdminUsageOver
       actions={<AdminTextLink href="/customers?view=all">View all customers</AdminTextLink>}
       className="usage-overview-ranking-card"
       description="Top five customers by production usage events. Closed issue outcomes use closedAt in the selected period and include cancelled, no-show, expired, and refunded records; they are separate from the created-cohort outcomes above. Phone numbers are masked by the API."
-      title="Customer activity · Top 5"
+      title="Most active customers · Top 5"
     >
       <AdminTableScroll ariaLabel="Customer activity top five table">
         <AdminDataTable

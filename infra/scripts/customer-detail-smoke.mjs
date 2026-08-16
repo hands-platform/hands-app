@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import {
+  AdminUserProvenance,
   BookingStatus,
   ManualWalletAdjustmentRequestStatus,
   PaymentMethod,
@@ -634,40 +635,45 @@ async function providerCandidateForBooking(booking, fallback) {
 }
 
 async function ensureAdminAuthPair() {
-  let maker = await prisma.user.findFirst({
-    where: { roles: { has: Role.ADMIN } },
-    orderBy: { id: 'asc' },
+  const maker = await upsertCustomerDetailFixtureAdmin({
+    fullName: 'Customer Detail Smoke Admin Maker',
+    id: 'smoke_customer_detail_admin_maker_user',
+    phone: '+84909100991',
+    roles: [Role.ADMIN],
   });
-  if (!maker) {
-    maker = await prisma.user.create({
-      data: {
-        fullName: 'Customer Detail Smoke Admin Maker',
-        id: 'smoke_customer_detail_admin_maker_user',
-        phone: '+84909100991',
-        roles: [Role.ADMIN],
-      },
-    });
-  }
-  let approver = await prisma.user.findFirst({
-    where: {
-      id: { not: maker.id },
-      AND: [{ roles: { has: Role.ADMIN } }, { roles: { has: Role.FINANCE_APPROVER } }],
-    },
-    orderBy: { id: 'asc' },
+  const approver = await upsertCustomerDetailFixtureAdmin({
+    fullName: 'Customer Detail Smoke Finance Approver',
+    id: 'smoke_customer_detail_admin_approver_user',
+    phone: '+84909100992',
+    roles: [Role.ADMIN, Role.FINANCE_APPROVER],
   });
-  if (!approver) {
-    approver = await prisma.user.upsert({
-      where: { id: 'smoke_customer_detail_admin_approver_user' },
-      update: { roles: { set: [Role.ADMIN, Role.FINANCE_APPROVER] } },
-      create: {
-        fullName: 'Customer Detail Smoke Finance Approver',
-        id: 'smoke_customer_detail_admin_approver_user',
-        phone: '+84909100992',
-        roles: [Role.ADMIN, Role.FINANCE_APPROVER],
-      },
-    });
-  }
   return { makerAuth: adminAuth(maker), approverAuth: adminAuth(approver) };
+}
+
+async function upsertCustomerDetailFixtureAdmin({ fullName, id, phone, roles }) {
+  const existing = await prisma.user.findUnique({ where: { id } });
+  if (existing && existing.adminUserProvenance !== AdminUserProvenance.FIXTURE) {
+    throw new Error(`Refusing to change non-fixture admin ${id} during customer detail smoke.`);
+  }
+  return prisma.user.upsert({
+    where: { id },
+    update: {
+      adminUserProvenance: AdminUserProvenance.FIXTURE,
+      fixtureKind: 'CUSTOMER_DETAIL_SMOKE',
+      fixtureRunId: SMOKE_PREFIX,
+      fullName,
+      roles: { set: roles },
+    },
+    create: {
+      adminUserProvenance: AdminUserProvenance.FIXTURE,
+      fixtureKind: 'CUSTOMER_DETAIL_SMOKE',
+      fixtureRunId: SMOKE_PREFIX,
+      fullName,
+      id,
+      phone,
+      roles,
+    },
+  });
 }
 
 function adminAuth(user) {

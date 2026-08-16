@@ -1,0 +1,260 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Insights":
+        - /url: /marketing-analytics
+      - generic: Marketing Analytics
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Insights workspace":
+    - strong: Insights
+    - generic "Insights pages":
+      - link "Marketing Analytics":
+        - /url: /marketing-analytics
+      - link "Customer Usage":
+        - /url: /usage-overview
+  - heading "Marketing Analytics" [level=1]
+  - paragraph: New-customer acquisition cohort, source, campaign, coupon, and spend performance from stored HANDS records.
+  - generic "Page actions":
+    - link "Close spend":
+      - /url: /marketing-analytics?range=today&view=campaigns
+  - generic "Marketing workspace view":
+    - link "Overview":
+      - /url: /marketing-analytics?range=today
+    - link "Campaigns & spend":
+      - /url: /marketing-analytics?range=today&view=campaigns
+    - link "Attribution quality":
+      - /url: /marketing-analytics?range=today&view=attribution
+    - link "Coupons":
+      - /url: /marketing-analytics?range=today&view=coupons
+  - heading "Marketing filters" [level=2]
+  - paragraph: Range, source, platform, and campaign apply to campaign outcomes and spend. Region applies only to spend ledger and location evidence.
+  - generic: Today
+  - generic: Signup cohort
+  - generic: "Spend source: manual records"
+  - text: Generated
+  - time: 12 Aug 2026, 16:46
+  - generic: Range
+  - generic "Range":
+    - link "Today":
+      - /url: /marketing-analytics?range=today&view=campaigns
+    - link "Yesterday":
+      - /url: /marketing-analytics?range=yesterday&view=campaigns
+    - link "7 days":
+      - /url: /marketing-analytics?range=7d&view=campaigns
+    - link "30 days":
+      - /url: /marketing-analytics?range=30d&view=campaigns
+  - generic: Source
+  - generic "Source":
+    - link "All sources":
+      - /url: /marketing-analytics?range=today&view=campaigns
+    - link "Referral":
+      - /url: /marketing-analytics?range=today&view=campaigns&source=referral
+    - link "Unknown":
+      - /url: /marketing-analytics?range=today&view=campaigns&source=unknown
+    - link "Meta":
+      - /url: /marketing-analytics?range=today&view=campaigns&source=meta
+    - link "Google":
+      - /url: /marketing-analytics?range=today&view=campaigns&source=google
+    - link "TikTok":
+      - /url: /marketing-analytics?range=today&view=campaigns&source=tiktok
+    - link "Organic":
+      - /url: /marketing-analytics?range=today&view=campaigns&source=organic
+    - link "Direct":
+      - /url: /marketing-analytics?range=today&view=campaigns&source=direct
+  - group "Additional marketing filters":
+    - generic "More filters"
+  - generic "Active marketing filters":
+    - generic: "View: Campaigns & spend · Range: Today"
+    - link "Reset range":
+      - /url: /marketing-analytics?range=7d&view=campaigns
+    - link "Clear all":
+      - /url: /marketing-analytics?range=7d&view=campaigns
+  - region "Add daily spend":
+    - heading "Add daily spend" [level=2]
+    - paragraph: Analysis remains read-only until one daily spend change is reviewed with its current value and operator reason.
+    - generic: Review change
+    - link "Close":
+      - /url: /marketing-analytics?range=today&view=campaigns
+    - alert:
+      - strong: Current spend could not be loaded
+      - paragraph: Do not save this change until the API is available and the existing value can be verified.
+  - heading "Decision reliability" [level=2]
+  - paragraph: Reliability checks for the selected cohort and manual spend evidence. Missing ledger dates are not treated as zero spend.
+  - generic: "Decision evidence: INSUFFICIENT"
+  - generic: Attribution coverage
+  - strong: Not available
+  - generic: Spend days recorded
+  - strong: 0 / 1
+  - generic: Campaign match
+  - strong: Not available
+  - generic: Last complete date
+  - strong: Not complete
+  - paragraph: No acquisition evidence · No spend evidence · Spend dates incomplete
+  - region "Marketing needs action":
+    - heading "Marketing needs action" [level=2]
+    - paragraph: Campaign and cohort risks are evaluated across the full server-side universe. Showing 1 of 1 · policy marketing-risk-v1.
+    - generic: 1 open · 0 hidden
+    - 'link "Manual spend ledger Spend coverage is incomplete 1 expected spend date(s) have no ledger row. Missing is not zero. Threshold: Every tracked paid-spend date has an explicit ledger row 1 Review spend ledger"':
+      - /url: /marketing-analytics?range=today&view=campaigns#marketing-spend-ledger
+      - generic: Manual spend ledger
+      - heading "Spend coverage is incomplete" [level=3]
+      - paragraph: "1 expected spend date(s) have no ledger row. Missing is not zero. Threshold: Every tracked paid-spend date has an explicit ledger row"
+      - strong: "1"
+      - generic: Review spend ledger
+  - heading "Spend coverage" [level=2]
+  - paragraph: Manual spend reliability for the selected paid scope. A zero is valid only when an explicit ledger row exists.
+  - generic: MISSING
+  - generic: Recorded dates
+  - strong: 0 / 1
+  - generic: Last entry
+  - strong: No entry
+  - generic: Missing dates
+  - strong: "1"
+  - generic: 2026-08-12
+  - generic: Unmatched spend
+  - strong: "0"
+  - generic: Unmatched outcomes
+  - strong: "0"
+  - generic: Canonical duplicates
+  - strong: "0"
+  - region "Campaign efficiency":
+    - heading "Campaign efficiency" [level=2]
+    - paragraph: Completed customer cohorts and fee return after manually recorded ad spend.
+    - generic: Top 0
+    - strong: No campaign evidence in today
+    - paragraph: Add a campaign ID to attribution or a manual spend row to compare campaign efficiency.
+  - region "Spend ledger":
+    - heading "Spend ledger" [level=2]
+    - paragraph: Read-only manual spend evidence. Campaign key is normalized for filter, aggregate, review, and audit targeting.
+    - generic: 0 rows
+    - region "Marketing spend ledger table":
+      - table:
+        - rowgroup:
+          - row "Date Source / platform Campaign Region Amount Last updated":
+            - columnheader "Date"
+            - columnheader "Source / platform"
+            - columnheader "Campaign"
+            - columnheader "Region"
+            - columnheader "Amount"
+            - columnheader "Last updated"
+        - rowgroup:
+          - row:
+            - cell:
+              - status:
+                - strong: No spend ledger rows in this scope
+                - paragraph: Missing is not the same as an explicit zero row.
+  - heading "Spend & location breakdown scope" [level=2]
+  - paragraph: Region scopes manually recorded spend and recent location evidence only. It does not change the headline acquisition cohort, comparison, actions, or coupons.
+  - generic: All regions
+  - generic: Region
+  - generic "Region":
+    - link "All regions":
+      - /url: /marketing-analytics?range=today&view=campaigns
+    - link "Ha Noi":
+      - /url: /marketing-analytics?range=today&view=campaigns&regionCode=hanoi
+    - link "Ho Chi Minh City":
+      - /url: /marketing-analytics?range=today&view=campaigns&regionCode=hcm
+    - link "Da Nang":
+      - /url: /marketing-analytics?range=today&view=campaigns&regionCode=da-nang
+    - link "Vung Tau":
+      - /url: /marketing-analytics?range=today&view=campaigns&regionCode=vung-tau
+    - link "Nha Trang":
+      - /url: /marketing-analytics?range=today&view=campaigns&regionCode=nha-trang
+    - link "Da Lat":
+      - /url: /marketing-analytics?range=today&view=campaigns&regionCode=da-lat
+    - link "Can Tho":
+      - /url: /marketing-analytics?range=today&view=campaigns&regionCode=can-tho
+    - link "Other Vietnam":
+      - /url: /marketing-analytics?range=today&view=campaigns&regionCode=other-vietnam
+  - heading "Campaign risk and performance" [level=2]
+  - paragraph: Server-paged campaign outcomes and spend. Action totals are calculated across the full campaign universe, not this visible page.
+  - generic: Showing 0 / 0
+  - region "Campaign risk and performance table":
+    - table:
+      - rowgroup:
+        - row "Campaign Signups Completed Cancelled Ad spend CPA completed Fee revenue Gross ROAS":
+          - columnheader "Campaign"
+          - columnheader "Signups"
+          - columnheader "Completed"
+          - columnheader "Cancelled"
+          - columnheader "Ad spend"
+          - columnheader "CPA completed"
+          - columnheader "Fee revenue"
+          - columnheader "Gross ROAS"
+      - rowgroup:
+        - row:
+          - cell:
+            - status:
+              - strong: No tracked campaign rows in this range.
+              - paragraph: Try a different range or remove the dimension filter.
+  - heading "Recent location evidence" [level=2]
+  - paragraph: Sample · up to 100 recent records per evidence source. This is not a complete regional total.
+  - generic: Showing 0 / 8
+  - region "Recent location evidence table":
+    - table:
+      - rowgroup:
+        - row "Region Signups Completed Cancelled Ad spend CPA completed Fee revenue Gross ROAS":
+          - columnheader "Region"
+          - columnheader "Signups"
+          - columnheader "Completed"
+          - columnheader "Cancelled"
+          - columnheader "Ad spend"
+          - columnheader "CPA completed"
+          - columnheader "Fee revenue"
+          - columnheader "Gross ROAS"
+      - rowgroup:
+        - row:
+          - cell:
+            - status:
+              - strong: No recent regional evidence loaded.
+              - paragraph: Try a different range or remove the dimension filter.
+  - generic: Showing 0 to 0 of 8 entries
+- alert

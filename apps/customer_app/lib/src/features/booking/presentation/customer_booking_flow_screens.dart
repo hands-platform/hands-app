@@ -362,7 +362,10 @@ class _BookingConfirmationPageState
     final distanceMeters = asDouble(provider['distanceMeters']);
     final servicePrice = customerServicePrice(service);
     final providerName = provider['displayName'] as String? ?? 'Partner';
-    final serviceName = customerServiceName(service);
+    final serviceName = customerServiceName(
+      service,
+      requestedLocale: Localizations.localeOf(context).languageCode,
+    );
     final durationLabel = customerServiceDurationLabel(service);
     final totalAmount = this.totalAmount;
     final couponApplied = appliedCouponCode != null && couponDiscountAmount > 0;

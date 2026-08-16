@@ -1585,7 +1585,6 @@ class _StartableBookingRepository extends _ChatReadyBookingRepository {
           },
         },
       ];
-
 }
 
 class _ArrivableBookingRepository extends _ChatReadyBookingRepository {
@@ -1608,7 +1607,6 @@ class _ArrivableBookingRepository extends _ChatReadyBookingRepository {
           },
         },
       ];
-
 }
 
 class _CancellableBookingRepository extends _ChatReadyBookingRepository {
@@ -1856,6 +1854,7 @@ class _FakeProviderEarningsRepository implements ProviderEarningsRepository {
   @override
   Future<Map<String, dynamic>> createWalletWithdrawalRequest({
     required int amount,
+    String? idempotencyKey,
     String? bankAccountId,
     String? requestNote,
   }) async =>
@@ -1886,6 +1885,7 @@ class _FakeProviderVerificationRepository
   @override
   Future<Map<String, dynamic>> createVerificationUpload({
     String contentType = 'image/jpeg',
+    required int sizeBytes,
   }) async =>
       {};
 

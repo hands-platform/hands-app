@@ -1,5 +1,16 @@
-import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
 import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  OnModuleInit,
+  Optional,
+} from '@nestjs/common';
+import {
+  AdminOperatorPermissionCategory,
+  AdminUserProvenance,
   BookingStatus,
   FileUploadStatus,
   FileVisibility,
@@ -12,10 +23,14 @@ import {
   ProviderLevel,
   Role,
   ProviderTaxProfileStatus,
+  TaxPolicyLifecycleStatus,
+  TaxPolicyApprovalStatus,
+  TaxPolicyProvenance,
   TaxPolicyStatus,
   TaxRuleScope,
   VerificationStatus,
 } from '@prisma/client';
+import { Queue } from 'bullmq';
 import { createHash } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -27,26 +42,70 @@ import {
   REQUIRED_PAYOUT_AGREEMENTS,
 } from './provider-onboarding.policy';
 import { providerBankCorrectionRequest } from './provider-bank-correction';
+import { calculatePartnerTaxWithholding } from '../earnings/tax-policy-withholding';
+import { adminOperatorHasRequiredCategory } from '../admin/admin-operator-category.guard';
+import {
+  financeApproverPolicySnapshot,
+  listFinanceApproverPolicySnapshots,
+} from '../admin/finance-approver-policy';
+import {
+  TAX_POLICY_ACTIVATION_QUEUE_NAME,
+  TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME,
+  taxPolicyActivationJob,
+} from './tax-policy-activation.queue';
+import { assertTaxPolicyFixtureWriteEnvironment } from './tax-policy-fixture-write-guard';
 
 const ADMIN_TAX_POLICY_VERSION_DEFAULT_TAKE = 20;
 const ADMIN_TAX_POLICY_VERSION_MAX_TAKE = 100;
 
 type AdminTaxPolicyVersionListOptions = {
+  readonly effectiveFrom?: string | null;
+  readonly effectiveTo?: string | null;
+  readonly id?: string | null;
+  readonly lifecycle?: string | null;
+  readonly provenance?: string | null;
+  readonly q?: string | null;
   readonly skip?: number | string | null;
+  readonly sort?: string | null;
+  readonly source?: string | null;
   readonly take?: number | string | null;
+  readonly view?: string | null;
 };
 
-type TaxPolicyFinanceApprovalInput = {
-  readonly approvalAdminId: string;
+type TaxPolicyMutationInput = {
   readonly operatorReason: string;
 };
 
+type TaxPolicySessionAssurance = {
+  readonly mfaVerifiedAt?: Date | null;
+  readonly sessionId?: string | null;
+};
+
 @Injectable()
-export class ProviderOnboardingService {
+export class ProviderOnboardingService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly notifications?: NotificationsService,
+    @Optional()
+    @InjectQueue(TAX_POLICY_ACTIVATION_QUEUE_NAME)
+    private readonly taxPolicyActivationQueue?: Queue,
   ) {}
+
+  async onModuleInit() {
+    if (!this.taxPolicyActivationQueue) {
+      return;
+    }
+    await this.taxPolicyActivationQueue.add(
+      TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME,
+      {},
+      {
+        jobId: TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME,
+        repeat: { every: 60_000 },
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
+    );
+  }
 
   async getSnapshot(userId?: string) {
     const provider = await this.requireProvider(userId);
@@ -285,7 +344,6 @@ export class ProviderOnboardingService {
       accountNumber?: string;
       accountHolderName: string;
       qrBankingInfo?: unknown;
-      status?: ProviderBankAccountStatus;
     },
   ) {
     const provider = await this.requireProvider(userId);
@@ -305,7 +363,7 @@ export class ProviderOnboardingService {
           accountNumberLast4: accountNumber?.slice(-4),
           accountHolderName,
           qrBankingInfo: input.qrBankingInfo === undefined ? undefined : toJson(input.qrBankingInfo),
-          status: input.status ?? ProviderBankAccountStatus.PENDING_REVIEW,
+          status: ProviderBankAccountStatus.PENDING_REVIEW,
           isPrimary: true,
         },
       });
@@ -331,7 +389,6 @@ export class ProviderOnboardingService {
       taxCode?: string;
       legalName: string;
       registeredAddress: string;
-      status?: ProviderTaxProfileStatus;
     },
   ) {
     const provider = await this.requireProvider(userId);
@@ -345,7 +402,7 @@ export class ProviderOnboardingService {
         taxCodeLast4: taxCode?.slice(-4),
         legalName,
         registeredAddress,
-        status: input.status ?? ProviderTaxProfileStatus.PENDING_REVIEW,
+        status: ProviderTaxProfileStatus.PENDING_REVIEW,
       },
       create: {
         providerProfileId: provider.id,
@@ -353,7 +410,7 @@ export class ProviderOnboardingService {
         taxCodeLast4: taxCode?.slice(-4),
         legalName,
         registeredAddress,
-        status: input.status ?? ProviderTaxProfileStatus.PENDING_REVIEW,
+        status: ProviderTaxProfileStatus.PENDING_REVIEW,
       },
     });
     await this.prisma.providerVerificationLog.create({
@@ -691,61 +748,582 @@ export class ProviderOnboardingService {
     return { ok: true, taxProfile };
   }
 
-  listTaxPolicyVersions(options: AdminTaxPolicyVersionListOptions = {}) {
+  async listTaxPolicyVersions(options: AdminTaxPolicyVersionListOptions = {}) {
     const skip = normalizeAdminTaxPolicyVersionSkip(options.skip);
+    const take = normalizeAdminTaxPolicyVersionTake(options.take);
+    const lifecycleByView: Record<string, TaxPolicyLifecycleStatus[]> = {
+      current: [TaxPolicyLifecycleStatus.ACTIVE],
+      drafts: [
+        TaxPolicyLifecycleStatus.DRAFT,
+        TaxPolicyLifecycleStatus.PENDING_APPROVAL,
+        TaxPolicyLifecycleStatus.APPROVED,
+        TaxPolicyLifecycleStatus.SCHEDULED,
+      ],
+      history: [
+        TaxPolicyLifecycleStatus.SUPERSEDED,
+        TaxPolicyLifecycleStatus.ARCHIVED,
+        TaxPolicyLifecycleStatus.REJECTED,
+        TaxPolicyLifecycleStatus.LEGACY_REVIEW,
+      ],
+    };
+    const lifecycle = options.view ? lifecycleByView[options.view] : undefined;
+    const provenance = Object.values(TaxPolicyProvenance).includes(
+      options.provenance as TaxPolicyProvenance,
+    )
+      ? (options.provenance as TaxPolicyProvenance)
+      : undefined;
+    const source = options.source === 'production' || options.source === 'test-legacy'
+      ? options.source
+      : undefined;
+    const requestedLifecycle = Object.values(TaxPolicyLifecycleStatus).includes(
+      options.lifecycle as TaxPolicyLifecycleStatus,
+    )
+      ? (options.lifecycle as TaxPolicyLifecycleStatus)
+      : undefined;
+    const query = normalizeString(options.q)?.slice(0, 160);
+    const effectiveFrom = options.effectiveFrom
+      ? parseDate(options.effectiveFrom, 'effectiveFrom must be a valid date')
+      : undefined;
+    const effectiveTo = options.effectiveTo
+      ? parseDate(options.effectiveTo, 'effectiveTo must be a valid date')
+      : undefined;
+    const where: Prisma.TaxPolicyVersionWhereInput = {
+      ...(options.id ? { id: options.id } : {}),
+      ...(requestedLifecycle
+        ? { lifecycleStatus: requestedLifecycle }
+        : lifecycle
+          ? { lifecycleStatus: { in: lifecycle } }
+          : {}),
+      ...(provenance ? { provenance } : {}),
+      ...(!provenance && source === 'production' ? { provenance: TaxPolicyProvenance.OPERATOR } : {}),
+      ...(!provenance && source === 'test-legacy' ? { provenance: { not: TaxPolicyProvenance.OPERATOR } } : {}),
+      ...(query
+        ? {
+            OR: [
+              { id: { contains: query, mode: 'insensitive' } },
+              { name: { contains: query, mode: 'insensitive' } },
+              { legalSourceTitle: { contains: query, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+      ...(effectiveFrom || effectiveTo
+        ? { effectiveFrom: { ...(effectiveFrom ? { gte: effectiveFrom } : {}), ...(effectiveTo ? { lte: effectiveTo } : {}) } }
+        : {}),
+    };
     const args: Prisma.TaxPolicyVersionFindManyArgs = {
-      orderBy: [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }],
-      include: { rules: { orderBy: { createdAt: 'asc' } } },
-      take: normalizeAdminTaxPolicyVersionTake(options.take),
+      where,
+      orderBy: options.sort === 'effective-asc'
+        ? [{ effectiveFrom: 'asc' }, { createdAt: 'asc' }]
+        : [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }],
+      include: {
+        createdBy: { select: { id: true, email: true, fullName: true } },
+        rules: { orderBy: { createdAt: 'asc' } },
+        supersedesPolicyVersion: { select: { id: true, name: true, provenance: true } },
+      },
+      take,
     };
     if (skip > 0) {
       args.skip = skip;
     }
-    return this.prisma.taxPolicyVersion.findMany(args);
+    const [items, total] = await Promise.all([
+      this.prisma.taxPolicyVersion.findMany(args),
+      this.prisma.taxPolicyVersion.count({ where }),
+    ]);
+    return { items, total, skip, take };
+  }
+
+  async taxPolicyCapabilities(
+    actorId: string,
+    assurance: TaxPolicySessionAssurance = {},
+    policyVersionId?: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const pendingRequest = policyVersionId
+        ? await tx.taxPolicyApprovalRequest.findFirst({
+            where: { policyVersionId, status: TaxPolicyApprovalStatus.PENDING },
+            orderBy: { requestedAt: 'desc' },
+            select: { requestedByAdminId: true },
+          })
+        : null;
+      return buildTaxPolicyCapabilities(
+        tx,
+        actorId,
+        assurance,
+        pendingRequest?.requestedByAdminId ?? null,
+      );
+    });
+  }
+
+  async taxPolicyWorkspaceSummary(actorId: string, now = new Date()) {
+    return this.prisma.$transaction(async (tx) => {
+      await requireTaxPolicyOperatorAccess(tx, actorId, 'read');
+      const [groups, nextScheduled] = await Promise.all([
+        tx.taxPolicyVersion.groupBy({
+          by: ['lifecycleStatus', 'provenance'],
+          _count: { _all: true },
+        }),
+        tx.taxPolicyVersion.findFirst({
+          where: {
+            lifecycleStatus: TaxPolicyLifecycleStatus.SCHEDULED,
+            effectiveFrom: { gte: now },
+          },
+          orderBy: [{ effectiveFrom: 'asc' }, { createdAt: 'asc' }],
+          include: {
+            createdBy: { select: { id: true, email: true, fullName: true } },
+            rules: { orderBy: { createdAt: 'asc' } },
+            supersedesPolicyVersion: { select: { id: true, name: true, provenance: true } },
+          },
+        }),
+      ]);
+      const count = (lifecycleStatus: TaxPolicyLifecycleStatus, provenance?: TaxPolicyProvenance) =>
+        groups
+          .filter((group) => group.lifecycleStatus === lifecycleStatus && (!provenance || group.provenance === provenance))
+          .reduce((total, group) => total + group._count._all, 0);
+      const historyStatuses: TaxPolicyLifecycleStatus[] = [
+          TaxPolicyLifecycleStatus.SUPERSEDED,
+          TaxPolicyLifecycleStatus.ARCHIVED,
+          TaxPolicyLifecycleStatus.REJECTED,
+          TaxPolicyLifecycleStatus.LEGACY_REVIEW,
+      ];
+      const productionHistory = groups
+        .filter((group) => group.provenance === TaxPolicyProvenance.OPERATOR && historyStatuses.includes(group.lifecycleStatus))
+        .reduce((total, group) => total + group._count._all, 0);
+      const historyTotal = groups
+        .filter((group) => historyStatuses.includes(group.lifecycleStatus))
+        .reduce((total, group) => total + group._count._all, 0);
+      return {
+        generatedAt: now.toISOString(),
+        drafts: {
+          needsAuthor: count(TaxPolicyLifecycleStatus.DRAFT),
+          awaitingChecker: count(TaxPolicyLifecycleStatus.PENDING_APPROVAL),
+          approved: count(TaxPolicyLifecycleStatus.APPROVED),
+          scheduled: count(TaxPolicyLifecycleStatus.SCHEDULED),
+        },
+        history: {
+          production: productionHistory,
+          testOrLegacy: Math.max(0, historyTotal - productionHistory),
+        },
+        nextScheduled,
+      };
+    });
+  }
+
+  async listTaxPolicyAuditLogs(
+    actorId: string,
+    options: {
+      action?: string;
+      actorId?: string;
+      eventId?: string;
+      from?: string;
+      policyVersionId?: string;
+      skip?: string;
+      source?: string;
+      take?: string;
+      to?: string;
+    } = {},
+  ) {
+    const skip = normalizeAdminTaxPolicyVersionSkip(options.skip);
+    const take = normalizeAdminTaxPolicyVersionTake(options.take);
+    const domainWhere: Prisma.AdminAuditLogWhereInput = {
+      OR: [
+        { action: { startsWith: 'tax_policy.' } },
+        { action: { startsWith: 'tax_rule.' } },
+      ],
+    };
+    return this.prisma.$transaction(async (tx) => {
+      await requireTaxPolicyOperatorAccess(tx, actorId, 'read');
+      const source = taxPolicyEvidenceSource(options.source, true) as Exclude<TaxPolicyEvidenceSource, 'all'> | undefined;
+      const sourcePolicies = source
+        ? (await tx.taxPolicyVersion.findMany({
+            where: taxPolicyVersionSourceWhere(source),
+            select: { id: true, provenance: true },
+          }))
+        : [];
+      const sourcePolicyIds = sourcePolicies.map((policy) => policy.id);
+      const sourceByPolicyId = new Map(sourcePolicies.map((policy) => [policy.id, policy.provenance]));
+      const policyFilter = (policyIds: string[]): Prisma.AdminAuditLogWhereInput => ({
+        OR: policyIds.flatMap((policyVersionId) => [
+          { target: `tax_policy:${policyVersionId}` },
+          { metadata: { path: ['policyVersionId'], equals: policyVersionId } },
+        ]),
+      });
+      const filters: Prisma.AdminAuditLogWhereInput[] = [domainWhere];
+      if (options.eventId?.trim()) filters.push({ id: options.eventId.trim() });
+      if (options.policyVersionId) filters.push(policyFilter([options.policyVersionId]));
+      if (source) filters.push(sourcePolicyIds.length ? policyFilter(sourcePolicyIds) : { id: '__no_match__' });
+      if (options.action?.trim()) filters.push({ action: options.action.trim() });
+      if (options.actorId?.trim()) filters.push({ actorId: options.actorId.trim() });
+      if (options.from || options.to) {
+        filters.push({
+          createdAt: {
+            ...(options.from ? { gte: parseDate(options.from, 'Audit from date must be valid') } : {}),
+            ...(options.to ? { lte: parseDate(options.to, 'Audit to date must be valid') } : {}),
+          },
+        });
+      }
+      const where: Prisma.AdminAuditLogWhereInput = { AND: filters };
+      const [items, total] = await Promise.all([
+        tx.adminAuditLog.findMany({
+          where,
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          skip,
+          take,
+          include: {
+            actor: {
+              select: { id: true, fullName: true, email: true, phone: true },
+            },
+          },
+        }),
+        tx.adminAuditLog.count({ where }),
+      ]);
+      return {
+        items: source
+          ? items.map((item) => ({
+              ...item,
+              policyProvenance: sourceByPolicyId.get(taxPolicyAuditPolicyVersionId(item)) ?? null,
+            }))
+          : items,
+        total,
+        skip,
+        take,
+      };
+    });
+  }
+
+  async simulateTaxPolicyVersion(
+    actorId: string,
+    policyVersionId: string,
+    input: { grossAmount?: string | number; serviceType?: string },
+  ) {
+    const grossAmount = Number(input.grossAmount);
+    if (!Number.isSafeInteger(grossAmount) || grossAmount < 0) {
+      throw new BadRequestException({
+        code: 'TAX_POLICY_SIMULATION_AMOUNT_INVALID',
+        message: 'Simulation gross amount must be a non-negative whole VND amount.',
+      });
+    }
+    const serviceType = requiredString(input.serviceType, 'Simulation service is required');
+
+    return this.prisma.$transaction(async (tx) => {
+      await requireTaxPolicyOperatorAccess(tx, actorId, 'read');
+      const policy = await tx.taxPolicyVersion.findUnique({
+        where: { id: policyVersionId },
+        include: { rules: { where: { active: true }, orderBy: { createdAt: 'asc' } } },
+      });
+      if (!policy) {
+        throw new NotFoundException({
+          code: 'TAX_POLICY_NOT_FOUND',
+          message: 'Tax policy version not found',
+        });
+      }
+      const calculation = calculatePartnerTaxWithholding(policy.rules, {
+        grossAmount,
+        serviceTypes: [serviceType],
+      });
+      const lines = [calculation.vat, calculation.pit, calculation.combined]
+        .filter((line): line is NonNullable<typeof line> => Boolean(line?.rule))
+        .map((line) => ({
+          amount: line.amount,
+          fixedAmount: line.fixedAmount,
+          rateBps: line.rateBps,
+          ruleId: line.rule!.id,
+          scope: line.rule!.scope,
+          taxKind: line.rule!.taxKind,
+        }));
+      return {
+        amount: calculation.amount,
+        currency: 'VND',
+        grossAmount,
+        lines,
+        policyName: policy.name,
+        policyVersionId: policy.id,
+        serviceType,
+      };
+    });
+  }
+
+  async taxPolicyIntegritySummary(actorId: string, now = new Date()) {
+    const rangeStart = new Date(now.getTime() - 30 * 24 * 60 * 60_000);
+    return this.prisma.$transaction(async (tx) => {
+      await requireTaxPolicyOperatorAccess(tx, actorId, 'read');
+      const rows = await tx.$queryRaw<Array<{
+        total: bigint;
+        healthy: bigint;
+        amountMismatch: bigint;
+        missingTaxLog: bigint;
+        missingSnapshot: bigint;
+        noActivePolicy: bigint;
+        noApprovedTaxProfile: bigint;
+        noMatchingRule: bigint;
+        oldestAmountMismatch: Date | null;
+        oldestMissingTaxLog: Date | null;
+        oldestMissingSnapshot: Date | null;
+        oldestNoActivePolicy: Date | null;
+        oldestNoApprovedTaxProfile: Date | null;
+        oldestNoMatchingRule: Date | null;
+      }>>(Prisma.sql`
+        SELECT
+          COUNT(*)::bigint AS "total",
+          COUNT(*) FILTER (
+            WHERE evidence."logCount" > 0
+              AND evidence."snapshotCount" = evidence."logCount"
+              AND evidence."withholdingTotal" = earning."withholdingAmount"
+          )::bigint AS "healthy",
+          COUNT(*) FILTER (
+            WHERE evidence."logCount" > 0
+              AND evidence."withholdingTotal" <> earning."withholdingAmount"
+          )::bigint AS "amountMismatch",
+          COUNT(*) FILTER (WHERE evidence."logCount" = 0)::bigint AS "missingTaxLog",
+          COUNT(*) FILTER (
+            WHERE evidence."logCount" > 0 AND evidence."snapshotCount" < evidence."logCount"
+          )::bigint AS "missingSnapshot",
+          COUNT(*) FILTER (WHERE evidence."noActivePolicy")::bigint AS "noActivePolicy",
+          COUNT(*) FILTER (WHERE evidence."noApprovedTaxProfile")::bigint AS "noApprovedTaxProfile",
+          COUNT(*) FILTER (WHERE evidence."noMatchingRule")::bigint AS "noMatchingRule",
+          MIN(earning."createdAt") FILTER (
+            WHERE evidence."logCount" > 0 AND evidence."withholdingTotal" <> earning."withholdingAmount"
+          ) AS "oldestAmountMismatch",
+          MIN(earning."createdAt") FILTER (WHERE evidence."logCount" = 0) AS "oldestMissingTaxLog",
+          MIN(earning."createdAt") FILTER (
+            WHERE evidence."logCount" > 0 AND evidence."snapshotCount" < evidence."logCount"
+          ) AS "oldestMissingSnapshot",
+          MIN(earning."createdAt") FILTER (WHERE evidence."noActivePolicy") AS "oldestNoActivePolicy",
+          MIN(earning."createdAt") FILTER (WHERE evidence."noApprovedTaxProfile") AS "oldestNoApprovedTaxProfile",
+          MIN(earning."createdAt") FILTER (WHERE evidence."noMatchingRule") AS "oldestNoMatchingRule"
+        FROM "ProviderEarning" earning
+        LEFT JOIN LATERAL (
+          SELECT
+            COUNT(*)::int AS "logCount",
+            COUNT(log."ruleSnapshot")::int AS "snapshotCount",
+            COALESCE(SUM(log."withholdingAmount"), 0)::bigint AS "withholdingTotal",
+            COALESCE(BOOL_OR(log."ruleSnapshot"->>'reason' = 'NO_ACTIVE_POLICY'), false) AS "noActivePolicy",
+            COALESCE(BOOL_OR(log."ruleSnapshot"->>'reason' = 'NO_APPROVED_TAX_PROFILE'), false) AS "noApprovedTaxProfile",
+            COALESCE(BOOL_OR(
+              log."ruleSnapshot"->>'reason' = 'NO_MATCHING_RULE'
+              OR jsonb_path_exists(COALESCE(log."ruleSnapshot", '{}'::jsonb), '$.lines[*] ? (@.scope == "NONE")')
+            ), false) AS "noMatchingRule"
+          FROM "ProviderTaxLog" log
+          WHERE log."earningId" = earning."id"
+        ) evidence ON true
+        WHERE earning."createdAt" >= ${rangeStart}
+      `);
+      const row = rows[0];
+      return {
+        generatedAt: now.toISOString(),
+        range: '30d',
+        rangeStart: rangeStart.toISOString(),
+        total: Number(row?.total ?? 0),
+        recordIntegrity: {
+          healthy: Number(row?.healthy ?? 0),
+          amountMismatch: Number(row?.amountMismatch ?? 0),
+          missingTaxLog: Number(row?.missingTaxLog ?? 0),
+          missingSnapshot: Number(row?.missingSnapshot ?? 0),
+          oldestAmountMismatch: row?.oldestAmountMismatch?.toISOString() ?? null,
+          oldestMissingTaxLog: row?.oldestMissingTaxLog?.toISOString() ?? null,
+          oldestMissingSnapshot: row?.oldestMissingSnapshot?.toISOString() ?? null,
+        },
+        taxApplicability: {
+          noActivePolicy: Number(row?.noActivePolicy ?? 0),
+          noApprovedTaxProfile: Number(row?.noApprovedTaxProfile ?? 0),
+          noMatchingRule: Number(row?.noMatchingRule ?? 0),
+          oldestNoActivePolicy: row?.oldestNoActivePolicy?.toISOString() ?? null,
+          oldestNoApprovedTaxProfile: row?.oldestNoApprovedTaxProfile?.toISOString() ?? null,
+          oldestNoMatchingRule: row?.oldestNoMatchingRule?.toISOString() ?? null,
+        },
+      };
+    });
+  }
+
+  async taxPolicyIntegrityRecords(
+    actorId: string,
+    options: {
+      from?: string;
+      issue?: string;
+      skip?: string;
+      sort?: string;
+      source?: string;
+      take?: string;
+      to?: string;
+    } = {},
+    now = new Date(),
+  ) {
+    const issue = taxPolicyIntegrityIssue(options.issue);
+    const skip = normalizeAdminTaxPolicyVersionSkip(options.skip);
+    const take = normalizeAdminTaxPolicyVersionTake(options.take);
+    const rangeStart = new Date(now.getTime() - 30 * 24 * 60 * 60_000);
+    const source = taxPolicyEvidenceSource(options.source) ?? 'all';
+    const sort = options.sort === 'newest' ? 'newest' : 'oldest';
+    const requestedFrom = options.from
+      ? parseVietnamDateBoundary(options.from, 'Integrity from date must be valid')
+      : rangeStart;
+    const from = requestedFrom > rangeStart ? requestedFrom : rangeStart;
+    const to = options.to
+      ? parseVietnamDateBoundary(options.to, 'Integrity to date must be valid', true)
+      : null;
+    if (to && to <= from) {
+      throw new BadRequestException({
+        code: 'TAX_POLICY_INTEGRITY_DATE_RANGE_INVALID',
+        message: 'Integrity to date must be after the from date.',
+      });
+    }
+    const predicate = Prisma.sql`
+      ${taxPolicyIntegrityIssuePredicate(issue)}
+      AND ${taxPolicyIntegritySourcePredicate(source)}
+      ${to ? Prisma.sql`AND earning."createdAt" < ${to}` : Prisma.empty}
+    `;
+    return this.prisma.$transaction(async (tx) => {
+      await requireTaxPolicyOperatorAccess(tx, actorId, 'read');
+      const [countRows, rows] = await Promise.all([
+        tx.$queryRaw<Array<{ total: bigint }>>(Prisma.sql`
+          SELECT COUNT(*)::bigint AS "total"
+          ${taxPolicyIntegrityEvidenceSource(from, predicate)}
+        `),
+        tx.$queryRaw<Array<{
+          bookingId: string;
+          createdAt: Date;
+          grossAmount: number;
+          id: string;
+          policyProvenance: TaxPolicyProvenance | null;
+          policyVersionId: string | null;
+          providerDisplayName: string;
+          providerProfileId: string;
+          taxLogWithholdingAmount: bigint;
+          withholdingAmount: number;
+        }>>(Prisma.sql`
+          SELECT
+            earning."id",
+            earning."bookingId",
+            earning."providerProfileId",
+            provider."displayName" AS "providerDisplayName",
+            earning."createdAt",
+            earning."grossAmount",
+            earning."withholdingAmount",
+            evidence."withholdingTotal" AS "taxLogWithholdingAmount",
+            evidence."policyVersionId",
+            evidence."policyProvenance"
+          ${taxPolicyIntegrityEvidenceSource(from, predicate)}
+          ORDER BY earning."createdAt" ${sort === 'newest' ? Prisma.raw('DESC') : Prisma.raw('ASC')}, earning."id" ${sort === 'newest' ? Prisma.raw('DESC') : Prisma.raw('ASC')}
+          OFFSET ${skip}
+          LIMIT ${take}
+        `),
+      ]);
+      return {
+        generatedAt: now.toISOString(),
+        issue,
+        items: rows.map((row) => {
+          const evidenceSource = taxPolicyIntegrityRowSource(row.policyProvenance);
+          return {
+            ...row,
+            classification: taxPolicyIntegrityClassification(issue, evidenceSource),
+            createdAt: row.createdAt.toISOString(),
+            evidenceSource,
+            taxLogWithholdingAmount: Number(row.taxLogWithholdingAmount),
+          };
+        }),
+        skip,
+        sort,
+        source,
+        take,
+        total: Number(countRows[0]?.total ?? 0),
+      };
+    });
   }
 
   async createTaxPolicyVersion(
     actorId: string,
-    input: TaxPolicyFinanceApprovalInput & {
+    input: TaxPolicyMutationInput & {
       name: string;
       status?: TaxPolicyStatus;
       effectiveFrom: string;
       effectiveTo?: string | null;
       notes?: string;
+      legalSourceTitle: string;
+      legalSourceUrl: string;
+      promulgatedDate: string;
+      taxSubject: string;
+      changeSummary: string;
+      supersedesPolicyVersionId?: string;
+      defaultRateBps?: number;
     },
+    assurance: TaxPolicySessionAssurance = {},
   ) {
     const status = input.status ?? TaxPolicyStatus.DRAFT;
+    assertDraftTaxPolicyStatus(status);
     const effectiveFrom = parseDate(input.effectiveFrom, 'effectiveFrom is required');
     const effectiveTo = parseOptionalDate(input.effectiveTo, 'effectiveTo must be a valid date');
     assertTaxPolicyEffectiveWindow(effectiveFrom, effectiveTo);
+    const legalSourceTitle = requiredString(input.legalSourceTitle, 'Legal source title is required');
+    const legalSourceUrl = requiredHttpsUrl(input.legalSourceUrl, 'Legal source URL must use HTTPS');
+    const promulgatedDate = parseDate(input.promulgatedDate, 'Promulgated date is required');
+    const taxSubject = requiredString(input.taxSubject, 'Tax subject is required');
+    const changeSummary = requiredTaxPolicyEvidence(input.changeSummary, 'Tax policy change summary');
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      const approval = await requireTaxPolicyFinanceApproval(
-        tx,
-        actorId,
-        input,
-        'Tax policy version create',
-      );
+    const policy = await this.prisma.$transaction(async (tx) => {
+      await requireTaxPolicyOperatorAccess(tx, actorId, 'draft', assurance);
+      const provenance = await requireTaxPolicyDraftProvenance(tx, actorId);
+      const supersededPolicy = input.supersedesPolicyVersionId
+        ? await tx.taxPolicyVersion.findUnique({
+            where: { id: input.supersedesPolicyVersionId },
+            select: { id: true, revision: true },
+          })
+        : null;
+      if (input.supersedesPolicyVersionId && !supersededPolicy) {
+        throw new NotFoundException('Superseded tax policy version not found');
+      }
       const policy = await tx.taxPolicyVersion.create({
         data: {
           name: requiredString(input.name, 'Policy name is required'),
           status,
+          lifecycleStatus: TaxPolicyLifecycleStatus.DRAFT,
+          provenance,
+          jurisdiction: 'VN',
+          timezone: 'Asia/Ho_Chi_Minh',
           effectiveFrom,
           effectiveTo,
           notes: normalizeString(input.notes),
+          legalSourceTitle,
+          legalSourceUrl,
+          promulgatedDate,
+          taxSubject,
+          changeSummary,
+          supersedesPolicyVersionId: supersededPolicy?.id,
+          revision: (supersededPolicy?.revision ?? 0) + 1,
           createdById: actorId,
         },
         include: { rules: true },
       });
-      const deactivated = await deactivateOtherActiveTaxPolicies(tx, policy.id, status);
-      return { approval, policy, deactivatedCount: deactivated.count };
-    });
-    const { policy } = result;
-    await this.writeAudit(actorId, 'tax_policy.create', `tax_policy:${policy.id}`, {
-      approvalAdminId: result.approval.approvalAdminId,
-      operatorReason: result.approval.operatorReason,
-      status: policy.status,
-      deactivatedOtherActivePolicies: result.deactivatedCount,
+      let createdDefaultRule = null;
+      if (input.defaultRateBps !== undefined) {
+        const defaultRule = normalizeTaxRuleInput(
+          {
+            scope: TaxRuleScope.DEFAULT,
+            rateBps: input.defaultRateBps,
+            fixedAmount: 0,
+            active: true,
+          },
+          true,
+        );
+        createdDefaultRule = await tx.taxRule.create({
+          data: {
+            policyVersionId: policy.id,
+            ...defaultRule,
+          },
+        });
+      }
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'tax_policy.draft_created',
+          target: `tax_policy:${policy.id}`,
+          metadata: toJson({
+            operatorReason: requiredTaxPolicyEvidence(input.operatorReason, 'Tax policy draft create'),
+            status: policy.status,
+          }),
+        },
+      });
+      return createdDefaultRule
+        ? { ...policy, rules: [...policy.rules, createdDefaultRule] }
+        : policy;
     });
     return policy;
   }
@@ -753,14 +1331,24 @@ export class ProviderOnboardingService {
   async updateTaxPolicyVersion(
     actorId: string,
     id: string,
-    input: TaxPolicyFinanceApprovalInput & {
+    input: TaxPolicyMutationInput & {
       name?: string;
       status?: TaxPolicyStatus;
       effectiveFrom?: string;
       effectiveTo?: string | null;
       notes?: string | null;
+      legalSourceTitle?: string;
+      legalSourceUrl?: string;
+      promulgatedDate?: string;
+      taxSubject?: string;
+      changeSummary?: string;
+      supersedesPolicyVersionId?: string | null;
     },
+    assurance: TaxPolicySessionAssurance = {},
   ) {
+    if (input.status !== undefined) {
+      assertDraftTaxPolicyStatus(input.status);
+    }
     const effectiveFrom = input.effectiveFrom
       ? parseDate(input.effectiveFrom, 'effectiveFrom must be a valid date')
       : undefined;
@@ -768,38 +1356,56 @@ export class ProviderOnboardingService {
       input.effectiveTo === undefined
         ? undefined
         : parseOptionalDate(input.effectiveTo, 'effectiveTo must be a valid date');
+    const promulgatedDate = input.promulgatedDate
+      ? parseDate(input.promulgatedDate, 'Promulgated date must be valid')
+      : undefined;
     if (effectiveFrom && effectiveTo) {
       assertTaxPolicyEffectiveWindow(effectiveFrom, effectiveTo);
     }
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      const approval = await requireTaxPolicyFinanceApproval(
-        tx,
-        actorId,
-        input,
-        'Tax policy version update',
-      );
+    const policy = await this.prisma.$transaction(async (tx) => {
+      await requireTaxPolicyOperatorAccess(tx, actorId, 'draft', assurance);
+      const existing = await requireEditableTaxPolicy(tx, id);
+      const nextEffectiveFrom = effectiveFrom ?? existing.effectiveFrom;
+      const nextEffectiveTo = effectiveTo === undefined ? existing.effectiveTo : effectiveTo;
+      assertTaxPolicyEffectiveWindow(nextEffectiveFrom, nextEffectiveTo);
       const policy = await tx.taxPolicyVersion.update({
         where: { id },
         data: {
           name: normalizeString(input.name),
-          status: input.status,
           effectiveFrom,
           effectiveTo,
           notes: input.notes === undefined ? undefined : normalizeString(input.notes),
+          legalSourceTitle: input.legalSourceTitle === undefined
+            ? undefined
+            : requiredString(input.legalSourceTitle, 'Legal source title is required'),
+          legalSourceUrl: input.legalSourceUrl === undefined
+            ? undefined
+            : requiredHttpsUrl(input.legalSourceUrl, 'Legal source URL must use HTTPS'),
+          promulgatedDate,
+          taxSubject: input.taxSubject === undefined
+            ? undefined
+            : requiredString(input.taxSubject, 'Tax subject is required'),
+          changeSummary: input.changeSummary === undefined
+            ? undefined
+            : requiredTaxPolicyEvidence(input.changeSummary, 'Tax policy change summary'),
+          supersedesPolicyVersionId: input.supersedesPolicyVersionId,
+          payloadHash: null,
         },
         include: { rules: true },
       });
-      assertTaxPolicyEffectiveWindow(policy.effectiveFrom, policy.effectiveTo);
-      const deactivated = await deactivateOtherActiveTaxPolicies(tx, policy.id, policy.status);
-      return { approval, policy, deactivatedCount: deactivated.count };
-    });
-    const { policy } = result;
-    await this.writeAudit(actorId, 'tax_policy.update', `tax_policy:${policy.id}`, {
-      approvalAdminId: result.approval.approvalAdminId,
-      operatorReason: result.approval.operatorReason,
-      status: policy.status,
-      deactivatedOtherActivePolicies: result.deactivatedCount,
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'tax_policy.draft_updated',
+          target: `tax_policy:${policy.id}`,
+          metadata: toJson({
+            operatorReason: requiredTaxPolicyEvidence(input.operatorReason, 'Tax policy draft update'),
+            status: policy.status,
+          }),
+        },
+      });
+      return policy;
     });
     return policy;
   }
@@ -807,7 +1413,7 @@ export class ProviderOnboardingService {
   async createTaxRule(
     actorId: string,
     policyVersionId: string,
-    input: TaxPolicyFinanceApprovalInput & {
+    input: TaxPolicyMutationInput & {
       scope?: TaxRuleScope;
       serviceType?: string;
       minGrossAmount?: number;
@@ -816,15 +1422,12 @@ export class ProviderOnboardingService {
       fixedAmount?: number;
       active?: boolean;
     },
+    assurance: TaxPolicySessionAssurance = {},
   ) {
     const data = normalizeTaxRuleInput(input, true);
     const rule = await this.prisma.$transaction(async (tx) => {
-      const approval = await requireTaxPolicyFinanceApproval(
-        tx,
-        actorId,
-        input,
-        'Tax rule create',
-      );
+      await requireTaxPolicyOperatorAccess(tx, actorId, 'draft', assurance);
+      await requireEditableTaxPolicy(tx, policyVersionId);
       await assertTaxRuleDoesNotConflict(tx, policyVersionId, data);
       const createdRule = await tx.taxRule.create({
         data: {
@@ -838,22 +1441,32 @@ export class ProviderOnboardingService {
           active: data.active,
         },
       });
-      return { approval, rule: createdRule };
+      await tx.taxPolicyVersion.update({
+        where: { id: policyVersionId },
+        data: { payloadHash: null },
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'tax_rule.draft_created',
+          target: `tax_rule:${createdRule.id}`,
+          metadata: toJson({
+            operatorReason: requiredTaxPolicyEvidence(input.operatorReason, 'Tax rule draft create'),
+            policyVersionId,
+            scope: createdRule.scope,
+            rateBps: createdRule.rateBps,
+          }),
+        },
+      });
+      return createdRule;
     });
-    await this.writeAudit(actorId, 'tax_rule.create', `tax_rule:${rule.rule.id}`, {
-      approvalAdminId: rule.approval.approvalAdminId,
-      operatorReason: rule.approval.operatorReason,
-      policyVersionId,
-      scope: rule.rule.scope,
-      rateBps: rule.rule.rateBps,
-    });
-    return rule.rule;
+    return rule;
   }
 
   async updateTaxRule(
     actorId: string,
     id: string,
-    input: TaxPolicyFinanceApprovalInput & {
+    input: TaxPolicyMutationInput & {
       scope?: TaxRuleScope;
       serviceType?: string | null;
       minGrossAmount?: number | null;
@@ -862,43 +1475,519 @@ export class ProviderOnboardingService {
       fixedAmount?: number;
       active?: boolean;
     },
+    assurance: TaxPolicySessionAssurance = {},
   ) {
-    const existing = await this.prisma.taxRule.findUniqueOrThrow({ where: { id } });
-    const data = normalizeTaxRuleInput(
-      {
-        scope: input.scope ?? existing.scope,
-        serviceType: input.serviceType === undefined ? existing.serviceType : input.serviceType,
-        minGrossAmount: input.minGrossAmount === undefined ? existing.minGrossAmount : input.minGrossAmount,
-        maxGrossAmount: input.maxGrossAmount === undefined ? existing.maxGrossAmount : input.maxGrossAmount,
-        rateBps: input.rateBps ?? existing.rateBps,
-        fixedAmount: input.fixedAmount ?? existing.fixedAmount,
-        active: input.active ?? existing.active,
-      },
-      false,
-    );
     const rule = await this.prisma.$transaction(async (tx) => {
-      const approval = await requireTaxPolicyFinanceApproval(
-        tx,
-        actorId,
-        input,
-        'Tax rule update',
+      await requireTaxPolicyOperatorAccess(tx, actorId, 'draft', assurance);
+      const existing = await tx.taxRule.findUnique({
+        where: { id },
+        include: {
+          policyVersion: {
+            include: {
+              _count: { select: { taxLogs: true, bookingSettlementSnapshots: true } },
+            },
+          },
+        },
+      });
+      if (!existing) {
+        throw new NotFoundException('Tax rule not found');
+      }
+      assertEditableTaxPolicy(existing.policyVersion);
+      const data = normalizeTaxRuleInput(
+        {
+          scope: input.scope ?? existing.scope,
+          serviceType: input.serviceType === undefined ? existing.serviceType : input.serviceType,
+          minGrossAmount: input.minGrossAmount === undefined ? existing.minGrossAmount : input.minGrossAmount,
+          maxGrossAmount: input.maxGrossAmount === undefined ? existing.maxGrossAmount : input.maxGrossAmount,
+          rateBps: input.rateBps ?? existing.rateBps,
+          fixedAmount: input.fixedAmount ?? existing.fixedAmount,
+          active: input.active ?? existing.active,
+        },
+        false,
       );
       await assertTaxRuleDoesNotConflict(tx, existing.policyVersionId, data, existing.id);
       const updatedRule = await tx.taxRule.update({
         where: { id },
         data,
       });
-      return { approval, rule: updatedRule };
+      await tx.taxPolicyVersion.update({
+        where: { id: existing.policyVersionId },
+        data: { payloadHash: null },
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'tax_rule.draft_updated',
+          target: `tax_rule:${updatedRule.id}`,
+          metadata: toJson({
+            operatorReason: requiredTaxPolicyEvidence(input.operatorReason, 'Tax rule draft update'),
+            policyVersionId: updatedRule.policyVersionId,
+            scope: updatedRule.scope,
+            rateBps: updatedRule.rateBps,
+            active: updatedRule.active,
+          }),
+        },
+      });
+      return updatedRule;
     });
-    await this.writeAudit(actorId, 'tax_rule.update', `tax_rule:${rule.rule.id}`, {
-      approvalAdminId: rule.approval.approvalAdminId,
-      operatorReason: rule.approval.operatorReason,
-      policyVersionId: rule.rule.policyVersionId,
-      scope: rule.rule.scope,
-      rateBps: rule.rule.rateBps,
-      active: rule.rule.active,
+    return rule;
+  }
+
+  async submitTaxPolicyApprovalRequest(
+    actorId: string,
+    policyVersionId: string,
+    input: { cleanSourceAcknowledged?: boolean; operatorReason: string; idempotencyKey: string },
+    assurance: TaxPolicySessionAssurance = {},
+  ) {
+    const operatorReason = requiredTaxPolicyEvidence(
+      input.operatorReason,
+      'Tax policy approval request',
+    );
+    const idempotencyKey = requiredString(input.idempotencyKey, 'Idempotency key is required');
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        await requireTaxPolicyOperatorAccess(tx, actorId, 'request', assurance);
+        const policy = await tx.taxPolicyVersion.findUnique({
+          where: { id: policyVersionId },
+          include: {
+            rules: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
+            _count: { select: { taxLogs: true, bookingSettlementSnapshots: true } },
+            supersedesPolicyVersion: { select: { id: true, provenance: true } },
+          },
+        });
+        if (!policy) {
+          throw new NotFoundException({
+            code: 'TAX_POLICY_NOT_FOUND',
+            message: 'Tax policy version not found',
+          });
+        }
+        assertEditableTaxPolicy(policy);
+        assertTaxPolicyReadyForApproval(policy);
+        if (
+          policy.supersedesPolicyVersion &&
+          policy.supersedesPolicyVersion.provenance !== TaxPolicyProvenance.OPERATOR &&
+          input.cleanSourceAcknowledged !== true
+        ) {
+          throw new BadRequestException({
+            code: 'TAX_POLICY_CLEAN_SOURCE_ACKNOWLEDGEMENT_REQUIRED',
+            message: 'Confirm that non-production source values were independently reviewed before submission.',
+          });
+        }
+        const payloadHash = taxPolicyPayloadHash(policy);
+
+        const replay = await tx.taxPolicyApprovalRequest.findUnique({
+          where: { idempotencyKey },
+          include: { policyVersion: true, requestedByAdmin: true, decidedByAdmin: true },
+        });
+        if (replay) {
+          if (
+            replay.policyVersionId === policyVersionId &&
+            replay.requestedByAdminId === actorId &&
+            replay.payloadHash === payloadHash
+          ) {
+            return taxPolicyApprovalReceipt(replay, true);
+          }
+          throw new ConflictException({
+            code: 'TAX_POLICY_IDEMPOTENCY_KEY_REUSED',
+            message: 'This idempotency key belongs to a different tax policy approval request.',
+          });
+        }
+
+        const pendingKey = `tax-policy:${policyVersionId}`;
+        const pending = await tx.taxPolicyApprovalRequest.findUnique({ where: { pendingKey } });
+        if (pending) {
+          throw new ConflictException({
+            code: 'TAX_POLICY_APPROVAL_ALREADY_PENDING',
+            message: 'This tax policy already has a pending approval request.',
+          });
+        }
+
+        const request = await tx.taxPolicyApprovalRequest.create({
+          data: {
+            policyVersionId,
+            requestedByAdminId: actorId,
+            operatorReason,
+            payloadHash,
+            idempotencyKey,
+            pendingKey,
+          },
+          include: { policyVersion: true, requestedByAdmin: true, decidedByAdmin: true },
+        });
+        await tx.taxPolicyVersion.update({
+          where: { id: policyVersionId },
+          data: {
+            lifecycleStatus: TaxPolicyLifecycleStatus.PENDING_APPROVAL,
+            payloadHash,
+          },
+        });
+        await tx.adminAuditLog.create({
+          data: {
+            actorId,
+            action: 'tax_policy.approval_requested',
+            target: `tax_policy_approval:${request.id}`,
+            metadata: toJson({
+              cleanSourceAcknowledged: input.cleanSourceAcknowledged === true,
+              policyVersionId,
+              payloadHash,
+              operatorReason,
+              sourcePolicyId: policy.supersedesPolicyVersion?.id ?? null,
+              sourceProvenance: policy.supersedesPolicyVersion?.provenance ?? null,
+            }),
+          },
+        });
+        return taxPolicyApprovalReceipt(request, false);
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+  }
+
+  async listTaxPolicyApprovalRequests(
+    actorId: string,
+    options: { policyVersionId?: string; skip?: string; take?: string } = {},
+  ) {
+    const skip = normalizeAdminTaxPolicyVersionSkip(options.skip);
+    const take = normalizeAdminTaxPolicyVersionTake(options.take);
+    return this.prisma.$transaction(async (tx) => {
+      await requireTaxPolicyOperatorAccess(tx, actorId, 'read');
+      const where: Prisma.TaxPolicyApprovalRequestWhereInput = options.policyVersionId
+        ? { policyVersionId: options.policyVersionId }
+        : {};
+      const [items, total] = await Promise.all([
+        tx.taxPolicyApprovalRequest.findMany({
+          where,
+          orderBy: [{ requestedAt: 'desc' }, { id: 'desc' }],
+          skip,
+          take,
+          include: { policyVersion: true, requestedByAdmin: true, decidedByAdmin: true },
+        }),
+        tx.taxPolicyApprovalRequest.count({ where }),
+      ]);
+      return {
+        items: items.map((request) => taxPolicyApprovalReceipt(request, false)),
+        total,
+        skip,
+        take,
+      };
     });
-    return rule.rule;
+  }
+
+  async decideTaxPolicyApprovalRequest(
+    actorId: string,
+    requestId: string,
+    input: { decision: 'APPROVE' | 'REJECT'; decisionReason: string },
+    assurance: TaxPolicySessionAssurance = {},
+  ) {
+    const decisionReason = requiredTaxPolicyEvidence(
+      input.decisionReason,
+      'Tax policy approval decision',
+    );
+    const now = new Date();
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        const request = await tx.taxPolicyApprovalRequest.findUnique({
+          where: { id: requestId },
+          include: {
+            requestedByAdmin: true,
+            decidedByAdmin: true,
+            policyVersion: {
+              include: { rules: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] } },
+            },
+          },
+        });
+        if (!request) {
+          throw new NotFoundException({
+            code: 'TAX_POLICY_APPROVAL_NOT_FOUND',
+            message: 'Tax policy approval request not found',
+          });
+        }
+        await requireTaxPolicyOperatorAccess(
+          tx,
+          actorId,
+          'decision',
+          assurance,
+          request.requestedByAdminId,
+        );
+        if (request.requestedByAdminId === actorId) {
+          throw new ForbiddenException({
+            code: 'TAX_POLICY_MAKER_CANNOT_APPROVE',
+            message: 'The operator who submitted this tax policy cannot decide its approval.',
+          });
+        }
+        if (request.status !== TaxPolicyApprovalStatus.PENDING) {
+          const replayed =
+            (input.decision === 'APPROVE' &&
+              (request.status === TaxPolicyApprovalStatus.APPROVED ||
+                request.status === TaxPolicyApprovalStatus.ACTIVATED)) ||
+            (input.decision === 'REJECT' && request.status === TaxPolicyApprovalStatus.REJECTED);
+          if (replayed) {
+            return {
+              receipt: taxPolicyApprovalReceipt(request, true),
+              activation: input.decision === 'APPROVE'
+                ? {
+                    policyVersionId: request.policyVersionId,
+                    approvalRequestId: request.id,
+                    effectiveFrom: request.policyVersion.effectiveFrom,
+                  }
+                : null,
+            };
+          }
+          throw new ConflictException({
+            code: 'TAX_POLICY_APPROVAL_ALREADY_DECIDED',
+            message: 'This tax policy approval request already has a different final decision.',
+          });
+        }
+        if (request.policyVersion.lifecycleStatus !== TaxPolicyLifecycleStatus.PENDING_APPROVAL) {
+          throw new ConflictException({
+            code: 'TAX_POLICY_APPROVAL_STATE_CHANGED',
+            message: 'The tax policy lifecycle changed after this approval request was submitted.',
+          });
+        }
+        const currentHash = taxPolicyPayloadHash(request.policyVersion);
+        if (
+          currentHash !== request.payloadHash ||
+          request.policyVersion.payloadHash !== request.payloadHash
+        ) {
+          throw new ConflictException({
+            code: 'TAX_POLICY_PAYLOAD_CHANGED',
+            message: 'The tax policy payload changed after submission. Create a new draft request.',
+          });
+        }
+
+        if (input.decision === 'REJECT') {
+          const rejected = await tx.taxPolicyApprovalRequest.update({
+            where: { id: request.id },
+            data: {
+              status: TaxPolicyApprovalStatus.REJECTED,
+              decidedByAdminId: actorId,
+              decisionReason,
+              decidedAt: now,
+              pendingKey: null,
+            },
+            include: { policyVersion: true, requestedByAdmin: true, decidedByAdmin: true },
+          });
+          await tx.taxPolicyVersion.update({
+            where: { id: request.policyVersionId },
+            data: { lifecycleStatus: TaxPolicyLifecycleStatus.REJECTED },
+          });
+          await tx.adminAuditLog.create({
+            data: {
+              actorId,
+              action: 'tax_policy.approval_rejected',
+              target: `tax_policy_approval:${request.id}`,
+              metadata: toJson({
+                policyVersionId: request.policyVersionId,
+                makerId: request.requestedByAdminId,
+                checkerId: actorId,
+                decisionReason,
+                payloadHash: request.payloadHash,
+              }),
+            },
+          });
+          return { receipt: taxPolicyApprovalReceipt(rejected, false), activation: null };
+        }
+
+        const scheduled = request.policyVersion.effectiveFrom.getTime() > now.getTime();
+        const activationJobId = `activate-tax-policy-${request.id}`;
+        const approved = await tx.taxPolicyApprovalRequest.update({
+          where: { id: request.id },
+          data: {
+            status: TaxPolicyApprovalStatus.APPROVED,
+            decidedByAdminId: actorId,
+            decisionReason,
+            decidedAt: now,
+            scheduledFor: request.policyVersion.effectiveFrom,
+            activationJobId,
+            pendingKey: null,
+          },
+          include: { policyVersion: true, requestedByAdmin: true, decidedByAdmin: true },
+        });
+        await tx.taxPolicyVersion.update({
+          where: { id: request.policyVersionId },
+          data: {
+            lifecycleStatus: scheduled
+              ? TaxPolicyLifecycleStatus.SCHEDULED
+              : TaxPolicyLifecycleStatus.APPROVED,
+            approvedByAdminId: actorId,
+            approvedAt: now,
+          },
+        });
+        await tx.adminAuditLog.create({
+          data: {
+            actorId,
+            action: scheduled ? 'tax_policy.approval_scheduled' : 'tax_policy.approval_approved',
+            target: `tax_policy_approval:${request.id}`,
+            metadata: toJson({
+              policyVersionId: request.policyVersionId,
+              makerId: request.requestedByAdminId,
+              checkerId: actorId,
+              decisionReason,
+              payloadHash: request.payloadHash,
+              scheduledFor: request.policyVersion.effectiveFrom.toISOString(),
+            }),
+          },
+        });
+        return {
+          receipt: taxPolicyApprovalReceipt(approved, false),
+          activation: {
+            policyVersionId: request.policyVersionId,
+            approvalRequestId: request.id,
+            effectiveFrom: request.policyVersion.effectiveFrom,
+          },
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+
+    if (result.activation && this.taxPolicyActivationQueue) {
+      const job = taxPolicyActivationJob(
+        result.activation.policyVersionId,
+        result.activation.approvalRequestId,
+        result.activation.effectiveFrom,
+      );
+      await this.taxPolicyActivationQueue.add(job.name, job.data, job.options);
+    }
+    return result.receipt;
+  }
+
+  async activateDueTaxPolicies(now = new Date()) {
+    const due = await this.prisma.taxPolicyApprovalRequest.findMany({
+      where: {
+        status: TaxPolicyApprovalStatus.APPROVED,
+        scheduledFor: { lte: now },
+        policyVersion: {
+          lifecycleStatus: {
+            in: [TaxPolicyLifecycleStatus.APPROVED, TaxPolicyLifecycleStatus.SCHEDULED],
+          },
+        },
+      },
+      orderBy: [{ scheduledFor: 'asc' }, { requestedAt: 'asc' }],
+      take: 25,
+      select: { id: true, policyVersionId: true },
+    });
+    const results = [];
+    for (const request of due) {
+      results.push(await this.activateTaxPolicyVersion(request.policyVersionId, request.id, now));
+    }
+    return { checked: due.length, results };
+  }
+
+  async activateTaxPolicyVersion(
+    policyVersionId: string,
+    approvalRequestId?: string,
+    now = new Date(),
+  ) {
+    return this.prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('hands-tax-policy-activation'))`;
+        const policy = await tx.taxPolicyVersion.findUnique({
+          where: { id: policyVersionId },
+          include: { rules: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] } },
+        });
+        if (!policy) {
+          return { skipped: true, reason: 'policy-not-found', policyVersionId };
+        }
+        const request = approvalRequestId
+          ? await tx.taxPolicyApprovalRequest.findUnique({ where: { id: approvalRequestId } })
+          : await tx.taxPolicyApprovalRequest.findFirst({
+              where: { policyVersionId, status: TaxPolicyApprovalStatus.APPROVED },
+              orderBy: { requestedAt: 'desc' },
+            });
+        if (!request || request.policyVersionId !== policyVersionId) {
+          return { skipped: true, reason: 'approval-not-found', policyVersionId };
+        }
+        if (
+          policy.status === TaxPolicyStatus.ACTIVE &&
+          policy.lifecycleStatus === TaxPolicyLifecycleStatus.ACTIVE
+        ) {
+          return { activated: true, replayed: true, policyVersionId };
+        }
+        if (request.status !== TaxPolicyApprovalStatus.APPROVED) {
+          return { skipped: true, reason: 'approval-not-ready', policyVersionId };
+        }
+        if (
+          policy.lifecycleStatus !== TaxPolicyLifecycleStatus.APPROVED &&
+          policy.lifecycleStatus !== TaxPolicyLifecycleStatus.SCHEDULED
+        ) {
+          return { skipped: true, reason: 'policy-not-approved', policyVersionId };
+        }
+        if (policy.effectiveFrom.getTime() > now.getTime()) {
+          return { skipped: true, reason: 'not-due', policyVersionId };
+        }
+        if (taxPolicyPayloadHash(policy) !== request.payloadHash) {
+          await tx.taxPolicyApprovalRequest.update({
+            where: { id: request.id },
+            data: {
+              status: TaxPolicyApprovalStatus.FAILED,
+              failureCode: 'TAX_POLICY_PAYLOAD_CHANGED',
+            },
+          });
+          await tx.adminAuditLog.create({
+            data: {
+              actorId: request.decidedByAdminId ?? request.requestedByAdminId,
+              action: 'tax_policy.activation_blocked',
+              target: `tax_policy_approval:${request.id}`,
+              metadata: toJson({ policyVersionId, failureCode: 'TAX_POLICY_PAYLOAD_CHANGED' }),
+            },
+          });
+          return { skipped: true, reason: 'payload-changed', policyVersionId };
+        }
+
+        const activePolicies = await tx.taxPolicyVersion.findMany({
+          where: { status: TaxPolicyStatus.ACTIVE, id: { not: policyVersionId } },
+          select: { id: true },
+        });
+        const previousActiveId = activePolicies[0]?.id ?? null;
+        if (!request.decidedByAdminId) {
+          return { skipped: true, reason: 'checker-missing', policyVersionId };
+        }
+        if (activePolicies.length > 0) {
+          await tx.taxPolicyVersion.updateMany({
+            where: { id: { in: activePolicies.map((active) => active.id) } },
+            data: {
+              status: TaxPolicyStatus.INACTIVE,
+              lifecycleStatus: TaxPolicyLifecycleStatus.SUPERSEDED,
+              effectiveTo: now,
+              supersededAt: now,
+            },
+          });
+        }
+        await tx.taxPolicyVersion.update({
+          where: { id: policyVersionId },
+          data: {
+            status: TaxPolicyStatus.ACTIVE,
+            lifecycleStatus: TaxPolicyLifecycleStatus.ACTIVE,
+            activatedAt: now,
+            supersedesPolicyVersionId: policy.supersedesPolicyVersionId ?? previousActiveId,
+          },
+        });
+        await tx.taxPolicyApprovalRequest.update({
+          where: { id: request.id },
+          data: {
+            status: TaxPolicyApprovalStatus.ACTIVATED,
+            activatedAt: now,
+            failureCode: null,
+          },
+        });
+        await tx.adminAuditLog.create({
+          data: {
+            actorId: request.decidedByAdminId,
+            action: 'tax_policy.activated',
+            target: `tax_policy:${policyVersionId}`,
+            metadata: toJson({
+              approvalRequestId: request.id,
+              makerId: request.requestedByAdminId,
+              checkerId: request.decidedByAdminId,
+              previousActiveId,
+              payloadHash: request.payloadHash,
+              activatedAt: now.toISOString(),
+            }),
+          },
+        });
+        return { activated: true, replayed: false, policyVersionId, previousActiveId };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   private async attachProviderDocument(
@@ -1156,48 +2245,402 @@ function assertTaxPolicyEffectiveWindow(effectiveFrom: Date, effectiveTo?: Date 
   }
 }
 
+function assertDraftTaxPolicyStatus(status: TaxPolicyStatus) {
+  if (status !== TaxPolicyStatus.DRAFT) {
+    throw new ConflictException({
+      code: 'TAX_POLICY_DIRECT_ACTIVATION_FORBIDDEN',
+      message: 'Tax policies can only be created or edited as drafts. Submit the draft for approval instead.',
+    });
+  }
+}
+
+async function requireEditableTaxPolicy(tx: Prisma.TransactionClient, id: string) {
+  const policy = await tx.taxPolicyVersion.findUnique({
+    where: { id },
+    include: {
+      _count: { select: { taxLogs: true, bookingSettlementSnapshots: true } },
+    },
+  });
+  if (!policy) {
+    throw new NotFoundException('Tax policy version not found');
+  }
+  assertEditableTaxPolicy(policy);
+  return policy;
+}
+
+function assertEditableTaxPolicy(policy: {
+  readonly status: TaxPolicyStatus;
+  readonly lifecycleStatus: TaxPolicyLifecycleStatus;
+  readonly _count: {
+    readonly taxLogs: number;
+    readonly bookingSettlementSnapshots: number;
+  };
+}) {
+  if (
+    policy.status !== TaxPolicyStatus.DRAFT ||
+    policy.lifecycleStatus !== TaxPolicyLifecycleStatus.DRAFT
+  ) {
+    throw new ConflictException({
+      code: 'TAX_POLICY_IMMUTABLE',
+      message: 'Only unreferenced draft tax policies can be edited.',
+    });
+  }
+  if (policy._count.taxLogs > 0 || policy._count.bookingSettlementSnapshots > 0) {
+    throw new ConflictException({
+      code: 'TAX_POLICY_REFERENCED',
+      message: 'This tax policy is referenced by financial records and is immutable.',
+    });
+  }
+}
+
+function requiredHttpsUrl(value: string | undefined, message: string) {
+  const url = requiredString(value, message);
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') {
+      throw new Error('not https');
+    }
+    return parsed.toString();
+  } catch {
+    throw new BadRequestException(message);
+  }
+}
+
+function requiredTaxPolicyEvidence(value: string | undefined, actionLabel: string) {
+  const evidence = requiredString(value, `${actionLabel} requires operator evidence`);
+  if (evidence.length < 10) {
+    throw new BadRequestException(`${actionLabel} requires at least 10 characters of operator evidence`);
+  }
+  return evidence;
+}
+
+async function requireTaxPolicyOperatorAccess(
+  tx: Prisma.TransactionClient,
+  actorId: string,
+  purpose: 'decision' | 'draft' | 'read' | 'request',
+  assurance: TaxPolicySessionAssurance = {},
+  makerId?: string | null,
+) {
+  const actor = await tx.user.findUnique({
+    where: { id: actorId },
+    select: {
+      id: true,
+      roles: true,
+      adminUserProvenance: true,
+      adminOperatorPermission: { select: { categories: true } },
+    },
+  });
+  const categories = actor?.adminOperatorPermission?.categories ?? [];
+  if (
+    !actor ||
+    !actor.roles.includes(Role.ADMIN) ||
+    !adminOperatorHasRequiredCategory(
+      categories,
+      AdminOperatorPermissionCategory.FINANCE_TAX,
+    )
+  ) {
+    throw new ForbiddenException({
+      code: 'TAX_POLICY_FINANCE_ACCESS_REQUIRED',
+      message: 'A verified Finance Tax operator session is required for tax policy changes.',
+    });
+  }
+  if (purpose === 'read') return actor;
+  if (actor.adminUserProvenance === AdminUserProvenance.FIXTURE && purpose === 'draft') {
+    assertTaxPolicyFixtureWriteEnvironment(
+      process.env.DATABASE_URL,
+      process.env.TAX_POLICY_FIXTURE_WRITE_ALLOWLIST,
+    );
+    return actor;
+  }
+  const snapshot = await financeApproverPolicySnapshot(tx, actorId, {
+    makerId: purpose === 'decision' ? makerId : undefined,
+    requiredCategory: AdminOperatorPermissionCategory.FINANCE_TAX,
+    requireAttestation: purpose === 'decision',
+    requireFinanceRole: purpose === 'decision',
+    requireRecentReauthentication: purpose === 'request' || purpose === 'decision',
+    requireSessionMfa: purpose === 'request' || purpose === 'decision',
+    sessionId: assurance.sessionId,
+    sessionMfaVerifiedAt: assurance.mfaVerifiedAt,
+  });
+  if (!snapshot.ready) {
+    const blocker = snapshot.blockers[0];
+    throw new ForbiddenException({
+      blockers: snapshot.blockers,
+      code: blocker?.code ?? 'TAX_POLICY_VERIFIED_OPERATOR_REQUIRED',
+      message: blocker?.message ?? 'A verified production operator session is required for tax policy changes.',
+    });
+  }
+  if (purpose === 'request') {
+    const checkers = await listFinanceApproverPolicySnapshots(tx, {
+      excludeIds: [actorId],
+      requiredCategory: AdminOperatorPermissionCategory.FINANCE_TAX,
+      requireAttestation: true,
+      requireFinanceRole: true,
+    });
+    if (!checkers.some((checker) => checker.ready)) {
+      throw new ForbiddenException({
+        code: 'INDEPENDENT_CHECKER_UNAVAILABLE',
+        message: 'No separate verified Finance approver is available to review this request.',
+      });
+    }
+  }
+  return actor;
+}
+
+async function buildTaxPolicyCapabilities(
+  tx: Prisma.TransactionClient,
+  actorId: string,
+  assurance: TaxPolicySessionAssurance,
+  makerId: string | null,
+) {
+  const base = {
+    requiredCategory: AdminOperatorPermissionCategory.FINANCE_TAX,
+    sessionId: assurance.sessionId,
+    sessionMfaVerifiedAt: assurance.mfaVerifiedAt,
+  };
+  const [draft, submit, decision, checkers] = await Promise.all([
+    financeApproverPolicySnapshot(tx, actorId, {
+      ...base,
+      requireAttestation: false,
+      requireFinanceRole: false,
+    }),
+    financeApproverPolicySnapshot(tx, actorId, {
+      ...base,
+      requireAttestation: false,
+      requireFinanceRole: false,
+      requireRecentReauthentication: true,
+      requireSessionMfa: true,
+    }),
+    financeApproverPolicySnapshot(tx, actorId, {
+      ...base,
+      makerId,
+      requireAttestation: true,
+      requireFinanceRole: true,
+      requireRecentReauthentication: true,
+      requireSessionMfa: true,
+    }),
+    listFinanceApproverPolicySnapshots(tx, {
+      excludeIds: [actorId],
+      requiredCategory: AdminOperatorPermissionCategory.FINANCE_TAX,
+      requireAttestation: true,
+      requireFinanceRole: true,
+    }),
+  ]);
+  const readyCheckers = checkers.filter((checker) => checker.ready);
+  let draftBlockers: Array<{ code: string; message: string }> = [...draft.blockers];
+  if (draft.source === 'FIXTURE' || draft.source === 'TEST_RUN') {
+    try {
+      assertTaxPolicyFixtureWriteEnvironment(
+        process.env.DATABASE_URL,
+        process.env.TAX_POLICY_FIXTURE_WRITE_ALLOWLIST,
+      );
+      draftBlockers = draftBlockers.filter((blocker) =>
+        blocker.code !== 'TEST_OR_FIXTURE_ACCOUNT' && blocker.code !== 'NON_PRODUCTION_PROVENANCE');
+    } catch (error) {
+      draftBlockers.push({
+        code: 'FIXTURE_DATABASE_NOT_ISOLATED',
+        message: error instanceof Error ? error.message : 'Fixture Tax Policy writes require an isolated database.',
+      });
+    }
+  }
+  const submitBlockers: Array<{ code: string; message: string }> = [...submit.blockers];
+  if (!readyCheckers.length) {
+    submitBlockers.push({
+      code: 'INDEPENDENT_CHECKER_UNAVAILABLE',
+      message: 'No separate verified Finance approver is available to review this request.',
+    });
+  }
+  return {
+    actorId,
+    canDecide: decision.ready,
+    canDraft: draftBlockers.length === 0,
+    canSubmit: submitBlockers.length === 0,
+    decisionBlockers: decision.blockers,
+    draftBlockers,
+    generatedAt: new Date().toISOString(),
+    independentCheckerCount: readyCheckers.length,
+    source: draft.source,
+    submitBlockers,
+    warning: draft.source === 'PRODUCTION'
+      ? null
+      : 'This identity is not verified for production Tax Policy work.',
+  };
+}
+
+async function requireTaxPolicyDraftProvenance(
+  tx: Prisma.TransactionClient,
+  actorId: string,
+) {
+  const actor = await tx.user.findUnique({
+    where: { id: actorId },
+    select: { adminUserProvenance: true },
+  });
+  if (actor?.adminUserProvenance === AdminUserProvenance.FIXTURE) {
+    assertTaxPolicyFixtureWriteEnvironment(
+      process.env.DATABASE_URL,
+      process.env.TAX_POLICY_FIXTURE_WRITE_ALLOWLIST,
+    );
+    return TaxPolicyProvenance.SMOKE_TEST;
+  }
+  if (actor?.adminUserProvenance === AdminUserProvenance.PRODUCTION) {
+    return TaxPolicyProvenance.OPERATOR;
+  }
+  throw new ForbiddenException({
+    code: 'TAX_POLICY_OPERATOR_PROVENANCE_REQUIRED',
+    message: 'Tax policy drafts require a production operator or an isolated fixture identity.',
+  });
+}
+
+function assertTaxPolicyReadyForApproval(policy: {
+  readonly provenance: TaxPolicyProvenance;
+  readonly legalSourceTitle: string | null;
+  readonly legalSourceUrl: string | null;
+  readonly promulgatedDate: Date | null;
+  readonly taxSubject: string | null;
+  readonly changeSummary: string | null;
+  readonly effectiveFrom: Date;
+  readonly effectiveTo: Date | null;
+  readonly rules: ReadonlyArray<{ readonly scope: TaxRuleScope; readonly active: boolean }>;
+}) {
+  if (policy.provenance !== TaxPolicyProvenance.OPERATOR) {
+    throw new ConflictException({
+      code: 'TAX_POLICY_NON_OPERATOR_DRAFT',
+      message: 'Seed, smoke, migration, and legacy policies cannot enter the production approval flow.',
+    });
+  }
+  if (
+    !policy.legalSourceTitle ||
+    !policy.legalSourceUrl ||
+    !policy.promulgatedDate ||
+    !policy.taxSubject ||
+    !policy.changeSummary
+  ) {
+    throw new BadRequestException({
+      code: 'TAX_POLICY_LEGAL_EVIDENCE_REQUIRED',
+      message: 'Legal source, promulgated date, tax subject, and change summary are required.',
+    });
+  }
+  requiredHttpsUrl(policy.legalSourceUrl, 'Legal source URL must use HTTPS');
+  assertTaxPolicyEffectiveWindow(policy.effectiveFrom, policy.effectiveTo);
+  const activeDefaultRules = policy.rules.filter(
+    (rule) => rule.active && rule.scope === TaxRuleScope.DEFAULT,
+  );
+  if (activeDefaultRules.length !== 1) {
+    throw new BadRequestException({
+      code: 'TAX_POLICY_DEFAULT_RULE_REQUIRED',
+      message: 'Exactly one active DEFAULT tax rule is required before approval.',
+    });
+  }
+}
+
+function taxPolicyPayloadHash(policy: {
+  readonly id: string;
+  readonly name: string;
+  readonly jurisdiction: string;
+  readonly timezone: string;
+  readonly effectiveFrom: Date;
+  readonly effectiveTo: Date | null;
+  readonly notes: string | null;
+  readonly legalSourceTitle: string | null;
+  readonly legalSourceUrl: string | null;
+  readonly promulgatedDate: Date | null;
+  readonly taxSubject: string | null;
+  readonly changeSummary: string | null;
+  readonly supersedesPolicyVersionId: string | null;
+  readonly revision: number;
+  readonly rules: ReadonlyArray<{
+    readonly id: string;
+    readonly scope: TaxRuleScope;
+    readonly serviceType: string | null;
+    readonly minGrossAmount: number | null;
+    readonly maxGrossAmount: number | null;
+    readonly taxKind: string;
+    readonly category: string | null;
+    readonly collectionMode: string | null;
+    readonly rateBps: number;
+    readonly fixedAmount: number;
+    readonly active: boolean;
+  }>;
+}) {
+  return sha256(
+    JSON.stringify({
+      id: policy.id,
+      name: policy.name,
+      jurisdiction: policy.jurisdiction,
+      timezone: policy.timezone,
+      effectiveFrom: policy.effectiveFrom.toISOString(),
+      effectiveTo: policy.effectiveTo?.toISOString() ?? null,
+      notes: policy.notes,
+      legalSourceTitle: policy.legalSourceTitle,
+      legalSourceUrl: policy.legalSourceUrl,
+      promulgatedDate: policy.promulgatedDate?.toISOString() ?? null,
+      taxSubject: policy.taxSubject,
+      changeSummary: policy.changeSummary,
+      supersedesPolicyVersionId: policy.supersedesPolicyVersionId,
+      revision: policy.revision,
+      rules: policy.rules.map((rule) => ({
+        id: rule.id,
+        scope: rule.scope,
+        serviceType: rule.serviceType,
+        minGrossAmount: rule.minGrossAmount,
+        maxGrossAmount: rule.maxGrossAmount,
+        taxKind: rule.taxKind,
+        category: rule.category,
+        collectionMode: rule.collectionMode,
+        rateBps: rule.rateBps,
+        fixedAmount: rule.fixedAmount,
+        active: rule.active,
+      })),
+    }),
+  );
+}
+
+function taxPolicyApprovalReceipt(
+  request: {
+    readonly id: string;
+    readonly policyVersionId: string;
+    readonly requestedByAdminId: string;
+    readonly decidedByAdminId: string | null;
+    readonly operatorReason: string;
+    readonly decisionReason: string | null;
+    readonly payloadHash: string;
+    readonly status: TaxPolicyApprovalStatus;
+    readonly requestedAt: Date;
+    readonly decidedAt: Date | null;
+    readonly scheduledFor: Date | null;
+    readonly activatedAt: Date | null;
+    readonly failureCode: string | null;
+    readonly policyVersion?: unknown;
+    readonly requestedByAdmin?: unknown;
+    readonly decidedByAdmin?: unknown;
+  },
+  replayed: boolean,
+) {
+  return {
+    id: request.id,
+    policyVersionId: request.policyVersionId,
+    status: request.status,
+    payloadHash: request.payloadHash,
+    operatorReason: request.operatorReason,
+    decisionReason: request.decisionReason,
+    requestedAt: request.requestedAt,
+    decidedAt: request.decidedAt,
+    scheduledFor: request.scheduledFor,
+    activatedAt: request.activatedAt,
+    failureCode: request.failureCode,
+    maker: request.requestedByAdmin ?? { id: request.requestedByAdminId },
+    checker: request.decidedByAdmin ?? (request.decidedByAdminId ? { id: request.decidedByAdminId } : null),
+    policyVersion: request.policyVersion,
+    replayed,
+  };
+}
+
 function requiredString(value: string | undefined, message: string) {
   const normalized = normalizeString(value);
   if (!normalized) {
     throw new BadRequestException(message);
   }
   return normalized;
-}
-
-async function requireTaxPolicyFinanceApproval(
-  tx: Prisma.TransactionClient,
-  actorId: string,
-  input: TaxPolicyFinanceApprovalInput,
-  actionLabel: string,
-) {
-  const approvalAdminId = requiredString(
-    input.approvalAdminId,
-    `${actionLabel} requires a Finance approver`,
-  );
-  if (approvalAdminId === actorId) {
-    throw new BadRequestException(`${actionLabel} requires a different Finance approver`);
-  }
-  const approver = await tx.user.findUnique({
-    where: { id: approvalAdminId },
-    select: { id: true, roles: true },
-  });
-  if (
-    !approver?.roles.includes(Role.ADMIN) ||
-    !approver.roles.includes(Role.FINANCE_APPROVER)
-  ) {
-    throw new BadRequestException(`${actionLabel} requires approval from a Finance approver`);
-  }
-  const operatorReason = requiredString(
-    input.operatorReason,
-    `${actionLabel} requires operator evidence`,
-  );
-  if (operatorReason.length < 10) {
-    throw new BadRequestException(`${actionLabel} requires at least 10 characters of operator evidence`);
-  }
-  return {
-    approvalAdminId,
-    operatorReason,
-  };
 }
 
 function normalizeString(value?: string | null) {
@@ -1244,23 +2687,6 @@ function sha256(value: string) {
 
 function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
-}
-
-function deactivateOtherActiveTaxPolicies(
-  tx: Prisma.TransactionClient,
-  activePolicyId: string,
-  status: TaxPolicyStatus,
-) {
-  if (status !== TaxPolicyStatus.ACTIVE) {
-    return Promise.resolve({ count: 0 });
-  }
-  return tx.taxPolicyVersion.updateMany({
-    where: {
-      id: { not: activePolicyId },
-      status: TaxPolicyStatus.ACTIVE,
-    },
-    data: { status: TaxPolicyStatus.INACTIVE },
-  });
 }
 
 async function assertTaxRuleDoesNotConflict(
@@ -1336,6 +2762,154 @@ function normalizeAdminTaxPolicyVersionSkip(value: number | string | null | unde
     return 0;
   }
   return Math.floor(parsed);
+}
+
+type TaxPolicyIntegrityIssue =
+  | 'amount-mismatch'
+  | 'missing-snapshot'
+  | 'missing-tax-log'
+  | 'no-active-policy'
+  | 'no-approved-tax-profile'
+  | 'no-matching-rule';
+
+function taxPolicyIntegrityIssue(value?: string): TaxPolicyIntegrityIssue {
+  const issues = new Set<TaxPolicyIntegrityIssue>([
+    'amount-mismatch',
+    'missing-snapshot',
+    'missing-tax-log',
+    'no-active-policy',
+    'no-approved-tax-profile',
+    'no-matching-rule',
+  ]);
+  if (!issues.has(value as TaxPolicyIntegrityIssue)) {
+    throw new BadRequestException({
+      code: 'TAX_POLICY_INTEGRITY_ISSUE_INVALID',
+      message: 'Select a supported Tax Policy integrity issue.',
+    });
+  }
+  return value as TaxPolicyIntegrityIssue;
+}
+
+function taxPolicyIntegrityIssuePredicate(issue: TaxPolicyIntegrityIssue) {
+  if (issue === 'amount-mismatch') {
+    return Prisma.sql`evidence."logCount" > 0 AND evidence."withholdingTotal" <> earning."withholdingAmount"`;
+  }
+  if (issue === 'missing-snapshot') {
+    return Prisma.sql`evidence."logCount" > 0 AND evidence."snapshotCount" < evidence."logCount"`;
+  }
+  if (issue === 'missing-tax-log') return Prisma.sql`evidence."logCount" = 0`;
+  if (issue === 'no-active-policy') return Prisma.sql`evidence."noActivePolicy"`;
+  if (issue === 'no-approved-tax-profile') return Prisma.sql`evidence."noApprovedTaxProfile"`;
+  return Prisma.sql`evidence."noMatchingRule"`;
+}
+
+function taxPolicyIntegrityEvidenceSource(rangeStart: Date, predicate: Prisma.Sql) {
+  return Prisma.sql`
+    FROM "ProviderEarning" earning
+    INNER JOIN "ProviderProfile" provider ON provider."id" = earning."providerProfileId"
+    LEFT JOIN LATERAL (
+      SELECT
+        COUNT(*)::int AS "logCount",
+        COUNT(log."ruleSnapshot")::int AS "snapshotCount",
+        COALESCE(SUM(log."withholdingAmount"), 0)::bigint AS "withholdingTotal",
+        CASE WHEN COUNT(DISTINCT log."policyVersionId") = 1 THEN MIN(log."policyVersionId") ELSE NULL END AS "policyVersionId",
+        CASE WHEN COUNT(DISTINCT policy."provenance") = 1 THEN MIN(policy."provenance"::text)::"TaxPolicyProvenance" ELSE NULL END AS "policyProvenance",
+        COUNT(policy."id")::int AS "policyCount",
+        COUNT(DISTINCT policy."provenance")::int AS "provenanceCount",
+        COALESCE(BOOL_OR(policy."provenance" = 'OPERATOR'), false) AS "hasProductionPolicy",
+        COALESCE(BOOL_OR(policy."provenance" IN ('SEED', 'SMOKE_TEST')), false) AS "hasTestPolicy",
+        COALESCE(BOOL_OR(policy."provenance" = 'MIGRATION'), false) AS "hasLegacyPolicy",
+        COALESCE(BOOL_OR(log."ruleSnapshot"->>'reason' = 'NO_ACTIVE_POLICY'), false) AS "noActivePolicy",
+        COALESCE(BOOL_OR(log."ruleSnapshot"->>'reason' = 'NO_APPROVED_TAX_PROFILE'), false) AS "noApprovedTaxProfile",
+        COALESCE(BOOL_OR(
+          log."ruleSnapshot"->>'reason' = 'NO_MATCHING_RULE'
+          OR jsonb_path_exists(COALESCE(log."ruleSnapshot", '{}'::jsonb), '$.lines[*] ? (@.scope == "NONE")')
+        ), false) AS "noMatchingRule"
+      FROM "ProviderTaxLog" log
+      LEFT JOIN "TaxPolicyVersion" policy ON policy."id" = log."policyVersionId"
+      WHERE log."earningId" = earning."id"
+    ) evidence ON true
+    WHERE earning."createdAt" >= ${rangeStart} AND ${predicate}
+  `;
+}
+
+type TaxPolicyEvidenceSource = 'all' | 'legacy' | 'production' | 'test' | 'test-legacy' | 'unknown';
+
+function taxPolicyEvidenceSource(value?: string | null, allowCombined = false): TaxPolicyEvidenceSource | undefined {
+  if (!value?.trim()) return undefined;
+  const source = value.trim();
+  const supported = allowCombined
+    ? ['production', 'test', 'legacy', 'unknown', 'test-legacy']
+    : ['all', 'production', 'test', 'legacy', 'unknown'];
+  return supported.includes(source) ? source as TaxPolicyEvidenceSource : undefined;
+}
+
+function taxPolicyVersionSourceWhere(source: Exclude<TaxPolicyEvidenceSource, 'all'>): Prisma.TaxPolicyVersionWhereInput {
+  if (source === 'production') return { provenance: TaxPolicyProvenance.OPERATOR };
+  if (source === 'test') {
+    return { provenance: { in: [TaxPolicyProvenance.SEED, TaxPolicyProvenance.SMOKE_TEST] } };
+  }
+  if (source === 'legacy') return { provenance: TaxPolicyProvenance.MIGRATION };
+  if (source === 'unknown') return { provenance: TaxPolicyProvenance.LEGACY_UNKNOWN };
+  return { provenance: { not: TaxPolicyProvenance.OPERATOR } };
+}
+
+function taxPolicyAuditPolicyVersionId(log: { metadata?: Prisma.JsonValue | null; target: string }) {
+  if (log.target.startsWith('tax_policy:')) return log.target.slice('tax_policy:'.length);
+  const metadata = log.metadata;
+  if (!metadata || Array.isArray(metadata) || typeof metadata !== 'object') return '';
+  const policyVersionId = (metadata as Prisma.JsonObject).policyVersionId;
+  return typeof policyVersionId === 'string' ? policyVersionId : '';
+}
+
+function taxPolicyIntegritySourceExpression() {
+  return Prisma.sql`
+    CASE
+      WHEN evidence."logCount" = 0
+        OR evidence."policyCount" <> evidence."logCount"
+        OR evidence."provenanceCount" <> 1
+        THEN 'UNKNOWN'
+      WHEN evidence."hasProductionPolicy" THEN 'PRODUCTION'
+      WHEN evidence."hasTestPolicy" THEN 'TEST'
+      WHEN evidence."hasLegacyPolicy" THEN 'LEGACY'
+      ELSE 'UNKNOWN'
+    END
+  `;
+}
+
+function taxPolicyIntegritySourcePredicate(source: TaxPolicyEvidenceSource) {
+  if (source === 'all') return Prisma.sql`true`;
+  const label = source.toUpperCase();
+  return Prisma.sql`${taxPolicyIntegritySourceExpression()} = ${label}`;
+}
+
+function taxPolicyIntegrityRowSource(
+  provenance: TaxPolicyProvenance | null,
+): 'LEGACY' | 'PRODUCTION' | 'TEST' | 'UNKNOWN' {
+  if (!provenance || provenance === TaxPolicyProvenance.LEGACY_UNKNOWN) return 'UNKNOWN';
+  if (provenance === TaxPolicyProvenance.OPERATOR) return 'PRODUCTION';
+  if (provenance === TaxPolicyProvenance.MIGRATION) return 'LEGACY';
+  return 'TEST';
+}
+
+function taxPolicyIntegrityClassification(
+  issue: TaxPolicyIntegrityIssue,
+  source: 'LEGACY' | 'PRODUCTION' | 'TEST' | 'UNKNOWN',
+) {
+  if (issue === 'no-active-policy' || issue === 'no-approved-tax-profile' || issue === 'no-matching-rule') {
+    return 'APPLICABILITY_READINESS' as const;
+  }
+  if (source === 'PRODUCTION') return 'CURRENT_REGRESSION' as const;
+  if (source === 'LEGACY') return 'LEGACY_MIGRATION_DEBT' as const;
+  return 'UNKNOWN' as const;
+}
+
+function parseVietnamDateBoundary(value: string, message: string, endExclusive = false) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new BadRequestException(message);
+  const date = new Date(`${value}T00:00:00+07:00`);
+  if (Number.isNaN(date.getTime())) throw new BadRequestException(message);
+  if (endExclusive) date.setUTCDate(date.getUTCDate() + 1);
+  return date;
 }
 
 function providerDocumentNotificationLabel(type: ProviderDocumentType) {

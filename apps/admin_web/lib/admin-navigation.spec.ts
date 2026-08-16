@@ -1,7 +1,11 @@
 import { readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 
-import { adminHiddenRoutePolicy, adminHiddenRouteRoutes } from './admin-hidden-route-policy';
+import {
+  adminHiddenRoutePolicy,
+  adminHiddenRoutePolicyDetails,
+  adminHiddenRouteRoutes,
+} from './admin-hidden-route-policy';
 import { adminOperatorCategoryForPath } from './admin-operator-access-model';
 import {
   adminNavIconKeys,
@@ -264,7 +268,9 @@ describe('admin navigation', () => {
   });
 
   it('keeps every navigation destination mapped to an operator permission category', () => {
-    const hiddenOperatingRoutes = adminHiddenRouteRoutes().filter((route) => route !== '/login');
+    const hiddenOperatingRoutes = adminHiddenRouteRoutes().filter(
+      (route) => adminHiddenRoutePolicyDetails(route)?.kind !== 'AUTH_BOUNDARY',
+    );
     const unmappedRoutes = [
       ...new Set([...allAdminNavSections.flatMap(adminNavSectionDestinations), ...hiddenOperatingRoutes]),
     ]

@@ -56,6 +56,8 @@ describe('buildTaxPolicySnapshotConsistency', () => {
         id: 'earning-consistent',
         snapshotLabel: 'Vietnam tax 2026',
         statusLabel: 'Aligned',
+        recordIntegrityLabel: 'Amounts match',
+        taxApplicabilityLabel: 'Applicable evidence present',
         toneClassName: 'pill-success',
       }),
       expect.objectContaining({
@@ -63,12 +65,15 @@ describe('buildTaxPolicySnapshotConsistency', () => {
         id: 'earning-mismatch',
         snapshotLabel: 'NO_APPROVED_TAX_PROFILE',
         statusLabel: 'Check amount',
+        taxApplicabilityLabel: 'No approved tax profile',
+        taxApplicabilityTone: 'warning',
         toneClassName: 'pill-danger',
       }),
       expect.objectContaining({
         id: 'earning-missing-log',
         snapshotLabel: 'No tax log',
         statusLabel: 'Missing tax log',
+        taxApplicabilityLabel: 'Needs review',
         toneClassName: 'pill-warn',
       }),
     ]);

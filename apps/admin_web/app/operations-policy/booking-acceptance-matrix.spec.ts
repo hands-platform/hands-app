@@ -47,6 +47,7 @@ describe('booking acceptance matrix builder', () => {
     );
 
     expect(matrix.blockingCount).toBe(0);
+    expect(matrix.sampledPartnerCount).toBe(2);
     expect(matrix.summary).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ label: 'First-pick timer', value: '10 min' }),
@@ -72,7 +73,7 @@ describe('booking acceptance matrix builder', () => {
     );
     expect(matrix.impact).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ label: 'Marketplace ready', value: '1' }),
+        expect.objectContaining({ kind: 'record', label: 'Marketplace ready', scope: 'Sample result', value: '1' }),
         expect.objectContaining({ label: 'Final gate held', value: '1' }),
         expect.objectContaining({ label: 'Push gap', value: '1' }),
       ]),
@@ -105,7 +106,7 @@ describe('booking acceptance matrix builder', () => {
         expect.objectContaining({ status: 'Customer-choice conflict', title: 'Customer final selection' }),
         expect.objectContaining({
           detail:
-            'FCM live smoke and token recovery passed; Partner booking and marketplace alerts stay in-app until monitoring stays clean and the owner enables push routing.',
+            'FCM readiness is not verified in this workspace; Partner booking and marketplace alerts stay in-app until monitoring evidence is available and the owner enables push routing.',
           operatorAction:
             'Keep this on in-app-first while operators watch notification monitoring and retry audit evidence; SMS stays under the deferred Phone Auth step.',
           status: 'In-app first',

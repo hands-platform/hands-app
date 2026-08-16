@@ -663,7 +663,10 @@ describe('AdminBackgroundJobsService', () => {
     expect(fixture.tx.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         action: 'admin.background_jobs.failure_alerted',
-        actorId: 'master-1',
+        actorId: null,
+        actorKey: 'background-job-monitor',
+        actorLabelSnapshot: 'HANDS background monitor',
+        actorType: 'SYSTEM',
         target: 'background_job_failure:payment-status-check:payment-failure-1',
       }),
     });
@@ -786,6 +789,8 @@ describe('AdminBackgroundJobsService', () => {
     expect(fixture.tx.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         action: 'admin.background_jobs.failure_registered',
+        outcome: 'RECORDED',
+        severity: 'INFO',
         target: 'background_job_failure:bank-statement-escalation:repeat:background-job-failure-monitor:2',
       }),
     });
@@ -923,11 +928,12 @@ describe('AdminBackgroundJobsService', () => {
     expect(fixture.tx.notification.create).toHaveBeenCalledTimes(2);
     expect(fixture.tx.notification.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        data: {
+        data: expect.objectContaining({
+          deliveryIntent: 'IN_APP_ONLY',
           destination: '/background-jobs?queue=notification-retry&review=OPEN&range=ALL',
           queueName: 'notification-retry',
           source: 'background_job_queue_health_monitor',
-        },
+        }),
         type: 'admin.system.background_job.queue_stale',
       }),
       select: { id: true },
@@ -935,7 +941,8 @@ describe('AdminBackgroundJobsService', () => {
     expect(fixture.tx.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         action: 'admin.background_jobs.queue_stale_alerted',
-        actorId: 'master-1',
+        actorId: null,
+        actorType: 'SYSTEM',
         target: 'background_job_queue_health:notification-retry',
       }),
     });
@@ -992,7 +999,8 @@ describe('AdminBackgroundJobsService', () => {
     expect(recoveryFixture.tx.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         action: 'admin.background_jobs.queue_stale_recovered',
-        actorId: 'master-1',
+        actorId: null,
+        actorType: 'SYSTEM',
         target,
       }),
     });

@@ -20,6 +20,8 @@ export class ProvidersController {
   constructor(private readonly providers: ProvidersService) {}
 
   @Get(['customer/partners/nearby', 'customer/providers/nearby'])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
   nearby(@Query('lat') lat?: string, @Query('lng') lng?: string, @Query('take') take?: string) {
     return this.providers.findNearby(Number(lat), Number(lng), { take });
   }

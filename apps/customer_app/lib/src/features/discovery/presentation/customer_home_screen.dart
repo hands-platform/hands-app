@@ -684,12 +684,7 @@ class CustomerHomePartnerAvatar extends StatelessWidget {
     final colors = context.handsColors;
     final name = partner['displayName']?.toString() ?? 'Partner';
     final imageUrl = providerProfileImageUrl(partner);
-    final distanceMeters = asDouble(partner['distanceMeters']);
-    final distanceLabel = distanceMeters == null
-        ? null
-        : distanceMeters <= 0
-            ? '<1 km'
-            : formatDistance(distanceMeters);
+    final distanceLabel = providerDistanceLabel(partner);
 
     return SizedBox(
       width: 100,
@@ -712,16 +707,15 @@ class CustomerHomePartnerAvatar extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelMedium,
             ),
-            if (distanceLabel != null)
-              Text(
-                distanceLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.inkMuted,
-                      fontSize: 12,
-                    ),
-              ),
+            Text(
+              distanceLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.inkMuted,
+                    fontSize: 12,
+                  ),
+            ),
           ],
         ),
       ),

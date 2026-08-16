@@ -23,13 +23,14 @@ describe('Admin bank statement batch proxy routes', () => {
   it('requires an Admin Web session before previewing bank statement rows', async () => {
     process.env = {
       ...process.env,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-bank-batch-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-bank-batch-session-secret-with-32-chars',
       NODE_ENV: 'production',
     };
     const { POST } = await import('./route');
     const response = await POST(
       new Request('http://localhost/api/admin/bank-reconciliation/batch-preview', {
         body: JSON.stringify({ rows: [] }),
+        headers: { origin: 'http://localhost' },
         method: 'POST',
       }),
     );
@@ -40,7 +41,7 @@ describe('Admin bank statement batch proxy routes', () => {
   });
 
   it('forwards reviewed preview and import payloads through server-only Admin API access', async () => {
-    const sessionSecret = 'test-bank-batch-session-secret';
+    const sessionSecret = 'test-bank-batch-session-secret-with-32-chars';
     process.env = {
       ...process.env,
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
@@ -51,7 +52,10 @@ describe('Admin bank statement batch proxy routes', () => {
       secret: sessionSecret,
       sub: 'finance.operator@hands.vn',
     });
-    const headers = { cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookie}` };
+    const headers = {
+      cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookie}`,
+      origin: 'http://localhost',
+    };
     const previewPayload = { rows: [{ amount: '100000', rowNumber: 2 }] };
     const importPayload = { ...previewPayload, approvalAdminId: 'finance-admin-2' };
     mockedAdminPostOrThrow

@@ -31,6 +31,7 @@ export function CustomersTableSection({
 }: CustomersTableSectionProps) {
   const rows = pagination.rows;
   const needsActionView = filters.view === 'needs-action';
+  const usageNewUnbooked = filters.segment === 'usage-new-unbooked';
 
   return (
     <AdminTablePanel
@@ -104,7 +105,14 @@ export function CustomersTableSection({
                 )}
               </td>
               <td>
-                {row.bookingCount === 0 ? (
+                {usageNewUnbooked ? (
+                  <div className="vuexy-customer-booking-cell">
+                    <strong>No verified production booking</strong>
+                    {row.bookingCount > 0 ? (
+                      <span>{`${row.bookingCount} unverified or non-production ${row.bookingCount === 1 ? 'record' : 'records'} excluded`}</span>
+                    ) : null}
+                  </div>
+                ) : row.bookingCount === 0 ? (
                   <span className="muted">No bookings yet</span>
                 ) : (
                   <div className="vuexy-customer-booking-cell">

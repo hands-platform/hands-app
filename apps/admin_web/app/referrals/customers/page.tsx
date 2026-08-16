@@ -1,6 +1,7 @@
 import type {
   AdminCustomerReferralParent,
   AdminCustomerReferralRewardQueueRow,
+  AdminCustomerReferralWorkspace,
   AdminReferralParentSummary,
   AdminReferralPolicies,
 } from '../../../lib/admin-api';
@@ -14,7 +15,8 @@ import {
   buildReferralDashboardFilters,
   buildReferralDashboardPage,
   buildReferralParentApiHref,
-  buildReferralRewardQueueApiHref,
+  buildReferralCustomerWorkspaceApiHref,
+  buildReferralParentRecordsHref,
   buildReferralParentSummaryApiHref,
   buildReferralRewardQueueSummaries,
   filterReferralParentRows,
@@ -36,13 +38,22 @@ export default async function CustomerReferralsPage({
   );
   const filters = buildReferralDashboardFilters(resolvedSearchParams);
   const currentPage = buildReferralDashboardPage(resolvedSearchParams);
-  const summaryHref = buildReferralParentSummaryApiHref('customer', filters);
+  const parentRecordsLoaded = !policyMode && readSearchParam(resolvedSearchParams.parents) === 'open';
+  const fixtureIncludeRequested = !policyMode && readSearchParam(resolvedSearchParams.fixtures) === 'include';
   const parentFilters = { ...filters, reward: 'all' as const };
   const parentRowsHref = buildReferralParentApiHref('customer', parentFilters, currentPage);
   const parentSummaryHref = buildReferralParentSummaryApiHref('customer', parentFilters);
-  const rewardRowsHref = buildReferralRewardQueueApiHref(filters, currentPage);
-  const [operatorAccess, policiesResult, rowsResult, summaryResult, rewardRowsResult, parentSummaryResult] = await Promise.all([
-    getCurrentAdminOperatorAccess(),
+  const workspaceHref = buildReferralCustomerWorkspaceApiHref(filters, currentPage);
+  const operatorAccessPromise = getCurrentAdminOperatorAccess();
+  const fixtureRowsPromise = fixtureIncludeRequested
+    ? operatorAccessPromise.then((access) =>
+        canViewAdminDeveloperSystem(access)
+          ? adminGetResult<AdminCustomerReferralRewardQueueRow[]>('/admin/referrals/customers/fixtures?include=confirmed&take=50', [])
+          : Promise.resolve({ data: [] as AdminCustomerReferralRewardQueueRow[], ok: true, status: 200 }),
+      )
+    : Promise.resolve({ data: [] as AdminCustomerReferralRewardQueueRow[], ok: true, status: 200 });
+  const [operatorAccess, policiesResult, workspaceResult, rowsResult, parentSummaryResult, policySummaryResult, fixtureRowsResult] = await Promise.all([
+    operatorAccessPromise,
     policyMode
       ? adminGetResult<AdminReferralPolicies>('/admin/referrals/policies', {
           customer: referralPolicyFallback('customer'),
@@ -53,21 +64,22 @@ export default async function CustomerReferralsPage({
         partner: referralPolicyFallback('partner'),
       }, ok: true, status: 200 }),
     policyMode
+      ? Promise.resolve({ data: null as AdminCustomerReferralWorkspace | null, ok: true, status: 200 })
+      : adminGetResult<AdminCustomerReferralWorkspace | null>(workspaceHref, null),
+    !parentRecordsLoaded
       ? Promise.resolve({ data: [] as AdminCustomerReferralParent[], ok: true, status: 200 })
       : adminGetResult<AdminCustomerReferralParent[]>(parentRowsHref, []),
-    !policyMode && summaryHref
-      ? adminGetResult<AdminReferralParentSummary | null>(summaryHref, null)
-      : Promise.resolve({ data: null, ok: true, status: 200 }),
-    policyMode
-      ? Promise.resolve({ data: [] as AdminCustomerReferralRewardQueueRow[], ok: true, status: 200 })
-      : adminGetResult<AdminCustomerReferralRewardQueueRow[]>(rewardRowsHref, []),
-    !policyMode && parentSummaryHref
+    parentRecordsLoaded && parentSummaryHref
       ? adminGetResult<AdminReferralParentSummary | null>(parentSummaryHref, null)
       : Promise.resolve({ data: null, ok: true, status: 200 }),
+    policyMode && parentSummaryHref
+      ? adminGetResult<AdminReferralParentSummary | null>(parentSummaryHref, null)
+      : Promise.resolve({ data: null, ok: true, status: 200 }),
+    fixtureRowsPromise,
   ]);
   const policies = policiesResult.data;
   const rows = rowsResult.data;
-  const summary = summaryResult.data;
+  const summary = workspaceResult.data?.summary ?? null;
   const parentSummary = parentSummaryResult.data;
   const serverPagination = Boolean(parentSummary);
   const rewardSummaryRows = serverPagination
@@ -83,11 +95,14 @@ export default async function CustomerReferralsPage({
       canViewDeveloperSetup={canViewAdminDeveloperSystem(operatorAccess)}
       currentPage={currentPage}
       filters={filters}
+      fixtureRows={fixtureRowsResult.data}
       policy={policies.customer}
       policyNotice={policyNotice}
       policyMode={policyMode}
       readError={
-        !policiesResult.ok || !summaryResult.ok || !rewardRowsResult.ok
+        !policiesResult.ok ||
+        (policyMode && !policySummaryResult.ok) ||
+        (!policyMode && (!workspaceResult.ok || !workspaceResult.data))
           ? 'Customer referral operations could not be loaded. Retry before making a reward decision.'
           : undefined
       }
@@ -96,12 +111,17 @@ export default async function CustomerReferralsPage({
           ? 'Parent account records are temporarily unavailable. The reward queue may still be used for review.'
           : undefined
       }
-      rewardRows={rewardRowsResult.data}
-      rewardQueueSummaries={summary?.rewardQueueSummaries ?? buildReferralRewardQueueSummaries(rewardSummaryRows)}
+      parentRecordsHref={buildReferralParentRecordsHref(filters, currentPage)}
+      parentRecordsLoaded={parentRecordsLoaded}
+      rewardRows={workspaceResult.data?.rows ?? []}
+      rewardQueueSummaries={
+        (policyMode ? policySummaryResult.data?.rewardQueueSummaries : summary?.rewardQueueSummaries) ??
+        buildReferralRewardQueueSummaries(rewardSummaryRows)
+      }
       referralCount={summary?.referralCount}
       rows={filteredRows}
       serverPagination={serverPagination}
-      totalCount={parentSummary?.totalCount ?? rows.length}
+      totalCount={parentSummary?.totalCount ?? summary?.totalCount ?? rows.length}
     />
   );
 }

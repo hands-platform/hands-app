@@ -1,0 +1,167 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+    - link "Operations Policy":
+      - /url: /operations-policy
+      - generic: Operations Policy
+    - link "Service Catalog":
+      - /url: /services
+      - generic: Service Catalog
+    - link "Company Bank Accounts":
+      - /url: /finance-tax/company-bank-accounts
+      - generic: Company Bank Accounts
+    - link "Finance Approvers":
+      - /url: /finance-tax/finance-approvers
+      - generic: Finance Approvers
+    - link "Tax Policy":
+      - /url: /tax-policy
+      - generic: Tax Policy
+    - link "Admin Operators":
+      - /url: /admin-operators
+      - generic: Admin Operators
+    - link "Audit Log":
+      - /url: /audit-log
+      - generic: Audit Log
+    - link "System Health":
+      - /url: /setup
+      - generic: System Health
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Administration & Settings
+      - generic: Audit Log
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - heading "Audit Log" [level=1]
+  - paragraph: Investigate immutable operator, security, money, booking, and system evidence. Times use Vietnam time.
+  - generic "Page actions":
+    - link "Export CSV":
+      - /url: /api/admin/audit-log/export?view=ALL&range=all&sort=newest&q=cmpe4hweq000jvyds2wiunx6q&format=csv
+      - text: Export CSV
+    - link "Export JSON":
+      - /url: /api/admin/audit-log/export?view=ALL&range=all&sort=newest&q=cmpe4hweq000jvyds2wiunx6q&format=json
+      - text: Export JSON
+    - link "Refresh now":
+      - /url: /audit-log?view=ALL&range=all&sort=newest&q=cmpe4hweq000jvyds2wiunx6q
+      - text: Refresh now
+  - region "Audit evidence trust status":
+    - strong: Audit source available
+    - text: Generated
+    - time: 12 Aug 2026, 14:46
+    - text: · Asia/Ho_Chi_Minh
+    - generic: Review required
+    - strong: "0"
+    - generic: Current filters
+    - generic: Failed
+    - strong: "0"
+    - generic: Current filters
+    - generic: Unacknowledged
+    - strong: "0"
+    - generic: Current filters
+    - generic: Data lag
+    - strong: Unknown
+    - generic: Freshness
+  - navigation "Saved audit views":
+    - link "Review required 0":
+      - /url: /audit-log?view=REVIEW_REQUIRED&range=all&sort=newest&q=cmpe4hweq000jvyds2wiunx6q
+      - generic: Review required
+      - strong: "0"
+    - link "Operator changes 0":
+      - /url: /audit-log?view=OPERATOR_CHANGES&range=all&sort=newest&q=cmpe4hweq000jvyds2wiunx6q
+      - generic: Operator changes
+      - strong: "0"
+    - link "Money & policy 0":
+      - /url: /audit-log?view=MONEY_POLICY&range=all&sort=newest&q=cmpe4hweq000jvyds2wiunx6q
+      - generic: Money & policy
+      - strong: "0"
+    - link "Security & access 0":
+      - /url: /audit-log?view=SECURITY_ACCESS&range=all&sort=newest&q=cmpe4hweq000jvyds2wiunx6q
+      - generic: Security & access
+      - strong: "0"
+    - link "System incidents 0":
+      - /url: /audit-log?view=SYSTEM_INCIDENTS&range=all&sort=newest&q=cmpe4hweq000jvyds2wiunx6q
+      - generic: System incidents
+      - strong: "0"
+    - link "All records 0":
+      - /url: /audit-log?view=ALL&range=all&sort=newest&q=cmpe4hweq000jvyds2wiunx6q
+      - generic: All records
+      - strong: "0"
+  - heading "Find evidence" [level=2]
+  - generic: 0 events
+  - generic: Search
+  - searchbox "Search": cmpe4hweq000jvyds2wiunx6q
+  - generic: Area
+  - combobox "Area":
+    - option "All areas" [selected]
+  - generic: Outcome
+  - combobox "Outcome":
+    - option "All outcomes" [selected]
+  - generic: Actor type
+  - combobox "Actor type":
+    - option "All actors" [selected]
+  - generic: Date & time
+  - combobox "Date & time":
+    - option "Today · Vietnam"
+    - option "Yesterday · Vietnam"
+    - option "Last 7 days · Vietnam"
+    - option "Last 30 days · Vietnam"
+    - option "Custom date & time · Vietnam"
+    - option "All dates" [selected]
+  - generic "More filters"
+  - option "All severities" [selected]
+  - option "Newest first" [selected]
+  - option "Oldest first"
+  - button "Apply filters":
+    - text: Apply filters
+  - link "Clear all":
+    - /url: /audit-log?view=ALL
+    - text: Clear all
+  - generic "Active audit filters":
+    - generic: "Search: cmpe4hweq000jvyds2wiunx6q"
+  - heading "Investigation results" [level=2]
+  - paragraph: All time (Vietnam) · snapshot generated at 12 Aug 2026, 14:46
+  - generic: Server ordered · newest first
+  - region "Audit investigation results":
+    - table:
+      - rowgroup:
+        - row "Time & actor Event / outcome Object Change summary Open":
+          - columnheader "Time & actor"
+          - columnheader "Event / outcome"
+          - columnheader "Object"
+          - columnheader "Change summary"
+          - columnheader "Open"
+      - rowgroup:
+        - row:
+          - cell:
+            - status:
+              - paragraph: No events match these filters. Change a filter or date range to continue the investigation.
+  - generic: Showing 0 of 0 events in this snapshot
+- alert

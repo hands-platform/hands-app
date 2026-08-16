@@ -14,6 +14,7 @@ import { SOCKET_ROOMS } from '../common/domain';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { corsOriginFromEnv } from '../security/cors-origin';
+import { socketEventAllowed } from '../security/socket-rate-limit';
 import {
   isVietnamServiceAreaCoordinate,
   providerLocationUpdateDecision,
@@ -84,9 +85,12 @@ export class LocationsGateway implements OnGatewayConnection {
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { bookingId?: string; lat: number; lng: number },
   ) {
-    const user = this.socketAuth.requireUser(client);
+    const user = await this.socketAuth.requireCurrentUser(client);
     if (!user.roles.includes(Role.PROVIDER)) {
       return { ok: false, error: 'PROVIDER_ROLE_REQUIRED' };
+    }
+    if (!(await socketEventAllowed(this.redisState, user.id, 'provider.location.update', 120))) {
+      return { ok: false, error: 'LOCATION_RATE_LIMITED' };
     }
 
     const parsedPayload = parseProviderLocationPayload(payload);
@@ -100,10 +104,16 @@ export class LocationsGateway implements OnGatewayConnection {
     }
 
     let hasActiveBookingContext = false;
+    let bookingRecipientUserIds: string[] = [];
     if (parsedPayload.bookingId) {
       const booking = await this.prisma.booking.findFirst({
         where: { id: parsedPayload.bookingId, selectedProviderId: provider.id },
-        select: { id: true, status: true },
+        select: {
+          id: true,
+          status: true,
+          customerProfile: { select: { userId: true } },
+          selectedProvider: { select: { userId: true } },
+        },
       });
       if (!booking) {
         return { ok: false, error: 'BOOKING_LOCATION_FORBIDDEN' };
@@ -112,6 +122,9 @@ export class LocationsGateway implements OnGatewayConnection {
         return { ok: false, error: 'BOOKING_LOCATION_INACTIVE' };
       }
       hasActiveBookingContext = true;
+      bookingRecipientUserIds = Array.from(
+        new Set([booking.customerProfile.userId, booking.selectedProvider?.userId].filter(Boolean)),
+      ) as string[];
     }
 
     const recordedAt = new Date().toISOString();
@@ -140,13 +153,16 @@ export class LocationsGateway implements OnGatewayConnection {
     }
 
     if (parsedPayload.bookingId) {
-      this.server.to(SOCKET_ROOMS.booking(parsedPayload.bookingId)).emit('provider.location.updated', {
+      const locationEvent = {
         bookingId: parsedPayload.bookingId,
         providerProfileId: provider.id,
         lat: parsedPayload.lat,
         lng: parsedPayload.lng,
         recordedAt,
-      });
+      };
+      for (const recipientUserId of bookingRecipientUserIds) {
+        this.server.to(SOCKET_ROOMS.user(recipientUserId)).emit('provider.location.updated', locationEvent);
+      }
     }
     return { ok: true };
   }

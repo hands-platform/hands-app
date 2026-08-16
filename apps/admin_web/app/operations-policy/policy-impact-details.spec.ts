@@ -2,6 +2,26 @@ import { OPERATIONAL_POLICY_KEYS } from '../../lib/operations-policy';
 import { policyImpactDetails } from './policy-impact-details';
 
 describe('operations policy impact details', () => {
+  it.each([
+    [OPERATIONAL_POLICY_KEYS.startShiftPaymentHoldsSlaMinutes, '/payments?range=all&review=authorized&sort=oldest'],
+    [OPERATIONAL_POLICY_KEYS.startShiftMatchingDelaysSlaMinutes, '/bookings?view=matching-delays&sort=oldest'],
+    [OPERATIONAL_POLICY_KEYS.startShiftCancellationReviewSlaMinutes, '/bookings/post-match-cancellations?view=manual-decision&dateRange=all&sort=oldest'],
+    [OPERATIONAL_POLICY_KEYS.startShiftRefundReviewSlaMinutes, '/refunds?range=all&review=open&sort=oldest'],
+    [OPERATIONAL_POLICY_KEYS.startShiftNotificationFailuresSlaMinutes, '/notifications?range=all&review=unresolved-failed&sort=oldest'],
+    [OPERATIONAL_POLICY_KEYS.startShiftCashReconciliationSlaMinutes, '/cash-settlements?range=all&sort=oldest'],
+    [OPERATIONAL_POLICY_KEYS.startShiftPartnerApprovalsSlaMinutes, '/partners?review=approval-pending&sort=oldest'],
+  ])('documents the runtime queue and next-read reclassification for %s', (key, queueHref) => {
+    const details = policyImpactDetails(key);
+
+    expect(details.area).toBe('Start Shift queue');
+    expect(details.title).toContain('overdue threshold');
+    expect(details.detail).toContain('reclassified on the next Start Shift or queue read');
+    expect(details.detail).toContain('source timestamps are not rewritten');
+    expect(details.saveChecks[0]).toMatchObject({ href: queueHref });
+    expect(details.saveChecks[0]?.detail).toContain('current unresolved count');
+    expect(details.saveChecks[1]?.href).toBe('/audit-log?bucket=Operations%2FPolicy&range=all&sort=newest');
+  });
+
   it('maps current marketplace keys to the operator impact copy used by legacy saved policy rows', () => {
     const details = policyImpactDetails(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters);
 

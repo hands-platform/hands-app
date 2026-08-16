@@ -5,6 +5,18 @@ const root = resolve(import.meta.dirname, '..', '..');
 const prismaSchema = readFileSync(resolve(root, 'apps/api/prisma/schema.prisma'), 'utf8');
 const supabaseSchema = readFileSync(resolve(root, 'infra/supabase/hands-core-schema.sql'), 'utf8');
 const storageSchema = readFileSync(resolve(root, 'infra/supabase/storage-schema.sql'), 'utf8');
+const bookingPrivacyPatch = readFileSync(
+  resolve(root, 'infra/supabase/patches/2026-08-16-restrict-booking-address-and-review-reads.sql'),
+  'utf8',
+);
+const filePrivacyPatch = readFileSync(
+  resolve(root, 'infra/supabase/patches/2026-08-16-restrict-public-file-metadata.sql'),
+  'utf8',
+);
+const storageOwnershipPatch = readFileSync(
+  resolve(root, 'infra/supabase/patches/2026-08-16-use-storage-owner-id.sql'),
+  'utf8',
+);
 
 const enumChecks = [
   { prisma: 'BookingStatus', sql: 'booking_status' },
@@ -101,7 +113,11 @@ const forbiddenSchemaFragments = [
   },
   {
     label: 'unfiltered public review policy',
-    pattern: /create\s+policy\s+"reviews public read"[\s\S]*?using\s*\(\s*true\s*\)/i,
+    pattern: /create\s+policy\s+"reviews public read"/i,
+  },
+  {
+    label: 'anonymous raw review table grant',
+    pattern: /grant\s+select\s+on\s+table[^;]*public\.reviews[^;]*to\s+anon\s*;/i,
   },
 ];
 
@@ -166,8 +182,20 @@ requireSchemaFragments([
       /alter\s+default\s+privileges\s+for\s+role\s+postgres\s+in\s+schema\s+public[\s\S]*?revoke\s+execute\s+on\s+functions\s+from\s+public\s*,\s*anon\s*,\s*authenticated\s*,\s*service_role/i,
   },
   {
-    label: 'published-only public review policy',
-    pattern: /create\s+policy\s+"reviews public read"[\s\S]*?using\s*\(\s*status\s*=\s*'PUBLISHED'\s*\)/i,
+    label: 'review owner and subject read policy',
+    pattern: /create\s+policy\s+"reviews owner and subject read"[\s\S]*?customer_id\s*=\s*auth\.uid\(\)[\s\S]*?p\.id\s*=\s*provider_id/i,
+  },
+  {
+    label: 'anonymous raw review table revoke',
+    pattern: /revoke\s+select\s+on\s+table[^;]*public\.reviews[^;]*from\s+anon\s*;/i,
+  },
+  {
+    label: 'exact booking rows selected Partner policy',
+    pattern: /create\s+policy\s+"bookings owner and selected Partner read"[\s\S]*?p\.id\s*=\s*selected_provider_id/i,
+  },
+  {
+    label: 'exact booking snapshot selected Partner policy',
+    pattern: /create\s+policy\s+"booking address snapshots owner and selected Partner read"[\s\S]*?p\.id\s*=\s*b\.selected_provider_id/i,
   },
 ]);
 
@@ -188,6 +216,11 @@ const requiredFileSchemaFragments = [
   { label: 'files owner purpose index', pattern: /files_owner_purpose_idx/i },
   { label: 'files visibility purpose index', pattern: /files_visibility_purpose_idx/i },
   { label: 'files review status purpose index', pattern: /files_review_status_purpose_idx/i },
+  {
+    label: 'public file metadata requires completed approval',
+    pattern:
+      /create\s+policy\s+"files owner read"[\s\S]*?visibility\s*=\s*'PUBLIC'[\s\S]*?upload_status\s*=\s*'UPLOADED'[\s\S]*?review_status\s*=\s*'APPROVED'/i,
+  },
 ];
 
 requireSchemaFragments(requiredFileSchemaFragments);
@@ -200,12 +233,39 @@ requireStorageSchemaFragments([
     label: 'private media direct insert policy removal',
     pattern: /drop\s+policy\s+if\s+exists\s+"private media owner insert"\s+on\s+storage\.objects/i,
   },
+  {
+    label: 'private media owner_id read policy',
+    pattern:
+      /create\s+policy\s+"private media owner read"[\s\S]*?to\s+authenticated[\s\S]*?owner_id\s*=\s*\(select\s+auth\.uid\(\)::text\)/i,
+  },
+]);
+requirePatchFragments(bookingPrivacyPatch, 'booking/address/review privacy patch', [
+  /drop\s+policy\s+if\s+exists\s+"bookings participant read"/i,
+  /create\s+policy\s+"bookings owner and selected Partner read"/i,
+  /create\s+policy\s+"booking address snapshots owner and selected Partner read"/i,
+  /create\s+policy\s+"reviews owner and subject read"/i,
+  /revoke\s+select\s+on\s+table\s+public\.reviews\s+from\s+anon/i,
+]);
+requirePatchFragments(filePrivacyPatch, 'public file metadata privacy patch', [
+  /drop\s+policy\s+if\s+exists\s+"files owner read"/i,
+  /visibility\s*=\s*'PUBLIC'/i,
+  /upload_status\s*=\s*'UPLOADED'/i,
+  /review_status\s*=\s*'APPROVED'/i,
+]);
+requirePatchFragments(storageOwnershipPatch, 'Storage owner_id patch', [
+  /drop\s+policy\s+if\s+exists\s+"private media owner read"/i,
+  /to\s+authenticated/i,
+  /owner_id\s*=\s*\(select\s+auth\.uid\(\)::text\)/i,
 ]);
 rejectStoragePatterns([
   {
     label: 'authenticated direct storage write policy',
     pattern:
       /create\s+policy\s+"(?:owner public media (?:insert|update|delete)|private media owner (?:insert|update|delete))"/i,
+  },
+  {
+    label: 'deprecated storage.objects.owner predicate',
+    pattern: /\bowner\s*=\s*(?:\(?\s*select\s+)?auth\.uid\(\)/i,
   },
 ]);
 
@@ -273,6 +333,14 @@ function requireStorageSchemaFragments(fragments) {
   for (const fragment of fragments) {
     if (!fragment.pattern.test(storageSchema)) {
       failures.push(`Supabase storage schema is missing ${fragment.label}.`);
+    }
+  }
+}
+
+function requirePatchFragments(sql, label, patterns) {
+  for (const pattern of patterns) {
+    if (!pattern.test(sql)) {
+      failures.push(`Supabase ${label} is missing required pattern ${pattern}.`);
     }
   }
 }

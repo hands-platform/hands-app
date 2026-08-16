@@ -3,43 +3,58 @@ import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import type { AdminOperationalPolicySetting } from '../../lib/admin-api';
-import { OperationsPolicyForm } from './operations-policy-form';
+import { OperationsPolicyForm, validatePolicyChange } from './operations-policy-form';
 
 const source = readFileSync(new URL('./operations-policy-form.tsx', import.meta.url), 'utf8');
 
 describe('OperationsPolicyForm', () => {
-  it('renders one bounded policy change review with before, after and effective time', () => {
+  it('renders visible confirmation copy, bounded reason guidance, and no native validation contract', () => {
     const markup = renderToStaticMarkup(<OperationsPolicyForm setting={policySetting()} />);
 
     expect(markup).toContain('<form');
-    expect(markup).toContain('Change First-pick response window');
-    expect(markup).toContain('Before');
-    expect(markup).toContain('After');
-    expect(markup).toContain('Operating impact');
-    expect(markup).toContain('Effective');
-    expect(markup).toContain('Immediately after save');
-    expect(markup).toContain('Additional approval');
-    expect(markup).toContain('Not required');
-    expect(markup).toContain('Change reason');
-    expect(markup).toContain('Save policy change');
-    expect(markup).toContain('href="/operations-policy"');
-  });
-
-  it('requires the current value and an explicit operator confirmation', () => {
-    const markup = renderToStaticMarkup(<OperationsPolicyForm setting={policySetting()} />);
-
-    expect(markup).toContain('name="expectedValue" value="10"');
-    expect(markup).toContain('required="" type="checkbox" name="confirmed" value="yes"');
+    expect(markup).toContain('noValidate=""');
     expect(markup).toContain('I reviewed the before and after values');
-    expect(source).toContain('Only an operator with System Policy write access');
+    expect(markup).toContain('admin-form-checkbox-label');
+    expect(markup).not.toContain('operations-policy-confirmation-error');
+    expect(markup).toContain('aria-invalid="false"');
+    expect(markup).toContain('admin-form-field-help');
+    expect(markup).toContain('12–500 characters');
+    expect(markup).toContain('maxLength="500"');
+    expect(markup).not.toContain('Additional approval');
+    expect(markup).not.toContain('Not required');
   });
 
-  it('does not render booking samples or repeated inline diagnostics in the change form', () => {
-    expect(source).not.toContain('AdminInsightCard');
-    expect(source).not.toContain('AdminInsightLinkCard');
-    expect(source).not.toContain('Related booking records');
-    expect(source).not.toContain('Before saving this policy');
-    expect(source).not.toContain('policyRelatedBookingRecords');
+  it('keeps save disabled until value, reason, and confirmation are valid', () => {
+    const setting = policySetting();
+
+    expect(validatePolicyChange(setting, '10', 'Long enough reason', true).value).toContain('current value');
+    expect(validatePolicyChange(setting, '12', 'short', true).reason).toContain('12 characters');
+    expect(validatePolicyChange(setting, '12', 'Long enough reason', false).confirmed).toContain('Confirm');
+    expect(validatePolicyChange(setting, '2', 'Long enough reason', true).value).toContain('at least 3');
+    expect(validatePolicyChange(setting, '31', 'Long enough reason', true).value).toContain('no greater than 30');
+    expect(validatePolicyChange(setting, '12', 'Long enough reason', true)).toEqual({});
+  });
+
+  it('includes pending, error focus, success audit link, and double-submit guards', () => {
+    expect(source).toContain('useActionState');
+    expect(source).toContain('disabled={!canSubmit}');
+    expect(source).toContain("actionState.status === 'error'");
+    expect(source).toContain('errorSummaryRef.current?.focus()');
+    expect(source).toContain('Open audit record');
+    expect(source).toContain('Revert to Before');
+    expect(source).toContain("name=\"intent\"");
+    expect(source).toContain('hasUnsavedChanges');
+    expect(source).toContain('if (isPending)');
+    expect(source).toContain("isPending ? 'Saving policy…'");
+    expect(source).toContain("window.confirm('Discard unsaved policy change?')");
+    expect(source).toContain('destination.origin !== window.location.origin');
+    expect(source).not.toContain("destination.pathname !== '/operations-policy'");
+    expect(source).toContain('confirmedNavigationRef.current = true');
+    expect(source).toContain('if (confirmedNavigationRef.current)');
+    expect(source).toContain('window.sessionStorage.setItem(draftStorageKey');
+    expect(source).toContain('window.sessionStorage.removeItem(draftStorageKey)');
+    expect(source).toContain('window.history.forward()');
+    expect(source).toContain("event.returnValue = ''");
   });
 });
 
@@ -48,6 +63,15 @@ function policySetting(): AdminOperationalPolicySetting {
     category: 'Matching',
     description: 'Controls the first-pick response window.',
     enforced: true,
+    lifecycle: 'live',
+    risk: 'low',
+    blastRadius: 'Matching queue timing',
+    consumerContract: {
+      applicationScope: 'Matching',
+      consumerIds: ['matching.service#getPolicy'],
+      fallbackBehavior: 'Use default.',
+      integrationTestIds: ['matching.policy.spec.ts'],
+    },
     key: 'matching.provider_response_window_minutes',
     label: 'First-pick response window',
     max: 30,

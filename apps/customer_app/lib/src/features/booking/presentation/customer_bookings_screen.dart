@@ -746,7 +746,11 @@ class CustomerBookingCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          customerServiceOptionLabel(service),
+                          customerServiceOptionLabel(
+                            service,
+                            requestedLocale:
+                                Localizations.localeOf(context).languageCode,
+                          ),
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.w700,

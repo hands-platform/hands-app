@@ -4,7 +4,10 @@ import {
   LEGACY_CUSTOMER_NOTIFICATION_TYPES,
   LEGACY_PROVIDER_NOTIFICATION_TYPES,
 } from '../notifications/notification-target-role';
-import { adminNotificationDataScopeSql } from './admin-notification-production-data';
+import {
+  adminNotificationDataScopeSql,
+  adminNotificationPushIntentSql,
+} from './admin-notification-production-data';
 import { adminQueueAgeDateWhere, adminQueueSortDirection } from './admin-queue-list';
 
 export const ADMIN_NOTIFICATION_DELIVERY_GAP_MINUTES = 15;
@@ -186,7 +189,10 @@ function adminNotificationUnattemptedFilteredSql(
   disposition: AdminNotificationUnattemptedDisposition,
   now: Date,
 ) {
-  const conditions: Prisma.Sql[] = [adminNotificationDataScopeSql(options.dataScope)];
+  const conditions: Prisma.Sql[] = [
+    adminNotificationDataScopeSql(options.dataScope),
+    adminNotificationPushIntentSql(),
+  ];
   const from = parseNotificationBoundary(options.from);
   const to = parseNotificationBoundary(options.to);
   if (from && to && from.getTime() >= to.getTime()) {

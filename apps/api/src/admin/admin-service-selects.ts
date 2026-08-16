@@ -8,6 +8,8 @@ export const adminServicePayoutRuleSummarySelect = {
   otherCostAmount: true,
   currency: true,
   active: true,
+  createdAt: true,
+  updatedAt: true,
   notes: true,
 } satisfies Prisma.ServicePayoutRuleSelect;
 
@@ -112,6 +114,14 @@ export const adminServiceCatalogSelect = {
   priceStep: true,
   displayOrder: true,
   active: true,
+  publicationStatus: true,
+  provenance: true,
+  provenanceRunId: true,
+  catalogVersion: true,
+  publishedAt: true,
+  publishedById: true,
+  createdAt: true,
+  updatedAt: true,
   payoutRules: {
     orderBy: [{ active: 'desc' }, { customerPrice: 'asc' }],
     select: {
@@ -155,6 +165,14 @@ export const adminServiceMutationSelect = {
   priceStep: true,
   displayOrder: true,
   active: true,
+  publicationStatus: true,
+  provenance: true,
+  provenanceRunId: true,
+  catalogVersion: true,
+  publishedAt: true,
+  publishedById: true,
+  createdAt: true,
+  updatedAt: true,
   payoutRules: {
     orderBy: [{ active: 'desc' }, { customerPrice: 'asc' }],
     select: adminServicePayoutRuleMutationSelect,

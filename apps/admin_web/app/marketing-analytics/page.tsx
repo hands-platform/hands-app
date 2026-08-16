@@ -24,7 +24,6 @@ import {
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFilterSummary } from '../../components/admin-filter-summary';
-import { AdminOverviewGrid } from '../../components/admin-overview-card';
 import {
   AdminMetricGrid,
   AdminPageTemplate,
@@ -32,6 +31,7 @@ import {
 } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminTextLink } from '../../components/admin-text-link';
+import { CommandCopyButton } from '../../components/command-copy-button';
 import {
   AdminActionCard,
   AdminDetailGrid,
@@ -64,13 +64,20 @@ import {
   AdminMarketingCouponSummary,
   AdminMarketingComparison,
   AdminMarketingComparisonMetric,
+  AdminMarketingActionItem,
+  AdminMarketingDecisionReadiness,
   AdminMarketingOverview,
+  AdminMarketingSpendCoverage,
+  AdminMarketingSpendLedgerPage,
   AdminMarketingSummary,
   AdminMarketingStats,
   AdminMarketingUnknownAttributionDiagnostics,
   AdminMarketingUnknownAttributionReason,
+  AdminGetResult,
   adminGetResult,
 } from '../../lib/admin-api';
+import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
+import { hasAdminOperatorCategory } from '../../lib/admin-operator-access-model';
 import {
   formatPercentLabel as formatPercent,
   shortDisplayId,
@@ -79,9 +86,6 @@ import {
 import {
   MARKETING_ANALYTICS_DIMENSION_PAGE_SIZE,
   MARKETING_ANALYTICS_COUPON_PAGE_SIZE,
-  buildMarketingActionPriorities,
-  hasMarketingDecisionEvidence,
-  type MarketingActionPriority,
   marketingAnalyticsCouponPageHref,
   marketingAnalyticsCouponPaging,
   marketingAnalyticsCouponPerformanceApiPath,
@@ -91,11 +95,15 @@ import {
   marketingAnalyticsDimensionPageHref,
   marketingAnalyticsDimensionPaging,
   marketingAnalyticsHref,
+  marketingAnalyticsSpendLedgerApiPath,
+  marketingAnalyticsSpendLedgerPageHref,
+  marketingAnalyticsSpendLedgerPaging,
   marketingAnalyticsSummaryApiPath,
   marketingAnalyticsPlatformOptions,
   marketingAnalyticsRangeOptions,
   marketingAnalyticsRegionOptions,
   marketingAnalyticsSourceOptions,
+  marketingAnalyticsViewOptions,
   marketingSpendDailyApiPath,
   marketingSpendPanelHref,
   normalizeMarketingSpendDraft,
@@ -116,7 +124,15 @@ type MarketingDimensionLoadResult = {
   readonly pages: MarketingDimensionPages;
 };
 type MarketingPageOverview = AdminMarketingOverview &
-  Pick<AdminMarketingSummary, 'comparison' | 'trend' | 'unknownAttributionDiagnostics'>;
+  Pick<
+    AdminMarketingSummary,
+    | 'actionSummary'
+    | 'comparison'
+    | 'decisionReadiness'
+    | 'spendCoverage'
+    | 'trend'
+    | 'unknownAttributionDiagnostics'
+  >;
 type MarketingSpendDailyRecord = {
   campaignId: string;
   campaignName: string | null;
@@ -144,6 +160,7 @@ const marketingDimensionMetricHeaders = [
   'Ad spend',
   'CPA completed',
   'Fee revenue',
+  'Fee ROAS',
   'Gross ROAS',
 ] as const;
 
@@ -201,10 +218,10 @@ const emptyMarketingOverview: AdminMarketingOverview = {
   attributionQuality: {
     attributedFirstOpens: 0,
     unknownFirstOpens: 0,
-    firstOpenCoverageRate: 0,
+    firstOpenCoverageRate: null,
     attributedSignups: 0,
     unknownSignups: 0,
-    signupCoverageRate: 0,
+    signupCoverageRate: null,
   },
   campaignEfficiency: [],
   topInsights: [],
@@ -226,7 +243,57 @@ const emptyMarketingSummary: AdminMarketingSummary = {
     rows: [],
     recentAccounts: [],
   },
+  campaignUniverseCount: 0,
+  spendCoverage: {
+    trackingExpected: true,
+    expectedDayCount: 0,
+    recordedDayCount: 0,
+    missingDates: [],
+    lastRecordedDate: null,
+    latestUpdatedAt: null,
+    totalSpendAmount: null,
+    hasExplicitZeroRows: false,
+    unmatchedCampaignRowCount: 0,
+    unmatchedOutcomeCampaignCount: 0,
+    duplicateCanonicalCampaignCount: 0,
+    matchedCampaignCount: 0,
+    campaignKeyCount: 0,
+    status: 'MISSING',
+  },
+  decisionReadiness: {
+    status: 'INSUFFICIENT',
+    reasons: ['NO_ACQUISITION_EVIDENCE', 'NO_SPEND_EVIDENCE'],
+    attributionCoveragePercent: null,
+    spendCoveragePercent: null,
+    campaignJoinCoveragePercent: null,
+    lastCompleteDate: null,
+  },
+  actionSummary: {
+    totalCount: 0,
+    visibleCount: 0,
+    hiddenCount: 0,
+    items: [],
+    generatedAt: new Date(0).toISOString(),
+    thresholdVersion: 'marketing-risk-v1',
+  },
 };
+
+function emptyMarketingSpendLedgerPage(
+  filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>,
+  paging: { readonly skip: number; readonly take: number },
+): AdminMarketingSpendLedgerPage {
+  return {
+    generatedAt: new Date(0).toISOString(),
+    range: filters.range,
+    rangeLabel: marketingRangeLabel(filters.range),
+    windowStartAt: new Date(0).toISOString(),
+    windowEndAt: new Date(0).toISOString(),
+    rows: [],
+    skip: paging.skip,
+    take: paging.take,
+    totalCount: 0,
+  };
+}
 
 const emptyMarketingCouponSummary: AdminMarketingCouponSummary = {
   generatedAt: new Date(0).toISOString(),
@@ -268,9 +335,10 @@ function emptyMarketingCouponPerformancePage(
 async function loadMarketingDimensionPages(
   filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>,
   params: Record<string, string | string[] | undefined> | undefined,
+  dimensions: readonly AdminMarketingDimensionKey[] = marketingDimensionKeys,
 ): Promise<MarketingDimensionLoadResult> {
   const pages = await Promise.all(
-    marketingDimensionKeys.map(async (dimension) => {
+    dimensions.map(async (dimension) => {
       const paging = marketingAnalyticsDimensionPaging(params, dimension);
       const page = await adminGetResult<AdminMarketingDimensionPage>(
         marketingAnalyticsDimensionApiPath(filters, dimension, paging),
@@ -289,10 +357,10 @@ async function loadMarketingDimensionPages(
   return {
     available: Object.fromEntries(
       pages.map(([dimension, result]) => [dimension, result.ok]),
-    ) as MarketingDimensionAvailability,
+    ) as Partial<MarketingDimensionAvailability> as MarketingDimensionAvailability,
     pages: Object.fromEntries(
       pages.map(([dimension, result]) => [dimension, result.data]),
-    ) as MarketingDimensionPages,
+    ) as Partial<MarketingDimensionPages> as MarketingDimensionPages,
   };
 }
 
@@ -330,46 +398,40 @@ export default async function MarketingAnalyticsPage({
 }) {
   const params = await searchParams;
   const filters = normalizeMarketingAnalyticsFilters(params);
-  const spendDraft = normalizeMarketingSpendDraft(params, filters);
-  const includeBreakdowns = normalizeBreakdownParam(params?.breakdowns);
-  const includeCouponPerformance = marketingAnalyticsCouponPerformanceEnabled(params);
+  const operatorAccess = await getCurrentAdminOperatorAccess();
+  const canManageSpend = hasAdminOperatorCategory(operatorAccess, 'GROWTH_MARKETING_SPEND');
+  const spendDraft = canManageSpend ? normalizeMarketingSpendDraft(params, filters) : null;
+  const includeCouponPerformance =
+    filters.view === 'coupons' && marketingAnalyticsCouponPerformanceEnabled(params);
   const couponPaging = marketingAnalyticsCouponPaging(params);
-  const [summaryResult, couponSummaryResult, spendRecordResult] = await Promise.all([
-    adminGetResult<AdminMarketingSummary>(marketingAnalyticsSummaryApiPath(filters), emptyMarketingSummary, {
-      freshness: 'aggregate',
-      revalidateSeconds: 60,
-      tags: ['admin-marketing-analytics'],
-    }),
-    adminGetResult<AdminMarketingCouponSummary>(
-      marketingAnalyticsCouponSummaryApiPath(filters),
-      {
-        ...emptyMarketingCouponSummary,
-        range: filters.range,
-      },
-      {
+  const spendLedgerPaging = marketingAnalyticsSpendLedgerPaging(params);
+  const dimensions: readonly AdminMarketingDimensionKey[] =
+    filters.view === 'campaigns'
+      ? ['campaign', 'region']
+      : filters.view === 'attribution'
+        ? ['source', 'platform']
+        : [];
+  const needsSummary = filters.view !== 'coupons';
+  const needsCoupons = filters.view === 'coupons';
+  const [summaryResult, couponSummaryResult, spendRecordResult, dimensionLoadResult, couponPerformanceResult, spendLedgerResult] = await Promise.all([
+    needsSummary
+      ? adminGetResult<AdminMarketingSummary>(marketingAnalyticsSummaryApiPath(filters), emptyMarketingSummary, {
         freshness: 'aggregate',
         revalidateSeconds: 60,
         tags: ['admin-marketing-analytics'],
-      },
-    ),
+      })
+      : Promise.resolve({ data: emptyMarketingSummary, ok: true, status: null }),
+    needsCoupons
+      ? adminGetResult<AdminMarketingCouponSummary>(
+          marketingAnalyticsCouponSummaryApiPath(filters),
+          { ...emptyMarketingCouponSummary, range: filters.range },
+          { freshness: 'aggregate', revalidateSeconds: 60, tags: ['admin-marketing-analytics'] },
+        )
+      : Promise.resolve({ data: emptyMarketingCouponSummary, ok: true, status: null }),
     spendDraft?.preview
       ? adminGetResult<MarketingSpendDailyRecord | null>(marketingSpendDailyApiPath(spendDraft), null)
       : Promise.resolve({ data: null, ok: true, status: null }),
-  ]);
-  const overview = summaryResult.ok ? marketingOverviewFromSummary(summaryResult.data) : null;
-  const couponSummary = couponSummaryResult.data;
-  const marketingActions = overview
-    ? buildMarketingActionPriorities({
-        attributionQuality: overview.attributionQuality,
-        campaignEfficiency: overview.campaignEfficiency,
-        comparison: overview.comparison,
-        filters,
-        rangeLabel: overview.rangeLabel,
-        totals: overview.totals,
-      })
-    : [];
-  const [dimensionLoadResult, couponPerformanceResult] = await Promise.all([
-    includeBreakdowns ? loadMarketingDimensionPages(filters, params) : Promise.resolve(null),
+    dimensions.length > 0 ? loadMarketingDimensionPages(filters, params, dimensions) : Promise.resolve(null),
     includeCouponPerformance
       ? adminGetResult<AdminMarketingCouponPerformancePage>(
           marketingAnalyticsCouponPerformanceApiPath(filters, couponPaging),
@@ -381,10 +443,20 @@ export default async function MarketingAnalyticsPage({
           },
         )
       : Promise.resolve(null),
+    filters.view === 'campaigns'
+      ? adminGetResult<AdminMarketingSpendLedgerPage>(
+          marketingAnalyticsSpendLedgerApiPath(filters, spendLedgerPaging),
+          emptyMarketingSpendLedgerPage(filters, spendLedgerPaging),
+          { freshness: 'aggregate', revalidateSeconds: 60, tags: ['admin-marketing-analytics'] },
+        )
+      : Promise.resolve(null),
   ]);
+  const overview = needsSummary && summaryResult.ok ? marketingOverviewFromSummary(summaryResult.data) : null;
+  const couponSummary = couponSummaryResult.data;
   const dimensionPages = dimensionLoadResult?.pages ?? null;
   const dimensionAvailability = dimensionLoadResult?.available ?? null;
   const couponPerformancePage = couponPerformanceResult?.data ?? null;
+  const spendLedgerPage = spendLedgerResult?.data ?? null;
   const cards = overview
     ? [
     {
@@ -406,14 +478,17 @@ export default async function MarketingAnalyticsPage({
       value: formatNullableMultiplier(overview.totals.conversionRates.roas),
       detail: 'Gross booking value / ad spend',
       icon: TrendingUp,
-      tone: marketingRoasTone(overview.totals.conversionRates.roas),
+      tone: marketingRoasTone(overview.totals.conversionRates.roas, overview.spendCoverage.status),
     },
     {
       label: 'Fee ROAS',
       value: formatNullableMultiplier(overview.totals.conversionRates.platformFeeRoas),
       detail: 'Platform fee revenue / ad spend · 1.00x break-even',
       icon: BarChart3,
-      tone: marketingRoasTone(overview.totals.conversionRates.platformFeeRoas),
+      tone: marketingRoasTone(
+        overview.totals.conversionRates.platformFeeRoas,
+        overview.spendCoverage.status,
+      ),
     },
     {
       label: 'Platform fee revenue',
@@ -432,11 +507,25 @@ export default async function MarketingAnalyticsPage({
   return (
     <AdminPageTemplate
       actions={
-        <AdminFormControlLink
-          href={spendDraft ? marketingAnalyticsHref(filters) : marketingSpendPanelHref(filters)}
-        >
-          {spendDraft ? 'Close spend' : 'Add spend'}
-        </AdminFormControlLink>
+        <div className="marketing-header-actions">
+          <AdminSegmentedControl
+            activeValue={filters.view}
+            ariaLabel="Marketing workspace view"
+            className="marketing-workspace-tabs"
+            options={marketingWorkspaceOptions(filters)}
+          />
+          {filters.view === 'campaigns' ? (
+            canManageSpend ? (
+              <AdminFormControlLink
+                href={spendDraft ? marketingAnalyticsHref(filters) : marketingSpendPanelHref(filters)}
+              >
+                {spendDraft ? 'Close spend' : 'Add spend'}
+              </AdminFormControlLink>
+            ) : (
+              <StatusBadge tone="neutral">Spend ledger read only</StatusBadge>
+            )
+          ) : null}
+        </div>
       }
       contentClassName="marketing-analytics-page"
       description="New-customer acquisition cohort, source, campaign, coupon, and spend performance from stored HANDS records."
@@ -445,20 +534,38 @@ export default async function MarketingAnalyticsPage({
       <AdminFilterPanel
         actions={
           <>
-            <StatusBadge tone="info">{overview?.rangeLabel ?? marketingRangeLabel(filters.range)}</StatusBadge>
-            <StatusBadge tone="info">Signup cohort</StatusBadge>
-            <StatusBadge tone="neutral">Spend source: manual records</StatusBadge>
-            {overview ? (
+            <StatusBadge tone="info">
+              {filters.view === 'coupons'
+                ? couponSummaryResult.ok
+                  ? couponSummary.rangeLabel
+                  : marketingRangeLabel(filters.range)
+                : overview?.rangeLabel ?? marketingRangeLabel(filters.range)}
+            </StatusBadge>
+            <StatusBadge tone="info">
+              {filters.view === 'coupons' ? 'Booking-created cohort' : 'Signup cohort'}
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              {filters.view === 'coupons'
+                ? 'Source: booking coupon metadata'
+                : 'Spend source: manual records'}
+            </StatusBadge>
+            {filters.view === 'coupons' && couponSummaryResult.ok ? (
+              <StatusBadge tone="info">
+                Generated <DateTimeText value={couponSummary.generatedAt} />
+              </StatusBadge>
+            ) : overview ? (
               <StatusBadge tone="info">
                 Generated <DateTimeText value={overview.generatedAt} />
               </StatusBadge>
             ) : (
-              <StatusBadge tone="danger">Marketing summary unavailable</StatusBadge>
+              <StatusBadge tone="danger">
+                {filters.view === 'coupons' ? 'Coupon summary unavailable' : 'Marketing summary unavailable'}
+              </StatusBadge>
             )}
           </>
         }
         className="marketing-analytics-filter-panel"
-        description="Range and source scope the acquisition cohort. Platform and campaign are available as secondary cohort filters."
+        description={marketingFilterScopeDescription(filters.view)}
         title="Marketing filters"
       >
         <FilterButtons
@@ -467,47 +574,52 @@ export default async function MarketingAnalyticsPage({
           activeValue={filters.range}
           hrefFor={(range) => marketingAnalyticsHref({ ...filters, range })}
         />
-        <FilterButtons
-          label="Source"
-          options={marketingAnalyticsSourceOptions}
-          activeValue={filters.source ?? 'all'}
-          hrefFor={(source) =>
-            marketingAnalyticsHref({ ...filters, source: source === 'all' ? null : source })
-          }
-        />
-        <AdminDisclosure
-          ariaLabel="Additional marketing filters"
-          className="marketing-analytics-more-filters"
-          open={Boolean(filters.platform || filters.campaignId)}
-        >
-          <summary>More filters</summary>
-          <div className="marketing-analytics-more-filter-fields">
+        {filters.view !== 'coupons' ? (
+          <>
             <FilterButtons
-              label="Platform"
-              options={marketingAnalyticsPlatformOptions}
-              activeValue={filters.platform ?? 'all'}
-              hrefFor={(platform) =>
-                marketingAnalyticsHref({ ...filters, platform: platform === 'all' ? null : platform })
+              label="Source"
+              options={marketingAnalyticsSourceOptions}
+              activeValue={filters.source ?? 'all'}
+              hrefFor={(source) =>
+                marketingAnalyticsHref({ ...filters, source: source === 'all' ? null : source })
               }
             />
-            <AdminFormGrid className="marketing-analytics-campaign-form" action="/marketing-analytics">
-              <input type="hidden" name="range" value={filters.range} />
-              {filters.source ? <input type="hidden" name="source" value={filters.source} /> : null}
-              {filters.platform ? <input type="hidden" name="platform" value={filters.platform} /> : null}
-              <AdminFormInput
-                defaultValue={filters.campaignId ?? ''}
-                label="Campaign ID"
-                labelVisibility="visible"
-                name="campaignId"
-                placeholder="Search recent campaigns"
-                type="search"
-              />
-              <AdminFormControlButton className="marketing-analytics-apply-button" type="submit">
-                Apply campaign
-              </AdminFormControlButton>
-            </AdminFormGrid>
-          </div>
-        </AdminDisclosure>
+            <AdminDisclosure
+              ariaLabel="Additional marketing filters"
+              className="marketing-analytics-more-filters"
+              open={Boolean(filters.platform || filters.campaignId)}
+            >
+              <summary>More filters</summary>
+              <div className="marketing-analytics-more-filter-fields">
+                <FilterButtons
+                  label="Platform"
+                  options={marketingAnalyticsPlatformOptions}
+                  activeValue={filters.platform ?? 'all'}
+                  hrefFor={(platform) =>
+                    marketingAnalyticsHref({ ...filters, platform: platform === 'all' ? null : platform })
+                  }
+                />
+                <AdminFormGrid className="marketing-analytics-campaign-form" action="/marketing-analytics">
+                  <input type="hidden" name="range" value={filters.range} />
+                  <input type="hidden" name="view" value={filters.view} />
+                  {filters.source ? <input type="hidden" name="source" value={filters.source} /> : null}
+                  {filters.platform ? <input type="hidden" name="platform" value={filters.platform} /> : null}
+                  <AdminFormInput
+                    defaultValue={filters.campaignId ?? ''}
+                    label="Campaign ID"
+                    labelVisibility="visible"
+                    name="campaignId"
+                    placeholder="Search recent campaigns"
+                    type="search"
+                  />
+                  <AdminFormControlButton className="marketing-analytics-apply-button" type="submit">
+                    Apply campaign
+                  </AdminFormControlButton>
+                </AdminFormGrid>
+              </div>
+            </AdminDisclosure>
+          </>
+        ) : null}
         <AdminFilterSummary
           ariaLabel="Active marketing filters"
           labels={[marketingAnalyticsActiveFilterLabels(filters).join(' · ')]}
@@ -515,7 +627,7 @@ export default async function MarketingAnalyticsPage({
         >
           {filters.range !== '7d' ? (
             <AdminTextLink href={marketingAnalyticsHref({ ...filters, range: '7d' })}>
-              Reset range
+              Use default range
             </AdminTextLink>
           ) : null}
           {filters.source ? (
@@ -533,61 +645,58 @@ export default async function MarketingAnalyticsPage({
               Clear campaign
             </AdminTextLink>
           ) : null}
-          {filters.range !== '7d' ||
-          filters.source ||
+          {filters.source ||
           filters.platform ||
+          filters.regionCode ||
           filters.campaignId ? (
             <AdminTextLink
               href={marketingAnalyticsHref({
                 ...filters,
                 campaignId: null,
                 platform: null,
-                range: '7d',
+                regionCode: null,
                 source: null,
               })}
             >
-              Clear all
+              Clear dimensions
             </AdminTextLink>
           ) : null}
         </AdminFilterSummary>
       </AdminFilterPanel>
 
-      {spendDraft ? (
+      {filters.view === 'campaigns' && !canManageSpend ? (
+        <AdminNoticeCard tone="info">
+          <strong>Spend ledger is read only</strong>
+          <p>Marketing analytics access does not permit manual spend changes. A separate Marketing spend manage permission is required.</p>
+        </AdminNoticeCard>
+      ) : null}
+
+      {filters.view === 'campaigns' && spendDraft ? (
         <MarketingSpendPanel
           draft={spendDraft}
           filters={filters}
-          readFailed={!spendRecordResult.ok}
+          readResult={spendRecordResult}
           record={spendRecordResult.data}
         />
       ) : null}
 
-      {overview ? (
+      {overview && filters.view !== 'coupons' ? (
+        <MarketingEvidenceStrip
+          readiness={overview.decisionReadiness}
+          spendCoverage={overview.spendCoverage}
+        />
+      ) : null}
+
+      {overview && filters.view === 'overview' ? (
         <>
           <MarketingNeedsActionSection
-            actions={marketingActions}
-            hasEvidence={hasMarketingDecisionEvidence(overview.totals)}
+            actionSummary={overview.actionSummary}
+            filters={filters}
             rangeLabel={overview.rangeLabel}
+            readiness={overview.decisionReadiness}
           />
-
           <FunnelCard overview={overview} />
-
-          <AdminOverviewGrid
-            ariaLabel="Marketing attribution quality and campaign efficiency"
-            baseClassName="marketing-operations-grid"
-            variant="content"
-          >
-            <AttributionQualityCard
-              diagnostics={overview.unknownAttributionDiagnostics}
-              quality={overview.attributionQuality}
-              rangeLabel={overview.rangeLabel}
-            />
-            <CampaignEfficiencyCard rangeLabel={overview.rangeLabel} rows={overview.campaignEfficiency} />
-          </AdminOverviewGrid>
-
-          <section
-            aria-labelledby="marketing-business-outcomes-title"
-            className="marketing-outcome-metrics-group"
-          >
+          <section aria-labelledby="marketing-business-outcomes-title" className="marketing-outcome-metrics-group">
             <AdminSectionHeader
               status={<StatusBadge tone="info">{overview.rangeLabel}</StatusBadge>}
               title="Business outcome metrics"
@@ -607,33 +716,69 @@ export default async function MarketingAnalyticsPage({
               }))}
             />
           </section>
-
           <MarketingComparisonSection comparison={overview.comparison} rangeLabel={overview.rangeLabel} />
-
           <AdminSection
             actions={<StatusBadge tone="info">Vietnam time</StatusBadge>}
             bodyClassName="marketing-trend-body"
             className="marketing-trend-section"
-            description="Daily authenticated app entry and new-signup activity. First-booking lines stay inside the selected new-customer cohort; ad spend uses recorded daily rows."
+            description="Daily authenticated customer entry and new-signup activity. First-booking lines stay inside the selected cohort; ad spend uses recorded daily rows."
             id="marketing-acquisition-trend"
             title="Acquisition and booking trend"
           >
             <MarketingAnalyticsTrendChart points={overview.trend} />
           </AdminSection>
+          <InsightCard overview={overview} />
         </>
-      ) : (
-        <MarketingSummaryUnavailable filters={filters} />
-      )}
+      ) : null}
 
-      <CouponPerformanceSection
-        available={couponSummaryResult.ok}
-        filters={filters}
-        page={couponPerformancePage}
-        pageAvailable={couponPerformanceResult?.ok ?? true}
-        summary={couponSummary}
-      />
+      {overview && filters.view === 'campaigns' ? (
+        <>
+          <MarketingNeedsActionSection
+            actionSummary={overview.actionSummary}
+            filters={filters}
+            rangeLabel={overview.rangeLabel}
+            readiness={overview.decisionReadiness}
+          />
+          <MarketingSpendCoverageSection coverage={overview.spendCoverage} />
+          <CampaignEfficiencyCard
+            rangeLabel={overview.rangeLabel}
+            rows={overview.campaignEfficiency}
+            spendCoverage={overview.spendCoverage}
+          />
+          {spendLedgerPage ? (
+            <MarketingSpendLedger
+              available={spendLedgerResult?.ok ?? true}
+              filters={filters}
+              page={spendLedgerPage}
+            />
+          ) : null}
+        </>
+      ) : null}
 
-      <AdminSection
+      {overview && filters.view === 'attribution' ? (
+        <>
+          <AttributionQualityCard
+            diagnostics={overview.unknownAttributionDiagnostics}
+            quality={overview.attributionQuality}
+            rangeLabel={overview.rangeLabel}
+          />
+          <InsightCard overview={overview} />
+        </>
+      ) : null}
+
+      {!overview && filters.view !== 'coupons' ? <MarketingSummaryUnavailable filters={filters} /> : null}
+
+      {filters.view === 'coupons' ? (
+        <CouponPerformanceSection
+          available={couponSummaryResult.ok}
+          filters={filters}
+          page={couponPerformancePage}
+          pageAvailable={couponPerformanceResult?.ok ?? true}
+          summary={couponSummary}
+        />
+      ) : null}
+
+      {filters.view === 'campaigns' ? <AdminSection
         actions={
           <StatusBadge tone="neutral">
             {filters.regionCode
@@ -657,10 +802,10 @@ export default async function MarketingAnalyticsPage({
             })
           }
         />
-      </AdminSection>
+      </AdminSection> : null}
 
-      <div className="marketing-breakdown-stack">
-        {dimensionPages ? (
+      {dimensionPages ? <div className="marketing-breakdown-stack">
+        {filters.view === 'attribution' ? (
           <>
             <MarketingTable
               available={dimensionAvailability?.source ?? true}
@@ -676,36 +821,10 @@ export default async function MarketingAnalyticsPage({
               secondaryFor={(row) => (row.platform ? platformLabel(row.platform) : null)}
             />
             <MarketingTable
-              available={dimensionAvailability?.region ?? true}
-              title="Recent location evidence"
-              description="Sample · up to 100 recent records per evidence source from saved addresses, booking service addresses, and recorded spend. This is not a complete regional total."
-              emptyMessage="No recent regional evidence loaded."
-              filters={filters}
-              page={dimensionPages.region}
-              rows={dimensionPages.region.rows.filter(hasMarketingActivity)}
-              primaryColumn="Region"
-              icon={<MapPinned size={18} aria-hidden="true" />}
-              labelFor={(row) => row.regionName ?? row.regionCode ?? 'Unknown region'}
-              secondaryFor={(row) => row.regionCode ?? null}
-            />
-            <MarketingTable
-              available={dimensionAvailability?.campaign ?? true}
-              title="Campaign performance"
-              description="Referral code campaigns first; paid campaign rows can be added by manual spend/import foundation."
-              emptyMessage="No tracked campaign rows in this range."
-              filters={filters}
-              page={dimensionPages.campaign}
-              rows={dimensionPages.campaign.rows}
-              primaryColumn="Campaign"
-              icon={<BarChart3 size={18} aria-hidden="true" />}
-              labelFor={(row) => row.campaignName ?? row.campaignId ?? 'Unknown campaign'}
-              secondaryFor={(row) => (row.source ? sourceLabel(row.source) : null)}
-            />
-            <MarketingTable
               available={dimensionAvailability?.platform ?? true}
-              title="Platform first opens"
-              description="First recorded app platform for the selected acquisition cohort."
-              emptyMessage="No platform first-open rows in this range."
+              title="Platform tracked entrants"
+              description="First recorded app platform for authenticated entrants in the selected cohort."
+              emptyMessage="No platform entrant rows in this range."
               filters={filters}
               page={dimensionPages.platform}
               rows={dimensionPages.platform.rows}
@@ -715,51 +834,83 @@ export default async function MarketingAnalyticsPage({
               secondaryFor={() => null}
             />
           </>
-        ) : (
-          <MarketingBreakdownLoader filters={filters} />
-        )}
-      </div>
-
-      {overview ? <InsightCard overview={overview} /> : null}
+        ) : filters.view === 'campaigns' ? (
+          <>
+            <MarketingTable
+              available={dimensionAvailability?.campaign ?? true}
+              title="Campaign risk and performance"
+              description="Server-paged campaign outcomes and spend. Action totals are calculated across the full campaign universe, not this visible page."
+              emptyMessage="No tracked campaign rows in this range."
+              filters={filters}
+              page={dimensionPages.campaign}
+              rows={dimensionPages.campaign.rows}
+              spendCalculable={
+                overview?.spendCoverage.status === 'COMPLETE' &&
+                overview.spendCoverage.totalSpendAmount !== null
+              }
+              primaryColumn="Campaign"
+              icon={<BarChart3 size={18} aria-hidden="true" />}
+              labelFor={(row) => row.campaignName ?? row.campaignId ?? 'Unknown campaign'}
+              secondaryFor={(row) => (row.source ? sourceLabel(row.source) : null)}
+            />
+            <MarketingTable
+              available={dimensionAvailability?.region ?? true}
+              title="Recent location evidence"
+              description="Sample · up to 100 recent records per evidence source. This is not a complete regional total."
+              emptyMessage="No recent regional evidence loaded."
+              filters={filters}
+              page={dimensionPages.region}
+              rows={dimensionPages.region.rows}
+              primaryColumn="Region"
+              icon={<MapPinned size={18} aria-hidden="true" />}
+              labelFor={(row) => row.regionName ?? row.regionCode ?? 'Unknown region'}
+              secondaryFor={(row) => row.regionCode ?? null}
+            />
+          </>
+        ) : null}
+      </div> : null}
     </AdminPageTemplate>
   );
 }
 
 function MarketingNeedsActionSection({
-  actions,
-  hasEvidence,
+  actionSummary,
+  filters,
   rangeLabel,
+  readiness,
 }: {
-  actions: readonly MarketingActionPriority[];
-  hasEvidence: boolean;
+  actionSummary: AdminMarketingSummary['actionSummary'];
+  filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>;
   rangeLabel: string;
+  readiness: AdminMarketingDecisionReadiness;
 }) {
+  const ready = readiness.status === 'READY';
   return (
     <AdminSection
       actions={
-        <StatusBadge tone={actions.length > 0 ? 'warning' : hasEvidence ? 'success' : 'neutral'}>
-          {actions.length > 0
-            ? `${actions.length} open`
-            : hasEvidence
-              ? 'No threshold breach'
-              : 'Awaiting evidence'}
+        <StatusBadge tone={actionSummary.totalCount > 0 ? 'warning' : ready ? 'success' : 'neutral'}>
+          {actionSummary.totalCount > 0
+            ? `${actionSummary.totalCount} open · ${actionSummary.hiddenCount} hidden`
+            : ready
+              ? 'No configured threshold exceeded'
+              : `Decision evidence ${readiness.status.toLowerCase()}`}
         </StatusBadge>
       }
       className="marketing-needs-action-section"
-      description="Top campaign spend, fee break-even, period decline, and attribution issues. Only the four highest-priority findings are shown."
+      description={`Campaign and cohort risks are evaluated across the full server-side universe. Showing ${actionSummary.visibleCount} of ${actionSummary.totalCount} · Risk policy ${marketingRiskPolicyLabel(actionSummary.thresholdVersion)}.`}
       id="marketing-needs-action"
       title="Marketing needs action"
     >
-      {actions.length > 0 ? (
+      {actionSummary.items.length > 0 ? (
         <AdminTaskGrid className="marketing-needs-action-grid">
-          {actions.map((action) => (
+          {actionSummary.items.map((action) => (
             <AdminActionCard
               actionLabel={action.actionLabel}
-              className={`marketing-needs-action-card is-${action.tone}`}
-              detail={action.detail}
-              href={action.href}
+              className={`marketing-needs-action-card is-${action.severity}`}
+              detail={`${action.detail} Threshold: ${action.threshold}`}
+              href={marketingActionHref(filters, action)}
               key={action.key}
-              leading={<StatusBadge tone={action.tone}>{action.scope}</StatusBadge>}
+              leading={<StatusBadge tone={action.severity}>{action.scope}</StatusBadge>}
               title={action.title}
               value={marketingActionValue(action)}
               variant="ops-task"
@@ -769,14 +920,14 @@ function MarketingNeedsActionSection({
       ) : (
         <AdminEmptyState
           message={
-            hasEvidence
-              ? 'Campaign spend, fee return, period movement, and attribution coverage are within the current decision thresholds.'
-              : 'Record customer entry, signup, or campaign spend evidence before judging marketing performance.'
+            ready
+              ? 'The complete evidence currently available did not exceed the configured server thresholds. This is not a budget increase recommendation.'
+              : 'The evidence is not complete enough to claim that campaign thresholds are clear.'
           }
           title={
-            hasEvidence
-              ? `No marketing action triggered in ${rangeLabel.toLowerCase()}`
-              : `No marketing evidence in ${rangeLabel.toLowerCase()}`
+            ready
+              ? `No configured threshold exceeded in ${rangeLabel.toLowerCase()}`
+              : `Decision evidence is ${readiness.status.toLowerCase()}`
           }
         />
       )}
@@ -784,17 +935,165 @@ function MarketingNeedsActionSection({
   );
 }
 
-function marketingActionValue(action: MarketingActionPriority) {
-  if (action.valueKind === 'money') {
-    return <MoneyText amount={action.value} />;
+function marketingActionValue(action: AdminMarketingActionItem) {
+  if (action.observedValueKind === 'money') {
+    return <MoneyText amount={action.observedValue} />;
   }
-  if (action.valueKind === 'percent') {
-    return formatPercent(action.value);
+  if (action.observedValueKind === 'percent') {
+    return formatPercent(action.observedValue);
   }
-  if (action.valueKind === 'multiplier') {
-    return `${formatDecimal(action.value)}x`;
+  if (action.observedValueKind === 'multiplier') {
+    return `${formatDecimal(action.observedValue)}x`;
   }
-  return formatNumber(action.value);
+  return formatNumber(action.observedValue);
+}
+
+function marketingActionHref(
+  filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>,
+  action: AdminMarketingActionItem,
+) {
+  const view = action.key.includes('attribution') ? 'attribution' : 'campaigns';
+  return `${marketingAnalyticsHref({
+    ...filters,
+    campaignId: action.campaignKey ?? filters.campaignId,
+    view,
+  })}#${action.key.includes('spend-coverage') ? 'marketing-spend-ledger' : 'marketing-needs-action'}`;
+}
+
+function MarketingEvidenceStrip({
+  readiness,
+  spendCoverage,
+}: {
+  readiness: AdminMarketingDecisionReadiness;
+  spendCoverage: AdminMarketingSpendCoverage;
+}) {
+  const readinessTone =
+    readiness.status === 'READY'
+      ? 'success'
+      : readiness.status === 'INSUFFICIENT' || readiness.status === 'STALE'
+        ? 'danger'
+        : 'warning';
+  return (
+    <AdminSection
+      actions={<StatusBadge tone={readinessTone}>Decision evidence: {readiness.status}</StatusBadge>}
+      bodyClassName="marketing-evidence-strip"
+      className="marketing-evidence-section"
+      description="Reliability checks for the selected cohort and manual spend evidence. Missing ledger dates are not treated as zero spend."
+      title="Decision reliability"
+    >
+      <div><span>Attribution coverage</span><strong>{formatOptionalPercent(readiness.attributionCoveragePercent)}</strong></div>
+      <div><span>Spend days recorded</span><strong>{spendCoverage.recordedDayCount} / {spendCoverage.expectedDayCount}</strong></div>
+      <div><span>Campaign match</span><strong>{formatOptionalPercent(readiness.campaignJoinCoveragePercent)}</strong></div>
+      <div><span>Last complete date</span><strong>{readiness.lastCompleteDate ?? 'Not complete'}</strong></div>
+      {readiness.reasons.length > 0 ? (
+        <p>{readiness.reasons.slice(0, 3).map(marketingReadinessReasonLabel).join(' · ')}</p>
+      ) : null}
+    </AdminSection>
+  );
+}
+
+function MarketingSpendCoverageSection({ coverage }: { coverage: AdminMarketingSpendCoverage }) {
+  return (
+    <AdminSection
+      actions={<StatusBadge tone={coverage.status === 'COMPLETE' ? 'success' : 'warning'}>{coverage.status}</StatusBadge>}
+      bodyClassName="marketing-spend-coverage-grid"
+      className="marketing-spend-coverage-section"
+      description="Manual spend reliability for the selected paid scope. A zero is valid only when an explicit ledger row exists."
+      title="Spend coverage"
+    >
+      <div><span>Recorded dates</span><strong>{coverage.recordedDayCount} / {coverage.expectedDayCount}</strong></div>
+      <div><span>Last entry</span><strong>{coverage.lastRecordedDate ?? 'No entry'}</strong></div>
+      <div><span>Missing dates</span><strong>{coverage.missingDates.length}</strong><small>{coverage.missingDates.slice(0, 4).join(', ') || 'None'}</small></div>
+      <div><span>Unmatched spend</span><strong>{coverage.unmatchedCampaignRowCount}</strong></div>
+      <div><span>Unmatched outcomes</span><strong>{coverage.unmatchedOutcomeCampaignCount}</strong></div>
+      <div><span>Canonical duplicates</span><strong>{coverage.duplicateCanonicalCampaignCount}</strong></div>
+    </AdminSection>
+  );
+}
+
+function MarketingSpendLedger({
+  available,
+  filters,
+  page,
+}: {
+  available: boolean;
+  filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>;
+  page: AdminMarketingSpendLedgerPage;
+}) {
+  const activePage = Math.floor(page.skip / page.take) + 1;
+  const totalPages = Math.max(1, Math.ceil(page.totalCount / page.take));
+  const from = page.totalCount > 0 ? page.skip + 1 : 0;
+  const to = Math.min(page.totalCount, page.skip + page.rows.length);
+  return (
+    <AdminSection
+      actions={<StatusBadge tone="info">{page.totalCount} rows</StatusBadge>}
+      className="marketing-spend-ledger-section"
+      description="Read-only manual spend evidence. Campaign key is normalized for filter, aggregate, review, and audit targeting."
+      id="marketing-spend-ledger"
+      title="Spend ledger"
+    >
+      {!available ? (
+        <AdminNoticeCard role="alert" tone="danger">
+          <strong>Spend ledger is unavailable</strong>
+          <p>Do not interpret this state as zero spend.</p>
+        </AdminNoticeCard>
+      ) : (
+        <AdminTableScroll ariaLabel="Marketing spend ledger table" className="marketing-analytics-table-wrap">
+          <AdminDataTable
+            className="marketing-analytics-table marketing-spend-ledger-table"
+            emptyMessage={<AdminEmptyState title="No spend ledger rows in this scope" message="Missing is not the same as an explicit zero row." />}
+            headers={['Date', 'Source / platform', 'Campaign', 'Region', 'Amount', 'Last updated']}
+            rowCount={page.rows.length}
+          >
+            {page.rows.map((row) => (
+              <tr key={row.id}>
+                <td>{row.spendDate}</td>
+                <td><strong>{row.source}</strong><small>{row.platform}</small></td>
+                <td><strong>{row.campaignName ?? row.campaignKey ?? 'All campaigns'}</strong><small>{row.campaignKey ?? 'all'}</small></td>
+                <td>{row.regionCode}</td>
+                <td><MoneyText amount={row.spendAmount} /></td>
+                <td><DateTimeText value={row.updatedAt} /></td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
+      )}
+      {available ? (
+        <AdminTablePaginationFooter
+          activePage={activePage}
+          ariaLabel="Marketing spend ledger pagination"
+          from={from}
+          hrefForPage={(nextPage) => marketingAnalyticsSpendLedgerPageHref(filters, nextPage)}
+          summaryLabel={`Showing ${from} to ${to} of ${page.totalCount} entries`}
+          to={to}
+          totalPages={totalPages}
+          totalRows={page.totalCount}
+        />
+      ) : null}
+    </AdminSection>
+  );
+}
+
+function marketingReadinessReasonLabel(reason: string) {
+  const labels: Record<string, string> = {
+    NO_ACQUISITION_EVIDENCE: 'No acquisition evidence',
+    NO_SPEND_EVIDENCE: 'No spend evidence',
+    INCOMPLETE_SPEND_DAYS: 'Spend dates incomplete',
+    LOW_ATTRIBUTION_COVERAGE: 'Attribution coverage low',
+    UNMATCHED_CAMPAIGN_SPEND: 'Spend campaigns unmatched',
+    UNMATCHED_CAMPAIGN_OUTCOMES: 'Outcome campaigns unmatched',
+    STALE_AGGREGATE: 'Spend evidence stale',
+  };
+  return labels[reason] ?? reason;
+}
+
+function marketingRiskPolicyLabel(value: string) {
+  const match = value.match(/v(\d+)$/i);
+  return match ? `v${match[1]}` : value;
+}
+
+function formatOptionalPercent(value: number | null) {
+  return value === null ? 'Not available' : formatPercent(value);
 }
 
 function AttributionQualityCard({
@@ -808,6 +1107,7 @@ function AttributionQualityCard({
 }) {
   const signupTotal = quality.attributedSignups + quality.unknownSignups;
   const entryTotal = quality.attributedFirstOpens + quality.unknownFirstOpens;
+  const hasSignupCoverage = quality.signupCoverageRate !== null;
 
   return (
     <AdminSection
@@ -820,19 +1120,23 @@ function AttributionQualityCard({
       <div className="marketing-attribution-coverage-summary">
         <div>
           <span>Signup source coverage</span>
-          <strong>{formatPercent(quality.signupCoverageRate)}</strong>
-          <small>{rangeLabel}</small>
+          <strong>{formatOptionalPercent(quality.signupCoverageRate)}</strong>
+          <small>{hasSignupCoverage ? rangeLabel : `No signups in ${rangeLabel}`}</small>
         </div>
-        <div
-          aria-label={`${formatPercent(quality.signupCoverageRate)} signup source coverage`}
-          className="marketing-attribution-progress"
-          role="progressbar"
-          aria-valuemax={100}
-          aria-valuemin={0}
-          aria-valuenow={quality.signupCoverageRate}
-        >
-          <span style={{ width: `${Math.min(100, Math.max(0, quality.signupCoverageRate))}%` }} />
-        </div>
+        {hasSignupCoverage ? (
+          <div
+            aria-label={`${formatPercent(quality.signupCoverageRate ?? 0)} signup source coverage`}
+            className="marketing-attribution-progress"
+            role="progressbar"
+            aria-valuemax={100}
+            aria-valuemin={0}
+            aria-valuenow={quality.signupCoverageRate ?? undefined}
+          >
+            <span style={{ width: `${Math.min(100, Math.max(0, quality.signupCoverageRate ?? 0))}%` }} />
+          </div>
+        ) : (
+          <p className="marketing-attribution-progress-unavailable">Coverage is not available without signups.</p>
+        )}
       </div>
       <div className="marketing-attribution-breakdown">
         <div>
@@ -849,7 +1153,9 @@ function AttributionQualityCard({
           <span>Known entrants</span>
           <strong>{formatNumber(quality.attributedFirstOpens)}</strong>
           <small>
-            {formatPercent(quality.firstOpenCoverageRate)} of {formatNumber(entryTotal)}
+            {quality.firstOpenCoverageRate === null
+              ? `No entrants in ${rangeLabel}`
+              : `${formatPercent(quality.firstOpenCoverageRate)} of ${formatNumber(entryTotal)}`}
           </small>
         </div>
       </div>
@@ -925,15 +1231,22 @@ function AttributionQualityCard({
 }
 
 function CampaignEfficiencyCard({
+  spendCoverage,
   rangeLabel,
   rows,
 }: {
   rangeLabel: string;
   rows: readonly AdminMarketingDimensionRow[];
+  spendCoverage: AdminMarketingSpendCoverage;
 }) {
+  const spendCalculable = spendCoverage.status === 'COMPLETE' && spendCoverage.totalSpendAmount !== null;
   return (
     <AdminSection
-      actions={<StatusBadge tone="info">Top {Math.min(5, rows.length)}</StatusBadge>}
+      actions={
+        <StatusBadge tone={rows.length > 0 ? 'info' : 'neutral'}>
+          {rows.length > 0 ? `Top ${Math.min(5, rows.length)}` : 'No ranked campaigns'}
+        </StatusBadge>
+      }
       bodyClassName="marketing-campaign-efficiency"
       className="marketing-campaign-efficiency-card"
       description="Completed customer cohorts and fee return after manually recorded ad spend."
@@ -948,7 +1261,7 @@ function CampaignEfficiencyCard({
           <AdminDataTable
             className="marketing-campaign-efficiency-table"
             emptyMessage={null}
-            headers={['Campaign', 'Completed', 'Ad spend', 'CPA completed', 'Fee ROAS', 'Decision']}
+            headers={['Campaign', 'Completed', 'Ad spend', 'CPA completed', 'Fee revenue', 'Fee ROAS', 'Gross ROAS', 'Decision']}
             rowCount={rows.length}
           >
             {rows.map((row) => {
@@ -973,7 +1286,9 @@ function CampaignEfficiencyCard({
                   <td>
                     <MoneyText amount={row.conversionRates.cpaBookingCompleted} fallback="n/a" />
                   </td>
-                  <td>{formatNullableMultiplier(row.conversionRates.platformFeeRoas)}</td>
+                  <td><MoneyText amount={row.platformFeeRevenue} /></td>
+                  <td>{spendCalculable ? formatNullableMultiplier(row.conversionRates.platformFeeRoas) : 'Not calculable'}</td>
+                  <td>{spendCalculable ? formatNullableMultiplier(row.conversionRates.roas) : 'Not calculable'}</td>
                   <td>
                     <StatusBadge tone={decision.tone}>{decision.label}</StatusBadge>
                   </td>
@@ -985,7 +1300,7 @@ function CampaignEfficiencyCard({
       ) : (
         <AdminEmptyState
           message="Add a campaign ID to attribution or a manual spend row to compare campaign efficiency."
-          title={`No campaign evidence in ${rangeLabel.toLowerCase()}`}
+          title={`No campaign evidence for ${rangeLabel}`}
         />
       )}
     </AdminSection>
@@ -1211,15 +1526,17 @@ function CouponPerformanceSection({
       ) : (
         <div className="marketing-coupon-empty-state">
           <AdminEmptyState
-            message="Try a longer range, review coupon operations, or load code-level rows when you need historical evidence."
-            title="No coupon checkout activity in this range"
+            message="Try Yesterday, 7 days, or 30 days, or review Coupon operations. There are no code-level rows to load for this empty cohort."
+            title={`No coupon checkout activity in ${marketingRangeLabel(filters.range)}`}
           />
           <div className="actions">
-            <AdminFormControlLink
-              className="button-primary"
-              href={marketingAnalyticsCouponPageHref(filters)}
-            >
-              Load coupon performance
+            {filters.range === 'today' ? (
+              <AdminFormControlLink className="button-secondary" href={marketingAnalyticsHref({ ...filters, range: '7d' })}>
+                View 7 days
+              </AdminFormControlLink>
+            ) : null}
+            <AdminFormControlLink className="button-secondary" href="/coupons">
+              Coupon operations
             </AdminFormControlLink>
           </div>
         </div>
@@ -1374,12 +1691,12 @@ function marketingCouponStateTone(state: AdminMarketingCouponPerformanceRow['cou
 function MarketingSpendPanel({
   draft,
   filters,
-  readFailed,
+  readResult,
   record,
 }: {
   draft: MarketingSpendDraft;
   filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>;
-  readFailed: boolean;
+  readResult: AdminGetResult<MarketingSpendDailyRecord | null>;
   record: MarketingSpendDailyRecord | null;
 }) {
   return (
@@ -1398,7 +1715,7 @@ function MarketingSpendPanel({
       title="Add daily spend"
     >
       {draft.preview ? (
-        <MarketingSpendReview draft={draft} filters={filters} readFailed={readFailed} record={record} />
+        <MarketingSpendReview draft={draft} filters={filters} readResult={readResult} record={record} />
       ) : (
         <MarketingSpendDraftForm draft={draft} filters={filters} />
       )}
@@ -1430,18 +1747,26 @@ function MarketingSpendDraftForm({
         label="Source"
         labelVisibility="visible"
         name="spendSource"
-        options={marketingAnalyticsSourceOptions
-          .filter((option) => option.value !== 'all' && option.value !== 'unknown')
-          .map((option) => ({ label: option.label, value: option.value }))}
+        options={[
+          { label: 'Select source', value: '' },
+          ...marketingAnalyticsSourceOptions
+            .filter((option) => option.value !== 'all')
+            .map((option) => ({ label: option.label, value: option.value })),
+        ]}
+        required
       />
       <AdminFormSelect
         defaultValue={draft.platform}
         label="Platform"
         labelVisibility="visible"
         name="spendPlatform"
-        options={marketingAnalyticsPlatformOptions
-          .filter((option) => option.value !== 'all')
-          .map((option) => ({ label: option.label, value: option.value }))}
+        options={[
+          { label: 'Select platform', value: '' },
+          ...marketingAnalyticsPlatformOptions
+            .filter((option) => option.value !== 'all')
+            .map((option) => ({ label: option.label, value: option.value })),
+        ]}
+        required
       />
       <AdminFormSelect
         defaultValue={draft.regionCode}
@@ -1472,6 +1797,7 @@ function MarketingSpendDraftForm({
         label="Spend amount"
         labelVisibility="visible"
         min={0}
+        max={2_000_000_000}
         name="spendAmount"
         placeholder="e.g. 600000"
         required
@@ -1498,31 +1824,67 @@ function MarketingSpendDraftForm({
 function MarketingSpendReview({
   draft,
   filters,
-  readFailed,
+  readResult,
   record,
 }: {
   draft: MarketingSpendDraft;
   filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>;
-  readFailed: boolean;
+  readResult: AdminGetResult<MarketingSpendDailyRecord | null>;
   record: MarketingSpendDailyRecord | null;
 }) {
   const existingAmount = record?.spendAmount ?? 0;
   const nextAmount = draft.spendAmount ?? 0;
   const delta = nextAmount - existingAmount;
 
-  if (readFailed) {
+  if (!readResult.ok) {
+    const failure = marketingSpendReadFailure(readResult);
+    const retryHref = marketingSpendPanelHref(filters, draft, true);
+    const editHref = marketingSpendPanelHref(filters, draft);
+    const recoveryHref =
+      failure.action === 'sign-in'
+        ? `/login?redirectTo=${encodeURIComponent(retryHref)}`
+        : failure.action === 'access'
+          ? '/admin-operators'
+          : failure.action === 'ledger'
+            ? '#marketing-spend-ledger'
+            : failure.action === 'edit'
+              ? editHref
+              : retryHref;
     return (
-      <AdminNoticeCard role="alert" tone="danger">
-        <strong>Current spend could not be loaded</strong>
-        <p>Do not save this change until the API is available and the existing value can be verified.</p>
-      </AdminNoticeCard>
+      <>
+        <AdminNoticeCard role="alert" tone={failure.tone}>
+          <strong>{failure.title}</strong>
+          <p>{failure.message}</p>
+          {readResult.requestId ? (
+            <div className="marketing-spend-request-evidence">
+              <small>Request ID: {readResult.requestId}</small>
+              <CommandCopyButton label="Copy request ID" value={readResult.requestId} />
+            </div>
+          ) : null}
+        </AdminNoticeCard>
+        <AdminDetailGrid ariaLabel="Preserved daily spend draft" className="admin-mt-12">
+          <AdminFormStaticValue label="Date" labelVisibility="visible" value={draft.spendDate} />
+          <AdminFormStaticValue label="Source" labelVisibility="visible" value={sourceLabel(draft.source || undefined)} />
+          <AdminFormStaticValue label="Channel" labelVisibility="visible" value={platformLabel(draft.platform || undefined)} />
+          <AdminFormStaticValue label="Region" labelVisibility="visible" value={draft.regionCode} />
+          <AdminFormStaticValue label="Campaign" labelVisibility="visible" value={draft.campaignName || draft.campaignId || 'All campaigns'} />
+          <AdminFormStaticValue label="New value" labelVisibility="visible" value={<MoneyText amount={nextAmount} />} />
+        </AdminDetailGrid>
+        <AdminFormActionRow className="admin-mt-12">
+          <AdminFormControlLink href={recoveryHref}>{failure.actionLabel}</AdminFormControlLink>
+          <AdminFormControlLink href={marketingSpendPanelHref(filters, draft)}>
+            Edit inputs
+          </AdminFormControlLink>
+          <AdminFormControlLink href={marketingAnalyticsHref(filters)}>Cancel</AdminFormControlLink>
+        </AdminFormActionRow>
+      </>
     );
   }
 
   return (
     <>
       <AdminNoticeCard className="admin-mb-16" tone={delta === 0 ? 'info' : 'warning'}>
-        <strong>Change summary</strong>
+        <strong>{record ? 'Change summary' : 'New spend record'}</strong>
         <p>
           <MoneyText amount={existingAmount} currency="VND" /> →{' '}
           <MoneyText amount={nextAmount} currency="VND" /> ({delta >= 0 ? '+' : ''}
@@ -1535,11 +1897,15 @@ function MarketingSpendReview({
           labelVisibility="visible"
           value={`${draft.spendDate} · Vietnam time`}
         />
-        <AdminFormStaticValue label="Source" labelVisibility="visible" value={sourceLabel(draft.source)} />
+        <AdminFormStaticValue
+          label="Source"
+          labelVisibility="visible"
+          value={sourceLabel(draft.source || undefined)}
+        />
         <AdminFormStaticValue
           label="Channel"
           labelVisibility="visible"
-          value={platformLabel(draft.platform)}
+          value={platformLabel(draft.platform || undefined)}
         />
         <AdminFormStaticValue label="Region" labelVisibility="visible" value={draft.regionCode} />
         <AdminFormStaticValue
@@ -1615,40 +1981,13 @@ function MarketingSpendFilterInputs({
   );
 }
 
-function MarketingBreakdownLoader({
-  filters,
-}: {
-  filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>;
-}) {
-  const href = marketingAnalyticsHref(filters);
-  const joiner = href.includes('?') ? '&' : '?';
-
-  return (
-    <AdminSection
-      actions={<BarChart3 size={18} aria-hidden="true" />}
-      bodyClassName="marketing-breakdown-loader-body"
-      className="marketing-table-card"
-      description="The default view loads summary counts only. Open breakdowns when you need source, region, campaign, and platform rows."
-      title="Breakdown tables"
-    >
-      <BarChart3 size={22} aria-hidden="true" />
-      <AdminEmptyState
-        className="marketing-breakdown-loader-empty"
-        framed
-        message="This keeps Marketing Analytics light until an operator requests the list data."
-        title="Dimension rows are not loaded by default."
-      />
-      <AdminFormControlLink className="button-primary" href={`${href}${joiner}breakdowns=1`}>
-        Load breakdown tables
-      </AdminFormControlLink>
-    </AdminSection>
-  );
-}
-
 function marketingAnalyticsActiveFilterLabels(
   filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>,
 ) {
-  const labels = [`Range: ${marketingFilterOptionLabel(marketingAnalyticsRangeOptions, filters.range)}`];
+  const labels = [
+    `View: ${marketingFilterOptionLabel(marketingAnalyticsViewOptions, filters.view)}`,
+    `Range: ${marketingFilterOptionLabel(marketingAnalyticsRangeOptions, filters.range)}`,
+  ];
 
   if (filters.source) {
     labels.push(`Source: ${marketingFilterOptionLabel(marketingAnalyticsSourceOptions, filters.source)}`);
@@ -1664,6 +2003,38 @@ function marketingAnalyticsActiveFilterLabels(
   }
 
   return labels;
+}
+
+function marketingWorkspaceOptions(filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>) {
+  return marketingAnalyticsViewOptions.map((option) => ({
+    href: marketingAnalyticsHref(
+      option.value === 'coupons'
+        ? {
+            campaignId: null,
+            platform: null,
+            range: filters.range,
+            regionCode: null,
+            source: null,
+            view: option.value,
+          }
+        : { ...filters, view: option.value },
+    ),
+    label: option.label,
+    value: option.value,
+  }));
+}
+
+function marketingFilterScopeDescription(view: ReturnType<typeof normalizeMarketingAnalyticsFilters>['view']) {
+  if (view === 'coupons') {
+    return 'Only Range applies to coupon results. Source, platform, campaign, and region do not filter coupons.';
+  }
+  if (view === 'campaigns') {
+    return 'Range, source, platform, and campaign apply to campaign outcomes and spend. Region applies only to spend ledger and location evidence.';
+  }
+  if (view === 'attribution') {
+    return 'Range, source, platform, and campaign apply to the new-customer attribution cohort. Region does not change attribution diagnostics.';
+  }
+  return 'Range, source, platform, and campaign apply to the acquisition cohort. Region does not change headline outcomes.';
 }
 
 function marketingFilterOptionLabel<T extends string>(
@@ -1771,6 +2142,7 @@ function MarketingTable({
   primaryColumn,
   rows,
   secondaryFor,
+  spendCalculable = true,
   title,
 }: {
   available: boolean;
@@ -1783,6 +2155,7 @@ function MarketingTable({
   primaryColumn: string;
   rows: readonly AdminMarketingDimensionRow[];
   secondaryFor: (row: AdminMarketingDimensionRow) => string | null;
+  spendCalculable?: boolean;
   title: string;
 }) {
   const pageTake = page?.take ?? MARKETING_ANALYTICS_DIMENSION_PAGE_SIZE;
@@ -1854,7 +2227,8 @@ function MarketingTable({
               <td>
                 <MoneyText amount={row.platformFeeRevenue} />
               </td>
-              <td>{formatNullableMultiplier(row.conversionRates.roas)}</td>
+              <td>{spendCalculable ? formatNullableMultiplier(row.conversionRates.platformFeeRoas, 'Not calculable') : 'Not calculable'}</td>
+              <td>{spendCalculable ? formatNullableMultiplier(row.conversionRates.roas, 'Not calculable') : 'Not calculable'}</td>
             </tr>
           ))}
         </AdminDataTable>
@@ -1876,17 +2250,6 @@ function MarketingTable({
         />
       ) : null}
     </AdminSection>
-  );
-}
-
-function hasMarketingActivity(row: AdminMarketingDimensionRow) {
-  return (
-    row.firstOpens > 0 ||
-    row.signups > 0 ||
-    row.addressSaves > 0 ||
-    row.bookingCreated > 0 ||
-    row.bookingCompleted > 0 ||
-    row.bookingCancelled > 0
   );
 }
 
@@ -1920,12 +2283,6 @@ function emptyComparisonMetric(): AdminMarketingComparisonMetric {
   };
 }
 
-function normalizeBreakdownParam(value: string | string[] | undefined) {
-  const candidate = Array.isArray(value) ? value[0] : value;
-
-  return candidate === '1' || candidate === 'true' || candidate === 'breakdowns';
-}
-
 function sourceLabel(source: AdminMarketingDimensionRow['source']) {
   if (source === 'meta') return 'Meta';
   if (source === 'google') return 'Google';
@@ -1947,12 +2304,79 @@ function formatDecimal(value: number) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value);
 }
 
-function formatNullableMultiplier(value: number | null) {
-  return value === null ? 'n/a' : `${formatDecimal(value)}x`;
+function formatNullableMultiplier(value: number | null, fallback = 'n/a') {
+  return value === null ? fallback : `${formatDecimal(value)}x`;
 }
 
-function marketingRoasTone(value: number | null) {
-  if (value === null) return 'neutral';
+function marketingSpendReadFailure(result: AdminGetResult<unknown>) {
+  if (result.status === 401) {
+    return {
+      action: 'sign-in' as const,
+      actionLabel: 'Sign in again',
+      message: 'Your admin session could not read the current value. Sign in again, then retry this preserved draft.',
+      title: 'Session expired',
+      tone: 'warning' as const,
+    };
+  }
+  if (result.status === 403) {
+    return {
+      action: 'access' as const,
+      actionLabel: 'Review operator access',
+      message: 'This operator can open Marketing Analytics but cannot verify or change daily spend.',
+      title: 'Marketing spend permission required',
+      tone: 'warning' as const,
+    };
+  }
+  if (result.status === 404) {
+    return {
+      action: 'retry' as const,
+      actionLabel: 'Retry current value',
+      message: 'The spend endpoint or selected scope is not available. Confirm the inputs before retrying.',
+      title: 'Current spend scope was not found',
+      tone: 'warning' as const,
+    };
+  }
+  if (result.status === 409) {
+    return {
+      action: 'ledger' as const,
+      actionLabel: 'Review ledger conflict',
+      message:
+        result.errorCode === 'MARKETING_SPEND_CAMPAIGN_ID_AMBIGUOUS'
+          ? 'Multiple rows resolve to this campaign key. Review the ledger conflict before saving.'
+          : 'The current spend evidence conflicts with this draft. Review the ledger before saving.',
+      title: 'Campaign key conflict',
+      tone: 'warning' as const,
+    };
+  }
+  if (result.status === 429) {
+    return {
+      action: 'retry' as const,
+      actionLabel: 'Retry later',
+      message: 'Too many spend requests were received. Wait briefly, then retry the current value.',
+      title: 'Spend lookup is temporarily limited',
+      tone: 'warning' as const,
+    };
+  }
+  if (result.status === 400 || result.status === 422) {
+    return {
+      action: 'edit' as const,
+      actionLabel: 'Edit inputs',
+      message: `The selected scope was rejected${result.errorCode ? ` (${result.errorCode})` : ''}. Edit the inputs, then review again.`,
+      title: 'Spend scope needs correction',
+      tone: 'warning' as const,
+    };
+  }
+  return {
+    action: 'retry' as const,
+    actionLabel: 'Retry current value',
+    message: 'Do not save until the current value can be verified. The complete draft is preserved below for retry.',
+    title: result.status === null ? 'Spend service could not be reached' : 'Current spend could not be loaded',
+    tone: 'danger' as const,
+  };
+}
+
+function marketingRoasTone(value: number | null, coverage: AdminMarketingSpendCoverage['status']) {
+  if (value === null || coverage !== 'COMPLETE') return 'neutral';
   return value >= 1 ? 'success' : 'warning';
 }
 

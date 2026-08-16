@@ -1,0 +1,106 @@
+{
+  "alertCount": 1,
+  "detailsCount": 15,
+  "document": {
+    "clientWidth": 1425,
+    "scrollHeight": 2472,
+    "scrollWidth": 1425
+  },
+  "newerLinks": 0,
+  "olderLinks": 1,
+  "openDetails": 1,
+  "sourceLinks": [
+    {
+      "ariaCurrent": null,
+      "backgroundColor": "rgb(47, 51, 73)",
+      "border": "1px solid rgba(225, 222, 245, 0.12)",
+      "boxShadow": "none",
+      "color": "rgba(225, 222, 245, 0.9)",
+      "fontWeight": "500",
+      "label": "Operator changes"
+    },
+    {
+      "ariaCurrent": null,
+      "backgroundColor": "rgb(47, 51, 73)",
+      "border": "1px solid rgba(225, 222, 245, 0.12)",
+      "boxShadow": "none",
+      "color": "rgba(225, 222, 245, 0.9)",
+      "fontWeight": "500",
+      "label": "Automated smoke"
+    },
+    {
+      "ariaCurrent": "page",
+      "backgroundColor": "rgb(47, 51, 73)",
+      "border": "1px solid rgba(225, 222, 245, 0.12)",
+      "boxShadow": "none",
+      "color": "rgba(225, 222, 245, 0.9)",
+      "fontWeight": "500",
+      "label": "Legacy / unknown"
+    }
+  ],
+  "statusCount": 0,
+  "table": {
+    "cellWidths": [
+      158,
+      132,
+      196,
+      294,
+      169,
+      102
+    ],
+    "count": 9,
+    "firstRowHeight": 216,
+    "headers": [
+      "When",
+      "Policy",
+      "Before → After",
+      "Actor / Source",
+      "Reason",
+      "Details"
+    ],
+    "rowCount": 8
+  },
+  "url": "http://localhost:3101/operations-policy?details=audit&audit=legacy_unknown",
+  "viewport": {
+    "innerHeight": 1000,
+    "innerWidth": 1440
+  },
+  "workspaceLinks": [
+    {
+      "ariaCurrent": null,
+      "backgroundColor": "rgb(47, 51, 73)",
+      "border": "1px solid rgba(225, 222, 245, 0.12)",
+      "boxShadow": "none",
+      "color": "rgba(225, 222, 245, 0.9)",
+      "fontWeight": "500",
+      "label": "Policies"
+    },
+    {
+      "ariaCurrent": null,
+      "backgroundColor": "rgb(47, 51, 73)",
+      "border": "1px solid rgba(225, 222, 245, 0.12)",
+      "boxShadow": "none",
+      "color": "rgba(225, 222, 245, 0.9)",
+      "fontWeight": "500",
+      "label": "Supply"
+    },
+    {
+      "ariaCurrent": null,
+      "backgroundColor": "rgb(47, 51, 73)",
+      "border": "1px solid rgba(225, 222, 245, 0.12)",
+      "boxShadow": "none",
+      "color": "rgba(225, 222, 245, 0.9)",
+      "fontWeight": "500",
+      "label": "Simulation"
+    },
+    {
+      "ariaCurrent": "page",
+      "backgroundColor": "rgb(47, 51, 73)",
+      "border": "1px solid rgba(225, 222, 245, 0.12)",
+      "boxShadow": "none",
+      "color": "rgba(225, 222, 245, 0.9)",
+      "fontWeight": "500",
+      "label": "Audit"
+    }
+  ]
+}

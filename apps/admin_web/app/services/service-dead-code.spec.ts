@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const legacyServiceEditorFiles = [
@@ -19,5 +19,22 @@ describe('service catalog dead code guard', () => {
     );
 
     expect(existingLegacyFiles).toEqual([]);
+  });
+
+  it('keeps legacy per-row service and payout actions out of the active action module', () => {
+    const source = readFileSync(join(process.cwd(), 'app/services/actions.ts'), 'utf8');
+    for (const action of [
+      'createService',
+      'createServiceDurationSet',
+      'updateService',
+      'saveServiceDurationMenu',
+      'upsertPayoutRule',
+      'bulkUpsertPayoutRules',
+      'updatePayoutRule',
+    ]) {
+      expect(source).not.toContain(`export async function ${action}`);
+    }
+    expect(source).not.toContain('/admin/service-payout-rules/');
+    expect(source).not.toContain('/payout-rules/bulk');
   });
 });

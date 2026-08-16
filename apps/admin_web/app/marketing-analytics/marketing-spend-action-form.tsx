@@ -53,12 +53,13 @@ export function MarketingSpendSubmitButton() {
 
 function MarketingSpendActionResult({ state }: { readonly state: MarketingSpendActionState }) {
   const success = state.status === 'success';
+  const warning = state.status === 'invalid' || state.status === 'conflict' || state.status === 'throttled';
 
   return (
     <AdminNoticeCard
       className="admin-grid-span-2 marketing-spend-action-result"
       role={success ? 'status' : 'alert'}
-      tone={success ? 'success' : state.status === 'invalid' ? 'warning' : 'danger'}
+      tone={success ? 'success' : warning ? 'warning' : 'danger'}
     >
       <strong>{state.message}</strong>
       {state.fieldErrors ? (
@@ -70,6 +71,10 @@ function MarketingSpendActionResult({ state }: { readonly state: MarketingSpendA
       ) : null}
       {state.saved ? (
         <div className="marketing-spend-saved-evidence">
+          <span>
+            <strong>Result</strong>
+            {state.saved.outcome === 'NO_CHANGE' ? 'No change' : 'Saved'}
+          </span>
           <span>
             <strong>Saved value</strong>
             <MoneyText amount={state.saved.spendAmount} />
@@ -88,13 +93,26 @@ function MarketingSpendActionResult({ state }: { readonly state: MarketingSpendA
             <strong>Reason</strong>
             {state.saved.reason}
           </span>
-          <Link
-            className="text-link"
-            href="/audit-log?q=marketing_spend_daily.upsert"
-            prefetch={false}
-          >
-            Open Audit Log
-          </Link>
+          {state.saved.canonicalTarget ? (
+            <span>
+              <strong>Canonical target</strong>
+              {state.saved.canonicalTarget}
+            </span>
+          ) : null}
+          {state.saved.auditId ? (
+            <Link
+              className="text-link"
+              href={`/audit-log?q=${encodeURIComponent(state.saved.auditId)}`}
+              prefetch={false}
+            >
+              Open audit event {state.saved.auditId}
+            </Link>
+          ) : (
+            <span>
+              <strong>Audit event</strong>
+              Not created because no value changed
+            </span>
+          )}
         </div>
       ) : null}
     </AdminNoticeCard>

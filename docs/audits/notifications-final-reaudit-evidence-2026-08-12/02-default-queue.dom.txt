@@ -1,0 +1,174 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Messaging":
+        - /url: /notifications
+      - generic: Notification Delivery
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Messaging workspace":
+    - strong: Messaging
+    - generic "Messaging pages":
+      - link "Notification Delivery":
+        - /url: /notifications
+      - link "Notification Templates":
+        - /url: /notifications/templates
+      - link "Push Send":
+        - /url: /notifications/push-send
+  - heading "Notification Delivery" [level=1]
+  - paragraph: Review unresolved mobile send issues and inspect delivery records.
+  - generic "Notification delivery data status":
+    - generic: Current · under 24h
+    - generic: Asia/Ho_Chi_Minh
+    - generic: Generated 12 Aug 2026, 14:30
+    - button "Refresh now":
+      - text: Refresh now
+    - generic: Explicit production records · 0
+  - generic "Notification data source":
+    - link "Production":
+      - /url: /notifications
+    - link "Unknown source":
+      - /url: /notifications?dataScope=unknown
+    - link "Synthetic":
+      - /url: /notifications?dataScope=synthetic
+  - generic "Notification Delivery mode":
+    - link "Needs action":
+      - /url: /notifications
+    - link "Delivery records":
+      - /url: /notifications?mode=records&range=all&sort=oldest
+  - region "Delivery health":
+    - heading "Delivery health" [level=2]
+    - paragraph: Current delivery debt and 24h+ backlog stay visible together. Counts are scoped to the selected data source.
+    - generic: 0 current · 0 history
+    - region "Current delivery debt":
+      - paragraph: CURRENT · UNDER 24H
+      - heading "Current delivery debt" [level=3]
+      - generic: No new delivery issues in the last 24 hours
+      - term: Failure groups
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications
+      - term: Failed
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=failed
+      - term: No attempt
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=no-attempt
+      - term: No route recipients
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=no-route
+      - term: Stale routes
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=stale-route
+    - region "Historical delivery debt":
+      - paragraph: HISTORY · 24H+
+      - heading "Historical delivery debt" [level=3]
+      - generic: No history debt
+      - term: Failure groups
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?scope=history
+      - term: Failed
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=failed&scope=history
+      - term: No attempt
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=no-attempt&scope=history
+      - term: No route recipients
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=no-route&scope=history
+      - term: Stale routes
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=stale-route&scope=history
+  - generic "Notification delivery issue":
+    - link "Failure groups · 0 groups":
+      - /url: /notifications
+    - link "Failed · 0 notifications":
+      - /url: /notifications?issue=failed
+    - link "No send attempt after 15m · 0 notifications":
+      - /url: /notifications?issue=no-attempt
+    - link "No active push route · 0 recipients · 0 notifications":
+      - /url: /notifications?issue=no-route
+    - link "App route needs refresh · 0 notifications":
+      - /url: /notifications?issue=stale-route
+  - generic "Notification action age scope":
+    - link "Current · under 24h":
+      - /url: /notifications
+    - link "24h+ history":
+      - /url: /notifications?scope=history
+    - link "All ages":
+      - /url: /notifications?scope=all
+  - region "Open failure groups":
+    - heading "Open failure groups" [level=2]
+    - paragraph: Latest unresolved paths grouped by push provider and normalized failure code.
+    - generic: 0 failure groups
+    - region "Notification delivery records":
+      - table:
+        - rowgroup:
+          - row "Cause Affected First / latest Technical next step Open affected records":
+            - columnheader "Cause"
+            - columnheader "Affected"
+            - columnheader "First / latest"
+            - columnheader "Technical next step"
+            - columnheader "Open affected records"
+        - rowgroup:
+          - row:
+            - cell:
+              - status:
+                - paragraph: No open failure groups match this scope.
+- alert

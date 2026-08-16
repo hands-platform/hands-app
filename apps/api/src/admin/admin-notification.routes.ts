@@ -3,6 +3,7 @@ import { Body, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import {
+  AdminPushCampaignConfirmDto,
   AdminPushCampaignDto,
   AdminReasonDto,
   UpdateNotificationTemplateDto,
@@ -32,6 +33,7 @@ export class AdminNotificationRoutes extends AdminGovernanceRoutes {
     @Query('failureProvider') failureProvider?: string,
     @Query('failureCode') failureCode?: string,
     @Query('dataScope') dataScope?: string,
+    @Query('campaignId') campaignId?: string,
   ) {
     return this.admin.listNotifications({
       ...(age ? { age } : {}),
@@ -54,6 +56,7 @@ export class AdminNotificationRoutes extends AdminGovernanceRoutes {
       failureProvider,
       failureCode,
       dataScope,
+      campaignId,
     });
   }
 
@@ -77,6 +80,7 @@ export class AdminNotificationRoutes extends AdminGovernanceRoutes {
     @Query('failureCode') failureCode?: string,
     @Query('dataScope') dataScope?: string,
     @Query('viewMode') viewMode?: string,
+    @Query('campaignId') campaignId?: string,
   ) {
     return this.admin.notificationSummary({
       ...(age ? { age } : {}),
@@ -97,6 +101,7 @@ export class AdminNotificationRoutes extends AdminGovernanceRoutes {
       failureCode,
       dataScope,
       viewMode,
+      campaignId,
     });
   }
 
@@ -129,14 +134,19 @@ export class AdminNotificationRoutes extends AdminGovernanceRoutes {
     return this.admin.adminPushCampaignSummary({ from, to });
   }
 
+  @Get('notifications/push-campaigns/:id')
+  pushCampaignEvidence(@Param('id') id: string) {
+    return this.admin.adminPushCampaignEvidence(id);
+  }
+
   @Post('notifications/push-campaigns/preview')
-  previewPushCampaign(@Body() body: AdminPushCampaignDto) {
-    return this.admin.previewAdminPushCampaign(body);
+  previewPushCampaign(@CurrentUser() user: AuthenticatedUser, @Body() body: AdminPushCampaignDto) {
+    return this.admin.previewAdminPushCampaign(user.id, body);
   }
 
   @Post('notifications/push-campaigns')
-  createPushCampaign(@CurrentUser() user: AuthenticatedUser, @Body() body: AdminPushCampaignDto) {
-    return this.admin.createAdminPushCampaign(user.id, body);
+  createPushCampaign(@CurrentUser() user: AuthenticatedUser, @Body() body: AdminPushCampaignConfirmDto) {
+    return this.admin.confirmAdminPushCampaign(user.id, body);
   }
 
   @Post('notifications/:id/retry')

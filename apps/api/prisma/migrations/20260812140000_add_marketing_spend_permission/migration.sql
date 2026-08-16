@@ -1,0 +1,1 @@
+ALTER TYPE "AdminOperatorPermissionCategory" ADD VALUE IF NOT EXISTS 'GROWTH_MARKETING_SPEND';

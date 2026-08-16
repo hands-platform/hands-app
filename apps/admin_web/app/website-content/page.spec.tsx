@@ -89,7 +89,7 @@ function listResult(items: ReturnType<typeof routeGroup>[]) {
     take: 20,
     total: items.length,
     totalPages: 1,
-    summary: { routes: items.length, live: items.length, draftChanges: items.length, needsAttention: 0, missingTranslations: 0, recentlyPublished: 1 },
+    summary: { routes: items.length, live: items.length, draftChanges: items.length, ready: items.length, needsAttention: 0, missingRoutes: 0, missingTranslations: 0, staleTranslations: 0, recentlyPublished: 1, scope: { contentType: 'pages', site: null, locale: null, q: null, status: 'all' }, generatedAt: '2026-08-12T00:00:00Z' },
     summaryAvailable: true,
   };
 }
@@ -99,12 +99,16 @@ function routeGroup() {
     groupKey: 'MAIN:/about',
     site: 'MAIN' as const,
     path: '/about',
+    label: 'About HANDS',
+    ownership: 'CODE_FALLBACK' as const,
     translations: [{
       id: 'page-1',
       site: 'MAIN' as const,
       locale: 'vi',
       path: '/about',
       internalName: 'About HANDS',
+      manifestLabel: 'About HANDS',
+      ownership: 'CODE_FALLBACK' as const,
       firstPublishedAt: '2026-08-01T00:00:00Z',
       updatedAt: '2026-08-10T00:00:00Z',
       activeRevision: { id: 'active-1', revisionNumber: 1, publishedAt: '2026-08-01T00:00:00Z', updatedAt: '2026-08-01T00:00:00Z', noIndex: false, _count: { sections: 1 } },
@@ -117,5 +121,5 @@ function detailPage() {
   const section = { id: 'section-1', revisionId: 'draft-2', key: 'hero', kind: 'HERO' as const, content: { title: 'Draft title' }, sortOrder: 0, enabled: true, updatedAt: '2026-08-10T00:00:00Z' };
   const draft = { id: 'draft-2', revisionNumber: 2, version: 3, state: 'DRAFT' as const, readinessState: 'READY' as const, readinessIssues: [], seoTitle: 'Draft title', seoDescription: 'Description', canonicalPath: '/about', noIndex: false, updatedAt: '2026-08-10T00:00:00Z', sections: [section] };
   const active = { ...draft, id: 'active-1', revisionNumber: 1, version: 1, state: 'ACTIVE' as const, seoTitle: 'Live title', publishedAt: '2026-08-01T00:00:00Z', publishedById: 'publisher-1', sections: [{ ...section, id: 'live-section', revisionId: 'active-1', content: { title: 'Live title' } }] };
-  return { id: 'page-1', site: 'MAIN' as const, locale: 'vi', path: '/about', internalName: 'About HANDS', activeRevisionId: 'active-1', draftRevisionId: 'draft-2', firstPublishedAt: '2026-08-01T00:00:00Z', updatedAt: '2026-08-10T00:00:00Z', activeRevision: active, draftRevision: draft, revisions: [active] };
+  return { id: 'page-1', site: 'MAIN' as const, locale: 'vi', path: '/about', internalName: 'About HANDS', manifestLabel: 'About HANDS', ownership: 'CMS_LIVE' as const, offlineVisitorOutcome: 'CODE_FALLBACK' as const, activeRevisionId: 'active-1', draftRevisionId: 'draft-2', firstPublishedAt: '2026-08-01T00:00:00Z', updatedAt: '2026-08-10T00:00:00Z', activeRevision: active, draftRevision: draft, revisions: [active], activity: [] };
 }

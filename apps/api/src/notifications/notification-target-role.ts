@@ -1,6 +1,7 @@
 import { Role } from '@prisma/client';
 
 const NOTIFICATION_TARGET_ROLE_KEY = 'targetRole';
+export const ROLE_NEUTRAL_NOTIFICATION_TYPES = ['system.notice'] as const;
 export const LEGACY_CUSTOMER_NOTIFICATION_TYPES = [
   'booking.opened',
   'booking.rejected',
@@ -28,6 +29,9 @@ const LEGACY_CUSTOMER_NOTIFICATION_TYPE_SET: ReadonlySet<string> = new Set(
 );
 const LEGACY_PROVIDER_NOTIFICATION_TYPE_SET: ReadonlySet<string> = new Set(
   LEGACY_PROVIDER_NOTIFICATION_TYPES,
+);
+const ROLE_NEUTRAL_NOTIFICATION_TYPE_SET: ReadonlySet<string> = new Set(
+  ROLE_NEUTRAL_NOTIFICATION_TYPES,
 );
 
 export type NotificationTargetRole = Extract<Role, 'CUSTOMER' | 'PROVIDER'>;
@@ -60,7 +64,11 @@ export function pushDeviceMatchesTargetRole(
   device: { role?: Role | null },
   targetRole: NotificationTargetRole | null,
 ) {
-  return !targetRole || device.role === targetRole;
+  return targetRole !== null && device.role === targetRole;
+}
+
+export function isRoleNeutralNotificationType(notificationType: string | undefined) {
+  return Boolean(notificationType && ROLE_NEUTRAL_NOTIFICATION_TYPE_SET.has(notificationType));
 }
 
 export function isNotificationTargetRole(value: unknown): value is NotificationTargetRole {

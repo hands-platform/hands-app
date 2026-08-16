@@ -46,7 +46,7 @@ const ADMIN_PAGE_TITLE_TERMS: Readonly<Record<string, string>> = {
   'Referral accounting guardrails': 'Referral Accounting',
   'Parent account': 'Referral Parent Account',
   'Service catalog': 'Service Catalog',
-  Setup: 'Setup Readiness',
+  Setup: 'External Services',
   'Page not found': 'Page Not Found',
 };
 

@@ -1,0 +1,105 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - generic: Website Content
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - heading "Website Content" [level=1]
+  - paragraph: Edit Draft content without interrupting the current Live website.
+  - generic "Page actions":
+    - link "Back to Pages":
+      - /url: /website-content?view=pages
+  - region "Route status":
+    - generic: Website
+    - strong: hands.vn
+    - generic: Language
+    - strong: KO
+    - generic: Public URL
+    - link "http://localhost:3200/ko":
+      - /url: http://localhost:3200/ko
+    - generic: Live
+    - generic: Not live
+    - generic: Draft
+    - generic: Needs content
+  - link "Preview Draft":
+    - /url: http://localhost:3200/ko?cmsPreview=[REDACTED]
+  - link "Review Publish":
+    - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=publishing#publish-draft
+  - navigation "Page workspace":
+    - link "Overview":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=overview
+    - link "Content":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=content
+    - link "SEO & publishing":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=publishing
+    - link "Activity":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=activity
+  - heading "Current state" [level=2]
+  - paragraph: This route remains private until a publisher activates a ready Draft.
+  - term: Current Live
+  - definition: Not published
+  - term: Draft changes
+  - definition: Revision 1 · version 1
+  - term: Last published
+  - definition: Never
+  - term: Draft updated
+  - definition:
+    - time: 29 Jul 2026, 23:55
+  - heading "Publishing readiness" [level=2]
+  - generic: UNKNOWN
+  - list:
+    - listitem: Readiness has not been evaluated for this legacy Draft. Save the Draft before publishing.
+  - link "Preview Draft":
+    - /url: http://localhost:3200/ko?cmsPreview=[REDACTED]
+  - heading "Delete Draft route" [level=2]
+  - paragraph: Only routes that have never been Live can be deleted.
+  - link "Review deletion":
+    - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&deletePageId=cms6bst3r000qvynovauef2ej
+- alert

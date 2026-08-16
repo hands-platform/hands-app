@@ -45,21 +45,29 @@ describe('AdminController notification and push actions', () => {
     createOperationsShiftHandoff: vi.fn(),
     acknowledgeOperationsShiftHandoff: vi.fn(),
     listOperationsPolicyProviders: vi.fn(),
+    matchingPreview: vi.fn(),
     listOperationalPolicySettings: vi.fn(),
     listAuditLogs: vi.fn(),
     listAuditLogPage: vi.fn(),
+    companyBankAccountRecentChanges: vi.fn(),
     auditLogSummary: vi.fn(),
     listUsers: vi.fn(),
     listAdminCalendarEvents: vi.fn(),
     createAdminCalendarEvent: vi.fn(),
     updateAdminCalendarEvent: vi.fn(),
     deleteAdminCalendarEvent: vi.fn(),
-    createAdminOperator: vi.fn(),
+    listAdminOperatorInvitations: vi.fn(),
+    createAdminOperatorInvitation: vi.fn(),
     getAdminOperatorAccess: vi.fn(),
     recordAdminOperatorActivity: vi.fn(),
     updateAdminOperatorAccess: vi.fn(),
     revokeAdminOperatorAccess: vi.fn(),
-    updateUserFinanceApproverRole: vi.fn(),
+    getFinanceApproverGovernanceSummary: vi.fn(),
+    listFinanceApproverGovernanceOperators: vi.fn(),
+    listFinanceApproverAccessRequests: vi.fn(),
+    listFinanceApproverAccessHistory: vi.fn(),
+    createFinanceApproverAccessRequest: vi.fn(),
+    decideFinanceApproverAccessRequest: vi.fn(),
     listNotifications: vi.fn(),
     notificationSummary: vi.fn(),
     listProviderReports: vi.fn(),
@@ -146,6 +154,8 @@ describe('AdminController notification and push actions', () => {
     assignBookingPaymentClearingReview: vi.fn(),
     assignBookingPaymentClearingReviews: vi.fn(),
     listCompanyBankAccounts: vi.fn(),
+    companyBankAccountOperationsPage: vi.fn(),
+    companyBankAccountStatusPreflight: vi.fn(),
     createCompanyBankAccount: vi.fn(),
     updateCompanyBankAccount: vi.fn(),
     decideCompanyBankAccountChange: vi.fn(),
@@ -172,7 +182,7 @@ describe('AdminController notification and push actions', () => {
     listPayoutBatches: vi.fn(),
     payoutBatchSummary: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
-    createAdminPushCampaign: vi.fn(),
+    confirmAdminPushCampaign: vi.fn(),
     customerSummary: vi.fn(),
     approveReferralRewardCashout: vi.fn(),
     creditReferralReward: vi.fn(),
@@ -193,6 +203,7 @@ describe('AdminController notification and push actions', () => {
     updateNotificationTemplate: vi.fn(),
     updateReferralPolicy: vi.fn(),
     getMarketingSpendDaily: vi.fn(),
+    listMarketingSpendLedger: vi.fn(),
     upsertMarketingSpendDaily: vi.fn(),
     listAppSessions: vi.fn(),
     appSessionSummary: vi.fn(),
@@ -204,7 +215,7 @@ describe('AdminController notification and push actions', () => {
     listBookingMarketplaceProviders: vi.fn(),
   };
   const controller = new AdminController(admin as unknown as AdminService);
-  const user = { id: 'admin-1', roles: [Role.ADMIN] } as AuthenticatedUser;
+  const user = { id: 'admin-1', roles: [Role.ADMIN], sessionId: 'admin-session-1' } as AuthenticatedUser;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -792,6 +803,7 @@ describe('AdminController notification and push actions', () => {
         'Notification',
         '4',
         undefined,
+        undefined,
       ),
     ).resolves.toEqual([{ id: 'audit-1' }]);
     await expect(
@@ -805,6 +817,7 @@ describe('AdminController notification and push actions', () => {
         'Notification',
         '4',
         'true',
+        undefined,
       ),
     ).resolves.toEqual({
       items: [{ id: 'audit-page-1' }],
@@ -820,6 +833,7 @@ describe('AdminController notification and push actions', () => {
         'Notification',
         '4',
         ['booking.create.rejected', 'company_bank_account.create'],
+        undefined,
       ),
     ).resolves.toEqual({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 120 });
 
@@ -839,6 +853,7 @@ describe('AdminController notification and push actions', () => {
       q: 'booking-1',
       skip: '40',
       take: '20',
+      targetPrefix: undefined,
       to: '2026-06-28T00:00:00.000Z',
     });
     expect(admin.listAuditLogPage).toHaveBeenCalledWith({
@@ -849,6 +864,7 @@ describe('AdminController notification and push actions', () => {
       q: 'booking-1',
       skip: '40',
       take: '20',
+      targetPrefix: undefined,
       to: '2026-06-28T00:00:00.000Z',
     });
     expect(admin.auditLogSummary).toHaveBeenCalledWith({
@@ -857,6 +873,7 @@ describe('AdminController notification and push actions', () => {
       from: '2026-06-27T00:00:00.000Z',
       priority: '4',
       q: 'booking-1',
+      targetPrefix: undefined,
       to: '2026-06-28T00:00:00.000Z',
     });
   });
@@ -1823,6 +1840,85 @@ describe('AdminController notification and push actions', () => {
       path: 'company-bank-accounts',
     });
     expect(admin.listCompanyBankAccounts).toHaveBeenCalledWith({ status: 'ACTIVE' });
+  });
+
+  it('exposes bounded company bank account lifecycle changes without a global audit scan', async () => {
+    admin.companyBankAccountRecentChanges.mockResolvedValue({
+      accountSnapshots: [{ id: 'bank-account-1', name: 'Operations VND' }],
+      items: [{ id: 'audit-1', targetId: 'bank-account-1' }],
+      pagination: { skip: 0, take: 20, totalCount: 1 },
+    });
+
+    await expect(controller.companyBankAccountRecentChanges('20')).resolves.toMatchObject({
+      items: [{ id: 'audit-1' }],
+    });
+    expect(routeMetadata('companyBankAccountRecentChanges')).toEqual({
+      method: RequestMethod.GET,
+      path: 'company-bank-accounts/recent-changes',
+    });
+    expect(admin.companyBankAccountRecentChanges).toHaveBeenCalledWith('20');
+  });
+
+  it('exposes the bounded company bank account operations projection', async () => {
+    admin.companyBankAccountOperationsPage.mockResolvedValue({
+      items: [{ id: 'bank-account-1' }],
+      pagination: { skip: 25, take: 25, totalCount: 51 },
+    });
+
+    await expect(controller.companyBankAccountOperationsPage(
+      'archived',
+      '25',
+      '25',
+      'PAYOUT',
+      'VND',
+      'VERIFIED',
+      'HEALTHY',
+      'ACTIVE',
+    )).resolves.toEqual({
+      items: [{ id: 'bank-account-1' }],
+      pagination: { skip: 25, take: 25, totalCount: 51 },
+    });
+    expect(routeMetadata('companyBankAccountOperationsPage')).toEqual({
+      method: RequestMethod.GET,
+      path: 'company-bank-accounts/operations-page',
+    });
+    expect(admin.companyBankAccountOperationsPage).toHaveBeenCalledWith({
+      currency: 'VND',
+      health: 'HEALTHY',
+      purpose: 'PAYOUT',
+      skip: '25',
+      status: 'ACTIVE',
+      take: '25',
+      verification: 'VERIFIED',
+      view: 'archived',
+    });
+  });
+
+  it('exposes account lifecycle preflight with actor and replacement context', async () => {
+    admin.companyBankAccountStatusPreflight.mockResolvedValue({
+      accountId: 'bank-account-1',
+      mode: 'ARCHIVE',
+      ready: true,
+    });
+
+    await expect(
+      controller.companyBankAccountStatusPreflight(
+        { id: 'admin-1' } as never,
+        'bank-account-1',
+        'INACTIVE',
+        'bank-account-2',
+      ),
+    ).resolves.toEqual({ accountId: 'bank-account-1', mode: 'ARCHIVE', ready: true });
+    expect(routeMetadata('companyBankAccountStatusPreflight')).toEqual({
+      method: RequestMethod.GET,
+      path: 'company-bank-accounts/:id/status-preflight',
+    });
+    expect(admin.companyBankAccountStatusPreflight).toHaveBeenCalledWith(
+      'admin-1',
+      'bank-account-1',
+      'INACTIVE',
+      'bank-account-2',
+    );
   });
 
   it('exposes protected company bank account create and update routes with actor identity', async () => {
@@ -3006,23 +3102,31 @@ describe('AdminController notification and push actions', () => {
 
   it('exposes manual push campaigns with preview before send', async () => {
     const body = {
+      appDestination: 'notificationCenter',
       targetRole: 'CUSTOMER' as never,
+      targetSegment: 'all',
       locale: 'en',
       title: 'HANDS update',
       body: 'Your booking update is ready.',
     };
     admin.listAdminPushCampaigns.mockResolvedValue([{ id: 'campaign-1' }]);
-    admin.previewAdminPushCampaign.mockResolvedValue({ recipientCount: 2, willSendCount: 2 });
-    admin.createAdminPushCampaign.mockResolvedValue({ id: 'campaign-1' });
+    const confirmation = {
+      confirmationPhrase: 'SEND 2',
+      idempotencyKey: 'push-confirm-request-1',
+      previewId: 'preview-1',
+      reason: 'Reviewed manual campaign for this audience.',
+    };
+    admin.previewAdminPushCampaign.mockResolvedValue({ eligibleUsers: 2, previewId: 'preview-1' });
+    admin.confirmAdminPushCampaign.mockResolvedValue({ id: 'campaign-1' });
 
     await expect(
       controller.pushCampaigns('25', '50', '2026-06-27T00:00:00.000Z', '2026-06-28T00:00:00.000Z'),
     ).resolves.toEqual([{ id: 'campaign-1' }]);
-    await expect(controller.previewPushCampaign(body)).resolves.toEqual({
-      recipientCount: 2,
-      willSendCount: 2,
+    await expect(controller.previewPushCampaign(user, body)).resolves.toEqual({
+      eligibleUsers: 2,
+      previewId: 'preview-1',
     });
-    await expect(controller.createPushCampaign(user, body)).resolves.toEqual({ id: 'campaign-1' });
+    await expect(controller.createPushCampaign(user, confirmation)).resolves.toEqual({ id: 'campaign-1' });
 
     expect(routeMetadata('pushCampaigns')).toEqual({
       method: RequestMethod.GET,
@@ -3042,7 +3146,8 @@ describe('AdminController notification and push actions', () => {
       take: '25',
       to: '2026-06-28T00:00:00.000Z',
     });
-    expect(admin.createAdminPushCampaign).toHaveBeenCalledWith('admin-1', body);
+    expect(admin.previewAdminPushCampaign).toHaveBeenCalledWith('admin-1', body);
+    expect(admin.confirmAdminPushCampaign).toHaveBeenCalledWith('admin-1', confirmation);
   });
 
   it('exposes manual push campaign summary as a separate aggregate endpoint', async () => {
@@ -3225,6 +3330,24 @@ describe('AdminController notification and push actions', () => {
       path: 'operations-policy/providers',
     });
     expect(admin.listOperationsPolicyProviders).toHaveBeenCalledWith({ take: '50' });
+  });
+
+  it('exposes the read-only operations policy matching preview', async () => {
+    admin.matchingPreview.mockResolvedValue({
+      safety: { dryRun: true, mutationsPerformed: false },
+      status: 'DEMO_PREVIEW_ONLY',
+    });
+
+    await expect(controller.operationsPolicyMatchingPreview('booking-1')).resolves.toEqual({
+      safety: { dryRun: true, mutationsPerformed: false },
+      status: 'DEMO_PREVIEW_ONLY',
+    });
+
+    expect(routeMetadata('operationsPolicyMatchingPreview')).toEqual({
+      method: RequestMethod.GET,
+      path: 'operations-policy/matching-preview',
+    });
+    expect(admin.matchingPreview).toHaveBeenCalledWith('booking-1');
   });
 
   it('exposes operational policy settings with optional key filtering', async () => {
@@ -3587,6 +3710,28 @@ describe('AdminController notification and push actions', () => {
       regionCode: 'hcm',
       source: 'google',
       spendDate: '2026-06-20',
+    });
+  });
+
+  it('exposes the paged manual marketing spend ledger as a GET endpoint', async () => {
+    admin.listMarketingSpendLedger.mockResolvedValue({ rows: [], totalCount: 26 });
+
+    await expect(
+      controller.marketingSpendLedger('30d', 'google', 'android', 'hcm', 'launch-hcm', '25', '25'),
+    ).resolves.toEqual({ rows: [], totalCount: 26 });
+
+    expect(routeMetadata('marketingSpendLedger')).toEqual({
+      method: RequestMethod.GET,
+      path: 'marketing/spend-ledger',
+    });
+    expect(admin.listMarketingSpendLedger).toHaveBeenCalledWith({
+      campaignId: 'launch-hcm',
+      platform: 'android',
+      range: '30d',
+      regionCode: 'hcm',
+      skip: '25',
+      source: 'google',
+      take: '25',
     });
   });
 
@@ -4075,70 +4220,98 @@ describe('AdminController notification and push actions', () => {
     });
   });
 
-  it('exposes finance approver role changes as an audited PATCH action', async () => {
-    admin.updateUserFinanceApproverRole.mockResolvedValue({
-      user: { id: 'finance-admin-2', roles: ['ADMIN', 'FINANCE_APPROVER'] },
+  it('exposes finance approver access as request and independent decision actions', async () => {
+    admin.createFinanceApproverAccessRequest.mockResolvedValue({ request: { id: 'request-1' } });
+    admin.decideFinanceApproverAccessRequest.mockResolvedValue({
+      request: { id: 'request-1', status: 'APPROVED' },
     });
 
     await expect(
       (
         controller as unknown as {
-          updateUserFinanceApproverRole: (
+          createFinanceApproverAccessRequest: (
             actor: AuthenticatedUser,
-            userId: string,
-            body: { enabled: boolean; reason?: string },
+            body: {
+              targetUserId: string;
+              requestedEnabled: boolean;
+              operatorReason: string;
+              idempotencyKey: string;
+            },
           ) => Promise<unknown>;
         }
-      ).updateUserFinanceApproverRole(user, 'finance-admin-2', {
-        enabled: true,
-        reason: 'Treasury owner',
+      ).createFinanceApproverAccessRequest(user, {
+        targetUserId: 'finance-admin-2',
+        requestedEnabled: true,
+        operatorReason: 'Treasury backup coverage',
+        idempotencyKey: 'finance-request-0001',
       }),
-    ).resolves.toEqual({
-      user: { id: 'finance-admin-2', roles: ['ADMIN', 'FINANCE_APPROVER'] },
+    ).resolves.toEqual({ request: { id: 'request-1' } });
+
+    expect(routeMetadata('createFinanceApproverAccessRequest' as keyof AdminController)).toEqual({
+      method: RequestMethod.POST,
+      path: 'finance-approver-governance/requests',
+    });
+    expect(admin.createFinanceApproverAccessRequest).toHaveBeenCalledWith('admin-1', {
+      targetUserId: 'finance-admin-2',
+      requestedEnabled: true,
+      operatorReason: 'Treasury backup coverage',
+      idempotencyKey: 'finance-request-0001',
     });
 
-    expect(routeMetadata('updateUserFinanceApproverRole' as keyof AdminController)).toEqual({
-      method: RequestMethod.PATCH,
-      path: 'users/:id/finance-approver',
-    });
-    expect(admin.updateUserFinanceApproverRole).toHaveBeenCalledWith('admin-1', 'finance-admin-2', {
-      enabled: true,
-      reason: 'Treasury owner',
+    await expect(
+      (
+        controller as unknown as {
+          decideFinanceApproverAccessRequest: (
+            actor: AuthenticatedUser,
+            requestId: string,
+            body: { decision: 'APPROVE'; decisionReason: string },
+          ) => Promise<unknown>;
+        }
+      ).decideFinanceApproverAccessRequest(user, 'request-1', {
+        decision: 'APPROVE',
+        decisionReason: 'Independent checker approval',
+      }),
+    ).resolves.toEqual({ request: { id: 'request-1', status: 'APPROVED' } });
+    expect(routeMetadata('decideFinanceApproverAccessRequest' as keyof AdminController)).toEqual({
+      method: RequestMethod.POST,
+      path: 'finance-approver-governance/requests/:id/decision',
     });
   });
 
-  it('exposes master admin operator creation as an audited POST action', async () => {
-    admin.createAdminOperator.mockResolvedValue({
-      user: { id: 'master-admin-2', roles: ['ADMIN', 'MASTER_ADMIN'] },
+  it('exposes master admin operator invitation as an audited POST action', async () => {
+    admin.createAdminOperatorInvitation.mockResolvedValue({
+      invitation: { id: 'invitation-1', normalizedEmail: 'master@hands.vn' },
+      setupToken: 'copy-once-token',
     });
 
     await expect(
       (
         controller as unknown as {
-          createAdminOperator: (
+          createAdminOperatorInvitation: (
             actor: AuthenticatedUser,
-            body: { phone: string; roles?: string[]; permissionCategories?: string[]; reason?: string },
+            body: { email: string; masterAdminEnabled?: boolean; permissionCategories: string[]; reason: string },
           ) => Promise<unknown>;
         }
-      ).createAdminOperator(user, {
+      ).createAdminOperatorInvitation(user, {
+        email: 'master@hands.vn',
+        masterAdminEnabled: true,
         permissionCategories: ['SYSTEM'],
-        phone: '+84900000009',
         reason: 'Bootstrap master',
-        roles: ['MASTER_ADMIN'],
       }),
     ).resolves.toEqual({
-      user: { id: 'master-admin-2', roles: ['ADMIN', 'MASTER_ADMIN'] },
+      invitation: { id: 'invitation-1', normalizedEmail: 'master@hands.vn' },
+      setupToken: 'copy-once-token',
     });
 
-    expect(routeMetadata('createAdminOperator' as keyof AdminController)).toEqual({
+    expect(routeMetadata('createAdminOperatorInvitation' as keyof AdminController)).toEqual({
       method: RequestMethod.POST,
-      path: 'users/admin-operators',
+      path: 'admin-operator-invitations',
     });
-    expect(admin.createAdminOperator).toHaveBeenCalledWith('admin-1', {
+    expect(admin.createAdminOperatorInvitation).toHaveBeenCalledWith('admin-1', 'admin-session-1', {
+      email: 'master@hands.vn',
+      masterAdminEnabled: true,
       permissionCategories: ['SYSTEM'],
-      phone: '+84900000009',
       reason: 'Bootstrap master',
-      roles: ['MASTER_ADMIN'],
     });
   });
 
@@ -4153,10 +4326,11 @@ describe('AdminController notification and push actions', () => {
           updateAdminOperatorAccess: (
             actor: AuthenticatedUser,
             userId: string,
-            body: { roles?: string[]; permissionCategories?: string[]; reason?: string },
+            body: { expectedVersion: number; roles?: string[]; permissionCategories?: string[]; reason: string },
           ) => Promise<unknown>;
         }
       ).updateAdminOperatorAccess(user, 'ops-admin-2', {
+        expectedVersion: 2,
         permissionCategories: ['BOOKINGS', 'CUSTOMERS'],
         reason: 'Queue rotation',
         roles: ['ADMIN'],
@@ -4169,11 +4343,17 @@ describe('AdminController notification and push actions', () => {
       method: RequestMethod.PATCH,
       path: 'users/:id/admin-operator-access',
     });
-    expect(admin.updateAdminOperatorAccess).toHaveBeenCalledWith('admin-1', 'ops-admin-2', {
-      permissionCategories: ['BOOKINGS', 'CUSTOMERS'],
-      reason: 'Queue rotation',
-      roles: ['ADMIN'],
-    });
+    expect(admin.updateAdminOperatorAccess).toHaveBeenCalledWith(
+      'admin-1',
+      'ops-admin-2',
+      {
+        expectedVersion: 2,
+        permissionCategories: ['BOOKINGS', 'CUSTOMERS'],
+        reason: 'Queue rotation',
+        roles: ['ADMIN'],
+      },
+      'admin-session-1',
+    );
   });
 
   it('exposes master admin operator access revocation as an audited DELETE action', async () => {
@@ -4203,9 +4383,12 @@ describe('AdminController notification and push actions', () => {
       method: RequestMethod.DELETE,
       path: 'users/:id/admin-operator',
     });
-    expect(admin.revokeAdminOperatorAccess).toHaveBeenCalledWith('admin-1', 'ops-admin-2', {
-      reason: 'Left operations team',
-    });
+    expect(admin.revokeAdminOperatorAccess).toHaveBeenCalledWith(
+      'admin-1',
+      'ops-admin-2',
+      { reason: 'Left operations team' },
+      'admin-session-1',
+    );
   });
 
   it('exposes admin operator access lookup for Admin Web session enforcement', async () => {

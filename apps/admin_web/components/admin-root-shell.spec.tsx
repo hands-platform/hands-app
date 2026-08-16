@@ -39,6 +39,9 @@ describe('AdminRootShell', () => {
     expect(markup).toContain('Workspace content');
     expect(markup).toContain('aria-label="Operations Policy"');
     expect(markup).toContain('aria-label="Operation alerts, 0"');
+    expect(markup).toContain('aria-label="Confirm identity for high-risk changes"');
+    expect(markup).toContain('name="password"');
+    expect(markup).toContain('name="mfaCode"');
     expect(markup).not.toContain('aria-label="Help"');
     expect(markup).not.toContain('class="workspace-page-title"');
     expect(markup).toContain('Vietnam Operations Map');

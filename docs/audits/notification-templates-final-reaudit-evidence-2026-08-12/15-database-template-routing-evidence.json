@@ -1,0 +1,29 @@
+{
+  "scope": "local audit database; aggregate read-only query; historical rows may include legacy or non-production data",
+  "unresolvedPlaceholderOccurrences": {
+    "literal": "{partnerName}",
+    "total": 453,
+    "byType": {
+      "provider.joined": 322,
+      "provider.accepted": 63,
+      "provider.rejected": 68
+    }
+  },
+  "audienceCopyMismatchExamples": [
+    {
+      "type": "booking.matched",
+      "targetRole": "PROVIDER",
+      "title": "Partner matched",
+      "body": "Your chat room is ready.",
+      "count": 569
+    },
+    {
+      "type": "service.started",
+      "targetRole": "PROVIDER",
+      "title": "Service started",
+      "body": "Your partner started the service. Continue in the matched chat if needed.",
+      "count": 198
+    }
+  ],
+  "interpretation": "The aggregates are corroborating evidence, not production incident counts. Source inspection proves that template resolution uses type only and ignores targetRole."
+}

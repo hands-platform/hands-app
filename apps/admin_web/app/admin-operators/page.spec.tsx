@@ -3,211 +3,184 @@ import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
-import { adminGet } from '../../lib/admin-api';
+import { adminGetResult } from '../../lib/admin-api';
 import AdminOperatorsPage from './page';
 
-vi.mock('../../lib/admin-api', async () => {
-  const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
-
-  return {
-    ...actual,
-    adminGet: vi.fn(),
-  };
-});
-
-const mockedAdminGet = vi.mocked(adminGet);
-
-vi.mock('./actions', () => ({
-  createAdminOperator: vi.fn(),
-  revokeAdminOperatorAccess: vi.fn(),
-  updateAdminOperatorAccess: vi.fn(),
+vi.mock('../../lib/admin-api', async () => ({
+  ...(await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api')),
+  adminGetResult: vi.fn(),
 }));
+
+const mockedAdminGetResult = vi.mocked(adminGetResult);
+
+const operator = {
+  allowedActions: {
+    initializeAccess: { allowed: false, blockedReasons: [{ code: 'PERMISSION_POLICY_EXISTS', message: 'The permission policy is already initialized.' }] },
+    reactivate: { allowed: false, blockedReasons: [{ code: 'NOT_SUSPENDED', message: 'Only suspended operators can be reactivated.' }] },
+    revokeOperatorAccess: { allowed: false, blockedReasons: [{ code: 'SELF_ACTION_FORBIDDEN', message: 'Another active Master Admin must perform this action.' }] },
+    revokeSession: { allowed: false, blockedReasons: [{ code: 'SELF_ACTION_FORBIDDEN', message: 'Another active Master Admin must perform this action.' }] },
+    suspend: { allowed: false, blockedReasons: [{ code: 'SELF_ACTION_FORBIDDEN', message: 'Another active Master Admin must perform this action.' }] },
+    updateAccess: { allowed: false, blockedReasons: [{ code: 'SELF_ACTION_FORBIDDEN', message: 'Another active Master Admin must perform this action.' }] },
+  },
+  activeSessionCount: 1,
+  createdAt: '2026-08-01T01:00:00.000Z',
+  credential: {
+    disabledAt: null,
+    disabledReason: null,
+    failedLoginCount: 0,
+    lastLoginAt: '2026-08-11T03:00:00.000Z',
+    lockedUntil: null,
+    mfaState: 'NOT_CONFIGURED',
+    passwordUpdatedAt: '2026-08-01T01:00:00.000Z',
+    setupCompletedAt: '2026-08-01T01:00:00.000Z',
+  },
+  email: 'master@hands.vn',
+  fullName: 'Master Operator',
+  id: 'master-1',
+  lastSession: {
+    expiresAt: '2026-08-12T12:00:00.000Z',
+    id: 'session-1',
+    lastSeenAt: '2026-08-11T03:00:00.000Z',
+    platformSummary: 'Admin Web · Windows',
+    revokedAt: null,
+  },
+  lifecycleStatus: 'ACTIVE',
+  permission: {
+    categories: ['BOOKINGS_REALTIME', 'CUSTOMERS_VIEW'],
+    effectiveCategories: ['BOOKINGS_REALTIME'],
+    effectiveLeafPermissionCount: 1,
+    id: 'permission-1',
+    storedPermissionCount: 2,
+    updatedAt: '2026-08-10T01:00:00.000Z',
+    version: 3,
+  },
+  phone: '+84900000001',
+  roles: ['ADMIN', 'MASTER_ADMIN'],
+  updatedAt: '2026-08-10T01:00:00.000Z',
+} as const;
+
+function ok<T>(data: T) {
+  return { data, ok: true, status: 200 } as const;
+}
 
 describe('AdminOperatorsPage', () => {
   beforeEach(() => {
-    mockedAdminGet.mockImplementation(async (path) => {
-      if (String(path).startsWith('/admin/audit-logs')) {
-        return [
-          {
-            id: 'audit-1',
-            action: 'admin_web.page_view',
-            target: '/bookings',
-            metadata: { category: 'BOOKINGS' },
-            createdAt: '2026-06-30T09:30:00.000Z',
-            actor: {
-              id: 'ops-admin-1',
-              email: 'ops@hands.vn',
-              phone: '+84900000002',
-              fullName: 'Booking Operator',
-            },
-          },
-          {
-            id: 'audit-2',
-            action: 'admin_web.action_denied',
-            target: 'POST /admin/manual-wallet-adjustments',
-            metadata: { category: 'FINANCE', status: 403 },
-            createdAt: '2026-06-30T09:35:00.000Z',
-            actor: {
-              id: 'ops-admin-1',
-              email: 'ops@hands.vn',
-              phone: '+84900000002',
-              fullName: 'Booking Operator',
-            },
-          },
-        ] as never;
+    mockedAdminGetResult.mockImplementation(async (path, fallback) => {
+      const value = String(path);
+      if (value === '/admin/users/admin-operator-access') {
+        return ok({ categories: ['SYSTEM_ADMIN_OPERATORS'], id: 'master-1', permissionState: 'CONFIGURED', roles: ['ADMIN', 'MASTER_ADMIN'] }) as never;
       }
-
-      return [
-        {
-          id: 'master-admin-1',
-          roles: ['ADMIN', 'FINANCE_APPROVER', 'MASTER_ADMIN'],
-          adminOperatorPermission: {
-            id: 'permission-1',
-            categories: ['BOOKINGS', 'FINANCE', 'SYSTEM'],
-            updatedAt: '2026-06-30T09:00:00.000Z',
+      if (value.startsWith('/admin/users/admin-operators?')) {
+        return ok({
+          items: [operator],
+          page: { filteredTotal: 1, hasNextPage: false, nextCursor: null, returned: 1 },
+          summary: {
+            finance: 0,
+            locked: 0,
+            master: 1,
+            missingCredential: 0,
+            missingPermission: 0,
+            mfaNotConfigured: 1,
+            securityIncompleteDistinct: 1,
+            suspended: 0,
+            total: 1,
           },
-          fullName: 'Master Admin',
-          email: 'master@hands.vn',
-          phone: '+84900000001',
-          appSessions: [
-            {
-              id: 'session-1',
-              role: 'ADMIN',
-              deviceId: 'web-session',
-              active: true,
-              platform: 'WEB',
-              lastSeenAt: '2026-06-30T09:00:00.000Z',
-            },
-          ],
-          pushDevices: [],
-        },
-        {
-          id: 'ops-admin-1',
-          roles: ['ADMIN'],
-          adminOperatorPermission: {
-            id: 'permission-2',
-            categories: ['BOOKINGS', 'CUSTOMERS', 'PARTNERS'],
-            updatedAt: '2026-06-30T09:00:00.000Z',
-          },
-          fullName: 'Booking Operator',
-          phone: '+84900000002',
-          appSessions: [],
-          pushDevices: [],
-        },
-        {
-          id: 'customer-user-1',
-          roles: ['CUSTOMER'],
-          fullName: 'Customer User',
-          phone: '+84900000003',
-          appSessions: [],
-          pushDevices: [],
-        },
-      ] as never;
+        }) as never;
+      }
+      if (value === '/admin/admin-operator-invitations') {
+        return ok({ expiredCount: 0, items: [], pendingCount: 0, totalCount: 0 }) as never;
+      }
+      return ok(fallback) as never;
     });
   });
 
-  it('renders a master admin workspace from the bounded admin users API', async () => {
-    const page = await AdminOperatorsPage({});
-    const markup = renderToStaticMarkup(page);
+  it('renders the exact server-backed operator directory and secure invitation workflow', async () => {
+    const markup = renderToStaticMarkup(await AdminOperatorsPage({}));
 
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/users?take=100', []);
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/audit-logs?bucket=Admin%20Web&take=30', []);
-    expect(markup).toContain('Admin Operators');
-    expect(markup).toContain('<span class="metric-card-scope is-record">All records</span>');
-    expect(markup).toContain('<span class="metric-card-scope is-live">Live</span>');
-    expect(markup).toContain('<span class="metric-card-scope is-record">Access records</span>');
-    expect(markup).toContain('<span class="metric-card-scope is-record">Role records</span>');
-    expect(markup).toContain('Master admin control');
-    expect(markup).toContain('Add operator');
-    expect(markup).toContain('Delete operator');
-    expect(markup).not.toContain('Delete operator access');
-    expect(markup).not.toContain('Admin user ID');
-    expect(markup).not.toContain('Operator phone');
-    expect(markup).toContain('Operator email');
-    expect(markup).toContain('Temporary password');
-    expect(markup).not.toContain('Master Admin has full access automatically.');
-    expect(markup).not.toContain('No category setup is required while this role is active.');
-    expect(markup).toContain('Category permissions');
-    expect(markup).toContain('card admin-card admin-operator-control-card');
-    expect(markup).toContain('card admin-card admin-operator-permission-item');
-    expect(markup).not.toContain('<article class="admin-operator-permission-item');
-    expect(markup).toContain('Bookings');
-    expect(markup).toContain('Realtime bookings');
-    expect(markup).toContain('Booking cancellations');
-    expect(markup).toContain('Finance');
-    expect(markup).toContain('Tax &amp; Accounting');
-    expect(markup).toContain('Wallet adjustments');
-    expect(markup).toContain('Communications');
-    expect(markup).toContain('Policies');
-    expect(markup).toContain('Developer / System');
-    expect(markup).not.toContain('Policies &amp; Setup');
-    expect(markup).toContain('Admin Control');
+    expect(mockedAdminGetResult).toHaveBeenCalledWith('/admin/users/admin-operator-access', null);
+    expect(mockedAdminGetResult).toHaveBeenCalledWith(
+      '/admin/users/admin-operators?take=25',
+      expect.objectContaining({ items: [], summary: expect.objectContaining({ total: 0 }) }),
+    );
     expect(markup).toContain('Admin operators');
-    expect(markup).toContain('Master Admin');
-    expect(markup).toContain('Booking Operator');
-    expect(markup).not.toContain('Customer User');
-    expect(markup).toContain('vuexy-booking-table');
-    expect(markup).toContain('admin-form-input');
-    expect(markup).toContain('Save permissions');
-    expect(markup).toContain('Operator activity log');
-    expect(markup).toContain('page view');
-    expect(markup).toContain('action denied');
-    expect(markup).toContain('/bookings');
-    expect(markup).toContain('POST /admin/manual-wallet-adjustments');
-    expect(markup).not.toContain('API required');
+    expect(markup).toContain('Master Operator');
+    expect(markup).toContain('MFA required');
+    expect(markup).toContain('Invite operator');
+    expect(markup).toContain('Operator Access directory');
+    expect(markup).not.toContain('Temporary password');
+    expect(markup).not.toContain('Delete operator');
+    expect(markup).not.toContain('Remove operator');
   });
 
-  it('uses shared badge atoms for operator role and category chips', () => {
-    const source = readFileSync(join(process.cwd(), 'app/admin-operators/page.tsx'), 'utf8');
+  it('passes search, status, role, and leaf permission filters to the server directory', async () => {
+    await AdminOperatorsPage({
+      searchParams: Promise.resolve({
+        category: 'BOOKINGS_REALTIME',
+        q: 'ops@hands.vn',
+        role: 'ADMIN',
+        status: 'active',
+      }),
+    });
 
-    expect(source).toContain('AdminCard');
-    expect(source).toContain('AdminCardGrid');
-    expect(source).toContain('AdminFormCard');
-    expect(source).toContain('AdminFilterChipGroup');
-    expect(source).toContain('AdminTablePanel');
-    expect(source).toContain('StatusBadge');
-    expect(source).toContain('StatusBadgeFromPillClass');
-    expect(source).not.toContain('statusBadgeToneFromPillClass');
-    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
-    expect(source).not.toContain('PillClassBadge');
-    expect(source).not.toContain('<form action={createAdminOperator} className="admin-operator-control-card"');
-    expect(source).not.toContain('<div className="admin-operator-control-grid">');
-    expect(source).not.toContain('<div className="admin-operator-permission-grid">');
-    expect(source).not.toContain('<span className="pill pill-neutral">{category.group}</span>');
-    expect(source).not.toContain('<span className="pill pill-primary">All categories</span>');
-    expect(source).not.toContain('<span className="pill pill-info" key={`${user.id}:${label}`}>');
-    expect(source).not.toContain('<span className={operatorRolePillClassName(role)} key={role}>');
-    expect(source).not.toContain('<div className="participant-list">');
+    expect(mockedAdminGetResult).toHaveBeenCalledWith(
+      '/admin/users/admin-operators?q=ops%40hands.vn&status=active&role=ADMIN&category=BOOKINGS_REALTIME&take=25',
+      expect.any(Object),
+    );
   });
 
-  it('uses the shared DateTimeText atom for visible operator timestamps', () => {
-    const source = readFileSync(join(process.cwd(), 'app/admin-operators/page.tsx'), 'utf8');
+  it('keeps missing permission records deny-by-default and visible to operators', async () => {
+    mockedAdminGetResult.mockImplementation(async (path, fallback) => {
+      const value = String(path);
+      if (value === '/admin/users/admin-operator-access') {
+        return ok({ categories: [], id: 'master-1', permissionState: 'CONFIGURED', roles: ['ADMIN', 'MASTER_ADMIN'] }) as never;
+      }
+      if (value.startsWith('/admin/users/admin-operators?')) {
+        return ok({
+          items: [{ ...operator, lifecycleStatus: 'MIGRATION_REQUIRED', permission: null }],
+          page: { filteredTotal: 1, hasNextPage: false, nextCursor: null, returned: 1 },
+          summary: {
+            finance: 0,
+            locked: 0,
+            master: 1,
+            missingCredential: 0,
+            missingPermission: 1,
+            mfaNotConfigured: 1,
+            securityIncompleteDistinct: 1,
+            suspended: 0,
+            total: 1,
+          },
+        }) as never;
+      }
+      if (value === '/admin/admin-operator-invitations') return ok({ expiredCount: 0, items: [], pendingCount: 0, totalCount: 0 }) as never;
+      return ok(fallback) as never;
+    });
 
-    expect(source).toContain('DateTimeText');
-    expect(source).not.toContain('<td>{formatDateTime(log.createdAt)}</td>');
-    expect(source).not.toContain('return latest?.lastSeenAt ? formatDateTime(latest.lastSeenAt) :');
+    const markup = renderToStaticMarkup(await AdminOperatorsPage({}));
+
+    expect(markup).toContain('Permission setup required');
+    expect(markup).toContain('deny-by-default');
+    expect(markup).toContain('Migration required');
+    expect(markup).toContain('Needs action');
+    expect(markup).not.toContain('All access through Master Admin role</strong>');
   });
 
-  it('uses shared inline fallback atoms for missing operator session fields', () => {
-    const source = readFileSync(join(process.cwd(), 'app/admin-operators/page.tsx'), 'utf8');
-
-    expect(source).toContain('AdminInlineFallback');
-    expect(source).not.toContain("'No recent session'");
-    expect(source).not.toContain("<div className=\"muted\">{user.appSessions?.[0]?.platform ?? 'No platform'}</div>");
-  });
-
-  it('scopes operator control and permission typography to direct card slots', () => {
+  it('uses scoped desktop table, drawer, and permission-group contracts', () => {
+    const pageSource = readFileSync(join(process.cwd(), 'app/admin-operators/page.tsx'), 'utf8');
+    const formSource = readFileSync(join(process.cwd(), 'app/admin-operators/operator-access-forms.tsx'), 'utf8');
     const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
 
-    expect(css).toContain('.admin-operator-control-card > div > h3');
-    expect(css).toContain('.admin-operator-control-card > div > p');
-    expect(css).toContain('.admin-operator-permission-item > div > strong');
-    expect(css).toContain('.admin-operator-permission-item > div > p');
-    expect(css).toContain('.admin-operator-permission-item > small');
-    expect(css).not.toContain('.admin-operator-control-card h3');
-    expect(css).not.toContain('.admin-operator-control-card p');
-    expect(css).not.toContain('.admin-operator-permission-item strong');
-    expect(css).not.toContain('.admin-operator-permission-item p');
-    expect(css).not.toContain('.admin-operator-permission-item small');
+    expect(pageSource).toContain('AdminTableScroll ariaLabel="Operator Access directory"');
+    expect(pageSource).toContain('operator-access-command-strip');
+    expect(pageSource).toContain("headers={['Operator', 'Status', 'Roles', 'Effective access', 'Security', 'Last sign-in', 'Action']}");
+    expect(pageSource).toContain('Finance Approver is read-only here.');
+    expect(formSource).toContain('<details key={group}');
+    expect(formSource).toContain('<dialog');
+    expect(formSource).toContain('Confirm access change for {operatorName}');
+    expect(formSource).toContain('active session(s) remain active');
+    expect(formSource).toContain('This setup token is shown only in this receipt.');
+    expect(pageSource).toContain('previousPageHref(params)');
+    expect(css).toContain('.operator-access-table :is(th, td):first-child');
+    expect(css).toContain('.operator-access-drawer');
+    expect(css).toContain('.operator-access-permission-groups');
   });
 });

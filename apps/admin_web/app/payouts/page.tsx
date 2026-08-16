@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 
 import {
-  type AdminUser,
   AdminEarning,
   AdminOperationalPolicySetting,
   AdminPayoutBatch,
@@ -33,7 +32,6 @@ import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import { formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import { adminWorkflowStatusLabel } from '../../lib/admin-copy';
-import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
 import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
 import {
   type AdminLiveOperationsPolicy,
@@ -68,7 +66,6 @@ import {
   type PayoutMoneyFlowCheck,
 } from './payout-money-flow-section';
 import type { PayoutServiceEvidenceItem } from './payout-service-evidence-section';
-import { buildFinanceApproverOptions } from '../finance-tax/finance-approver-options';
 import {
   buildPayoutFilters,
   buildPayoutOperationsApiHrefs,
@@ -207,18 +204,6 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   );
   const selectedWithdrawalForReversal =
     walletWithdrawalRequests.find((request) => request.id === filters.reverseWithdrawalRequestId) ?? null;
-  const needsFinanceApproverDirectory =
-    confirmationAction === 'reverse' || Boolean(selectedWithdrawalForReversal);
-  const [currentOperatorAccess, financeApproverUsers] = needsFinanceApproverDirectory
-    ? await Promise.all([
-        getCurrentAdminOperatorAccess(),
-        adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', []),
-      ])
-    : [null, []];
-  const financeApproverOptions = buildFinanceApproverOptions(
-    financeApproverUsers,
-    currentOperatorAccess?.id ?? null,
-  );
 
   return (
     <AdminPageTemplate
@@ -288,10 +273,10 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
     >
       {confirmation ? (
         <>
-          {confirmation.action === 'reverse' && financeApproverOptions.length === 0 ? (
-            <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
-              No other Finance approver is available. Assign the FINANCE_APPROVER role before posting this
-              payout reversal.
+          {confirmation.action === 'reverse' ? (
+            <AdminInlineNotice className="admin-mb-16" tone="info">
+              The signed-in verified Finance operator is recorded as the reversal approver. The API blocks the
+              operator who posted the paid closeout from reversing the same payout.
             </AdminInlineNotice>
           ) : null}
           <ConfirmDialog
@@ -299,27 +284,12 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             cancelHref={confirmation.cancelHref}
             confirmLabel={confirmation.confirmLabel}
             description={confirmation.description}
-            disabled={
-              confirmation.disabled ||
-              (confirmation.action === 'reverse' && financeApproverOptions.length === 0)
-            }
+            disabled={confirmation.disabled}
             hiddenInputs={[
               { name: 'payoutBatchId', value: confirmation.payoutBatchId },
               { name: 'transferRef', value: confirmation.transferRef },
             ]}
             id={`payout-${confirmation.action}-${confirmation.payoutBatchId}`}
-            selectInputs={
-              confirmation.action === 'reverse'
-                ? [
-                    {
-                      label: 'Separate Finance approver',
-                      name: 'approvalAdminId',
-                      options: [{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions],
-                      required: true,
-                    },
-                  ]
-                : []
-            }
             textInputs={
               confirmation.action === 'reverse'
                 ? [
@@ -389,20 +359,9 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               {selectedWithdrawalForReversal.preflight?.paidJournalPosted ? 'posted' : 'missing'}.
             </>
           }
-          disabled={
-            selectedWithdrawalForReversal.preflight?.canReversePaid === false ||
-            financeApproverOptions.length === 0
-          }
+          disabled={selectedWithdrawalForReversal.preflight?.canReversePaid === false}
           hiddenInputs={[{ name: 'requestId', value: selectedWithdrawalForReversal.id }]}
           id={`withdrawal-reversal-${selectedWithdrawalForReversal.id}`}
-          selectInputs={[
-            {
-              label: 'Separate Finance approver',
-              name: 'approvalAdminId',
-              options: [{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions],
-              required: true,
-            },
-          ]}
           textInputs={[
             {
               label: 'Reversal reason',

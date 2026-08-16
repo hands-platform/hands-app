@@ -132,9 +132,27 @@ export type OperationalPolicyDefinition = {
   options?: Array<{ value: string; label: string; tradeoff: string }>;
   requiresRestart?: boolean;
   enforced: boolean;
+  lifecycle: OperationalPolicyLifecycle;
+  risk: OperationalPolicyRisk;
+  blastRadius: string;
+  consumerContract: OperationalPolicyConsumerContract;
 };
 
-export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
+export type OperationalPolicyLifecycle = 'live' | 'locked' | 'planned' | 'deprecated';
+export type OperationalPolicyRisk = 'low' | 'medium' | 'high';
+export type OperationalPolicyConsumerContract = {
+  consumerIds: readonly string[];
+  integrationTestIds: readonly string[];
+  applicationScope: string;
+  fallbackBehavior: string;
+};
+
+type OperationalPolicyBaseDefinition = Omit<
+  OperationalPolicyDefinition,
+  'blastRadius' | 'consumerContract' | 'lifecycle' | 'risk'
+>;
+
+const OPERATIONAL_POLICY_BASE_DEFINITIONS: OperationalPolicyBaseDefinition[] = [
   {
     key: START_SHIFT_ACTION_SLA_POLICY_KEYS.matchingDelays,
     category: 'Command center',
@@ -607,6 +625,131 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     enforced: true,
   },
 ];
+
+const PLANNED_OPERATIONAL_POLICY_KEYS = new Set<string>([
+  WALLET_NEGATIVE_BALANCE_GATE_KEY,
+  DECISION_ACTION_EVIDENCE_GATE_MODE_KEY,
+  CASH_SETTLEMENT_CLEARANCE_POLICY_KEY,
+  PAYOUT_BATCH_CYCLE_POLICY_KEY,
+  MATCHING_FIRST_PICK_EXPIRY_ACTION_POLICY_KEY,
+  CANCELLATION_AFTER_MATCH_POLICY_KEY,
+  NO_SHOW_EVIDENCE_REQUIREMENT_POLICY_KEY,
+]);
+
+const LOCKED_OPERATIONAL_POLICY_KEYS = new Set<string>([
+  MATCHING_MARKETPLACE_OPEN_MODE_KEY,
+  MATCHING_PREFERRED_ACCEPT_MODE_KEY,
+]);
+
+const START_SHIFT_POLICY_KEYS = new Set<string>(Object.values(START_SHIFT_ACTION_SLA_POLICY_KEYS));
+const MATCHING_RUNTIME_POLICY_KEYS = new Set<string>([
+  MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY,
+  MATCHING_MARKETPLACE_PARTNER_RADIUS_METERS_KEY,
+  MATCHING_MARKETPLACE_PARTNER_LOCATION_MAX_AGE_MINUTES_KEY,
+  MATCHING_MARKETPLACE_PARTNER_INVITATION_LIMIT_KEY,
+  MATCHING_TRAVEL_BUFFER_MINUTES_KEY,
+]);
+const BOOKING_RUNTIME_POLICY_KEYS = new Set<string>([
+  BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM_KEY,
+  BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM_KEY,
+  BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES_KEY,
+  BOOKING_DISTANCE_GATE_ENABLED_KEY,
+  BOOKING_SERVICE_AREA_REQUIRED_KEY,
+]);
+
+function operationalPolicyLifecycle(key: string): OperationalPolicyLifecycle {
+  if (PLANNED_OPERATIONAL_POLICY_KEYS.has(key)) return 'planned';
+  if (LOCKED_OPERATIONAL_POLICY_KEYS.has(key)) return 'locked';
+  return 'live';
+}
+
+function operationalPolicyRisk(key: string): OperationalPolicyRisk {
+  if (START_SHIFT_POLICY_KEYS.has(key)) return 'low';
+  if (MATCHING_RUNTIME_POLICY_KEYS.has(key) || key === NO_SHOW_PARTNER_REPORT_POLICY_KEY) return 'medium';
+  return 'high';
+}
+
+function operationalPolicyBlastRadius(key: string, category: string): string {
+  if (START_SHIFT_POLICY_KEYS.has(key)) return 'Start Shift overdue queue timing';
+  if (MATCHING_RUNTIME_POLICY_KEYS.has(key)) return 'Open booking matching and Partner participation';
+  if (BOOKING_RUNTIME_POLICY_KEYS.has(key)) return 'New booking eligibility and address validation';
+  if (key === NO_SHOW_PARTNER_REPORT_POLICY_KEY) return 'Admin no-show review and closeout evidence';
+  if (key === NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY) return 'Partner booking alert delivery';
+  return `${category} reference contract; no runtime change is applied`;
+}
+
+function operationalPolicyConsumerContract(
+  key: string,
+  lifecycle: OperationalPolicyLifecycle,
+): OperationalPolicyConsumerContract {
+  if (lifecycle === 'planned') {
+    return {
+      consumerIds: [],
+      integrationTestIds: [],
+      applicationScope: 'Reference only',
+      fallbackBehavior: 'The current hard-coded MVP contract remains authoritative.',
+    };
+  }
+  if (lifecycle === 'locked') {
+    return {
+      consumerIds: ['apps/api/src/matching/matching.policy.ts#resolveMatchingPolicy'],
+      integrationTestIds: ['apps/api/src/matching/matching.policy.spec.ts'],
+      applicationScope: 'Fixed HANDS MVP matching contract',
+      fallbackBehavior: 'Legacy saved values are normalized to the fixed runtime behavior.',
+    };
+  }
+  if (START_SHIFT_POLICY_KEYS.has(key)) {
+    return {
+      consumerIds: ['apps/api/src/admin/admin.service.ts#queueSlaWindow'],
+      integrationTestIds: ['apps/api/src/admin/admin.service.spec.ts'],
+      applicationScope: 'Start Shift overdue queue promotion',
+      fallbackBehavior: 'The documented default SLA is used when no valid saved value exists.',
+    };
+  }
+  if (MATCHING_RUNTIME_POLICY_KEYS.has(key) || BOOKING_RUNTIME_POLICY_KEYS.has(key)) {
+    return {
+      consumerIds: [
+        'apps/api/src/matching/matching.policy.ts#resolveMatchingPolicy',
+        'apps/api/src/matching/matching.service.ts#getPolicy',
+      ],
+      integrationTestIds: [
+        'apps/api/src/matching/matching.policy.spec.ts',
+        'apps/api/src/providers/providers.service.spec.ts',
+      ],
+      applicationScope: MATCHING_RUNTIME_POLICY_KEYS.has(key)
+        ? 'Matching and marketplace participation'
+        : 'Booking address and eligibility checks',
+      fallbackBehavior: 'The matching policy resolver uses the documented default value.',
+    };
+  }
+  if (key === NO_SHOW_PARTNER_REPORT_POLICY_KEY) {
+    return {
+      consumerIds: ['apps/api/src/admin/admin.service.ts#markBookingNoShow'],
+      integrationTestIds: ['apps/api/src/admin/admin.service.spec.ts'],
+      applicationScope: 'Admin no-show review workflow',
+      fallbackBehavior: 'Admin review remains required when the saved value is missing or invalid.',
+    };
+  }
+  return {
+    consumerIds: ['apps/api/src/notifications/notifications.processor.ts#resolveProviderOverride'],
+    integrationTestIds: ['apps/api/src/notifications/notifications.processor.spec.ts'],
+    applicationScope: 'Partner booking alert delivery',
+    fallbackBehavior: 'Partner alerts remain in-app only when the saved value is missing or invalid.',
+  };
+}
+
+export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] =
+  OPERATIONAL_POLICY_BASE_DEFINITIONS.map((definition) => {
+    const lifecycle = operationalPolicyLifecycle(definition.key);
+    return {
+      ...definition,
+      blastRadius: operationalPolicyBlastRadius(definition.key, definition.category),
+      consumerContract: operationalPolicyConsumerContract(definition.key, lifecycle),
+      enforced: lifecycle === 'live',
+      lifecycle,
+      risk: operationalPolicyRisk(definition.key),
+    };
+  });
 
 export function isFcmPartnerAlertChannel(value: unknown): boolean {
   return (

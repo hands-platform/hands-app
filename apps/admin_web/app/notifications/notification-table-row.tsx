@@ -1,7 +1,7 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { DateTimeText } from '../../components/date-time-text';
-import { AdminSignal, StatusBadgeLink, adminSignalToneFromClassName } from '../../components/status-badge';
+import { AdminSignal, StatusBadge, StatusBadgeLink, adminSignalToneFromClassName } from '../../components/status-badge';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import { NotificationDeliveryCell, type NotificationDeliveryRow } from './notification-delivery-cell';
 
@@ -123,7 +123,9 @@ function NotificationIncidentTableRow({
       <td data-label="Cause">
         <strong>{incident.failureCodeLabel}</strong>
         <div className="muted admin-mt-6">{incident.provider}</div>
-        <code className="notification-failure-code">{incident.failureCode}</code>
+        <code aria-label={incident.failureCode} className="notification-failure-code">
+          {technicalCodeWithBreaks(incident.failureCode)}
+        </code>
       </td>
       <td data-label="Affected">
         <strong>{incident.affectedUserCount} affected user{incident.affectedUserCount === 1 ? '' : 's'}</strong>
@@ -195,6 +197,9 @@ function notificationPushRouteStatusLabel(status: AdminAvatarStatus) {
 }
 
 function NotificationRowActions({ row }: { readonly row: NotificationTableRow }) {
+  const blockedRetry = row.actions.find(
+    (action) => action.disabled && ['Retry blocked', 'Retry cooldown'].includes(action.label),
+  );
   return (
     <div className="notification-row-actions">
       {row.primaryAction ? (
@@ -203,8 +208,23 @@ function NotificationRowActions({ row }: { readonly row: NotificationTableRow })
       {row.actions.length > 0 ? (
         <ActionMenu actions={row.actions} label={row.actionLabel} managedDropdown variant="dropdown" />
       ) : null}
+      {blockedRetry ? (
+        <p className="notification-retry-block-reason">
+          <StatusBadge tone="neutral">{blockedRetry.label}</StatusBadge>
+          <span>{typeof blockedRetry.description === 'string' ? blockedRetry.description : 'Recovery evidence is required before retry.'}</span>
+        </p>
+      ) : null}
     </div>
   );
+}
+
+function technicalCodeWithBreaks(value: string) {
+  return value.split(/([_/:.-]+)/).map((part, index) => (
+    <span key={`${part}-${index}`}>
+      {part}
+      {/[_/:.-]+/.test(part) ? <wbr /> : null}
+    </span>
+  ));
 }
 
 function notificationEmptyDeliveryLabel(signal: string) {

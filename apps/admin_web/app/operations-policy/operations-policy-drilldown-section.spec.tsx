@@ -63,7 +63,7 @@ describe('OperationsPolicyDrilldownSection', () => {
     expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
     expect(rendered).toContain('Policy impact drill-down');
     expect(rendered).toContain('Partner records');
-    expect(rendered).toContain('1 item(s) to review');
+    expect(rendered).toContain('1 item to review');
     expect(rendered).toContain('Open matching records');
     expect(rendered).toContain('Saved policy drift records');
     expect(rendered).toContain('No saved policy drift is currently loaded.');

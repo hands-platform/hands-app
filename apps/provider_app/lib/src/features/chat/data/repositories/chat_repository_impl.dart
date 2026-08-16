@@ -56,6 +56,7 @@ class ChatRepositoryImpl implements ChatRepository {
       'contentType': contentType,
       'visibility': 'PRIVATE',
       'purpose': 'chat-attachment',
+      'sizeBytes': bytes.length,
     });
     if (presign is! Map) {
       throw const FormatException('Upload response is invalid.');

@@ -3,12 +3,16 @@ import {
   adminMarketingPreviousRangeWindow,
   adminMarketingRangeWindow,
   buildMarketingComparison,
+  buildMarketingActionSummary,
   buildMarketingAttributionQuality,
   buildMarketingCampaignEfficiency,
+  buildMarketingDecisionReadiness,
   buildMarketingDimensionRows,
   buildMarketingFunnel,
   buildMarketingInsights,
   buildMarketingRegionRows,
+  buildMarketingSpendCoverage,
+  canonicalMarketingCampaignKey,
   emptyMarketingStats,
   normalizeAdminMarketingRange,
   normalizeMarketingFunnelCohort,
@@ -255,6 +259,20 @@ describe('admin marketing analytics helpers', () => {
     });
   });
 
+  it.each([
+    { expected: null, known: 0, unknown: 0 },
+    { expected: 0, known: 0, unknown: 4 },
+    { expected: 25, known: 1, unknown: 3 },
+    { expected: 100, known: 4, unknown: 0 },
+  ])('returns $expected signup coverage for $known known and $unknown unknown signups', ({ expected, known, unknown }) => {
+    expect(
+      buildMarketingAttributionQuality([
+        { source: 'google', stats: { signups: known } },
+        { source: 'unknown', stats: { signups: unknown } },
+      ]).signupCoverageRate,
+    ).toBe(expected);
+  });
+
   it('merges campaign activity and spend across platform rows before calculating efficiency', () => {
     const rows = buildMarketingCampaignEfficiency(
       [
@@ -297,6 +315,131 @@ describe('admin marketing analytics helpers', () => {
       },
     });
     expect(rows[0].platform).toBeUndefined();
+  });
+
+  it('uses one canonical campaign key across case and surrounding whitespace', () => {
+    expect(canonicalMarketingCampaignKey('  Summer-HCM  ')).toBe('summer-hcm');
+    expect(canonicalMarketingCampaignKey('   ')).toBeNull();
+    expect(
+      buildMarketingCampaignEfficiency(
+        [{ campaignId: ' SUMMER-HCM ', stats: { signups: 2 } }],
+        [{ campaignId: 'summer-hcm', stats: { adSpend: 100_000 } }],
+        null,
+      ),
+    ).toMatchObject([
+      {
+        campaignId: 'summer-hcm',
+        signups: 2,
+        adSpend: 100_000,
+      },
+    ]);
+  });
+
+  it('distinguishes missing spend evidence from an explicit zero ledger row', () => {
+    const window = adminMarketingRangeWindow('today', now);
+    const missing = buildMarketingSpendCoverage({
+      window,
+      recordedDates: [],
+      totalSpendAmount: null,
+      now,
+    });
+    const explicitZero = buildMarketingSpendCoverage({
+      window,
+      recordedDates: ['2026-06-22'],
+      totalSpendAmount: 0,
+      hasExplicitZeroRows: true,
+      now,
+    });
+
+    expect(missing).toMatchObject({ status: 'MISSING', totalSpendAmount: null });
+    expect(explicitZero).toMatchObject({
+      status: 'COMPLETE',
+      totalSpendAmount: 0,
+      hasExplicitZeroRows: true,
+    });
+  });
+
+  it('marks incomplete evidence as partial and complete joined evidence as ready', () => {
+    const totals = withMarketingRates({
+      ...emptyMarketingStats(),
+      signups: 4,
+      bookingCreated: 2,
+      bookingCompleted: 1,
+      adSpend: 100_000,
+    });
+    const quality = {
+      attributedFirstOpens: 4,
+      unknownFirstOpens: 0,
+      firstOpenCoverageRate: 100,
+      attributedSignups: 4,
+      unknownSignups: 0,
+      signupCoverageRate: 100,
+    };
+    const partialCoverage = buildMarketingSpendCoverage({
+      window: adminMarketingRangeWindow('7d', now),
+      recordedDates: ['2026-06-22'],
+      totalSpendAmount: 100_000,
+      attributionCampaignIds: ['launch'],
+      spendCampaignIds: ['LAUNCH'],
+      now,
+    });
+    const readyCoverage = buildMarketingSpendCoverage({
+      window: adminMarketingRangeWindow('today', now),
+      recordedDates: ['2026-06-22'],
+      totalSpendAmount: 100_000,
+      attributionCampaignIds: ['launch'],
+      spendCampaignIds: ['LAUNCH'],
+      now,
+    });
+
+    expect(buildMarketingDecisionReadiness({ attributionQuality: quality, spendCoverage: partialCoverage, totals }))
+      .toMatchObject({ status: 'PARTIAL', reasons: expect.arrayContaining(['INCOMPLETE_SPEND_DAYS']) });
+    expect(buildMarketingDecisionReadiness({ attributionQuality: quality, spendCoverage: readyCoverage, totals }))
+      .toMatchObject({ status: 'READY', reasons: [] });
+  });
+
+  it('counts risks across the campaign universe while returning only the visible action slice', () => {
+    const totals = withMarketingRates({
+      ...emptyMarketingStats(),
+      signups: 6,
+      bookingCreated: 6,
+      adSpend: 600_000,
+    });
+    const attributionQuality = {
+      attributedFirstOpens: 6,
+      unknownFirstOpens: 0,
+      firstOpenCoverageRate: 100,
+      attributedSignups: 6,
+      unknownSignups: 0,
+      signupCoverageRate: 100,
+    };
+    const spendCoverage = buildMarketingSpendCoverage({
+      window: adminMarketingRangeWindow('today', now),
+      recordedDates: ['2026-06-22'],
+      totalSpendAmount: 600_000,
+      now,
+      paidScopeExpected: false,
+    });
+    const readiness = buildMarketingDecisionReadiness({ attributionQuality, spendCoverage, totals });
+    const campaigns = Array.from({ length: 6 }, (_, index) => ({
+      key: `campaign-${index}`,
+      campaignId: `campaign-${index}`,
+      campaignName: `Campaign ${index}`,
+      ...withMarketingRates({ ...emptyMarketingStats(), adSpend: 100_000 }),
+    }));
+    const actions = buildMarketingActionSummary({
+      attributionQuality,
+      campaignEfficiency: campaigns,
+      comparison: buildMarketingComparison(totals, emptyMarketingStats(), 'Previous day'),
+      readiness,
+      spendCoverage,
+      totals,
+      visibleLimit: 4,
+      generatedAt: now,
+    });
+
+    expect(actions).toMatchObject({ totalCount: 6, visibleCount: 4, hiddenCount: 2 });
+    expect(actions.items).toHaveLength(4);
   });
 
   it('builds funnel steps and operator insights from safe aggregate counts', () => {

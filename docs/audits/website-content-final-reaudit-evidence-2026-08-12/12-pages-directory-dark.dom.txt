@@ -1,0 +1,555 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - generic: Website Content
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to light mode" [active]:
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - heading "Website Content" [level=1]
+  - paragraph: Operate Live routes, Draft changes, publishing readiness and translation coverage.
+  - generic "Page actions":
+    - link "New page":
+      - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&mode=new
+  - generic: Active revisions
+  - paragraph: Live
+  - generic: "Live:"
+  - text: "0"
+  - generic: Routes currently available to the public.
+  - generic: Unpublished work
+  - paragraph: Draft changes
+  - generic: "Draft changes:"
+  - text: "85"
+  - generic: Routes with an editable Draft revision.
+  - generic: Blocked Drafts
+  - paragraph: Needs attention
+  - generic: "Needs attention:"
+  - text: "85"
+  - generic: Drafts that do not pass publishing readiness.
+  - generic: Required languages
+  - paragraph: Missing translations
+  - generic: "Missing translations:"
+  - text: "0"
+  - generic: Page routes missing one or more KO, EN, VI, JA or ZH versions.
+  - generic: Last 7 days
+  - paragraph: Recently published
+  - generic: "Recently published:"
+  - text: "0"
+  - generic: Routes activated during the latest seven days.
+  - navigation "Website content type":
+    - link "Pages":
+      - /url: /website-content?view=pages
+    - link "News":
+      - /url: /website-content?view=news
+  - heading "Filters" [level=2]
+  - paragraph: Search and pagination run on the server; section content is loaded only after opening a route.
+  - generic: Name or route
+  - searchbox "Name or route"
+  - generic: Website
+  - combobox "Website":
+    - option "All websites" [selected]
+    - option "hands.vn"
+    - option "join.hands.vn"
+  - generic: Language
+  - combobox "Language":
+    - option "All languages" [selected]
+    - option "VI"
+    - option "KO"
+    - option "EN"
+    - option "JA"
+    - option "ZH"
+  - generic: Status
+  - combobox "Status":
+    - option "All states" [selected]
+    - option "Live"
+    - option "Draft changes"
+    - option "Needs attention"
+  - button "Apply"
+  - link "Clear filters":
+    - /url: /website-content?view=pages
+  - heading "Managed pages" [level=2]
+  - generic: 17 route groups
+  - region "Website route groups":
+    - table:
+      - rowgroup:
+        - row "Route Website KO EN VI JA ZH":
+          - columnheader "Route"
+          - columnheader "Website"
+          - columnheader "KO"
+          - columnheader "EN"
+          - columnheader "VI"
+          - columnheader "JA"
+          - columnheader "ZH"
+      - rowgroup:
+        - row "MAIN EN / / hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "MAIN EN / /":
+            - strong: MAIN EN /
+            - code: /
+          - cell "hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst3r000qvynovauef2ej&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst66001gvynocaaazc83&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst0c0000vynopfyq0aia&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst8k0026vynon3426jyc&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstas002wvyno2iehmyk2&workspace=overview
+              - generic: Needs content
+        - row "MAIN EN /company /company hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "MAIN EN /company /company":
+            - strong: MAIN EN /company
+            - code: /company
+          - cell "hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst4q0014vynocgzgllk3&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst76001uvynoowzhk07p&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst26000evynoo0ue9bnb&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst9h002kvynofr50tct0&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstbp003avyno07ymvhmy&workspace=overview
+              - generic: Needs content
+        - row "MAIN EN /contact /contact hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "MAIN EN /contact /contact":
+            - strong: MAIN EN /contact
+            - code: /contact
+          - cell "hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst4z0016vynopzes5age&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst7g001wvynofqzjr191&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst2g000gvynoc3y5s1c9&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst9p002mvynoig7j3hxi&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstbx003cvynookc3m9jk&workspace=overview
+              - generic: Needs content
+        - row "MAIN EN /legal/app /legal/app hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "MAIN EN /legal/app /legal/app":
+            - strong: MAIN EN /legal/app
+            - code: /legal/app
+          - cell "hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst5x001evynoadoi1406&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst8c0024vynoq5upq74c&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst3g000ovynorajcyz3p&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstak002uvynod2g3ilaw&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstcr003kvynozyqbcwu7&workspace=overview
+              - generic: Needs content
+        - row "MAIN EN /legal/cookies /legal/cookies hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "MAIN EN /legal/cookies /legal/cookies":
+            - strong: MAIN EN /legal/cookies
+            - code: /legal/cookies
+          - cell "hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst5g001avynoct0fl4ve&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst7w0020vynoqzbvd1sb&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst2x000kvynobh51159k&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bsta5002qvyno2bk43kl3&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstcc003gvynoe867ilb8&workspace=overview
+              - generic: Needs content
+        - row "MAIN EN /legal/privacy /legal/privacy hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "MAIN EN /legal/privacy /legal/privacy":
+            - strong: MAIN EN /legal/privacy
+            - code: /legal/privacy
+          - cell "hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst580018vyno146d69pr&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst7o001yvyno3itod1kc&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst2p000ivynof07kw1tq&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst9x002ovynomt5zy81y&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstc5003evynodghrtq44&workspace=overview
+              - generic: Needs content
+        - row "MAIN EN /legal/terms /legal/terms hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "MAIN EN /legal/terms /legal/terms":
+            - strong: MAIN EN /legal/terms
+            - code: /legal/terms
+          - cell "hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst5p001cvynoeep2r249&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst830022vynoger309ya&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst37000mvyno3u1qo8of&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstad002svyno5420yxii&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstck003ivynokrvn7iny&workspace=overview
+              - generic: Needs content
+        - row "MAIN EN /partners /partners hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "MAIN EN /partners /partners":
+            - strong: MAIN EN /partners
+            - code: /partners
+          - cell "hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst3z000uvynom7r5lynb&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst6f001kvynow59dmw5s&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst1f0004vynoygnu586e&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst8s002avynop4bq77f3&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstb00030vynoybqeogqv&workspace=overview
+              - generic: Needs content
+        - row "MAIN EN /partners/[city] /partners/[city] hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "MAIN EN /partners/[city] /partners/[city]":
+            - strong: MAIN EN /partners/[city]
+            - code: /partners/[city]
+          - cell "hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst49000yvynoj0qlpryn&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst6p001ovynoe6iqqau5&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst1o0008vyno853ljjl5&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst90002evynoscrrbc79&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstba0034vyno8japz1aw&workspace=overview
+              - generic: Needs content
+        - row "MAIN EN /partners/[city]/[slug] /partners/[city]/[slug] hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "MAIN EN /partners/[city]/[slug] /partners/[city]/[slug]":
+            - strong: MAIN EN /partners/[city]/[slug]
+            - code: /partners/[city]/[slug]
+          - cell "hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst4h0011vynoa9s6nq8a&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst6y001rvyno1f1nob7b&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst1y000bvynoblstvk1p&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bst99002hvynobfh0zg3u&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstbh0037vyno7e4cr2em&workspace=overview
+              - generic: Needs content
+        - row "PARTNER_RECRUITMENT EN / / join.hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "PARTNER_RECRUITMENT EN / /":
+            - strong: PARTNER_RECRUITMENT EN /
+            - code: /
+          - cell "join.hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstel0048vynofnlksmkm&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstg4004uvynot6n1o4t1&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstd0003mvynonbw5pktz&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstho005gvynozdw2aedq&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstjj0062vynoukks0bhx&workspace=overview
+              - generic: Needs content
+        - row "PARTNER_RECRUITMENT EN /apply /apply join.hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "PARTNER_RECRUITMENT EN /apply /apply":
+            - strong: PARTNER_RECRUITMENT EN /apply
+            - code: /apply
+          - cell "join.hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstfh004ovynorckrfd6l&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bsth0005avynoh55a98s5&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstdx0042vynogcij6ltc&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstim005wvyno1zji9p7c&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstkg006ivynof05dn0ok&workspace=overview
+              - generic: Needs content
+        - row "PARTNER_RECRUITMENT EN /faq /faq join.hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "PARTNER_RECRUITMENT EN /faq /faq":
+            - strong: PARTNER_RECRUITMENT EN /faq
+            - code: /faq
+          - cell "join.hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstf9004lvyno8ll02ugn&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstgt0057vynoinvcrobv&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstdo003zvynov3wqi69q&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstic005tvynoy6vk7g3u&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstk8006fvynojwbogbp3&workspace=overview
+              - generic: Needs content
+        - row "PARTNER_RECRUITMENT EN /legal/privacy /legal/privacy join.hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "PARTNER_RECRUITMENT EN /legal/privacy /legal/privacy":
+            - strong: PARTNER_RECRUITMENT EN /legal/privacy
+            - code: /legal/privacy
+          - cell "join.hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstfp004qvynoho6o4kvi&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bsth8005cvynopxw7ygqh&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bste40044vynoavthjtlb&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstiw005yvynoqx09pzar&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstko006kvynoaggmjsg6&workspace=overview
+              - generic: Needs content
+        - row "PARTNER_RECRUITMENT EN /legal/terms /legal/terms join.hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "PARTNER_RECRUITMENT EN /legal/terms /legal/terms":
+            - strong: PARTNER_RECRUITMENT EN /legal/terms
+            - code: /legal/terms
+          - cell "join.hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstfx004svynojr7ww6md&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bsthf005evynooh9be9fn&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstee0046vynon4rl33hi&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstj80060vynolo5xemuw&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstkw006mvynob1horro6&workspace=overview
+              - generic: Needs content
+        - row "PARTNER_RECRUITMENT EN /process /process join.hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "PARTNER_RECRUITMENT EN /process /process":
+            - strong: PARTNER_RECRUITMENT EN /process
+            - code: /process
+          - cell "join.hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstf1004hvynopdcsdooh&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstgk0053vyno2d65o9wu&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstdh003vvyno55gq0qha&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bsti5005pvynor2q0h372&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstk1006bvynovktxc3x3&workspace=overview
+              - generic: Needs content
+        - row "PARTNER_RECRUITMENT EN /requirements /requirements join.hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "PARTNER_RECRUITMENT EN /requirements /requirements":
+            - strong: PARTNER_RECRUITMENT EN /requirements
+            - code: /requirements
+          - cell "join.hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstet004evynoxcug8uyd&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstgd0050vynokdtcwklv&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstd9003svynoivnnixrm&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bsthw005mvynoji9uf9qn&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6&pageId=cms6bstjt0068vynostxms00q&workspace=overview
+              - generic: Needs content
+  - generic: Showing 1 to 17 of 17 route groups
+- alert

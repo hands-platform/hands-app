@@ -4,6 +4,7 @@ import { chatNotificationRoutingData } from '../notifications/notification-push-
 export type BookingNotificationPayload = {
   userId: string;
   targetRole: Extract<Role, 'CUSTOMER' | 'PROVIDER'>;
+  templateKey?: string;
   type: string;
   title: string;
   body: string;
@@ -95,10 +96,15 @@ export function customerProviderJoinedNotification(input: {
   return {
     userId: input.userId,
     targetRole: Role.CUSTOMER,
+    templateKey: 'provider.joined',
     type: 'provider.joined',
     title: 'A partner joined',
     body: `${input.provider.displayName} joined your booking.`,
-    data: { bookingId: input.bookingId, providerProfileId: input.provider.id },
+    data: {
+      bookingId: input.bookingId,
+      partnerName: input.provider.displayName,
+      providerProfileId: input.provider.id,
+    },
   };
 }
 
@@ -109,6 +115,7 @@ export function selectedPartnerMatchedProviderNotification(
   return {
     userId,
     targetRole: Role.PROVIDER,
+    templateKey: 'booking.matched.partner',
     type: 'booking.matched',
     title: 'You were selected',
     body: 'The customer selected you for this booking.',
@@ -124,6 +131,7 @@ export function selectedPartnerMatchedCustomerNotification(input: {
   return {
     userId: input.userId,
     targetRole: Role.CUSTOMER,
+    templateKey: 'booking.matched',
     type: 'booking.matched',
     title: 'Partner selected',
     body: 'Your chat room is ready.',
@@ -138,6 +146,7 @@ export function firstPickMatchedProviderNotification(
   return {
     userId,
     targetRole: Role.PROVIDER,
+    templateKey: 'booking.matched.partner',
     type: 'booking.matched',
     title: 'You were matched',
     body: 'Your first-pick request was accepted and matched.',
@@ -154,6 +163,7 @@ export function firstPickMatchedCustomerNotification(input: {
   return {
     userId: input.userId,
     targetRole: Role.CUSTOMER,
+    templateKey: 'booking.matched',
     type: 'booking.matched',
     title: 'Partner matched',
     body: `${input.provider.displayName} accepted your request. Your chat room is ready.`,
@@ -188,10 +198,15 @@ export function customerMarketplaceProviderAcceptedNotification(input: {
   return {
     userId: input.userId,
     targetRole: Role.CUSTOMER,
+    templateKey: 'provider.accepted',
     type: 'provider.accepted',
     title: 'Marketplace partner is ready',
     body: `${input.provider.displayName} can take this booking. Select this partner if you want to switch.`,
-    data: { bookingId: input.bookingId, providerProfileId: input.provider.id },
+    data: {
+      bookingId: input.bookingId,
+      partnerName: input.provider.displayName,
+      providerProfileId: input.provider.id,
+    },
   };
 }
 
@@ -203,10 +218,15 @@ export function customerMarketplaceProviderRejectedNotification(input: {
   return {
     userId: input.userId,
     targetRole: Role.CUSTOMER,
+    templateKey: 'provider.rejected',
     type: 'provider.rejected',
     title: 'Partner declined',
     body: `${input.provider.displayName} cannot take this booking.`,
-    data: { bookingId: input.bookingId, providerProfileId: input.provider.id },
+    data: {
+      bookingId: input.bookingId,
+      partnerName: input.provider.displayName,
+      providerProfileId: input.provider.id,
+    },
   };
 }
 
@@ -218,6 +238,7 @@ export function serviceStartedCustomerNotification(input: {
   return {
     userId: input.userId,
     targetRole: Role.CUSTOMER,
+    templateKey: 'service.started',
     type: 'service.started',
     title: 'Service started',
     body: 'Your partner started the service. Continue in the matched chat if needed.',
@@ -234,6 +255,7 @@ export function serviceStartedProviderNotification(input: {
   return {
     userId: input.userId,
     targetRole: Role.PROVIDER,
+    templateKey: 'service.started.partner',
     type: 'service.started',
     title: 'Service started',
     body: chatRoomId

@@ -1,0 +1,282 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Insights":
+        - /url: /marketing-analytics
+      - generic: Marketing Analytics
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Insights workspace":
+    - strong: Insights
+    - generic "Insights pages":
+      - link "Marketing Analytics":
+        - /url: /marketing-analytics
+      - link "Customer Usage":
+        - /url: /usage-overview
+  - heading "Marketing Analytics" [level=1]
+  - paragraph: New-customer acquisition cohort, source, campaign, coupon, and spend performance from stored HANDS records.
+  - generic "Marketing workspace view":
+    - link "Overview":
+      - /url: /marketing-analytics?range=30d
+    - link "Campaigns & spend":
+      - /url: /marketing-analytics?range=30d&view=campaigns
+    - link "Attribution quality":
+      - /url: /marketing-analytics?range=30d&view=attribution
+    - link "Coupons":
+      - /url: /marketing-analytics?range=30d&view=coupons
+  - heading "Marketing filters" [level=2]
+  - paragraph: Range, source, platform, and campaign apply to the new-customer attribution cohort. Region does not change attribution diagnostics.
+  - generic: Last 30 days
+  - generic: Signup cohort
+  - generic: "Spend source: manual records"
+  - text: Generated
+  - time: 12 Aug 2026, 16:59
+  - generic: Range
+  - generic "Range":
+    - link "Today":
+      - /url: /marketing-analytics?range=today&view=attribution
+    - link "Yesterday":
+      - /url: /marketing-analytics?range=yesterday&view=attribution
+    - link "7 days":
+      - /url: /marketing-analytics?range=7d&view=attribution
+    - link "30 days":
+      - /url: /marketing-analytics?range=30d&view=attribution
+  - generic: Source
+  - generic "Source":
+    - link "All sources":
+      - /url: /marketing-analytics?range=30d&view=attribution
+    - link "Referral":
+      - /url: /marketing-analytics?range=30d&view=attribution&source=referral
+    - link "Unknown":
+      - /url: /marketing-analytics?range=30d&view=attribution&source=unknown
+    - link "Meta":
+      - /url: /marketing-analytics?range=30d&view=attribution&source=meta
+    - link "Google":
+      - /url: /marketing-analytics?range=30d&view=attribution&source=google
+    - link "TikTok":
+      - /url: /marketing-analytics?range=30d&view=attribution&source=tiktok
+    - link "Organic":
+      - /url: /marketing-analytics?range=30d&view=attribution&source=organic
+    - link "Direct":
+      - /url: /marketing-analytics?range=30d&view=attribution&source=direct
+  - group "Additional marketing filters":
+    - generic "More filters"
+  - generic "Active marketing filters":
+    - generic: "View: Attribution quality · Range: 30 days"
+    - link "Reset range":
+      - /url: /marketing-analytics?range=7d&view=attribution
+    - link "Clear all":
+      - /url: /marketing-analytics?range=7d&view=attribution
+  - heading "Decision reliability" [level=2]
+  - paragraph: Reliability checks for the selected cohort and manual spend evidence. Missing ledger dates are not treated as zero spend.
+  - generic: "Decision evidence: INSUFFICIENT"
+  - generic: Attribution coverage
+  - strong: 25%
+  - generic: Spend days recorded
+  - strong: 0 / 30
+  - generic: Campaign match
+  - strong: 0%
+  - generic: Last complete date
+  - strong: Not complete
+  - paragraph: No spend evidence · Spend dates incomplete · Attribution coverage low
+  - region "Attribution quality":
+    - heading "Attribution quality" [level=2]
+    - paragraph: Known first-touch source versus Unknown for the selected customer cohort.
+    - generic: Signup source coverage
+    - strong: 25%
+    - generic: Last 30 days
+    - progressbar "25% signup source coverage"
+    - generic: Known signups
+    - strong: "1"
+    - generic: of 4
+    - generic: Unknown signups
+    - strong: "3"
+    - generic: needs source data
+    - generic: Known entrants
+    - strong: "2"
+    - generic: 40% of 5
+    - strong: Unknown signup diagnostics
+    - generic: First customer session evidence for this signup cohort
+    - generic: 3 unknown
+    - generic "Unknown signup attribution diagnostics":
+      - strong: Unknown platform
+      - generic: Version not reported
+      - generic: Account created; app session not reached
+      - strong: "2"
+      - strong: iOS
+      - generic: 1.0.0-smoke
+      - generic: Attribution metadata missing
+      - strong: "1"
+    - strong: Recent signup gaps
+    - generic: Latest accounts without a usable first-touch source
+    - generic "Recent unknown signup accounts":
+      - link "Customer audit_po... Signed up 7 Aug 2026, 19:09 Account created; app session not reached Unknown platform / Version not reported":
+        - /url: /customers/audit_post_match_customer_profile
+        - strong: Customer audit_po...
+        - text: Signed up
+        - time: 7 Aug 2026, 19:09
+        - generic: Account created; app session not reached
+        - generic: Unknown platform / Version not reported
+      - link "Customer audit_bo... Signed up 5 Aug 2026, 18:53 Attribution metadata missing iOS / 1.0.0-smoke":
+        - /url: /customers/audit_booking_list_customer_profile
+        - strong: Customer audit_bo...
+        - text: Signed up
+        - time: 5 Aug 2026, 18:53
+        - generic: Attribution metadata missing
+        - generic: iOS / 1.0.0-smoke
+      - link "Customer cmrknir6... Signed up 14 Jul 2026, 19:52 Account created; app session not reached Unknown platform / Version not reported":
+        - /url: /customers/cmrknir6a0001vyyszyh4kex4
+        - strong: Customer cmrknir6...
+        - text: Signed up
+        - time: 14 Jul 2026, 19:52
+        - generic: Account created; app session not reached
+        - generic: Unknown platform / Version not reported
+  - heading "Insights & metric scope" [level=2]
+  - paragraph: Operator-readable findings and current data gaps before paid scaling.
+  - paragraph: Unknown is the strongest tracked source in this range with 3 signups and 0 completed bookings.
+  - paragraph: Booking cancellation rate is above 25%; review source quality before adding spend.
+  - paragraph: Some signup and booking demand is still un-attributed; persist install/campaign attribution before paid scaling.
+  - group "Metric scope and limitations":
+    - generic "Metric scope & limitations"
+  - heading "Source performance" [level=2]
+  - paragraph: Current first slice groups unknown demand separately from tracked referral attribution.
+  - generic: Showing 3 / 3
+  - region "Source performance table":
+    - table:
+      - rowgroup:
+        - row "Source Signups Completed Cancelled Ad spend CPA completed Fee revenue Gross ROAS":
+          - columnheader "Source"
+          - columnheader "Signups"
+          - columnheader "Completed"
+          - columnheader "Cancelled"
+          - columnheader "Ad spend"
+          - columnheader "CPA completed"
+          - columnheader "Fee revenue"
+          - columnheader "Gross ROAS"
+      - rowgroup:
+        - row "Unknown 3 0 1 0 VND n/a 0 VND n/a":
+          - cell "Unknown":
+            - strong: Unknown
+          - cell "3"
+          - cell "0"
+          - cell "1"
+          - cell "0 VND"
+          - cell "n/a"
+          - cell "0 VND"
+          - cell "n/a"
+        - row "Referral 1 0 0 0 VND n/a 0 VND n/a":
+          - cell "Referral":
+            - strong: Referral
+          - cell "1"
+          - cell "0"
+          - cell "0"
+          - cell "0 VND"
+          - cell "n/a"
+          - cell "0 VND"
+          - cell "n/a"
+        - row "Direct 0 0 0 0 VND n/a 0 VND n/a":
+          - cell "Direct":
+            - strong: Direct
+          - cell "0"
+          - cell "0"
+          - cell "0"
+          - cell "0 VND"
+          - cell "n/a"
+          - cell "0 VND"
+          - cell "n/a"
+  - generic: Showing 1 to 3 of 3 entries
+  - heading "Platform tracked entrants" [level=2]
+  - paragraph: First recorded app platform for authenticated entrants in the selected cohort.
+  - generic: Showing 3 / 3
+  - region "Platform tracked entrants table":
+    - table:
+      - rowgroup:
+        - row "Platform Signups Completed Cancelled Ad spend CPA completed Fee revenue Gross ROAS":
+          - columnheader "Platform"
+          - columnheader "Signups"
+          - columnheader "Completed"
+          - columnheader "Cancelled"
+          - columnheader "Ad spend"
+          - columnheader "CPA completed"
+          - columnheader "Fee revenue"
+          - columnheader "Gross ROAS"
+      - rowgroup:
+        - row "Unknown platform 2 0 1 0 VND n/a 0 VND n/a":
+          - cell "Unknown platform":
+            - strong: Unknown platform
+          - cell "2"
+          - cell "0"
+          - cell "1"
+          - cell "0 VND"
+          - cell "n/a"
+          - cell "0 VND"
+          - cell "n/a"
+        - row "Android 1 0 0 0 VND n/a 0 VND n/a":
+          - cell "Android":
+            - strong: Android
+          - cell "1"
+          - cell "0"
+          - cell "0"
+          - cell "0 VND"
+          - cell "n/a"
+          - cell "0 VND"
+          - cell "n/a"
+        - row "iOS 1 0 0 0 VND n/a 0 VND n/a":
+          - cell "iOS":
+            - strong: iOS
+          - cell "1"
+          - cell "0"
+          - cell "0"
+          - cell "0 VND"
+          - cell "n/a"
+          - cell "0 VND"
+          - cell "n/a"
+  - generic: Showing 1 to 3 of 3 entries
+- alert

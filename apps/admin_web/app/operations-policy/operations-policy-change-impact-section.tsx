@@ -4,6 +4,7 @@ import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/adm
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { PolicyChangeImpactDashboard } from './policy-impact-dashboard';
+import { policyCountLabel } from './policy-copy';
 
 type OperationsPolicyChangeImpactSectionProps = {
   readonly dashboard: PolicyChangeImpactDashboard;
@@ -25,7 +26,7 @@ export function OperationsPolicyChangeImpactSection({
     <AdminSection
       className="admin-mb-16"
       description="Before changing a setting, use this view to see whether it only affects new bookings or also changes live Partner visibility, participation checks, and operational review work."
-      statusLabel={`${sampledBookingCount} booking(s) sampled`}
+      statusLabel={`${policyCountLabel(sampledBookingCount, 'booking')} sampled`}
       statusTone="info"
       title="Policy change impact"
     >

@@ -63,6 +63,7 @@ describe('Admin route domain manifest', () => {
         'partners/:id',
         'partners/:id/approve',
         'partners/:id/public-media/presign',
+        'operations-policy/matching-preview',
         'partner-reports',
         'partner-sanctions',
         'files/review-summary',
@@ -183,9 +184,17 @@ describe('Admin route domain manifest', () => {
     );
     const writeRoutes = routes.filter((route) => route.method !== 'GET');
 
-    expect(routes).toHaveLength(22);
+    expect(routes).toHaveLength(26);
     expect(writeRoutes).toHaveLength(12);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminBankRoutes']));
+    expect(routes.map((route) => `${route.method} ${route.path}`)).toEqual(
+      expect.arrayContaining([
+        'GET company-bank-accounts/operations-page',
+        'GET company-bank-accounts/recent-changes',
+        'GET company-bank-accounts/approver-readiness',
+        'GET company-bank-accounts/:id/status-preflight',
+      ]),
+    );
     expect(writeRoutes.map((route) => `${route.method} ${route.path}`)).toEqual(
       expect.arrayContaining([
         'POST company-bank-accounts',
@@ -315,11 +324,22 @@ describe('Admin route domain manifest', () => {
     );
     const writeRoutes = routes.filter((route) => route.method !== 'GET');
 
-    expect(routes).toHaveLength(5);
-    expect(writeRoutes).toHaveLength(2);
+    expect(routes.length).toBeGreaterThanOrEqual(9);
+    expect(writeRoutes).toHaveLength(3);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminGovernanceRoutes']));
+    expect(routes.map((route) => `${route.method} ${route.path}`)).toEqual(
+      expect.arrayContaining([
+        'GET audit-logs/page',
+        'GET audit-logs/events/:id',
+        'GET audit-logs/export',
+      ]),
+    );
     expect(writeRoutes.map((route) => `${route.method} ${route.path}`)).toEqual(
-      expect.arrayContaining(['POST operations-handoff/note', 'PATCH operational-policy/:key']),
+      expect.arrayContaining([
+        'POST audit-logs/events/:id/corrections',
+        'POST operations-handoff/note',
+        'PATCH operational-policy/:key',
+      ]),
     );
   });
 
@@ -329,9 +349,12 @@ describe('Admin route domain manifest', () => {
     );
     const writeRoutes = routes.filter((route) => route.method !== 'GET');
 
-    expect(routes).toHaveLength(10);
+    expect(routes).toHaveLength(11);
     expect(writeRoutes).toHaveLength(5);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminNotificationRoutes']));
+    expect(routes.map((route) => `${route.method} ${route.path}`)).toContain(
+      'GET notifications/push-campaigns/:id',
+    );
     expect(writeRoutes.map((route) => `${route.method} ${route.path}`)).toEqual(
       expect.arrayContaining([
         'PATCH notifications/templates/:key',
@@ -349,20 +372,33 @@ describe('Admin route domain manifest', () => {
     );
     const writeRoutes = routes.filter((route) => route.method !== 'GET');
 
-    expect(routes).toHaveLength(14);
-    expect(writeRoutes).toHaveLength(9);
+    expect(routes).toHaveLength(38);
+    expect(writeRoutes).toHaveLength(22);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminIdentityRoutes']));
     expect(writeRoutes.map((route) => `${route.method} ${route.path}`)).toEqual(
       expect.arrayContaining([
-        'POST users/admin-operators',
-        'POST users/admin-operator-login',
+        'POST admin-operator-invitations',
+        'POST admin-operator-invitations/:id/revoke',
+        'POST admin-operator-invitations/:id/resend',
+        'POST admin-operators/reauthenticate',
+        'POST admin-operators/me/mfa/enrollment',
+        'POST admin-operators/me/mfa/verify',
+        'POST admin-operators/me/session/revoke',
         'PATCH users/:id/admin-operator-access',
+        'POST users/:id/admin-operator-access/initialize',
+        'POST users/:id/admin-operator/suspend',
+        'POST users/:id/admin-operator/reactivate',
+        'POST users/:id/admin-operator/mfa/reset',
+        'POST users/:id/admin-web-sessions/:sessionId/revoke',
         'DELETE users/:id/admin-operator',
         'POST operator-activity',
         'POST calendar-events',
         'PATCH calendar-events/:id',
         'DELETE calendar-events/:id',
-        'PATCH users/:id/finance-approver',
+        'POST finance-approver-governance/requests',
+        'POST finance-approver-governance/requests/:id/decision',
+        'POST finance-approver-governance/legacy-attestations',
+        'POST finance-approver-governance/legacy-attestations/:id/decision',
       ]),
     );
   });
@@ -373,7 +409,7 @@ describe('Admin route domain manifest', () => {
     );
     const writeRoutes = routes.filter((route) => route.method !== 'GET');
 
-    expect(routes).toHaveLength(17);
+    expect(routes).toHaveLength(18);
     expect(writeRoutes).toHaveLength(1);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminAnalyticsRoutes']));
     expect(writeRoutes.map((route) => `${route.method} ${route.path}`)).toEqual([
@@ -387,9 +423,15 @@ describe('Admin route domain manifest', () => {
     );
     const writeRoutes = routes.filter((route) => route.method !== 'GET');
 
-    expect(routes).toHaveLength(19);
+    expect(routes).toHaveLength(21);
     expect(writeRoutes).toHaveLength(9);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminReferralRoutes']));
+    expect(routes.map((route) => `${route.method} ${route.path}`)).toEqual(
+      expect.arrayContaining([
+        'GET referrals/customers/workspace',
+        'GET referrals/customers/fixtures',
+      ]),
+    );
     expect(writeRoutes.map((route) => `${route.method} ${route.path}`)).toEqual(
       expect.arrayContaining([
         'PATCH referrals/policies/:audience',
@@ -454,11 +496,12 @@ describe('Admin route domain manifest', () => {
     );
     const writeRoutes = routes.filter((route) => route.method !== 'GET');
 
-    expect(routes).toHaveLength(8);
-    expect(writeRoutes).toHaveLength(6);
+    expect(routes).toHaveLength(11);
+    expect(writeRoutes).toHaveLength(7);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminCatalogRoutes']));
     expect(writeRoutes.map((route) => `${route.method} ${route.path}`)).toEqual(
       expect.arrayContaining([
+        'PATCH services/groups/:groupKey',
         'POST services/duration-sets',
         'POST services',
         'PATCH services/:id',

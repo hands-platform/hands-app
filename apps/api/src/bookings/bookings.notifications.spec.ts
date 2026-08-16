@@ -113,8 +113,9 @@ describe('booking notification payloads', () => {
       }),
     ).toMatchObject({
       type: 'provider.joined',
+      templateKey: 'provider.joined',
       body: 'Mai joined your booking.',
-      data: { bookingId: 'booking-1', providerProfileId: 'provider-1' },
+      data: { bookingId: 'booking-1', partnerName: 'Mai', providerProfileId: 'provider-1' },
     });
 
     expect(
@@ -125,7 +126,8 @@ describe('booking notification payloads', () => {
       }),
     ).toMatchObject({
       type: 'provider.accepted',
-      data: { bookingId: 'booking-1', providerProfileId: 'provider-1' },
+      templateKey: 'provider.accepted',
+      data: { bookingId: 'booking-1', partnerName: 'Mai', providerProfileId: 'provider-1' },
     });
   });
 
@@ -133,6 +135,7 @@ describe('booking notification payloads', () => {
     expect(selectedPartnerMatchedProviderNotification('provider-user-1', 'booking-1')).toEqual({
       userId: 'provider-user-1',
       targetRole: Role.PROVIDER,
+      templateKey: 'booking.matched.partner',
       type: 'booking.matched',
       title: 'You were selected',
       body: 'The customer selected you for this booking.',
@@ -172,6 +175,7 @@ describe('booking notification payloads', () => {
     ).toEqual({
       userId: 'provider-user-1',
       targetRole: Role.PROVIDER,
+      templateKey: 'service.started.partner',
       type: 'service.started',
       title: 'Service started',
       body: 'Continue with the customer in the matched chat if needed.',

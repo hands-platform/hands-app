@@ -1,104 +1,102 @@
-import { ActionMenu } from '../../components/action-menu';
-import { AdminDataTable } from '../../components/admin-data-table';
-import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
-import { AdminDisclosure } from '../../components/admin-surface';
+import { ExternalLink, FileSearch } from 'lucide-react';
+
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { DateTimeText } from '../../components/date-time-text';
-import {
-  AdminSignal,
-  StatusBadge,
-  adminSignalToneFromClassName,
-  type StatusBadgeTone,
-} from '../../components/status-badge';
+import { StatusBadge } from '../../components/status-badge';
+import type { AdminAuditEventView } from '../../lib/admin-api';
+import { formatRelativeTime } from '../../lib/admin-format';
 
-export type AuditLogMetadataHighlight = {
-  readonly label: string;
-  readonly tone: StatusBadgeTone;
-};
-
-export type AuditLogTableRow = {
-  readonly actionLabel: string;
-  readonly actorLabel: string;
-  readonly bucketClassName: string;
-  readonly bucketLabel: string;
-  readonly createdAt: string | null;
-  readonly id: string;
-  readonly metadataHighlights: readonly AuditLogMetadataHighlight[];
-  readonly metadataPreview: string;
-  readonly opsDetail: string;
-  readonly opsHint: string;
-  readonly priorityLabel: string;
-  readonly relatedBoardHref: string;
-  readonly relatedBoardLabel: string;
-  readonly relativeTimeLabel: string;
-  readonly shortTargetLabel: string;
-  readonly targetLabel: string;
-};
-
-type AuditLogTableSectionProps = {
-  readonly emptyMessage: string;
-  readonly rows: readonly AuditLogTableRow[];
-};
-
-export function AuditLogTableSection({ emptyMessage, rows }: AuditLogTableSectionProps) {
+export function AuditLogTableSection({
+  evidenceHref,
+  items,
+}: {
+  readonly evidenceHref: (eventId: string) => string;
+  readonly items: readonly AdminAuditEventView[];
+}) {
   return (
-    <AdminDataTable
-      emptyMessage={emptyMessage}
-      headers={['When', 'Result', 'Action', 'Actor', 'Target', 'Related board / route']}
-      rowCount={rows.length}
-    >
-      {rows.map((row) => (
-        <tr key={row.id}>
-          <td>
-            <div>
-              <DateTimeText value={row.createdAt} />
-            </div>
-            <div className="muted">{row.relativeTimeLabel}</div>
-          </td>
-          <td>
-            <StatusBadge tone="neutral">Recorded</StatusBadge>
-            <div className="muted admin-mt-6">{row.priorityLabel}</div>
-          </td>
-          <td>
-            <div className="admin-mb-6">{row.actionLabel}</div>
-            <AdminSignal className={row.bucketClassName} tone={adminSignalToneFromClassName(row.bucketClassName)}>
-              {row.bucketLabel}
-            </AdminSignal>
-          </td>
-          <td>{row.actorLabel}</td>
-          <td>
-            <div>{row.shortTargetLabel}</div>
-          </td>
-          <td>
-            <ActionMenu
-              actions={[
-                {
-                  href: row.relatedBoardHref,
-                  kind: 'link',
-                  label: row.relatedBoardLabel,
-                  tone: 'info',
-                },
-              ]}
-              label={`${row.id} related board actions`}
-            />
-            <AdminDisclosure className="admin-mt-6">
-              <summary>Technical evidence</summary>
-              <div>{row.opsHint}</div>
-              <div className="muted admin-mt-6">{row.opsDetail}</div>
-              <div className="muted admin-mt-6">{row.targetLabel}</div>
-              {row.metadataHighlights.length > 0 ? (
-                <AdminFilterChipGroup ariaLabel={`${row.id} metadata highlights`} className="admin-mt-8 admin-mb-8">
-                  {row.metadataHighlights.map((item, index) => (
-                    <StatusBadge tone={item.tone} key={`${item.label}-${index}`}>
-                      {item.label}
-                    </StatusBadge>
-                  ))}
-                </AdminFilterChipGroup>
+    <AdminTableScroll ariaLabel="Audit investigation results" className="audit-investigation-table-scroll">
+      <AdminDataTable
+        className="audit-investigation-table"
+        emptyMessage="No events match these filters. Change a filter or date range to continue the investigation."
+        headers={['Time & actor', 'Event / outcome', 'Object', 'Change summary', 'Open']}
+        rowCount={items.length}
+      >
+        {items.map((event) => (
+          <tr key={event.id}>
+            <td className="audit-time-actor-cell">
+              <DateTimeText value={event.occurredAt} />
+              <span className="audit-relative-time">{formatRelativeTime(event.occurredAt)} · ICT</span>
+              <strong>{event.actor.labelSnapshot}</strong>
+              <span>{actorTypeLabel(event.actor.type)} · {shortId(event.actor.key ?? event.id)}</span>
+              {event.actor.attribution === 'LEGACY_INFERRED' ? (
+                <span className="audit-legacy-attribution">Legacy attribution uncertain</span>
               ) : null}
-              <pre className="admin-pre-wrap">{row.metadataPreview}</pre>
-            </AdminDisclosure>
-          </td>
-        </tr>
-      ))}
-    </AdminDataTable>
+            </td>
+            <td className="audit-event-cell">
+              <strong>{event.eventLabel}</strong>
+              <span className="audit-event-type">{event.eventType}</span>
+              <div className="audit-row-badges">
+                <StatusBadge tone={outcomeTone(event.outcome)}>{event.outcome}</StatusBadge>
+                <StatusBadge tone={severityTone(event.severity)}>{event.severity}</StatusBadge>
+                <StatusBadge tone="neutral">{event.area}</StatusBadge>
+              </div>
+            </td>
+            <td className="audit-object-cell">
+              <strong>{event.object.labelSnapshot}</strong>
+              <span>{event.object.type} · {shortId(event.object.id)}</span>
+            </td>
+            <td className="audit-change-cell">
+              <strong>{event.changeSummary}</strong>
+              {event.reason?.code ? <span>Reason · {event.reason.code}</span> : null}
+              {event.context.correlationId ? (
+                <span>Correlation · {shortId(event.context.correlationId)}</span>
+              ) : null}
+            </td>
+            <td className="audit-open-cell">
+              <AdminFormControlLink
+                aria-label={`Open evidence for ${event.eventLabel}, ${event.object.labelSnapshot}, ${shortId(event.id)}`}
+                className="button-secondary audit-evidence-trigger"
+                href={evidenceHref(event.id)}
+              >
+                <FileSearch aria-hidden="true" size={16} />
+                Evidence
+              </AdminFormControlLink>
+              {event.related ? (
+                <AdminFormControlLink className="button-plain audit-related-link" href={event.related.href}>
+                  {event.related.label}
+                  <ExternalLink aria-hidden="true" size={14} />
+                </AdminFormControlLink>
+              ) : null}
+            </td>
+          </tr>
+        ))}
+      </AdminDataTable>
+    </AdminTableScroll>
   );
+}
+
+function shortId(value: string) {
+  return value.length > 15 ? `${value.slice(0, 9)}…${value.slice(-4)}` : value;
+}
+
+function actorTypeLabel(type: AdminAuditEventView['actor']['type']) {
+  if (type === 'HUMAN') return 'Human';
+  if (type === 'SYSTEM') return 'System';
+  if (type === 'SERVICE') return 'Service';
+  return 'Unknown actor';
+}
+
+function severityTone(severity: AdminAuditEventView['severity']) {
+  if (severity === 'CRITICAL') return 'danger' as const;
+  if (severity === 'REVIEW') return 'warning' as const;
+  if (severity === 'NOTICE') return 'info' as const;
+  return 'neutral' as const;
+}
+
+function outcomeTone(outcome: AdminAuditEventView['outcome']) {
+  if (outcome === 'FAILED' || outcome === 'DENIED') return 'danger' as const;
+  if (outcome === 'OPENED') return 'warning' as const;
+  if (outcome === 'SUCCEEDED' || outcome === 'RESOLVED') return 'success' as const;
+  return 'neutral' as const;
 }

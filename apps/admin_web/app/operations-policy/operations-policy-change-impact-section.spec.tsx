@@ -62,7 +62,7 @@ describe('OperationsPolicyChangeImpactSection', () => {
 
     expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
     expect(rendered).toContain('Policy change impact');
-    expect(rendered).toContain('5 booking(s) sampled');
+    expect(rendered).toContain('5 bookings sampled');
     expect(rendered).toContain('First-pick response timer');
     expect(rendered).toContain('Response timer changes are forward-only');
   });

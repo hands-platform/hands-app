@@ -29,6 +29,25 @@ export const PROVIDER_ACTIVE_WORK_STATUS_VALUES = [
 
 const PROVIDER_ACTIVE_WORK_STATUSES = new Set<BookingStatus>(PROVIDER_ACTIVE_WORK_STATUS_VALUES);
 
+type ProviderBookingIdentityReadiness = {
+  blockedAt: Date | null;
+  blockedReason: string | null;
+  verification?: { status: VerificationStatus } | null;
+  kyc?: { status: ProviderKycStatus } | null;
+  documents?: Array<{
+    type: ProviderDocumentType;
+    status: ProviderDocumentStatus;
+    deletedAt?: Date | null;
+  }>;
+};
+
+export function assertProviderCanViewOpenBookingMarketplace(
+  provider: ProviderBookingIdentityReadiness,
+) {
+  assertProviderBookingAccessNotBlocked(provider);
+  assertProviderBookingIdentityReady(provider);
+}
+
 export function assertProviderCanReceiveBooking(provider: {
   blockedAt: Date | null;
   blockedReason: string | null;
@@ -66,13 +85,7 @@ export function assertProviderCanReceiveBooking(provider: {
     deletedAt?: Date | null;
   }>;
 }, now = new Date()) {
-  if (provider.blockedAt) {
-    throw new BadRequestException(
-      provider.blockedReason
-        ? `Partner account is blocked by admin review: ${provider.blockedReason}`
-        : 'Partner account is blocked by admin review.',
-    );
-  }
+  assertProviderBookingAccessNotBlocked(provider);
   if (provider.availabilityIntent) {
     const availability = resolveProviderAvailability({
       availabilityIntent: provider.availabilityIntent,
@@ -110,6 +123,19 @@ export function assertProviderCanReceiveBooking(provider: {
       'Partner must complete the current booking before receiving or joining another booking',
     );
   }
+  assertProviderBookingIdentityReady(provider);
+}
+
+function assertProviderBookingAccessNotBlocked(provider: ProviderBookingIdentityReadiness) {
+  if (!provider.blockedAt) return;
+  throw new BadRequestException(
+    provider.blockedReason
+      ? `Partner account is blocked by admin review: ${provider.blockedReason}`
+      : 'Partner account is blocked by admin review.',
+  );
+}
+
+function assertProviderBookingIdentityReady(provider: ProviderBookingIdentityReadiness) {
   if (provider.verification?.status !== VerificationStatus.APPROVED) {
     throw new BadRequestException('Partner verification must be approved before receiving bookings');
   }

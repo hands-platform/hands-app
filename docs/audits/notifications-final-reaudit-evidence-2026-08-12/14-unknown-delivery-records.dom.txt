@@ -1,0 +1,147 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Messaging":
+        - /url: /notifications
+      - generic: Notification Delivery
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Messaging workspace":
+    - strong: Messaging
+    - generic "Messaging pages":
+      - link "Notification Delivery":
+        - /url: /notifications
+      - link "Notification Templates":
+        - /url: /notifications/templates
+      - link "Push Send":
+        - /url: /notifications/push-send
+  - heading "Notification Delivery" [level=1]
+  - paragraph: Review unresolved mobile send issues and inspect delivery records.
+  - generic "Notification delivery data status":
+    - generic: All dates
+    - generic: Asia/Ho_Chi_Minh
+    - generic: Generated 12 Aug 2026, 14:38
+    - button "Refresh now":
+      - text: Refresh now
+    - generic: Unknown source records · 0
+  - generic "Notification data source":
+    - link "Production":
+      - /url: /notifications?mode=records&range=all&sort=oldest
+    - link "Unknown source":
+      - /url: /notifications?mode=records&dataScope=unknown&range=all&sort=oldest
+    - link "Synthetic":
+      - /url: /notifications?mode=records&dataScope=synthetic&range=all&sort=oldest
+  - generic "Notification Delivery mode":
+    - link "Needs action":
+      - /url: /notifications?scope=all&dataScope=unknown
+    - link "Delivery records":
+      - /url: /notifications?mode=records&dataScope=unknown&range=all&sort=oldest
+  - heading "Delivery record filters" [level=2]
+  - paragraph: Search server-side delivery records. Page size is fixed at 10.
+  - generic: Search
+  - searchbox "Search"
+  - generic: Recipient role
+  - combobox "Recipient role":
+    - option "All roles" [selected]
+    - option "Customer"
+    - option "Partner"
+    - option "Admin"
+  - generic: Channel
+  - combobox "Channel":
+    - option "All channels" [selected]
+    - option "FCM"
+    - option "In-app"
+  - generic: Send status
+  - combobox "Send status":
+    - option "All statuses" [selected]
+    - option "Accepted by FCM"
+    - option "Failed"
+    - option "Skipped"
+    - option "Not attempted"
+  - generic: Date
+  - combobox "Date":
+    - option "Today"
+    - option "Previous day"
+    - option "7 days"
+    - option "30 days"
+    - option "All" [selected]
+  - generic: Sort
+  - combobox "Sort":
+    - option "Newest"
+    - option "Oldest" [selected]
+  - button "Apply filters"
+  - link "Reset":
+    - /url: /notifications?mode=records&dataScope=unknown
+  - status:
+    - strong: Applied filters
+    - list "Applied notification record filters":
+      - listitem: "Date: all"
+      - listitem: "Sort: oldest"
+    - link "Clear record filters":
+      - /url: /notifications?mode=records&dataScope=unknown
+  - region "Delivery records":
+    - heading "Delivery records" [level=2]
+    - paragraph: FCM acceptance is provider acknowledgement, not proof that the device received or opened the notification.
+    - generic: 0 notifications
+    - region "Notification delivery records":
+      - table:
+        - rowgroup:
+          - row "Created Recipient Notification Send status Next action":
+            - columnheader "Created"
+            - columnheader "Recipient"
+            - columnheader "Notification"
+            - columnheader "Send status"
+            - columnheader "Next action"
+        - rowgroup:
+          - row:
+            - cell:
+              - status:
+                - paragraph: No delivery records exist for this period.
+- alert

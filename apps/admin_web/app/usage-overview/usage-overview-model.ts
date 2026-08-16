@@ -58,6 +58,13 @@ export function usageOverviewHref(range: UsageOverviewRange) {
   return `/usage-overview?range=${range}`;
 }
 
+export function usageOverviewCustomHref(today: string) {
+  const to = new Date(`${today}T00:00:00.000Z`);
+  const from = new Date(to);
+  from.setUTCDate(from.getUTCDate() - 6);
+  return `/usage-overview?range=custom&from=${from.toISOString().slice(0, 10)}&to=${today}`;
+}
+
 export function emptyUsageOverview(range: UsageOverviewRange): AdminUsageOverview {
   return {
     generatedAt: new Date(0).toISOString(),
@@ -174,9 +181,10 @@ export function emptyUsageOverview(range: UsageOverviewRange): AdminUsageOvervie
       completedPartners: [],
     },
     provenance: {
-      bookingFixtures: 'explicit-markers-excluded',
-      unknownAggregateCount: 0,
-      usageFixtures: 'not-guaranteed',
+      booking: 'incomplete',
+      unknownBookingCount: 0,
+      unknownUsageAggregateCount: 0,
+      usage: 'incomplete',
     },
   };
 }
@@ -292,7 +300,7 @@ export function buildUsageActionPriorities(overview: AdminUsageOverview): UsageA
   return [
     {
       key: 'new-unbooked',
-      label: 'New customers without a booking',
+      label: 'New customers without a verified production booking',
       detail: 'Joined in this reporting period and still have no production booking.',
       tone: 'warning',
       value: overview.customerSegments.newUnbookedCustomerCount,

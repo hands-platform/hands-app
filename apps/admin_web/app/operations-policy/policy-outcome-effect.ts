@@ -7,6 +7,7 @@ import {
   readBookingMatchingPolicySnapshot,
 } from './policy-snapshot';
 import { policyDisplayByKey } from './policy-value-display';
+import { policyCountLabel, policyValueLabel } from './policy-copy';
 
 type PolicyEffectStats = {
   sampleCount: number;
@@ -69,7 +70,7 @@ export function buildPolicyOutcomeEffect(
   });
 
   const totalOutcomeCheckCount = closedOutcomeCountForStats(globalStats);
-  const avgBackupInvites = averageLabel(globalStats.backupInviteCount, globalStats.sampleCount, 'partner(s)');
+  const avgBackupInvites = averageLabel(globalStats.backupInviteCount, globalStats.sampleCount, 'partner');
   const currentInviteCap = policyDisplayByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit);
   const currentRadius = policyDisplayByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters);
 
@@ -120,7 +121,7 @@ function policyEffectRowDefinitions(
       policy: 'Marketplace alert cap',
       settingKey: OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
       readValue: (snapshot) => snapshot.backupProviderInvitationLimit,
-      formatValue: (value) => `${value} partner(s)`,
+      formatValue: (value) => policyValueLabel(value, 'Partner'),
     },
     {
       policy: 'Marketplace opening mode',
@@ -167,12 +168,12 @@ function buildOutcomeEffectMetrics(
     {
       label: 'Matched rate',
       value: percentLabel(stats.matchedCount, stats.sampleCount),
-      helper: `${stats.matchedCount}/${stats.sampleCount} sampled booking(s) reached a selected or active partner.`,
+      helper: `${stats.matchedCount}/${stats.sampleCount} sampled ${stats.sampleCount === 1 ? 'booking' : 'bookings'} reached a selected or active Partner.`,
     },
     {
       label: 'Completed rate',
       value: percentLabel(stats.completedCount, stats.sampleCount),
-      helper: `${stats.completedCount}/${stats.sampleCount} sampled booking(s) completed service.`,
+      helper: `${stats.completedCount}/${stats.sampleCount} sampled ${stats.sampleCount === 1 ? 'booking' : 'bookings'} completed service.`,
     },
     {
       label: 'Avg marketplace alerts',
@@ -279,14 +280,14 @@ function buildPolicyEffectRows(input: {
       policy: input.policy,
       value: group.value,
       sampleRaw: stats.sampleCount,
-      sample: `${stats.sampleCount} booking(s)`,
+      sample: policyCountLabel(stats.sampleCount, 'booking'),
       matchedRate: percentLabel(stats.matchedCount, stats.sampleCount),
       completedRate: percentLabel(stats.completedCount, stats.sampleCount),
-      avgBackupInvites: averageLabel(stats.backupInviteCount, stats.sampleCount, 'partner(s)'),
-      avgParticipants: averageLabel(stats.participantCount, stats.sampleCount, 'partner(s)'),
+      avgBackupInvites: averageLabel(stats.backupInviteCount, stats.sampleCount, 'Partner'),
+      avgParticipants: averageLabel(stats.participantCount, stats.sampleCount, 'Partner'),
       outcomeLabel: sampleTooSmall ? 'Low sample' : needsOutcomeReview ? 'Check outcomes' : 'On track',
       outcomePill: sampleTooSmall ? 'pill-warn' : needsOutcomeReview ? 'pill-danger' : 'pill-success',
-      outcomeDetail: `${closedOutcomeCount} closed outcome(s) to review / live value now ${liveValue}.`,
+      outcomeDetail: `${policyCountLabel(closedOutcomeCount, 'closed outcome')} to review / live value now ${liveValue}.`,
       operatorRead: sampleTooSmall
         ? 'Keep collecting data before deciding. This cohort is useful for debugging, not final policy choice.'
         : belowAverage
@@ -359,9 +360,12 @@ function percentLabel(count: number, total: number) {
 
 function averageLabel(total: number, count: number, unit: string) {
   if (count <= 0) {
-    return `0 ${unit}`;
+    return policyValueLabel(0, unit);
   }
-  return `${(total / count).toLocaleString('en', { maximumFractionDigits: 1 })} ${unit}`;
+  return policyValueLabel(
+    (total / count).toLocaleString('en', { maximumFractionDigits: 1 }),
+    unit,
+  );
 }
 
 function formatDistance(meters: number) {

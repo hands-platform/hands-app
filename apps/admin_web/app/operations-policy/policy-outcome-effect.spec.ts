@@ -131,16 +131,16 @@ describe('policy outcome effect', () => {
       {
         label: 'Matched rate',
         value: '67%',
-        helper: '2/3 sampled booking(s) reached a selected or active partner.',
+        helper: '2/3 sampled bookings reached a selected or active Partner.',
       },
       {
         label: 'Completed rate',
         value: '33%',
-        helper: '1/3 sampled booking(s) completed service.',
+        helper: '1/3 sampled bookings completed service.',
       },
       {
         label: 'Avg marketplace alerts',
-        value: '1.3 partner(s)',
+        value: '1.3 partners',
         helper: 'Uses stored marketplace alert traces from booking metadata, not just live partner supply.',
       },
       {
@@ -152,14 +152,14 @@ describe('policy outcome effect', () => {
     expect(
       analysis.rows.find((row) => row.policy === 'First-pick response window' && row.value === '10 min'),
     ).toMatchObject({
-      sample: '2 booking(s)',
+      sample: '2 bookings',
       matchedRate: '50%',
       completedRate: '50%',
-      avgBackupInvites: '2 partner(s)',
-      avgParticipants: '1 partner(s)',
+      avgBackupInvites: '2 Partners',
+      avgParticipants: '1 Partner',
       outcomeLabel: 'Low sample',
       outcomePill: 'pill-warn',
-      outcomeDetail: '1 closed outcome(s) to review / live value now 10 min.',
+      outcomeDetail: '1 closed outcome to review / live value now 10 min.',
     });
     expect(analysis.cards.map((card) => card.title)).toEqual([
       'Policy snapshots are measurable',

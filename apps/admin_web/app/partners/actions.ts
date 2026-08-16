@@ -213,7 +213,11 @@ export async function uploadPartnerPublicMedia(formData: FormData) {
     file: { id: string };
     storageMode: string;
     upload: { headers?: Record<string, string>; method: string; url: string };
-  }>(`/admin/partners/${providerId}/public-media/presign`, { contentType, purpose });
+  }>(`/admin/partners/${providerId}/public-media/presign`, {
+    contentType,
+    purpose,
+    sizeBytes: photo.size,
+  });
 
   try {
     if (!/^https?:\/\//u.test(presigned.upload.url)) {

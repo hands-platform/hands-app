@@ -1,0 +1,138 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Referrals":
+        - /url: /referrals/customers
+      - generic: Customer Referral Policy
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Referrals workspace":
+    - strong: Referrals
+    - generic "Referrals pages":
+      - link "Customer Referrals":
+        - /url: /referrals/customers
+      - link "Partner Referrals":
+        - /url: /referrals/partners
+      - link "Referral Cashouts":
+        - /url: /referrals/cashouts
+  - heading "Customer Referrals Policy" [level=1]
+  - paragraph: Restricted Settings for Customer Referrals. Changes require SYSTEM_POLICY access, confirmation, and an audit reason.
+  - generic "Page actions":
+    - link "Back to referral operations":
+      - /url: /referrals/customers
+  - heading "Referral policy" [level=2]
+  - paragraph: Review the current Customer Referrals values before editing. One confirmed save writes the policy and audit event together.
+  - generic: Enabled
+  - generic: Current filters
+  - generic: Reward mode
+  - strong: Commission %
+  - generic: Stored policy
+  - generic: Current filters
+  - generic: Customer percent
+  - strong: 5.00%
+  - generic: Applied only after a qualifying completed booking.
+  - generic: Pending
+  - generic: Hold period
+  - strong: 7 days
+  - generic: Wallet credit can stay pending until this window passes.
+  - generic: Current filters
+  - generic: Platform fee VAT
+  - strong: 8%
+  - generic: Removed from gross platform fee before customer referral reward calculation.
+  - generic: All records
+  - generic: Per-user cap
+  - strong: 500.000 VND
+  - generic: Maximum total referral rewards per parent account.
+  - generic: Current filters
+  - generic: Per-reward cap
+  - strong: 100.000 VND
+  - generic: Maximum liability created by one qualifying referral reward.
+  - generic: Current filters
+  - generic: Max rewarded referrals
+  - strong: "5"
+  - generic: Manual policy limit for rewardable referred accounts.
+  - form "Customer referral policy controls":
+    - generic: Policy status
+    - combobox "Policy status":
+      - option "Enabled" [selected]
+      - option "Disabled"
+    - generic: Reward percent
+    - spinbutton "Reward percent": "5"
+    - generic: Per-reward cap
+    - spinbutton "Per-reward cap": "100000"
+    - generic: Total reward cap
+    - spinbutton "Total reward cap": "500000"
+    - generic: Max rewarded referrals
+    - spinbutton "Max rewarded referrals": "5"
+    - generic: Max rewards per referred
+    - spinbutton "Max rewards per referred": "1"
+    - generic: Hold period days
+    - spinbutton "Hold period days": "7"
+    - generic: Platform fee VAT
+    - spinbutton "Platform fee VAT": "8"
+    - generic: Currency
+    - textbox "Currency" [disabled]: VND
+    - generic: Policy notes
+    - textbox "Policy notes":
+      - /placeholder: Customer Referrals policy note for operators
+      - text: Smoke policy for customer referral admin UI checks.
+    - generic: Update reason
+    - textbox "Update reason":
+      - /placeholder: Why this referral policy is being changed
+    - generic "Review current and proposed liability" [active]
+    - strong: Current policy
+    - paragraph: 5.00% of eligible platform fee; 7 day hold; 100,000 VND per reward; 500,000 VND per parent.
+    - strong: After save
+    - paragraph: The submitted reward rate, hold period, and caps replace these values after server validation.
+    - checkbox "I reviewed the current values, the replacement values, and the wallet liability impact."
+    - generic: I reviewed the current values, the replacement values, and the wallet liability impact.
+    - button "Save referral policy"
+- button "Open Next.js Dev Tools":
+- alert

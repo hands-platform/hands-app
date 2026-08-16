@@ -1,6 +1,12 @@
-import { Role } from '@prisma/client';
+import { AdminOperatorPermissionCategory, Role } from '@prisma/client';
 
 import { ChatService } from './chat.service';
+
+const ADMIN_CHAT_USER = {
+  id: 'admin-user',
+  roles: [Role.ADMIN],
+  adminPermissionCategories: [AdminOperatorPermissionCategory.BOOKINGS_DETAIL],
+};
 
 describe('ChatService access control', () => {
   it('does not allow admin access to a missing chat room', async () => {
@@ -13,8 +19,7 @@ describe('ChatService access control', () => {
 
     await expect(
       service.canAccessChatRoom('missing-room', {
-        id: 'admin-user',
-        roles: [Role.ADMIN],
+        ...ADMIN_CHAT_USER,
       }),
     ).resolves.toBe(false);
 
@@ -41,10 +46,32 @@ describe('ChatService access control', () => {
 
     await expect(
       service.canAccessChatRoom('chat-room-1', {
-        id: 'admin-user',
-        roles: [Role.ADMIN],
+        ...ADMIN_CHAT_USER,
       }),
     ).resolves.toBe(true);
+  });
+
+  it('denies an Admin operator without booking-detail permission', async () => {
+    const prisma = {
+      chatRoom: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'chat-room-1',
+          booking: {
+            customerProfileId: 'customer-1',
+            selectedProviderId: 'partner-1',
+          },
+        }),
+      },
+    };
+    const service = new ChatService(prisma as never);
+
+    await expect(
+      service.canAccessChatRoom('chat-room-1', {
+        id: 'support-only-admin',
+        roles: [Role.ADMIN],
+        adminPermissionCategories: [AdminOperatorPermissionCategory.CUSTOMERS],
+      }),
+    ).resolves.toBe(false);
   });
 
   it('allows only the customer and final selected partner to access a booking chat room', async () => {
@@ -184,7 +211,7 @@ describe('ChatService message validation', () => {
     await expect(
       service.createMessage(
         'chat-room-1',
-        { id: 'admin-user', roles: [Role.ADMIN] },
+        ADMIN_CHAT_USER,
         { text: 'x'.repeat(2001) },
       ),
     ).rejects.toThrow('Message body must be 2000 characters or fewer');
@@ -212,7 +239,7 @@ describe('ChatService message validation', () => {
     await expect(
       service.createMessage(
         'chat-room-1',
-        { id: 'admin-user', roles: [Role.ADMIN] },
+        ADMIN_CHAT_USER,
         {
           text: 'Please review this attachment',
           attachments: [{ id: 'file-1', note: 'x'.repeat(5000) }],
@@ -246,7 +273,7 @@ describe('ChatService message validation', () => {
     await expect(
       service.createMessage(
         'chat-room-1',
-        { id: 'admin-user', roles: [Role.ADMIN] },
+        ADMIN_CHAT_USER,
         {
           text: 'Please review this attachment',
           attachments: [{ id: 'file-1', url: 'https://attacker.example/file' }],
@@ -281,7 +308,7 @@ describe('ChatService message validation', () => {
     await expect(
       service.createMessage(
         'chat-room-1',
-        { id: 'admin-user', roles: [Role.ADMIN] },
+        ADMIN_CHAT_USER,
         {
           text: 'Please review this attachment',
           attachments: [{ id: 'another-user-file' }],
@@ -325,7 +352,7 @@ describe('ChatService message validation', () => {
     await expect(
       service.createMessage(
         'chat-room-1',
-        { id: 'admin-user', roles: [Role.ADMIN] },
+        ADMIN_CHAT_USER,
         {
           text: 'Please review this attachment',
           attachments: [{ id: 'file-1' }],

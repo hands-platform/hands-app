@@ -32,6 +32,7 @@ export function bookingCreateMetadata(input: {
   bookingGate: Prisma.InputJsonValue;
 }): Prisma.InputJsonObject {
   return {
+    dataOrigin: 'PRODUCTION',
     matchingPolicy: bookingMatchingPolicySnapshot(input.policy),
     bookingGate: input.bookingGate,
   };

@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import {
+  AdminUserProvenance,
   AdminOperatorPermissionCategory,
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
@@ -126,7 +127,17 @@ try {
   process.exitCode = 1;
 } finally {
   await stopApi();
-  await cleanup().catch(() => undefined);
+  try {
+    await cleanup();
+  } catch (cleanupError) {
+    console.error(JSON.stringify({
+      ok: false,
+      phase: 'cleanup',
+      error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+      residualFixtureIds: Object.values(ids),
+    }, null, 2));
+    process.exitCode = 1;
+  }
   await prisma.$disconnect();
 }
 
@@ -205,12 +216,23 @@ async function waitForHealth() {
 async function seed() {
   await prisma.user.createMany({
     data: [
-      { id: ids.actor, phone: smokePhone('01'), fullName: 'Payment Smoke Actor', roles: [Role.ADMIN] },
+      {
+        id: ids.actor,
+        phone: smokePhone('01'),
+        fullName: 'Payment Smoke Actor',
+        roles: [Role.ADMIN],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'PAYMENT_LIFECYCLE_SMOKE',
+        fixtureRunId: runId,
+      },
       {
         id: ids.approver,
         phone: smokePhone('02'),
         fullName: 'Payment Smoke Approver',
         roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'PAYMENT_LIFECYCLE_SMOKE',
+        fixtureRunId: runId,
       },
       {
         id: ids.customerUser,
@@ -292,8 +314,12 @@ async function captureMomo() {
   };
   const accepted = await request('/payments/MOMO/callback', { method: 'POST', body });
   const replay = await request('/payments/MOMO/callback', { method: 'POST', body });
-  assertCondition(accepted.payment?.status === PaymentStatus.CAPTURED && accepted.replay === false, 'MoMo callback was not captured.');
-  assertCondition(replay.payment?.status === PaymentStatus.CAPTURED && replay.replay === true, 'MoMo replay was not idempotent.');
+  const storedPayment = await prisma.payment.findUniqueOrThrow({ where: { id: fixture.paymentId } });
+  assertCondition(
+    accepted.ok === true && accepted.replay === false && storedPayment.status === PaymentStatus.CAPTURED,
+    'MoMo callback was not captured.',
+  );
+  assertCondition(replay.ok === true && replay.replay === true, 'MoMo replay was not idempotent.');
 }
 
 async function captureVnpay() {

@@ -1,4 +1,16 @@
 export type NotificationDataScope = 'production' | 'synthetic' | 'unknown';
+export type NotificationDeliveryIntent = 'IN_APP_ONLY' | 'PUSH' | 'PUSH_AND_IN_APP';
+
+export function notificationDataWithDeliveryContract(
+  data: unknown,
+  deliveryIntent: NotificationDeliveryIntent,
+  nodeEnv = process.env.NODE_ENV,
+) {
+  return {
+    ...notificationDataWithRuntimeScope(data, nodeEnv),
+    deliveryIntent,
+  };
+}
 
 export function notificationDataWithRuntimeScope(data: unknown, nodeEnv = process.env.NODE_ENV) {
   const record = data && typeof data === 'object' && !Array.isArray(data)

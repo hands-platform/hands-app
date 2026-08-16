@@ -25,7 +25,7 @@ describe('Admin calendar events route', () => {
     process.env = {
       ...process.env,
       ADMIN_WEB_ALLOW_DEV_REALTIME_TOKEN: undefined,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       NODE_ENV: 'production',
     };
     const { POST } = await import('./route');
@@ -33,6 +33,7 @@ describe('Admin calendar events route', () => {
     const response = await POST(
       new Request('http://localhost/api/admin/calendar-events', {
         body: JSON.stringify({ title: 'Finance closeout' }),
+        headers: { origin: 'http://localhost' },
         method: 'POST',
       }),
     );
@@ -49,7 +50,7 @@ describe('Admin calendar events route', () => {
     process.env = {
       ...process.env,
       ADMIN_WEB_ALLOW_DEV_REALTIME_TOKEN: undefined,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       NODE_ENV: 'production',
     };
     const { GET } = await import('./route');
@@ -62,7 +63,7 @@ describe('Admin calendar events route', () => {
   });
 
   it('forwards only bounded calendar range query parameters for a signed operator', async () => {
-    const sessionSecret = 'test-admin-session-secret';
+    const sessionSecret = 'test-admin-session-secret-with-32-chars';
     process.env = {
       ...process.env,
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
@@ -97,7 +98,7 @@ describe('Admin calendar events route', () => {
   });
 
   it('creates persistent calendar events with the current operator identity', async () => {
-    const sessionSecret = 'test-admin-session-secret';
+    const sessionSecret = 'test-admin-session-secret-with-32-chars';
     process.env = {
       ...process.env,
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
@@ -131,7 +132,10 @@ describe('Admin calendar events route', () => {
           tags: ['finance'],
           title: 'Finance closeout',
         }),
-        headers: { cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookie}` },
+        headers: {
+          cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookie}`,
+          origin: 'http://localhost',
+        },
         method: 'POST',
       }),
     );

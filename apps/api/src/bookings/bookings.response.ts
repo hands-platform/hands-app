@@ -61,6 +61,7 @@ const PARTNER_OPEN_BOOKING_PRIVATE_KEYS = new Set([
   'customerProfile',
   'customerProfileId',
   'customerUserId',
+  'participants',
   'user',
   'userId',
 ]);
@@ -391,7 +392,7 @@ function coarseAddressPreview(value: unknown) {
     .map((part) => part.trim())
     .filter(Boolean);
   if (textParts.length <= 1) {
-    return textParts[0] ?? null;
+    return null;
   }
   return textParts.slice(1, 4).join(', ');
 }

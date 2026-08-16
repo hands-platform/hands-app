@@ -1,0 +1,314 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Insights":
+        - /url: /marketing-analytics
+      - generic: Marketing Analytics
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Insights workspace":
+    - strong: Insights
+    - generic "Insights pages":
+      - link "Marketing Analytics":
+        - /url: /marketing-analytics
+      - link "Customer Usage":
+        - /url: /usage-overview
+  - heading "Marketing Analytics" [level=1]
+  - paragraph: New-customer acquisition cohort, source, campaign, coupon, and spend performance from stored HANDS records.
+  - generic "Marketing workspace view":
+    - link "Overview":
+      - /url: /marketing-analytics?range=30d
+    - link "Campaigns & spend":
+      - /url: /marketing-analytics?range=30d&view=campaigns
+    - link "Attribution quality":
+      - /url: /marketing-analytics?range=30d&view=attribution
+    - link "Coupons":
+      - /url: /marketing-analytics?range=30d&view=coupons
+  - heading "Marketing filters" [level=2]
+  - paragraph: Only Range applies to coupon results. Source, platform, campaign, and region do not filter coupons.
+  - generic: Last 30 days
+  - generic: Signup cohort
+  - generic: "Spend source: manual records"
+  - text: Generated
+  - time: 12 Aug 2026, 16:59
+  - generic: Range
+  - generic "Range":
+    - link "Today":
+      - /url: /marketing-analytics?range=today&view=coupons
+    - link "Yesterday":
+      - /url: /marketing-analytics?range=yesterday&view=coupons
+    - link "7 days":
+      - /url: /marketing-analytics?range=7d&view=coupons
+    - link "30 days":
+      - /url: /marketing-analytics?range=30d&view=coupons
+  - generic "Active marketing filters":
+    - generic: "View: Coupons · Range: 30 days"
+    - link "Reset range":
+      - /url: /marketing-analytics?range=7d&view=coupons
+    - link "Clear all":
+      - /url: /marketing-analytics?range=7d&view=coupons
+  - region "Coupon checkout performance":
+    - heading "Coupon checkout performance" [level=2]
+    - paragraph: Booking-created cohort for the selected range. Completed conversion excludes cancelled and refunded bookings; expense, tax, and settlement evidence remain in Coupon Finance.
+    - generic: "Scope: selected range only"
+    - link "Coupon operations":
+      - /url: /coupons
+    - link "Coupon finance":
+      - /url: /finance-tax/coupon-finance
+    - region "Coupon marketing metrics":
+      - paragraph: Coupon checkouts
+      - generic: "Coupon checkouts:"
+      - text: "33"
+      - generic: Bookings created with a coupon code in this range.
+      - paragraph: Completed
+      - generic: "Completed:"
+      - text: "0"
+      - generic: 0% of coupon checkout bookings.
+      - paragraph: Outcome exceptions
+      - generic: "Outcome exceptions:"
+      - text: "36"
+      - generic: 33 cancelled / 3 refunded.
+      - paragraph: Realized discount
+      - generic: "Realized discount:"
+      - text: 0 VND
+      - generic: Average 0 VND per completed booking.
+      - paragraph: Completed booking value
+      - generic: "Completed booking value:"
+      - text: 0 VND
+      - generic: Completed coupon booking value after checkout discount.
+    - heading "Coupon code performance" [level=2]
+    - paragraph: Server-paged coupon code outcomes for the selected booking-created cohort.
+    - generic: Showing 10 / 33
+    - region "Coupon checkout performance table":
+      - table:
+        - rowgroup:
+          - row "Coupon State Checkouts Completed Cancelled Refunded Conversion Realized discount Booking value Last checkout":
+            - columnheader "Coupon"
+            - columnheader "State"
+            - columnheader "Checkouts"
+            - columnheader "Completed"
+            - columnheader "Cancelled"
+            - columnheader "Refunded"
+            - columnheader "Conversion"
+            - columnheader "Realized discount"
+            - columnheader "Booking value"
+            - columnheader "Last checkout"
+        - rowgroup:
+          - row "SMOKE1785768300902 Live 1 0 1 0 0% 0 VND 0 VND 3 Aug 2026, 21:45":
+            - cell "SMOKE1785768300902":
+              - link "SMOKE1785768300902":
+                - /url: /coupons?q=SMOKE1785768300902
+            - cell "Live":
+              - generic: Live
+            - cell "1"
+            - cell "0"
+            - cell "1"
+            - cell "0"
+            - cell "0%"
+            - cell "0 VND"
+            - cell "0 VND"
+            - cell "3 Aug 2026, 21:45":
+              - time: 3 Aug 2026, 21:45
+          - row "SMOKE1785766964294 Live 1 0 1 0 0% 0 VND 0 VND 3 Aug 2026, 21:22":
+            - cell "SMOKE1785766964294":
+              - link "SMOKE1785766964294":
+                - /url: /coupons?q=SMOKE1785766964294
+            - cell "Live":
+              - generic: Live
+            - cell "1"
+            - cell "0"
+            - cell "1"
+            - cell "0"
+            - cell "0%"
+            - cell "0 VND"
+            - cell "0 VND"
+            - cell "3 Aug 2026, 21:22":
+              - time: 3 Aug 2026, 21:22
+          - row "SMOKE1785765141174 Live 1 0 1 0 0% 0 VND 0 VND 3 Aug 2026, 20:52":
+            - cell "SMOKE1785765141174":
+              - link "SMOKE1785765141174":
+                - /url: /coupons?q=SMOKE1785765141174
+            - cell "Live":
+              - generic: Live
+            - cell "1"
+            - cell "0"
+            - cell "1"
+            - cell "0"
+            - cell "0%"
+            - cell "0 VND"
+            - cell "0 VND"
+            - cell "3 Aug 2026, 20:52":
+              - time: 3 Aug 2026, 20:52
+          - row "SMOKE1785759905908 Live 1 0 1 0 0% 0 VND 0 VND 3 Aug 2026, 19:25":
+            - cell "SMOKE1785759905908":
+              - link "SMOKE1785759905908":
+                - /url: /coupons?q=SMOKE1785759905908
+            - cell "Live":
+              - generic: Live
+            - cell "1"
+            - cell "0"
+            - cell "1"
+            - cell "0"
+            - cell "0%"
+            - cell "0 VND"
+            - cell "0 VND"
+            - cell "3 Aug 2026, 19:25":
+              - time: 3 Aug 2026, 19:25
+          - row "SMOKE1785758400009 Live 1 0 1 0 0% 0 VND 0 VND 3 Aug 2026, 19:00":
+            - cell "SMOKE1785758400009":
+              - link "SMOKE1785758400009":
+                - /url: /coupons?q=SMOKE1785758400009
+            - cell "Live":
+              - generic: Live
+            - cell "1"
+            - cell "0"
+            - cell "1"
+            - cell "0"
+            - cell "0%"
+            - cell "0 VND"
+            - cell "0 VND"
+            - cell "3 Aug 2026, 19:00":
+              - time: 3 Aug 2026, 19:00
+          - row "SMOKE1785757115223 Live 1 0 1 0 0% 0 VND 0 VND 3 Aug 2026, 18:38":
+            - cell "SMOKE1785757115223":
+              - link "SMOKE1785757115223":
+                - /url: /coupons?q=SMOKE1785757115223
+            - cell "Live":
+              - generic: Live
+            - cell "1"
+            - cell "0"
+            - cell "1"
+            - cell "0"
+            - cell "0%"
+            - cell "0 VND"
+            - cell "0 VND"
+            - cell "3 Aug 2026, 18:38":
+              - time: 3 Aug 2026, 18:38
+          - row "SMOKE1785756990924 Live 1 0 1 0 0% 0 VND 0 VND 3 Aug 2026, 18:36":
+            - cell "SMOKE1785756990924":
+              - link "SMOKE1785756990924":
+                - /url: /coupons?q=SMOKE1785756990924
+            - cell "Live":
+              - generic: Live
+            - cell "1"
+            - cell "0"
+            - cell "1"
+            - cell "0"
+            - cell "0%"
+            - cell "0 VND"
+            - cell "0 VND"
+            - cell "3 Aug 2026, 18:36":
+              - time: 3 Aug 2026, 18:36
+          - row "SMOKE1785756880425 Live 1 0 1 0 0% 0 VND 0 VND 3 Aug 2026, 18:34":
+            - cell "SMOKE1785756880425":
+              - link "SMOKE1785756880425":
+                - /url: /coupons?q=SMOKE1785756880425
+            - cell "Live":
+              - generic: Live
+            - cell "1"
+            - cell "0"
+            - cell "1"
+            - cell "0"
+            - cell "0%"
+            - cell "0 VND"
+            - cell "0 VND"
+            - cell "3 Aug 2026, 18:34":
+              - time: 3 Aug 2026, 18:34
+          - row "SMOKE1785756698401 Live 1 0 1 0 0% 0 VND 0 VND 3 Aug 2026, 18:31":
+            - cell "SMOKE1785756698401":
+              - link "SMOKE1785756698401":
+                - /url: /coupons?q=SMOKE1785756698401
+            - cell "Live":
+              - generic: Live
+            - cell "1"
+            - cell "0"
+            - cell "1"
+            - cell "0"
+            - cell "0%"
+            - cell "0 VND"
+            - cell "0 VND"
+            - cell "3 Aug 2026, 18:31":
+              - time: 3 Aug 2026, 18:31
+          - row "SMOKE1785756618996 Live 1 0 1 0 0% 0 VND 0 VND 3 Aug 2026, 18:30":
+            - cell "SMOKE1785756618996":
+              - link "SMOKE1785756618996":
+                - /url: /coupons?q=SMOKE1785756618996
+            - cell "Live":
+              - generic: Live
+            - cell "1"
+            - cell "0"
+            - cell "1"
+            - cell "0"
+            - cell "0%"
+            - cell "0 VND"
+            - cell "0 VND"
+            - cell "3 Aug 2026, 18:30":
+              - time: 3 Aug 2026, 18:30
+    - generic: Showing 1 to 10 of 33 entries
+    - navigation "Coupon performance pagination":
+      - generic "First page":
+      - generic "Previous page":
+      - link "Page 1":
+        - /url: /marketing-analytics?range=30d&view=coupons&couponPerformance=1
+        - text: "1"
+      - link "Page 2":
+        - /url: /marketing-analytics?range=30d&view=coupons&couponPerformance=1&couponPage=2
+        - text: "2"
+      - link "Page 3":
+        - /url: /marketing-analytics?range=30d&view=coupons&couponPerformance=1&couponPage=3
+        - text: "3"
+      - link "Page 4":
+        - /url: /marketing-analytics?range=30d&view=coupons&couponPerformance=1&couponPage=4
+        - text: "4"
+      - link "Next page":
+        - /url: /marketing-analytics?range=30d&view=coupons&couponPerformance=1&couponPage=2
+      - link "Last page":
+        - /url: /marketing-analytics?range=30d&view=coupons&couponPerformance=1&couponPage=4
+- alert

@@ -11,28 +11,24 @@ import { HandsSiteFooter, HandsSiteHeader } from './hands-site-chrome';
 import { PartnerRecruitmentPage } from './partner-recruitment-page';
 
 describe('HandsHomePage', () => {
-  it('renders the complete Korean launch-page structure', () => {
+  it('keeps the Korean navigation and renders the Creative Wellness clone', () => {
     const html = renderToStaticMarkup(<HandsHomePage />);
 
     expect(html).toContain('HANDS 마사지 테라피스트');
-    expect(html).toContain('이용 방법');
-    expect(html).toContain('안전과 신뢰');
-    expect(html).toContain('자주 묻는 질문');
-    expect(html).toContain('Wellness, wherever you are.');
-    expect(html).toContain('회사 소개');
+    expect(html).toContain('새로운 소식');
+    expect(html).toContain('마사지 테라피스트 지원');
+    expect(html).toContain('Elite Personal');
+    expect(html).toContain('Stronger Together');
+    expect(html).toContain('Real human connection drives real results');
     expect(html).toContain('hero-video-card');
     expect(html).toContain('how-showcase');
     expect(html).toContain('customer-stories-section');
-    expect(html).toContain('CUSTOMER STORIES');
-    expect(html).toContain('분명한 예약 과정');
-    expect(html).toContain('home-final-cta');
-    expect(html).toContain('내 일상에 맞는 웰니스 마사지 테라피스트를 만나보세요.');
-    expect(html).toContain('faq-media');
-    expect(html).not.toContain('app-section');
-    expect(html).not.toContain('join-section');
-    expect(html).not.toContain('safety-section');
-    expect(html).not.toContain('download-section');
-    expect(html).toContain('id="download"');
+    expect(html).toContain('Testimonials');
+    expect(html).toContain('Built on the idea that human-to-human');
+    expect(html).toContain('The right investment');
+    expect(html).toContain('Expert coaching made for your real-world lifestyle');
+    expect(html).not.toContain('home-final-cta');
+    expect(html).not.toContain('id="download"');
   });
 
   it('renders Japanese navigation and launch copy', () => {

@@ -56,6 +56,22 @@ void main() {
     expect(intent.hasBooking, isFalse);
   });
 
+  test('customer manual Push allowlist destinations route without required ids', () {
+    for (final destination in ['notificationCenter', 'booking']) {
+      final intent = PushNotificationOpenIntent.fromData({
+        'destination': destination,
+        'source': 'admin_manual_push',
+      });
+
+      expect(
+        intent.destination,
+        destination == 'booking'
+            ? PushNotificationOpenDestination.booking
+            : PushNotificationOpenDestination.notificationCenter,
+      );
+    }
+  });
+
   test('customer notification falls back to notification center', () {
     final intent = PushNotificationOpenIntent.fromData({
       'bookingId': ' ',

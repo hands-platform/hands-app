@@ -1,0 +1,155 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - generic: Website Content
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to light mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - heading "Website Content" [level=1]
+  - paragraph: Operate Live routes, Draft changes, publishing readiness and translation coverage.
+  - generic "Page actions":
+    - link "New page":
+      - /url: /website-content?view=pages&q=%2Fcompany&statusFilter=all&mode=new
+  - generic: Active revisions
+  - paragraph: Live
+  - generic: "Live:"
+  - text: "0"
+  - generic: Routes currently available to the public.
+  - generic: Unpublished work
+  - paragraph: Draft changes
+  - generic: "Draft changes:"
+  - text: "85"
+  - generic: Routes with an editable Draft revision.
+  - generic: Blocked Drafts
+  - paragraph: Needs attention
+  - generic: "Needs attention:"
+  - text: "85"
+  - generic: Drafts that do not pass publishing readiness.
+  - generic: Required languages
+  - paragraph: Missing translations
+  - generic: "Missing translations:"
+  - text: "0"
+  - generic: Page routes missing one or more KO, EN, VI, JA or ZH versions.
+  - generic: Last 7 days
+  - paragraph: Recently published
+  - generic: "Recently published:"
+  - text: "0"
+  - generic: Routes activated during the latest seven days.
+  - navigation "Website content type":
+    - link "Pages":
+      - /url: /website-content?view=pages
+    - link "News":
+      - /url: /website-content?view=news
+  - heading "Filters" [level=2]
+  - paragraph: Search and pagination run on the server; section content is loaded only after opening a route.
+  - generic: Name or route
+  - searchbox "Name or route": /company
+  - generic: Website
+  - combobox "Website":
+    - option "All websites" [selected]
+    - option "hands.vn"
+    - option "join.hands.vn"
+  - generic: Language
+  - combobox "Language":
+    - option "All languages" [selected]
+    - option "VI"
+    - option "KO"
+    - option "EN"
+    - option "JA"
+    - option "ZH"
+  - generic: Status
+  - combobox "Status":
+    - option "All states" [selected]
+    - option "Live"
+    - option "Draft changes"
+    - option "Needs attention"
+  - button "Apply"
+  - link "Clear filters":
+    - /url: /website-content?view=pages
+  - heading "Managed pages" [level=2]
+  - generic: 1 route groups
+  - region "Website route groups":
+    - table:
+      - rowgroup:
+        - row "Route Website KO EN VI JA ZH":
+          - columnheader "Route"
+          - columnheader "Website"
+          - columnheader "KO"
+          - columnheader "EN"
+          - columnheader "VI"
+          - columnheader "JA"
+          - columnheader "ZH"
+      - rowgroup:
+        - row "MAIN EN /company /company hands.vn Needs content Needs content Needs content Needs content Needs content":
+          - cell "MAIN EN /company /company":
+            - strong: MAIN EN /company
+            - code: /company
+          - cell "hands.vn"
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&q=%2Fcompany&statusFilter=all&pageId=cms6bst4q0014vynocgzgllk3&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&q=%2Fcompany&statusFilter=all&pageId=cms6bst76001uvynoowzhk07p&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&q=%2Fcompany&statusFilter=all&pageId=cms6bst26000evynoo0ue9bnb&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&q=%2Fcompany&statusFilter=all&pageId=cms6bst9h002kvynofr50tct0&workspace=overview
+              - generic: Needs content
+          - cell "Needs content":
+            - link "Needs content":
+              - /url: /website-content?view=pages&q=%2Fcompany&statusFilter=all&pageId=cms6bstbp003avyno07ymvhmy&workspace=overview
+              - generic: Needs content
+  - generic: Showing 1 to 1 of 1 route groups
+- alert

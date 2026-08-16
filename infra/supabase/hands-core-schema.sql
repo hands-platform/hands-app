@@ -121,7 +121,8 @@ begin
     'PROVIDER_VERIFICATION',
     'PROVIDER_GALLERY',
     'CHAT_ATTACHMENT',
-    'PROFILE_IMAGE'
+    'PROFILE_IMAGE',
+    'FINANCE_EVIDENCE'
   );
 exception
   when duplicate_object then null;
@@ -646,27 +647,22 @@ create policy "customer selected locations owner"
   with check (customer_id = auth.uid());
 
 drop policy if exists "bookings participant read" on public.bookings;
-create policy "bookings participant read"
+drop policy if exists "bookings owner and selected Partner read" on public.bookings;
+create policy "bookings owner and selected Partner read"
   on public.bookings for select
   using (
     customer_id = auth.uid()
     or public.is_admin()
     or exists (
       select 1 from public.providers p
-      where p.id in (preferred_provider_id, selected_provider_id)
-        and p.user_id = auth.uid()
-    )
-    or exists (
-      select 1
-      from public.booking_participants bp
-      join public.providers p on p.id = bp.provider_id
-      where bp.booking_id = bookings.id
+      where p.id = selected_provider_id
         and p.user_id = auth.uid()
     )
   );
 
 drop policy if exists "booking address snapshots participant read" on public.booking_address_snapshots;
-create policy "booking address snapshots participant read"
+drop policy if exists "booking address snapshots owner and selected Partner read" on public.booking_address_snapshots;
+create policy "booking address snapshots owner and selected Partner read"
   on public.booking_address_snapshots for select
   using (
     customer_id = auth.uid()
@@ -674,15 +670,8 @@ create policy "booking address snapshots participant read"
     or exists (
       select 1
       from public.bookings b
-      join public.providers p on p.id in (b.preferred_provider_id, b.selected_provider_id)
+      join public.providers p on p.id = b.selected_provider_id
       where b.id = booking_id
-        and p.user_id = auth.uid()
-    )
-    or exists (
-      select 1
-      from public.booking_participants bp
-      join public.providers p on p.id = bp.provider_id
-      where bp.booking_id = booking_address_snapshots.booking_id
         and p.user_id = auth.uid()
     )
   );
@@ -755,9 +744,17 @@ create policy "provider payout batches owner read"
   );
 
 drop policy if exists "reviews public read" on public.reviews;
-create policy "reviews public read"
+drop policy if exists "reviews owner and subject read" on public.reviews;
+create policy "reviews owner and subject read"
   on public.reviews for select
-  using (status = 'PUBLISHED');
+  using (
+    public.is_admin()
+    or customer_id = auth.uid()
+    or exists (
+      select 1 from public.providers p
+      where p.id = provider_id and p.user_id = auth.uid()
+    )
+  );
 
 drop policy if exists "notifications owner read" on public.notifications;
 create policy "notifications owner read"
@@ -797,7 +794,15 @@ create policy "notification deliveries owner read"
 drop policy if exists "files owner read" on public.files;
 create policy "files owner read"
   on public.files for select
-  using (visibility = 'PUBLIC' or owner_id = auth.uid() or public.is_admin());
+  using (
+    owner_id = auth.uid()
+    or public.is_admin()
+    or (
+      visibility = 'PUBLIC'
+      and upload_status = 'UPLOADED'
+      and review_status = 'APPROVED'
+    )
+  );
 
 drop policy if exists "location snapshots participant read" on public.location_snapshots;
 create policy "location snapshots participant read"
@@ -1265,6 +1270,7 @@ grant usage, select on all sequences in schema public to service_role;
 revoke insert, update, delete on all tables in schema public from anon, authenticated;
 revoke usage, select on all sequences in schema public from anon, authenticated;
 revoke select on table public.providers, public.provider_locations from anon;
+revoke select on table public.reviews from anon;
 
 grant select on table
   public.profiles,
@@ -1314,6 +1320,5 @@ grant usage, select on all sequences in schema public to authenticated;
 grant select on table
   public.services,
   public.provider_services,
-  public.reviews,
   public.coupons
 to anon;

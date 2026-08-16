@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adminWebSessionCookieSecretFromEnv } from './lib/admin-session-secret';
 
 const ADMIN_WEB_SESSION_COOKIE_NAME = 'hands_admin_session';
 const NO_STORE_HEADERS = {
@@ -14,8 +15,23 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
-  if (await hasValidAdminWebSession(request)) {
-    return NextResponse.next({ request: { headers: requestHeaders } });
+  const cookieSession = await getValidAdminWebCookieSession(request);
+  if (cookieSession) {
+    const serverSession = await getServerAdminSessionState(request);
+    if (serverSession.valid) {
+      if (serverSession.mfaEnrollmentRequired && pathname !== '/admin-operators') {
+        if (isBrowserFacingApi(pathname)) {
+          return NextResponse.json(
+            { error: 'MFA_ENROLLMENT_REQUIRED' },
+            { headers: NO_STORE_HEADERS, status: 403 },
+          );
+        }
+        return NextResponse.redirect(new URL('/admin-operators?mfa=setup', request.url), {
+          headers: NO_STORE_HEADERS,
+        });
+      }
+      return NextResponse.next({ request: { headers: requestHeaders } });
+    }
   }
 
   if (isBrowserFacingApi(pathname)) {
@@ -31,8 +47,8 @@ export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|robots.txt|.*\\.(?:png|jpg|jpeg|gif|svg|ico|css|js|map|txt|webmanifest)$).*)'],
 };
 
-async function hasValidAdminWebSession(request: NextRequest) {
-  const secret = process.env.ADMIN_WEB_SESSION_COOKIE_SECRET?.trim();
+async function getValidAdminWebCookieSession(request: NextRequest) {
+  const secret = adminWebSessionCookieSecretFromEnv();
   if (!secret) {
     return false;
   }
@@ -65,19 +81,48 @@ async function verifyAdminWebSessionCookieValue(cookieValue: string, secret: str
       role?: unknown;
       sessionVersion?: unknown;
       sub?: unknown;
+      mfaEnrollmentRequired?: unknown;
     };
 
-    return (
+    const valid =
       payload.role === 'ADMIN' &&
       payload.sessionVersion === 1 &&
       typeof payload.sub === 'string' &&
       typeof payload.iat === 'number' &&
       typeof payload.exp === 'number' &&
       typeof payload.jti === 'string' &&
-      payload.exp > Math.floor(nowMs / 1000)
-    );
+      (payload.mfaEnrollmentRequired === undefined || typeof payload.mfaEnrollmentRequired === 'boolean') &&
+      payload.exp > Math.floor(nowMs / 1000);
+    return valid
+      ? {
+          mfaEnrollmentRequired: payload.mfaEnrollmentRequired === true,
+        }
+      : null;
   } catch {
-    return false;
+    return null;
+  }
+}
+
+async function getServerAdminSessionState(request: NextRequest) {
+  try {
+    const response = await fetch(new URL('/api/admin/session/me', request.url), {
+      cache: 'no-store',
+      headers: { cookie: request.headers.get('cookie') ?? '' },
+      redirect: 'manual',
+    });
+    if (!response.ok) {
+      return { valid: false, mfaEnrollmentRequired: false };
+    }
+    const body = (await response.json()) as {
+      authenticated?: unknown;
+      mfaEnrollmentRequired?: unknown;
+    };
+    return {
+      valid: body.authenticated === true,
+      mfaEnrollmentRequired: body.mfaEnrollmentRequired === true,
+    };
+  } catch {
+    return { valid: false, mfaEnrollmentRequired: false };
   }
 }
 

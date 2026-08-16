@@ -6,6 +6,7 @@ import {
   adminWalletGateBlocksFinalGate,
 } from '../../lib/operations-policy';
 import { policyDisplayValue } from './policy-value-display';
+import { policyCountLabel } from './policy-copy';
 
 export type PolicyRecommendationReview = {
   readonly warningCount: number;
@@ -236,8 +237,8 @@ function defaultPolicyRecommendationPosture(
     status: setting.enforced ? 'Owner choice' : 'Planning choice',
     detail: 'This differs from the recommended baseline and should stay visible in weekly operations review.',
     operatorAction: setting.enforced
-      ? `${context.activeBookingCount} active booking(s) may need operator awareness.`
-      : 'This is not enforced yet; keep the decision documented before automation.',
+      ? `${policyCountLabel(context.activeBookingCount, 'active booking')} may need operator awareness.`
+      : 'This decision is documented but has no active operational effect yet.',
     alignedAction: 'Current value matches the recommended policy posture.',
     className: setting.enforced ? 'ops-task-pending' : 'ops-task-done',
     pillClass: setting.enforced ? 'pill-warn' : 'pill-info',
@@ -246,7 +247,7 @@ function defaultPolicyRecommendationPosture(
 
 function policyRecommendationLiveContext(context: PolicyRecommendationContext) {
   return context.openMatchingCount > 0
-    ? `${context.openMatchingCount} open matching booking(s) may feel this policy while active.`
+    ? `${policyCountLabel(context.openMatchingCount, 'open matching booking')} may be affected while active.`
     : 'No open matching booking is currently exposed to this policy.';
 }
 

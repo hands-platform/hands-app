@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
+import { CmsPreviewBootstrap } from '../components/cms-preview-bootstrap';
+
 import './globals.css';
+import './creative-wellness.css';
 
 export const metadata: Metadata = {
   title: {
@@ -14,7 +17,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { readonly children: ReactNode }) {
   return (
     <html data-scroll-behavior="smooth" lang="ko">
-      <body>{children}</body>
+      <body>
+        <CmsPreviewBootstrap />
+        {children}
+      </body>
     </html>
   );
 }

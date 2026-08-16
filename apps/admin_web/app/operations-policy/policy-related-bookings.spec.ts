@@ -19,7 +19,7 @@ describe('policyRelatedBookingRecords', () => {
     const records = policyRelatedBookingRecords(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters, bookings);
 
     expect(records.title).toBe('Marketplace participation records');
-    expect(records.recordCount).toBe('1 record(s)');
+    expect(records.recordCount).toBe('1 record');
     expect(records.rows[0]).toEqual(
       expect.objectContaining({
         href: '/bookings/marketplace-booking-123456',

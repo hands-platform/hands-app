@@ -10,13 +10,31 @@ import {
   adminBookingListFreshnessWhere,
   adminBookingListStatusGroupWhere,
   adminBookingListWhere,
-  adminBookingExplicitFixtureMetadataWhere,
   adminBookingProductionDataWhere,
+  adminBookingUnknownOriginSql,
+  adminBookingVerifiedProductionSql,
+  adminBookingVerifiedProductionWhere,
   endOfLocalDay,
   startOfLocalDay,
 } from './admin-booking-list-query';
 
 describe('admin booking list query', () => {
+  it('uses explicit origin as the analysis authority and fails closed for unknown records', () => {
+    expect(adminBookingVerifiedProductionWhere()).toEqual({
+      AND: expect.arrayContaining([
+        { metadata: { path: ['dataOrigin'], equals: 'PRODUCTION' } },
+      ]),
+    });
+    const productionSql = adminBookingVerifiedProductionSql().strings.join(' ');
+    const unknownSql = adminBookingUnknownOriginSql().strings.join(' ');
+    expect(productionSql).toContain("= 'PRODUCTION'");
+    expect(productionSql).not.toContain('booking.id');
+    expect(productionSql).toContain("'{smoke}' IS NULL");
+    expect(productionSql).toContain("'{fixture}' IS NULL");
+    expect(productionSql).toContain('booking_customer_user."fixtureKind" IS NOT NULL');
+    expect(unknownSql).toContain("<> 'SYNTHETIC'");
+    expect(unknownSql).toContain('booking_partner_user."fixtureKind" IS NOT NULL');
+  });
   it('hides marked audit, smoke, and seed bookings from operating queues by default', () => {
     expect(adminBookingListWhere({})).toEqual(adminBookingProductionDataWhere());
     expect(adminBookingProductionDataWhere()).toEqual({
@@ -130,7 +148,7 @@ describe('admin booking list query', () => {
     });
     expect(where).toEqual({
       AND: [
-        adminBookingExplicitFixtureMetadataWhere(),
+        adminBookingVerifiedProductionWhere(),
         {
           createdAt: {
             gte: new Date('2026-07-09T17:00:00.000Z'),

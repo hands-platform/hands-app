@@ -1,0 +1,466 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Messaging":
+        - /url: /notifications
+      - generic: Notification Delivery
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Messaging workspace":
+    - strong: Messaging
+    - generic "Messaging pages":
+      - link "Notification Delivery":
+        - /url: /notifications
+      - link "Notification Templates":
+        - /url: /notifications/templates
+      - link "Push Send":
+        - /url: /notifications/push-send
+  - heading "Notification Delivery" [level=1]
+  - paragraph: Review unresolved mobile send issues and inspect delivery records.
+  - generic "Notification delivery data status":
+    - generic: History · 24h+
+    - generic: Asia/Ho_Chi_Minh
+    - generic: Generated 12 Aug 2026, 14:49
+    - button "Refresh now":
+      - text: Refresh now
+    - generic: Unknown source records · 0
+  - generic "Notification data source":
+    - link "Production":
+      - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=INVALID_ARGUMENT
+    - link "Unknown source":
+      - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=INVALID_ARGUMENT&dataScope=unknown
+    - link "Synthetic":
+      - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=INVALID_ARGUMENT&dataScope=synthetic
+  - generic "Notification Delivery mode":
+    - link "Needs action":
+      - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=INVALID_ARGUMENT&dataScope=unknown
+    - link "Delivery records":
+      - /url: /notifications?mode=records&dataScope=unknown&range=all&sort=oldest
+  - region "Delivery health":
+    - heading "Delivery health" [level=2]
+    - paragraph: Current delivery debt and 24h+ backlog stay visible together. Counts are scoped to the selected data source.
+    - generic: 4 current · 2,469 history
+    - region "Current delivery debt":
+      - paragraph: CURRENT · UNDER 24H
+      - heading "Current delivery debt" [level=3]
+      - generic: 4 signals
+      - term: Failure groups
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?dataScope=unknown
+      - term: Failed
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=failed&failureProvider=FCM&failureCode=INVALID_ARGUMENT&dataScope=unknown
+      - term: No attempt
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=no-attempt&dataScope=unknown
+      - term: No route recipients
+      - definition: "4"
+      - link "Review":
+        - /url: /notifications?issue=no-route&dataScope=unknown
+      - term: Stale routes
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=stale-route&dataScope=unknown
+    - region "Historical delivery debt":
+      - paragraph: HISTORY · 24H+
+      - heading "Historical delivery debt" [level=3]
+      - generic: Open history
+      - term: Failure groups
+      - definition: "1"
+      - link "Review":
+        - /url: /notifications?scope=history&dataScope=unknown
+      - term: Failed
+      - definition: "747"
+      - link "Review":
+        - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=INVALID_ARGUMENT&dataScope=unknown
+      - term: No attempt
+      - definition: "451"
+      - link "Review":
+        - /url: /notifications?issue=no-attempt&scope=history&dataScope=unknown
+      - term: No route recipients
+      - definition: 1,270
+      - link "Review":
+        - /url: /notifications?issue=no-route&scope=history&dataScope=unknown
+      - term: Stale routes
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=stale-route&scope=history&dataScope=unknown
+      - paragraph: "Oldest failure group: 27 Jun 2026, 03:43 · lifecycle is read-only because Notification records do not have a persistent assignment or resolution field."
+  - generic "Notification delivery issue":
+    - link "Failure groups":
+      - /url: /notifications?scope=history&dataScope=unknown
+    - link "Failed · 369 notifications":
+      - /url: /notifications?issue=failed&scope=history&dataScope=unknown
+    - link "No send attempt after 15m":
+      - /url: /notifications?issue=no-attempt&scope=history&dataScope=unknown
+    - link "No active push route":
+      - /url: /notifications?issue=no-route&scope=history&dataScope=unknown
+    - link "App route needs refresh":
+      - /url: /notifications?issue=stale-route&scope=history&dataScope=unknown
+  - generic "Notification action age scope":
+    - link "Current · under 24h":
+      - /url: /notifications?issue=failed&failureProvider=FCM&failureCode=INVALID_ARGUMENT&dataScope=unknown
+    - link "24h+ history":
+      - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=INVALID_ARGUMENT&dataScope=unknown
+    - link "All ages":
+      - /url: /notifications?issue=failed&scope=all&failureProvider=FCM&failureCode=INVALID_ARGUMENT&dataScope=unknown
+  - generic "Active failure group filter":
+    - generic: FCM · INVALID_ARGUMENT
+    - link "Clear group":
+      - /url: /notifications?issue=failed&scope=history&dataScope=unknown
+  - region "Failed":
+    - heading "Failed" [level=2]
+    - paragraph: Notifications with at least one latest failed device path. Recovered paths are excluded.
+    - generic: 369 notifications
+    - link "Open failure groups":
+      - /url: /notifications
+    - region "Notification delivery records":
+      - table:
+        - rowgroup:
+          - row "Created Recipient Notification Send status Next action":
+            - columnheader "Created"
+            - columnheader "Recipient"
+            - columnheader "Notification"
+            - columnheader "Send status"
+            - columnheader "Next action"
+        - rowgroup:
+          - 'row "27 Jun 2026, 03:43 46d ago Push route: inactive Partner Smoke Partner Smoke Partner / ••• ••• 0957 / offline Partner Account Blocked Partner account blocked Your HANDS partner account is under admin review. Open the app for details. Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:43. Primary Actions for Smoke Partner · Partner account blocked · 27 Jun 2026, 03:43 Actions for Smoke Partner · Partner account blocked · 27 Jun 2026, 03:43"':
+            - cell "27 Jun 2026, 03:43 46d ago":
+              - time: 27 Jun 2026, 03:43
+              - generic: 46d ago
+            - 'cell "Push route: inactive Partner Smoke Partner Smoke Partner / ••• ••• 0957 / offline"':
+              - generic: PS
+              - 'img "Push route: inactive"'
+              - link "Partner Smoke Partner":
+                - /url: /partners/cmqveehfy001ovyoc7vea1ht5
+              - generic: Smoke Partner / ••• ••• 0957 / offline
+            - cell "Partner Account Blocked Partner account blocked Your HANDS partner account is under admin review. Open the app for details.":
+              - generic: Partner Account Blocked
+              - strong: Partner account blocked
+              - generic: Your HANDS partner account is under admin review. Open the app for details.
+            - cell "Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:43.":
+              - generic: Failed
+              - generic: Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:43.
+              - generic "1 failed 1 attempt":
+                - strong: 1 failed
+                - generic: 1 attempt
+            - cell "Primary Actions for Smoke Partner · Partner account blocked · 27 Jun 2026, 03:43 Actions for Smoke Partner · Partner account blocked · 27 Jun 2026, 03:43":
+              - navigation "Primary Actions for Smoke Partner · Partner account blocked · 27 Jun 2026, 03:43":
+                - link "Open recipient":
+                  - /url: /partners/cmqveehfy001ovyoc7vea1ht5
+                  - generic: Open recipient
+              - button "Actions for Smoke Partner · Partner account blocked · 27 Jun 2026, 03:43":
+          - 'row "27 Jun 2026, 03:43 46d ago Push route: inactive Partner 3958 Partner 3958 / ••• ••• 3958 / offline Partner Verification Approved Verification approved You can now receive matching jobs. Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:43. Primary Actions for Partner 3958 · Verification approved · 27 Jun 2026, 03:43 Actions for Partner 3958 · Verification approved · 27 Jun 2026, 03:43"':
+            - cell "27 Jun 2026, 03:43 46d ago":
+              - time: 27 Jun 2026, 03:43
+              - generic: 46d ago
+            - 'cell "Push route: inactive Partner 3958 Partner 3958 / ••• ••• 3958 / offline"':
+              - generic: P3
+              - 'img "Push route: inactive"'
+              - link "Partner 3958":
+                - /url: /partners/cmqveehgk001tvyocgvg74dik
+              - generic: Partner 3958 / ••• ••• 3958 / offline
+            - cell "Partner Verification Approved Verification approved You can now receive matching jobs.":
+              - generic: Partner Verification Approved
+              - strong: Verification approved
+              - generic: You can now receive matching jobs.
+            - cell "Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:43.":
+              - generic: Failed
+              - generic: Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:43.
+              - generic "1 failed 1 attempt":
+                - strong: 1 failed
+                - generic: 1 attempt
+            - cell "Primary Actions for Partner 3958 · Verification approved · 27 Jun 2026, 03:43 Actions for Partner 3958 · Verification approved · 27 Jun 2026, 03:43":
+              - navigation "Primary Actions for Partner 3958 · Verification approved · 27 Jun 2026, 03:43":
+                - link "Open recipient":
+                  - /url: /partners/cmqveehgk001tvyocgvg74dik
+                  - generic: Open recipient
+              - button "Actions for Partner 3958 · Verification approved · 27 Jun 2026, 03:43":
+          - 'row "27 Jun 2026, 03:43 46d ago Push route: inactive Demo Customer ••• ••• 0001 Booking Opened Booking request sent Partner 3959 received your booking request. booking cmqveej5 / partner cmqveehh Partial delivery Some mobile deliveries succeeded while at least one delivery is still unresolved. Latest attempt 27 Jun 2026, 03:43. Primary Actions for Demo Customer · Booking request sent · 27 Jun 2026, 03:43 Actions for Demo Customer · Booking request sent · 27 Jun 2026, 03:43"':
+            - cell "27 Jun 2026, 03:43 46d ago":
+              - time: 27 Jun 2026, 03:43
+              - generic: 46d ago
+            - 'cell "Push route: inactive Demo Customer ••• ••• 0001"':
+              - generic: DC
+              - 'img "Push route: inactive"'
+              - link "Demo Customer":
+                - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+              - generic: ••• ••• 0001
+            - cell "Booking Opened Booking request sent Partner 3959 received your booking request. booking cmqveej5 / partner cmqveehh":
+              - generic: Booking Opened
+              - strong: Booking request sent
+              - generic: Partner 3959 received your booking request.
+              - generic: booking cmqveej5 / partner cmqveehh
+            - cell "Partial delivery Some mobile deliveries succeeded while at least one delivery is still unresolved. Latest attempt 27 Jun 2026, 03:43.":
+              - generic: Partial delivery
+              - generic: Some mobile deliveries succeeded while at least one delivery is still unresolved. Latest attempt 27 Jun 2026, 03:43.
+              - generic "1 failed · 1 accepted 2 attempts":
+                - strong: 1 failed · 1 accepted
+                - generic: 2 attempts
+            - cell "Primary Actions for Demo Customer · Booking request sent · 27 Jun 2026, 03:43 Actions for Demo Customer · Booking request sent · 27 Jun 2026, 03:43":
+              - navigation "Primary Actions for Demo Customer · Booking request sent · 27 Jun 2026, 03:43":
+                - link "Open recipient":
+                  - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+                  - generic: Open recipient
+              - button "Actions for Demo Customer · Booking request sent · 27 Jun 2026, 03:43":
+          - 'row "27 Jun 2026, 03:43 46d ago Push route: inactive Partner 7964 Partner 7964 / ••• ••• 7964 / offline Booking Requested New direct booking request A customer requested one of your services. booking cmqveen2 Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:43. Primary Actions for Partner 7964 · New direct booking request · 27 Jun 2026, 03:43 Actions for Partner 7964 · New direct booking request · 27 Jun 2026, 03:43"':
+            - cell "27 Jun 2026, 03:43 46d ago":
+              - time: 27 Jun 2026, 03:43
+              - generic: 46d ago
+            - 'cell "Push route: inactive Partner 7964 Partner 7964 / ••• ••• 7964 / offline"':
+              - generic: P7
+              - 'img "Push route: inactive"'
+              - link "Partner 7964":
+                - /url: /partners/cmqveehjr002nvyocs0r40p0a
+              - generic: Partner 7964 / ••• ••• 7964 / offline
+            - cell "Booking Requested New direct booking request A customer requested one of your services. booking cmqveen2":
+              - generic: Booking Requested
+              - strong: New direct booking request
+              - generic: A customer requested one of your services.
+              - generic: booking cmqveen2
+            - cell "Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:43.":
+              - generic: Failed
+              - generic: Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:43.
+              - generic "1 failed 1 attempt":
+                - strong: 1 failed
+                - generic: 1 attempt
+            - cell "Primary Actions for Partner 7964 · New direct booking request · 27 Jun 2026, 03:43 Actions for Partner 7964 · New direct booking request · 27 Jun 2026, 03:43":
+              - navigation "Primary Actions for Partner 7964 · New direct booking request · 27 Jun 2026, 03:43":
+                - link "Open recipient":
+                  - /url: /partners/cmqveehjr002nvyocs0r40p0a
+                  - generic: Open recipient
+              - button "Actions for Partner 7964 · New direct booking request · 27 Jun 2026, 03:43":
+          - 'row "27 Jun 2026, 03:43 46d ago Push route: inactive Demo Customer ••• ••• 0001 Service Started Service started Your partner started the service. Continue in the matched chat if needed. booking cmqveerl Partial delivery Some mobile deliveries succeeded while at least one delivery is still unresolved. Latest attempt 27 Jun 2026, 03:43. Primary Actions for Demo Customer · Service started · 27 Jun 2026, 03:43 Actions for Demo Customer · Service started · 27 Jun 2026, 03:43"':
+            - cell "27 Jun 2026, 03:43 46d ago":
+              - time: 27 Jun 2026, 03:43
+              - generic: 46d ago
+            - 'cell "Push route: inactive Demo Customer ••• ••• 0001"':
+              - generic: DC
+              - 'img "Push route: inactive"'
+              - link "Demo Customer":
+                - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+              - generic: ••• ••• 0001
+            - cell "Service Started Service started Your partner started the service. Continue in the matched chat if needed. booking cmqveerl":
+              - generic: Service Started
+              - strong: Service started
+              - generic: Your partner started the service. Continue in the matched chat if needed.
+              - generic: booking cmqveerl
+            - cell "Partial delivery Some mobile deliveries succeeded while at least one delivery is still unresolved. Latest attempt 27 Jun 2026, 03:43.":
+              - generic: Partial delivery
+              - generic: Some mobile deliveries succeeded while at least one delivery is still unresolved. Latest attempt 27 Jun 2026, 03:43.
+              - generic "1 failed · 1 accepted 2 attempts":
+                - strong: 1 failed · 1 accepted
+                - generic: 2 attempts
+            - cell "Primary Actions for Demo Customer · Service started · 27 Jun 2026, 03:43 Actions for Demo Customer · Service started · 27 Jun 2026, 03:43":
+              - navigation "Primary Actions for Demo Customer · Service started · 27 Jun 2026, 03:43":
+                - link "Open recipient":
+                  - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+                  - generic: Open recipient
+              - button "Actions for Demo Customer · Service started · 27 Jun 2026, 03:43":
+          - 'row "27 Jun 2026, 03:48 46d ago Push route: inactive Partner Smoke Partner Smoke Partner / ••• ••• 6481 / offline Partner Account Blocked Partner account blocked Your HANDS partner account is under admin review. Open the app for details. Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:48. Primary Actions for Smoke Partner · Partner account blocked · 27 Jun 2026, 03:48 Actions for Smoke Partner · Partner account blocked · 27 Jun 2026, 03:48"':
+            - cell "27 Jun 2026, 03:48 46d ago":
+              - time: 27 Jun 2026, 03:48
+              - generic: 46d ago
+            - 'cell "Push route: inactive Partner Smoke Partner Smoke Partner / ••• ••• 6481 / offline"':
+              - generic: PS
+              - 'img "Push route: inactive"'
+              - link "Partner Smoke Partner":
+                - /url: /partners/cmqvel8lg01fqvyocn6ms7p2x
+              - generic: Smoke Partner / ••• ••• 6481 / offline
+            - cell "Partner Account Blocked Partner account blocked Your HANDS partner account is under admin review. Open the app for details.":
+              - generic: Partner Account Blocked
+              - strong: Partner account blocked
+              - generic: Your HANDS partner account is under admin review. Open the app for details.
+            - cell "Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:48.":
+              - generic: Failed
+              - generic: Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:48.
+              - generic "1 failed 1 attempt":
+                - strong: 1 failed
+                - generic: 1 attempt
+            - cell "Primary Actions for Smoke Partner · Partner account blocked · 27 Jun 2026, 03:48 Actions for Smoke Partner · Partner account blocked · 27 Jun 2026, 03:48":
+              - navigation "Primary Actions for Smoke Partner · Partner account blocked · 27 Jun 2026, 03:48":
+                - link "Open recipient":
+                  - /url: /partners/cmqvel8lg01fqvyocn6ms7p2x
+                  - generic: Open recipient
+              - button "Actions for Smoke Partner · Partner account blocked · 27 Jun 2026, 03:48":
+          - 'row "27 Jun 2026, 03:48 46d ago Push route: inactive Partner 1482 Partner 1482 / ••• ••• 1482 / offline Partner Verification Approved Verification approved You can now receive matching jobs. Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:48. Primary Actions for Partner 1482 · Verification approved · 27 Jun 2026, 03:48 Actions for Partner 1482 · Verification approved · 27 Jun 2026, 03:48"':
+            - cell "27 Jun 2026, 03:48 46d ago":
+              - time: 27 Jun 2026, 03:48
+              - generic: 46d ago
+            - 'cell "Push route: inactive Partner 1482 Partner 1482 / ••• ••• 1482 / offline"':
+              - generic: P1
+              - 'img "Push route: inactive"'
+              - link "Partner 1482":
+                - /url: /partners/cmqvel8m401fvvyocia08hgls
+              - generic: Partner 1482 / ••• ••• 1482 / offline
+            - cell "Partner Verification Approved Verification approved You can now receive matching jobs.":
+              - generic: Partner Verification Approved
+              - strong: Verification approved
+              - generic: You can now receive matching jobs.
+            - cell "Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:48.":
+              - generic: Failed
+              - generic: Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:48.
+              - generic "1 failed 1 attempt":
+                - strong: 1 failed
+                - generic: 1 attempt
+            - cell "Primary Actions for Partner 1482 · Verification approved · 27 Jun 2026, 03:48 Actions for Partner 1482 · Verification approved · 27 Jun 2026, 03:48":
+              - navigation "Primary Actions for Partner 1482 · Verification approved · 27 Jun 2026, 03:48":
+                - link "Open recipient":
+                  - /url: /partners/cmqvel8m401fvvyocia08hgls
+                  - generic: Open recipient
+              - button "Actions for Partner 1482 · Verification approved · 27 Jun 2026, 03:48":
+          - 'row "27 Jun 2026, 03:48 46d ago Push route: inactive Demo Customer ••• ••• 0001 Booking Opened Booking request sent Partner 1483 received your booking request. booking cmqvela8 / partner cmqvel8m Partial delivery Some mobile deliveries succeeded while at least one delivery is still unresolved. Latest attempt 27 Jun 2026, 03:48. Primary Actions for Demo Customer · Booking request sent · 27 Jun 2026, 03:48 Actions for Demo Customer · Booking request sent · 27 Jun 2026, 03:48"':
+            - cell "27 Jun 2026, 03:48 46d ago":
+              - time: 27 Jun 2026, 03:48
+              - generic: 46d ago
+            - 'cell "Push route: inactive Demo Customer ••• ••• 0001"':
+              - generic: DC
+              - 'img "Push route: inactive"'
+              - link "Demo Customer":
+                - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+              - generic: ••• ••• 0001
+            - cell "Booking Opened Booking request sent Partner 1483 received your booking request. booking cmqvela8 / partner cmqvel8m":
+              - generic: Booking Opened
+              - strong: Booking request sent
+              - generic: Partner 1483 received your booking request.
+              - generic: booking cmqvela8 / partner cmqvel8m
+            - cell "Partial delivery Some mobile deliveries succeeded while at least one delivery is still unresolved. Latest attempt 27 Jun 2026, 03:48.":
+              - generic: Partial delivery
+              - generic: Some mobile deliveries succeeded while at least one delivery is still unresolved. Latest attempt 27 Jun 2026, 03:48.
+              - generic "1 failed · 1 accepted 2 attempts":
+                - strong: 1 failed · 1 accepted
+                - generic: 2 attempts
+            - cell "Primary Actions for Demo Customer · Booking request sent · 27 Jun 2026, 03:48 Actions for Demo Customer · Booking request sent · 27 Jun 2026, 03:48":
+              - navigation "Primary Actions for Demo Customer · Booking request sent · 27 Jun 2026, 03:48":
+                - link "Open recipient":
+                  - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+                  - generic: Open recipient
+              - button "Actions for Demo Customer · Booking request sent · 27 Jun 2026, 03:48":
+          - 'row "27 Jun 2026, 03:48 46d ago Push route: inactive Partner 0488 Partner 0488 / ••• ••• 0488 / offline Booking Requested New direct booking request A customer requested one of your services. booking cmqvelee Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:48. Primary Actions for Partner 0488 · New direct booking request · 27 Jun 2026, 03:48 Actions for Partner 0488 · New direct booking request · 27 Jun 2026, 03:48"':
+            - cell "27 Jun 2026, 03:48 46d ago":
+              - time: 27 Jun 2026, 03:48
+              - generic: 46d ago
+            - 'cell "Push route: inactive Partner 0488 Partner 0488 / ••• ••• 0488 / offline"':
+              - generic: P0
+              - 'img "Push route: inactive"'
+              - link "Partner 0488":
+                - /url: /partners/cmqvel8pf01gpvyoc0fes3o9x
+              - generic: Partner 0488 / ••• ••• 0488 / offline
+            - cell "Booking Requested New direct booking request A customer requested one of your services. booking cmqvelee":
+              - generic: Booking Requested
+              - strong: New direct booking request
+              - generic: A customer requested one of your services.
+              - generic: booking cmqvelee
+            - cell "Failed Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:48.":
+              - generic: Failed
+              - generic: Push unavailable · contact by phone if the alert is urgent, then review the latest attempt. Latest attempt 27 Jun 2026, 03:48.
+              - generic "1 failed 1 attempt":
+                - strong: 1 failed
+                - generic: 1 attempt
+            - cell "Primary Actions for Partner 0488 · New direct booking request · 27 Jun 2026, 03:48 Actions for Partner 0488 · New direct booking request · 27 Jun 2026, 03:48":
+              - navigation "Primary Actions for Partner 0488 · New direct booking request · 27 Jun 2026, 03:48":
+                - link "Open recipient":
+                  - /url: /partners/cmqvel8pf01gpvyoc0fes3o9x
+                  - generic: Open recipient
+              - button "Actions for Partner 0488 · New direct booking request · 27 Jun 2026, 03:48":
+          - 'row "27 Jun 2026, 03:48 46d ago Push route: inactive Demo Customer ••• ••• 0001 Service Started Service started Your partner started the service. Continue in the matched chat if needed. booking cmqvelj5 Partial delivery Some mobile deliveries succeeded while at least one delivery is still unresolved. Latest attempt 27 Jun 2026, 03:48. Primary Actions for Demo Customer · Service started · 27 Jun 2026, 03:48 Actions for Demo Customer · Service started · 27 Jun 2026, 03:48"':
+            - cell "27 Jun 2026, 03:48 46d ago":
+              - time: 27 Jun 2026, 03:48
+              - generic: 46d ago
+            - 'cell "Push route: inactive Demo Customer ••• ••• 0001"':
+              - generic: DC
+              - 'img "Push route: inactive"'
+              - link "Demo Customer":
+                - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+              - generic: ••• ••• 0001
+            - cell "Service Started Service started Your partner started the service. Continue in the matched chat if needed. booking cmqvelj5":
+              - generic: Service Started
+              - strong: Service started
+              - generic: Your partner started the service. Continue in the matched chat if needed.
+              - generic: booking cmqvelj5
+            - cell "Partial delivery Some mobile deliveries succeeded while at least one delivery is still unresolved. Latest attempt 27 Jun 2026, 03:48.":
+              - generic: Partial delivery
+              - generic: Some mobile deliveries succeeded while at least one delivery is still unresolved. Latest attempt 27 Jun 2026, 03:48.
+              - generic "1 failed · 1 accepted 2 attempts":
+                - strong: 1 failed · 1 accepted
+                - generic: 2 attempts
+            - cell "Primary Actions for Demo Customer · Service started · 27 Jun 2026, 03:48 Actions for Demo Customer · Service started · 27 Jun 2026, 03:48":
+              - navigation "Primary Actions for Demo Customer · Service started · 27 Jun 2026, 03:48":
+                - link "Open recipient":
+                  - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+                  - generic: Open recipient
+              - button "Actions for Demo Customer · Service started · 27 Jun 2026, 03:48":
+    - generic: Showing 1 to 10 of 369 entries
+    - navigation "Notification delivery pages":
+      - generic "First page":
+      - generic "Previous page":
+      - link "Page 1":
+        - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=INVALID_ARGUMENT&dataScope=unknown
+        - text: "1"
+      - link "Page 2":
+        - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=INVALID_ARGUMENT&dataScope=unknown&page=2
+        - text: "2"
+      - link "Page 3":
+        - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=INVALID_ARGUMENT&dataScope=unknown&page=3
+        - text: "3"
+      - link "Page 4":
+        - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=INVALID_ARGUMENT&dataScope=unknown&page=4
+        - text: "4"
+      - link "Page 5":
+        - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=INVALID_ARGUMENT&dataScope=unknown&page=5
+        - text: "5"
+      - link "Next page":
+        - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=INVALID_ARGUMENT&dataScope=unknown&page=2
+      - link "Last page":
+        - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=INVALID_ARGUMENT&dataScope=unknown&page=37
+- alert

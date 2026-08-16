@@ -31,6 +31,7 @@ describe('booking matching policy snapshot', () => {
     const bookingGate = { gatePassed: true, serviceArea: 'VIETNAM' };
 
     expect(bookingCreateMetadata({ policy: policy(), bookingGate })).toEqual({
+      dataOrigin: 'PRODUCTION',
       matchingPolicy: expect.objectContaining({
         providerResponseWindowMinutes: 10,
         marketplaceRadiusMeters: 12000,

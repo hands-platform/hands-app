@@ -1,5 +1,10 @@
 import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
+import { GUARDS_METADATA } from '@nestjs/common/constants';
+import { Role } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ROLES_KEY } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 import { ProvidersController } from './providers.controller';
 
 describe('provider request DTO validation', () => {
@@ -46,6 +51,15 @@ describe('provider request DTO validation', () => {
     expect(transformed).not.toHaveProperty('walletBalance');
   });
 
+  it('requires an authenticated Customer for nearby Partner location discovery', () => {
+    const handler = ProvidersController.prototype.nearby;
+    const guards = Reflect.getMetadata(GUARDS_METADATA, handler) ?? [];
+    const roles = Reflect.getMetadata(ROLES_KEY, handler) ?? [];
+
+    expect(guards).toEqual(expect.arrayContaining([JwtAuthGuard, RolesGuard]));
+    expect(roles).toEqual([Role.CUSTOMER]);
+  });
+
   it('rejects non-numeric partner location coordinates', async () => {
     const pipe = new ValidationPipe({ whitelist: true, transform: true });
 
@@ -85,6 +99,22 @@ describe('provider request DTO validation', () => {
         { platform: 'android' },
         { type: 'body', metatype: bodyMetatype('recordDeviceSession', 2) as never, data: '' },
       ),
+    ).rejects.toThrow();
+  });
+
+  it('bounds and de-duplicates verification file identifiers', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const metatype = bodyMetatype('submitVerification', 1) as never;
+
+    await expect(
+      pipe.transform({ fileIds: Array.from({ length: 13 }, (_, index) => `file-${index}`) }, {
+        type: 'body',
+        metatype,
+        data: '',
+      }),
+    ).rejects.toThrow();
+    await expect(
+      pipe.transform({ fileIds: ['file-1', 'file-1'] }, { type: 'body', metatype, data: '' }),
     ).rejects.toThrow();
   });
 

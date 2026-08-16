@@ -10,7 +10,7 @@ describe('LocationsGateway provider location updates', () => {
       setProviderLocation: vi.fn().mockResolvedValue(undefined),
     };
     const socketAuth = {
-      requireUser: vi.fn().mockReturnValue({ id: 'provider-user-1', roles: [Role.PROVIDER] }),
+      requireCurrentUser: vi.fn().mockResolvedValue({ id: 'provider-user-1', roles: [Role.PROVIDER] }),
       authenticate: vi.fn(),
     };
     const prisma = {
@@ -18,7 +18,12 @@ describe('LocationsGateway provider location updates', () => {
         findUnique: vi.fn().mockResolvedValue({ id: 'provider-profile-1' }),
       },
       booking: {
-        findFirst: vi.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.IN_SERVICE }),
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.IN_SERVICE,
+          customerProfile: { userId: 'customer-user-1' },
+          selectedProvider: { userId: 'provider-user-1' },
+        }),
       },
     };
     const emit = vi.fn();
@@ -68,7 +73,12 @@ describe('LocationsGateway provider location updates', () => {
     expect(result).toEqual({ ok: false, error: 'BOOKING_LOCATION_FORBIDDEN' });
     expect(prisma.booking.findFirst).toHaveBeenCalledWith({
       where: { id: 'booking-for-another-provider', selectedProviderId: 'provider-profile-1' },
-      select: { id: true, status: true },
+      select: {
+        id: true,
+        status: true,
+        customerProfile: { select: { userId: true } },
+        selectedProvider: { select: { userId: true } },
+      },
     });
     expect(redisState.setProviderLocation).not.toHaveBeenCalled();
     expect(emit).not.toHaveBeenCalled();
@@ -130,7 +140,9 @@ describe('LocationsGateway provider location updates', () => {
 
     expect(result).toEqual({ ok: true });
     expect(redisState.setProviderLocation).not.toHaveBeenCalled();
-    expect(to).toHaveBeenCalledWith(SOCKET_ROOMS.booking('booking-1'));
+    expect(to).toHaveBeenCalledWith(SOCKET_ROOMS.user('customer-user-1'));
+    expect(to).toHaveBeenCalledWith(SOCKET_ROOMS.user('provider-user-1'));
+    expect(to).not.toHaveBeenCalledWith(SOCKET_ROOMS.booking('booking-1'));
     expect(emit).toHaveBeenCalledWith(
       'provider.location.updated',
       expect.objectContaining({
@@ -175,7 +187,9 @@ describe('LocationsGateway provider location updates', () => {
         lng: 106.7009,
       }),
     );
-    expect(to).toHaveBeenCalledWith(SOCKET_ROOMS.booking('booking-1'));
+    expect(to).toHaveBeenCalledWith(SOCKET_ROOMS.user('customer-user-1'));
+    expect(to).toHaveBeenCalledWith(SOCKET_ROOMS.user('provider-user-1'));
+    expect(to).not.toHaveBeenCalledWith(SOCKET_ROOMS.booking('booking-1'));
     expect(emit).toHaveBeenCalledWith(
       'provider.location.updated',
       expect.objectContaining({

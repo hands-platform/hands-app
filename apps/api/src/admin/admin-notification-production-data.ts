@@ -26,18 +26,53 @@ export function adminNotificationDataScopeWhere(
 ): Prisma.NotificationWhereInput {
   const scope = normalizeAdminNotificationDataScope(value);
   const syntheticWhere = adminNotificationSyntheticDataWhere();
+  const nonSyntheticWhere = adminNotificationNonSyntheticDataWhere();
   const productionWhere: Prisma.NotificationWhereInput = {
     AND: [
       { data: { path: ['dataScope'], equals: 'production' } },
-      { NOT: syntheticWhere },
+      nonSyntheticWhere,
     ],
   };
 
   if (scope === 'synthetic') return syntheticWhere;
   if (scope === 'unknown') {
-    return { AND: [{ NOT: productionWhere }, { NOT: syntheticWhere }] };
+    return {
+      AND: [
+        {
+          OR: [
+            { data: { path: ['dataScope'], equals: Prisma.AnyNull } },
+            {
+              AND: [
+                adminNotificationJsonValueIsNot({ path: ['dataScope'], equals: 'production' }),
+                adminNotificationJsonValueIsNot({ path: ['dataScope'], equals: 'synthetic' }),
+              ],
+            },
+          ],
+        },
+        nonSyntheticWhere,
+      ],
+    };
   }
   return productionWhere;
+}
+
+export function adminNotificationPushIntentSql(
+  notification = Prisma.sql`notification`,
+) {
+  return Prisma.sql`(
+    UPPER(COALESCE(${notification}.data->>'deliveryIntent', '')) IN ('PUSH', 'PUSH_AND_IN_APP')
+    OR (
+      UPPER(COALESCE(${notification}.data->>'deliveryIntent', '')) NOT IN (
+        'IN_APP_ONLY', 'PUSH', 'PUSH_AND_IN_APP'
+      )
+      AND EXISTS (
+        SELECT 1
+        FROM "NotificationDelivery" push_intent_delivery
+        WHERE push_intent_delivery."notificationId" = ${notification}.id
+          AND UPPER(push_intent_delivery.provider::text) <> 'IN_APP_ONLY'
+      )
+    )
+  )`;
 }
 
 export function adminNotificationProductionDataSql(notification = Prisma.sql`notification`) {
@@ -73,6 +108,28 @@ function adminNotificationSyntheticDataWhere(): Prisma.NotificationWhereInput {
       { data: { path: ['smokeFixture'], equals: true } },
       { data: { path: ['smoke'], equals: true } },
       { data: { path: ['fixture'], equals: true } },
+    ],
+  };
+}
+
+function adminNotificationNonSyntheticDataWhere(): Prisma.NotificationWhereInput {
+  return {
+    AND: [
+      adminNotificationJsonValueIsNot({ path: ['dataScope'], equals: 'synthetic' }),
+      adminNotificationJsonValueIsNot({ path: ['smokeFixture'], equals: true }),
+      adminNotificationJsonValueIsNot({ path: ['smoke'], equals: true }),
+      adminNotificationJsonValueIsNot({ path: ['fixture'], equals: true }),
+    ],
+  };
+}
+
+function adminNotificationJsonValueIsNot(
+  filter: Prisma.JsonNullableFilterBase<'Notification'>,
+): Prisma.NotificationWhereInput {
+  return {
+    OR: [
+      { data: { path: filter.path, equals: Prisma.AnyNull } },
+      { NOT: { data: filter } },
     ],
   };
 }

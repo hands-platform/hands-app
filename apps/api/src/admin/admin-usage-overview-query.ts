@@ -11,7 +11,8 @@ import { appUsageDay } from '../app-usage/app-usage-daily-aggregate';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ADMIN_BOOKING_RESOLVED_STATUSES,
-  adminBookingExplicitFixtureMetadataSql,
+  adminBookingUnknownOriginSql,
+  adminBookingVerifiedProductionSql,
 } from './admin-booking-list-query';
 import {
   type AdminUsageOverviewWindow,
@@ -71,6 +72,7 @@ type CurrentCustomerBaseRow = {
 
 type FreshnessRow = {
   bookingActivityThroughAt: Date | string | null;
+  unknownBookingCount: bigint | number | null;
   reviewActivityThroughAt: Date | string | null;
   refundActivityThroughAt: Date | string | null;
   unknownAggregateCount: bigint | number | null;
@@ -92,10 +94,11 @@ type RetentionRow = {
 
 type TrendRow = {
   appOpenCount: bigint | number | null;
-  bookingRequestCount: bigint | number | null;
+  createdBookingCount: bigint | number | null;
   completedBookingCount: bigint | number | null;
   label: string;
   periodStart: Date | string;
+  preferredRequestCount: bigint | number | null;
   providerProfileViewCount: bigint | number | null;
   sessionStartCount: bigint | number | null;
 };
@@ -200,6 +203,7 @@ export async function getAdminUsageOverview(
   const freshnessRow = freshnessRows[0];
   const usageAggregatedThroughAt = dateValue(freshnessRow?.usageAggregatedThroughAt);
   const unknownAggregateCount = numberValue(freshnessRow?.unknownAggregateCount);
+  const unknownBookingCount = numberValue(freshnessRow?.unknownBookingCount);
   const retention = [1, 7, 30].map((milestone) => {
     const row = retentionRows.find((candidate) => numberValue(candidate.milestone) === milestone);
     const eligibleCustomerCount = numberValue(row?.eligibleCustomerCount);
@@ -214,10 +218,11 @@ export async function getAdminUsageOverview(
   });
   const trend = trendRows.map((row) => ({
     appOpenCount: numberValue(row.appOpenCount),
-    bookingRequestCount: numberValue(row.bookingRequestCount),
+    createdBookingCount: numberValue(row.createdBookingCount),
     completedBookingCount: numberValue(row.completedBookingCount),
     label: row.label,
     periodStart: dateValue(row.periodStart)?.toISOString() ?? null,
+    preferredRequestCount: numberValue(row.preferredRequestCount),
     providerProfileViewCount: numberValue(row.providerProfileViewCount),
     sessionStartCount: numberValue(row.sessionStartCount),
   }));
@@ -273,7 +278,7 @@ export async function getAdminUsageOverview(
       hourlyActivity: trend
         .filter((row) => /^\d{2}:00$/.test(row.label))
         .map((row) => ({
-          bookingRequestCount: row.bookingRequestCount,
+          bookingRequestCount: row.preferredRequestCount,
           customerSessionCount: row.sessionStartCount,
           hour: Number(row.label.slice(0, 2)),
           label: row.label,
@@ -281,7 +286,7 @@ export async function getAdminUsageOverview(
             row.appOpenCount +
             row.sessionStartCount +
             row.providerProfileViewCount +
-            row.bookingRequestCount,
+            row.createdBookingCount,
         })),
       popularServices: popularServiceRows
         .filter((row) => Boolean(row.serviceId && row.name))
@@ -402,9 +407,10 @@ export async function getAdminUsageOverview(
     retention,
     source: 'stored-usage-aggregates' as const,
     provenance: {
-      bookingFixtures: 'explicit-markers-excluded' as const,
-      unknownAggregateCount,
-      usageFixtures: unknownAggregateCount === 0 ? 'guaranteed' as const : 'not-guaranteed' as const,
+      booking: unknownBookingCount === 0 ? 'guaranteed' as const : 'incomplete' as const,
+      unknownBookingCount,
+      unknownUsageAggregateCount: unknownAggregateCount,
+      usage: unknownAggregateCount === 0 ? 'guaranteed' as const : 'incomplete' as const,
     },
     timeZone: 'Asia/Ho_Chi_Minh' as const,
     totals: {
@@ -470,8 +476,8 @@ async function queryPeriodSummary(prisma: PrismaService, window: AdminUsageOverv
       (SELECT COUNT(*) FROM booking_period booking WHERE booking."status" = ${BookingStatus.REFUNDED}::"BookingStatus")::bigint AS "refundCount",
       (SELECT COUNT(*) FROM booking_period booking WHERE booking."status" NOT IN (${RESOLVED_BOOKING_STATUS_SQL}))::bigint AS "unresolvedCount",
       (SELECT COUNT(DISTINCT booking."customerProfileId") FROM closed_period booking WHERE booking."status" IN (${BookingStatus.CANCELLED}::"BookingStatus", ${BookingStatus.NO_SHOW}::"BookingStatus", ${BookingStatus.EXPIRED}::"BookingStatus", ${BookingStatus.REFUNDED}::"BookingStatus"))::bigint AS "issueCustomerCount",
-      (SELECT COUNT(*) FROM "User" customer_user INNER JOIN "CustomerProfile" customer ON customer."userId" = customer_user."id" WHERE TRUE ${userCreatedAt})::bigint AS "newCustomerCount",
-      (SELECT COUNT(*) FROM "User" customer_user INNER JOIN "CustomerProfile" customer ON customer."userId" = customer_user."id" WHERE TRUE ${userCreatedAt} AND NOT EXISTS (SELECT 1 FROM "Booking" booking WHERE booking."customerProfileId" = customer."id" AND ${usageBookingProductionSql()}))::bigint AS "newUnbookedCustomerCount",
+      (SELECT COUNT(*) FROM "User" customer_user INNER JOIN "CustomerProfile" customer ON customer."userId" = customer_user."id" WHERE TRUE ${userCreatedAt} AND customer_user."fixtureKind" IS NULL)::bigint AS "newCustomerCount",
+      (SELECT COUNT(*) FROM "User" customer_user INNER JOIN "CustomerProfile" customer ON customer."userId" = customer_user."id" WHERE TRUE ${userCreatedAt} AND customer_user."fixtureKind" IS NULL AND NOT EXISTS (SELECT 1 FROM "Booking" booking WHERE booking."customerProfileId" = customer."id" AND ${usageBookingProductionSql()}))::bigint AS "newUnbookedCustomerCount",
       (SELECT COUNT(*) FROM completed_by_customer WHERE count = 1)::bigint AS "firstCompletedCustomerCount",
       (SELECT COUNT(*) FROM completed_by_customer WHERE count >= 2)::bigint AS "repeatCustomerCount",
       (SELECT COUNT(*) FROM completed_by_customer WHERE count >= 3)::bigint AS "vipCustomerCount",
@@ -490,11 +496,11 @@ async function queryCurrentCustomerBase(prisma: PrismaService, now: Date) {
 
   return prisma.$queryRaw<CurrentCustomerBaseRow[]>(Prisma.sql`
     SELECT
-      (SELECT COUNT(*) FROM "CustomerProfile" customer WHERE NOT EXISTS (
+      (SELECT COUNT(*) FROM "CustomerProfile" customer INNER JOIN "User" customer_user ON customer_user.id = customer."userId" WHERE customer_user."fixtureKind" IS NULL AND NOT EXISTS (
         SELECT 1 FROM "Booking" booking
         WHERE booking."customerProfileId" = customer."id" AND ${usageBookingProductionSql()}
       ))::bigint AS "neverBookedCustomerCount",
-      (SELECT COUNT(*) FROM "CustomerProfile" customer WHERE EXISTS (
+      (SELECT COUNT(*) FROM "CustomerProfile" customer INNER JOIN "User" customer_user ON customer_user.id = customer."userId" WHERE customer_user."fixtureKind" IS NULL AND EXISTS (
         SELECT 1 FROM "Booking" booking
         WHERE booking."customerProfileId" = customer."id"
           AND booking."status" = ${BookingStatus.COMPLETED}::"BookingStatus"
@@ -519,6 +525,7 @@ async function queryCurrentCustomerBase(prisma: PrismaService, now: Date) {
 async function queryFreshness(prisma: PrismaService, window: AdminUsageOverviewWindow) {
   const aggregateDay = aggregateDaySql(window);
   const bookingCreatedAt = bookingTimestampSql('booking."createdAt"', window);
+  const bookingWindowAt = timestampSql('booking."createdAt"', window);
   const reviewCreatedAt = timestampSql('review."createdAt"', window);
   const refundCreatedAt = timestampSql('refund."createdAt"', window);
 
@@ -555,6 +562,12 @@ async function queryFreshness(prisma: PrismaService, window: AdminUsageOverviewW
           AND usage_daily."origin" = ${AppUsageOrigin.UNKNOWN}::"AppUsageOrigin"
           ${aggregateDay}
       )::bigint AS "unknownAggregateCount"
+      ,(
+        SELECT COUNT(*)
+        FROM "Booking" booking
+        WHERE TRUE ${bookingWindowAt}
+          AND ${adminBookingUnknownOriginSql()}
+      )::bigint AS "unknownBookingCount"
   `);
 }
 
@@ -598,6 +611,7 @@ async function queryRetention(prisma: PrismaService, window: AdminUsageOverviewW
       SELECT customer_user."id" AS "userId", (customer_user."createdAt" AT TIME ZONE 'Asia/Ho_Chi_Minh')::date AS "cohortDay"
       FROM "User" customer_user
       INNER JOIN "CustomerProfile" customer ON customer."userId" = customer_user."id"
+      WHERE customer_user."fixtureKind" IS NULL
     )
     SELECT
       milestone."milestone"::bigint AS "milestone",
@@ -637,7 +651,10 @@ async function queryTrend(prisma: PrismaService, window: AdminUsageOverviewWindo
         FROM "AppUsageEvent" event
         WHERE event."role" = ${Role.CUSTOMER}::"Role" ${eventAt} AND ${usageEventProductionSql()}
         GROUP BY 1
-      ), requests AS (
+      ), created AS (
+        SELECT EXTRACT(HOUR FROM booking."createdAt" AT TIME ZONE 'Asia/Ho_Chi_Minh')::int AS hour, COUNT(*)::bigint AS count
+        FROM "Booking" booking WHERE TRUE ${bookingCreatedAt} GROUP BY 1
+      ), preferred AS (
         SELECT EXTRACT(HOUR FROM booking."createdAt" AT TIME ZONE 'Asia/Ho_Chi_Minh')::int AS hour, COUNT(*)::bigint AS count
         FROM "Booking" booking WHERE booking."preferredProviderId" IS NOT NULL ${bookingCreatedAt} GROUP BY 1
       ), completed AS (
@@ -650,11 +667,13 @@ async function queryTrend(prisma: PrismaService, window: AdminUsageOverviewWindo
         COALESCE(events."appOpenCount", 0)::bigint AS "appOpenCount",
         COALESCE(events."sessionStartCount", 0)::bigint AS "sessionStartCount",
         COALESCE(events."providerProfileViewCount", 0)::bigint AS "providerProfileViewCount",
-        COALESCE(requests.count, 0)::bigint AS "bookingRequestCount",
+        COALESCE(created.count, 0)::bigint AS "createdBookingCount",
+        COALESCE(preferred.count, 0)::bigint AS "preferredRequestCount",
         COALESCE(completed.count, 0)::bigint AS "completedBookingCount"
       FROM hours
       LEFT JOIN events USING (hour)
-      LEFT JOIN requests USING (hour)
+      LEFT JOIN created USING (hour)
+      LEFT JOIN preferred USING (hour)
       LEFT JOIN completed USING (hour)
       ORDER BY hours.hour
     `);
@@ -672,7 +691,10 @@ async function queryTrend(prisma: PrismaService, window: AdminUsageOverviewWindo
       FROM "AppUsageDailyAggregate" usage_daily
       WHERE usage_daily."role" = ${Role.CUSTOMER}::"Role" AND ${usageAggregateProductionSql()} ${aggregateDay}
       GROUP BY usage_daily."day"
-    ), requests AS (
+    ), created AS (
+      SELECT (booking."createdAt" AT TIME ZONE 'Asia/Ho_Chi_Minh')::date AS day, COUNT(*)::bigint AS count
+      FROM "Booking" booking WHERE TRUE ${bookingCreatedAt} GROUP BY 1
+    ), preferred AS (
       SELECT (booking."createdAt" AT TIME ZONE 'Asia/Ho_Chi_Minh')::date AS day, COUNT(*)::bigint AS count
       FROM "Booking" booking WHERE booking."preferredProviderId" IS NOT NULL ${bookingCreatedAt} GROUP BY 1
     ), completed AS (
@@ -687,11 +709,13 @@ async function queryTrend(prisma: PrismaService, window: AdminUsageOverviewWindo
       COALESCE(usage."appOpenCount", 0)::bigint AS "appOpenCount",
       COALESCE(usage."sessionStartCount", 0)::bigint AS "sessionStartCount",
       COALESCE(usage."providerProfileViewCount", 0)::bigint AS "providerProfileViewCount",
-      COALESCE(requests.count, 0)::bigint AS "bookingRequestCount",
+      COALESCE(created.count, 0)::bigint AS "createdBookingCount",
+      COALESCE(preferred.count, 0)::bigint AS "preferredRequestCount",
       COALESCE(completed.count, 0)::bigint AS "completedBookingCount"
     FROM days
     LEFT JOIN usage USING (day)
-    LEFT JOIN requests USING (day)
+    LEFT JOIN created USING (day)
+    LEFT JOIN preferred USING (day)
     LEFT JOIN completed USING (day)
     ORDER BY days.day
   `);
@@ -699,7 +723,6 @@ async function queryTrend(prisma: PrismaService, window: AdminUsageOverviewWindo
 
 async function queryCustomerRankings(prisma: PrismaService, window: AdminUsageOverviewWindow) {
   const aggregateDay = aggregateDaySql(window);
-  const bookingCreatedAt = bookingTimestampSql('booking."createdAt"', window);
   const bookingClosedAt = bookingTimestampSql('booking."closedAt"', window);
   return prisma.$queryRaw<CustomerRankingRow[]>(Prisma.sql`
     WITH usage AS (
@@ -719,9 +742,6 @@ async function queryCustomerRankings(prisma: PrismaService, window: AdminUsageOv
         MAX(booking."closedAt") AS "lastActivityAt"
       FROM "Booking" booking WHERE TRUE ${bookingClosedAt}
       GROUP BY booking."customerProfileId"
-    ), booking_intent AS (
-      SELECT booking."customerProfileId", MAX(booking."createdAt") AS "lastActivityAt"
-      FROM "Booking" booking WHERE TRUE ${bookingCreatedAt} GROUP BY booking."customerProfileId"
     )
     SELECT customer."id" AS "customerProfileId", customer."userId", customer_user."fullName", customer_user."phone",
       COALESCE(usage."totalEventCount", 0)::bigint AS "totalEventCount",
@@ -730,13 +750,11 @@ async function queryCustomerRankings(prisma: PrismaService, window: AdminUsageOv
       COALESCE(usage."providerProfileViewCount", 0)::bigint AS "providerProfileViewCount",
       COALESCE(bookings."completedBookingCount", 0)::bigint AS "completedBookingCount",
       COALESCE(bookings."issueCount", 0)::bigint AS "issueCount",
-      GREATEST(usage."lastActivityAt", bookings."lastActivityAt", booking_intent."lastActivityAt") AS "lastActivityAt"
+      usage."lastActivityAt" AS "lastActivityAt"
     FROM "CustomerProfile" customer
     INNER JOIN "User" customer_user ON customer_user."id" = customer."userId"
-    LEFT JOIN usage ON usage."userId" = customer."userId"
+    INNER JOIN usage ON usage."userId" = customer."userId" AND usage."totalEventCount" > 0
     LEFT JOIN bookings ON bookings."customerProfileId" = customer."id"
-    LEFT JOIN booking_intent ON booking_intent."customerProfileId" = customer."id"
-    WHERE usage."userId" IS NOT NULL OR bookings."customerProfileId" IS NOT NULL OR booking_intent."customerProfileId" IS NOT NULL
     ORDER BY COALESCE(usage."totalEventCount", 0) DESC, COALESCE(bookings."completedBookingCount", 0) DESC, "lastActivityAt" DESC NULLS LAST
     LIMIT ${RANK_LIMIT}
   `);
@@ -853,7 +871,7 @@ function bookingTimestampSql(column: string, window: AdminUsageOverviewWindow) {
 }
 
 function usageBookingProductionSql() {
-  return adminBookingExplicitFixtureMetadataSql();
+  return adminBookingVerifiedProductionSql();
 }
 
 function usageEventProductionSql() {

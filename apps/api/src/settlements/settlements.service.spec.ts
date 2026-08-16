@@ -275,8 +275,10 @@ describe('SettlementsService', () => {
 
     expect(prisma.bookingSettlementSnapshot.upsert).toHaveBeenCalledWith({
       where: { bookingId: 'booking-1' },
-      update: expect.objectContaining({
+      update: {},
+      create: expect.objectContaining({
         sourceKey: 'booking-settlement:booking-1',
+        bookingId: 'booking-1',
         partnerVatAmount: 30_000,
         partnerPitAmount: 12_000,
         partnerWithholdingTotal: 42_000,
@@ -284,15 +286,54 @@ describe('SettlementsService', () => {
         companyOutputVat: 9_481,
         paymentProcessingFee: 10_000,
         monthlyPeriod: '2026-06',
-      }),
-      create: expect.objectContaining({
-        sourceKey: 'booking-settlement:booking-1',
-        bookingId: 'booking-1',
         providerTaxLogIds: ['tax-vat-1', 'tax-pit-1'],
         providerPlatformFeeLogId: 'platform-log-1',
         providerWalletLedgerEntryIds: ['wallet-1'],
       }),
     });
+  });
+
+  it('rejects a replay that reuses a booking settlement key with different financial evidence', async () => {
+    const prisma = {
+      accountingJournalBatch: {
+        upsert: vi.fn(),
+      },
+      bookingPaymentClearingEntry: {
+        upsert: vi.fn(),
+      },
+      bookingSettlementSnapshot: {
+        upsert: vi.fn(async (args) => ({
+          id: 'settlement-existing-1',
+          ...args.create,
+          customerPaymentAmount: args.create.customerPaymentAmount + 1,
+        })),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await expect(
+      service.upsertBookingSettlementSnapshot({
+        bookingId: 'booking-replayed-1',
+        customerProfileId: 'customer-1',
+        providerProfileId: 'provider-1',
+        paymentId: 'payment-1',
+        providerEarningId: 'earning-1',
+        paymentMethod: 'CARD',
+        currency: 'VND',
+        customerPaymentAmount: 600_000,
+        partnerPayoutAmount: 430_000,
+        platformFeeGross: 128_000,
+        partnerVatRateBps: 500,
+        partnerPitRateBps: 200,
+        platformVatRateBps: 800,
+        occurredAt: new Date('2026-06-13T03:02:00.000Z'),
+      }),
+    ).rejects.toThrow(
+      'A settlement snapshot already exists with different financial evidence.',
+    );
+
+    expect(prisma.accountingJournalBatch.upsert).not.toHaveBeenCalled();
+    expect(prisma.bookingPaymentClearingEntry.upsert).not.toHaveBeenCalled();
   });
 
   it('stores coupon accounting policy metadata while keeping paid amount separate from taxable base', async () => {
@@ -304,17 +345,7 @@ describe('SettlementsService', () => {
         upsert: vi.fn().mockResolvedValue({ id: 'clearing-1' }),
       },
       bookingSettlementSnapshot: {
-        upsert: vi.fn().mockResolvedValue({
-          id: 'settlement-coupon-1',
-          bookingId: 'booking-coupon-1',
-          currency: 'VND',
-          metadata: {
-            companyCouponExpense: 60_000,
-            couponDiscountAmount: 60_000,
-          },
-          monthlyPeriod: '2026-06',
-          postedAt: new Date('2026-06-13T03:02:00.000Z'),
-        }),
+        upsert: vi.fn(async (args) => ({ id: 'settlement-coupon-1', ...args.create })),
       },
     };
     const service = new SettlementsService(prisma as never);
@@ -346,7 +377,9 @@ describe('SettlementsService', () => {
 
     expect(prisma.bookingSettlementSnapshot.upsert).toHaveBeenCalledWith({
       where: { bookingId: 'booking-coupon-1' },
-      update: expect.objectContaining({
+      update: {},
+      create: expect.objectContaining({
+        bookingId: 'booking-coupon-1',
         customerPaymentAmount: 540_000,
         partnerTaxableRevenue: 600_000,
         metadata: expect.objectContaining({
@@ -357,11 +390,6 @@ describe('SettlementsService', () => {
           couponFundingSourceSnapshot: 'COMPANY',
           settlementBaseAmount: 600_000,
         }),
-      }),
-      create: expect.objectContaining({
-        bookingId: 'booking-coupon-1',
-        customerPaymentAmount: 540_000,
-        partnerTaxableRevenue: 600_000,
       }),
     });
   });
@@ -414,18 +442,7 @@ describe('SettlementsService', () => {
 
     expect(prisma.bookingPaymentClearingEntry.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'booking-payment-clearing:booking-1:settlement' },
-      update: expect.objectContaining({
-        amount: 600_000,
-        metadata: expect.objectContaining({
-          paymentFeeFixedAmount: 1_000,
-          paymentFeePayer: PaymentFeePayer.HANDS,
-          paymentFeePolicyVersionId: 'payment-fee-policy-1',
-          paymentFeeRateBps: 150,
-          paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
-          paymentProcessingFee: 10_000,
-        }),
-        status: 'OPEN',
-      }),
+      update: {},
       create: expect.objectContaining({
         amount: 600_000,
         bookingId: 'booking-1',
@@ -445,18 +462,7 @@ describe('SettlementsService', () => {
     });
     expect(prisma.accountingJournalBatch.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'accounting-journal:booking-settlement:booking-1' },
-      update: expect.objectContaining({
-        metadata: expect.objectContaining({
-          paymentFeeFixedAmount: 1_000,
-          paymentFeePayer: PaymentFeePayer.HANDS,
-          paymentFeePolicyVersionId: 'payment-fee-policy-1',
-          paymentFeeRateBps: 150,
-          paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
-          paymentProcessingFee: 10_000,
-        }),
-        totalCredit: 610_000,
-        totalDebit: 610_000,
-      }),
+      update: {},
       create: expect.objectContaining({
         bookingId: 'booking-1',
         customerProfileId: 'customer-1',
@@ -490,10 +496,7 @@ describe('SettlementsService', () => {
         totalDebit: 610_000,
       }),
     });
-    expect(Object.keys(prisma.accountingJournalBatch.upsert.mock.calls[0]?.[0]?.update?.entries ?? {})).toEqual([
-      'deleteMany',
-      'create',
-    ]);
+    expect(prisma.accountingJournalBatch.upsert.mock.calls[0]?.[0]?.update).toEqual({});
   });
 
   it('posts customer wallet payments to the customer wallet ledger instead of payment clearing', async () => {
@@ -540,11 +543,7 @@ describe('SettlementsService', () => {
 
     expect(prisma.customerWalletLedgerEntry.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'customer-wallet-payment:booking-wallet-1:settlement' },
-      update: expect.objectContaining({
-        amount: -600_000,
-        bookingId: 'booking-wallet-1',
-        customerProfileId: 'customer-1',
-      }),
+      update: {},
       create: expect.objectContaining({
         amount: -600_000,
         bookingId: 'booking-wallet-1',
@@ -576,9 +575,7 @@ describe('SettlementsService', () => {
         create: expect.objectContaining({
           customerWalletLedgerEntryIds: ['customer-wallet-ledger-1'],
         }),
-        update: expect.objectContaining({
-          customerWalletLedgerEntryIds: ['customer-wallet-ledger-1'],
-        }),
+        update: {},
       }),
     );
   });
@@ -658,11 +655,7 @@ describe('SettlementsService', () => {
     });
     expect(prisma.accountingJournalBatch.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'accounting-journal:booking-settlement-reversal:settlement-coupon-1' },
-      update: expect.objectContaining({
-        sourceType: 'BOOKING_SETTLEMENT_REVERSAL',
-        totalCredit: 600_000,
-        totalDebit: 600_000,
-      }),
+      update: {},
       create: expect.objectContaining({
         bookingId: 'booking-coupon-1',
         entries: {
@@ -685,10 +678,7 @@ describe('SettlementsService', () => {
         totalDebit: 600_000,
       }),
     });
-    expect(Object.keys(prisma.accountingJournalBatch.upsert.mock.calls[0]?.[0]?.update?.entries ?? {})).toEqual([
-      'deleteMany',
-      'create',
-    ]);
+    expect(prisma.accountingJournalBatch.upsert.mock.calls[0]?.[0]?.update).toEqual({});
     expect(prisma.bookingPaymentClearingEntry.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'booking-payment-clearing:booking-coupon-1:refund-reversal' },
       update: expect.objectContaining({
@@ -931,17 +921,7 @@ describe('SettlementsService', () => {
     expect(prisma.bookingSettlementSnapshot.update).not.toHaveBeenCalled();
     expect(prisma.bookingSettlementReversalEntry.upsert).toHaveBeenCalledWith({
       where: { originalSettlementSnapshotId: 'settlement-closed-1' },
-      update: expect.objectContaining({
-        metadata: expect.objectContaining({
-          paymentFeeFixedAmount: 1_000,
-          paymentFeePayer: PaymentFeePayer.HANDS,
-          paymentFeePolicyVersionId: 'payment-fee-policy-1',
-          paymentFeeRateBps: 150,
-          paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
-          paymentProcessingFee: 10_000,
-        }),
-        reason: 'Closed refund',
-      }),
+      update: {},
       create: expect.objectContaining({
         bookingId: 'booking-closed-1',
         companyOutputVat: -9_481,
@@ -972,18 +952,7 @@ describe('SettlementsService', () => {
     });
     expect(prisma.accountingJournalBatch.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'accounting-journal:booking-settlement-reversal:settlement-closed-1' },
-      update: expect.objectContaining({
-        metadata: expect.objectContaining({
-          paymentFeeFixedAmount: 1_000,
-          paymentFeePayer: PaymentFeePayer.HANDS,
-          paymentFeePolicyVersionId: 'payment-fee-policy-1',
-          paymentFeeRateBps: 150,
-          paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
-          paymentProcessingFee: 10_000,
-        }),
-        settlementReversalEntryId: 'reversal-entry-1',
-        sourceType: 'BOOKING_SETTLEMENT_REVERSAL',
-      }),
+      update: {},
       create: expect.objectContaining({
         bookingId: 'booking-closed-1',
         entries: {

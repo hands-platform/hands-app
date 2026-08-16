@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 describe('ServicesPage source', () => {
-  it('uses the shared Vuexy status badge atom for service section counters', () => {
+  it('loads the operational group contract and renders the compact catalog control', () => {
     const source = readFileSync('app/services/page.tsx', 'utf8');
     const managerSource = readFileSync('app/services/service-catalog-manager-section.tsx', 'utf8');
 
@@ -10,9 +10,12 @@ describe('ServicesPage source', () => {
     expect(source).not.toContain('<span className="pill pill-info">{groupedServices.length} service type(s)</span>');
     expect(source).not.toContain('<span className="pill pill-success">{activeServices.length} active option(s)</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">{payoutRuleCount} payout rule(s)</span>');
-    expect(managerSource).toContain('AdminCard');
-    expect(managerSource).not.toContain('<article className="service-menu-card">');
-    expect(source).toContain("'/admin/services?scope=operational'");
+    expect(managerSource).toContain('service-catalog-health-strip');
+    expect(managerSource).toContain('service-catalog-table');
+    expect(managerSource).not.toContain('service-menu-card-grid');
+    expect(source).toContain("'/admin/services/groups?scope=operational'");
+    expect(source).toContain("'/admin/services/health'");
+    expect(source).toContain('groupsResult.ok');
   });
 
   it('scopes service catalog page section headers to direct cards', () => {

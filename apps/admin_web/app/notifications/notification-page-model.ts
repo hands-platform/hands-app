@@ -134,18 +134,20 @@ export type NotificationTablePagination = {
   readonly totalRows: number;
 };
 
-export function notificationDeliveryHealthTotals(
+export type NotificationDeliveryHealthState = 'attention' | 'clear' | 'unavailable';
+
+export function notificationDeliveryHealthState(
   summary: AdminNotificationBoardSummary | null | undefined,
 ) {
   return {
-    current: sumCompleteNotificationHealth([
+    current: classifyNotificationHealth([
       summary?.openDeliveryIncidentCount,
       summary?.currentFailed,
       summary?.currentDeliveryGaps,
       summary?.currentNoPushPathRecipientCount,
       summary?.currentStaleRouteNotifications,
     ]),
-    history: sumCompleteNotificationHealth([
+    history: classifyNotificationHealth([
       summary?.historicalDeliveryIncidentCount,
       summary?.historicalFailed,
       summary?.historicalDeliveryGaps,
@@ -155,10 +157,11 @@ export function notificationDeliveryHealthTotals(
   };
 }
 
-function sumCompleteNotificationHealth(values: readonly (number | undefined)[]): number | null {
-  return values.some((value) => value === undefined)
-    ? null
-    : values.reduce<number>((total, value) => total + (value ?? 0), 0);
+function classifyNotificationHealth(
+  values: readonly (number | undefined)[],
+): NotificationDeliveryHealthState {
+  if (values.some((value) => value === undefined)) return 'unavailable';
+  return values.some((value) => (value ?? 0) > 0) ? 'attention' : 'clear';
 }
 
 const PARTNER_ALERT_TYPES = [
@@ -547,7 +550,8 @@ export function buildNotificationApiHref(params: Record<string, string | string[
 export function buildNotificationSummaryApiHref(params: Record<string, string | string[] | undefined>) {
   const filters = buildNotificationFilters(params);
   const query = new URLSearchParams();
-  if (readSearchParam(params.mode) === 'records') query.set('viewMode', 'records');
+  const mode = readSearchParam(params.mode);
+  if (mode === 'records' || mode === 'action') query.set('viewMode', mode);
   appendNotificationQueueParams(query, filters);
   if (shouldIncludeNotificationApiReview(filters.review)) {
     query.set('review', filters.review);
@@ -854,6 +858,7 @@ export function notificationDeliveryModelParams(
     dataScope: view.dataScope,
     failureCode: view.mode === 'action' && view.issue === 'failed' ? view.failureCode || undefined : undefined,
     failureProvider: view.mode === 'action' && view.issue === 'failed' ? view.failureProvider || undefined : undefined,
+    mode: view.mode,
     q: view.q || undefined,
     range: view.range,
     recipientRole: view.recipientRole === 'all' ? undefined : view.recipientRole,
@@ -964,14 +969,21 @@ function normalizeNotificationDataScope(value: string): NotificationDataScopeFil
   return value === 'unknown' || value === 'synthetic' ? value : 'production';
 }
 
-function normalizeNotificationFailureProvider(value: string) {
+export function normalizeNotificationFailureProvider(value: string) {
   const normalized = value.trim().toUpperCase();
-  return normalized === 'FCM' || normalized === 'IN_APP_ONLY' ? normalized : '';
+  return isSafeNotificationFilterValue(normalized, 80) ? normalized : '';
 }
 
-function normalizeNotificationFailureCode(value: string) {
+export function normalizeNotificationFailureCode(value: string) {
   const normalized = value.trim();
-  return normalized.length <= 160 && /^[A-Za-z0-9_./:-]+$/.test(normalized) ? normalized : '';
+  return isSafeNotificationFilterValue(normalized, 160) ? normalized : '';
+}
+
+function isSafeNotificationFilterValue(value: string, maxLength: number) {
+  return Boolean(value) && value.length <= maxLength && !Array.from(value).some((character) => {
+    const code = character.charCodeAt(0);
+    return code < 32 || code === 127;
+  });
 }
 
 function normalizeNotificationDeliveryRecordStatus(value: string): NotificationDeliveryRecordStatus {
@@ -1004,7 +1016,9 @@ function appendNotificationRecordApiFilters(
   const scope = readSearchParam(params.scope).trim();
   const failureProvider = normalizeNotificationFailureProvider(readSearchParam(params.failureProvider));
   const failureCode = normalizeNotificationFailureCode(readSearchParam(params.failureCode));
+  const campaignId = readSearchParam(params.campaignId).trim();
   if (search) query.set('q', search);
+  if (campaignId) query.set('campaignId', campaignId);
   if (recipientRole) query.set('recipientRole', recipientRole);
   if (channel) query.set('channel', channel);
   if (scope) query.set('scope', scope);
@@ -1546,10 +1560,10 @@ export function buildNotificationTableRows(
     const sourceRecipientCount = positiveInteger(asRecord(notification.data)?.systemIncidentRecipientCount);
     const sourceNotificationCount = positiveInteger(asRecord(notification.data)?.systemIncidentNotificationCount);
     const isGroupedSystemIncident = sourceNotificationCount > 1;
-    const deliveryIncident = notificationDeliveryIncident(notification);
+    const deliveryIncident = notificationDeliveryIncident(notification, actionContext);
     const routeGroup = notificationDeliveryRouteGroup(notification);
     const actions = notificationActionMenuItems(notification, actionContext, deliveryHealth);
-    const primaryAction = notificationPrimaryAction(notification, actions, deliveryHealth);
+    const primaryAction = notificationPrimaryAction(notification, actions);
 
     return {
       actionLabel: `Actions for ${notificationUserLabel(notification)} · ${marketplaceDisplayText(notification.title)} · ${formatDateTime(notification.createdAt)}`,
@@ -1590,7 +1604,10 @@ export function buildNotificationTableRows(
   });
 }
 
-function notificationDeliveryIncident(notification: AdminNotification): NotificationTableRow['incident'] {
+function notificationDeliveryIncident(
+  notification: AdminNotification,
+  actionContext: NotificationActionReturnContext = {},
+): NotificationTableRow['incident'] {
   const data = asRecord(notification.data);
   const key = readString(data?.deliveryIncidentKey);
   const failureCode = readString(data?.deliveryIncidentFailureCode);
@@ -1601,13 +1618,16 @@ function notificationDeliveryIncident(notification: AdminNotification): Notifica
     return undefined;
   }
   const runbook = notificationFailureRunbook(failureCode);
-  const href = buildNotificationDeliveryHref(buildNotificationDeliveryView({}), {
-    failureCode,
-    failureProvider: provider,
-    issue: 'failed',
-    page: 1,
-    scope: data?.deliveryIncidentHistory === true ? 'history' : 'current',
-  });
+  const href = buildNotificationDeliveryHref(
+    buildNotificationDeliveryView({ dataScope: actionContext.dataScope }),
+    {
+      failureCode,
+      failureProvider: provider,
+      issue: 'failed',
+      page: 1,
+      scope: data?.deliveryIncidentHistory === true ? 'history' : 'current',
+    },
+  );
   return {
     affectedUserCount: positiveInteger(data?.deliveryIncidentAffectedUserCount),
     failureCode,
@@ -2565,7 +2585,6 @@ function notificationActionMenuItems(
 function notificationPrimaryAction(
   notification: AdminNotification,
   actions: readonly ActionMenuItem[],
-  deliveryHealth: NotificationDeliveryHealth,
 ): { readonly action: ActionMenuItem; readonly source?: ActionMenuItem } | null {
   const retry = actions.find((action) => action.kind === 'link' && action.label === 'Retry');
   if (retry?.kind === 'link' && ['failed', 'partial'].includes(notificationDeliveryDisposition(notification))) {
@@ -2581,15 +2600,11 @@ function notificationPrimaryAction(
     }
   }
 
-  const audit = actions.find((action) => action.kind === 'link' && action.label === 'Audit trail');
-  if (audit?.kind === 'link') {
-    return {
-      action: {
-        ...audit,
-        label: deliveryHealth.signalLabel === 'No send attempt after 15m' ? 'Check audit trail' : 'Audit trail',
-      },
-      source: audit,
-    };
+  const sourceAction = actions.find(
+    (action) => action.kind === 'link' && action.label.startsWith('Open ') && action.label !== 'Open audit trail',
+  );
+  if (sourceAction?.kind === 'link') {
+    return { action: sourceAction, source: sourceAction };
   }
   return null;
 }

@@ -65,7 +65,7 @@ describe('NotificationsTableSection', () => {
     expect(elementTypesIn(section)).toContain('details');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-card vuexy-booking-table-card vuexy-booking-table-group admin-section notification-table-shell has-5-columns',
+        'card admin-card vuexy-booking-table-card vuexy-booking-table-group admin-section notification-table-shell has-5-columns is-delivery',
         'admin-action-dropdown action-menu-dropdown',
         'admin-action-menu action-menu-panel',
         'admin-action-item',
@@ -157,6 +157,29 @@ describe('NotificationsTableSection', () => {
     expect(rowSource).toContain("return status === 'online' ? 'Push route: active' : 'Push route: inactive'");
   });
 
+  it('renders retry block evidence as visible row content', () => {
+    const row = buildRow();
+    const section = NotificationsTableSection({
+      emptyMessage: 'No notifications loaded.',
+      rows: [{
+        ...row,
+        actions: [{
+          description: 'Payload/config recovery evidence is required before retry.',
+          disabled: true,
+          href: '#',
+          kind: 'link',
+          label: 'Retry blocked',
+          tone: 'neutral',
+        }],
+      }],
+    });
+
+    expect(normalizedText(section)).toContain(
+      'Retry blocked Payload/config recovery evidence is required before retry.',
+    );
+    expect(classNamesIn(section)).toContain('notification-retry-block-reason');
+  });
+
   it('renders one inactive recipient route group with safe identity and occurrence counts', () => {
     const section = NotificationsTableSection({
       emptyMessage: 'No route groups.',
@@ -209,7 +232,8 @@ describe('NotificationsTableSection', () => {
 
     expect(rendered).toContain('37 affected user');
     expect(rendered).toContain('100 notification');
-    expect(rendered).toContain('messaging/registration-token-not-registered');
+    expect(rendered).toContain('messaging / registration - token - not - registered');
+    expect(classNamesIn(section)).toContain('notification-failure-code');
     expect(rendered).toContain('Confirm token cleanup before retrying.');
     expect(rendered).toContain('Age Updated just now');
     expect(rendered).toContain('Open this group');

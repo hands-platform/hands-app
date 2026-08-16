@@ -88,6 +88,19 @@
   --mint: #b7dbc4;
   --yellow: #e7db73;
   --font-sans: Arial, 'Helvetica Neue', 'Noto Sans KR', sans-serif;
+  --font-ratio: 1.618;
+  --font-base: clamp(14px, calc(13.43px + 0.1786vw), 16px);
+  --font-body: var(--font-base);
+  --font-section: calc(var(--font-base) * var(--font-ratio));
+  --font-display: calc(var(--font-base) * var(--font-ratio) * var(--font-ratio));
+  --font-small: clamp(12px, calc(11.43px + 0.1786vw), 14px);
+  --font-ui: var(--font-base);
+  --leading-display: 1.12;
+  --leading-section: 1.2;
+  --leading-body: 1.6;
+  --leading-ui: 1.45;
+  --tracking-heading: -0.015em;
+  --tracking-body: -0.003em;
 }
 
 * {
@@ -139,9 +152,6 @@ textarea {
 
 .hands-logo {
   width: fit-content;
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: 0;
 }
 
 .hands-header .hands-logo,
@@ -168,7 +178,7 @@ textarea {
 
 .hands-nav {
   gap: 34px;
-  font-size: 14px;
+
   font-weight: 600;
 }
 
@@ -210,7 +220,7 @@ textarea {
 
 .language-menu {
   position: relative;
-  font-size: 14px;
+
   font-weight: 600;
 }
 
@@ -308,7 +318,7 @@ textarea {
 .mobile-nav-panel nav a {
   padding: 15px 0;
   border-bottom: 1px solid var(--line);
-  font-size: 20px;
+
   font-weight: 600;
 }
 
@@ -319,7 +329,6 @@ textarea {
 
 .mobile-language-menu > strong {
   color: var(--muted);
-  font-size: 12px;
 }
 
 .mobile-language-menu > div {
@@ -332,7 +341,7 @@ textarea {
   padding: 8px 10px;
   background: #efefec;
   border-radius: 6px;
-  font-size: 13px;
+
   font-weight: 600;
 }
 
@@ -349,7 +358,7 @@ textarea {
   padding: 0 22px;
   border: 1px solid transparent;
   border-radius: 999px;
-  font-size: 14px;
+
   font-weight: 600;
   transition:
     color 180ms ease,
@@ -417,9 +426,8 @@ textarea {
   padding: 10px 14px;
   background: rgba(23, 24, 23, 0.28);
   border-radius: 999px;
-  font-size: 11px;
+
   font-weight: 600;
-  letter-spacing: 1.4px;
 }
 
 .hero-media,
@@ -452,9 +460,6 @@ textarea {
 
 .eyebrow {
   margin: 0 0 26px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1.8px;
 }
 
 .eyebrow.dark {
@@ -464,17 +469,13 @@ textarea {
 .hero h1 {
   max-width: 1080px;
   margin: 0;
-  font-size: 104px;
+
   font-weight: 600;
-  line-height: 0.98;
-  letter-spacing: 0;
 }
 
 .hero-copy {
   max-width: 640px;
   margin: 34px 0 0;
-  font-size: 19px;
-  line-height: 1.65;
 }
 
 .hero-actions {
@@ -486,7 +487,7 @@ textarea {
   display: inline-flex;
   gap: 8px;
   align-items: center;
-  font-size: 14px;
+
   font-weight: 600;
 }
 
@@ -613,19 +614,16 @@ textarea {
 }
 
 .hero-video-copy strong {
-  font-size: clamp(1.25rem, 0.9821rem + 0.8929vw, 1.875rem);
   font-weight: 500;
-  line-height: 1.2;
-  letter-spacing: -0.05em;
+
   white-space: pre-line;
 }
 
 .hero-video-copy small {
   color: var(--white);
-  font-size: clamp(1rem, 0.8929rem + 0.3571vw, 1.25rem);
+
   font-weight: 400;
-  line-height: 1.2;
-  letter-spacing: -0.05em;
+
   white-space: pre-line;
 }
 
@@ -664,7 +662,7 @@ textarea {
   background: var(--white);
   border: 0;
   border-radius: 999px;
-  font-size: 12px;
+
   font-weight: 600;
 }
 
@@ -682,10 +680,8 @@ textarea {
   max-width: 1260px;
   margin: 0;
   color: #c9cbc7;
-  font-size: 108px;
+
   font-weight: 600;
-  line-height: 0.96;
-  letter-spacing: 0;
 }
 
 .value-grid {
@@ -702,27 +698,21 @@ textarea {
 
 .value-grid span {
   color: var(--muted);
-  font-size: 12px;
+
   font-weight: 600;
 }
 
 .value-grid h3 {
   margin: 48px 0 14px;
-  font-size: 25px;
 }
 
 .value-grid p,
 .faq-list p {
   color: var(--muted);
-  font-size: 15px;
-  line-height: 1.7;
 }
 
 .faq-heading h2 {
   margin: 0;
-  font-size: 60px;
-  line-height: 1.06;
-  letter-spacing: 0;
 }
 
 .home-feature-rail {
@@ -776,16 +766,13 @@ textarea {
 
 .home-feature-copy h2 {
   margin: 0;
-  font-size: 44px;
+
   font-weight: 500;
-  line-height: 1.2;
 }
 
 .home-feature-copy p {
   margin: auto 0 32px;
   color: #303133;
-  font-size: 23px;
-  line-height: 1.5;
 }
 
 .home-editorial-button {
@@ -797,7 +784,7 @@ textarea {
   color: #101213;
   background: #fff;
   border-radius: 170px;
-  font-size: 17px;
+
   font-weight: 500;
 }
 
@@ -832,8 +819,6 @@ textarea {
   align-items: center;
   gap: 10px;
   margin: 0 0 36px;
-  font-size: 17px;
-  line-height: 1.2;
 }
 
 .home-method-kicker span {
@@ -843,16 +828,13 @@ textarea {
 .home-method-copy h2 {
   max-width: 564px;
   margin: 0;
-  font-size: 60px;
+
   font-weight: 500;
-  line-height: 1.2;
 }
 
 .home-method-body {
   max-width: 564px;
   margin: 18px 0 0;
-  font-size: 24px;
-  line-height: 1.5;
 }
 
 .home-method-stat {
@@ -876,15 +858,12 @@ textarea {
 .home-method-stat strong {
   display: block;
   margin-bottom: 18px;
-  font-size: 60px;
+
   font-weight: 400;
-  line-height: 1;
 }
 
 .home-method-stat p {
   margin: 0;
-  font-size: 19px;
-  line-height: 1.5;
 }
 
 .home-method-media {
@@ -905,15 +884,12 @@ textarea {
 
 .home-method-media-copy h3 {
   margin: 0;
-  font-size: 50px;
+
   font-weight: 500;
-  line-height: 1.2;
 }
 
 .home-method-media-copy p {
   margin: 18px 0 0;
-  font-size: 19px;
-  line-height: 1.5;
 }
 
 .home-method-partner {
@@ -944,14 +920,10 @@ textarea {
 }
 
 .home-method-partner strong {
-  font-size: 22px;
   font-weight: 500;
-  line-height: 1.2;
 }
 
 .home-method-partner span {
-  font-size: 19px;
-  line-height: 1.2;
 }
 
 .how-showcase {
@@ -992,25 +964,23 @@ textarea {
 
 .how-story-index {
   color: var(--white);
-  font-size: 50px;
+
   font-weight: 500;
-  line-height: 1.2;
 }
 
 .how-story-kicker {
   margin: 0 0 18px;
   color: var(--white);
-  font-size: 20px;
+
   font-weight: 400;
-  line-height: 1.2;
 }
 
 .how-story-card h2 {
   margin: 0;
   color: var(--white);
-  font-size: 34px;
+
   font-weight: 500;
-  line-height: 1.2;
+
   word-break: keep-all;
 }
 
@@ -1018,7 +988,7 @@ textarea {
   min-height: 70px;
   margin-top: 28px;
   padding-inline: 26px;
-  font-size: 17px;
+
   font-weight: 500;
   border-radius: 170px;
 }
@@ -1033,7 +1003,7 @@ textarea {
 .how-slide-controls > span {
   padding-right: 18px;
   color: var(--white);
-  font-size: 14px;
+
   font-weight: 500;
 }
 
@@ -1097,13 +1067,10 @@ textarea {
   gap: 10px;
   margin: 0;
   color: #303133;
-  font-size: 17px;
-  line-height: 21px;
 }
 
 .customer-stories-heading span {
   color: #cebffa;
-  font-size: 12px;
 }
 
 .customer-stories-window {
@@ -1146,17 +1113,15 @@ textarea {
 
 .customer-story-card h3 {
   margin: 0 0 18px;
-  font-size: 24px;
+
   font-weight: 500;
-  line-height: 28.8px;
 }
 
 .customer-story-card p {
   margin: 0;
   color: #777;
-  font-size: 17px;
+
   font-weight: 400;
-  line-height: 25.65px;
 }
 
 .customer-story-card footer {
@@ -1179,15 +1144,11 @@ textarea {
 }
 
 .customer-story-card footer strong {
-  font-size: 20px;
   font-weight: 500;
-  line-height: 24px;
 }
 
 .customer-story-card footer span {
   color: #303133;
-  font-size: 17px;
-  line-height: 20.4px;
 }
 
 .home-final-cta {
@@ -1215,9 +1176,8 @@ textarea {
 
 .home-final-cta h2 {
   margin: 0;
-  font-size: 60px;
+
   font-weight: 500;
-  line-height: 1.2;
 }
 
 .home-final-cta-button {
@@ -1230,7 +1190,7 @@ textarea {
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(18px);
   border-radius: 999px;
-  font-size: 17px;
+
   font-weight: 500;
 }
 
@@ -1276,7 +1236,6 @@ textarea {
 
 .faq-heading h2 {
   margin: 0;
-  font-size: 64px;
 }
 
 .faq-list {
@@ -1298,7 +1257,7 @@ textarea {
   min-height: 96px;
   cursor: pointer;
   list-style: none;
-  font-size: 20px;
+
   font-weight: 600;
 }
 
@@ -1321,8 +1280,6 @@ textarea {
   margin: 0;
   padding: 0 46px 34px 0;
   color: rgba(255, 255, 255, 0.74);
-  font-size: 17px;
-  line-height: 1.65;
 }
 
 .faq-media {
@@ -1352,13 +1309,10 @@ textarea {
 }
 
 .faq-media-card strong {
-  font-size: 28px;
 }
 
 .faq-media-card span {
   color: rgba(255, 255, 255, 0.78);
-  font-size: 14px;
-  line-height: 1.5;
 }
 
 .home-partner-strip {
@@ -1377,15 +1331,13 @@ textarea {
 
 .home-partner-strip-heading h2 {
   margin: 0;
-  font-size: 50px;
+
   font-weight: 500;
-  line-height: 1.2;
 }
 
 .home-partner-strip-heading > a {
   flex: 0 0 auto;
   padding-bottom: 8px;
-  font-size: 15px;
 }
 
 .home-partner-strip-list {
@@ -1422,14 +1374,13 @@ textarea {
 
 .home-partner-strip-card strong {
   align-self: end;
-  font-size: 17px;
+
   font-weight: 500;
 }
 
 .home-partner-strip-card small {
   align-self: start;
   color: var(--muted);
-  font-size: 13px;
 }
 
 .download-actions {
@@ -1448,11 +1399,9 @@ textarea {
 }
 
 .store-button small {
-  font-size: 10px;
 }
 
 .store-button strong {
-  font-size: 18px;
 }
 
 .hands-home {
@@ -1521,10 +1470,8 @@ textarea {
   width: min(900px, 100%);
   margin: 0;
   color: #fff;
-  font-size: 60px;
+
   font-weight: 500;
-  letter-spacing: -3px;
-  line-height: 72px;
 }
 
 .wellness-footer-button {
@@ -1538,11 +1485,11 @@ textarea {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 170px;
   backdrop-filter: blur(10px);
-  font-size: 17px;
+
   font-weight: 500;
-  letter-spacing: -0.85px;
-  line-height: 20px;
-  transition: background-color 0.2s cubic-bezier(0.785, 0.135, 0.15, 0.86),
+
+  transition:
+    background-color 0.2s cubic-bezier(0.785, 0.135, 0.15, 0.86),
     transform 0.4s cubic-bezier(0.25, 0.45, 0.4, 1);
 }
 
@@ -1623,18 +1570,14 @@ textarea {
 .wellness-footer-intro h2 {
   width: min(540px, 100%);
   margin: 0;
-  font-size: 40px;
+
   font-weight: 500;
-  letter-spacing: -2px;
-  line-height: 48px;
 }
 
 .wellness-footer-intro > p {
   margin: 18px 0 0;
-  font-size: 20px;
+
   font-weight: 400;
-  letter-spacing: -1px;
-  line-height: 30px;
 }
 
 .wellness-footer-trust {
@@ -1671,9 +1614,6 @@ textarea {
   gap: 7px;
   color: #777;
   font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  letter-spacing: normal;
-  line-height: normal;
 }
 
 .wellness-footer-stars {
@@ -1683,10 +1623,9 @@ textarea {
   height: 16px;
   overflow: hidden;
   font-family: 'Uncode Icons';
-  font-size: 15px;
+
   font-style: normal;
-  letter-spacing: 1px;
-  line-height: 16px;
+
   white-space: nowrap;
 }
 
@@ -1763,20 +1702,17 @@ textarea {
   width: fit-content;
   height: 60px;
   margin: 0 0 18px;
-  font-size: 24px;
+
   font-weight: 500;
-  letter-spacing: -1.2px;
-  line-height: 29px;
 }
 
 .wellness-footer-column a {
   display: flex;
   min-height: 50px;
   width: fit-content;
-  font-size: 20px;
+
   font-weight: 400;
-  letter-spacing: -1px;
-  line-height: 50px;
+
   transition: opacity 0.2s ease;
 }
 
@@ -1804,9 +1740,6 @@ textarea {
   .wellness-footer-cta h2 {
     width: 708px;
     max-width: 100%;
-    font-size: 40px;
-    letter-spacing: -2px;
-    line-height: 48px;
   }
 
   .wellness-footer-info {
@@ -1818,9 +1751,6 @@ textarea {
 
   .wellness-footer-intro h2 {
     width: 100%;
-    font-size: 26.6667px;
-    letter-spacing: -1.3333px;
-    line-height: 32px;
   }
 
   .wellness-footer-trust {
@@ -1855,7 +1785,6 @@ textarea {
   }
 
   .wellness-footer-column h3 {
-    line-height: 60px;
   }
 }
 
@@ -1878,23 +1807,18 @@ textarea {
 .directory-hero h1 {
   max-width: 1040px;
   margin: 0;
-  font-size: 86px;
-  line-height: 0.98;
 }
 
 .directory-hero > p:not(.eyebrow) {
   max-width: 670px;
   margin: 32px 0 0;
   color: var(--muted);
-  font-size: 17px;
-  line-height: 1.7;
 }
 
 .directory-hero > strong {
   position: absolute;
   right: 0;
   bottom: 90px;
-  font-size: 46px;
 }
 
 .directory-regions {
@@ -1920,7 +1844,7 @@ textarea {
   padding: 7px 0;
   color: var(--muted);
   border-bottom: 2px solid transparent;
-  font-size: 15px;
+
   font-weight: 600;
 }
 
@@ -1940,7 +1864,7 @@ textarea {
   color: var(--muted);
   border: 1px solid var(--line);
   border-radius: 999px;
-  font-size: 12px;
+
   font-weight: 600;
 }
 
@@ -1965,13 +1889,10 @@ textarea {
 .directory-results-heading h2 {
   max-width: 800px;
   margin: 0;
-  font-size: 52px;
-  line-height: 1.05;
 }
 
 .directory-results-heading > span {
   color: var(--muted);
-  font-size: 13px;
 }
 
 .public-partner-grid {
@@ -2020,7 +1941,6 @@ textarea {
 
 .public-partner-card-copy h3 {
   margin: 0 0 6px;
-  font-size: 17px;
 }
 
 .public-partner-card-copy p,
@@ -2028,7 +1948,6 @@ textarea {
 .public-partner-card-footer > span {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
 }
 
 .public-partner-card-footer {
@@ -2036,7 +1955,6 @@ textarea {
 }
 
 .public-partner-card-footer strong {
-  font-size: 13px;
 }
 
 .directory-empty {
@@ -2051,15 +1969,11 @@ textarea {
 }
 
 .directory-empty > span {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
 }
 
 .directory-empty h3 {
   max-width: 620px;
   margin: 18px 0 8px;
-  font-size: 31px;
 }
 
 .directory-empty p {
@@ -2074,7 +1988,6 @@ textarea {
   margin-top: 70px;
   padding-top: 22px;
   border-top: 1px solid var(--line);
-  font-size: 13px;
 }
 
 .directory-pagination a:last-child {
@@ -2094,8 +2007,6 @@ textarea {
 .directory-download h2 {
   max-width: 960px;
   margin: 0;
-  font-size: 58px;
-  line-height: 1.06;
 }
 
 .partner-breadcrumbs {
@@ -2103,7 +2014,6 @@ textarea {
   gap: 12px;
   padding-top: 30px;
   color: var(--muted);
-  font-size: 12px;
 }
 
 .partner-breadcrumbs a::after {
@@ -2152,15 +2062,12 @@ textarea {
 
 .partner-detail-title h1 {
   margin: 0;
-  font-size: 76px;
-  line-height: 1;
 }
 
 .partner-detail-title > div:first-child > p:last-child {
   max-width: 720px;
   margin: 24px 0 0;
   color: var(--muted);
-  line-height: 1.7;
 }
 
 .partner-detail-rating {
@@ -2171,12 +2078,10 @@ textarea {
 }
 
 .partner-detail-rating strong {
-  font-size: 44px;
 }
 
 .partner-detail-rating span {
   color: var(--muted);
-  font-size: 12px;
 }
 
 .partner-detail-content {
@@ -2194,7 +2099,6 @@ textarea {
 .partner-detail-main h2,
 .partner-app-cta h2 {
   margin: 0 0 34px;
-  font-size: 44px;
 }
 
 .partner-facts {
@@ -2213,7 +2117,6 @@ textarea {
 
 .partner-facts dt {
   color: var(--muted);
-  font-size: 13px;
 }
 
 .partner-facts dd {
@@ -2236,15 +2139,12 @@ textarea {
 
 .public-service-list h3 {
   margin: 0 0 8px;
-  font-size: 20px;
 }
 
 .public-service-list p {
   max-width: 580px;
   margin: 0;
   color: var(--muted);
-  font-size: 14px;
-  line-height: 1.6;
 }
 
 .public-service-list article > div:last-child {
@@ -2256,7 +2156,6 @@ textarea {
 
 .public-service-list span {
   color: var(--muted);
-  font-size: 12px;
 }
 
 .public-review-list {
@@ -2276,19 +2175,16 @@ textarea {
 }
 
 .public-review-list article > strong {
-  font-size: 24px;
 }
 
 .public-review-list article > p {
   min-height: 72px;
   color: var(--muted);
-  line-height: 1.65;
 }
 
 .public-review-list article > span,
 .partner-app-cta small {
   color: var(--muted);
-  font-size: 11px;
 }
 
 .partner-detail-empty-copy {
@@ -2307,13 +2203,11 @@ textarea {
 }
 
 .partner-app-cta h2 {
-  font-size: 32px;
 }
 
 .partner-app-cta > p:not(.eyebrow) {
   margin: 0 0 28px;
   color: var(--muted);
-  line-height: 1.65;
 }
 
 .partner-app-cta .button {
@@ -2369,15 +2263,11 @@ textarea {
 
 .recruitment-hero-copy h1 {
   margin: 0;
-  font-size: 92px;
-  line-height: 0.98;
 }
 
 .recruitment-hero-copy > p:not(.eyebrow) {
   max-width: 620px;
   margin: 30px 0;
-  font-size: 19px;
-  line-height: 1.65;
 }
 
 .recruitment-hero-video {
@@ -2408,14 +2298,9 @@ textarea {
 }
 
 .recruitment-hero-video .hero-video-copy strong {
-  font-size: 17px;
-  letter-spacing: 0;
 }
 
 .recruitment-hero-video .hero-video-copy small {
-  font-size: 11px;
-  line-height: 1.35;
-  letter-spacing: 0;
 }
 
 .referral-page main {
@@ -2453,15 +2338,12 @@ textarea {
 .referral-hero h1 {
   max-width: 760px;
   margin: 14px 0 24px;
-  font-size: clamp(64px, 6vw, 104px);
+
   font-weight: 500;
-  line-height: 0.96;
 }
 
 .referral-hero-copy > p:not(.eyebrow) {
   max-width: 650px;
-  font-size: 18px;
-  line-height: 1.65;
 }
 
 .referral-actions {
@@ -2474,8 +2356,6 @@ textarea {
 .referral-hero-note {
   max-width: 300px;
   margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
 }
 
 .referral-audiences,
@@ -2498,9 +2378,8 @@ textarea {
 .referral-faq-section h2,
 .referral-final-cta h2 {
   margin: 0;
-  font-size: clamp(48px, 5vw, 78px);
+
   font-weight: 500;
-  line-height: 1;
 }
 
 .referral-audience-grid {
@@ -2523,19 +2402,17 @@ textarea {
 .referral-audience-grid article > span,
 .referral-rule-grid article > span,
 .referral-flow-list > li > span {
-  font-size: 12px;
 }
 
 .referral-audience-grid h3 {
   margin: 140px 0 20px;
-  font-size: 42px;
+
   font-weight: 500;
 }
 
 .referral-audience-grid p {
   max-width: 560px;
   color: var(--muted);
-  line-height: 1.7;
 }
 
 .referral-audience-grid ol {
@@ -2557,7 +2434,7 @@ textarea {
   display: inline-block;
   width: 48px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--font-small);
 }
 
 .referral-flow-section {
@@ -2574,7 +2451,6 @@ textarea {
   max-width: 480px;
   margin-top: 30px;
   color: rgba(255, 255, 255, 0.62);
-  line-height: 1.7;
 }
 
 .referral-flow-list {
@@ -2594,14 +2470,13 @@ textarea {
 
 .referral-flow-list h3 {
   margin: 0 0 8px;
-  font-size: 22px;
+
   font-weight: 500;
 }
 
 .referral-flow-list p {
   margin: 0;
   color: rgba(255, 255, 255, 0.62);
-  line-height: 1.6;
 }
 
 .referral-rule-grid {
@@ -2620,14 +2495,13 @@ textarea {
 
 .referral-rule-grid h3 {
   margin: 100px 0 16px;
-  font-size: 24px;
+
   font-weight: 500;
 }
 
 .referral-rule-grid p {
   margin: 0;
   color: var(--muted);
-  line-height: 1.65;
 }
 
 .referral-faq-section {
@@ -2652,7 +2526,7 @@ textarea {
   position: relative;
   padding: 28px 46px 28px 0;
   cursor: pointer;
-  font-size: 18px;
+
   font-weight: 500;
   list-style: none;
 }
@@ -2676,7 +2550,6 @@ textarea {
   max-width: 620px;
   margin: 0;
   padding: 0 46px 28px 0;
-  line-height: 1.7;
 }
 
 .referral-final-cta {
@@ -2698,7 +2571,6 @@ textarea {
 
 .referral-final-cta > div:first-child > p:last-child {
   max-width: 590px;
-  line-height: 1.7;
 }
 
 .public-news-heading,
@@ -2734,8 +2606,6 @@ textarea {
 .public-document-heading h1 {
   max-width: 1050px;
   margin: 0;
-  font-size: 88px;
-  line-height: 0.98;
 }
 
 .public-news-heading > p:not(.eyebrow),
@@ -2743,8 +2613,6 @@ textarea {
   max-width: 680px;
   margin: 28px 0 0;
   color: var(--muted);
-  font-size: 17px;
-  line-height: 1.7;
 }
 
 .public-news-grid {
@@ -2795,24 +2663,19 @@ textarea {
 }
 
 .public-news-card-copy > span {
-  font-size: 72px;
   font-weight: 600;
 }
 
 .public-news-card-copy h2 {
   margin: 0;
-  font-size: 34px;
-  line-height: 1.05;
 }
 
 .public-news-card-copy p {
   margin: 16px 0 24px;
   color: rgba(255, 255, 255, 0.78);
-  line-height: 1.6;
 }
 
 .public-news-card-copy strong {
-  font-size: 13px;
 }
 
 .public-news-detail-hero {
@@ -2834,19 +2697,14 @@ textarea {
 
 .public-news-detail-title h1 {
   margin: 0;
-  font-size: 78px;
-  line-height: 1;
 }
 
 .public-news-detail-title > p:not(.eyebrow) {
   max-width: 700px;
   margin: 24px 0;
-  font-size: 18px;
-  line-height: 1.6;
 }
 
 .public-news-detail-title time {
-  font-size: 12px;
 }
 
 .public-news-article {
@@ -2856,8 +2714,6 @@ textarea {
 
 .public-news-article p {
   margin: 0 0 28px;
-  font-size: 20px;
-  line-height: 1.85;
 }
 
 .public-news-article .text-button {
@@ -2878,20 +2734,17 @@ textarea {
 
 .public-document-content section > span {
   color: var(--muted);
-  font-size: 13px;
 }
 
 .public-document-content h2 {
   margin: 0 0 16px;
-  font-size: 28px;
 }
 
 .public-document-content p {
   max-width: 820px;
   margin: 0;
   color: var(--muted);
-  font-size: 17px;
-  line-height: 1.8;
+
   white-space: pre-line;
 }
 
@@ -2903,8 +2756,6 @@ textarea {
   color: var(--ohio-muted);
   background: #23252b;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  font-size: 16.4px;
-  line-height: 26.24px;
 }
 
 .ohio-creative-shell {
@@ -2944,18 +2795,14 @@ textarea {
 }
 
 .ohio-intro-copy h2 {
-  font-size: clamp(36px, 3.65vw, 72px);
-  letter-spacing: -0.04em;
-  line-height: 1.05;
 }
 
 .ohio-intro-copy > p {
   margin: 1px 0 0;
   padding-top: 7.38px;
   color: var(--ohio-muted);
-  font-size: 14.76px;
+
   font-weight: 500;
-  line-height: 23.616px;
 }
 
 .ohio-intro-action {
@@ -2972,9 +2819,8 @@ textarea {
   min-height: 24.92px;
   color: #fff;
   font-family: 'DM Sans Ohio', sans-serif;
-  font-size: 15.58px;
+
   font-weight: 500;
-  line-height: 24.928px;
 }
 
 .ohio-text-link svg {
@@ -3023,7 +2869,6 @@ textarea {
 
 .ohio-story-copy strong {
   color: var(--ohio-ink);
-  font-weight: 700;
 }
 
 .ohio-story-copy-primary p {
@@ -3041,9 +2886,8 @@ textarea {
 .ohio-progress h3 {
   margin: 0 0 9.36px;
   color: var(--ohio-ink);
-  font-size: 16.4px;
+
   font-weight: 500;
-  line-height: 23.616px;
 }
 
 .ohio-progress-track {
@@ -3070,9 +2914,9 @@ textarea {
   color: #fff;
   background: #111013;
   border-radius: 20px;
-  font-size: 13.12px;
+
   font-weight: 500;
-  line-height: 20.992px;
+
   text-align: center;
   transform: translateX(50%);
 }
@@ -3099,9 +2943,6 @@ textarea {
 }
 
 .ohio-capabilities-heading h3 {
-  font-size: 22.64px;
-  letter-spacing: -0.03em;
-  line-height: 27.167px;
 }
 
 .ohio-capabilities-heading .ohio-text-link {
@@ -3148,7 +2989,9 @@ textarea {
   object-fit: cover;
   opacity: 0;
   transform: scale(1);
-  transition: opacity 350ms ease, transform 350ms ease;
+  transition:
+    opacity 350ms ease,
+    transform 350ms ease;
 }
 
 .ohio-capability-card:hover > img,
@@ -3177,17 +3020,14 @@ textarea {
 .ohio-capability-eyebrow {
   margin: 0;
   color: #91929b;
-  font-size: 14.76px;
+
   font-weight: 500;
-  line-height: 23.616px;
+
   text-transform: uppercase;
 }
 
 .ohio-capability-card h4 {
   padding-top: 3.6px;
-  font-size: 24px;
-  letter-spacing: -0.035em;
-  line-height: 27.6px;
 }
 
 .ohio-capability-description p {
@@ -3251,10 +3091,8 @@ textarea {
   margin: 0;
   color: #fff;
   font-family: 'Space Grotesk Asymmetric', 'Space Grotesk', sans-serif;
-  font-size: 75px;
+
   font-weight: 600;
-  letter-spacing: -3.1px;
-  line-height: 0.9;
 }
 
 .asymmetric-vision-word {
@@ -3263,11 +3101,7 @@ textarea {
 
 .asymmetric-vision-char,
 .asymmetric-vision-reveal-unit {
-  opacity: clamp(
-    0.2,
-    calc((var(--vision-reveal) - var(--char-index)) * 0.8 + 0.2),
-    1
-  );
+  opacity: clamp(0.2, calc((var(--vision-reveal) - var(--char-index)) * 0.8 + 0.2), 1);
   transition: opacity 80ms linear;
 }
 
@@ -3297,10 +3131,7 @@ textarea {
   margin-top: 40px;
   color: #fff;
   font-family: 'Space Grotesk Asymmetric', 'Space Grotesk', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  line-height: 16.8px;
+
   text-transform: uppercase;
   pointer-events: auto;
 }
@@ -3351,9 +3182,9 @@ textarea {
   opacity: 0;
   color: #000;
   font-family: sans-serif;
-  font-size: 22px;
+
   font-weight: 400;
-  line-height: 33px;
+
   white-space: nowrap;
   transition: opacity 350ms ease-out;
   cursor: grab;
@@ -3454,8 +3285,6 @@ textarea {
 
   .asymmetric-vision-title {
     max-width: 335px;
-    font-size: 46.8px;
-    line-height: 42.12px;
   }
 
   .asymmetric-vision-chip-scene {
@@ -3547,15 +3376,12 @@ textarea {
   }
 
   .hero h1 {
-    font-size: 72px;
   }
 
   .statement-section h2 {
-    font-size: 82px;
   }
 
   .faq-heading h2 {
-    font-size: 50px;
   }
 
   .home-feature-rail {
@@ -3656,9 +3482,6 @@ textarea {
   }
 
   .ohio-intro-copy h2 {
-    font-size: 36px;
-    letter-spacing: -1.44px;
-    line-height: 41.4px;
   }
 
   .ohio-desktop-break {
@@ -3702,9 +3525,6 @@ textarea {
   }
 
   .ohio-capabilities-heading h3 {
-    font-size: 19.92px;
-    letter-spacing: -0.03em;
-    line-height: 25.9px;
   }
 
   .ohio-capabilities-grid {
@@ -3728,7 +3548,6 @@ textarea {
   }
 
   .ohio-capability-card h4 {
-    line-height: 30px;
   }
 
   .hands-header-actions {
@@ -3758,13 +3577,10 @@ textarea {
   }
 
   .hero h1 {
-    font-size: 48px;
-    line-height: 1.02;
   }
 
   .hero-copy {
     margin-top: 24px;
-    font-size: 16px;
   }
 
   .hero-actions {
@@ -3784,7 +3600,6 @@ textarea {
   }
 
   .statement-section h2 {
-    font-size: 52px;
   }
 
   .value-grid {
@@ -3801,7 +3616,6 @@ textarea {
   }
 
   .faq-heading h2 {
-    font-size: 42px;
   }
 
   .home-feature-panel {
@@ -3818,11 +3632,9 @@ textarea {
   }
 
   .home-feature-copy h2 {
-    font-size: 32px;
   }
 
   .home-feature-copy p {
-    font-size: 19px;
   }
 
   .home-method-section {
@@ -3839,13 +3651,9 @@ textarea {
   }
 
   .home-method-copy h2 {
-    font-size: 35px;
-    line-height: 42px;
   }
 
   .home-method-body {
-    font-size: 24px;
-    line-height: 36px;
   }
 
   .home-method-stat {
@@ -3864,13 +3672,9 @@ textarea {
   }
 
   .home-method-stat strong {
-    font-size: 35px;
-    line-height: 35px;
   }
 
   .home-method-stat p {
-    font-size: 16px;
-    line-height: 24px;
   }
 
   .home-method-media {
@@ -3883,8 +3687,6 @@ textarea {
   }
 
   .home-method-media-copy h3 {
-    font-size: 33.3333px;
-    line-height: 40px;
   }
 
   .home-method-partner {
@@ -3921,7 +3723,6 @@ textarea {
   }
 
   .how-story-card h2 {
-    font-size: 36px;
   }
 
   .how-slide-controls {
@@ -3978,13 +3779,10 @@ textarea {
   }
 
   .home-final-cta h2 {
-    font-size: 36px;
-    line-height: 1.08;
   }
 
   .home-final-cta-button {
     min-height: 56px;
-    font-size: 15px;
   }
 
   .faq-section {
@@ -4018,7 +3816,6 @@ textarea {
   }
 
   .faq-list summary {
-    font-size: 17px;
   }
 
   .faq-list p {
@@ -4037,7 +3834,6 @@ textarea {
   }
 
   .home-partner-strip-heading h2 {
-    font-size: 36px;
   }
 
   .home-partner-strip-list {
@@ -4084,9 +3880,6 @@ textarea {
 
   .wellness-footer-cta h2 {
     width: 276px;
-    font-size: 35px;
-    letter-spacing: -1.75px;
-    line-height: 42px;
   }
 
   .wellness-footer-info {
@@ -4103,9 +3896,6 @@ textarea {
 
   .wellness-footer-intro h2 {
     width: 100%;
-    font-size: 26.6667px;
-    letter-spacing: -1.3333px;
-    line-height: 32px;
   }
 
   .wellness-footer-intro > p {
@@ -4159,14 +3949,12 @@ textarea {
   }
 
   .directory-hero h1 {
-    font-size: 50px;
   }
 
   .directory-hero > strong {
     position: static;
     display: block;
     margin-top: 34px;
-    font-size: 34px;
   }
 
   .directory-regions {
@@ -4185,7 +3973,6 @@ textarea {
 
   .directory-results-heading h2,
   .directory-download h2 {
-    font-size: 40px;
   }
 
   .public-partner-grid {
@@ -4211,7 +3998,6 @@ textarea {
   }
 
   .public-partner-card-copy h3 {
-    font-size: 16px;
   }
 
   .directory-download {
@@ -4241,7 +4027,6 @@ textarea {
   }
 
   .partner-detail-title h1 {
-    font-size: 52px;
   }
 
   .partner-detail-rating {
@@ -4287,7 +4072,6 @@ textarea {
   }
 
   .recruitment-hero-copy h1 {
-    font-size: 50px;
   }
 
   .recruitment-hero-video {
@@ -4308,7 +4092,6 @@ textarea {
   }
 
   .referral-hero h1 {
-    font-size: 52px;
   }
 
   .referral-hero-note {
@@ -4338,7 +4121,6 @@ textarea {
   .referral-flow-intro h2,
   .referral-faq-section h2,
   .referral-final-cta h2 {
-    font-size: 42px;
   }
 
   .referral-audience-grid article {
@@ -4348,7 +4130,6 @@ textarea {
 
   .referral-audience-grid h3 {
     margin-top: 70px;
-    font-size: 34px;
   }
 
   .referral-flow-section,
@@ -4404,7 +4185,6 @@ textarea {
 
   .public-news-heading h1,
   .public-document-heading h1 {
-    font-size: 52px;
   }
 
   .public-news-grid {
@@ -4425,7 +4205,6 @@ textarea {
   }
 
   .public-news-detail-title h1 {
-    font-size: 48px;
   }
 
   .public-news-article {
@@ -4495,9 +4274,9 @@ textarea {
   color: var(--halsa-ink);
   background: var(--halsa-paper);
   border-radius: 500px;
-  font-size: 12px;
+
   font-weight: 500;
-  line-height: 12px;
+
   white-space: nowrap;
 }
 
@@ -4517,18 +4296,18 @@ textarea {
 .halsa-features-intro h2 {
   width: 100%;
   color: var(--halsa-ink);
-  font-size: 64px;
+
   font-weight: 400;
-  line-height: 64px;
+
   text-align: center;
 }
 
 .halsa-features-intro p {
   width: 600px;
   color: rgba(24, 33, 45, 0.6);
-  font-size: 20px;
+
   font-weight: 400;
-  line-height: 32px;
+
   text-align: center;
 }
 
@@ -4589,16 +4368,14 @@ textarea {
 
 .halsa-feature-card h3 {
   color: #fff;
-  font-size: 40px;
+
   font-weight: 400;
-  line-height: 44px;
 }
 
 .halsa-feature-card p {
   color: rgba(255, 255, 255, 0.6);
-  font-size: 16px;
+
   font-weight: 400;
-  line-height: 25.6px;
 }
 
 .halsa-feature-card-mindfulness p {
@@ -4620,9 +4397,8 @@ textarea {
   gap: 8px;
   min-height: 24px;
   color: #fff;
-  font-size: 15px;
+
   font-weight: 400;
-  line-height: 21px;
 }
 
 .halsa-reveal {
@@ -4660,8 +4436,6 @@ textarea {
   }
 
   .halsa-features-intro h2 {
-    font-size: 48px;
-    line-height: 52.8px;
   }
 
   .halsa-features-grid {
@@ -4687,10 +4461,7 @@ textarea {
   }
 
   .halsa-feature-card h3 {
-    font-size: 32px;
-    line-height: 38.4px;
   }
-
 }
 
 @media (max-width: 809px) {
@@ -4708,14 +4479,10 @@ textarea {
   }
 
   .halsa-features-intro h2 {
-    font-size: 40px;
-    line-height: 44px;
   }
 
   .halsa-features-intro p {
     width: 100%;
-    font-size: 18px;
-    line-height: 28.8px;
   }
 
   .halsa-features-grid {
@@ -4766,10 +4533,7 @@ textarea {
   }
 
   .halsa-feature-card h3 {
-    font-size: 26px;
-    line-height: 31.2px;
   }
-
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4806,17 +4570,12 @@ textarea {
 }
 
 .hands-footer-wordmark {
-  font-size: 78px;
-  font-weight: 800;
-  letter-spacing: -0.015em;
-  line-height: 0.82;
 }
 
 .hands-footer-brand p {
   margin: 0;
   color: #9b9e9c;
-  font-size: 16px;
-  line-height: 1;
+
   transform: translateY(19px);
 }
 
@@ -4837,17 +4596,13 @@ textarea {
 .hands-footer-group h2 {
   margin: 0 0 25px;
   color: #727775;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0;
-  line-height: 16px;
 }
 
 .hands-footer-group a {
   width: fit-content;
-  font-size: 14px;
+
   font-weight: 600;
-  line-height: 32px;
+
   transition: color 180ms ease;
 }
 
@@ -4877,8 +4632,6 @@ textarea {
   min-height: 72px;
   padding-bottom: 4px;
   color: #929694;
-  font-size: 11px;
-  line-height: 16px;
 }
 
 .recruitment-page .hands-footer-brand,
@@ -4923,7 +4676,6 @@ textarea {
   }
 
   .hands-footer-wordmark {
-    font-size: 54px;
   }
 
   .hands-footer-menu {
@@ -4953,5 +4705,439 @@ textarea {
 @media (max-width: 420px) {
   .hands-footer-menu {
     grid-template-columns: 1fr;
+  }
+}
+
+/*
+ * HANDS semantic typography system
+ *
+ * The final cascade normalizes legacy, component-specific scales into four
+ * reusable roles while preserving each section's established font family.
+ */
+.hands-site {
+  font-size: var(--font-body);
+  font-weight: 400;
+  line-height: var(--leading-body);
+  letter-spacing: var(--tracking-body);
+}
+
+.hands-site h1 {
+  max-width: min(16ch, 100%);
+  font-size: var(--font-display);
+  font-weight: 500;
+  line-height: var(--leading-display);
+  letter-spacing: var(--tracking-heading);
+  text-wrap: balance;
+}
+
+.hands-site h2 {
+  max-width: min(26ch, 100%);
+  font-size: var(--font-section);
+  font-weight: 500;
+  line-height: var(--leading-section);
+  letter-spacing: var(--tracking-heading);
+  text-wrap: balance;
+}
+
+.hands-site h3,
+.hands-site h4,
+.hands-site h5,
+.hands-site h6 {
+  font-size: var(--font-body);
+  font-weight: 500;
+  line-height: var(--leading-ui);
+  letter-spacing: -0.01em;
+}
+
+.hands-site.hands-site :is(p, li, dt, dd) {
+  font-size: var(--font-body);
+  font-weight: 400;
+  line-height: var(--leading-body);
+  letter-spacing: var(--tracking-body);
+}
+
+.hands-site.hands-site p:not(.eyebrow) {
+  max-width: 70ch;
+}
+
+.hands-site.hands-site :is(a, button, summary, input, select, textarea) {
+  font-size: var(--font-ui);
+  line-height: var(--leading-ui);
+  letter-spacing: -0.005em;
+}
+
+.hands-site.hands-site :is(strong, b) {
+  font-size: var(--font-body);
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+}
+
+.hands-site.hands-site
+  :is(
+    .eyebrow,
+    small,
+    time,
+    .media-placeholder span,
+    .value-grid article > span,
+    .customer-stories-heading,
+    .home-method-kicker,
+    .how-slide-controls > span,
+    .directory-district-links a,
+    .directory-results-heading > span,
+    .public-partner-card-copy > span,
+    .public-partner-card-footer > span,
+    .directory-empty > span,
+    .partner-breadcrumbs,
+    .partner-detail-rating span,
+    .partner-facts dt,
+    .public-service-list span,
+    .public-review-list article > span,
+    .referral-hero-note,
+    .referral-audience-grid article > span,
+    .referral-rule-grid article > span,
+    .referral-flow-list > li > span,
+    .public-news-card-copy strong,
+    .public-document-content section > span,
+    .ohio-progress-tooltip,
+    .ohio-capability-eyebrow,
+    .halsa-pill,
+    .hands-footer-group h2,
+    .hands-footer-bottom,
+    .mobile-language-menu > strong
+  ) {
+  font-size: var(--font-small);
+  line-height: var(--leading-ui);
+  letter-spacing: 0;
+}
+
+.hands-site.hands-site .eyebrow {
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.hands-site.hands-site :is(.hands-nav, .language-menu, .mobile-nav-panel nav a, .mobile-language-menu a) {
+  font-size: var(--font-ui);
+  font-weight: 500;
+  line-height: var(--leading-ui);
+}
+
+.hands-site.hands-site
+  :is(
+    .button,
+    .text-button,
+    .home-editorial-button,
+    .home-final-cta-button,
+    .wellness-footer-button,
+    .asymmetric-vision-action
+  ) {
+  font-size: var(--font-ui);
+  font-weight: 600;
+  line-height: var(--leading-ui);
+}
+
+.hands-site.hands-site
+  :is(
+    .home-method-stat strong,
+    .how-story-index,
+    .directory-hero > strong,
+    .partner-detail-rating strong,
+    .public-review-list article > strong,
+    .public-news-card-copy > span
+  ) {
+  font-size: var(--font-section);
+  font-weight: 500;
+  line-height: var(--leading-section);
+  letter-spacing: var(--tracking-heading);
+}
+
+.hands-site.hands-site :is(.hands-logo, .hands-footer-wordmark) {
+  font-size: var(--font-section);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+/* Independent Vietnamese recruitment site */
+.recruitment-page {
+  --font-sans: Arial, 'Helvetica Neue', 'Noto Sans KR', sans-serif;
+  --paper: #efe8dc;
+  --ink: #23252b;
+  --recruitment-paper: var(--paper);
+  --recruitment-ink: var(--ink);
+  --recruitment-base: clamp(14px, calc(13.43px + 0.1786vw), 16px);
+  --recruitment-section: calc(var(--recruitment-base) * 1.618);
+  --recruitment-display: calc(var(--recruitment-base) * 2.617924);
+  --recruitment-small: clamp(12px, calc(11.43px + 0.1786vw), 14px);
+  --recruitment-section-space: clamp(80px, 10vw, 160px);
+  --recruitment-content-gap: clamp(48px, 6vw, 96px);
+  min-width: 320px;
+  overflow-x: clip;
+  color: var(--recruitment-ink);
+  background: var(--recruitment-paper);
+  font-family: var(--font-sans);
+  font-size: var(--recruitment-base);
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: -0.003em;
+}
+
+.recruitment-page *,
+.recruitment-page *::before,
+.recruitment-page *::after {
+  font-family: inherit;
+}
+
+.recruitment-page.recruitment-page
+  :is(h1, h2, h3, h4, h5, h6, p, a, button, li, strong, small, span, summary) {
+  font-family: var(--font-sans);
+}
+
+.recruitment-page :is(h1, h2, h3, h4, p) {
+  margin-block-start: 0;
+}
+
+.recruitment-page h1 {
+  max-width: min(16ch, 100%);
+  font-size: var(--recruitment-display);
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.recruitment-page h2 {
+  max-width: min(26ch, 100%);
+  font-size: var(--recruitment-section);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.recruitment-page :is(h3, h4, h5, h6, p, li, a, button, strong, small) {
+  font-size: var(--recruitment-base);
+}
+
+.recruitment-page :is(h3, h4, h5, h6, strong) {
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+}
+
+.recruitment-page :is(p, li) {
+  line-height: 1.6;
+  letter-spacing: -0.003em;
+}
+
+.recruitment-page p:not(.eyebrow) {
+  max-width: 70ch;
+}
+
+.recruitment-page :is(a, button) {
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+}
+
+.recruitment-page :is(.eyebrow, .halsa-pill, .ohio-capability-eyebrow, .ohio-progress-tooltip) {
+  font-size: var(--recruitment-small);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.recruitment-page .eyebrow {
+  letter-spacing: 0.08em;
+}
+
+.recruitment-page :is(.hands-logo, .hands-footer-wordmark) {
+  font-size: var(--recruitment-section);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.recruitment-page :is(.button, .asymmetric-vision-action) {
+  font-size: var(--recruitment-base);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.recruitment-page .button-light {
+  color: var(--recruitment-ink);
+  background: var(--recruitment-paper);
+}
+
+.recruitment-page .button-dark {
+  color: var(--recruitment-paper);
+  background: var(--recruitment-ink);
+}
+
+.recruitment-page .hands-header,
+.recruitment-page .recruitment-hero {
+  color: var(--recruitment-paper);
+}
+
+.recruitment-page .recruitment-hero {
+  background: var(--recruitment-ink);
+}
+
+.recruitment-page .recruitment-hero-shade {
+  background: rgba(35, 37, 43, 0.52);
+}
+
+.recruitment-page .recruitment-hero :is(h1, p, strong, small),
+.recruitment-page .hands-header :is(.hands-logo, summary) {
+  color: var(--recruitment-paper);
+}
+
+.recruitment-page .mobile-nav-panel {
+  color: var(--recruitment-ink);
+  background: var(--recruitment-paper);
+  border-color: rgba(35, 37, 43, 0.18);
+}
+
+.recruitment-page .mobile-nav-panel nav a {
+  border-color: rgba(35, 37, 43, 0.18);
+}
+
+.recruitment-page .halsa-main-clone {
+  --halsa-ink: var(--recruitment-ink);
+  --halsa-paper: var(--recruitment-paper);
+  padding: 0;
+  color: var(--recruitment-ink);
+  background: var(--recruitment-paper);
+}
+
+.recruitment-page .halsa-features-section {
+  gap: var(--recruitment-content-gap);
+  padding: var(--recruitment-section-space) 0;
+}
+
+.recruitment-page .halsa-features-intro :is(h2, p) {
+  color: var(--recruitment-ink);
+}
+
+.recruitment-page .halsa-features-grid {
+  padding: 0;
+}
+
+.recruitment-page .halsa-feature-card {
+  color: var(--recruitment-paper);
+  background: var(--recruitment-ink);
+}
+
+.recruitment-page .halsa-feature-card :is(h3, p, li),
+.recruitment-page .halsa-pill-inverse {
+  color: var(--recruitment-paper);
+}
+
+.recruitment-page .halsa-pill-inverse {
+  background: rgba(239, 232, 220, 0.1);
+}
+
+.recruitment-page .ohio-creative-section {
+  --ohio-ink: var(--recruitment-paper);
+  --ohio-muted: var(--recruitment-paper);
+  padding: var(--recruitment-section-space) 0;
+  color: var(--recruitment-paper);
+  background: var(--recruitment-ink);
+}
+
+.recruitment-page .ohio-section-spacer {
+  height: var(--recruitment-content-gap);
+}
+
+.recruitment-page .ohio-creative-shell > .ohio-section-spacer:first-child {
+  display: none;
+}
+
+.recruitment-page .ohio-creative-section :is(h2, h3, h4, p, strong, a) {
+  color: var(--recruitment-paper);
+}
+
+.recruitment-page .ohio-capability-card,
+.recruitment-page .ohio-capability-card.is-deep {
+  background: var(--recruitment-ink);
+}
+
+.recruitment-page .ohio-capability-description a {
+  color: var(--recruitment-ink);
+  background: var(--recruitment-paper);
+}
+
+.recruitment-page .ohio-progress-tooltip {
+  color: var(--recruitment-ink);
+  background: var(--recruitment-paper);
+}
+
+.recruitment-page .ohio-progress-tooltip::after {
+  border-top-color: var(--recruitment-paper);
+}
+
+.recruitment-page .asymmetric-vision-section {
+  min-height: calc(740px + var(--recruitment-section-space) * 2);
+  padding: var(--recruitment-section-space) 0;
+  color: var(--recruitment-paper);
+  background: var(--recruitment-ink);
+  border-top: 1px solid rgba(239, 232, 220, 0.18);
+}
+
+.recruitment-page .asymmetric-vision-title {
+  color: var(--recruitment-paper);
+  font-size: var(--recruitment-display);
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+}
+
+.recruitment-page .asymmetric-vision-action {
+  color: var(--recruitment-paper);
+}
+
+.recruitment-page .asymmetric-vision-action a,
+.recruitment-page .asymmetric-vision-chip > span {
+  color: var(--recruitment-ink);
+  background: var(--recruitment-paper);
+}
+
+.recruitment-page .hands-footer {
+  color: var(--recruitment-paper);
+  background: var(--recruitment-ink);
+  border-top: 1px solid rgba(239, 232, 220, 0.18);
+}
+
+.recruitment-page .hands-footer :is(h2, p, a, span) {
+  color: var(--recruitment-paper);
+}
+
+.recruitment-page .hands-footer-brand {
+  height: auto;
+  padding: var(--recruitment-section-space) 0 var(--recruitment-content-gap);
+}
+
+.recruitment-page .hands-footer-group h2,
+.recruitment-page .hands-footer-bottom {
+  font-size: var(--recruitment-small);
+  line-height: 1.45;
+}
+
+@media (max-width: 809px) {
+  .recruitment-page .halsa-features-section {
+    padding-block: var(--recruitment-section-space);
+  }
+
+  .recruitment-page .halsa-main-clone {
+    padding-block: 0;
+  }
+
+  .recruitment-page .halsa-features-grid {
+    padding: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .recruitment-page .asymmetric-vision-section {
+    min-height: calc(964.5px + var(--recruitment-section-space) * 2);
   }
 }

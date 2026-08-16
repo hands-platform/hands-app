@@ -26,10 +26,25 @@ type Bucket = {
   resetAt: number;
 };
 
+export type RateLimitStore = {
+  consumeRateLimit(key: string, windowMs: number): Promise<Bucket>;
+};
+
 const buckets = new Map<string, Bucket>();
 
 export const apiRateLimitPolicies: RateLimitOptions[] = [
-  { windowMs: 60_000, max: 30, pathPattern: /^\/api\/auth\//, keyPathDepth: 3 },
+  {
+    windowMs: 15 * 60_000,
+    max: 4,
+    pathPattern: /^\/api\/auth\/admin-operator-login(?:\?|$)/,
+    keyPathDepth: 3,
+  },
+  {
+    windowMs: 60_000,
+    max: 30,
+    pathPattern: /^\/api\/auth\/(?!admin-operator-login(?:\?|$))/,
+    keyPathDepth: 3,
+  },
   {
     windowMs: 60_000,
     max: 120,
@@ -39,14 +54,87 @@ export const apiRateLimitPolicies: RateLimitOptions[] = [
   },
   {
     windowMs: 60_000,
-    max: 180,
-    pathPattern: /^\/api\/payments\/(?:CARD|MOMO|VNPAY)\/callback(?:\?|$)/i,
+    max: 120,
+    pathPattern: /^\/api\/(?:partner|provider)\/bookings\/open(?:\?|$)/i,
     keyPathDepth: 4,
+  },
+  {
+    windowMs: 60_000,
+    max: 120,
+    pathPattern:
+      /^\/api\/(?:public\/site-pages(?:\/[^/?]+)*|services(?:\/groups)?|mobile\/app-version)(?:\?|$)/i,
+    keyPathDepth: 3,
+  },
+  {
+    windowMs: 60_000,
+    max: 180,
+    pathPattern: /^\/api\/payments\/[^/?]+\/callback(?:\?|$)/i,
+    keyPathDepth: 2,
+  },
+  {
+    windowMs: 60_000,
+    max: 60,
+    pathPattern: /^\/api\/app\/session(?:\?|$)/i,
+    keyPathDepth: 3,
+  },
+  {
+    windowMs: 60_000,
+    max: 20,
+    pathPattern: /^\/api\/files\/presign(?:\?|$)/i,
+    keyPathDepth: 3,
+  },
+  {
+    windowMs: 60_000,
+    max: 30,
+    pathPattern: /^\/api\/files\/[^/?]+\/(?:complete|read-url)(?:\?|$)/i,
+    keyPathDepth: 2,
+  },
+  {
+    windowMs: 60_000,
+    max: 120,
+    pathPattern: /^\/api\/chat\/rooms\/[^/?]+\/messages(?:\?|$)/i,
+    keyPathDepth: 3,
+  },
+  {
+    windowMs: 60_000,
+    max: 30,
+    pathPattern: /^\/api\/customer\/bookings(?:\/[^/?]+(?:\/[^/?]+)?)?(?:\?|$)/i,
+    keyPathDepth: 3,
+  },
+  {
+    windowMs: 60_000,
+    max: 60,
+    pathPattern: /^\/api\/(?:partner|provider)\/bookings\/[^/?]+\/(?:join|accept|reject|arrived|start|complete|cancel|customer-evaluation)(?:\?|$)/i,
+    keyPathDepth: 3,
+  },
+  {
+    windowMs: 60_000,
+    max: 30,
+    pathPattern: /^\/api\/customer\/locations(?:\/[^/?]+)?(?:\?|$)/i,
+    keyPathDepth: 3,
+  },
+  {
+    windowMs: 60_000,
+    max: 60,
+    pathPattern: /^\/api\/(?:partner|provider)\/location(?:\?|$)/i,
+    keyPathDepth: 3,
+  },
+  {
+    windowMs: 60_000,
+    max: 30,
+    pathPattern: /^\/api\/notifications\/(?:device-token|provider-chat|[^/?]+\/read)(?:\/[^/?]+)?(?:\?|$)/i,
+    keyPathDepth: 3,
+  },
+  {
+    windowMs: 60_000,
+    max: 600,
+    pathPattern: /^\/api\/health(?:\/ready)?(?:\?|$)/i,
+    keyPathDepth: 2,
   },
 ];
 
-export function rateLimitMiddleware(options: RateLimitOptions) {
-  return (req: RequestLike, res: ResponseLike, next: Next) => {
+export function rateLimitMiddleware(options: RateLimitOptions, store?: RateLimitStore) {
+  return async (req: RequestLike, res: ResponseLike, next: Next) => {
     const path = req.originalUrl ?? req.url ?? '';
     if (!options.pathPattern.test(path)) {
       next();
@@ -55,10 +143,23 @@ export function rateLimitMiddleware(options: RateLimitOptions) {
 
     const now = Date.now();
     const key = `${clientId(req)}:${req.method ?? 'GET'}:${pathKey(path, options.keyPathDepth)}`;
-    const bucket = buckets.get(key);
-    const active = bucket && bucket.resetAt > now ? bucket : { count: 0, resetAt: now + options.windowMs };
-    active.count += 1;
-    buckets.set(key, active);
+    let active: Bucket;
+    if (store) {
+      try {
+        active = await store.consumeRateLimit(key, options.windowMs);
+      } catch {
+        if (process.env.NODE_ENV === 'production') {
+          res.status(503).json({
+            statusCode: 503,
+            message: 'Request protection is temporarily unavailable',
+          });
+          return;
+        }
+        active = consumeLocalBucket(key, now, options.windowMs);
+      }
+    } else {
+      active = consumeLocalBucket(key, now, options.windowMs);
+    }
 
     const remaining = Math.max(options.max - active.count, 0);
     res.setHeader('x-ratelimit-limit', String(options.max));
@@ -75,9 +176,17 @@ export function rateLimitMiddleware(options: RateLimitOptions) {
       return;
     }
 
-    cleanupExpired(now);
+    if (!store) cleanupExpired(now);
     next();
   };
+}
+
+function consumeLocalBucket(key: string, now: number, windowMs: number) {
+  const bucket = buckets.get(key);
+  const active = bucket && bucket.resetAt > now ? bucket : { count: 0, resetAt: now + windowMs };
+  active.count += 1;
+  buckets.set(key, active);
+  return active;
 }
 
 function clientId(req: RequestLike) {

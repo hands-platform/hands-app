@@ -1,0 +1,150 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Messaging":
+        - /url: /notifications
+      - generic: Notification Templates
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Messaging workspace":
+    - strong: Messaging
+    - generic "Messaging pages":
+      - link "Notification Delivery":
+        - /url: /notifications
+      - link "Notification Templates":
+        - /url: /notifications/templates
+      - link "Push Send":
+        - /url: /notifications/push-send
+  - heading "Notification Templates" [level=1]
+  - paragraph: Notification copy catalog for in-app and push messages across supported app languages.
+  - generic: Template records
+  - paragraph: Templates
+  - generic: "Templates:"
+  - text: "22"
+  - generic: Notification event records in the bounded catalog.
+  - generic: Live
+  - paragraph: Enabled
+  - generic: "Enabled:"
+  - text: "22"
+  - generic: Templates currently available to operating flows.
+  - generic: Audience coverage
+  - paragraph: Customers
+  - generic: "Customers:"
+  - text: "13"
+  - generic: Customer-facing templates with language copy.
+  - generic: Audience coverage
+  - paragraph: Partners
+  - generic: "Partners:"
+  - text: "9"
+  - generic: Partner-facing templates with language copy.
+  - heading "Template catalog" [level=2]
+  - paragraph: Select one template, review every language, preview the message, then save the editing session atomically.
+  - generic: 22 templates
+  - generic: Template
+  - combobox "Template":
+    - option "HANDS update / Customer" [selected]
+    - option "Booking cancelled / Customer"
+    - option "Partner matched / Customer"
+    - option "No-show under review / Customer"
+    - option "Booking opened / Customer"
+    - option "Partner declined your booking / Customer"
+    - option "New chat message / Customer"
+    - option "Payment updated / Customer"
+    - option "Marketplace partner is ready / Customer"
+    - option "A partner joined / Customer"
+    - option "Partner declined / Customer"
+    - option "Service completed / Customer"
+    - option "Service started / Customer"
+    - option "Nearby booking available / Partner"
+    - option "You were matched / Partner"
+    - option "New direct booking request / Partner"
+    - option "Earning created / Partner"
+    - option "Partner account blocked / Partner"
+    - option "Partner account unblocked / Partner"
+    - option "Payout batch updated / Partner"
+    - option "Payout setup required / Partner"
+    - option "Service started / Partner"
+  - heading "HANDS update" [level=3]
+  - paragraph: Manual admin push campaign. Audience is selected at send time.
+  - generic: Enabled
+  - generic: Customer
+  - generic: PUSH
+  - generic "Technical details"
+  - tablist "Template languages":
+    - tab "English Complete" [selected]:
+      - generic: English
+      - generic: Complete
+    - tab "Vietnamese Complete":
+      - generic: Vietnamese
+      - generic: Complete
+    - tab "Korean Complete":
+      - generic: Korean
+      - generic: Complete
+    - tab "Japanese Complete":
+      - generic: Japanese
+      - generic: Complete
+    - tab "Chinese Complete":
+      - generic: Chinese
+      - generic: Complete
+  - tabpanel "en notification copy":
+    - heading "English" [level=4]
+    - checkbox "Enabled for every language" [checked]
+    - generic: Enabled for every language
+    - generic: Title
+    - textbox "Title": HANDS update
+    - generic: Message
+    - textbox "Message": Open HANDS for the latest update.
+  - generic: Message preview / EN
+  - strong: HANDS update
+  - paragraph: Open HANDS for the latest update.
+  - strong: Changes in this editing session
+  - paragraph: No unsaved changes.
+  - button "Save all changed languages" [disabled]
+- alert

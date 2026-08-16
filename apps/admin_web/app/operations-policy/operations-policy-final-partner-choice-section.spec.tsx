@@ -25,6 +25,7 @@ describe('OperationsPolicyFinalPartnerChoiceSection', () => {
     const section = OperationsPolicyFinalPartnerChoiceSection({
       matrix: {
         blockingCount: 2,
+        sampledPartnerCount: 5,
         cards: [
           {
             className: 'ops-task-warning',
@@ -38,7 +39,9 @@ describe('OperationsPolicyFinalPartnerChoiceSection', () => {
         impact: [
           {
             helper: 'Partners blocked by account, identity, bank, or wallet gates.',
+            kind: 'risk',
             label: 'Needs follow-up',
+            scope: 'Needs action',
             value: '3',
           },
         ],
@@ -56,7 +59,7 @@ describe('OperationsPolicyFinalPartnerChoiceSection', () => {
 
     expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
     expect(rendered).toContain('Final partner choice control matrix');
-    expect(rendered).toContain('2 control choice(s)');
+    expect(rendered).toContain('2 policy deviations');
     expect(rendered).toContain('Direct booking window');
     expect(rendered).toContain('Current partner acceptance impact');
     expect(rendered).toContain('Open Partner queue');
@@ -67,6 +70,7 @@ describe('OperationsPolicyFinalPartnerChoiceSection', () => {
     const section = OperationsPolicyFinalPartnerChoiceSection({
       matrix: {
         blockingCount: 1,
+        sampledPartnerCount: 0,
         cards: [
           {
             className: 'ops-task-warning',

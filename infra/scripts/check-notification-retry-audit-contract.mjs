@@ -7,6 +7,8 @@ const apiNotificationsService = readSource('apps/api/src/notifications/notificat
 const adminAuditLog = readSources([
   'apps/admin_web/app/audit-log/page.tsx',
   'apps/admin_web/app/audit-log/page-content.tsx',
+  'apps/admin_web/app/audit-log/audit-evidence-drawer.tsx',
+  'apps/admin_web/app/audit-log/audit-notification-retry-evidence.tsx',
 ]);
 const fcmPushSmoke = readSource('infra/scripts/fcm-push-smoke.mjs');
 

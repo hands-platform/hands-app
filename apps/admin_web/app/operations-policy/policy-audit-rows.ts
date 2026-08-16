@@ -15,9 +15,15 @@ export type PolicyAuditRow = {
   readonly reason: string;
   readonly enforced: boolean;
   readonly effect: string;
+  readonly environment: string;
+  readonly restoration: boolean;
+  readonly runId: string | null;
+  readonly source: 'operator' | 'automated_smoke' | 'legacy_unknown';
 };
 
-export function operationalPolicyAuditRows(logs: AdminAuditLog[]): PolicyAuditRow[] {
+export function operationalPolicyAuditRows(
+  logs: AdminAuditLog[],
+): PolicyAuditRow[] {
   return logs
     .filter((log) => log.action === 'operational_policy.update')
     .map((log) => {
@@ -25,24 +31,33 @@ export function operationalPolicyAuditRows(logs: AdminAuditLog[]): PolicyAuditRo
       const key = readOptionalString(metadata?.key) ?? targetPolicyKey(log.target);
       const details = policyImpactDetails(key);
       const enforced = Boolean(metadata?.enforced);
+      const source: PolicyAuditRow['source'] =
+        metadata?.source === 'automated_smoke'
+          ? 'automated_smoke'
+          : metadata?.source === 'operator'
+            ? 'operator'
+            : 'legacy_unknown';
       return {
         id: log.id,
         createdAt: log.createdAt,
         key,
-        label: policyKeyLabel(key),
-        policyContext: details.title,
+        label: log.policyDefinition?.label ?? policyKeyLabel(key),
+        policyContext: log.policyDefinition?.category ?? details.title,
         actorName: log.actor?.fullName ?? log.actor?.phone ?? 'System',
-        previousValue: compactAuditValue(metadata?.previousValue),
-        value: compactAuditValue(metadata?.value),
+        previousValue: compactAuditValue(metadata?.before ?? metadata?.previousValue),
+        value: compactAuditValue(metadata?.after ?? metadata?.value),
         reason: policyAuditReasonText(readOptionalString(metadata?.reason) ?? 'No reason recorded'),
         enforced,
         effect: enforced
           ? details.detail
           : `${details.title}. This is stored as an owner decision until enforced.`,
+        environment: readOptionalString(metadata?.environment) ?? 'unknown',
+        restoration: metadata?.restoration === true,
+        runId: readOptionalString(metadata?.runId),
+        source,
       };
     })
-    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
-    .slice(0, 8);
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
 }
 
 function targetPolicyKey(target: string) {

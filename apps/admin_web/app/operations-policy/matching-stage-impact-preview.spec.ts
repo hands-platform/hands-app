@@ -86,6 +86,7 @@ describe('matching stage impact preview', () => {
     const preview = buildMatchingStageImpactPreview(settings, bookings, providers, now);
 
     expect(preview.currentPolicyLabel).toBe('10m / 10 km / 30m fresh');
+    expect(preview.openMatchingCount).toBe(3);
     expect(preview.summary).toEqual([
       {
         label: 'Open matching sample',
@@ -105,7 +106,7 @@ describe('matching stage impact preview', () => {
       {
         label: 'Stage 4 repair',
         value: '1',
-        helper: '1 matched/live booking(s) checked for missing chat handoff.',
+        helper: '1 matched/live booking checked for missing chat handoff.',
       },
     ]);
     expect(preview.rows.find((row) => row.scenario === 'Marketplace policy' && row.value === '10 km')).toMatchObject({

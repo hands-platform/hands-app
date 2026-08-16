@@ -1,8 +1,7 @@
-import { Controller, Get, Header, NotFoundException, Query } from '@nestjs/common';
+import { Controller, Get, Header, Headers, NotFoundException, Query, UnauthorizedException } from '@nestjs/common';
 
 import {
   PublicSitePageQueryDto,
-  PublicSitePreviewQueryDto,
   PublicSiteRouteQueryDto,
 } from './site-content.dto';
 import { SiteContentService } from './site-content.service';
@@ -27,8 +26,12 @@ export class PublicSiteContentController {
   @Get('preview')
   @Header('Cache-Control', 'private, no-store, max-age=0')
   @Header('X-Robots-Tag', 'noindex, nofollow, noarchive')
-  preview(@Query() query: PublicSitePreviewQueryDto) {
-    return this.siteContent.resolvePreview(query.token);
+  preview(@Headers('authorization') authorization?: string) {
+    const token = previewBearerToken(authorization);
+    if (!token) {
+      throw new UnauthorizedException('Preview bearer token is required');
+    }
+    return this.siteContent.resolvePreview(token);
   }
 
   @Get('routes')
@@ -40,4 +43,9 @@ export class PublicSiteContentController {
   news(@Query() query: PublicSiteRouteQueryDto) {
     return this.siteContent.listPublishedNews(query.site, query.locale);
   }
+}
+
+function previewBearerToken(authorization?: string) {
+  const match = authorization?.match(/^Bearer\s+([^\s]+)$/i);
+  return match?.[1]?.trim() || null;
 }

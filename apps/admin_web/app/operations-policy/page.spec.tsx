@@ -1,428 +1,531 @@
 import { readFileSync } from 'node:fs';
+
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
-import { adminGet, type AdminOperationalPolicySetting } from '../../lib/admin-api';
+import {
+  adminGetResult,
+  type AdminBooking,
+  type AdminOperationalPolicySetting,
+} from '../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
 import OperationsPolicyPage from './page';
 
 vi.mock('../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
-
-  return {
-    ...actual,
-    adminGet: vi.fn(),
-  };
+  return { ...actual, adminGetResult: vi.fn() };
 });
 
-vi.mock('../../lib/admin-operator-access', () => ({
-  getCurrentAdminOperatorAccess: vi.fn(),
-}));
+vi.mock('../../lib/admin-operator-access', () => ({ getCurrentAdminOperatorAccess: vi.fn() }));
 
-const mockedAdminGet = vi.mocked(adminGet);
+const mockedAdminGetResult = vi.mocked(adminGetResult);
 const mockedGetAccess = vi.mocked(getCurrentAdminOperatorAccess);
 const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 const globalCss = readFileSync('app/globals.css', 'utf8');
 
 describe('OperationsPolicyPage', () => {
   beforeEach(() => {
-    mockedAdminGet.mockReset();
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+    mockedAdminGetResult.mockReset();
+    mockedAdminGetResult.mockImplementation(async (_href, fallback) => ({ data: fallback, ok: true, status: 200 }));
     mockedGetAccess.mockReset();
     mockedGetAccess.mockResolvedValue(null);
   });
 
-  it('renders default policy page sections on shared Vuexy section surfaces', async () => {
-    const page = await OperationsPolicyPage({ searchParams: Promise.resolve({}) });
-    const markup = renderToStaticMarkup(page);
+  it('loads only settings and renders the operator group workflow by default', async () => {
+    mockSettings(policySettings());
 
-    expect(markup).toContain('admin-page-header admin-page-header-toolbar');
-    expect(markup).toContain('Live matching policy');
-    expect(markup).not.toContain('Diagnostics loaded on demand');
-    expect(markup).toContain('Operator decisions');
-    expect(markup).not.toContain(
-      '<section class="card admin-mb-16"><div class="ops-section-header"><div><h2>Live matching policy',
-    );
-    expect(markup).not.toContain(
-      '<section class="card admin-mb-16"><div class="ops-section-header"><div><h2>Diagnostics loaded on demand',
-    );
-    expect(markup).not.toContain(
-      '<section class="card admin-mb-16"><div class="ops-section-header"><div><h2>Operator decisions',
-    );
-  });
+    const markup = renderToStaticMarkup(await OperationsPolicyPage({ searchParams: Promise.resolve({}) }));
 
-  it('shows every policy in the read-only comparison without opening an editor', async () => {
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/operational-policy') {
-        return [
-          operationPolicySetting({
-            category: 'Matching',
-            key: 'matching.provider_response_window_minutes',
-            label: 'First-pick Partner response window',
-            value: 10,
-          }),
-          operationPolicySetting({
-            category: 'Decision',
-            key: 'matching.preferred_accept_mode',
-            label: 'First-pick acceptance contract',
-            options: [
-              {
-                label: 'Preferred first',
-                tradeoff: 'Keep preferred partner priority before marketplace fallback.',
-                value: 'preferred_first',
-              },
-            ],
-            value: 'preferred_first',
-          }),
-        ] satisfies AdminOperationalPolicySetting[];
-      }
-
-      return fallback;
-    });
-
-    const page = await OperationsPolicyPage({ searchParams: Promise.resolve({}) });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('Policy comparison');
-    expect(markup).toContain('First-pick Partner response window');
-    expect(markup).toContain('First-pick acceptance contract');
+    expect(mockedAdminGetResult).toHaveBeenCalledTimes(1);
+    expect(mockedAdminGetResult).toHaveBeenCalledWith('/admin/operational-policy', []);
+    expect(markup).toContain('Policy command strip');
+    expect(markup).toContain('Workspace');
+    expect(markup).toContain('Shift &amp; Queue SLA');
+    expect(markup).toContain('Matching &amp; Availability');
     expect(markup).toContain('Current value');
-    expect(markup).toContain('Recommended value');
-    expect(markup).toContain('Operating impact');
-    expect(markup).toContain('Last changed by');
-    expect(markup).toContain('Last changed at');
-    expect(markup).not.toContain('Load decision editor');
-    expect(markup).not.toContain('/operations-policy?details=all');
-    expect(markup).not.toContain('Related booking records');
-    expect(markup).not.toContain('Before saving this policy');
-    expect((markup.match(/<form/g) ?? []).length).toBe(0);
+    expect(markup).toContain('Last changed');
+    expect(markup).toContain('Review change');
+    expect(markup).not.toContain('Recommended value</span>');
+    expect(markup).not.toContain('Operating impact</span>');
+    expect(markup).not.toContain('Saved override');
+    expect(markup).not.toContain('Needs owner choice');
   });
 
-  it('renders Start Shift queue SLA policies in the default operational workspace', async () => {
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/operational-policy') {
-        return [
-          operationPolicySetting({
-            category: 'Command center',
-            key: 'command.start_shift.payment_holds_sla_minutes',
-            label: 'Payment hold review SLA',
-            unit: 'minutes',
-            value: 60,
-          }),
-        ] satisfies AdminOperationalPolicySetting[];
-      }
-
-      return fallback;
-    });
-
-    const page = await OperationsPolicyPage({ searchParams: Promise.resolve({}) });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('Policy comparison');
-    expect(markup).toContain('Payment hold review SLA');
-    expect(markup).toContain('60 min');
-    expect(markup).toContain('Command center');
-    expect((markup.match(/<form/g) ?? []).length).toBe(0);
-  });
-
-  it('opens exactly one policy change panel from the selected comparison row', async () => {
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/operational-policy') {
-        return [
-          operationPolicySetting({
-            category: 'Matching',
-            key: 'matching.provider_response_window_minutes',
-            label: 'First-pick Partner response window',
-            value: 10,
-          }),
-          operationPolicySetting({
-            category: 'Matching',
-            key: 'matching.marketplace_partner_radius_meters',
-            label: 'Marketplace Partner radius',
-            value: 10000,
-          }),
-        ] satisfies AdminOperationalPolicySetting[];
-      }
-
-      return fallback;
-    });
-
-    const page = await OperationsPolicyPage({
-      searchParams: Promise.resolve({ edit: 'matching.provider_response_window_minutes' }),
-    });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('Change First-pick Partner response window');
-    expect(markup).toContain('name="expectedValue" value="10"');
-    expect(markup).toContain('Immediately after save');
-    expect(markup).toContain('Additional approval');
-    expect((markup.match(/<form/g) ?? []).length).toBe(1);
-  });
-
-  it('does not expose the Developer/System setup route to ordinary operators when policies are missing', async () => {
-    const page = await OperationsPolicyPage({ searchParams: Promise.resolve({}) });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('No matching policies loaded');
-    expect(markup).not.toContain('/setup');
-    expect(markup).not.toContain('Open setup checks');
-    expect(markup).not.toContain('API setup');
-  });
-
-  it('keeps setup checks available to Master Admins when policies are missing', async () => {
-    mockedGetAccess.mockResolvedValue({
-      categories: [],
-      email: 'master@example.com',
-      fullName: 'Master Admin',
-      id: 'master-1',
-      phone: null,
-      roles: ['ADMIN', 'MASTER_ADMIN'],
-      updatedAt: null,
-    });
-
-    const page = await OperationsPolicyPage({ searchParams: Promise.resolve({}) });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('/setup');
-    expect(markup).toContain('Open setup checks');
-  });
-
-  it('keeps the decision evidence workspace read-only and links back to policy comparison', async () => {
-    mockedGetAccess.mockResolvedValue({
-      categories: [],
-      email: 'master@example.com',
-      fullName: 'Master Admin',
-      id: 'master-1',
-      phone: null,
-      roles: ['ADMIN', 'MASTER_ADMIN'],
-      updatedAt: null,
-    });
-    mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/operational-policy') {
-        return [
-          operationPolicySetting({
-            category: 'Matching',
-            key: 'matching.provider_response_window_minutes',
-            label: 'First-pick Partner response window',
-            value: 10,
-          }),
-          operationPolicySetting({
-            category: 'Decision',
-            key: 'matching.preferred_accept_mode',
-            label: 'First-pick acceptance contract',
-            options: [
-              {
-                label: 'Preferred first',
-                tradeoff: 'Keep preferred partner priority before marketplace fallback.',
-                value: 'preferred_first',
-              },
-            ],
-            value: 'preferred_first',
-          }),
-        ] satisfies AdminOperationalPolicySetting[];
-      }
-
-      return fallback;
-    });
-
-    const page = await OperationsPolicyPage({ searchParams: Promise.resolve({ details: 'decisions' }) });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).not.toContain('First-pick Partner response window');
-    expect(markup).not.toContain('First-pick acceptance contract');
-    expect(markup).toContain('Decision editor');
-    expect(markup).toContain('Open policy comparison');
-    expect(markup).not.toContain('Owner decision backlog');
-    expect(markup).not.toContain('Current decision pressure');
-    expect(mockedAdminGet.mock.calls.map(([href]) => href)).not.toContain(
-      '/admin/operations-policy/providers?take=20',
-    );
-    expect(mockedAdminGet.mock.calls.map(([href]) => href)).not.toContain(
-      '/admin/audit-logs?action=operational_policy.update&take=3',
-    );
-    expect(mockedAdminGet.mock.calls.map(([href]) => href)).not.toContain(
-      '/admin/audit-logs?action=booking.create.rejected&take=3',
-    );
-    expect((markup.match(/<form/g) ?? []).length).toBe(0);
-  });
-
-  it('loads the bounded Partner sample only in the decision evidence workspace', async () => {
-    mockedGetAccess.mockResolvedValue({
-      categories: [],
-      email: 'master@example.com',
-      fullName: 'Master Admin',
-      id: 'master-1',
-      phone: null,
-      roles: ['ADMIN', 'MASTER_ADMIN'],
-      updatedAt: null,
-    });
-
-    const page = await OperationsPolicyPage({
-      searchParams: Promise.resolve({ details: 'decisions', decision: 'evidence' }),
-    });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('Live evidence');
-    expect(markup).toContain('Owner decision backlog');
-    expect(markup).toContain('Current decision pressure');
-    expect(markup).toContain('Open decision editor');
-    expect(mockedAdminGet.mock.calls.map(([href]) => href)).toContain(
-      '/admin/operations-policy/providers?take=20',
-    );
-  });
-
-  it('loads matching Partner samples only in supply and simulation workspaces', async () => {
-    mockedGetAccess.mockResolvedValue({
-      categories: [],
-      email: 'master@example.com',
-      fullName: 'Master Admin',
-      id: 'master-1',
-      phone: null,
-      roles: ['ADMIN', 'MASTER_ADMIN'],
-      updatedAt: null,
-    });
-
-    const policyPage = await OperationsPolicyPage({
-      searchParams: Promise.resolve({ details: 'matching' }),
-    });
-    const policyMarkup = renderToStaticMarkup(policyPage);
-
-    expect(policyMarkup).toContain('Matching workspace');
-    expect(policyMarkup).toContain('Policy editor');
-    expect(policyMarkup).toContain('Booking matching playbook');
-    expect(policyMarkup).not.toContain('Policy sensitivity preview');
-    expect(mockedAdminGet.mock.calls.map(([href]) => href)).not.toContain(
-      '/admin/operations-policy/providers?take=30',
-    );
-
-    mockedAdminGet.mockClear();
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
-
-    const supplyPage = await OperationsPolicyPage({
-      searchParams: Promise.resolve({ details: 'matching', matching: 'supply' }),
-    });
-    const supplyMarkup = renderToStaticMarkup(supplyPage);
-
-    expect(supplyMarkup).toContain('Supply evidence');
-    expect(supplyMarkup).toContain('Policy sensitivity preview');
-    expect(supplyMarkup).toContain('Read-only evidence');
-    expect(supplyMarkup).not.toContain('Live policy simulator');
-    expect(mockedAdminGet.mock.calls.map(([href]) => href)).toContain(
-      '/admin/operations-policy/providers?take=30',
-    );
-
-    mockedAdminGet.mockClear();
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
-
-    const simulationPage = await OperationsPolicyPage({
-      searchParams: Promise.resolve({ details: 'matching', matching: 'simulation' }),
-    });
-    const simulationMarkup = renderToStaticMarkup(simulationPage);
-
-    expect(simulationMarkup).toContain('Simulation');
-    expect(simulationMarkup).toContain('Live policy simulator');
-    expect(simulationMarkup).toContain('Policy change impact');
-    expect(simulationMarkup).not.toContain('Policy sensitivity preview');
-    expect(mockedAdminGet.mock.calls.map(([href]) => href)).toContain(
-      '/admin/operations-policy/providers?take=30',
-    );
-  });
-
-  it('keeps details=all as a bounded workspace index for Master Admins', async () => {
-    mockedGetAccess.mockResolvedValue({
-      categories: [],
-      email: 'master@example.com',
-      fullName: 'Master Admin',
-      id: 'master-1',
-      phone: null,
-      roles: ['ADMIN', 'MASTER_ADMIN'],
-      updatedAt: null,
-    });
-
-    const page = await OperationsPolicyPage({ searchParams: Promise.resolve({ details: 'all' }) });
-    const markup = renderToStaticMarkup(page);
-
-    expect(markup).toContain('Choose workspace');
-    expect(markup).toContain('/operations-policy?details=matching');
-    expect(markup).toContain('/operations-policy?details=decisions');
-    expect(markup).toContain('/operations-policy?details=audit');
-    expect(markup).not.toContain('MVP authority baseline');
-    expect(markup).not.toContain('Live matching policy');
-    expect(markup).not.toContain('Operator decisions');
-    expect(markup).not.toContain('Policy sensitivity preview');
-    expect(markup).not.toContain('Policy audit trail');
-    expect(mockedAdminGet.mock.calls.map(([href]) => href)).toEqual([
-      '/admin/operational-policy',
+  it('separates saved values, provenance, and current-deviation counts', async () => {
+    mockSettings([
+      policy({
+        key: 'matching.provider_response_window_minutes',
+        auditSource: 'operator',
+        updatedAt: '2026-08-11T00:00:00.000Z',
+        value: 10,
+      }),
+      policy({
+        key: 'matching.marketplace_partner_radius_meters',
+        label: 'Marketplace Partner radius',
+        recommendedValue: 10000,
+        unit: 'meters',
+        value: 12000,
+      }),
     ]);
+
+    const markup = renderToStaticMarkup(await OperationsPolicyPage({ searchParams: Promise.resolve({}) }));
+
+    expect(markup).toContain('Current deviations</span><strong>1</strong>');
+    expect(markup).toContain('Saved values</span><strong>1</strong>');
+    expect(markup).toContain('Operator 1 · Smoke 0 · Legacy/unknown 0');
+    expect(markup).toContain('Operator changed');
+    expect(markup).toContain('Restored to baseline');
+    expect(markup).toContain('Live · baseline aligned');
+    expect(markup).toContain('Recommended: 10 km');
   });
 
-  it('uses shared Vuexy badge atoms for page header counters', () => {
-    expect(pageSource).toContain('AdminNoticeCard');
-    expect(pageSource).toContain('StatusBadge');
-    expect(pageSource).toContain('tone={notice.tone === \'success\' ? \'success\' : \'danger\'}');
-    expect(pageSource).not.toContain('<span className="pill pill-success">{matchingSettings.length} enforced policy</span>');
-    expect(pageSource).not.toContain('<span className="pill pill-info">{decisionSettings.length} decision item(s)</span>');
-    expect(pageSource).not.toContain('<span className="pill pill-info">{savedCount} saved override(s)</span>');
-    expect(pageSource).not.toContain("notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'");
+  it('filters policy rows by lifecycle without hiding lifecycle counts', async () => {
+    mockSettings([
+      policy({ key: 'matching.provider_response_window_minutes', lifecycle: 'live' }),
+      policy({ key: 'matching.marketplace_open_mode', label: 'Marketplace open mode', lifecycle: 'locked' }),
+    ]);
+
+    const markup = renderToStaticMarkup(await OperationsPolicyPage({
+      searchParams: Promise.resolve({ lifecycle: 'locked' }),
+    }));
+
+    expect(markup).toContain('Marketplace open mode');
+    expect(markup).not.toContain('First-pick response window</strong>');
+    expect(markup).toContain('name="lifecycle"');
+    expect(markup).toContain('Locked</span><strong>1</strong>');
   });
 
-  it('uses the shared AdminFormControlLink atom for page-level actions', () => {
-    expect(pageSource).toContain('AdminFormControlLink');
-    expect(pageSource).not.toContain('<Link className="button button-secondary"');
+  it('opens one focused change form and keeps the deep-link anchor', async () => {
+    mockSettings([policy({ key: 'matching.provider_response_window_minutes' })]);
+
+    const markup = renderToStaticMarkup(
+      await OperationsPolicyPage({
+        searchParams: Promise.resolve({ edit: 'matching.provider_response_window_minutes' }),
+      }),
+    );
+
+    expect(markup).toContain('operations-policy-editor');
+    expect(markup).toContain('Change First-pick response window');
+    expect(markup).toContain('id="policy-matching-provider-response-window-minutes"');
+    expect((markup.match(/Save policy change/g) ?? [])).toHaveLength(1);
   });
 
-  it('routes full diagnostics loading through Developer/System access', () => {
-    expect(pageSource).toContain('getCurrentAdminOperatorAccess');
-    expect(pageSource).toContain('canViewAdminDeveloperSystem');
-    expect(pageSource).toContain('allowFullDiagnostics: canLoadFullDiagnostics');
+  it('fails closed when a selected policy has no lifecycle contract', async () => {
+    mockSettings([policy({ key: 'matching.provider_response_window_minutes', lifecycle: undefined })]);
+
+    const markup = renderToStaticMarkup(
+      await OperationsPolicyPage({
+        searchParams: Promise.resolve({ edit: 'matching.provider_response_window_minutes' }),
+      }),
+    );
+
+    expect(markup).toContain('Unknown · editing disabled');
+    expect(markup).toContain('Lifecycle metadata is missing or unsupported');
+    expect(markup).not.toContain('Save policy change');
   });
 
-  it('keeps compact policy page copy free of developer verification wording', () => {
-    expect(pageSource).not.toContain('loaded on demand');
-    expect(pageSource).not.toContain('Load full diagnostics');
-    expect(pageSource).not.toContain('full diagnostics view');
+  it('disables live policy writes when operator audit evidence is unavailable', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => ({
+      data: href === '/admin/operational-policy'
+        ? [policy({ key: 'matching.provider_response_window_minutes' })]
+        : fallback,
+      ok: href !== '/admin/operational-policy/audit?source=operator&take=1',
+      status: href === '/admin/operational-policy/audit?source=operator&take=1' ? 503 : 200,
+    }));
+
+    const markup = renderToStaticMarkup(
+      await OperationsPolicyPage({
+        searchParams: Promise.resolve({ edit: 'matching.provider_response_window_minutes' }),
+      }),
+    );
+
+    expect(markup).toContain('Policy audit is unavailable');
+    expect(markup).toContain('Writes disabled');
+    expect(markup).toContain('System Health');
+    expect(markup).not.toContain('Save policy change');
   });
 
-  it('uses the shared data table for policy comparison instead of repeated form grids', () => {
-    expect(pageSource).toContain('AdminDataTable');
-    expect(pageSource).toContain('AdminTablePanel');
-    expect(pageSource).not.toContain('AdminDetailGrid');
+  it('does not turn a settings API failure into an aligned or empty state', async () => {
+    mockedAdminGetResult.mockResolvedValue({ data: [], ok: false, status: 503 });
+
+    const markup = renderToStaticMarkup(await OperationsPolicyPage({ searchParams: Promise.resolve({}) }));
+
+    expect(markup).toContain('Operations Policy is not ready for decisions');
+    expect(markup).toContain('could not be loaded');
+    expect(markup).not.toContain('All launch baselines aligned');
+    expect(markup).not.toContain('No policies loaded');
   });
 
-  it('uses the shared empty-state atom for missing policy setup copy', () => {
-    expect(pageSource).toContain('AdminNotePanel');
-    expect(pageSource).toContain('AdminEmptyState');
-    expect(pageSource).not.toContain('<div className="ops-task-note admin-m-0">');
-    expect(pageSource).not.toContain('<h3>No matching policies loaded</h3>');
-    expect(pageSource).not.toContain('<p className="muted">\n                Seed operational policies');
+  it('normalizes details=all and legacy policy editor links to the grouped Policies workspace', async () => {
+    mockSettings(policySettings());
+
+    const allMarkup = renderToStaticMarkup(
+      await OperationsPolicyPage({ searchParams: Promise.resolve({ details: 'all' }) }),
+    );
+    const matchingMarkup = renderToStaticMarkup(
+      await OperationsPolicyPage({ searchParams: Promise.resolve({ details: 'matching' }) }),
+    );
+    const decisionMarkup = renderToStaticMarkup(
+      await OperationsPolicyPage({ searchParams: Promise.resolve({ details: 'decisions' }) }),
+    );
+
+    expect(allMarkup).toContain('Policy command strip');
+    expect(allMarkup).not.toContain('Choose workspace');
+    expect(matchingMarkup).toContain('Matching &amp; Availability');
+    expect(matchingMarkup).not.toContain('aria-label="Shift &amp; Queue SLA policies"');
+    expect(decisionMarkup).toContain('Exceptions &amp; Evidence');
+    expect(decisionMarkup).not.toContain('planning');
   });
 
-  it('scopes operations policy header overflow rules to direct page cards', () => {
-    expect(globalCss).toContain('.operations-policy-page > .card > .ops-section-header > div,');
-    expect(globalCss).toContain('.operations-policy-page > .card > .ops-section-header > .pill,');
-    expect(globalCss).toContain('.operations-policy-page > .card > .ops-section-header > .signal,');
-    expect(globalCss).not.toContain('.operations-policy-page .ops-section-header > div,');
-    expect(globalCss).not.toContain('.operations-policy-page .ops-section-header > .pill,');
-    expect(globalCss).not.toContain('.operations-policy-page .ops-section-header > .signal,');
+  it('shows observed source provenance, demo warning, and blocking supply state', async () => {
+    allowDiagnostics();
+    mockRouteData({
+      '/admin/operational-policy': policySettings(),
+      '/admin/bookings?take=20': [],
+      '/admin/operations-policy/providers?take=30': [],
+    });
+
+    const markup = renderToStaticMarkup(
+      await OperationsPolicyPage({
+        searchParams: Promise.resolve({ details: 'matching', matching: 'supply' }),
+      }),
+    );
+
+    expect(mockedAdminGetResult).toHaveBeenCalledTimes(3);
+    expect(markup).toContain('Observed');
+    expect(markup).toContain('bounded Partner records');
+    expect(markup).toContain('Refresh evidence');
+    expect(markup).toContain('Demo reference');
+    expect(markup).toContain('Supply is not ready');
+    expect(markup).toContain('0 usable Partners');
+  });
+
+  it('loads the server preview and keeps historical evidence independent from current supply', async () => {
+    allowDiagnostics();
+    mockRouteData({
+      '/admin/operational-policy': policySettings(),
+      '/admin/bookings?take=20': [],
+      '/admin/operations-policy/matching-preview': {
+        candidates: [],
+        checkedAt: '2026-08-14T03:00:00.000Z',
+        evidence: {
+          newestAt: null,
+          oldestAt: null,
+          returnedCandidates: 0,
+          totalEvaluated: 12,
+          truncated: false,
+        },
+        primaryBlocker: {
+          actionHref: '/bookings?view=matching',
+          actionLabel: 'Open matching bookings',
+          code: 'NO_ACTIONABLE_BOOKING',
+          detail: 'No actionable booking coordinate is available.',
+          title: 'No production booking reference',
+        },
+        reference: {
+          bookingId: null,
+          bookingStatus: null,
+          kind: 'DEMO',
+          label: 'Ho Chi Minh City demo reference',
+          lat: 10.7769,
+          lng: 106.7009,
+          observedAt: null,
+          serviceId: null,
+        },
+        safety: { dryRun: true, mutationsPerformed: false },
+        stages: [],
+        status: 'DEMO_PREVIEW_ONLY',
+      },
+    });
+
+    const markup = renderToStaticMarkup(
+      await OperationsPolicyPage({
+        searchParams: Promise.resolve({ details: 'matching', matching: 'simulation' }),
+      }),
+    );
+
+    expect(mockedAdminGetResult).toHaveBeenCalledWith(
+      '/admin/operations-policy/matching-preview',
+      null,
+    );
+    expect(mockedAdminGetResult).not.toHaveBeenCalledWith(
+      '/admin/operations-policy/providers?take=30',
+      [],
+    );
+    expect(markup).toContain('Current dispatch preview');
+    expect(markup).toContain('Demo preview only');
+    expect(markup).toContain('Historical policy evidence');
+    expect(markup).toContain('No historical booking evidence');
+    expect(markup).not.toContain('Change impact preview');
+  });
+
+  it('fails closed for an operator with only a narrower Developer diagnostic category', async () => {
+    mockedGetAccess.mockResolvedValue({
+      categories: ['DEVELOPER_HEALTH'],
+      email: 'health@example.com',
+      fullName: 'Health operator',
+      id: 'health-1',
+      phone: null,
+      roles: ['ADMIN'],
+      updatedAt: null,
+    });
+
+    const markup = renderToStaticMarkup(
+      await OperationsPolicyPage({
+        searchParams: Promise.resolve({ details: 'matching', matching: 'simulation' }),
+      }),
+    );
+
+    expect(markup).toContain('403 · Access denied');
+    expect(markup).not.toContain('Current dispatch preview');
+    expect(mockedAdminGetResult).not.toHaveBeenCalled();
+  });
+
+  it('renders all historical evidence sections when the current production preview is blocked', async () => {
+    allowDiagnostics();
+    mockRouteData({
+      '/admin/operational-policy': policySettings(),
+      '/admin/bookings?take=20': [historicalBooking()],
+      '/admin/operations-policy/matching-preview': {
+        candidates: [],
+        checkedAt: '2026-08-14T03:00:00.000Z',
+        evidence: {
+          newestAt: '2026-08-14T02:30:00.000Z',
+          oldestAt: '2026-08-14T01:30:00.000Z',
+          returnedCandidates: 0,
+          totalEvaluated: 12,
+          truncated: false,
+        },
+        primaryBlocker: {
+          actionHref: '/partner-controls?details=controls&review=location',
+          actionLabel: 'Review Partner locations',
+          code: 'fresh-location',
+          detail: '12 Partner records were excluded at this production gate.',
+          title: 'Fresh dispatch location blocks dispatch',
+        },
+        reference: {
+          bookingId: 'booking-history-1',
+          bookingStatus: 'OPEN_MATCHING',
+          kind: 'BOOKING',
+          label: 'Booking booking-history-1',
+          lat: 10.7769,
+          lng: 106.7009,
+          observedAt: '2026-08-14T02:45:00.000Z',
+          serviceId: 'service-1',
+        },
+        safety: { dryRun: true, mutationsPerformed: false },
+        stages: [{
+          actionHref: '/partner-controls?details=controls&review=location',
+          actionLabel: 'Review Partner locations',
+          code: 'fresh-location',
+          excludedCount: 12,
+          label: 'Fresh dispatch location',
+          passedCount: 0,
+        }],
+        status: 'BLOCKED_NO_ELIGIBLE_SUPPLY',
+      },
+    });
+
+    const markup = renderToStaticMarkup(
+      await OperationsPolicyPage({
+        searchParams: Promise.resolve({ details: 'matching', matching: 'simulation' }),
+      }),
+    );
+
+    expect(markup).toContain('Blocked · no eligible Partner supply');
+    expect(markup).toContain('Historical policy evidence');
+    expect(markup).toContain('Policy change impact');
+    expect(markup).toContain('Policy impact drill-down');
+    expect(markup).toContain('Policy outcome effect');
+  });
+
+  it('shows operator audit by default and server-verified smoke only through its filter', async () => {
+    allowDiagnostics();
+    mockRouteData({
+      '/admin/operational-policy/audit?source=operator&take=8': {
+        items: [auditLog('operator-row', { before: 10, after: 12, source: 'operator' })],
+        nextCursor: null,
+        source: 'operator',
+      },
+      '/admin/operational-policy/audit?source=automated_smoke&take=8': {
+        items: [auditLog('smoke-row', {
+          before: 12,
+          after: 10,
+          environment: 'test',
+          restoration: true,
+          runId: 'run-123456',
+          source: 'automated_smoke',
+        })],
+        nextCursor: null,
+        source: 'automated_smoke',
+      },
+    });
+
+    const operatorMarkup = renderToStaticMarkup(
+      await OperationsPolicyPage({ searchParams: Promise.resolve({ details: 'audit' }) }),
+    );
+    const smokeMarkup = renderToStaticMarkup(
+      await OperationsPolicyPage({
+        searchParams: Promise.resolve({ audit: 'automated_smoke', details: 'audit' }),
+      }),
+    );
+
+    expect(operatorMarkup).toContain('Ops Lead');
+    expect(operatorMarkup).toContain('>10<');
+    expect(operatorMarkup).toContain('>12<');
+    expect(operatorMarkup).not.toContain('Smoke restore');
+    expect(smokeMarkup).toContain('Smoke restore');
+    expect(smokeMarkup).toContain('run-1234');
+    expect(smokeMarkup).not.toContain('Ops Lead');
+  });
+
+  it('distinguishes policy audit access denial from an API failure or empty history', async () => {
+    allowDiagnostics();
+    mockedAdminGetResult.mockResolvedValue({
+      data: { items: [], nextCursor: null, source: 'operator' },
+      ok: false,
+      status: 403,
+    });
+
+    const markup = renderToStaticMarkup(
+      await OperationsPolicyPage({ searchParams: Promise.resolve({ details: 'audit' }) }),
+    );
+
+    expect(markup).toContain('Policy audit access denied');
+    expect(markup).toContain('403 · Access denied');
+    expect(markup).not.toContain('No authenticated operator policy changes are recorded.');
+  });
+
+  it('keeps the desktop policy contract compact and free of the old six-column audit layout', () => {
+    expect(pageSource).not.toContain("'Recommended value',");
+    expect(pageSource).not.toContain("'Operating impact',");
+    expect(pageSource).not.toContain('saved override(s)');
+    expect(pageSource).not.toContain('control choice(s)');
+    expect(globalCss).toContain('.operations-policy-list-row');
+    expect(globalCss).toContain('grid-template-columns: minmax(250px, 2.1fr)');
+    expect(globalCss).toContain('.operations-policy-page > .card');
+    expect(globalCss).toContain(".operations-policy-workspace-nav a[aria-current='page']");
+    expect(globalCss).toContain('box-shadow: inset 0 -2px 0 rgb(var(--admin-primary-channel));');
+    expect(globalCss).toContain('max-height: none;');
+    expect(globalCss).toContain('.operations-policy-page .admin-table-scroll .operations-policy-audit-table.admin-data-table');
+    expect(globalCss).toContain('min-width: 1080px;');
+    expect(globalCss).toContain('.operations-policy-audit-evidence');
+    expect(globalCss).toContain('.operations-policy-audit-change > strong');
+    expect(globalCss).toContain('-webkit-line-clamp: 1');
+    expect(globalCss).not.toContain('.operations-policy-audit-table tbody tr {\n    height: 104px;');
+    expect(globalCss).not.toContain('.operations-policy-audit-table th:nth-child(6)');
+    expect(globalCss).toContain('.operations-policy-audit-sources a.is-active');
+    expect(globalCss).toContain('.audit-scope-context');
+    expect(globalCss).not.toContain('operations-policy-page > .card {\n  box-shadow: var(--admin-shadow-md);\n  max-height: min');
   });
 });
 
-function operationPolicySetting(
-  overrides: Partial<AdminOperationalPolicySetting> & Pick<AdminOperationalPolicySetting, 'category' | 'key' | 'label'>,
-): AdminOperationalPolicySetting {
-  return {
-    category: overrides.category,
-    description: `${overrides.label} description`,
-    enforced: true,
-    key: overrides.key,
-    label: overrides.label,
-    max: null,
-    min: null,
-    options: overrides.options ?? null,
-    recommendedValue: overrides.recommendedValue ?? overrides.value ?? 10,
-    unit: overrides.unit ?? null,
+function mockSettings(settings: AdminOperationalPolicySetting[]) {
+  mockRouteData({ '/admin/operational-policy': settings });
+}
+
+function mockRouteData(dataByHref: Record<string, unknown>) {
+  mockedAdminGetResult.mockImplementation(async (href, fallback) => ({
+    data: (dataByHref[href] ?? fallback) as never,
+    ok: true,
+    status: 200,
+  }));
+}
+
+function allowDiagnostics() {
+  mockedGetAccess.mockResolvedValue({
+    categories: [],
+    email: 'master@example.com',
+    fullName: 'Master Admin',
+    id: 'master-1',
+    phone: null,
+    roles: ['ADMIN', 'MASTER_ADMIN'],
     updatedAt: null,
-    updatedBy: null,
-    value: overrides.value ?? 10,
+  });
+}
+
+function policySettings() {
+  return [
+    policy({
+      category: 'Command center',
+      key: 'command.start_shift.matching_delays_sla_minutes',
+      label: 'Matching delay review SLA',
+      min: 5,
+      max: 240,
+      unit: 'minutes',
+      value: 15,
+      recommendedValue: 15,
+    }),
+    policy({ key: 'matching.provider_response_window_minutes' }),
+    policy({
+      category: 'Decision',
+      key: 'cancellation.after_match_policy',
+      label: 'Customer cancellation after match',
+      value: 'ADMIN_REVIEW_FOR_MVP',
+      recommendedValue: 'ADMIN_REVIEW_FOR_MVP',
+    }),
+  ];
+}
+
+function policy(overrides: Partial<AdminOperationalPolicySetting>): AdminOperationalPolicySetting {
+  return {
+    category: 'Matching',
+    description: 'Controls the current operating policy.',
+    enforced: true,
+    lifecycle: 'live',
+    risk: 'low',
+    blastRadius: 'Current operations',
+    consumerContract: {
+      applicationScope: 'Current operations',
+      consumerIds: ['service#consumer'],
+      fallbackBehavior: 'Use the default value.',
+      integrationTestIds: ['service.spec.ts'],
+    },
+    key: 'matching.provider_response_window_minutes',
+    label: 'First-pick response window',
+    max: 30,
+    min: 3,
+    recommendedValue: 10,
+    unit: 'minutes',
+    value: 10,
+    ...overrides,
   };
+}
+
+function auditLog(id: string, metadata: Record<string, unknown>) {
+  return {
+    action: 'operational_policy.update',
+    actor: id === 'operator-row' ? { fullName: 'Ops Lead' } : { fullName: 'HANDS Smoke Admin' },
+    createdAt: '2026-08-11T02:00:00.000Z',
+    id,
+    metadata: {
+      enforced: true,
+      key: 'matching.provider_response_window_minutes',
+      reason: 'Reviewed policy evidence before change',
+      ...metadata,
+    },
+    target: 'operational_policy:matching.provider_response_window_minutes',
+  };
+}
+
+function historicalBooking(): AdminBooking {
+  return {
+    createdAt: '2026-08-14T02:45:00.000Z',
+    expiresAt: '2026-08-14T03:10:00.000Z',
+    id: 'booking-history-1',
+    metadata: {
+      matchingPolicy: {
+        backupOpenMode: 'IMMEDIATE_WITHIN_WINDOW',
+        backupProviderInvitationLimit: 5,
+        backupProviderLocationMaxAgeMinutes: 90,
+        backupProviderRadiusMeters: 10000,
+        preferredAcceptMode: 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+        providerResponseWindowMinutes: 10,
+        travelBufferMinutes: 30,
+      },
+    },
+    participants: [],
+    services: [],
+    status: 'OPEN_MATCHING',
+  } as unknown as AdminBooking;
 }

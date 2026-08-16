@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import {
+  AdminUserProvenance,
   AccountingJournalSourceType,
   PrismaClient,
   ReferralAudience,
@@ -264,8 +265,24 @@ try {
 async function seed() {
   await prisma.user.createMany({
     data: [
-      { id: ids.actor, phone: smokePhone('01'), fullName: 'Referral Smoke Master', roles: [Role.ADMIN, Role.MASTER_ADMIN] },
-      { id: ids.approver, phone: smokePhone('02'), fullName: 'Referral Smoke Approver', roles: [Role.ADMIN, Role.FINANCE_APPROVER] },
+      {
+        id: ids.actor,
+        phone: smokePhone('01'),
+        fullName: 'Referral Smoke Master',
+        roles: [Role.ADMIN, Role.MASTER_ADMIN],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'REFERRAL_MONEY_SMOKE',
+        fixtureRunId: runId,
+      },
+      {
+        id: ids.approver,
+        phone: smokePhone('02'),
+        fullName: 'Referral Smoke Approver',
+        roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'REFERRAL_MONEY_SMOKE',
+        fixtureRunId: runId,
+      },
       { id: ids.customerUser, phone: smokePhone('03'), fullName: 'Referral Smoke Customer', roles: [Role.CUSTOMER] },
       { id: ids.providerUser, phone: smokePhone('04'), fullName: 'Referral Smoke Partner', roles: [Role.PROVIDER] },
     ],

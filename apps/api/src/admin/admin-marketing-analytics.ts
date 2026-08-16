@@ -95,10 +95,10 @@ export type AdminMarketingDimensionRow = AdminMarketingStatsWithRates & {
 export type AdminMarketingAttributionQuality = {
   attributedFirstOpens: number;
   unknownFirstOpens: number;
-  firstOpenCoverageRate: number;
+  firstOpenCoverageRate: number | null;
   attributedSignups: number;
   unknownSignups: number;
-  signupCoverageRate: number;
+  signupCoverageRate: number | null;
 };
 
 export type AdminMarketingUnknownAttributionReason =
@@ -185,6 +185,95 @@ export type AdminMarketingCouponSummary = {
   refundedBookingCount: number;
   refundRate: number;
 };
+
+export type AdminMarketingDecisionReadinessStatus =
+  | 'INSUFFICIENT'
+  | 'PARTIAL'
+  | 'READY'
+  | 'STALE';
+
+export type AdminMarketingDecisionReadinessReason =
+  | 'NO_ACQUISITION_EVIDENCE'
+  | 'NO_SPEND_EVIDENCE'
+  | 'INCOMPLETE_SPEND_DAYS'
+  | 'LOW_ATTRIBUTION_COVERAGE'
+  | 'UNMATCHED_CAMPAIGN_SPEND'
+  | 'UNMATCHED_CAMPAIGN_OUTCOMES'
+  | 'STALE_AGGREGATE';
+
+export type AdminMarketingSpendCoverage = {
+  trackingExpected: boolean;
+  expectedDayCount: number;
+  recordedDayCount: number;
+  missingDates: string[];
+  lastRecordedDate: string | null;
+  latestUpdatedAt: string | null;
+  totalSpendAmount: number | null;
+  hasExplicitZeroRows: boolean;
+  unmatchedCampaignRowCount: number;
+  unmatchedOutcomeCampaignCount: number;
+  duplicateCanonicalCampaignCount: number;
+  matchedCampaignCount: number;
+  campaignKeyCount: number;
+  status: 'COMPLETE' | 'PARTIAL' | 'MISSING' | 'STALE';
+};
+
+export type AdminMarketingDecisionReadiness = {
+  status: AdminMarketingDecisionReadinessStatus;
+  reasons: AdminMarketingDecisionReadinessReason[];
+  attributionCoveragePercent: number | null;
+  spendCoveragePercent: number | null;
+  campaignJoinCoveragePercent: number | null;
+  lastCompleteDate: string | null;
+};
+
+export type AdminMarketingActionItem = {
+  actionLabel: string;
+  campaignKey: string | null;
+  detail: string;
+  evidenceReadiness: AdminMarketingDecisionReadinessStatus;
+  key: string;
+  observedValue: number;
+  observedValueKind: 'count' | 'money' | 'multiplier' | 'percent';
+  scope: string;
+  severity: 'danger' | 'warning';
+  threshold: string;
+  title: string;
+};
+
+export type AdminMarketingActionSummary = {
+  totalCount: number;
+  visibleCount: number;
+  hiddenCount: number;
+  items: AdminMarketingActionItem[];
+  generatedAt: string;
+  thresholdVersion: string;
+};
+
+export type AdminMarketingSpendCoverageInput = {
+  window: Pick<AdminMarketingWindow, 'startAt' | 'endAt'>;
+  recordedDates: readonly string[];
+  latestUpdatedAt?: Date | string | null;
+  totalSpendAmount?: number | null;
+  hasExplicitZeroRows?: boolean;
+  attributionCampaignIds?: readonly (string | null | undefined)[];
+  spendCampaignIds?: readonly (string | null | undefined)[];
+  duplicateCanonicalCampaignCount?: number;
+  paidScopeExpected?: boolean;
+  now?: Date;
+};
+
+const MARKETING_ACTION_THRESHOLDS = {
+  attributionCoveragePercent: 80,
+  cancellationRatePercent: 25,
+  comparisonMinimumBaseline: 3,
+  completedDeclinePercent: -25,
+  feeBreakEvenRoas: 1,
+  spendGrowthPercent: 25,
+  version: 'marketing-risk-v1',
+} as const;
+
+const MARKETING_ACTION_VISIBLE_LIMIT = 4;
 
 const DEFAULT_MARKETING_RANGE: AdminMarketingRange = '7d';
 const MARKETING_RANGE_LABELS: Record<AdminMarketingRange, string> = {
@@ -451,13 +540,20 @@ export function buildMarketingDimensionRows(
   for (const input of inputs) {
     if (filters.source && input.source !== filters.source) continue;
     if (filters.platform && input.platform !== filters.platform) continue;
-    if (filters.campaignId && input.campaignId !== filters.campaignId) continue;
+    if (
+      filters.campaignId &&
+      canonicalMarketingCampaignKey(input.campaignId) !== canonicalMarketingCampaignKey(filters.campaignId)
+    ) {
+      continue;
+    }
+
+    const campaignKey = canonicalMarketingCampaignKey(input.campaignId);
 
     const key = [
       input.source ?? 'all',
       input.platform ?? 'all',
       input.regionCode ?? 'all',
-      input.campaignId ?? 'all',
+      campaignKey ?? 'all',
     ].join(':');
     const existing = rows.get(key);
     const base = existing ?? {
@@ -466,7 +562,7 @@ export function buildMarketingDimensionRows(
       platform: input.platform,
       regionCode: input.regionCode,
       regionName: input.regionName,
-      campaignId: input.campaignId ?? null,
+      campaignId: campaignKey,
       campaignName: input.campaignName ?? null,
       ...withMarketingRates(emptyMarketingStats()),
     };
@@ -510,25 +606,26 @@ export function buildMarketingAttributionQuality(
   return {
     attributedFirstOpens,
     unknownFirstOpens: totals.unknownFirstOpens,
-    firstOpenCoverageRate: percent(attributedFirstOpens, totals.totalFirstOpens),
+    firstOpenCoverageRate:
+      totals.totalFirstOpens > 0 ? percent(attributedFirstOpens, totals.totalFirstOpens) : null,
     attributedSignups,
     unknownSignups: totals.unknownSignups,
-    signupCoverageRate: percent(attributedSignups, totals.totalSignups),
+    signupCoverageRate: totals.totalSignups > 0 ? percent(attributedSignups, totals.totalSignups) : null,
   };
 }
 
 export function buildMarketingCampaignEfficiency(
   attributionInputs: readonly AdminMarketingDimensionInput[],
   spendInputs: readonly AdminMarketingDimensionInput[],
-  limit = 5,
+  limit: number | null = 5,
 ): AdminMarketingDimensionRow[] {
   const campaigns = new Map<string, AdminMarketingDimensionRow>();
 
   for (const input of [...attributionInputs, ...spendInputs]) {
-    const campaignId = input.campaignId?.trim();
+    const campaignId = canonicalMarketingCampaignKey(input.campaignId);
     if (!campaignId) continue;
 
-    const key = campaignId.toLowerCase();
+    const key = campaignId;
     const current = campaigns.get(key);
     const source =
       current && current.source !== input.source
@@ -550,9 +647,359 @@ export function buildMarketingCampaignEfficiency(
     });
   }
 
-  return Array.from(campaigns.values())
-    .sort(marketingRowSort)
-    .slice(0, Math.max(0, limit));
+  const rows = Array.from(campaigns.values()).sort(marketingRowSort);
+  return limit === null ? rows : rows.slice(0, Math.max(0, limit));
+}
+
+export function canonicalMarketingCampaignKey(value: unknown) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  return normalized || null;
+}
+
+export function buildMarketingSpendCoverage({
+  attributionCampaignIds = [],
+  duplicateCanonicalCampaignCount = 0,
+  hasExplicitZeroRows = false,
+  latestUpdatedAt = null,
+  now = new Date(),
+  paidScopeExpected = true,
+  recordedDates,
+  spendCampaignIds = [],
+  totalSpendAmount = null,
+  window,
+}: AdminMarketingSpendCoverageInput): AdminMarketingSpendCoverage {
+  const expectedDates = paidScopeExpected ? marketingWindowDateKeys(window, now) : [];
+  const recorded = new Set(recordedDates.filter((date) => /^\d{4}-\d{2}-\d{2}$/u.test(date)));
+  const missingDates = expectedDates.filter((date) => !recorded.has(date));
+  const recordedExpectedDates = expectedDates.filter((date) => recorded.has(date));
+  const attributionKeys = new Set(
+    attributionCampaignIds.map(canonicalMarketingCampaignKey).filter((value): value is string => Boolean(value)),
+  );
+  const spendKeys = new Set(
+    spendCampaignIds.map(canonicalMarketingCampaignKey).filter((value): value is string => Boolean(value)),
+  );
+  const unmatchedCampaignRowCount = [...spendKeys].filter((key) => !attributionKeys.has(key)).length;
+  const unmatchedOutcomeCampaignCount = [...attributionKeys].filter((key) => !spendKeys.has(key)).length;
+  const campaignKeys = new Set([...attributionKeys, ...spendKeys]);
+  const matchedCampaignCount = [...campaignKeys].filter(
+    (key) => attributionKeys.has(key) && spendKeys.has(key),
+  ).length;
+  const lastRecordedDate = [...recorded].sort().at(-1) ?? null;
+  const latestUpdatedAtValue = normalizeIsoDate(latestUpdatedAt);
+  const stale =
+    expectedDates.length > 1 &&
+    recordedExpectedDates.length > 0 &&
+    expectedDates.slice(-2).every((date) => !recorded.has(date));
+  const status: AdminMarketingSpendCoverage['status'] =
+    expectedDates.length === 0
+      ? 'COMPLETE'
+      : recordedExpectedDates.length === 0
+        ? 'MISSING'
+        : stale
+          ? 'STALE'
+          : missingDates.length > 0
+            ? 'PARTIAL'
+            : 'COMPLETE';
+
+  return {
+    trackingExpected: paidScopeExpected,
+    expectedDayCount: expectedDates.length,
+    recordedDayCount: recordedExpectedDates.length,
+    missingDates,
+    lastRecordedDate,
+    latestUpdatedAt: latestUpdatedAtValue,
+    totalSpendAmount,
+    hasExplicitZeroRows,
+    unmatchedCampaignRowCount,
+    unmatchedOutcomeCampaignCount,
+    duplicateCanonicalCampaignCount: Math.max(0, Math.trunc(duplicateCanonicalCampaignCount)),
+    matchedCampaignCount,
+    campaignKeyCount: campaignKeys.size,
+    status,
+  };
+}
+
+export function buildMarketingDecisionReadiness(input: {
+  attributionQuality: AdminMarketingAttributionQuality;
+  spendCoverage: AdminMarketingSpendCoverage;
+  totals: AdminMarketingStats;
+}): AdminMarketingDecisionReadiness {
+  const { attributionQuality, spendCoverage, totals } = input;
+  const reasons: AdminMarketingDecisionReadinessReason[] = [];
+  const acquisitionEvidence =
+    totals.firstOpens + totals.signups + totals.bookingCreated + totals.bookingCompleted + totals.bookingCancelled > 0;
+  const outcomeEvidence = totals.bookingCreated + totals.bookingCompleted + totals.bookingCancelled > 0;
+  const spendEvidence = spendCoverage.totalSpendAmount !== null;
+  const spendRequired = spendCoverage.trackingExpected;
+  const signupTotal = attributionQuality.attributedSignups + attributionQuality.unknownSignups;
+  const attributionCoveragePercent = signupTotal > 0 ? attributionQuality.signupCoverageRate : null;
+
+  if (!acquisitionEvidence) reasons.push('NO_ACQUISITION_EVIDENCE');
+  if (spendRequired && !spendEvidence) reasons.push('NO_SPEND_EVIDENCE');
+  if (spendRequired && (spendCoverage.status === 'PARTIAL' || spendCoverage.status === 'MISSING')) {
+    reasons.push('INCOMPLETE_SPEND_DAYS');
+  }
+  if (spendCoverage.status === 'STALE') reasons.push('STALE_AGGREGATE');
+  if (
+    attributionCoveragePercent !== null &&
+    attributionCoveragePercent < MARKETING_ACTION_THRESHOLDS.attributionCoveragePercent
+  ) {
+    reasons.push('LOW_ATTRIBUTION_COVERAGE');
+  }
+  if (spendCoverage.unmatchedCampaignRowCount > 0) reasons.push('UNMATCHED_CAMPAIGN_SPEND');
+  if (spendCoverage.unmatchedOutcomeCampaignCount > 0) reasons.push('UNMATCHED_CAMPAIGN_OUTCOMES');
+
+  const campaignJoinCoveragePercent =
+    spendCoverage.campaignKeyCount > 0
+      ? percent(spendCoverage.matchedCampaignCount, spendCoverage.campaignKeyCount)
+      : null;
+  const spendCoveragePercent =
+    spendCoverage.expectedDayCount > 0
+      ? percent(spendCoverage.recordedDayCount, spendCoverage.expectedDayCount)
+      : null;
+  const status: AdminMarketingDecisionReadinessStatus =
+    spendCoverage.status === 'STALE'
+      ? 'STALE'
+      : !acquisitionEvidence || (spendRequired && !spendEvidence) || (spendEvidence && !outcomeEvidence)
+        ? 'INSUFFICIENT'
+        : reasons.length > 0
+          ? 'PARTIAL'
+          : 'READY';
+
+  return {
+    status,
+    reasons: [...new Set(reasons)],
+    attributionCoveragePercent,
+    spendCoveragePercent,
+    campaignJoinCoveragePercent,
+    lastCompleteDate: lastCompleteMarketingDate(spendCoverage),
+  };
+}
+
+export function buildMarketingActionSummary(input: {
+  attributionQuality: AdminMarketingAttributionQuality;
+  campaignEfficiency: readonly AdminMarketingDimensionRow[];
+  comparison: AdminMarketingComparison;
+  generatedAt?: Date | string;
+  readiness: AdminMarketingDecisionReadiness;
+  spendCoverage: AdminMarketingSpendCoverage;
+  totals: AdminMarketingStatsWithRates;
+  visibleLimit?: number;
+}): AdminMarketingActionSummary {
+  const actions: AdminMarketingActionItem[] = [];
+  const campaignRows = [...input.campaignEfficiency]
+    .filter((row) => row.adSpend > 0)
+    .sort((left, right) => right.adSpend - left.adSpend);
+
+  for (const campaign of campaignRows.filter((row) => row.bookingCompleted === 0)) {
+    actions.push(marketingAction({
+      actionLabel: 'Review campaign',
+      campaignKey: canonicalMarketingCampaignKey(campaign.campaignId),
+      detail: 'Recorded spend has no completed new customer in the selected cohort.',
+      evidenceReadiness: input.readiness.status,
+      key: `campaign-no-completion:${campaign.key}`,
+      observedValue: campaign.adSpend,
+      observedValueKind: 'money',
+      scope: campaign.campaignName ?? campaign.campaignId ?? 'Unknown campaign',
+      severity: 'danger',
+      threshold: 'Spend > 0 VND and completed new customers = 0',
+      title: 'Spend with no completed customer',
+    }));
+  }
+
+  for (const campaign of campaignRows.filter(
+    (row) =>
+      row.bookingCompleted > 0 &&
+      row.conversionRates.platformFeeRoas !== null &&
+      row.conversionRates.platformFeeRoas < MARKETING_ACTION_THRESHOLDS.feeBreakEvenRoas,
+  )) {
+    actions.push(marketingAction({
+      actionLabel: 'Review efficiency',
+      campaignKey: canonicalMarketingCampaignKey(campaign.campaignId),
+      detail: 'Platform fee revenue is below recorded spend. Verify evidence before changing budget.',
+      evidenceReadiness: input.readiness.status,
+      key: `campaign-below-break-even:${campaign.key}`,
+      observedValue: campaign.conversionRates.platformFeeRoas ?? 0,
+      observedValueKind: 'multiplier',
+      scope: campaign.campaignName ?? campaign.campaignId ?? 'Unknown campaign',
+      severity: 'warning',
+      threshold: `Fee ROAS < ${MARKETING_ACTION_THRESHOLDS.feeBreakEvenRoas.toFixed(2)}x`,
+      title: 'Campaign fee return needs review',
+    }));
+  }
+
+  if (
+    input.totals.bookingCreated > 0 &&
+    input.totals.conversionRates.cancellationRate >= MARKETING_ACTION_THRESHOLDS.cancellationRatePercent
+  ) {
+    actions.push(marketingAction({
+      actionLabel: 'Review funnel evidence',
+      campaignKey: null,
+      detail: 'The selected new-customer cohort has an elevated cancellation share.',
+      evidenceReadiness: input.readiness.status,
+      key: 'cohort-cancellation-rate',
+      observedValue: input.totals.conversionRates.cancellationRate,
+      observedValueKind: 'percent',
+      scope: 'Selected cohort',
+      severity: 'warning',
+      threshold: `Cancellation rate >= ${MARKETING_ACTION_THRESHOLDS.cancellationRatePercent}%`,
+      title: 'Cancellation rate needs review',
+    }));
+  }
+
+  if (input.spendCoverage.status !== 'COMPLETE') {
+    actions.push(marketingAction({
+      actionLabel: 'Review spend ledger',
+      campaignKey: null,
+      detail: `${input.spendCoverage.missingDates.length} ${input.spendCoverage.missingDates.length === 1 ? 'spend date is' : 'spend dates are'} missing from the ledger. Missing is not zero.`,
+      evidenceReadiness: input.readiness.status,
+      key: 'spend-coverage-gap',
+      observedValue: input.spendCoverage.missingDates.length,
+      observedValueKind: 'count',
+      scope: 'Manual spend ledger',
+      severity: input.spendCoverage.status === 'MISSING' || input.spendCoverage.status === 'STALE' ? 'danger' : 'warning',
+      threshold: 'Every tracked paid-spend date has an explicit ledger row',
+      title: 'Spend coverage is incomplete',
+    }));
+  }
+
+  if (input.spendCoverage.unmatchedCampaignRowCount > 0) {
+    actions.push(marketingAction({
+      actionLabel: 'Match campaign evidence',
+      campaignKey: null,
+      detail: 'Spend campaign keys exist without matching attributed outcomes.',
+      evidenceReadiness: input.readiness.status,
+      key: 'unmatched-campaign-spend',
+      observedValue: input.spendCoverage.unmatchedCampaignRowCount,
+      observedValueKind: 'count',
+      scope: 'Campaign identity',
+      severity: 'warning',
+      threshold: 'Unmatched spend campaign rows = 0',
+      title: 'Campaign spend is unmatched',
+    }));
+  }
+
+  const signupTotal = input.attributionQuality.attributedSignups + input.attributionQuality.unknownSignups;
+  if (
+    signupTotal >= MARKETING_ACTION_THRESHOLDS.comparisonMinimumBaseline &&
+    input.attributionQuality.signupCoverageRate !== null &&
+    input.attributionQuality.signupCoverageRate < MARKETING_ACTION_THRESHOLDS.attributionCoveragePercent
+  ) {
+    actions.push(marketingAction({
+      actionLabel: 'Review unknown source',
+      campaignKey: null,
+      detail: `${input.attributionQuality.unknownSignups} of ${signupTotal} signups have no supported first-touch source.`,
+      evidenceReadiness: input.readiness.status,
+      key: 'signup-attribution-gap',
+      observedValue: input.attributionQuality.signupCoverageRate,
+      observedValueKind: 'percent',
+      scope: 'Attribution quality',
+      severity: 'warning',
+      threshold: `Coverage < ${MARKETING_ACTION_THRESHOLDS.attributionCoveragePercent}%`,
+      title: 'Signup attribution is incomplete',
+    }));
+  }
+
+  const spendGrowth = input.comparison.adSpend.deltaPercent;
+  if (
+    input.comparison.adSpend.current > 0 &&
+    spendGrowth !== null &&
+    spendGrowth >= MARKETING_ACTION_THRESHOLDS.spendGrowthPercent &&
+    input.comparison.bookingCompleted.delta <= 0
+  ) {
+    actions.push(marketingAction({
+      actionLabel: 'Compare periods',
+      campaignKey: null,
+      detail: 'Recorded spend increased while completed new-customer outcomes did not.',
+      evidenceReadiness: input.readiness.status,
+      key: 'spend-growth-without-completion-growth',
+      observedValue: spendGrowth,
+      observedValueKind: 'percent',
+      scope: 'Previous-period comparison',
+      severity: 'danger',
+      threshold: `Spend growth >= ${MARKETING_ACTION_THRESHOLDS.spendGrowthPercent}% with no completion growth`,
+      title: 'Spend rose without completion growth',
+    }));
+  }
+
+  const completionDelta = input.comparison.bookingCompleted.deltaPercent;
+  if (
+    input.comparison.bookingCompleted.previous >= MARKETING_ACTION_THRESHOLDS.comparisonMinimumBaseline &&
+    completionDelta !== null &&
+    completionDelta <= MARKETING_ACTION_THRESHOLDS.completedDeclinePercent
+  ) {
+    actions.push(marketingAction({
+      actionLabel: 'Inspect trend',
+      campaignKey: null,
+      detail: 'Completed new-customer outcomes declined against the comparable previous period.',
+      evidenceReadiness: input.readiness.status,
+      key: 'completed-cohort-decline',
+      observedValue: Math.abs(completionDelta),
+      observedValueKind: 'percent',
+      scope: 'Previous-period comparison',
+      severity: 'warning',
+      threshold: `Completed outcome change <= ${MARKETING_ACTION_THRESHOLDS.completedDeclinePercent}%`,
+      title: 'Completed acquisition declined',
+    }));
+  }
+
+  const sorted = actions.sort((left, right) =>
+    Number(right.severity === 'danger') - Number(left.severity === 'danger') ||
+    right.observedValue - left.observedValue ||
+    left.key.localeCompare(right.key),
+  );
+  const visibleLimit = Math.max(0, Math.trunc(input.visibleLimit ?? MARKETING_ACTION_VISIBLE_LIMIT));
+  const items = sorted.slice(0, visibleLimit);
+
+  return {
+    totalCount: sorted.length,
+    visibleCount: items.length,
+    hiddenCount: Math.max(0, sorted.length - items.length),
+    items,
+    generatedAt: normalizeIsoDate(input.generatedAt ?? new Date()) ?? new Date().toISOString(),
+    thresholdVersion: MARKETING_ACTION_THRESHOLDS.version,
+  };
+}
+
+function marketingAction(item: AdminMarketingActionItem) {
+  return item;
+}
+
+function marketingWindowDateKeys(
+  window: Pick<AdminMarketingWindow, 'startAt' | 'endAt'>,
+  now: Date,
+) {
+  const effectiveEnd = new Date(Math.min(window.endAt.getTime(), addUtcDays(startOfVietnamDay(now), 1).getTime()));
+  const dates: string[] = [];
+  for (let date = new Date(window.startAt); date < effectiveEnd; date = addUtcDays(date, 1)) {
+    dates.push(vietnamDateKey(date));
+  }
+  return dates;
+}
+
+function vietnamDateKey(value: Date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+  }).formatToParts(value);
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
+function normalizeIsoDate(value: Date | string | null | undefined) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function lastCompleteMarketingDate(coverage: AdminMarketingSpendCoverage) {
+  if (coverage.expectedDayCount === 0 || coverage.recordedDayCount === 0) return null;
+  const missing = new Set(coverage.missingDates);
+  if (missing.size === 0) return coverage.lastRecordedDate;
+  return coverage.lastRecordedDate && !missing.has(coverage.lastRecordedDate) ? coverage.lastRecordedDate : null;
 }
 
 export function buildMarketingRegionRows(

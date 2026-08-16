@@ -4,6 +4,9 @@ import { normalizeNullable, slugify } from './admin-text-helpers';
 
 export const PRICE_STEP_UNIT_VND = 100000;
 const SERVICE_NAME_TRANSLATION_KEYS = ['en', 'vi', 'ko', 'ja', 'zh'] as const;
+const SUPPORTED_SERVICE_DURATIONS = [60, 90, 120] as const;
+
+export type ServiceCatalogGroupCommand = ReturnType<typeof normalizeServiceCatalogGroupCommand>;
 
 export function normalizeServiceDurationSetInput(input: {
   serviceGroupKey?: string;
@@ -141,6 +144,120 @@ export function normalizeServiceNameTranslations(input: unknown) {
   }
 
   return Object.keys(translations).length ? translations : null;
+}
+
+export function normalizeServiceCatalogGroupCommand(
+  groupKeyInput: string,
+  input: {
+    requestId: string;
+    expectedVersion: number;
+    intent: 'SAVE_DRAFT' | 'PUBLISH' | 'HIDE' | 'ARCHIVE';
+    reason?: string;
+    nameTranslations?: unknown;
+    description?: string | null;
+    priceStep: number;
+    displayOrder: number;
+    durations: Array<{
+      durationMin: number;
+      enabled: boolean;
+      basePrice?: number;
+      providerPayoutAmount?: number;
+      displayOrder: number;
+    }>;
+  },
+) {
+  const serviceGroupKey = normalizeNullable(groupKeyInput);
+  if (!serviceGroupKey || !/^[a-z0-9_]{2,80}$/u.test(serviceGroupKey)) {
+    throw new BadRequestException({
+      code: 'SERVICE_CATALOG_VALIDATION_FAILED',
+      fieldErrors: { serviceGroupKey: 'Use 2-80 lowercase letters, numbers, or underscores.' },
+    });
+  }
+  if (input.priceStep % PRICE_STEP_UNIT_VND !== 0) {
+    throw new BadRequestException({
+      code: 'SERVICE_CATALOG_VALIDATION_FAILED',
+      fieldErrors: { priceStep: `Price step must use ${PRICE_STEP_UNIT_VND} VND increments.` },
+    });
+  }
+  const translations = normalizeServiceNameTranslations(input.nameTranslations) ?? {};
+  const durations = [...input.durations].sort((left, right) => left.durationMin - right.durationMin);
+  const durationValues = durations.map((row) => row.durationMin);
+  if (
+    durationValues.length !== SUPPORTED_SERVICE_DURATIONS.length ||
+    SUPPORTED_SERVICE_DURATIONS.some((duration) => !durationValues.includes(duration)) ||
+    new Set(durationValues).size !== durationValues.length
+  ) {
+    throw new BadRequestException({
+      code: 'SERVICE_CATALOG_VALIDATION_FAILED',
+      fieldErrors: { durations: 'Provide one row for each supported duration: 60, 90, and 120 minutes.' },
+    });
+  }
+
+  const normalized = {
+    serviceGroupKey,
+    requestId: input.requestId,
+    expectedVersion: input.expectedVersion,
+    intent: input.intent,
+    reason: normalizeNullable(input.reason),
+    nameTranslations: translations,
+    description: normalizeNullable(input.description),
+    priceStep: input.priceStep,
+    displayOrder: input.displayOrder,
+    durations: durations.map((row) => ({
+      durationMin: row.durationMin,
+      enabled: row.enabled,
+      basePrice: row.basePrice,
+      providerPayoutAmount: row.providerPayoutAmount,
+      displayOrder: row.displayOrder,
+    })),
+  };
+
+  if (input.intent === 'PUBLISH') {
+    assertServiceCatalogPublishReady(normalized);
+  }
+  return normalized;
+}
+
+export function assertServiceCatalogPublishReady(input: {
+  reason?: string | null;
+  nameTranslations: Record<string, string>;
+  priceStep: number;
+  durations: Array<{
+    durationMin: number;
+    enabled: boolean;
+    basePrice?: number;
+    providerPayoutAmount?: number;
+  }>;
+}) {
+  const fieldErrors: Record<string, string> = {};
+  if (!input.nameTranslations.en) fieldErrors.nameEn = 'English name is required to publish.';
+  if (!input.nameTranslations.vi) fieldErrors.nameVi = 'Vietnamese name is required to publish.';
+  if (!input.reason || input.reason.length < 12) {
+    fieldErrors.reason = 'Explain the publishing impact in at least 12 characters.';
+  }
+  if (!input.durations.some((row) => row.enabled)) {
+    fieldErrors.durations = 'Enable at least one duration before publishing.';
+  }
+  for (const row of input.durations) {
+    if (!row.enabled) continue;
+    const prefix = `duration${row.durationMin}`;
+    if (!Number.isInteger(row.basePrice) || (row.basePrice ?? 0) <= 0) {
+      fieldErrors[`${prefix}.basePrice`] = 'Customer price is required for an enabled duration.';
+      continue;
+    }
+    if ((row.basePrice as number) % input.priceStep !== 0) {
+      fieldErrors[`${prefix}.basePrice`] = `Customer price must use ${input.priceStep} VND increments.`;
+    }
+    if (!Number.isInteger(row.providerPayoutAmount) || (row.providerPayoutAmount ?? -1) < 0) {
+      fieldErrors[`${prefix}.providerPayoutAmount`] =
+        'Partner payout must be explicitly set, including when it is 0 VND.';
+    } else if ((row.providerPayoutAmount as number) > (row.basePrice as number)) {
+      fieldErrors[`${prefix}.providerPayoutAmount`] = 'Partner payout cannot exceed customer price.';
+    }
+  }
+  if (Object.keys(fieldErrors).length > 0) {
+    throw new BadRequestException({ code: 'SERVICE_CATALOG_VALIDATION_FAILED', fieldErrors });
+  }
 }
 
 function normalizeServiceNameTranslationsForPrisma(input: unknown) {

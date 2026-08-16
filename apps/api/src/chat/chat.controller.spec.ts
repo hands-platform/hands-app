@@ -13,7 +13,7 @@ describe('ChatController', () => {
       createMessage: vi.fn().mockResolvedValue(message),
     };
     const gateway = {
-      emitMessageCreated: vi.fn(),
+      emitMessageCreated: vi.fn().mockResolvedValue(undefined),
     };
     const controller = new ChatController(chat as never, gateway as never);
     const user = {

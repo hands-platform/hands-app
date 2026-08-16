@@ -18,6 +18,44 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
   return POLICY_IMPACT_DETAILS[impactKey] ?? FALLBACK_POLICY_IMPACT_DETAILS;
 }
 
+const START_SHIFT_SLA_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
+  [OPERATIONAL_POLICY_KEYS.startShiftPaymentHoldsSlaMinutes]: startShiftSlaImpact(
+    'Payment holds',
+    'payment authorization holds',
+    '/payments?range=all&review=authorized&sort=oldest',
+  ),
+  [OPERATIONAL_POLICY_KEYS.startShiftMatchingDelaysSlaMinutes]: startShiftSlaImpact(
+    'Matching delays',
+    'open bookings still waiting for a valid match',
+    '/bookings?view=matching-delays&sort=oldest',
+  ),
+  [OPERATIONAL_POLICY_KEYS.startShiftCancellationReviewSlaMinutes]: startShiftSlaImpact(
+    'Cancellation review',
+    'post-match cancellations awaiting a manual decision',
+    '/bookings/post-match-cancellations?view=manual-decision&dateRange=all&sort=oldest',
+  ),
+  [OPERATIONAL_POLICY_KEYS.startShiftRefundReviewSlaMinutes]: startShiftSlaImpact(
+    'Refund review',
+    'open refund cases awaiting a decision or payment reversal',
+    '/refunds?range=all&review=open&sort=oldest',
+  ),
+  [OPERATIONAL_POLICY_KEYS.startShiftNotificationFailuresSlaMinutes]: startShiftSlaImpact(
+    'Notification failures',
+    'unresolved failed notification deliveries',
+    '/notifications?range=all&review=unresolved-failed&sort=oldest',
+  ),
+  [OPERATIONAL_POLICY_KEYS.startShiftCashReconciliationSlaMinutes]: startShiftSlaImpact(
+    'Cash reconciliation',
+    'cash booking fee and tax debt awaiting reconciliation',
+    '/cash-settlements?range=all&sort=oldest',
+  ),
+  [OPERATIONAL_POLICY_KEYS.startShiftPartnerApprovalsSlaMinutes]: startShiftSlaImpact(
+    'Partner approvals',
+    'submitted Partner approvals awaiting review',
+    '/partners?review=approval-pending&sort=oldest',
+  ),
+};
+
 const BOOKING_CREATE_GATE_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
   [OPERATIONAL_POLICY_KEYS.bookingDistanceGateEnabled]: {
     area: 'Booking create gate',
@@ -413,6 +451,7 @@ const NOTIFICATION_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = 
 };
 
 const POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
+  ...START_SHIFT_SLA_POLICY_IMPACT_DETAILS,
   ...BOOKING_CREATE_GATE_POLICY_IMPACT_DETAILS,
   ...MATCHING_MARKETPLACE_POLICY_IMPACT_DETAILS,
   ...SETTLEMENT_POLICY_IMPACT_DETAILS,
@@ -420,10 +459,30 @@ const POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
   ...NOTIFICATION_POLICY_IMPACT_DETAILS,
 };
 
+function startShiftSlaImpact(label: string, records: string, href: string): PolicyImpactDetails {
+  return {
+    area: 'Start Shift queue',
+    title: `Sets the ${label.toLowerCase()} overdue threshold`,
+    detail: `Start Shift promotes ${records} when their retained queue age reaches this threshold. Existing unresolved rows are reclassified on the next Start Shift or queue read; the source timestamps are not rewritten.`,
+    saveChecks: [
+      {
+        label: `${label} queue`,
+        detail: 'The current unresolved count is read from this queue. The policy editor does not load a separate count.',
+        href,
+      },
+      {
+        label: 'Policy audit evidence',
+        detail: 'After saving, confirm the exact before/after value and effective time in the scoped Operations/Policy audit.',
+        href: '/audit-log?bucket=Operations%2FPolicy&range=all&sort=newest',
+      },
+    ],
+  };
+}
+
 const FALLBACK_POLICY_IMPACT_DETAILS: PolicyImpactDetails = {
   area: 'Operations',
   title: 'Operational policy',
-  detail: 'This setting is tracked for auditability and future automation.',
+  detail: 'This setting is tracked for auditability. Review its lifecycle and listed runtime consumer before changing it.',
   saveChecks: [
     {
       label: 'Audit trail',

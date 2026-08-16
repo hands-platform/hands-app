@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 
 import {
   BadRequestException,
@@ -25,12 +25,20 @@ import type {
   CreatePublicSiteNewsDraftDto,
   CreatePublicSitePageDto,
   CreatePublicSiteSectionDto,
+  DeletePublicSitePageDto,
   PublishPublicSiteDraftDto,
   RollbackPublicSiteRevisionDto,
+  TakePublicSitePageOfflineDto,
   UpdatePublicSiteNewsDraftDto,
   UpdatePublicSitePageDto,
   UpdatePublicSiteSectionDto,
 } from './site-content.dto';
+import {
+  publicSiteManifestEntry,
+  publicSiteOwnership,
+  publicSiteRouteManifest,
+  type PublicSiteOwnership,
+} from './public-site-route-manifest';
 
 const revisionSections = {
   orderBy: [{ sortOrder: 'asc' as const }, { key: 'asc' as const }],
@@ -85,6 +93,7 @@ export class SiteContentService {
     const page = Math.max(1, query.page ?? 1);
     const take = Math.min(100, Math.max(1, query.take ?? 20));
     const contentType = query.contentType ?? 'pages';
+    const ownershipWhere = ownershipFilter(query.ownership, query.site);
     const where: Prisma.PublicSitePageWhereInput = {
       ...(query.site ? { site: query.site } : {}),
       ...(query.locale ? { locale: query.locale } : {}),
@@ -110,6 +119,10 @@ export class SiteContentService {
                 },
               }
             : {}),
+      ...(query.readiness
+        ? { draftRevision: { is: { readinessState: query.readiness } } }
+        : {}),
+      ...(ownershipWhere ? { AND: [ownershipWhere] } : {}),
     };
     if (contentType === 'news') {
       const [rows, total, resolvedSummary] = await Promise.all([
@@ -120,10 +133,10 @@ export class SiteContentService {
           take,
           select: adminPageSummarySelect,
         }),
-        this.prisma.publicSitePage.count({ where }),
-        this.adminSummary().catch(() => null),
+      this.prisma.publicSitePage.count({ where }),
+        this.adminSummary(query, where).catch(() => null),
       ]);
-      return pageResult(rows, page, take, total, resolvedSummary);
+      return pageResult(rows.map(adminPageSummaryWithOwnership), page, take, total, resolvedSummary);
     }
     const [routeGroups, allRouteGroups, resolvedSummary] = await Promise.all([
       this.prisma.publicSitePage.groupBy({
@@ -134,7 +147,7 @@ export class SiteContentService {
         take,
       }),
       this.prisma.publicSitePage.groupBy({ by: ['site', 'path'], where }),
-      this.adminSummary().catch(() => null),
+      this.adminSummary(query, where).catch(() => null),
     ]);
     if (!routeGroups.length) {
       return pageResult([], page, take, allRouteGroups.length, resolvedSummary);
@@ -149,11 +162,42 @@ export class SiteContentService {
       orderBy: [{ site: 'asc' }, { path: 'asc' }, { locale: 'asc' }],
       select: adminPageSummarySelect,
     });
-    return pageResult(groupPageRoutes(rows), page, take, allRouteGroups.length, resolvedSummary);
+    return pageResult(
+      groupPageRoutes(rows.map(adminPageSummaryWithOwnership)),
+      page,
+      take,
+      allRouteGroups.length,
+      resolvedSummary,
+    );
   }
 
-  getAdminPage(pageId: string) {
-    return this.assertPageExists(pageId);
+  async getAdminPage(pageId: string) {
+    const [page, activity] = await Promise.all([
+      this.assertPageExists(pageId),
+      this.prisma.adminAuditLog.findMany({
+        where: { target: `public_site_page:${pageId}` },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 50,
+        include: { actor: { select: { id: true, fullName: true, email: true } } },
+      }),
+    ]);
+    return {
+      ...page,
+      ownership: publicSiteOwnership(page.site, page.path, Boolean(page.activeRevisionId)),
+      manifestLabel: publicSiteManifestEntry(page.site, page.path)?.label ?? null,
+      offlineVisitorOutcome: publicSiteManifestEntry(page.site, page.path)?.codeFallback
+        ? 'CODE_FALLBACK'
+        : 'NOT_SERVED',
+      activity: activity.map((event) => ({
+        id: event.id,
+        action: event.action,
+        createdAt: event.createdAt,
+        actor: event.actor
+          ? { id: event.actor.id, label: event.actor.fullName ?? event.actor.email ?? event.actor.id }
+          : null,
+        metadata: event.metadata,
+      })),
+    };
   }
 
   async createPage(actorId: string, input: CreatePublicSitePageDto) {
@@ -279,23 +323,32 @@ export class SiteContentService {
     }
   }
 
-  async deletePage(actorId: string, pageId: string) {
-    const existing = await this.assertPageExists(pageId);
-    if (existing.activeRevisionId) {
-      throw new BadRequestException('Live routes cannot be deleted');
-    }
-    await this.prisma.$transaction([
-      this.prisma.publicSitePage.delete({ where: { id: pageId } }),
-      this.prisma.adminAuditLog.create({
-        data: {
-          actorId,
-          action: 'PUBLIC_SITE_PAGE_DELETED',
-          target: `public_site_page:${pageId}`,
-          metadata: { site: existing.site, locale: existing.locale, path: existing.path },
+  async deletePage(actorId: string, pageId: string, input: DeletePublicSitePageDto) {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await this.findPageWithTx(tx, pageId);
+      if (!existing) throw new NotFoundException('Public site page not found');
+      assertConfirmedPath(existing.path, input.confirmationPath);
+      if (existing.activeRevisionId || existing.firstPublishedAt || existing.revisions.length > 0) {
+        throw new ConflictException(
+          'Pages with Live history cannot be deleted. Take the page offline and retain its audit history.',
+        );
+      }
+      if (publicSiteOwnership(existing.site, existing.path, false) === 'OWNERSHIP_CONFLICT') {
+        throw new ConflictException('Resolve this route ownership conflict before deleting the page.');
+      }
+      await audit(tx, actorId, 'PUBLIC_SITE_PAGE_DELETED', pageId, {
+        requestId: randomUUID(),
+        reason: input.reason,
+        before: {
+          site: existing.site,
+          locale: existing.locale,
+          path: existing.path,
+          draftRevisionId: existing.draftRevisionId,
         },
-      }),
-    ]);
-    return { deleted: true, id: pageId };
+      });
+      await tx.publicSitePage.delete({ where: { id: pageId } });
+      return { deleted: true, id: pageId };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   async createSection(actorId: string, pageId: string, input: CreatePublicSiteSectionDto) {
@@ -601,9 +654,13 @@ export class SiteContentService {
           },
         });
         await audit(tx, actorId, 'PUBLIC_SITE_DRAFT_PUBLISHED', pageId, {
+          requestId: randomUUID(),
           previousRevisionId: page.activeRevisionId,
           revisionId: draft.id,
           version: draft.version,
+          ownershipBefore: publicSiteOwnership(page.site, page.path, Boolean(page.activeRevisionId)),
+          ownershipAfter: 'CMS_LIVE',
+          firstPublish: !page.firstPublishedAt,
         });
         return this.findPageWithTx(tx, pageId);
       },
@@ -652,13 +709,53 @@ export class SiteContentService {
           },
         });
         await audit(tx, actorId, 'PUBLIC_SITE_REVISION_ROLLED_BACK', pageId, {
+          requestId: randomUUID(),
+          reason: input.reason,
           previousRevisionId: page.activeRevisionId,
           revisionId: target.id,
+          originalPublishedAt: target.publishedAt?.toISOString() ?? null,
+          originalPublisherId: target.publishedById,
         });
         return this.findPageWithTx(tx, pageId);
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+  }
+
+  async takeOffline(actorId: string, pageId: string, input: TakePublicSitePageOfflineDto) {
+    return this.prisma.$transaction(async (tx) => {
+      const page = await this.findPageWithTx(tx, pageId);
+      if (!page) throw new NotFoundException('Public site page not found');
+      assertConfirmedPath(page.path, input.confirmationPath);
+      const manifest = publicSiteManifestEntry(page.site, page.path);
+      const visitorOutcome = manifest?.codeFallback ? 'CODE_FALLBACK' : 'NOT_SERVED';
+      if (!page.activeRevisionId) {
+        return { page, idempotent: true, visitorOutcome };
+      }
+      const previousRevisionId = page.activeRevisionId;
+      await tx.publicSitePageRevision.update({
+        where: { id: previousRevisionId },
+        data: { state: PublicSiteRevisionState.ARCHIVED, updatedById: actorId },
+      });
+      await tx.publicSitePage.update({
+        where: { id: pageId },
+        data: {
+          activeRevisionId: null,
+          status: PublicSitePageStatus.DRAFT,
+          publishedAt: null,
+          updatedById: actorId,
+        },
+      });
+      await audit(tx, actorId, 'PUBLIC_SITE_PAGE_TAKEN_OFFLINE', pageId, {
+        requestId: randomUUID(),
+        reason: input.reason,
+        previousRevisionId,
+        ownershipBefore: 'CMS_LIVE',
+        ownershipAfter: visitorOutcome,
+        visitorOutcome,
+      });
+      return { page: await this.findPageWithTx(tx, pageId), idempotent: false, visitorOutcome };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   async createPreviewToken(pageId: string) {
@@ -747,32 +844,97 @@ export class SiteContentService {
     });
   }
 
-  private async adminSummary() {
-    const [routes, live, draftChanges, needsAttention, translationGroups, recentlyPublished] = await Promise.all([
-      this.prisma.publicSitePage.count(),
-      this.prisma.publicSitePage.count({ where: { activeRevisionId: { not: null } } }),
-      this.prisma.publicSitePage.count({ where: { draftRevisionId: { not: null } } }),
+  async readinessDryRun() {
+    const drafts = await this.prisma.publicSitePage.findMany({
+      where: { draftRevisionId: { not: null } },
+      orderBy: [{ site: 'asc' }, { path: 'asc' }, { locale: 'asc' }],
+      include: { draftRevision: { include: { sections: revisionSections } } },
+    });
+    return {
+      generatedAt: new Date().toISOString(),
+      applyExecuted: false,
+      items: drafts.flatMap((page) => {
+        if (!page.draftRevision) return [];
+        const readiness = publicSiteRevisionReadiness(page.draftRevision);
+        return [{
+          pageId: page.id,
+          site: page.site,
+          locale: page.locale,
+          path: page.path,
+          previousState: page.draftRevision.readinessState,
+          nextState: readiness.state,
+          issues: readiness.issues,
+        }];
+      }),
+    };
+  }
+
+  private async adminSummary(
+    query: AdminPublicSitePageListQueryDto,
+    scopedWhere: Prisma.PublicSitePageWhereInput,
+  ) {
+    const contentType = query.contentType ?? 'pages';
+    const includeCompleteness = contentType === 'pages' &&
+      !query.readiness &&
+      !query.ownership &&
+      (!query.status || query.status === 'all');
+    const manifestRoutes = !includeCompleteness
+      ? []
+      : publicSiteRouteManifest.filter((entry) =>
+          (!query.site || entry.site === query.site) &&
+          (!query.q || `${entry.label} ${entry.path}`.toLowerCase().includes(query.q.toLowerCase())),
+        );
+    const requiredManifestRows = manifestRoutes.flatMap((entry) =>
+      entry.requiredLocales
+        .filter((locale) => !query.locale || locale === query.locale)
+        .map((locale) => ({ site: entry.site, path: entry.path, locale })),
+    );
+    const [routeGroups, live, draftChanges, ready, needsAttention, existingManifestRows, recentlyPublished] = await Promise.all([
+      this.prisma.publicSitePage.groupBy({ by: ['site', 'path'], where: scopedWhere }),
+      this.prisma.publicSitePage.count({ where: { AND: [scopedWhere, { activeRevisionId: { not: null } }] } }),
+      this.prisma.publicSitePage.count({ where: { AND: [scopedWhere, { draftRevisionId: { not: null } }] } }),
       this.prisma.publicSitePage.count({
         where: {
-          draftRevision: {
-            is: { readinessState: { not: PublicSiteRevisionReadinessState.READY } },
-          },
+          AND: [scopedWhere, { draftRevision: { is: { readinessState: PublicSiteRevisionReadinessState.READY } } }],
         },
       }),
-      this.prisma.publicSitePage.groupBy({
-        by: ['site', 'path'],
-        where: { NOT: { path: { startsWith: '/news/' } } },
-        _count: { locale: true },
-      }),
-      this.prisma.adminAuditLog.count({
+      this.prisma.publicSitePage.count({
         where: {
-          action: { in: ['PUBLIC_SITE_DRAFT_PUBLISHED', 'PUBLIC_SITE_REVISION_ROLLED_BACK'] },
-          createdAt: { gte: new Date(Date.now() - 7 * 86_400_000) },
+          AND: [scopedWhere, { draftRevision: { is: { readinessState: PublicSiteRevisionReadinessState.BLOCKED } } }],
+        },
+      }),
+      requiredManifestRows.length
+        ? this.prisma.publicSitePage.findMany({
+            where: { OR: requiredManifestRows.map((row) => row) },
+            select: { site: true, path: true, locale: true },
+          })
+        : Promise.resolve([]),
+      this.prisma.publicSitePage.count({
+        where: {
+          AND: [
+            scopedWhere,
+            { activeRevision: { is: { publishedAt: { gte: new Date(Date.now() - 7 * 86_400_000) } } } },
+          ],
         },
       }),
     ]);
-    const missingTranslations = translationGroups.filter((group) => group._count.locale < 5).length;
-    return { routes, live, draftChanges, needsAttention, missingTranslations, recentlyPublished };
+    const existingKeys = new Set(existingManifestRows.map((row) => `${row.site}:${row.path}:${row.locale}`));
+    const missingRows = requiredManifestRows.filter((row) => !existingKeys.has(`${row.site}:${row.path}:${row.locale}`));
+    const existingRouteKeys = new Set(existingManifestRows.map((row) => `${row.site}:${row.path}`));
+    const missingRoutes = manifestRoutes.filter((entry) => !existingRouteKeys.has(`${entry.site}:${entry.path}`)).length;
+    return {
+      routes: contentType === 'news' ? routeGroups.length : routeGroups.length,
+      live,
+      draftChanges,
+      ready,
+      needsAttention,
+      missingRoutes,
+      missingTranslations: missingRows.length,
+      staleTranslations: 0,
+      recentlyPublished,
+      scope: { contentType, site: query.site ?? null, locale: query.locale ?? null, q: query.q ?? null, status: query.status ?? 'all' },
+      generatedAt: new Date().toISOString(),
+    };
   }
 
   private async assertPageExists(pageId: string) {
@@ -893,10 +1055,8 @@ export class SiteContentService {
   private previewSecret() {
     const secret =
       this.config?.get<string>('SITE_CONTENT_PREVIEW_SECRET') ??
-      this.config?.get<string>('SUPABASE_JWT_SECRET') ??
-      process.env.SITE_CONTENT_PREVIEW_SECRET ??
-      process.env.SUPABASE_JWT_SECRET;
-    if (!secret || secret.length < 16) {
+      process.env.SITE_CONTENT_PREVIEW_SECRET;
+    if (!secret || secret.length < 32) {
       throw new ServiceUnavailableException('Draft preview signing is not configured');
     }
     return secret;
@@ -935,13 +1095,40 @@ const adminPageSummarySelect = {
 } satisfies Prisma.PublicSitePageSelect;
 
 type AdminPageSummary = Prisma.PublicSitePageGetPayload<{ select: typeof adminPageSummarySelect }>;
+type AdminPageSummaryWithOwnership = AdminPageSummary & {
+  ownership: PublicSiteOwnership;
+  manifestLabel: string | null;
+};
 
-function groupPageRoutes(rows: AdminPageSummary[]) {
-  const groups = new Map<string, { groupKey: string; site: PublicSiteKey; path: string; translations: AdminPageSummary[] }>();
+function adminPageSummaryWithOwnership(row: AdminPageSummary): AdminPageSummaryWithOwnership {
+  return {
+    ...row,
+    ownership: publicSiteOwnership(row.site, row.path, Boolean(row.activeRevision)),
+    manifestLabel: publicSiteManifestEntry(row.site, row.path)?.label ?? null,
+  };
+}
+
+function groupPageRoutes(rows: AdminPageSummaryWithOwnership[]) {
+  const groups = new Map<string, {
+    groupKey: string;
+    site: PublicSiteKey;
+    path: string;
+    label: string;
+    ownership: PublicSiteOwnership;
+    translations: AdminPageSummaryWithOwnership[];
+  }>();
   for (const row of rows) {
     const key = `${row.site}:${row.path}`;
-    const group = groups.get(key) ?? { groupKey: key, site: row.site, path: row.path, translations: [] };
+    const group = groups.get(key) ?? {
+      groupKey: key,
+      site: row.site,
+      path: row.path,
+      label: row.manifestLabel ?? row.internalName,
+      ownership: row.ownership,
+      translations: [],
+    };
     group.translations.push(row);
+    if (group.ownership !== row.ownership) group.ownership = 'OWNERSHIP_CONFLICT';
     groups.set(key, group);
   }
   return [...groups.values()];
@@ -957,6 +1144,42 @@ function pageResult<T>(items: T[], page: number, take: number, total: number, su
     summary,
     summaryAvailable: summary !== null,
   };
+}
+
+function ownershipFilter(
+  ownership: AdminPublicSitePageListQueryDto['ownership'],
+  site?: PublicSiteKey,
+): Prisma.PublicSitePageWhereInput | null {
+  if (!ownership) return null;
+  if (ownership === 'CMS_LIVE') return { activeRevisionId: { not: null } };
+  const entries = publicSiteRouteManifest.filter((entry) => !site || entry.site === site);
+  const routes = entries
+    .filter((entry) =>
+      ownership === 'CODE_FALLBACK'
+        ? entry.codeFallback
+        : ownership === 'NOT_SERVED'
+          ? !entry.codeFallback
+          : false,
+    )
+    .map((entry) => ({ site: entry.site, path: entry.path }));
+  if (ownership === 'OWNERSHIP_CONFLICT') {
+    return {
+      NOT: {
+        OR: entries.map((entry) => ({ site: entry.site, path: entry.path })),
+      },
+    };
+  }
+  return { activeRevisionId: null, OR: routes.length ? routes : [{ id: '__no_matching_route__' }] };
+}
+
+function assertConfirmedPath(currentPath: string, confirmationPath: string) {
+  if (currentPath !== confirmationPath) {
+    throw new ConflictException({
+      code: 'PUBLIC_SITE_PATH_CHANGED',
+      message: 'The page path changed. Reload the page and confirm the current path before continuing.',
+      currentPath,
+    });
+  }
 }
 
 function requiredDraft<T extends { draftRevision: RevisionWithSections | null }>(page: T) {

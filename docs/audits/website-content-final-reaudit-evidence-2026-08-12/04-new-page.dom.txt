@@ -1,0 +1,84 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - generic: Website Content
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - heading "New page" [level=1]
+  - paragraph: Create a Draft-only route. It remains unavailable to the public until published.
+  - generic "Page actions":
+    - link "Cancel":
+      - /url: /website-content?view=pages
+  - heading "Route identity" [level=2]
+  - paragraph: New routes start as Draft and stay hidden from search. Add content, verify preview, then publish separately.
+  - generic: Website
+  - combobox "Website":
+    - option "hands.vn" [selected]
+    - option "join.hands.vn"
+  - generic: Language
+  - combobox "Language":
+    - option "VI" [selected]
+    - option "KO"
+    - option "EN"
+    - option "JA"
+    - option "ZH"
+  - generic: Route path
+  - textbox "Route path":
+    - /placeholder: /about
+  - generic: Operator label
+  - textbox "Operator label"
+  - generic: SEO title
+  - textbox "SEO title"
+  - generic: SEO description
+  - textbox "SEO description"
+  - generic: Canonical path
+  - textbox "Canonical path"
+  - button "Create Draft route"
+- alert

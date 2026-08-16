@@ -1,0 +1,25 @@
+{
+  "auditDate": "2026-08-13",
+  "templateCount": 24,
+  "translationCount": 120,
+  "statusCounts": {
+    "READY": 24,
+    "SOURCE_COPIED": 96
+  },
+  "nonEnglishCopiesIdenticalToEnglish": 96,
+  "reloadReadOnlyCheck": {
+    "beforeHash": "7ad08d259da75ac9fa8dcc61ff56c6483764e5af88a360736e2134ec550e2b0c",
+    "afterHash": "7ad08d259da75ac9fa8dcc61ff56c6483764e5af88a360736e2134ec550e2b0c",
+    "rowsBefore": 24,
+    "rowsAfter": 24,
+    "translationsBefore": 120,
+    "translationsAfter": 120,
+    "result": "pass"
+  },
+  "contractMismatchExample": {
+    "templateKey": "booking.cancelled",
+    "databaseVariables": ["bookingId"],
+    "canonicalApiVariables": [],
+    "effect": "the editor permits {bookingId}, while the API placeholder validator rejects it"
+  }
+}

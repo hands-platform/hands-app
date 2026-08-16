@@ -71,7 +71,7 @@ describe('OperationsPolicyOwnerDecisionBacklogSection', () => {
     expect(sectionSource).not.toContain('className="card admin-card insight-card"');
     expect(rendered).toContain('Owner decision backlog');
     expect(rendered).toContain('Current decision pressure');
-    expect(rendered).toContain('1 active record(s)');
+    expect(rendered).toContain('1 active record');
     expect(rendered).toContain('First-pick Partner timer');
     expect(rendered).toContain('Recommended direction');
     expect(hrefsIn(section)).toEqual(

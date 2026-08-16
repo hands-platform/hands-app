@@ -1,143 +1,187 @@
-import { readFileSync } from 'node:fs';
-
+import type { AdminMatchingPreview } from '../../lib/admin-api';
 import { OperationsPolicyLiveSimulatorSection } from './operations-policy-live-simulator-section';
 import { classNamesIn, hrefsIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
-describe('OperationsPolicyLiveSimulatorSection', () => {
-  it('uses shared Vuexy badge atoms for visible partner count labels', () => {
-    const source = readFileSync('app/operations-policy/operations-policy-live-simulator-section.tsx', 'utf8');
-
-    expect(source).toContain('AdminDetailGrid');
-    expect(source).toContain('AdminFilterChipGroup');
-    expect(source).toContain('AdminNotePanel');
-    expect(source).toContain('AdminSectionHeader');
-    expect(source).toContain('AdminTraceSummary');
-    expect(source).toContain('StatusBadgeFromPillClass');
-    expect(source).not.toContain('statusBadgeToneFromPillClass');
-    expect(source).not.toContain('PillClassBadge');
-    expect(source).not.toContain('<div className="detail-grid admin-mt-14">');
-    expect(source).not.toContain('<div className="participant-list');
-    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
-    expect(source).not.toContain('<div className="ops-task-note">');
-    expect(source).not.toContain('<div className="ops-section-header">');
-    expect(source).not.toContain('<span className="pill pill-info">{simulation.partnerRows.length} shown</span>');
-  });
-
-  it('renders the ready simulator state with partner links and checks', () => {
-    const section = OperationsPolicyLiveSimulatorSection({
-      simulation: {
-        checks: [
-          {
-            className: 'ops-task-done',
-            detail: 'Fresh Partner locations are inside the current radius.',
-            operatorAction: 'This can support a real wait screen.',
-            pillClass: 'pill-success',
-            status: 'Supply ready',
-            title: 'Dispatch supply check',
-          },
-        ],
-        metrics: [
-          {
-            helper: '10.7769, 106.7009',
-            label: 'Reference location',
-            value: 'Booking cmqbcwop...oqle',
-          },
-        ],
-        partnerRows: [
-          {
-            distanceLabel: '2 km',
-            id: 'provider-1',
-            locationAgeLabel: '5m ago',
-            name: 'Partner One',
-            pillClass: 'pill-success',
-            status: 'Fresh',
-          },
-        ],
-        ready: true,
-        timeline: [
-          {
-            className: 'timeline-active',
-            detail: 'Marketplace list opens immediately.',
-            step: '1',
-            tags: [{ label: '10 min', tone: 'pill-success' }],
-            title: 'Customer creates direct request',
-          },
-        ],
+function preview(
+  status: AdminMatchingPreview['status'],
+  overrides: Partial<AdminMatchingPreview> = {},
+): AdminMatchingPreview {
+  return {
+    candidates: [],
+    checkedAt: '2026-08-14T03:00:00.000Z',
+    evidence: {
+      newestAt: '2026-08-14T02:55:00.000Z',
+      oldestAt: '2026-08-14T02:30:00.000Z',
+      returnedCandidates: 0,
+      totalEvaluated: 12,
+      truncated: false,
+    },
+    primaryBlocker: null,
+    reference: {
+      bookingId: 'booking-1',
+      bookingStatus: 'OPEN_MATCHING',
+      kind: 'BOOKING',
+      label: 'Booking booking-1',
+      lat: 10.7769,
+      lng: 106.7009,
+      observedAt: '2026-08-14T02:50:00.000Z',
+      serviceId: 'service-1',
+    },
+    safety: { dryRun: true, mutationsPerformed: false },
+    stages: [
+      {
+        actionHref: null,
+        actionLabel: null,
+        code: 'evaluated',
+        excludedCount: 0,
+        label: 'Evaluated',
+        passedCount: 12,
       },
-    });
+    ],
+    status,
+    ...overrides,
+  };
+}
 
+describe('OperationsPolicyLiveSimulatorSection', () => {
+  it('renders production-ready evidence without overstating simulation behavior', () => {
+    const section = OperationsPolicyLiveSimulatorSection({
+      preview: preview('READY_WITH_PRODUCTION_EVIDENCE', {
+        candidates: [
+          {
+            blockerCodes: [],
+            distanceMeters: 950,
+            locationUpdatedAt: '2026-08-14T02:55:00.000Z',
+            name: 'Partner One',
+            partnerId: 'provider-1',
+            stage: 'INVITABLE',
+          },
+        ],
+      }),
+      refreshHref: '/operations-policy?details=matching&matching=simulation',
+    });
     const rendered = normalizedTextContent(section);
 
-    expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
-    expect(rendered).toContain('Live policy simulator');
-    expect(rendered).toContain('Ready for dispatch check');
-    expect(rendered).toContain('Simulated booking path');
-    expect(rendered).toContain('Eligible Partner preview');
-    expect(rendered).toContain('Dispatch supply check');
+    expect(classNamesIn(section)).toContain(
+      'card admin-section operations-policy-matching-preview admin-mb-16',
+    );
+    expect(rendered).toContain('Current dispatch preview');
+    expect(rendered).toContain('Ready with production evidence');
+    expect(rendered).toContain('Candidate preview');
+    expect(rendered).toContain('Dry run only');
+    expect(rendered).not.toContain('Live policy simulator');
+    expect(rendered).toContain('Read-only, no-write preview');
     expect(hrefsIn(section)).toContain('/partners/provider-1');
   });
 
-  it('renders empty partner guidance when supply is not ready', () => {
+  it('warns when a production result is based on a small Partner sample', () => {
+    const rendered = normalizedTextContent(OperationsPolicyLiveSimulatorSection({
+      preview: preview('READY_WITH_PRODUCTION_EVIDENCE', {
+        evidence: {
+          newestAt: '2026-08-14T02:55:00.000Z',
+          oldestAt: '2026-08-14T02:30:00.000Z',
+          returnedCandidates: 1,
+          totalEvaluated: 6,
+          truncated: false,
+        },
+      }),
+      refreshHref: '/operations-policy?details=matching&matching=simulation',
+    }));
+
+    expect(rendered).toContain('Preview confidence is limited');
+    expect(rendered).toContain('Small sample');
+    expect(rendered).toContain('not a city-wide supply conclusion');
+  });
+
+  it('never presents Demo evidence as ready even when candidate data is supplied', () => {
+    const section = OperationsPolicyLiveSimulatorSection({
+      preview: preview('DEMO_PREVIEW_ONLY', {
+        candidates: [
+          {
+            blockerCodes: [],
+            distanceMeters: 100,
+            locationUpdatedAt: '2026-08-14T02:55:00.000Z',
+            name: 'Demo Partner',
+            partnerId: 'demo-partner',
+            stage: 'INVITABLE',
+          },
+        ],
+        reference: {
+          bookingId: null,
+          bookingStatus: null,
+          kind: 'DEMO',
+          label: 'Renamed demo location',
+          lat: 10.7769,
+          lng: 106.7009,
+          observedAt: null,
+          serviceId: null,
+        },
+      }),
+      refreshHref: '/operations-policy?details=matching&matching=simulation',
+    });
+    const rendered = normalizedTextContent(section);
+
+    expect(rendered).toContain('Demo preview only');
+    expect(rendered).toContain('Demo evidence cannot authorize dispatch');
+    expect(rendered).toContain('Not production evidence');
+    expect(rendered).toContain('Not evaluated');
+    expect(rendered).not.toContain('Ready with production evidence');
+    expect(rendered).not.toContain('Candidate preview');
+  });
+
+  it('shows the first production blocker and its exact recovery action', () => {
+    const section = OperationsPolicyLiveSimulatorSection({
+      preview: preview('BLOCKED_NO_ELIGIBLE_SUPPLY', {
+        primaryBlocker: {
+          actionHref: '/partner-controls?details=controls&review=location',
+          actionLabel: 'Review Partner locations',
+          code: 'fresh-location',
+          detail: '5 Partner records were excluded at this production gate.',
+          title: 'Fresh dispatch location blocks dispatch',
+        },
+      }),
+      refreshHref: '/operations-policy?details=matching&matching=simulation',
+    });
+    const rendered = normalizedTextContent(section);
+
+    expect(rendered).toContain('Blocked · no eligible Partner supply');
+    expect(rendered).toContain('Primary blocker');
+    expect(rendered).toContain('Fresh dispatch location blocks dispatch');
+    expect(hrefsIn(section)).toContain('/partner-controls?details=controls&review=location');
+  });
+
+  it('does not claim global no-supply for incomplete evidence', () => {
     const rendered = normalizedTextContent(
       OperationsPolicyLiveSimulatorSection({
-        simulation: {
-          checks: [],
-          metrics: [],
-          partnerRows: [],
-          ready: false,
-          timeline: [],
-        },
+        preview: preview('INCOMPLETE_EVIDENCE', {
+          evidence: {
+            newestAt: null,
+            oldestAt: null,
+            returnedCandidates: 0,
+            totalEvaluated: 30,
+            truncated: true,
+          },
+        }),
+        refreshHref: '/operations-policy?details=matching&matching=simulation',
       }),
     );
 
-    expect(rendered).toContain('Needs better location data');
-    expect(rendered).toContain('No online Partner with a usable location');
+    expect(rendered).toContain('Evidence incomplete');
+    expect(rendered).toContain('Incomplete');
+    expect(rendered).toContain('No global supply conclusion is shown');
+    expect(rendered).not.toContain('Blocked · no eligible Partner supply');
   });
 
-  it('does not duplicate the base pill class for simulator tag, partner, and check badges', () => {
-    const section = OperationsPolicyLiveSimulatorSection({
-      simulation: {
-        checks: [
-          {
-            className: 'ops-task-warning',
-            detail: 'Partner location data is stale.',
-            operatorAction: 'Refresh Partner app location before launch.',
-            pillClass: 'pill pill-warn',
-            status: 'Needs review',
-            title: 'Location freshness',
-          },
-        ],
-        metrics: [],
-        partnerRows: [
-          {
-            distanceLabel: '3 km',
-            id: 'provider-legacy-pill',
-            locationAgeLabel: '28m ago',
-            name: 'Legacy Pill Partner',
-            pillClass: 'pill pill-success',
-            status: 'Fresh',
-          },
-        ],
-        ready: true,
-        timeline: [
-          {
-            className: 'timeline-active',
-            detail: 'Marketplace list opens immediately.',
-            step: '1',
-            tags: [{ label: '10 min', tone: 'pill pill-info' }],
-            title: 'Customer creates direct request',
-          },
-        ],
-      },
-    });
+  it('renders API failure separately from an empty candidate result', () => {
+    const rendered = normalizedTextContent(
+      OperationsPolicyLiveSimulatorSection({
+        preview: null,
+        refreshHref: '/operations-policy?details=matching&matching=simulation',
+        unavailable: true,
+      }),
+    );
 
-    const classNames = classNamesIn(section);
-
-    expect(classNames).toContain('pill pill-info');
-    expect(classNames).toContain('pill pill-success');
-    expect(classNames).toContain('pill pill-warn');
-    expect(classNames).not.toContain('pill pill pill-info');
-    expect(classNames).not.toContain('pill pill pill-success');
-    expect(classNames).not.toContain('pill pill pill-warn');
+    expect(rendered).toContain('Production evidence unavailable');
+    expect(rendered).not.toContain('Blocked · no eligible Partner supply');
   });
 });

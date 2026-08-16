@@ -5,30 +5,30 @@ import { useEffect } from 'react';
 
 const featureCards = {
   sleep: {
-    eyebrow: 'Sleep',
-    title: 'Revitalize Nights, Energize Your Days!',
-    body: 'Unlock deep insights into sleep patterns, personalized recommendations, and wake up feeling refreshed and revitalized each morning with our sleep feature.',
+    eyebrow: 'Giấc ngủ',
+    title: 'Phục hồi ban đêm, tràn đầy năng lượng mỗi ngày!',
+    body: 'Hiểu rõ nhịp ngủ, nhận gợi ý phù hợp và bắt đầu mỗi sáng với trạng thái tỉnh táo, sảng khoái hơn.',
     items: [
-      ['/images/halsa-features/heart-rate.svg', 'Heart Rate'],
-      ['/images/halsa-features/sleep-cycles.svg', 'Sleep Cicles'],
+      ['/images/halsa-features/heart-rate.svg', 'Nhịp tim'],
+      ['/images/halsa-features/sleep-cycles.svg', 'Chu kỳ giấc ngủ'],
     ],
   },
   activity: {
-    eyebrow: 'Activity',
-    title: 'Move Freely, Thrive Every Day!',
-    body: "Set goals, track activity levels, and receive personalized plans. Whether it's steps, workouts, or challenges, our app supports your journey to an active lifestyle.",
+    eyebrow: 'Vận động',
+    title: 'Tự do vận động, khỏe hơn mỗi ngày!',
+    body: 'Đặt mục tiêu, theo dõi mức độ vận động và nhận kế hoạch phù hợp để duy trì lối sống chủ động mỗi ngày.',
     items: [
-      ['/images/halsa-features/step-count.svg', 'Step Count'],
-      ['/images/halsa-features/calories.svg', 'Calories Tracking'],
+      ['/images/halsa-features/step-count.svg', 'Số bước chân'],
+      ['/images/halsa-features/calories.svg', 'Theo dõi calo'],
     ],
   },
   mindfulness: {
-    eyebrow: 'Mindfulness',
-    title: 'Mindful Moments, Daily Serenity!',
-    body: 'Indulge in guided meditations, breathing exercises, and stress reduction tools. Cultivate mindfulness for a balanced and serene everyday life.',
+    eyebrow: 'Chánh niệm',
+    title: 'Khoảnh khắc tĩnh tại, bình yên mỗi ngày!',
+    body: 'Thực hành thiền có hướng dẫn, bài tập hít thở và các phương pháp giảm căng thẳng để cân bằng cuộc sống.',
     items: [
-      ['/images/halsa-features/meditation.svg', 'Guided Meditation'],
-      ['/images/halsa-features/stress.svg', 'Stress Level Tracking'],
+      ['/images/halsa-features/meditation.svg', 'Thiền có hướng dẫn'],
+      ['/images/halsa-features/stress.svg', 'Theo dõi căng thẳng'],
     ],
   },
 } as const;
@@ -73,7 +73,7 @@ function FeatureImage({
   return (
     <div className={`halsa-feature-image${revealClassName} ${className ?? ''}`}>
       <Image
-        alt="Feature"
+        alt="Tính năng wellness"
         fill
         priority={priority}
         sizes="(min-width: 1200px) 33vw, (min-width: 810px) 50vw, 100vw"
@@ -104,16 +104,16 @@ export function HalsaFeaturesClone() {
     <div className="halsa-main-clone">
       <section className="halsa-features-section">
         <div className="halsa-features-intro">
-          <span className="halsa-pill">Features</span>
+          <span className="halsa-pill">Tính năng</span>
           <div>
             <h2>
-              Your Path to Wellness:
+              Hành trình wellness của bạn:
               <br />
-              Uncover Features.
+              Khám phá mọi tính năng.
             </h2>
             <p>
-              Discover a suite of powerful features designed to optimize sleep, boost activity, and enhance
-              mindfulness daily.
+              Khám phá những tính năng giúp cải thiện giấc ngủ, tăng cường vận động và duy trì sự cân bằng mỗi
+              ngày.
             </p>
           </div>
         </div>
@@ -149,7 +149,6 @@ export function HalsaFeaturesClone() {
           <FeatureCard name="mindfulness" />
         </div>
       </section>
-
     </div>
   );
 }

@@ -1,0 +1,387 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Insights":
+        - /url: /marketing-analytics
+      - generic: Customer Usage
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Insights workspace":
+    - strong: Insights
+    - generic "Insights pages":
+      - link "Marketing Analytics":
+        - /url: /marketing-analytics
+      - link "Customer Usage":
+        - /url: /usage-overview
+  - heading "Customer Usage" [level=1]
+  - paragraph: Customer reach, booking outcomes, and the records that need an operator decision.
+  - heading "Reporting period" [level=2]
+  - paragraph: Applied dates use Asia/Ho_Chi_Minh. Presets compare with the immediately preceding period of equal length.
+  - generic: 2026-08-01 – 2026-08-12 · 12 days · Vietnam time
+  - button "Refresh Customer Usage report":
+    - text: Refresh now
+  - status
+  - generic "Usage overview range":
+    - link "Today":
+      - /url: /usage-overview?range=today
+    - link "Yesterday":
+      - /url: /usage-overview?range=yesterday
+    - link "7 days":
+      - /url: /usage-overview?range=7d
+    - link "30 days":
+      - /url: /usage-overview?range=30d
+    - link "This month":
+      - /url: /usage-overview?range=month
+    - link "Custom":
+      - /url: /usage-overview?range=custom
+  - generic: From
+  - textbox "From": 2026-08-01
+  - generic: To
+  - textbox "To": 2026-08-12
+  - button "Apply period"
+  - generic "Applied usage report scope":
+    - generic: 2026-08-01 – 2026-08-12 · 12 days · Vietnam time
+    - generic: Daily
+    - generic: Compared with 2026-07-20 – 2026-07-31
+    - generic: Report generated 12 Aug 2026, 16:11 ICT
+    - generic: Usage signal time unavailable
+  - alert:
+    - strong: Usage provenance is incomplete
+    - generic: 3 unknown aggregate rows are excluded. Do not use the missing historical usage as a production total.
+  - alert:
+    - strong: Production usage freshness is unknown
+    - generic: No production usage aggregate timestamp is available for this period.
+  - group "Source activity times":
+    - generic "Source activity times"
+  - heading "Needs attention" [level=2]
+  - paragraph: Counts and filters use the same reporting-period contract as their destination lists.
+  - generic: 1 queue
+  - link "Review now New customers without a booking 4 Joined in this reporting period and still have no production booking. Review 4 customers →":
+    - /url: /customers?view=all&segment=usage-new-unbooked&dateField=joined&dateRange=custom&dateFrom=2026-08-01&dateTo=2026-08-12
+    - generic: Review now
+    - generic: New customers without a booking
+    - strong: "4"
+    - generic: Joined in this reporting period and still have no production booking.
+    - generic: Review 4 customers →
+  - region "Period health":
+    - generic: Custom period
+    - paragraph: Active unique customers
+    - generic: "Active unique customers:"
+    - text: "0"
+    - generic: No change vs previous equal period
+    - generic: Custom period
+    - paragraph: Partner view events
+    - generic: "Partner view events:"
+    - text: "0"
+    - generic: No change vs previous equal period
+    - generic: Custom period
+    - paragraph: Booking records created
+    - generic: "Booking records created:"
+    - text: "344"
+    - generic: +11% vs previous equal period
+    - generic: Custom period
+    - paragraph: Unresolved booking records
+    - generic: "Unresolved booking records:"
+    - text: "0"
+    - generic: No change vs previous equal period
+  - heading "Unique-customer reach" [level=2]
+  - paragraph: Unique customers who reached each state in the period. This does not claim event order or event-lineage conversion.
+  - generic: Unique customers
+  - generic: Active customers
+  - strong: "0"
+  - generic: unique customers
+  - generic: Viewed a Partner
+  - strong: "0"
+  - generic: N/A · no previous-step customers
+  - generic: Created a booking
+  - strong: "0"
+  - generic: N/A · no previous-step customers
+  - generic: Completed work
+  - strong: "0"
+  - generic: N/A · no previous-step customers
+  - heading "Booking outcomes" [level=2]
+  - paragraph: Mutually exclusive current status as of report generation for booking records created in the reporting period.
+  - generic: Cohort reconciled
+  - generic: Created in period
+  - strong: "344"
+  - generic: Completed
+  - strong: "36"
+  - generic: Cancelled
+  - strong: "36"
+  - generic: No-show
+  - strong: "11"
+  - generic: Expired
+  - strong: "255"
+  - generic: Refunded
+  - strong: "6"
+  - generic: Still open / unresolved
+  - strong: "0"
+  - heading "Activity trends" [level=2]
+  - paragraph: Daily activity in Vietnam time. Customer and booking scales are separated.
+  - generic: Custom period
+  - region "Customer activity trend":
+    - heading "Customer activity" [level=3]
+    - paragraph: Total signals 0 · Peak 08/01
+    - img "Customer activity trend":
+      - list:
+        - img "App opens legend icon"
+        - text: App opens
+        - img "Partner views legend icon"
+        - text: Partner views
+        - img "Sessions legend icon"
+        - text: Sessions
+      - application:
+        - generic: 08/02
+        - generic: 08/04
+        - generic: 08/06
+        - generic: 08/08
+        - generic: 08/10
+        - generic: 08/12
+        - generic: "0"
+        - generic: "1"
+        - generic: "2"
+        - generic: "3"
+        - generic: "4"
+    - group "Customer activity exact values":
+      - generic "View chart data"
+  - region "Booking activity trend":
+    - heading "Booking activity" [level=3]
+    - paragraph: Total booking signals 176 · Peak 08/03
+    - img "Booking activity trend":
+      - list:
+        - img "Closed completed legend icon"
+        - text: Closed completed
+        - img "Created records legend icon"
+        - text: Created records
+      - application:
+        - generic: 08/02
+        - generic: 08/04
+        - generic: 08/06
+        - generic: 08/08
+        - generic: 08/10
+        - generic: 08/12
+        - generic: "0"
+        - generic: "45"
+        - generic: "90"
+        - generic: "135"
+        - generic: "180"
+    - group "Booking activity exact values":
+      - generic "View chart data"
+  - region "Customer period and current base":
+    - heading "Period customers" [level=2]
+    - generic: New customers
+    - strong: "5"
+    - generic: Customers with completed work
+    - strong: "2"
+    - generic: 2+ completions in period
+    - strong: "1"
+    - heading "Cohort retention" [level=2]
+    - paragraph: Customers who returned on the exact milestone day after signup.
+    - generic: D1
+    - strong: 0%
+    - generic: 0 of 5 eligible
+    - generic: D7
+    - strong: 0%
+    - generic: 0 of 2 eligible
+    - generic: D30
+    - strong: N/A
+    - generic: No eligible cohort
+    - heading "Current customer base · Usage data time unavailable" [level=2]
+    - paragraph: Usage-derived snapshot. Reporting-period comparison does not apply.
+    - generic: Never booked
+    - strong: "38"
+    - generic: Inactive 30d
+    - strong: "0"
+    - generic: Seen today
+    - strong: "0"
+    - generic: Seen in 7d
+    - strong: "0"
+    - generic: Seen in 30d
+    - strong: "0"
+  - heading "Customer activity · Top 5" [level=2]
+  - paragraph: Top five customers by production usage events. Closed issue outcomes use closedAt in the selected period and include cancelled, no-show, expired, and refunded records; they are separate from the created-cohort outcomes above. Phone numbers are masked by the API.
+  - link "View all customers":
+    - /url: /customers?view=all
+  - region "Customer activity top five table":
+    - table:
+      - rowgroup:
+        - row "Customer Events App opens Partner views Completed Closed issue outcomes Last active":
+          - columnheader "Customer"
+          - columnheader "Events"
+          - columnheader "App opens"
+          - columnheader "Partner views"
+          - columnheader "Completed"
+          - columnheader "Closed issue outcomes"
+          - columnheader "Last active"
+      - rowgroup:
+        - row "#1 Smoke Cancellation Customer +84••••••7001 0 0 0 0 0 7 Aug 2026, 19:09":
+          - rowheader "#1 Smoke Cancellation Customer +84••••••7001":
+            - link "#1 Smoke Cancellation Customer":
+              - /url: /customers/smoke_post_match_customer_profile
+            - generic: +84••••••7001
+          - cell "0"
+          - cell "0"
+          - cell "0"
+          - cell "0"
+          - cell "0":
+            - generic: "0"
+          - cell "7 Aug 2026, 19:09":
+            - time: 7 Aug 2026, 19:09
+        - row "#2 Smoke Referral Referred Customer +84••••••0011 0 0 0 0 1 4 Aug 2026, 13:14":
+          - rowheader "#2 Smoke Referral Referred Customer +84••••••0011":
+            - link "#2 Smoke Referral Referred Customer":
+              - /url: /customers/smoke_referral_customer_referred_profile
+            - generic: +84••••••0011
+          - cell "0"
+          - cell "0"
+          - cell "0"
+          - cell "0"
+          - cell "1":
+            - generic: "1"
+          - cell "4 Aug 2026, 13:14":
+            - time: 4 Aug 2026, 13:14
+        - row "#3 Demo Customer +84••••••0001 0 0 0 0 295 4 Aug 2026, 12:08":
+          - rowheader "#3 Demo Customer +84••••••0001":
+            - link "#3 Demo Customer":
+              - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+            - generic: +84••••••0001
+          - cell "0"
+          - cell "0"
+          - cell "0"
+          - cell "0"
+          - cell "295":
+            - generic: "295"
+          - cell "4 Aug 2026, 12:08":
+            - time: 4 Aug 2026, 12:08
+  - heading "Partner discovery · Top 5" [level=2]
+  - paragraph: Top five Partner discovery signals. Views, preferred requests, and completed work are independent counts.
+  - link "View all Partners":
+    - /url: /partners
+  - region "Partner discovery top five table":
+    - table:
+      - rowgroup:
+        - row "Partner Views Preferred requests Completed Last active":
+          - columnheader "Partner"
+          - columnheader "Views"
+          - columnheader "Preferred requests"
+          - columnheader "Completed"
+          - columnheader "Last active"
+      - rowgroup:
+        - row "#1 Partner 0281 +84••••••0281 0 6 0 4 Aug 2026, 12:06":
+          - rowheader "#1 Partner 0281 +84••••••0281":
+            - link "#1 Partner 0281":
+              - /url: /partners/cmsdcc60a0017vy8wlyyowo4e
+            - generic: +84••••••0281
+          - cell "0"
+          - cell "6"
+          - cell "0"
+          - cell "4 Aug 2026, 12:06":
+            - time: 4 Aug 2026, 12:06
+        - row "#2 Smoke Partner Ho Chi Minh City 0 6 0 3 Aug 2026, 15:52":
+          - rowheader "#2 Smoke Partner Ho Chi Minh City":
+            - link "#2 Smoke Partner":
+              - /url: /partners/cmrkqcd890003vyw4e4ys82l6
+            - generic: Ho Chi Minh City
+          - cell "0"
+          - cell "6"
+          - cell "0"
+          - cell "3 Aug 2026, 15:52":
+            - time: 3 Aug 2026, 15:52
+        - row "#3 Smoke Partner Ho Chi Minh City 0 5 0 3 Aug 2026, 20:13":
+          - rowheader "#3 Smoke Partner Ho Chi Minh City":
+            - link "#3 Smoke Partner":
+              - /url: /partners/cmsd7c8dj0007vy0o2bqdnn4e
+            - generic: Ho Chi Minh City
+          - cell "0"
+          - cell "5"
+          - cell "0"
+          - cell "3 Aug 2026, 20:13":
+            - time: 3 Aug 2026, 20:13
+        - row "#4 Linh Wellness Ho Chi Minh City 0 5 0 4 Aug 2026, 13:14":
+          - rowheader "#4 Linh Wellness Ho Chi Minh City":
+            - link "#4 Linh Wellness":
+              - /url: /partners/cmpb9dvqx0003vyqsk8dk7ufd
+            - generic: Ho Chi Minh City
+          - cell "0"
+          - cell "5"
+          - cell "0"
+          - cell "4 Aug 2026, 13:14":
+            - time: 4 Aug 2026, 13:14
+        - row "#5 Smoke Partner Ho Chi Minh City 0 3 0 3 Aug 2026, 18:36":
+          - rowheader "#5 Smoke Partner Ho Chi Minh City":
+            - link "#5 Smoke Partner":
+              - /url: /partners/cmsd5lr8507s5vyygazq7yr8f
+            - generic: Ho Chi Minh City
+          - cell "0"
+          - cell "3"
+          - cell "0"
+          - cell "3 Aug 2026, 18:36":
+            - time: 3 Aug 2026, 18:36
+  - region "Demand and service patterns":
+    - heading "Popular services" [level=2]
+    - generic: "#1"
+    - strong: Foot Massage
+    - generic: 45 min
+    - strong: 338 bookings
+    - generic: ₫116,900,000
+    - heading "Top regions" [level=2]
+    - paragraph: Created booking demand and current cohort outcomes for the top five regions.
+    - generic: HCMC
+    - strong: Ho Chi Minh City
+    - strong: "344"
+    - text: created
+    - strong: "36"
+    - text: completed
+    - strong: "302"
+    - text: non-completed
+    - strong: "0"
+    - text: unresolved
+- alert
+- generic: "45"

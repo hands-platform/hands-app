@@ -148,6 +148,25 @@ describe('ConfirmDialog', () => {
     expect(markup).toContain('required=""');
   });
 
+  it('uses a validity-aware submit for evidence-gated confirmations', () => {
+    const dialog = ConfirmDialog({
+      action: '/notifications/review',
+      cancelHref: '/notifications',
+      confirmLabel: 'Mark reviewed',
+      description: 'Evidence is required.',
+      id: 'notification-review',
+      requireValidForm: true,
+      textInputs: [{ label: 'Evidence', minLength: 12, name: 'reason', required: true }],
+      title: 'Mark notification reviewed?',
+    });
+
+    const markup = renderToStaticMarkup(dialog);
+    expect(markup).toContain('minLength="12"');
+    expect(markup).toContain('required=""');
+    expect(source).toContain('ConfirmDialogValidSubmit');
+    expect(source).toContain('requireValidForm ?');
+  });
+
   it('renders optional shared select inputs inside the confirm form', () => {
     const dialog = ConfirmDialog({
       action: '/finance/reassign',

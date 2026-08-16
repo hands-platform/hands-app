@@ -1,5 +1,7 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 
+import { InjectQueue } from '@nestjs/bullmq';
+import { ConfigService } from '@nestjs/config';
 import {
   BadRequestException,
   ConflictException,
@@ -18,12 +20,14 @@ import {
   AccountingJournalEntrySide,
   AccountingJournalSourceType,
   AdminOperatorPermissionCategory,
+  AdminUserProvenance,
   AppUsageEventType,
   BankReconciliationStatus,
   BookingPaymentClearingStatus,
   BookingPaymentClearingEntryType,
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
+  CompanyBankAccountDataScope,
   CompanyBankAccountStatus,
   CompanyBankTransactionType,
   BookingStatus,
@@ -35,6 +39,7 @@ import {
   FileReviewStatus,
   FileUploadStatus,
   FileVisibility,
+  FinanceApproverAccessRequestStatus,
   MonthlyTaxClosingStatus,
   ManualWalletAdjustmentRequestStatus,
   PartnerBankDepositRequestStatus,
@@ -66,15 +71,32 @@ import {
   ProviderWalletWithdrawalRequestStatus,
   ProviderWalletLedgerType,
   ReviewStatus,
+  ServiceCatalogProvenance,
+  ServicePublicationStatus,
   ReferralAttributionStatus,
   Role,
+  NotificationTranslationStatus,
   TaxPolicyStatus,
   VerificationStatus,
 } from '@prisma/client';
+import type { Queue } from 'bullmq';
 import { SupabaseAdminService } from '../auth/supabase-admin.service';
 import type { AuthenticatedUser } from '../auth/auth.types';
-import { hashAdminOperatorPassword, verifyAdminOperatorPassword } from '../auth/admin-operator-credential';
+import { SocketAuthService } from '../auth/socket-auth.service';
+import {
+  ADMIN_OPERATOR_LOCK_MS,
+  ADMIN_OPERATOR_MAX_FAILED_LOGINS,
+  verifyAdminOperatorPasswordOrDummy,
+} from '../auth/admin-operator-credential';
+import {
+  assertAdminMfaEncryptionSecret,
+  createAdminMfaEnrollment,
+  decryptAdminMfaSecret,
+  matchingTotpCounter,
+  verifyAdminMfaCode,
+} from '../auth/admin-mfa';
 import { appUsageDay } from '../app-usage/app-usage-daily-aggregate';
+import * as adminOperatorPermissionManifest from './admin-operator-permission-manifest.json';
 import { EarningsService } from '../earnings/earnings.service';
 import {
   cashSettlementDebtCteSql,
@@ -94,10 +116,18 @@ import {
   START_SHIFT_ACTION_SLA_POLICY_KEYS,
 } from '../matching/matching.policy';
 import { NotificationsService } from '../notifications/notifications.service';
+import {
+  ADMIN_PUSH_CAMPAIGN_QUEUE_NAME,
+  adminPushCampaignJob,
+} from '../notifications/admin-push-campaign.queue';
+import { adminPushDestination } from '../notifications/admin-push-destination';
+import { NOTIFICATION_SEND_PUSH_DEVICE_LIMIT } from '../notifications/notification-send.queue';
 import { customerWalletAdjustmentNotification } from '../notifications/customer-app-notification.policy';
 import { compactNotificationDeliveryResponse } from '../notifications/notification-delivery-failure';
 import { notificationRetryDecision } from '../notifications/notification-retry-decision';
+import { notificationDataWithDeliveryContract } from '../notifications/notification-data-scope';
 import {
+  isRoleNeutralNotificationType,
   notificationDataWithTargetRole,
   notificationTargetRole,
   pushDeviceMatchesTargetRole,
@@ -105,7 +135,10 @@ import {
 import {
   DEFAULT_NOTIFICATION_TEMPLATES,
   NOTIFICATION_TEMPLATE_LOCALES,
+  NOTIFICATION_TEMPLATE_ROUTES,
   isNotificationTemplateLocale,
+  notificationTemplateContractErrors,
+  notificationTemplateOpenBehavior,
 } from '../notifications/notification-template-catalog';
 import { notificationRetryAuditMetadata } from '../notifications/notification-retry-audit';
 import { PrismaService } from '../prisma/prisma.service';
@@ -113,8 +146,35 @@ import {
   buildAccountingJournalIntegrity,
   type AccountingJournalIntegrity,
 } from './admin-accounting-journal-integrity';
+import {
+  ADMIN_AUDIT_SAVED_VIEWS,
+  adminAuditActorTypeWhere,
+  adminAuditAreaWhere,
+  adminAuditDefaultWhere,
+  adminAuditEventReadModel,
+  adminAuditOutcomeWhere,
+  adminAuditReviewLevelWhere,
+  adminAuditSavedViewWhere,
+  adminAuditSeverityWhere,
+  classifyAdminAuditActorType,
+  classifyAdminAuditAction,
+  type AdminAuditActorTypeValue,
+  type AdminAuditAreaValue,
+  type AdminAuditOutcomeValue,
+  type AdminAuditSavedView,
+  type AdminAuditSeverityValue,
+} from './admin-audit-event-registry';
+import { buildAdminMatchingPreview } from './admin-matching-preview';
+import {
+  companyBankAccountDataScopeLifecycle,
+  companyBankAccountOperationalScopeError,
+  companyBankAccountProductionWhere,
+  companyBankAccountScopeWhere,
+} from './company-bank-account-data-scope';
+import type { OperationalPolicyAuditContext } from './admin-operational-policy-audit-source';
 import { adminPayoutBankOutflowReconciliationCteSql } from './admin-payout-bank-reconciliation-query';
 import { paymentCaptureSourceStatuses, transitionPaymentStatus } from '../payments/payment-status-transition';
+import { customerWalletBookingLockKey } from '../payments/customer-wallet-payment';
 import { PaymentsService } from '../payments/payments.service';
 import { REQUIRED_KYC_DOCUMENT_TYPES } from '../provider-onboarding/provider-onboarding.policy';
 import {
@@ -127,6 +187,12 @@ import {
 } from '../providers/provider-public-readiness';
 import { RedisStateService } from '../redis/redis-state.service';
 import { ReferralsService } from '../referrals/referrals.service';
+import {
+  isReferralRewardFixture,
+  referralAdminFixtureAttributionWhere,
+  referralAdminFixtureRewardWhere,
+} from '../referrals/referral-fixture';
+import { referralRewardEvidenceBlocker } from '../referrals/referral-reward-evidence';
 import { settlementMonthlyPeriod, VIETNAM_TIME_ZONE } from '../settlements/settlements.service';
 import { bpsAmount } from '../settlements/settlement-calculator';
 import {
@@ -152,13 +218,19 @@ import {
   type ManualWalletAdjustmentPeriodStatus,
 } from '../wallet-adjustments/manual-wallet-adjustment-policy';
 import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
+import {
+  isPublicServiceCatalogOption,
+  PUBLIC_SERVICE_CATALOG_DURATIONS,
+} from '../services/public-service-catalog';
 import type {
   AdminPublicSitePageListQueryDto,
   CreatePublicSiteNewsDraftDto,
   CreatePublicSitePageDto,
   CreatePublicSiteSectionDto,
+  DeletePublicSitePageDto,
   PublishPublicSiteDraftDto,
   RollbackPublicSiteRevisionDto,
+  TakePublicSitePageOfflineDto,
   UpdatePublicSiteNewsDraftDto,
   UpdatePublicSitePageDto,
   UpdatePublicSiteSectionDto,
@@ -193,9 +265,9 @@ import {
   adminBookingListDateWhere,
   adminBookingListStatusGroupWhere,
   adminBookingListWhere,
-  adminBookingExplicitFixtureMetadataWhere,
   adminBookingProductionDataSql,
   adminBookingProductionDataWhere,
+  adminBookingVerifiedProductionWhere,
   endOfLocalDay,
   normalizeAdminPostMatchCancellationReason,
   startOfLocalDay,
@@ -207,6 +279,19 @@ import {
   type AdminOpenOperationsCaseQueueKey,
 } from './admin-start-shift-open-cases';
 import { adminOperatorHasRequiredCategory } from './admin-operator-category.guard';
+import {
+  assertVerifiedFinanceApprover,
+  evaluateFinanceApproverPolicy,
+  FINANCE_APPROVER_KNOWN_TEST_RUN_IDS,
+  FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION,
+  FINANCE_APPROVER_LEGACY_ATTESTATION_REJECT_ACTION,
+  FINANCE_APPROVER_LEGACY_ATTESTATION_REQUEST_ACTION,
+  financeApproverPolicySnapshot,
+  financeApproverPolicyUserSelect,
+  financeApproverKnownTestRunId,
+  listFinanceApproverPolicySnapshots,
+  type FinanceApproverPolicySnapshot,
+} from './finance-approver-policy';
 import { appendDatedAdminNote } from './admin-booking-ops-helpers';
 import {
   normalizeProviderAccountBlockReason,
@@ -315,6 +400,7 @@ import {
 } from './admin-audit-helpers';
 import {
   normalizeServiceDurationSetInput,
+  normalizeServiceCatalogGroupCommand,
   normalizeServiceInput,
   normalizeServicePayoutRuleInput,
 } from './admin-service-input';
@@ -385,12 +471,16 @@ import {
   adminMarketingPreviousRangeWindow,
   adminMarketingRangeWindow,
   buildMarketingAttributionQuality,
+  buildMarketingActionSummary,
   buildMarketingCampaignEfficiency,
   buildMarketingComparison,
+  buildMarketingDecisionReadiness,
   buildMarketingDimensionRows,
   buildMarketingFunnel,
   buildMarketingInsights,
   buildMarketingRegionRows,
+  buildMarketingSpendCoverage,
+  canonicalMarketingCampaignKey,
   emptyMarketingStats,
   normalizeAdminMarketingRange,
   normalizeMarketingPlatform,
@@ -403,17 +493,21 @@ import {
 } from './admin-marketing-analytics';
 import type {
   AdminCalendarActorDto,
+  BeginAdminMfaEnrollmentDto,
   AssignBookingPaymentClearingReviewsDto,
   AssignCompanyBankTransactionImportBatchDto,
   AssignCompanyBankTransactionReviewDto,
   AssignCompanyBankTransactionReviewsDto,
   AssignPartnerBankDepositReconciliationReviewsDto,
   AllocatePartnerBankDepositCashDebtDto,
+  AdminPushCampaignConfirmDto,
   AdminPushCampaignDto,
   CompletePartnerPublicMediaUploadDto,
   CreatePartnerPublicMediaUploadDto,
   CreateAdminCalendarEventDto,
-  CreateAdminOperatorDto,
+  CreateAdminOperatorInvitationDto,
+  CreateFinanceApproverAccessRequestDto,
+  CreateFinanceApproverLegacyAttestationDto,
   CreateBankReconciliationMatchDto,
   CreateCompanyBankAccountDto,
   CreateCompanyBankTransactionDto,
@@ -423,20 +517,27 @@ import type {
   CreateManualWalletAdjustmentRequestDto,
   CreatePartnerBankDepositRequestDto,
   DeleteAdminOperatorAccessDto,
+  DecideFinanceApproverAccessRequestDto,
+  DecideFinanceApproverLegacyAttestationDto,
   IgnoreCompanyBankTransactionDto,
+  InitializeAdminOperatorPermissionDto,
   ImportCompanyBankTransactionBatchDto,
+  ManageAdminOperatorInvitationDto,
   PreviewManualWalletAdjustmentDto,
   PreviewCompanyBankTransactionBatchDto,
   RecordPartnerBankDepositDto,
   RepairBookingSettlementGapDto,
+  ReauthenticateAdminOperatorDto,
+  ResetAdminMfaDto,
   ReorderPartnerPublicMediaDto,
   ReverseBankReconciliationMatchDto,
   UpdateAdminCalendarEventDto,
   UpdateAdminOperatorAccessDto,
   UpdateCompanyBankAccountDto,
-  UpdateFinanceApproverRoleDto,
   UpdateNotificationTemplateDto,
+  VerifyAdminMfaEnrollmentDto,
   UpdatePartnerProfileContentDto,
+  SuspendAdminOperatorDto,
 } from './admin.dto';
 
 type AdminCompanyBankTransactionBatchClassification =
@@ -468,8 +569,10 @@ type AdminCompanyBankTransactionDuplicateCandidate = {
 };
 
 type AdminCompanyBankTransactionBatchAccount = {
+  dataScope: CompanyBankAccountDataScope;
   id: string;
   currency: string;
+  metadata: Prisma.JsonValue | null;
   status: CompanyBankAccountStatus;
 };
 
@@ -568,7 +671,7 @@ type AdminPartnerBankDepositReconciliationEscalationRow = {
 
 type AdminFinanceReviewAssignmentAuditLog = {
   id: string;
-  actorId: string;
+  actorId: string | null;
   createdAt: Date;
   metadata: Prisma.JsonValue | null;
   target?: string;
@@ -631,50 +734,48 @@ const ADMIN_CALENDAR_EVENT_LIST_LIMIT = 200;
 const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 50;
 const ADMIN_USER_LIST_LIMIT = 50;
 const ADMIN_OPERATOR_ROLES = [Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN] as const;
-const ADMIN_OPERATOR_PASSWORD_MIN_LENGTH = 8;
-const ADMIN_OPERATOR_PERMISSION_CATEGORIES = [
-  AdminOperatorPermissionCategory.BOOKINGS,
-  AdminOperatorPermissionCategory.BOOKINGS_REALTIME,
-  AdminOperatorPermissionCategory.BOOKINGS_IN_PROGRESS,
-  AdminOperatorPermissionCategory.BOOKINGS_COMPLETED,
-  AdminOperatorPermissionCategory.BOOKINGS_CANCELLATIONS,
-  AdminOperatorPermissionCategory.BOOKINGS_DETAIL,
-  AdminOperatorPermissionCategory.CUSTOMERS,
-  AdminOperatorPermissionCategory.CUSTOMERS_DIRECTORY,
-  AdminOperatorPermissionCategory.CUSTOMERS_DETAIL,
-  AdminOperatorPermissionCategory.CUSTOMERS_REVIEWS,
-  AdminOperatorPermissionCategory.GROWTH,
-  AdminOperatorPermissionCategory.GROWTH_MARKETING,
-  AdminOperatorPermissionCategory.PARTNERS,
-  AdminOperatorPermissionCategory.PARTNERS_DIRECTORY,
-  AdminOperatorPermissionCategory.PARTNERS_UNAPPROVED,
-  AdminOperatorPermissionCategory.PARTNERS_DETAIL,
-  AdminOperatorPermissionCategory.PARTNERS_KYC,
-  AdminOperatorPermissionCategory.FINANCE,
-  AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING,
-  AdminOperatorPermissionCategory.FINANCE_GENERAL_LEDGER,
-  AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
-  AdminOperatorPermissionCategory.FINANCE_WALLET_ADJUSTMENTS,
-  AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
-  AdminOperatorPermissionCategory.FINANCE_TAX,
-  AdminOperatorPermissionCategory.NOTIFICATIONS,
-  AdminOperatorPermissionCategory.NOTIFICATIONS_TEMPLATES,
-  AdminOperatorPermissionCategory.NOTIFICATIONS_PUSH,
-  AdminOperatorPermissionCategory.NOTIFICATIONS_DELIVERY,
-  AdminOperatorPermissionCategory.NOTIFICATIONS_RETRY,
-  AdminOperatorPermissionCategory.SYSTEM,
-  AdminOperatorPermissionCategory.SYSTEM_SERVICES,
-  AdminOperatorPermissionCategory.SYSTEM_COUPONS,
-  AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS,
-  AdminOperatorPermissionCategory.SYSTEM_POLICY,
-  AdminOperatorPermissionCategory.SYSTEM_AUDIT,
-  AdminOperatorPermissionCategory.SYSTEM_SETUP,
-  AdminOperatorPermissionCategory.DEVELOPER_SYSTEM,
-  AdminOperatorPermissionCategory.DEVELOPER_SETUP,
-  AdminOperatorPermissionCategory.DEVELOPER_HEALTH,
-  AdminOperatorPermissionCategory.DEVELOPER_APP_SESSIONS_DIAGNOSTICS,
-  AdminOperatorPermissionCategory.DEVELOPER_ROUTE_COMPAT,
-] as const;
+const ADMIN_OPERATOR_INVITATION_DEFAULT_HOURS = 72;
+const ADMIN_OPERATOR_RECENT_REAUTH_MS = 10 * 60_000;
+
+function adminOperatorReauthenticationRateLimitKey(actorId: string, sessionId: string) {
+  return `admin-reauthentication:${actorId}:${sessionId}`;
+}
+const ADMIN_OPERATOR_LIFECYCLE_ACTIONS: string[] = [
+  'admin_operator.invitation.create',
+  'admin_operator.invitation.resend',
+  'admin_operator.invitation.revoke',
+  'admin_operator.invitation.accept',
+  'admin_operator.permission.initialize',
+  'admin_operator.access.update',
+  'admin_operator.access.revoke',
+  'admin_operator.suspend',
+  'admin_operator.reactivate',
+  'admin_operator.session.revoke',
+  'admin_operator.session.logout',
+  'admin_operator.login.success',
+  'admin_operator.login.failed',
+  'admin_operator.login.lock',
+  'admin_operator.login.blocked',
+  'admin_operator.reauthenticate.success',
+  'admin_operator.reauthenticate.failed',
+  'admin_operator.reauthenticate.lock',
+  'admin_operator.reauthenticate.blocked',
+];
+const ADMIN_OPERATOR_ACTIVITY_ACTIONS = new Set([
+  'admin_web.action',
+  'admin_web.action_denied',
+  'admin_web.action_failed',
+]);
+const ADMIN_OPERATOR_PERMISSION_CATEGORIES = adminOperatorPermissionManifest.categories.map(
+  ({ key }) => key as AdminOperatorPermissionCategory,
+);
+const ADMIN_OPERATOR_PERMISSION_CATEGORY_SET = new Set<AdminOperatorPermissionCategory>(
+  ADMIN_OPERATOR_PERMISSION_CATEGORIES,
+);
+const ADMIN_OPERATOR_LEGACY_PERMISSION_GROUPS = adminOperatorPermissionManifest.legacyGroups as Record<
+  string,
+  AdminOperatorPermissionCategory[]
+>;
 const ADMIN_CUSTOMER_DIRECTORY_DEFAULT_LIMIT = 25;
 const ADMIN_CUSTOMER_DIRECTORY_MAX_LIMIT = 100;
 const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 1;
@@ -698,6 +799,9 @@ const ADMIN_OPERATIONAL_SERVICE_DURATIONS = new Set([60, 90, 120]);
 const ADMIN_MARKETING_REGION_LIMIT = 100;
 const ADMIN_MARKETING_DIMENSION_PAGE_LIMIT = 10;
 const ADMIN_MARKETING_DIMENSION_PAGE_MAX_LIMIT = 20;
+const ADMIN_MARKETING_SPEND_LEDGER_DEFAULT_LIMIT = 25;
+const ADMIN_MARKETING_SPEND_LEDGER_MAX_LIMIT = 50;
+const ADMIN_MARKETING_SPEND_MAX_VND = 2_000_000_000;
 const ADMIN_MARKETING_COUPON_PAGE_LIMIT = 10;
 const ADMIN_MARKETING_COUPON_PAGE_MAX_LIMIT = 50;
 const ADMIN_MARKETING_DIMENSIONS = ['source', 'platform', 'region', 'campaign'] as const;
@@ -786,6 +890,7 @@ const ADMIN_PARTNER_OVERVIEW_REQUEST_DETAIL_DURATION_EVENTS = [
 const ADMIN_PARTNER_OVERVIEW_DETAIL_DURATION_EVENT_SCAN_LIMIT = 2000;
 const ADMIN_PARTNER_OVERVIEW_RESPONSE_EVENT_SCAN_LIMIT = 2000;
 const ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT = 100;
+const ADMIN_PUSH_CAMPAIGN_PREVIEW_TTL_MS = 15 * 60 * 1000;
 const ADMIN_PUSH_SEGMENT_ALL = 'all';
 const ADMIN_PUSH_CUSTOMER_SEGMENTS = new Set([
   ADMIN_PUSH_SEGMENT_ALL,
@@ -801,23 +906,6 @@ const ADMIN_PUSH_PROVIDER_SEGMENTS = new Set([
   'provider_referral_parents',
   'provider_inactive_last_7_days',
 ]);
-const ADMIN_PUSH_DEFAULT_DESTINATION = 'notificationCenter';
-const ADMIN_PUSH_CUSTOMER_DESTINATIONS = new Set([
-  ADMIN_PUSH_DEFAULT_DESTINATION,
-  'booking',
-  'chat',
-  'providerProfile',
-  'profile',
-]);
-const ADMIN_PUSH_PROVIDER_DESTINATIONS = new Set([
-  ADMIN_PUSH_DEFAULT_DESTINATION,
-  'booking',
-  'jobs',
-  'earnings',
-  'chat',
-  'providerProfile',
-  'profile',
-]);
 const ADMIN_PUSH_SEGMENT_WINDOWS = {
   customerCompletedRecentMs: 7 * 24 * 60 * 60 * 1000,
   customerInactiveMs: 30 * 24 * 60 * 60 * 1000,
@@ -826,9 +914,38 @@ const ADMIN_PUSH_SEGMENT_WINDOWS = {
 };
 const ADMIN_PUSH_CAMPAIGN_HISTORY_DEFAULT_LIMIT = 20;
 const ADMIN_PUSH_CAMPAIGN_HISTORY_MAX_LIMIT = 50;
+const adminPushCampaignOperatorSelect = {
+  appDestination: true,
+  body: true,
+  completedAt: true,
+  confirmedAt: true,
+  createdAt: true,
+  deliveredDeviceCount: true,
+  eligibleDeviceCount: true,
+  excludedDeviceCount: true,
+  excludedUserCount: true,
+  failedAt: true,
+  failedDeviceCount: true,
+  id: true,
+  locale: true,
+  notificationCount: true,
+  operatorReason: true,
+  pendingDeviceCount: true,
+  processingAt: true,
+  queueJobId: true,
+  queuedAt: true,
+  recipientCount: true,
+  sentAt: true,
+  skippedDeviceCount: true,
+  status: true,
+  targetRole: true,
+  targetSegment: true,
+  title: true,
+} satisfies Prisma.AdminPushCampaignSelect;
 const ADMIN_BOOKING_MARKETPLACE_PROVIDER_LIMIT = 120;
 const ADMIN_BOOKING_MARKETPLACE_PROVIDER_RADIUS_METERS = 50_000;
 const ADMIN_AUDIT_LOG_LIST_LIMIT = 50;
+const ADMIN_AUDIT_EXPORT_LIMIT = 5_000;
 const ADMIN_PAYMENT_OPERATIONS_DEFAULT_LIMIT = 50;
 const ADMIN_PAYMENT_OPERATIONS_MAX_LIMIT = 100;
 const ADMIN_BOOKING_SETTLEMENT_GAP_DEFAULT_LIMIT = 20;
@@ -1824,6 +1941,7 @@ const adminCompanyBankAccountSelect = {
   accountNumberMasked: true,
   accountNumberLast4: true,
   currency: true,
+  dataScope: true,
   status: true,
 } satisfies Prisma.CompanyBankAccountSelect;
 const adminCompanyBankAccountManagementSelect = {
@@ -1983,9 +2101,30 @@ const ADMIN_VIETNAM_REVENUE_STATUSES = new Set<PaymentStatus>([
 ]);
 const adminAuditLogSelect = {
   id: true,
+  schemaVersion: true,
+  eventId: true,
+  occurredAt: true,
+  recordedAt: true,
+  timelineAt: true,
+  source: true,
+  correlationId: true,
+  requestId: true,
+  actorId: true,
+  actorType: true,
+  actorKey: true,
+  actorLabelSnapshot: true,
   action: true,
   target: true,
+  objectType: true,
+  objectId: true,
+  objectLabelSnapshot: true,
+  area: true,
+  severity: true,
+  outcome: true,
+  tags: true,
   metadata: true,
+  payloadHash: true,
+  correctionOfEventId: true,
   createdAt: true,
   actor: { select: { id: true, email: true, phone: true, fullName: true } },
 } satisfies Prisma.AdminAuditLogSelect;
@@ -2046,9 +2185,89 @@ const adminOperatorAccessSelect = {
     select: {
       categories: true,
       updatedAt: true,
+      version: true,
     },
   },
 } satisfies Prisma.UserSelect;
+
+const adminOperatorDirectorySelect = {
+  id: true,
+  email: true,
+  phone: true,
+  fullName: true,
+  roles: true,
+  createdAt: true,
+  updatedAt: true,
+  adminOperatorPermission: {
+    select: {
+      id: true,
+      categories: true,
+      updatedAt: true,
+      version: true,
+    },
+  },
+  adminOperatorCredential: {
+    select: {
+      id: true,
+      email: true,
+      disabledAt: true,
+      disabledReason: true,
+      failedLoginCount: true,
+      lastLoginAt: true,
+      lockedUntil: true,
+      mfaState: true,
+      passwordUpdatedAt: true,
+      setupCompletedAt: true,
+      updatedAt: true,
+    },
+  },
+  adminWebSessions: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: 1,
+    select: {
+      id: true,
+      expiresAt: true,
+      lastSeenAt: true,
+      platformSummary: true,
+      revokedAt: true,
+    },
+  },
+} satisfies Prisma.UserSelect;
+
+type AdminOperatorDirectoryRecord = Prisma.UserGetPayload<{
+  select: typeof adminOperatorDirectorySelect;
+}>;
+
+const financeApproverGovernanceIdentitySelect = {
+  id: true,
+  email: true,
+  fullName: true,
+} satisfies Prisma.UserSelect;
+
+const financeApproverGovernanceUserSelect = financeApproverPolicyUserSelect;
+
+const financeApproverAccessRequestSelect = {
+  id: true,
+  targetUserId: true,
+  requestedEnabled: true,
+  previousEnabled: true,
+  previousRoles: true,
+  requestedByAdminId: true,
+  operatorReason: true,
+  requestedAt: true,
+  expectedTargetUpdatedAt: true,
+  status: true,
+  decidedByAdminId: true,
+  decisionReason: true,
+  decidedAt: true,
+  executedAt: true,
+  idempotencyKey: true,
+  createdAt: true,
+  updatedAt: true,
+  targetUser: { select: financeApproverPolicyUserSelect },
+  requestedByAdmin: { select: financeApproverGovernanceIdentitySelect },
+  decidedByAdmin: { select: financeApproverGovernanceIdentitySelect },
+} satisfies Prisma.FinanceApproverAccessRequestSelect;
 
 const adminBookingMarketplaceProviderSelect = {
   id: true,
@@ -2079,6 +2298,39 @@ const adminReferralRewardSelect = {
   availableAt: true,
   createdAt: true,
   updatedAt: true,
+  metadata: true,
+  walletOwnerCustomerProfileId: true,
+  walletOwnerProviderProfileId: true,
+  attribution: {
+    select: {
+      audience: true,
+      fraudReviewStatus: true,
+      referrerCustomerProfileId: true,
+      referrerProviderProfileId: true,
+      status: true,
+      metadata: true,
+      referralCode: { select: { metadata: true } },
+    },
+  },
+  qualifyingBooking: {
+    select: {
+      customerProfileId: true,
+      earning: { select: { id: true } },
+      id: true,
+      payment: { select: { method: true, status: true } },
+      refunds: { select: { status: true } },
+      selectedProviderId: true,
+      settlementSnapshot: {
+        select: {
+          customerProfileId: true,
+          providerProfileId: true,
+          reversedById: true,
+          settlementStatus: true,
+        },
+      },
+      status: true,
+    },
+  },
 } satisfies Prisma.ReferralRewardSelect;
 
 const adminReferralCashoutRewardSelect = {
@@ -2089,6 +2341,10 @@ const adminReferralCashoutRewardSelect = {
       audience: true,
       status: true,
       fraudReviewStatus: true,
+      referrerCustomerProfileId: true,
+      referrerProviderProfileId: true,
+      metadata: true,
+      referralCode: { select: { metadata: true } },
       installSource: true,
       platform: true,
       createdAt: true,
@@ -2151,19 +2407,20 @@ const adminReferralCodeSelect = {
   code: true,
   active: true,
   createdAt: true,
+  metadata: true,
 } satisfies Prisma.ReferralCodeSelect;
 
 const adminCustomerReferralParentSelect = {
   id: true,
   user: { select: adminUserSummarySelect },
   referralCodes: {
-    where: { audience: ReferralAudience.CUSTOMER },
+    where: { audience: ReferralAudience.CUSTOMER, NOT: { metadata: { path: ['smoke'], equals: 'referral-admin' } } },
     orderBy: { createdAt: 'desc' },
     take: 1,
     select: adminReferralCodeSelect,
   },
   referralsMade: {
-    where: { audience: ReferralAudience.CUSTOMER },
+    where: { audience: ReferralAudience.CUSTOMER, NOT: referralAdminFixtureAttributionWhere },
     orderBy: { createdAt: 'desc' },
     take: ADMIN_REFERRAL_ATTRIBUTION_LIST_LIMIT,
     select: {
@@ -2177,6 +2434,7 @@ const adminCustomerReferralParentSelect = {
         select: { id: true, user: { select: adminUserSummarySelect } },
       },
       rewards: {
+        where: { NOT: referralAdminFixtureRewardWhere },
         orderBy: { createdAt: 'desc' },
         select: adminReferralRewardSelect,
       },
@@ -2188,13 +2446,13 @@ const adminCustomerReferralParentListSelect = {
   id: true,
   user: { select: adminUserSummarySelect },
   referralCodes: {
-    where: { audience: ReferralAudience.CUSTOMER },
+    where: { audience: ReferralAudience.CUSTOMER, NOT: { metadata: { path: ['smoke'], equals: 'referral-admin' } } },
     orderBy: { createdAt: 'desc' },
     take: 1,
     select: adminReferralCodeSelect,
   },
   referralsMade: {
-    where: { audience: ReferralAudience.CUSTOMER },
+    where: { audience: ReferralAudience.CUSTOMER, NOT: referralAdminFixtureAttributionWhere },
     orderBy: { createdAt: 'desc' },
     take: 1,
     select: {
@@ -2208,6 +2466,7 @@ const adminCustomerReferralParentListSelect = {
         select: { id: true, user: { select: adminUserSummarySelect } },
       },
       rewards: {
+        where: { NOT: referralAdminFixtureRewardWhere },
         orderBy: { createdAt: 'desc' },
         take: 1,
         select: adminReferralRewardSelect,
@@ -2220,10 +2479,15 @@ const adminCustomerReferralRewardQueueSelect = {
   ...adminReferralRewardSelect,
   attribution: {
     select: {
+      audience: true,
       id: true,
       status: true,
       fraudReviewStatus: true,
       createdAt: true,
+      referrerCustomerProfileId: true,
+      referrerProviderProfileId: true,
+      metadata: true,
+      referralCode: { select: { metadata: true } },
       referrerCustomerProfile: {
         select: { id: true, user: { select: adminUserSummarySelect } },
       },
@@ -2241,13 +2505,13 @@ const adminPartnerReferralParentSelect = {
   status: true,
   user: { select: adminUserSummarySelect },
   referralCodes: {
-    where: { audience: ReferralAudience.PARTNER },
+    where: { audience: ReferralAudience.PARTNER, NOT: { metadata: { path: ['smoke'], equals: 'referral-admin' } } },
     orderBy: { createdAt: 'desc' },
     take: 1,
     select: adminReferralCodeSelect,
   },
   referralsMade: {
-    where: { audience: ReferralAudience.PARTNER },
+    where: { audience: ReferralAudience.PARTNER, NOT: referralAdminFixtureAttributionWhere },
     orderBy: { createdAt: 'desc' },
     take: ADMIN_REFERRAL_ATTRIBUTION_LIST_LIMIT,
     select: {
@@ -2267,6 +2531,7 @@ const adminPartnerReferralParentSelect = {
         },
       },
       rewards: {
+        where: { NOT: referralAdminFixtureRewardWhere },
         orderBy: { createdAt: 'desc' },
         select: adminReferralRewardSelect,
       },
@@ -2274,7 +2539,19 @@ const adminPartnerReferralParentSelect = {
   },
 } satisfies Prisma.ProviderProfileSelect;
 
-type AdminAuditLogSummary = Prisma.AdminAuditLogGetPayload<{ select: typeof adminAuditLogSelect }>;
+type AdminAuditLogSummary = {
+  id: string;
+  action: string;
+  target: string;
+  metadata: Prisma.JsonValue | null;
+  createdAt: Date;
+  actor: {
+    id: string;
+    email: string | null;
+    phone: string;
+    fullName: string | null;
+  } | null;
+};
 type AdminOperatorAccessSummary = Prisma.UserGetPayload<{ select: typeof adminOperatorAccessSelect }>;
 const adminPartnerBankDepositHistoryInclude = {
   providerProfile: {
@@ -2346,19 +2623,49 @@ type AdminUserListOptions = {
   view?: string | null;
 };
 
+type AdminOperatorDirectoryOptions = {
+  category?: string | null;
+  cursor?: string | null;
+  includeTestRecords?: boolean | string | null;
+  q?: string | null;
+  role?: string | null;
+  status?: string | null;
+  take?: number | string | null;
+};
+
 type AdminAuditLogListOptions = {
   action?: string | string[] | null;
+  actorType?: string | null;
+  area?: string | null;
   bucket?: string | null;
+  correlationId?: string | null;
+  cursor?: string | null;
+  eventId?: string | null;
   from?: string | null;
+  objectType?: string | null;
+  outcome?: string | null;
   priority?: string | null;
   q?: string | null;
+  range?: string | null;
+  requestId?: string | null;
+  severity?: string | null;
   skip?: number | string | null;
+  sort?: string | null;
   take?: number | string | null;
+  targetPrefix?: string | null;
   to?: string | null;
+  view?: string | null;
 };
 
 type AdminOperationalPolicyListOptions = {
   keys?: string | string[] | null;
+};
+
+type AdminOperationalPolicyAuditSource = 'operator' | 'automated_smoke' | 'legacy_unknown';
+type AdminOperationalPolicyAuditOptions = {
+  cursor?: string | null;
+  source?: string | null;
+  take?: number | string | null;
 };
 
 type AdminCustomerDirectorySummaryOptions = {
@@ -2974,7 +3281,7 @@ type AdminAuditLogSummaryRow = {
   target: string;
   metadata: Prisma.JsonValue | null;
   createdAt: Date;
-  actorId: string;
+  actorId: string | null;
   actorEmail: string | null;
   actorPhone: string;
   actorFullName: string | null;
@@ -3027,11 +3334,16 @@ type ManualWalletAdjustmentDb = Pick<
   | 'user'
 >;
 
-type FinanceApprovalLookupDb = Partial<Pick<Prisma.TransactionClient, 'user'>>;
+type FinanceApprovalLookupDb = Pick<Prisma.TransactionClient, 'adminAuditLog' | 'user'>;
 type BankReconciliationApprovalDb = Pick<Prisma.TransactionClient, 'adminAuditLog' | 'user'>;
 type AdminOperatorAccessDb = Pick<
   Prisma.TransactionClient,
-  'adminAuditLog' | 'adminOperatorCredential' | 'adminOperatorPermission' | 'user'
+  | 'adminAuditLog'
+  | 'adminOperatorCredential'
+  | 'adminOperatorInvitation'
+  | 'adminOperatorPermission'
+  | 'adminWebSession'
+  | 'user'
 >;
 
 type AdminManualWalletAdjustmentPreview = ManualWalletAdjustmentPreview & {
@@ -3242,7 +3554,20 @@ export class AdminService {
     @Inject(forwardRef(() => PaymentsService))
     private readonly payments?: PaymentsService,
     @Optional() private readonly siteContent?: SiteContentService,
+    @Optional()
+    @InjectQueue(ADMIN_PUSH_CAMPAIGN_QUEUE_NAME)
+    private readonly adminPushCampaignQueue?: Queue,
+    @Optional() private readonly config?: ConfigService,
+    @Optional() private readonly socketAuth?: SocketAuthService,
   ) {}
+
+  matchingPreview(referenceBookingId?: string) {
+    return buildAdminMatchingPreview(
+      this.prisma,
+      this.config ?? new ConfigService(),
+      referenceBookingId,
+    );
+  }
 
   listUsers(options: AdminUserListOptions = {}) {
     const skip = adminUserListSkip(options.skip);
@@ -3262,6 +3587,128 @@ export class AdminService {
     });
   }
 
+  async listAdminOperators(options: AdminOperatorDirectoryOptions = {}, actorId?: string) {
+    const take = adminOperatorDirectoryTake(options.take);
+    const now = new Date();
+    const includeTestRecords = adminOperatorDirectoryIncludesTestRecords(options.includeTestRecords);
+    const operatorWhere = adminOperatorDirectoryBaseWhere(includeTestRecords);
+    const where = adminOperatorDirectoryWhere(options, now, includeTestRecords);
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        const [
+          rows,
+          filteredTotal,
+          total,
+          master,
+          finance,
+          missingPermission,
+          missingCredential,
+          suspended,
+          locked,
+          mfaNotConfigured,
+          securityIncompleteDistinct,
+          actor,
+          activeMasterCount,
+        ] =
+          await Promise.all([
+            tx.user.findMany({
+              where,
+              orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+              take: take + 1,
+              select: adminOperatorDirectorySelect,
+            }),
+            tx.user.count({ where }),
+            tx.user.count({ where: operatorWhere }),
+            tx.user.count({ where: { ...operatorWhere, roles: { has: Role.MASTER_ADMIN } } }),
+            tx.user.count({ where: { ...operatorWhere, roles: { has: Role.FINANCE_APPROVER } } }),
+            tx.user.count({ where: { ...operatorWhere, adminOperatorPermission: { is: null } } }),
+            tx.user.count({ where: { ...operatorWhere, adminOperatorCredential: { is: null } } }),
+            tx.user.count({
+              where: { ...operatorWhere, adminOperatorCredential: { is: { disabledAt: { not: null } } } },
+            }),
+            tx.user.count({
+              where: { ...operatorWhere, adminOperatorCredential: { is: { lockedUntil: { gt: now } } } },
+            }),
+            tx.user.count({
+              where: {
+                AND: [
+                  operatorWhere,
+                  {
+                    OR: [
+                      { adminOperatorCredential: { is: null } },
+                      { adminOperatorCredential: { is: { mfaState: { not: 'VERIFIED' } } } },
+                    ],
+                  },
+                ],
+              },
+            }),
+            tx.user.count({
+              where: {
+                AND: [
+                  operatorWhere,
+                  adminOperatorSecurityIncompleteWhere(now),
+                ],
+              },
+            }),
+            actorId
+              ? tx.user.findUnique({ where: { id: actorId }, select: { id: true, roles: true } })
+              : Promise.resolve(null),
+            tx.user.count({
+              where: {
+                ...operatorWhere,
+                roles: { has: Role.MASTER_ADMIN },
+                adminOperatorCredential: { is: { disabledAt: null } },
+              },
+            }),
+          ]);
+        const hasNextPage = rows.length > take;
+        const items = hasNextPage ? rows.slice(0, take) : rows;
+        const activeSessionRows = items.length
+          ? await tx.adminWebSession.groupBy({
+              by: ['userId'],
+              where: {
+                userId: { in: items.map((row) => row.id) },
+                revokedAt: null,
+                expiresAt: { gt: now },
+              },
+              _count: { _all: true },
+            })
+          : [];
+        const activeSessionCounts = new Map(
+          activeSessionRows.map((row) => [row.userId, row._count._all]),
+        );
+
+        return {
+          items: items.map((row) => adminOperatorDirectoryRow(
+            row,
+            activeSessionCounts.get(row.id) ?? 0,
+            now,
+            { activeMasterCount, actorId: actor?.id ?? null, actorRoles: actor?.roles ?? [] },
+          )),
+          page: {
+            filteredTotal,
+            hasNextPage,
+            nextCursor: hasNextPage ? adminOperatorDirectoryCursorValue(items.at(-1)) : null,
+            returned: items.length,
+          },
+          summary: {
+            total,
+            master,
+            finance,
+            missingPermission,
+            missingCredential,
+            suspended,
+            locked,
+            mfaNotConfigured,
+            securityIncompleteDistinct,
+          },
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    );
+  }
+
   async getAdminOperatorAccess(actorId: string, identity?: string) {
     const operator = await this.findAdminOperatorForIdentity(this.prisma, actorId, identity);
     if (!operator) {
@@ -3269,6 +3716,873 @@ export class AdminService {
     }
 
     return adminOperatorAccessView(operator);
+  }
+
+  async getAdminOperatorDirectoryItem(actorId: string, targetUserId: string) {
+    const now = new Date();
+    const [row, actor, activeMasterCount] = await this.prisma.$transaction([
+      this.prisma.user.findFirst({
+        where: { id: targetUserId, roles: { has: Role.ADMIN } },
+        select: adminOperatorDirectorySelect,
+      }),
+      this.prisma.user.findUnique({ where: { id: actorId }, select: { id: true, roles: true } }),
+      this.prisma.user.count({
+        where: {
+          roles: { has: Role.MASTER_ADMIN },
+          adminOperatorCredential: { is: { disabledAt: null } },
+        },
+      }),
+    ]);
+    if (!row) throw new NotFoundException('Admin operator not found');
+    const activeSessionCount = await this.prisma.adminWebSession.count({
+      where: { userId: targetUserId, revokedAt: null, expiresAt: { gt: now } },
+    });
+    return adminOperatorDirectoryRow(row, activeSessionCount, now, {
+      activeMasterCount,
+      actorId: actor?.id ?? null,
+      actorRoles: actor?.roles ?? [],
+    });
+  }
+
+  async listAdminOperatorInvitations(actorId: string) {
+    const now = new Date();
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await this.assertMasterAdminAccess(tx, actorId);
+      const baseWhere = { acceptedAt: null, revokedAt: null } satisfies Prisma.AdminOperatorInvitationWhereInput;
+      const [invitations, totalCount, pendingCount, expiredCount] = await Promise.all([
+        tx.adminOperatorInvitation.findMany({
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          take: 50,
+          select: {
+            id: true,
+            normalizedEmail: true,
+            fullName: true,
+            targetUserId: true,
+            permissionCategories: true,
+            masterAdminEnabled: true,
+            expiresAt: true,
+            acceptedAt: true,
+            revokedAt: true,
+            invitedByAdminId: true,
+            reason: true,
+            createdAt: true,
+          },
+        }),
+        tx.adminOperatorInvitation.count(),
+        tx.adminOperatorInvitation.count({ where: { ...baseWhere, expiresAt: { gt: now } } }),
+        tx.adminOperatorInvitation.count({ where: { ...baseWhere, expiresAt: { lte: now } } }),
+      ]);
+      return {
+        items: invitations.map((invitation) => ({
+          ...invitation,
+          status: invitation.acceptedAt
+            ? 'ACCEPTED'
+            : invitation.revokedAt
+              ? 'REVOKED'
+              : invitation.expiresAt <= now
+                ? 'EXPIRED'
+                : 'PENDING',
+          deliveryStatus: invitation.acceptedAt
+            ? 'ACCEPTED'
+            : invitation.revokedAt
+              ? 'REVOKED'
+              : invitation.expiresAt <= now
+                ? 'EXPIRED'
+                : 'PENDING',
+        })),
+        totalCount,
+        pendingCount,
+        expiredCount,
+      };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+    return updated;
+  }
+
+  async createAdminOperatorInvitation(
+    actorId: string,
+    sessionId: string | undefined,
+    input: CreateAdminOperatorInvitationDto,
+  ) {
+    const email = normalizeAdminOperatorEmail(input.email);
+    if (!email) throw new BadRequestException('Operator email is required');
+    const reason = normalizeAdminOperatorReason(input.reason);
+    const expiresInHours = input.expiresInHours ?? ADMIN_OPERATOR_INVITATION_DEFAULT_HOURS;
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + expiresInHours * 60 * 60_000);
+    const rawToken = randomBytes(32).toString('base64url');
+    const tokenHash = createHash('sha256').update(rawToken).digest('base64url');
+
+    return this.prisma.$transaction(async (tx) => {
+      await this.assertMasterAdminAccess(tx, actorId);
+      await this.assertRecentAdminReauthentication(tx, actorId, sessionId);
+      const existingCredential = await tx.adminOperatorCredential.findUnique({
+        where: { email },
+        select: { id: true },
+      });
+      if (existingCredential) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_CREDENTIAL_EXISTS',
+          message: 'This email already has operator credentials',
+        });
+      }
+      const pendingInvitation = await tx.adminOperatorInvitation.findUnique({
+        where: { pendingKey: email },
+        select: { id: true, expiresAt: true },
+      });
+      if (pendingInvitation) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_INVITATION_PENDING',
+          message: 'A pending invitation already exists. Revoke it before creating another.',
+        });
+      }
+
+      const targetUserId = normalizeNullable(input.targetUserId);
+      const targetUser = targetUserId
+        ? await tx.user.findUnique({
+            where: { id: targetUserId },
+            select: { id: true, email: true, roles: true, adminOperatorCredential: { select: { id: true } } },
+          })
+        : null;
+      if (targetUserId && !targetUser) {
+        throw new NotFoundException({ code: 'ADMIN_OPERATOR_TARGET_NOT_FOUND', message: 'Existing user not found' });
+      }
+      if (targetUser?.adminOperatorCredential) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_CREDENTIAL_EXISTS',
+          message: 'The selected user already has operator credentials',
+        });
+      }
+      if (targetUser?.email && targetUser.email.trim().toLowerCase() !== email) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_TARGET_EMAIL_MISMATCH',
+          message: 'The invitation email does not match the selected existing user',
+        });
+      }
+      if (!targetUserId) {
+        const matchingUsers = await tx.user.findMany({
+          where: { email: { equals: email, mode: 'insensitive' } },
+          select: { id: true },
+          take: 2,
+        });
+        if (matchingUsers.length > 0) {
+          throw new ConflictException({
+            code: 'ADMIN_OPERATOR_EXISTING_USER_SELECTION_REQUIRED',
+            message: 'An existing user has this email. Select that user explicitly instead of auto-linking.',
+          });
+        }
+      }
+
+      const roles = [Role.ADMIN, ...(input.masterAdminEnabled ? [Role.MASTER_ADMIN] : [])];
+      const permissionCategories = normalizeAdminOperatorPermissionCategories(
+        roles,
+        input.permissionCategories,
+      );
+      const invitation = await tx.adminOperatorInvitation.create({
+        data: {
+          normalizedEmail: email,
+          pendingKey: email,
+          fullName: normalizeNullable(input.fullName),
+          targetUserId,
+          permissionCategories: { set: permissionCategories },
+          masterAdminEnabled: input.masterAdminEnabled ?? false,
+          tokenHash,
+          expiresAt,
+          invitedByAdminId: actorId,
+          reason,
+        },
+      });
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'admin_operator.invitation.create',
+          target: `admin_operator_invitation:${invitation.id}`,
+          metadata: {
+            email,
+            targetUserId,
+            permissionCategories,
+            masterAdminEnabled: input.masterAdminEnabled ?? false,
+            expiresAt: expiresAt.toISOString(),
+            reason,
+          },
+        },
+      });
+      return {
+        invitation: { ...invitation, tokenHash: undefined },
+        setupToken: rawToken,
+        auditLogId: auditLog.id,
+      };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }
+
+  async revokeAdminOperatorInvitation(
+    actorId: string,
+    sessionId: string | undefined,
+    invitationId: string,
+    input: ManageAdminOperatorInvitationDto,
+  ) {
+    const reason = normalizeAdminOperatorReason(input.reason);
+    return this.prisma.$transaction(async (tx) => {
+      await this.assertMasterAdminAccess(tx, actorId);
+      await this.assertRecentAdminReauthentication(tx, actorId, sessionId);
+      const invitation = await tx.adminOperatorInvitation.findUnique({ where: { id: invitationId } });
+      if (!invitation) throw new NotFoundException('Admin operator invitation not found');
+      if (invitation.acceptedAt) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_INVITATION_ACCEPTED',
+          message: 'An accepted invitation cannot be revoked',
+        });
+      }
+      if (invitation.revokedAt) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_INVITATION_REVOKED',
+          message: 'This invitation is already revoked',
+        });
+      }
+      const revokedAt = new Date();
+      const update = await tx.adminOperatorInvitation.updateMany({
+        where: { id: invitationId, acceptedAt: null, revokedAt: null },
+        data: { pendingKey: null, revokedAt },
+      });
+      if (update.count !== 1) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_INVITATION_STATE_CHANGED',
+          message: 'The invitation changed after this page loaded',
+        });
+      }
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'admin_operator.invitation.revoke',
+          target: `admin_operator_invitation:${invitationId}`,
+          metadata: {
+            normalizedEmail: invitation.normalizedEmail,
+            previousStatus: invitation.expiresAt <= revokedAt ? 'EXPIRED' : 'PENDING',
+            nextStatus: 'REVOKED',
+            reason,
+          },
+        },
+      });
+      return { auditLogId: auditLog.id, ok: true, revokedAt };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }
+
+  async resendAdminOperatorInvitation(
+    actorId: string,
+    sessionId: string | undefined,
+    invitationId: string,
+    input: ManageAdminOperatorInvitationDto,
+  ) {
+    const reason = normalizeAdminOperatorReason(input.reason);
+    const expiresInHours = input.expiresInHours ?? ADMIN_OPERATOR_INVITATION_DEFAULT_HOURS;
+    const rawToken = randomBytes(32).toString('base64url');
+    const tokenHash = createHash('sha256').update(rawToken).digest('base64url');
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + expiresInHours * 60 * 60_000);
+    return this.prisma.$transaction(async (tx) => {
+      await this.assertMasterAdminAccess(tx, actorId);
+      await this.assertRecentAdminReauthentication(tx, actorId, sessionId);
+      const invitation = await tx.adminOperatorInvitation.findUnique({ where: { id: invitationId } });
+      if (!invitation) throw new NotFoundException('Admin operator invitation not found');
+      if (invitation.acceptedAt) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_INVITATION_ACCEPTED',
+          message: 'An accepted invitation cannot be resent',
+        });
+      }
+      if (invitation.revokedAt) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_INVITATION_REVOKED',
+          message: 'A revoked invitation cannot be resent',
+        });
+      }
+      const invalidated = await tx.adminOperatorInvitation.updateMany({
+        where: { id: invitationId, acceptedAt: null, revokedAt: null },
+        data: { pendingKey: null, revokedAt: now },
+      });
+      if (invalidated.count !== 1) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_INVITATION_STATE_CHANGED',
+          message: 'The invitation changed after this page loaded',
+        });
+      }
+      const replacement = await tx.adminOperatorInvitation.create({
+        data: {
+          normalizedEmail: invitation.normalizedEmail,
+          pendingKey: invitation.normalizedEmail,
+          fullName: invitation.fullName,
+          targetUserId: invitation.targetUserId,
+          permissionCategories: { set: invitation.permissionCategories },
+          masterAdminEnabled: invitation.masterAdminEnabled,
+          tokenHash,
+          expiresAt,
+          invitedByAdminId: actorId,
+          reason,
+        },
+      });
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'admin_operator.invitation.resend',
+          target: `admin_operator_invitation:${replacement.id}`,
+          metadata: {
+            previousInvitationId: invitationId,
+            replacementInvitationId: replacement.id,
+            expiresAt: expiresAt.toISOString(),
+            deliveryStatus: 'PENDING',
+            reason,
+          },
+        },
+      });
+      return {
+        auditLogId: auditLog.id,
+        deliveryStatus: 'PENDING',
+        invitation: { id: replacement.id, expiresAt },
+        setupToken: rawToken,
+      };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }
+
+  async reauthenticateAdminOperator(
+    actorId: string,
+    sessionId: string | undefined,
+    input: ReauthenticateAdminOperatorDto,
+  ) {
+    if (!sessionId) throw new UnauthorizedException('Admin Web session is required');
+    const now = new Date();
+    const credential = await this.prisma.adminOperatorCredential.findUnique({
+      where: { userId: actorId },
+      select: {
+        id: true,
+        disabledAt: true,
+        lockedUntil: true,
+        passwordHash: true,
+        passwordSalt: true,
+        mfaRecoveryCodeHashes: true,
+        mfaSecretEncrypted: true,
+        mfaState: true,
+      },
+    });
+    const passwordMatches = verifyAdminOperatorPasswordOrDummy(input.password, credential);
+    let mfaVerification =
+      credential?.mfaState === 'VERIFIED' &&
+      !credential.disabledAt &&
+      (credential.lockedUntil?.getTime() ?? 0) <= now.getTime() &&
+      passwordMatches
+      ? this.verifyAdminMfaCredential(credential, input.mfaCode, now)
+      : { recoveryCodeHashes: null, totpCounter: null, verified: true };
+    if (credential && mfaVerification.verified && mfaVerification.totpCounter !== null) {
+      try {
+        const consumed = await this.redisState.consumeAdminMfaTotp(
+          credential.id,
+          mfaVerification.totpCounter,
+        );
+        if (!consumed) {
+          mfaVerification = {
+            recoveryCodeHashes: null,
+            totpCounter: null,
+            verified: false,
+          };
+        }
+      } catch {
+        throw new ServiceUnavailableException('Admin MFA verification is temporarily unavailable');
+      }
+    }
+    if (
+      !credential ||
+      credential.disabledAt ||
+      (credential.lockedUntil?.getTime() ?? 0) > now.getTime() ||
+      !passwordMatches ||
+      !mfaVerification.verified
+    ) {
+      if (credential && !credential.disabledAt && (credential.lockedUntil?.getTime() ?? 0) <= now.getTime()) {
+        const rateLimitKey = adminOperatorReauthenticationRateLimitKey(actorId, sessionId);
+        let failedReauthenticationCount: number;
+        try {
+          failedReauthenticationCount = (
+            await this.redisState.consumeRateLimit(rateLimitKey, ADMIN_OPERATOR_LOCK_MS)
+          ).count;
+        } catch {
+          await this.prisma.adminAuditLog.create({
+            data: {
+              actorId,
+              action: 'admin_operator.reauthenticate.blocked',
+              target: `admin_web_session:${sessionId}`,
+              metadata: { rateLimiterUnavailable: true, sessionId },
+            },
+          });
+          throw new ServiceUnavailableException('Admin reauthentication is temporarily unavailable');
+        }
+        const sessionRevoked = failedReauthenticationCount >= ADMIN_OPERATOR_MAX_FAILED_LOGINS;
+        await this.prisma.$transaction(async (tx) => {
+          if (sessionRevoked) {
+            await tx.adminWebSession.updateMany({
+              where: { id: sessionId, userId: actorId, revokedAt: null },
+              data: {
+                revokedAt: now,
+                revokedByAdminId: actorId,
+                revocationReason: 'Too many failed reauthentication attempts',
+              },
+            });
+          }
+          await tx.adminAuditLog.create({
+            data: {
+              actorId,
+              action: sessionRevoked
+                ? 'admin_operator.reauthenticate.lock'
+                : 'admin_operator.reauthenticate.failed',
+              target: `admin_web_session:${sessionId}`,
+              metadata: {
+                failedReauthenticationCount,
+                sessionRevoked,
+              },
+            },
+          });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        if (sessionRevoked) this.socketAuth?.disconnectAdminSession(sessionId);
+      } else if (credential) {
+        await this.prisma.adminAuditLog.create({
+          data: {
+            actorId,
+            action: 'admin_operator.reauthenticate.blocked',
+            target: `admin_web_session:${sessionId}`,
+            metadata: {
+              disabled: Boolean(credential.disabledAt),
+              locked: (credential.lockedUntil?.getTime() ?? 0) > now.getTime(),
+            },
+          },
+        });
+      }
+      throw new UnauthorizedException('Invalid admin operator credentials');
+    }
+    try {
+      await this.redisState.clearRateLimit(
+        adminOperatorReauthenticationRateLimitKey(actorId, sessionId),
+      );
+    } catch {
+      throw new ServiceUnavailableException('Admin reauthentication is temporarily unavailable');
+    }
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.adminWebSession.updateMany({
+        where: { id: sessionId, userId: actorId, revokedAt: null, expiresAt: { gt: now } },
+        data: {
+          lastSeenAt: now,
+          mfaVerifiedAt: credential.mfaState === 'VERIFIED' ? now : null,
+          reauthenticatedAt: now,
+        },
+      });
+      if (result.count !== 1) throw new UnauthorizedException('Admin Web session is no longer active');
+      if (mfaVerification.recoveryCodeHashes) {
+        await tx.adminOperatorCredential.update({
+          where: { id: credential.id },
+          data: { mfaRecoveryCodeHashes: { set: mfaVerification.recoveryCodeHashes } },
+        });
+      }
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'admin_operator.reauthenticate.success',
+          target: `admin_web_session:${sessionId}`,
+          metadata: { sessionId },
+        },
+      });
+      return {
+        auditLogId: auditLog.id,
+        mfaVerifiedAt: credential.mfaState === 'VERIFIED' ? now : null,
+        reauthenticated: true,
+        reauthenticatedAt: now,
+      };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }
+
+  async beginAdminMfaEnrollment(
+    actorId: string,
+    sessionId: string | undefined,
+    input: BeginAdminMfaEnrollmentDto,
+  ) {
+    if (!sessionId) throw new UnauthorizedException('Admin Web session is required');
+    const credential = await this.prisma.adminOperatorCredential.findUnique({
+      where: { userId: actorId },
+      select: { email: true, mfaState: true },
+    });
+    if (!credential) throw new UnauthorizedException('Admin operator credential is required');
+    if (credential.mfaState === 'VERIFIED') {
+      throw new ConflictException('Admin MFA is already enrolled');
+    }
+    await this.reauthenticateAdminOperator(actorId, sessionId, { password: input.password });
+    let enrollment: ReturnType<typeof createAdminMfaEnrollment>;
+    try {
+      enrollment = createAdminMfaEnrollment(credential.email, this.adminMfaEncryptionSecret());
+    } catch {
+      throw new ServiceUnavailableException('Admin MFA enrollment is unavailable');
+    }
+    const auditLog = await this.prisma.$transaction(async (tx) => {
+      const update = await tx.adminOperatorCredential.updateMany({
+        where: { userId: actorId, mfaState: { not: 'VERIFIED' } },
+        data: {
+          mfaEnrolledAt: null,
+          mfaRecoveryCodeHashes: { set: enrollment.recoveryCodeHashes },
+          mfaSecretEncrypted: enrollment.encryptedSecret,
+          mfaState: 'CONFIGURING',
+        },
+      });
+      if (update.count !== 1) throw new ConflictException('Admin MFA enrollment state changed');
+      return tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'admin_operator.mfa.enrollment_started',
+          target: `user:${actorId}`,
+          metadata: { recoveryCodeCount: enrollment.recoveryCodes.length, sessionId },
+        },
+      });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    return {
+      auditLogId: auditLog.id,
+      otpAuthUri: enrollment.otpAuthUri,
+      recoveryCodes: enrollment.recoveryCodes,
+      secret: enrollment.secret,
+    };
+  }
+
+  async getAdminMfaStatus(actorId: string) {
+    const credential = await this.prisma.adminOperatorCredential.findUnique({
+      where: { userId: actorId },
+      select: {
+        mfaEnrolledAt: true,
+        mfaRecoveryCodeHashes: true,
+        mfaState: true,
+      },
+    });
+    if (!credential) throw new UnauthorizedException('Admin operator credential is required');
+    return {
+      enrolledAt: credential.mfaEnrolledAt,
+      recoveryCodesRemaining: credential.mfaRecoveryCodeHashes.length,
+      state: credential.mfaState,
+    };
+  }
+
+  async verifyAdminMfaEnrollment(
+    actorId: string,
+    sessionId: string | undefined,
+    input: VerifyAdminMfaEnrollmentDto,
+  ) {
+    if (!sessionId) throw new UnauthorizedException('Admin Web session is required');
+    const credential = await this.prisma.adminOperatorCredential.findUnique({
+      where: { userId: actorId },
+      select: { id: true, mfaSecretEncrypted: true, mfaState: true },
+    });
+    if (!credential?.mfaSecretEncrypted || credential.mfaState !== 'CONFIGURING') {
+      throw new ConflictException('Start Admin MFA enrollment before verification');
+    }
+    let verified = false;
+    try {
+      const secret = decryptAdminMfaSecret(
+        credential.mfaSecretEncrypted,
+        this.adminMfaEncryptionSecret(),
+      );
+      const totpCounter = matchingTotpCounter(secret, input.code);
+      verified =
+        totpCounter !== null &&
+        (await this.redisState.consumeAdminMfaTotp(credential.id, totpCounter));
+    } catch {
+      throw new ServiceUnavailableException('Admin MFA verification is unavailable');
+    }
+    if (!verified) {
+      await this.prisma.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'admin_operator.mfa.enrollment_failed',
+          target: `user:${actorId}`,
+          metadata: { sessionId },
+        },
+      });
+      throw new UnauthorizedException('Invalid authenticator code');
+    }
+    const now = new Date();
+    const auditLog = await this.prisma.$transaction(async (tx) => {
+      const session = await tx.adminWebSession.updateMany({
+        where: { id: sessionId, userId: actorId, revokedAt: null, expiresAt: { gt: now } },
+        data: { lastSeenAt: now, mfaVerifiedAt: now },
+      });
+      if (session.count !== 1) throw new UnauthorizedException('Admin Web session is no longer active');
+      await tx.adminOperatorCredential.update({
+        where: { id: credential.id },
+        data: { mfaEnrolledAt: now, mfaState: 'VERIFIED' },
+      });
+      return tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'admin_operator.mfa.enrollment_verified',
+          target: `user:${actorId}`,
+          metadata: { sessionId },
+        },
+      });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    return { auditLogId: auditLog.id, mfaVerifiedAt: now, verified: true };
+  }
+
+  async resetAdminMfa(
+    actorId: string,
+    currentSessionId: string | undefined,
+    targetUserId: string,
+    input: ResetAdminMfaDto,
+  ) {
+    if (actorId === targetUserId) {
+      throw new BadRequestException('Use a recovery code or another Master Admin for MFA recovery');
+    }
+    const reason = normalizeAdminOperatorReason(input.reason);
+    const result = await this.prisma.$transaction(async (tx) => {
+      await this.assertMasterAdminAccess(tx, actorId);
+      await this.assertRecentAdminReauthentication(tx, actorId, currentSessionId);
+      const credential = await tx.adminOperatorCredential.findUnique({
+        where: { userId: targetUserId },
+        select: { id: true, mfaState: true },
+      });
+      if (!credential) throw new NotFoundException('Admin operator credential not found');
+      await tx.adminOperatorCredential.update({
+        where: { id: credential.id },
+        data: {
+          mfaEnrolledAt: null,
+          mfaRecoveryCodeHashes: { set: [] },
+          mfaSecretEncrypted: null,
+          mfaState: 'NOT_CONFIGURED',
+        },
+      });
+      const revoked = await tx.adminWebSession.updateMany({
+        where: { userId: targetUserId, revokedAt: null },
+        data: { revokedAt: new Date(), revokedByAdminId: actorId, revocationReason: reason },
+      });
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'admin_operator.mfa.reset',
+          target: `user:${targetUserId}`,
+          metadata: { previousState: credential.mfaState, reason, revokedSessionCount: revoked.count },
+        },
+      });
+      return { auditLogId: auditLog.id, revokedSessionCount: revoked.count };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    this.socketAuth?.disconnectAdminUser(targetUserId);
+    return result;
+  }
+
+  private verifyAdminMfaCredential(
+    credential: {
+      mfaRecoveryCodeHashes: readonly string[];
+      mfaSecretEncrypted: string | null;
+    },
+    code: string | undefined,
+    now: Date,
+  ) {
+    if (!credential.mfaSecretEncrypted) {
+      throw new ServiceUnavailableException('Admin MFA verification is unavailable');
+    }
+    try {
+      return verifyAdminMfaCode({
+        code,
+        encryptedSecret: credential.mfaSecretEncrypted,
+        encryptionSecret: this.adminMfaEncryptionSecret(),
+        recoveryCodeHashes: credential.mfaRecoveryCodeHashes,
+        nowMs: now.getTime(),
+      });
+    } catch {
+      throw new ServiceUnavailableException('Admin MFA verification is unavailable');
+    }
+  }
+
+  private adminMfaEncryptionSecret() {
+    const value = this.config?.get<string>('ADMIN_MFA_ENCRYPTION_KEY');
+    assertAdminMfaEncryptionSecret(value);
+    return value;
+  }
+
+  async setAdminOperatorSuspended(
+    actorId: string,
+    sessionId: string | undefined,
+    targetUserId: string,
+    suspended: boolean,
+    input: SuspendAdminOperatorDto,
+  ) {
+    const reason = normalizeAdminOperatorReason(input.reason);
+    if (actorId === targetUserId) {
+      throw new BadRequestException({ code: 'ADMIN_OPERATOR_SELF_SUSPEND_FORBIDDEN', message: 'You cannot suspend your own access' });
+    }
+    const result = await this.prisma.$transaction(async (tx) => {
+      await this.assertMasterAdminAccess(tx, actorId);
+      await this.assertRecentAdminReauthentication(tx, actorId, sessionId);
+      const target = await tx.user.findUnique({
+        where: { id: targetUserId },
+        select: { id: true, roles: true, adminOperatorCredential: { select: { id: true, disabledAt: true } } },
+      });
+      if (!target?.roles.includes(Role.ADMIN) || !target.adminOperatorCredential) {
+        throw new NotFoundException('Admin operator not found');
+      }
+      if (suspended && target.roles.includes(Role.MASTER_ADMIN)) {
+        const masterCount = await tx.user.count({
+          where: {
+            roles: { has: Role.MASTER_ADMIN },
+            adminOperatorCredential: { is: { disabledAt: null } },
+          },
+        });
+        if (masterCount <= 1) {
+          throw new ConflictException({
+            code: 'LAST_MASTER_ADMIN_REQUIRED',
+            message: 'The last active Master Admin cannot be suspended',
+          });
+        }
+      }
+      const now = new Date();
+      const correlationId = randomUUID();
+      await tx.adminOperatorCredential.update({
+        where: { id: target.adminOperatorCredential.id },
+        data: suspended
+          ? { disabledAt: now, disabledReason: reason }
+          : { disabledAt: null, disabledReason: null, failedLoginCount: 0, lockedUntil: null },
+      });
+      const revokedSessions = suspended
+        ? await tx.adminWebSession.updateMany({
+            where: { userId: targetUserId, revokedAt: null },
+            data: { revokedAt: now, revokedByAdminId: actorId, revocationReason: reason },
+          })
+        : { count: 0 };
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: suspended ? 'admin_operator.suspend' : 'admin_operator.reactivate',
+          target: `user:${targetUserId}`,
+          metadata: {
+            correlationId,
+            emergencyContainment: suspended && target.roles.includes(Role.FINANCE_APPROVER),
+            reason,
+            revokedSessionCount: revokedSessions.count,
+            targetSnapshot: {
+              credentialDisabledAt: target.adminOperatorCredential.disabledAt?.toISOString() ?? null,
+              roles: target.roles,
+            },
+          },
+        },
+      });
+      return {
+        auditLogId: auditLog.id,
+        correlationId,
+        ok: true,
+        revokedSessionCount: revokedSessions.count,
+        roleRemovalRequired: suspended && target.roles.includes(Role.FINANCE_APPROVER),
+        suspended,
+      };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    if (suspended) {
+      this.socketAuth?.disconnectAdminUser(targetUserId);
+    }
+    return result;
+  }
+
+  async listAdminOperatorSessions(actorId: string, targetUserId: string, currentSessionId?: string) {
+    await this.assertMasterAdminAccess(this.prisma, actorId);
+    const sessions = await this.prisma.adminWebSession.findMany({
+      where: { userId: targetUserId },
+      orderBy: [{ lastSeenAt: 'desc' }, { id: 'desc' }],
+      take: 25,
+      select: {
+        id: true,
+        issuedAt: true,
+        expiresAt: true,
+        lastSeenAt: true,
+        revokedAt: true,
+        revocationReason: true,
+        platformSummary: true,
+        reauthenticatedAt: true,
+      },
+    });
+    return sessions.map((session) => ({ ...session, current: session.id === currentSessionId }));
+  }
+
+  async listAdminOperatorHistory(actorId: string, targetUserId?: string | null, takeInput?: string | number | null) {
+    await this.assertMasterAdminAccess(this.prisma, actorId);
+    const targetId = normalizeNullable(targetUserId);
+    const take = Math.min(Math.max(Number.parseInt(String(takeInput ?? '30'), 10) || 30, 1), 50);
+    const targetFilter = targetId
+      ? {
+          OR: [
+            { target: `user:${targetId}` },
+            { metadata: { path: ['targetUserId'], equals: targetId } },
+          ],
+        }
+      : {};
+    const where = {
+      action: { in: ADMIN_OPERATOR_LIFECYCLE_ACTIONS },
+      ...targetFilter,
+    } satisfies Prisma.AdminAuditLogWhereInput;
+    const [items, totalCount] = await this.prisma.$transaction([
+      this.prisma.adminAuditLog.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take,
+        include: { actor: { select: { id: true, email: true, fullName: true } } },
+      }),
+      this.prisma.adminAuditLog.count({ where }),
+    ]);
+    return { items, totalCount };
+  }
+
+  async revokeAdminOperatorSession(
+    actorId: string,
+    currentSessionId: string | undefined,
+    targetUserId: string,
+    targetSessionId: string,
+    input: SuspendAdminOperatorDto,
+  ) {
+    const reason = normalizeAdminOperatorReason(input.reason);
+    const result = await this.prisma.$transaction(async (tx) => {
+      await this.assertMasterAdminAccess(tx, actorId);
+      await this.assertRecentAdminReauthentication(tx, actorId, currentSessionId);
+      const result = await tx.adminWebSession.updateMany({
+        where: { id: targetSessionId, userId: targetUserId, revokedAt: null },
+        data: { revokedAt: new Date(), revokedByAdminId: actorId, revocationReason: reason },
+      });
+      if (result.count !== 1) throw new ConflictException('Session is already revoked or no longer exists');
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'admin_operator.session.revoke',
+          target: `admin_web_session:${targetSessionId}`,
+          metadata: { targetUserId, reason },
+        },
+      });
+      return { ok: true, auditLogId: auditLog.id };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    this.socketAuth?.disconnectAdminSession(targetSessionId);
+    return result;
+  }
+
+  async revokeCurrentAdminOperatorSession(actorId: string, sessionId: string | undefined) {
+    if (!sessionId) {
+      throw new ForbiddenException('Admin Web session is required');
+    }
+    const result = await this.prisma.$transaction(async (tx) => {
+      const revokedAt = new Date();
+      const result = await tx.adminWebSession.updateMany({
+        where: { id: sessionId, userId: actorId, revokedAt: null, expiresAt: { gt: revokedAt } },
+        data: {
+          revokedAt,
+          revokedByAdminId: actorId,
+          revocationReason: 'Operator logout',
+        },
+      });
+      if (result.count !== 1) {
+        throw new ConflictException('Admin Web session is already revoked or expired');
+      }
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'admin_operator.session.logout',
+          target: `admin_web_session:${sessionId}`,
+          metadata: { sessionId },
+        },
+      });
+      return { ok: true, auditLogId: auditLog.id, revokedAt };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    this.socketAuth?.disconnectAdminSession(sessionId);
+    return result;
   }
 
   async recordAdminOperatorActivity(
@@ -3282,6 +4596,12 @@ export class AdminService {
     }
     if (!target) {
       throw new BadRequestException('Admin operator activity target is required');
+    }
+    if (action === 'admin_web.page_view') {
+      return { ok: true, ignored: true, reason: 'General page views are telemetry, not audit evidence.' };
+    }
+    if (!ADMIN_OPERATOR_ACTIVITY_ACTIONS.has(action)) {
+      throw new ForbiddenException('Admin Web activity cannot create reserved audit events');
     }
 
     const operator = await this.findAdminOperatorForIdentity(this.prisma, actorId, input.operatorIdentity);
@@ -3434,153 +4754,85 @@ export class AdminService {
     });
   }
 
-  async createAdminOperator(actorId: string, input: CreateAdminOperatorDto) {
-    const email = normalizeAdminOperatorEmail(input.email);
-    if (!email) {
-      throw new BadRequestException('Operator email is required');
+  async initializeAdminOperatorPermission(
+    actorId: string,
+    userId: string,
+    input: InitializeAdminOperatorPermissionDto,
+    sessionId?: string,
+  ) {
+    const targetUserId = normalizeNullable(userId);
+    if (!targetUserId) throw new BadRequestException('Admin user id is required');
+    if (actorId === targetUserId) {
+      throw new BadRequestException({
+        code: 'ADMIN_OPERATOR_SELF_ACCESS_CHANGE_FORBIDDEN',
+        message: 'Another Master Admin must initialize your permission policy',
+      });
     }
-    const password = normalizeNullable(input.password);
-    if (!password || password.length < ADMIN_OPERATOR_PASSWORD_MIN_LENGTH) {
-      throw new BadRequestException('Operator password must be at least 8 characters');
-    }
-
+    const reason = normalizeAdminOperatorReason(input.reason);
     return this.prisma.$transaction(async (tx) => {
       await this.assertMasterAdminAccess(tx, actorId);
-      const existingCredential = await tx.adminOperatorCredential.findUnique({
-        where: { email },
-        select: { userId: true },
+      await this.assertRecentAdminReauthentication(tx, actorId, sessionId);
+      const targetUser = await tx.user.findUnique({
+        where: { id: targetUserId },
+        select: {
+          id: true,
+          roles: true,
+          adminOperatorPermission: { select: { id: true } },
+        },
       });
-      const adminPhone = normalizeNullable(input.phone) ?? generatedAdminOperatorPhone(email);
-      const existingUser = existingCredential
-        ? await tx.user.findUnique({
-            where: { id: existingCredential.userId },
-            select: {
-              id: true,
-              roles: true,
-            },
-          })
-        : await tx.user.findFirst({
-            where: {
-              OR: [{ email }, { phone: adminPhone }],
-            },
-            select: {
-              id: true,
-              roles: true,
-            },
-          });
-      const nextRoles = mergeAdminOperatorRoles(existingUser?.roles ?? [], input.roles);
-      const nextCategories = normalizeAdminOperatorPermissionCategories(
-        nextRoles,
+      if (!targetUser?.roles.includes(Role.ADMIN)) {
+        throw new NotFoundException('Admin operator not found');
+      }
+      if (targetUser.adminOperatorPermission) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_PERMISSION_ALREADY_INITIALIZED',
+          message: 'The permission policy already exists. Reload and review the current access.',
+        });
+      }
+      const categories = normalizeAdminOperatorPermissionCategories(
+        targetUser.roles,
         input.permissionCategories,
       );
-      const reason = normalizeAuditReason(input.reason);
-      const userId = existingUser?.id;
-      const user = userId
-        ? await tx.user.update({
-            where: { id: userId },
-            data: {
-              email,
-              ...(input.fullName !== undefined ? { fullName: normalizeNullable(input.fullName) } : {}),
-              roles: { set: nextRoles },
-            },
-            select: adminUserListSelect,
-          })
-        : await tx.user.create({
-            data: {
-              phone: adminPhone,
-              email,
-              fullName: normalizeNullable(input.fullName),
-              roles: nextRoles,
-            },
-            select: adminUserListSelect,
+      let permission;
+      try {
+        permission = await tx.adminOperatorPermission.create({
+          data: { userId: targetUserId, categories: { set: categories } },
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+          throw new ConflictException({
+            code: 'ADMIN_OPERATOR_PERMISSION_ALREADY_INITIALIZED',
+            message: 'The permission policy was initialized in another session. Reload before continuing.',
           });
-
-      const passwordCredential = hashAdminOperatorPassword(password);
-      await tx.adminOperatorCredential.upsert({
-        where: { userId: user.id },
-        create: {
-          userId: user.id,
-          email,
-          passwordHash: passwordCredential.passwordHash,
-          passwordSalt: passwordCredential.passwordSalt,
-        },
-        update: {
-          email,
-          passwordHash: passwordCredential.passwordHash,
-          passwordSalt: passwordCredential.passwordSalt,
-        },
-      });
-      const permission = await tx.adminOperatorPermission.upsert({
-        where: { userId: user.id },
-        create: {
-          userId: user.id,
-          categories: { set: nextCategories },
-        },
-        update: {
-          categories: { set: nextCategories },
-        },
-      });
-      const hydratedUser = await tx.user.findUnique({
-        where: { id: user.id },
-        select: adminUserListSelect,
-      });
+        }
+        throw error;
+      }
       const auditLog = await tx.adminAuditLog.create({
         data: {
           actorId,
-          action: userId ? 'admin_operator.access.grant' : 'admin_operator.create',
-          target: `user:${user.id}`,
+          action: 'admin_operator.permission.initialize',
+          target: `user:${targetUserId}`,
           metadata: {
-            permissionId: permission.id,
-            previousRoles: existingUser?.roles ?? [],
-            nextRoles,
-            permissionCategories: nextCategories,
+            before: { permissionPolicy: null },
+            after: {
+              permissionId: permission.id,
+              permissionCategories: categories,
+              version: permission.version,
+            },
             reason,
           },
         },
       });
-
-      return { user: hydratedUser ?? user, auditLog };
-    });
+      return { auditLogId: auditLog.id, permission };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
-  async verifyAdminOperatorLogin(input: { email?: string | null; password?: string | null }) {
-    const email = normalizeAdminOperatorEmail(input.email);
-    const password = normalizeNullable(input.password);
-    if (!email || !password) {
-      throw new UnauthorizedException('Invalid admin operator credentials');
-    }
-
-    const credential = await this.prisma.adminOperatorCredential.findUnique({
-      where: { email },
-      select: {
-        passwordHash: true,
-        passwordSalt: true,
-        user: {
-          select: {
-            id: true,
-            email: true,
-            fullName: true,
-            roles: true,
-          },
-        },
-      },
-    });
-    if (!credential?.user.roles.includes(Role.ADMIN) || !verifyAdminOperatorPassword(password, credential)) {
-      throw new UnauthorizedException('Invalid admin operator credentials');
-    }
-
-    return {
-      authenticated: true,
-      user: {
-        id: credential.user.id,
-        email: credential.user.email,
-        fullName: credential.user.fullName,
-        roles: credential.user.roles,
-      },
-    };
-  }
-
-  async updateAdminOperatorAccess(actorId: string, userId: string, input: UpdateAdminOperatorAccessDto) {
+  async updateAdminOperatorAccess(
+    actorId: string,
+    userId: string,
+    input: UpdateAdminOperatorAccessDto,
+    sessionId?: string,
+  ) {
     const targetUserId = normalizeNullable(userId);
     if (!targetUserId) {
       throw new BadRequestException('Admin user id is required');
@@ -3589,41 +4841,69 @@ export class AdminService {
       throw new BadRequestException('Master Admin access changes cannot target the acting admin');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       await this.assertMasterAdminAccess(tx, actorId);
+      await this.assertRecentAdminReauthentication(tx, actorId, sessionId);
       const targetUser = await tx.user.findUnique({
         where: { id: targetUserId },
         select: {
           id: true,
           roles: true,
-          adminOperatorPermission: { select: { categories: true } },
+          adminOperatorPermission: { select: { id: true, categories: true, version: true } },
         },
       });
       if (!targetUser || !targetUser.roles.includes(Role.ADMIN)) {
         throw new NotFoundException('Admin operator not found');
       }
+      if (!targetUser.adminOperatorPermission) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_PERMISSION_MIGRATION_REQUIRED',
+          message: 'This operator has no persisted permission record. Complete the access migration before editing.',
+        });
+      }
+      if (targetUser.adminOperatorPermission.version !== input.expectedVersion) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_ACCESS_VERSION_CONFLICT',
+          message: 'Operator access changed after this page loaded. Refresh and review the latest access.',
+        });
+      }
 
       const previousRoles = [...targetUser.roles];
       const nextRoles = mergeAdminOperatorRoles(previousRoles, input.roles ?? previousRoles);
+      if (
+        previousRoles.includes(Role.FINANCE_APPROVER) !==
+        nextRoles.includes(Role.FINANCE_APPROVER)
+      ) {
+        throw new BadRequestException({
+          code: 'FINANCE_APPROVER_GOVERNANCE_REQUIRED',
+          message: 'Finance approver access must be changed through Finance approval access',
+        });
+      }
       await assertAdminOperatorProtectedRoleRemoval(tx, targetUserId, previousRoles, nextRoles);
       const nextCategories = normalizeAdminOperatorPermissionCategories(
         nextRoles,
-        input.permissionCategories ?? targetUser.adminOperatorPermission?.categories,
+        input.permissionCategories ?? targetUser.adminOperatorPermission.categories,
       );
       const user = await tx.user.update({
         where: { id: targetUserId },
         data: { roles: { set: nextRoles } },
         select: adminUserListSelect,
       });
-      const permission = await tx.adminOperatorPermission.upsert({
-        where: { userId: targetUserId },
-        create: {
-          userId: targetUserId,
+      const permissionUpdate = await tx.adminOperatorPermission.updateMany({
+        where: { id: targetUser.adminOperatorPermission.id, version: input.expectedVersion },
+        data: {
           categories: { set: nextCategories },
+          version: { increment: 1 },
         },
-        update: {
-          categories: { set: nextCategories },
-        },
+      });
+      if (permissionUpdate.count !== 1) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_ACCESS_VERSION_CONFLICT',
+          message: 'Operator access changed after this page loaded. Refresh and review the latest access.',
+        });
+      }
+      const permission = await tx.adminOperatorPermission.findUniqueOrThrow({
+        where: { id: targetUser.adminOperatorPermission.id },
       });
       const hydratedUser = await tx.user.findUnique({
         where: { id: targetUserId },
@@ -3639,16 +4919,23 @@ export class AdminService {
             previousRoles,
             nextRoles,
             permissionCategories: nextCategories,
-            reason: normalizeAuditReason(input.reason),
+            reason: normalizeAdminOperatorReason(input.reason),
           },
         },
       });
 
       return { user: hydratedUser ?? user, auditLog };
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    this.socketAuth?.disconnectAdminUser(targetUserId);
+    return updated;
   }
 
-  async revokeAdminOperatorAccess(actorId: string, userId: string, input: DeleteAdminOperatorAccessDto = {}) {
+  async revokeAdminOperatorAccess(
+    actorId: string,
+    userId: string,
+    input: DeleteAdminOperatorAccessDto,
+    sessionId?: string,
+  ) {
     const targetUserId = normalizeNullable(userId);
     if (!targetUserId) {
       throw new BadRequestException('Admin user id is required');
@@ -3659,22 +4946,50 @@ export class AdminService {
 
     return this.prisma.$transaction(async (tx) => {
       await this.assertMasterAdminAccess(tx, actorId);
+      await this.assertRecentAdminReauthentication(tx, actorId, sessionId);
       const targetUser = await tx.user.findUnique({
         where: { id: targetUserId },
         select: {
           id: true,
           roles: true,
+          adminOperatorCredential: { select: { id: true, disabledAt: true } },
           adminOperatorPermission: { select: { id: true, categories: true } },
         },
       });
       if (!targetUser || !targetUser.roles.includes(Role.ADMIN)) {
         throw new NotFoundException('Admin operator not found');
       }
+      if (targetUser.roles.includes(Role.FINANCE_APPROVER)) {
+        throw new BadRequestException({
+          code: 'FINANCE_APPROVER_GOVERNANCE_REQUIRED',
+          message: 'Remove Finance approver access through Finance approval access before revoking this operator',
+        });
+      }
+      if (!targetUser.adminOperatorCredential?.disabledAt) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_SUSPEND_REQUIRED',
+          message: 'Suspend Admin Web access before permanent offboarding',
+        });
+      }
+      const activeSessionCount = await tx.adminWebSession.count({
+        where: { userId: targetUserId, revokedAt: null, expiresAt: { gt: new Date() } },
+      });
+      if (activeSessionCount > 0) {
+        throw new ConflictException({
+          code: 'ADMIN_OPERATOR_ACTIVE_SESSIONS_REMAIN',
+          message: 'Revoke all active Admin Web sessions before permanent offboarding',
+        });
+      }
 
       const previousRoles = [...targetUser.roles];
       const nextRoles = previousRoles.filter((role) => !isAdminOperatorRole(role));
       await assertAdminOperatorProtectedRoleRemoval(tx, targetUserId, previousRoles, nextRoles);
       await tx.adminOperatorPermission.deleteMany({ where: { userId: targetUserId } });
+      const credentialDelete = await tx.adminOperatorCredential.deleteMany({ where: { userId: targetUserId } });
+      const invitationRevoke = await tx.adminOperatorInvitation.updateMany({
+        where: { targetUserId, acceptedAt: null, revokedAt: null },
+        data: { pendingKey: null, revokedAt: new Date() },
+      });
       const user = await tx.user.update({
         where: { id: targetUserId },
         data: { roles: { set: nextRoles } },
@@ -3690,13 +5005,15 @@ export class AdminService {
             previousRoles,
             nextRoles,
             previousPermissionCategories: targetUser.adminOperatorPermission?.categories ?? [],
-            reason: normalizeAuditReason(input.reason),
+            removedCredentialCount: credentialDelete.count,
+            revokedPendingInvitationCount: invitationRevoke.count,
+            reason: normalizeAdminOperatorReason(input.reason),
           },
         },
       });
 
       return { ok: true, user, auditLog };
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   private async assertMasterAdminAccess(db: AdminOperatorAccessDb, actorId: string) {
@@ -3711,80 +5028,836 @@ export class AdminService {
       return actor;
     }
 
-    const masterAdminCount = await db.user.count({
-      where: { roles: { has: Role.MASTER_ADMIN } },
-    });
-    if (masterAdminCount === 0) {
-      return actor;
-    }
-
     throw new ForbiddenException('Master Admin role is required for operator access changes');
   }
 
-  async updateUserFinanceApproverRole(actorId: string, userId: string, input: UpdateFinanceApproverRoleDto) {
-    const targetUserId = userId.trim();
+  private async assertRecentAdminReauthentication(
+    db: AdminOperatorAccessDb,
+    actorId: string,
+    sessionId: string | undefined,
+  ) {
+    if (!sessionId || !('adminWebSession' in db)) {
+      throw new ForbiddenException({
+        code: 'ADMIN_OPERATOR_REAUTH_REQUIRED',
+        message: 'Confirm your password before this high-risk access change',
+      });
+    }
+    const session = await db.adminWebSession.findUnique({
+      where: { id: sessionId },
+      select: {
+        userId: true,
+        revokedAt: true,
+        expiresAt: true,
+        mfaVerifiedAt: true,
+        reauthenticatedAt: true,
+      },
+    });
+    const now = Date.now();
+    if (
+      !session ||
+      session.userId !== actorId ||
+      session.revokedAt ||
+      session.expiresAt.getTime() <= now ||
+      !session.reauthenticatedAt ||
+      now - session.reauthenticatedAt.getTime() > ADMIN_OPERATOR_RECENT_REAUTH_MS ||
+      !session.mfaVerifiedAt ||
+      now - session.mfaVerifiedAt.getTime() > ADMIN_OPERATOR_RECENT_REAUTH_MS
+    ) {
+      throw new ForbiddenException({
+        code: 'ADMIN_OPERATOR_REAUTH_REQUIRED',
+        message: 'Confirm your password before this high-risk access change',
+      });
+    }
+  }
+
+  async getFinanceApproverGovernanceSummary(actorId: string) {
+    const actor = await assertFinanceApproverGovernanceAccess(this.prisma, actorId, 'read');
+    const [approverSnapshots, candidateSnapshots, pendingRequestCount] = await Promise.all([
+      listFinanceApproverPolicySnapshots(this.prisma, {
+        requireAttestation: true,
+        requireFinanceRole: true,
+      }),
+      listFinanceApproverPolicySnapshots(this.prisma, {
+        requireAttestation: false,
+        requireFinanceRole: false,
+      }),
+      this.prisma.financeApproverAccessRequest.count({
+        where: {
+          status: FinanceApproverAccessRequestStatus.PENDING,
+          targetUser: {
+            is: {
+              adminUserProvenance: AdminUserProvenance.PRODUCTION,
+              fixtureExpiresAt: null,
+              fixtureKind: null,
+              fixtureRunId: null,
+              NOT: FINANCE_APPROVER_KNOWN_TEST_RUN_IDS.map((runId) => ({
+                id: { startsWith: `${runId}:` },
+              })),
+            },
+          },
+        },
+      }),
+    ]);
+    const verifiedRealApproverCount = approverSnapshots.filter((snapshot) => snapshot.ready).length;
+    const eligibleCandidateCount = candidateSnapshots.filter(
+      (snapshot) => !snapshot.user.roles.includes(Role.FINANCE_APPROVER) && snapshot.ready,
+    ).length;
+    const fixtureExcludedCount = new Set(
+      [...approverSnapshots, ...candidateSnapshots]
+        .filter((snapshot) => snapshot.source === 'FIXTURE' || snapshot.source === 'TEST_RUN')
+        .map((snapshot) => snapshot.user.id),
+    ).size;
+    const unattestedLegacyCount = approverSnapshots.filter(
+      (snapshot) => snapshot.source === 'LEGACY' && snapshot.attestationStatus === 'UNATTESTED',
+    ).length;
+    const requiredApproverCount = FINANCE_APPROVER_REQUIRED_REAL_COUNT;
+    const blockers: Array<{ code: string; message: string }> = [];
+    if (verifiedRealApproverCount < requiredApproverCount) {
+      blockers.push({
+        code: 'MINIMUM_APPROVER_COVERAGE_REQUIRED',
+        message: `Assign ${requiredApproverCount - verifiedRealApproverCount} more verified real Finance approver${
+          requiredApproverCount - verifiedRealApproverCount === 1 ? '' : 's'
+        } through independent review.`,
+      });
+    }
+
+    return {
+      readiness: blockers.length === 0 ? ('READY' as const) : ('BLOCKED' as const),
+      requiredApproverCount,
+      verifiedRealApproverCount,
+      primaryReady: verifiedRealApproverCount >= 1,
+      backupReady: verifiedRealApproverCount >= requiredApproverCount,
+      eligibleCandidateCount,
+      pendingRequestCount,
+      fixtureExcludedCount,
+      unattestedLegacyCount,
+      lastEvaluatedAt: new Date().toISOString(),
+      blockers,
+      currentActor: financeApproverGovernanceActorView(actor),
+    };
+  }
+
+  async listFinanceApproverGovernanceOperators(
+    actorId: string,
+    options: { access?: string; status?: string; q?: string; readiness?: string; take?: string; skip?: string } = {},
+  ) {
+    const actor = await assertFinanceApproverGovernanceAccess(this.prisma, actorId, 'read');
+    const where = financeApproverGovernanceOperatorWhere(options);
+    const take = financeApproverGovernanceTake(options.take);
+    const skip = financeApproverGovernanceSkip(options.skip);
+    const [matchingOperators, policySnapshots] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        orderBy: [{ fullName: 'asc' }, { email: 'asc' }, { id: 'asc' }],
+        select: adminFinanceApproverDirectoryUserSelect,
+      }),
+      listFinanceApproverPolicySnapshots(this.prisma, {
+        requireAttestation: true,
+        requireFinanceRole: false,
+      }),
+    ]);
+    const snapshotsById = new Map(policySnapshots.map((snapshot) => [snapshot.user.id, snapshot]));
+    const readiness = normalizeNullable(options.readiness)?.toLowerCase();
+    const accountStatus = normalizeNullable(options.status)?.toLowerCase();
+    const filteredOperators = matchingOperators.filter((operator) => {
+      const source = snapshotsById.get(operator.id)?.source ?? 'UNKNOWN';
+      if (
+        (accountStatus === 'production' || accountStatus === 'active') &&
+        source !== 'PRODUCTION' &&
+        source !== 'LEGACY'
+      ) return false;
+      if (accountStatus === 'fixture' && source !== 'FIXTURE' && source !== 'TEST_RUN') return false;
+      if (accountStatus === 'unknown' && source !== 'UNKNOWN') return false;
+      if (readiness !== 'ready' && readiness !== 'needs') return true;
+      const ready = snapshotsById.get(operator.id)?.ready === true;
+      return readiness === 'ready' ? ready : !ready;
+    });
+    const totalCount = filteredOperators.length;
+    const items = filteredOperators.slice(skip, skip + take);
+    const verifiedRealApproverCount = policySnapshots.filter(
+      (snapshot) => snapshot.user.roles.includes(Role.FINANCE_APPROVER) && snapshot.ready,
+    ).length;
+    const availableCheckerCount = policySnapshots.filter(
+      (snapshot) =>
+        snapshot.user.id !== actorId &&
+        snapshot.user.roles.includes(Role.MASTER_ADMIN) &&
+        snapshot.user.roles.includes(Role.FINANCE_APPROVER) &&
+        snapshot.ready,
+    ).length;
+    const itemIds = items.map((item) => item.id);
+    const [pendingRequests, lastRoleChanges] = itemIds.length
+      ? await Promise.all([
+          this.prisma.financeApproverAccessRequest.findMany({
+            where: {
+              targetUserId: { in: itemIds },
+              status: FinanceApproverAccessRequestStatus.PENDING,
+            },
+            orderBy: { requestedAt: 'asc' },
+            select: { id: true, requestedAt: true, requestedEnabled: true, targetUserId: true },
+          }),
+          this.prisma.financeApproverAccessRequest.findMany({
+            where: {
+              targetUserId: { in: itemIds },
+              executedAt: { not: null },
+            },
+            orderBy: { executedAt: 'desc' },
+            select: { executedAt: true, targetUserId: true },
+          }),
+        ])
+      : [[], []];
+    const pendingByTarget = new Map(pendingRequests.map((request) => [request.targetUserId, request]));
+    const lastChangedByTarget = new Map<string, Date>();
+    for (const change of lastRoleChanges) {
+      if (change.executedAt && !lastChangedByTarget.has(change.targetUserId)) {
+        lastChangedByTarget.set(change.targetUserId, change.executedAt);
+      }
+    }
+
+    return {
+      items: items.map((item) =>
+        financeApproverGovernanceOperatorView(item, {
+          actor,
+          availableCheckerCount,
+          lastChangedAt: lastChangedByTarget.get(item.id) ?? null,
+          pendingRequest: pendingByTarget.get(item.id) ?? null,
+          policy: snapshotsById.get(item.id) ?? evaluateFinanceApproverPolicy(item, {
+            requireAttestation: item.roles.includes(Role.FINANCE_APPROVER),
+            requireFinanceRole: item.roles.includes(Role.FINANCE_APPROVER),
+          }),
+          verifiedRealApproverCount,
+        }),
+      ),
+      totalCount,
+      skip,
+      take,
+    };
+  }
+
+  async listFinanceApproverAccessRequests(
+    actorId: string,
+    options: { status?: string; q?: string; source?: string; take?: string; skip?: string } = {},
+  ) {
+    await assertFinanceApproverGovernanceAccess(this.prisma, actorId, 'read');
+    return this.financeApproverAccessRequestPage(options, true);
+  }
+
+  async listFinanceApproverAccessHistory(
+    actorId: string,
+    options: { targetUserId?: string; q?: string; source?: string; take?: string; skip?: string } = {},
+  ) {
+    await assertFinanceApproverGovernanceAccess(this.prisma, actorId, 'history');
+    const page = await this.financeApproverAccessRequestPage(
+      { ...options, status: 'all' },
+      false,
+      normalizeNullable(options.targetUserId),
+    );
+    const requestIds = page.items.map((request) => request.id);
+    const events = requestIds.length
+      ? await this.prisma.adminAuditLog.findMany({
+          where: {
+            action: { in: [...FINANCE_APPROVER_AUDIT_ACTIONS] },
+            target: { in: requestIds.map((id) => `finance_approver_request:${id}`) },
+          },
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            action: true,
+            target: true,
+            metadata: true,
+            createdAt: true,
+            actor: { select: { id: true, email: true, fullName: true } },
+          },
+        })
+      : [];
+    const eventsByRequest = new Map<string, typeof events>();
+    for (const event of events) {
+      const requestId = event.target.replace(/^finance_approver_request:/u, '');
+      const requestEvents = eventsByRequest.get(requestId) ?? [];
+      requestEvents.push(event);
+      eventsByRequest.set(requestId, requestEvents);
+    }
+    return {
+      ...page,
+      items: page.items.map((request) => ({
+        ...request,
+        events: eventsByRequest.get(request.id) ?? [],
+      })),
+    };
+  }
+
+  async createFinanceApproverAccessRequest(actorId: string, input: CreateFinanceApproverAccessRequestDto) {
+    const targetUserId = normalizeNullable(input.targetUserId);
+    const idempotencyKey = normalizeFinanceApproverIdempotencyKey(input.idempotencyKey);
+    const operatorReason = normalizeFinanceApproverReason(input.operatorReason, 'operatorReason');
     if (!targetUserId) {
-      throw new BadRequestException('Admin user id is required');
+      throw new BadRequestException({ code: 'TARGET_ADMIN_REQUIRED', message: 'Target admin user is required' });
+    }
+
+    let lastConflict: unknown = null;
+    for (let attempt = 0; attempt < FINANCE_APPROVER_TRANSACTION_ATTEMPTS; attempt += 1) {
+      try {
+        return await this.prisma.$transaction(
+        async (tx) => {
+          const actor = await assertFinanceApproverGovernanceAccess(tx, actorId, 'request');
+          const existing = await tx.financeApproverAccessRequest.findUnique({
+            where: { idempotencyKey },
+            select: financeApproverAccessRequestSelect,
+          });
+          if (existing) {
+            if (
+              existing.targetUserId === targetUserId &&
+              existing.requestedEnabled === input.requestedEnabled &&
+              existing.operatorReason === operatorReason
+            ) {
+              return financeApproverAccessRequestReceipt(existing, true);
+            }
+            throw new ConflictException({
+              code: 'IDEMPOTENCY_KEY_REUSED',
+              message: 'This idempotency key belongs to a different access request',
+            });
+          }
+          if (actorId === targetUserId) {
+            throw new BadRequestException({
+              code: 'SELF_ACCESS_CHANGE_FORBIDDEN',
+              message: 'You cannot change your own finance approval access. Ask another role governor.',
+            });
+          }
+          const target = await tx.user.findUnique({
+            where: { id: targetUserId },
+            select: financeApproverGovernanceUserSelect,
+          });
+          assertFinanceApproverTargetEligible(target);
+          const currentlyEnabled = target.roles.includes(Role.FINANCE_APPROVER);
+          if (currentlyEnabled === input.requestedEnabled) {
+            throw new ConflictException({
+              code: 'FINANCE_APPROVER_ACCESS_NO_OP',
+              message: 'This operator already has the requested finance approval access state',
+            });
+          }
+          const checkerSnapshots = await listFinanceApproverPolicySnapshots(tx, {
+            excludeIds: [actorId, targetUserId],
+            requireAttestation: true,
+            requireFinanceRole: true,
+          });
+          const checkerCount = checkerSnapshots.filter(
+            (snapshot) => snapshot.ready && snapshot.user.roles.includes(Role.MASTER_ADMIN),
+          ).length;
+          if (checkerCount < 1) {
+            throw new ConflictException({
+              code: 'INDEPENDENT_ROLE_GOVERNOR_REQUIRED',
+              message: 'A different verified role governor is required before this request can be submitted',
+            });
+          }
+          if (!input.requestedEnabled) {
+            const remaining = (
+              await listFinanceApproverPolicySnapshots(tx, {
+                excludeIds: [targetUserId],
+                requireAttestation: true,
+                requireFinanceRole: true,
+              })
+            ).filter((snapshot) => snapshot.ready).length;
+            if (remaining < FINANCE_APPROVER_REQUIRED_REAL_COUNT) {
+              throw new ConflictException({
+                code: 'MINIMUM_APPROVER_COVERAGE_REQUIRED',
+                message: 'Removing this approver would leave finance operations without an independent backup.',
+              });
+            }
+          }
+          const request = await tx.financeApproverAccessRequest.create({
+            data: {
+              targetUserId,
+              requestedEnabled: input.requestedEnabled,
+              previousEnabled: currentlyEnabled,
+              previousRoles: target.roles,
+              requestedByAdminId: actorId,
+              operatorReason,
+              expectedTargetUpdatedAt: target.updatedAt,
+              idempotencyKey,
+              pendingKey: `finance-approver:${targetUserId}`,
+            },
+            select: financeApproverAccessRequestSelect,
+          });
+          await tx.adminAuditLog.create({
+            data: {
+              ...classifyAdminAuditAction('admin_user.finance_approver.requested'),
+              actorId,
+              action: 'admin_user.finance_approver.requested',
+              target: `finance_approver_request:${request.id}`,
+              metadata: financeApproverAuditMetadata(request, {
+                actorId: actor.id,
+                reason: operatorReason,
+              }),
+            },
+          });
+          return financeApproverAccessRequestReceipt(request, false);
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+        );
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+          lastConflict = error;
+          continue;
+        }
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+          const replay = await this.prisma.financeApproverAccessRequest.findUnique({
+            where: { idempotencyKey },
+            select: financeApproverAccessRequestSelect,
+          });
+          if (
+            replay?.targetUserId === targetUserId &&
+            replay.requestedEnabled === input.requestedEnabled &&
+            replay.operatorReason === operatorReason
+          ) {
+            return financeApproverAccessRequestReceipt(replay, true);
+          }
+          const conflict = replay
+            ? new ConflictException({
+                code: 'IDEMPOTENCY_KEY_REUSED',
+                message: 'This idempotency key belongs to a different access request',
+              })
+            : new ConflictException({
+                code: 'DUPLICATE_PENDING_REQUEST',
+                message: 'This operator already has a pending access request',
+              });
+          await this.recordFinanceApproverBlockedAttempt(actorId, 'request', targetUserId, null, conflict);
+          throw conflict;
+        }
+        await this.recordFinanceApproverBlockedAttempt(actorId, 'request', targetUserId, null, error);
+        throw error;
+      }
+    }
+    const conflict = new ConflictException({
+      code: 'APPROVER_SET_CHANGED',
+      message: 'The Finance approver set changed while this request was submitted. Review the latest state and try again.',
+      cause: lastConflict ? 'serializable-conflict' : 'unknown',
+    });
+    await this.recordFinanceApproverBlockedAttempt(actorId, 'request', targetUserId, null, conflict);
+    throw conflict;
+  }
+
+  async decideFinanceApproverAccessRequest(
+    actorId: string,
+    requestIdValue: string,
+    input: DecideFinanceApproverAccessRequestDto,
+  ) {
+    const requestId = normalizeNullable(requestIdValue);
+    const decisionReason = normalizeFinanceApproverReason(input.decisionReason, 'decisionReason');
+    if (!requestId) {
+      throw new BadRequestException({ code: 'ACCESS_REQUEST_REQUIRED', message: 'Access request id is required' });
+    }
+
+    let lastConflict: unknown = null;
+    for (let attempt = 0; attempt < FINANCE_APPROVER_TRANSACTION_ATTEMPTS; attempt += 1) {
+      try {
+        return await this.prisma.$transaction(
+          async (tx) => {
+            await assertFinanceApproverGovernanceAccess(tx, actorId, 'decision');
+            const request = await tx.financeApproverAccessRequest.findUnique({
+              where: { id: requestId },
+              select: financeApproverAccessRequestSelect,
+            });
+            if (!request) {
+              throw new NotFoundException({ code: 'ACCESS_REQUEST_NOT_FOUND', message: 'Access request not found' });
+            }
+            if (request.requestedByAdminId === actorId) {
+              throw new ForbiddenException({
+                code: 'MAKER_CANNOT_APPROVE',
+                message: 'The operator who requested this access change cannot decide it',
+              });
+            }
+            if (request.targetUserId === actorId) {
+              throw new ForbiddenException({
+                code: 'SELF_ACCESS_CHANGE_FORBIDDEN',
+                message: 'You cannot decide a change to your own finance approval access',
+              });
+            }
+            if (request.status !== FinanceApproverAccessRequestStatus.PENDING) {
+              const sameDecision =
+                (input.decision === 'APPROVE' && request.status === FinanceApproverAccessRequestStatus.APPROVED) ||
+                (input.decision === 'REJECT' && request.status === FinanceApproverAccessRequestStatus.REJECTED);
+              if (sameDecision) return financeApproverAccessRequestReceipt(request, true);
+              throw new ConflictException({
+                code: 'ACCESS_REQUEST_ALREADY_DECIDED',
+                message: 'This access request already has a different final decision',
+              });
+            }
+            const target = await tx.user.findUnique({
+              where: { id: request.targetUserId },
+              select: financeApproverGovernanceUserSelect,
+            });
+            assertFinanceApproverTargetEligible(target);
+            const targetEnabled = target.roles.includes(Role.FINANCE_APPROVER);
+            if (
+              target.updatedAt.getTime() !== request.expectedTargetUpdatedAt.getTime() ||
+              targetEnabled !== request.previousEnabled
+            ) {
+              throw new ConflictException({
+                code: 'APPROVER_SET_CHANGED',
+                message: 'This request is out of date because the operator access changed. Review the latest state and submit again.',
+              });
+            }
+            const now = new Date();
+            if (input.decision === 'REJECT') {
+              const rejected = await tx.financeApproverAccessRequest.update({
+                where: { id: request.id },
+                data: {
+                  status: FinanceApproverAccessRequestStatus.REJECTED,
+                  decidedByAdminId: actorId,
+                  decisionReason,
+                  decidedAt: now,
+                  pendingKey: null,
+                },
+                select: financeApproverAccessRequestSelect,
+              });
+              await tx.adminAuditLog.create({
+                data: {
+                  ...classifyAdminAuditAction('admin_user.finance_approver.rejected'),
+                  actorId,
+                  action: 'admin_user.finance_approver.rejected',
+                  target: `finance_approver_request:${request.id}`,
+                  metadata: financeApproverAuditMetadata(rejected, {
+                    actorId,
+                    reason: decisionReason,
+                  }),
+                },
+              });
+              return financeApproverAccessRequestReceipt(rejected, false);
+            }
+
+            if (!request.requestedEnabled) {
+              const remaining = (
+                await listFinanceApproverPolicySnapshots(tx, {
+                  excludeIds: [request.targetUserId],
+                  requireAttestation: true,
+                  requireFinanceRole: true,
+                })
+              ).filter((snapshot) => snapshot.ready).length;
+              if (remaining < FINANCE_APPROVER_REQUIRED_REAL_COUNT) {
+                throw new ConflictException({
+                  code: 'MINIMUM_APPROVER_COVERAGE_REQUIRED',
+                  message: 'Removing this approver would leave finance operations without an independent backup.',
+                });
+              }
+            }
+            const nextRoles = request.requestedEnabled
+              ? Array.from(new Set([...target.roles, Role.FINANCE_APPROVER]))
+              : target.roles.filter((role) => role !== Role.FINANCE_APPROVER);
+            await tx.user.update({
+              where: { id: target.id },
+              data: { roles: { set: nextRoles } },
+              select: { id: true },
+            });
+            const approved = await tx.financeApproverAccessRequest.update({
+              where: { id: request.id },
+              data: {
+                status: FinanceApproverAccessRequestStatus.APPROVED,
+                decidedByAdminId: actorId,
+                decisionReason,
+                decidedAt: now,
+                executedAt: now,
+                pendingKey: null,
+              },
+              select: financeApproverAccessRequestSelect,
+            });
+            await tx.adminAuditLog.create({
+              data: {
+                ...classifyAdminAuditAction('admin_user.finance_approver.approved'),
+                actorId,
+                action: 'admin_user.finance_approver.approved',
+                target: `finance_approver_request:${request.id}`,
+                metadata: financeApproverAuditMetadata(approved, {
+                  actorId,
+                  reason: decisionReason,
+                  nextRoles,
+                }),
+              },
+            });
+            await tx.adminAuditLog.create({
+              data: {
+                ...classifyAdminAuditAction(request.requestedEnabled
+                  ? 'admin_user.finance_approver.grant'
+                  : 'admin_user.finance_approver.revoke'),
+                actorId,
+                action: request.requestedEnabled
+                  ? 'admin_user.finance_approver.grant'
+                  : 'admin_user.finance_approver.revoke',
+                target: `finance_approver_request:${request.id}`,
+                metadata: financeApproverAuditMetadata(approved, {
+                  actorId,
+                  reason: decisionReason,
+                  nextRoles,
+                }),
+              },
+            });
+            return financeApproverAccessRequestReceipt(approved, false);
+          },
+          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+        );
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+          lastConflict = error;
+          continue;
+        }
+        await this.recordFinanceApproverBlockedAttempt(actorId, 'decision', null, requestId, error);
+        throw error;
+      }
+    }
+    const conflict = new ConflictException({
+      code: 'APPROVER_SET_CHANGED',
+      message: 'The Finance approver set changed during this decision. Review the latest state and try again.',
+      cause: lastConflict ? 'serializable-conflict' : 'unknown',
+    });
+    await this.recordFinanceApproverBlockedAttempt(actorId, 'decision', null, requestId, conflict);
+    throw conflict;
+  }
+
+  async createFinanceApproverLegacyAttestation(
+    actorId: string,
+    input: CreateFinanceApproverLegacyAttestationDto,
+  ) {
+    const targetUserId = normalizeNullable(input.targetUserId);
+    const reason = normalizeFinanceApproverReason(input.reason, 'reason');
+    const sourceReference = normalizeFinanceApproverSourceReference(input.sourceReference);
+    const idempotencyKey = normalizeFinanceApproverIdempotencyKey(input.idempotencyKey);
+    if (!targetUserId) {
+      throw new BadRequestException({ code: 'TARGET_ADMIN_REQUIRED', message: 'Target admin user is required' });
     }
     if (actorId === targetUserId) {
-      throw new BadRequestException('Finance approver role changes cannot target the acting admin');
+      throw new ForbiddenException({
+        code: 'MAKER_CHECKER_CONFLICT',
+        message: 'A legacy access owner cannot attest their own Finance approver authority',
+      });
     }
-
+    const target = `finance_approver_attestation:${targetUserId}:${idempotencyKey}`;
     return this.prisma.$transaction(async (tx) => {
-      const targetUser = await tx.user.findUnique({
-        where: { id: targetUserId },
-        select: {
-          id: true,
-          phone: true,
-          fullName: true,
-          roles: true,
-        },
+      await assertFinanceApproverGovernanceAccess(tx, actorId, 'request');
+      const existing = await tx.adminAuditLog.findFirst({
+        where: { action: FINANCE_APPROVER_LEGACY_ATTESTATION_REQUEST_ACTION, target },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, actorId: true, action: true, target: true, metadata: true, createdAt: true },
       });
-      if (!targetUser) {
-        throw new NotFoundException('Admin user not found');
-      }
-      if (!targetUser.roles.includes(Role.ADMIN)) {
-        throw new BadRequestException('Finance approver role can only be assigned to admin users');
-      }
+      if (existing) return financeApproverLegacyAttestationReceipt(existing, true);
 
-      const previousRoles = [...targetUser.roles];
-      const enabled = input.enabled;
-      const currentlyEnabled = previousRoles.includes(Role.FINANCE_APPROVER);
-      if (!enabled && currentlyEnabled) {
-        const remainingApprovers = await tx.user.count({
-          where: {
-            id: { not: targetUserId },
-            roles: { has: Role.FINANCE_APPROVER },
-          },
+      const owner = await tx.user.findUnique({
+        where: { id: targetUserId },
+        select: financeApproverPolicyUserSelect,
+      });
+      if (!owner?.roles.includes(Role.FINANCE_APPROVER)) {
+        throw new ConflictException({
+          code: 'ROLE_MISSING',
+          message: 'Legacy attestation only applies to an existing Finance approver role holder',
         });
-        if (remainingApprovers === 0) {
-          throw new BadRequestException('Cannot remove the last finance approver');
-        }
       }
-
-      const nextRoles = enabled
-        ? Array.from(new Set([...previousRoles, Role.FINANCE_APPROVER]))
-        : previousRoles.filter((role) => role !== Role.FINANCE_APPROVER);
-      const user = await tx.user.update({
-        where: { id: targetUserId },
-        data: { roles: { set: nextRoles } },
-        select: adminUserListSelect,
+      if (owner.financeApproverRequestsTargeted[0]?.requestedEnabled === true) {
+        throw new ConflictException({
+          code: 'LEGACY_ATTESTATION_NOT_REQUIRED',
+          message: 'This Finance approver role already has a governed access request',
+        });
+      }
+      const policy = evaluateFinanceApproverPolicy(owner, {
+        requireAttestation: false,
+        requireFinanceRole: true,
       });
-      const auditLog = await tx.adminAuditLog.create({
+      if (!policy.ready) {
+        const blocker = policy.blockers[0];
+        throw new ConflictException({
+          blockers: policy.blockers,
+          code: blocker?.code ?? 'UNKNOWN_PROVENANCE',
+          message: blocker?.message ?? 'The legacy owner cannot be attested until account verification is complete',
+        });
+      }
+      const requestedAt = new Date();
+      const requestEvent = await tx.adminAuditLog.create({
         data: {
+          ...classifyAdminAuditAction(FINANCE_APPROVER_LEGACY_ATTESTATION_REQUEST_ACTION),
           actorId,
-          action: enabled ? 'admin_user.finance_approver.grant' : 'admin_user.finance_approver.revoke',
-          target: `user:${targetUserId}`,
+          action: FINANCE_APPROVER_LEGACY_ATTESTATION_REQUEST_ACTION,
+          target,
           metadata: {
-            enabled,
-            reason: normalizeAuditReason(input.reason),
-            previousRoles,
-            nextRoles,
+            attestorId: actorId,
+            idempotencyKey,
+            reason,
+            requestedAt: requestedAt.toISOString(),
+            sourceReference,
+            targetSnapshot: financeApproverLegacyOwnerSnapshot(owner),
+            targetUserId,
           },
         },
+        select: { id: true, actorId: true, action: true, target: true, metadata: true, createdAt: true },
       });
+      return financeApproverLegacyAttestationReceipt(requestEvent, false);
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }
 
-      return { user, auditLog };
+  async decideFinanceApproverLegacyAttestation(
+    actorId: string,
+    requestEventIdValue: string,
+    input: DecideFinanceApproverLegacyAttestationDto,
+  ) {
+    const requestEventId = normalizeNullable(requestEventIdValue);
+    const decisionReason = normalizeFinanceApproverReason(input.decisionReason, 'decisionReason');
+    if (!requestEventId) {
+      throw new BadRequestException({ code: 'ATTESTATION_REQUEST_REQUIRED', message: 'Attestation request id is required' });
+    }
+    return this.prisma.$transaction(async (tx) => {
+      await assertFinanceApproverGovernanceAccess(tx, actorId, 'request');
+      const requestEvent = await tx.adminAuditLog.findUnique({
+        where: { id: requestEventId },
+        select: { id: true, actorId: true, action: true, target: true, metadata: true, createdAt: true },
+      });
+      if (!requestEvent || requestEvent.action !== FINANCE_APPROVER_LEGACY_ATTESTATION_REQUEST_ACTION) {
+        throw new NotFoundException({ code: 'ATTESTATION_REQUEST_NOT_FOUND', message: 'Legacy attestation request not found' });
+      }
+      const requestEvidence = financeApproverLegacyAttestationEvidence(requestEvent);
+      if (requestEvidence.attestorId === actorId) {
+        throw new ForbiddenException({
+          code: 'MAKER_CHECKER_CONFLICT',
+          message: 'The attestation requester cannot make the independent decision',
+        });
+      }
+      if (requestEvidence.targetUserId === actorId) {
+        throw new ForbiddenException({
+          code: 'MAKER_CHECKER_CONFLICT',
+          message: 'The legacy access owner cannot decide their own attestation',
+        });
+      }
+      const finalAction = input.decision === 'APPROVE'
+        ? FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION
+        : FINANCE_APPROVER_LEGACY_ATTESTATION_REJECT_ACTION;
+      const existing = await tx.adminAuditLog.findFirst({
+        where: {
+          action: { in: [FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION, FINANCE_APPROVER_LEGACY_ATTESTATION_REJECT_ACTION] },
+          target: requestEvent.target,
+        },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, actorId: true, action: true, target: true, metadata: true, createdAt: true },
+      });
+      if (existing) {
+        if (existing.action === finalAction) return financeApproverLegacyAttestationReceipt(existing, true);
+        throw new ConflictException({
+          code: 'ATTESTATION_ALREADY_DECIDED',
+          message: 'This legacy attestation already has a different final decision',
+        });
+      }
+      const owner = await tx.user.findUnique({
+        where: { id: requestEvidence.targetUserId },
+        select: financeApproverPolicyUserSelect,
+      });
+      if (!owner?.roles.includes(Role.FINANCE_APPROVER)) {
+        throw new ConflictException({
+          code: 'STALE_ROLE_VERSION',
+          message: 'The target Finance approver role changed after the attestation request',
+        });
+      }
+      const currentPolicy = evaluateFinanceApproverPolicy(owner, {
+        requireAttestation: false,
+        requireFinanceRole: true,
+      });
+      if (input.decision === 'APPROVE' && !currentPolicy.ready) {
+        const blocker = currentPolicy.blockers[0];
+        throw new ConflictException({
+          blockers: currentPolicy.blockers,
+          code: blocker?.code ?? 'STALE_ROLE_VERSION',
+          message: blocker?.message ?? 'The legacy access owner no longer matches the reviewed account state',
+        });
+      }
+      const decidedAt = new Date();
+      const decisionEvent = await tx.adminAuditLog.create({
+        data: {
+          ...classifyAdminAuditAction(finalAction),
+          actorId,
+          action: finalAction,
+          target: requestEvent.target,
+          metadata: {
+            attestationRequestEventId: requestEvent.id,
+            attestorId: requestEvidence.attestorId,
+            decision: input.decision,
+            decisionReason,
+            decidedAt: decidedAt.toISOString(),
+            independentCheckerId: actorId,
+            reason: requestEvidence.reason,
+            sourceReference: requestEvidence.sourceReference,
+            targetSnapshot: financeApproverLegacyOwnerSnapshot(owner),
+            targetUserId: requestEvidence.targetUserId,
+          },
+        },
+        select: { id: true, actorId: true, action: true, target: true, metadata: true, createdAt: true },
+      });
+      return financeApproverLegacyAttestationReceipt(decisionEvent, false);
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }
+
+  private async financeApproverAccessRequestPage(
+    options: { status?: string; q?: string; source?: string; take?: string; skip?: string },
+    defaultPending: boolean,
+    targetUserId?: string | null,
+  ) {
+    const where = financeApproverAccessRequestWhere(options, defaultPending, targetUserId);
+    const take = financeApproverGovernanceTake(options.take);
+    const skip = financeApproverGovernanceSkip(options.skip);
+    const [items, totalCount] = await Promise.all([
+      this.prisma.financeApproverAccessRequest.findMany({
+        where,
+        orderBy: { requestedAt: defaultPending ? 'asc' : 'desc' },
+        skip,
+        take,
+        select: financeApproverAccessRequestSelect,
+      }),
+      this.prisma.financeApproverAccessRequest.count({ where }),
+    ]);
+    const policies = await Promise.all(
+      items.map((item) =>
+        financeApproverPolicySnapshot(this.prisma, item.targetUserId, {
+          requireAttestation: item.targetUser.roles.includes(Role.FINANCE_APPROVER),
+          requireFinanceRole: item.targetUser.roles.includes(Role.FINANCE_APPROVER),
+        }),
+      ),
+    );
+    return {
+      items: items.map((item, index) => {
+        const policy = policies[index]!;
+        return {
+          ...item,
+          source: policy.source,
+          sourceReference: financeApproverKnownTestRunId(item.targetUser),
+          targetPolicy: {
+            attestationStatus: policy.attestationStatus,
+            blockers: policy.blockers,
+            credentialState: policy.credentialState,
+            mfaVerified: policy.mfaVerified,
+            permissionVersion: policy.permissionVersion,
+            ready: policy.ready,
+          },
+        };
+      }),
+      totalCount,
+      skip,
+      take,
+    };
+  }
+
+  private async recordFinanceApproverBlockedAttempt(
+    actorId: string,
+    operation: 'request' | 'decision',
+    targetUserId: string | null,
+    requestId: string | null,
+    error: unknown,
+  ) {
+    const actor = await this.prisma.user.findUnique({ where: { id: actorId }, select: { id: true } });
+    if (!actor) return;
+    await this.prisma.adminAuditLog.create({
+      data: {
+        ...classifyAdminAuditAction('admin_user.finance_approver.blocked'),
+        actorId,
+        action: 'admin_user.finance_approver.blocked',
+        target: requestId ? `finance_approver_request:${requestId}` : `user:${targetUserId ?? 'unknown'}`,
+        metadata: {
+          code: financeApproverErrorCode(error),
+          operation,
+          requestId,
+          targetUserId,
+        },
+      },
     });
   }
 
@@ -6057,21 +8130,33 @@ export class AdminService {
       transferRef: string;
     },
   ) {
-    const approvalAdminId = normalizeFinanceActionApprovalAdminId(
-      input.approvalAdminId,
-      actorId,
-      'Referral reward cashout paid closeout',
-    );
-    await assertFinanceActionApprovalAdmin(
-      this.prisma,
-      approvalAdminId,
-      'Referral reward cashout paid closeout',
-    );
     const reason = normalizeAuditReason(input.reason);
     if (!normalizeNullable(input.transferRef)) {
       throw new BadRequestException('Referral cashout paid closeout requires a transfer reference');
     }
     const transferRef = normalizeAuditReason(input.transferRef);
+    const approvalAdminId = actorId;
+    await assertFinanceActionApprovalAdmin(
+      this.prisma,
+      approvalAdminId,
+      'Referral reward cashout paid closeout',
+    );
+    const approvalRequest = await this.prisma.adminAuditLog.findFirst({
+      where: {
+        action: 'referral_reward.cashout_approve',
+        target: `referral_reward:${rewardId}`,
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: { actorId: true, id: true },
+    });
+    if (!approvalRequest?.actorId) {
+      throw new ConflictException('Referral reward cashout paid closeout request maker is missing');
+    }
+    if (approvalRequest.actorId === actorId) {
+      throw new BadRequestException(
+        'Referral reward cashout paid closeout requires a different operator from the cashout approver',
+      );
+    }
     const reward = await this.referrals.payRewardCashout(rewardId, {
       expectedStatus: input.expectedStatus,
       expectedUpdatedAt: input.expectedUpdatedAt,
@@ -6082,6 +8167,7 @@ export class AdminService {
     await this.writeAudit(actorId, 'referral_reward.cashout_paid', `referral_reward:${rewardId}`, {
       amount: reward.amount,
       approvalAdminId,
+      approvalRequestId: approvalRequest.id,
       cashoutPaid: true,
       currency: reward.currency,
       reason,
@@ -6159,6 +8245,43 @@ export class AdminService {
     }));
   }
 
+  async customerReferralWorkspace(options: AdminReferralParentListQuery = {}) {
+    const [summary, rows] = await Promise.all([
+      this.customerReferralParentSummary(options),
+      this.listCustomerReferralRewardQueue(options),
+    ]);
+    return { asOf: new Date(), rows, summary };
+  }
+
+  async listCustomerReferralFixtureRewards(options: AdminReferralParentListQuery = {}) {
+    const rows = await this.prisma.referralReward.findMany({
+      where: {
+        attribution: { audience: ReferralAudience.CUSTOMER },
+        AND: [referralAdminFixtureRewardWhere],
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      take: adminReferralParentListTake(options.take),
+      select: adminCustomerReferralRewardQueueSelect,
+    });
+    const decisions = await this.listLatestReferralRewardDecisions(rows.map((row) => row.id));
+
+    return rows.map((reward) => ({
+      ...adminReferralRewardView(reward, decisions),
+      attribution: {
+        id: reward.attribution.id,
+        status: reward.attribution.status,
+        fraudReviewStatus: reward.attribution.fraudReviewStatus,
+        createdAt: reward.attribution.createdAt,
+      },
+      parent: adminReferralCustomerPersonView(reward.attribution.referrerCustomerProfile, 'Unknown customer'),
+      referred: adminReferralCustomerPersonView(
+        reward.attribution.referredCustomerProfile,
+        'Unknown referred customer',
+      ),
+      detailHref: null,
+    }));
+  }
+
   async customerReferralParentSummary(options: AdminReferralParentListQuery = {}) {
     const queueOptions = { ...options, reward: null };
     const [totalCount, referralCount, rewardGroups, attentionSummary] = await Promise.all([
@@ -6200,15 +8323,16 @@ export class AdminService {
       where: {
         audience: ReferralAudience.CUSTOMER,
         referrerCustomerProfileId: { in: [...parentIds] },
+        NOT: referralAdminFixtureAttributionWhere,
       },
       select: { id: true, referrerCustomerProfileId: true },
     });
     const attributionIds = attributions.map((attribution) => attribution.id);
     const rewardGroups =
       attributionIds.length > 0
-        ? await this.prisma.referralReward.groupBy({
+          ? await this.prisma.referralReward.groupBy({
             by: ['attributionId', 'status'],
-            where: { attributionId: { in: attributionIds } },
+            where: { attributionId: { in: attributionIds }, NOT: referralAdminFixtureRewardWhere },
             _count: { _all: true },
             _sum: { amount: true },
           })
@@ -6221,7 +8345,9 @@ export class AdminService {
     const row = await this.prisma.customerProfile.findFirst({
       where: {
         id: customerProfileId,
-        referralsMade: { some: { audience: ReferralAudience.CUSTOMER } },
+        referralsMade: {
+          some: { audience: ReferralAudience.CUSTOMER, NOT: referralAdminFixtureAttributionWhere },
+        },
       },
       select: adminCustomerReferralParentSelect,
     });
@@ -6304,7 +8430,9 @@ export class AdminService {
     const row = await this.prisma.providerProfile.findFirst({
       where: {
         id: providerProfileId,
-        referralsMade: { some: { audience: ReferralAudience.PARTNER } },
+        referralsMade: {
+          some: { audience: ReferralAudience.PARTNER, NOT: referralAdminFixtureAttributionWhere },
+        },
       },
       select: adminPartnerReferralParentSelect,
     });
@@ -9340,7 +11468,9 @@ export class AdminService {
       spendDate: dateWhere,
       ...(sourceFilter ? { source: sourceFilter } : {}),
       ...(platformFilter ? { platform: platformFilter } : {}),
-      ...(campaignIdFilter ? { campaignId: campaignIdFilter } : {}),
+      ...(campaignIdFilter
+        ? { campaignId: { equals: canonicalMarketingCampaignKey(campaignIdFilter) ?? campaignIdFilter, mode: 'insensitive' } }
+        : {}),
     } satisfies Prisma.MarketingSpendDailyWhereInput;
 
     const [
@@ -9747,7 +11877,7 @@ export class AdminService {
           })),
         ],
         filters,
-      );
+      ).filter(adminMarketingDimensionHasActivity);
     }
 
     if (dimension === 'source') {
@@ -10070,6 +12200,7 @@ export class AdminService {
       reason: string;
     },
   ) {
+    await this.assertMarketingSpendManageAccess(actorId);
     const spendDate = normalizeMarketingSpendDate(input.spendDate);
     const source = normalizeMarketingSpendSource(input.source);
     const platform = normalizeMarketingSpendPlatform(input.platform);
@@ -10095,9 +12226,49 @@ export class AdminService {
 
     return this.prisma.$transaction(
       async (tx) => {
-        const previous = await tx.marketingSpendDaily.findUnique({ where });
+        const candidates = await tx.marketingSpendDaily.findMany({
+          where: {
+            spendDate,
+            source,
+            platform,
+            regionCode,
+            campaignId: { equals: campaignId, mode: 'insensitive' },
+          },
+          orderBy: { updatedAt: 'desc' },
+          take: 2,
+        });
+        if (candidates.length > 1 || (candidates[0] && candidates[0].campaignId !== campaignId)) {
+          throw new ConflictException({
+            code: 'MARKETING_SPEND_CAMPAIGN_ID_AMBIGUOUS',
+            message: 'This campaign has legacy duplicate or non-canonical spend rows. Resolve them before editing.',
+          });
+        }
+        const previous = candidates[0] ?? null;
+        if (
+          previous &&
+          previous.campaignName === campaignName &&
+          previous.spendAmount === spendAmount &&
+          previous.currency === currency &&
+          previous.notes === notes
+        ) {
+          return {
+            ...previous,
+            auditId: null,
+            status: 'NO_CHANGE' as const,
+            canonicalTarget: marketingSpendAuditTarget({
+              campaignId,
+              platform,
+              regionCode,
+              source,
+              spendDate,
+            }),
+          };
+        }
         if ((previous?.updatedAt.toISOString() ?? null) !== input.expectedUpdatedAt) {
-          throw new ConflictException('Marketing spend changed after this review was loaded');
+          throw new ConflictException({
+            code: 'MARKETING_SPEND_VERSION_CONFLICT',
+            message: 'Marketing spend changed after this review was loaded',
+          });
         }
         const row = await tx.marketingSpendDaily.upsert({
           where,
@@ -10122,22 +12293,51 @@ export class AdminService {
             updatedById: actorId,
           },
         });
-        await tx.adminAuditLog.create({
+        const target = marketingSpendAuditTarget({ campaignId, platform, regionCode, source, spendDate });
+        const audit = await tx.adminAuditLog.create({
           data: {
             actorId,
             action: 'marketing_spend_daily.upsert',
-            target: `marketing_spend_daily:${source}:${platform}:${regionCode}:${campaignId}:${marketingSpendDateKey(spendDate)}`,
+            target,
             metadata: toJson({
-              after: row,
-              before: previous,
+              after: marketingSpendAuditSnapshot(row),
+              before: previous ? marketingSpendAuditSnapshot(previous) : null,
+              campaignKey: campaignId,
               reason,
             }),
           },
         });
-        return row;
+        return {
+          ...row,
+          auditId: audit.id,
+          status: 'SAVED' as const,
+          canonicalTarget: target,
+        };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+  }
+
+  private async assertMarketingSpendManageAccess(actorId: string) {
+    const operator = await this.prisma.user.findUnique({
+      where: { id: actorId },
+      select: {
+        roles: true,
+        adminOperatorPermission: { select: { categories: true } },
+      },
+    });
+    if (
+      !operator?.roles.includes(Role.ADMIN) ||
+      (!operator.roles.includes(Role.MASTER_ADMIN) &&
+        !operator.adminOperatorPermission?.categories.includes(
+          AdminOperatorPermissionCategory.GROWTH_MARKETING_SPEND,
+        ))
+    ) {
+      throw new ForbiddenException({
+        code: 'MARKETING_SPEND_PERMISSION_REQUIRED',
+        message: 'Marketing spend manage permission is required',
+      });
+    }
   }
 
   async getMarketingSpendDaily(input: {
@@ -10147,17 +12347,95 @@ export class AdminService {
     source?: string;
     spendDate?: string;
   }) {
-    return this.prisma.marketingSpendDaily.findUnique({
+    const campaignId = normalizeMarketingSpendCampaignId(input.campaignId);
+    const rows = await this.prisma.marketingSpendDaily.findMany({
       where: {
-        spendDate_source_platform_regionCode_campaignId: {
-          campaignId: normalizeMarketingSpendCampaignId(input.campaignId),
-          platform: normalizeMarketingSpendPlatform(input.platform),
-          regionCode: normalizeMarketingSpendRegionCode(input.regionCode),
-          source: normalizeMarketingSpendSource(input.source),
-          spendDate: normalizeMarketingSpendDate(input.spendDate),
-        },
+        campaignId: { equals: campaignId, mode: 'insensitive' },
+        platform: normalizeMarketingSpendPlatform(input.platform),
+        regionCode: normalizeMarketingSpendRegionCode(input.regionCode),
+        source: normalizeMarketingSpendSource(input.source),
+        spendDate: normalizeMarketingSpendDate(input.spendDate),
       },
+      orderBy: { updatedAt: 'desc' },
+      take: 2,
     });
+    if (rows.length > 1) {
+      throw new ConflictException({
+        code: 'MARKETING_SPEND_CAMPAIGN_ID_AMBIGUOUS',
+        message: 'Multiple spend rows resolve to this canonical campaign key',
+      });
+    }
+    return rows[0] ?? null;
+  }
+
+  async listMarketingSpendLedger(input: {
+    range?: string;
+    source?: string;
+    platform?: string;
+    regionCode?: string;
+    campaignId?: string;
+    take?: number | string;
+    skip?: number | string;
+  } = {}) {
+    const window = adminMarketingRangeWindow(normalizeAdminMarketingRange(input.range));
+    const source = normalizeMarketingSourceFilter(input.source);
+    const platform = normalizeMarketingPlatformFilter(input.platform);
+    const campaignKey = canonicalMarketingCampaignKey(input.campaignId);
+    const regionCode = input.regionCode
+      ? normalizeMarketingSpendRegionCode(input.regionCode, { allowAll: true })
+      : null;
+    const take =
+      input.take === undefined || input.take === null || input.take === ''
+        ? ADMIN_MARKETING_SPEND_LEDGER_DEFAULT_LIMIT
+        : boundedAdminListLimit(input.take, ADMIN_MARKETING_SPEND_LEDGER_MAX_LIMIT);
+    const skip = boundedAdminListSkip(input.skip);
+    const where = {
+      spendDate: adminMarketingDateWhere(window),
+      ...(source ? { source } : {}),
+      ...(platform ? { platform } : {}),
+      ...(regionCode ? { regionCode } : {}),
+      ...(campaignKey ? { campaignId: { equals: campaignKey, mode: 'insensitive' as const } } : {}),
+    } satisfies Prisma.MarketingSpendDailyWhereInput;
+    const [rows, totalCount] = await Promise.all([
+      this.prisma.marketingSpendDaily.findMany({
+        where,
+        orderBy: [{ spendDate: 'desc' }, { updatedAt: 'desc' }],
+        skip,
+        take,
+        select: {
+          campaignId: true,
+          campaignName: true,
+          currency: true,
+          id: true,
+          notes: true,
+          platform: true,
+          regionCode: true,
+          source: true,
+          spendAmount: true,
+          spendDate: true,
+          updatedAt: true,
+          updatedById: true,
+        },
+      }),
+      this.prisma.marketingSpendDaily.count({ where }),
+    ]);
+
+    return {
+      generatedAt: new Date().toISOString(),
+      range: window.range,
+      rangeLabel: window.label,
+      windowStartAt: window.startAt.toISOString(),
+      windowEndAt: window.endAt.toISOString(),
+      rows: rows.map((row) => ({
+        ...row,
+        campaignKey: canonicalMarketingCampaignKey(row.campaignId),
+        spendDate: marketingSpendDateKey(row.spendDate),
+        updatedAt: row.updatedAt.toISOString(),
+      })),
+      skip,
+      take,
+      totalCount,
+    };
   }
 
   private async marketingAttributionBreakdown(
@@ -11023,6 +13301,7 @@ export class AdminService {
       previousMarketingSpendRows,
       trend,
       unknownAttributionDiagnostics,
+      spendEvidenceRows,
     ] = await Promise.all([
       this.marketingAttributionBreakdown(window, filters),
       this.marketingSpendDimensionRows(marketingSpendWhere),
@@ -11030,6 +13309,19 @@ export class AdminService {
       this.marketingSpendDimensionRows(previousMarketingSpendWhere),
       this.marketingDailyTrend(window, filters),
       this.marketingUnknownAttributionDiagnostics(window, filters),
+      this.prisma.marketingSpendDaily.findMany({
+        where: marketingSpendWhere,
+        orderBy: [{ spendDate: 'asc' }, { updatedAt: 'asc' }],
+        select: {
+          campaignId: true,
+          platform: true,
+          regionCode: true,
+          source: true,
+          spendAmount: true,
+          spendDate: true,
+          updatedAt: true,
+        },
+      }),
     ]);
     const funnelCohort = attributionRows.reduce(
       (total, row) => addMarketingStats(total, row.stats),
@@ -11057,9 +13349,46 @@ export class AdminService {
         stats: row.stats,
       })),
     );
+    const generatedAt = new Date();
+    const totals = withMarketingRates(stats);
+    const comparison = buildMarketingComparison(stats, previousStats, previousWindow.label);
+    const attributionQuality = buildMarketingAttributionQuality(attributionRows);
+    const campaignUniverse = buildMarketingCampaignEfficiency(attributionRows, marketingSpendRows, null);
+    const latestSpendUpdatedAt = spendEvidenceRows.reduce<Date | null>(
+      (latest, row) => (!latest || row.updatedAt > latest ? row.updatedAt : latest),
+      null,
+    );
+    const paidScopeExpected =
+      !sourceFilter || ['meta', 'google', 'tiktok', 'unknown'].includes(sourceFilter);
+    const spendCoverage = buildMarketingSpendCoverage({
+      window,
+      recordedDates: spendEvidenceRows.map((row) => marketingSpendDateKey(row.spendDate)),
+      latestUpdatedAt: latestSpendUpdatedAt,
+      totalSpendAmount: spendEvidenceRows.length > 0 ? manualAdSpend : null,
+      hasExplicitZeroRows: spendEvidenceRows.some((row) => row.spendAmount === 0),
+      attributionCampaignIds: attributionRows.map((row) => row.campaignId),
+      spendCampaignIds: spendEvidenceRows.map((row) => row.campaignId),
+      duplicateCanonicalCampaignCount: marketingSpendDuplicateCanonicalCount(spendEvidenceRows),
+      paidScopeExpected,
+      now: generatedAt,
+    });
+    const decisionReadiness = buildMarketingDecisionReadiness({
+      attributionQuality,
+      spendCoverage,
+      totals,
+    });
+    const actionSummary = buildMarketingActionSummary({
+      attributionQuality,
+      campaignEfficiency: campaignUniverse,
+      comparison,
+      generatedAt,
+      readiness: decisionReadiness,
+      spendCoverage,
+      totals,
+    });
 
     return {
-      generatedAt: new Date().toISOString(),
+      generatedAt: generatedAt.toISOString(),
       refreshSeconds: 300,
       source: 'stored-marketing-aggregates',
       range: window.range,
@@ -11072,13 +13401,17 @@ export class AdminService {
         regionCode: null,
         campaignId: campaignIdFilter ?? null,
       },
-      totals: withMarketingRates(stats),
-      comparison: buildMarketingComparison(stats, previousStats, previousWindow.label),
+      totals,
+      comparison,
       trend,
       funnel: buildMarketingFunnel(stats),
-      attributionQuality: buildMarketingAttributionQuality(attributionRows),
+      attributionQuality,
       unknownAttributionDiagnostics,
-      campaignEfficiency: buildMarketingCampaignEfficiency(attributionRows, marketingSpendRows),
+      campaignEfficiency: campaignUniverse.slice(0, 5),
+      campaignUniverseCount: campaignUniverse.length,
+      spendCoverage,
+      decisionReadiness,
+      actionSummary,
       topInsights: buildMarketingInsights(stats, sourceRows),
       dataGaps: ADMIN_MARKETING_DATA_GAPS,
     };
@@ -12609,15 +14942,9 @@ export class AdminService {
       throw new BadRequestException('Rejection reason is required');
     }
 
-    const updated = await this.prisma.fileAsset.update({
-      where: { id: fileId },
-      data: {
-        reviewStatus: status,
-        reviewedAt: new Date(),
-        reviewedById: actorId,
-        reviewReason: normalizedReason,
-      },
-    });
+    const updated = status === FileReviewStatus.APPROVED
+      ? await this.requireFilesService().approvePublicMedia(fileId, actorId)
+      : await this.requireFilesService().rejectPublicMedia(fileId, actorId, normalizedReason!);
     await this.writeAudit(actorId, `provider_media.${status.toLowerCase()}`, `file:${fileId}`, {
       fileId,
       purpose: file.purpose,
@@ -12697,6 +15024,7 @@ export class AdminService {
     const upload = await filesService.createPresignedUploadForOwner(user, provider.userId, {
       contentType: input.contentType,
       purpose: input.purpose,
+      sizeBytes: input.sizeBytes,
       visibility: FileVisibility.PUBLIC,
     });
     const file = await this.prisma.fileAsset.update({
@@ -12722,15 +15050,7 @@ export class AdminService {
     const provider = await this.requirePartnerPublicMediaOwner(providerProfileId);
     await this.requirePartnerPublicMediaFile(provider.userId, fileId);
     await filesService.completeUpload(user, fileId, input);
-    const file = await this.prisma.fileAsset.update({
-      where: { id: fileId },
-      data: {
-        reviewStatus: FileReviewStatus.APPROVED,
-        reviewedAt: new Date(),
-        reviewedById: user.id,
-        reviewReason: null,
-      },
-    });
+    const file = await filesService.approvePublicMedia(fileId, user.id);
     await this.writeAudit(user.id, 'provider_media.upload_completed', `file:${fileId}`, {
       fileId,
       providerProfileId,
@@ -13488,16 +15808,6 @@ export class AdminService {
 
   async markBookingNoShow(actorId: string, bookingId: string, input: { reason?: string }) {
     const reason = normalizeNullable(input.reason);
-    const booking = await this.prisma.booking.findUniqueOrThrow({
-      where: { id: bookingId },
-      select: {
-        id: true,
-        status: true,
-        notes: true,
-        payment: { select: { id: true, status: true } },
-      },
-    });
-
     const noShowEligibleStatuses: BookingStatus[] = [
       BookingStatus.OPEN_MATCHING,
       BookingStatus.MATCHED,
@@ -13505,10 +15815,6 @@ export class AdminService {
       BookingStatus.ARRIVED,
       BookingStatus.IN_SERVICE,
     ];
-    if (!noShowEligibleStatuses.includes(booking.status)) {
-      throw new BadRequestException(`Booking status ${booking.status} cannot be marked as no-show`);
-    }
-
     const noShowPolicy = await this.readOperationalPolicyValue(
       NO_SHOW_PARTNER_REPORT_POLICY_KEY,
       NO_SHOW_ADMIN_REVIEW_REQUIRED,
@@ -13517,51 +15823,71 @@ export class AdminService {
       noShowPolicy === NO_SHOW_EVIDENCE_ASSISTED_ADMIN_REVIEW
         ? 'Policy: evidence-assisted admin review is active; verify evidence trail before payment closeout.'
         : 'Policy: admin review required before any payment or closeout decision.';
-    const notes = appendDatedAdminNote(
-      booking.notes,
-      `No-show marked by operations${reason ? `: ${reason}. ` : '. '}${policyNote}`,
-    );
     const paymentReviewNote =
       reason ??
       (noShowPolicy === NO_SHOW_EVIDENCE_ASSISTED_ADMIN_REVIEW
         ? 'No-show marked; evidence-assisted admin review active, verify evidence before closeout.'
         : 'No-show requires payment and customer communication review.');
-
-    const updated = await this.prisma.booking.update({
-      where: { id: bookingId },
-      data: {
-        status: BookingStatus.NO_SHOW,
-        closedAt: new Date(),
-        closedByRole: Role.ADMIN,
-        closedReason: 'admin_no_show',
-        closedNote: paymentReviewNote,
-        notes,
-        opsTasks: {
-          upsert: {
-            where: { bookingId_type: { bookingId, type: BookingOpsTaskType.PAYMENT_REVIEWED } },
-            update: {
-              status: BookingOpsTaskStatus.BLOCKED,
-              note: paymentReviewNote,
-              actorId,
-            },
-            create: {
-              type: BookingOpsTaskType.PAYMENT_REVIEWED,
-              status: BookingOpsTaskStatus.BLOCKED,
-              note: paymentReviewNote,
-              actorId,
-            },
-          },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const booking = await tx.booking.findUniqueOrThrow({
+        where: { id: bookingId },
+        select: {
+          id: true,
+          status: true,
+          notes: true,
+          payment: { select: { id: true, status: true } },
         },
-      },
-      select: adminBookingDetailSelect,
-    });
-
-    await this.writeAudit(actorId, 'booking.no_show.mark', `booking:${bookingId}`, {
-      bookingId,
-      previousStatus: booking.status,
-      paymentStatus: booking.payment?.status,
-      reason,
-      noShowPolicy,
+      });
+      if (!noShowEligibleStatuses.includes(booking.status)) {
+        throw new BadRequestException(`Booking status ${booking.status} cannot be marked as no-show`);
+      }
+      const notes = appendDatedAdminNote(
+        booking.notes,
+        `No-show marked by operations${reason ? `: ${reason}. ` : '. '}${policyNote}`,
+      );
+      const mutation = await tx.booking.updateMany({
+        where: { id: bookingId, status: booking.status },
+        data: {
+          status: BookingStatus.NO_SHOW,
+          closedAt: new Date(),
+          closedByRole: Role.ADMIN,
+          closedReason: 'admin_no_show',
+          closedNote: paymentReviewNote,
+          notes,
+        },
+      });
+      if (mutation.count !== 1) {
+        throw new ConflictException(
+          'Booking changed while no-show review was running. Reload and review the latest status.',
+        );
+      }
+      await tx.bookingOpsTask.upsert({
+        where: { bookingId_type: { bookingId, type: BookingOpsTaskType.PAYMENT_REVIEWED } },
+        update: {
+          status: BookingOpsTaskStatus.BLOCKED,
+          note: paymentReviewNote,
+          actorId,
+        },
+        create: {
+          bookingId,
+          type: BookingOpsTaskType.PAYMENT_REVIEWED,
+          status: BookingOpsTaskStatus.BLOCKED,
+          note: paymentReviewNote,
+          actorId,
+        },
+      });
+      const result = await tx.booking.findUniqueOrThrow({
+        where: { id: bookingId },
+        select: adminBookingDetailSelect,
+      });
+      await this.writeAudit(actorId, 'booking.no_show.mark', `booking:${bookingId}`, {
+        bookingId,
+        previousStatus: booking.status,
+        paymentStatus: booking.payment?.status,
+        reason,
+        noShowPolicy,
+      }, undefined, tx);
+      return result;
     });
 
     await this.notifications.create({
@@ -13686,6 +16012,15 @@ export class AdminService {
         select: adminBookingDetailSelect,
       });
 
+      await this.writeAudit(actorId, 'booking.expire.manual', `booking:${bookingId}`, {
+        bookingId,
+        previousStatus: booking.status,
+        paymentId: booking.payment?.id ?? null,
+        paymentReleased: releasePayment,
+        staleSelectableResponseCount: selectableBeforeDeadline,
+        reason,
+      }, undefined, tx);
+
       return {
         paymentId: booking.payment?.id ?? null,
         paymentReleased: releasePayment,
@@ -13696,14 +16031,6 @@ export class AdminService {
     });
 
     await this.redisState.closeMatching(bookingId);
-    await this.writeAudit(actorId, 'booking.expire.manual', `booking:${bookingId}`, {
-      bookingId,
-      previousStatus: result.previousStatus,
-      paymentId: result.paymentId,
-      paymentReleased: result.paymentReleased,
-      staleSelectableResponseCount: result.selectableBeforeDeadline,
-      reason,
-    });
 
     return result.updated;
   }
@@ -13739,7 +16066,9 @@ export class AdminService {
         ).payment
       : null;
 
-    const earning = await this.earnings.createForCompletedBooking(bookingId, booking.selectedProviderId);
+    const earning = await this.earnings.createForCompletedBooking(bookingId, booking.selectedProviderId, {
+      preserveExistingLifecycle: true,
+    });
     const notes = appendDatedAdminNote(
       booking.notes,
       `Completed booking closeout reconciled by operations${note ? `: ${note}` : '.'}`,
@@ -13821,8 +16150,82 @@ export class AdminService {
     const decisionReasonLabel = postMatchCancellationDecisionReasonLabel(decisionReason);
     const closureNote = normalizedNote ? `${decisionReasonLabel}: ${normalizedNote}` : decisionReasonLabel;
 
-    return this.prisma
-      .$transaction(async (tx) => {
+    const preflight = await this.prisma.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+      select: {
+        status: true,
+        matchedAt: true,
+        selectedProviderId: true,
+        closedReason: true,
+        payment: { select: { id: true, method: true, status: true } },
+        earning: { select: { status: true, netAmount: true } },
+      },
+    });
+    if (preflight.status !== BookingStatus.CANCELLED) {
+      throw new BadRequestException(`Booking status ${preflight.status} is not a cancellation review`);
+    }
+    if (!preflight.matchedAt && !preflight.selectedProviderId) {
+      throw new BadRequestException('Post-match cancellation requires matching evidence');
+    }
+    if (
+      preflight.closedReason === POST_MATCH_CANCELLATION_APPROVED_REASON ||
+      preflight.closedReason === POST_MATCH_CANCELLATION_HELD_REASON
+    ) {
+      throw new ConflictException('Post-match cancellation has already been resolved');
+    }
+    const hasRetainablePartnerFee = Boolean(
+      preflight.earning &&
+      preflight.earning.status === EarningStatus.PENDING &&
+      preflight.earning.netAmount < 0,
+    );
+    if (decision === 'HELD' && !hasRetainablePartnerFee) {
+      throw new BadRequestException('No active Partner fee deduction exists to keep');
+    }
+    if (preflight.earning && preflight.earning.netAmount !== 0 && !hasRetainablePartnerFee) {
+      throw new ConflictException('Partner earning state cannot be resolved safely from this review');
+    }
+
+    let paymentResolution:
+      | {
+          paymentId: null;
+          skipped: true;
+          reason: 'NO_PAYMENT';
+        }
+      | {
+          paymentId: string;
+          method: PaymentMethod;
+          previousStatus: PaymentStatus;
+          status: PaymentStatus;
+          released: boolean;
+          refundRequested: boolean;
+          refundId: string | null;
+        };
+    if (!preflight.payment) {
+      paymentResolution = { paymentId: null, skipped: true, reason: 'NO_PAYMENT' };
+    } else {
+      if (!this.payments) {
+        throw new ServiceUnavailableException('Post-match cancellation payment resolver is unavailable');
+      }
+      const result = await this.payments.closeUnmatchedBookingPayment(
+        preflight.payment.id,
+        `Post-match cancellation ${decisionVerb} by admin: ${closureNote}`,
+        {
+          requestedByAdminId: actorId,
+          source: 'ADMIN_POST_MATCH_CANCELLATION',
+        },
+      );
+      paymentResolution = {
+        paymentId: result.payment.id,
+        method: preflight.payment.method,
+        previousStatus: preflight.payment.status,
+        status: result.payment.status,
+        released: result.released,
+        refundRequested: result.refundRequested,
+        refundId: 'refund' in result ? (result.refund?.id ?? null) : null,
+      };
+    }
+
+    return this.prisma.$transaction(async (tx) => {
         await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "Booking" WHERE "id" = ${bookingId} FOR UPDATE`);
 
         const booking = await tx.booking.findUniqueOrThrow({
@@ -13885,47 +16288,6 @@ export class AdminService {
         const minutesAfterMatch = minutesBetween(booking.matchedAt, booking.closedAt ?? new Date());
         const autoApprovalWindow =
           minutesAfterMatch !== null && minutesAfterMatch <= POST_MATCH_CANCELLATION_REVIEW_MINUTES;
-
-        let paymentResolution:
-          | {
-              paymentId: null;
-              skipped: true;
-              reason: 'NO_PAYMENT';
-            }
-          | {
-              paymentId: string;
-              method: PaymentMethod;
-              previousStatus: PaymentStatus;
-              status: PaymentStatus;
-              released: boolean;
-              refundRequested: boolean;
-              refundId: string | null;
-            };
-        if (!booking.payment) {
-          paymentResolution = { paymentId: null, skipped: true, reason: 'NO_PAYMENT' };
-        } else {
-          if (!this.payments) {
-            throw new ServiceUnavailableException('Post-match cancellation payment resolver is unavailable');
-          }
-          const result = await this.payments.closeUnmatchedBookingPayment(
-            booking.payment.id,
-            `Post-match cancellation ${decisionVerb} by admin: ${closureNote}`,
-            {
-              requestedByAdminId: actorId,
-              source: 'ADMIN_POST_MATCH_CANCELLATION',
-            },
-            tx,
-          );
-          paymentResolution = {
-            paymentId: result.payment.id,
-            method: booking.payment.method,
-            previousStatus: booking.payment.status,
-            status: result.payment.status,
-            released: result.released,
-            refundRequested: result.refundRequested,
-            refundId: 'refund' in result ? (result.refund?.id ?? null) : null,
-          };
-        }
 
         const notes = appendDatedAdminNote(
           booking.notes,
@@ -14003,13 +16365,6 @@ export class AdminService {
             paymentResolution,
           },
         };
-      })
-      .then(async (resolved) => {
-        const paymentResolution = resolved.postMatchDecisionResult.paymentResolution;
-        if ('released' in paymentResolution && paymentResolution.released) {
-          await this.payments?.notifyPaymentUpdatedAfterCommit?.(paymentResolution.paymentId);
-        }
-        return resolved;
       });
   }
 
@@ -15305,12 +17660,7 @@ export class AdminService {
   }
 
   async repairBookingSettlementGap(actorId: string, bookingId: string, input: RepairBookingSettlementGapDto) {
-    const approvalAdminId = normalizeFinanceActionApprovalAdminId(
-      input.approvalAdminId,
-      actorId,
-      'Booking settlement repair',
-    );
-    await assertFinanceActionApprovalAdmin(this.prisma, approvalAdminId, 'Booking settlement repair');
+    await assertFinanceActionApprovalAdmin(this.prisma, actorId, 'Booking settlement repair');
 
     return this.prisma.$transaction(
       async (lockTx) => {
@@ -15319,100 +17669,163 @@ export class AdminService {
         );
 
         const preview = await this.previewBookingSettlementGapRepair(bookingId);
-    if (input.sourceVersion !== preview.sourceVersion) {
-      throw new BadRequestException(
-        'Settlement evidence changed after preview. Reload the preview before requesting repair.',
-      );
-    }
-    if (!preview.canRepair || preview.policyDecision !== 'APPROVED' || !preview.partner?.id) {
-      const reason = [...preview.blockers.map((blocker) => blocker.message), ...preview.policyReasons].join(
-        ' ',
-      );
-      throw new BadRequestException(reason || 'Booking settlement repair is not eligible.');
-    }
+        if (input.sourceVersion !== preview.sourceVersion) {
+          throw new BadRequestException(
+            'Settlement evidence changed after preview. Reload the preview before requesting repair.',
+          );
+        }
+        if (!preview.canRepair || preview.policyDecision !== 'APPROVED' || !preview.partner?.id) {
+          const reason = [...preview.blockers.map((blocker) => blocker.message), ...preview.policyReasons].join(
+            ' ',
+          );
+          throw new BadRequestException(reason || 'Booking settlement repair is not eligible.');
+        }
 
-    await this.writeAudit(
-      actorId,
-      'booking_settlement_gap.repair_requested',
-      `booking:${preview.bookingId}`,
-      {
-        approvalAdminId,
-        monthlyPeriod: preview.monthlyPeriod,
-        reason: input.reason,
-        repairMode: preview.repairMode,
-      },
-    );
-
-    const repairResult =
-      preview.repairMode === 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION'
-        ? await this.earnings.reconstructPaidBookingSettlement(preview.bookingId, preview.partner.id, {
-            actorId,
-            approvalAdminId,
-            reason: input.reason,
-          })
-        : {
-            earningId: (
-              await this.earnings.createForCompletedBooking(preview.bookingId, preview.partner.id, {
-                preserveExistingLifecycle: true,
-              })
-            ).id,
-          };
-    const settlementSnapshot = await this.prisma.bookingSettlementSnapshot.findUnique({
-      where: { bookingId: preview.bookingId },
-      select: { id: true, sourceKey: true, monthlyPeriod: true },
-    });
-    if (!settlementSnapshot) {
-      throw new BadRequestException(
-        'Settlement repair completed without a settlement snapshot. Review API wiring.',
-      );
-    }
-
-    let checkpoint;
-    try {
-      checkpoint = await this.verifyBookingSettlementRepair(preview.bookingId);
-    } catch {
-      checkpoint = {
-        blockingFailures: ['CHECKPOINT_UNAVAILABLE'],
-        bookingId: preview.bookingId,
-        checkedAt: new Date(),
-        checks: [
-          {
-            code: 'CHECKPOINT_UNAVAILABLE',
-            message: 'The repair was recorded, but the post-repair accounting checkpoint could not be read.',
-            passed: false,
+        const target = `booking:${preview.bookingId}`;
+        const writeLockedAudit = (
+          auditActorId: string,
+          action: string,
+          metadata: Prisma.InputJsonValue,
+        ) => {
+          const classification = classifyAdminAuditAction(action);
+          return lockTx.adminAuditLog.create({
+            data: {
+              actorId: auditActorId,
+              actorKey: auditActorId,
+              actorType: 'HUMAN',
+              action,
+              area: classification.area,
+              severity: classification.severity,
+              outcome: classification.outcome,
+              target,
+              metadata,
+              objectType: 'booking',
+              objectId: preview.bookingId,
+              source: 'admin_api',
+            },
+          });
+        };
+        const latestRequest = await lockTx.adminAuditLog.findFirst({
+          where: {
+            action: 'booking_settlement_gap.repair_requested',
+            target,
           },
-        ],
-        passed: false,
-        repairMode: preview.repairMode,
-        snapshotId: settlementSnapshot.id,
-        status: 'FAILED' as const,
-      };
-    }
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          select: { actorId: true, createdAt: true, id: true, metadata: true },
+        });
+        const latestRequestMetadata = latestRequest ? jsonObject(latestRequest.metadata) : {};
+        const pendingRequest =
+          latestRequest && jsonString(latestRequestMetadata.sourceVersion) === preview.sourceVersion
+            ? latestRequest
+            : null;
 
-    const auditLog = await this.writeAudit(
-      actorId,
-      preview.repairMode === 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION'
-        ? 'booking_settlement_gap.historical_reconstructed'
-        : 'booking_settlement_gap.repaired',
-      `booking:${preview.bookingId}`,
-      {
-        approvalAdminId,
-        checkpointBlockingFailures: checkpoint.blockingFailures,
-        checkpointStatus: checkpoint.status,
-        earningId: repairResult.earningId,
-        monthlyPeriod: settlementSnapshot.monthlyPeriod,
-        reason: input.reason,
-        repairMode: preview.repairMode,
-        repairPolicyDecision: preview.policyDecision,
-        repairPolicyVersion: preview.policyVersion,
-        repairSourceVersion: preview.sourceVersion,
-        settlementSnapshotId: settlementSnapshot.id,
-        settlementSourceKey: settlementSnapshot.sourceKey,
-      },
-    );
+        if (!pendingRequest) {
+          const requestAudit = await writeLockedAudit(
+            actorId,
+            'booking_settlement_gap.repair_requested',
+            {
+              monthlyPeriod: preview.monthlyPeriod,
+              reason: input.reason,
+              repairMode: preview.repairMode,
+              sourceVersion: preview.sourceVersion,
+            },
+          );
+          return {
+            actorId,
+            approvalRequested: true as const,
+            auditLogId: requestAudit.id,
+            bookingId: preview.bookingId,
+            policyDecision: preview.policyDecision,
+            policyVersion: preview.policyVersion,
+            repairMode: preview.repairMode,
+            requestedAt: requestAudit.createdAt.toISOString(),
+            sourceVersion: preview.sourceVersion,
+          };
+        }
+        const requestActorId = pendingRequest.actorId;
+        if (!requestActorId) {
+          throw new ConflictException('Booking settlement repair request maker is missing');
+        }
+        if (requestActorId === actorId) {
+          throw new BadRequestException(
+            'Booking settlement repair requires approval from a different verified Finance operator',
+          );
+        }
+
+        const approvalAdminId = actorId;
+        const requestReason = jsonString(latestRequestMetadata.reason) ?? input.reason;
+        const repairResult =
+          preview.repairMode === 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION'
+            ? await this.earnings.reconstructPaidBookingSettlement(preview.bookingId, preview.partner.id, {
+                actorId: requestActorId,
+                approvalAdminId,
+                reason: requestReason,
+              })
+            : {
+                earningId: (
+                  await this.earnings.createForCompletedBooking(preview.bookingId, preview.partner.id, {
+                    preserveExistingLifecycle: true,
+                  })
+                ).id,
+              };
+        const settlementSnapshot = await this.prisma.bookingSettlementSnapshot.findUnique({
+          where: { bookingId: preview.bookingId },
+          select: { id: true, sourceKey: true, monthlyPeriod: true },
+        });
+        if (!settlementSnapshot) {
+          throw new BadRequestException(
+            'Settlement repair completed without a settlement snapshot. Review API wiring.',
+          );
+        }
+
+        let checkpoint;
+        try {
+          checkpoint = await this.verifyBookingSettlementRepair(preview.bookingId);
+        } catch {
+          checkpoint = {
+            blockingFailures: ['CHECKPOINT_UNAVAILABLE'],
+            bookingId: preview.bookingId,
+            checkedAt: new Date(),
+            checks: [
+              {
+                code: 'CHECKPOINT_UNAVAILABLE',
+                message: 'The repair was recorded, but the post-repair accounting checkpoint could not be read.',
+                passed: false,
+              },
+            ],
+            passed: false,
+            repairMode: preview.repairMode,
+            snapshotId: settlementSnapshot.id,
+            status: 'FAILED' as const,
+          };
+        }
+
+        const auditLog = await writeLockedAudit(
+          approvalAdminId,
+          preview.repairMode === 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION'
+            ? 'booking_settlement_gap.historical_reconstructed'
+            : 'booking_settlement_gap.repaired',
+          {
+            approvalAdminId,
+            approvalReason: input.reason,
+            approvalRequestId: pendingRequest.id,
+            checkpointBlockingFailures: checkpoint.blockingFailures,
+            checkpointStatus: checkpoint.status,
+            earningId: repairResult.earningId,
+            monthlyPeriod: settlementSnapshot.monthlyPeriod,
+            reason: requestReason,
+            repairMode: preview.repairMode,
+            repairPolicyDecision: preview.policyDecision,
+            repairPolicyVersion: preview.policyVersion,
+            repairSourceVersion: preview.sourceVersion,
+            requestedByAdminId: requestActorId,
+            settlementSnapshotId: settlementSnapshot.id,
+            settlementSourceKey: settlementSnapshot.sourceKey,
+          },
+        );
 
         return {
-          actorId,
+          actorId: requestActorId,
           approvalAdminId,
           auditLogId: auditLog.id,
           bookingId: preview.bookingId,
@@ -16387,45 +18800,483 @@ export class AdminService {
         : CompanyBankAccountStatus.ACTIVE;
 
     return this.prisma.companyBankAccount.findMany({
-      ...(status ? { where: { status } } : {}),
+      where: companyBankAccountProductionWhere(status),
       orderBy: [{ status: 'asc' }, { name: 'asc' }, { createdAt: 'asc' }],
       take: 100,
       select: adminCompanyBankAccountManagementSelect,
     });
   }
 
-  async createCompanyBankAccount(actorId: string, input: CreateCompanyBankAccountDto) {
-    const account = normalizeCompanyBankAccountIdentity(input);
-    const operatorReason = input.operatorReason.trim();
-    const requestId = randomUUID();
-    const requestedAt = new Date().toISOString();
-    const duplicate = await this.prisma.companyBankAccount.findFirst({
-      where: {
-        accountNumberLast4: account.accountNumberLast4,
-        bankName: { equals: account.bankName, mode: 'insensitive' },
-        currency: account.currency,
-        status: { not: CompanyBankAccountStatus.DISABLED },
+  async companyBankAccountOperationsPage(options: {
+    currency?: string | null;
+    health?: string | null;
+    purpose?: string | null;
+    skip?: string | null;
+    status?: string | null;
+    take?: string | null;
+    verification?: string | null;
+    view?: string | null;
+  } = {}) {
+    const skip = boundedAdminListSkip(options.skip);
+    const take = Math.min(adminPaymentOperationsTake(options.take), 50);
+    const requestedView = normalizeNullable(options.view)?.toLowerCase();
+    const view = requestedView === 'pending' || requestedView === 'archived' || requestedView === 'remediation'
+      ? requestedView
+      : 'current';
+    const pendingWhere: Prisma.CompanyBankAccountWhereInput = {
+      metadata: { path: ['pendingApproval', 'requestId'], not: Prisma.AnyNull },
+    };
+    const scopeWhere: Prisma.CompanyBankAccountWhereInput = view === 'pending'
+      ? pendingWhere
+      : view === 'archived'
+        ? {
+            AND: [
+              companyBankAccountProductionWhere(),
+              { status: { not: CompanyBankAccountStatus.ACTIVE } },
+              { NOT: pendingWhere },
+            ],
+          }
+        : view === 'remediation'
+          ? companyBankAccountScopeWhere(CompanyBankAccountDataScope.UNKNOWN)
+          : {
+              AND: [
+                companyBankAccountProductionWhere(CompanyBankAccountStatus.ACTIVE),
+                { NOT: pendingWhere },
+              ],
+            };
+    const purpose = companyBankAccountOperationsPurpose(options.purpose);
+    const currency = normalizeNullable(options.currency)?.toUpperCase() === 'VND' ? 'VND' : null;
+    const verification = companyBankAccountOperationsVerification(options.verification);
+    const health = normalizeNullable(options.health)?.toUpperCase();
+    const status = normalizeNullable(options.status)?.toUpperCase();
+    const openReconciliationWhere: Prisma.CompanyBankTransactionWhereInput = {
+      status: { in: [BankReconciliationStatus.UNMATCHED, BankReconciliationStatus.PARTIALLY_MATCHED] },
+    };
+    const filterWhere: Prisma.CompanyBankAccountWhereInput[] = [scopeWhere];
+    if (purpose) {
+      filterWhere.push({
+        OR: [
+          { metadata: { path: ['operationalProfile', 'purpose'], equals: purpose } },
+          { metadata: { path: ['purpose'], equals: purpose } },
+        ],
+      });
+    }
+    if (currency) filterWhere.push({ currency });
+    if (verification) {
+      filterWhere.push({
+        OR: [
+          { metadata: { path: ['operationalProfile', 'verificationStatus'], equals: verification } },
+          { metadata: { path: ['verificationStatus'], equals: verification } },
+        ],
+      });
+    }
+    if (health === 'ATTENTION') filterWhere.push({ transactions: { some: openReconciliationWhere } });
+    if (health === 'HEALTHY') filterWhere.push({ transactions: { none: openReconciliationWhere } });
+    const lifecycleWhere = companyBankAccountOperationsLifecycleWhere(status);
+    if (lifecycleWhere) filterWhere.push(lifecycleWhere);
+    const where: Prisma.CompanyBankAccountWhereInput = { AND: filterWhere };
+    const activeProductionWhere = companyBankAccountProductionWhere(CompanyBankAccountStatus.ACTIVE);
+
+    const [
+      accounts,
+      totalCount,
+      activeCount,
+      productionCount,
+      syntheticCount,
+      unknownDataScopeCount,
+      pendingCount,
+      pendingMetadata,
+      unmatchedCount,
+      latestImported,
+    ] =
+      await Promise.all([
+        this.prisma.companyBankAccount.findMany({
+          where,
+          orderBy: [{ status: 'asc' }, { name: 'asc' }, { createdAt: 'asc' }],
+          skip,
+          take,
+          select: {
+            ...adminCompanyBankAccountManagementSelect,
+            createdAt: true,
+            _count: { select: { transactions: true } },
+          },
+        }),
+        this.prisma.companyBankAccount.count({ where }),
+        this.prisma.companyBankAccount.count({ where: activeProductionWhere }),
+        this.prisma.companyBankAccount.count({ where: companyBankAccountProductionWhere() }),
+        this.prisma.companyBankAccount.count({
+          where: companyBankAccountScopeWhere(CompanyBankAccountDataScope.SYNTHETIC),
+        }),
+        this.prisma.companyBankAccount.count({
+          where: companyBankAccountScopeWhere(CompanyBankAccountDataScope.UNKNOWN),
+        }),
+        this.prisma.companyBankAccount.count({ where: pendingWhere }),
+        this.prisma.companyBankAccount.findMany({
+          where: pendingWhere,
+          select: { metadata: true },
+        }),
+        this.prisma.companyBankTransaction.count({
+          where: {
+            bankAccount: activeProductionWhere,
+            status: { in: [BankReconciliationStatus.UNMATCHED, BankReconciliationStatus.PARTIALLY_MATCHED] },
+          },
+        }),
+        this.prisma.companyBankTransaction.findFirst({
+          where: {
+            bankAccount: activeProductionWhere,
+            metadata: { path: ['batchImportId'], not: Prisma.AnyNull },
+          },
+          orderBy: { createdAt: 'desc' },
+          select: {
+            createdAt: true,
+            bankAccount: { select: adminCompanyBankAccountSelect },
+          },
+        }),
+      ]);
+
+    const accountIds = accounts.map((account) => account.id);
+    const openByAccount = accountIds.length > 0
+      ? await this.prisma.companyBankTransaction.groupBy({
+          by: ['bankAccountId'],
+          where: {
+            bankAccountId: { in: accountIds },
+            status: { in: [BankReconciliationStatus.UNMATCHED, BankReconciliationStatus.PARTIALLY_MATCHED] },
+          },
+          _count: { _all: true },
+          _max: { occurredAt: true },
+        })
+      : [];
+    const openByAccountId = new Map(
+      openByAccount.map((row) => [row.bankAccountId, { count: row._count._all, lastActivityAt: row._max.occurredAt }]),
+    );
+    const oldestPendingRequestedAt = pendingMetadata
+      .map((account) => {
+        const metadata = adminJsonObject(account.metadata);
+        const pending = adminJsonObject(metadata?.pendingApproval);
+        return companyBankAccountMetadataString(pending?.requestedAt);
+      })
+      .filter((requestedAt): requestedAt is string => Boolean(requestedAt))
+      .sort((left, right) => Date.parse(left) - Date.parse(right))[0] ?? null;
+
+    return {
+      generatedAt: new Date().toISOString(),
+      items: accounts.map((account) => {
+        const pending = companyBankAccountPendingApproval(account.metadata);
+        const profile = companyBankAccountOperationalProfile(account.metadata);
+        const open = openByAccountId.get(account.id);
+        return {
+          ...account,
+          lifecycleStatus: companyBankAccountLifecycleStatus(account, pending),
+          operationalProfile: profile,
+          operations: {
+            openReconciliationCount: open?.count ?? 0,
+            transactionCount: account._count.transactions,
+            lastActivityAt: open?.lastActivityAt?.toISOString() ?? account.updatedAt.toISOString(),
+          },
+        };
+      }),
+      pagination: { skip, take, totalCount },
+      summary: {
+        productionCount,
+        syntheticCount,
+        unknownDataScopeCount,
+        usableRealAccountCount: activeCount,
+        pendingApprovalCount: pendingCount,
+        oldestPendingRequestedAt,
+        reconciliationHealth: unmatchedCount > 0 ? 'ATTENTION' : 'HEALTHY',
+        unmatchedCount,
+        lastRecordedStatementImport: latestImported
+          ? {
+              account: latestImported.bankAccount,
+              importedAt: latestImported.createdAt.toISOString(),
+            }
+          : null,
       },
-      select: { id: true },
+      view,
+    };
+  }
+
+  async companyBankAccountApproverReadiness(actorId: string) {
+    const eligibleApproverCount = await companyBankAccountEligibleApproverCount(this.prisma, actorId);
+    return {
+      eligibleApproverCount,
+      ready: eligibleApproverCount > 0,
+    };
+  }
+
+  async companyBankAccountRecentChanges(take?: string | null) {
+    const page = await this.listAuditLogPage({
+      take,
+      targetPrefix: 'company_bank_account:',
     });
-    if (duplicate) {
-      throw new ConflictException(
-        'A company bank account with the same bank, currency, and last four digits already exists',
-      );
+    const accountIds = [...new Set(
+      page.items
+        .map((item) => item.target?.startsWith('company_bank_account:')
+          ? item.target.slice('company_bank_account:'.length)
+          : null)
+        .filter((id): id is string => Boolean(id)),
+    )];
+    const accountSnapshots = accountIds.length > 0
+      ? await this.prisma.companyBankAccount.findMany({
+          where: { id: { in: accountIds } },
+          select: {
+            accountNumberMasked: true,
+            bankName: true,
+            id: true,
+            name: true,
+          },
+        })
+      : [];
+    return { ...page, accountSnapshots };
+  }
+
+  async companyBankAccountStatusPreflight(
+    actorId: string,
+    id: string,
+    nextStatusInput?: string | null,
+    replacementAccountIdInput?: string | null,
+  ) {
+    const accountId = normalizeRequiredId(id, 'Company bank account id');
+    const nextStatus = normalizeNullable(nextStatusInput)?.toUpperCase() === 'ACTIVE'
+      ? CompanyBankAccountStatus.ACTIVE
+      : CompanyBankAccountStatus.INACTIVE;
+    const account = await this.prisma.companyBankAccount.findUnique({
+      where: { id: accountId },
+      select: {
+        ...adminCompanyBankAccountManagementSelect,
+        _count: { select: { transactions: true } },
+      },
+    });
+    if (!account) throw new NotFoundException('Company bank account not found');
+    const pendingWhere: Prisma.CompanyBankAccountWhereInput = {
+      metadata: { path: ['pendingApproval', 'requestId'], not: Prisma.AnyNull },
+    };
+    const profile = companyBankAccountOperationalProfile(account.metadata);
+    const eligibleApproverCount = await companyBankAccountEligibleApproverCount(this.prisma, actorId);
+    const blockers = nextStatus === CompanyBankAccountStatus.ACTIVE
+      ? companyBankAccountActivationBlockers(profile)
+      : [];
+    const scopeError = companyBankAccountOperationalScopeError(account.dataScope);
+    if (scopeError) blockers.push({ code: scopeError.code, label: scopeError.message });
+    const [duplicate, successfulStatementImport, openTransactions] = await Promise.all([
+      nextStatus === CompanyBankAccountStatus.ACTIVE
+        ? this.prisma.companyBankAccount.findFirst({
+            where: {
+              id: { not: account.id },
+              accountNumberLast4: account.accountNumberLast4,
+              bankName: { equals: account.bankName, mode: 'insensitive' },
+              currency: account.currency,
+              status: { not: CompanyBankAccountStatus.DISABLED },
+            },
+            select: { accountNumberMasked: true, bankName: true, dataScope: true, id: true, name: true },
+          })
+        : Promise.resolve(null),
+      nextStatus === CompanyBankAccountStatus.ACTIVE
+        ? this.prisma.companyBankTransaction.findFirst({
+            where: {
+              bankAccountId: account.id,
+              metadata: { path: ['batchImportId'], not: Prisma.AnyNull },
+            },
+            orderBy: { createdAt: 'desc' },
+            select: { createdAt: true, id: true },
+          })
+        : Promise.resolve(null),
+      nextStatus === CompanyBankAccountStatus.INACTIVE
+        ? this.prisma.companyBankTransaction.findMany({
+            where: {
+              bankAccountId: account.id,
+              status: { in: [BankReconciliationStatus.UNMATCHED, BankReconciliationStatus.PARTIALLY_MATCHED] },
+            },
+            select: { metadata: true, occurredAt: true },
+            orderBy: { occurredAt: 'desc' },
+            take: 500,
+          })
+        : Promise.resolve([]),
+    ]);
+    if (duplicate) blockers.push({ code: 'POTENTIAL_DUPLICATE', label: 'A potential duplicate account needs review' });
+    if (nextStatus === CompanyBankAccountStatus.ACTIVE && !successfulStatementImport) {
+      blockers.push({
+        code: 'STATEMENT_IMPORT_TEST_MISSING',
+        label: 'No successful statement import is linked to this account',
+      });
+    }
+    if (eligibleApproverCount === 0) {
+      blockers.push({ code: 'APPROVER_UNAVAILABLE', label: 'No separate Finance approver is available' });
+    }
+    const openImportBatchIds = new Set(
+      openTransactions
+        .map((transaction) => companyBankAccountMetadataString(adminJsonObject(transaction.metadata)?.batchImportId))
+        .filter((value): value is string => Boolean(value)),
+    );
+    if (openTransactions.length > 0) {
+      blockers.push({
+        code: 'OPEN_RECONCILIATION_REFERENCES',
+        label: `${openTransactions.length} open or partially matched transaction reference(s) remain`,
+      });
+    }
+    const replacementAccountId = normalizeNullable(replacementAccountIdInput);
+    let replacementAccount: { id: string; name: string } | null = null;
+    let replacementCandidates: Array<{
+      accountNumberMasked: string | null;
+      bankName: string;
+      id: string;
+      name: string;
+    }> = [];
+    if (nextStatus === CompanyBankAccountStatus.INACTIVE && profile.isPrimary) {
+      const candidates = await this.prisma.companyBankAccount.findMany({
+        where: {
+          ...companyBankAccountProductionWhere(CompanyBankAccountStatus.ACTIVE),
+          currency: account.currency,
+          id: { not: account.id },
+          NOT: pendingWhere,
+        },
+        orderBy: { name: 'asc' },
+        select: { ...adminCompanyBankAccountManagementSelect },
+        take: 50,
+      });
+      replacementCandidates = candidates
+        .filter((candidate) => companyBankAccountReplacementCompatible(profile, companyBankAccountOperationalProfile(candidate.metadata)))
+        .map(({ accountNumberMasked, bankName, id, name }) => ({ accountNumberMasked, bankName, id, name }))
+        .slice(0, 20);
+      if (replacementAccountId) {
+        replacementAccount = replacementCandidates
+          .filter((candidate) => candidate.id === replacementAccountId)
+          .map(({ id, name }) => ({ id, name }))[0] ?? null;
+      }
+      if (!replacementAccount) {
+        blockers.push({ code: 'PRIMARY_REPLACEMENT_MISSING', label: 'Select an active replacement for this primary account' });
+      }
     }
 
+    const archiveSources = nextStatus === CompanyBankAccountStatus.INACTIVE
+      ? companyBankAccountArchiveReferenceSources({
+          lastOpenActivityAt: openTransactions[0]?.occurredAt.toISOString() ?? null,
+          openTransactionCount: openTransactions.length,
+          totalTransactionCount: account._count.transactions,
+        })
+      : [];
+    const incompleteSources = archiveSources.filter(
+      (source) => source.coverage === 'INCOMPLETE' || source.coverage === 'ERROR',
+    );
+    if (incompleteSources.length > 0) {
+      blockers.push({
+        code: 'REFERENCE_COVERAGE_INCOMPLETE',
+        label: `Archive reference coverage is incomplete for ${incompleteSources.map((source) => source.source).join(', ')}`,
+      });
+    }
+    const generatedAt = new Date().toISOString();
+    const preflightHash = companyBankAccountPreflightHash({
+      accountId: account.id,
+      archiveSources,
+      blockerCodes: blockers.map((blocker) => blocker.code),
+      mode: nextStatus === CompanyBankAccountStatus.ACTIVE ? 'ACTIVATION' : 'ARCHIVE',
+      replacementAccountId: replacementAccount?.id ?? null,
+      successfulStatementImportId: successfulStatementImport?.id ?? null,
+    });
+
+    return {
+      accountId: account.id,
+      archiveImpact: {
+        ready: nextStatus === CompanyBankAccountStatus.INACTIVE && blockers.length === 0,
+        sources: archiveSources,
+      },
+      eligibleApproverCount,
+      generatedAt,
+      mode: nextStatus === CompanyBankAccountStatus.ACTIVE ? 'ACTIVATION' : 'ARCHIVE',
+      preflightHash,
+      ready: blockers.length === 0,
+      blockers,
+      duplicateCandidate: duplicate,
+      profile,
+      replacementCandidates,
+      impact: {
+        incompleteImportBatchCount: openImportBatchIds.size,
+        lastOpenActivityAt: openTransactions[0]?.occurredAt.toISOString() ?? null,
+        openTransactionCount: openTransactions.length,
+        totalTransactionCount: account._count.transactions,
+        scheduledReferenceCount: null,
+      },
+      replacementAccount,
+      statementImportEvidence: successfulStatementImport
+        ? { id: successfulStatementImport.id, importedAt: successfulStatementImport.createdAt.toISOString() }
+        : null,
+    };
+  }
+
+  async createCompanyBankAccount(actorId: string, input: CreateCompanyBankAccountDto) {
+    await assertCompanyBankAccountApproverAvailable(this.prisma, actorId);
+    const account = normalizeCompanyBankAccountIdentity(input);
+    const operatorReason = input.operatorReason.trim();
+    const idempotencyKey = normalizeCompanyBankAccountIdempotencyKey(input.idempotencyKey);
+    const operationalProfile = companyBankAccountOperationalProfileFromInput(input);
+    assertControlledCompanyBankAccountIdentity(input.bankCode, account.bankName);
+
     return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`company_bank_account_request:${actorId}:${idempotencyKey}`}))::text AS lock_status`,
+      );
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`company_bank_account_duplicate:${input.bankCode}:${account.currency}:${account.accountNumberLast4}`}))::text AS lock_status`,
+      );
+      const priorRequest = await tx.adminAuditLog.findFirst({
+        where: {
+          action: 'company_bank_account.approval_requested',
+          actorId,
+          metadata: { path: ['idempotencyKey'], equals: idempotencyKey },
+          target: { startsWith: 'company_bank_account:' },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { target: true },
+      });
+      if (priorRequest) {
+        const priorAccount = await tx.companyBankAccount.findUnique({
+          where: { id: priorRequest.target.slice('company_bank_account:'.length) },
+          select: adminCompanyBankAccountManagementSelect,
+        });
+        if (priorAccount) {
+          return priorAccount;
+        }
+        throw new ConflictException({
+          code: 'COMPANY_BANK_ACCOUNT_IDEMPOTENCY_CONFLICT',
+          message: 'The prior request record no longer resolves to a company bank account',
+        });
+      }
+      const duplicate = await tx.companyBankAccount.findFirst({
+        where: {
+          accountNumberLast4: account.accountNumberLast4,
+          bankName: { equals: account.bankName, mode: 'insensitive' },
+          currency: account.currency,
+          status: { not: CompanyBankAccountStatus.DISABLED },
+        },
+        select: { accountNumberMasked: true, bankName: true, id: true, name: true },
+      });
+      if (duplicate) {
+        throw new ConflictException({
+          candidate: duplicate,
+          code: 'COMPANY_BANK_ACCOUNT_POTENTIAL_DUPLICATE',
+          field: 'accountNumberLast4',
+          message: 'A company bank account with the same bank, currency, and last four digits requires review',
+          reviewHref: `/finance-tax/company-bank-accounts?view=remediation&accountId=${encodeURIComponent(duplicate.id)}&dialog=edit`,
+        });
+      }
+      const requestId = randomUUID();
+      const requestedAt = new Date().toISOString();
       const created = await tx.companyBankAccount.create({
         data: {
           ...account,
+          dataScope: CompanyBankAccountDataScope.UNKNOWN,
           metadata: toJson({
             createdByAdminId: actorId,
+            operationalProfile,
             pendingApproval: {
+              idempotencyKey,
               operation: 'CREATE',
               operatorReason,
               proposed: {
                 ...account,
-                status: CompanyBankAccountStatus.ACTIVE,
+                dataScope: CompanyBankAccountDataScope.UNKNOWN,
+                operationalProfile,
+                status: CompanyBankAccountStatus.INACTIVE,
               },
               requestedAt,
               requestedByAdminId: actorId,
@@ -16443,9 +19294,10 @@ export class AdminService {
           metadata: toJson({
             bankName: account.bankName,
             currency: account.currency,
+            idempotencyKey,
             operation: 'CREATE',
             operatorReason,
-            proposedStatus: CompanyBankAccountStatus.ACTIVE,
+            proposedStatus: CompanyBankAccountStatus.INACTIVE,
             requestId,
           }),
           target: `company_bank_account:${created.id}`,
@@ -16456,7 +19308,9 @@ export class AdminService {
   }
 
   async updateCompanyBankAccount(actorId: string, id: string, input: UpdateCompanyBankAccountDto) {
+    await assertCompanyBankAccountApproverAvailable(this.prisma, actorId);
     const accountId = normalizeRequiredId(id, 'Company bank account id');
+    const idempotencyKey = normalizeCompanyBankAccountIdempotencyKey(input.idempotencyKey);
     const existing = await this.prisma.companyBankAccount.findUnique({
       where: { id: accountId },
       select: {
@@ -16467,7 +19321,11 @@ export class AdminService {
     if (!existing) {
       throw new NotFoundException('Company bank account not found');
     }
-    if (companyBankAccountPendingApproval(existing.metadata)) {
+    const existingPendingApproval = companyBankAccountPendingApproval(existing.metadata);
+    if (existingPendingApproval?.idempotencyKey === idempotencyKey) {
+      return existing;
+    }
+    if (existingPendingApproval) {
       throw new ConflictException('Company bank account already has a pending approval request');
     }
 
@@ -16483,10 +19341,7 @@ export class AdminService {
     const nextIdentity = identityInputProvided
       ? normalizeCompanyBankAccountIdentity({
           accountNumberLast4: input.accountNumberLast4 ?? existing.accountNumberLast4 ?? '',
-          accountNumberMasked:
-            input.accountNumberMasked === undefined
-              ? existing.accountNumberMasked
-              : input.accountNumberMasked,
+          accountNumberMasked: input.accountNumberMasked,
           bankName: input.bankName ?? existing.bankName,
           currency: input.currency ?? existing.currency,
           name: nextName,
@@ -16499,6 +19354,29 @@ export class AdminService {
           name: nextName,
         };
     const nextStatus = input.status ?? existing.status;
+    const nextDataScope = input.dataScope ?? existing.dataScope;
+    if (input.dataScope === CompanyBankAccountDataScope.SYNTHETIC) {
+      throw new BadRequestException({
+        code: 'COMPANY_BANK_ACCOUNT_SYNTHETIC_SCOPE_RESTRICTED',
+        field: 'dataScope',
+        message: 'Synthetic scope is reserved for the isolated test harness',
+      });
+    }
+    if (
+      nextDataScope === CompanyBankAccountDataScope.PRODUCTION &&
+      existing.dataScope !== CompanyBankAccountDataScope.PRODUCTION
+    ) {
+      throw new ConflictException({
+        code: 'COMPANY_BANK_ACCOUNT_EVIDENCE_AUTHORITY_UNAVAILABLE',
+        field: 'dataScope',
+        message: 'Production classification is blocked until authoritative restricted ownership evidence is available',
+      });
+    }
+    const currentOperationalProfile = companyBankAccountOperationalProfile(existing.metadata);
+    const nextOperationalProfile = companyBankAccountOperationalProfileFromInput(input, currentOperationalProfile);
+    if (nextOperationalProfile.bankCode) {
+      assertControlledCompanyBankAccountIdentity(nextOperationalProfile.bankCode, nextIdentity.bankName);
+    }
     const identityChanged =
       nextIdentity.accountNumberLast4 !== existing.accountNumberLast4 ||
       nextIdentity.accountNumberMasked !== existing.accountNumberMasked ||
@@ -16509,27 +19387,80 @@ export class AdminService {
         'Bank identity and currency cannot be changed after transactions exist; create a replacement account instead',
       );
     }
-    const changed = identityChanged || nextIdentity.name !== existing.name || nextStatus !== existing.status;
+    const operationalProfileChanged =
+      JSON.stringify(nextOperationalProfile) !== JSON.stringify(currentOperationalProfile);
+    const changed =
+      identityChanged ||
+      nextIdentity.name !== existing.name ||
+      nextStatus !== existing.status ||
+      nextDataScope !== existing.dataScope ||
+      operationalProfileChanged;
     if (!changed) {
       throw new BadRequestException('Company bank account update did not change any managed field');
     }
 
     const operatorReason = input.operatorReason.trim();
+    let statusPreflight: {
+      blockers: Array<{ code: string; label: string }>;
+      generatedAt: string;
+      preflightHash: string;
+      ready: boolean;
+    } | null = null;
+    if (nextStatus !== existing.status) {
+      statusPreflight = await this.companyBankAccountStatusPreflight(
+        actorId,
+        accountId,
+        nextStatus,
+        input.replacementAccountId,
+      );
+      if (!statusPreflight.ready) {
+        throw new ConflictException({
+          blockers: statusPreflight.blockers,
+          code:
+            nextStatus === CompanyBankAccountStatus.ACTIVE
+              ? 'COMPANY_BANK_ACCOUNT_ACTIVATION_NOT_READY'
+              : 'COMPANY_BANK_ACCOUNT_ARCHIVE_BLOCKED',
+          message: 'Company bank account status preflight did not pass',
+        });
+      }
+    }
     const requestId = randomUUID();
     const requestedAt = new Date().toISOString();
     await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`company_bank_account_request:${actorId}:${idempotencyKey}`}))::text AS lock_status`,
+      );
+      const priorRequest = await tx.adminAuditLog.findFirst({
+        where: {
+          action: 'company_bank_account.approval_requested',
+          actorId,
+          metadata: { path: ['idempotencyKey'], equals: idempotencyKey },
+          target: `company_bank_account:${accountId}`,
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true },
+      });
+      if (priorRequest) {
+        return;
+      }
       const requested = await tx.companyBankAccount.updateMany({
         where: { id: accountId, updatedAt: existing.updatedAt },
         data: {
           metadata: toJson({
             ...(adminJsonObject(existing.metadata) ?? {}),
             pendingApproval: {
+              idempotencyKey,
               operation: 'UPDATE',
               operatorReason,
+              preflightGeneratedAt: statusPreflight?.generatedAt ?? null,
+              preflightHash: statusPreflight?.preflightHash ?? null,
               proposed: {
                 ...nextIdentity,
+                dataScope: nextDataScope,
+                operationalProfile: nextOperationalProfile,
                 status: nextStatus,
               },
+              replacementAccountId: normalizeNullable(input.replacementAccountId),
               requestedAt,
               requestedByAdminId: actorId,
               requestId,
@@ -16538,7 +19469,10 @@ export class AdminService {
         },
       });
       if (requested.count !== 1) {
-        throw new ConflictException('Company bank account changed during review; reload before retrying');
+        throw new ConflictException({
+          code: 'COMPANY_BANK_ACCOUNT_VERSION_CONFLICT',
+          message: 'Company bank account changed during review; reload before retrying',
+        });
       }
       await tx.adminAuditLog.create({
         data: {
@@ -16546,12 +19480,18 @@ export class AdminService {
           actorId,
           metadata: toJson({
             before: companyBankAccountAuditSnapshot(existing),
+            idempotencyKey,
             operation: 'UPDATE',
             operatorReason,
+            preflightGeneratedAt: statusPreflight?.generatedAt ?? null,
+            preflightHash: statusPreflight?.preflightHash ?? null,
             proposed: {
               ...nextIdentity,
+              dataScope: nextDataScope,
+              operationalProfile: nextOperationalProfile,
               status: nextStatus,
             },
+            replacementAccountId: normalizeNullable(input.replacementAccountId),
             requestId,
           }),
           target: `company_bank_account:${accountId}`,
@@ -16599,6 +19539,21 @@ export class AdminService {
     const metadata = companyBankAccountMetadataWithoutPending(existing.metadata);
     const approved = input.decision === 'APPROVE';
     const nextAccount = approved ? pending.proposed : companyBankAccountAuditSnapshot(existing);
+    if (approved && nextAccount.status !== existing.status) {
+      const currentPreflight = await this.companyBankAccountStatusPreflight(
+        actorId,
+        accountId,
+        nextAccount.status,
+        pending.replacementAccountId,
+      );
+      if (!currentPreflight.ready || currentPreflight.preflightHash !== pending.preflightHash) {
+        throw new ConflictException({
+          blockers: currentPreflight.blockers,
+          code: 'COMPANY_BANK_ACCOUNT_PREFLIGHT_CHANGED',
+          message: 'Company bank account impact changed after the request; the maker must review and submit again',
+        });
+      }
+    }
     const identityChanged =
       nextAccount.accountNumberLast4 !== existing.accountNumberLast4 ||
       nextAccount.accountNumberMasked !== existing.accountNumberMasked ||
@@ -16620,12 +19575,28 @@ export class AdminService {
                 accountNumberMasked: nextAccount.accountNumberMasked,
                 bankName: nextAccount.bankName,
                 currency: nextAccount.currency,
+                dataScope: nextAccount.dataScope,
                 name: nextAccount.name,
                 status: nextAccount.status,
               }
             : {}),
           metadata: toJson({
             ...metadata,
+            ...(approved
+              ? {
+                  ...(nextAccount.status === CompanyBankAccountStatus.ACTIVE
+                    ? { effectiveFrom: decisionAt, archivedAt: undefined }
+                    : existing.status === CompanyBankAccountStatus.ACTIVE
+                      ? { archivedAt: decisionAt }
+                      : {}),
+                  operationalProfile: {
+                    ...nextAccount.operationalProfile,
+                    ...(nextAccount.operationalProfile.verificationStatus === 'VERIFIED'
+                      ? { verifiedAt: decisionAt, verifiedByAdminId: actorId }
+                      : {}),
+                  },
+                }
+              : {}),
             lastApprovalAdminId: approved ? actorId : undefined,
             lastApprovalDecision: input.decision,
             lastApprovalDecisionAt: decisionAt,
@@ -18055,20 +21026,27 @@ export class AdminService {
           type: 'admin.finance.bank_transaction.review_escalated',
           title: 'Bank transaction review is overdue',
           body: `Bank transaction ${candidate.bankTransactionId} has remained assigned and unresolved for over 48 hours.`,
-          data: {
+          data: toJson(notificationDataWithDeliveryContract({
             assignmentAuditLogId: candidate.assignmentAuditLogId,
             bankTransactionId: candidate.bankTransactionId,
             destination: `/finance-tax/bank-reconciliation/${encodeURIComponent(candidate.bankTransactionId)}`,
             financeReviewStatus: 'OPEN',
             source: 'bank_transaction_review_escalation_sweep',
-          },
+          }, 'IN_APP_ONLY')),
         },
         select: { id: true },
       });
       await tx.adminAuditLog.create({
         data: {
-          actorId: recipient.id,
+          actorId: null,
+          actorKey: 'finance-operations-monitor',
+          actorLabelSnapshot: 'HANDS finance monitor',
+          actorType: 'SYSTEM',
           action: COMPANY_BANK_TRANSACTION_REVIEW_ESCALATION_ACTION,
+          area: 'MONEY',
+          outcome: 'OPENED',
+          severity: 'REVIEW',
+          source: 'system_sweep',
           target,
           metadata: {
             assigneeAdminId: candidate.assigneeAdminId,
@@ -18225,21 +21203,28 @@ export class AdminService {
           type: 'admin.finance.partner_bank_deposit.reconciliation_escalated',
           title: 'Partner deposit reconciliation is overdue',
           body: `Partner bank deposit ${request.id} has remained unreconciled for over 48 hours.`,
-          data: {
+          data: toJson(notificationDataWithDeliveryContract({
             assignmentAuditLogId: candidate.assignmentAuditLogId,
             bankTransactionId: request.bankTransactionId,
             destination: `/finance-tax/partner-bank-deposits/${encodeURIComponent(request.id)}`,
             financeReviewStatus: 'OPEN',
             partnerBankDepositRequestId: request.id,
             source: 'partner_bank_deposit_reconciliation_escalation_sweep',
-          },
+          }, 'IN_APP_ONLY')),
         },
         select: { id: true },
       });
       await tx.adminAuditLog.create({
         data: {
-          actorId: fallbackRecipient.id,
+          actorId: null,
+          actorKey: 'finance-operations-monitor',
+          actorLabelSnapshot: 'HANDS finance monitor',
+          actorType: 'SYSTEM',
           action: PARTNER_BANK_DEPOSIT_RECONCILIATION_ESCALATION_ACTION,
+          area: 'MONEY',
+          outcome: 'OPENED',
+          severity: 'REVIEW',
+          source: 'system_sweep',
           target,
           metadata: {
             assigneeAdminId: candidate.assigneeAdminId,
@@ -18392,10 +21377,17 @@ export class AdminService {
       });
       await tx.adminAuditLog.create({
         data: {
-          actorId: current.userId,
+          actorId: null,
+          actorKey: 'finance-operations-monitor',
+          actorLabelSnapshot: 'HANDS finance monitor',
+          actorType: 'SYSTEM',
           action: partnerBankDepositRequestId
             ? PARTNER_BANK_DEPOSIT_RECONCILIATION_ESCALATION_RESOLVED_ACTION
             : COMPANY_BANK_TRANSACTION_REVIEW_ESCALATION_RESOLVED_ACTION,
+          area: 'MONEY',
+          outcome: 'RESOLVED',
+          severity: 'NOTICE',
+          source: 'system_sweep',
           target: `notification:${current.id}`,
           metadata: {
             bankTransactionId,
@@ -18463,19 +21455,26 @@ export class AdminService {
           type: 'admin.finance.bank_statement_batch.escalated',
           title: 'Bank statement batch needs escalation',
           body: `Bank statement batch ${candidate.batchImportId} has waited over 48 hours and needs reconciliation.`,
-          data: {
+          data: toJson(notificationDataWithDeliveryContract({
             batchImportId: candidate.batchImportId,
             destination: `/finance-tax/bank-reconciliation/import-batches/${encodeURIComponent(candidate.batchImportId)}`,
             financeReviewStatus: 'OPEN',
             source: 'bank_statement_batch_escalation_sweep',
-          },
+          }, 'IN_APP_ONLY')),
         },
         select: { id: true },
       });
       await tx.adminAuditLog.create({
         data: {
-          actorId: recipient.id,
+          actorId: null,
+          actorKey: 'finance-operations-monitor',
+          actorLabelSnapshot: 'HANDS finance monitor',
+          actorType: 'SYSTEM',
           action: COMPANY_BANK_TRANSACTION_BATCH_ESCALATION_ACTION,
+          area: 'MONEY',
+          outcome: 'OPENED',
+          severity: 'REVIEW',
+          source: 'system_sweep',
           target,
           metadata: {
             assigneeAdminId: candidate.assigneeAdminId,
@@ -18512,16 +21511,10 @@ export class AdminService {
     const transactionIds = Array.from(
       new Set(rowResults.map((row) => row.transactionId).filter((id): id is string => Boolean(id))),
     );
-    const [approver, assignee, transactions, assignmentAuditLogs] = await Promise.all([
+    const [approver, transactions, assignmentAuditLogs] = await Promise.all([
       batch.approvalAdminId
         ? this.prisma.user.findUnique({
             where: { id: batch.approvalAdminId },
-            select: { id: true, email: true, fullName: true },
-          })
-        : null,
-      batch.assigneeAdminId
-        ? this.prisma.user.findUnique({
-            where: { id: batch.assigneeAdminId },
             select: { id: true, email: true, fullName: true },
           })
         : null,
@@ -18555,7 +21548,13 @@ export class AdminService {
         },
       }),
     ]);
-    const assignmentAdminIds = adminFinanceReviewAssignmentReferencedIds(assignmentAuditLogs);
+    const latestAssignmentMetadata = jsonObject(assignmentAuditLogs[0]?.metadata ?? null);
+    const currentAssigneeAdminId =
+      jsonString(latestAssignmentMetadata.assigneeAdminId) ?? batch.assigneeAdminId;
+    const assignmentAdminIds = Array.from(new Set([
+      ...adminFinanceReviewAssignmentReferencedIds(assignmentAuditLogs),
+      ...(currentAssigneeAdminId ? [currentAssigneeAdminId] : []),
+    ]));
     const assignmentAdmins = assignmentAdminIds.length
       ? await this.prisma.user.findMany({
           where: { id: { in: assignmentAdminIds } },
@@ -18563,6 +21562,9 @@ export class AdminService {
         })
       : [];
     const assignmentAdminsById = new Map(assignmentAdmins.map((admin) => [admin.id, admin]));
+    const assignee = currentAssigneeAdminId
+      ? (assignmentAdminsById.get(currentAssigneeAdminId) ?? null)
+      : null;
     const transactionsById = new Map(transactions.map((transaction) => [transaction.id, transaction]));
     const transactionStatusById = new Map(
       transactions.map((transaction) => [transaction.id, transaction.status]),
@@ -18575,6 +21577,7 @@ export class AdminService {
         transactionStatusById,
         batch.createdAt,
       ),
+      assigneeAdminId: currentAssigneeAdminId,
       assignee,
       approver,
       assignmentHistory: adminFinanceReviewAssignmentHistory(assignmentAuditLogs, assignmentAdminsById),
@@ -18594,7 +21597,7 @@ export class AdminService {
     const assigneeAdminId = normalizeRequiredId(input.assigneeAdminId, 'Assignee admin id');
     const reason = normalizeAuditReason(input.reason);
     const target = `company_bank_transaction_batch:${normalizedBatchImportId}`;
-    const [batchLog, assigneeRecord] = await Promise.all([
+    const [batchLog, assigneeRecord, previousAssignment] = await Promise.all([
       this.prisma.adminAuditLog.findFirst({
         where: { action: COMPANY_BANK_TRANSACTION_BATCH_IMPORT_ACTION, target },
         select: adminAuditLogSelect,
@@ -18612,14 +21615,17 @@ export class AdminService {
           adminOperatorPermission: { select: { categories: true } },
         },
       }),
+      this.prisma.adminAuditLog.findFirst({
+        where: { action: COMPANY_BANK_TRANSACTION_BATCH_ASSIGNMENT_ACTION, target },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: { metadata: true },
+      }),
     ]);
     if (!batchLog) throw new NotFoundException('Bank statement import batch not found');
     if (!assigneeRecord) {
       throw new BadRequestException('Finance reconciliation assignee is not an active Admin operator');
     }
-    const assigneeCategories =
-      assigneeRecord.adminOperatorPermission?.categories ??
-      defaultAdminOperatorPermissionCategories(assigneeRecord.roles);
+    const assigneeCategories = assigneeRecord.adminOperatorPermission?.categories ?? [];
     if (
       !assigneeRecord.roles.includes(Role.MASTER_ADMIN) &&
       !assigneeCategories.includes(AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION)
@@ -18632,37 +21638,33 @@ export class AdminService {
       fullName: assigneeRecord.fullName,
     };
 
-    const previousMetadata = jsonObject(batchLog.metadata);
-    const previousAssigneeAdminId = jsonString(previousMetadata.assigneeAdminId);
+    const previousAssigneeAdminId =
+      jsonString(jsonObject(previousAssignment?.metadata ?? null).assigneeAdminId) ??
+      jsonString(jsonObject(batchLog.metadata).assigneeAdminId);
     if (previousAssigneeAdminId === assigneeAdminId) {
       throw new ConflictException('Bank statement import batch is already assigned to this operator');
     }
     const assignedAt = new Date();
-    const metadata = {
-      ...previousMetadata,
-      assigneeAdminId,
-      assignedAt: assignedAt.toISOString(),
-      assignedByAdminId: actorId,
-    } satisfies Prisma.InputJsonObject;
-    const [, assignmentAuditLog] = await this.prisma.$transaction([
-      this.prisma.adminAuditLog.update({
-        where: { id: batchLog.id },
-        data: { metadata },
-      }),
-      this.prisma.adminAuditLog.create({
-        data: {
-          actorId,
-          action: COMPANY_BANK_TRANSACTION_BATCH_ASSIGNMENT_ACTION,
-          target,
-          metadata: {
-            assigneeAdminId,
-            assignedAt: assignedAt.toISOString(),
-            previousAssigneeAdminId,
-            reason,
-          },
+    const assignmentAuditLog = await this.prisma.adminAuditLog.create({
+      data: {
+        actorId,
+        actorKey: actorId,
+        actorType: 'HUMAN',
+        action: COMPANY_BANK_TRANSACTION_BATCH_ASSIGNMENT_ACTION,
+        area: 'MONEY',
+        outcome: 'SUCCEEDED',
+        severity: 'INFO',
+        source: 'admin_web',
+        target,
+        metadata: {
+          assigneeAdminId,
+          assignedAt: assignedAt.toISOString(),
+          assignedByAdminId: actorId,
+          previousAssigneeAdminId,
+          reason,
         },
-      }),
-    ]);
+      },
+    });
     const batch = await this.companyBankTransactionImportBatchDetail(normalizedBatchImportId);
     const escalated = batch.reconciliationSlaStatus === 'ESCALATE';
     const notification = await this.notifications.createInApp({
@@ -18738,9 +21740,7 @@ export class AdminService {
     if (!assigneeRecord) {
       throw new BadRequestException('Finance reconciliation assignee is not an active Admin operator');
     }
-    const assigneeCategories =
-      assigneeRecord.adminOperatorPermission?.categories ??
-      defaultAdminOperatorPermissionCategories(assigneeRecord.roles);
+    const assigneeCategories = assigneeRecord.adminOperatorPermission?.categories ?? [];
     if (
       !assigneeRecord.roles.includes(Role.MASTER_ADMIN) &&
       !assigneeCategories.includes(AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION)
@@ -18859,9 +21859,7 @@ export class AdminService {
     if (!assigneeRecord) {
       throw new BadRequestException('Finance reconciliation assignee is not an active Admin operator');
     }
-    const assigneeCategories =
-      assigneeRecord.adminOperatorPermission?.categories ??
-      defaultAdminOperatorPermissionCategories(assigneeRecord.roles);
+    const assigneeCategories = assigneeRecord.adminOperatorPermission?.categories ?? [];
     if (
       !assigneeRecord.roles.includes(Role.MASTER_ADMIN) &&
       !assigneeCategories.includes(AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION)
@@ -19077,9 +22075,7 @@ export class AdminService {
     if (!assigneeRecord) {
       throw new BadRequestException('Payment clearing assignee is not an active Admin operator');
     }
-    const assigneeCategories =
-      assigneeRecord.adminOperatorPermission?.categories ??
-      defaultAdminOperatorPermissionCategories(assigneeRecord.roles);
+    const assigneeCategories = assigneeRecord.adminOperatorPermission?.categories ?? [];
     if (
       !assigneeRecord.roles.includes(Role.MASTER_ADMIN) &&
       !assigneeCategories.includes(AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING)
@@ -19222,9 +22218,7 @@ export class AdminService {
     if (!assigneeRecord) {
       throw new BadRequestException('Payment clearing assignee is not an active Admin operator');
     }
-    const assigneeCategories =
-      assigneeRecord.adminOperatorPermission?.categories ??
-      defaultAdminOperatorPermissionCategories(assigneeRecord.roles);
+    const assigneeCategories = assigneeRecord.adminOperatorPermission?.categories ?? [];
     if (
       !assigneeRecord.roles.includes(Role.MASTER_ADMIN) &&
       !assigneeCategories.includes(AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING)
@@ -19445,9 +22439,7 @@ export class AdminService {
     if (!assigneeRecord) {
       throw new BadRequestException('Finance reconciliation assignee is not an active Admin operator');
     }
-    const assigneeCategories =
-      assigneeRecord.adminOperatorPermission?.categories ??
-      defaultAdminOperatorPermissionCategories(assigneeRecord.roles);
+    const assigneeCategories = assigneeRecord.adminOperatorPermission?.categories ?? [];
     if (
       !assigneeRecord.roles.includes(Role.MASTER_ADMIN) &&
       !assigneeCategories.includes(AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION)
@@ -19570,9 +22562,7 @@ export class AdminService {
     if (!assigneeRecord) {
       throw new BadRequestException('Finance reconciliation assignee is not an active Admin operator');
     }
-    const assigneeCategories =
-      assigneeRecord.adminOperatorPermission?.categories ??
-      defaultAdminOperatorPermissionCategories(assigneeRecord.roles);
+    const assigneeCategories = assigneeRecord.adminOperatorPermission?.categories ?? [];
     if (
       !assigneeRecord.roles.includes(Role.MASTER_ADMIN) &&
       !assigneeCategories.includes(AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION)
@@ -19738,7 +22728,7 @@ export class AdminService {
     }
     const matchIds = new Set(transaction.reconciliationMatches.map((match) => match.id));
     const matchTargets = [...matchIds].map((matchId) => `bank_reconciliation_match:${matchId}`);
-    const [auditLogs, assignmentAuditLogs, currentOperator] = await Promise.all([
+    const [auditLogs, assignmentAuditLogs, currentApproverPolicy] = await Promise.all([
       matchIds.size
         ? this.prisma.adminAuditLog.findMany({
             where: {
@@ -19780,10 +22770,11 @@ export class AdminService {
         },
       }),
       actorId
-        ? this.prisma.user.findUnique({
-            where: { id: actorId },
-            select: { roles: true },
-          })
+        ? financeApproverPolicySnapshot(this.prisma, actorId, {
+            requireAttestation: true,
+            requiredCategory: AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+            requireFinanceRole: true,
+          }).catch(() => null)
         : Promise.resolve(null),
     ]);
     const transactionMetadata = jsonObject(transaction.metadata);
@@ -19844,11 +22835,7 @@ export class AdminService {
       Array.isArray(transaction.reconciliationMatches)
         ? bankReconciliationTransactionPreflight({
             actorId,
-            actorCanApprove: Boolean(
-              currentOperator?.roles.some(
-                (role) => role === Role.FINANCE_APPROVER || role === Role.MASTER_ADMIN,
-              ),
-            ),
+            actorCanApprove: currentApproverPolicy?.ready === true,
             amount: transaction.amount,
             matches: transaction.reconciliationMatches,
             reviewOwnerAdminId,
@@ -20243,13 +23230,17 @@ export class AdminService {
     const bankAccountId = normalizeRequiredId(input.bankAccountId, 'Company bank account id');
     const bankAccount = await this.prisma.companyBankAccount.findUnique({
       where: { id: bankAccountId },
-      select: { id: true, currency: true, status: true },
+      select: { id: true, currency: true, dataScope: true, metadata: true, status: true },
     });
     if (!bankAccount) {
       throw new NotFoundException('Company bank account not found');
     }
     if (bankAccount.status !== CompanyBankAccountStatus.ACTIVE) {
       throw new BadRequestException('Company bank account must be active before importing transactions');
+    }
+    const scopeError = companyBankAccountOperationalScopeError(bankAccount.dataScope);
+    if (scopeError) {
+      throw new BadRequestException({ ...scopeError, field: 'bankAccountId' });
     }
 
     const currency = normalizeCompanyBankTransactionCurrency(input.currency, bankAccount.currency);
@@ -20559,7 +23550,7 @@ export class AdminService {
     if (!bankAccountCache.has(bankAccountId)) {
       bankAccount = await this.prisma.companyBankAccount.findUnique({
         where: { id: bankAccountId },
-        select: { id: true, currency: true, status: true },
+        select: { id: true, currency: true, dataScope: true, metadata: true, status: true },
       });
       bankAccountCache.set(bankAccountId, bankAccount);
     }
@@ -20568,6 +23559,12 @@ export class AdminService {
     }
     if (bankAccount.status !== CompanyBankAccountStatus.ACTIVE) {
       return companyBankTransactionInvalidBatchRow(input, ['Company bank account is not active']);
+    }
+    const scopeError = companyBankAccountOperationalScopeError(bankAccount.dataScope);
+    if (scopeError) {
+      return companyBankTransactionInvalidBatchRow(input, [
+        scopeError.message,
+      ]);
     }
 
     const currency = normalizeCompanyBankTransactionCurrency(input.currency, bankAccount.currency);
@@ -20645,8 +23642,7 @@ export class AdminService {
       bankTransactionId,
       'Bank reconciliation match',
     );
-    return this.prisma.$transaction(
-      async (tx) => {
+    return this.runBankReconciliationSerializable(async (tx) => {
         const bankTransaction = await tx.companyBankTransaction.findUnique({
           where: { id: bankTransactionId },
           select: {
@@ -20818,11 +23814,7 @@ export class AdminService {
           match,
           paymentClearingEntry: updatedPaymentClearingEntry,
         };
-      },
-      {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-      },
-    );
+      });
   }
 
   async reverseBankReconciliationMatch(
@@ -20837,8 +23829,7 @@ export class AdminService {
       bankTransactionId,
       'Bank reconciliation match reversal',
     );
-    return this.prisma.$transaction(
-      async (tx) => {
+    return this.runBankReconciliationSerializable(async (tx) => {
         const match = await tx.bankReconciliationMatch.findUnique({
           where: { id: matchId },
           select: {
@@ -20935,11 +23926,7 @@ export class AdminService {
           match: reversedMatch,
           paymentClearingEntry: updatedPaymentClearingEntry,
         };
-      },
-      {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-      },
-    );
+      });
   }
 
   async ignoreCompanyBankTransaction(
@@ -20953,8 +23940,7 @@ export class AdminService {
       bankTransactionId,
       'Bank transaction ignore',
     );
-    return this.prisma.$transaction(
-      async (tx) => {
+    return this.runBankReconciliationSerializable(async (tx) => {
         const bankTransaction = await tx.companyBankTransaction.findUnique({
           where: { id: bankTransactionId },
           select: {
@@ -21030,11 +24016,32 @@ export class AdminService {
         });
 
         return { auditLog, bankTransaction: updatedBankTransaction };
-      },
-      {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-      },
-    );
+      });
+  }
+
+  private async runBankReconciliationSerializable<T>(
+    operation: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        return await this.prisma.$transaction(operation, {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        });
+      } catch (error) {
+        const isSerializableConflict =
+          error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034';
+        if (!isSerializableConflict) {
+          throw error;
+        }
+        if (attempt === 3) {
+          throw new ConflictException(
+            'Bank reconciliation changed concurrently; reload and try again.',
+          );
+        }
+      }
+    }
+
+    throw new ConflictException('Bank reconciliation changed concurrently; reload and try again.');
   }
 
   private async resolveBankReconciliationSource(
@@ -22487,11 +25494,18 @@ export class AdminService {
       : 'all';
     const include = (focusedView: Exclude<AdminFinanceApprovalQueueView, 'priority'>) =>
       view === 'priority' || view === focusedView;
-    const currentApprover = actorId
-      ? await this.prisma.user.findFirst({
-          where: { id: actorId, roles: { has: Role.FINANCE_APPROVER } },
-          select: { id: true, email: true, fullName: true },
+    const currentApproverPolicy = actorId
+      ? await financeApproverPolicySnapshot(this.prisma, actorId, {
+          requireAttestation: true,
+          requireFinanceRole: true,
         })
+      : null;
+    const currentApprover = currentApproverPolicy?.ready
+      ? {
+          email: currentApproverPolicy.user.email,
+          fullName: currentApproverPolicy.user.fullName,
+          id: currentApproverPolicy.user.id,
+        }
       : null;
     const actorCanApprove = Boolean(currentApprover);
     const walletReviewState =
@@ -23982,6 +26996,10 @@ export class AdminService {
     return this.requiredSiteContent().listAdminPages(query);
   }
 
+  publicSiteReadinessDryRun() {
+    return this.requiredSiteContent().readinessDryRun();
+  }
+
   getPublicSitePage(pageId: string) {
     return this.requiredSiteContent().getAdminPage(pageId);
   }
@@ -24018,12 +27036,16 @@ export class AdminService {
     return this.requiredSiteContent().rollbackRevision(actorId, pageId, input);
   }
 
+  takePublicSitePageOffline(actorId: string, pageId: string, input: TakePublicSitePageOfflineDto) {
+    return this.requiredSiteContent().takeOffline(actorId, pageId, input);
+  }
+
   updatePublicSitePage(actorId: string, pageId: string, input: UpdatePublicSitePageDto) {
     return this.requiredSiteContent().updatePage(actorId, pageId, input);
   }
 
-  deletePublicSitePage(actorId: string, pageId: string) {
-    return this.requiredSiteContent().deletePage(actorId, pageId);
+  deletePublicSitePage(actorId: string, pageId: string, input: DeletePublicSitePageDto) {
+    return this.requiredSiteContent().deletePage(actorId, pageId, input);
   }
 
   createPublicSiteSection(actorId: string, pageId: string, input: CreatePublicSiteSectionDto) {
@@ -24047,6 +27069,15 @@ export class AdminService {
 
   async listServices(options: { readonly scope?: string } = {}) {
     const services = await this.prisma.massageService.findMany({
+      ...(options.scope === 'operational'
+        ? {
+            where: {
+              provenance: {
+                in: [ServiceCatalogProvenance.OPERATOR, ServiceCatalogProvenance.SEED],
+              },
+            },
+          }
+        : {}),
       orderBy: [{ displayOrder: 'asc' }, { serviceGroupKey: 'asc' }, { durationMin: 'asc' }],
       select: adminServiceCatalogSelect,
     });
@@ -24058,8 +27089,416 @@ export class AdminService {
     );
   }
 
-  async listServiceGroups() {
-    return groupServiceCatalogOptions(await this.listServices());
+  async listServiceGroups(options: { readonly scope?: string } = {}) {
+    const [services, drafts] = await Promise.all([
+      this.listServices(options),
+      this.prisma.serviceCatalogDraft.findMany({ orderBy: { updatedAt: 'desc' } }),
+    ]);
+    const groups = groupServiceCatalogOptions(services);
+    const draftsByKey = new Map(drafts.map((draft) => [draft.serviceGroupKey, draft]));
+    const result = groups.map((group) => ({
+      ...group,
+      draft: draftsByKey.get(group.key) ?? null,
+    }));
+    const existingKeys = new Set(groups.map((group) => group.key));
+    for (const draft of drafts) {
+      if (existingKeys.has(draft.serviceGroupKey)) continue;
+      const payload = serviceCatalogDraftPayload(draft.payload);
+      result.push({
+        key: draft.serviceGroupKey,
+        name: payload.nameTranslations.en ?? payload.nameTranslations.vi ?? draft.serviceGroupKey,
+        nameTranslations: payload.nameTranslations,
+        description: payload.description,
+        durationSummary: payload.durations.map((row) => `${row.durationMin} min`).join(', '),
+        activeOptionCount: 0,
+        missingStandardDurations: [],
+        minBasePrice: null,
+        maxBasePrice: null,
+        payoutRuleCount: 0,
+        options: [],
+        draft,
+      });
+    }
+    return result;
+  }
+
+  async serviceCatalogHealth() {
+    const checkedAt = new Date();
+    const [services, drafts] = await Promise.all([
+      this.prisma.massageService.findMany({
+        where: {
+          durationMin: { in: [...PUBLIC_SERVICE_CATALOG_DURATIONS] },
+          provenance: {
+            in: [ServiceCatalogProvenance.OPERATOR, ServiceCatalogProvenance.SEED],
+          },
+        },
+        orderBy: [{ publishedAt: 'desc' }, { updatedAt: 'desc' }],
+        select: adminServiceCatalogSelect,
+      }),
+      this.prisma.serviceCatalogDraft.findMany({
+        select: { serviceGroupKey: true, version: true },
+      }),
+    ]);
+    const publishedOptions = services.filter(
+      (service) =>
+        service.active && service.publicationStatus === ServicePublicationStatus.PUBLISHED,
+    );
+    const liveOptions = publishedOptions.filter(isPublicServiceCatalogOption);
+    const blockedOptions = publishedOptions.filter(
+      (service) => !isPublicServiceCatalogOption(service),
+    );
+    const liveGroups = groupServiceCatalogOptions(liveOptions);
+    const liveEnViReadyGroupCount = liveGroups.filter((group) => {
+      const translations = serviceCatalogNameTranslations(group.nameTranslations);
+      return Boolean(translations.en && translations.vi);
+    }).length;
+    const currentPayoutRuleCount = liveOptions.reduce(
+      (count, service) =>
+        count +
+        service.payoutRules.filter(
+          (rule) =>
+            rule.active &&
+            rule.customerPrice === service.basePrice &&
+            rule.providerPayoutAmount <= rule.customerPrice,
+        ).length,
+      0,
+    );
+    const allPayoutRuleCount = services.reduce(
+      (count, service) => count + service.payoutRules.length,
+      0,
+    );
+    const duplicateCurrentPayoutCount = liveOptions.filter(
+      (service) =>
+        service.payoutRules.filter(
+          (rule) =>
+            rule.active &&
+            rule.customerPrice === service.basePrice &&
+            rule.providerPayoutAmount <= rule.customerPrice,
+        ).length !== 1,
+    ).length;
+    const latestCatalogVersionByGroup = new Map<string, number>();
+    for (const service of services) {
+      const groupKey = service.serviceGroupKey;
+      if (!groupKey) continue;
+      latestCatalogVersionByGroup.set(
+        groupKey,
+        Math.max(latestCatalogVersionByGroup.get(groupKey) ?? 0, service.catalogVersion),
+      );
+    }
+    const workingDraftCount = drafts.filter(
+      (draft) => draft.version > (latestCatalogVersionByGroup.get(draft.serviceGroupKey) ?? 0),
+    ).length;
+    const lastPublished = services
+      .filter(
+        (service) =>
+          service.publicationStatus === ServicePublicationStatus.PUBLISHED && service.publishedAt,
+      )
+      .sort(
+        (left, right) =>
+          (right.publishedAt?.getTime() ?? 0) - (left.publishedAt?.getTime() ?? 0),
+      )[0];
+
+    return {
+      status:
+        blockedOptions.length || duplicateCurrentPayoutCount ? ('degraded' as const) : ('healthy' as const),
+      checkedAt,
+      liveGroupCount: liveGroups.length,
+      liveOptionCount: liveOptions.length,
+      blockedOptionCount: blockedOptions.length,
+      anomalyCount: blockedOptions.length + duplicateCurrentPayoutCount,
+      liveEnViReadyGroupCount,
+      currentPayoutRuleCount,
+      historicalPayoutRuleCount: Math.max(0, allPayoutRuleCount - currentPayoutRuleCount),
+      workingDraftCount,
+      lastPublishedAt: lastPublished?.publishedAt ?? null,
+      lastPublishedById: lastPublished?.publishedById ?? null,
+      lastPublishedGroupKey: lastPublished?.serviceGroupKey ?? null,
+      auditTarget: lastPublished?.serviceGroupKey
+        ? `service_group:${lastPublished.serviceGroupKey}`
+        : null,
+    };
+  }
+
+  async serviceCatalogGroupImpact(groupKeyInput: string) {
+    const groupKey = groupKeyInput.trim();
+    if (!/^[a-z0-9_]{2,80}$/u.test(groupKey)) {
+      throw new BadRequestException('Invalid service group key');
+    }
+    const options = await this.prisma.massageService.findMany({
+      where: { serviceGroupKey: groupKey },
+      select: { id: true, basePrice: true },
+    });
+    const serviceIds = options.map((option) => option.id);
+    if (serviceIds.length === 0) {
+      throw new NotFoundException('Service group not found');
+    }
+    const [partnerPrices, openBookingLineCount] = await Promise.all([
+      this.prisma.providerService.findMany({
+        where: { active: true, serviceId: { in: serviceIds } },
+        select: {
+          providerProfileId: true,
+          price: true,
+          service: { select: { basePrice: true } },
+        },
+      }),
+      this.prisma.bookingService.count({
+        where: {
+          serviceId: { in: serviceIds },
+          booking: { status: { in: Array.from(ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES) } },
+        },
+      }),
+    ]);
+
+    return {
+      groupKey,
+      activePartnerCount: new Set(partnerPrices.map((row) => row.providerProfileId)).size,
+      customPricePartnerCount: new Set(
+        partnerPrices
+          .filter((row) => row.price !== row.service.basePrice)
+          .map((row) => row.providerProfileId),
+      ).size,
+      openBookingLineCount,
+    };
+  }
+
+  async saveServiceCatalogGroup(
+    actorId: string,
+    groupKey: string,
+    input: {
+      requestId: string;
+      expectedVersion: number;
+      intent: 'SAVE_DRAFT' | 'PUBLISH' | 'HIDE' | 'ARCHIVE';
+      reason?: string;
+      nameTranslations?: unknown;
+      description?: string | null;
+      priceStep: number;
+      displayOrder: number;
+      durations: Array<{
+        durationMin: number;
+        enabled: boolean;
+        basePrice?: number;
+        providerPayoutAmount?: number;
+        displayOrder: number;
+      }>;
+    },
+  ) {
+    const command = normalizeServiceCatalogGroupCommand(groupKey, input);
+    const mutationHash = serviceCatalogMutationHash(command);
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`service-catalog:${command.serviceGroupKey}`}, 0))`,
+      );
+      const replayDraft = await tx.serviceCatalogDraft.findUnique({
+        where: { lastMutationKey: command.requestId },
+      });
+      if (replayDraft) {
+        if (
+          replayDraft.serviceGroupKey !== command.serviceGroupKey ||
+          replayDraft.lastMutationHash !== mutationHash
+        ) {
+          throw new ConflictException('Service catalog request ID was already used for another change');
+        }
+        return serviceCatalogGroupResult(tx, command.serviceGroupKey, replayDraft);
+      }
+      const replayService = await tx.massageService.findFirst({
+        where: { lastMutationKey: command.requestId },
+        select: { serviceGroupKey: true, lastMutationHash: true },
+      });
+      if (replayService) {
+        if (
+          replayService.serviceGroupKey !== command.serviceGroupKey ||
+          replayService.lastMutationHash !== mutationHash
+        ) {
+          throw new ConflictException('Service catalog request ID was already used for another change');
+        }
+        const replay = await tx.serviceCatalogDraft.findUnique({
+          where: { serviceGroupKey: command.serviceGroupKey },
+        });
+        return serviceCatalogGroupResult(tx, command.serviceGroupKey, replay);
+      }
+
+      const [draft, existing] = await Promise.all([
+        tx.serviceCatalogDraft.findUnique({ where: { serviceGroupKey: command.serviceGroupKey } }),
+        tx.massageService.findMany({
+          where: { serviceGroupKey: command.serviceGroupKey },
+          orderBy: { durationMin: 'asc' },
+          select: adminServiceMutationSelect,
+        }),
+      ]);
+      const currentVersion = Math.max(
+        draft?.version ?? 0,
+        ...existing.map((service) => service.catalogVersion),
+      );
+      if (command.expectedVersion !== currentVersion) {
+        if (command.expectedVersion === 0 && currentVersion > 0) {
+          throw new ConflictException({
+            code: 'SERVICE_CATALOG_GROUP_KEY_EXISTS',
+            fieldErrors: { serviceGroupKey: 'This service key is already in use.' },
+            message: 'A service group already uses this key.',
+          });
+        }
+        throw new ConflictException({
+          code: 'SERVICE_CATALOG_VERSION_CONFLICT',
+          currentVersion,
+          message: 'The service catalog changed after this drawer was opened. Reload and review the latest values.',
+        });
+      }
+      const nextVersion = currentVersion + 1;
+      const before = existing;
+      const draftRecord = await tx.serviceCatalogDraft.upsert({
+        where: { serviceGroupKey: command.serviceGroupKey },
+        create: {
+          serviceGroupKey: command.serviceGroupKey,
+          version: nextVersion,
+          payload: toJson(command),
+          lastMutationKey: command.requestId,
+          lastMutationHash: mutationHash,
+          createdById: actorId,
+          updatedById: actorId,
+        },
+        update: {
+          version: nextVersion,
+          payload: toJson(command),
+          lastMutationKey: command.requestId,
+          lastMutationHash: mutationHash,
+          updatedById: actorId,
+        },
+      });
+
+      if (command.intent === 'SAVE_DRAFT') {
+        await tx.adminAuditLog.create({
+          data: {
+            actorId,
+            action: 'service_catalog.draft_saved',
+            target: `service_group:${command.serviceGroupKey}`,
+            metadata: toJson({ before, after: command, reason: command.reason, version: nextVersion }),
+          },
+        });
+        return serviceCatalogGroupResult(tx, command.serviceGroupKey, draftRecord);
+      }
+
+      if (command.intent === 'HIDE' || command.intent === 'ARCHIVE') {
+        if (!command.reason || command.reason.length < 12) {
+          throw new BadRequestException({
+            code: 'SERVICE_CATALOG_VALIDATION_FAILED',
+            fieldErrors: { reason: 'Explain the customer impact in at least 12 characters.' },
+          });
+        }
+        const publicationStatus =
+          command.intent === 'HIDE'
+            ? ServicePublicationStatus.HIDDEN
+            : ServicePublicationStatus.ARCHIVED;
+        await tx.massageService.updateMany({
+          where: { serviceGroupKey: command.serviceGroupKey },
+          data: {
+            publicationStatus,
+            catalogVersion: nextVersion,
+            lastMutationKey: command.requestId,
+            lastMutationHash: mutationHash,
+          },
+        });
+        await tx.adminAuditLog.create({
+          data: {
+            actorId,
+            action: `service_catalog.${command.intent.toLowerCase()}`,
+            target: `service_group:${command.serviceGroupKey}`,
+            metadata: toJson({ before, reason: command.reason, version: nextVersion }),
+          },
+        });
+        return serviceCatalogGroupResult(tx, command.serviceGroupKey, draftRecord);
+      }
+
+      const now = new Date();
+      const name =
+        command.nameTranslations.en ??
+        command.nameTranslations.vi ??
+        command.serviceGroupKey;
+      for (const row of command.durations) {
+        const existingService = existing.find((service) => service.durationMin === row.durationMin);
+        if (row.basePrice === undefined) {
+          if (existingService) {
+            await tx.massageService.update({
+              where: { id: existingService.id },
+              data: {
+                active: false,
+                catalogVersion: nextVersion,
+                lastMutationKey: command.requestId,
+                lastMutationHash: mutationHash,
+              },
+            });
+          }
+          continue;
+        }
+        const service = await tx.massageService.upsert({
+          where: {
+            serviceGroupKey_durationMin: {
+              serviceGroupKey: command.serviceGroupKey,
+              durationMin: row.durationMin,
+            },
+          },
+          create: {
+            serviceGroupKey: command.serviceGroupKey,
+            name,
+            nameTranslations: toJson(command.nameTranslations),
+            description: command.description,
+            durationMin: row.durationMin,
+            basePrice: row.basePrice!,
+            priceStep: command.priceStep,
+            displayOrder: row.displayOrder,
+            active: row.enabled,
+            publicationStatus: ServicePublicationStatus.PUBLISHED,
+            provenance: ServiceCatalogProvenance.OPERATOR,
+            catalogVersion: nextVersion,
+            lastMutationKey: command.requestId,
+            lastMutationHash: mutationHash,
+            publishedAt: now,
+            publishedById: actorId,
+          },
+          update: {
+            name,
+            nameTranslations: toJson(command.nameTranslations),
+            description: command.description,
+            basePrice: row.basePrice!,
+            priceStep: command.priceStep,
+            displayOrder: row.displayOrder,
+            active: row.enabled,
+            publicationStatus: ServicePublicationStatus.PUBLISHED,
+            catalogVersion: nextVersion,
+            lastMutationKey: command.requestId,
+            lastMutationHash: mutationHash,
+            publishedAt: now,
+            publishedById: actorId,
+          },
+          select: { id: true, basePrice: true },
+        });
+        if (row.enabled) {
+          await createServicePayoutRuleVersion(tx, service.id, {
+            customerPrice: service.basePrice,
+            providerPayoutAmount: row.providerPayoutAmount!,
+            vatBps: 0,
+            otherCostAmount: 0,
+            currency: 'VND',
+            active: true,
+            notes: `Published with service catalog version ${nextVersion}.`,
+          });
+        }
+      }
+      const after = await tx.massageService.findMany({
+        where: { serviceGroupKey: command.serviceGroupKey },
+        orderBy: { durationMin: 'asc' },
+        select: adminServiceMutationSelect,
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'service_catalog.published',
+          target: `service_group:${command.serviceGroupKey}`,
+          metadata: toJson({ before, after, reason: command.reason, version: nextVersion }),
+        },
+      });
+      return serviceCatalogGroupResult(tx, command.serviceGroupKey, draftRecord);
+    });
   }
 
   async createService(
@@ -24215,6 +27654,7 @@ export class AdminService {
       where: { id: serviceId },
       select: adminServiceMutationSelect,
     });
+    assertLegacyServiceCatalogMutationAllowed(existing);
     const data = normalizeServiceInput(input, false, existing) as Prisma.MassageServiceUncheckedUpdateInput;
     return this.prisma.$transaction(async (tx) => {
       await ensureServiceDurationIsUnique(tx, {
@@ -24263,41 +27703,33 @@ export class AdminService {
       notes?: string | null;
     },
   ) {
-    const service = await this.prisma.massageService.findUniqueOrThrow({
-      where: { id: serviceId },
-      select: adminServiceMutationSelect,
-    });
-    const data = normalizeServicePayoutRuleInput(service, input, true);
-    const existingRule = await this.prisma.servicePayoutRule.findUnique({
-      where: {
-        serviceId_customerPrice: {
-          serviceId,
-          customerPrice: data.customerPrice,
-        },
-      },
-      select: adminServicePayoutRuleMutationSelect,
-    });
-    const rule = await this.prisma.servicePayoutRule.upsert({
-      where: {
-        serviceId_customerPrice: {
-          serviceId,
-          customerPrice: data.customerPrice,
-        },
-      },
-      update: data,
-      create: {
-        ...data,
+    return this.prisma.$transaction(async (tx) => {
+      const service = await tx.massageService.findUniqueOrThrow({
+        where: { id: serviceId },
+        select: adminServiceMutationSelect,
+      });
+      assertLegacyServiceCatalogMutationAllowed(service);
+      const data = normalizeServicePayoutRuleInput(service, input, true);
+      const existingRule = await tx.servicePayoutRule.findFirst({
+        where: { serviceId, customerPrice: data.customerPrice, active: true },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: adminServicePayoutRuleMutationSelect,
+      });
+      const rule = await createServicePayoutRuleVersion(
+        tx,
         serviceId,
-      },
-      select: adminServicePayoutRuleMutationSelect,
+        data,
+      );
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'service_payout_rule.upsert',
+          target: `service:${serviceId}`,
+          metadata: toJson(servicePayoutRuleAuditMetadata(service, existingRule, rule)),
+        },
+      });
+      return rule;
     });
-    await this.writeAudit(
-      actorId,
-      'service_payout_rule.upsert',
-      `service:${serviceId}`,
-      toJson(servicePayoutRuleAuditMetadata(service, existingRule, rule)),
-    );
-    return rule;
   }
 
   async bulkUpsertServicePayoutRules(
@@ -24318,6 +27750,7 @@ export class AdminService {
       where: { id: serviceId },
       select: adminServiceMutationSelect,
     });
+    assertLegacyServiceCatalogMutationAllowed(service);
     const rows = input.rules ?? [];
     if (rows.length === 0) {
       throw new BadRequestException('At least one payout rule is required');
@@ -24336,25 +27769,21 @@ export class AdminService {
 
     return this.prisma.$transaction(async (tx) => {
       const existingRules = await tx.servicePayoutRule.findMany({
-        where: { serviceId, customerPrice: { in: data.map((row) => row.customerPrice) } },
+        where: {
+          serviceId,
+          customerPrice: { in: data.map((row) => row.customerPrice) },
+          active: true,
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         select: adminServicePayoutRuleMutationSelect,
       });
       const saved = [];
       for (const row of data) {
-        const rule = await tx.servicePayoutRule.upsert({
-          where: {
-            serviceId_customerPrice: {
-              serviceId,
-              customerPrice: row.customerPrice,
-            },
-          },
-          update: row,
-          create: {
-            ...row,
-            serviceId,
-          },
-          select: adminServicePayoutRuleMutationSelect,
-        });
+        const rule = await createServicePayoutRuleVersion(
+          tx,
+          serviceId,
+          row,
+        );
         saved.push(rule);
       }
       await tx.adminAuditLog.create({
@@ -24381,23 +27810,28 @@ export class AdminService {
       notes?: string | null;
     },
   ) {
-    const existing = await this.prisma.servicePayoutRule.findUniqueOrThrow({
-      where: { id: ruleId },
-      select: adminServicePayoutRuleWithServiceSelect,
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.servicePayoutRule.findUniqueOrThrow({
+        where: { id: ruleId },
+        select: adminServicePayoutRuleWithServiceSelect,
+      });
+      assertLegacyServiceCatalogMutationAllowed(existing.service);
+      const data = normalizeServicePayoutRuleInput(existing.service, input, false, existing);
+      const rule = await createServicePayoutRuleVersion(
+        tx,
+        existing.serviceId,
+        data,
+      );
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'service_payout_rule.update',
+          target: `service_payout_rule:${ruleId}`,
+          metadata: toJson(servicePayoutRuleAuditMetadata(existing.service, existing, rule)),
+        },
+      });
+      return { ...rule, service: existing.service };
     });
-    const data = normalizeServicePayoutRuleInput(existing.service, input, false, existing);
-    const rule = await this.prisma.servicePayoutRule.update({
-      where: { id: ruleId },
-      data,
-      select: adminServicePayoutRuleWithServiceSelect,
-    });
-    await this.writeAudit(
-      actorId,
-      'service_payout_rule.update',
-      `service_payout_rule:${ruleId}`,
-      toJson(servicePayoutRuleAuditMetadata(existing.service, existing, rule)),
-    );
-    return rule;
   }
 
   async markEarningPaid(
@@ -25606,10 +29040,10 @@ export class AdminService {
           })
         : [],
       actorId
-        ? this.prisma.user.findFirst({
-            where: { id: actorId, roles: { has: Role.FINANCE_APPROVER } },
-            select: { id: true },
-          })
+        ? financeApproverPolicySnapshot(this.prisma, actorId, {
+            requireAttestation: true,
+            requireFinanceRole: true,
+          }).then((snapshot) => (snapshot.ready ? { id: snapshot.user.id } : null))
         : null,
     ]);
     const ownerNamesByKey = new Map<string, string>([
@@ -25621,7 +29055,7 @@ export class AdminService {
           [`PARTNER:${owner.id}`, owner.displayName ?? owner.user.fullName ?? owner.user.phone] as const,
       ),
     ]);
-    const ownerPhonesByKey = new Map<string, string>([
+    const ownerPhonesByKey = new Map<string, string | null>([
       ...customerOwners.map(
         (owner) => [`CUSTOMER:${owner.id}`, maskedAdminOwnerPhone(owner.user.phone)] as const,
       ),
@@ -25748,7 +29182,7 @@ export class AdminService {
   ) {
     const approvalChannel = expectedLegacyInput ? 'LEGACY_COMPAT' : 'REQUEST_APPROVAL';
     const outcome = await this.prisma.$transaction(async (tx) => {
-      const request = await tx.manualWalletAdjustmentRequest.findUnique({ where: { id: requestId } });
+      let request = await tx.manualWalletAdjustmentRequest.findUnique({ where: { id: requestId } });
       if (!request) {
         throw new NotFoundException(`Manual wallet adjustment request ${requestId} was not found`);
       }
@@ -25760,6 +29194,17 @@ export class AdminService {
       if (expectedLegacyInput) {
         assertLegacyManualWalletAdjustmentRequestMatches(request, expectedLegacyInput);
       }
+      await this.lockManualWalletAdjustmentOwner(
+        tx,
+        manualWalletAdjustmentOwnerType(request.ownerType),
+        request.ownerId,
+        request.currency,
+      );
+      request = await tx.manualWalletAdjustmentRequest.findUnique({ where: { id: requestId } });
+      if (!request) {
+        throw new NotFoundException(`Manual wallet adjustment request ${requestId} was not found`);
+      }
+      assertManualWalletAdjustmentRequestPending(request.status);
 
       const input: CreateManualWalletAdjustmentDto = {
         ownerType: manualWalletAdjustmentOwnerType(request.ownerType),
@@ -25833,6 +29278,20 @@ export class AdminService {
       await this.notifications?.enqueuePersistedNotification?.(outcome.notificationId);
     }
     return outcome.response;
+  }
+
+  private async lockManualWalletAdjustmentOwner(
+    tx: Prisma.TransactionClient,
+    ownerType: ManualWalletAdjustmentOwnerType,
+    ownerId: string,
+    currency: string,
+  ) {
+    const lockKey = ownerType === 'PARTNER'
+      ? `${ownerId}:${currency}`
+      : customerWalletBookingLockKey(ownerId);
+    await tx.$queryRaw(
+      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`,
+    );
   }
 
   rejectManualWalletAdjustmentRequest(actorId: string, requestId: string, reason: string) {
@@ -26042,7 +29501,10 @@ export class AdminService {
         type: copy.type,
         title: copy.title,
         body: copy.body,
-        data: toJson(notificationDataWithTargetRole(copy.data, Role.CUSTOMER)),
+        data: toJson(notificationDataWithDeliveryContract(
+          notificationDataWithTargetRole(copy.data, Role.CUSTOMER),
+          'PUSH_AND_IN_APP',
+        )),
       },
       select: { id: true },
     });
@@ -26158,13 +29620,14 @@ export class AdminService {
 
     for (const log of auditLogs) {
       const evidence = evidenceByTarget.get(log.target) ?? {};
-      if (log.action === 'payout_batch.create' && !evidence.createdByAdminId) {
+      if (log.actorId && log.action === 'payout_batch.create' && !evidence.createdByAdminId) {
         evidence.createdByAdminId = log.actorId;
       }
-      if (log.action === 'payout_batch.update' && !evidence.lastUpdatedByAdminId) {
+      if (log.actorId && log.action === 'payout_batch.update' && !evidence.lastUpdatedByAdminId) {
         evidence.lastUpdatedByAdminId = log.actorId;
       }
       if (
+        log.actorId &&
         log.action === 'payout_batch.update' &&
         payoutBatchAuditStatus(log.metadata) === PayoutBatchStatus.PROCESSING &&
         !evidence.paidCloseoutRequestedByAdminId
@@ -26172,6 +29635,7 @@ export class AdminService {
         evidence.paidCloseoutRequestedByAdminId = log.actorId;
       }
       if (
+        log.actorId &&
         log.action === 'payout_batch.update' &&
         payoutBatchAuditStatus(log.metadata) === PayoutBatchStatus.PAID &&
         !evidence.paidByAdminId
@@ -26732,28 +30196,41 @@ export class AdminService {
       requestId,
       earningsInput,
       actorId,
-    );
-    const withdrawalStatusChange = providerWalletWithdrawalStatusChangeForAudit(request.metadata ?? null);
-    const previousStatus =
-      typeof withdrawalStatusChange?.previousStatus === 'string'
-        ? withdrawalStatusChange.previousStatus
-        : null;
-    await this.writeAudit(
-      actorId,
-      'provider_wallet.withdrawal_request.update',
-      `provider_wallet_withdrawal_request:${request.id}`,
-      {
-        providerProfileId: request.providerProfileId,
-        ...(approvalAdminId ? { approvalAdminId } : {}),
-        amount: request.amount,
-        currency: request.currency,
-        status: request.status,
-        previousStatus,
-        withdrawalStatusChange,
-        transferRef: request.transferRef,
-        bankTransferDate: input.bankTransferDate,
-        attachmentFileId: input.attachmentFileId,
-        attachmentUrl: input.attachmentUrl,
+      async (tx, updatedRequest) => {
+        if (approvalAdminId) {
+          await assertFinanceActionApprovalAdmin(
+            tx,
+            actorId,
+            'Provider wallet withdrawal paid closeout',
+          );
+        }
+        const withdrawalStatusChange = providerWalletWithdrawalStatusChangeForAudit(
+          updatedRequest.metadata ?? null,
+        );
+        const previousStatus =
+          typeof withdrawalStatusChange?.previousStatus === 'string'
+            ? withdrawalStatusChange.previousStatus
+            : null;
+        await this.writeAudit(
+          actorId,
+          'provider_wallet.withdrawal_request.update',
+          `provider_wallet_withdrawal_request:${updatedRequest.id}`,
+          {
+            providerProfileId: updatedRequest.providerProfileId,
+            ...(approvalAdminId ? { approvalAdminId } : {}),
+            amount: updatedRequest.amount,
+            currency: updatedRequest.currency,
+            status: updatedRequest.status,
+            previousStatus,
+            withdrawalStatusChange,
+            transferRef: updatedRequest.transferRef,
+            bankTransferDate: input.bankTransferDate,
+            attachmentFileId: input.attachmentFileId,
+            attachmentUrl: input.attachmentUrl,
+          },
+          undefined,
+          tx,
+        );
       },
     );
     return request;
@@ -26763,7 +30240,7 @@ export class AdminService {
     actorId: string,
     requestId: string,
     input: {
-      approvalAdminId: string;
+      approvalAdminId?: string;
       reason: string;
       reversalReference: string;
       occurredAt?: string | Date;
@@ -26771,40 +30248,65 @@ export class AdminService {
       attachmentUrl?: string | null;
     },
   ) {
-    const approvalAdminId = normalizeFinanceActionApprovalAdminId(
-      input.approvalAdminId,
-      actorId,
-      'Provider wallet withdrawal reversal',
-    );
+    const approvalAdminId = actorId;
     await assertFinanceActionApprovalAdmin(
       this.prisma,
       approvalAdminId,
       'Provider wallet withdrawal reversal',
     );
-    const result = await this.earnings.reversePaidProviderWalletWithdrawalForAdmin(requestId, {
-      actorId,
-      approvalAdminId,
-      reason: input.reason,
-      reversalReference: input.reversalReference,
-      occurredAt: input.occurredAt,
-      attachmentFileId: input.attachmentFileId,
-      attachmentUrl: input.attachmentUrl,
+    const paidCloseout = await this.prisma.adminAuditLog.findFirst({
+      where: {
+        action: 'provider_wallet.withdrawal_request.update',
+        target: `provider_wallet_withdrawal_request:${requestId}`,
+        metadata: { path: ['status'], equals: ProviderWalletWithdrawalRequestStatus.PAID },
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: { actorId: true, id: true },
     });
-    await this.writeAudit(
-      actorId,
-      'provider_wallet.withdrawal_request.reversal',
-      `provider_wallet_withdrawal_request:${requestId}`,
+    if (!paidCloseout?.actorId) {
+      throw new ConflictException('Provider wallet withdrawal reversal requires paid closeout evidence');
+    }
+    if (paidCloseout.actorId === actorId) {
+      throw new BadRequestException(
+        'Provider wallet withdrawal reversal requires a different operator from the paid closeout approver',
+      );
+    }
+    return this.earnings.reversePaidProviderWalletWithdrawalForAdmin(
+      requestId,
       {
+        actorId,
         approvalAdminId,
-        amount: result.withdrawalRequest.amount,
-        currency: result.withdrawalRequest.currency,
         reason: input.reason,
         reversalReference: input.reversalReference,
-        reversalJournalBatchId: result.reversalJournalBatch.id,
-        reversalWalletLedgerEntryId: result.reversalWalletLedgerEntry.id,
+        occurredAt: input.occurredAt,
+        attachmentFileId: input.attachmentFileId,
+        attachmentUrl: input.attachmentUrl,
+      },
+      async (tx, result) => {
+        await assertFinanceActionApprovalAdmin(
+          tx,
+          approvalAdminId,
+          'Provider wallet withdrawal reversal',
+        );
+        await this.writeAudit(
+          actorId,
+          'provider_wallet.withdrawal_request.reversal',
+          `provider_wallet_withdrawal_request:${requestId}`,
+          {
+            approvalAdminId,
+            paidCloseoutAuditId: paidCloseout.id,
+            amount: result.withdrawalRequest.amount,
+            currency: result.withdrawalRequest.currency,
+            reason: input.reason,
+            reversalReference: input.reversalReference,
+            reversalJournalBatchId: result.reversalJournalBatch.id,
+            reversalWalletLedgerEntryId: result.reversalWalletLedgerEntry.id,
+          },
+          undefined,
+          tx,
+        );
       },
     );
-    return result;
   }
 
   async listPayoutBatches(options: AdminPaymentOperationsQuery = {}, actorId?: string) {
@@ -26879,14 +30381,15 @@ export class AdminService {
           totalDebit: true,
         },
       }),
-      this.prisma.user.findFirst({
-        where: { id: { not: actorId }, roles: { has: Role.FINANCE_APPROVER } },
-        select: { id: true },
-      }),
-      this.prisma.user.findFirst({
-        where: { id: actorId, roles: { has: Role.FINANCE_APPROVER } },
-        select: { id: true },
-      }),
+      listFinanceApproverPolicySnapshots(this.prisma, {
+        excludeIds: [actorId],
+        requireAttestation: true,
+        requireFinanceRole: true,
+      }).then((snapshots) => snapshots.find((snapshot) => snapshot.ready) ?? null),
+      financeApproverPolicySnapshot(this.prisma, actorId, {
+        requireAttestation: true,
+        requireFinanceRole: true,
+      }).then((snapshot) => (snapshot.ready ? snapshot : null)),
       this.prisma.monthlyTaxClosing.findMany({
         where: {
           period: postingPeriod,
@@ -27156,14 +30659,15 @@ export class AdminService {
           totalDebit: true,
         },
       }),
-      this.prisma.user.findFirst({
-        where: { id: { not: actorId }, roles: { has: Role.FINANCE_APPROVER } },
-        select: { id: true },
-      }),
-      this.prisma.user.findFirst({
-        where: { id: actorId, roles: { has: Role.FINANCE_APPROVER } },
-        select: { id: true },
-      }),
+      listFinanceApproverPolicySnapshots(this.prisma, {
+        excludeIds: [actorId],
+        requireAttestation: true,
+        requireFinanceRole: true,
+      }).then((snapshots) => snapshots.find((snapshot) => snapshot.ready) ?? null),
+      financeApproverPolicySnapshot(this.prisma, actorId, {
+        requireAttestation: true,
+        requireFinanceRole: true,
+      }).then((snapshot) => (snapshot.ready ? snapshot : null)),
       this.prisma.monthlyTaxClosing.findMany({
         where: {
           period: postingPeriod,
@@ -27491,12 +30995,13 @@ export class AdminService {
     actorId: string,
     input: { providerProfileId: string; transferRef?: string; notes?: string },
   ) {
-    const batch = await this.earnings.createProviderPayoutBatch(input);
-    await this.writeAudit(actorId, 'payout_batch.create', `payout_batch:${batch.id}`, {
-      providerProfileId: batch.providerProfileId,
-      totalNetAmount: batch.totalNetAmount,
-      transferRef: batch.transferRef,
-      earningCount: batch.earnings.length,
+    const batch = await this.earnings.createProviderPayoutBatch(input, async (tx, createdBatch) => {
+      await this.writeAudit(actorId, 'payout_batch.create', `payout_batch:${createdBatch.id}`, {
+        providerProfileId: createdBatch.providerProfileId,
+        totalNetAmount: createdBatch.totalNetAmount,
+        transferRef: createdBatch.transferRef,
+        earningCount: createdBatch.earnings.length,
+      }, undefined, tx);
     });
     return batch;
   }
@@ -27599,28 +31104,36 @@ export class AdminService {
       }
       approvalAdminId = actorId;
     }
-    const batch = await this.earnings.updatePayoutBatch(payoutBatchId, {
-      ...earningsInput,
-      actorId,
-    });
-    await this.writeAudit(actorId, 'payout_batch.update', `payout_batch:${batch.id}`, {
-      ...(approvalAdminId ? { approvalAdminId } : {}),
-      ...(paidCloseoutRequestedByAdminId ? { paidCloseoutRequestedByAdminId } : {}),
-      status: batch.status,
-      transferRef: batch.transferRef,
-      earningCount: batch.earnings.length,
-      ...(transferEvidenceBefore
-        ? {
-            before: transferEvidenceBefore,
-            after: {
-              notes: normalizeNullable(batch.notes),
-              status: batch.status,
-              transferRef: normalizeNullable(batch.transferRef),
-            },
-            reason: normalizeAuditReason(input.reason ?? undefined),
-          }
-        : {}),
-    });
+    const batch = await this.earnings.updatePayoutBatch(
+      payoutBatchId,
+      {
+        ...earningsInput,
+        actorId,
+      },
+      async (tx, updatedBatch) => {
+        if (approvalAdminId) {
+          await assertFinanceActionApprovalAdmin(tx, actorId, 'Payout batch paid closeout');
+        }
+        await this.writeAudit(actorId, 'payout_batch.update', `payout_batch:${updatedBatch.id}`, {
+          ...(approvalAdminId ? { approvalAdminId } : {}),
+          ...(paidCloseoutRequestedByAdminId ? { paidCloseoutRequestedByAdminId } : {}),
+          status: updatedBatch.status,
+          transferRef: updatedBatch.transferRef,
+          earningCount: updatedBatch.earnings.length,
+          ...(transferEvidenceBefore
+            ? {
+                before: transferEvidenceBefore,
+                after: {
+                  notes: normalizeNullable(updatedBatch.notes),
+                  status: updatedBatch.status,
+                  transferRef: normalizeNullable(updatedBatch.transferRef),
+                },
+                reason: normalizeAuditReason(input.reason ?? undefined),
+              }
+            : {}),
+        }, undefined, tx);
+      },
+    );
     return batch;
   }
 
@@ -27628,7 +31141,7 @@ export class AdminService {
     actorId: string,
     payoutBatchId: string,
     input: {
-      approvalAdminId: string;
+      approvalAdminId?: string;
       reason: string;
       reversalReference: string;
       occurredAt?: string | Date;
@@ -27636,31 +31149,57 @@ export class AdminService {
       attachmentUrl?: string | null;
     },
   ) {
-    const approvalAdminId = normalizeFinanceActionApprovalAdminId(
-      input.approvalAdminId,
-      actorId,
-      'Payout batch reversal',
-    );
+    const approvalAdminId = actorId;
     await assertFinanceActionApprovalAdmin(this.prisma, approvalAdminId, 'Payout batch reversal');
-    const result = await this.earnings.reversePaidPayoutBatchForAdmin(payoutBatchId, {
-      actorId,
-      approvalAdminId,
-      reason: input.reason,
-      reversalReference: input.reversalReference,
-      occurredAt: input.occurredAt,
-      attachmentFileId: input.attachmentFileId,
-      attachmentUrl: input.attachmentUrl,
+    const paidCloseout = await this.prisma.adminAuditLog.findFirst({
+      where: {
+        action: 'payout_batch.update',
+        target: `payout_batch:${payoutBatchId}`,
+        metadata: { path: ['status'], equals: PayoutBatchStatus.PAID },
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: { actorId: true, id: true },
     });
-    await this.writeAudit(actorId, 'payout_batch.reversal', `payout_batch:${payoutBatchId}`, {
-      approvalAdminId,
-      amount: result.payoutBatch.totalNetAmount,
-      currency: result.payoutBatch.currency,
-      reason: input.reason,
-      reversalReference: input.reversalReference,
-      reversalJournalBatchId: result.reversalJournalBatch.id,
-      reversalWalletLedgerEntryId: result.reversalWalletLedgerEntry.id,
-    });
-    return result;
+    if (!paidCloseout?.actorId) {
+      throw new ConflictException('Payout batch reversal requires paid closeout evidence');
+    }
+    if (paidCloseout.actorId === actorId) {
+      throw new BadRequestException(
+        'Payout batch reversal requires a different operator from the paid closeout approver',
+      );
+    }
+    return this.earnings.reversePaidPayoutBatchForAdmin(
+      payoutBatchId,
+      {
+        actorId,
+        approvalAdminId,
+        reason: input.reason,
+        reversalReference: input.reversalReference,
+        occurredAt: input.occurredAt,
+        attachmentFileId: input.attachmentFileId,
+        attachmentUrl: input.attachmentUrl,
+      },
+      async (tx, result) => {
+        await assertFinanceActionApprovalAdmin(tx, approvalAdminId, 'Payout batch reversal');
+        await this.writeAudit(
+          actorId,
+          'payout_batch.reversal',
+          `payout_batch:${payoutBatchId}`,
+          {
+            approvalAdminId,
+            paidCloseoutAuditId: paidCloseout.id,
+            amount: result.payoutBatch.totalNetAmount,
+            currency: result.payoutBatch.currency,
+            reason: input.reason,
+            reversalReference: input.reversalReference,
+            reversalJournalBatchId: result.reversalJournalBatch.id,
+            reversalWalletLedgerEntryId: result.reversalWalletLedgerEntry.id,
+          },
+          undefined,
+          tx,
+        );
+      },
+    );
   }
 
   listReviews(options: AdminReviewBoardQueryOptions = {}) {
@@ -28378,6 +31917,235 @@ export class AdminService {
     return { items, skip, take, totalCount };
   }
 
+  async auditLogWorkspacePage(options: AdminAuditLogListOptions = {}) {
+    const cursor = adminAuditLogCursor(options.cursor);
+    const generatedAt = cursor?.snapshotAt ?? new Date();
+    const take = adminAuditLogListLimit(options.take);
+    const sort = adminAuditLogSort(options.sort);
+    const view = adminAuditLogSavedView(options.view);
+    const reportWindow = adminAuditReportWindow(options, generatedAt);
+    const baseWhere = adminAuditWorkspaceWhere(options, generatedAt, null);
+    const filteredWhere = adminAuditWorkspaceWhere(options, generatedAt, view);
+    const sourceWhere = adminAuditWorkspaceSourceWhere(options, generatedAt);
+    const pageWhere = withAdminAuditLogWhere(
+      filteredWhere,
+      adminAuditLogCursorWhere(cursor, generatedAt, sort),
+    );
+
+    return this.prisma.$transaction(async (tx) => {
+      const [pageRows, totalCount, filteredGroupedCounts, baseGroupedCounts, latest, reviewRequiredCount, previousRows, incidentRows] = await Promise.all([
+        tx.adminAuditLog.findMany({
+          where: pageWhere,
+          orderBy: [{ timelineAt: sort }, { id: sort }],
+          take: take + 1,
+          select: adminAuditLogSelect,
+        }),
+        tx.adminAuditLog.count({ where: filteredWhere }),
+        tx.adminAuditLog.groupBy({
+          by: ['schemaVersion', 'action', 'actorId', 'actorType', 'area', 'severity', 'outcome', 'source'],
+          where: filteredWhere,
+          _count: { _all: true },
+        }),
+        tx.adminAuditLog.groupBy({
+          by: ['schemaVersion', 'action', 'actorId', 'actorType', 'area', 'severity', 'outcome', 'source'],
+          where: baseWhere,
+          _count: { _all: true },
+        }),
+        tx.adminAuditLog.aggregate({
+          where: sourceWhere,
+          _max: { createdAt: true, recordedAt: true },
+        }),
+        tx.adminAuditLog.count({
+          where: withAdminAuditLogWhere(filteredWhere, adminAuditReviewLevelWhere()),
+        }),
+        cursor
+          ? tx.adminAuditLog.findMany({
+              where: withAdminAuditLogWhere(
+                filteredWhere,
+                adminAuditLogPreviousPageWhere(cursor, generatedAt, sort),
+              ),
+              orderBy: [{ timelineAt: sort === 'desc' ? 'asc' : 'desc' }, { id: sort === 'desc' ? 'asc' : 'desc' }],
+              take,
+              select: { id: true, timelineAt: true },
+            })
+          : Promise.resolve([]),
+        tx.adminAuditLog.findMany({
+          where: adminAuditActionableIncidentWhere(options),
+          orderBy: [{ timelineAt: 'desc' }, { id: 'desc' }],
+          take: 500,
+          select: adminAuditLogSelect,
+        }),
+      ]);
+      const hasMore = pageRows.length > take;
+      const rows = hasMore ? pageRows.slice(0, take) : pageRows;
+      const events = rows.map((row) => adminAuditEventReadModel(row, { includePayload: false }));
+      const facets = adminAuditWorkspaceFacets(filteredGroupedCounts);
+      const savedViews = ADMIN_AUDIT_SAVED_VIEWS.map((savedView) => ({
+        ...savedView,
+        count: adminAuditSavedViewCount(savedView.key, baseGroupedCounts),
+      }));
+      const lastRow = rows.at(-1);
+      const previousRow = previousRows.length === take ? previousRows.at(-1) : null;
+      const latestRecordedAt = adminAuditLatestRecordedAt(latest._max);
+      const actionableIncidents = adminAuditActionableIncidents(incidentRows);
+
+      return {
+        items: events,
+        actionableIncidents,
+        totalCount,
+        generatedAt: generatedAt.toISOString(),
+        timezone: VIETNAM_TIME_ZONE,
+        window: reportWindow,
+        sourceStatus: 'LIVE' as const,
+        source: {
+          dataLagSeconds: latestRecordedAt
+            ? Math.max(0, Math.floor((generatedAt.getTime() - latestRecordedAt.getTime()) / 1_000))
+            : null,
+          lastRecordedAt: latestRecordedAt?.toISOString() ?? null,
+          state: latestRecordedAt ? 'AVAILABLE' : 'EMPTY',
+        },
+        summary: {
+          failed: facets.outcomeCounts.FAILED ?? 0,
+          reviewRequired: reviewRequiredCount,
+          unacknowledged: facets.outcomeCounts.OPENED ?? 0,
+          unknownClassification: facets.areaCounts.UNKNOWN ?? 0,
+        },
+        savedViews,
+        facets: {
+          actorTypes: auditFacetEntries(facets.actorTypeCounts),
+          areas: auditFacetEntries(facets.areaCounts),
+          outcomes: auditFacetEntries(facets.outcomeCounts),
+          severities: auditFacetEntries(facets.severityCounts),
+        },
+        cursor: {
+          next: hasMore && lastRow
+            ? adminAuditLogCursorValue(lastRow.timelineAt, lastRow.id, generatedAt)
+            : null,
+          previous: cursor
+            ? previousRow
+              ? adminAuditLogCursorValue(previousRow.timelineAt, previousRow.id, generatedAt)
+              : ''
+            : null,
+        },
+        take,
+      };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+  }
+
+  async auditLogEventDetail(actorId: string, id: string, bucket?: string | null) {
+    const normalizedId = normalizeRequiredId(id, 'Audit event id');
+    const normalizedBucket = normalizeNullable(bucket);
+    const bucketWhere = adminAuditLogBucketWhere(normalizedBucket);
+    const row = await this.prisma.adminAuditLog.findFirst({
+      where: bucketWhere ? { AND: [{ id: normalizedId }, bucketWhere] } : { id: normalizedId },
+      select: adminAuditLogSelect,
+    });
+    if (!row) throw new NotFoundException('Audit event not found');
+    await this.writeAudit(actorId, 'admin.audit_event.viewed', `audit_event:${normalizedId}`, {
+      accessedEventId: normalizedId,
+      ...(normalizedBucket ? { bucket: normalizedBucket } : {}),
+      source: 'audit_log_evidence_drawer',
+    });
+    return {
+      event: adminAuditEventReadModel(row),
+      generatedAt: new Date().toISOString(),
+      timezone: VIETNAM_TIME_ZONE,
+    };
+  }
+
+  async recordAuditCorrection(actorId: string, id: string, reason: string) {
+    const normalizedId = normalizeOptionalText(id);
+    const normalizedReason = normalizeOptionalText(reason);
+    if (!normalizedId || !normalizedReason) {
+      throw new BadRequestException('Audit event ID and correction reason are required');
+    }
+    if (normalizedId.length > 200 || normalizedReason.length > 1000) {
+      throw new BadRequestException('Audit correction input exceeds the allowed length');
+    }
+
+    const original = await this.prisma.adminAuditLog.findFirst({
+      where: { OR: [{ id: normalizedId }, { eventId: normalizedId }] },
+      select: { eventId: true, id: true, payloadHash: true },
+    });
+    if (!original) {
+      throw new NotFoundException('Audit event not found');
+    }
+
+    const originalEventId = original.eventId ?? original.id;
+    const correction = await this.writeAudit(
+      actorId,
+      'admin.audit_event.correction_recorded',
+      `audit_event:${originalEventId}`,
+      {
+        correctionOfEventId: originalEventId,
+        originalPayloadHash: original.payloadHash,
+        reason: normalizedReason,
+        source: 'audit_log_correction',
+      },
+      { correctionOfEventId: originalEventId },
+    );
+
+    return {
+      correctionEventId: correction.eventId ?? correction.id,
+      originalEventId,
+      originalPayloadHash: original.payloadHash,
+    };
+  }
+
+  async exportAuditLogs(
+    actorId: string,
+    options: AdminAuditLogListOptions = {},
+    requestedFormat?: string | null,
+  ) {
+    const format = adminAuditExportFormat(requestedFormat);
+    const generatedAt = new Date();
+    const view = adminAuditLogSavedView(options.view);
+    const where = adminAuditWorkspaceWhere(options, generatedAt, view);
+    const sort = adminAuditLogSort(options.sort);
+    const filterEvidence = adminAuditExportFilterEvidence(options, view);
+    const target = `audit_export:${filterEvidence.filterHash.slice(0, 16)}`;
+
+    try {
+      const rows = await this.prisma.adminAuditLog.findMany({
+        where,
+        orderBy: [{ timelineAt: sort }, { id: sort }],
+        take: ADMIN_AUDIT_EXPORT_LIMIT + 1,
+        select: adminAuditLogSelect,
+      });
+      const truncated = rows.length > ADMIN_AUDIT_EXPORT_LIMIT;
+      const events = rows
+        .slice(0, ADMIN_AUDIT_EXPORT_LIMIT)
+        .map((row) => adminAuditEventReadModel(row));
+      await this.writeAudit(actorId, 'admin.audit_export.succeeded', target, {
+        ...filterEvidence,
+        format,
+        limit: ADMIN_AUDIT_EXPORT_LIMIT,
+        outcome: 'SUCCEEDED',
+        rowCount: events.length,
+        source: 'audit_log_export',
+        truncated,
+      });
+      return {
+        events,
+        format,
+        generatedAt: generatedAt.toISOString(),
+        limit: ADMIN_AUDIT_EXPORT_LIMIT,
+        rowCount: events.length,
+        timezone: VIETNAM_TIME_ZONE,
+        truncated,
+      };
+    } catch (error) {
+      await this.writeAudit(actorId, 'admin.audit_export.failed', target, {
+        ...filterEvidence,
+        format,
+        limit: ADMIN_AUDIT_EXPORT_LIMIT,
+        outcome: 'FAILED',
+        source: 'audit_log_export',
+      }).catch(() => undefined);
+      throw error;
+    }
+  }
+
   async operationsHandoffActivityPage(options: AdminOperationsHandoffActivityQuery = {}) {
     const page = adminOperationsHandoffActivityPageNumber(options.page);
     const pageSize = adminOperationsHandoffActivityPageSize(options.pageSize);
@@ -28712,8 +32480,7 @@ export class AdminService {
       ? []
       : actor.roles.includes(Role.MASTER_ADMIN)
         ? ADMIN_OPERATOR_PERMISSION_CATEGORIES
-        : (actor.adminOperatorPermission?.categories ??
-          defaultAdminOperatorPermissionCategories(actor.roles));
+        : (actor.adminOperatorPermission?.categories ?? []);
     const allRows = (await this.operationsHandoffOpenCaseRows())
       .filter((row) =>
         adminOperatorHasRequiredCategory(
@@ -28801,8 +32568,7 @@ export class AdminService {
       .map((operator) => {
         const categories = operator.roles.includes(Role.MASTER_ADMIN)
           ? [...ADMIN_OPERATOR_PERMISSION_CATEGORIES]
-          : (operator.adminOperatorPermission?.categories ??
-            defaultAdminOperatorPermissionCategories(operator.roles));
+          : (operator.adminOperatorPermission?.categories ?? []);
         return {
           email: operator.email,
           fullName: operator.fullName,
@@ -28958,8 +32724,7 @@ export class AdminService {
     const operatorCategories = (operatorRecord: typeof incomingOperator) =>
       operatorRecord.roles.includes(Role.MASTER_ADMIN)
         ? ADMIN_OPERATOR_PERMISSION_CATEGORIES
-        : (operatorRecord.adminOperatorPermission?.categories ??
-          defaultAdminOperatorPermissionCategories(operatorRecord.roles));
+        : (operatorRecord.adminOperatorPermission?.categories ?? []);
     const outgoingCategories = operatorCategories(outgoingOperator);
     const openCases = (await this.operationsHandoffOpenCaseRows()).filter((item) =>
       adminOperatorHasRequiredCategory(
@@ -29088,9 +32853,26 @@ export class AdminService {
       requestedKeys.length > 0
         ? OPERATIONAL_POLICY_DEFINITIONS.filter((definition) => requestedKeys.includes(definition.key))
         : OPERATIONAL_POLICY_DEFINITIONS;
+    const auditTargets = savedSettings.map((setting) => `operational_policy:${setting.key}`);
+    const latestAuditRows = auditTargets.length > 0
+      ? await this.findRecentAuditLogsByTargets(auditTargets, 1, 'operational_policy.update')
+      : [];
+    const latestAuditByTarget = new Map(
+      latestAuditRows
+        .filter((row) => row.action === 'operational_policy.update')
+        .map((row) => [row.target, row]),
+    );
 
     return definitions.map((definition) => {
       const saved = savedByKey.get(definition.key);
+      const audit = latestAuditByTarget.get(`operational_policy:${definition.key}`);
+      const auditMetadata = recordFromUnknown(audit?.metadata);
+      const auditSource = operationalPolicyAuditSource(
+        typeof auditMetadata?.source === 'string' ? auditMetadata.source : 'legacy_unknown',
+      );
+      const effectiveAt = normalizeNullable(
+        typeof auditMetadata?.effectiveAt === 'string' ? auditMetadata.effectiveAt : null,
+      ) ?? audit?.createdAt.toISOString() ?? null;
       const savedValue =
         saved && this.isOperationalPolicyValueSupported(definition, saved.value)
           ? saved.value
@@ -29102,19 +32884,73 @@ export class AdminService {
         options: definition.options ?? null,
         requiresRestart: definition.requiresRestart ?? false,
         updatedAt: saved?.updatedAt ?? null,
-        updatedBy: saved?.updatedBy ?? null,
+        updatedBy: audit?.actor ?? saved?.updatedBy ?? null,
+        auditId: audit?.id ?? null,
+        auditSource: audit ? auditSource : null,
+        effectiveAt,
       };
     });
+  }
+
+  async listOperationalPolicyAudit(options: AdminOperationalPolicyAuditOptions = {}) {
+    const source = operationalPolicyAuditSource(options.source);
+    const take = Math.min(adminAuditLogListLimit(options.take), 8);
+    const cursor = operationalPolicyAuditCursor(options.cursor, source);
+    const sourceWhere: Prisma.AdminAuditLogWhereInput =
+      source === 'legacy_unknown'
+        ? {
+            OR: [
+              { metadata: { equals: Prisma.DbNull } },
+              { metadata: { path: ['source'], equals: Prisma.AnyNull } },
+            ],
+          }
+        : { metadata: { path: ['source'], equals: source } };
+    const rows = await this.prisma.adminAuditLog.findMany({
+      where: { action: 'operational_policy.update', AND: [sourceWhere] },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      ...(cursor ? { cursor: { id: cursor.id }, skip: 1 } : {}),
+      take: take + 1,
+      select: adminAuditLogSelect,
+    });
+    const hasMore = rows.length > take;
+    const pageRows = hasMore ? rows.slice(0, take) : rows;
+    const items = pageRows.map((row) => {
+      const metadata = recordFromUnknown(row.metadata);
+      const key = normalizeNullable(typeof metadata?.key === 'string' ? metadata.key : null)
+        ?? (row.target.startsWith('operational_policy:') ? row.target.slice('operational_policy:'.length) : row.target);
+      const definition = OPERATIONAL_POLICY_DEFINITIONS.find((item) => item.key === key);
+      return definition
+        ? { ...row, policyDefinition: { category: definition.category, label: definition.label } }
+        : row;
+    });
+    return {
+      items,
+      nextCursor: hasMore && pageRows.at(-1)
+        ? operationalPolicyAuditCursorValue(pageRows.at(-1)!.id, source)
+        : null,
+      source,
+    };
   }
 
   async updateOperationalPolicySetting(
     actorId: string,
     key: string,
-    input: { expectedValue?: unknown; value?: unknown; reason?: string },
+    input: { confirmationLabel?: string; expectedValue?: unknown; value?: unknown; reason?: string },
+    auditContext: OperationalPolicyAuditContext = {
+      environment: process.env.NODE_ENV?.trim() || 'development',
+      source: 'operator',
+    },
   ) {
     const definition = OPERATIONAL_POLICY_DEFINITIONS.find((item) => item.key === key);
     if (!definition) {
       throw new NotFoundException('Operational policy setting not found');
+    }
+    if (definition.lifecycle !== 'live') {
+      throw new ConflictException({
+        code: 'OPERATIONAL_POLICY_NOT_EDITABLE',
+        lifecycle: definition.lifecycle,
+        message: `${definition.label} is ${definition.lifecycle} and cannot be changed.`,
+      });
     }
 
     const value = this.validateOperationalPolicyValue(definition, input.value);
@@ -29126,7 +32962,17 @@ export class AdminService {
     if (reason.length < 12) {
       throw new BadRequestException('Operational policy change reason must be at least 12 characters');
     }
-    const setting = await this.prisma.$transaction(async (tx) => {
+    if (reason.length > 500) {
+      throw new BadRequestException('Operational policy change reason must be 500 characters or fewer');
+    }
+    if (definition.risk === 'high' && input.confirmationLabel?.trim() !== definition.label) {
+      throw new BadRequestException({
+        code: 'OPERATIONAL_POLICY_CONFIRMATION_LABEL_REQUIRED',
+        message: `Type ${definition.label} to confirm this high-risk policy change.`,
+      });
+    }
+    const transactionResult = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
       const previous = await tx.operationalPolicySetting.findUnique({ where: { key } });
       const previousValue =
         previous && this.isOperationalPolicyValueSupported(definition, previous.value)
@@ -29167,7 +33013,7 @@ export class AdminService {
       });
       const effectiveAt = updated.updatedAt.toISOString();
 
-      await tx.adminAuditLog.create({
+      const auditEvent = await tx.adminAuditLog.create({
         data: {
           actorId,
           action: 'operational_policy.update',
@@ -29181,12 +33027,19 @@ export class AdminService {
             enforced: definition.enforced,
             key,
             reason,
+            source: auditContext.source,
+            environment: auditContext.environment,
+            ...(auditContext.source === 'automated_smoke'
+              ? { restoration: auditContext.restoration, runId: auditContext.runId }
+              : {}),
           },
         },
       });
 
-      return updated;
+      return { auditEvent, effectiveAt, updated };
     });
+
+    const setting = transactionResult.updated;
 
     return {
       ...definition,
@@ -29196,6 +33049,9 @@ export class AdminService {
       requiresRestart: setting.requiresRestart,
       updatedAt: setting.updatedAt,
       updatedBy: setting.updatedBy,
+      auditId: transactionResult.auditEvent.id,
+      auditSource: auditContext.source,
+      effectiveAt: transactionResult.effectiveAt,
     };
   }
 
@@ -29546,6 +33402,130 @@ export class AdminService {
         unknownDataCount,
       };
     }
+    const deliveryHealthOptions = {
+      ...options,
+      age: 'all',
+      failureCode: undefined,
+      failureProvider: undefined,
+      review: undefined,
+      sla: 'all',
+    };
+    const deliveryHealthForScope = async (scope: 'current' | 'history') => {
+      const scopedOptions = { ...deliveryHealthOptions, scope };
+      const [retryRows, unattemptedRows, staleRows] = await Promise.all([
+        this.prisma.$queryRaw<AdminNotificationRetryCountRow[]>(
+          adminNotificationRetryCountQuery(scopedOptions),
+        ),
+        this.prisma.$queryRaw<AdminNotificationUnattemptedSummaryRow[]>(
+          adminNotificationUnattemptedSummaryQuery(scopedOptions),
+        ),
+        this.prisma.$queryRaw<AdminNotificationStaleRouteCountRow[]>(
+          adminNotificationStaleRouteCountQuery(scopedOptions),
+        ),
+      ]);
+      const unattempted = unattemptedRows[0];
+      return {
+        deliveryGaps: unattempted?.deliveryGaps ?? 0,
+        failed: retryRows[0]?.count ?? 0,
+        noPushPathNotificationCount: unattempted?.noPushPathNotificationCount ?? 0,
+        noPushPathRecipientCount: unattempted?.noPushPathRecipientCount ?? 0,
+        staleRouteNotifications: staleRows[0]?.count ?? 0,
+      };
+    };
+    const deliveryIncidentSummaryForScope = (scope: 'current' | 'historical') => deliveryIncidentWindow
+      ? this.prisma
+          .$queryRaw<AdminNotificationIncidentSummaryRow[]>(
+            adminNotificationIncidentSummaryQuery(
+              { ...options, scope: 'all' },
+              scope,
+              deliveryIncidentWindow.thresholdMinutes,
+              deliveryIncidentHistoricalCutoffAt,
+            ),
+          )
+          .then((rows) => rows[0])
+      : Promise.resolve(undefined);
+
+    if (options.viewMode === 'action') {
+      const [
+        currentHealth,
+        historicalHealth,
+        currentIncidents,
+        historicalIncidents,
+        productionDataCount,
+        unknownDataCount,
+        syntheticDataCount,
+      ] = await Promise.all([
+        deliveryHealthForScope('current'),
+        deliveryHealthForScope('history'),
+        deliveryIncidentSummaryForScope('current'),
+        deliveryIncidentSummaryForScope('historical'),
+        countDataScope('production'),
+        countDataScope('unknown'),
+        countDataScope('synthetic'),
+      ]);
+      const selectedScope = options.scope === 'history' ? 'history' : options.scope === 'all' ? 'all' : 'current';
+      const selectedHealth = selectedScope === 'history'
+        ? historicalHealth
+        : selectedScope === 'all'
+          ? addNotificationDeliveryHealth(currentHealth, historicalHealth)
+          : currentHealth;
+      const selectedIncidentCount = selectedScope === 'history'
+        ? historicalIncidents?.incidentCount ?? 0
+        : selectedScope === 'all'
+          ? (currentIncidents?.incidentCount ?? 0) + (historicalIncidents?.incidentCount ?? 0)
+          : currentIncidents?.incidentCount ?? 0;
+      let selectedCount = selectedIncidentCount;
+
+      if (deliveryDisposition) {
+        selectedCount = options.failureProvider && options.failureCode
+          ? (await this.prisma.$queryRaw<AdminNotificationRetryCountRow[]>(
+              adminNotificationDispositionCountQuery(options, deliveryDisposition),
+            ))[0]?.count ?? 0
+          : selectedHealth?.failed ?? 0;
+      } else if (unattemptedDisposition === 'no-push-path') {
+        selectedCount = selectedHealth?.noPushPathRecipientCount ?? 0;
+      } else if (unattemptedDisposition) {
+        selectedCount = options.age && options.age !== 'all'
+          ? (await this.prisma.$queryRaw<AdminNotificationUnattemptedCountRow[]>(
+              adminNotificationUnattemptedCountQuery(options, unattemptedDisposition),
+            ))[0]?.count ?? 0
+          : selectedHealth?.deliveryGaps ?? 0;
+      } else if (staleRouteReview) {
+        selectedCount = selectedHealth?.staleRouteNotifications ?? 0;
+      }
+
+      return {
+        currentDeliveryGaps: currentHealth?.deliveryGaps ?? 0,
+        currentFailed: currentHealth?.failed ?? 0,
+        currentNoPushPathNotificationCount: currentHealth?.noPushPathNotificationCount ?? 0,
+        currentNoPushPathRecipientCount: currentHealth?.noPushPathRecipientCount ?? 0,
+        currentStaleRouteNotifications: currentHealth?.staleRouteNotifications ?? 0,
+        deliveryGaps: selectedHealth?.deliveryGaps ?? 0,
+        failed: selectedHealth?.failed ?? 0,
+        generatedAt: now.toISOString(),
+        historicalDeliveryGaps: historicalHealth?.deliveryGaps ?? 0,
+        historicalDeliveryIncidentCount: historicalIncidents?.incidentCount ?? 0,
+        historicalDeliveryOldestAt: adminIsoDateTime(historicalIncidents?.oldestOpenAt),
+        historicalFailed: historicalHealth?.failed ?? 0,
+        historicalNoPushPathNotificationCount: historicalHealth?.noPushPathNotificationCount ?? 0,
+        historicalNoPushPathRecipientCount: historicalHealth?.noPushPathRecipientCount ?? 0,
+        historicalStaleRouteNotifications: historicalHealth?.staleRouteNotifications ?? 0,
+        lastEventAt: null,
+        noPushPath: selectedHealth?.noPushPathNotificationCount ?? 0,
+        noPushPathNotificationCount: selectedHealth?.noPushPathNotificationCount ?? 0,
+        noPushPathRecipientCount: selectedHealth?.noPushPathRecipientCount ?? 0,
+        openDeliveryIncidentCount: currentIncidents?.incidentCount ?? 0,
+        productionDataCount,
+        scopeEnd: validIsoDate(options.to) ?? now.toISOString(),
+        scopeStart: validIsoDate(options.from),
+        selectedDataScope: options.dataScope ?? 'production',
+        sourceUpdatedAt: now.toISOString(),
+        staleRouteNotifications: selectedHealth?.staleRouteNotifications ?? 0,
+        syntheticDataCount,
+        totalCount: selectedCount,
+        unknownDataCount,
+      };
+    }
     const selectedDispositionSummary = deliveryDisposition
       ? this.prisma
           .$queryRaw<
@@ -29580,56 +33560,14 @@ export class AdminService {
             .$queryRaw<AdminNotificationRetryCountRow[]>(adminNotificationRetryCountQuery(options))
             .then((rows) => rows[0]);
     const retryCount = retrySummary.then((row) => row?.count ?? 0);
-    const deliveryHealthOptions = {
-      ...options,
-      age: 'all',
-      failureCode: undefined,
-      failureProvider: undefined,
-      review: undefined,
-      sla: 'all',
-    };
-    const deliveryHealthForScope = async (scope: 'current' | 'history') => {
-      const scopedOptions = { ...deliveryHealthOptions, scope };
-      const [retryRows, unattemptedRows, staleRows] = await Promise.all([
-        this.prisma.$queryRaw<AdminNotificationRetryCountRow[]>(
-          adminNotificationRetryCountQuery(scopedOptions),
-        ),
-        this.prisma.$queryRaw<AdminNotificationUnattemptedSummaryRow[]>(
-          adminNotificationUnattemptedSummaryQuery(scopedOptions),
-        ),
-        this.prisma.$queryRaw<AdminNotificationStaleRouteCountRow[]>(
-          adminNotificationStaleRouteCountQuery(scopedOptions),
-        ),
-      ]);
-      const unattempted = unattemptedRows[0];
-      return {
-        deliveryGaps: unattempted?.deliveryGaps ?? 0,
-        failed: retryRows[0]?.count ?? 0,
-        noPushPathNotificationCount: unattempted?.noPushPathNotificationCount ?? 0,
-        noPushPathRecipientCount: unattempted?.noPushPathRecipientCount ?? 0,
-        staleRouteNotifications: staleRows[0]?.count ?? 0,
-      };
-    };
     const currentDeliveryHealthPromise = includesDeliveryHealth
       ? deliveryHealthForScope('current')
       : Promise.resolve(undefined);
     const historicalDeliveryHealthPromise = includesDeliveryHealth
       ? deliveryHealthForScope('history')
       : Promise.resolve(undefined);
-    const currentDeliveryIncidentSummary = deliveryIncidentWindow
-      ? this.prisma
-          .$queryRaw<
-            AdminNotificationIncidentSummaryRow[]
-          >(adminNotificationIncidentSummaryQuery({ ...options, scope: 'all' }, 'current', deliveryIncidentWindow.thresholdMinutes, deliveryIncidentHistoricalCutoffAt))
-          .then((rows) => rows[0])
-      : Promise.resolve(undefined);
-    const historicalDeliveryIncidentSummary = deliveryIncidentWindow
-      ? this.prisma
-          .$queryRaw<
-            AdminNotificationIncidentSummaryRow[]
-          >(adminNotificationIncidentSummaryQuery({ ...options, scope: 'all' }, 'historical', deliveryIncidentWindow.thresholdMinutes, deliveryIncidentHistoricalCutoffAt))
-          .then((rows) => rows[0])
-      : Promise.resolve(undefined);
+    const currentDeliveryIncidentSummary = deliveryIncidentSummaryForScope('current');
+    const historicalDeliveryIncidentSummary = deliveryIncidentSummaryForScope('historical');
     const selectedDeliveryIncidentSummary =
       deliveryIncidentMode === 'historical'
         ? historicalDeliveryIncidentSummary
@@ -29863,89 +33801,276 @@ export class AdminService {
   }
 
   async listNotificationTemplates(options: AdminNotificationTemplateListQuery = {}) {
-    await this.ensureDefaultNotificationTemplates();
-
-    const templates = await this.prisma.notificationTemplate.findMany({
-      orderBy: [{ audience: 'asc' }, { key: 'asc' }],
-      skip: boundedAdminListSkip(options.skip),
-      take: boundedAdminListLimit(options.take, ADMIN_NOTIFICATION_TEMPLATE_LIST_LIMIT),
-      include: {
-        translations: { orderBy: { locale: 'asc' } },
+    const [rows, lastChange] = await Promise.all([
+      this.prisma.notificationTemplate.findMany({
+        where: { key: { not: 'admin.push.broadcast' } },
+        orderBy: [{ audience: 'asc' }, { key: 'asc' }],
+        skip: boundedAdminListSkip(options.skip),
+        take: boundedAdminListLimit(options.take, ADMIN_NOTIFICATION_TEMPLATE_LIST_LIMIT),
+        include: {
+          translations: { orderBy: { locale: 'asc' } },
+        },
+      }),
+      this.prisma.adminAuditLog.findFirst({
+        orderBy: { createdAt: 'desc' },
+        select: { actorId: true, createdAt: true, target: true },
+        where: { action: 'notification_template.update' },
+      }),
+    ]);
+    const templates = rows.map((template) => notificationTemplateContractView(template));
+    const databaseKeys = new Set(rows.map((template) => template.key));
+    const catalogKeys = new Set(DEFAULT_NOTIFICATION_TEMPLATES.map((template) => template.key));
+    const missingKeys = [...catalogKeys].filter((key) => !databaseKeys.has(key));
+    const unexpectedKeys = [...databaseKeys].filter((key) => !catalogKeys.has(key));
+    const contractIssues = [
+      ...missingKeys.map((key) => `Missing catalog key: ${key}`),
+      ...unexpectedKeys.map((key) => `Unexpected database key: ${key}`),
+      ...rows.flatMap((template) => notificationTemplateMetadataIssues(template)),
+      ...notificationTemplateContractErrors(),
+    ];
+    const statusCounts = templates
+      .flatMap((template) => template.translations)
+      .reduce<Record<string, number>>((counts, translation) => {
+        counts[translation.status] = (counts[translation.status] ?? 0) + 1;
+        return counts;
+      }, {});
+    return {
+      health: {
+        complete: contractIssues.length === 0,
+        contractIssues,
+        missingKeys,
+        unexpectedKeys,
       },
-    });
-    return templates.map((template) => {
-      const definition = DEFAULT_NOTIFICATION_TEMPLATES.find((candidate) => candidate.key === template.key);
-      return {
-        ...template,
-        requiredVariables: definition
-          ? [...notificationTemplatePlaceholders(`${definition.title} ${definition.body}`)]
-          : [],
-      };
-    });
+      lastChange: lastChange
+        ? {
+            actorId: lastChange.actorId,
+            changedAt: lastChange.createdAt,
+            templateKey: lastChange.target.replace(/^notification_template:/, ''),
+          }
+        : null,
+      statusCounts,
+      templates,
+    };
   }
 
   async updateNotificationTemplate(actorId: string, key: string, input: UpdateNotificationTemplateDto) {
     const templateKey = normalizeNotificationTemplateKey(key);
     const translations = normalizeNotificationTemplateTranslations(input);
     const definition = DEFAULT_NOTIFICATION_TEMPLATES.find((template) => template.key === templateKey)!;
-    await this.ensureDefaultNotificationTemplates();
-
-    const template = await this.prisma.notificationTemplate.findUnique({
-      where: { key: templateKey },
-      select: {
-        enabled: true,
-        id: true,
-        key: true,
-        translations: {
-          orderBy: { locale: 'asc' },
-          select: { body: true, locale: true, title: true },
-        },
-      },
-    });
-    if (!template) {
-      throw new NotFoundException('Notification template was not found');
-    }
-
     for (const translation of translations) {
       validateNotificationTemplatePlaceholders(definition, translation);
     }
+    const expectedUpdatedAt = new Date(input.expectedUpdatedAt);
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const template = await tx.notificationTemplate.findUnique({
+        where: { key: templateKey },
+        include: { translations: { orderBy: { locale: 'asc' } } },
+      });
+      if (!template) {
+        throw new NotFoundException('Notification template was not found');
+      }
+      const contractIssues = notificationTemplateIssuesForKey(template);
+      if (contractIssues.length > 0) {
+        throw new BadRequestException({
+          code: 'NOTIFICATION_TEMPLATE_CONTRACT_MISMATCH',
+          issues: contractIssues,
+          message: 'This template contract is out of sync. Repair the catalog metadata before saving copy.',
+        });
+      }
+      if (template.updatedAt.getTime() !== expectedUpdatedAt.getTime()) {
+        throw new ConflictException({
+          code: 'NOTIFICATION_TEMPLATE_REVISION_CONFLICT',
+          current: notificationTemplateContractView(template),
+          message: 'Notification template changed. Review the latest copy before saving again.',
+        });
+      }
 
-    const previousByLocale = new Map(
-      template.translations.map((translation) => [translation.locale, translation]),
-    );
-    const enabled = typeof input.enabled === 'boolean' ? input.enabled : template.enabled;
-    const languageChanges = translations.map((translation) => ({
-      after: { body: translation.body, title: translation.title },
-      before: previousByLocale.get(translation.locale) ?? null,
-      locale: translation.locale,
-    }));
+      const previousByLocale = new Map(
+        template.translations.map((translation) => [translation.locale, translation]),
+      );
+      const requestedEnglish = translations.find((translation) => translation.locale === 'en');
+      const currentEnglish = previousByLocale.get('en');
+      const englishSource = requestedEnglish ?? currentEnglish;
+      if (!englishSource && translations.some((translation) => translation.locale !== 'en')) {
+        throw new BadRequestException('English source copy is required before reviewing translations');
+      }
+      const identicalOverrideLocales = new Set<string>();
+      for (const translation of translations) {
+        const previous = previousByLocale.get(translation.locale);
+        const identicalToEnglish =
+          translation.locale !== 'en'
+          && Boolean(englishSource)
+          && notificationCopyEquals(translation, englishSource!);
+        if (translation.confirmIdenticalTranslation && !(
+          previous?.status === NotificationTranslationStatus.SOURCE_COPIED
+          && translation.reviewedAndReady
+          && identicalToEnglish
+        )) {
+          throw new BadRequestException(
+            'Identical-language confirmation is only valid when reviewed source-copied text still matches English',
+          );
+        }
+        if (
+          previous?.status === NotificationTranslationStatus.SOURCE_COPIED
+          && translation.reviewedAndReady
+          && identicalToEnglish
+          && !translation.confirmIdenticalTranslation
+        ) {
+          throw new BadRequestException(
+            `This ${translation.locale} copy still matches the English source. Translate it or confirm the identical-language exception before marking it ready.`,
+          );
+        }
+        if (
+          previous?.status === NotificationTranslationStatus.SOURCE_COPIED
+          && translation.reviewedAndReady
+          && identicalToEnglish
+          && translation.confirmIdenticalTranslation
+        ) {
+          identicalOverrideLocales.add(translation.locale);
+        }
+      }
 
-    await this.prisma.$transaction([
-      this.prisma.notificationTemplate.update({
-        where: { id: template.id },
-        data: { enabled },
-      }),
-      ...translations.map((translation) =>
-        this.prisma.notificationTemplateTranslation.upsert({
+      const enabled = typeof input.enabled === 'boolean' ? input.enabled : template.enabled;
+      const resultingRevision = new Date();
+      const claimed = await tx.notificationTemplate.updateMany({
+        where: { id: template.id, updatedAt: expectedUpdatedAt },
+        data: { enabled, updatedAt: resultingRevision },
+      });
+      if (claimed.count !== 1) {
+        const current = await tx.notificationTemplate.findUnique({
+          where: { id: template.id },
+          include: { translations: { orderBy: { locale: 'asc' } } },
+        });
+        throw new ConflictException({
+          code: 'NOTIFICATION_TEMPLATE_REVISION_CONFLICT',
+          current: current ? notificationTemplateContractView(current) : null,
+          message: 'Notification template changed. Review the latest copy before saving again.',
+        });
+      }
+
+      const englishChanged = translations.some((translation) => {
+        const before = previousByLocale.get('en');
+        return (
+          translation.locale === 'en' &&
+          (translation.body !== before?.body || translation.title !== before?.title)
+        );
+      });
+      const explicitlySavedLocales = translations.map((translation) => translation.locale);
+      const explicitlySavedLocaleSet = new Set<string>(explicitlySavedLocales);
+      const readinessTransitions = [];
+      const identicalCopyOverrides = [...identicalOverrideLocales].map((locale) => ({
+        confirmed: true,
+        locale,
+        reviewedAt: resultingRevision.toISOString(),
+        reviewedByAdminId: actorId,
+      }));
+      if (englishChanged) {
+        for (const previous of template.translations) {
+          if (
+            previous.locale !== 'en' &&
+            !explicitlySavedLocaleSet.has(previous.locale) &&
+            previous.status !== NotificationTranslationStatus.NEEDS_REVIEW
+          ) {
+            readinessTransitions.push({
+              after: NotificationTranslationStatus.NEEDS_REVIEW,
+              before: previous.status,
+              locale: previous.locale,
+            });
+          }
+        }
+        await tx.notificationTemplateTranslation.updateMany({
+          where: {
+            templateId: template.id,
+            locale: { not: 'en', notIn: explicitlySavedLocales },
+          },
+          data: {
+            reviewedAt: null,
+            reviewedByAdminId: null,
+            status: NotificationTranslationStatus.NEEDS_REVIEW,
+          },
+        });
+      }
+
+      for (const translation of translations) {
+        const previous = previousByLocale.get(translation.locale);
+        const status =
+          translation.locale === 'en' || translation.reviewedAndReady
+            ? NotificationTranslationStatus.READY
+            : NotificationTranslationStatus.NEEDS_REVIEW;
+        const reviewed = translation.locale !== 'en' && status === NotificationTranslationStatus.READY;
+        await tx.notificationTemplateTranslation.upsert({
           where: {
             templateId_locale: { templateId: template.id, locale: translation.locale },
           },
-          create: { ...translation, templateId: template.id },
-          update: { body: translation.body, title: translation.title },
-        }),
-      ),
-      this.writeAudit(actorId, 'notification_template.update', `notification_template:${template.key}`, {
-        changedLocales: translations.map((translation) => translation.locale),
+          create: {
+            body: translation.body,
+            locale: translation.locale,
+            reviewedAt: reviewed ? resultingRevision : null,
+            reviewedByAdminId: reviewed ? actorId : null,
+            status,
+            templateId: template.id,
+            title: translation.title,
+          },
+          update: {
+            body: translation.body,
+            reviewedAt: reviewed ? resultingRevision : null,
+            reviewedByAdminId: reviewed ? actorId : null,
+            status,
+            title: translation.title,
+          },
+        });
+        readinessTransitions.push({
+          after: status,
+          before: previous?.status ?? null,
+          locale: translation.locale,
+        });
+      }
+
+      const languageChanges = translations.map((translation) => ({
+        after: { body: translation.body, title: translation.title },
+        before: previousByLocale.get(translation.locale)
+          ? {
+              body: previousByLocale.get(translation.locale)!.body,
+              title: previousByLocale.get(translation.locale)!.title,
+            }
+          : null,
+        locale: translation.locale,
+      }));
+      const auditMetadata = {
+        changedLocales: explicitlySavedLocales,
         enabled: { after: enabled, before: template.enabled },
+        expectedRevision: input.expectedUpdatedAt,
         key: template.key,
         languageChanges,
-      }),
-    ]);
+        identicalCopyOverrides,
+        readinessTransitions,
+        reason: input.reason,
+        resultingRevision: resultingRevision.toISOString(),
+      };
+      const classification = classifyAdminAuditAction('notification_template.update');
+      await tx.adminAuditLog.create({
+        data: {
+          action: 'notification_template.update',
+          actorId,
+          actorKey: actorId,
+          actorType: 'HUMAN',
+          area: classification.area,
+          metadata: auditMetadata,
+          objectId: template.key,
+          objectType: 'notification_template',
+          outcome: classification.outcome,
+          severity: classification.severity,
+          source: 'admin_api',
+          target: `notification_template:${template.key}`,
+        },
+      });
 
-    return this.prisma.notificationTemplate.findUnique({
-      where: { key: templateKey },
-      include: { translations: { orderBy: { locale: 'asc' } } },
+      return tx.notificationTemplate.findUnique({
+        where: { id: template.id },
+        include: { translations: { orderBy: { locale: 'asc' } } },
+      });
     });
+    return updated ? notificationTemplateContractView(updated) : updated;
   }
 
   listAdminPushCampaigns(
@@ -29956,161 +34081,492 @@ export class AdminService {
       readonly to?: string;
     } = {},
   ) {
-    const where = adminPushCampaignHistoryDateWhere(options);
+    const dateWhere = adminPushCampaignHistoryDateWhere(options);
+    const where: Prisma.AdminPushCampaignWhereInput = {
+      status: { notIn: ['PREVIEWED', 'EXPIRED'] },
+      ...(dateWhere ?? {}),
+    };
     return this.prisma.adminPushCampaign.findMany({
       orderBy: { createdAt: 'desc' },
+      select: adminPushCampaignOperatorSelect,
       skip: normalizeAdminPushCampaignHistorySkip(options.skip),
       take: normalizeAdminPushCampaignHistoryTake(options.take),
-      ...(where ? { where } : {}),
-      include: {
-        recipients: {
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-        },
-      },
+      where,
     });
   }
 
   async adminPushCampaignSummary(options: { readonly from?: string; readonly to?: string } = {}) {
-    const where = adminPushCampaignHistoryDateWhere(options);
-    const aggregate = await this.prisma.adminPushCampaign.aggregate({
-      _count: { _all: true },
-      _sum: {
-        notificationCount: true,
-        recipientCount: true,
-      },
-      ...(where ? { where } : {}),
-    });
+    const dateWhere = adminPushCampaignHistoryDateWhere(options);
+    const where: Prisma.AdminPushCampaignWhereInput = {
+      status: { notIn: ['PREVIEWED', 'EXPIRED'] },
+      ...(dateWhere ?? {}),
+    };
+    const [aggregate, queuedOrProcessing, needsAttention, lastCompleted] = await Promise.all([
+      this.prisma.adminPushCampaign.aggregate({
+        _count: { _all: true },
+        _sum: {
+          deliveredDeviceCount: true,
+          eligibleDeviceCount: true,
+          failedDeviceCount: true,
+          notificationCount: true,
+          pendingDeviceCount: true,
+          recipientCount: true,
+          skippedDeviceCount: true,
+        },
+        where,
+      }),
+      this.prisma.adminPushCampaign.count({
+        where: { AND: [where, { status: { in: ['QUEUED', 'PROCESSING'] } }] },
+      }),
+      this.prisma.adminPushCampaign.count({
+        where: { AND: [where, { status: { in: ['FAILED', 'PARTIAL_FAILED'] } }] },
+      }),
+      this.prisma.adminPushCampaign.findFirst({
+        orderBy: { completedAt: 'desc' },
+        select: { completedAt: true },
+        where: { AND: [where, { status: 'COMPLETED' }] },
+      }),
+    ]);
 
     return {
+      deliveredDevices: aggregate._sum.deliveredDeviceCount ?? 0,
+      eligibleDevices: aggregate._sum.eligibleDeviceCount ?? 0,
+      failedDevices: aggregate._sum.failedDeviceCount ?? 0,
       generatedAt: new Date().toISOString(),
+      lastCompletedAt: lastCompleted?.completedAt?.toISOString() ?? null,
+      needsAttention,
+      pendingDevices: aggregate._sum.pendingDeviceCount ?? 0,
+      queuedOrProcessing,
+      skippedDevices: aggregate._sum.skippedDeviceCount ?? 0,
       totalCount: aggregate._count._all,
       totalNotifications: aggregate._sum.notificationCount ?? 0,
       totalRecipients: aggregate._sum.recipientCount ?? 0,
     };
   }
 
-  async previewAdminPushCampaign(input: AdminPushCampaignDto) {
-    const targetRole = normalizeAdminPushTargetRole(input.targetRole);
-    const targetSegment = normalizeAdminPushTargetSegment(targetRole, input.targetSegment);
-    const appDestination = normalizeAdminPushAppDestination(targetRole, input.appDestination);
-    const where = adminPushRecipientWhere(targetRole, input.targetUserId, targetSegment);
-    const [recipientCount, sampleRecipients] = await Promise.all([
-      this.prisma.user.count({ where }),
-      this.prisma.user.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-        select: {
-          id: true,
-          phone: true,
-          fullName: true,
-          roles: true,
-          customerProfile: { select: { id: true } },
-          providerProfile: { select: { id: true, displayName: true, status: true } },
-          pushDevices: {
-            where: { role: targetRole, enabled: true },
-            orderBy: { updatedAt: 'desc' },
-            take: 1,
-            select: { id: true, platform: true, role: true, updatedAt: true },
+  async adminPushCampaignEvidence(campaignId: string) {
+    const campaign = await this.prisma.adminPushCampaign.findUnique({
+      where: { id: campaignId },
+      select: {
+        ...adminPushCampaignOperatorSelect,
+        recipients: {
+          orderBy: { createdAt: 'desc' },
+          select: {
+            deliveredDeviceCount: true,
+            eligibleDeviceCount: true,
+            failedDeviceCount: true,
+            lastErrorCode: true,
+            processedAt: true,
+            skippedDeviceCount: true,
+            status: true,
           },
+          take: 10,
         },
-      }),
-    ]);
-
-    return {
-      targetRole,
-      targetUserId: normalizeNullable(input.targetUserId),
-      targetSegment,
-      appDestination,
-      recipientCount,
-      sendLimit: ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT,
-      willSendCount: Math.min(recipientCount, ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT),
-      capped: recipientCount > ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT,
-      sampleRecipients,
-    };
+      },
+    });
+    if (!campaign || campaign.status === 'PREVIEWED') {
+      throw new NotFoundException('Push campaign was not found');
+    }
+    return campaign;
   }
 
-  async createAdminPushCampaign(actorId: string, input: AdminPushCampaignDto) {
+  async previewAdminPushCampaign(actorId: string, input: AdminPushCampaignDto) {
     const targetRole = normalizeAdminPushTargetRole(input.targetRole);
     const targetSegment = normalizeAdminPushTargetSegment(targetRole, input.targetSegment);
-    const appDestination = normalizeAdminPushAppDestination(targetRole, input.appDestination);
-    const where = adminPushRecipientWhere(targetRole, input.targetUserId, targetSegment);
-    const recipients = await this.prisma.user.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT,
-      select: { id: true },
+    const locale = normalizeAdminPushLocale(targetRole, input.locale);
+    const destination = adminPushDestination(targetRole, input.appDestination);
+    const resolution = await this.resolveAdminPushAudience({
+      locale,
+      targetRole,
+      targetSegment,
+      targetUserId: input.targetUserId,
+    });
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + ADMIN_PUSH_CAMPAIGN_PREVIEW_TTL_MS);
+    const state = adminPushPreviewState(resolution.eligibleUserCount, resolution.eligibleDeviceCount);
+    const copyHash = adminPushHash({ body: input.body, title: input.title });
+    const criteriaHash = adminPushHash({
+      appDestination: destination.value,
+      locale,
+      targetRole,
+      targetSegment,
+      targetUserId: normalizeNullable(input.targetUserId),
     });
 
-    if (recipients.length === 0) {
-      throw new BadRequestException('No active push recipients were found for this target');
-    }
-
-    const campaign = await this.prisma.adminPushCampaign.create({
+    const preview = await this.prisma.adminPushCampaign.create({
       data: {
-        targetRole,
-        targetUserId: normalizeNullable(input.targetUserId),
-        locale: normalizeNullable(input.locale),
-        title: input.title,
+        appDestination: destination.value,
         body: input.body,
+        copyHash,
         createdById: actorId,
-        recipientCount: recipients.length,
+        criteriaHash,
+        eligibleDeviceCount: resolution.eligibleDeviceCount,
+        excludedDeviceCount: resolution.excludedDeviceCount,
+        excludedUserCount: resolution.excludedUserCount,
+        expiresAt,
+        locale,
         metadata: toJson({
+          destination,
+          exclusions: resolution.exclusions,
+          manualUserLimit: ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT,
           source: 'admin_manual_push',
-          sendLimit: ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT,
-          targetSegment,
-          appDestination,
+          state,
         }),
-        sentAt: new Date(),
+        pendingDeviceCount: resolution.eligibleDeviceCount,
+        recipientCount: resolution.eligibleUserCount,
+        recipientFingerprint: resolution.recipientFingerprint,
+        status: 'PREVIEWED',
+        targetRole,
+        targetSegment,
+        targetUserId: normalizeNullable(input.targetUserId),
+        title: input.title,
+        ...(state === 'READY'
+          ? {
+              recipients: {
+                create: resolution.recipients.map((recipient) => ({
+                  deviceIds: toJson(recipient.devices.map((device) => device.id)),
+                  eligibleDeviceCount: recipient.devices.length,
+                  userId: recipient.userId,
+                })),
+              },
+            }
+          : {}),
       },
     });
 
-    let notificationCount = 0;
-    for (const recipient of recipients) {
-      const notification = await this.notifications.create({
-        userId: recipient.id,
-        targetRole,
-        type: 'admin.push.broadcast',
-        resolveTemplate: false,
-        title: input.title,
-        body: input.body,
-        data: {
-          campaignId: campaign.id,
-          source: 'admin_manual_push',
-          targetSegment,
-          destination: appDestination,
-        },
-      });
-      notificationCount += 1;
+    await this.writeAudit(actorId, 'admin_push_campaign.previewed', `admin_push_campaign:${preview.id}`, {
+      appDestination: destination.value,
+      copyHash,
+      criteriaHash,
+      eligibleDeviceCount: resolution.eligibleDeviceCount,
+      eligibleUserCount: resolution.eligibleUserCount,
+      excludedDeviceCount: resolution.excludedDeviceCount,
+      excludedUserCount: resolution.excludedUserCount,
+      expiresAt: expiresAt.toISOString(),
+      locale,
+      manualUserLimit: ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT,
+      source: 'admin_manual_push',
+      state,
+      targetRole,
+      targetSegment,
+      targetType: input.targetUserId ? 'specific_account' : 'matched_audience',
+    });
 
-      await this.prisma.adminPushCampaignRecipient.create({
-        data: {
-          campaignId: campaign.id,
-          userId: recipient.id,
-          notificationId: notification.id,
-          status: 'QUEUED',
-        },
-      });
+    return {
+      previewId: preview.id,
+      expiresAt: expiresAt.toISOString(),
+      targetRole,
+      targetSegment,
+      ...(resolution.targetAccountLabel ? { targetAccountLabel: resolution.targetAccountLabel } : {}),
+      locale,
+      destination,
+      eligibleUsers: resolution.eligibleUserCount,
+      eligibleDevices: resolution.eligibleDeviceCount,
+      excludedUsers: resolution.excludedUserCount,
+      excludedDevices: resolution.excludedDeviceCount,
+      exclusions: resolution.exclusions,
+      manualUserLimit: ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT,
+      state,
+      sampleRecipients: resolution.sampleRecipients,
+    };
+  }
+
+  async confirmAdminPushCampaign(actorId: string, input: AdminPushCampaignConfirmDto) {
+    const replay = await this.prisma.adminPushCampaign.findUnique({
+      where: { idempotencyKey: input.idempotencyKey },
+      select: { ...adminPushCampaignOperatorSelect, createdById: true },
+    });
+    if (replay) {
+      if (replay.id !== input.previewId || replay.createdById !== actorId) {
+        throw new ConflictException('Idempotency key is already bound to another push campaign');
+      }
+      return { ...adminPushCampaignWithoutActorId(replay), replayed: true };
     }
 
-    const updatedCampaign = await this.prisma.adminPushCampaign.update({
-      where: { id: campaign.id },
-      data: { notificationCount },
-      include: { recipients: { orderBy: { createdAt: 'desc' }, take: 5 } },
+    const preview = await this.prisma.adminPushCampaign.findUnique({
+      where: { id: input.previewId },
+      include: { recipients: true },
     });
+    if (!preview) {
+      throw new NotFoundException('Push campaign preview was not found');
+    }
+    if (preview.createdById !== actorId) {
+      throw new ForbiddenException('Push campaign preview belongs to another operator');
+    }
+    if (preview.status !== 'PREVIEWED' || preview.consumedAt) {
+      throw new ConflictException('Push campaign preview has already been consumed');
+    }
+    const now = new Date();
+    if (!preview.expiresAt || preview.expiresAt.getTime() <= now.getTime()) {
+      await this.prisma.adminPushCampaign.update({
+        where: { id: preview.id },
+        data: { status: 'EXPIRED' },
+      });
+      throw new ConflictException('Push campaign preview has expired');
+    }
+    if (
+      preview.recipientCount < 1 ||
+      preview.recipientCount > ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT ||
+      preview.eligibleDeviceCount < 1
+    ) {
+      throw new BadRequestException('Push campaign preview is not eligible to queue');
+    }
+    if (input.confirmationPhrase !== `SEND ${preview.recipientCount}`) {
+      throw new BadRequestException(`Type SEND ${preview.recipientCount} to confirm this campaign`);
+    }
 
-    await this.writeAudit(actorId, 'admin_push_campaign.create', `admin_push_campaign:${campaign.id}`, {
-      campaignId: campaign.id,
+    const targetRole = normalizeAdminPushTargetRole(preview.targetRole);
+    const locale = normalizeAdminPushLocale(targetRole, preview.locale ?? undefined);
+    adminPushDestination(targetRole, preview.appDestination);
+    const currentResolution = await this.resolveAdminPushAudience({
+      locale,
       targetRole,
-      targetUserId: normalizeNullable(input.targetUserId),
-      targetSegment,
-      appDestination,
-      recipientCount: recipients.length,
-      notificationCount,
+      targetSegment: preview.targetSegment,
+      targetUserId: preview.targetUserId ?? undefined,
+    });
+    if (
+      currentResolution.recipientFingerprint !== preview.recipientFingerprint ||
+      currentResolution.eligibleUserCount !== preview.recipientCount ||
+      currentResolution.eligibleDeviceCount !== preview.eligibleDeviceCount
+    ) {
+      throw new ConflictException('Push campaign audience changed after preview');
+    }
+
+    const consumed = await this.prisma.adminPushCampaign.updateMany({
+      where: {
+        consumedAt: null,
+        createdById: actorId,
+        expiresAt: { gt: now },
+        id: preview.id,
+        status: 'PREVIEWED',
+      },
+      data: {
+        confirmedAt: now,
+        consumedAt: now,
+        idempotencyKey: input.idempotencyKey,
+        operatorReason: input.reason,
+        queuedAt: now,
+        status: 'QUEUED',
+      },
+    });
+    if (consumed.count !== 1) {
+      const concurrentReplay = await this.prisma.adminPushCampaign.findUnique({
+        where: { idempotencyKey: input.idempotencyKey },
+        select: { ...adminPushCampaignOperatorSelect, createdById: true },
+      });
+      if (concurrentReplay?.id === preview.id && concurrentReplay.createdById === actorId) {
+        return { ...adminPushCampaignWithoutActorId(concurrentReplay), replayed: true };
+      }
+      throw new ConflictException('Push campaign preview could not be consumed');
+    }
+
+    await this.writeAudit(actorId, 'admin_push_campaign.confirmed', `admin_push_campaign:${preview.id}`, {
+      appDestination: preview.appDestination,
+      copyHash: preview.copyHash,
+      eligibleDeviceCount: preview.eligibleDeviceCount,
+      eligibleUserCount: preview.recipientCount,
+      idempotencyKey: input.idempotencyKey,
+      locale,
+      reason: input.reason,
+      source: 'admin_manual_push',
+      targetRole,
+      targetSegment: preview.targetSegment,
     });
 
-    return updatedCampaign;
+    if (!this.adminPushCampaignQueue) {
+      await this.failAdminPushCampaignQueue(preview.id, actorId, 'QUEUE_NOT_CONFIGURED');
+      throw new ServiceUnavailableException('Push campaign queue is unavailable');
+    }
+
+    const request = adminPushCampaignJob(preview.id);
+    let job: Awaited<ReturnType<NonNullable<typeof this.adminPushCampaignQueue>['add']>>;
+    try {
+      job = await this.adminPushCampaignQueue.add(request.name, request.data, request.options);
+    } catch {
+      await this.failAdminPushCampaignQueue(preview.id, actorId, 'QUEUE_ENQUEUE_FAILED');
+      throw new ServiceUnavailableException('Push campaign queue is unavailable');
+    }
+
+    const queueJobId = job?.id ? String(job.id) : null;
+    try {
+      const campaign = await this.prisma.adminPushCampaign.update({
+        where: { id: preview.id },
+        data: { queueJobId },
+        select: adminPushCampaignOperatorSelect,
+      });
+      await this.writeAudit(actorId, 'admin_push_campaign.queued', `admin_push_campaign:${preview.id}`, {
+        campaignId: preview.id,
+        eligibleDeviceCount: preview.eligibleDeviceCount,
+        eligibleUserCount: preview.recipientCount,
+        queueJobId,
+        queueName: ADMIN_PUSH_CAMPAIGN_QUEUE_NAME,
+        source: 'admin_manual_push',
+      });
+      return { ...campaign, replayed: false };
+    } catch {
+      this.logger.error('Push campaign queued but its queue receipt could not be finalized', {
+        campaignId: preview.id,
+        queueJobId,
+      });
+      throw new ServiceUnavailableException(
+        'Campaign was queued, but its receipt could not be loaded. Retry this confirmation with the same request key.',
+      );
+    }
+  }
+
+  private async resolveAdminPushAudience(input: {
+    locale: string;
+    targetRole: Extract<Role, 'CUSTOMER' | 'PROVIDER'>;
+    targetSegment: string;
+    targetUserId?: string;
+  }) {
+    const baseWhere = adminPushRecipientBaseWhere(
+      input.targetRole,
+      input.targetUserId,
+      input.targetSegment,
+    );
+    const localeFilter = { startsWith: input.locale, mode: Prisma.QueryMode.insensitive } as const;
+    const eligibleWhere: Prisma.UserWhereInput = {
+      AND: [
+        baseWhere,
+        {
+          pushDevices: {
+            some: {
+              enabled: true,
+              locale: localeFilter,
+              role: input.targetRole,
+            },
+          },
+        },
+      ],
+    };
+    const [candidateUserCount, eligibleUserCount, allEnabledDeviceCount, roleDeviceCount, deviceGroups] =
+      await Promise.all([
+        this.prisma.user.count({ where: baseWhere }),
+        this.prisma.user.count({ where: eligibleWhere }),
+        this.prisma.pushDevice.count({ where: { enabled: true, user: { is: baseWhere } } }),
+        this.prisma.pushDevice.count({
+          where: { enabled: true, role: input.targetRole, user: { is: baseWhere } },
+        }),
+        this.prisma.pushDevice.groupBy({
+          by: ['userId'],
+          where: {
+            enabled: true,
+            locale: localeFilter,
+            role: input.targetRole,
+            user: { is: baseWhere },
+          },
+          _count: { _all: true },
+        }),
+      ]);
+    const matchingDeviceCount = deviceGroups.reduce((sum, group) => sum + group._count._all, 0);
+    const eligibleDeviceCount = deviceGroups.reduce(
+      (sum, group) => sum + Math.min(group._count._all, NOTIFICATION_SEND_PUSH_DEVICE_LIMIT),
+      0,
+    );
+    const cappedDeviceCount = matchingDeviceCount - eligibleDeviceCount;
+    const roleMismatchDeviceCount = Math.max(0, allEnabledDeviceCount - roleDeviceCount);
+    const localeMismatchDeviceCount = Math.max(0, roleDeviceCount - matchingDeviceCount);
+    const excludedUserCount = Math.max(0, candidateUserCount - eligibleUserCount);
+    const excludedDeviceCount =
+      roleMismatchDeviceCount + localeMismatchDeviceCount + cappedDeviceCount;
+    const take = eligibleUserCount <= ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT ? eligibleUserCount : 5;
+    const matchedUsers =
+      take > 0
+        ? await this.prisma.user.findMany({
+            where: eligibleWhere,
+            orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+            take,
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+              providerProfile: { select: { displayName: true } },
+              pushDevices: {
+                where: {
+                  enabled: true,
+                  locale: localeFilter,
+                  role: input.targetRole,
+                },
+                orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+                take: NOTIFICATION_SEND_PUSH_DEVICE_LIMIT,
+                select: { id: true, platform: true, updatedAt: true },
+              },
+            },
+          })
+        : [];
+    const snapshotUsers =
+      eligibleUserCount <= ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT ? matchedUsers : [];
+    const recipients = snapshotUsers.map((user) => ({
+      userId: user.id,
+      devices: user.pushDevices,
+    }));
+    const recipientFingerprint = adminPushHash(
+      recipients.length > 0
+        ? recipients.map((recipient) => ({
+            deviceIds: recipient.devices.map((device) => device.id).sort(),
+            userId: recipient.userId,
+          }))
+        : { eligibleDeviceCount, eligibleUserCount, overLimit: true },
+    );
+    const sampleRecipients = matchedUsers.slice(0, 5).map((user) => ({
+      displayLabel:
+        user.providerProfile?.displayName ??
+        user.fullName ??
+        maskedAdminOwnerPhone(user.phone) ??
+        (input.targetRole === Role.PROVIDER ? 'Partner account' : 'Customer account'),
+      maskedPhone: maskedAdminOwnerPhone(user.phone),
+      platform: user.pushDevices[0]?.platform,
+      lastActiveAt: user.pushDevices[0]?.updatedAt?.toISOString(),
+    }));
+    const exclusions = [
+      {
+        code: 'NO_ROLE_LOCALE_DEVICE',
+        count: excludedUserCount,
+        label: 'Users without an enabled device for this role and language',
+      },
+      {
+        code: 'DEVICE_ROLE_MISMATCH',
+        count: roleMismatchDeviceCount,
+        label: 'Enabled devices registered for another app role',
+      },
+      {
+        code: 'DEVICE_LOCALE_MISMATCH',
+        count: localeMismatchDeviceCount,
+        label: 'Enabled devices registered for another language',
+      },
+      {
+        code: 'DEVICE_CAP',
+        count: cappedDeviceCount,
+        label: `Devices above the ${NOTIFICATION_SEND_PUSH_DEVICE_LIMIT}-device per-user limit`,
+      },
+    ].filter((exclusion) => exclusion.count > 0);
+
+    return {
+      eligibleDeviceCount,
+      eligibleUserCount,
+      excludedDeviceCount,
+      excludedUserCount,
+      exclusions,
+      recipientFingerprint,
+      recipients,
+      sampleRecipients,
+      targetAccountLabel: input.targetUserId ? sampleRecipients[0]?.displayLabel : undefined,
+    };
+  }
+
+  private async failAdminPushCampaignQueue(campaignId: string, actorId: string, errorCode: string) {
+    const failedAt = new Date();
+    await this.prisma.adminPushCampaign.update({
+      where: { id: campaignId },
+      data: { failedAt, status: 'FAILED' },
+    });
+    await this.writeAudit(actorId, 'admin_push_campaign.failed', `admin_push_campaign:${campaignId}`, {
+      campaignId,
+      errorCode,
+      failedAt: failedAt.toISOString(),
+      source: 'admin_manual_push',
+    });
   }
 
   async retryNotification(actorId: string, notificationId: string, rawReason?: string) {
@@ -30266,46 +34722,32 @@ export class AdminService {
     });
   }
 
-  private async ensureDefaultNotificationTemplates() {
-    for (const template of DEFAULT_NOTIFICATION_TEMPLATES) {
-      const row = await this.prisma.notificationTemplate.upsert({
-        where: { key: template.key },
-        create: {
-          key: template.key,
-          audience: template.audience,
-          channel: template.channel,
-          description: template.description,
-          variables: toJson(template.variables),
-          enabled: true,
-        },
-        update: {
-          audience: template.audience,
-          channel: template.channel,
-          description: template.description,
-          variables: toJson(template.variables),
-        },
-        select: { id: true },
-      });
-
-      await this.prisma.notificationTemplateTranslation.createMany({
-        data: NOTIFICATION_TEMPLATE_LOCALES.map((locale) => ({
-          templateId: row.id,
-          locale,
-          title: template.title,
-          body: template.body,
-        })),
-        skipDuplicates: true,
-      });
-    }
-  }
-
-  writeAudit(actorId: string, action: string, target: string, metadata?: Prisma.InputJsonValue) {
-    return this.prisma.adminAuditLog.create({
+  writeAudit(
+    actorId: string,
+    action: string,
+    target: string,
+    metadata?: Prisma.InputJsonValue,
+    options?: { correctionOfEventId?: string },
+    client: PrismaService | Prisma.TransactionClient = this.prisma,
+  ) {
+    const classification = classifyAdminAuditAction(action);
+    const targetSeparator = target.indexOf(':');
+    const metadataObject = jsonObject((metadata ?? null) as Prisma.JsonValue | null);
+    return client.adminAuditLog.create({
       data: {
         actorId,
+        actorKey: actorId,
+        actorType: 'HUMAN',
         action,
+        area: classification.area,
+        correctionOfEventId: options?.correctionOfEventId,
+        severity: classification.severity,
+        outcome: classification.outcome,
         target,
         metadata,
+        objectType: targetSeparator > 0 ? target.slice(0, targetSeparator) : 'unknown',
+        objectId: targetSeparator > 0 ? target.slice(targetSeparator + 1) : target,
+        source: jsonString(metadataObject.source) ?? 'admin_api',
       },
     });
   }
@@ -30340,7 +34782,11 @@ export class AdminService {
     };
   }
 
-  private async findRecentAuditLogsByTargets(targets: string[], perTargetLimit: number) {
+  private async findRecentAuditLogsByTargets(
+    targets: string[],
+    perTargetLimit: number,
+    action?: string,
+  ) {
     const rows = await this.prisma.$queryRaw<AdminAuditLogSummaryRow[]>(Prisma.sql`
       WITH ranked_logs AS (
         SELECT
@@ -30355,8 +34801,9 @@ export class AdminService {
           actor."fullName" AS "actorFullName",
           ROW_NUMBER() OVER (PARTITION BY logs."target" ORDER BY logs."createdAt" DESC) AS "targetRank"
         FROM "AdminAuditLog" logs
-        INNER JOIN "User" actor ON actor."id" = logs."actorId"
+        LEFT JOIN "User" actor ON actor."id" = logs."actorId"
         WHERE logs."target" IN (${Prisma.join(targets)})
+        ${action ? Prisma.sql`AND logs."action" = ${action}` : Prisma.empty}
       )
       SELECT
         "id",
@@ -30380,12 +34827,14 @@ export class AdminService {
       target: row.target,
       metadata: row.metadata,
       createdAt: row.createdAt,
-      actor: {
-        id: row.actorId,
-        email: row.actorEmail,
-        phone: row.actorPhone,
-        fullName: row.actorFullName,
-      },
+      actor: row.actorId
+        ? {
+            id: row.actorId,
+            email: row.actorEmail,
+            phone: row.actorPhone,
+            fullName: row.actorFullName,
+          }
+        : null,
     })) satisfies AdminAuditLogSummary[];
   }
 
@@ -30895,14 +35344,36 @@ function percentageValue(numerator: number, denominator: number) {
   return Math.round((numerator / denominator) * 100);
 }
 
+function adminMarketingDimensionHasActivity(row: AdminMarketingDimensionRow) {
+  return (
+    row.addressSaves > 0 ||
+    row.bookingCreated > 0 ||
+    row.bookingCompleted > 0 ||
+    row.bookingCancelled > 0 ||
+    row.adSpend > 0
+  );
+}
+
 function normalizeMarketingSpendDate(value: unknown) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
-    throw new BadRequestException('Marketing spend date must use YYYY-MM-DD');
+    throw new BadRequestException({
+      code: 'MARKETING_SPEND_DATE_INVALID',
+      message: 'Marketing spend date must use YYYY-MM-DD',
+    });
   }
 
   const date = new Date(`${value.trim()}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime())) {
-    throw new BadRequestException('Marketing spend date is invalid');
+  if (Number.isNaN(date.getTime()) || marketingSpendDateKey(date) !== value.trim()) {
+    throw new BadRequestException({
+      code: 'MARKETING_SPEND_DATE_INVALID',
+      message: 'Marketing spend date is invalid',
+    });
+  }
+  if (value.trim() > marketingVietnamDateKey(new Date())) {
+    throw new BadRequestException({
+      code: 'MARKETING_SPEND_FUTURE_DATE',
+      message: 'Marketing spend cannot be recorded for a future Vietnam date',
+    });
   }
 
   return date;
@@ -30910,6 +35381,78 @@ function normalizeMarketingSpendDate(value: unknown) {
 
 function marketingSpendDateKey(value: Date) {
   return value.toISOString().slice(0, 10);
+}
+
+function marketingVietnamDateKey(value: Date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+  }).formatToParts(value);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value ?? '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
+function marketingSpendAuditTarget(input: {
+  campaignId: string;
+  platform: string;
+  regionCode: string;
+  source: string;
+  spendDate: Date;
+}) {
+  return `marketing_spend_daily:${input.source}:${input.platform}:${input.regionCode}:${input.campaignId}:${marketingSpendDateKey(input.spendDate)}`;
+}
+
+function marketingSpendAuditSnapshot(row: {
+  campaignId: string;
+  campaignName: string | null;
+  currency: string;
+  notes: string | null;
+  platform: string;
+  regionCode: string;
+  source: string;
+  spendAmount: number;
+  spendDate: Date;
+  updatedAt: Date;
+}) {
+  return {
+    campaignId: row.campaignId,
+    campaignName: row.campaignName,
+    currency: row.currency,
+    notes: row.notes,
+    platform: row.platform,
+    regionCode: row.regionCode,
+    source: row.source,
+    spendAmount: row.spendAmount,
+    spendDate: marketingSpendDateKey(row.spendDate),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function marketingSpendDuplicateCanonicalCount(
+  rows: readonly {
+    campaignId: string;
+    platform: string;
+    regionCode: string;
+    source: string;
+    spendDate: Date;
+  }[],
+) {
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    const key = [
+      marketingSpendDateKey(row.spendDate),
+      row.source.trim().toLowerCase(),
+      row.platform.trim().toLowerCase(),
+      row.regionCode.trim().toLowerCase(),
+      canonicalMarketingCampaignKey(row.campaignId) ?? 'all',
+    ].join(':');
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  return [...counts.values()].reduce((total, count) => total + Math.max(0, count - 1), 0);
 }
 
 function normalizeMarketingSpendSource(value: unknown) {
@@ -30924,7 +35467,10 @@ function normalizeMarketingSpendSource(value: unknown) {
 
 function normalizeMarketingSpendPlatform(value: unknown) {
   if (value === undefined || value === null || `${value}`.trim() === '') {
-    return 'unknown';
+    throw new BadRequestException({
+      code: 'MARKETING_SPEND_PLATFORM_REQUIRED',
+      message: 'Marketing spend platform must be selected explicitly',
+    });
   }
 
   const platform = normalizeMarketingPlatform(value);
@@ -30962,8 +35508,7 @@ function normalizeMarketingSpendRegionCode(
 }
 
 function normalizeMarketingSpendCampaignId(value: unknown) {
-  const normalized = value === undefined || value === null ? null : normalizeNullable(String(value));
-  return normalized ?? 'all';
+  return canonicalMarketingCampaignKey(value) ?? 'all';
 }
 
 function adminAuditLogListLimit(value: number | string | null | undefined): number {
@@ -31141,6 +35686,7 @@ function adminReferralCashoutListSkip(value: number | string | null | undefined)
 function adminReferralCashoutWhere(options: AdminReferralCashoutQueueQuery): Prisma.ReferralRewardWhereInput {
   const filters: Prisma.ReferralRewardWhereInput[] = [
     { status: { in: adminReferralCashoutStatuses(options.status) } },
+    { NOT: referralAdminFixtureRewardWhere },
   ];
   const audience = adminReferralCashoutAudience(options.audience);
   const q = normalizeNullable(options.q);
@@ -31204,7 +35750,11 @@ function adminCustomerReferralParentWhere(
   options: AdminReferralParentListQuery,
 ): Prisma.CustomerProfileWhereInput {
   const filters: Prisma.CustomerProfileWhereInput[] = [
-    { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
+    {
+      referralsMade: {
+        some: { audience: ReferralAudience.CUSTOMER, NOT: referralAdminFixtureAttributionWhere },
+      },
+    },
   ];
   const q = normalizeNullable(options.q);
   const attributionStatuses = adminReferralAttributionStatusFilter(options.status);
@@ -31220,6 +35770,7 @@ function adminCustomerReferralParentWhere(
       referralsMade: {
         some: {
           audience: ReferralAudience.CUSTOMER,
+          NOT: referralAdminFixtureAttributionWhere,
           ...(attributionStatuses ? { status: { in: attributionStatuses } } : {}),
           ...(fraudReviewStatuses ? { fraudReviewStatus: { in: fraudReviewStatuses } } : {}),
           ...(createdAt ? { createdAt } : {}),
@@ -31237,6 +35788,7 @@ function adminCustomerReferralRewardQueueWhere(
 ): Prisma.ReferralRewardWhereInput {
   const filters: Prisma.ReferralRewardWhereInput[] = [
     { attribution: { audience: ReferralAudience.CUSTOMER } },
+    { NOT: referralAdminFixtureRewardWhere },
   ];
   const q = normalizeNullable(options.q);
   const attributionStatuses = adminReferralAttributionStatusFilter(options.status);
@@ -31278,7 +35830,11 @@ function adminPartnerReferralParentWhere(
   options: AdminReferralParentListQuery,
 ): Prisma.ProviderProfileWhereInput {
   const filters: Prisma.ProviderProfileWhereInput[] = [
-    { referralsMade: { some: { audience: ReferralAudience.PARTNER } } },
+    {
+      referralsMade: {
+        some: { audience: ReferralAudience.PARTNER, NOT: referralAdminFixtureAttributionWhere },
+      },
+    },
   ];
   const q = normalizeNullable(options.q);
   const attributionStatuses = adminReferralAttributionStatusFilter(options.status);
@@ -31294,6 +35850,7 @@ function adminPartnerReferralParentWhere(
       referralsMade: {
         some: {
           audience: ReferralAudience.PARTNER,
+          NOT: referralAdminFixtureAttributionWhere,
           ...(attributionStatuses ? { status: { in: attributionStatuses } } : {}),
           ...(fraudReviewStatuses ? { fraudReviewStatus: { in: fraudReviewStatuses } } : {}),
           ...(createdAt ? { createdAt } : {}),
@@ -31310,7 +35867,10 @@ function adminCustomerReferralAttributionWhere(
   options: AdminReferralParentListQuery,
   config: { includeReward: boolean },
 ): Prisma.ReferralAttributionWhereInput {
-  const filters: Prisma.ReferralAttributionWhereInput[] = [{ audience: ReferralAudience.CUSTOMER }];
+  const filters: Prisma.ReferralAttributionWhereInput[] = [
+    { audience: ReferralAudience.CUSTOMER },
+    { NOT: referralAdminFixtureAttributionWhere },
+  ];
   const q = normalizeNullable(options.q);
   const attributionStatuses = adminReferralAttributionStatusFilter(options.status);
   const fraudReviewStatuses = adminReferralFraudReviewStatusFilter(options.fraud);
@@ -31340,7 +35900,10 @@ function adminPartnerReferralAttributionWhere(
   options: AdminReferralParentListQuery,
   config: { includeReward: boolean },
 ): Prisma.ReferralAttributionWhereInput {
-  const filters: Prisma.ReferralAttributionWhereInput[] = [{ audience: ReferralAudience.PARTNER }];
+  const filters: Prisma.ReferralAttributionWhereInput[] = [
+    { audience: ReferralAudience.PARTNER },
+    { NOT: referralAdminFixtureAttributionWhere },
+  ];
   const q = normalizeNullable(options.q);
   const attributionStatuses = adminReferralAttributionStatusFilter(options.status);
   const fraudReviewStatuses = adminReferralFraudReviewStatusFilter(options.fraud);
@@ -31774,6 +36337,442 @@ function adminChatArchiveAuditFilters(query: AdminChatArchiveListQuery) {
   };
 }
 
+type AdminAuditGroupCount = {
+  schemaVersion: number;
+  action: string;
+  actorId: string | null;
+  actorType: string | null;
+  area: string;
+  outcome: string;
+  severity: string;
+  source: string | null;
+  _count: { _all: number };
+};
+
+type AdminAuditWorkspaceFacetCounts = {
+  actorTypeCounts: Record<string, number>;
+  areaCounts: Record<string, number>;
+  outcomeCounts: Record<string, number>;
+  severityCounts: Record<string, number>;
+};
+
+function adminAuditWorkspaceWhere(
+  options: AdminAuditLogListOptions,
+  generatedAt: Date,
+  view: AdminAuditSavedView | null,
+): Prisma.AdminAuditLogWhereInput {
+  const filters: Prisma.AdminAuditLogWhereInput[] = [
+    view ? adminAuditSavedViewWhere(view) : adminAuditDefaultWhere(null),
+  ];
+  const actions = (Array.isArray(options.action) ? options.action : [options.action])
+    .map((action) => normalizeNullable(action))
+    .filter((action): action is string => Boolean(action));
+  const reportWindow = adminAuditReportWindow(options, generatedAt);
+  const q = normalizeNullable(options.q);
+  const targetPrefix = adminAuditLogTargetPrefix(options.targetPrefix);
+  const area = adminAuditAreaFilter(options.area);
+  const outcome = adminAuditOutcomeFilter(options.outcome);
+  const severity = adminAuditSeverityFilter(options.severity);
+  const actorType = adminAuditActorTypeFilter(options.actorType);
+  const objectType = normalizeNullable(options.objectType);
+  const eventId = normalizeNullable(options.eventId);
+  const correlationId = normalizeNullable(options.correlationId);
+  const requestId = normalizeNullable(options.requestId);
+
+  if (actions.length === 1) filters.push({ action: actions[0] });
+  if (actions.length > 1) filters.push({ action: { in: actions } });
+  if (reportWindow.from || reportWindow.to) {
+    filters.push(adminAuditTimelineWhere(reportWindow.from, reportWindow.to));
+  }
+  if (targetPrefix) {
+    filters.push({
+      action: { in: adminAuditLogTargetActions(targetPrefix) },
+      target: { startsWith: targetPrefix },
+    });
+  }
+  if (q) {
+    filters.push({
+      OR: [
+        { action: { contains: q, mode: 'insensitive' } },
+        { target: { contains: q, mode: 'insensitive' } },
+        { eventId: { contains: q, mode: 'insensitive' } },
+        { objectId: { contains: q, mode: 'insensitive' } },
+        { objectLabelSnapshot: { contains: q, mode: 'insensitive' } },
+        { actorKey: { contains: q, mode: 'insensitive' } },
+        { actorLabelSnapshot: { contains: q, mode: 'insensitive' } },
+        { correlationId: { contains: q, mode: 'insensitive' } },
+        { requestId: { contains: q, mode: 'insensitive' } },
+        { actor: { id: { contains: q, mode: 'insensitive' } } },
+        { actor: { email: { contains: q, mode: 'insensitive' } } },
+        { actor: { fullName: { contains: q, mode: 'insensitive' } } },
+        { actor: { phone: { contains: q, mode: 'insensitive' } } },
+      ],
+    });
+  }
+  if (area) filters.push(adminAuditAreaWhere(area));
+  if (outcome) filters.push(adminAuditOutcomeWhere(outcome));
+  if (severity) filters.push(adminAuditSeverityWhere(severity));
+  if (actorType) filters.push(adminAuditActorTypeWhere(actorType));
+  if (objectType) filters.push({ OR: [{ objectType }, { target: { startsWith: `${objectType}:` } }] });
+  if (eventId) filters.push({ OR: [{ id: eventId }, { eventId }] });
+  if (correlationId) {
+    filters.push({ OR: [{ correlationId }, { metadata: { path: ['correlationId'], equals: correlationId } }] });
+  }
+  if (requestId) {
+    filters.push({ OR: [{ requestId }, { metadata: { path: ['requestId'], equals: requestId } }] });
+  }
+  const bucketWhere = adminAuditLogBucketWhere(normalizeNullable(options.bucket));
+  const priorityWhere = adminAuditLogPriorityWhere(normalizeNullable(options.priority));
+  if (bucketWhere) filters.push(bucketWhere);
+  if (priorityWhere) filters.push(priorityWhere);
+
+  return filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+function adminAuditWorkspaceSourceWhere(
+  options: AdminAuditLogListOptions,
+  generatedAt: Date,
+): Prisma.AdminAuditLogWhereInput {
+  const filters: Prisma.AdminAuditLogWhereInput[] = [adminAuditDefaultWhere(null)];
+  const reportWindow = adminAuditReportWindow(options, generatedAt);
+  if (reportWindow.from || reportWindow.to) {
+    filters.push(adminAuditTimelineWhere(reportWindow.from, reportWindow.to));
+  }
+  const bucketWhere = adminAuditLogBucketWhere(normalizeNullable(options.bucket));
+  if (bucketWhere) filters.push(bucketWhere);
+  return filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+function adminAuditActionableIncidentWhere(
+  options: AdminAuditLogListOptions,
+): Prisma.AdminAuditLogWhereInput {
+  const filters: Prisma.AdminAuditLogWhereInput[] = [{
+    action: {
+      in: [
+        'admin.background_jobs.recurring_incident_opened',
+        'admin.background_jobs.recurring_incident_recovered',
+      ],
+    },
+  }];
+  const bucketWhere = adminAuditLogBucketWhere(normalizeNullable(options.bucket));
+  if (bucketWhere) filters.push(bucketWhere);
+  return filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+function adminAuditActionableIncidents(
+  rows: readonly Prisma.AdminAuditLogGetPayload<{ select: typeof adminAuditLogSelect }>[],
+) {
+  const latestByTarget = new Map<string, typeof rows[number]>();
+  for (const row of rows) {
+    if (!latestByTarget.has(row.target)) latestByTarget.set(row.target, row);
+  }
+  return [...latestByTarget.values()]
+    .filter((row) => row.action === 'admin.background_jobs.recurring_incident_opened')
+    .slice(0, 10)
+    .map((row) => {
+      const event = adminAuditEventReadModel(row, { includePayload: false });
+      return {
+        id: row.id,
+        href: `/background-jobs/incidents/${encodeURIComponent(row.id)}`,
+        label: event.object.labelSnapshot,
+        openedAt: event.occurredAt,
+        source: event.context.source,
+        target: row.target,
+      };
+    });
+}
+
+function adminAuditReportWindow(options: AdminAuditLogListOptions, now: Date) {
+  const explicitFrom = adminAuditLogDateBoundary(options.from, 'from');
+  const explicitTo = adminAuditLogDateBoundary(options.to, 'to');
+  if (explicitFrom || explicitTo) {
+    if (explicitFrom && explicitTo && explicitFrom.getTime() >= explicitTo.getTime()) {
+      throw new BadRequestException('Audit log date range is invalid');
+    }
+    return {
+      range: 'custom',
+      label: 'Custom range',
+      from: explicitFrom?.toISOString() ?? null,
+      to: explicitTo?.toISOString() ?? null,
+    };
+  }
+
+  const window = adminVietnamOverviewRangeWindow(
+    normalizeAdminVietnamOverviewRange(options.range ?? 'today'),
+    now,
+  );
+  const dateWhere = adminVietnamOverviewDateWhere(window);
+  return {
+    range: window.range,
+    label: `${window.label} (Vietnam)`,
+    from: dateWhere?.gte.toISOString() ?? null,
+    to: dateWhere?.lt.toISOString() ?? null,
+  };
+}
+
+function adminAuditTimelineWhere(from: string | null, to: string | null): Prisma.AdminAuditLogWhereInput {
+  return {
+    timelineAt: {
+      ...(from ? { gte: new Date(from) } : {}),
+      ...(to ? { lt: new Date(to) } : {}),
+    },
+  };
+}
+
+function adminAuditLatestRecordedAt(value: { createdAt: Date | null; recordedAt: Date | null }) {
+  if (!value.recordedAt) return value.createdAt;
+  if (!value.createdAt) return value.recordedAt;
+  return value.recordedAt > value.createdAt ? value.recordedAt : value.createdAt;
+}
+
+function adminAuditExportFormat(value: string | null | undefined): 'csv' | 'json' {
+  const normalized = normalizeNullable(value)?.toLowerCase() ?? 'csv';
+  if (normalized !== 'csv' && normalized !== 'json') {
+    throw new BadRequestException('Unsupported audit export format');
+  }
+  return normalized;
+}
+
+function adminAuditExportFilterEvidence(
+  options: AdminAuditLogListOptions,
+  view: AdminAuditSavedView,
+) {
+  const normalizedFilters = {
+    actorType: normalizeNullable(options.actorType),
+    area: normalizeNullable(options.area),
+    bucket: normalizeNullable(options.bucket),
+    correlationId: normalizeNullable(options.correlationId),
+    eventId: normalizeNullable(options.eventId),
+    from: normalizeNullable(options.from),
+    objectType: normalizeNullable(options.objectType),
+    outcome: normalizeNullable(options.outcome),
+    q: normalizeNullable(options.q),
+    range: normalizeNullable(options.range),
+    requestId: normalizeNullable(options.requestId),
+    severity: normalizeNullable(options.severity),
+    sort: normalizeNullable(options.sort),
+    targetPrefix: normalizeNullable(options.targetPrefix),
+    to: normalizeNullable(options.to),
+    view,
+  };
+  const filterKeys = Object.entries(normalizedFilters)
+    .filter(([, value]) => Boolean(value))
+    .map(([key]) => key)
+    .sort();
+  return {
+    filterHash: createHash('sha256').update(JSON.stringify(normalizedFilters)).digest('hex'),
+    filterKeys,
+  };
+}
+
+function adminAuditWorkspaceFacets(groups: readonly AdminAuditGroupCount[]): AdminAuditWorkspaceFacetCounts {
+  const counts: AdminAuditWorkspaceFacetCounts = {
+    actorTypeCounts: {},
+    areaCounts: {},
+    outcomeCounts: {},
+    severityCounts: {},
+  };
+  for (const group of groups) {
+    const classification = classifyAdminAuditAction(group.action);
+    const canonical = group.schemaVersion >= 2;
+    const actorType = classifyAdminAuditActorType(
+      group.action,
+      group.actorType,
+      group.source,
+      group.actorId,
+      group.schemaVersion,
+    );
+    const area = canonical ? group.area : classification.area;
+    const outcome = canonical ? group.outcome : classification.outcome;
+    const severity = canonical ? group.severity : classification.severity;
+    incrementAuditFacet(counts.actorTypeCounts, actorType, group._count._all);
+    incrementAuditFacet(counts.areaCounts, area, group._count._all);
+    incrementAuditFacet(counts.outcomeCounts, outcome, group._count._all);
+    incrementAuditFacet(counts.severityCounts, severity, group._count._all);
+  }
+  return counts;
+}
+
+function adminAuditSavedViewCount(view: AdminAuditSavedView, groups: readonly AdminAuditGroupCount[]) {
+  return groups.reduce((total, group) => {
+    if (group.action === 'admin_web.page_view') return total;
+    const classification = classifyAdminAuditAction(group.action);
+    const canonical = group.schemaVersion >= 2;
+    const area = canonical ? group.area : classification.area;
+    const severity = canonical ? group.severity : classification.severity;
+    const include =
+      view === 'ALL' ||
+      (view === 'REVIEW_REQUIRED' && group.action !== 'admin.background_jobs.failure_registered' && (severity === 'REVIEW' || severity === 'CRITICAL')) ||
+      (view === 'OPERATOR_CHANGES' && area === 'OPERATOR') ||
+      (view === 'MONEY_POLICY' && (area === 'MONEY' || area === 'POLICY')) ||
+      (view === 'SECURITY_ACCESS' && area === 'SECURITY') ||
+      (view === 'SYSTEM_INCIDENTS' && area === 'SYSTEM' && (severity === 'REVIEW' || severity === 'CRITICAL'));
+    return include ? total + group._count._all : total;
+  }, 0);
+}
+
+function auditFacetEntries(counts: Record<string, number>) {
+  return Object.entries(counts)
+    .map(([value, count]) => ({ value, count }))
+    .sort((left, right) => right.count - left.count || left.value.localeCompare(right.value));
+}
+
+function incrementAuditFacet(counts: Record<string, number>, value: string, increment: number) {
+  counts[value] = (counts[value] ?? 0) + increment;
+}
+
+function adminAuditLogSavedView(value: string | null | undefined): AdminAuditSavedView {
+  const normalized = normalizeNullable(value)?.toUpperCase() ?? 'ALL';
+  const supported = new Set<string>([
+    ...ADMIN_AUDIT_SAVED_VIEWS.map((view) => view.key),
+    'LEGACY_TELEMETRY',
+  ]);
+  if (!supported.has(normalized)) throw new BadRequestException('Unsupported audit saved view');
+  return normalized as AdminAuditSavedView;
+}
+
+function adminAuditAreaFilter(value: string | null | undefined): AdminAuditAreaValue | null {
+  const normalized = normalizeNullable(value)?.toUpperCase();
+  if (!normalized) return null;
+  if (!['OPERATOR', 'POLICY', 'MONEY', 'BOOKING', 'SECURITY', 'SYSTEM', 'UNKNOWN'].includes(normalized)) {
+    throw new BadRequestException('Unsupported audit area');
+  }
+  return normalized as AdminAuditAreaValue;
+}
+
+function adminAuditSeverityFilter(value: string | null | undefined): AdminAuditSeverityValue | null {
+  const normalized = normalizeNullable(value)?.toUpperCase();
+  if (!normalized) return null;
+  if (!['INFO', 'NOTICE', 'REVIEW', 'CRITICAL'].includes(normalized)) {
+    throw new BadRequestException('Unsupported audit severity');
+  }
+  return normalized as AdminAuditSeverityValue;
+}
+
+function adminAuditOutcomeFilter(value: string | null | undefined): AdminAuditOutcomeValue | null {
+  const normalized = normalizeNullable(value)?.toUpperCase();
+  if (!normalized) return null;
+  if (![
+    'SUCCEEDED', 'FAILED', 'DENIED', 'SKIPPED', 'OPENED', 'ACKNOWLEDGED', 'RESOLVED', 'RECORDED', 'UNKNOWN',
+  ].includes(normalized)) {
+    throw new BadRequestException('Unsupported audit outcome');
+  }
+  return normalized as AdminAuditOutcomeValue;
+}
+
+function adminAuditActorTypeFilter(value: string | null | undefined): AdminAuditActorTypeValue | null {
+  const normalized = normalizeNullable(value)?.toUpperCase();
+  if (!normalized) return null;
+  if (!['HUMAN', 'SYSTEM', 'SERVICE', 'UNKNOWN'].includes(normalized)) {
+    throw new BadRequestException('Unsupported audit actor type');
+  }
+  return normalized as AdminAuditActorTypeValue;
+}
+
+type AdminAuditCursor = { occurredAt: Date; id: string; snapshotAt: Date };
+
+function adminAuditLogCursor(value: string | null | undefined): AdminAuditCursor | null {
+  const normalized = normalizeNullable(value);
+  if (!normalized) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(normalized, 'base64url').toString('utf8')) as Record<string, unknown>;
+    const occurredAt = new Date(String(parsed.occurredAt ?? ''));
+    const snapshotAt = new Date(String(parsed.snapshotAt ?? ''));
+    const id = typeof parsed.id === 'string' ? parsed.id : '';
+    if (!id || Number.isNaN(occurredAt.getTime()) || Number.isNaN(snapshotAt.getTime())) throw new Error();
+    return { occurredAt, id, snapshotAt };
+  } catch {
+    throw new BadRequestException('Audit cursor is invalid. Clear pagination and retry.');
+  }
+}
+
+function adminAuditLogCursorValue(occurredAt: Date, id: string, snapshotAt: Date) {
+  return Buffer.from(JSON.stringify({
+    occurredAt: occurredAt.toISOString(),
+    id,
+    snapshotAt: snapshotAt.toISOString(),
+  })).toString('base64url');
+}
+
+function adminAuditLogCursorWhere(
+  cursor: AdminAuditCursor | null,
+  generatedAt: Date,
+  sort: 'asc' | 'desc',
+): Prisma.AdminAuditLogWhereInput {
+  return {
+    AND: [
+      { timelineAt: { lte: generatedAt } },
+      ...(cursor
+        ? [{
+            OR: sort === 'desc'
+              ? [
+                  { timelineAt: { lt: cursor.occurredAt } },
+                  { timelineAt: cursor.occurredAt, id: { lt: cursor.id } },
+                ]
+              : [
+                  { timelineAt: { gt: cursor.occurredAt } },
+                  { timelineAt: cursor.occurredAt, id: { gt: cursor.id } },
+                ],
+          }]
+        : []),
+    ],
+  };
+}
+
+function adminAuditLogPreviousPageWhere(
+  cursor: AdminAuditCursor,
+  generatedAt: Date,
+  sort: 'asc' | 'desc',
+): Prisma.AdminAuditLogWhereInput {
+  return {
+    AND: [
+      { timelineAt: { lte: generatedAt } },
+      {
+        OR: sort === 'desc'
+          ? [
+              { timelineAt: { gt: cursor.occurredAt } },
+              { timelineAt: cursor.occurredAt, id: { gt: cursor.id } },
+            ]
+          : [
+              { timelineAt: { lt: cursor.occurredAt } },
+              { timelineAt: cursor.occurredAt, id: { lt: cursor.id } },
+            ],
+      },
+    ],
+  };
+}
+
+function adminAuditLogSort(value: string | null | undefined): 'asc' | 'desc' {
+  return normalizeNullable(value)?.toLowerCase() === 'oldest' ? 'asc' : 'desc';
+}
+
+function operationalPolicyAuditSource(value: string | null | undefined): AdminOperationalPolicyAuditSource {
+  return value === 'automated_smoke' || value === 'legacy_unknown' ? value : 'operator';
+}
+
+function operationalPolicyAuditCursor(
+  value: string | null | undefined,
+  source: AdminOperationalPolicyAuditSource,
+) {
+  const normalized = normalizeNullable(value);
+  if (!normalized || normalized.length > 500) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(normalized, 'base64url').toString('utf8')) as {
+      id?: unknown;
+      source?: unknown;
+    };
+    return typeof parsed.id === 'string' && parsed.id.length > 0 && parsed.id.length <= 200 && parsed.source === source
+      ? { id: parsed.id, source }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function operationalPolicyAuditCursorValue(id: string, source: AdminOperationalPolicyAuditSource) {
+  return Buffer.from(JSON.stringify({ id, source }), 'utf8').toString('base64url');
+}
+
 function adminAuditLogWhere(options: AdminAuditLogListOptions): Prisma.AdminAuditLogWhereInput | undefined {
   const filters: Prisma.AdminAuditLogWhereInput[] = [];
   const actions = (Array.isArray(options.action) ? options.action : [options.action])
@@ -31782,6 +36781,7 @@ function adminAuditLogWhere(options: AdminAuditLogListOptions): Prisma.AdminAudi
   const q = normalizeNullable(options.q);
   const bucket = normalizeNullable(options.bucket);
   const priority = normalizeNullable(options.priority);
+  const targetPrefix = adminAuditLogTargetPrefix(options.targetPrefix);
   const createdAt = adminAuditLogDateWhere(options.from, options.to);
   const bucketWhere = adminAuditLogBucketWhere(bucket);
   const priorityWhere = adminAuditLogPriorityWhere(priority);
@@ -31790,6 +36790,12 @@ function adminAuditLogWhere(options: AdminAuditLogListOptions): Prisma.AdminAudi
     filters.push({ action: actions[0] });
   } else if (actions.length > 1) {
     filters.push({ action: { in: actions } });
+  }
+  if (targetPrefix) {
+    filters.push({
+      action: { in: adminAuditLogTargetActions(targetPrefix) },
+      target: { startsWith: targetPrefix },
+    });
   }
   if (createdAt) {
     filters.push(createdAt);
@@ -31821,6 +36827,29 @@ function adminAuditLogWhere(options: AdminAuditLogListOptions): Prisma.AdminAudi
   }
 
   return { AND: filters };
+}
+
+const COMPANY_BANK_ACCOUNT_AUDIT_ACTIONS: string[] = [
+  'company_bank_account.approval_requested',
+  'company_bank_account.approval_rejected',
+  'company_bank_account.create',
+  'company_bank_account.update',
+];
+
+function adminAuditLogTargetPrefix(value: string | null | undefined): string | null {
+  const normalized = normalizeNullable(value);
+  if (!normalized) {
+    return null;
+  }
+  if (normalized === 'company_bank_account:') return normalized;
+  if (/^finance_approver_request:[A-Za-z0-9_-]{1,128}$/u.test(normalized)) return normalized;
+  throw new BadRequestException('Unsupported audit target prefix');
+}
+
+function adminAuditLogTargetActions(targetPrefix: string): string[] {
+  return targetPrefix === 'company_bank_account:'
+    ? COMPANY_BANK_ACCOUNT_AUDIT_ACTIONS
+    : [...FINANCE_APPROVER_AUDIT_ACTIONS];
 }
 
 function withAdminAuditLogWhere(
@@ -31966,7 +36995,11 @@ function adminAuditLogDateBoundary(value: string | null | undefined, label: 'fro
     return undefined;
   }
 
-  const date = new Date(normalized);
+  const hasExplicitOffset = /(?:z|[+-]\d{2}:?\d{2})$/i.test(normalized);
+  const vietnamLocalValue = /^\d{4}-\d{2}-\d{2}$/.test(normalized)
+    ? `${normalized}T00:00:00+07:00`
+    : `${normalized}+07:00`;
+  const date = new Date(hasExplicitOffset ? normalized : vietnamLocalValue);
   if (Number.isNaN(date.getTime())) {
     throw new BadRequestException(`Audit log ${label} date is invalid`);
   }
@@ -32805,8 +37838,9 @@ function adminProviderSanctionListOrderBy(
   return [{ status: 'asc' }, { startsAt: 'desc' }];
 }
 
-function maskedAdminOwnerPhone(value: string) {
-  const phone = value.trim();
+function maskedAdminOwnerPhone(value: string | null | undefined) {
+  const phone = value?.trim() ?? '';
+  if (!phone) return null;
   if (phone.length <= 5) return '*'.repeat(phone.length);
   return `${phone.slice(0, 3)}${'*'.repeat(Math.max(3, phone.length - 5))}${phone.slice(-2)}`;
 }
@@ -33689,8 +38723,11 @@ function adminFileReviewStatusSearch(query: string): Prisma.FileAssetWhereInput 
 
 function normalizeMarketingSpendAmount(value: unknown) {
   const amount = numberValue(value);
-  if (!Number.isInteger(amount) || amount < 0) {
-    throw new BadRequestException('Marketing spend amount must be a positive integer or zero');
+  if (!Number.isInteger(amount) || amount < 0 || amount > ADMIN_MARKETING_SPEND_MAX_VND) {
+    throw new BadRequestException({
+      code: 'MARKETING_SPEND_AMOUNT_INVALID',
+      message: `Marketing spend amount must be a whole VND amount from 0 to ${ADMIN_MARKETING_SPEND_MAX_VND}`,
+    });
   }
 
   return amount;
@@ -34897,10 +39934,7 @@ async function upsertPartnerBankDepositJournal(
 
   return tx.accountingJournalBatch.upsert({
     where: { sourceKey },
-    update: {
-      ...batchData,
-      entries: { deleteMany: {}, create: entries },
-    },
+    update: {},
     create: { ...batchData, sourceKey },
   });
 }
@@ -35893,6 +40927,112 @@ function paymentFeePolicyFingerprint(policy: PaymentFeePolicyPreflightInput) {
     .digest('hex');
 }
 
+function serviceCatalogMutationHash(value: unknown) {
+  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
+}
+
+function serviceCatalogNameTranslations(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (entry): entry is [string, string] => typeof entry[1] === 'string' && Boolean(entry[1].trim()),
+    ),
+  );
+}
+
+function assertLegacyServiceCatalogMutationAllowed(service: {
+  publicationStatus: ServicePublicationStatus;
+  provenance: ServiceCatalogProvenance;
+}) {
+  if (
+    service.publicationStatus === ServicePublicationStatus.PUBLISHED &&
+    (service.provenance === ServiceCatalogProvenance.OPERATOR ||
+      service.provenance === ServiceCatalogProvenance.SEED)
+  ) {
+    throw new ConflictException({
+      code: 'SERVICE_CATALOG_GROUP_COMMAND_REQUIRED',
+      message:
+        'Published operational services can only be changed through the service group command.',
+    });
+  }
+}
+
+async function createServicePayoutRuleVersion(
+  tx: Prisma.TransactionClient,
+  serviceId: string,
+  data: {
+    customerPrice: number;
+    providerPayoutAmount: number;
+    vatBps: number;
+    otherCostAmount: number;
+    currency: string;
+    active: boolean;
+    notes?: string | null;
+  },
+) {
+  await tx.servicePayoutRule.updateMany({
+    where: { serviceId, customerPrice: data.customerPrice, active: true },
+    data: { active: false },
+  });
+  return tx.servicePayoutRule.create({
+    data: { ...data, serviceId },
+  });
+}
+
+function serviceCatalogDraftPayload(value: Prisma.JsonValue) {
+  const record = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const translationsValue = record.nameTranslations;
+  const nameTranslations =
+    translationsValue && typeof translationsValue === 'object' && !Array.isArray(translationsValue)
+      ? Object.fromEntries(
+          Object.entries(translationsValue).filter(
+            (entry): entry is [string, string] => typeof entry[1] === 'string',
+          ),
+        )
+      : {};
+  const durations = Array.isArray(record.durations)
+    ? record.durations
+        .filter((row) => row && typeof row === 'object' && !Array.isArray(row))
+        .map((row) => {
+          const duration = row as Prisma.JsonObject;
+          return {
+            durationMin: typeof duration.durationMin === 'number' ? duration.durationMin : 0,
+          };
+        })
+        .filter((row) => row.durationMin > 0)
+    : [];
+  return {
+    nameTranslations,
+    description: typeof record.description === 'string' ? record.description : null,
+    durations,
+  };
+}
+
+async function serviceCatalogGroupResult(
+  tx: Prisma.TransactionClient,
+  serviceGroupKey: string,
+  draft: {
+    id: string;
+    serviceGroupKey: string;
+    version: number;
+    payload: Prisma.JsonValue;
+    lastMutationKey: string | null;
+    lastMutationHash: string | null;
+    createdById: string;
+    updatedById: string;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null,
+) {
+  const options = await tx.massageService.findMany({
+    where: { serviceGroupKey },
+    orderBy: { durationMin: 'asc' },
+    select: adminServiceCatalogSelect,
+  });
+  const group = groupServiceCatalogOptions(options)[0] ?? null;
+  return { group, draft };
+}
+
 function paymentFeePolicyApprovalMetadata(value: Prisma.JsonValue | null) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return {} as {
@@ -36038,18 +41178,34 @@ async function assertFinanceActionApprovalAdmin(
   approvalAdminId: string,
   actionLabel: string,
 ) {
-  const userDelegate = db.user;
-  if (!userDelegate?.findFirst) {
+  await assertVerifiedFinanceApprover(db, approvalAdminId, actionLabel);
+}
+
+type CompanyBankAccountApproverLookupDb = FinanceApprovalLookupDb;
+
+async function companyBankAccountEligibleApproverCount(
+  db: CompanyBankAccountApproverLookupDb,
+  actorId: string,
+) {
+  const snapshots = await listFinanceApproverPolicySnapshots(db, {
+    excludeIds: [actorId],
+    requireAttestation: true,
+    requireFinanceRole: true,
+  });
+  return snapshots.filter((snapshot) => snapshot.ready).length;
+}
+
+async function assertCompanyBankAccountApproverAvailable(
+  db: CompanyBankAccountApproverLookupDb,
+  actorId: string,
+) {
+  if ((await companyBankAccountEligibleApproverCount(db, actorId)) > 0) {
     return;
   }
-
-  const approver = await userDelegate.findFirst({
-    where: { id: approvalAdminId, roles: { has: Role.FINANCE_APPROVER } },
-    select: { id: true },
+  throw new BadRequestException({
+    code: 'COMPANY_BANK_ACCOUNT_APPROVER_UNAVAILABLE',
+    message: 'A different Finance approver is required before this request can be submitted',
   });
-  if (!approver) {
-    throw new BadRequestException(`${actionLabel} requires approval from a finance approver`);
-  }
 }
 
 async function assertBankReconciliationActionApproval(
@@ -36058,13 +41214,9 @@ async function assertBankReconciliationActionApproval(
   bankTransactionId: string,
   actionLabel: string,
 ) {
-  const [approver, assignment] = await Promise.all([
-    db.user.findFirst({
-      where: {
-        id: actorId,
-        roles: { hasSome: [Role.FINANCE_APPROVER, Role.MASTER_ADMIN] },
-      },
-      select: { id: true },
+  const [, assignment] = await Promise.all([
+    assertVerifiedFinanceApprover(db, actorId, actionLabel, {
+      requiredCategory: AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
     }),
     db.adminAuditLog.findFirst({
       where: {
@@ -36075,10 +41227,6 @@ async function assertBankReconciliationActionApproval(
       select: { metadata: true },
     }),
   ]);
-  if (!approver) {
-    throw new BadRequestException(`${actionLabel} requires the signed-in operator to be a finance approver`);
-  }
-
   const reviewOwnerAdminId = jsonString(jsonObject(assignment?.metadata ?? null).assigneeAdminId);
   if (!reviewOwnerAdminId) {
     throw new BadRequestException(`${actionLabel} requires an assigned review owner`);
@@ -36201,13 +41349,7 @@ async function upsertManualWalletAdjustmentJournal(
 
   await tx.accountingJournalBatch.upsert({
     where: { sourceKey },
-    update: {
-      ...batchData,
-      entries: {
-        deleteMany: {},
-        create: journalEntries,
-      },
-    },
+    update: {},
     create: {
       ...batchData,
       sourceKey,
@@ -38830,7 +43972,25 @@ function adminReferralRewardView(
   decisions: AdminReferralRewardDecisionMap,
 ) {
   const latestDecision = decisions.get(reward.id);
-  return latestDecision ? { ...reward, latestDecision } : reward;
+  const evidenceBlocker = referralRewardEvidenceBlocker(reward);
+  return {
+    id: reward.id,
+    amount: reward.amount,
+    availableAt: reward.availableAt,
+    calculationSnapshot: reward.calculationSnapshot,
+    createdAt: reward.createdAt,
+    currency: reward.currency,
+    evidence: {
+      ready: evidenceBlocker === null,
+      blocker: evidenceBlocker,
+    },
+    isFixture: isReferralRewardFixture(reward),
+    ...(latestDecision ? { latestDecision } : {}),
+    qualifyingBookingId: reward.qualifyingBookingId,
+    status: reward.status,
+    updatedAt: reward.updatedAt,
+    walletLedgerReference: reward.walletLedgerReference,
+  };
 }
 
 function adminReferralCashoutQueueRowView(
@@ -39468,9 +44628,9 @@ function adminOperatorAccessView(operator: AdminOperatorAccessSummary) {
     phone: operator.phone,
     fullName: operator.fullName,
     roles: operator.roles,
-    categories:
-      operator.adminOperatorPermission?.categories ??
-      defaultAdminOperatorPermissionCategories(operator.roles),
+    categories: operator.adminOperatorPermission?.categories ?? [],
+    permissionState: operator.adminOperatorPermission ? 'CONFIGURED' : 'MIGRATION_REQUIRED',
+    version: operator.adminOperatorPermission?.version ?? null,
     updatedAt: operator.adminOperatorPermission?.updatedAt.toISOString() ?? null,
   };
 }
@@ -39494,12 +44654,18 @@ function normalizeAdminOperatorPermissionCategories(
     return [...ADMIN_OPERATOR_PERMISSION_CATEGORIES];
   }
 
-  const categories =
-    requestedCategories && requestedCategories.length > 0
-      ? requestedCategories
-      : defaultAdminOperatorPermissionCategories(roles);
+  const categories = requestedCategories === undefined
+    ? defaultAdminOperatorPermissionCategories(roles)
+    : requestedCategories.flatMap(adminOperatorEffectivePermissionLeaves);
   const allowed = new Set<AdminOperatorPermissionCategory>(ADMIN_OPERATOR_PERMISSION_CATEGORIES);
-  return [...new Set(categories.filter((category) => allowed.has(category)))];
+  const unsupported = categories.filter((category) => !allowed.has(category));
+  if (unsupported.length > 0) {
+    throw new BadRequestException({
+      code: 'ADMIN_OPERATOR_PERMISSION_UNSUPPORTED',
+      message: `Unsupported operator permission: ${unsupported.join(', ')}`,
+    });
+  }
+  return [...new Set(categories)];
 }
 
 function defaultAdminOperatorPermissionCategories(roles: readonly Role[]) {
@@ -39531,8 +44697,523 @@ function normalizeAdminOperatorEmail(value: string | null | undefined) {
   return normalizeNullable(value)?.toLowerCase() ?? null;
 }
 
-function generatedAdminOperatorPhone(email: string) {
-  return `admin:${createHash('sha256').update(email).digest('hex').slice(0, 24)}`;
+function normalizeAdminOperatorReason(value: string | null | undefined) {
+  const reason = normalizeNullable(value)?.replace(/\s+/gu, ' ') ?? '';
+  if (reason.length < 12 || reason.length > 500) {
+    throw new BadRequestException({
+      code: 'ADMIN_OPERATOR_REASON_REQUIRED',
+      message: 'Provide a specific reason between 12 and 500 characters',
+    });
+  }
+  return reason;
+}
+
+const FINANCE_APPROVER_REQUIRED_REAL_COUNT = 2;
+const FINANCE_APPROVER_TRANSACTION_ATTEMPTS = 3;
+const FINANCE_APPROVER_AUDIT_ACTIONS = [
+  'admin_user.finance_approver.requested',
+  'admin_user.finance_approver.approved',
+  'admin_user.finance_approver.rejected',
+  'admin_user.finance_approver.grant',
+  'admin_user.finance_approver.revoke',
+  'admin_user.finance_approver.blocked',
+] as const;
+
+type FinanceApproverGovernanceActor = Prisma.UserGetPayload<{
+  select: typeof financeApproverGovernanceUserSelect;
+}>;
+type FinanceApproverGovernanceOperator = Prisma.UserGetPayload<{
+  select: typeof adminFinanceApproverDirectoryUserSelect;
+}>;
+type FinanceApproverAccessRequestRecord = Prisma.FinanceApproverAccessRequestGetPayload<{
+  select: typeof financeApproverAccessRequestSelect;
+}>;
+
+async function assertFinanceApproverGovernanceAccess(
+  db: Pick<Prisma.TransactionClient, 'adminAuditLog' | 'user'>,
+  actorId: string,
+  purpose: 'read' | 'request' | 'decision' | 'history',
+) {
+  const actor = await db.user.findUnique({
+    where: { id: actorId },
+    select: financeApproverGovernanceUserSelect,
+  });
+  if (!actor?.roles.includes(Role.ADMIN)) {
+    throw new ForbiddenException({
+      code: 'FINANCE_APPROVER_GOVERNANCE_READ_FORBIDDEN',
+      message: 'Admin operator access is required',
+    });
+  }
+  const categories = actor.adminOperatorPermission?.categories ?? [];
+  const isMaster = actor.roles.includes(Role.MASTER_ADMIN);
+  const requestPolicy = evaluateFinanceApproverPolicy(actor, {
+    requireAttestation: false,
+    requiredCategory: AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS,
+    requireFinanceRole: false,
+  });
+  const governedFinanceGrant = actor.financeApproverRequestsTargeted[0]?.requestedEnabled === true;
+  const decisionPolicy = actor.roles.includes(Role.FINANCE_APPROVER) && !governedFinanceGrant
+    ? await financeApproverPolicySnapshot(db, actorId, {
+        requireAttestation: true,
+        requiredCategory: AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS,
+        requireFinanceRole: true,
+      })
+    : evaluateFinanceApproverPolicy(actor, {
+        requireAttestation: true,
+        requiredCategory: AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS,
+        requireFinanceRole: true,
+      });
+  const canRead =
+    isMaster ||
+    adminOperatorHasRequiredCategory(
+      categories,
+      AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS,
+    );
+  if (purpose === 'read' && !canRead) {
+    throw new ForbiddenException({
+      code: 'FINANCE_APPROVER_GOVERNANCE_READ_FORBIDDEN',
+      message: 'Finance approval access is read-only for authorized operator administrators',
+    });
+  }
+  if (
+    purpose === 'history' &&
+    !isMaster &&
+    !adminOperatorHasRequiredCategory(categories, AdminOperatorPermissionCategory.SYSTEM_AUDIT)
+  ) {
+    throw new ForbiddenException({
+      code: 'FINANCE_APPROVER_HISTORY_FORBIDDEN',
+      message: 'Role history access is required',
+    });
+  }
+  if (purpose === 'request' || purpose === 'decision') {
+    const policy = purpose === 'decision' ? decisionPolicy : requestPolicy;
+    if (!isMaster || !policy.ready) {
+      const blocker = policy.blockers[0];
+      throw new ForbiddenException({
+        blockers: policy.blockers,
+        code: blocker?.code ?? 'ROLE_GOVERNOR_REQUIRED',
+        message: blocker?.message ?? 'A verified production Master Admin is required for this access change',
+      });
+    }
+  }
+  return { ...actor, decisionPolicy, requestPolicy };
+}
+
+function financeApproverGovernanceActorView(
+  actor: FinanceApproverGovernanceActor & {
+    decisionPolicy: FinanceApproverPolicySnapshot;
+    requestPolicy: FinanceApproverPolicySnapshot;
+  },
+) {
+  const categories = actor.adminOperatorPermission?.categories ?? [];
+  return {
+    id: actor.id,
+    email: actor.email,
+    fullName: actor.fullName,
+    canRequest:
+      actor.requestPolicy.ready &&
+      actor.roles.includes(Role.MASTER_ADMIN) &&
+      actor.roles.includes(Role.ADMIN),
+    canDecide:
+      actor.decisionPolicy.ready &&
+      actor.roles.includes(Role.MASTER_ADMIN) &&
+      actor.roles.includes(Role.FINANCE_APPROVER),
+    decisionBlockers: actor.decisionPolicy.blockers,
+    requestBlockers: actor.requestPolicy.blockers,
+    canReadHistory:
+      actor.roles.includes(Role.MASTER_ADMIN) ||
+      adminOperatorHasRequiredCategory(categories, AdminOperatorPermissionCategory.SYSTEM_AUDIT),
+  };
+}
+
+function financeApproverGovernanceOperatorWhere(options: {
+  access?: string;
+  status?: string;
+  q?: string;
+}): Prisma.UserWhereInput {
+  const filters: Prisma.UserWhereInput[] = [{ roles: { has: Role.ADMIN } }];
+  const access = normalizeNullable(options.access)?.toLowerCase();
+  if (access === 'active') filters.push({ roles: { has: Role.FINANCE_APPROVER } });
+  if (access === 'eligible') filters.push({ NOT: { roles: { has: Role.FINANCE_APPROVER } } });
+  const status = normalizeNullable(options.status)?.toLowerCase();
+  if (status === 'fixture') {
+    filters.push({
+      OR: [
+        { adminUserProvenance: AdminUserProvenance.FIXTURE },
+        ...FINANCE_APPROVER_KNOWN_TEST_RUN_IDS.map((runId) => ({
+          id: { startsWith: `${runId}:` },
+        })),
+      ],
+    });
+  }
+  if (status === 'production' || status === 'active') {
+    filters.push({
+      adminUserProvenance: AdminUserProvenance.PRODUCTION,
+    });
+  }
+  if (status === 'unknown') {
+    filters.push({ adminUserProvenance: null });
+  }
+  const q = normalizeNullable(options.q);
+  if (q) {
+    filters.push({
+      OR: [
+        { id: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+        { fullName: { contains: q, mode: 'insensitive' } },
+      ],
+    });
+  }
+  return filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+function financeApproverGovernanceOperatorView(
+  operator: FinanceApproverGovernanceOperator,
+  context: {
+    actor: FinanceApproverGovernanceActor;
+    availableCheckerCount: number;
+    lastChangedAt: Date | null;
+    pendingRequest: {
+      id: string;
+      requestedAt: Date;
+      requestedEnabled: boolean;
+      targetUserId: string;
+    } | null;
+    policy: FinanceApproverPolicySnapshot;
+    verifiedRealApproverCount: number;
+  },
+) {
+  const enabled = operator.roles.includes(Role.FINANCE_APPROVER);
+  const blockers: Array<{ code: string; message: string }> = [...context.policy.blockers];
+  if (operator.id === context.actor.id) {
+    blockers.push({
+      code: 'SELF_ACCESS_CHANGE_FORBIDDEN',
+      message: 'You cannot change your own finance approval access. Ask another role governor.',
+    });
+  }
+  if (context.pendingRequest) {
+    blockers.push({
+      code: 'DUPLICATE_PENDING_REQUEST',
+      message: 'This operator already has a pending access request.',
+    });
+  }
+  if (context.availableCheckerCount < 1) {
+    blockers.push({
+      code: 'INDEPENDENT_ROLE_GOVERNOR_REQUIRED',
+      message: 'A different verified role governor is required.',
+    });
+  }
+  if (enabled && context.verifiedRealApproverCount - (context.policy.ready ? 1 : 0) < FINANCE_APPROVER_REQUIRED_REAL_COUNT) {
+    blockers.push({
+      code: 'MINIMUM_APPROVER_COVERAGE_REQUIRED',
+      message: 'Removing this approver would leave finance operations without an independent backup.',
+    });
+  }
+  return {
+    id: operator.id,
+    email: operator.email,
+    fullName: operator.fullName,
+    isCurrentActor: operator.id === context.actor.id,
+    accountStatus:
+      context.policy.source === 'FIXTURE' || context.policy.source === 'TEST_RUN'
+        ? 'TEST_FIXTURE'
+        : context.policy.credentialState,
+    provenance: operator.adminUserProvenance ?? 'UNKNOWN',
+    source: context.policy.source,
+    fixtureKind: operator.fixtureKind,
+    fixtureRunId: financeApproverKnownTestRunId(operator),
+    fixtureExpiresAt: operator.fixtureExpiresAt,
+    financeAccess: enabled ? 'APPROVER' : 'PREPARATION_ONLY',
+    attestationStatus: context.policy.attestationStatus,
+    credentialState: context.policy.credentialState,
+    mfaVerified: context.policy.mfaVerified,
+    permissionVersion: context.policy.permissionVersion,
+    policyBlockers: context.policy.blockers,
+    separationReadiness: blockers.length === 0 ? 'READY' : 'BLOCKED',
+    openFinanceWork: { available: false, count: null },
+    lastChangedAt: context.lastChangedAt,
+    reviewStatus: context.pendingRequest ? 'PENDING' : 'NONE',
+    pendingRequest: context.pendingRequest,
+    action: {
+      requestedEnabled: !enabled,
+      allowed: blockers.length === 0,
+      blockers,
+    },
+  };
+}
+
+function financeApproverAccessRequestWhere(
+  options: { status?: string; q?: string; source?: string },
+  defaultPending: boolean,
+  targetUserId?: string | null,
+): Prisma.FinanceApproverAccessRequestWhereInput {
+  const filters: Prisma.FinanceApproverAccessRequestWhereInput[] = [];
+  const status = normalizeNullable(options.status)?.toUpperCase();
+  if (status && status !== 'ALL' && Object.values(FinanceApproverAccessRequestStatus).includes(status as FinanceApproverAccessRequestStatus)) {
+    filters.push({ status: status as FinanceApproverAccessRequestStatus });
+  } else if (defaultPending) {
+    filters.push({ status: FinanceApproverAccessRequestStatus.PENDING });
+  }
+  if (targetUserId) filters.push({ targetUserId });
+  const source = normalizeNullable(options.source)?.toLowerCase() ?? 'production';
+  if (source !== 'all') {
+    if (source === 'test') {
+      filters.push({
+        targetUser: {
+          is: {
+            OR: [
+              { adminUserProvenance: AdminUserProvenance.FIXTURE },
+              { fixtureKind: { not: null } },
+              { fixtureRunId: { not: null } },
+              { fixtureExpiresAt: { not: null } },
+              ...FINANCE_APPROVER_KNOWN_TEST_RUN_IDS.map((runId) => ({
+                id: { startsWith: `${runId}:` },
+              })),
+            ],
+          },
+        },
+      });
+    } else if (source === 'unknown') {
+      filters.push({
+        targetUser: {
+          is: {
+            adminUserProvenance: null,
+            fixtureKind: null,
+            fixtureRunId: null,
+            fixtureExpiresAt: null,
+          },
+        },
+      });
+    } else {
+      filters.push({
+        targetUser: {
+          is: {
+            adminUserProvenance: AdminUserProvenance.PRODUCTION,
+            fixtureKind: null,
+            fixtureRunId: null,
+            fixtureExpiresAt: null,
+            NOT: FINANCE_APPROVER_KNOWN_TEST_RUN_IDS.map((runId) => ({
+              id: { startsWith: `${runId}:` },
+            })),
+          },
+        },
+      });
+    }
+  }
+  const q = normalizeNullable(options.q);
+  if (q) {
+    filters.push({
+      OR: [
+        { id: { contains: q, mode: 'insensitive' } },
+        { targetUser: { is: { OR: [
+          { id: { contains: q, mode: 'insensitive' } },
+          { email: { contains: q, mode: 'insensitive' } },
+          { fullName: { contains: q, mode: 'insensitive' } },
+        ] } } },
+        { requestedByAdmin: { is: { OR: [
+          { email: { contains: q, mode: 'insensitive' } },
+          { fullName: { contains: q, mode: 'insensitive' } },
+        ] } } },
+      ],
+    });
+  }
+  return filters.length === 0 ? {} : filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+function financeApproverGovernanceTake(value: string | number | null | undefined) {
+  const parsed = Number.parseInt(String(value ?? '25'), 10);
+  return Number.isFinite(parsed) ? Math.min(Math.max(parsed, 1), 50) : 25;
+}
+
+function financeApproverGovernanceSkip(value: string | number | null | undefined) {
+  const parsed = Number.parseInt(String(value ?? '0'), 10);
+  return Number.isFinite(parsed) ? Math.min(Math.max(parsed, 0), 10_000) : 0;
+}
+
+function normalizeFinanceApproverReason(value: string | null | undefined, field: string) {
+  const normalized = normalizeNullable(value)?.replace(/\s+/gu, ' ') ?? '';
+  if (normalized.length < 12 || normalized.length > 500) {
+    throw new BadRequestException({
+      code: 'FINANCE_APPROVER_REASON_LENGTH',
+      field,
+      message: 'Provide a specific reason between 12 and 500 characters',
+    });
+  }
+  return normalized;
+}
+
+function normalizeFinanceApproverIdempotencyKey(value: string | null | undefined) {
+  const normalized = normalizeNullable(value) ?? '';
+  if (!/^[A-Za-z0-9:_-]{8,128}$/u.test(normalized)) {
+    throw new BadRequestException({
+      code: 'FINANCE_APPROVER_IDEMPOTENCY_KEY_INVALID',
+      field: 'idempotencyKey',
+      message: 'A stable idempotency key is required',
+    });
+  }
+  return normalized;
+}
+
+function normalizeFinanceApproverSourceReference(value: string | null | undefined) {
+  const normalized = normalizeNullable(value)?.replace(/\s+/gu, ' ') ?? '';
+  if (normalized.length < 3 || normalized.length > 240) {
+    throw new BadRequestException({
+      code: 'ATTESTATION_SOURCE_REFERENCE_REQUIRED',
+      message: 'Provide an owner evidence reference between 3 and 240 characters',
+    });
+  }
+  return normalized;
+}
+
+function financeApproverLegacyOwnerSnapshot(owner: FinanceApproverGovernanceActor) {
+  return {
+    credential: owner.adminOperatorCredential
+      ? {
+          disabledAt: owner.adminOperatorCredential.disabledAt?.toISOString() ?? null,
+          lockedUntil: owner.adminOperatorCredential.lockedUntil?.toISOString() ?? null,
+          mfaState: owner.adminOperatorCredential.mfaState,
+          setupCompletedAt: owner.adminOperatorCredential.setupCompletedAt?.toISOString() ?? null,
+        }
+      : null,
+    permission: owner.adminOperatorPermission
+      ? {
+          categories: owner.adminOperatorPermission.categories,
+          updatedAt: owner.adminOperatorPermission.updatedAt.toISOString(),
+          version: owner.adminOperatorPermission.version,
+        }
+      : null,
+    provenance: owner.adminUserProvenance,
+    roles: owner.roles,
+    updatedAt: owner.updatedAt.toISOString(),
+  } satisfies Prisma.InputJsonObject;
+}
+
+function financeApproverLegacyAttestationEvidence(event: {
+  actorId: string | null;
+  metadata: Prisma.JsonValue | null;
+}) {
+  const metadata = event.metadata;
+  if (!event.actorId || !metadata || Array.isArray(metadata) || typeof metadata !== 'object') {
+    throw new ConflictException({
+      code: 'ATTESTATION_EVIDENCE_INVALID',
+      message: 'The attestation request evidence is incomplete',
+    });
+  }
+  const targetUserId = typeof metadata.targetUserId === 'string' ? metadata.targetUserId : '';
+  const sourceReference = typeof metadata.sourceReference === 'string' ? metadata.sourceReference : '';
+  const reason = typeof metadata.reason === 'string' ? metadata.reason : '';
+  const attestorId = typeof metadata.attestorId === 'string' ? metadata.attestorId : event.actorId;
+  if (!targetUserId || !sourceReference || !reason || !attestorId) {
+    throw new ConflictException({
+      code: 'ATTESTATION_EVIDENCE_INVALID',
+      message: 'The attestation request is missing owner, reason, or source evidence',
+    });
+  }
+  return { attestorId, reason, sourceReference, targetUserId };
+}
+
+function financeApproverLegacyAttestationReceipt(
+  event: {
+    id: string;
+    actorId: string | null;
+    action: string;
+    target: string;
+    metadata: Prisma.JsonValue | null;
+    createdAt: Date;
+  },
+  replayed: boolean,
+) {
+  return {
+    event,
+    receipt: {
+      auditHref: `/audit-log?range=all&sort=oldest&targetPrefix=${encodeURIComponent(event.target)}`,
+      eventId: event.id,
+      replayed,
+      status: event.action === FINANCE_APPROVER_LEGACY_ATTESTATION_REQUEST_ACTION
+        ? 'PENDING'
+        : event.action === FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION
+          ? 'APPROVED'
+          : 'REJECTED',
+      target: event.target,
+    },
+  };
+}
+
+function assertFinanceApproverTargetEligible(
+  target: FinanceApproverGovernanceActor | null,
+): asserts target is FinanceApproverGovernanceActor {
+  if (!target) {
+    throw new NotFoundException({ code: 'TARGET_ADMIN_NOT_FOUND', message: 'Target admin user not found' });
+  }
+  if (!target.roles.includes(Role.ADMIN)) {
+    throw new BadRequestException({
+      code: 'TARGET_ADMIN_REQUIRED',
+      message: 'Finance approver access can only be assigned to an admin operator',
+    });
+  }
+  const policy = evaluateFinanceApproverPolicy(target, {
+    requireAttestation: false,
+    requireFinanceRole: false,
+  });
+  if (!policy.ready) {
+    const blocker = policy.blockers[0];
+    throw new ConflictException({
+      blockers: policy.blockers,
+      code: blocker?.code ?? 'UNKNOWN_PROVENANCE',
+      message: blocker?.message ?? 'The target operator readiness could not be verified',
+    });
+  }
+}
+
+function financeApproverAccessRequestReceipt(request: FinanceApproverAccessRequestRecord, replayed: boolean) {
+  return {
+    request,
+    receipt: {
+      requestId: request.id,
+      status: request.status,
+      target: request.targetUser,
+      requestedEnabled: request.requestedEnabled,
+      requester: request.requestedByAdmin,
+      decisionMaker: request.decidedByAdmin,
+      requestedAt: request.requestedAt,
+      decidedAt: request.decidedAt,
+      executedAt: request.executedAt,
+      replayed,
+      auditHref: `/audit-log?range=all&sort=oldest&targetPrefix=${encodeURIComponent(`finance_approver_request:${request.id}`)}`,
+    },
+  };
+}
+
+function financeApproverAuditMetadata(
+  request: FinanceApproverAccessRequestRecord,
+  input: { actorId: string; reason: string; nextRoles?: Role[] },
+): Prisma.InputJsonObject {
+  return {
+    requestId: request.id,
+    targetUserId: request.targetUserId,
+    requestedEnabled: request.requestedEnabled,
+    previousEnabled: request.previousEnabled,
+    previousRoles: request.previousRoles,
+    ...(input.nextRoles ? { nextRoles: input.nextRoles } : {}),
+    requestedByAdminId: request.requestedByAdminId,
+    decidedByAdminId: request.decidedByAdminId,
+    actorId: input.actorId,
+    reason: input.reason,
+    status: request.status,
+    requestedAt: request.requestedAt.toISOString(),
+    decidedAt: request.decidedAt?.toISOString() ?? null,
+    executedAt: request.executedAt?.toISOString() ?? null,
+  };
+}
+
+function financeApproverErrorCode(error: unknown) {
+  if (error && typeof error === 'object' && 'getResponse' in error) {
+    const response = (error as { getResponse: () => unknown }).getResponse();
+    if (response && typeof response === 'object' && 'code' in response && typeof response.code === 'string') {
+      return response.code;
+    }
+  }
+  return error instanceof Error ? error.name : 'UNKNOWN_ERROR';
 }
 
 async function assertAdminOperatorProtectedRoleRemoval(
@@ -39554,12 +45235,13 @@ async function assertAdminOperatorProtectedRoleRemoval(
   }
 
   if (previousRoles.includes(Role.FINANCE_APPROVER) && !nextRoles.includes(Role.FINANCE_APPROVER)) {
-    const remainingApprovers = await db.user.count({
-      where: {
-        id: { not: targetUserId },
-        roles: { has: Role.FINANCE_APPROVER },
-      },
-    });
+    const remainingApprovers = (
+      await listFinanceApproverPolicySnapshots(db, {
+        excludeIds: [targetUserId],
+        requireAttestation: true,
+        requireFinanceRole: true,
+      })
+    ).filter((snapshot) => snapshot.ready).length;
     if (remainingApprovers === 0) {
       throw new BadRequestException('Cannot remove the last finance approver');
     }
@@ -39590,6 +45272,316 @@ function adminUserListSkip(value: number | string | null | undefined) {
   }
 
   return Math.min(Math.trunc(parsed), 10_000);
+}
+
+function adminOperatorDirectoryTake(value: number | string | null | undefined) {
+  const parsed = typeof value === 'number' ? value : Number.parseInt(String(value ?? '25'), 10);
+  return Number.isFinite(parsed) ? Math.min(Math.max(Math.trunc(parsed), 1), 50) : 25;
+}
+
+function adminOperatorDirectoryIncludesTestRecords(value: boolean | string | null | undefined) {
+  const requested = value === true || String(value ?? '').toLowerCase() === 'true';
+  return requested && process.env.NODE_ENV !== 'production';
+}
+
+function adminOperatorDirectoryBaseWhere(includeTestRecords: boolean): Prisma.UserWhereInput {
+  return {
+    roles: { has: Role.ADMIN },
+    ...(includeTestRecords
+      ? {}
+      : {
+          NOT: [
+            { adminUserProvenance: AdminUserProvenance.FIXTURE },
+            { fixtureKind: { not: null } },
+            { fixtureRunId: { not: null } },
+            { fixtureExpiresAt: { not: null } },
+          ],
+        }),
+  };
+}
+
+function adminOperatorDirectoryWhere(
+  options: AdminOperatorDirectoryOptions,
+  now = new Date(),
+  includeTestRecords = adminOperatorDirectoryIncludesTestRecords(options.includeTestRecords),
+): Prisma.UserWhereInput {
+  const filters: Prisma.UserWhereInput[] = [adminOperatorDirectoryBaseWhere(includeTestRecords)];
+  const q = normalizeNullable(options.q);
+  if (q) {
+    filters.push({
+      OR: [
+        { id: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+        { fullName: { contains: q, mode: 'insensitive' } },
+        { phone: { contains: q, mode: 'insensitive' } },
+      ],
+    });
+  }
+
+  const role = normalizeNullable(options.role)?.toUpperCase();
+  if (role) {
+    if (!ADMIN_OPERATOR_ROLES.includes(role as (typeof ADMIN_OPERATOR_ROLES)[number])) {
+      throw new BadRequestException({ code: 'ADMIN_OPERATOR_ROLE_INVALID', message: 'Unsupported operator role' });
+    }
+    filters.push({ roles: { has: role as Role } });
+  }
+
+  const category = normalizeNullable(options.category)?.toUpperCase();
+  if (category) {
+    if (!Object.values(AdminOperatorPermissionCategory).includes(category as AdminOperatorPermissionCategory)) {
+      throw new BadRequestException({
+        code: 'ADMIN_OPERATOR_CATEGORY_INVALID',
+        message: 'Unsupported operator permission category',
+      });
+    }
+    filters.push({
+      adminOperatorPermission: {
+        is: {
+          categories: {
+            hasSome: adminOperatorEffectiveCategoryStorageCandidates(
+              category as AdminOperatorPermissionCategory,
+            ),
+          },
+        },
+      },
+    });
+  }
+
+  const status = normalizeNullable(options.status)?.toLowerCase();
+  if (status === 'needs-action') {
+    filters.push(adminOperatorSecurityIncompleteWhere(now));
+  } else if (status === 'mfa-required') {
+    filters.push({
+      OR: [
+        { adminOperatorCredential: { is: null } },
+        { adminOperatorCredential: { is: { mfaState: { not: 'VERIFIED' } } } },
+      ],
+    });
+  } else if (status && ['active', 'setup-required', 'migration-required', 'suspended', 'locked'].includes(status)) {
+    filters.push(adminOperatorLifecycleWhere(status, now));
+  } else if (status) {
+    throw new BadRequestException({ code: 'ADMIN_OPERATOR_STATUS_INVALID', message: 'Unsupported operator status' });
+  }
+
+  const cursor = adminOperatorDirectoryCursor(options.cursor);
+  if (cursor) {
+    filters.push({
+      OR: [
+        { createdAt: { lt: cursor.createdAt } },
+        { createdAt: cursor.createdAt, id: { lt: cursor.id } },
+      ],
+    });
+  }
+
+  return { AND: filters };
+}
+
+function adminOperatorSecurityIncompleteWhere(now: Date): Prisma.UserWhereInput {
+  return {
+    OR: [
+      { adminOperatorPermission: { is: null } },
+      { adminOperatorCredential: { is: null } },
+      { adminOperatorCredential: { is: { setupCompletedAt: null } } },
+      { adminOperatorCredential: { is: { lockedUntil: { gt: now } } } },
+      { adminOperatorCredential: { is: { mfaState: { not: 'VERIFIED' } } } },
+    ],
+  };
+}
+
+function adminOperatorLifecycleWhere(status: string, now: Date): Prisma.UserWhereInput {
+  const suspended = {
+    adminOperatorCredential: { is: { disabledAt: { not: null } } },
+  } satisfies Prisma.UserWhereInput;
+  const locked = {
+    adminOperatorCredential: { is: { disabledAt: null, lockedUntil: { gt: now } } },
+  } satisfies Prisma.UserWhereInput;
+
+  if (status === 'suspended') return suspended;
+  if (status === 'locked') return { AND: [{ NOT: suspended }, locked] };
+  if (status === 'migration-required') {
+    return {
+      AND: [{ NOT: suspended }, { NOT: locked }, { adminOperatorPermission: { is: null } }],
+    };
+  }
+  if (status === 'setup-required') {
+    return {
+      AND: [
+        { NOT: suspended },
+        { NOT: locked },
+        { adminOperatorPermission: { isNot: null } },
+        {
+          OR: [
+            { adminOperatorCredential: { is: null } },
+            { adminOperatorCredential: { is: { setupCompletedAt: null } } },
+          ],
+        },
+      ],
+    };
+  }
+  return {
+    AND: [
+      { NOT: suspended },
+      { NOT: locked },
+      { adminOperatorPermission: { isNot: null } },
+      { adminOperatorCredential: { is: { setupCompletedAt: { not: null } } } },
+    ],
+  };
+}
+
+function adminOperatorEffectiveCategoryStorageCandidates(category: AdminOperatorPermissionCategory) {
+  const requestedLeaves = new Set(adminOperatorEffectivePermissionLeaves(category));
+  return Object.values(AdminOperatorPermissionCategory).filter((storedCategory) => {
+    const effectiveLeaves = adminOperatorEffectivePermissionLeaves(storedCategory);
+    return effectiveLeaves.some((leaf) => requestedLeaves.has(leaf));
+  });
+}
+
+function adminOperatorEffectivePermissionLeaves(category: AdminOperatorPermissionCategory) {
+  return ADMIN_OPERATOR_PERMISSION_CATEGORY_SET.has(category)
+    ? [category]
+    : ADMIN_OPERATOR_LEGACY_PERMISSION_GROUPS[category] ?? [category];
+}
+
+function adminOperatorDirectoryCursor(value: string | null | undefined) {
+  const encoded = normalizeNullable(value);
+  if (!encoded) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8')) as Record<string, unknown>;
+    const id = typeof parsed.id === 'string' ? parsed.id : '';
+    const createdAt = typeof parsed.createdAt === 'string' ? new Date(parsed.createdAt) : new Date(Number.NaN);
+    if (!id || Number.isNaN(createdAt.getTime())) throw new Error('invalid cursor payload');
+    return { createdAt, id };
+  } catch {
+    throw new BadRequestException({ code: 'ADMIN_OPERATOR_CURSOR_INVALID', message: 'Invalid operator cursor' });
+  }
+}
+
+function adminOperatorDirectoryCursorValue(row: AdminOperatorDirectoryRecord | undefined) {
+  if (!row) return null;
+  return Buffer.from(
+    JSON.stringify({ createdAt: row.createdAt.toISOString(), id: row.id }),
+  ).toString('base64url');
+}
+
+function adminOperatorDirectoryRow(
+  row: AdminOperatorDirectoryRecord,
+  activeSessionCount = 0,
+  now = new Date(),
+  actionContext: {
+    activeMasterCount: number;
+    actorId: string | null;
+    actorRoles: readonly Role[];
+  } = { activeMasterCount: 0, actorId: null, actorRoles: [] },
+) {
+  const lifecycleStatus = row.adminOperatorCredential?.disabledAt
+    ? 'SUSPENDED'
+    : (row.adminOperatorCredential?.lockedUntil?.getTime() ?? 0) > now.getTime()
+      ? 'LOCKED'
+      : !row.adminOperatorPermission
+        ? 'MIGRATION_REQUIRED'
+        : !row.adminOperatorCredential?.setupCompletedAt
+          ? 'SETUP_REQUIRED'
+          : 'ACTIVE';
+  const effectiveCategories = row.adminOperatorPermission
+    ? [...new Set(row.adminOperatorPermission.categories.flatMap(adminOperatorEffectivePermissionLeaves))]
+    : [];
+  return {
+    id: row.id,
+    email: row.email,
+    phone: row.phone,
+    fullName: row.fullName,
+    roles: row.roles,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    lifecycleStatus,
+    permission: row.adminOperatorPermission
+      ? {
+          id: row.adminOperatorPermission.id,
+          categories: row.adminOperatorPermission.categories,
+          effectiveCategories,
+          effectiveLeafPermissionCount: effectiveCategories.length,
+          storedPermissionCount: row.adminOperatorPermission.categories.length,
+          updatedAt: row.adminOperatorPermission.updatedAt,
+          version: row.adminOperatorPermission.version,
+        }
+      : null,
+    credential: row.adminOperatorCredential
+      ? {
+          email: row.adminOperatorCredential.email,
+          disabledAt: row.adminOperatorCredential.disabledAt,
+          disabledReason: row.adminOperatorCredential.disabledReason,
+          failedLoginCount: row.adminOperatorCredential.failedLoginCount,
+          lastLoginAt: row.adminOperatorCredential.lastLoginAt,
+          lockedUntil: row.adminOperatorCredential.lockedUntil,
+          mfaState: row.adminOperatorCredential.mfaState,
+          passwordUpdatedAt: row.adminOperatorCredential.passwordUpdatedAt,
+          setupCompletedAt: row.adminOperatorCredential.setupCompletedAt,
+          updatedAt: row.adminOperatorCredential.updatedAt,
+        }
+      : null,
+    activeSessionCount,
+    lastSession: row.adminWebSessions[0] ?? null,
+    allowedActions: adminOperatorAllowedActions(row, lifecycleStatus, activeSessionCount, actionContext),
+  };
+}
+
+function adminOperatorAllowedActions(
+  row: AdminOperatorDirectoryRecord,
+  lifecycleStatus: 'ACTIVE' | 'LOCKED' | 'MIGRATION_REQUIRED' | 'SETUP_REQUIRED' | 'SUSPENDED',
+  activeSessionCount: number,
+  context: { activeMasterCount: number; actorId: string | null; actorRoles: readonly Role[] },
+) {
+  const isMasterActor = context.actorRoles.includes(Role.MASTER_ADMIN);
+  const isSelf = context.actorId === row.id;
+  const isLastActiveMaster =
+    row.roles.includes(Role.MASTER_ADMIN) &&
+    !row.adminOperatorCredential?.disabledAt &&
+    context.activeMasterCount <= 1;
+  const baseBlockers = [
+    ...(!isMasterActor ? [{ code: 'MASTER_ADMIN_REQUIRED', message: 'Master Admin access is required.' }] : []),
+    ...(isSelf ? [{ code: 'SELF_ACTION_FORBIDDEN', message: 'Another active Master Admin must perform this action.' }] : []),
+  ];
+  const action = (extra: Array<{ code: string; message: string }> = []) => ({
+    allowed: [...baseBlockers, ...extra].length === 0,
+    blockedReasons: [...baseBlockers, ...extra],
+  });
+  return {
+    initializeAccess: action(row.adminOperatorPermission
+      ? [{ code: 'PERMISSION_POLICY_EXISTS', message: 'The permission policy is already initialized.' }]
+      : []),
+    updateAccess: action(!row.adminOperatorPermission
+      ? [{ code: 'PERMISSION_POLICY_REQUIRED', message: 'Initialize the permission policy first.' }]
+      : []),
+    suspend: action([
+      ...(!row.adminOperatorCredential
+        ? [{ code: 'SIGN_IN_SETUP_REQUIRED', message: 'This operator has no sign-in credential to suspend.' }]
+        : []),
+      ...(lifecycleStatus === 'SUSPENDED'
+        ? [{ code: 'ALREADY_SUSPENDED', message: 'This operator is already suspended.' }]
+        : []),
+      ...(isLastActiveMaster
+        ? [{ code: 'LAST_MASTER_ADMIN_REQUIRED', message: 'Create another active Master Admin before suspending this operator.' }]
+        : []),
+    ]),
+    reactivate: action(lifecycleStatus === 'SUSPENDED'
+      ? []
+      : [{ code: 'NOT_SUSPENDED', message: 'Only suspended operators can be reactivated.' }]),
+    revokeOperatorAccess: action([
+      ...(lifecycleStatus !== 'SUSPENDED'
+        ? [{ code: 'SUSPEND_FIRST', message: 'Suspend Admin Web access before offboarding.' }]
+        : []),
+      ...(activeSessionCount > 0
+        ? [{ code: 'ACTIVE_SESSIONS_REMAIN', message: 'Revoke all active Admin Web sessions before offboarding.' }]
+        : []),
+      ...(row.roles.includes(Role.FINANCE_APPROVER)
+        ? [{ code: 'FINANCE_APPROVER_GOVERNANCE_REQUIRED', message: 'Remove Finance Approver access from Finance Approvers first.' }]
+        : []),
+      ...(isLastActiveMaster
+        ? [{ code: 'LAST_MASTER_ADMIN_REQUIRED', message: 'Create another active Master Admin before offboarding this operator.' }]
+        : []),
+    ]),
+    revokeSession: action(),
+  };
 }
 
 function normalizeAdminUserListRole(value: Role | string | null | undefined) {
@@ -40334,7 +46326,7 @@ function adminCustomerDirectoryWhere(
 ): Prisma.CustomerProfileWhereInput | undefined {
   const usageNewUnbooked = normalizeNullable(options.segment)?.toLowerCase() === 'usage-new-unbooked';
   const conditions: Prisma.CustomerProfileWhereInput[] = usageNewUnbooked
-    ? []
+    ? [{ user: { fixtureKind: null } }]
     : [adminCustomerProductionDataWhere()];
   const userWhere: Prisma.UserWhereInput = {};
   const q = normalizeNullable(options.q);
@@ -40436,7 +46428,7 @@ function adminCustomerDirectorySegmentWhere(
     case 'never-booked':
       return { bookings: { none: {} } };
     case 'usage-new-unbooked':
-      return { bookings: { none: adminBookingExplicitFixtureMetadataWhere() } };
+      return { bookings: { none: adminBookingVerifiedProductionWhere() } };
     case 'has-bookings':
       return { bookings: { some: {} } };
     case 'completed':
@@ -41253,14 +47245,38 @@ type CompanyBankAccountApprovalSnapshot = {
   accountNumberMasked: string | null;
   bankName: string;
   currency: string;
+  dataScope: CompanyBankAccountDataScope;
   name: string;
+  operationalProfile: CompanyBankAccountOperationalProfile;
   status: CompanyBankAccountStatus;
 };
 
+type CompanyBankAccountPurpose = 'ADJUSTMENT' | 'COLLECTION' | 'PAYOUT' | 'RECONCILIATION' | 'REFUND';
+type CompanyBankAccountDirection = 'BOTH' | 'INBOUND' | 'OUTBOUND';
+type CompanyBankAccountVerificationStatus = 'EVIDENCE_SUBMITTED' | 'FAILED' | 'UNVERIFIED' | 'VERIFIED';
+
+type CompanyBankAccountOperationalProfile = {
+  bankCode: string | null;
+  direction: CompanyBankAccountDirection | null;
+  evidenceObjectId: string | null;
+  isPrimary: boolean;
+  legalOwnerName: string | null;
+  purpose: CompanyBankAccountPurpose | null;
+  statementImportTestedAt: string | null;
+  verificationMethod: string | null;
+  verificationStatus: CompanyBankAccountVerificationStatus;
+  verifiedAt: string | null;
+  verifiedByAdminId: string | null;
+};
+
 type CompanyBankAccountPendingApproval = {
+  idempotencyKey: string | null;
   operation: 'CREATE' | 'UPDATE';
   operatorReason: string;
+  preflightGeneratedAt: string | null;
+  preflightHash: string | null;
   proposed: CompanyBankAccountApprovalSnapshot;
+  replacementAccountId: string | null;
   requestedAt: string;
   requestedByAdminId: string;
   requestId: string;
@@ -41271,6 +47287,8 @@ function companyBankAccountAuditSnapshot(value: {
   accountNumberMasked?: string | null;
   bankName: string;
   currency: string;
+  dataScope: CompanyBankAccountDataScope;
+  metadata?: unknown;
   name: string;
   status: CompanyBankAccountStatus;
 }): CompanyBankAccountApprovalSnapshot {
@@ -41279,7 +47297,9 @@ function companyBankAccountAuditSnapshot(value: {
     accountNumberMasked: normalizeNullable(value.accountNumberMasked),
     bankName: value.bankName,
     currency: value.currency,
+    dataScope: value.dataScope,
     name: value.name,
+    operationalProfile: companyBankAccountOperationalProfile(value.metadata),
     status: value.status,
   };
 }
@@ -41290,7 +47310,12 @@ function companyBankAccountPendingApproval(value: unknown): CompanyBankAccountPe
   const proposed = adminJsonObject(pending?.proposed);
   const operation = pending?.operation;
   const status = proposed?.status;
+  const dataScope = proposed?.dataScope;
   const operatorReason = companyBankAccountMetadataString(pending?.operatorReason);
+  const idempotencyKey = companyBankAccountMetadataString(pending?.idempotencyKey);
+  const preflightGeneratedAt = adminIsoDateTime(companyBankAccountMetadataString(pending?.preflightGeneratedAt));
+  const preflightHash = companyBankAccountMetadataString(pending?.preflightHash);
+  const replacementAccountId = companyBankAccountMetadataString(pending?.replacementAccountId);
   const requestedAt = companyBankAccountMetadataString(pending?.requestedAt);
   const requestedByAdminId = companyBankAccountMetadataString(pending?.requestedByAdminId);
   const requestId = companyBankAccountMetadataString(pending?.requestId);
@@ -41306,26 +47331,260 @@ function companyBankAccountPendingApproval(value: unknown): CompanyBankAccountPe
     !bankName ||
     !currency ||
     !name ||
+    !Object.values(CompanyBankAccountDataScope).includes(dataScope as CompanyBankAccountDataScope) ||
     !Object.values(CompanyBankAccountStatus).includes(status as CompanyBankAccountStatus)
   ) {
     return null;
   }
 
   return {
+    idempotencyKey,
     operation,
     operatorReason,
+    preflightGeneratedAt,
+    preflightHash,
     proposed: {
       accountNumberLast4: companyBankAccountMetadataString(proposed?.accountNumberLast4),
       accountNumberMasked: companyBankAccountMetadataString(proposed?.accountNumberMasked),
       bankName,
       currency,
+      dataScope: dataScope as CompanyBankAccountDataScope,
       name,
+      operationalProfile: companyBankAccountOperationalProfile(proposed?.operationalProfile),
       status: status as CompanyBankAccountStatus,
     },
+    replacementAccountId,
     requestedAt,
     requestedByAdminId,
     requestId,
   };
+}
+
+function companyBankAccountOperationalProfile(value: unknown): CompanyBankAccountOperationalProfile {
+  const metadata = adminJsonObject(value);
+  const profile = adminJsonObject(metadata?.operationalProfile) ?? metadata;
+  const direction = companyBankAccountMetadataString(profile?.direction)?.toUpperCase();
+  const purpose = companyBankAccountMetadataString(profile?.purpose)?.toUpperCase();
+  const verificationStatus = companyBankAccountMetadataString(profile?.verificationStatus)?.toUpperCase();
+  return {
+    bankCode: companyBankAccountMetadataString(profile?.bankCode)?.toUpperCase() ?? null,
+    direction: direction === 'INBOUND' || direction === 'OUTBOUND' || direction === 'BOTH' ? direction : null,
+    evidenceObjectId: companyBankAccountMetadataString(profile?.evidenceObjectId),
+    isPrimary: profile?.isPrimary === true,
+    legalOwnerName: companyBankAccountMetadataString(profile?.legalOwnerName),
+    purpose:
+      purpose === 'COLLECTION' ||
+      purpose === 'REFUND' ||
+      purpose === 'PAYOUT' ||
+      purpose === 'RECONCILIATION' ||
+      purpose === 'ADJUSTMENT'
+        ? purpose
+        : null,
+    statementImportTestedAt: adminIsoDateTime(companyBankAccountMetadataString(profile?.statementImportTestedAt)),
+    verificationMethod: companyBankAccountMetadataString(profile?.verificationMethod),
+    verificationStatus:
+      verificationStatus === 'EVIDENCE_SUBMITTED' ||
+      verificationStatus === 'VERIFIED' ||
+      verificationStatus === 'FAILED'
+        ? verificationStatus
+        : 'UNVERIFIED',
+    verifiedAt: adminIsoDateTime(companyBankAccountMetadataString(profile?.verifiedAt)),
+    verifiedByAdminId: companyBankAccountMetadataString(profile?.verifiedByAdminId),
+  };
+}
+
+function companyBankAccountOperationsPurpose(value: string | null | undefined) {
+  const normalized = normalizeNullable(value)?.toUpperCase();
+  return normalized === 'COLLECTION' ||
+    normalized === 'REFUND' ||
+    normalized === 'PAYOUT' ||
+    normalized === 'RECONCILIATION' ||
+    normalized === 'ADJUSTMENT'
+    ? normalized
+    : null;
+}
+
+function companyBankAccountOperationsVerification(value: string | null | undefined) {
+  const normalized = normalizeNullable(value)?.toUpperCase();
+  return normalized === 'UNVERIFIED' ||
+    normalized === 'EVIDENCE_SUBMITTED' ||
+    normalized === 'VERIFIED' ||
+    normalized === 'FAILED'
+    ? normalized
+    : null;
+}
+
+function companyBankAccountOperationsLifecycleWhere(
+  value: string | null | undefined,
+): Prisma.CompanyBankAccountWhereInput | null {
+  const lifecycle = normalizeNullable(value)?.toUpperCase();
+  const pendingWhere: Prisma.CompanyBankAccountWhereInput = {
+    metadata: { path: ['pendingApproval', 'requestId'], not: Prisma.AnyNull },
+  };
+  const pendingActivationWhere: Prisma.CompanyBankAccountWhereInput = {
+    metadata: { path: ['pendingApproval', 'proposed', 'status'], equals: CompanyBankAccountStatus.ACTIVE },
+  };
+  if (lifecycle === 'ACTIVE') {
+    return { AND: [companyBankAccountProductionWhere(CompanyBankAccountStatus.ACTIVE), { NOT: pendingWhere }] };
+  }
+  if (lifecycle === 'PENDING_ACTIVATION') return pendingActivationWhere;
+  if (lifecycle === 'PENDING_CHANGE') return { AND: [pendingWhere, { NOT: pendingActivationWhere }] };
+  if (lifecycle === 'DISABLED_BY_SYSTEM') return { status: CompanyBankAccountStatus.DISABLED };
+  if (lifecycle === 'REJECTED') {
+    return { metadata: { path: ['lastApprovalDecision'], equals: 'REJECT' } };
+  }
+  if (lifecycle === 'ARCHIVED_WITH_HISTORY') {
+    return {
+      AND: [
+        companyBankAccountProductionWhere(),
+        { status: CompanyBankAccountStatus.INACTIVE },
+        {
+          OR: [
+            { transactions: { some: {} } },
+            { metadata: { path: ['archivedAt'], not: Prisma.AnyNull } },
+          ],
+        },
+      ],
+    };
+  }
+  if (lifecycle === 'NEVER_ACTIVATED') {
+    return {
+      AND: [
+        companyBankAccountProductionWhere(),
+        { status: CompanyBankAccountStatus.INACTIVE },
+        { transactions: { none: {} } },
+        { NOT: { metadata: { path: ['archivedAt'], not: Prisma.AnyNull } } },
+        { NOT: { metadata: { path: ['lastApprovalDecision'], equals: 'REJECT' } } },
+      ],
+    };
+  }
+  if (lifecycle === 'SYNTHETIC') {
+    return companyBankAccountScopeWhere(CompanyBankAccountDataScope.SYNTHETIC);
+  }
+  if (lifecycle === 'UNKNOWN_DATA_SCOPE') {
+    return companyBankAccountScopeWhere(CompanyBankAccountDataScope.UNKNOWN);
+  }
+  return null;
+}
+
+function companyBankAccountOperationalProfileFromInput(
+  input: CreateCompanyBankAccountDto | UpdateCompanyBankAccountDto,
+  current: CompanyBankAccountOperationalProfile = companyBankAccountOperationalProfile(null),
+): CompanyBankAccountOperationalProfile {
+  return companyBankAccountOperationalProfile({
+    bankCode: input.bankCode ?? current.bankCode,
+    direction: input.direction ?? current.direction,
+    evidenceObjectId: current.evidenceObjectId,
+    isPrimary: input.isPrimary ?? current.isPrimary,
+    legalOwnerName: input.legalOwnerName ?? current.legalOwnerName,
+    purpose: input.purpose ?? current.purpose,
+    statementImportTestedAt: current.statementImportTestedAt,
+    verificationMethod: current.verificationMethod,
+    verificationStatus: current.verificationStatus,
+    verifiedAt: current.verifiedAt,
+    verifiedByAdminId: current.verifiedByAdminId,
+  });
+}
+
+function companyBankAccountActivationBlockers(profile: CompanyBankAccountOperationalProfile) {
+  const blockers: Array<{ code: string; label: string }> = [];
+  if (!profile.legalOwnerName) blockers.push({ code: 'LEGAL_OWNER_MISSING', label: 'Legal account owner is missing' });
+  if (!profile.bankCode) blockers.push({ code: 'BANK_CODE_MISSING', label: 'Controlled bank code is missing' });
+  if (!profile.purpose) blockers.push({ code: 'PURPOSE_MISSING', label: 'Account purpose is missing' });
+  if (!profile.direction) blockers.push({ code: 'DIRECTION_MISSING', label: 'Money direction is missing' });
+  if (profile.verificationStatus !== 'VERIFIED') {
+    blockers.push({ code: 'VERIFICATION_INCOMPLETE', label: 'Ownership verification is not complete' });
+  }
+  blockers.push({
+    code: 'EVIDENCE_AUTHORITY_UNAVAILABLE',
+    label: 'No authoritative restricted ownership evidence relation is available',
+  });
+  return blockers;
+}
+
+type CompanyBankAccountArchiveReferenceSource = {
+  coverage: 'COMPLETE' | 'ERROR' | 'INCOMPLETE' | 'NOT_APPLICABLE';
+  lastActivityAt: string | null;
+  openCount: number | null;
+  reason: string | null;
+  source: 'BANK_TRANSACTIONS' | 'PAYOUTS' | 'REFUNDS' | 'SETTLEMENTS' | 'STATEMENT_IMPORTS';
+  totalCount: number | null;
+};
+
+function companyBankAccountArchiveReferenceSources(input: {
+  lastOpenActivityAt: string | null;
+  openTransactionCount: number;
+  totalTransactionCount: number;
+}): CompanyBankAccountArchiveReferenceSource[] {
+  const unsupported = (
+    source: CompanyBankAccountArchiveReferenceSource['source'],
+    reason: string,
+  ): CompanyBankAccountArchiveReferenceSource => ({
+    coverage: 'INCOMPLETE',
+    lastActivityAt: null,
+    openCount: null,
+    reason,
+    source,
+    totalCount: null,
+  });
+  return [
+    {
+      coverage: 'COMPLETE',
+      lastActivityAt: input.lastOpenActivityAt,
+      openCount: input.openTransactionCount,
+      reason: null,
+      source: 'BANK_TRANSACTIONS',
+      totalCount: input.totalTransactionCount,
+    },
+    unsupported('STATEMENT_IMPORTS', 'Statement imports are identified through transaction metadata, not an authoritative account relation.'),
+    unsupported('PAYOUTS', 'Payout records do not have an authoritative direct company bank account relation.'),
+    unsupported('REFUNDS', 'Refund records do not have an authoritative direct company bank account relation.'),
+    unsupported('SETTLEMENTS', 'Settlement records do not have an authoritative direct company bank account relation.'),
+  ];
+}
+
+function companyBankAccountReplacementCompatible(
+  current: CompanyBankAccountOperationalProfile,
+  candidate: CompanyBankAccountOperationalProfile,
+) {
+  if (candidate.verificationStatus !== 'VERIFIED') return false;
+  if (current.purpose && candidate.purpose !== current.purpose) return false;
+  if (current.direction && candidate.direction !== current.direction && candidate.direction !== 'BOTH') return false;
+  return true;
+}
+
+function companyBankAccountPreflightHash(input: {
+  accountId: string;
+  archiveSources: CompanyBankAccountArchiveReferenceSource[];
+  blockerCodes: string[];
+  mode: 'ACTIVATION' | 'ARCHIVE';
+  replacementAccountId: string | null;
+  successfulStatementImportId: string | null;
+}) {
+  return createHash('sha256')
+    .update(JSON.stringify({ ...input, blockerCodes: [...input.blockerCodes].sort() }))
+    .digest('hex');
+}
+
+function companyBankAccountLifecycleStatus(
+  account: {
+    dataScope: CompanyBankAccountDataScope;
+    metadata?: unknown;
+    status: CompanyBankAccountStatus;
+    _count?: { transactions?: number };
+  },
+  pending: CompanyBankAccountPendingApproval | null,
+) {
+  const dataScopeLifecycle = companyBankAccountDataScopeLifecycle(account.dataScope);
+  if (dataScopeLifecycle) return dataScopeLifecycle;
+  if (pending?.proposed.status === CompanyBankAccountStatus.ACTIVE) return 'PENDING_ACTIVATION';
+  if (pending) return 'PENDING_CHANGE';
+  if (account.status === CompanyBankAccountStatus.ACTIVE) return 'ACTIVE';
+  if (account.status === CompanyBankAccountStatus.DISABLED) return 'DISABLED_BY_SYSTEM';
+  const metadata = adminJsonObject(account.metadata);
+  if (metadata?.lastApprovalDecision === 'REJECT') return 'REJECTED';
+  if ((account._count?.transactions ?? 0) > 0 || metadata?.archivedAt) return 'ARCHIVED_WITH_HISTORY';
+  return 'NEVER_ACTIVATED';
 }
 
 function companyBankAccountMetadataString(value: unknown) {
@@ -43460,35 +49719,69 @@ function normalizeCompanyBankAccountIdentity(input: {
 }) {
   const name = normalizeNullable(input.name);
   const bankName = normalizeNullable(input.bankName);
-  const accountNumberLast4 = normalizeNullable(input.accountNumberLast4);
+  const accountNumberLast4 =
+    typeof input.accountNumberLast4 === 'string' ? input.accountNumberLast4 : '';
   const currency = normalizeNullable(input.currency)?.toUpperCase();
   if (!name || !bankName) {
     throw new BadRequestException('Company bank account name and bank name are required');
   }
-  if (!accountNumberLast4 || !/^\d{4}$/u.test(accountNumberLast4)) {
-    throw new BadRequestException('Company bank account last four digits must contain exactly four digits');
+  if (!/^[0-9]{4}$/u.test(accountNumberLast4)) {
+    throw new BadRequestException({
+      code: 'COMPANY_BANK_ACCOUNT_INVALID_LAST4',
+      field: 'accountNumberLast4',
+      message: 'Enter exactly four ASCII digits',
+    });
   }
   if (!currency || !/^[A-Z]{3}$/u.test(currency)) {
     throw new BadRequestException('Company bank account currency must be a three-letter code');
   }
-  const providedMasked = normalizeNullable(input.accountNumberMasked);
-  const compactMasked = providedMasked?.replace(/[\s-]/gu, '') ?? '';
-  if (/^\d{5,}$/u.test(compactMasked)) {
-    throw new BadRequestException(
-      'Full bank account numbers must not be stored; provide a masked value only',
-    );
-  }
-  const maskedDigits = providedMasked?.replace(/\D/gu, '') ?? '';
-  if (maskedDigits.length >= 4 && maskedDigits.slice(-4) !== accountNumberLast4) {
-    throw new BadRequestException('Masked bank account number must end with accountNumberLast4');
+  if (input.accountNumberMasked !== undefined && input.accountNumberMasked !== null) {
+    throw new BadRequestException({
+      code: 'COMPANY_BANK_ACCOUNT_RAW_NUMBER_REJECTED',
+      field: 'accountNumberMasked',
+      message: 'Masked account numbers are server-managed; send only the last four digits',
+    });
   }
   return {
     accountNumberLast4,
-    accountNumberMasked: providedMasked ?? `****${accountNumberLast4}`,
+    accountNumberMasked: `•••• ${accountNumberLast4}`,
     bankName,
     currency,
     name,
   };
+}
+
+function normalizeCompanyBankAccountIdempotencyKey(value: string | null | undefined) {
+  const normalized = normalizeNullable(value);
+  if (!normalized || !/^[A-Za-z0-9:_-]{8,128}$/u.test(normalized)) {
+    throw new BadRequestException({
+      code: 'COMPANY_BANK_ACCOUNT_INVALID_IDEMPOTENCY_KEY',
+      field: 'idempotencyKey',
+      message: 'A stable idempotency key is required',
+    });
+  }
+  return normalized;
+}
+
+function assertControlledCompanyBankAccountIdentity(bankCode: string, bankName: string) {
+  const names: Record<string, string> = {
+    ACB: 'ACB',
+    BIDV: 'BIDV',
+    MBB: 'MB Bank',
+    TCB: 'Techcombank',
+    VCB: 'Vietcombank',
+  };
+  const expected = names[bankCode];
+  if (
+    expected &&
+    (expected.toLocaleLowerCase('en') === bankName.toLocaleLowerCase('en') ||
+      bankCode.toLocaleLowerCase('en') === bankName.toLocaleLowerCase('en'))
+  ) return;
+  throw new BadRequestException({
+    code: 'COMPANY_BANK_ACCOUNT_BANK_IDENTITY_MISMATCH',
+    field: 'bankName',
+    message: 'Bank name must match the selected controlled bank code',
+  });
 }
 
 function normalizeCompanyBankTransactionCurrency(
@@ -43996,7 +50289,9 @@ function adminFinanceReviewAssignmentHistory(
           email: null,
           fullName: null,
         },
-        assignedBy: adminsById.get(assignedByAdminId) ?? auditLog.actor,
+        assignedBy: assignedByAdminId
+          ? (adminsById.get(assignedByAdminId) ?? auditLog.actor)
+          : auditLog.actor,
         previousAssignee: previousAssigneeAdminId
           ? (adminsById.get(previousAssigneeAdminId) ?? {
               id: previousAssigneeAdminId,
@@ -44031,6 +50326,7 @@ function compactNotificationBoardDeliveryResponses<
 function withAdminNotificationRetryDecision<
   T extends {
     readonly data: Prisma.JsonValue | null;
+    readonly type?: string;
     readonly deliveries?: readonly {
       readonly attemptedAt: Date | string;
       readonly pushDeviceId: string | null;
@@ -44041,8 +50337,10 @@ function withAdminNotificationRetryDecision<
   },
 >(notification: T, now: Date) {
   const targetRole = notificationTargetRole(notification);
+  const roleNeutral = isRoleNeutralNotificationType(notification.type);
   const targetDevices = notificationRetryPushDevices(notification.user).filter(
-    (device) => device.enabled && pushDeviceMatchesTargetRole(device, targetRole),
+    (device) =>
+      device.enabled && (roleNeutral || pushDeviceMatchesTargetRole(device, targetRole)),
   );
   const retryDecision = notificationRetryDecision(targetDevices, notification.deliveries ?? [], now);
   return {
@@ -44118,15 +50416,15 @@ function adminBankReconciliationMatchAuditMetadata(
   auditLog:
     | {
         action: string;
-        actor: { id: string; email: string | null; fullName: string | null };
-        actorId: string;
+        actor: { id: string; email: string | null; fullName: string | null } | null;
+        actorId: string | null;
         createdAt: Date;
         metadata: Prisma.JsonValue | null;
       }
     | undefined,
   approvalAdminsById: ReadonlyMap<string, { id: string; email: string | null; fullName: string | null }>,
 ): Prisma.InputJsonObject {
-  if (!auditLog) return {};
+  if (!auditLog?.actor || !auditLog.actorId) return {};
   const metadata = jsonObject(auditLog.metadata);
   const approvalAdminId = jsonString(metadata.approvalAdminId);
   const approvalAdmin = approvalAdminId ? approvalAdminsById.get(approvalAdminId) : null;
@@ -44165,15 +50463,15 @@ function adminBankReconciliationMatchReversalAuditMetadata(
   auditLog:
     | {
         action: string;
-        actor: { id: string; email: string | null; fullName: string | null };
-        actorId: string;
+        actor: { id: string; email: string | null; fullName: string | null } | null;
+        actorId: string | null;
         createdAt: Date;
         metadata: Prisma.JsonValue | null;
       }
     | undefined,
   approvalAdminsById: ReadonlyMap<string, AdminOperatorIdentityRecord>,
 ): Prisma.InputJsonObject {
-  if (!auditLog) return {};
+  if (!auditLog?.actor || !auditLog.actorId) return {};
   const metadata = jsonObject(auditLog.metadata);
   const approvalAdminId = jsonString(metadata.approvalAdminId);
   const approvalAdmin = approvalAdminId ? approvalAdminsById.get(approvalAdminId) : null;
@@ -45104,13 +51402,7 @@ async function upsertWithholdingRemittanceJournal(
 
   await tx.accountingJournalBatch.upsert({
     where: { sourceKey },
-    update: {
-      ...batchData,
-      entries: {
-        deleteMany: {},
-        create: entries,
-      },
-    },
+    update: {},
     create: {
       ...batchData,
       sourceKey,
@@ -46215,6 +52507,7 @@ function notificationBoardAndWhere(
 }
 
 type NotificationBoardSummaryOptions = {
+  readonly campaignId?: string;
   readonly age?: string;
   readonly booking?: string;
   readonly financeAge?: string;
@@ -46235,6 +52528,31 @@ type NotificationBoardSummaryOptions = {
   readonly dataScope?: string;
   readonly viewMode?: string;
 };
+
+type NotificationDeliveryHealthCounts = {
+  readonly deliveryGaps: number;
+  readonly failed: number;
+  readonly noPushPathNotificationCount: number;
+  readonly noPushPathRecipientCount: number;
+  readonly staleRouteNotifications: number;
+};
+
+function addNotificationDeliveryHealth(
+  current: NotificationDeliveryHealthCounts | undefined,
+  history: NotificationDeliveryHealthCounts | undefined,
+): NotificationDeliveryHealthCounts | undefined {
+  if (!current || !history) return undefined;
+  return {
+    deliveryGaps: current.deliveryGaps + history.deliveryGaps,
+    failed: current.failed + history.failed,
+    noPushPathNotificationCount:
+      current.noPushPathNotificationCount + history.noPushPathNotificationCount,
+    noPushPathRecipientCount:
+      current.noPushPathRecipientCount + history.noPushPathRecipientCount,
+    staleRouteNotifications:
+      current.staleRouteNotifications + history.staleRouteNotifications,
+  };
+}
 
 type NotificationBoardQueryOptions = NotificationBoardSummaryOptions & {
   readonly skip?: string;
@@ -46260,6 +52578,7 @@ function notificationBoardWhere(
   const search = normalizeNullable(options.q);
   const recipientRole = normalizeNotificationRecipientRole(options.recipientRole);
   const channel = normalizeNotificationChannel(options.channel);
+  const campaignId = normalizeNullable(options.campaignId);
 
   if (dateWhere) {
     Object.assign(where, dateWhere);
@@ -46269,6 +52588,9 @@ function notificationBoardWhere(
   }
   if (user) {
     filters.push({ userId: user });
+  }
+  if (campaignId) {
+    filters.push({ data: { path: ['campaignId'], equals: campaignId } });
   }
   if (reviewWhere) {
     filters.push(reviewWhere);
@@ -47119,7 +53441,18 @@ function normalizeNotificationTemplateTranslations(input: UpdateNotificationTemp
     if (!title || !body) {
       throw new BadRequestException(`Notification ${locale} title and body are required`);
     }
-    return { body, locale, title };
+    if (translation.confirmIdenticalTranslation && (locale === 'en' || !translation.reviewedAndReady)) {
+      throw new BadRequestException(
+        'Identical-language confirmation is only valid for a reviewed non-English translation',
+      );
+    }
+    return {
+      body,
+      confirmIdenticalTranslation: translation.confirmIdenticalTranslation === true,
+      locale,
+      reviewedAndReady: translation.reviewedAndReady === true,
+      title,
+    };
   });
   if (normalized.length > NOTIFICATION_TEMPLATE_LOCALES.length) {
     throw new BadRequestException('Too many notification translations');
@@ -47130,12 +53463,111 @@ function normalizeNotificationTemplateTranslations(input: UpdateNotificationTemp
   return normalized;
 }
 
+function notificationTemplateContractView<
+  T extends {
+    readonly audience: unknown;
+    readonly channel: unknown;
+    readonly description?: unknown;
+    readonly key: string;
+    readonly variables?: unknown;
+  },
+>(template: T) {
+  const definition = DEFAULT_NOTIFICATION_TEMPLATES.find((candidate) => candidate.key === template.key);
+  if (!definition) {
+    return {
+      ...template,
+      contractIssues: notificationTemplateIssuesForKey(template),
+      openBehavior: notificationTemplateOpenBehavior(template.key),
+      requiredVariables: [],
+      runtimeRoutes: [],
+    };
+  }
+  return {
+    ...template,
+    audience: definition.audience,
+    channel: definition.channel,
+    contractIssues: notificationTemplateIssuesForKey(template),
+    description: definition.description,
+    openBehavior: notificationTemplateOpenBehavior(template.key),
+    requiredVariables: [...definition.requiredVariables],
+    runtimeRoutes: NOTIFICATION_TEMPLATE_ROUTES
+      .filter((route) => route.templateKey === template.key)
+      .map((route) => ({ targetRole: route.targetRole, type: route.type })),
+    variables: [...definition.variables],
+  };
+}
+
+function notificationTemplateIssuesForKey(template: {
+  readonly audience: unknown;
+  readonly channel: unknown;
+  readonly key: string;
+  readonly variables?: unknown;
+}) {
+  const routeIds = NOTIFICATION_TEMPLATE_ROUTES
+    .filter((route) => route.templateKey === template.key)
+    .map((route) => `${route.type}:${route.targetRole}`);
+  return [
+    ...notificationTemplateMetadataIssues(template),
+    ...notificationTemplateContractErrors().filter(
+      (issue) => issue.includes(template.key) || routeIds.some((routeId) => issue.includes(routeId)),
+    ),
+  ];
+}
+
+function notificationTemplateMetadataIssues(template: {
+  readonly audience: unknown;
+  readonly channel: unknown;
+  readonly key: string;
+  readonly variables?: unknown;
+}) {
+  const definition = DEFAULT_NOTIFICATION_TEMPLATES.find((candidate) => candidate.key === template.key);
+  if (!definition) return [`${template.key}: unexpected database template`];
+  const issues: string[] = [];
+  if (template.audience !== definition.audience) {
+    issues.push(`${template.key}: audience mismatch (database ${String(template.audience)}, catalog ${definition.audience})`);
+  }
+  if (template.channel !== definition.channel) {
+    issues.push(`${template.key}: channel mismatch (database ${String(template.channel)}, catalog ${definition.channel})`);
+  }
+  const databaseVariables = stringArray(template.variables);
+  if (!sameStringSet(databaseVariables, definition.variables)) {
+    issues.push(
+      `${template.key}: variables mismatch (database ${formatContractList(databaseVariables)}, catalog ${formatContractList(definition.variables)})`,
+    );
+  }
+  return issues;
+}
+
+function notificationCopyEquals(
+  left: { readonly body: string; readonly title: string },
+  right: { readonly body: string; readonly title: string },
+) {
+  return normalizeNotificationCopy(left.title) === normalizeNotificationCopy(right.title)
+    && normalizeNotificationCopy(left.body) === normalizeNotificationCopy(right.body);
+}
+
+function normalizeNotificationCopy(value: string) {
+  return value.replace(/\r\n?/g, '\n').trim();
+}
+
+function stringArray(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
+function sameStringSet(left: readonly string[], right: readonly string[]) {
+  return [...new Set(left)].sort().join('\u0000') === [...new Set(right)].sort().join('\u0000');
+}
+
+function formatContractList(value: readonly string[]) {
+  return value.length > 0 ? value.join(', ') : 'none';
+}
+
 function validateNotificationTemplatePlaceholders(
   definition: (typeof DEFAULT_NOTIFICATION_TEMPLATES)[number],
   translation: { readonly body: string; readonly locale: string; readonly title: string },
 ) {
   const allowed = new Set<string>(definition.variables);
-  const required = notificationTemplatePlaceholders(`${definition.title} ${definition.body}`);
+  const required = new Set<string>(definition.requiredVariables);
   const actual = notificationTemplatePlaceholders(`${translation.title} ${translation.body}`);
   const unknown = [...actual].filter((placeholder) => !allowed.has(placeholder));
   const missing = [...required].filter((placeholder) => !actual.has(placeholder));
@@ -47173,20 +53605,21 @@ function normalizeAdminPushTargetSegment(targetRole: Extract<Role, 'CUSTOMER' | 
   throw new BadRequestException(`Unsupported manual push target segment for ${targetRole}`);
 }
 
-function normalizeAdminPushAppDestination(
+function normalizeAdminPushLocale(
   targetRole: Extract<Role, 'CUSTOMER' | 'PROVIDER'>,
   value?: string,
 ) {
-  const destination = normalizeNullable(value) ?? ADMIN_PUSH_DEFAULT_DESTINATION;
-  const allowedDestinations =
-    targetRole === Role.PROVIDER ? ADMIN_PUSH_PROVIDER_DESTINATIONS : ADMIN_PUSH_CUSTOMER_DESTINATIONS;
-  if (allowedDestinations.has(destination)) {
-    return destination;
+  const locale = normalizeNullable(value)?.toLowerCase();
+  if (!locale || !['en', 'vi', 'ko', 'ja', 'zh'].includes(locale)) {
+    throw new BadRequestException('Manual push language is required');
   }
-  throw new BadRequestException(`Unsupported manual push app destination for ${targetRole}`);
+  if (targetRole === Role.PROVIDER && locale !== 'vi') {
+    throw new BadRequestException('Partner manual push campaigns support Vietnamese only');
+  }
+  return locale;
 }
 
-function adminPushRecipientWhere(
+function adminPushRecipientBaseWhere(
   targetRole: Extract<Role, 'CUSTOMER' | 'PROVIDER'>,
   targetUserId?: string,
   targetSegment = ADMIN_PUSH_SEGMENT_ALL,
@@ -47196,15 +53629,32 @@ function adminPushRecipientWhere(
   const baseWhere: Prisma.UserWhereInput = {
     ...(normalizedTargetUserId ? { id: normalizedTargetUserId } : {}),
     roles: { has: targetRole },
-    pushDevices: {
-      some: {
-        enabled: true,
-        role: targetRole,
-      },
-    },
+    ...(targetRole === Role.CUSTOMER
+      ? { customerProfile: { isNot: null } }
+      : { providerProfile: { is: { blockedAt: null, deletedAt: null } } }),
   };
   const segmentWhere = adminPushSegmentWhere(targetRole, targetSegment, now);
   return Object.keys(segmentWhere).length ? { AND: [baseWhere, segmentWhere] } : baseWhere;
+}
+
+function adminPushPreviewState(eligibleUsers: number, eligibleDevices: number) {
+  if (eligibleUsers === 0 || eligibleDevices === 0) {
+    return 'ZERO_RECIPIENTS' as const;
+  }
+  if (eligibleUsers > ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT) {
+    return 'OVER_LIMIT' as const;
+  }
+  return 'READY' as const;
+}
+
+function adminPushHash(value: unknown) {
+  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
+}
+
+function adminPushCampaignWithoutActorId<T extends { readonly createdById: string }>(campaign: T) {
+  const { createdById, ...operatorCampaign } = campaign;
+  void createdById;
+  return operatorCampaign;
 }
 
 function adminPushSegmentWhere(

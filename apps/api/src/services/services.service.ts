@@ -1,7 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import {
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { groupServiceCatalogOptions } from './service-catalog-groups';
+import {
+  isPublicServiceCatalogOption,
+  publicServiceCatalogWhere,
+} from './public-service-catalog';
 
 const PRICE_STEP_UNIT_VND = 100000;
 
@@ -9,21 +15,50 @@ const PRICE_STEP_UNIT_VND = 100000;
 export class ServicesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  listActive() {
-    return this.prisma.massageService.findMany({
-      where: { active: true },
-      include: {
+  async listActive() {
+    const services = await this.prisma.massageService.findMany({
+      where: publicServiceCatalogWhere,
+      select: {
+        id: true,
+        serviceGroupKey: true,
+        name: true,
+        nameTranslations: true,
+        description: true,
+        durationMin: true,
+        basePrice: true,
+        priceStep: true,
+        displayOrder: true,
         payoutRules: {
           where: { active: true },
           orderBy: { customerPrice: 'asc' },
+          select: {
+            id: true,
+            customerPrice: true,
+            providerPayoutAmount: true,
+          },
         },
       },
       orderBy: [{ displayOrder: 'asc' }, { serviceGroupKey: 'asc' }, { durationMin: 'asc' }],
     });
+
+    return services.flatMap(({ payoutRules, ...service }) =>
+      isPublicServiceCatalogOption({ ...service, payoutRules }) ? [service] : [],
+    );
   }
 
   async listActiveGroups() {
-    return groupServiceCatalogOptions(await this.listActive());
+    return groupServiceCatalogOptions(await this.listActive()).map((group) => ({
+      key: group.key,
+      name: group.name,
+      nameTranslations: group.nameTranslations,
+      description: group.description,
+      durationSummary: group.durationSummary,
+      activeOptionCount: group.activeOptionCount,
+      missingStandardDurations: group.missingStandardDurations,
+      minBasePrice: group.minBasePrice,
+      maxBasePrice: group.maxBasePrice,
+      options: group.options,
+    }));
   }
 
   create(input: {

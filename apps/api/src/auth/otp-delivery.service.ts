@@ -1,5 +1,6 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { developmentOtpFromConfig } from './development-otp';
 
 type SmsProvider = 'dev' | 'http' | 'vonage';
 
@@ -94,6 +95,9 @@ export class OtpDeliveryService {
   private provider(): SmsProvider {
     const configured = this.config.get<string>('SMS_PROVIDER')?.trim().toLowerCase();
     if (!configured || configured === 'dev') {
+      if (!developmentOtpFromConfig(this.config)) {
+        throw new ServiceUnavailableException('SMS service is not configured');
+      }
       return 'dev';
     }
     if (configured === 'vonage') {

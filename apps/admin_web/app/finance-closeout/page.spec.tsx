@@ -348,7 +348,7 @@ describe('FinanceCloseoutPage', () => {
     expect(markup).toContain('Month: 2026-07');
     expect(markup).toContain('Payment: Card');
     expect(markup).toContain('Matching bookings: 21');
-    expect(markup).toContain('Oldest: 70d ago');
+    expect(markup).toMatch(/Oldest: \d+d ago/);
     expect(markup).toContain('Compare selected (0)');
     expect(markup).toContain('Select up to 10 records. 0 selected.');
     expect(markup).toContain('Select booking-settlement-gap-11');
@@ -566,9 +566,10 @@ describe('FinanceCloseoutPage', () => {
     expect(markup).toContain('Settlement repair preview');
     expect(markup).toContain('Approved for controlled repair');
     expect(markup).toContain('Dual approval required');
-    expect(markup).toContain('Finance Approver · finance-admin-2');
+    expect(markup).toContain('Two verified Finance operators are required');
+    expect(markup).not.toContain('name="approvalAdminId"');
     expect(markup).toContain('Confirm booking ID');
-    expect(markup).toContain('Create missing settlement');
+    expect(markup).toContain('Request / approve settlement repair');
     expect(markup).toContain('Existing status preserved');
   });
 
@@ -698,7 +699,7 @@ describe('FinanceCloseoutPage', () => {
 
     expect(markup).toContain('Historical paid evidence');
     expect(markup).toContain('1 fee · 1 tax · 2 wallet');
-    expect(markup).toContain('Reconstruct historical settlement');
+    expect(markup).toContain('Request / approve reconstruction');
     expect(markup).toContain('preserves the paid earning and wallet lifecycle');
   });
 

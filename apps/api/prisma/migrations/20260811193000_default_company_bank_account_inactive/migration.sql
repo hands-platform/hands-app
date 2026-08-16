@@ -1,0 +1,2 @@
+ALTER TABLE "CompanyBankAccount"
+ALTER COLUMN "status" SET DEFAULT 'INACTIVE';

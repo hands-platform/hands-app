@@ -2,8 +2,9 @@ import { headers } from 'next/headers';
 import { cache } from 'react';
 
 import {
-  adminGet,
+  adminGetResult,
   adminPost,
+  type AdminGetResult,
   type AdminOperatorAccess,
 } from './admin-api';
 import { resolveEnvMasterAdminAccess } from './admin-env-master-access';
@@ -26,18 +27,25 @@ export type AdminOperatorPageAccess =
       category: AdminOperatorPermissionCategory | null;
     };
 
-export const getCurrentAdminOperatorAccess = cache(async function getCurrentAdminOperatorAccess() {
+export const getCurrentAdminOperatorAccessResult = cache(async function getCurrentAdminOperatorAccessResult(): Promise<AdminGetResult<AdminOperatorAccess | null>> {
   const identity = await currentAdminWebSessionIdentity();
   if (!identity) {
-    return null;
+    return { data: null, ok: true, status: null };
   }
 
-  const access = await adminGet<AdminOperatorAccess | null>(
+  const result = await adminGetResult<AdminOperatorAccess | null>(
     `/admin/users/admin-operator-access?identity=${encodeURIComponent(identity)}`,
     null,
   );
 
-  return resolveEnvMasterAdminAccess(identity, access);
+  return {
+    ...result,
+    data: resolveEnvMasterAdminAccess(identity, result.data),
+  };
+});
+
+export const getCurrentAdminOperatorAccess = cache(async function getCurrentAdminOperatorAccess() {
+  return (await getCurrentAdminOperatorAccessResult()).data;
 });
 
 export async function getAdminOperatorPageAccess(
@@ -46,9 +54,10 @@ export async function getAdminOperatorPageAccess(
 ): Promise<AdminOperatorPageAccess> {
   const category = adminOperatorCategoryForPath(pathname);
   const access = loadedAccess === undefined ? await getCurrentAdminOperatorAccess() : loadedAccess;
+  const auditTarget = adminOperatorAuditTarget(pathname);
 
   if (!category) {
-    await recordAdminOperatorActivity('admin_web.access_denied', pathname, {
+    await recordAdminOperatorActivity('admin_web.access_denied', auditTarget, {
       category: null,
       reason: 'unmapped_admin_page',
     });
@@ -56,11 +65,10 @@ export async function getAdminOperatorPageAccess(
   }
 
   if (hasAdminOperatorCategory(access, category)) {
-    await recordAdminOperatorActivity('admin_web.page_view', pathname, { category });
     return { allowed: true, access, category };
   }
 
-  await recordAdminOperatorActivity('admin_web.access_denied', pathname, { category });
+  await recordAdminOperatorActivity('admin_web.access_denied', auditTarget, { category });
   return { allowed: false, access, category };
 }
 
@@ -95,4 +103,9 @@ async function currentAdminWebSessionIdentity() {
   } catch {
     return null;
   }
+}
+
+function adminOperatorAuditTarget(pathname: string) {
+  const pathOnly = pathname.split(/[?#]/, 1)[0]?.trim() || '/';
+  return `admin_page:${pathOnly.startsWith('/') ? pathOnly : `/${pathOnly}`}`;
 }

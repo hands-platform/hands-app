@@ -220,7 +220,7 @@ describe('referral server actions', () => {
       walletLedgerReference: 'customer-cashout-ledger-1',
     });
     const formData = referralDecisionForm('customer', 'parent-customer', 'CASHOUT_APPROVED');
-    formData.set('approvalAdminId', 'finance-admin-2');
+    formData.set('approvalAdminId', 'browser-supplied-admin');
     formData.set('reason', 'manual bank transfer complete');
     formData.set('transferRef', 'VCB-REF-001');
 
@@ -229,13 +229,13 @@ describe('referral server actions', () => {
     expect(mockedAdminPost).toHaveBeenCalledWith(
       '/admin/referrals/rewards/reward-1/cashout-paid',
       {
-        approvalAdminId: 'finance-admin-2',
         expectedStatus: 'CASHOUT_APPROVED',
         expectedUpdatedAt: '2026-08-10T10:00:00.000Z',
         reason: 'manual bank transfer complete',
         transferRef: 'VCB-REF-001',
       },
     );
+    expect(mockedAdminPost.mock.calls[0]?.[1]).not.toHaveProperty('approvalAdminId');
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/customers',
       '/referrals/cashouts',

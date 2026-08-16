@@ -1,0 +1,47 @@
+{
+  "verifiedAt": "2026-08-12T18:35:59+07:00",
+  "route": "/referrals/customers",
+  "browser": "Codex in-app browser",
+  "viewports": [
+    {
+      "requested": "1440x1000",
+      "measuredInnerViewport": "1439x1000",
+      "note": "The in-app browser chrome consumed one horizontal CSS pixel."
+    },
+    {
+      "requested": "1600x1000",
+      "measuredInnerViewport": "1597x1000",
+      "note": "The in-app browser chrome consumed three horizontal CSS pixels."
+    }
+  ],
+  "warmNavigationMs": [167, 133, 131],
+  "warmNavigationP95Ms": 167,
+  "layout": {
+    "operationalQueueClientWidth": 877,
+    "operationalQueueScrollWidth": 877,
+    "fixtureQueueClientWidth": 1212,
+    "fixtureQueueScrollWidth": 1212,
+    "horizontalScrollRequired": false,
+    "actionColumnVisible": true
+  },
+  "states": {
+    "needsAction": "verified",
+    "readyEmpty": "verified",
+    "onHoldEmpty": "verified",
+    "creditedHistoryEmpty": "verified",
+    "searchEmpty": "verified",
+    "parentRecordsCollapsedExpanded": "verified",
+    "developerFixtureDiagnostic": "verified; wallet actions disabled",
+    "policyUnchanged": "verified; save disabled",
+    "policyInvalid": "verified; save disabled",
+    "policyValidUnsaved": "verified; save enabled but not invoked",
+    "detailNotFound": "verified",
+    "realRewardDetailActions": "not available without creating or mutating operational data",
+    "policyConflict": "covered by focused tests; not forced against shared data",
+    "partialApiFailure": "covered by focused tests; not injected into the shared local stack"
+  },
+  "console": {
+    "freshTab": "No referral-page error observed after the final rebuild.",
+    "reusedTab": "Old ChunkLoadError entries from the intentional development-server restart remained in browser history and were not treated as current application errors."
+  }
+}

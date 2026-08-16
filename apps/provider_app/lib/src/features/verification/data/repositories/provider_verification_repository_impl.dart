@@ -17,11 +17,13 @@ class ProviderVerificationRepositoryImpl
   @override
   Future<Map<String, dynamic>> createVerificationUpload({
     String contentType = 'image/jpeg',
+    required int sizeBytes,
   }) async {
     final result = await _api.postJson('/files/presign', {
       'contentType': contentType,
       'visibility': 'PRIVATE',
       'purpose': 'provider-verification',
+      'sizeBytes': sizeBytes,
     });
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
@@ -31,8 +33,8 @@ class ProviderVerificationRepositoryImpl
     required List<int> bytes,
     required String contentType,
   }) async {
-    final uploadContract =
-        await createVerificationUpload(contentType: contentType);
+    final uploadContract = await createVerificationUpload(
+        contentType: contentType, sizeBytes: bytes.length);
     final file = _asMap(uploadContract['file']);
     final upload = _asMap(uploadContract['upload']);
     final fileId = file?['id']?.toString();

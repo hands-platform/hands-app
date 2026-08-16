@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import {
+  AdminUserProvenance,
   AdminOperatorPermissionCategory,
   AccountingJournalSourceType,
   BankReconciliationStatus,
@@ -477,7 +478,17 @@ try {
   process.exitCode = 1;
 } finally {
   await stopApi();
-  await cleanup().catch(() => undefined);
+  try {
+    await cleanup();
+  } catch (cleanupError) {
+    console.error(JSON.stringify({
+      ok: false,
+      phase: 'cleanup',
+      error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+      residualFixtureIds: Object.values(ids),
+    }, null, 2));
+    process.exitCode = 1;
+  }
   await prisma.$disconnect();
 }
 
@@ -541,12 +552,23 @@ async function seed() {
   const now = new Date();
   await prisma.user.createMany({
     data: [
-      { id: ids.actor, phone: smokePhone('01'), fullName: 'Payout Smoke Actor', roles: [Role.ADMIN] },
+      {
+        id: ids.actor,
+        phone: smokePhone('01'),
+        fullName: 'Payout Smoke Actor',
+        roles: [Role.ADMIN],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'PAYOUT_REVERSAL_SMOKE',
+        fixtureRunId: runId,
+      },
       {
         id: ids.approver,
         phone: smokePhone('02'),
         fullName: 'Payout Smoke Finance Approver',
         roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'PAYOUT_REVERSAL_SMOKE',
+        fixtureRunId: runId,
       },
       {
         id: ids.providerUser,

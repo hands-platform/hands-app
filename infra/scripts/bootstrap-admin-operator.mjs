@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer';
-import { PrismaClient, Role } from '@prisma/client';
+import { AdminUserProvenance, PrismaClient, Role } from '@prisma/client';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
 
@@ -14,10 +14,19 @@ try {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, roles: true },
+    select: { adminUserProvenance: true, id: true, roles: true },
   });
   if (!user?.roles.includes(Role.ADMIN) || !user.roles.includes(Role.MASTER_ADMIN)) {
     throw new Error('Bootstrap target must be an existing ADMIN and MASTER_ADMIN user.');
+  }
+  if (user.adminUserProvenance === AdminUserProvenance.FIXTURE) {
+    throw new Error('Bootstrap target cannot be a test fixture.');
+  }
+  const confirmProduction = env.ADMIN_OPERATOR_BOOTSTRAP_CONFIRM_PRODUCTION === 'true';
+  if (user.adminUserProvenance !== AdminUserProvenance.PRODUCTION && !confirmProduction) {
+    throw new Error(
+      'Set ADMIN_OPERATOR_BOOTSTRAP_CONFIRM_PRODUCTION=true to explicitly verify this real operator.',
+    );
   }
 
   await prisma.$transaction(async (tx) => {
@@ -31,7 +40,13 @@ try {
 
     await tx.user.update({
       where: { id: user.id },
-      data: { email },
+      data: {
+        adminUserProvenance: AdminUserProvenance.PRODUCTION,
+        email,
+        fixtureExpiresAt: null,
+        fixtureKind: null,
+        fixtureRunId: null,
+      },
     });
     await tx.adminOperatorCredential.upsert({
       where: { userId: user.id },
@@ -43,7 +58,10 @@ try {
         actorId: user.id,
         action: 'ADMIN_OPERATOR_CREDENTIAL_BOOTSTRAPPED',
         target: user.id,
-        metadata: { source: 'explicit-bootstrap-script' },
+        metadata: {
+          provenanceConfirmed: confirmProduction,
+          source: 'explicit-bootstrap-script',
+        },
       },
     });
   });

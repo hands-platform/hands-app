@@ -159,22 +159,21 @@ describe('Referral cashout queue', () => {
     expect(cashoutQueueSource).not.toContain('<details className="admin-action-dropdown referral-reward-action-dropdown">');
   });
 
-  it('uses a separate Finance approver select for paid cashout closeout', () => {
+  it('uses the authenticated Finance operator and server-side request evidence for paid cashout closeout', () => {
     const markup = renderToStaticMarkup(
       <ReferralCashoutQueuePage
         currentPage={1}
         filters={{ audience: 'all', q: '', status: 'approved' }}
-        financeApproverOptions={[{ label: 'Finance Approver · approver@example.com', value: 'approver-2' }]}
         rows={[row]}
         summary={summary}
       />,
     );
 
-    expect(markup).toContain('Separate Finance approver');
-    expect(markup).toContain('Finance Approver · approver@example.com');
-    expect(markup).not.toContain('Different admin user id');
-    expect(cashoutQueueSource).toContain("requiresApproval: true");
-    expect(cashoutQueueSource).toContain('disabled={item.requiresApproval && paidApprovalUnavailable}');
+    expect(markup).toContain('The signed-in Finance operator is recorded as the paid closeout approver.');
+    expect(markup).toContain('The API enforces separation from the cashout request approver.');
+    expect(markup).not.toContain('name="approvalAdminId"');
+    expect(cashoutQueueSource).not.toContain('financeApproverOptions');
+    expect(cashoutQueueSource).not.toContain('requiresApproval');
   });
 
   it('uses the shared Vuexy button atom for cashout decision submit actions', () => {

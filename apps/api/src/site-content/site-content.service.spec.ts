@@ -121,10 +121,56 @@ describe('SiteContentService revision contract', () => {
     expect(pageUpdate).not.toHaveBeenCalled();
   });
 
+  it('requires the current path before taking a Live page offline', async () => {
+    const page = pageFixture();
+    const tx = transactionClient(page);
+    const service = new SiteContentService({ $transaction: vi.fn((callback) => callback(tx)) } as never);
+
+    await expect(service.takeOffline('publisher-1', page.id, {
+      confirmationPath: '/old-about',
+      reason: 'Incorrect public content',
+    })).rejects.toThrow('page path changed');
+    expect(tx.publicSitePage.update).not.toHaveBeenCalled();
+    expect(tx.publicSitePageRevision.update).not.toHaveBeenCalled();
+  });
+
+  it('archives the active revision and records visitor outcome when taking a page offline', async () => {
+    const page = pageFixture();
+    const tx = transactionClient(page);
+    const service = new SiteContentService({ $transaction: vi.fn((callback) => callback(tx)) } as never);
+
+    const result = await service.takeOffline('publisher-1', page.id, {
+      confirmationPath: '/about',
+      reason: 'Incorrect public content',
+    });
+
+    expect(tx.publicSitePageRevision.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'active-1' },
+      data: expect.objectContaining({ state: PublicSiteRevisionState.ARCHIVED }),
+    }));
+    expect(tx.publicSitePage.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ activeRevisionId: null, publishedAt: null }),
+    }));
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'PUBLIC_SITE_PAGE_TAKEN_OFFLINE' }) }));
+    expect(result).toMatchObject({ idempotent: false, visitorOutcome: 'NOT_SERVED' });
+  });
+
+  it('refuses hard deletion when a page has Live history', async () => {
+    const page = pageFixture();
+    const tx = { ...transactionClient(page), publicSitePage: { ...transactionClient(page).publicSitePage, delete: vi.fn() } };
+    const service = new SiteContentService({ $transaction: vi.fn((callback) => callback(tx)) } as never);
+
+    await expect(service.deletePage('operator-1', page.id, {
+      confirmationPath: '/about',
+      reason: 'No longer required',
+    })).rejects.toThrow('Live history');
+    expect(tx.publicSitePage.delete).not.toHaveBeenCalled();
+  });
+
   it('rejects invalid and expired preview tokens before returning Draft content', async () => {
     const page = pageFixture();
     const prisma = { publicSitePage: { findUnique: vi.fn().mockResolvedValue(page) } };
-    const config = { get: vi.fn((key: string) => key === 'SITE_CONTENT_PREVIEW_SECRET' ? 'preview-secret-at-least-16' : undefined) };
+    const config = { get: vi.fn((key: string) => key === 'SITE_CONTENT_PREVIEW_SECRET' ? 'preview-secret-at-least-32-characters' : undefined) };
     const service = new SiteContentService(prisma as never, config as never);
 
     await expect(service.resolvePreview('not-a-signed-token')).rejects.toThrow('invalid');
@@ -135,13 +181,27 @@ describe('SiteContentService revision contract', () => {
     clock.mockRestore();
   });
 
+  it('does not reuse the Supabase JWT secret for draft preview signing', async () => {
+    const page = pageFixture();
+    const service = new SiteContentService(
+      { publicSitePage: { findUnique: vi.fn().mockResolvedValue(page) } } as never,
+      { get: vi.fn((key: string) => key === 'SUPABASE_JWT_SECRET' ? 'supabase-jwt-secret-at-least-32-characters' : undefined) } as never,
+    );
+
+    await expect(service.createPreviewToken(page.id)).rejects.toThrow(
+      'Draft preview signing is not configured',
+    );
+  });
+
   it('applies server pagination to route groups without returning section JSON', async () => {
     const page = pageFixture();
     const groupBy = vi.fn()
       .mockResolvedValueOnce([{ site: PublicSiteKey.MAIN, path: '/about' }])
       .mockResolvedValueOnce(Array.from({ length: 1_000 }, (_, index) => ({ site: PublicSiteKey.MAIN, path: `/page-${index}` })))
       .mockResolvedValueOnce([{ site: PublicSiteKey.MAIN, path: '/about', _count: { locale: 4 } }]);
-    const findMany = vi.fn().mockResolvedValue([summaryRow(page)]);
+    const findMany = vi.fn()
+      .mockResolvedValueOnce([summaryRow(page)])
+      .mockResolvedValueOnce([]);
     const prisma = {
       publicSitePage: { groupBy, findMany, count: vi.fn().mockResolvedValue(1) },
       publicSitePageRevision: { count: vi.fn().mockResolvedValue(1) },
@@ -156,7 +216,12 @@ describe('SiteContentService revision contract', () => {
       page: 2,
       take: 20,
       total: 1_000,
-      summary: { missingTranslations: 1, recentlyPublished: 2 },
+      summary: {
+        missingRoutes: 35,
+        missingTranslations: 175,
+        recentlyPublished: 1,
+        scope: { contentType: 'pages' },
+      },
     });
     expect(JSON.stringify(findMany.mock.calls[0]?.[0]?.select)).not.toContain('"content"');
   });

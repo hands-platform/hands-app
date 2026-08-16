@@ -97,7 +97,7 @@ describe('provider onboarding request DTO validation', () => {
     );
 
     expect(transformed).toHaveProperty('minGrossAmount', 500000);
-    expect(transformed).toHaveProperty('approvalAdminId', 'finance-admin-2');
+    expect(transformed).not.toHaveProperty('approvalAdminId');
     expect(transformed).not.toHaveProperty('private');
 
     await expect(
@@ -113,7 +113,7 @@ describe('provider onboarding request DTO validation', () => {
     ).rejects.toThrow();
   });
 
-  it('requires separate finance approval evidence for tax policy writes', async () => {
+  it('requires legal source and operator evidence for a tax policy draft', async () => {
     const pipe = new ValidationPipe({ whitelist: true, transform: true });
 
     await expect(

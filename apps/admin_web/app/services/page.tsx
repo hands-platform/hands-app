@@ -1,47 +1,65 @@
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { adminGet, type AdminServiceCatalogItem } from '../../lib/admin-api';
-import { groupServices, readSingleParam, type ServiceCatalogGroup } from '../../lib/service-catalog-filters';
+import {
+  adminGetResult,
+  type AdminServiceCatalogGroup,
+  type AdminServiceCatalogHealth,
+  type AdminServiceCatalogImpact,
+} from '../../lib/admin-api';
+import { readSingleParam, type ServiceCatalogGroup } from '../../lib/service-catalog-filters';
 import { serviceActionNotice } from '../../lib/service-action-notice';
 import { ServiceActionNoticeSection } from './service-action-notice-section';
 import { ServiceCatalogManagerSection } from './service-catalog-manager-section';
 
 type ServicesPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
-const STANDARD_SERVICE_DURATIONS = new Set([60, 90, 120]);
 
 export default async function ServicesPage({ searchParams }: { searchParams?: ServicesPageSearchParams }) {
   const params = (await searchParams) ?? {};
-  const services = await adminGet<AdminServiceCatalogItem[]>('/admin/services?scope=operational', []);
-  const visibleServices = services.filter(
-    (service) => !isSmokeOrTestService(service) && STANDARD_SERVICE_DURATIONS.has(service.durationMin),
-  );
-  const groupedServices = groupServices(visibleServices);
-  const activeServices = visibleServices.filter((service) => service.active);
+  const [groupsResult, healthResult] = await Promise.all([
+    adminGetResult<AdminServiceCatalogGroup[]>('/admin/services/groups?scope=operational', []),
+    adminGetResult<AdminServiceCatalogHealth | null>('/admin/services/health', null),
+  ]);
+  const groupedServices = groupsResult.data.map(toServiceCatalogGroup);
   const dialogMode = readDialogMode(params.dialog);
   const editGroupKey = readSingleParam(params.group);
   const editGroup = dialogMode === 'edit' ? findServiceGroup(groupedServices, editGroupKey) : null;
-  const payoutRuleCount = visibleServices.reduce(
-    (sum, service) => sum + (service.payoutRules?.length ?? 0),
-    0,
-  );
+  const impactResult = editGroup
+    ? await adminGetResult<AdminServiceCatalogImpact | null>(
+        `/admin/services/groups/${encodeURIComponent(editGroup.key)}/impact`,
+        null,
+      )
+    : null;
 
   return (
     <AdminPageTemplate
-      description="Manage the base service menu, duration options, base customer prices, and Partner payout amounts."
+      description="Control app-visible services, duration pricing, Partner payout rules, and publication readiness."
       title="Service catalog"
     >
       <div className="service-catalog-page">
         <ServiceActionNoticeSection notice={serviceActionNotice(params)} />
         <ServiceCatalogManagerSection
+          dataAvailable={groupsResult.ok}
           dialogMode={dialogMode}
           editGroup={editGroup}
-          activeOptionCount={activeServices.length}
           groups={groupedServices}
-          payoutRuleCount={payoutRuleCount}
-          totalGroupCount={groupedServices.length}
+          health={healthResult.data}
+          healthAvailable={healthResult.ok}
+          impact={impactResult?.data ?? null}
+          impactAvailable={impactResult?.ok ?? true}
+          invalidEditGroupKey={dialogMode === 'edit' && !editGroup ? editGroupKey ?? 'missing' : null}
         />
       </div>
     </AdminPageTemplate>
   );
+}
+
+function toServiceCatalogGroup(group: AdminServiceCatalogGroup): ServiceCatalogGroup {
+  return {
+    key: group.key,
+    label: group.name,
+    nameTranslations: group.nameTranslations,
+    items: group.options,
+    draft: group.draft ?? null,
+  };
 }
 
 function readDialogMode(value: string | readonly string[] | undefined) {
@@ -51,16 +69,4 @@ function readDialogMode(value: string | readonly string[] | undefined) {
 
 function findServiceGroup(groups: readonly ServiceCatalogGroup[], key: string | undefined) {
   return groups.find((group) => group.key === key) ?? null;
-}
-
-function isSmokeOrTestService(service: AdminServiceCatalogItem) {
-  const key = service.serviceGroupKey?.toLowerCase() ?? '';
-  const name = service.name.toLowerCase();
-  const marker = `${key} ${name}`;
-  return (
-    key.startsWith('smoke') ||
-    marker.includes('test') ||
-    name.startsWith('smoke') ||
-    /\d{10,}/.test(marker)
-  );
 }

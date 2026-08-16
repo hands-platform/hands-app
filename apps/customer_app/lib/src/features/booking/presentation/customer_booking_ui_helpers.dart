@@ -516,6 +516,17 @@ String formatDistance(num? meters) {
   return '${meters.round()} m';
 }
 
+num? providerDistanceRank(Map<String, dynamic> provider) {
+  return asNum(provider['distanceBucketRank']) ??
+      asNum(provider['distanceMeters']);
+}
+
+String providerDistanceLabel(Map<String, dynamic> provider) {
+  final bucketLabel = provider['distanceLabel']?.toString().trim();
+  if (bucketLabel != null && bucketLabel.isNotEmpty) return bucketLabel;
+  return formatDistance(asNum(provider['distanceMeters']));
+}
+
 LatLng? deriveProviderLatLng(Map<String, dynamic>? provider) {
   final lat = asDouble(provider?['currentLat']) ?? asDouble(provider?['lat']);
   final lng = asDouble(provider?['currentLng']) ?? asDouble(provider?['lng']);
@@ -580,6 +591,13 @@ Color providerLocationStatusColor(HandsColors colors, dynamic value) {
 }
 
 String providerLocationFreshnessLabel(Map<String, dynamic> provider) {
+  if (provider['currentLocationUpdatedAt'] == null) {
+    return switch (provider['locationFreshness']) {
+      'FRESH' => 'Location recently verified',
+      'STALE' => 'Location needs refresh',
+      _ => 'Location status unavailable',
+    };
+  }
   final ageLabel = formatLastLocation(provider['currentLocationUpdatedAt']);
   if (ageLabel == 'not shared yet') {
     return 'Location not shared yet';

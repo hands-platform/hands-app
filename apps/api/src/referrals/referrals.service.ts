@@ -1,13 +1,10 @@
 import { createHash } from 'crypto';
 import { BadRequestException, ConflictException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import {
-  BookingSettlementStatus,
   BookingStatus,
   CustomerWalletLedgerType,
-  PaymentStatus,
   Prisma,
   ProviderWalletLedgerType,
-  ReferralFraudReviewStatus,
   ReferralAttributionStatus,
   ReferralAudience,
   ReferralRewardMode,
@@ -16,15 +13,24 @@ import {
 } from '@prisma/client';
 import { calculatePlatformFeeBreakdown } from '../earnings/earnings.policy';
 import { customerReferralRewardNotification } from '../notifications/customer-app-notification.policy';
+import { notificationDataWithDeliveryContract } from '../notifications/notification-data-scope';
 import { notificationDataWithTargetRole } from '../notifications/notification-target-role';
 import { toJson } from '../notifications/notification-push-payload';
 import { NotificationsService } from '../notifications/notifications.service';
+import { customerWalletBookingLockKey } from '../payments/customer-wallet-payment';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  CUSTOMER_WALLET_LEDGER_REPLAY_FIELDS,
+  immutableFinancialReplayMatches,
+  PROVIDER_WALLET_LEDGER_REPLAY_FIELDS,
+} from '../settlements/immutable-financial-replay';
 import {
   calculateCustomerReferralReward,
   calculateReferralTaxWithholding,
   type ReferralTaxPolicy,
 } from './referrals.accounting';
+import { isReferralRewardFixture, referralAdminFixtureRewardWhere } from './referral-fixture';
+import { referralRewardEvidenceBlocker } from './referral-reward-evidence';
 
 const DEFAULT_REFERRAL_PLATFORM_FEE_VAT_RATE_BPS = 800;
 const CASHOUT_APPROVED_REFERRAL_REWARD_STATUS = referralRewardStatus('CASHOUT_APPROVED');
@@ -32,6 +38,11 @@ const CASHOUT_REQUESTED_REFERRAL_REWARD_STATUS = referralRewardStatus('CASHOUT_R
 const CREDITED_REFERRAL_REWARD_STATUS = referralRewardStatus('CREDITED');
 const PAID_REFERRAL_REWARD_STATUS = referralRewardStatus('PAID');
 const TAX_REVIEW_REQUIRED_REFERRAL_REWARD_STATUS = referralRewardStatus('TAX_REVIEW_REQUIRED');
+const RESERVED_REFERRAL_CASHOUT_STATUSES = [
+  CASHOUT_REQUESTED_REFERRAL_REWARD_STATUS,
+  CASHOUT_APPROVED_REFERRAL_REWARD_STATUS,
+  TAX_REVIEW_REQUIRED_REFERRAL_REWARD_STATUS,
+] as const;
 
 const referralCodeSelect = {
   id: true,
@@ -159,6 +170,7 @@ const referralRewardCreditCandidateSelect = {
   walletLedgerReference: true,
   walletOwnerCustomerProfileId: true,
   walletOwnerProviderProfileId: true,
+  metadata: true,
   attribution: {
     select: {
       audience: true,
@@ -166,6 +178,8 @@ const referralRewardCreditCandidateSelect = {
       referrerCustomerProfileId: true,
       referrerProviderProfileId: true,
       status: true,
+      metadata: true,
+      referralCode: { select: { metadata: true } },
     },
   },
   qualifyingBooking: {
@@ -208,6 +222,20 @@ type ReferralRewardLedgerCandidate = Pick<
   | 'walletOwnerProviderProfileId'
 >;
 
+const referralRewardCashoutReservationSelect = {
+  amount: true,
+  availableAt: true,
+  calculationSnapshot: true,
+  currency: true,
+  id: true,
+  qualifyingBookingId: true,
+  sourceKey: true,
+  status: true,
+  walletLedgerReference: true,
+  walletOwnerCustomerProfileId: true,
+  walletOwnerProviderProfileId: true,
+} satisfies Prisma.ReferralRewardSelect;
+
 const referralRewardCandidateStateSelect = {
   amount: true,
   availableAt: true,
@@ -216,6 +244,13 @@ const referralRewardCandidateStateSelect = {
   status: true,
   updatedAt: true,
   walletLedgerReference: true,
+  metadata: true,
+  attribution: {
+    select: {
+      metadata: true,
+      referralCode: { select: { metadata: true } },
+    },
+  },
 } satisfies Prisma.ReferralRewardSelect;
 
 type ReferralRewardCandidateState = Prisma.ReferralRewardGetPayload<{
@@ -252,6 +287,8 @@ type ReferralRewardSummaryGroup = {
   _count: { _all: number };
   _sum: { amount: number | null };
 };
+
+type ReferralRewardClient = PrismaService | Prisma.TransactionClient;
 
 type ReferralListInput = {
   cursor?: string;
@@ -626,6 +663,7 @@ export class ReferralsService {
       where: {
         availableAt: { lte: referenceDate },
         status: ReferralRewardStatus.PENDING,
+        NOT: referralAdminFixtureRewardWhere,
       },
     });
 
@@ -637,7 +675,34 @@ export class ReferralsService {
   }
 
   async releaseHeldRewardCandidate(rewardId: string, expected: ReferralRewardExpectedState) {
-    return this.updateRewardCandidateStatus(rewardId, ReferralRewardStatus.AVAILABLE, expected);
+    return this.runSerializableTransaction(async (tx) => {
+      const reward = await tx.referralReward.findUnique({
+        where: { id: rewardId },
+        select: referralRewardCreditCandidateSelect,
+      });
+      if (!reward) {
+        throw new NotFoundException('Referral reward was not found');
+      }
+      this.assertExpectedRewardState(reward, expected);
+      this.assertRewardIsNotFixture(reward);
+      this.assertRewardEvidence(reward);
+      this.assertRewardCandidateCanChangeStatus(reward, ReferralRewardStatus.AVAILABLE);
+      const transition = await tx.referralReward.updateMany({
+        data: { status: ReferralRewardStatus.AVAILABLE },
+        where: {
+          id: rewardId,
+          status: expected.expectedStatus,
+          updatedAt: new Date(expected.expectedUpdatedAt),
+        },
+      });
+      if (transition.count !== 1) {
+        throw this.rewardStateChangedError();
+      }
+      return tx.referralReward.findUniqueOrThrow({
+        where: { id: rewardId },
+        select: referralRewardSelect,
+      });
+    });
   }
 
   async reverseRewardCandidate(rewardId: string, expected: ReferralRewardExpectedState) {
@@ -649,6 +714,7 @@ export class ReferralsService {
       throw new NotFoundException('Referral reward was not found');
     }
     this.assertExpectedRewardState(reward, expected);
+    this.assertRewardIsNotFixture(reward);
     if (isCreditedReferralRewardStatus(reward.status)) {
       return this.reverseCreditedRewardCandidate(reward, expected);
     }
@@ -668,7 +734,7 @@ export class ReferralsService {
   }
 
   async creditRewardCandidate(rewardId: string, expected: ReferralRewardExpectedState) {
-    const outcome = await this.prisma.$transaction(async (tx) => {
+    const outcome = await this.runSerializableTransaction(async (tx) => {
       const reward = await tx.referralReward.findUnique({
         where: { id: rewardId },
         select: referralRewardCreditCandidateSelect,
@@ -677,6 +743,7 @@ export class ReferralsService {
         throw new NotFoundException('Referral reward was not found');
       }
       this.assertExpectedRewardState(reward, expected);
+      this.assertRewardIsNotFixture(reward);
       await this.assertRewardCandidateCanBeCredited(tx, reward);
       await this.claimRewardForWalletMutation(tx, reward, expected);
 
@@ -747,13 +814,16 @@ export class ReferralsService {
           type: copy.type,
           title: copy.title,
           body: copy.body,
-          data: toJson(notificationDataWithTargetRole(copy.data, Role.CUSTOMER)),
+          data: toJson(notificationDataWithDeliveryContract(
+            notificationDataWithTargetRole(copy.data, Role.CUSTOMER),
+            'PUSH_AND_IN_APP',
+          )),
         },
         select: { id: true },
       });
 
       return { notificationId: notification.id, reward: creditedReward };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    });
 
     if (outcome.notificationId) {
       await this.notifications?.enqueuePersistedNotification(outcome.notificationId);
@@ -766,7 +836,7 @@ export class ReferralsService {
     rewardId: string,
     input: { expectedStatus: ReferralRewardStatus; expectedUpdatedAt: string; notes?: string | null; reference?: string | null },
   ) {
-    return this.prisma.$transaction(async (tx) => {
+    return this.runSerializableTransaction(async (tx) => {
       const reward = await tx.referralReward.findUnique({
         where: { id: rewardId },
         select: referralRewardCreditCandidateSelect,
@@ -775,7 +845,9 @@ export class ReferralsService {
         throw new NotFoundException('Referral reward was not found');
       }
       this.assertExpectedRewardState(reward, input);
+      this.assertRewardIsNotFixture(reward);
       this.assertRewardCashoutCanBePaid(reward);
+      await this.lockRewardWallet(tx, reward);
       await this.assertRewardCashoutWalletBalance(tx, reward);
       await this.claimRewardForWalletMutation(tx, reward, input);
 
@@ -784,50 +856,28 @@ export class ReferralsService {
       const notes = normalizeOptionalText(input.notes ?? undefined);
       const walletCashoutAmount = referralRewardNetWalletAmount(reward);
       const ledger = reward.walletOwnerCustomerProfileId
-        ? await tx.customerWalletLedgerEntry.upsert({
-            where: { sourceKey: ledgerSourceKey },
-            update: {
-              amount: -walletCashoutAmount,
-              currency: reward.currency,
-              metadata: referralWalletCashoutMetadata(reward, 'CUSTOMER'),
-              notes,
-              reference,
-            },
-            create: {
-              amount: -walletCashoutAmount,
-              bookingId: reward.qualifyingBookingId,
-              currency: reward.currency,
-              customerProfileId: reward.walletOwnerCustomerProfileId,
-              metadata: referralWalletCashoutMetadata(reward, 'CUSTOMER'),
-              notes,
-              referralRewardId: reward.id,
-              reference,
-              sourceKey: ledgerSourceKey,
-              type: customerWalletLedgerType('CUSTOMER_REFERRAL_CASHOUT'),
-            },
-            select: { id: true },
+        ? await upsertImmutableCustomerWalletLedger(tx, {
+            amount: -walletCashoutAmount,
+            bookingId: reward.qualifyingBookingId,
+            currency: reward.currency,
+            customerProfileId: reward.walletOwnerCustomerProfileId,
+            metadata: referralWalletCashoutMetadata(reward, 'CUSTOMER'),
+            notes,
+            referralRewardId: reward.id,
+            reference,
+            sourceKey: ledgerSourceKey,
+            type: customerWalletLedgerType('CUSTOMER_REFERRAL_CASHOUT'),
           })
-        : await tx.providerWalletLedgerEntry.upsert({
-            where: { sourceKey: ledgerSourceKey },
-            update: {
-              amount: -walletCashoutAmount,
-              currency: reward.currency,
-              metadata: referralWalletCashoutMetadata(reward, 'PARTNER'),
-              notes,
-              reference,
-            },
-            create: {
-              amount: -walletCashoutAmount,
-              bookingId: reward.qualifyingBookingId,
-              currency: reward.currency,
-              metadata: referralWalletCashoutMetadata(reward, 'PARTNER'),
-              notes,
-              providerProfileId: reward.walletOwnerProviderProfileId as string,
-              reference,
-              sourceKey: ledgerSourceKey,
-              type: providerWalletLedgerType('PARTNER_REFERRAL_CASHOUT'),
-            },
-            select: { id: true },
+        : await upsertImmutableProviderWalletLedger(tx, {
+            amount: -walletCashoutAmount,
+            bookingId: reward.qualifyingBookingId,
+            currency: reward.currency,
+            metadata: referralWalletCashoutMetadata(reward, 'PARTNER'),
+            notes,
+            providerProfileId: reward.walletOwnerProviderProfileId as string,
+            reference,
+            sourceKey: ledgerSourceKey,
+            type: providerWalletLedgerType('PARTNER_REFERRAL_CASHOUT'),
           });
 
       await upsertReferralRewardJournal(tx, reward, ledger.id, 'wallet-cashout');
@@ -840,7 +890,7 @@ export class ReferralsService {
         where: { id: reward.id, status: ReferralRewardStatus.LOCKED },
         select: referralRewardSelect,
       });
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    });
   }
 
   private async reverseCreditedRewardCandidate(
@@ -856,51 +906,31 @@ export class ReferralsService {
       throw new BadRequestException('Referral reward does not have a wallet owner');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.runSerializableTransaction(async (tx) => {
       await this.claimRewardForWalletMutation(tx, reward, expected);
       const ledgerSourceKey = referralWalletReversalSourceKey(reward.id);
       const walletReversalAmount = referralRewardNetWalletAmount(reward);
       const ledger = reward.walletOwnerCustomerProfileId
-        ? await tx.customerWalletLedgerEntry.upsert({
-            where: { sourceKey: ledgerSourceKey },
-            update: {
-              amount: -walletReversalAmount,
-              currency: reward.currency,
-              metadata: referralWalletReversalMetadata(reward, 'CUSTOMER'),
-              reference: reward.sourceKey,
-            },
-            create: {
-              amount: -walletReversalAmount,
-              bookingId: reward.qualifyingBookingId,
-              currency: reward.currency,
-              customerProfileId: reward.walletOwnerCustomerProfileId,
-              metadata: referralWalletReversalMetadata(reward, 'CUSTOMER'),
-              referralRewardId: reward.id,
-              reference: reward.sourceKey,
-              sourceKey: ledgerSourceKey,
-              type: customerWalletLedgerType('CUSTOMER_REFERRAL_REVERSED'),
-            },
-            select: { id: true },
+        ? await upsertImmutableCustomerWalletLedger(tx, {
+            amount: -walletReversalAmount,
+            bookingId: reward.qualifyingBookingId,
+            currency: reward.currency,
+            customerProfileId: reward.walletOwnerCustomerProfileId,
+            metadata: referralWalletReversalMetadata(reward, 'CUSTOMER'),
+            referralRewardId: reward.id,
+            reference: reward.sourceKey,
+            sourceKey: ledgerSourceKey,
+            type: customerWalletLedgerType('CUSTOMER_REFERRAL_REVERSED'),
           })
-        : await tx.providerWalletLedgerEntry.upsert({
-            where: { sourceKey: ledgerSourceKey },
-            update: {
-              amount: -walletReversalAmount,
-              currency: reward.currency,
-              metadata: referralWalletReversalMetadata(reward, 'PARTNER'),
-              reference: reward.sourceKey,
-            },
-            create: {
-              amount: -walletReversalAmount,
-              bookingId: reward.qualifyingBookingId,
-              currency: reward.currency,
-              metadata: referralWalletReversalMetadata(reward, 'PARTNER'),
-              providerProfileId: reward.walletOwnerProviderProfileId as string,
-              reference: reward.sourceKey,
-              sourceKey: ledgerSourceKey,
-              type: providerWalletLedgerType('PARTNER_REFERRAL_REVERSED'),
-            },
-            select: { id: true },
+        : await upsertImmutableProviderWalletLedger(tx, {
+            amount: -walletReversalAmount,
+            bookingId: reward.qualifyingBookingId,
+            currency: reward.currency,
+            metadata: referralWalletReversalMetadata(reward, 'PARTNER'),
+            providerProfileId: reward.walletOwnerProviderProfileId as string,
+            reference: reward.sourceKey,
+            sourceKey: ledgerSourceKey,
+            type: providerWalletLedgerType('PARTNER_REFERRAL_REVERSED'),
           });
 
       await upsertReferralRewardJournal(tx, reward, ledger.id, 'wallet-reversal');
@@ -913,26 +943,26 @@ export class ReferralsService {
         where: { id: reward.id, status: ReferralRewardStatus.LOCKED },
         select: referralRewardSelect,
       });
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    });
   }
 
   async createRewardsForCompletedBooking(bookingId: string) {
-    const booking = await this.prisma.booking.findUnique({
-      where: { id: bookingId },
-      select: completedBookingReferralSelect,
+    return this.runSerializableTransaction(async (tx) => {
+      const booking = await tx.booking.findUnique({
+        where: { id: bookingId },
+        select: completedBookingReferralSelect,
+      });
+      if (!booking) {
+        throw new NotFoundException('Booking was not found');
+      }
+      if (booking.status !== BookingStatus.COMPLETED || !booking.earning || !booking.selectedProviderId) {
+        throw new BadRequestException('Referral rewards require a completed booking with settled earning data');
+      }
+      const completedBooking = booking as CompletedBookingReferralWithEarning;
+      const customerReward = await this.createCustomerRewardForCompletedBooking(tx, completedBooking);
+      const partnerReward = await this.createPartnerRewardForCompletedBooking(tx, completedBooking);
+      return { customerReward, partnerReward };
     });
-    if (!booking) {
-      throw new NotFoundException('Booking was not found');
-    }
-    if (booking.status !== BookingStatus.COMPLETED || !booking.earning || !booking.selectedProviderId) {
-      throw new BadRequestException('Referral rewards require a completed booking with settled earning data');
-    }
-    const completedBooking = booking as CompletedBookingReferralWithEarning;
-
-    const customerReward = await this.createCustomerRewardForCompletedBooking(completedBooking);
-    const partnerReward = await this.createPartnerRewardForCompletedBooking(completedBooking);
-
-    return { customerReward, partnerReward };
   }
 
   private async customerProfileForUser(userId: string) {
@@ -973,6 +1003,7 @@ export class ReferralsService {
       if (!reward) {
         throw new NotFoundException('Referral reward was not found');
       }
+      this.assertRewardIsNotFixture(reward);
       if (reward.status === CASHOUT_REQUESTED_REFERRAL_REWARD_STATUS) {
         return tx.referralReward.findUniqueOrThrow({
           where: { id: reward.id },
@@ -985,6 +1016,7 @@ export class ReferralsService {
       if (!reward.walletLedgerReference) {
         throw new BadRequestException('Referral cashout requires an existing wallet ledger reference');
       }
+      await this.lockRewardWallet(tx, reward);
       await this.assertRewardCashoutWalletBalance(tx, reward);
 
       const transition = await tx.referralReward.updateMany({
@@ -1020,24 +1052,60 @@ export class ReferralsService {
   ) {
     const balance = reward.walletOwnerCustomerProfileId
       ? await tx.customerWalletLedgerEntry.aggregate({
-          where: { customerProfileId: reward.walletOwnerCustomerProfileId },
+          where: {
+            customerProfileId: reward.walletOwnerCustomerProfileId,
+            currency: reward.currency,
+          },
           _sum: { amount: true },
         })
       : await tx.providerWalletLedgerEntry.aggregate({
-          where: { providerProfileId: reward.walletOwnerProviderProfileId as string },
+          where: {
+            providerProfileId: reward.walletOwnerProviderProfileId as string,
+            currency: reward.currency,
+          },
           _sum: { amount: true },
         });
     const availableBalance = balance._sum.amount ?? 0;
+    const reservedCashouts = await tx.referralReward.findMany({
+      where: {
+        id: { not: reward.id },
+        currency: reward.currency,
+        status: { in: [...RESERVED_REFERRAL_CASHOUT_STATUSES] },
+        ...(reward.walletOwnerCustomerProfileId
+          ? { walletOwnerCustomerProfileId: reward.walletOwnerCustomerProfileId }
+          : { walletOwnerProviderProfileId: reward.walletOwnerProviderProfileId as string }),
+      },
+      select: referralRewardCashoutReservationSelect,
+    });
+    const reservedCashoutAmount = reservedCashouts.reduce(
+      (total, reservedReward) => total + referralRewardNetWalletAmount(reservedReward),
+      0,
+    );
     const cashoutAmount = referralRewardNetWalletAmount(reward);
-    if (availableBalance < cashoutAmount) {
+    if (availableBalance - reservedCashoutAmount < cashoutAmount) {
       throw new BadRequestException('Wallet balance cannot cover referral cashout');
     }
   }
 
-  private async createCustomerRewardForCompletedBooking(booking: CompletedBookingReferralWithEarning) {
+  private async lockRewardWallet(
+    tx: Prisma.TransactionClient,
+    reward: ReferralRewardLedgerCandidate,
+  ) {
+    const lockKey = reward.walletOwnerCustomerProfileId
+      ? customerWalletBookingLockKey(reward.walletOwnerCustomerProfileId)
+      : `${reward.walletOwnerProviderProfileId as string}:${reward.currency}`;
+    await tx.$queryRaw(
+      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`,
+    );
+  }
+
+  private async createCustomerRewardForCompletedBooking(
+    tx: Prisma.TransactionClient,
+    booking: CompletedBookingReferralWithEarning,
+  ) {
     const [policy, attribution] = await Promise.all([
-      this.referralPolicyFor(ReferralAudience.CUSTOMER),
-      this.prisma.referralAttribution.findFirst({
+      this.referralPolicyFor(ReferralAudience.CUSTOMER, tx),
+      tx.referralAttribution.findFirst({
         where: {
           audience: ReferralAudience.CUSTOMER,
           referredCustomerProfileId: booking.customerProfileId,
@@ -1063,47 +1131,73 @@ export class ReferralsService {
     if (!baseRewardAmount) {
       return null;
     }
+    const referrerCustomerProfileId = attribution.referrerCustomerProfileId;
+    await this.lockReferralRewardScope(
+      tx,
+      ReferralAudience.CUSTOMER,
+      referrerCustomerProfileId,
+      attribution.id,
+    );
+    const sourceKey = referralRewardSourceKey(ReferralAudience.CUSTOMER, attribution.id, booking.id);
+    const existing = await tx.referralReward.findUnique({
+      where: { sourceKey },
+      select: referralRewardSelect,
+    });
+    if (existing) {
+      return existing;
+    }
     const [referrerSlotsAvailable, referredSlotsAvailable] = await Promise.all([
-      this.referrerRewardSlotsAvailable({
-        audience: ReferralAudience.CUSTOMER,
-        maxRewardedReferrals: policy.maxRewardedReferrals,
-        walletOwnerCustomerProfileId: attribution.referrerCustomerProfileId,
-      }),
-      this.referredRewardSlotsAvailable({
-        attributionId: attribution.id,
-        maxRewardsPerReferred: policy.maxRewardsPerReferred,
-      }),
+      this.referrerRewardSlotsAvailable(
+        {
+          audience: ReferralAudience.CUSTOMER,
+          maxRewardedReferrals: policy.maxRewardedReferrals,
+          walletOwnerCustomerProfileId: referrerCustomerProfileId,
+        },
+        tx,
+      ),
+      this.referredRewardSlotsAvailable(
+        {
+          attributionId: attribution.id,
+          maxRewardsPerReferred: policy.maxRewardsPerReferred,
+        },
+        tx,
+      ),
     ]);
     if (!referrerSlotsAvailable || !referredSlotsAvailable) {
       return null;
     }
-
     const amount = await this.rewardAmountAfterLifetimeCap(
       cappedRewardAmount(baseRewardAmount, policy.perRewardCapAmount),
       {
         audience: ReferralAudience.CUSTOMER,
         totalRewardCapAmount: policy.totalRewardCapAmount,
-        walletOwnerCustomerProfileId: attribution.referrerCustomerProfileId,
+        walletOwnerCustomerProfileId: referrerCustomerProfileId,
       },
+      tx,
     );
     if (amount <= 0) {
       return null;
     }
-
-    return this.createReferralReward({
-      amount,
-      attribution,
-      booking,
-      policy,
-      sourceKey: referralRewardSourceKey(ReferralAudience.CUSTOMER, attribution.id, booking.id),
-      walletOwnerCustomerProfileId: attribution.referrerCustomerProfileId,
-    });
+    return this.createReferralReward(
+      {
+        amount,
+        attribution,
+        booking,
+        policy,
+        sourceKey,
+        walletOwnerCustomerProfileId: referrerCustomerProfileId,
+      },
+      tx,
+    );
   }
 
-  private async createPartnerRewardForCompletedBooking(booking: CompletedBookingReferralWithEarning) {
+  private async createPartnerRewardForCompletedBooking(
+    tx: Prisma.TransactionClient,
+    booking: CompletedBookingReferralWithEarning,
+  ) {
     const [policy, attribution] = await Promise.all([
-      this.referralPolicyFor(ReferralAudience.PARTNER),
-      this.prisma.referralAttribution.findFirst({
+      this.referralPolicyFor(ReferralAudience.PARTNER, tx),
+      tx.referralAttribution.findFirst({
         where: {
           audience: ReferralAudience.PARTNER,
           referredProviderProfileId: booking.selectedProviderId,
@@ -1119,53 +1213,78 @@ export class ReferralsService {
     if (policy.rewardMode !== ReferralRewardMode.FIXED_AMOUNT || !policy.fixedRewardAmount) {
       return null;
     }
+    const fixedRewardAmount = policy.fixedRewardAmount;
+    const referredProviderProfileId = attribution.referredProviderProfileId;
+    const referrerProviderProfileId = attribution.referrerProviderProfileId;
 
+    await this.lockReferralRewardScope(
+      tx,
+      ReferralAudience.PARTNER,
+      referrerProviderProfileId,
+      attribution.id,
+    );
+    const sourceKey = referralRewardSourceKey(ReferralAudience.PARTNER, attribution.id, booking.id);
+    const existing = await tx.referralReward.findUnique({
+      where: { sourceKey },
+      select: referralRewardSelect,
+    });
+    if (existing) {
+      return existing;
+    }
     const [alreadyCompletedBookings, referrerSlotsAvailable, referredSlotsAvailable] = await Promise.all([
-      this.prisma.providerEarning.count({
+      tx.providerEarning.count({
         where: {
-          providerProfileId: attribution.referredProviderProfileId,
+          providerProfileId: referredProviderProfileId,
           bookingId: { not: booking.id },
           booking: { status: BookingStatus.COMPLETED },
         },
       }),
-      this.referrerRewardSlotsAvailable({
-        audience: ReferralAudience.PARTNER,
-        maxRewardedReferrals: policy.maxRewardedReferrals,
-        walletOwnerProviderProfileId: attribution.referrerProviderProfileId,
-      }),
-      this.referredRewardSlotsAvailable({
-        attributionId: attribution.id,
-        maxRewardsPerReferred: policy.maxRewardsPerReferred,
-      }),
+      this.referrerRewardSlotsAvailable(
+        {
+          audience: ReferralAudience.PARTNER,
+          maxRewardedReferrals: policy.maxRewardedReferrals,
+          walletOwnerProviderProfileId: referrerProviderProfileId,
+        },
+        tx,
+      ),
+      this.referredRewardSlotsAvailable(
+        {
+          attributionId: attribution.id,
+          maxRewardsPerReferred: policy.maxRewardsPerReferred,
+        },
+        tx,
+      ),
     ]);
     if (alreadyCompletedBookings > 0 || !referrerSlotsAvailable || !referredSlotsAvailable) {
       return null;
     }
-
     const amount = await this.rewardAmountAfterLifetimeCap(
-      cappedRewardAmount(policy.fixedRewardAmount, policy.perRewardCapAmount),
+      cappedRewardAmount(fixedRewardAmount, policy.perRewardCapAmount),
       {
         audience: ReferralAudience.PARTNER,
         totalRewardCapAmount: policy.totalRewardCapAmount,
-        walletOwnerProviderProfileId: attribution.referrerProviderProfileId,
+        walletOwnerProviderProfileId: referrerProviderProfileId,
       },
+      tx,
     );
     if (amount <= 0) {
       return null;
     }
-
-    return this.createReferralReward({
-      amount,
-      attribution,
-      booking,
-      policy,
-      sourceKey: referralRewardSourceKey(ReferralAudience.PARTNER, attribution.id, booking.id),
-      walletOwnerProviderProfileId: attribution.referrerProviderProfileId,
-    });
+    return this.createReferralReward(
+      {
+        amount,
+        attribution,
+        booking,
+        policy,
+        sourceKey,
+        walletOwnerProviderProfileId: referrerProviderProfileId,
+      },
+      tx,
+    );
   }
 
-  private async referralPolicyFor(audience: ReferralAudience) {
-    const policy = await this.prisma.referralPolicy.findUnique({
+  private async referralPolicyFor(audience: ReferralAudience, client: ReferralRewardClient = this.prisma) {
+    const policy = await client.referralPolicy.findUnique({
       where: { audience },
       select: referralPolicySelect,
     });
@@ -1186,12 +1305,12 @@ export class ReferralsService {
     maxRewardedReferrals: number | null;
     walletOwnerCustomerProfileId?: string;
     walletOwnerProviderProfileId?: string;
-  }) {
+  }, client: ReferralRewardClient = this.prisma) {
     if (!input.maxRewardedReferrals) {
       return true;
     }
 
-    const rewardCount = await this.prisma.referralReward.count({
+    const rewardCount = await client.referralReward.count({
       where: {
         status: { notIn: [ReferralRewardStatus.CANCELLED, ReferralRewardStatus.REVERSED] },
         walletOwnerCustomerProfileId: input.walletOwnerCustomerProfileId,
@@ -1206,12 +1325,12 @@ export class ReferralsService {
   private async referredRewardSlotsAvailable(input: {
     attributionId: string;
     maxRewardsPerReferred: number | null;
-  }) {
+  }, client: ReferralRewardClient = this.prisma) {
     if (!input.maxRewardsPerReferred) {
       return true;
     }
 
-    const rewardCount = await this.prisma.referralReward.count({
+    const rewardCount = await client.referralReward.count({
       where: {
         attributionId: input.attributionId,
         status: { notIn: [ReferralRewardStatus.CANCELLED, ReferralRewardStatus.REVERSED] },
@@ -1229,12 +1348,13 @@ export class ReferralsService {
       walletOwnerCustomerProfileId?: string;
       walletOwnerProviderProfileId?: string;
     },
+    client: ReferralRewardClient = this.prisma,
   ) {
     if (!input.totalRewardCapAmount) {
       return amount;
     }
 
-    const existingRewards = await this.prisma.referralReward.aggregate({
+    const existingRewards = await client.referralReward.aggregate({
       where: {
         status: { notIn: [ReferralRewardStatus.CANCELLED, ReferralRewardStatus.REVERSED] },
         walletOwnerCustomerProfileId: input.walletOwnerCustomerProfileId,
@@ -1256,8 +1376,8 @@ export class ReferralsService {
     sourceKey: string;
     walletOwnerCustomerProfileId?: string;
     walletOwnerProviderProfileId?: string;
-  }): Promise<ReferralRewardRecord> {
-    const existing = await this.prisma.referralReward.findUnique({
+  }, client: ReferralRewardClient): Promise<ReferralRewardRecord> {
+    const existing = await client.referralReward.findUnique({
       where: { sourceKey: input.sourceKey },
       select: referralRewardSelect,
     });
@@ -1270,7 +1390,7 @@ export class ReferralsService {
       input.policy,
     );
 
-    return this.prisma.referralReward.create({
+    return client.referralReward.create({
       data: {
         amount: input.amount,
         attributionId: input.attribution.id,
@@ -1303,12 +1423,52 @@ export class ReferralsService {
     });
   }
 
+  private async lockReferralRewardScope(
+    tx: Prisma.TransactionClient,
+    audience: ReferralAudience,
+    walletOwnerId: string,
+    attributionId: string,
+  ) {
+    const lockKeys = [
+      `referral-reward:${audience}:owner:${walletOwnerId}`,
+      `referral-reward:${audience}:attribution:${attributionId}`,
+    ].sort();
+    for (const lockKey of lockKeys) {
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`,
+      );
+    }
+  }
+
+  private async runSerializableTransaction<T>(
+    operation: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        return await this.prisma.$transaction(operation, {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        });
+      } catch (error) {
+        const canRetry =
+          error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034';
+        if (!canRetry) {
+          throw error;
+        }
+        if (attempt === 2) {
+          throw new ConflictException('Referral reward changed concurrently; reload and try again');
+        }
+      }
+    }
+
+    throw new ConflictException('Referral reward changed concurrently; reload and try again');
+  }
+
   private async updateRewardCandidateStatus(
     rewardId: string,
     status: ReferralRewardStatus,
     expected: ReferralRewardExpectedState,
   ) {
-    return this.prisma.$transaction(async (tx) => {
+    return this.runSerializableTransaction(async (tx) => {
       const reward = await tx.referralReward.findUnique({
         where: { id: rewardId },
         select: referralRewardCandidateStateSelect,
@@ -1317,6 +1477,7 @@ export class ReferralsService {
         throw new NotFoundException('Referral reward was not found');
       }
       this.assertExpectedRewardState(reward, expected);
+      this.assertRewardIsNotFixture(reward);
       this.assertRewardCandidateCanChangeStatus(reward, status);
       const transition = await tx.referralReward.updateMany({
         data: { status },
@@ -1327,13 +1488,13 @@ export class ReferralsService {
         },
       });
       if (transition.count !== 1) {
-        throw new ConflictException('Referral reward changed after this decision was loaded');
+        throw this.rewardStateChangedError();
       }
       return tx.referralReward.findUniqueOrThrow({
         where: { id: rewardId },
         select: referralRewardSelect,
       });
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    });
   }
 
   private async updateRewardLifecycleStatus(
@@ -1345,7 +1506,7 @@ export class ReferralsService {
     },
     expected: ReferralRewardExpectedState,
   ) {
-    return this.prisma.$transaction(async (tx) => {
+    return this.runSerializableTransaction(async (tx) => {
       const reward = await tx.referralReward.findUnique({
         where: { id: rewardId },
         select: referralRewardCandidateStateSelect,
@@ -1354,6 +1515,7 @@ export class ReferralsService {
         throw new NotFoundException('Referral reward was not found');
       }
       this.assertExpectedRewardState(reward, expected);
+      this.assertRewardIsNotFixture(reward);
       const allowedStatuses = options.allowedStatuses ? new Set(options.allowedStatuses) : null;
       const blockedStatuses = options.blockedStatuses ? new Set(options.blockedStatuses) : null;
 
@@ -1372,13 +1534,13 @@ export class ReferralsService {
         },
       });
       if (transition.count !== 1) {
-        throw new ConflictException('Referral reward changed after this decision was loaded');
+        throw this.rewardStateChangedError();
       }
       return tx.referralReward.findUniqueOrThrow({
         where: { id: rewardId },
         select: referralRewardSelect,
       });
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    });
   }
 
   private assertRewardCandidateCanChangeStatus(
@@ -1414,62 +1576,11 @@ export class ReferralsService {
     tx: Prisma.TransactionClient,
     reward: ReferralRewardCreditCandidate,
   ) {
-    if (reward.walletLedgerReference) {
-      throw new BadRequestException('Referral reward already has a wallet ledger reference');
-    }
     if (reward.status !== ReferralRewardStatus.AVAILABLE) {
       throw new BadRequestException('Only available referral rewards can be credited to wallets');
     }
-    if (!reward.walletOwnerCustomerProfileId && !reward.walletOwnerProviderProfileId) {
-      throw new BadRequestException('Referral reward does not have a wallet owner');
-    }
-    if (!reward.availableAt || reward.availableAt.getTime() > Date.now()) {
-      throw new BadRequestException('Referral reward hold period has not matured');
-    }
-    if (
-      reward.attribution.status !== ReferralAttributionStatus.REGISTERED &&
-      reward.attribution.status !== ReferralAttributionStatus.QUALIFIED
-    ) {
-      throw new BadRequestException('Referral attribution is no longer eligible for wallet credit');
-    }
-    if (reward.attribution.fraudReviewStatus !== ReferralFraudReviewStatus.CLEAR) {
-      throw new BadRequestException('Referral integrity review must be clear before wallet credit');
-    }
-    const expectedWalletOwner =
-      reward.attribution.audience === ReferralAudience.CUSTOMER
-        ? reward.attribution.referrerCustomerProfileId
-        : reward.attribution.referrerProviderProfileId;
-    const actualWalletOwner = reward.walletOwnerCustomerProfileId ?? reward.walletOwnerProviderProfileId;
-    if (!expectedWalletOwner || expectedWalletOwner !== actualWalletOwner) {
-      throw new BadRequestException('Referral reward wallet owner does not match its attribution');
-    }
-    const booking = reward.qualifyingBooking;
-    if (!booking || booking.status !== BookingStatus.COMPLETED || !booking.earning || !booking.selectedProviderId) {
-      throw new BadRequestException('Qualifying booking is not completed with settled earning data');
-    }
-    if (
-      booking.payment &&
-      booking.payment.status !== PaymentStatus.CAPTURED &&
-      booking.payment.status !== PaymentStatus.RELEASED
-    ) {
-      throw new BadRequestException('Qualifying booking payment is not captured or released');
-    }
-    if (booking.refunds.some((refund) => !['REJECTED', 'CANCELLED'].includes(refund.status.toUpperCase()))) {
-      throw new BadRequestException('Qualifying booking has an active or completed refund');
-    }
-    const settlement = booking.settlementSnapshot;
-    if (
-      !settlement ||
-      settlement.settlementStatus !== BookingSettlementStatus.POSTED ||
-      settlement.reversedById ||
-      settlement.customerProfileId !== booking.customerProfileId ||
-      settlement.providerProfileId !== booking.selectedProviderId
-    ) {
-      throw new BadRequestException('Qualifying booking settlement is missing, reversed, or inconsistent');
-    }
-    if (!validReferralRewardCalculationSnapshot(reward)) {
-      throw new BadRequestException('Referral reward policy snapshot is missing or inconsistent');
-    }
+    this.assertRewardIsNotFixture(reward);
+    this.assertRewardEvidence(reward);
     const ledgerSourceKey = referralWalletCreditSourceKey(reward.id);
     const existingLedger = reward.walletOwnerCustomerProfileId
       ? await tx.customerWalletLedgerEntry.findUnique({ where: { sourceKey: ledgerSourceKey }, select: { id: true } })
@@ -1487,8 +1598,33 @@ export class ReferralsService {
       reward.status !== expected.expectedStatus ||
       reward.updatedAt.toISOString() !== new Date(expected.expectedUpdatedAt).toISOString()
     ) {
-      throw new ConflictException('Referral reward changed after this decision was loaded');
+      throw this.rewardStateChangedError();
     }
+  }
+
+  private assertRewardEvidence(reward: ReferralRewardCreditCandidate) {
+    const evidenceBlocker = referralRewardEvidenceBlocker(reward);
+    if (evidenceBlocker) {
+      throw new ConflictException(evidenceBlocker);
+    }
+  }
+
+  private assertRewardIsNotFixture(
+    reward: Pick<ReferralRewardCreditCandidate, 'metadata' | 'attribution'> | ReferralRewardCandidateState,
+  ) {
+    if (isReferralRewardFixture(reward)) {
+      throw new ConflictException({
+        code: 'REFERRAL_FIXTURE_MUTATION_BLOCKED',
+        message: 'Test fixture rewards cannot change wallet or reward state.',
+      });
+    }
+  }
+
+  private rewardStateChangedError() {
+    return new ConflictException({
+      code: 'REWARD_STATE_CHANGED',
+      message: 'Referral reward changed after this decision was loaded.',
+    });
   }
 
   private async claimRewardForWalletMutation(
@@ -1769,25 +1905,6 @@ function referralRewardAvailableAt(referenceDate: Date, holdPeriodDays: number) 
   return new Date(referenceDate.getTime() + Math.max(holdPeriodDays, 0) * 24 * 60 * 60 * 1000);
 }
 
-function validReferralRewardCalculationSnapshot(reward: ReferralRewardCreditCandidate) {
-  const snapshot = reward.calculationSnapshot;
-  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
-    return false;
-  }
-  const audience = snapshot.audience;
-  const bookingId = snapshot.bookingId;
-  const rewardAmountSnapshot = snapshot.rewardAmountSnapshot;
-  const rewardMode = snapshot.rewardMode;
-  return (
-    audience === reward.attribution.audience &&
-    typeof bookingId === 'string' &&
-    bookingId === reward.qualifyingBookingId &&
-    typeof rewardAmountSnapshot === 'number' &&
-    rewardAmountSnapshot === reward.amount &&
-    (rewardMode === ReferralRewardMode.COMMISSION_PERCENT || rewardMode === ReferralRewardMode.FIXED_AMOUNT)
-  );
-}
-
 function referralWalletCreditSourceKey(rewardId: string) {
   return `referral:wallet-credit:${rewardId}`;
 }
@@ -1868,6 +1985,40 @@ function referralRewardWithholding(reward: ReferralRewardLedgerCandidate) {
 
 function referralRewardNetWalletAmount(reward: ReferralRewardLedgerCandidate) {
   return referralRewardWithholding(reward).netWalletAmount;
+}
+
+async function upsertImmutableCustomerWalletLedger(
+  tx: Prisma.TransactionClient,
+  data: Prisma.CustomerWalletLedgerEntryUncheckedCreateInput,
+) {
+  const ledger = await tx.customerWalletLedgerEntry.upsert({
+    where: { sourceKey: data.sourceKey },
+    update: {},
+    create: data,
+  });
+  if (!immutableFinancialReplayMatches(ledger, data, CUSTOMER_WALLET_LEDGER_REPLAY_FIELDS)) {
+    throw new ConflictException(
+      'A customer wallet entry already exists with different financial evidence.',
+    );
+  }
+  return ledger;
+}
+
+async function upsertImmutableProviderWalletLedger(
+  tx: Prisma.TransactionClient,
+  data: Prisma.ProviderWalletLedgerEntryUncheckedCreateInput,
+) {
+  const ledger = await tx.providerWalletLedgerEntry.upsert({
+    where: { sourceKey: data.sourceKey },
+    update: {},
+    create: data,
+  });
+  if (!immutableFinancialReplayMatches(ledger, data, PROVIDER_WALLET_LEDGER_REPLAY_FIELDS)) {
+    throw new ConflictException(
+      'A Partner wallet entry already exists with different financial evidence.',
+    );
+  }
+  return ledger;
 }
 
 async function upsertReferralRewardJournal(
@@ -2009,13 +2160,7 @@ async function upsertReferralRewardJournal(
 
   await tx.accountingJournalBatch.upsert({
     where: { sourceKey },
-    update: {
-      ...batchData,
-      entries: {
-        deleteMany: {},
-        create: entries,
-      },
-    },
+    update: {},
     create: {
       ...batchData,
       sourceKey,

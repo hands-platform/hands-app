@@ -66,6 +66,7 @@ grant select on table
   public.providers,
   public.services,
   public.provider_services,
-  public.reviews,
   public.coupons
 to anon;
+
+revoke select on table public.reviews from anon;

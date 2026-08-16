@@ -6,7 +6,7 @@ import { AdminDesktopOnlyGate } from '../components/admin-desktop-only-gate';
 import { AdminOperatorAccessGate } from '../components/admin-operator-access-gate';
 import { AdminRootShell } from '../components/admin-root-shell';
 import { AdminThemeScript } from '../components/admin-theme-script';
-import { getCurrentAdminOperatorAccess } from '../lib/admin-operator-access';
+import { getCurrentAdminOperatorAccessResult } from '../lib/admin-operator-access';
 import { adminNavSectionsForAccess } from '../lib/admin-navigation';
 
 export const metadata: Metadata = {
@@ -17,7 +17,8 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const operatorAccess = await getCurrentAdminOperatorAccess();
+  const operatorAccessResult = await getCurrentAdminOperatorAccessResult();
+  const operatorAccess = operatorAccessResult.data;
   const navSections = adminNavSectionsForAccess(operatorAccess);
 
   return (
@@ -28,7 +29,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body>
         <AdminDesktopOnlyGate>
           <AdminRootShell sections={navSections}>
-            <AdminOperatorAccessGate operatorAccess={operatorAccess}>{children}</AdminOperatorAccessGate>
+            <AdminOperatorAccessGate operatorAccess={operatorAccess} operatorAccessAvailable={operatorAccessResult.ok}>{children}</AdminOperatorAccessGate>
           </AdminRootShell>
         </AdminDesktopOnlyGate>
       </body>

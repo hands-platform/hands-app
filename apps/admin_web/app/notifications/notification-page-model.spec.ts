@@ -25,7 +25,7 @@ import {
   notificationFilterDescription,
   notificationFilterLinks,
   notificationFinanceAgeLinks,
-  notificationDeliveryHealthTotals,
+  notificationDeliveryHealthState,
   notificationDateRangeLabel,
   notificationDateRangeLinks,
   notificationReviewRunbook,
@@ -36,7 +36,7 @@ import { buildFcmPushSmokeCommand } from './fcm-smoke-commands';
 
 describe('notification page model', () => {
   it('keeps current clear and historical debt independent', () => {
-    expect(notificationDeliveryHealthTotals({
+    expect(notificationDeliveryHealthState({
       currentDeliveryGaps: 0,
       currentFailed: 0,
       currentNoPushPathRecipientCount: 0,
@@ -49,11 +49,11 @@ describe('notification page model', () => {
       generatedAt: '2026-08-10T00:00:00.000Z',
       openDeliveryIncidentCount: 0,
       totalCount: 0,
-    })).toEqual({ current: 0, history: 15 });
+    })).toEqual({ current: 'clear', history: 'attention' });
   });
 
   it('does not turn a partial health summary into zero debt', () => {
-    expect(notificationDeliveryHealthTotals({
+    expect(notificationDeliveryHealthState({
       currentDeliveryGaps: 0,
       currentFailed: 0,
       currentNoPushPathRecipientCount: 0,
@@ -61,8 +61,11 @@ describe('notification page model', () => {
       generatedAt: '2026-08-10T00:00:00.000Z',
       openDeliveryIncidentCount: 0,
       totalCount: 0,
-    })).toEqual({ current: 0, history: null });
-    expect(notificationDeliveryHealthTotals(null)).toEqual({ current: null, history: null });
+    })).toEqual({ current: 'clear', history: 'unavailable' });
+    expect(notificationDeliveryHealthState(null)).toEqual({
+      current: 'unavailable',
+      history: 'unavailable',
+    });
   });
 
   it('preserves one exact failure group through scope and pagination URLs', () => {
@@ -368,6 +371,7 @@ describe('notification page model', () => {
         enforced: true,
         key: 'notification.partner_alert_channel',
         label: 'Partner alert routing',
+        lifecycle: 'live',
         options: [{ label: 'In-app first', tradeoff: 'No FCM push by default.', value: 'in_app_first' }],
         value: 'in_app_first',
       },
@@ -395,6 +399,7 @@ describe('notification page model', () => {
           enforced: true,
           key: 'notification.partner_alert_channel',
           label: 'Partner alert routing',
+          lifecycle: 'live',
           options: [{ label: 'In-app now, FCM push later', tradeoff: 'Mobile push is deferred.', value: 'in_app_now' }],
           value: 'in_app_now',
         },
@@ -411,6 +416,7 @@ describe('notification page model', () => {
           enforced: true,
           key: 'notification.partner_alert_channel',
           label: 'Partner alert routing',
+          lifecycle: 'live',
           value: 'ONESIGNAL_FOR_ALL_BOOKINGS',
         },
       ],
@@ -458,6 +464,7 @@ describe('notification page model', () => {
           enforced: true,
           key: 'notification.partner_alert_channel',
           label: 'Partner alert routing',
+          lifecycle: 'live',
           value: 'IN_APP_WITH_PUSH_LATER',
         },
       ],
@@ -548,6 +555,7 @@ describe('notification page model', () => {
             enforced: true,
             key: 'notification.partner_alert_channel',
             label: 'Partner alert routing',
+            lifecycle: 'live',
             value: 'FCM_FOR_ALL_BOOKINGS',
           },
         ],
@@ -1668,6 +1676,30 @@ describe('notification page model', () => {
     });
   });
 
+  it('keeps the selected data scope in exact delivery failure group links', () => {
+    const rows = buildNotificationTableRows([
+      notification({
+        data: {
+          deliveryIncidentAffectedUserCount: 3,
+          deliveryIncidentFailureCode: 'INVALID_ARGUMENT',
+          deliveryIncidentFirstOccurredAt: '2026-08-01T10:00:00.000Z',
+          deliveryIncidentHistory: true,
+          deliveryIncidentKey: 'FCM_HTTP_V1:INVALID_ARGUMENT:2026-08-01T10:00:00.000Z',
+          deliveryIncidentLastOccurredAt: '2026-08-01T10:10:00.000Z',
+          deliveryIncidentNotificationCount: 96,
+          deliveryIncidentProvider: 'FCM_HTTP_V1',
+        },
+        deliveries: [],
+        id: 'notification-unknown-failure-group',
+        type: 'booking.matched',
+      }),
+    ], { dataScope: 'unknown' });
+
+    expect(rows[0]?.incident?.href).toBe(
+      '/notifications?issue=failed&scope=history&failureProvider=FCM_HTTP_V1&failureCode=INVALID_ARGUMENT&dataScope=unknown',
+    );
+  });
+
   it('labels API-stored FCM token failure metadata for failed queue review', () => {
     const rows = buildNotificationTableRows([
       notification({
@@ -1821,9 +1853,10 @@ describe('notification page model', () => {
       type: 'admin.system.background_job.failed',
     })])[0];
 
-    expect(incidentRow?.actions.find((action) => action.label === 'Open incident')).toMatchObject({
+    expect(incidentRow?.primaryAction).toMatchObject({
       href: '/background-jobs/incidents/incident-open-1',
       kind: 'link',
+      label: 'Open incident',
     });
     expect(externalRow?.actions.some((action) => (
       action.label === 'Open incident' || action.label === 'Open destination'
@@ -1886,11 +1919,6 @@ describe('notification page model', () => {
     });
     expect(row?.actions).toEqual(expect.arrayContaining([
       expect.objectContaining({
-        href: '/finance-tax/bank-reconciliation/bank-review-1',
-        label: 'Open Finance review',
-        tone: 'warning',
-      }),
-      expect.objectContaining({
         href: expect.stringContaining('confirm=assign-finance-review'),
         label: 'Assign to me',
         tone: 'warning',
@@ -1902,8 +1930,8 @@ describe('notification page model', () => {
       }),
     ]));
     expect(row?.primaryAction).toMatchObject({
-      href: '/audit-log?bucket=Notification&q=notification-finance-review&range=all',
-      label: 'Audit trail',
+      href: '/finance-tax/bank-reconciliation/bank-review-1',
+      label: 'Open Finance review',
     });
     expect(row?.actions.some((action) => action.label === 'Retry')).toBe(false);
     expect(buildNotificationTableRows([notifications[1]!])[0]).toMatchObject({
@@ -2018,6 +2046,9 @@ describe('notification page model', () => {
     expect(defaultSummaryUrl.searchParams.get('review')).toBe('delivery-incidents');
     expect(defaultSummaryUrl.searchParams.get('from')).toBeNull();
     expect(defaultSummaryUrl.searchParams.get('to')).toBeNull();
+    expect(buildNotificationSummaryApiHref({ mode: 'action', range: 'all', review: 'all' })).toBe(
+      '/admin/notifications/summary?viewMode=action',
+    );
     expect(buildNotificationPolicyApiHref()).toBe(
       '/admin/operational-policy?keys=notification.partner_alert_channel',
     );
@@ -2234,8 +2265,9 @@ describe('notification page model', () => {
       href: '/notifications?confirm=review-legacy&notificationId=legacy-system-alert',
       tone: 'warning',
     });
-    expect(row?.actions.find((action) => action.label === 'Open job evidence')).toMatchObject({
+    expect(row?.primaryAction).toMatchObject({
       href: '/background-jobs?jobId=repeat%3Abackground-job-failure-monitor%3A1783980324023&queue=bank-statement-escalation&range=ALL&review=ALL',
+      label: 'Open job evidence',
     });
     expect(row?.actions.some((action) => action.label === 'Open destination')).toBe(false);
     expect(row?.actions.some((action) => action.label === 'Retry')).toBe(false);

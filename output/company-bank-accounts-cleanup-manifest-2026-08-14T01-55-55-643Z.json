@@ -1,0 +1,477 @@
+{
+  "contractVersion": 1,
+  "generatedAt": "2026-08-14T01:55:55.643Z",
+  "destructiveApplyPerformed": false,
+  "counts": {
+    "manual-review": 13
+  },
+  "accounts": [
+    {
+      "id": "seed-finance-smoke-bank-account",
+      "name": "HANDS Finance Smoke Account",
+      "bankName": "Vietcombank",
+      "status": "ACTIVE",
+      "createdAt": "2026-07-01T06:15:48.721Z",
+      "metadata": {
+        "smokeFixture": true
+      },
+      "pendingApproval": false,
+      "references": {
+        "transactions": 1,
+        "reconciliationMatches": 1,
+        "importBatches": 0,
+        "payments": 0,
+        "refunds": 0,
+        "payouts": 0,
+        "auditEvents": 0
+      },
+      "unsupportedDirectReferences": [
+        "importBatches",
+        "payments",
+        "refunds",
+        "payouts"
+      ],
+      "decision": {
+        "action": "manual-review",
+        "reason": "Legacy fixture signal has no explicit provenance; do not delete by name."
+      }
+    },
+    {
+      "id": "cmr3am1v90000vyh8ih0r8kby",
+      "name": "HANDS Smoke VND Account",
+      "bankName": "Smoke Bank",
+      "status": "ACTIVE",
+      "createdAt": "2026-07-02T09:19:16.726Z",
+      "metadata": {
+        "smoke": true
+      },
+      "pendingApproval": false,
+      "references": {
+        "transactions": 56,
+        "reconciliationMatches": 44,
+        "importBatches": 0,
+        "payments": 0,
+        "refunds": 0,
+        "payouts": 0,
+        "auditEvents": 0
+      },
+      "unsupportedDirectReferences": [
+        "importBatches",
+        "payments",
+        "refunds",
+        "payouts"
+      ],
+      "decision": {
+        "action": "manual-review",
+        "reason": "Legacy fixture signal has no explicit provenance; do not delete by name."
+      }
+    },
+    {
+      "id": "cms50glxc02o2vyswgt6jeunp",
+      "name": "Smoke staged account 1785264621303 approved",
+      "bankName": "Smoke lifecycle bank 1785264621303",
+      "status": "INACTIVE",
+      "createdAt": "2026-07-28T18:50:21.313Z",
+      "metadata": {
+        "lastRequestId": "310935f1-dea4-49b0-bda0-60d0adcf8803",
+        "createdByAdminId": "cmpb9dvr80005vyqsskqoeo0v",
+        "lastRequestReason": "Archive completed staged account lifecycle smoke evidence.",
+        "lastApprovalReason": "Verified the staged account archive request.",
+        "lastApprovalAdminId": "cmr39eqt60000vy8w8dgyx6wi",
+        "lastApprovalDecision": "APPROVE",
+        "lastApprovalDecisionAt": "2026-07-28T18:50:21.392Z",
+        "lastRequestedByAdminId": "cmpb9dvr80005vyqsskqoeo0v"
+      },
+      "pendingApproval": false,
+      "references": {
+        "transactions": 0,
+        "reconciliationMatches": 0,
+        "importBatches": 0,
+        "payments": 0,
+        "refunds": 0,
+        "payouts": 0,
+        "auditEvents": 6
+      },
+      "unsupportedDirectReferences": [
+        "importBatches",
+        "payments",
+        "refunds",
+        "payouts"
+      ],
+      "decision": {
+        "action": "manual-review",
+        "reason": "Legacy fixture signal has no explicit provenance; do not delete by name."
+      }
+    },
+    {
+      "id": "cms515y7t02o2vyu89kp4exc0",
+      "name": "Smoke staged account 1785265803634 approved",
+      "bankName": "Smoke lifecycle bank 1785265803634",
+      "status": "INACTIVE",
+      "createdAt": "2026-07-28T19:10:03.642Z",
+      "metadata": {
+        "lastRequestId": "7c2c42c3-b721-419c-9e6f-180b648b7f2f",
+        "createdByAdminId": "cmpb9dvr80005vyqsskqoeo0v",
+        "lastRequestReason": "Archive completed staged account lifecycle smoke evidence.",
+        "lastApprovalReason": "Verified the staged account archive request.",
+        "lastApprovalAdminId": "cmr39eqt60000vy8w8dgyx6wi",
+        "lastApprovalDecision": "APPROVE",
+        "lastApprovalDecisionAt": "2026-07-28T19:10:03.919Z",
+        "lastRequestedByAdminId": "cmpb9dvr80005vyqsskqoeo0v"
+      },
+      "pendingApproval": false,
+      "references": {
+        "transactions": 0,
+        "reconciliationMatches": 0,
+        "importBatches": 0,
+        "payments": 0,
+        "refunds": 0,
+        "payouts": 0,
+        "auditEvents": 6
+      },
+      "unsupportedDirectReferences": [
+        "importBatches",
+        "payments",
+        "refunds",
+        "payouts"
+      ],
+      "decision": {
+        "action": "manual-review",
+        "reason": "Legacy fixture signal has no explicit provenance; do not delete by name."
+      }
+    },
+    {
+      "id": "cms51xn3p02o4vy5w1uhhttox",
+      "name": "Smoke staged account 1785267095596 approved",
+      "bankName": "Smoke lifecycle bank 1785267095596",
+      "status": "INACTIVE",
+      "createdAt": "2026-07-28T19:31:35.605Z",
+      "metadata": {
+        "lastRequestId": "bcd0fc1b-0331-462c-b522-e8b4c33fe770",
+        "createdByAdminId": "cmpb9dvr80005vyqsskqoeo0v",
+        "lastRequestReason": "Archive completed staged account lifecycle smoke evidence.",
+        "lastApprovalReason": "Verified the staged account archive request.",
+        "lastApprovalAdminId": "cmr39eqt60000vy8w8dgyx6wi",
+        "lastApprovalDecision": "APPROVE",
+        "lastApprovalDecisionAt": "2026-07-28T19:31:36.108Z",
+        "lastRequestedByAdminId": "cmpb9dvr80005vyqsskqoeo0v"
+      },
+      "pendingApproval": false,
+      "references": {
+        "transactions": 0,
+        "reconciliationMatches": 0,
+        "importBatches": 0,
+        "payments": 0,
+        "refunds": 0,
+        "payouts": 0,
+        "auditEvents": 6
+      },
+      "unsupportedDirectReferences": [
+        "importBatches",
+        "payments",
+        "refunds",
+        "payouts"
+      ],
+      "decision": {
+        "action": "manual-review",
+        "reason": "Legacy fixture signal has no explicit provenance; do not delete by name."
+      }
+    },
+    {
+      "id": "cmsd5jv4f07qnvyygmjhgve60",
+      "name": "Smoke staged account 1785756900677 approved",
+      "bankName": "Smoke lifecycle bank 1785756900677",
+      "status": "INACTIVE",
+      "createdAt": "2026-08-03T11:35:00.688Z",
+      "metadata": {
+        "lastRequestId": "f07b77ef-e418-454b-8457-1a7e7388813c",
+        "createdByAdminId": "cmpb9dvr80005vyqsskqoeo0v",
+        "lastRequestReason": "Archive completed staged account lifecycle smoke evidence.",
+        "lastApprovalReason": "Verified the staged account archive request.",
+        "lastApprovalAdminId": "cmr39eqt60000vy8w8dgyx6wi",
+        "lastApprovalDecision": "APPROVE",
+        "lastApprovalDecisionAt": "2026-08-03T11:35:01.198Z",
+        "lastRequestedByAdminId": "cmpb9dvr80005vyqsskqoeo0v"
+      },
+      "pendingApproval": false,
+      "references": {
+        "transactions": 0,
+        "reconciliationMatches": 0,
+        "importBatches": 0,
+        "payments": 0,
+        "refunds": 0,
+        "payouts": 0,
+        "auditEvents": 6
+      },
+      "unsupportedDirectReferences": [
+        "importBatches",
+        "payments",
+        "refunds",
+        "payouts"
+      ],
+      "decision": {
+        "action": "manual-review",
+        "reason": "Legacy fixture signal has no explicit provenance; do not delete by name."
+      }
+    },
+    {
+      "id": "cmsd5m8uo0adgvyygouncv9oh",
+      "name": "Smoke staged account 1785757011782 approved",
+      "bankName": "Smoke lifecycle bank 1785757011782",
+      "status": "INACTIVE",
+      "createdAt": "2026-08-03T11:36:51.792Z",
+      "metadata": {
+        "lastRequestId": "dcf2e12a-0b96-46a9-8b19-31ef8ab4336b",
+        "createdByAdminId": "cmpb9dvr80005vyqsskqoeo0v",
+        "lastRequestReason": "Archive completed staged account lifecycle smoke evidence.",
+        "lastApprovalReason": "Verified the staged account archive request.",
+        "lastApprovalAdminId": "cmr39eqt60000vy8w8dgyx6wi",
+        "lastApprovalDecision": "APPROVE",
+        "lastApprovalDecisionAt": "2026-08-03T11:36:52.231Z",
+        "lastRequestedByAdminId": "cmpb9dvr80005vyqsskqoeo0v"
+      },
+      "pendingApproval": false,
+      "references": {
+        "transactions": 0,
+        "reconciliationMatches": 0,
+        "importBatches": 0,
+        "payments": 0,
+        "refunds": 0,
+        "payouts": 0,
+        "auditEvents": 6
+      },
+      "unsupportedDirectReferences": [
+        "importBatches",
+        "payments",
+        "refunds",
+        "payouts"
+      ],
+      "decision": {
+        "action": "manual-review",
+        "reason": "Legacy fixture signal has no explicit provenance; do not delete by name."
+      }
+    },
+    {
+      "id": "cmsd5ow1x0d5svyygr9eexe8k",
+      "name": "Smoke staged account 1785757135162 approved",
+      "bankName": "Smoke lifecycle bank 1785757135162",
+      "status": "INACTIVE",
+      "createdAt": "2026-08-03T11:38:55.174Z",
+      "metadata": {
+        "lastRequestId": "6bf57dc1-1f9c-4da6-a6ad-f36ab5c9733d",
+        "createdByAdminId": "cmpb9dvr80005vyqsskqoeo0v",
+        "lastRequestReason": "Archive completed staged account lifecycle smoke evidence.",
+        "lastApprovalReason": "Verified the staged account archive request.",
+        "lastApprovalAdminId": "cmr39eqt60000vy8w8dgyx6wi",
+        "lastApprovalDecision": "APPROVE",
+        "lastApprovalDecisionAt": "2026-08-03T11:38:55.632Z",
+        "lastRequestedByAdminId": "cmpb9dvr80005vyqsskqoeo0v"
+      },
+      "pendingApproval": false,
+      "references": {
+        "transactions": 0,
+        "reconciliationMatches": 0,
+        "importBatches": 0,
+        "payments": 0,
+        "refunds": 0,
+        "payouts": 0,
+        "auditEvents": 6
+      },
+      "unsupportedDirectReferences": [
+        "importBatches",
+        "payments",
+        "refunds",
+        "payouts"
+      ],
+      "decision": {
+        "action": "manual-review",
+        "reason": "Legacy fixture signal has no explicit provenance; do not delete by name."
+      }
+    },
+    {
+      "id": "cmsd6gfxg02lfvyqkwswldu7f",
+      "name": "Smoke staged account 1785758420633 approved",
+      "bankName": "Smoke lifecycle bank 1785758420633",
+      "status": "INACTIVE",
+      "createdAt": "2026-08-03T12:00:20.644Z",
+      "metadata": {
+        "lastRequestId": "a9dc16da-3741-41dc-ac39-f6dbcc5d5982",
+        "createdByAdminId": "cmpb9dvr80005vyqsskqoeo0v",
+        "lastRequestReason": "Archive completed staged account lifecycle smoke evidence.",
+        "lastApprovalReason": "Verified the staged account archive request.",
+        "lastApprovalAdminId": "cmr39eqt60000vy8w8dgyx6wi",
+        "lastApprovalDecision": "APPROVE",
+        "lastApprovalDecisionAt": "2026-08-03T12:00:21.151Z",
+        "lastRequestedByAdminId": "cmpb9dvr80005vyqsskqoeo0v"
+      },
+      "pendingApproval": false,
+      "references": {
+        "transactions": 0,
+        "reconciliationMatches": 0,
+        "importBatches": 0,
+        "payments": 0,
+        "refunds": 0,
+        "payouts": 0,
+        "auditEvents": 6
+      },
+      "unsupportedDirectReferences": [
+        "importBatches",
+        "payments",
+        "refunds",
+        "payouts"
+      ],
+      "decision": {
+        "action": "manual-review",
+        "reason": "Legacy fixture signal has no explicit provenance; do not delete by name."
+      }
+    },
+    {
+      "id": "cmsd7cp9e02llvy0o6rrpx38j",
+      "name": "Smoke staged account 1785759925721 approved",
+      "bankName": "Smoke lifecycle bank 1785759925721",
+      "status": "INACTIVE",
+      "createdAt": "2026-08-03T12:25:25.730Z",
+      "metadata": {
+        "lastRequestId": "974e8809-e9ed-43b7-8b96-81ec9e54056d",
+        "createdByAdminId": "cmpb9dvr80005vyqsskqoeo0v",
+        "lastRequestReason": "Archive completed staged account lifecycle smoke evidence.",
+        "lastApprovalReason": "Verified the staged account archive request.",
+        "lastApprovalAdminId": "cmr39eqt60000vy8w8dgyx6wi",
+        "lastApprovalDecision": "APPROVE",
+        "lastApprovalDecisionAt": "2026-08-03T12:25:26.249Z",
+        "lastRequestedByAdminId": "cmpb9dvr80005vyqsskqoeo0v"
+      },
+      "pendingApproval": false,
+      "references": {
+        "transactions": 0,
+        "reconciliationMatches": 0,
+        "importBatches": 0,
+        "payments": 0,
+        "refunds": 0,
+        "payouts": 0,
+        "auditEvents": 6
+      },
+      "unsupportedDirectReferences": [
+        "importBatches",
+        "payments",
+        "refunds",
+        "payouts"
+      ],
+      "decision": {
+        "action": "manual-review",
+        "reason": "Legacy fixture signal has no explicit provenance; do not delete by name."
+      }
+    },
+    {
+      "id": "cmsdaguuy01o3vy2swfgo5s5q",
+      "name": "Smoke staged account 1785765158446 approved",
+      "bankName": "Smoke lifecycle bank 1785765158446",
+      "status": "INACTIVE",
+      "createdAt": "2026-08-03T13:52:38.459Z",
+      "metadata": {
+        "lastRequestId": "c98fd238-3cda-4730-ab38-6b31f70db36a",
+        "createdByAdminId": "cmpb9dvr80005vyqsskqoeo0v",
+        "lastRequestReason": "Archive completed staged account lifecycle smoke evidence.",
+        "lastApprovalReason": "Verified the staged account archive request.",
+        "lastApprovalAdminId": "cmr39eqt60000vy8w8dgyx6wi",
+        "lastApprovalDecision": "APPROVE",
+        "lastApprovalDecisionAt": "2026-08-03T13:52:39.101Z",
+        "lastRequestedByAdminId": "cmpb9dvr80005vyqsskqoeo0v"
+      },
+      "pendingApproval": false,
+      "references": {
+        "transactions": 0,
+        "reconciliationMatches": 0,
+        "importBatches": 0,
+        "payments": 0,
+        "refunds": 0,
+        "payouts": 0,
+        "auditEvents": 6
+      },
+      "unsupportedDirectReferences": [
+        "importBatches",
+        "payments",
+        "refunds",
+        "payouts"
+      ],
+      "decision": {
+        "action": "manual-review",
+        "reason": "Legacy fixture signal has no explicit provenance; do not delete by name."
+      }
+    },
+    {
+      "id": "cmsdbjvlw01mhvyton6ja2qnj",
+      "name": "Smoke staged account 1785766979002 approved",
+      "bankName": "Smoke lifecycle bank 1785766979002",
+      "status": "INACTIVE",
+      "createdAt": "2026-08-03T14:22:59.012Z",
+      "metadata": {
+        "lastRequestId": "f5cf33cb-cf4e-4d6f-9500-758c1bb338d3",
+        "createdByAdminId": "cmpb9dvr80005vyqsskqoeo0v",
+        "lastRequestReason": "Archive completed staged account lifecycle smoke evidence.",
+        "lastApprovalReason": "Verified the staged account archive request.",
+        "lastApprovalAdminId": "cmr39eqt60000vy8w8dgyx6wi",
+        "lastApprovalDecision": "APPROVE",
+        "lastApprovalDecisionAt": "2026-08-03T14:22:59.543Z",
+        "lastRequestedByAdminId": "cmpb9dvr80005vyqsskqoeo0v"
+      },
+      "pendingApproval": false,
+      "references": {
+        "transactions": 0,
+        "reconciliationMatches": 0,
+        "importBatches": 0,
+        "payments": 0,
+        "refunds": 0,
+        "payouts": 0,
+        "auditEvents": 6
+      },
+      "unsupportedDirectReferences": [
+        "importBatches",
+        "payments",
+        "refunds",
+        "payouts"
+      ],
+      "decision": {
+        "action": "manual-review",
+        "reason": "Legacy fixture signal has no explicit provenance; do not delete by name."
+      }
+    },
+    {
+      "id": "cmsdccl2u01whvy8wqwd2t8wl",
+      "name": "Smoke staged account 1785768318377 approved",
+      "bankName": "Smoke lifecycle bank 1785768318377",
+      "status": "INACTIVE",
+      "createdAt": "2026-08-03T14:45:18.390Z",
+      "metadata": {
+        "lastRequestId": "1c7f0ca3-42b2-4afa-8bf5-bd1f21685021",
+        "createdByAdminId": "cmpb9dvr80005vyqsskqoeo0v",
+        "lastRequestReason": "Archive completed staged account lifecycle smoke evidence.",
+        "lastApprovalReason": "Verified the staged account archive request.",
+        "lastApprovalAdminId": "cmr39eqt60000vy8w8dgyx6wi",
+        "lastApprovalDecision": "APPROVE",
+        "lastApprovalDecisionAt": "2026-08-03T14:45:19.104Z",
+        "lastRequestedByAdminId": "cmpb9dvr80005vyqsskqoeo0v"
+      },
+      "pendingApproval": false,
+      "references": {
+        "transactions": 0,
+        "reconciliationMatches": 0,
+        "importBatches": 0,
+        "payments": 0,
+        "refunds": 0,
+        "payouts": 0,
+        "auditEvents": 6
+      },
+      "unsupportedDirectReferences": [
+        "importBatches",
+        "payments",
+        "refunds",
+        "payouts"
+      ],
+      "decision": {
+        "action": "manual-review",
+        "reason": "Legacy fixture signal has no explicit provenance; do not delete by name."
+      }
+    }
+  ]
+}

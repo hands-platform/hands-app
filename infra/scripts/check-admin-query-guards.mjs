@@ -42,8 +42,10 @@ const notificationListSource = sourceBetween('listNotifications', 'async notific
 const notificationSummarySource = sourceBetween('async notificationSummary', 'async listNotificationTemplates');
 const pushCampaignListSource = sourceBetween('listAdminPushCampaigns', 'async adminPushCampaignSummary');
 const pushCampaignSummarySource = sourceBetween('async adminPushCampaignSummary', 'async previewAdminPushCampaign');
-const pushCampaignPreviewSource = sourceBetween('async previewAdminPushCampaign', 'async createAdminPushCampaign');
-const pushCampaignCreateSource = sourceBetween('async createAdminPushCampaign', 'async retryNotification');
+const pushCampaignPreviewSource = sourceBetween('async previewAdminPushCampaign', 'async confirmAdminPushCampaign');
+const pushCampaignConfirmSource = sourceBetween('async confirmAdminPushCampaign', 'private async resolveAdminPushAudience');
+const pushCampaignAudienceSource = sourceBetween('private async resolveAdminPushAudience', 'private async failAdminPushCampaignQueue');
+const pushCampaignEvidenceSource = sourceBetween('async adminPushCampaignEvidence', 'async previewAdminPushCampaign');
 const customerDirectorySelectSource = sourceBetweenIn(
   adminCustomerSelectsSource,
   'export const adminCustomerDirectorySelect',
@@ -311,11 +313,19 @@ if (!pushCampaignListSource.includes('take: normalizeAdminPushCampaignHistoryTak
   });
 }
 
-if (!pushCampaignListSource.includes('take: 5,')) {
+if (pushCampaignListSource.includes('recipients:')) {
   violations.push({
     area: 'admin push campaign query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Manual push campaign history must only include a 5-recipient evidence preview.',
+    message: 'Manual push history must not hydrate recipient identifiers; use the bounded evidence endpoint.',
+  });
+}
+
+if (!pushCampaignEvidenceSource.includes('take: 10,')) {
+  violations.push({
+    area: 'admin push campaign query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Manual push evidence must keep a bounded outcome-only recipient sample.',
   });
 }
 
@@ -327,35 +337,46 @@ if (!pushCampaignSummarySource.includes('this.prisma.adminPushCampaign.aggregate
   });
 }
 
-if (!pushCampaignPreviewSource.includes('this.prisma.user.count({ where })')) {
+if (!pushCampaignAudienceSource.includes('this.prisma.user.count({ where: eligibleWhere })')) {
   violations.push({
     area: 'admin push campaign query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Manual push recipient preview must count recipients separately from sample rows.',
+    message: 'Manual push audience resolution must count role-and-locale eligible recipients separately.',
   });
 }
 
-if (!pushCampaignPreviewSource.includes('take: 5,') || !pushCampaignPreviewSource.includes('take: 1,')) {
+if (
+  !pushCampaignAudienceSource.includes('matchedUsers.slice(0, 5)') ||
+  !pushCampaignAudienceSource.includes('take: NOTIFICATION_SEND_PUSH_DEVICE_LIMIT,')
+) {
   violations.push({
     area: 'admin push campaign query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Manual push recipient preview must keep a 5-user sample and one active push device per user.',
+    message: 'Manual push audience resolution must keep a five-account masked sample and a per-user device cap.',
   });
 }
 
-if (!pushCampaignCreateSource.includes('take: ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT,')) {
+if (
+  !pushCampaignPreviewSource.includes("status: 'PREVIEWED'") ||
+  !pushCampaignPreviewSource.includes('ADMIN_PUSH_CAMPAIGN_PREVIEW_TTL_MS') ||
+  !pushCampaignPreviewSource.includes('recipientFingerprint')
+) {
   violations.push({
     area: 'admin push campaign query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Manual push creation must cap recipient loading at ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT.',
+    message: 'Manual push preview must persist an expiring recipient fingerprint receipt.',
   });
 }
 
-if (!pushCampaignCreateSource.includes('select: { id: true },')) {
+if (
+  !pushCampaignConfirmSource.includes('preview.recipientCount > ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT') ||
+  !pushCampaignConfirmSource.includes('this.prisma.adminPushCampaign.updateMany({') ||
+  !pushCampaignConfirmSource.includes('adminPushCampaignJob(preview.id)')
+) {
   violations.push({
     area: 'admin push campaign query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Manual push creation must load only recipient ids before enqueueing notifications.',
+    message: 'Manual push confirmation must atomically consume a <=100 receipt and enqueue one campaign job.',
   });
 }
 
@@ -367,19 +388,27 @@ if (!pushSendPageModelSource.includes('const PUSH_CAMPAIGN_API_TAKE = 20;')) {
   });
 }
 
-if (!pushSendPageModelSource.includes('shouldRequestPushCampaignPreview')) {
+if (
+  pushSendPageModelSource.includes("query.set('title'") ||
+  pushSendPageModelSource.includes("query.set('body'") ||
+  pushSendPageModelSource.includes("query.set('reason'") ||
+  pushSendPageModelSource.includes("query.set('targetUserId'")
+) {
   violations.push({
     area: 'admin push campaign page',
     file: 'apps/admin_web/app/notifications/push-send/push-send-page-model.ts',
-    message: 'Push send page must require explicit preview intent before counting recipients.',
+    message: 'Push send URLs must not contain message copy, reason, or internal target identifiers.',
   });
 }
 
-if (!pushSendPageModelSource.includes("key === 'preview'")) {
+if (
+  !pushSendPageModelSource.includes('readSearchParam(params.campaignRange)') ||
+  !pushSendPageModelSource.includes('readSearchParam(params.campaignPage)')
+) {
   violations.push({
     area: 'admin push campaign page',
     file: 'apps/admin_web/app/notifications/push-send/push-send-page-model.ts',
-    message: 'Push send history navigation must drop preview intent to avoid repeated recipient counts.',
+    message: 'Push send URLs must remain limited to campaign history range and pagination state.',
   });
 }
 

@@ -30,6 +30,33 @@ const featurePanels = [
   },
 ] as const;
 
+const sourceFeaturePanels = [
+  {
+    action: 'Meet the Team',
+    body: 'Forget generic apps because we pair you with a real human trainer based on your unique personality and fitness level to provide the daily accountability and expert guidance you need to stay motivated and see real results.',
+    color: '#ffe1d6',
+    href: '#method',
+    image: '/images/editorial/feature-coach.webp',
+    title: 'Connect with an elite coach who builds your custom plan and stays by your side to ensure you reach every goal.',
+  },
+  {
+    action: 'Explore Courses',
+    body: 'Whether you are at a hotel gym or in your living room, your coach builds a dynamic schedule that fits your available equipment and energy levels so you never have to guess what exercise comes next to see real progress.',
+    color: '#d7e9ff',
+    href: '#results',
+    image: '/images/editorial/feature-anywhere.webp',
+    title: 'Future updates your workouts automatically, adjusting load, intensity, and movements for effective training.',
+  },
+  {
+    action: 'Join Community',
+    body: 'Get the professional encouragement and technical feedback you need right when you need it most because our coaches monitor your progress in real-time to adjust your path and celebrate every single victory with you.',
+    color: '#cebffa',
+    href: '#community',
+    image: '/images/editorial/feature-support.webp',
+    title: 'Connect with your trainer daily through a seamless chat and video experience built for your ultimate success.',
+  },
+] as const;
+
 export function getFeatureRailOffset(
   scrollY: number,
   sectionTop: number,
@@ -42,8 +69,9 @@ export function getFeatureRailOffset(
   return -progress * maxOffset;
 }
 
-export function HomeEditorialSections() {
+export function HomeEditorialSections({ sourceExact = false }: { readonly sourceExact?: boolean }) {
   const railRef = useRef<HTMLElement>(null);
+  const panels = sourceExact ? sourceFeaturePanels : featurePanels;
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -98,7 +126,7 @@ export function HomeEditorialSections() {
       >
         <div className="home-feature-sticky">
           <div className="home-feature-track">
-            {featurePanels.map((panel) => (
+            {panels.map((panel) => (
               <article
                 className="home-feature-panel"
                 key={panel.title}
@@ -131,12 +159,15 @@ export function HomeEditorialSections() {
         <div className="home-method-copy">
           <div>
             <p className="home-method-kicker">
-              <span aria-hidden="true">●</span> HANDS METHOD
+              <span aria-hidden="true">●</span> {sourceExact ? 'Our Method' : 'HANDS METHOD'}
             </p>
-            <h2 id="home-method-title">사람과 사람의 연결이 더 나은 웰니스를 만듭니다.</h2>
+            <h2 id="home-method-title">
+              {sourceExact ? 'Real human connection drives real results' : '사람과 사람의 연결이 더 나은 웰니스를 만듭니다.'}
+            </h2>
             <p className="home-method-body">
-              기술은 선택과 예약을 단순하게 만들고, 검증된 마사지 테라피스트는 고객이 원하는
-              장소에서 편안한 서비스를 완성합니다.
+              {sourceExact
+                ? 'We combine elite personal coaching with an effortless digital experience because we know that a custom plan is only as good as the accountability behind it so your trainer is always there.'
+                : '기술은 선택과 예약을 단순하게 만들고, 검증된 마사지 테라피스트는 고객이 원하는 장소에서 편안한 서비스를 완성합니다.'}
             </p>
           </div>
           <div className="home-method-stat">
@@ -148,16 +179,24 @@ export function HomeEditorialSections() {
               width={264}
             />
             <div>
-              <strong>1:1</strong>
-              <p>고객의 선택과 마사지 테라피스트의 전문성을 한 번의 예약으로 연결합니다.</p>
+              <strong>{sourceExact ? '500k+' : '1:1'}</strong>
+              <p>
+                {sourceExact
+                  ? 'Personalized workouts delivered and completed by our growing global community.'
+                  : '고객의 선택과 마사지 테라피스트의 전문성을 한 번의 예약으로 연결합니다.'}
+              </p>
             </div>
           </div>
         </div>
 
         <div className="home-method-media">
           <div className="home-method-media-copy">
-            <h3>웰니스가 필요한 순간을 위한 HANDS</h3>
-            <p>원하는 장소, 원하는 시간, 나에게 맞는 마사지 테라피스트.</p>
+            <h3>{sourceExact ? 'The 12-Week Evolution' : '웰니스가 필요한 순간을 위한 HANDS'}</h3>
+            <p>
+              {sourceExact
+                ? 'A high-intensity journey designed to reset your habits through a daily expert guidance.'
+                : '원하는 장소, 원하는 시간, 나에게 맞는 마사지 테라피스트.'}
+            </p>
           </div>
           <div className="home-method-partner">
             <Image
@@ -167,8 +206,8 @@ export function HomeEditorialSections() {
               width={84}
             />
             <div>
-              <strong>HANDS Partner</strong>
-              <span>Verified profile</span>
+              <strong>{sourceExact ? 'Coach Mark Johnson' : 'HANDS Partner'}</strong>
+              <span>{sourceExact ? 'Meet your Trainer' : 'Verified profile'}</span>
             </div>
           </div>
         </div>

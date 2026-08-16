@@ -73,6 +73,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
   const repairActorId = readPageParam(params, 'repairActorId');
   const repairApprovalAdminId = readPageParam(params, 'repairApprovalAdminId');
   const repairCompletedAt = readPageParam(params, 'repairCompletedAt');
+  const repairRequestedAt = readPageParam(params, 'repairRequestedAt');
   const shouldRunSettlementDryRun = readPageParam(params, 'settlementDryRun') === '1';
   const reviewBookingIds = readPageParamList(params, 'reviewBookingId', 10);
   const apiHrefs = buildFinanceCloseoutApiHrefs(filters);
@@ -307,10 +308,12 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
       {repairNotice ? (
         <AdminNoticeCard
           className="admin-mb-16"
-          role={repairNotice === 'repaired' ? 'status' : 'alert'}
+          role={repairNotice === 'repaired' || repairNotice === 'approval-requested' ? 'status' : 'alert'}
           tone={
             repairNotice === 'repaired'
               ? 'success'
+              : repairNotice === 'approval-requested'
+                ? 'info'
               : repairNotice === 'checkpoint-failed'
                 ? 'warning'
                 : 'danger'
@@ -319,6 +322,8 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
           <strong>
             {repairNotice === 'repaired'
               ? 'Settlement repaired and verified'
+              : repairNotice === 'approval-requested'
+                ? 'Independent Finance approval requested'
               : repairNotice === 'checkpoint-failed'
                 ? 'Settlement recorded, accounting review required'
                 : 'Settlement repair not completed'}
@@ -332,7 +337,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
                 : ` · ${repairCheckpoint.checks.length} checks passed`}
             </p>
           ) : null}
-          {repairNotice === 'repaired' || repairNotice === 'checkpoint-failed' ? (
+          {repairNotice === 'repaired' || repairNotice === 'checkpoint-failed' || repairNotice === 'approval-requested' ? (
             <div className="admin-inline-actions admin-mt-8" aria-label="Settlement repair evidence">
               {checkpointBookingId ? (
                 <AdminTextLink href={`/bookings/${encodeURIComponent(checkpointBookingId)}`}>
@@ -362,6 +367,12 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
             <p className="muted admin-mt-8">
               Actor {repairActorId || 'Unavailable'} · Approver {repairApprovalAdminId || 'Unavailable'} ·
               Completed {repairCompletedAt ? formatDateTime(repairCompletedAt) : 'Unavailable'}
+            </p>
+          ) : null}
+          {repairNotice === 'approval-requested' && (repairActorId || repairRequestedAt) ? (
+            <p className="muted admin-mt-8">
+              Requested by {repairActorId || 'Unavailable'} · Requested{' '}
+              {repairRequestedAt ? formatDateTime(repairRequestedAt) : 'Unavailable'}
             </p>
           ) : null}
         </AdminNoticeCard>
@@ -638,7 +649,6 @@ async function repairBookingSettlementGapAction(formData: FormData) {
 
   const bookingId = readFormValue(formData, 'bookingId');
   const confirmationBookingId = readFormValue(formData, 'confirmationBookingId');
-  const approvalAdminId = readFormValue(formData, 'approvalAdminId');
   const reason = readFormValue(formData, 'reason');
   const sourceVersion = readFormValue(formData, 'sourceVersion');
   const filters = buildFinanceCloseoutFilters({
@@ -653,7 +663,7 @@ async function repairBookingSettlementGapAction(formData: FormData) {
   const closeHref = buildFinanceCloseoutPageHref(filters);
   const previewHref = bookingId ? buildFinanceCloseoutSettlementRepairHref(filters, bookingId) : closeHref;
 
-  if (!bookingId || !approvalAdminId || !sourceVersion || reason.length < 12) {
+  if (!bookingId || !sourceVersion || reason.length < 12) {
     redirect(withRepairNotice(previewHref, 'invalid'));
   }
   if (confirmationBookingId !== bookingId) {
@@ -664,10 +674,19 @@ async function repairBookingSettlementGapAction(formData: FormData) {
   try {
     result = await adminPostOrThrow<AdminBookingSettlementGapRepairResult>(
       `/admin/booking-settlement-gaps/${encodeURIComponent(bookingId)}/repair`,
-      { approvalAdminId, reason, sourceVersion },
+      { reason, sourceVersion },
     );
   } catch (error) {
     redirect(withRepairNotice(previewHref, settlementRepairErrorCode(error)));
+  }
+
+  if ('approvalRequested' in result) {
+    const url = new URL(previewHref, 'http://admin.local');
+    url.searchParams.set('repairNotice', 'approval-requested');
+    url.searchParams.set('repairAuditLogId', result.auditLogId);
+    url.searchParams.set('repairActorId', result.actorId);
+    url.searchParams.set('repairRequestedAt', result.requestedAt);
+    redirect(`${url.pathname}?${url.searchParams.toString()}`);
   }
 
   redirect(
@@ -754,13 +773,15 @@ function settlementRepairErrorCode(error: unknown) {
 }
 
 function settlementRepairNoticeMessage(notice: string) {
+  if (notice === 'approval-requested')
+    return 'No finance write was made. A different signed-in verified Finance operator must reopen the same evidence version and submit the repair.';
   if (notice === 'repaired')
     return 'The missing snapshot was created and its journal, clearing, and retained evidence checks passed.';
   if (notice === 'checkpoint-failed')
     return 'The repair write exists, but one or more accounting checks failed. Do not retry; review the checkpoint and finance audit evidence.';
   if (notice === 'confirmation') return 'The confirmation booking ID did not match.';
   if (notice === 'invalid')
-    return 'Approver, a reason of at least 12 characters, current preview, and booking confirmation are required.';
+    return 'A reason of at least 12 characters, current preview, and booking confirmation are required.';
   if (notice === 'access-denied' || notice === 'api-403')
     return 'Your operator category cannot perform this repair.';
   if (notice === 'api-400')

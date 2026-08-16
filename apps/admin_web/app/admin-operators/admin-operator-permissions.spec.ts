@@ -28,6 +28,7 @@ describe('admin operator permission catalog', () => {
       'FINANCE_SETTLEMENTS',
       'FINANCE_TAX',
       'GROWTH_MARKETING',
+      'GROWTH_MARKETING_SPEND',
       'NOTIFICATIONS_TEMPLATES',
       'NOTIFICATIONS_PUSH',
       'NOTIFICATIONS_DELIVERY',
@@ -36,11 +37,11 @@ describe('admin operator permission catalog', () => {
       'SYSTEM_COUPONS',
       'SYSTEM_ADMIN_OPERATORS',
       'SYSTEM_POLICY',
+      'SYSTEM_AUDIT',
       'CONTENT_VIEW',
       'CONTENT_EDIT',
       'CONTENT_PUBLISH',
       'CONTENT_DELETE',
-      'SYSTEM_AUDIT',
       'DEVELOPER_SETUP',
       'DEVELOPER_HEALTH',
       'DEVELOPER_APP_SESSIONS_DIAGNOSTICS',
@@ -65,6 +66,10 @@ describe('admin operator permission catalog', () => {
       'SYSTEM_AUDIT',
       'UNKNOWN',
     ]);
+  });
+
+  it('keeps canonical leaf permissions intact when a legacy key has the same name', () => {
+    expect(expandLegacyAdminOperatorCategories(['SYSTEM_POLICY'])).toEqual(['SYSTEM_POLICY']);
   });
 
   it('keeps Admin-only role values constrained for operator actions', () => {

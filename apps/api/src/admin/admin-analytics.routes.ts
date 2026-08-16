@@ -160,4 +160,25 @@ export class AdminAnalyticsRoutes extends AdminIdentityRoutes {
       spendDate,
     });
   }
+
+  @Get('marketing/spend-ledger')
+  marketingSpendLedger(
+    @Query('range') range?: string,
+    @Query('source') source?: string,
+    @Query('platform') platform?: string,
+    @Query('regionCode') regionCode?: string,
+    @Query('campaignId') campaignId?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.admin.listMarketingSpendLedger({
+      campaignId,
+      platform,
+      range,
+      regionCode,
+      skip,
+      source,
+      take,
+    });
+  }
 }

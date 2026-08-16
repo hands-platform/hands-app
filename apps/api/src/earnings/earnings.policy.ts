@@ -52,6 +52,7 @@ export type PartnerBankDepositInput = {
 };
 
 export type ProviderWalletWithdrawalRequestInput = {
+  idempotencyKey: string;
   amount: number;
   bankAccountId?: string | null;
   requestNote?: string | null;
@@ -73,6 +74,56 @@ export type PayoutBatchUpdateStatusInput = {
   currentStatus: PayoutBatchStatus | string;
   requestedStatus?: PayoutBatchStatus | string | null;
   nextTransferRef?: string | null;
+};
+
+const PROVIDER_WITHDRAWAL_STATUS_TRANSITIONS: Partial<
+  Record<ProviderWalletWithdrawalRequestStatus, readonly ProviderWalletWithdrawalRequestStatus[]>
+> = {
+  [ProviderWalletWithdrawalRequestStatus.REQUESTED]: [
+    ProviderWalletWithdrawalRequestStatus.NEEDS_BANK_CORRECTION,
+    ProviderWalletWithdrawalRequestStatus.APPROVED,
+    ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
+    ProviderWalletWithdrawalRequestStatus.HOLD,
+    ProviderWalletWithdrawalRequestStatus.REJECTED,
+    ProviderWalletWithdrawalRequestStatus.CANCELLED,
+  ],
+  [ProviderWalletWithdrawalRequestStatus.NEEDS_BANK_CORRECTION]: [
+    ProviderWalletWithdrawalRequestStatus.REQUESTED,
+    ProviderWalletWithdrawalRequestStatus.APPROVED,
+    ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
+    ProviderWalletWithdrawalRequestStatus.HOLD,
+    ProviderWalletWithdrawalRequestStatus.REJECTED,
+    ProviderWalletWithdrawalRequestStatus.CANCELLED,
+  ],
+  [ProviderWalletWithdrawalRequestStatus.APPROVED]: [
+    ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+    ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
+    ProviderWalletWithdrawalRequestStatus.HOLD,
+    ProviderWalletWithdrawalRequestStatus.PAID,
+    ProviderWalletWithdrawalRequestStatus.REJECTED,
+    ProviderWalletWithdrawalRequestStatus.CANCELLED,
+    ProviderWalletWithdrawalRequestStatus.FAILED,
+  ],
+  [ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING]: [
+    ProviderWalletWithdrawalRequestStatus.PAID,
+    ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
+    ProviderWalletWithdrawalRequestStatus.HOLD,
+    ProviderWalletWithdrawalRequestStatus.REJECTED,
+    ProviderWalletWithdrawalRequestStatus.CANCELLED,
+    ProviderWalletWithdrawalRequestStatus.FAILED,
+  ],
+  [ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED]: [
+    ProviderWalletWithdrawalRequestStatus.APPROVED,
+    ProviderWalletWithdrawalRequestStatus.HOLD,
+    ProviderWalletWithdrawalRequestStatus.REJECTED,
+    ProviderWalletWithdrawalRequestStatus.CANCELLED,
+  ],
+  [ProviderWalletWithdrawalRequestStatus.HOLD]: [
+    ProviderWalletWithdrawalRequestStatus.APPROVED,
+    ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
+    ProviderWalletWithdrawalRequestStatus.REJECTED,
+    ProviderWalletWithdrawalRequestStatus.CANCELLED,
+  ],
 };
 
 type SelectedServicePayoutRule = {
@@ -243,15 +294,20 @@ export function normalizePartnerBankDepositInput(input: PartnerBankDepositInput)
 }
 
 export function normalizeProviderWalletWithdrawalRequestInput(input: ProviderWalletWithdrawalRequestInput) {
+  const idempotencyKey = cleanOptionalText(input.idempotencyKey);
   const amount = wholeVnd(input.amount, 'Withdrawal amount');
   const bankAccountId = cleanOptionalText(input.bankAccountId) ?? undefined;
   const requestNote = cleanOptionalText(input.requestNote) ?? undefined;
 
+  if (!idempotencyKey || !/^[A-Za-z0-9:_-]{8,128}$/u.test(idempotencyKey)) {
+    throw new BadRequestException('Idempotency key must be a stable request key');
+  }
   if (amount <= 0) {
     throw new BadRequestException('Withdrawal amount must be greater than 0 VND');
   }
 
   return {
+    idempotencyKey,
     amount,
     bankAccountId,
     requestNote,
@@ -293,6 +349,18 @@ export function normalizeProviderWalletWithdrawalRequestUpdateInput(
     nextStatus !== ProviderWalletWithdrawalRequestStatus.PAID
   ) {
     throw new BadRequestException('Paid withdrawal requests cannot be moved back to an unpaid status');
+  }
+  if (
+    nextStatus &&
+    input.currentStatus &&
+    nextStatus !== input.currentStatus &&
+    !PROVIDER_WITHDRAWAL_STATUS_TRANSITIONS[
+      input.currentStatus as ProviderWalletWithdrawalRequestStatus
+    ]?.includes(nextStatus)
+  ) {
+    throw new BadRequestException(
+      `Withdrawal request cannot move from ${input.currentStatus} to ${nextStatus}`,
+    );
   }
   if (nextStatus === ProviderWalletWithdrawalRequestStatus.PAID && !transferRef) {
     throw new BadRequestException('Transfer reference is required before marking a withdrawal request paid');

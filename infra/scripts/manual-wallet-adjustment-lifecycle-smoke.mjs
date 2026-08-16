@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import {
+  AdminUserProvenance,
   AdminOperatorPermissionCategory,
   AccountingJournalSourceType,
   ManualWalletAdjustmentRequestStatus,
@@ -436,12 +437,18 @@ async function seed() {
         phone: smokePhone('01'),
         fullName: 'Manual Wallet Smoke Master',
         roles: [Role.ADMIN, Role.MASTER_ADMIN],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'MANUAL_WALLET_SMOKE',
+        fixtureRunId: runId,
       },
       {
         id: ids.approver,
         phone: smokePhone('02'),
         fullName: 'Manual Wallet Smoke Approver',
         roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+        adminUserProvenance: AdminUserProvenance.FIXTURE,
+        fixtureKind: 'MANUAL_WALLET_SMOKE',
+        fixtureRunId: runId,
       },
       {
         id: ids.customerUser,

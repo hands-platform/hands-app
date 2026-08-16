@@ -21,7 +21,10 @@ class ProviderServicePriceModel extends ProviderServicePrice {
     super.payoutOptions,
   });
 
-  factory ProviderServicePriceModel.fromJson(Map<String, dynamic> json) {
+  factory ProviderServicePriceModel.fromJson(
+    Map<String, dynamic> json, {
+    String requestedLocale = 'vi',
+  }) {
     final payoutRule = _asMap(json['payoutRule']);
     final payoutOptions = _asList(json['payoutOptions'])
         .map(_asMap)
@@ -32,7 +35,7 @@ class ProviderServicePriceModel extends ProviderServicePrice {
     return ProviderServicePriceModel(
       id: json['id']?.toString() ?? '',
       serviceGroupKey: json['serviceGroupKey']?.toString(),
-      name: json['name']?.toString() ?? 'Dịch vụ',
+      name: _localizedServiceName(json, requestedLocale),
       description: json['description']?.toString(),
       durationMin: _asInt(json['durationMin']) ?? 0,
       basePrice: _asInt(json['basePrice']) ?? 0,
@@ -52,6 +55,30 @@ class ProviderServicePriceModel extends ProviderServicePrice {
       payoutOptions: payoutOptions,
     );
   }
+}
+
+String _localizedServiceName(
+  Map<String, dynamic> json,
+  String requestedLocale,
+) {
+  final translations = _asMap(json['nameTranslations']);
+  final requested = requestedLocale
+      .trim()
+      .toLowerCase()
+      .replaceAll('_', '-')
+      .split('-')
+      .first;
+  for (final locale in <String>[requested, 'vi', 'en']) {
+    final translated = translations?[locale]?.toString().trim();
+    if (translated != null && translated.isNotEmpty) {
+      return translated;
+    }
+  }
+
+  final legacyName = json['name']?.toString().trim();
+  return legacyName == null || legacyName.isEmpty
+      ? 'Dịch vụ không khả dụng'
+      : legacyName;
 }
 
 ProviderServicePayoutOption? _payoutOptionFromJson(Map<String, dynamic> json) {

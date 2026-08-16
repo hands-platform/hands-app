@@ -1,11 +1,4 @@
-import type {
-  AdminMarketingComparison,
-  AdminMarketingDimensionRow,
-  AdminMarketingStats,
-} from '../../lib/admin-api';
 import {
-  buildMarketingActionPriorities,
-  hasMarketingDecisionEvidence,
   marketingAnalyticsApiPath,
   marketingAnalyticsCouponPageHref,
   marketingAnalyticsCouponPaging,
@@ -17,6 +10,9 @@ import {
   marketingAnalyticsDimensionPaging,
   marketingAnalyticsHref,
   marketingAnalyticsSummaryApiPath,
+  marketingAnalyticsSpendLedgerApiPath,
+  marketingAnalyticsSpendLedgerPageHref,
+  marketingAnalyticsSpendLedgerPaging,
   marketingSpendDailyApiPath,
   marketingSpendPanelHref,
   normalizeMarketingSpendDraft,
@@ -71,6 +67,7 @@ describe('marketing analytics model', () => {
 
   it('normalizes bounded range and optional dimension filters', () => {
     expect(normalizeMarketingAnalyticsFilters(undefined)).toEqual({
+      view: 'overview',
       range: '7d',
       source: null,
       platform: null,
@@ -87,6 +84,7 @@ describe('marketing analytics model', () => {
         campaignId: 'ref-smoke',
       }),
     ).toEqual({
+      view: 'overview',
       range: '30d',
       source: 'referral',
       platform: 'ios',
@@ -102,6 +100,7 @@ describe('marketing analytics model', () => {
         regionCode: 'bad',
       }),
     ).toMatchObject({
+      view: 'overview',
       range: '7d',
       source: null,
       platform: null,
@@ -125,6 +124,7 @@ describe('marketing analytics model', () => {
 
     expect(
       marketingAnalyticsApiPath({
+        view: 'overview',
         range: '7d',
         source: 'referral',
         platform: null,
@@ -134,6 +134,7 @@ describe('marketing analytics model', () => {
     ).toBe('/admin/marketing/overview?range=7d&source=referral');
     expect(
       marketingAnalyticsSummaryApiPath({
+        view: 'attribution',
         range: '7d',
         source: 'referral',
         platform: 'android',
@@ -144,6 +145,7 @@ describe('marketing analytics model', () => {
     expect(
       marketingAnalyticsDimensionApiPath(
         {
+          view: 'attribution',
           range: '7d',
           source: 'referral',
           platform: null,
@@ -157,6 +159,7 @@ describe('marketing analytics model', () => {
     expect(
       marketingAnalyticsDimensionApiPath(
         {
+          view: 'campaigns',
           range: '7d',
           source: 'referral',
           platform: null,
@@ -197,6 +200,7 @@ describe('marketing analytics model', () => {
     expect(
       marketingAnalyticsDimensionPageHref(
         {
+          view: 'campaigns',
           range: '30d',
           source: 'google',
           platform: 'ios',
@@ -207,12 +211,13 @@ describe('marketing analytics model', () => {
         4,
       ),
     ).toBe(
-      '/marketing-analytics?range=30d&source=google&platform=ios&regionCode=hcm&campaignId=summer-launch&breakdowns=1&campaignPage=4',
+      '/marketing-analytics?range=30d&view=campaigns&source=google&platform=ios&regionCode=hcm&campaignId=summer-launch&breakdowns=1&campaignPage=4',
     );
 
     expect(
       marketingAnalyticsDimensionPageHref(
         {
+          view: 'attribution',
           range: '7d',
           source: null,
           platform: null,
@@ -222,11 +227,12 @@ describe('marketing analytics model', () => {
         'source',
         1,
       ),
-    ).toBe('/marketing-analytics?range=7d&breakdowns=1');
+    ).toBe('/marketing-analytics?range=7d&view=attribution&breakdowns=1');
   });
 
   it('keeps coupon summary lightweight and coupon rows server-paged by range', () => {
     const filters = {
+      view: 'coupons' as const,
       range: '30d' as const,
       source: 'google' as const,
       platform: 'android' as const,
@@ -248,204 +254,36 @@ describe('marketing analytics model', () => {
       take: 10,
     });
     expect(marketingAnalyticsCouponPageHref(filters, 3)).toBe(
-      '/marketing-analytics?range=30d&couponPerformance=1&couponPage=3',
+      '/marketing-analytics?range=30d&view=coupons&couponPerformance=1&couponPage=3',
     );
   });
 
-  it('prioritizes campaign spend, break-even, conversion decline, and attribution gaps', () => {
-    const actions = buildMarketingActionPriorities({
-      attributionQuality: {
-        attributedFirstOpens: 12,
-        unknownFirstOpens: 3,
-        firstOpenCoverageRate: 80,
-        attributedSignups: 4,
-        unknownSignups: 2,
-        signupCoverageRate: 66.67,
-      },
-      campaignEfficiency: [
-        marketingDimensionRow({
-          adSpend: 500_000,
-          bookingCompleted: 0,
-          campaignId: 'no-completion',
-          campaignName: 'No Completion',
-          key: 'no-completion',
-        }),
-        marketingDimensionRow({
-          adSpend: 300_000,
-          bookingCompleted: 2,
-          campaignId: 'below-break-even',
-          campaignName: 'Below Break Even',
-          conversionRates: {
-            ...marketingStats().conversionRates,
-            cpaBookingCompleted: 150_000,
-            platformFeeRoas: 0.6,
-          },
-          key: 'below-break-even',
-        }),
-      ],
-      comparison: marketingComparison({
-        bookingCompleted: { current: 2, previous: 4, delta: -2, deltaPercent: -50 },
-      }),
-      filters: {
-        campaignId: null,
-        platform: 'android',
-        range: '7d',
-        regionCode: 'hcm',
-        source: 'google',
-      },
-      rangeLabel: 'Last 7 days',
-      totals: marketingStats(),
-    });
+  it('keeps campaign workspace and filters while paging the spend ledger', () => {
+    const filters = {
+      campaignId: 'launch-hcm',
+      platform: 'android' as const,
+      range: '30d' as const,
+      regionCode: 'hcm',
+      source: 'google' as const,
+      view: 'campaigns' as const,
+    };
 
-    expect(actions.map((action) => action.key)).toEqual([
-      'campaign-no-completion:no-completion',
-      'campaign-below-break-even:below-break-even',
-      'completed-cohort-decline',
-      'signup-attribution-gap',
-    ]);
-    expect(actions[0]).toMatchObject({
-      href: '/marketing-analytics?range=7d&source=google&platform=android&regionCode=hcm&campaignId=no-completion#marketing-campaign-efficiency',
-      tone: 'danger',
-      value: 500_000,
-      valueKind: 'money',
+    expect(marketingAnalyticsSpendLedgerApiPath(filters, { skip: 25, take: 25 })).toBe(
+      '/admin/marketing/spend-ledger?range=30d&source=google&platform=android&regionCode=hcm&campaignId=launch-hcm&take=25&skip=25',
+    );
+    expect(marketingAnalyticsSpendLedgerPaging({ spendPage: '2' })).toEqual({
+      page: 2,
+      skip: 25,
+      take: 25,
     });
-    expect(actions[1]?.detail).toContain('1.00x is break-even');
-    expect(actions[1]).toMatchObject({ value: 0.6, valueKind: 'multiplier' });
-    expect(actions[2]?.href).toContain('#marketing-acquisition-trend');
-    expect(actions[3]?.href).toContain('source=unknown');
+    expect(marketingAnalyticsSpendLedgerPageHref(filters, 2)).toBe(
+      '/marketing-analytics?range=30d&view=campaigns&source=google&platform=android&regionCode=hcm&campaignId=launch-hcm&spendPage=2#marketing-spend-ledger',
+    );
   });
 
-  it('flags spend growth without completion growth and keeps no-evidence state honest', () => {
-    const actions = buildMarketingActionPriorities({
-      attributionQuality: {
-        attributedFirstOpens: 0,
-        unknownFirstOpens: 0,
-        firstOpenCoverageRate: 0,
-        attributedSignups: 0,
-        unknownSignups: 0,
-        signupCoverageRate: 0,
-      },
-      campaignEfficiency: [],
-      comparison: marketingComparison({
-        adSpend: {
-          current: 400_000,
-          previous: 200_000,
-          delta: 200_000,
-          deltaPercent: 100,
-        },
-        bookingCompleted: { current: 1, previous: 1, delta: 0, deltaPercent: 0 },
-      }),
-      filters: {
-        campaignId: null,
-        platform: null,
-        range: '7d',
-        regionCode: null,
-        source: null,
-      },
-      rangeLabel: 'Last 7 days',
-      totals: marketingStats(),
-    });
-
-    expect(actions).toHaveLength(1);
-    expect(actions[0]).toMatchObject({
-      key: 'spend-growth-without-completion-growth',
-      tone: 'danger',
-      valueKind: 'money',
-    });
-    expect(hasMarketingDecisionEvidence(marketingStats())).toBe(false);
-    expect(hasMarketingDecisionEvidence(marketingStats({ adSpend: 1 }))).toBe(true);
-  });
-
-  it('promotes a high cancellation rate to a direct funnel action', () => {
-    const actions = buildMarketingActionPriorities({
-      attributionQuality: {
-        attributedFirstOpens: 10,
-        unknownFirstOpens: 0,
-        firstOpenCoverageRate: 100,
-        attributedSignups: 5,
-        unknownSignups: 0,
-        signupCoverageRate: 100,
-      },
-      campaignEfficiency: [],
-      comparison: marketingComparison(),
-      filters: {
-        campaignId: null,
-        platform: null,
-        range: '7d',
-        regionCode: 'hcm',
-        source: null,
-      },
-      rangeLabel: 'Last 7 days',
-      totals: marketingStats({
-        bookingCreated: 4,
-        conversionRates: {
-          ...marketingStats().conversionRates,
-          cancellationRate: 25,
-        },
-      }),
-    });
-
-    expect(actions[0]).toMatchObject({
-      href: '/marketing-analytics?range=7d&regionCode=hcm#marketing-acquisition-funnel',
-      key: 'cohort-cancellation-rate',
-      value: 25,
-      valueKind: 'percent',
-    });
+  it('moves an opened spend editor into the campaigns workspace', () => {
+    expect(normalizeMarketingAnalyticsFilters({ spend: 'add', view: 'overview' }).view).toBe('campaigns');
+    expect(normalizeMarketingAnalyticsFilters({ view: 'attribution' }).view).toBe('attribution');
+    expect(normalizeMarketingAnalyticsFilters({ view: 'invalid' }).view).toBe('overview');
   });
 });
-
-function marketingStats(overrides: Partial<AdminMarketingStats> = {}): AdminMarketingStats {
-  return {
-    adSpend: 0,
-    addressSaves: 0,
-    bookingCancelled: 0,
-    bookingCompleted: 0,
-    bookingCreated: 0,
-    conversionRates: {
-      addressSaveRate: 0,
-      bookingCompleteRate: 0,
-      bookingCreateRate: 0,
-      cancellationRate: 0,
-      cpa: null,
-      cpaBookingCompleted: null,
-      cpaBookingCreated: null,
-      cpaSignup: null,
-      cpi: null,
-      firstBookingRate: 0,
-      platformFeeRoas: null,
-      repeatBookingRate: 0,
-      roas: null,
-      signupRate: 0,
-    },
-    firstBookingCompleted: 0,
-    firstOpens: 0,
-    grossBookingValue: 0,
-    platformFeeRevenue: 0,
-    refundAmount: 0,
-    repeatBookingCompleted: 0,
-    signups: 0,
-    ...overrides,
-  };
-}
-
-function marketingDimensionRow(overrides: Partial<AdminMarketingDimensionRow>): AdminMarketingDimensionRow {
-  return {
-    ...marketingStats(),
-    key: 'campaign',
-    ...overrides,
-  };
-}
-
-function marketingComparison(overrides: Partial<AdminMarketingComparison> = {}): AdminMarketingComparison {
-  const emptyMetric = { current: 0, previous: 0, delta: 0, deltaPercent: null };
-
-  return {
-    adSpend: emptyMetric,
-    bookingCompleted: emptyMetric,
-    firstOpens: emptyMetric,
-    platformFeeRevenue: emptyMetric,
-    previousRangeLabel: 'Previous 7 days',
-    signups: emptyMetric,
-    ...overrides,
-  };
-}

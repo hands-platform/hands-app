@@ -5,7 +5,6 @@ import type { AdminCustomerReferralParent } from '../../lib/admin-api';
 import {
   ReferralParentDetailPage,
   referralParentDetailHref,
-  referralParentNeedsFinanceApprover,
 } from './referral-detail';
 
 const createdAt = '2026-06-24T10:00:00.000Z';
@@ -166,7 +165,7 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('Decision evidence');
     expect(markup).toContain('Wallet credit wallet-ledger-1');
     expect(markup).toContain('Booking booking-1');
-    expect(markup).toContain('Latest decision Credit by Ops Admin');
+    expect(markup).toContain('Latest decision Wallet credit posted by Ops Admin');
     expect(markup).toContain('Reason manual payout check');
     expect(markup).toContain('Ready to credit');
     expect(markup).not.toContain('Hold reward');
@@ -253,8 +252,8 @@ describe('Referral detail presentation', () => {
       ' ',
     );
 
-    expect(markup).toContain('Credited rewards');
-    expect(markup).toContain('Rewards already posted to wallet credit records.');
+    expect(markup).toContain('Current decision');
+    expect(markup).toContain('Wallet credit posted');
     expect(markup).toContain('25.000 VND');
   });
 
@@ -281,7 +280,8 @@ describe('Referral detail presentation', () => {
     );
 
     expect(markup).toContain('admin-action-dropdown referral-reward-action-dropdown');
-    expect(markup).toContain('aria-label="Referral reward actions for reward-1"');
+    expect(markup).toContain('aria-label="Referral reward actions - Pending checks - 25000 VND"');
+    expect(markup).not.toContain('aria-label="Referral reward actions for reward-1"');
     expect(markup).toContain('Hold for review');
     expect(markup).toContain('Reverse reward');
     expect(markup).not.toContain('No booking');
@@ -326,6 +326,45 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('name="expectedStatus" value="HELD"');
     expect(markup).toContain('name="expectedUpdatedAt"');
     expect(markup).toContain('name="confirmation" value="confirmed"');
+  });
+
+  it('shows the booking evidence blocker and disables release and credit mutations', () => {
+    const row: AdminCustomerReferralParent = {
+      ...customerReferralParent,
+      referrals: [{
+        ...customerReferralParent.referrals[0],
+        rewards: [{
+          ...customerReferralParent.referrals[0].rewards[0],
+          evidence: {
+            blocker: { code: 'QUALIFYING_BOOKING_MISSING', message: 'Qualifying booking evidence is missing.' },
+            ready: false,
+          },
+          qualifyingBookingId: null,
+          status: 'HELD',
+          walletLedgerReference: null,
+        }],
+      }],
+    };
+    const markup = renderToStaticMarkup(<ReferralParentDetailPage audience="customer" row={row} />).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('Blocked: Qualifying booking evidence is missing.');
+    expect(markup).toContain('disabled=""');
+    expect(markup).toContain('Release hold');
+  });
+
+  it('disables every fixture mutation and labels the fixture risk', () => {
+    const row: AdminCustomerReferralParent = {
+      ...customerReferralParent,
+      referrals: [{
+        ...customerReferralParent.referrals[0],
+        rewards: [{ ...customerReferralParent.referrals[0].rewards[0], isFixture: true, status: 'AVAILABLE', walletLedgerReference: null }],
+      }],
+    };
+    const markup = renderToStaticMarkup(<ReferralParentDetailPage audience="customer" row={row} />).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('TEST FIXTURE · wallet actions disabled');
+    expect(markup).toContain('Credit to wallet');
+    expect(markup).toContain('disabled=""');
   });
 
   it('uses the shared Vuexy action dropdown surface for reward decision forms', () => {
@@ -402,7 +441,7 @@ describe('Referral detail presentation', () => {
   it('keeps referral detail summary panels off the legacy booking monitor filter class', () => {
     expect(detailSource).toContain('className="referral-parent-account-panel admin-mt-16"');
     expect(detailSource).toContain('className="referral-reward-decision-timeline-panel admin-mt-16"');
-    expect(detailSource).toContain('className="referral-operations-board-panel admin-mt-16"');
+    expect(detailSource).not.toContain('Referral operations board');
     expect(detailSource).not.toContain('className="booking-monitor-filter-panel admin-mt-16"');
   });
 
@@ -485,7 +524,6 @@ describe('Referral detail presentation', () => {
     const markup = renderToStaticMarkup(
       <ReferralParentDetailPage
         audience="customer"
-        financeApproverOptions={[{ label: 'Finance Approver · approver@example.com', value: 'approver-2' }]}
         row={row}
       />,
     ).replace(/\s+/g, ' ');
@@ -495,14 +533,13 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('Require tax review');
     expect(markup).toContain('Transfer reference');
     expect(markup).toContain('name="transferRef"');
-    expect(markup).toContain('Separate Finance approver');
-    expect(markup).toContain('Finance Approver · approver@example.com');
+    expect(markup).toContain('The signed-in Finance operator is recorded as the paid closeout approver.');
+    expect(markup).not.toContain('name="approvalAdminId"');
     expect(markup).not.toContain('Different admin user id');
     expect(markup).toContain('Cashout approved');
-    expect(referralParentNeedsFinanceApprover(row)).toBe(true);
   });
 
-  it('fails paid closeout closed when no separate Finance approver is available', () => {
+  it('does not trust a browser-selected approver when the paid closeout action is rendered', () => {
     const row: AdminCustomerReferralParent = {
       ...customerReferralParent,
       referrals: [
@@ -523,16 +560,27 @@ describe('Referral detail presentation', () => {
       ' ',
     );
 
-    expect(markup).toContain('No other Finance approver is available. Mark paid remains disabled.');
-    expect(markup).toMatch(/<button[^>]*disabled=""[^>]*><span>Mark paid<\/span><\/button>/);
+    expect(markup).toContain('The signed-in Finance operator is recorded as the paid closeout approver.');
+    expect(markup).not.toContain('name="approvalAdminId"');
+    expect(markup).toMatch(/<button[^>]*><span>Mark paid<\/span><\/button>/);
     expect(markup).toMatch(/<button[^>]*formNoValidate=""[^>]*><span>Require tax review<\/span><\/button>/);
   });
 
-  it('does not request a Finance approver directory for non-paid referral states', () => {
-    expect(referralParentNeedsFinanceApprover(customerReferralParent)).toBe(false);
+  it('does not request a browser-selectable Finance approver directory', () => {
+    const customerPageSource = readFileSync(
+      `${process.cwd()}/app/referrals/customers/[id]/page.tsx`,
+      'utf8',
+    );
+    const partnerPageSource = readFileSync(
+      `${process.cwd()}/app/referrals/partners/[id]/page.tsx`,
+      'utf8',
+    );
+
+    expect(customerPageSource).not.toContain('finance-approver-directory');
+    expect(partnerPageSource).not.toContain('finance-approver-directory');
   });
 
-  it('summarizes reward rows into an operator review board', () => {
+  it('summarizes reward rows in the command strip and evidence timeline without a duplicate board', () => {
     const row: AdminCustomerReferralParent = {
       ...customerReferralParent,
       referrals: [
@@ -569,10 +617,10 @@ describe('Referral detail presentation', () => {
       ' ',
     );
 
-    expect(markup).toContain('Referral operations board');
+    expect(markup).not.toContain('Referral operations board');
+    expect(markup).toContain('Reward decision timeline');
     expect(markup).toContain('Ready to credit');
-    expect(markup).toContain('On hold for review');
-    expect(markup).toContain('1 ready / 1 on hold');
+    expect(markup).toContain('1 ready · 1 on hold');
     expect(markup).toContain('Credit ready rewards or hold suspicious rows.');
     expect(markup).toContain('Ready 1');
     expect(markup).toContain('On hold 1');

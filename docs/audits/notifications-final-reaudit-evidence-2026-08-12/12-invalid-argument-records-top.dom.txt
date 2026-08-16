@@ -1,0 +1,379 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Messaging":
+        - /url: /notifications
+      - generic: Notification Delivery
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Messaging workspace":
+    - strong: Messaging
+    - generic "Messaging pages":
+      - link "Notification Delivery":
+        - /url: /notifications
+      - link "Notification Templates":
+        - /url: /notifications/templates
+      - link "Push Send":
+        - /url: /notifications/push-send
+  - heading "Notification Delivery" [level=1]
+  - paragraph: Review unresolved mobile send issues and inspect delivery records.
+  - generic "Notification delivery data status":
+    - generic: History · 24h+
+    - generic: Asia/Ho_Chi_Minh
+    - generic: Generated 12 Aug 2026, 14:34
+    - button "Refresh now":
+      - text: Refresh now
+    - generic: Unknown source records · 0
+  - generic "Notification data source":
+    - link "Production":
+      - /url: /notifications?scope=history
+    - link "Unknown source":
+      - /url: /notifications?scope=history&dataScope=unknown
+    - link "Synthetic":
+      - /url: /notifications?scope=history&dataScope=synthetic
+  - generic "Notification Delivery mode":
+    - link "Needs action":
+      - /url: /notifications?scope=history&dataScope=unknown
+    - link "Delivery records":
+      - /url: /notifications?mode=records&dataScope=unknown&range=all&sort=oldest
+  - region "Delivery health":
+    - heading "Delivery health" [level=2]
+    - paragraph: Current delivery debt and 24h+ backlog stay visible together. Counts are scoped to the selected data source.
+    - generic: 4 current · 2,477 history
+    - region "Current delivery debt":
+      - paragraph: CURRENT · UNDER 24H
+      - heading "Current delivery debt" [level=3]
+      - generic: 4 signals
+      - term: Failure groups
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?dataScope=unknown
+      - term: Failed
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=failed&dataScope=unknown
+      - term: No attempt
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=no-attempt&dataScope=unknown
+      - term: No route recipients
+      - definition: "4"
+      - link "Review":
+        - /url: /notifications?issue=no-route&dataScope=unknown
+      - term: Stale routes
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=stale-route&dataScope=unknown
+    - region "Historical delivery debt":
+      - paragraph: HISTORY · 24H+
+      - heading "Historical delivery debt" [level=3]
+      - generic: Open history
+      - term: Failure groups
+      - definition: "9"
+      - link "Review":
+        - /url: /notifications?scope=history&dataScope=unknown
+      - term: Failed
+      - definition: "747"
+      - link "Review":
+        - /url: /notifications?issue=failed&scope=history&dataScope=unknown
+      - term: No attempt
+      - definition: "451"
+      - link "Review":
+        - /url: /notifications?issue=no-attempt&scope=history&dataScope=unknown
+      - term: No route recipients
+      - definition: 1,270
+      - link "Review":
+        - /url: /notifications?issue=no-route&scope=history&dataScope=unknown
+      - term: Stale routes
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=stale-route&scope=history&dataScope=unknown
+      - paragraph: "Oldest failure group: 20 May 2026, 20:54 · lifecycle is read-only because Notification records do not have a persistent assignment or resolution field."
+  - generic "Notification delivery issue":
+    - link "Failure groups · 9 groups":
+      - /url: /notifications?scope=history&dataScope=unknown
+    - link "Failed · 747 notifications":
+      - /url: /notifications?issue=failed&scope=history&dataScope=unknown
+    - link "No send attempt after 15m · 451 notifications":
+      - /url: /notifications?issue=no-attempt&scope=history&dataScope=unknown
+    - link "No active push route · 1,270 recipients · 75,163 notifications":
+      - /url: /notifications?issue=no-route&scope=history&dataScope=unknown
+    - link "App route needs refresh · 0 notifications":
+      - /url: /notifications?issue=stale-route&scope=history&dataScope=unknown
+  - generic "Notification action age scope":
+    - link "Current · under 24h":
+      - /url: /notifications?dataScope=unknown
+    - link "24h+ history":
+      - /url: /notifications?scope=history&dataScope=unknown
+    - link "All ages":
+      - /url: /notifications?scope=all&dataScope=unknown
+  - region "Open failure groups":
+    - heading "Open failure groups" [level=2]
+    - paragraph: Latest unresolved paths grouped by push provider and normalized failure code.
+    - generic: 9 failure groups
+    - region "Notification delivery records":
+      - table:
+        - rowgroup:
+          - row "Cause Affected First / latest Technical next step Open affected records":
+            - columnheader "Cause"
+            - columnheader "Affected"
+            - columnheader "First / latest"
+            - columnheader "Technical next step"
+            - columnheader "Open affected records"
+        - rowgroup:
+          - row "INVALID_ARGUMENT FCM_HTTP_V1 INVALID_ARGUMENT 3 affected users 96 notifications First 20 May 2026, 20:54 Latest 22 May 2026, 06:51 Age 82d ago Inspect the latest provider response, template, and target fields. Owner · Developer / System Retry only after the target or template input is corrected. Developer checks Open this group":
+            - cell "INVALID_ARGUMENT FCM_HTTP_V1 INVALID_ARGUMENT":
+              - strong: INVALID_ARGUMENT
+              - generic: FCM_HTTP_V1
+              - code: INVALID_ARGUMENT
+            - cell "3 affected users 96 notifications":
+              - strong: 3 affected users
+              - generic: 96 notifications
+            - cell "First 20 May 2026, 20:54 Latest 22 May 2026, 06:51 Age 82d ago":
+              - text: First
+              - time: 20 May 2026, 20:54
+              - text: Latest
+              - time: 22 May 2026, 06:51
+              - generic: Age 82d ago
+            - cell "Inspect the latest provider response, template, and target fields. Owner · Developer / System Retry only after the target or template input is corrected. Developer checks":
+              - strong: Inspect the latest provider response, template, and target fields.
+              - generic: Owner · Developer / System
+              - generic: Retry only after the target or template input is corrected.
+              - link "Developer checks":
+                - /url: /setup?commands=all#notifications
+            - cell "Open this group":
+              - link "Open this group" [active]:
+                - /url: /notifications?issue=failed&scope=history&failureProvider=FCM_HTTP_V1&failureCode=INVALID_ARGUMENT
+          - row "UNCLASSIFIED_FAILURE ONESIGNAL UNCLASSIFIED_FAILURE 2 affected users 6 notifications First 10 Jun 2026, 16:36 Latest 11 Jun 2026, 04:12 Age 62d ago Inspect the provider response and Background Jobs before retrying. Owner · Developer / System Retry only after the failure is classified and the route is recovered. Developer checks Open this group":
+            - cell "UNCLASSIFIED_FAILURE ONESIGNAL UNCLASSIFIED_FAILURE":
+              - strong: UNCLASSIFIED_FAILURE
+              - generic: ONESIGNAL
+              - code: UNCLASSIFIED_FAILURE
+            - cell "2 affected users 6 notifications":
+              - strong: 2 affected users
+              - generic: 6 notifications
+            - cell "First 10 Jun 2026, 16:36 Latest 11 Jun 2026, 04:12 Age 62d ago":
+              - text: First
+              - time: 10 Jun 2026, 16:36
+              - text: Latest
+              - time: 11 Jun 2026, 04:12
+              - generic: Age 62d ago
+            - cell "Inspect the provider response and Background Jobs before retrying. Owner · Developer / System Retry only after the failure is classified and the route is recovered. Developer checks":
+              - strong: Inspect the provider response and Background Jobs before retrying.
+              - generic: Owner · Developer / System
+              - generic: Retry only after the failure is classified and the route is recovered.
+              - link "Developer checks":
+                - /url: /setup?commands=all#notifications
+            - cell "Open this group":
+              - link "Open this group":
+                - /url: /notifications?issue=failed&scope=history&failureProvider=ONESIGNAL&failureCode=UNCLASSIFIED_FAILURE
+          - row "UNCLASSIFIED_FAILURE FCM UNCLASSIFIED_FAILURE 2 affected users 38 notifications First 11 Jun 2026, 11:41 Latest 11 Jun 2026, 18:16 Age 61d ago Inspect the provider response and Background Jobs before retrying. Owner · Developer / System Retry only after the failure is classified and the route is recovered. Developer checks Open this group":
+            - cell "UNCLASSIFIED_FAILURE FCM UNCLASSIFIED_FAILURE":
+              - strong: UNCLASSIFIED_FAILURE
+              - generic: FCM
+              - code: UNCLASSIFIED_FAILURE
+            - cell "2 affected users 38 notifications":
+              - strong: 2 affected users
+              - generic: 38 notifications
+            - cell "First 11 Jun 2026, 11:41 Latest 11 Jun 2026, 18:16 Age 61d ago":
+              - text: First
+              - time: 11 Jun 2026, 11:41
+              - text: Latest
+              - time: 11 Jun 2026, 18:16
+              - generic: Age 61d ago
+            - cell "Inspect the provider response and Background Jobs before retrying. Owner · Developer / System Retry only after the failure is classified and the route is recovered. Developer checks":
+              - strong: Inspect the provider response and Background Jobs before retrying.
+              - generic: Owner · Developer / System
+              - generic: Retry only after the failure is classified and the route is recovered.
+              - link "Developer checks":
+                - /url: /setup?commands=all#notifications
+            - cell "Open this group":
+              - link "Open this group":
+                - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=UNCLASSIFIED_FAILURE
+          - row "FCM credentials missing FCM PUSH_PROVIDER_NOT_CONFIGURED 2 affected users 2 notifications First 13 Jun 2026, 03:01 Latest 13 Jun 2026, 03:01 Age 60d ago Verify FCM credentials, provider setup, and the notification worker. Owner · Developer / System Do not retry until provider setup and the notification worker are verified. Developer checks Open this group":
+            - cell "FCM credentials missing FCM PUSH_PROVIDER_NOT_CONFIGURED":
+              - strong: FCM credentials missing
+              - generic: FCM
+              - code: PUSH_PROVIDER_NOT_CONFIGURED
+            - cell "2 affected users 2 notifications":
+              - strong: 2 affected users
+              - generic: 2 notifications
+            - cell "First 13 Jun 2026, 03:01 Latest 13 Jun 2026, 03:01 Age 60d ago":
+              - text: First
+              - time: 13 Jun 2026, 03:01
+              - text: Latest
+              - time: 13 Jun 2026, 03:01
+              - generic: Age 60d ago
+            - cell "Verify FCM credentials, provider setup, and the notification worker. Owner · Developer / System Do not retry until provider setup and the notification worker are verified. Developer checks":
+              - strong: Verify FCM credentials, provider setup, and the notification worker.
+              - generic: Owner · Developer / System
+              - generic: Do not retry until provider setup and the notification worker are verified.
+              - link "Developer checks":
+                - /url: /setup?commands=all#notifications
+            - cell "Open this group":
+              - link "Open this group":
+                - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=PUSH_PROVIDER_NOT_CONFIGURED
+          - row "Firebase project mismatch FCM messaging/mismatched-credential 1 affected user 1 notification First 14 Jun 2026, 02:47 Latest 14 Jun 2026, 02:47 Age 60d ago Validate the Firebase project and credentials before retrying. Owner · Developer / System Retry only after the Firebase project credentials match the mobile app project. Developer checks Open this group":
+            - cell "Firebase project mismatch FCM messaging/mismatched-credential":
+              - strong: Firebase project mismatch
+              - generic: FCM
+              - code: messaging/mismatched-credential
+            - cell "1 affected user 1 notification":
+              - strong: 1 affected user
+              - generic: 1 notification
+            - cell "First 14 Jun 2026, 02:47 Latest 14 Jun 2026, 02:47 Age 60d ago":
+              - text: First
+              - time: 14 Jun 2026, 02:47
+              - text: Latest
+              - time: 14 Jun 2026, 02:47
+              - generic: Age 60d ago
+            - cell "Validate the Firebase project and credentials before retrying. Owner · Developer / System Retry only after the Firebase project credentials match the mobile app project. Developer checks":
+              - strong: Validate the Firebase project and credentials before retrying.
+              - generic: Owner · Developer / System
+              - generic: Retry only after the Firebase project credentials match the mobile app project.
+              - link "Developer checks":
+                - /url: /setup?commands=all#notifications
+            - cell "Open this group":
+              - link "Open this group":
+                - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=messaging%2Fmismatched-credential
+          - row "FCM token needs refresh FCM messaging/registration-token-not-registered 1 affected user 1 notification First 14 Jun 2026, 03:44 Latest 14 Jun 2026, 03:44 Age 60d ago Ask the recipient to reopen the app and register a new token. Owner · Customer Support Retry only after a new enabled push route is registered. Developer checks Open this group":
+            - cell "FCM token needs refresh FCM messaging/registration-token-not-registered":
+              - strong: FCM token needs refresh
+              - generic: FCM
+              - code: messaging/registration-token-not-registered
+            - cell "1 affected user 1 notification":
+              - strong: 1 affected user
+              - generic: 1 notification
+            - cell "First 14 Jun 2026, 03:44 Latest 14 Jun 2026, 03:44 Age 60d ago":
+              - text: First
+              - time: 14 Jun 2026, 03:44
+              - text: Latest
+              - time: 14 Jun 2026, 03:44
+              - generic: Age 60d ago
+            - cell "Ask the recipient to reopen the app and register a new token. Owner · Customer Support Retry only after a new enabled push route is registered. Developer checks":
+              - strong: Ask the recipient to reopen the app and register a new token.
+              - generic: Owner · Customer Support
+              - generic: Retry only after a new enabled push route is registered.
+              - link "Developer checks":
+                - /url: /setup?commands=all#notifications
+            - cell "Open this group":
+              - link "Open this group":
+                - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=messaging%2Fregistration-token-not-registered
+          - row "messaging/invalid-argument FCM messaging/invalid-argument 74 affected users 227 notifications First 13 Jun 2026, 03:05 Latest 26 Jun 2026, 16:02 Age 46d ago Inspect the latest provider response, template, and target fields. Owner · Developer / System Retry only after the target or template input is corrected. Developer checks Open this group":
+            - cell "messaging/invalid-argument FCM messaging/invalid-argument":
+              - strong: messaging/invalid-argument
+              - generic: FCM
+              - code: messaging/invalid-argument
+            - cell "74 affected users 227 notifications":
+              - strong: 74 affected users
+              - generic: 227 notifications
+            - cell "First 13 Jun 2026, 03:05 Latest 26 Jun 2026, 16:02 Age 46d ago":
+              - text: First
+              - time: 13 Jun 2026, 03:05
+              - text: Latest
+              - time: 26 Jun 2026, 16:02
+              - generic: Age 46d ago
+            - cell "Inspect the latest provider response, template, and target fields. Owner · Developer / System Retry only after the target or template input is corrected. Developer checks":
+              - strong: Inspect the latest provider response, template, and target fields.
+              - generic: Owner · Developer / System
+              - generic: Retry only after the target or template input is corrected.
+              - link "Developer checks":
+                - /url: /setup?commands=all#notifications
+            - cell "Open this group":
+              - link "Open this group":
+                - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=messaging%2Finvalid-argument
+          - row "INVALID_ARGUMENT FCM INVALID_ARGUMENT 244 affected users 369 notifications First 27 Jun 2026, 03:43 Latest 3 Aug 2026, 21:45 Age 8d ago Inspect the latest provider response, template, and target fields. Owner · Developer / System Retry only after the target or template input is corrected. Developer checks Open this group":
+            - cell "INVALID_ARGUMENT FCM INVALID_ARGUMENT":
+              - strong: INVALID_ARGUMENT
+              - generic: FCM
+              - code: INVALID_ARGUMENT
+            - cell "244 affected users 369 notifications":
+              - strong: 244 affected users
+              - generic: 369 notifications
+            - cell "First 27 Jun 2026, 03:43 Latest 3 Aug 2026, 21:45 Age 8d ago":
+              - text: First
+              - time: 27 Jun 2026, 03:43
+              - text: Latest
+              - time: 3 Aug 2026, 21:45
+              - generic: Age 8d ago
+            - cell "Inspect the latest provider response, template, and target fields. Owner · Developer / System Retry only after the target or template input is corrected. Developer checks":
+              - strong: Inspect the latest provider response, template, and target fields.
+              - generic: Owner · Developer / System
+              - generic: Retry only after the target or template input is corrected.
+              - link "Developer checks":
+                - /url: /setup?commands=all#notifications
+            - cell "Open this group":
+              - link "Open this group":
+                - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=INVALID_ARGUMENT
+          - row "UNREGISTERED FCM UNREGISTERED 3 affected users 10 notifications First 14 Jul 2026, 22:08 Latest 4 Aug 2026, 11:42 Age 8d ago Inspect the provider response and Background Jobs before retrying. Owner · Developer / System Retry only after the failure is classified and the route is recovered. Developer checks Open this group":
+            - cell "UNREGISTERED FCM UNREGISTERED":
+              - strong: UNREGISTERED
+              - generic: FCM
+              - code: UNREGISTERED
+            - cell "3 affected users 10 notifications":
+              - strong: 3 affected users
+              - generic: 10 notifications
+            - cell "First 14 Jul 2026, 22:08 Latest 4 Aug 2026, 11:42 Age 8d ago":
+              - text: First
+              - time: 14 Jul 2026, 22:08
+              - text: Latest
+              - time: 4 Aug 2026, 11:42
+              - generic: Age 8d ago
+            - cell "Inspect the provider response and Background Jobs before retrying. Owner · Developer / System Retry only after the failure is classified and the route is recovered. Developer checks":
+              - strong: Inspect the provider response and Background Jobs before retrying.
+              - generic: Owner · Developer / System
+              - generic: Retry only after the failure is classified and the route is recovered.
+              - link "Developer checks":
+                - /url: /setup?commands=all#notifications
+            - cell "Open this group":
+              - link "Open this group":
+                - /url: /notifications?issue=failed&scope=history&failureProvider=FCM&failureCode=UNREGISTERED
+    - generic: Showing 1 to 9 of 9 entries
+- alert

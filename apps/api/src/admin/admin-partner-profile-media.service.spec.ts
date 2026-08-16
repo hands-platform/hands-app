@@ -22,6 +22,7 @@ describe('AdminService Partner profile content and media', () => {
       },
     };
     const files = {
+      approvePublicMedia: vi.fn(),
       completeUpload: vi.fn(),
       createPresignedUploadForOwner: vi.fn(),
       deleteFile: vi.fn(),
@@ -86,12 +87,13 @@ describe('AdminService Partner profile content and media', () => {
     const result = await service.createPartnerPublicMediaUpload(actor, 'partner-1', {
       contentType: 'image/jpeg',
       purpose: 'provider-gallery',
+      sizeBytes: 1024,
     });
 
     expect(files.createPresignedUploadForOwner).toHaveBeenCalledWith(
       actor,
       'provider-user-1',
-      expect.objectContaining({ visibility: FileVisibility.PUBLIC }),
+      expect.objectContaining({ sizeBytes: 1024, visibility: FileVisibility.PUBLIC }),
     );
     expect(prisma.fileAsset.update).toHaveBeenCalledWith({
       where: { id: 'file-3' },

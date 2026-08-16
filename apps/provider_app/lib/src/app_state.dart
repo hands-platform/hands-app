@@ -293,11 +293,13 @@ class ProviderRepository {
 
   Future<Map<String, dynamic>> createWalletWithdrawalRequest({
     required int amount,
+    String? idempotencyKey,
     String? bankAccountId,
     String? requestNote,
   }) async {
     return _earningsRepository.createWalletWithdrawalRequest(
       amount: amount,
+      idempotencyKey: idempotencyKey,
       bankAccountId: bankAccountId,
       requestNote: requestNote,
     );
@@ -308,9 +310,10 @@ class ProviderRepository {
   }
 
   Future<Map<String, dynamic>> createVerificationUpload(
-      {String contentType = 'image/jpeg'}) async {
+      {String contentType = 'image/jpeg', required int sizeBytes}) async {
     return _verificationRepository.createVerificationUpload(
       contentType: contentType,
+      sizeBytes: sizeBytes,
     );
   }
 

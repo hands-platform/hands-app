@@ -1,11 +1,13 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = process.cwd();
 const apiPolicyPath = join(root, 'apps/api/src/matching/matching.policy.ts');
+const apiAdminServicePath = join(root, 'apps/api/src/admin/admin.service.ts');
 const adminPolicyPath = join(root, 'apps/admin_web/lib/operations-policy.ts');
 
 const apiPolicySource = readFileSync(apiPolicyPath, 'utf8');
+const apiAdminServiceSource = readFileSync(apiAdminServicePath, 'utf8');
 const adminPolicySource = readFileSync(adminPolicyPath, 'utf8');
 
 const adminPolicyKeysSource = readConstObjectSource(adminPolicySource, 'OPERATIONAL_POLICY_KEYS');
@@ -22,6 +24,8 @@ const adminStartShiftDefaultsSource = readConstObjectSource(
   adminPolicySource,
   'ADMIN_START_SHIFT_ACTION_SLA_DEFAULTS',
 );
+
+const lifecycleCheck = checkLifecycleAndConsumers();
 
 const requiredPolicies = [
   {
@@ -200,7 +204,7 @@ const checks = requiredPolicies.map((policy) => {
   };
 });
 
-const ok = checks.every((check) => check.status === 'PASS');
+const ok = checks.every((check) => check.status === 'PASS') && lifecycleCheck.status === 'PASS';
 const output = {
   ok,
   purpose:
@@ -208,6 +212,7 @@ const output = {
   apiPolicyPath,
   adminPolicyPath,
   checks,
+  lifecycleCheck,
 };
 
 console.log(JSON.stringify(output, null, 2));
@@ -225,6 +230,134 @@ function readConstObjectSource(source, name) {
   if (end === -1) {
     throw new Error(`Cannot find end of ${name}`);
   }
+  return source.slice(start + startMarker.length, end);
+}
+
+function checkLifecycleAndConsumers() {
+  const problems = [];
+  const baseDefinitionsSource = readBetween(
+    apiPolicySource,
+    'const OPERATIONAL_POLICY_BASE_DEFINITIONS: OperationalPolicyBaseDefinition[] = [',
+    'const PLANNED_OPERATIONAL_POLICY_KEYS',
+  );
+  const definitionReferences = [...baseDefinitionsSource.matchAll(/\bkey:\s*([A-Za-z0-9_.]+)/g)].map(
+    (match) => match[1],
+  );
+  const apiKeys = definitionReferences.map(resolveApiKeyReference).filter((value) => value !== undefined);
+  if (apiKeys.length !== definitionReferences.length) {
+    problems.push('Every API policy definition key reference must resolve to a literal key.');
+  }
+  const duplicateKeys = apiKeys.filter((key, index) => apiKeys.indexOf(key) !== index);
+  if (duplicateKeys.length > 0) problems.push(`Duplicate API policy keys: ${[...new Set(duplicateKeys)].join(', ')}`);
+
+  const plannedKeys = readSetKeyReferences(apiPolicySource, 'PLANNED_OPERATIONAL_POLICY_KEYS').map(
+    resolveApiKeyReference,
+  );
+  const lockedKeys = readSetKeyReferences(apiPolicySource, 'LOCKED_OPERATIONAL_POLICY_KEYS').map(
+    resolveApiKeyReference,
+  );
+  if (plannedKeys.some((key) => key === undefined) || lockedKeys.some((key) => key === undefined)) {
+    problems.push('Every planned and locked lifecycle key must resolve to an API policy key.');
+  }
+  const expectedPlannedKeys = [
+    'wallet.negative_balance_gate',
+    'decision.action_evidence_gate_mode',
+    'cash.settlement_clearance_policy',
+    'payout.batch_cycle_policy',
+    'matching.first_pick_expiry_action_policy',
+    'cancellation.after_match_policy',
+    'no_show.evidence_requirement_policy',
+  ].sort();
+  const expectedLockedKeys = [
+    'matching.marketplace_open_mode',
+    'matching.preferred_accept_mode',
+  ].sort();
+  if (JSON.stringify(plannedKeys.filter(Boolean).sort()) !== JSON.stringify(expectedPlannedKeys)) {
+    problems.push('Planned lifecycle keys do not match the reviewed reference-only contract.');
+  }
+  if (JSON.stringify(lockedKeys.filter(Boolean).sort()) !== JSON.stringify(expectedLockedKeys)) {
+    problems.push('Locked lifecycle keys do not match the fixed MVP contract.');
+  }
+
+  const adminKeys = [...adminPolicyKeysSource.matchAll(/\b\w+\s*:\s*['"]([^'"]+)['"]/g)]
+    .map((match) => match[1])
+    .filter((key) => key !== 'matching.backup_open_mode');
+  const missingAdminKeys = apiKeys.filter((key) => !adminKeys.includes(key));
+  const unknownAdminKeys = adminKeys.filter((key) => !apiKeys.includes(key));
+  if (missingAdminKeys.length > 0) problems.push(`Admin is missing policy keys: ${missingAdminKeys.join(', ')}`);
+  if (unknownAdminKeys.length > 0) problems.push(`Admin exposes unknown policy keys: ${unknownAdminKeys.join(', ')}`);
+
+  const contractSource = readBetween(
+    apiPolicySource,
+    'function operationalPolicyConsumerContract(',
+    'export const OPERATIONAL_POLICY_DEFINITIONS',
+  );
+  const consumerIds = readStringArrayValues(contractSource, 'consumerIds');
+  const integrationTestIds = readStringArrayValues(contractSource, 'integrationTestIds');
+  if (consumerIds.length === 0 || integrationTestIds.length === 0) {
+    problems.push('Live policies must declare allowlisted consumer and integration test IDs.');
+  }
+  for (const consumerId of new Set(consumerIds)) {
+    const [relativePath, symbol] = consumerId.split('#');
+    const absolutePath = join(root, relativePath);
+    if (!relativePath || !symbol || !existsSync(absolutePath)) {
+      problems.push(`Unknown operational policy consumer ID: ${consumerId}`);
+      continue;
+    }
+    if (!readFileSync(absolutePath, 'utf8').includes(symbol)) {
+      problems.push(`Operational policy consumer symbol is missing: ${consumerId}`);
+    }
+  }
+  for (const testId of new Set(integrationTestIds)) {
+    if (!existsSync(join(root, testId))) problems.push(`Unknown operational policy integration test ID: ${testId}`);
+  }
+
+  const liveCount = apiKeys.length - plannedKeys.length - lockedKeys.length;
+  if (apiKeys.length !== 28 || liveCount !== 19 || lockedKeys.length !== 2 || plannedKeys.length !== 7) {
+    problems.push(
+      `Lifecycle count drift: ${liveCount} live, ${lockedKeys.length} locked, ${plannedKeys.length} planned across ${apiKeys.length} definitions.`,
+    );
+  }
+  if (!apiAdminServiceSource.includes("definition.lifecycle !== 'live'")) {
+    problems.push('API write guard does not reject non-live lifecycle definitions.');
+  }
+
+  return {
+    status: problems.length === 0 ? 'PASS' : 'FAIL',
+    definitionCount: apiKeys.length,
+    lifecycleCounts: { live: liveCount, locked: lockedKeys.length, planned: plannedKeys.length },
+    consumerIds: [...new Set(consumerIds)].sort(),
+    integrationTestIds: [...new Set(integrationTestIds)].sort(),
+    problems,
+  };
+}
+
+function resolveApiKeyReference(reference) {
+  if (reference.startsWith('START_SHIFT_ACTION_SLA_POLICY_KEYS.')) {
+    return readObjectLiteral(apiStartShiftPolicyKeysSource, reference.split('.')[1]);
+  }
+  return readExportedLiteral(apiPolicySource, reference);
+}
+
+function readSetKeyReferences(source, name) {
+  const body = readBetween(source, `const ${name} = new Set<string>([`, ']);');
+  return body.match(/[A-Z][A-Z0-9_]+/g) ?? [];
+}
+
+function readStringArrayValues(source, propertyName) {
+  const values = [];
+  const pattern = new RegExp(`${propertyName}:\\s*\\[([\\s\\S]*?)\\]`, 'g');
+  for (const match of source.matchAll(pattern)) {
+    values.push(...[...match[1].matchAll(/['"]([^'"]+)['"]/g)].map((value) => value[1]));
+  }
+  return values;
+}
+
+function readBetween(source, startMarker, endMarker) {
+  const start = source.indexOf(startMarker);
+  if (start === -1) throw new Error(`Cannot find ${startMarker}`);
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  if (end === -1) throw new Error(`Cannot find ${endMarker}`);
   return source.slice(start + startMarker.length, end);
 }
 

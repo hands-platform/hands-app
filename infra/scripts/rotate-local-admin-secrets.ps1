@@ -6,6 +6,7 @@ param(
 $ErrorActionPreference = "Stop"
 $envPath = Join-Path $RepoRoot ".env"
 $secretKeys = @(
+  "ADMIN_MFA_ENCRYPTION_KEY",
   "ADMIN_WEB_API_TOKEN_SECRET",
   "ADMIN_REALTIME_TOKEN_SECRET",
   "ADMIN_WEB_SESSION_COOKIE_SECRET"

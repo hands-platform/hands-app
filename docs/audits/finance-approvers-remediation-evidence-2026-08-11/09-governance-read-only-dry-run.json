@@ -1,0 +1,161 @@
+{
+  "ok": true,
+  "environment": "development",
+  "highPrivilegeTotal": 12,
+  "productionCount": 0,
+  "fixtureCount": 0,
+  "unknownCount": 12,
+  "pendingRequestCount": 0,
+  "productionViolationCount": 12,
+  "releaseBlockingAccounts": [
+    {
+      "id": "admin-local-smoke",
+      "roles": [
+        "ADMIN",
+        "FINANCE_APPROVER",
+        "MASTER_ADMIN"
+      ],
+      "provenance": "UNKNOWN",
+      "fixtureKind": null,
+      "fixtureRunId": null,
+      "fixtureExpiresAt": null,
+      "recommendedAction": "Classify as PRODUCTION or FIXTURE only after an owner verifies the account evidence."
+    },
+    {
+      "id": "audit_post_match_finance_approver_user",
+      "roles": [
+        "ADMIN",
+        "FINANCE_APPROVER"
+      ],
+      "provenance": "UNKNOWN",
+      "fixtureKind": null,
+      "fixtureRunId": null,
+      "fixtureExpiresAt": null,
+      "recommendedAction": "Classify as PRODUCTION or FIXTURE only after an owner verifies the account evidence."
+    },
+    {
+      "id": "cmpb9dvr80005vyqsskqoeo0v",
+      "roles": [
+        "ADMIN",
+        "FINANCE_APPROVER",
+        "MASTER_ADMIN"
+      ],
+      "provenance": "UNKNOWN",
+      "fixtureKind": null,
+      "fixtureRunId": null,
+      "fixtureExpiresAt": null,
+      "recommendedAction": "Classify as PRODUCTION or FIXTURE only after an owner verifies the account evidence."
+    },
+    {
+      "id": "cmpfe6qxi00chvydwvhza0b23",
+      "roles": [
+        "ADMIN",
+        "FINANCE_APPROVER",
+        "MASTER_ADMIN"
+      ],
+      "provenance": "UNKNOWN",
+      "fixtureKind": null,
+      "fixtureRunId": null,
+      "fixtureExpiresAt": null,
+      "recommendedAction": "Classify as PRODUCTION or FIXTURE only after an owner verifies the account evidence."
+    },
+    {
+      "id": "cmr39eqt60000vy8w8dgyx6wi",
+      "roles": [
+        "ADMIN",
+        "FINANCE_APPROVER",
+        "MASTER_ADMIN"
+      ],
+      "provenance": "UNKNOWN",
+      "fixtureKind": null,
+      "fixtureRunId": null,
+      "fixtureExpiresAt": null,
+      "recommendedAction": "Classify as PRODUCTION or FIXTURE only after an owner verifies the account evidence."
+    },
+    {
+      "id": "provider_payout_reversal_1785336269676_approver",
+      "roles": [
+        "ADMIN",
+        "FINANCE_APPROVER"
+      ],
+      "provenance": "UNKNOWN",
+      "fixtureKind": null,
+      "fixtureRunId": null,
+      "fixtureExpiresAt": null,
+      "recommendedAction": "Classify as PRODUCTION or FIXTURE only after an owner verifies the account evidence."
+    },
+    {
+      "id": "provider_payout_reversal_1785340259415_approver",
+      "roles": [
+        "ADMIN",
+        "FINANCE_APPROVER"
+      ],
+      "provenance": "UNKNOWN",
+      "fixtureKind": null,
+      "fixtureRunId": null,
+      "fixtureExpiresAt": null,
+      "recommendedAction": "Classify as PRODUCTION or FIXTURE only after an owner verifies the account evidence."
+    },
+    {
+      "id": "provider_withdrawal_1785335298966_approver",
+      "roles": [
+        "ADMIN",
+        "FINANCE_APPROVER"
+      ],
+      "provenance": "UNKNOWN",
+      "fixtureKind": null,
+      "fixtureRunId": null,
+      "fixtureExpiresAt": null,
+      "recommendedAction": "Classify as PRODUCTION or FIXTURE only after an owner verifies the account evidence."
+    },
+    {
+      "id": "provider_withdrawal_1785340172425_approver",
+      "roles": [
+        "ADMIN",
+        "FINANCE_APPROVER"
+      ],
+      "provenance": "UNKNOWN",
+      "fixtureKind": null,
+      "fixtureRunId": null,
+      "fixtureExpiresAt": null,
+      "recommendedAction": "Classify as PRODUCTION or FIXTURE only after an owner verifies the account evidence."
+    },
+    {
+      "id": "provider_withdrawal_1785340200336_approver",
+      "roles": [
+        "ADMIN",
+        "FINANCE_APPROVER"
+      ],
+      "provenance": "UNKNOWN",
+      "fixtureKind": null,
+      "fixtureRunId": null,
+      "fixtureExpiresAt": null,
+      "recommendedAction": "Classify as PRODUCTION or FIXTURE only after an owner verifies the account evidence."
+    },
+    {
+      "id": "provider_withdrawal_1785384642017_approver",
+      "roles": [
+        "ADMIN",
+        "FINANCE_APPROVER"
+      ],
+      "provenance": "UNKNOWN",
+      "fixtureKind": null,
+      "fixtureRunId": null,
+      "fixtureExpiresAt": null,
+      "recommendedAction": "Classify as PRODUCTION or FIXTURE only after an owner verifies the account evidence."
+    },
+    {
+      "id": "smoke_post_match_finance_approver_user",
+      "roles": [
+        "ADMIN",
+        "FINANCE_APPROVER"
+      ],
+      "provenance": "UNKNOWN",
+      "fixtureKind": null,
+      "fixtureRunId": null,
+      "fixtureExpiresAt": null,
+      "recommendedAction": "Classify as PRODUCTION or FIXTURE only after an owner verifies the account evidence."
+    }
+  ],
+  "mutation": "none"
+}

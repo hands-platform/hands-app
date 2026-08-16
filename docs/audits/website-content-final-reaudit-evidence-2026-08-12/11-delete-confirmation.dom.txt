@@ -1,0 +1,32 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation"
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - generic: Website Content
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - heading "Shift Command" [level=1]
+  - paragraph: Loading current operator data and retained records.
+  - heading "Priority queue" [level=2]
+  - status:
+    - heading "Loading priority queue" [level=3]
+    - paragraph: Loading current exceptions and the next safe operator actions.
+  - heading "Records" [level=2]
+  - status:
+    - heading "Loading records" [level=3]
+    - paragraph: Loading supporting records without blocking the priority queue.
+- alert

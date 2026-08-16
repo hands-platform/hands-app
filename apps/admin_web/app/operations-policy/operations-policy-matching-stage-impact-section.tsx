@@ -1,6 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminNotePanel, AdminSection } from '../../components/admin-surface';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { MatchingStageImpactPreview } from './matching-stage-impact-preview';
 
@@ -26,7 +27,7 @@ export function OperationsPolicyMatchingStageImpactSection({
   return (
     <AdminSection
       className="admin-mb-16"
-      description="Estimates how current open bookings would move across Stage 1/2/3/4 if the response window, 10km radius, or location freshness policy changed. This is a planning preview; saved booking snapshots still protect live requests."
+      description="Estimates how current open bookings would move across Stage 1/2/3/4 if the response window, 10km radius, or location freshness policy changed. This is a scenario estimate; saved booking snapshots still protect live requests."
       id="matching-stage-impact"
       statusLabel={preview.currentPolicyLabel}
       statusTone="info"
@@ -40,30 +41,38 @@ export function OperationsPolicyMatchingStageImpactSection({
           value: item.value,
         }))}
       />
-      <AdminTableScroll>
-        <AdminDataTable
-          className="service-trace"
-          emptyMessage={null}
-          headers={MATCHING_STAGE_IMPACT_HEADERS}
-          rowCount={preview.rows.length}
-        >
-          {preview.rows.map((row) => (
-            <tr key={`${row.scenario}-${row.value}`}>
-              <td>
-                <StatusBadgeFromPillClass pillClass={row.pillClass}>{row.scenario}</StatusBadgeFromPillClass>
-              </td>
-              <td>{row.value}</td>
-              <td>{row.stage1}</td>
-              <td>{row.stage2}</td>
-              <td>{row.stage3}</td>
-              <td>{row.repair}</td>
-              <td>{row.noSupply}</td>
-              <td>{row.overdue}</td>
-              <td>{row.operatorRead}</td>
-            </tr>
-          ))}
-        </AdminDataTable>
-      </AdminTableScroll>
+      {preview.openMatchingCount > 0 ? (
+        <AdminTableScroll>
+          <AdminDataTable
+            className="service-trace"
+            emptyMessage={null}
+            headers={MATCHING_STAGE_IMPACT_HEADERS}
+            rowCount={preview.rows.length}
+          >
+            {preview.rows.map((row) => (
+              <tr key={`${row.scenario}-${row.value}`}>
+                <td>
+                  <StatusBadgeFromPillClass pillClass={row.pillClass}>{row.scenario}</StatusBadgeFromPillClass>
+                </td>
+                <td>{row.value}</td>
+                <td>{row.stage1}</td>
+                <td>{row.stage2}</td>
+                <td>{row.stage3}</td>
+                <td>{row.repair}</td>
+                <td>{row.noSupply}</td>
+                <td>{row.overdue}</td>
+                <td>{row.operatorRead}</td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
+      ) : (
+        <AdminEmptyState
+          framed
+          message="No OPEN_MATCHING bookings are present in the bounded sample. Scenario rows are hidden because every result would be zero."
+          title="No open matching bookings to model"
+        />
+      )}
       <AdminNotePanel className="admin-mt-14">
         <strong>How to use this preview</strong>
         <p className="muted">

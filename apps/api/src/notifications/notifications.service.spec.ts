@@ -1,6 +1,173 @@
 import { Role } from '@prisma/client';
 import { NotificationsService } from './notifications.service';
 
+describe('NotificationsService role isolation', () => {
+  it('filters role-targeted notifications for a dual-role identity', async () => {
+    const prisma = {
+      notification: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'customer-1', type: 'booking.opened', data: { targetRole: Role.CUSTOMER } },
+          { id: 'provider-1', type: 'booking.requested', data: { targetRole: Role.PROVIDER } },
+          { id: 'shared-1', type: 'system.notice', data: {} },
+          { id: 'ambiguous-1', type: 'chat.message.created', data: {} },
+        ]),
+      },
+    };
+    const service = new NotificationsService(prisma as never, { add: vi.fn() } as never);
+
+    await expect(service.listForUser('user-1', Role.PROVIDER)).resolves.toEqual([
+      expect.objectContaining({ id: 'provider-1' }),
+      expect.objectContaining({ id: 'shared-1' }),
+    ]);
+  });
+
+  it('rejects a push notification when its app role cannot be resolved', async () => {
+    const prisma = { notification: { create: vi.fn() } };
+    const queue = { add: vi.fn() };
+    const service = new NotificationsService(prisma as never, queue as never);
+
+    await expect(
+      service.create({
+        body: 'A new message is available.',
+        title: 'New message',
+        type: 'chat.message.created',
+        userId: 'user-1',
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'NOTIFICATION_TARGET_ROLE_REQUIRED' }),
+    });
+
+    expect(prisma.notification.create).not.toHaveBeenCalled();
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  it('stores an inferred role for a legacy role-specific notification', async () => {
+    const prisma = {
+      notification: { create: vi.fn().mockResolvedValue({ id: 'notification-1' }) },
+      notificationTemplate: { findUnique: vi.fn().mockResolvedValue(null) },
+      pushDevice: { findFirst: vi.fn().mockResolvedValue(null) },
+    };
+    const service = new NotificationsService(prisma as never, { add: vi.fn() } as never);
+
+    await service.create({
+      body: 'Your payment changed.',
+      title: 'Payment update',
+      type: 'payment.updated',
+      userId: 'user-1',
+    });
+
+    expect(prisma.notification.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        data: expect.objectContaining({ targetRole: Role.CUSTOMER }),
+      }),
+    });
+  });
+
+  it('does not mark another app role notification as read', async () => {
+    const prisma = {
+      notification: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'customer-1',
+          type: 'booking.opened',
+          data: { targetRole: Role.CUSTOMER },
+        }),
+        update: vi.fn(),
+      },
+    };
+    const service = new NotificationsService(prisma as never, { add: vi.fn() } as never);
+
+    await expect(service.markRead('user-1', 'customer-1', Role.PROVIDER)).rejects.toThrow(
+      'Notification was not found',
+    );
+    expect(prisma.notification.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('NotificationsService manual Push persistence', () => {
+  it('claims a snapshotted recipient before creating its single notification', async () => {
+    const tx = {
+      adminPushCampaignRecipient: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ notificationId: null, status: 'SNAPSHOTTED' }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      notification: {
+        create: vi.fn().mockResolvedValue({ id: 'notification-1' }),
+        findUniqueOrThrow: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const service = new NotificationsService(prisma as never, { add: vi.fn() } as never);
+
+    await expect(
+      service.persistAdminPushRecipient({
+        body: 'Campaign body',
+        campaignId: 'campaign-1',
+        data: { campaignId: 'campaign-1', locale: 'vi' },
+        locale: 'vi',
+        resolveTemplate: false,
+        targetRole: Role.PROVIDER,
+        title: 'Campaign title',
+        type: 'admin.push.broadcast',
+        userId: 'user-1',
+      }),
+    ).resolves.toEqual({ id: 'notification-1' });
+
+    expect(tx.adminPushCampaignRecipient.updateMany).toHaveBeenCalledWith({
+      where: {
+        campaignId: 'campaign-1',
+        userId: 'user-1',
+        notificationId: null,
+        status: 'SNAPSHOTTED',
+      },
+      data: { status: 'PROCESSING' },
+    });
+    expect(tx.notification.create).toHaveBeenCalledTimes(1);
+    expect(tx.adminPushCampaignRecipient.update).toHaveBeenCalledWith({
+      where: { campaignId_userId: { campaignId: 'campaign-1', userId: 'user-1' } },
+      data: { notificationId: 'notification-1' },
+    });
+  });
+
+  it('reuses the linked notification on a campaign retry', async () => {
+    const existingNotification = { id: 'notification-existing' };
+    const tx = {
+      adminPushCampaignRecipient: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          notificationId: existingNotification.id,
+          status: 'PROCESSING',
+        }),
+        updateMany: vi.fn(),
+        update: vi.fn(),
+      },
+      notification: {
+        create: vi.fn(),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(existingNotification),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const service = new NotificationsService(prisma as never, { add: vi.fn() } as never);
+
+    await expect(
+      service.persistAdminPushRecipient({
+        body: 'Campaign body',
+        campaignId: 'campaign-1',
+        targetRole: Role.CUSTOMER,
+        title: 'Campaign title',
+        type: 'admin.push.broadcast',
+        userId: 'user-1',
+      }),
+    ).resolves.toEqual(existingNotification);
+
+    expect(tx.adminPushCampaignRecipient.updateMany).not.toHaveBeenCalled();
+    expect(tx.notification.create).not.toHaveBeenCalled();
+  });
+});
+
 describe('NotificationsService device tokens', () => {
   it('registers an FCM token for the authenticated provider user', async () => {
     const prisma = {
@@ -148,6 +315,9 @@ describe('NotificationsService retry queue', () => {
           bookingId: 'booking-1',
           createdAt: '2026-06-11T00:00:00.000Z',
           dataScope: 'synthetic',
+          deliveryIntent: 'PUSH_AND_IN_APP',
+          managedTemplateKey: 'booking.requested',
+          targetRole: Role.PROVIDER,
         },
       },
     });
@@ -197,11 +367,13 @@ describe('NotificationsService retry queue', () => {
           translations: [
             {
               locale: 'vi',
+              status: 'READY',
               title: 'Yêu cầu mới',
               body: 'Đơn {bookingId} từ {customerName} đang sẵn sàng.',
             },
             {
               locale: 'en',
+              status: 'READY',
               title: 'New request',
               body: 'Booking {bookingId} is ready.',
             },
@@ -245,6 +417,7 @@ describe('NotificationsService retry queue', () => {
             locale: true,
             title: true,
             body: true,
+            status: true,
           },
         },
       },
@@ -259,10 +432,113 @@ describe('NotificationsService retry queue', () => {
           bookingId: 'booking-1',
           customerName: 'Linh',
           dataScope: 'synthetic',
+          deliveryIntent: 'PUSH_AND_IN_APP',
+          managedTemplateKey: 'booking.requested',
           targetRole: Role.PROVIDER,
         },
       },
     });
+  });
+
+  it('uses the role-specific Partner template and falls back to READY English copy', async () => {
+    const notification = { id: 'notification-partner-matched' };
+    const prisma = {
+      notification: { create: vi.fn().mockResolvedValue(notification) },
+      notificationTemplate: {
+        findUnique: vi.fn().mockResolvedValue({
+          enabled: true,
+          translations: [
+            { body: 'Bản dịch chưa được duyệt.', locale: 'vi', status: 'NEEDS_REVIEW', title: 'Đã ghép' },
+            { body: 'Open chat and start the service.', locale: 'en', status: 'READY', title: 'Booking matched' },
+          ],
+        }),
+      },
+      pushDevice: { findFirst: vi.fn().mockResolvedValue({ locale: 'vi' }) },
+    };
+    const queue = { add: vi.fn() };
+    const service = new NotificationsService(prisma as never, queue as never);
+
+    await expect(service.create({
+      body: 'The customer selected you. Open chat to continue.',
+      data: { bookingId: 'booking-1' },
+      targetRole: Role.PROVIDER,
+      title: 'You were selected',
+      type: 'booking.matched',
+      userId: 'partner-user-1',
+    })).resolves.toEqual(notification);
+
+    expect(prisma.notificationTemplate.findUnique).toHaveBeenCalledWith(expect.objectContaining({
+      where: { key: 'booking.matched.partner' },
+    }));
+    expect(prisma.notification.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        body: 'Open chat and start the service.',
+        data: expect.objectContaining({ managedTemplateKey: 'booking.matched.partner' }),
+        title: 'Booking matched',
+      }),
+    });
+  });
+
+  it('uses caller fallback when READY managed copy has an unresolved payload variable', async () => {
+    const notification = { id: 'notification-fallback' };
+    const prisma = {
+      notification: { create: vi.fn().mockResolvedValue(notification) },
+      notificationTemplate: {
+        findUnique: vi.fn().mockResolvedValue({
+          enabled: true,
+          translations: [
+            { body: '{partnerName} joined your booking.', locale: 'en', status: 'READY', title: 'Partner joined' },
+          ],
+        }),
+      },
+      pushDevice: { findFirst: vi.fn().mockResolvedValue({ locale: 'en' }) },
+    };
+    const queue = { add: vi.fn() };
+    const service = new NotificationsService(prisma as never, queue as never);
+
+    await expect(service.create({
+      body: 'A Partner joined your booking.',
+      data: { bookingId: 'booking-1' },
+      targetRole: Role.CUSTOMER,
+      title: 'Partner joined',
+      type: 'provider.joined',
+      userId: 'customer-user-1',
+    })).resolves.toEqual(notification);
+
+    expect(prisma.notification.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        body: 'A Partner joined your booking.',
+        title: 'Partner joined',
+      }),
+    });
+    expect(queue.add).toHaveBeenCalledTimes(1);
+  });
+
+  it('blocks persistence and enqueue when caller fallback still has unresolved variables', async () => {
+    const prisma = {
+      notification: { create: vi.fn() },
+      notificationTemplate: { findUnique: vi.fn() },
+      pushDevice: { findFirst: vi.fn() },
+    };
+    const queue = { add: vi.fn() };
+    const service = new NotificationsService(prisma as never, queue as never);
+
+    await expect(service.create({
+      body: '{partnerName} joined your booking.',
+      data: { bookingId: 'booking-1' },
+      targetRole: Role.CUSTOMER,
+      title: 'Partner joined',
+      type: 'provider.joined',
+      userId: 'customer-user-1',
+    })).rejects.toMatchObject({
+      response: expect.objectContaining({
+        code: 'NOTIFICATION_COPY_UNRESOLVED_VARIABLE',
+        unresolvedVariables: ['partnerName'],
+      }),
+    });
+
+    expect(prisma.notification.create).not.toHaveBeenCalled();
+    expect(queue.add).not.toHaveBeenCalled();
   });
 
   it('keeps explicit notification copy when template resolution is disabled', async () => {
@@ -304,6 +580,7 @@ describe('NotificationsService retry queue', () => {
         data: {
           campaignId: 'campaign-1',
           dataScope: 'synthetic',
+          deliveryIntent: 'PUSH_AND_IN_APP',
           targetRole: Role.PROVIDER,
         },
       },
@@ -340,6 +617,8 @@ describe('NotificationsService retry queue', () => {
         data: {
           bookingId: 'booking-1',
           dataScope: 'synthetic',
+          deliveryIntent: 'PUSH_AND_IN_APP',
+          managedTemplateKey: 'booking.requested',
           targetRole: Role.PROVIDER,
         },
       }),

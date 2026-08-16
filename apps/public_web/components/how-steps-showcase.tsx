@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 type HowStep = {
+  readonly action?: string;
   readonly body: string;
   readonly image: string;
   readonly imagePosition?: string;
@@ -10,9 +11,11 @@ type HowStep = {
 };
 
 export function HowStepsShowcase({
+  actionHref = '#download',
   actionLabel,
   steps,
 }: {
+  readonly actionHref?: string;
   readonly actionLabel: string;
   readonly steps: readonly HowStep[];
 }) {
@@ -37,8 +40,8 @@ export function HowStepsShowcase({
         <div className="how-story-content">
           <p className="how-story-kicker">— {activeStep.title}</p>
           <h2 id="how-showcase-title">{activeStep.body}</h2>
-          <a className="button button-light" href="#download">
-            {actionLabel}
+          <a className="button button-light" href={actionHref}>
+            {activeStep.action ?? actionLabel}
           </a>
           <div className="how-slide-controls">
             <span aria-live="polite">

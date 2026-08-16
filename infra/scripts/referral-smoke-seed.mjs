@@ -4,7 +4,6 @@ import {
   ReferralAttributionStatus,
   ReferralAudience,
   ReferralFraudReviewStatus,
-  ReferralRewardMode,
   ReferralRewardStatus,
   Role,
 } from '@prisma/client';
@@ -13,6 +12,7 @@ import { loadMergedEnv } from './lib/env-file.mjs';
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const cleanupOnly = process.argv.includes('--cleanup');
 const dryRun = process.argv.includes('--dry-run');
+const allowMutation = process.argv.includes('--apply') && process.env.REFERRAL_SMOKE_ALLOW_MUTATION === 'confirmed';
 const { env, envFileExists, envPath } = loadMergedEnv(envFile);
 
 if (env.DATABASE_URL) {
@@ -82,23 +82,16 @@ if (!process.env.DATABASE_URL) {
 
 const prisma = new PrismaClient();
 const now = new Date();
+const fixtureRunId = process.env.REFERRAL_FIXTURE_RUN_ID ?? `referral-admin-${now.toISOString()}`;
+const fixtureMetadata = { smoke: 'referral-admin', fixtureRunId };
 
 try {
-  await cleanupSmokeData();
+  if (!allowMutation) {
+    fail('Referral smoke mutation is disabled. Use --dry-run, or explicitly pass --apply with REFERRAL_SMOKE_ALLOW_MUTATION=confirmed in an isolated test database.');
+  }
 
   if (cleanupOnly) {
-    console.log(
-      JSON.stringify(
-        {
-          ok: true,
-          action: 'cleanup',
-          envFile: { path: envPath, exists: envFileExists },
-          removedIds: ids,
-        },
-        null,
-        2,
-      ),
-    );
+    fail('Cleanup is no longer performed by the seed. Run referrals:fixture-inventory and review the manifest instead.');
   } else {
     await seedSmokeData();
     const verification = await verifySmokeData();
@@ -134,74 +127,11 @@ try {
 }
 
 async function seedSmokeData() {
-  await seedPolicies();
   await seedCustomers();
   await seedPartners();
   await seedCodes();
   await seedAttributions();
   await seedRewards();
-}
-
-async function seedPolicies() {
-  await prisma.referralPolicy.upsert({
-    where: { audience: ReferralAudience.CUSTOMER },
-    update: {
-      enabled: true,
-      rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
-      commissionPercentBps: 500,
-      fixedRewardAmount: null,
-      perRewardCapAmount: 100000,
-      totalRewardCapAmount: 500000,
-      maxRewardedReferrals: 5,
-      maxRewardsPerReferred: 1,
-      holdPeriodDays: 7,
-      currency: 'VND',
-      notes: 'Smoke policy for customer referral admin UI checks.',
-    },
-    create: {
-      audience: ReferralAudience.CUSTOMER,
-      enabled: true,
-      rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
-      commissionPercentBps: 500,
-      perRewardCapAmount: 100000,
-      totalRewardCapAmount: 500000,
-      maxRewardedReferrals: 5,
-      maxRewardsPerReferred: 1,
-      holdPeriodDays: 7,
-      currency: 'VND',
-      notes: 'Smoke policy for customer referral admin UI checks.',
-    },
-  });
-
-  await prisma.referralPolicy.upsert({
-    where: { audience: ReferralAudience.PARTNER },
-    update: {
-      enabled: true,
-      rewardMode: ReferralRewardMode.FIXED_AMOUNT,
-      commissionPercentBps: null,
-      fixedRewardAmount: 150000,
-      perRewardCapAmount: 150000,
-      totalRewardCapAmount: 750000,
-      maxRewardedReferrals: 5,
-      maxRewardsPerReferred: 1,
-      holdPeriodDays: 7,
-      currency: 'VND',
-      notes: 'Smoke policy for Partner referral admin UI checks.',
-    },
-    create: {
-      audience: ReferralAudience.PARTNER,
-      enabled: true,
-      rewardMode: ReferralRewardMode.FIXED_AMOUNT,
-      fixedRewardAmount: 150000,
-      perRewardCapAmount: 150000,
-      totalRewardCapAmount: 750000,
-      maxRewardedReferrals: 5,
-      maxRewardsPerReferred: 1,
-      holdPeriodDays: 7,
-      currency: 'VND',
-      notes: 'Smoke policy for Partner referral admin UI checks.',
-    },
-  });
 }
 
 async function seedCustomers() {
@@ -258,14 +188,14 @@ async function seedCodes() {
       audience: ReferralAudience.CUSTOMER,
       ownerCustomerProfileId: ids.customerParentProfile,
       ownerProviderProfileId: null,
-      metadata: { smoke: 'referral-admin' },
+      metadata: fixtureMetadata,
     },
     create: {
       id: ids.customerCode,
       audience: ReferralAudience.CUSTOMER,
       code: 'SMOKECUSTREF',
       ownerCustomerProfileId: ids.customerParentProfile,
-      metadata: { smoke: 'referral-admin' },
+      metadata: fixtureMetadata,
     },
   });
 
@@ -276,14 +206,14 @@ async function seedCodes() {
       audience: ReferralAudience.PARTNER,
       ownerCustomerProfileId: null,
       ownerProviderProfileId: ids.partnerParentProfile,
-      metadata: { smoke: 'referral-admin' },
+      metadata: fixtureMetadata,
     },
     create: {
       id: ids.partnerCode,
       audience: ReferralAudience.PARTNER,
       code: 'SMOKEPARTREF',
       ownerProviderProfileId: ids.partnerParentProfile,
-      metadata: { smoke: 'referral-admin' },
+      metadata: fixtureMetadata,
     },
   });
 }
@@ -305,7 +235,7 @@ async function seedAttributions() {
       platform: 'android',
       status: ReferralAttributionStatus.QUALIFIED,
       fraudReviewStatus: ReferralFraudReviewStatus.CLEAR,
-      metadata: { smoke: 'referral-admin' },
+      metadata: fixtureMetadata,
     },
     create: {
       id: ids.customerAttribution,
@@ -317,7 +247,7 @@ async function seedAttributions() {
       platform: 'android',
       status: ReferralAttributionStatus.QUALIFIED,
       fraudReviewStatus: ReferralFraudReviewStatus.CLEAR,
-      metadata: { smoke: 'referral-admin' },
+      metadata: fixtureMetadata,
     },
   });
 
@@ -337,7 +267,7 @@ async function seedAttributions() {
       platform: 'ios',
       status: ReferralAttributionStatus.QUALIFIED,
       fraudReviewStatus: ReferralFraudReviewStatus.CLEAR,
-      metadata: { smoke: 'referral-admin' },
+      metadata: fixtureMetadata,
     },
     create: {
       id: ids.partnerAttribution,
@@ -349,7 +279,7 @@ async function seedAttributions() {
       platform: 'ios',
       status: ReferralAttributionStatus.QUALIFIED,
       fraudReviewStatus: ReferralFraudReviewStatus.CLEAR,
-      metadata: { smoke: 'referral-admin' },
+      metadata: fixtureMetadata,
     },
   });
 }
@@ -479,11 +409,11 @@ async function upsertReward({
     attributionId,
     availableAt,
     calculationSnapshot: {
-      smoke: 'referral-admin',
+      ...fixtureMetadata,
       walletCreditCreated: false,
     },
     currency: 'VND',
-    metadata: { smoke: 'referral-admin' },
+    metadata: fixtureMetadata,
     notes: 'Smoke reward candidate for Admin referral UI verification.',
     qualifyingBookingId: null,
     sourceKey,
@@ -545,58 +475,12 @@ async function verifySmokeData() {
   };
 }
 
-async function cleanupSmokeData() {
-  const rewardIds = [
-    ids.customerPendingReward,
-    ids.customerAvailableReward,
-    ids.partnerPendingReward,
-    ids.partnerAvailableReward,
-  ];
-
-  await prisma.adminAuditLog.deleteMany({
-    where: { target: { in: rewardIds.map((rewardId) => `referral_reward:${rewardId}`) } },
-  });
-  await prisma.customerWalletLedgerEntry.deleteMany({
-    where: {
-      OR: [
-        { referralRewardId: { in: rewardIds } },
-        { sourceKey: { in: rewardIds.map(referralWalletCreditSourceKey) } },
-      ],
-    },
-  });
-  await prisma.providerWalletLedgerEntry.deleteMany({
-    where: {
-      sourceKey: { in: rewardIds.map(referralWalletCreditSourceKey) },
-    },
-  });
-  await prisma.referralReward.deleteMany({
-    where: { OR: [{ id: { in: rewardIds } }, { sourceKey: { in: Object.values(sourceKeys) } }] },
-  });
-  await prisma.referralAttribution.deleteMany({
-    where: {
-      OR: [
-        { id: { in: [ids.customerAttribution, ids.partnerAttribution] } },
-        { referralCodeId: { in: [ids.customerCode, ids.partnerCode] } },
-      ],
-    },
-  });
-  await prisma.referralCode.deleteMany({
-    where: { id: { in: [ids.customerCode, ids.partnerCode] } },
-  });
-
-  // Booking smoke data can share these actors; seed paths upsert them in place.
-}
-
 function countBy(rows, getKey) {
   return rows.reduce((counts, row) => {
     const key = getKey(row);
     counts[key] = (counts[key] ?? 0) + 1;
     return counts;
   }, {});
-}
-
-function referralWalletCreditSourceKey(rewardId) {
-  return `referral:wallet-credit:${rewardId}`;
 }
 
 function assertCondition(condition, message) {

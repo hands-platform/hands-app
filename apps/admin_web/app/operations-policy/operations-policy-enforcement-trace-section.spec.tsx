@@ -29,9 +29,9 @@ describe('OperationsPolicyEnforcementTraceSection', () => {
 
     expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
     expect(rendered).toContain('Policy enforcement evidence');
-    expect(rendered).toContain('1 enforced lane(s)');
+    expect(rendered).toContain('1 enforced lane');
     expect(rendered).toContain('Marketplace participation');
-    expect(rendered).toContain('API touchpoint: Partner open-request list endpoint');
-    expect(rendered).toContain('Server owner: Marketplace eligibility pipeline');
+    expect(rendered).toContain('Enforcement endpoint: Partner open-request list endpoint');
+    expect(rendered).toContain('Responsible service: Marketplace eligibility pipeline');
   });
 });

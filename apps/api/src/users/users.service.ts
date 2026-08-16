@@ -1,11 +1,10 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import {
   AppUsageEventType,
   AppUsageOrigin,
   FilePurpose,
   FileUploadStatus,
   FileVisibility,
-  Prisma,
   Role,
 } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
@@ -82,9 +81,23 @@ export class UsersService {
       throw new BadRequestException('Authenticated user is required');
     }
 
-    const role = input.role && user.roles.includes(input.role) ? input.role : user.roles[0];
+    if (user.roles.includes(Role.ADMIN) || user.roles.includes(Role.MASTER_ADMIN)) {
+      throw new ForbiddenException('Admin operators cannot record mobile app sessions');
+    }
+
+    const mobileRoles = user.roles.filter(
+      (role) => role === Role.CUSTOMER || role === Role.PROVIDER,
+    );
+    if (
+      input.role &&
+      ((input.role !== Role.CUSTOMER && input.role !== Role.PROVIDER) ||
+        !user.roles.includes(input.role))
+    ) {
+      throw new ForbiddenException('Requested mobile app role is not authorized');
+    }
+    const role = input.role ?? mobileRoles[0];
     if (!role) {
-      throw new BadRequestException('Authenticated user role is required');
+      throw new ForbiddenException('Customer or Partner role is required');
     }
 
     const deviceId = input.deviceId?.trim();
@@ -114,9 +127,9 @@ export class UsersService {
             select: { metadata: true },
           })
         : null;
-      const metadata = hasCustomerMarketingAttribution
+      const metadata = role === Role.CUSTOMER
         ? customerAppSessionMetadata(existingSession?.metadata, input.metadata)
-        : (input.metadata as Prisma.InputJsonValue | undefined);
+        : undefined;
       const session = await transaction.appSession.upsert({
         where: sessionWhere,
         update: {

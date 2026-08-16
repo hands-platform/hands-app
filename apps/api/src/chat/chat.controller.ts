@@ -30,7 +30,7 @@ export class ChatController {
     @Body() body: CreateChatMessageDto,
   ) {
     const message = await this.chat.createMessage(chatRoomId, user, body);
-    this.gateway.emitMessageCreated(chatRoomId, message);
+    await this.gateway.emitMessageCreated(chatRoomId, message);
     return message;
   }
 }

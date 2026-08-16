@@ -1,10 +1,15 @@
-import type { AdminServiceCatalogItem, AdminTaxPolicyVersion } from './admin-api';
+import type {
+  AdminServiceCatalogDraft,
+  AdminServiceCatalogItem,
+  AdminTaxPolicyVersion,
+} from './admin-api';
 
 export type ServiceCatalogGroup = {
   readonly key: string;
   readonly label: string;
   readonly nameTranslations?: Record<string, string> | null;
   readonly items: readonly AdminServiceCatalogItem[];
+  readonly draft?: AdminServiceCatalogDraft | null;
 };
 
 export function groupServices(services: readonly AdminServiceCatalogItem[]): readonly ServiceCatalogGroup[] {

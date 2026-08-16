@@ -1,5 +1,8 @@
 import {
   BookingStatus,
+  FilePurpose,
+  FileUploadStatus,
+  FileVisibility,
   ProviderAvailabilityIntent,
   ProviderAvailabilityReason,
   ProviderStatus,
@@ -22,13 +25,60 @@ describe('public Partner identity readiness', () => {
   });
 });
 
+describe('ProvidersService verification file ownership', () => {
+  it('attaches only uploaded private verification files owned by the authenticated Partner', async () => {
+    const transaction = verificationTransactionFixture(['file-1', 'file-2']);
+    const prisma = {
+      $transaction: vi.fn((callback: (tx: unknown) => Promise<unknown>) => callback(transaction)),
+      providerProfile: { findUnique: vi.fn().mockResolvedValue({ id: 'provider-1', userId: 'user-1' }) },
+    };
+    const service = new ProvidersService(prisma as never, {} as never, {} as never);
+
+    await service.submitVerification('user-1', { fileIds: ['file-1', 'file-2'] });
+
+    expect(transaction.fileAsset.findMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        id: { in: ['file-1', 'file-2'] },
+        ownerUserId: 'user-1',
+        purpose: FilePurpose.PROVIDER_VERIFICATION,
+        uploadStatus: FileUploadStatus.UPLOADED,
+        visibility: FileVisibility.PRIVATE,
+      }),
+      select: { id: true },
+    });
+    expect(transaction.fileAsset.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { providerVerificationId: 'verification-1' } }),
+    );
+  });
+
+  it('rejects the whole submission when any requested file is ineligible', async () => {
+    const transaction = verificationTransactionFixture(['file-1']);
+    const prisma = {
+      $transaction: vi.fn((callback: (tx: unknown) => Promise<unknown>) => callback(transaction)),
+      providerProfile: { findUnique: vi.fn().mockResolvedValue({ id: 'provider-1', userId: 'user-1' }) },
+    };
+    const service = new ProvidersService(prisma as never, {} as never, {} as never);
+
+    await expect(
+      service.submitVerification('user-1', { fileIds: ['file-1', 'foreign-file'] }),
+    ).rejects.toThrow('Every verification file must be an uploaded private file owned by the authenticated partner');
+
+    expect(transaction.fileAsset.updateMany).not.toHaveBeenCalled();
+    expect(transaction.providerVerification.findUniqueOrThrow).not.toHaveBeenCalled();
+  });
+});
+
 describe('ProvidersService nearby discovery', () => {
   it('preserves global browse coordinates for long-distance partner metadata', async () => {
     const service = createServiceWithNearbyProviders([nearbyProviderFixture()]);
 
     const partners = await service.findNearby(37.5665, 126.978);
 
-    expect(partners[0].distanceMeters).toBeGreaterThan(1_000_000);
+    expect(partners[0]).toMatchObject({
+      distanceBucket: 'OVER_20_KM',
+      distanceBucketRank: 4,
+      distanceLabel: '20+ km',
+    });
   });
 
   it('returns completed booking count for customer ranking without exposing booking rows', async () => {
@@ -47,7 +97,11 @@ describe('ProvidersService nearby discovery', () => {
 
     const partners = await service.findNearby(Number.NaN, Number.NaN);
 
-    expect(partners[0].distanceMeters).toBe(0);
+    expect(partners[0]).toMatchObject({
+      distanceBucket: 'WITHIN_3_KM',
+      distanceBucketRank: 0,
+      distanceLabel: 'Within 3 km',
+    });
   });
 
   it('does not expose partner phone numbers in public nearby discovery', async () => {
@@ -73,6 +127,10 @@ describe('ProvidersService nearby discovery', () => {
               id: 'service-1',
               serviceGroupKey: 'relaxing',
               name: 'Relaxing massage',
+              nameTranslations: {
+                vi: 'Massage thư giãn',
+                en: 'Relaxing massage',
+              },
               description: 'A calming full-body massage.',
               durationMin: 60,
               basePrice: 400000,
@@ -94,12 +152,18 @@ describe('ProvidersService nearby discovery', () => {
       id: 'partner-service-1',
       bookable: true,
       price: 500000,
+      service: expect.objectContaining({
+        nameTranslations: {
+          vi: 'Massage thư giãn',
+          en: 'Relaxing massage',
+        },
+      }),
     });
     expect(serialized).not.toContain('payoutRules');
     expect(serialized).not.toContain('customerPrice');
   });
 
-  it('returns only an approximate public location and strips private provider fields', async () => {
+  it('returns only a broad distance bucket and strips provider location coordinates and timestamps', async () => {
     const service = createServiceWithNearbyProviders([
       nearbyProviderFixture({
         currentLat: 10.7769123,
@@ -115,11 +179,14 @@ describe('ProvidersService nearby discovery', () => {
     const serialized = JSON.stringify(partner);
 
     expect(partner).toMatchObject({
-      currentLat: 10.78,
-      currentLng: 106.7,
-      locationPrecision: 'APPROXIMATE',
+      distanceBucket: 'WITHIN_3_KM',
+      distanceBucketRank: 0,
+      distanceLabel: 'Within 3 km',
+      locationFreshness: expect.stringMatching(/^(FRESH|STALE|UNKNOWN)$/),
     });
-    expect(partner.distanceMeters % 1000).toBe(0);
+    expect(partner).not.toHaveProperty('currentLat');
+    expect(partner).not.toHaveProperty('currentLng');
+    expect(partner).not.toHaveProperty('currentLocationUpdatedAt');
     expect(serialized).not.toContain('Private legal name');
     expect(serialized).not.toContain('Private home address');
     expect(serialized).not.toContain('Internal moderation reason');
@@ -255,7 +322,7 @@ describe('ProvidersService nearby discovery', () => {
 
     expect(partners).toHaveLength(1);
     expect(partners[0].id).toBe('partner-valid');
-    expect(Number.isFinite(partners[0].distanceMeters)).toBe(true);
+    expect(Number.isInteger(partners[0].distanceBucketRank)).toBe(true);
   });
 
   it('uses the matching policy default instead of the retired 30-minute discovery setting', async () => {
@@ -986,6 +1053,19 @@ function createServiceWithNearbyProviders(providers: unknown[]) {
       get: vi.fn(),
     } as never,
   );
+}
+
+function verificationTransactionFixture(eligibleFileIds: string[]) {
+  return {
+    providerVerification: {
+      upsert: vi.fn().mockResolvedValue({ id: 'verification-1', providerProfileId: 'provider-1' }),
+      findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'verification-1', files: [] }),
+    },
+    fileAsset: {
+      findMany: vi.fn().mockResolvedValue(eligibleFileIds.map((id) => ({ id }))),
+      updateMany: vi.fn().mockResolvedValue({ count: eligibleFileIds.length }),
+    },
+  };
 }
 
 function nearbyDiscoveryPrisma(

@@ -12,13 +12,8 @@ import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
-  AdminFormCheckbox,
-  AdminFormGridFields,
-  AdminFormInput,
   AdminFormSearch,
   AdminFormSelect,
-  AdminFormShell,
-  AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
@@ -40,10 +35,10 @@ import {
   type AdminReferralUserSummary,
 } from '../../lib/admin-api';
 import { isInDateRange, readSearchParam } from '../../lib/date-range';
-import { isReferralRewardCredited } from '../../lib/referral-reward-credit-state';
+import { isReferralRewardCredited, referralRewardDecisionLabel } from '../../lib/referral-reward-credit-state';
 import { referralShareUrl, referralStoreSetupState, type ReferralAudienceSlug } from '../../lib/referral-links';
-import { updateReferralPolicy } from './actions';
 import { referralParentDetailHref } from './referral-detail';
+import { ReferralPolicyForm } from './referral-policy-form';
 import { ReferralStoreSetupStatus } from './referral-store-setup-status';
 
 export type ReferralDashboardStatusFilter = 'all' | 'qualified' | 'pending' | 'blocked';
@@ -80,6 +75,7 @@ type ReferralDashboardProps =
   | {
       readonly audience: 'customer';
       readonly filters?: ReferralDashboardFilters;
+      readonly fixtureRows?: readonly AdminCustomerReferralRewardQueueRow[];
       readonly currentPage?: number;
       readonly canEditPolicy?: boolean;
       readonly canManageRewards?: boolean;
@@ -94,6 +90,8 @@ type ReferralDashboardProps =
       readonly rewardQueueSummaries?: readonly ReferralRewardQueueSummary[];
       readonly referralCount?: number;
       readonly rows: readonly AdminCustomerReferralParent[];
+      readonly parentRecordsHref?: string;
+      readonly parentRecordsLoaded?: boolean;
       readonly serverPagination?: boolean;
       readonly totalCount?: number;
     }
@@ -125,6 +123,7 @@ type ReferralDashboardNotice = {
 type ReferralPolicyPanelProps = {
   readonly canEditPolicy?: boolean;
   readonly label: string;
+  readonly openExposure?: { readonly amount: number; readonly count: number };
   readonly policy: AdminReferralPolicy;
 };
 
@@ -144,6 +143,9 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
     rewardQueueSummaries.map((summary) => [summary.reward, summary]),
   );
   const totalCount = props.totalCount ?? props.rows.length;
+  const parentRecordsLoaded = props.audience === 'customer'
+    ? (props.parentRecordsLoaded ?? props.rows.length > 0)
+    : false;
   const rewardRows = props.audience === 'customer' ? props.rewardRows ?? [] : [];
   const selectedRewardSummary = rewardSummaryByQueue.get(filters.reward);
   const rewardTotalCount = selectedRewardSummary?.count ?? rewardRows.length;
@@ -243,6 +245,7 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
           <ReferralPolicyPanel
             canEditPolicy={props.canEditPolicy}
             label={audienceTitle}
+            openExposure={rewardOpenExposure(rewardQueueSummaries)}
             policy={props.policy}
           />
         </>
@@ -267,17 +270,42 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
                 pagination={rewardPagination}
                 rows={rewardPagination.rows}
               />
-              <details className="referral-parent-records-disclosure admin-mt-16">
-                <summary>All parent records</summary>
-                <CustomerReferralParentTable
-                  audience={props.audience}
-                  emptyState={tableEmptyState}
-                  filteredCount={props.rows.length}
-                  filters={{ ...filters, reward: 'all' }}
-                  pagination={pagination}
-                  rows={pagination.rows}
-                />
+              <details className="referral-parent-records-disclosure admin-mt-16" open={parentRecordsLoaded || undefined} id="parent-records">
+                <summary>All parent records · {formatCount(totalCount, 'parent account')}</summary>
+                {parentRecordsLoaded ? (
+                  <CustomerReferralParentTable
+                    audience={props.audience}
+                    emptyState={tableEmptyState}
+                    filteredCount={props.rows.length}
+                    filters={{ ...filters, reward: 'all' }}
+                    pagination={pagination}
+                    rows={pagination.rows}
+                  />
+                ) : (
+                  <div className="referral-parent-records-load">
+                    <p className="muted">Parent accounts are loaded only when needed, so reward queue decisions stay fast.</p>
+                    <AdminTextLink href={props.parentRecordsHref ?? referralListPath('customer')}>Load parent accounts</AdminTextLink>
+                  </div>
+                )}
               </details>
+              {props.canViewDeveloperSetup ? (
+                props.fixtureRows && props.fixtureRows.length > 0 ? (
+                  <section className="admin-mt-16 referral-fixture-diagnostics" aria-label="Developer referral fixture diagnostics">
+                    <AdminInlineNotice role="alert" tone="danger">
+                      TEST FIXTURE · wallet actions disabled. These records are excluded from operational counts and amounts.
+                    </AdminInlineNotice>
+                    <CustomerReferralRewardQueueTable
+                      filters={{ ...filters, reward: 'all' }}
+                      pagination={paginateReferralServerRows(props.fixtureRows, 1, props.fixtureRows.length, 50)}
+                      rows={props.fixtureRows}
+                    />
+                  </section>
+                ) : (
+                  <AdminTextLink className="admin-mt-16" href="/referrals/customers?fixtures=include">
+                    Inspect test fixtures
+                  </AdminTextLink>
+                )
+              ) : null}
             </>
           ) : (
             <PartnerReferralParentTable
@@ -309,6 +337,7 @@ function ReferralAccountingGuardrailsPanel() {
       title="Referral accounting guardrails"
     >
       <AdminTraceSummary
+        inferScope={false}
         metrics={[
           {
             key: 'expense-treatment',
@@ -353,6 +382,7 @@ function ReferralLinkReadinessPanel({
   return (
     <AdminSection
       className="referral-link-readiness-panel admin-mt-16"
+      id="referral-link-readiness"
       statusLabel={setupReady ? 'Ready' : 'Setup blocked'}
       statusTone={setupReady ? 'success' : 'warning'}
       title="Referral link readiness"
@@ -490,6 +520,7 @@ function ReferralListFilterPanel({
 function ReferralPolicyPanel({
   canEditPolicy = true,
   label,
+  openExposure = { amount: 0, count: 0 },
   policy,
 }: ReferralPolicyPanelProps) {
   const percentLabel =
@@ -510,7 +541,13 @@ function ReferralPolicyPanel({
       statusTone={policy.enabled ? 'success' : 'neutral'}
       title="Referral policy"
     >
+      {policy.notes?.toLowerCase().includes('smoke') ? (
+        <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
+          Test policy marker detected. Review the fixture inventory and audit history before any approved restore.
+        </AdminInlineNotice>
+      ) : null}
       <AdminTraceSummary
+        inferScope={false}
         metrics={[
           {
             key: 'reward-mode',
@@ -566,186 +603,8 @@ function ReferralPolicyPanel({
           },
         ]}
       />
-      {canEditPolicy ? <ReferralPolicyForm label={label} policy={policy} /> : null}
+      {canEditPolicy ? <ReferralPolicyForm openExposure={openExposure} policy={policy} /> : null}
     </AdminSection>
-  );
-}
-
-function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
-  const audience = policy.audience === 'PARTNER' ? 'partner' : 'customer';
-  const formLabel =
-    policy.audience === 'PARTNER' ? 'Partner referral policy controls' : 'Customer referral policy controls';
-  const commissionPercentValue =
-    policy.commissionPercentBps !== null && policy.commissionPercentBps !== undefined
-      ? Number(policy.commissionPercentBps) / 100
-      : '';
-  const platformFeeVatRateValue = Number(policy.platformFeeVatRateBps ?? 800) / 100;
-
-  return (
-    <AdminFormShell
-      action={updateReferralPolicy}
-      aria-label={formLabel}
-      className="vuexy-customer-form referral-policy-form admin-mt-16"
-    >
-      <input name="audience" type="hidden" value={audience} />
-      <input name="expectedUpdatedAt" type="hidden" value={policy.updatedAt ?? ''} />
-      <input name="returnTo" type="hidden" value={referralPolicySettingsHref(audience)} />
-      <AdminFormGridFields className="referral-policy-form-grid">
-        <AdminFormSelect
-          className="admin-form-control-fluid"
-          defaultValue={policy.enabled ? 'on' : 'off'}
-          label="Policy status"
-          labelVisibility="visible"
-          name="enabledState"
-          options={[
-            { label: 'Enabled', value: 'on' },
-            { label: 'Disabled', value: 'off' },
-          ]}
-        />
-        {policy.audience === 'CUSTOMER' ? (
-          <AdminFormInput
-            className="admin-form-control-fluid"
-            defaultValue={commissionPercentValue}
-            label="Reward percent"
-            labelVisibility="visible"
-            min="0"
-            name="commissionPercent"
-            placeholder="5"
-            step="0.01"
-            type="number"
-          />
-        ) : (
-          <AdminFormInput
-            className="admin-form-control-fluid"
-            defaultValue={policy.fixedRewardAmount ?? ''}
-            label="Fixed reward amount"
-            labelVisibility="visible"
-            min="0"
-            name="fixedRewardAmount"
-            placeholder="100000"
-            step="1000"
-            type="number"
-          />
-        )}
-        <AdminFormInput
-          className="admin-form-control-fluid"
-          defaultValue={policy.perRewardCapAmount ?? ''}
-          label="Per-reward cap"
-          labelVisibility="visible"
-          min="0"
-          name="perRewardCapAmount"
-          placeholder="Optional"
-          step="1000"
-          type="number"
-        />
-        <AdminFormInput
-          className="admin-form-control-fluid"
-          defaultValue={policy.totalRewardCapAmount ?? ''}
-          label="Total reward cap"
-          labelVisibility="visible"
-          min="0"
-          name="totalRewardCapAmount"
-          placeholder="Optional"
-          step="1000"
-          type="number"
-        />
-        <AdminFormInput
-          className="admin-form-control-fluid"
-          defaultValue={policy.maxRewardedReferrals ?? ''}
-          label="Max rewarded referrals"
-          labelVisibility="visible"
-          min="0"
-          name="maxRewardedReferrals"
-          placeholder="Optional"
-          type="number"
-        />
-        <AdminFormInput
-          className="admin-form-control-fluid"
-          defaultValue={policy.maxRewardsPerReferred ?? ''}
-          label="Max rewards per referred"
-          labelVisibility="visible"
-          min="0"
-          name="maxRewardsPerReferred"
-          placeholder="1"
-          type="number"
-        />
-        <AdminFormInput
-          className="admin-form-control-fluid"
-          defaultValue={policy.holdPeriodDays}
-          label="Hold period days"
-          labelVisibility="visible"
-          min="0"
-          name="holdPeriodDays"
-          type="number"
-        />
-        <AdminFormInput
-          className="admin-form-control-fluid"
-          defaultValue={platformFeeVatRateValue}
-          label="Platform fee VAT"
-          labelVisibility="visible"
-          min="0"
-          max="100"
-          name="platformFeeVatRate"
-          step="0.01"
-          type="number"
-        />
-        <AdminFormInput
-          className="admin-form-control-fluid"
-          defaultValue="VND"
-          disabled
-          label="Currency"
-          labelVisibility="visible"
-          name="currencyDisplay"
-        />
-        <input name="currency" type="hidden" value="VND" />
-        <AdminFormTextarea
-          className="admin-form-control-fluid admin-grid-span-2"
-          defaultValue={policy.notes ?? ''}
-          label="Policy notes"
-          labelVisibility="visible"
-          name="notes"
-          placeholder={`${label} policy note for operators`}
-          rows={3}
-        />
-        <AdminFormInput
-          className="admin-form-control-fluid admin-grid-span-2"
-          label="Update reason"
-          labelVisibility="visible"
-          maxLength={500}
-          name="reason"
-          placeholder="Why this referral policy is being changed"
-          minLength={12}
-          required
-        />
-      </AdminFormGridFields>
-      <details className="referral-policy-impact-preview admin-mt-16">
-        <summary>Review current and proposed liability</summary>
-        <div className="referral-policy-impact-grid admin-mt-12">
-          <div>
-            <strong>Current policy</strong>
-            <p className="muted">{referralPolicyImpactSummary(policy)}</p>
-          </div>
-          <div>
-            <strong>After save</strong>
-            <p className="muted">The submitted reward rate, hold period, and caps replace these values after server validation.</p>
-          </div>
-        </div>
-      </details>
-      <AdminFormCheckbox
-        className="admin-mt-16"
-        label="Confirm referral policy change"
-        name="confirmation"
-        required
-        value="confirmed"
-      >
-        I reviewed the current values, the replacement values, and the wallet liability impact.
-      </AdminFormCheckbox>
-      <div className="vuexy-customer-filter-actions referral-policy-actions">
-        <AdminFormControlButton className="referral-policy-save-button">
-          Save referral policy
-        </AdminFormControlButton>
-      </div>
-    </AdminFormShell>
   );
 }
 
@@ -762,15 +621,16 @@ function CustomerReferralRewardQueueTable({
   readonly pagination: ReferralPaginationModel<AdminCustomerReferralRewardQueueRow>;
   readonly rows: readonly AdminCustomerReferralRewardQueueRow[];
 }) {
-  const hasFilters = referralActiveFilterLabels(filters).length > 0;
+  const hasFilters = referralHasAdditionalFilters(filters);
+  const copy = referralRewardQueueCopy[filters.reward];
 
   return (
     <AdminTablePanel
       className="referral-reward-queue-panel"
-      description="Review one reward at a time. Open the parent detail to confirm booking, policy, integrity, and wallet evidence before changing state."
+      description={copy.description}
       resultLabel={formatCount(pagination.totalCount, 'reward')}
       resultTone={pagination.totalCount > 0 ? 'warning' : 'info'}
-      title={filters.reward === 'all' ? 'All reward records' : 'Needs action'}
+      title={copy.title}
     >
       <AdminTableScroll ariaLabel="Customer referral reward queue">
         <AdminDataTable
@@ -778,8 +638,8 @@ function CustomerReferralRewardQueueTable({
           emptyMessage={
             <>
               <AdminEmptyState
-                message={hasFilters ? 'No reward records match the current filters.' : 'No customer referral rewards currently need action.'}
-                title={hasFilters ? 'No matching reward records' : 'No reward work'}
+                message={hasFilters ? 'No reward records match the current filters.' : copy.emptyMessage}
+                title={hasFilters ? 'No matching reward records' : copy.emptyTitle}
               />
               {hasFilters ? (
                 <AdminTextLink className="admin-mt-8" href={referralListPath('customer')}>
@@ -788,63 +648,45 @@ function CustomerReferralRewardQueueTable({
               ) : null}
             </>
           }
-          headers={['Parent', 'Referred customer', 'Reward', 'Decision evidence', 'State', 'Action']}
+          headers={['Relationship', 'Evidence', 'Reward', 'Decision', 'Action']}
           rowCount={rows.length}
         >
           {rows.map((row) => (
             <tr key={row.id}>
-              <td>
-                <AdminPersonCell
-                  avatarClassName="vuexy-booking-avatar"
-                  className="vuexy-booking-person"
-                  copyClassName="vuexy-booking-person-copy"
-                  helper={row.parent.phone ?? row.parent.id}
-                  href={row.detailHref}
-                  label={row.parent.label}
-                  linkClassName="vuexy-booking-person-link"
-                />
+              <td className="referral-reward-relationship-cell">
+                {row.isFixture ? <StatusBadge tone="danger">TEST FIXTURE</StatusBadge> : null}
+                <strong>{row.parent.label}</strong>
+                <span className="muted">{row.parent.phone ?? shortId(row.parent.id)}</span>
+                <span className="referral-relationship-arrow" aria-hidden="true">→</span>
+                {row.referred.href ? <AdminTextLink href={row.referred.href}>{row.referred.label}</AdminTextLink> : <span>{row.referred.label}</span>}
+                <span className="muted">{row.referred.phone ?? shortId(row.referred.id)}</span>
               </td>
-              <td>
-                <AdminPersonCell
-                  avatarClassName="vuexy-booking-avatar"
-                  className="vuexy-booking-person"
-                  copyClassName="vuexy-booking-person-copy"
-                  helper={row.referred.phone ?? row.attribution.id}
-                  href={row.referred.href}
-                  label={row.referred.label}
-                  linkClassName="vuexy-booking-person-link"
-                />
+              <td className="referral-reward-evidence-cell">
+                {row.qualifyingBookingId ? (
+                  <AdminTextLink href={`/bookings/${encodeURIComponent(row.qualifyingBookingId)}`}>
+                    Booking {shortId(row.qualifyingBookingId)} linked
+                  </AdminTextLink>
+                ) : <strong className="text-danger">Booking evidence missing</strong>}
+                <span>{referralStatusLabel(row.attribution.status)}</span>
+                <span>{fraudReviewStatusLabel(row.attribution.fraudReviewStatus)}</span>
+                {row.evidence?.blocker ? <span className="text-danger">Blocked: {row.evidence.blocker.message}</span> : null}
               </td>
-              <td>
+              <td className="referral-reward-value-cell">
                 <strong><MoneyText amount={row.amount} currency={row.currency} fallback="0 VND" /></strong>
-                <p className="muted">
-                  {row.qualifyingBookingId ? (
-                    <AdminTextLink href={`/bookings/${encodeURIComponent(row.qualifyingBookingId)}`}>
-                      Booking {shortId(row.qualifyingBookingId)}
-                    </AdminTextLink>
-                  ) : 'No qualifying booking'}
-                </p>
-              </td>
-              <td>
-                <strong>{referralStatusLabel(row.attribution.status)}</strong>
-                <p className="muted">{fraudReviewStatusLabel(row.attribution.fraudReviewStatus)}</p>
-                {row.latestDecision ? (
-                  <p className="muted">
-                    Last decision: {row.latestDecision.action}
-                    {row.latestDecision.reason ? ` · ${row.latestDecision.reason}` : ''}
-                  </p>
-                ) : null}
-              </td>
-              <td>
                 <StatusBadge tone={referralRewardStatusTone(row.status)}>{referralRewardStatusLabel(row.status)}</StatusBadge>
-                <p className="muted">
-                  {row.availableAt ? <>Eligible since <DateTimeText value={row.availableAt} /></> : <>Updated <DateTimeText value={row.updatedAt} /></>}
-                </p>
               </td>
-              <td>
-                {row.detailHref ? (
+              <td className="referral-reward-decision-cell">
+                <strong>{row.latestDecision ? referralRewardDecisionLabel(row.latestDecision.action) : 'Awaiting decision'}</strong>
+                <span className="muted">
+                  {row.latestDecision ? <>By {row.latestDecision.actor?.fullName ?? row.latestDecision.actor?.email ?? 'admin'} · <DateTimeText value={row.latestDecision.createdAt} /></> : row.availableAt ? <>Eligible since <DateTimeText value={row.availableAt} /></> : <>Updated <DateTimeText value={row.updatedAt} /></>}
+                </span>
+              </td>
+              <td className="referral-reward-action-cell">
+                {row.isFixture ? (
+                  <AdminInlineFallback>Inspection only</AdminInlineFallback>
+                ) : row.detailHref ? (
                   <AdminTextLink href={`${row.detailHref}?rewardId=${encodeURIComponent(row.id)}`}>
-                    Review reward
+                    Review
                   </AdminTextLink>
                 ) : (
                   <AdminInlineFallback>Detail unavailable</AdminInlineFallback>
@@ -1367,20 +1209,6 @@ function referralStoreSetupReady(audience: ReferralAudienceSlug) {
   return setup.publicBase && setup.android && setup.ios;
 }
 
-function referralPolicyImpactSummary(policy: AdminReferralPolicy) {
-  const reward = policy.rewardMode === 'COMMISSION_PERCENT'
-    ? `${(Number(policy.commissionPercentBps ?? 0) / 100).toFixed(2)}% of eligible platform fee`
-    : `${numberOrZero(policy.fixedRewardAmount).toLocaleString('en-US')} ${policy.currency} fixed`;
-  const perReward = policy.perRewardCapAmount === null || policy.perRewardCapAmount === undefined
-    ? 'no per-reward cap'
-    : `${policy.perRewardCapAmount.toLocaleString('en-US')} ${policy.currency} per reward`;
-  const total = policy.totalRewardCapAmount === null || policy.totalRewardCapAmount === undefined
-    ? 'no parent total cap'
-    : `${policy.totalRewardCapAmount.toLocaleString('en-US')} ${policy.currency} per parent`;
-
-  return `${reward}; ${policy.holdPeriodDays} day hold; ${perReward}; ${total}.`;
-}
-
 function shortId(value: string) {
   return value.length <= 10 ? value : `${value.slice(0, 8)}...`;
 }
@@ -1460,6 +1288,50 @@ const referralRewardQuickFilterOptions: readonly {
     reward: 'credited',
   },
 ];
+
+const referralRewardQueueCopy: Record<ReferralDashboardRewardFilter, {
+  readonly description: string;
+  readonly emptyMessage: string;
+  readonly emptyTitle: string;
+  readonly title: string;
+}> = {
+  attention: {
+    description: 'Review rewards that still need a finance or integrity decision.',
+    emptyMessage: 'No customer referral rewards currently need action.',
+    emptyTitle: 'No reward work',
+    title: 'Needs action',
+  },
+  available: {
+    description: 'Review rewards that completed the required evidence checks before wallet credit.',
+    emptyMessage: 'No rewards have completed the required evidence checks.',
+    emptyTitle: 'Nothing ready to credit',
+    title: 'Ready to credit',
+  },
+  held: {
+    description: 'Review rewards currently held for integrity, policy, or support review.',
+    emptyMessage: 'No rewards are currently held for review.',
+    emptyTitle: 'No held rewards',
+    title: 'On hold',
+  },
+  pending: {
+    description: 'Review rewards waiting for the hold period or automated evidence checks.',
+    emptyMessage: 'No rewards are waiting for the hold period or automated checks.',
+    emptyTitle: 'No pending rewards',
+    title: 'Pending checks',
+  },
+  credited: {
+    description: 'Review referral rewards already posted to wallet liability.',
+    emptyMessage: 'No customer referral rewards have been posted to wallet.',
+    emptyTitle: 'No credited rewards',
+    title: 'Credited history',
+  },
+  all: {
+    description: 'Review all non-fixture customer referral reward records.',
+    emptyMessage: 'No customer referral reward records are available.',
+    emptyTitle: 'No reward records',
+    title: 'All reward records',
+  },
+};
 
 type ReferralParentRow = AdminCustomerReferralParent | AdminPartnerReferralParent;
 
@@ -1541,6 +1413,15 @@ export function buildReferralRewardQueueApiHref(filters: ReferralDashboardFilter
   if (skip > 0) params.set('skip', String(skip));
   appendReferralParentApiFilterParams(params, filters);
   return `/admin/referrals/customers/rewards?${params.toString()}`;
+}
+
+export function buildReferralCustomerWorkspaceApiHref(filters: ReferralDashboardFilters, currentPage: number) {
+  return buildReferralRewardQueueApiHref(filters, currentPage).replace('/rewards?', '/workspace?');
+}
+
+export function buildReferralParentRecordsHref(filters: ReferralDashboardFilters, currentPage: number) {
+  const href = buildReferralListHref('customer', filters, {}, currentPage);
+  return `${href}${href.includes('?') ? '&' : '?'}parents=open#parent-records`;
 }
 
 export function paginateReferralRows<T>(
@@ -1643,6 +1524,16 @@ export function buildReferralRewardQueueSummaries(
   return [attentionSummary, allSummary, availableSummary, pendingSummary, heldSummary, creditedSummary];
 }
 
+function rewardOpenExposure(summaries: readonly ReferralRewardQueueSummary[]) {
+  return summaries.reduce(
+    (total, summary) =>
+      ['available', 'held', 'pending'].includes(summary.reward)
+        ? { amount: total.amount + summary.amount, count: total.count + summary.count }
+        : total,
+    { amount: 0, count: 0 },
+  );
+}
+
 function referralListPath(audience: ReferralAudienceSlug) {
   return audience === 'partner' ? '/referrals/partners' : '/referrals/customers';
 }
@@ -1677,6 +1568,15 @@ function referralActiveFilterLabels(filters: ReferralDashboardFilters) {
   if (filters.range && filters.range !== 'all') labels.push(`Period: ${referralRangeFilterLabel(filters.range)}`);
   if (filters.reward !== 'attention') labels.push(`Reward: ${referralRewardFilterLabel(filters.reward)}`);
   return labels;
+}
+
+function referralHasAdditionalFilters(filters: ReferralDashboardFilters) {
+  return Boolean(
+    filters.q ||
+      filters.status !== 'all' ||
+      filters.fraud !== 'all' ||
+      filters.range !== 'all',
+  );
 }
 
 function referralParentMatchesSearch(audience: ReferralAudienceSlug, row: ReferralParentRow, q: string) {

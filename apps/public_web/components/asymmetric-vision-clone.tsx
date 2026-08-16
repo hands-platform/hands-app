@@ -5,14 +5,14 @@ import Matter from 'matter-js';
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 
 const chips = [
-  ['Elementor Support', '#d5d5d5'],
-  ['Mobile Builder', '#e1e3e8'],
-  ['Next-gen Technologies', '#c7d0c1'],
-  ['WooCommerce Builder', '#d9f8ea'],
-  ['Adaptive Colors', '#c7d0c1'],
-  ['Liquid Events', '#d9eef8'],
-  ['Smart Assets Manager', '#d9f8f1'],
-  ['Performance', '#f8f8d9'],
+  ['Hỗ trợ đối tác', '#d5d5d5'],
+  ['Ứng dụng di động', '#e1e3e8'],
+  ['Công nghệ kết nối', '#c7d0c1'],
+  ['Quản lý dịch vụ', '#d9f8ea'],
+  ['Lịch làm việc linh hoạt', '#c7d0c1'],
+  ['Cơ hội phát triển', '#d9eef8'],
+  ['Thu nhập minh bạch', '#d9f8f1'],
+  ['Hiệu quả', '#f8f8d9'],
 ] as const;
 
 type VisionStyle = CSSProperties & Record<`--${string}`, string | number>;
@@ -47,16 +47,16 @@ export function AsymmetricVisionClone() {
     });
 
   const firstLine = renderWords(
-    'We build and activate brands through cultural insight, strategic vision, and the',
+    'HANDS giúp đối tác phát triển bằng trải nghiệm minh bạch, công nghệ kết nối và',
     'opening',
   );
   const firstImageIndex = characterIndex++;
   const middleLine = renderWords(
-    'power of emotion across ever element of its expression. Developing',
+    'sự hỗ trợ xuyên suốt. Cùng xây dựng uy tín nghề nghiệp và tạo nên',
     'middle',
   );
   const secondImageIndex = characterIndex++;
-  const finalLine = renderWords('the best digital experience in the field.', 'closing');
+  const finalLine = renderWords('trải nghiệm wellness đáng tin cậy.', 'closing');
   const revealTargetCount = characterIndex;
 
   useEffect(() => {
@@ -111,9 +111,7 @@ export function AsymmetricVisionClone() {
     }
 
     const { Bodies, Body, Composite, Engine, Events, Mouse, MouseConstraint, Runner } = Matter;
-    const chipElements = Array.from(
-      scene.querySelectorAll<HTMLElement>('.asymmetric-vision-chip'),
-    );
+    const chipElements = Array.from(scene.querySelectorAll<HTMLElement>('.asymmetric-vision-chip'));
     const engine = Engine.create();
     const runner = Runner.create();
     const mouse = Mouse.create(scene);
@@ -251,13 +249,10 @@ export function AsymmetricVisionClone() {
           const body = bodies[index];
           if (!body) return;
           const rect = chip.getBoundingClientRect();
-          const resizedBody = Bodies.rectangle(
-            body.position.x,
-            body.position.y,
-            rect.width,
-            rect.height,
-            { angle: body.angle, chamfer: { radius: rect.height / 2 } },
-          );
+          const resizedBody = Bodies.rectangle(body.position.x, body.position.y, rect.width, rect.height, {
+            angle: body.angle,
+            chamfer: { radius: rect.height / 2 },
+          });
           Body.setVertices(body, resizedBody.vertices);
           if (body.position.y > height) Body.setPosition(body, { x: body.position.x, y: height / 2 });
           if (body.position.x > width) {
@@ -292,7 +287,7 @@ export function AsymmetricVisionClone() {
   }, [revealTargetCount]);
 
   return (
-    <section className="asymmetric-vision-section" aria-label="Our vision" ref={sectionRef}>
+    <section className="asymmetric-vision-section" aria-label="Tầm nhìn của HANDS" ref={sectionRef}>
       <div className="asymmetric-vision-inner">
         <div
           className="asymmetric-vision-chip-scene"
@@ -305,9 +300,11 @@ export function AsymmetricVisionClone() {
               className="asymmetric-vision-chip lqd-throwable-element"
               data-lqd-throwable-el=""
               key={label}
-              style={{
-                '--chip-color': color,
-              } as VisionStyle}
+              style={
+                {
+                  '--chip-color': color,
+                } as VisionStyle
+              }
             >
               <span className="lqd-throwable-element-rot">{label}</span>
             </p>
@@ -353,13 +350,8 @@ export function AsymmetricVisionClone() {
           </h2>
 
           <div className="asymmetric-vision-action">
-            <span>Our vision</span>
-            <a
-              aria-label="Explore details"
-              href="https://themeforest.net/item/hub-responsive-multipurpose-wordpress-theme/31569152"
-              rel="nofollow"
-              target="_blank"
-            >
+            <span>Tầm nhìn</span>
+            <a aria-label="Đăng ký đối tác" href="https://join.hands.vn/">
               <svg aria-hidden="true" height="11" viewBox="0 0 10.625 10.625" width="11">
                 <path
                   d="M-1.76-11.322H5.313V-4.25H3.885V-8.932L-4.316-.7l-1-1,8.2-8.234H-1.76Z"

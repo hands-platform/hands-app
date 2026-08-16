@@ -164,6 +164,54 @@ describe('remaining API request DTO validation', () => {
 
     await expect(
       pipe.transform(
+        {
+          contentType: 'image/jpeg',
+          purpose: 'profile-image',
+          visibility: 'PUBLIC',
+        },
+        {
+          type: 'body',
+          metatype: bodyMetatype(FilesController.prototype, 'createPresignedUpload', 1) as never,
+          data: '',
+        },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      pipe.transform(
+        { refreshToken: 'x'.repeat(4097) },
+        {
+          type: 'body',
+          metatype: bodyMetatype(AuthController.prototype, 'refresh', 0) as never,
+          data: '',
+        },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      pipe.transform(
+        { supabaseAccessToken: 'x'.repeat(4097) },
+        {
+          type: 'body',
+          metatype: bodyMetatype(AuthController.prototype, 'exchangeSupabaseSession', 0) as never,
+          data: '',
+        },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      pipe.transform(
+        { sizeBytes: 10 * 1024 * 1024 + 1 },
+        {
+          type: 'body',
+          metatype: bodyMetatype(FilesController.prototype, 'completeUpload', 2) as never,
+          data: '',
+        },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      pipe.transform(
         { token: 'push-token', platform: 'desktop' },
         {
           type: 'body',

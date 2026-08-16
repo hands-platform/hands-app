@@ -4,11 +4,10 @@ import { canViewAdminDeveloperSystem } from '../../../../components/admin-develo
 import { AdminInlineNotice } from '../../../../components/admin-inline-notice';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { AdminTextLink } from '../../../../components/admin-text-link';
-import { type AdminCustomerReferralParent, type AdminUser, adminGetResult } from '../../../../lib/admin-api';
+import { type AdminCustomerReferralParent, adminGetResult } from '../../../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../../../lib/admin-operator-access';
 import { readSearchParam } from '../../../../lib/date-range';
-import { buildFinanceApproverOptions } from '../../../finance-tax/finance-approver-options';
-import { ReferralParentDetailPage, referralParentNeedsFinanceApprover } from '../../referral-detail';
+import { ReferralParentDetailPage } from '../../referral-detail';
 
 type PageProps = {
   readonly params: Promise<{ id: string }>;
@@ -41,11 +40,6 @@ export default async function CustomerReferralDetailPage({ params, searchParams 
     );
   }
   const row = rowResult.data;
-  const financeApproverResult = referralParentNeedsFinanceApprover(row)
-    ? await adminGetResult<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
-    : { data: [] as AdminUser[], ok: true, status: 200 };
-  const financeApproverUsers = financeApproverResult.data;
-  const financeApproverOptions = buildFinanceApproverOptions(financeApproverUsers, operatorAccess?.id ?? null);
   const actionNotice = buildReferralActionNotice(
     readSearchParam(resolvedSearchParams.actionStatus),
     readSearchParam(resolvedSearchParams.actionCode),
@@ -58,7 +52,6 @@ export default async function CustomerReferralDetailPage({ params, searchParams 
       actionReason={readSearchParam(resolvedSearchParams.actionReason)}
       audience="customer"
       canViewDeveloperSetup={canViewAdminDeveloperSystem(operatorAccess)}
-      financeApproverOptions={financeApproverOptions}
       highlightRewardId={readSearchParam(resolvedSearchParams.rewardId)}
       row={row}
     />

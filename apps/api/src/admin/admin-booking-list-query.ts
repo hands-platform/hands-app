@@ -103,7 +103,7 @@ export function adminBookingListWhere(
 ): Prisma.BookingWhereInput | undefined {
   const filters = [
     query.statusGroup === 'usage-unresolved'
-      ? adminBookingExplicitFixtureMetadataWhere()
+      ? adminBookingVerifiedProductionWhere()
       : adminBookingProductionDataWhere(),
     adminBookingListDateWhere(query),
     adminBookingListAgeWhere(query.age),
@@ -207,6 +207,75 @@ export function adminBookingExplicitFixtureMetadataSql(booking = Prisma.sql`book
     LOWER(COALESCE(${booking}.metadata #>> '{smokeFixture}', 'false')) <> 'true'
     AND ${booking}.metadata #>> '{auditFixture}' IS NULL
     AND UPPER(COALESCE(${booking}.metadata #>> '{dataOrigin}', 'PRODUCTION')) <> 'SYNTHETIC'
+  `;
+}
+
+export function adminBookingVerifiedProductionWhere(): Prisma.BookingWhereInput {
+  return {
+    AND: [
+      { metadata: { path: ['dataOrigin'], equals: 'PRODUCTION' } },
+      adminBookingJsonValueIsNot({ path: ['smokeFixture'], equals: true }),
+      { metadata: { path: ['auditFixture'], equals: Prisma.AnyNull } },
+      { metadata: { path: ['smoke'], equals: Prisma.AnyNull } },
+      { metadata: { path: ['fixture'], equals: Prisma.AnyNull } },
+      { customerProfile: { is: { user: { is: { fixtureKind: null } } } } },
+      {
+        OR: [
+          { preferredProviderId: null },
+          { preferredProvider: { is: { user: { is: { fixtureKind: null } } } } },
+        ],
+      },
+      {
+        OR: [
+          { selectedProviderId: null },
+          { selectedProvider: { is: { user: { is: { fixtureKind: null } } } } },
+        ],
+      },
+    ],
+  };
+}
+
+export function adminBookingVerifiedProductionSql(booking = Prisma.sql`booking`) {
+  return Prisma.sql`
+    UPPER(COALESCE(${booking}.metadata #>> '{dataOrigin}', 'UNKNOWN')) = 'PRODUCTION'
+    AND LOWER(COALESCE(${booking}.metadata #>> '{smokeFixture}', 'false')) <> 'true'
+    AND ${booking}.metadata #>> '{auditFixture}' IS NULL
+    AND ${booking}.metadata #>> '{smoke}' IS NULL
+    AND ${booking}.metadata #>> '{fixture}' IS NULL
+    AND NOT (${adminBookingFixtureOwnerSql(booking)})
+  `;
+}
+
+export function adminBookingUnknownOriginSql(booking = Prisma.sql`booking`) {
+  return Prisma.sql`
+    UPPER(COALESCE(NULLIF(${booking}.metadata #>> '{dataOrigin}', ''), 'UNKNOWN')) <> 'SYNTHETIC'
+    AND LOWER(COALESCE(${booking}.metadata #>> '{smokeFixture}', 'false')) <> 'true'
+    AND ${booking}.metadata #>> '{auditFixture}' IS NULL
+    AND ${booking}.metadata #>> '{smoke}' IS NULL
+    AND ${booking}.metadata #>> '{fixture}' IS NULL
+    AND (
+      UPPER(COALESCE(NULLIF(${booking}.metadata #>> '{dataOrigin}', ''), 'UNKNOWN')) <> 'PRODUCTION'
+      OR ${adminBookingFixtureOwnerSql(booking)}
+    )
+  `;
+}
+
+function adminBookingFixtureOwnerSql(booking: Prisma.Sql) {
+  return Prisma.sql`
+    EXISTS (
+      SELECT 1
+      FROM "CustomerProfile" booking_customer
+      INNER JOIN "User" booking_customer_user ON booking_customer_user.id = booking_customer."userId"
+      WHERE booking_customer.id = ${booking}."customerProfileId"
+        AND booking_customer_user."fixtureKind" IS NOT NULL
+    )
+    OR EXISTS (
+      SELECT 1
+      FROM "ProviderProfile" booking_partner
+      INNER JOIN "User" booking_partner_user ON booking_partner_user.id = booking_partner."userId"
+      WHERE booking_partner.id IN (${booking}."preferredProviderId", ${booking}."selectedProviderId")
+        AND booking_partner_user."fixtureKind" IS NOT NULL
+    )
   `;
 }
 

@@ -1,1441 +1,536 @@
-import { Filter, X } from 'lucide-react';
-import type { AdminAuditLog } from '../../lib/admin-api';
-import { adminGet } from '../../lib/admin-api';
-import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminTableSection } from '../../components/admin-table-panel';
-import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminFilterSummary } from '../../components/admin-filter-summary';
-import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
+import { Download, Filter, RefreshCw, RotateCcw } from 'lucide-react';
+
 import {
+  AdminFormActionRow,
   AdminFormControlButton,
   AdminFormControlLink,
-  AdminFormActionRow,
+  AdminFormDateTime,
   AdminFormGrid,
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
-import { marketplaceDisplayText as operationalDisplayText } from '../../lib/admin-copy';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
+import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminErrorState, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import {
-  formatDistanceMeters,
-  formatMoney as money,
-  formatRelativeTime,
-} from '../../lib/admin-format';
-import { bookingCreateGateReasonLabel } from '../../lib/booking-create-gate-reasons';
-import { bookingMatchAuditHighlights } from '../../lib/booking-match-audit';
-import { dateRangeLabel, normalizeDateRange, readSearchParam } from '../../lib/date-range';
-import {
-  AuditLogCommandBoardSection,
-  type AuditCommandBoardItem,
-  type AuditCommandLogPreview,
-} from './audit-log-command-board-section';
-import { AuditLogTableSection, type AuditLogTableRow } from './audit-log-table-section';
-import {
-  notificationFailureCodeLabel,
-  notificationFailureRecoveryActionLabel,
-} from '../notifications/notification-failure-copy';
+  adminGetResult,
+  type AdminAuditEventDetail,
+  type AdminAuditWorkspaceResponse,
+} from '../../lib/admin-api';
+import { DateTimeText } from '../../components/date-time-text';
+import { AuditEvidenceDrawer } from './audit-evidence-drawer';
+import { AUDIT_LOG_FILTER_QUERY_KEYS } from './audit-log-query';
+import { AuditLogTableSection } from './audit-log-table-section';
 
-type AuditLogFilters = {
-  q: string;
-  bucket: string;
-  priority: string;
-  range: ReturnType<typeof normalizeDateRange>;
-};
-type AuditLogSummaryResponse = {
-  dispatch?: number;
-  financeCloseout?: number;
-  generatedAt: string;
-  needsReview?: number;
-  notifications?: number;
-  payments?: number;
-  recentHour?: number;
-  servicePricing?: number;
-  totalCount: number;
-};
 type AuditLogPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-const AUDIT_LOG_PAGE_SIZE = 20;
-const STALE_PUSH_DEVICE_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+const EMPTY_WORKSPACE: AdminAuditWorkspaceResponse = {
+  actionableIncidents: [],
+  items: [],
+  totalCount: 0,
+  facets: { actorTypes: [], areas: [], outcomes: [], severities: [] },
+  summary: { failed: 0, reviewRequired: 0, unacknowledged: 0, unknownClassification: 0 },
+  cursor: { next: null },
+  generatedAt: '',
+  timezone: 'Asia/Ho_Chi_Minh',
+  sourceStatus: 'UNAVAILABLE',
+  source: { dataLagSeconds: null, lastRecordedAt: null, state: 'EMPTY' },
+  savedViews: [],
+  take: 50,
+  window: { range: 'today', label: 'Today (Vietnam)', from: null, to: null },
+};
 
 export default async function AuditLogPage({ searchParams }: { searchParams?: AuditLogPageSearchParams }) {
   const params = searchParams ? await searchParams : {};
-  const filters = buildAuditFilters(params);
-  const activePage = readAuditLogPage(params.page);
-  const [serverLogs, serverSummary] = await Promise.all([
-    adminGet<AdminAuditLog[]>(buildAuditLogApiHref(params), []),
-    adminGet<AuditLogSummaryResponse | null>(buildAuditLogSummaryApiHref(params), null),
-  ]);
-  const logs = sortLogs(serverLogs);
-  const summary = buildSummary(logs, serverSummary);
-  const totalEvents = serverSummary?.totalCount ?? logs.length;
-  const totalPages = Math.max(1, Math.ceil(totalEvents / AUDIT_LOG_PAGE_SIZE));
-  const visibleFrom = totalEvents === 0 || logs.length === 0 ? 0 : (activePage - 1) * AUDIT_LOG_PAGE_SIZE + 1;
-  const visibleTo =
-    totalEvents === 0 || logs.length === 0
-      ? 0
-      : Math.min(totalEvents, (activePage - 1) * AUDIT_LOG_PAGE_SIZE + logs.length);
-  const commandBoard = buildAuditCommandBoard(logs, filters.range);
-  const auditLogRows = buildAuditLogTableRows(logs);
+  const filters = auditFilters(params);
+  const pageHref = auditPageHref(params);
+  const workspaceResult = await adminGetResult<AdminAuditWorkspaceResponse>(
+    auditWorkspaceApiHref(filters),
+    EMPTY_WORKSPACE,
+  );
+  const selectedEventResult = filters.event && workspaceResult.ok
+      ? await adminGetResult<AdminAuditEventDetail | null>(
+        `/admin/audit-logs/events/${encodeURIComponent(filters.event)}${filters.bucket ? `?bucket=${encodeURIComponent(filters.bucket)}` : ''}`,
+        null,
+      )
+    : null;
+  const workspace = workspaceResult.data;
+  const permissionDenied = workspaceResult.status === 401 || workspaceResult.status === 403;
+  const refreshedHref = auditHrefFromFilters({ ...filters, cursor: '', event: '' });
+  const clearRefinementsHref = filters.bucket
+    ? auditHrefFromFilters(auditFilters({ bucket: filters.bucket, range: 'all', sort: 'newest' }))
+    : `/audit-log?view=${encodeURIComponent(filters.view)}`;
+  const notificationContextId = filters.bucket === 'Notification' ? filters.q : '';
 
   return (
     <AdminPageTemplate
-      description="Operational history for bookings, payments, refunds, Partner review, alerts, and policy changes."
-      metrics={[
-        {
-          helper: 'Server-counted events after the active filters.',
-          kind: auditMetricKind(filters.range),
-          label: 'Total events',
-          scope: auditMetricScope(filters.range),
-          value: totalEvents,
-        },
-        {
-          helper: 'Booking, matching, and Partner events.',
-          kind: auditMetricKind(filters.range),
-          label: 'Dispatch actions',
-          scope: auditMetricScope(filters.range),
-          value: summary.dispatch,
-        },
-        {
-          helper: 'Payment and refund audit records.',
-          kind: auditMetricKind(filters.range),
-          label: 'Payment actions',
-          scope: auditMetricScope(filters.range),
-          value: summary.payments,
-        },
-        {
-          helper: 'Money movement and closeout records.',
-          kind: auditMetricKind(filters.range),
-          label: 'Finance closeout',
-          scope: auditMetricScope(filters.range),
-          value: summary.financeCloseout,
-        },
-        {
-          helper: 'Service, payout, tax, and pricing edits.',
-          kind: auditMetricKind(filters.range),
-          label: 'Service pricing',
-          scope: auditMetricScope(filters.range),
-          value: summary.servicePricing,
-        },
-        {
-          helper: 'Notification send and retry events.',
-          kind: auditMetricKind(filters.range),
-          label: 'Notification actions',
-          scope: auditMetricScope(filters.range),
-          value: summary.notifications,
-        },
-        {
-          helper: 'High-priority events for operators.',
-          kind: 'risk',
-          label: 'Needs review',
-          scope: 'Needs action',
-          value: summary.needsReview,
-        },
-        {
-          helper: 'Events created within the last hour.',
-          kind: 'live',
-          label: 'Recent hour',
-          scope: 'Live',
-          value: summary.recentHour,
-        },
-      ]}
+      actions={
+        <div className="audit-page-actions">
+          <AdminFormControlLink className="button-secondary" href={auditExportHref(filters, 'csv')}>
+            <Download aria-hidden="true" size={16} />
+            Export CSV
+          </AdminFormControlLink>
+          <AdminFormControlLink className="button-secondary" href={auditExportHref(filters, 'json')}>
+            <Download aria-hidden="true" size={16} />
+            Export JSON
+          </AdminFormControlLink>
+          <AdminFormControlLink className="button-secondary" href={refreshedHref}>
+            <RefreshCw aria-hidden="true" size={16} />
+            Refresh now
+          </AdminFormControlLink>
+        </div>
+      }
+      description="Investigate immutable operator, security, money, booking, and system evidence. Times use Vietnam time."
       title="Audit Log"
     >
-      <div className="audit-log-page">
-        <AuditLogCommandBoardSection items={commandBoard} />
-
-        <AdminFilterPanel
-          className="admin-mb-16"
-          description="Find retained admin and system events by actor, target, operation type, review priority, and operating window."
-          resultLabel={`Showing ${logs.length} of ${totalEvents}`}
-          title="Audit operation filters"
-        >
-          <AdminFormGrid action="/audit-log">
-            <AdminFormSearch
-              className="admin-directory-filter-search"
-              defaultValue={filters.q}
-              label="Search"
-              labelVisibility="visible"
-              name="q"
-              placeholder="Action, target, actor, metadata"
-            />
-            <AdminFormSelect
-              className="admin-directory-filter-select"
-              defaultValue={filters.range}
-              label="Date range"
-              labelVisibility="visible"
-              name="range"
-              options={[
-                { label: 'All dates', value: 'all' },
-                { label: 'Today', value: 'today' },
-                { label: 'Last 7 days', value: '7d' },
-                { label: 'Last 30 days', value: '30d' },
-              ]}
-            />
-            <AdminFormSelect
-              className="admin-directory-filter-select"
-              defaultValue={filters.bucket}
-              label="Bucket"
-              labelVisibility="visible"
-              name="bucket"
-              options={[
-                { label: 'All', value: '' },
-                { label: 'Dispatch', value: 'Dispatch' },
-                { label: 'Operations/Policy', value: 'Operations/Policy' },
-                { label: 'Payment', value: 'Payment' },
-                { label: 'Finance/Closeout', value: 'Finance/Closeout' },
-                { label: 'Service/Pricing', value: 'Service/Pricing' },
-                { label: 'Notification', value: 'Notification' },
-                { label: 'Partner', value: 'Partner' },
-                { label: 'Tax', value: 'Tax' },
-                { label: 'System', value: 'System' },
-              ]}
-            />
-            <AdminFormSelect
-              className="admin-directory-filter-select"
-              defaultValue={filters.priority}
-              label="Priority"
-              labelVisibility="visible"
-              name="priority"
-              options={[
-                { label: 'All', value: '' },
-                { label: 'Review this first', value: '4' },
-                { label: 'Check before close', value: '3' },
-                { label: 'Follow related flow', value: '2' },
-                { label: 'Reference event', value: '1' },
-              ]}
-            />
-            <AdminFormActionRow className="actions full-span">
-              <AdminFormControlButton className="button-primary" type="submit">
-                <Filter aria-hidden="true" size={16} />
-                Apply filters
-              </AdminFormControlButton>
-              <AdminFormControlLink className="button-secondary" href="/audit-log">
-                <X aria-hidden="true" size={16} />
-                Clear filters
-              </AdminFormControlLink>
-              <span className="muted">
-                Showing {logs.length} of {totalEvents} events / {dateRangeLabel(filters.range)}
-              </span>
-            </AdminFormActionRow>
-          </AdminFormGrid>
-          <AdminFilterSummary
-            ariaLabel="Active audit filters"
-            labels={buildAuditActiveFilterLabels(filters)}
-            tone="info"
+      <div className="audit-workspace">
+        {filters.bucket ? <AuditScopeContext bucket={filters.bucket} /> : null}
+        {!workspaceResult.ok ? (
+          <AdminErrorState
+            action={<AdminFormControlLink className="button-secondary" href={pageHref}>Retry audit data</AdminFormControlLink>}
+            message={permissionDenied
+              ? `Your current Admin access cannot read audit evidence.${workspaceResult.requestId ? ` Reference ${workspaceResult.requestId}.` : ''}`
+              : `Audit data could not be loaded. This is not an empty result.${workspaceResult.requestId ? ` Reference ${workspaceResult.requestId}.` : ''}`}
+            title={permissionDenied ? 'Audit access denied' : 'Audit data unavailable'}
           />
-        </AdminFilterPanel>
+        ) : (
+          <>
+            <AuditTrustStrip workspace={workspace} />
+            <AuditSavedViews filters={filters} workspace={workspace} />
+            {(workspace.actionableIncidents ?? []).length > 0 ? (
+              <AdminSection
+                className="audit-incidents-section"
+                description="Open recurring system incidents are projected from their latest lifecycle event. Raw occurrences remain in the event table."
+                status={<StatusBadge tone="warning">{workspace.actionableIncidents.length} open</StatusBadge>}
+                title="Action required incidents"
+              >
+                <div className="audit-incident-list">
+                  {(workspace.actionableIncidents ?? []).map((incident) => (
+                    <div className="audit-incident-row" key={incident.id}>
+                      <div>
+                        <strong>{incident.label}</strong>
+                        <span>Opened {formatVietnamTime(incident.openedAt)} · {incident.source}</span>
+                        <code>{incident.target}</code>
+                      </div>
+                      <AdminFormControlLink className="button-secondary" href={incident.href}>
+                        Review incident
+                      </AdminFormControlLink>
+                    </div>
+                  ))}
+                </div>
+              </AdminSection>
+            ) : null}
 
-        <AdminTableSection
-          bodyClassName="admin-table-section-body"
-          status={
-            <AdminFilterChipGroup ariaLabel="Audit record table status">
-              <StatusBadge tone="success">Newest first</StatusBadge>
-              <StatusBadge tone="info">Action grouped</StatusBadge>
-              <StatusBadge tone="warning">Metadata preview</StatusBadge>
-            </AdminFilterChipGroup>
-          }
-          title="Audit records"
-        >
-          <AdminSectionHeader
-            description="Recent operational trail for bookings, payments, refunds, Partner review, and alerts."
-            title="Operational trail"
-          />
+            <AdminFilterPanel
+              bodyClassName="audit-filter-panel-body"
+              description="Search normalized event, object, actor, correlation, and request fields. Raw payload text is not searched."
+              resultLabel={`${workspace.totalCount.toLocaleString('en-US')} events`}
+              title="Find evidence"
+            >
+              <AdminFormGrid action="/audit-log" className="audit-filter-grid">
+                <AdminFormSearch
+                  className="audit-filter-search"
+                  defaultValue={filters.q}
+                  label="Search"
+                  labelVisibility="visible"
+                  name="q"
+                  placeholder="Event, object, actor or ID"
+                />
+                <AdminFormSelect
+                  defaultValue={filters.area}
+                  label="Area"
+                  labelVisibility="visible"
+                  name="area"
+                  options={facetOptions('All areas', workspace.facets.areas)}
+                />
+                <AdminFormSelect
+                  defaultValue={filters.outcome}
+                  label="Outcome"
+                  labelVisibility="visible"
+                  name="outcome"
+                  options={facetOptions('All outcomes', workspace.facets.outcomes)}
+                />
+                <AdminFormSelect
+                  defaultValue={filters.actorType}
+                  label="Actor type"
+                  labelVisibility="visible"
+                  name="actorType"
+                  options={facetOptions('All actors', workspace.facets.actorTypes)}
+                />
+                <AdminFormSelect
+                  defaultValue={filters.range}
+                  label="Date & time"
+                  labelVisibility="visible"
+                  name="range"
+                  options={[
+                    { label: 'Today · Vietnam', value: 'today' },
+                    { label: 'Yesterday · Vietnam', value: 'yesterday' },
+                    { label: 'Last 7 days · Vietnam', value: '7d' },
+                    { label: 'Last 30 days · Vietnam', value: '30d' },
+                    { label: 'Custom date & time · Vietnam', value: 'custom' },
+                    { label: 'All dates', value: 'all' },
+                  ]}
+                />
 
-          <AdminTableScroll>
-            <AuditLogTableSection emptyMessage="No audit logs loaded." rows={auditLogRows} />
-          </AdminTableScroll>
-          <AdminTablePaginationFooter
-            activePage={activePage}
-            ariaLabel="Audit log pagination"
-            from={visibleFrom}
-            hrefForPage={(page) => buildAuditLogPageHref(filters, page)}
-            paginationClassName="admin-mt-16"
-            to={visibleTo}
-            totalPages={totalPages}
-            totalRows={totalEvents}
-          />
-        </AdminTableSection>
+                <details className="audit-more-filters full-span">
+                  <summary>More filters</summary>
+                  <div className="audit-more-filter-grid">
+                    <AdminFormSelect
+                      defaultValue={filters.severity}
+                      label="Severity"
+                      labelVisibility="visible"
+                      name="severity"
+                      options={facetOptions('All severities', workspace.facets.severities)}
+                    />
+                    <AdminFormSearch defaultValue={filters.objectType} label="Object type" name="objectType" placeholder="booking" />
+                    <AdminFormSearch defaultValue={filters.eventId} label="Event ID" name="eventId" placeholder="Exact event ID" />
+                    <AdminFormSearch defaultValue={filters.correlationId} label="Correlation ID" name="correlationId" placeholder="Exact correlation ID" />
+                    <AdminFormSearch defaultValue={filters.requestId} label="Request ID" name="requestId" placeholder="Exact request ID" />
+                    <AdminFormDateTime
+                      defaultValue={filters.from}
+                      label="From · Vietnam time"
+                      labelVisibility="visible"
+                      name="from"
+                    />
+                    <AdminFormDateTime
+                      defaultValue={filters.to}
+                      label="To · Vietnam time (exclusive)"
+                      labelVisibility="visible"
+                      name="to"
+                    />
+                    <AdminFormSelect
+                      defaultValue={filters.sort}
+                      label="Sort"
+                      labelVisibility="visible"
+                      name="sort"
+                      options={[
+                        { label: 'Newest first', value: 'newest' },
+                        { label: 'Oldest first', value: 'oldest' },
+                      ]}
+                    />
+                  </div>
+                </details>
+
+                <input name="view" type="hidden" value={filters.view} />
+                {filters.bucket ? <input name="bucket" type="hidden" value={filters.bucket} /> : null}
+                {filters.targetPrefix ? <input name="targetPrefix" type="hidden" value={filters.targetPrefix} /> : null}
+                <AdminFormActionRow className="actions full-span audit-filter-actions">
+                  <AdminFormControlButton className="button-primary" type="submit">
+                    <Filter aria-hidden="true" size={16} />
+                    Apply filters
+                  </AdminFormControlButton>
+                  <AdminFormControlLink className="button-secondary" href={clearRefinementsHref}>
+                    <RotateCcw aria-hidden="true" size={16} />
+                    {filters.bucket ? 'Clear refinements' : 'Clear all'}
+                  </AdminFormControlLink>
+                </AdminFormActionRow>
+              </AdminFormGrid>
+              <AdminFilterSummary ariaLabel="Active audit filters" labels={activeFilterLabels(filters)} tone="info" />
+            </AdminFilterPanel>
+
+            <AdminSection
+              bodyClassName="audit-results-body"
+              className="audit-results-section"
+              description={`${workspace.window.label} · snapshot generated at ${formatVietnamTime(workspace.generatedAt)}`}
+              status={<StatusBadge tone="neutral">Server ordered · {filters.sort === 'oldest' ? 'oldest first' : 'newest first'}</StatusBadge>}
+              title="Investigation results"
+            >
+              {notificationContextId && workspace.totalCount === 0 ? (
+                <AdminNoticeCard tone="info">
+                  <strong>No audit events have been recorded for this notification.</strong>
+                  <p>Delivery evidence may still be available on the notification record.</p>
+                  <AdminFormControlLink
+                    className="button-secondary"
+                    href={`/notifications?mode=records&range=all&q=${encodeURIComponent(notificationContextId)}`}
+                  >
+                    Back to Notification Delivery
+                  </AdminFormControlLink>
+                </AdminNoticeCard>
+              ) : (
+                <AuditLogTableSection
+                  evidenceHref={(eventId) => auditEvidenceHref(filters, eventId)}
+                  items={workspace.items}
+                />
+              )}
+              <div className="audit-cursor-footer">
+                <span>
+                  Showing {workspace.items.length.toLocaleString('en-US')} of {workspace.totalCount.toLocaleString('en-US')} events in this snapshot
+                </span>
+                <div>
+                  {filters.cursor ? (
+                    <AdminFormControlLink className="button-secondary" href={auditHrefFromFilters({ ...filters, cursor: workspace.cursor.previous ?? '', event: '' })}>
+                      Previous page
+                    </AdminFormControlLink>
+                  ) : null}
+                  {filters.cursor ? (
+                    <AdminFormControlLink className="button-plain" href={auditHrefFromFilters({ ...filters, cursor: '', event: '' })}>
+                      First page
+                    </AdminFormControlLink>
+                  ) : null}
+                  {workspace.cursor.next ? (
+                    <AdminFormControlLink
+                      className="button-secondary"
+                      href={auditHrefFromFilters({ ...filters, cursor: workspace.cursor.next, event: '' })}
+                    >
+                      Next page
+                    </AdminFormControlLink>
+                  ) : null}
+                </div>
+              </div>
+            </AdminSection>
+
+            {selectedEventResult && !selectedEventResult.ok ? (
+              <AdminNoticeCard tone="danger">
+                <strong>Evidence details could not be loaded.</strong>
+                <p>Close this drawer state and retry the event from the investigation table.</p>
+              </AdminNoticeCard>
+            ) : null}
+            {selectedEventResult?.ok && selectedEventResult.data ? (
+              <AuditEvidenceDrawer
+                event={selectedEventResult.data.event}
+                returnFocusHref={auditEvidenceHref(filters, selectedEventResult.data.event.id)}
+                returnHref={auditHrefFromFilters({ ...filters, event: '' })}
+                scopeBucket={filters.bucket || undefined}
+              />
+            ) : null}
+          </>
+        )}
       </div>
     </AdminPageTemplate>
   );
 }
 
-export function buildAuditLogTableRows(logs: readonly AdminAuditLog[]): AuditLogTableRow[] {
-  return logs.map((log) => ({
-    actionLabel: humanizeAction(log.action),
-    actorLabel: operationalDisplayText(log.actor?.fullName ?? log.actor?.phone ?? 'System'),
-    bucketClassName: signalClass(log.action),
-    bucketLabel: actionBucketLabel(log.action),
-    createdAt: log.createdAt,
-    id: log.id,
-    metadataHighlights: metadataHighlights(log),
-    metadataPreview: metadataPreviewForLog(log),
-    opsDetail: opsDetail(log.action),
-    opsHint: opsHint(log.action, log.target),
-    priorityLabel: reviewPriorityLabel(log.action),
-    relatedBoardHref: relatedBoardHref(log),
-    relatedBoardLabel: relatedBoardLabel(log),
-    relativeTimeLabel: auditRelativeTime(log.createdAt),
-    shortTargetLabel: shortTarget(log.target),
-    targetLabel: operationalDisplayText(log.target),
-  }));
-}
+type AuditFilters = {
+  actorType: string;
+  area: string;
+  bucket: string;
+  correlationId: string;
+  cursor: string;
+  event: string;
+  eventId: string;
+  from: string;
+  objectType: string;
+  outcome: string;
+  q: string;
+  range: string;
+  requestId: string;
+  severity: string;
+  sort: string;
+  targetPrefix: string;
+  to: string;
+  view: string;
+};
 
-function sortLogs(logs: AdminAuditLog[]) {
-  return [...logs].sort((left, right) => {
-    const priorityDiff = auditPriority(right.action) - auditPriority(left.action);
-    if (priorityDiff !== 0) {
-      return priorityDiff;
-    }
-    const leftTime = Date.parse(left.createdAt);
-    const rightTime = Date.parse(right.createdAt);
-    return rightTime - leftTime;
-  });
-}
-
-function buildSummary(logs: AdminAuditLog[], serverSummary?: AuditLogSummaryResponse | null) {
-  const now = Date.now();
-  const fallback = {
-    total: logs.length,
-    dispatch: logs.filter((log) => isDispatchAction(log.action)).length,
-    payments: logs.filter((log) => isPaymentAction(log.action)).length,
-    financeCloseout: logs.filter((log) => isFinanceCloseoutAction(log.action)).length,
-    servicePricing: logs.filter((log) => isServicePricingAction(log.action)).length,
-    notifications: logs.filter((log) => isNotificationAction(log.action)).length,
-    needsReview: logs.filter((log) => auditPriority(log.action) >= 3).length,
-    recentHour: logs.filter((log) => now - Date.parse(log.createdAt) <= 60 * 60 * 1000).length,
-  };
-
+function auditFilters(params: Record<string, string | string[] | undefined>): AuditFilters {
+  const from = singleParam(params.from);
+  const to = singleParam(params.to);
+  const requestedRange = supportedValue(
+    singleParam(params.range),
+    ['today', 'yesterday', '7d', '30d', 'custom', 'all'],
+    'today',
+  );
   return {
-    ...fallback,
-    dispatch: serverSummary?.dispatch ?? fallback.dispatch,
-    financeCloseout: serverSummary?.financeCloseout ?? fallback.financeCloseout,
-    needsReview: serverSummary?.needsReview ?? fallback.needsReview,
-    notifications: serverSummary?.notifications ?? fallback.notifications,
-    payments: serverSummary?.payments ?? fallback.payments,
-    recentHour: serverSummary?.recentHour ?? fallback.recentHour,
-    servicePricing: serverSummary?.servicePricing ?? fallback.servicePricing,
+    actorType: singleParam(params.actorType),
+    area: singleParam(params.area),
+    bucket: safeContextBucket(singleParam(params.bucket)),
+    correlationId: singleParam(params.correlationId),
+    cursor: singleParam(params.cursor),
+    event: singleParam(params.event),
+    eventId: singleParam(params.eventId),
+    from,
+    objectType: singleParam(params.objectType),
+    outcome: singleParam(params.outcome),
+    q: singleParam(params.q),
+    range: requestedRange === 'custom' && !from && !to ? 'today' : requestedRange,
+    requestId: singleParam(params.requestId),
+    severity: singleParam(params.severity),
+    sort: supportedValue(singleParam(params.sort), ['newest', 'oldest'], 'newest'),
+    targetPrefix: singleParam(params.targetPrefix),
+    to,
+    view: supportedValue(
+      singleParam(params.view).toUpperCase(),
+      ['REVIEW_REQUIRED', 'OPERATOR_CHANGES', 'MONEY_POLICY', 'SECURITY_ACCESS', 'SYSTEM_INCIDENTS', 'ALL', 'LEGACY_TELEMETRY'],
+      'ALL',
+    ),
   };
 }
 
-export function buildAuditCommandBoard(
-  logs: AdminAuditLog[],
-  range: AuditLogFilters['range'],
-): AuditCommandBoardItem[] {
-  const now = Date.now();
-  const servicePolicyLogs = logs.filter(
-    (log) => isServicePricingAction(log.action) || log.action.startsWith('tax_'),
-  );
-  const moneyLogs = logs.filter((log) => isPaymentAction(log.action) || isPayoutAction(log.action));
-  const financeCloseoutLogs = logs.filter((log) => isFinanceCloseoutAction(log.action));
-  const dispatchLogs = logs.filter(
-    (log) => isDispatchAction(log.action) || log.action.startsWith('booking.'),
-  );
-  const notificationLogs = logs.filter((log) => isNotificationAction(log.action));
-  const recentHighPriority = logs.filter(
-    (log) => auditPriority(log.action) >= 3 && now - Date.parse(log.createdAt) <= 24 * 60 * 60 * 1000,
-  );
+function auditWorkspaceApiHref(filters: AuditFilters) {
+  const params = auditFilterParams(filters);
+  params.set('take', '50');
+  if (filters.cursor) params.set('cursor', filters.cursor);
+  return `/admin/audit-logs/page?${params.toString()}`;
+}
 
+function auditHrefFromFilters(filters: AuditFilters) {
+  const params = auditFilterParams(filters);
+  if (filters.cursor) params.set('cursor', filters.cursor);
+  if (filters.event) params.set('event', filters.event);
+  const query = params.toString();
+  return query ? `/audit-log?${query}` : '/audit-log';
+}
+
+function auditFilterParams(filters: AuditFilters) {
+  const params = new URLSearchParams();
+  params.set('view', filters.view);
+  params.set('range', filters.range);
+  params.set('sort', filters.sort);
+  for (const key of AUDIT_LOG_FILTER_QUERY_KEYS) {
+    if (filters[key]) params.set(key, filters[key]);
+  }
+  return params;
+}
+
+function auditEvidenceHref(filters: AuditFilters, eventId: string) {
+  return auditHrefFromFilters({ ...filters, event: eventId });
+}
+
+function auditExportHref(filters: AuditFilters, format: 'csv' | 'json') {
+  const params = auditFilterParams(filters);
+  params.set('format', format);
+  return `/api/admin/audit-log/export?${params.toString()}`;
+}
+
+function auditPageHref(params: Record<string, string | string[] | undefined>) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    const item = Array.isArray(value) ? value[0] : value;
+    if (item) query.set(key, item);
+  }
+  return query.size ? `/audit-log?${query.toString()}` : '/audit-log';
+}
+
+function AuditTrustStrip({ workspace }: { readonly workspace: AdminAuditWorkspaceResponse }) {
+  const metrics = [
+    { label: 'Review-level events', value: workspace.summary.reviewRequired, tone: workspace.summary.reviewRequired ? 'warning' : 'neutral' },
+    { label: 'Failed', value: workspace.summary.failed, tone: workspace.summary.failed ? 'danger' : 'neutral' },
+    { label: 'Unacknowledged', value: workspace.summary.unacknowledged, tone: workspace.summary.unacknowledged ? 'warning' : 'neutral' },
+    { label: 'Data lag', value: formatLag(workspace.source.dataLagSeconds), tone: workspace.sourceStatus === 'LIVE' ? 'info' : 'danger' },
+  ] as const;
+
+  return (
+    <section aria-label="Audit evidence trust status" className="audit-trust-strip">
+      <div className="audit-trust-source">
+        <span className={workspace.sourceStatus === 'LIVE' ? 'audit-source-dot is-live' : 'audit-source-dot'} />
+        <div>
+          <strong>{workspace.sourceStatus === 'LIVE' ? 'Audit source available' : 'Audit source degraded'}</strong>
+          <span>Generated <DateTimeText value={workspace.generatedAt} /> · Asia/Ho_Chi_Minh</span>
+        </div>
+      </div>
+      {metrics.map((metric) => (
+        <div className="audit-trust-metric" key={metric.label}>
+          <span>{metric.label}</span>
+          <strong>{typeof metric.value === 'number' ? metric.value.toLocaleString('en-US') : metric.value}</strong>
+          <StatusBadge tone={metric.tone}>{metric.label === 'Data lag' ? 'Freshness' : 'Current filters'}</StatusBadge>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function AuditScopeContext({ bucket }: { readonly bucket: string }) {
+  return (
+    <section aria-label="Fixed audit investigation scope" className="audit-scope-context">
+      <div>
+        <StatusBadge tone="info">Fixed scope</StatusBadge>
+        <strong>Scope: {formatAuditBucket(bucket)}</strong>
+        <span>Summary, facets, pagination, refresh, and exports use this same evidence boundary.</span>
+      </div>
+      <AdminFormControlLink className="button-secondary" href="/audit-log">
+        Exit policy scope
+      </AdminFormControlLink>
+    </section>
+  );
+}
+
+function AuditSavedViews({ filters, workspace }: { readonly filters: AuditFilters; readonly workspace: AdminAuditWorkspaceResponse }) {
+  return (
+    <nav aria-label="Saved audit views" className="audit-saved-views">
+      {workspace.savedViews.map((view) => {
+        const href = auditHrefFromFilters({ ...filters, cursor: '', event: '', view: view.key });
+        const active = filters.view === view.key;
+        return (
+          <AdminFormControlLink
+            aria-current={active ? 'page' : undefined}
+            className={active ? 'audit-saved-view is-active' : 'audit-saved-view'}
+            href={href}
+            key={view.key}
+          >
+            <span>{view.label}</span>
+            <strong>{view.count.toLocaleString('en-US')}</strong>
+          </AdminFormControlLink>
+        );
+      })}
+    </nav>
+  );
+}
+
+function facetOptions(label: string, values: Array<{ value: string; count: number }>) {
   return [
-    {
-      title: 'Policy and pricing changes',
-      detail:
-        'Service price, payout, VAT, tax, and fee edits have downstream effects on bookings and wallet debt.',
-      status: 'Policy',
-      operatorAction: 'Review before/after metadata and confirm the change was intentional.',
-      href: withAuditRange('/audit-log?bucket=Service%2FPricing', range),
-      tone: servicePolicyLogs.length > 0 ? 'warn' : 'ok',
-      logs: buildAuditCommandLogPreviews(servicePolicyLogs),
-    },
-    {
-      title: 'Money movement trail',
-      detail: 'Payment, refund, payout, and settlement events should line up with booking outcomes.',
-      status: 'Money',
-      operatorAction: 'Check ledger impact before closing payment or payout tasks.',
-      href: withAuditRange('/audit-log?bucket=Payment', range),
-      tone: moneyLogs.length > 0 ? 'warn' : 'ok',
-      logs: buildAuditCommandLogPreviews(moneyLogs),
-    },
-    {
-      title: 'Finance closeout trail',
-      detail:
-        'End-of-shift finance audit for booking closeout, cash debt settlement, payout batches, and payment state.',
-      status: 'Closeout',
-      operatorAction: 'Open Finance Closeout, then confirm every listed event has a matching ledger row.',
-      href: withAuditRange('/audit-log?bucket=Finance%2FCloseout', range),
-      tone: financeCloseoutLogs.length > 0 ? 'warn' : 'ok',
-      logs: buildAuditCommandLogPreviews(financeCloseoutLogs),
-    },
-    {
-      title: 'Dispatch and Partner actions',
-      detail: 'Booking, matching, Partner status, and verification changes affect service delivery.',
-      status: 'Dispatch',
-      operatorAction: 'Review handoff problems from Booking detail back to the acting operator.',
-      href: withAuditRange('/audit-log?bucket=Dispatch', range),
-      tone: dispatchLogs.length > 0 ? 'info' : 'ok',
-      logs: buildAuditCommandLogPreviews(dispatchLogs),
-    },
-    {
-      title: 'Notification delivery trail',
-      detail: 'Send, retry, and device recovery actions should line up with notification delivery outcomes.',
-      status: 'Alerts',
-      operatorAction:
-        'Open Notifications, then confirm failed, FCM sent, stale, and disabled-device rows were handled.',
-      href: withAuditRange('/audit-log?bucket=Notification', range),
-      tone: notificationLogs.length > 0 ? 'info' : 'ok',
-      logs: buildAuditCommandLogPreviews(notificationLogs),
-    },
-    {
-      title: 'Recent high-priority changes',
-      detail: 'High-priority edits from the last 24 hours should be reviewed before shift handoff.',
-      status: 'Last 24h',
-      operatorAction: 'Use this lane for end-of-shift review and incident handoff.',
-      href: withAuditRange('/audit-log?priority=4', range),
-      tone: recentHighPriority.length > 0 ? 'warn' : 'ok',
-      logs: buildAuditCommandLogPreviews(recentHighPriority),
-    },
+    { label, value: '' },
+    ...values.map((item) => ({ label: `${titleCase(item.value)} (${item.count.toLocaleString('en-US')})`, value: item.value })),
   ];
 }
 
-function buildAuditCommandLogPreviews(logs: readonly AdminAuditLog[]): AuditCommandLogPreview[] {
-  return logs.map((log) => ({
-    actionLabel: humanizeAction(log.action),
-    id: log.id,
-    relativeTimeLabel: auditRelativeTime(log.createdAt),
-    shortTargetLabel: shortTarget(log.target),
-  }));
+function activeFilterLabels(filters: AuditFilters) {
+  const labels = [
+    filters.bucket ? `Scope: ${formatAuditBucket(filters.bucket)}` : null,
+    filters.q ? `Search: ${filters.q}` : null,
+    filters.area ? `Area: ${titleCase(filters.area)}` : null,
+    filters.outcome ? `Outcome: ${titleCase(filters.outcome)}` : null,
+    filters.actorType ? `Actor: ${titleCase(filters.actorType)}` : null,
+    filters.severity ? `Severity: ${titleCase(filters.severity)}` : null,
+    filters.objectType ? `Object: ${filters.objectType}` : null,
+    filters.eventId ? `Event ID: ${filters.eventId}` : null,
+    filters.correlationId ? `Correlation: ${filters.correlationId}` : null,
+    filters.requestId ? `Request: ${filters.requestId}` : null,
+    filters.from ? `From: ${filters.from} ICT` : null,
+    filters.to ? `To: ${filters.to} ICT (exclusive)` : null,
+    filters.targetPrefix ? `Target: ${filters.targetPrefix}` : null,
+  ];
+  return labels.filter((label): label is string => Boolean(label));
 }
 
-export function buildAuditFilters(params: Record<string, string | string[] | undefined>): AuditLogFilters {
-  const rangeParam = readSearchParam(params.range);
-  return {
-    q: readParam(params.q) || readParam(params.query),
-    bucket: readParam(params.bucket),
-    priority: readParam(params.priority),
-    range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
-  };
+function formatAuditBucket(value: string) {
+  return value.split('/').map((part) => part.trim()).filter(Boolean).join(' / ');
 }
 
-export function buildAuditLogApiHref(params: Record<string, string | string[] | undefined>) {
-  const filters = buildAuditFilters(params);
-  const page = readAuditLogPage(params.page);
-  return buildAuditLogAdminHref('/admin/audit-logs', filters, {
-    skip: (page - 1) * AUDIT_LOG_PAGE_SIZE,
-    take: AUDIT_LOG_PAGE_SIZE,
-  });
+function singleParam(value: string | string[] | undefined) {
+  return (Array.isArray(value) ? value[0] : value)?.trim() ?? '';
 }
 
-export function buildAuditLogSummaryApiHref(params: Record<string, string | string[] | undefined>) {
-  return buildAuditLogAdminHref('/admin/audit-logs/summary', buildAuditFilters(params));
+function safeContextBucket(value: string) {
+  return value.length <= 80 && /^[A-Za-z0-9 /_.-]*$/.test(value) ? value : '';
 }
 
-function buildAuditActiveFilterLabels(filters: AuditLogFilters) {
-  const labels = [`Date: ${dateRangeLabel(filters.range)}`];
-  if (filters.q) {
-    labels.push(`Search: ${filters.q}`);
-  }
-  if (filters.bucket) {
-    labels.push(`Bucket: ${filters.bucket}`);
-  }
-  if (filters.priority) {
-    labels.push(`Priority: ${auditPriorityFilterLabel(filters.priority)}`);
-  }
-  return labels;
+function supportedValue(value: string, supported: readonly string[], fallback: string) {
+  return supported.includes(value) ? value : fallback;
 }
 
-function auditMetricScope(range: AuditLogFilters['range']) {
-  return dateRangeLabel(range);
+function formatLag(value: number | null) {
+  if (value === null) return 'Unknown';
+  if (value < 60) return `${value}s`;
+  if (value < 3_600) return `${Math.floor(value / 60)}m`;
+  return `${Math.floor(value / 3_600)}h`;
 }
 
-function auditMetricKind(range: AuditLogFilters['range']) {
-  return range === 'all' ? 'record' as const : 'period' as const;
+function formatVietnamTime(value: string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).format(new Date(value));
 }
 
-function auditPriorityFilterLabel(priority: string) {
-  switch (priority) {
-    case '4':
-      return 'Review this first';
-    case '3':
-      return 'Check before close';
-    case '2':
-      return 'Follow related flow';
-    case '1':
-      return 'Reference event';
-    default:
-      return priority;
-  }
+function titleCase(value: string) {
+  return value.toLowerCase().replace(/(^|_)([a-z])/g, (_, space: string, letter: string) => `${space ? ' ' : ''}${letter.toUpperCase()}`);
 }
 
-function buildAuditLogAdminHref(
-  pathname: string,
-  filters: AuditLogFilters,
-  paging?: { take: number; skip: number },
-) {
-  const query = new URLSearchParams();
-  const dateWindow = auditLogDateWindow(filters.range);
-
-  if (paging) {
-    query.set('take', String(paging.take));
-    if (paging.skip > 0) {
-      query.set('skip', String(paging.skip));
-    }
-  }
-  if (filters.q) {
-    query.set('q', filters.q);
-  }
-  if (filters.bucket) {
-    query.set('bucket', filters.bucket);
-  }
-  if (filters.priority) {
-    query.set('priority', filters.priority);
-  }
-  if (dateWindow.from) {
-    query.set('from', dateWindow.from);
-  }
-  if (dateWindow.to) {
-    query.set('to', dateWindow.to);
-  }
-
-  const search = query.toString();
-  return search ? `${pathname}?${search}` : pathname;
-}
-
-function buildAuditLogPageHref(filters: AuditLogFilters, page: number) {
-  const query = new URLSearchParams();
-  if (filters.q) {
-    query.set('q', filters.q);
-  }
-  if (filters.range) {
-    query.set('range', filters.range);
-  }
-  if (filters.bucket) {
-    query.set('bucket', filters.bucket);
-  }
-  if (filters.priority) {
-    query.set('priority', filters.priority);
-  }
-  if (page > 1) {
-    query.set('page', String(page));
-  }
-
-  const search = query.toString();
-  return search ? `/audit-log?${search}` : '/audit-log';
-}
-
-function auditLogDateWindow(range: AuditLogFilters['range']) {
-  const now = new Date();
-  if (range === 'today') {
-    const from = new Date(now);
-    from.setHours(0, 0, 0, 0);
-    const to = new Date(from);
-    to.setDate(to.getDate() + 1);
-    return { from: from.toISOString(), to: to.toISOString() };
-  }
-  if (range === '7d') {
-    const from = new Date(now);
-    from.setDate(from.getDate() - 7);
-    return { from: from.toISOString(), to: now.toISOString() };
-  }
-  if (range === '30d') {
-    const from = new Date(now);
-    from.setDate(from.getDate() - 30);
-    return { from: from.toISOString(), to: now.toISOString() };
-  }
-  return {};
-}
-
-function readAuditLogPage(value: string | string[] | undefined) {
-  const page = Number.parseInt(readSearchParam(value), 10);
-  return Number.isFinite(page) && page > 0 ? page : 1;
-}
-
-function readParam(value: string | string[] | undefined) {
-  return readSearchParam(value);
-}
-
-function withAuditRange(href: string, range: AuditLogFilters['range']) {
-  if (range === 'all') {
-    return href;
-  }
-  return `${href}${href.includes('?') ? '&' : '?'}range=${range}`;
-}
-
-function auditPriority(action: string) {
-  if (action.startsWith('operational_policy.')) {
-    return 4;
-  }
-  if (action.startsWith('service_payout_rule.')) {
-    return 4;
-  }
-  if (action.startsWith('payout_batch.')) {
-    return 3;
-  }
-  if (action === 'booking.completed.closeout') {
-    return 4;
-  }
-  if (action.startsWith('service.')) {
-    return 3;
-  }
-  if (action.endsWith('.refund') || action.includes('reject') || action.endsWith('.retry')) {
-    return 4;
-  }
-  if (action.startsWith('payment.') || action.startsWith('refund.')) {
-    return 3;
-  }
-  if (action.startsWith('booking.') || action.startsWith('notification.')) {
-    return 2;
-  }
-  return 1;
-}
-
-function isDispatchAction(action: string) {
-  return (
-    action.startsWith('booking.') ||
-    action.startsWith('provider.') ||
-    action.startsWith('provider_') ||
-    action.startsWith('provider-')
-  );
-}
-
-function isPaymentAction(action: string) {
-  return action.startsWith('payment.') || action.startsWith('refund.');
-}
-
-function isPayoutAction(action: string) {
-  return action.startsWith('payout.') || action.startsWith('payout_batch.');
-}
-
-function isFinanceCloseoutAction(action: string) {
-  return (
-    isPaymentAction(action) ||
-    isPayoutAction(action) ||
-    action === 'booking.completed.closeout' ||
-    action === 'booking.expire.manual' ||
-    action === 'booking.no_show.mark' ||
-    action.startsWith('earning.') ||
-    action.startsWith('provider_wallet.') ||
-    action.startsWith('wallet_ledger.')
-  );
-}
-
-function isNotificationAction(action: string) {
-  return action.startsWith('notification.') || isPushDeviceAction(action);
-}
-
-function isPushDeviceAction(action: string) {
-  return action.startsWith('push_device.');
-}
-
-function isServicePricingAction(action: string) {
-  return action.startsWith('service.') || action.startsWith('service_payout_rule.');
-}
-
-function actionBucketLabel(action: string) {
-  if (isPayoutAction(action)) {
-    return 'Finance/Closeout';
-  }
-  if (action.startsWith('operational_policy.')) {
-    return 'Operations/Policy';
-  }
-  if (isServicePricingAction(action)) {
-    return 'Service/Pricing';
-  }
-  if (action.startsWith('tax_')) {
-    return 'Tax';
-  }
-  if (isProviderReviewAction(action)) {
-    return 'Partner';
-  }
-  if (isDispatchAction(action)) {
-    return 'Dispatch';
-  }
-  if (isPaymentAction(action)) {
-    return 'Payment';
-  }
-  if (isNotificationAction(action)) {
-    return 'Notification';
-  }
-  return 'System';
-}
-
-function isProviderReviewAction(action: string) {
-  return (
-    action.startsWith('provider_') ||
-    action.startsWith('provider-') ||
-    action.startsWith('provider-verification.')
-  );
-}
-
-function signalClass(action: string) {
-  if (action.startsWith('operational_policy.')) {
-    return 'signal signal-warn';
-  }
-  if (isServicePricingAction(action)) {
-    return 'signal signal-warn';
-  }
-  if (isDispatchAction(action)) {
-    return 'signal signal-info';
-  }
-  if (isPaymentAction(action)) {
-    return 'signal signal-warn';
-  }
-  if (isPayoutAction(action)) {
-    return 'signal signal-warn';
-  }
-  if (isNotificationAction(action)) {
-    return 'signal signal-ok';
-  }
-  return 'signal';
-}
-
-function humanizeAction(action: string) {
-  const publicSiteLabel = publicSiteActionLabels[action];
-  if (publicSiteLabel) {
-    return `Website content / ${publicSiteLabel}`;
-  }
-  if (action === 'booking.ops_note.add') {
-    return 'Booking / Operator note added';
-  }
-  if (action === 'booking.ops_task.update') {
-    return 'Booking / Ops status updated';
-  }
-
-  return action
-    .split('.')
-    .map((part) => part.replace(/[-_]/g, ' '))
-    .map((part) => operationalDisplayText(part))
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' / ');
-}
-
-function shortTarget(target: string) {
-  if (!target) {
-    return '-';
-  }
-  const [scope, id] = target.split(':');
-  if (!id) {
-    return operationalDisplayText(target);
-  }
-  return operationalDisplayText(`${scope}:${id.slice(0, 8)}`);
-}
-
-function metadataPreview(metadata: unknown) {
-  if (!metadata) {
-    return 'No metadata';
-  }
-  try {
-    return operationalDisplayText(JSON.stringify(metadata, null, 2));
-  } catch {
-    return 'Metadata could not be rendered';
-  }
-}
-
-function metadataPreviewForLog(log: AdminAuditLog) {
-  if (log.action === 'notification.retry') {
-    return notificationRetryMetadataPreview(log.metadata);
-  }
-
-  return metadataPreview(log.metadata);
-}
-
-function notificationRetryMetadataPreview(metadata: unknown) {
-  const record = readMetadataObject(metadata);
-  const latestDelivery = readRecord(record.latestDelivery);
-  const retryJob = readRecord(record.retryJob);
-  const failureCode = readString(latestDelivery.failureCode);
-  const notificationId = readString(record.notificationId);
-  const retryJobName = readString(retryJob.jobName);
-  const parts = [
-    notificationId ? `Notification ${notificationId.slice(0, 8)}` : null,
-    notificationRetryRiskPreview(readString(record.retryRisk)),
-    notificationDeliveryPreview(latestDelivery),
-    notificationFailurePreview(failureCode),
-    notificationFailureRecoveryActionLabel(failureCode),
-    notificationPushDevicePreview(latestDelivery),
-    latestDelivery.pushDeviceEnabled === true
-      ? 'Device enabled'
-      : latestDelivery.pushDeviceEnabled === false
-        ? 'Device disabled'
-        : null,
-    retryJobName ? `Queued ${retryJobName}` : null,
-  ].filter((part): part is string => Boolean(part));
-
-  return parts.length > 0 ? parts.join(' / ') : metadataPreview(metadata);
-}
-
-function notificationDeliveryPreview(latestDelivery: Record<string, unknown>) {
-  const provider = readString(latestDelivery.provider);
-  const status = readString(latestDelivery.status);
-  if (provider && status) {
-    return `Latest ${provider} ${status}`;
-  }
-  return status ? `Latest ${status}` : null;
-}
-
-function notificationFailurePreview(failureCode: string | null) {
-  return failureCode ? `Failure ${notificationFailureCodeLabel(failureCode)}` : null;
-}
-
-type MetadataHighlight = {
-  label: string;
-  tone: StatusBadgeTone;
+export {
+  auditFilters as buildAuditFilters,
+  auditExportHref as buildAuditExportHref,
+  auditHrefFromFilters as buildAuditHref,
+  auditWorkspaceApiHref as buildAuditWorkspaceApiHref,
 };
-
-function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
-  if (log.action === 'operational_policy.update') {
-    return operationalPolicyHighlights(log);
-  }
-
-  if (log.action === 'booking.create.rejected') {
-    return bookingGateRejectionHighlights(log);
-  }
-
-  if (log.action === 'notification.retry') {
-    return notificationRetryHighlights(log);
-  }
-
-  const matchHighlights = bookingMatchAuditHighlights(log);
-  if (matchHighlights.length > 0) {
-    return matchHighlights;
-  }
-
-  if (!isServicePricingAction(log.action)) {
-    return [];
-  }
-
-  const metadata = readMetadataObject(log.metadata);
-  const highlights: MetadataHighlight[] = [];
-  const service = firstRecord(metadata.service, metadata.after, metadata.before, metadata);
-  const before = readRecord(metadata.before);
-  const after = readRecord(metadata.after);
-  const changedFields = readStringList(metadata.changedFields);
-
-  const serviceLabel = serviceOptionLabel(service);
-  if (serviceLabel) {
-    highlights.push({ label: serviceLabel, tone: 'info' });
-  }
-
-  if (log.action === 'service.duration_set.create') {
-    const durations = readNumberList(metadata.durationMins);
-    if (durations.length > 0) {
-      highlights.push({
-        label: `Durations ${durations.map((duration) => `${duration}m`).join(', ')}`,
-        tone: 'success',
-      });
-    }
-  }
-
-  const customerPrice = readNumber(after.customerPrice ?? after.basePrice ?? metadata.customerPrice);
-  const previousCustomerPrice = readNumber(before.customerPrice ?? before.basePrice);
-  const currency = readString(after.currency ?? before.currency) ?? 'VND';
-  if (customerPrice !== null) {
-    highlights.push({
-      label:
-        previousCustomerPrice !== null && previousCustomerPrice !== customerPrice
-          ? `Customer ${money(previousCustomerPrice, currency)} -> ${money(customerPrice, currency)}`
-          : `Customer ${money(customerPrice, currency)}`,
-      tone: 'warning',
-    });
-  }
-
-  const providerPayout = readNumber(after.providerPayoutAmount);
-  const previousProviderPayout = readNumber(before.providerPayoutAmount);
-  if (providerPayout !== null) {
-    highlights.push({
-      label:
-        previousProviderPayout !== null && previousProviderPayout !== providerPayout
-          ? `Partner ${money(previousProviderPayout, currency)} -> ${money(providerPayout, currency)}`
-          : `Partner ${money(providerPayout, currency)}`,
-      tone: 'success',
-    });
-  }
-
-  const vatBps = readNumber(after.vatBps);
-  const otherCost = readNumber(after.otherCostAmount);
-  if (vatBps !== null || otherCost !== null) {
-    highlights.push({
-      label: `VAT ${formatBps(vatBps)} / other ${money(otherCost ?? 0, currency)}`,
-      tone: 'info',
-    });
-  }
-
-  const adjustedProviderPrices = readNumber(metadata.adjustedProviderPrices);
-  if (adjustedProviderPrices !== null && adjustedProviderPrices > 0) {
-    highlights.push({
-      label: `${adjustedProviderPrices} Partner price(s) adjusted`,
-      tone: 'warning',
-    });
-  }
-
-  if (changedFields.length > 0) {
-    highlights.push({
-      label: `Changed ${changedFields.join(', ')}`,
-      tone: 'info',
-    });
-  }
-
-  return highlights.slice(0, 6);
-}
-
-function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
-  const metadata = readMetadataObject(log.metadata);
-  const latestDelivery = readRecord(metadata.latestDelivery);
-  const retryJob = readRecord(metadata.retryJob);
-  const highlights: MetadataHighlight[] = [];
-  const provider = readString(latestDelivery.provider);
-  const status = readString(latestDelivery.status);
-  const failureCode = readString(latestDelivery.failureCode);
-  const jobName = readString(retryJob.jobName);
-  const fcmOutcome = notificationFcmOutcomeHighlight(provider, status);
-  const retryRisk = notificationRetryRiskHighlight(readString(metadata.retryRisk));
-
-  if (retryRisk) {
-    highlights.push(retryRisk);
-  }
-  if (fcmOutcome) {
-    highlights.push(fcmOutcome);
-  }
-  const tokenEvidence = notificationPushTokenEvidenceHighlight(latestDelivery);
-  if (tokenEvidence) {
-    highlights.push(tokenEvidence);
-  }
-  if (metadata.retryAlreadyDelivered === true) {
-    highlights.push({ label: 'Already delivered before retry', tone: 'info' });
-  }
-  if (jobName) {
-    highlights.push({ label: `Queued ${jobName}`, tone: 'info' });
-  }
-  if (provider && status) {
-    highlights.push({
-      label: `Latest ${provider} ${status}`,
-      tone: notificationStatusHighlightTone(status),
-    });
-  }
-  const pushDevice = notificationPushDevicePreview(latestDelivery);
-  if (pushDevice) {
-    highlights.push({ label: pushDevice, tone: 'info' });
-  }
-  if (failureCode) {
-    highlights.push({
-      label: notificationFailureCodeLabel(failureCode),
-      tone: notificationFailureCodeTone(failureCode),
-    });
-    const recoveryActionLabel = notificationFailureRecoveryActionLabel(failureCode);
-    if (recoveryActionLabel) {
-      highlights.push({
-        label: recoveryActionLabel,
-        tone: 'warning',
-      });
-    }
-  }
-  if (latestDelivery.pushDeviceEnabled === true) {
-    highlights.push({ label: 'Device enabled', tone: 'success' });
-  }
-  if (latestDelivery.pushDeviceEnabled === false) {
-    highlights.push({ label: 'Device disabled', tone: 'warning' });
-  }
-
-  return highlights.slice(0, 8);
-}
-
-function notificationPushDevicePreview(latestDelivery: Record<string, unknown>) {
-  const platform = readString(latestDelivery.pushDevicePlatform);
-  const pushDeviceId = readString(latestDelivery.pushDeviceId);
-  if (platform && pushDeviceId) {
-    return `Device ${platform} ${pushDeviceId.slice(0, 8)}`;
-  }
-  if (platform) {
-    return `Device ${platform}`;
-  }
-  return pushDeviceId ? `Device ${pushDeviceId.slice(0, 8)}` : null;
-}
-
-function notificationFcmOutcomeHighlight(
-  provider: string | null,
-  status: string | null,
-): MetadataHighlight | null {
-  if (provider !== 'FCM' || !status) {
-    return null;
-  }
-  if (status === 'SENT') {
-    return { label: 'FCM sent evidence', tone: 'success' };
-  }
-  if (status === 'FAILED') {
-    return { label: 'FCM failure evidence', tone: 'warning' };
-  }
-  if (status === 'SKIPPED') {
-    return { label: 'FCM skipped evidence', tone: 'info' };
-  }
-  return null;
-}
-
-function notificationStatusHighlightTone(status: string): StatusBadgeTone {
-  if (status === 'SENT') {
-    return 'success';
-  }
-  if (status === 'FAILED') {
-    return 'warning';
-  }
-  return 'info';
-}
-
-function notificationFailureCodeTone(failureCode: string): StatusBadgeTone {
-  if (
-    failureCode === 'messaging/mismatched-credential' ||
-    failureCode === 'PUSH_PROVIDER_NOT_CONFIGURED' ||
-    failureCode === 'messaging/registration-token-not-registered' ||
-    failureCode === 'messaging/invalid-registration-token'
-  ) {
-    return 'warning';
-  }
-  return 'info';
-}
-
-function notificationRetryRiskHighlight(risk: string | null): MetadataHighlight | null {
-  if (risk === 'DUPLICATE_SEND_RISK') {
-    return { label: 'Duplicate send risk', tone: 'warning' };
-  }
-  if (risk === 'DEVICE_DISABLED') {
-    return { label: 'Device recovery needed', tone: 'warning' };
-  }
-  if (risk === 'FAILED_DELIVERY_RETRY') {
-    return { label: 'Failed delivery retry', tone: 'warning' };
-  }
-  if (risk === 'STALE_PUSH_TOKEN') {
-    return { label: 'Stale token retry', tone: 'warning' };
-  }
-  if (risk === 'NO_DELIVERY_EVIDENCE') {
-    return { label: 'No delivery evidence', tone: 'info' };
-  }
-  if (risk === 'SKIPPED_DELIVERY_RETRY') {
-    return { label: 'Skipped delivery retry', tone: 'info' };
-  }
-  return null;
-}
-
-function notificationRetryRiskPreview(risk: string | null) {
-  return notificationRetryRiskHighlight(risk)?.label ?? null;
-}
-
-function notificationPushTokenEvidenceHighlight(
-  latestDelivery: Record<string, unknown>,
-): MetadataHighlight | null {
-  if (latestDelivery.pushDeviceEnabled === false) {
-    return null;
-  }
-
-  const lastSeenAt = Date.parse(readString(latestDelivery.pushDeviceLastSeenAt) ?? '');
-  if (!Number.isFinite(lastSeenAt)) {
-    return null;
-  }
-
-  if (hasStaleRetryAuditPushToken(latestDelivery)) {
-    return { label: 'Stale token evidence', tone: 'warning' };
-  }
-
-  return { label: 'Token freshness evidence', tone: 'success' };
-}
-
-function bookingGateRejectionHighlights(log: AdminAuditLog): MetadataHighlight[] {
-  const metadata = readMetadataObject(log.metadata);
-  const highlights: MetadataHighlight[] = [{ label: 'Booking gate rejected', tone: 'warning' }];
-  const reasonCode = readString(metadata.reasonCode);
-  const customerDistance = readNumber(metadata.customerDistanceMeters);
-  const customerLimit = readNumber(metadata.customerDistanceLimitMeters);
-  const preferredDistance = readNumber(metadata.preferredProviderDistanceMeters);
-  const preferredLimit = readNumber(metadata.preferredProviderDistanceLimitMeters);
-
-  if (reasonCode) {
-    highlights.push({ label: bookingCreateGateReasonLabel(reasonCode, 'audit'), tone: 'info' });
-  }
-  if (customerDistance !== null) {
-    highlights.push({
-      label: `Customer ${formatDistance(customerDistance)} / limit ${formatDistance(customerLimit ?? 0)}`,
-      tone: 'info',
-    });
-  }
-  if (preferredDistance !== null) {
-    highlights.push({
-      label: `Partner ${formatDistance(preferredDistance)} / limit ${formatDistance(preferredLimit ?? 0)}`,
-      tone: 'info',
-    });
-  }
-
-  return highlights.slice(0, 6);
-}
-
-function operationalPolicyHighlights(log: AdminAuditLog): MetadataHighlight[] {
-  const metadata = readMetadataObject(log.metadata);
-  const highlights: MetadataHighlight[] = [];
-  const key = readString(metadata.key) ?? log.target.replace(/^operational_policy:/, '');
-  const previousValue = metadata.previousValue;
-  const value = metadata.value;
-  const reason = readString(metadata.reason);
-  const enforced = metadata.enforced === true;
-
-  if (key) {
-    highlights.push({ label: policyAuditKeyLabel(key), tone: 'info' });
-  }
-  highlights.push({
-    label: enforced ? 'Live behavior' : 'Decision log',
-    tone: enforced ? 'success' : 'warning',
-  });
-  if (previousValue !== undefined || value !== undefined) {
-    highlights.push({
-      label: `${compactAuditValue(previousValue)} -> ${compactAuditValue(value)}`,
-      tone: 'warning',
-    });
-  }
-  if (reason) {
-    highlights.push({ label: `Reason: ${reason.slice(0, 72)}`, tone: 'success' });
-  }
-
-  return highlights.slice(0, 6);
-}
-
-function policyAuditKeyLabel(key: string) {
-  return key
-    .split('.')
-    .map((part) => part.replace(/_/g, ' '))
-    .map((part) => operationalDisplayText(part))
-    .join(' / ');
-}
-
-function compactAuditValue(value: unknown) {
-  if (value === null || value === undefined) {
-    return '-';
-  }
-  if (typeof value === 'object') {
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return '[complex value]';
-    }
-  }
-  return String(value);
-}
-
-function relatedBoardHref(log: AdminAuditLog) {
-  const targetId = log.target?.split(':')[1];
-  const metadata = readMetadataObject(log.metadata);
-  if (isPublicSiteAction(log.action)) {
-    return '/website-content';
-  }
-  if (log.action === 'booking.create.rejected') {
-    const customerProfileId =
-      typeof metadata.customerProfileId === 'string'
-        ? metadata.customerProfileId
-        : log.target?.startsWith('customer:')
-          ? targetId
-          : null;
-    return customerProfileId ? `/customers/${customerProfileId}` : '/customers';
-  }
-  if (log.action.startsWith('booking.')) {
-    return targetId ? `/bookings/${targetId}` : '/bookings';
-  }
-  if (log.action.startsWith('payment.')) {
-    return targetId ? `/payments#payment-${targetId}` : '/payments';
-  }
-  if (log.action.startsWith('refund.')) {
-    return targetId ? `/refunds#refund-${targetId}` : '/refunds';
-  }
-  if (isPayoutAction(log.action)) {
-    return targetId ? `/payouts#${targetId}` : '/payouts';
-  }
-  if (log.action.startsWith('earning.')) {
-    return '/earnings';
-  }
-  if (log.action.startsWith('provider_wallet.') || log.action.startsWith('wallet_ledger.')) {
-    return '/wallet-adjustments';
-  }
-  if (isFinanceCloseoutAction(log.action)) {
-    return '/finance-tax/booking-settlement-audit?review=open';
-  }
-  if (log.action.startsWith('notification.')) {
-    return notificationBoardHref(metadata, targetId);
-  }
-  if (isPushDeviceAction(log.action)) {
-    return '/notifications?review=disabled-device';
-  }
-  if (log.action.startsWith('operational_policy.')) {
-    return '/operations-policy';
-  }
-  if (isServicePricingAction(log.action)) {
-    return '/services';
-  }
-  if (isDispatchAction(log.action)) {
-    const providerId =
-      targetId && log.target?.startsWith('provider:')
-        ? targetId
-        : typeof metadata.providerProfileId === 'string'
-          ? metadata.providerProfileId
-          : null;
-    return providerId ? `/partners/${providerId}` : '/partners';
-  }
-  if (log.action.startsWith('coupon.')) {
-    return '/coupons';
-  }
-  if (log.action.startsWith('tax_') || log.action.startsWith('tax.')) {
-    return '/tax-policy';
-  }
-  return '/audit-log';
-}
-
-function notificationBoardHref(metadata: Record<string, unknown>, targetId?: string) {
-  const notificationId = readString(metadata.notificationId) ?? targetId;
-  if (!notificationId) {
-    return '/notifications';
-  }
-
-  const review = notificationAuditReview(metadata);
-  const query = review ? `?review=${review}` : '';
-  return `/notifications${query}#${encodeURIComponent(notificationId)}`;
-}
-
-function notificationAuditReview(metadata: Record<string, unknown>) {
-  const latestDelivery = readRecord(metadata.latestDelivery);
-  const provider = readString(latestDelivery.provider);
-  const retryRisk = readString(metadata.retryRisk);
-  const status = readString(latestDelivery.status);
-
-  if (retryRisk === 'DEVICE_DISABLED') {
-    return 'disabled-device';
-  }
-  if (retryRisk === 'STALE_PUSH_TOKEN' || hasStaleRetryAuditPushToken(latestDelivery)) {
-    return 'stale-device';
-  }
-  if (status === 'FAILED') {
-    return 'failed';
-  }
-  if (status === 'SKIPPED') {
-    return 'skipped';
-  }
-  if (provider === 'FCM') {
-    return 'fcm';
-  }
-  if (status === 'SENT') {
-    return 'sent';
-  }
-  return '';
-}
-
-function hasStaleRetryAuditPushToken(latestDelivery: Record<string, unknown>) {
-  if (latestDelivery.pushDeviceEnabled === false) {
-    return false;
-  }
-
-  const attemptedAt = Date.parse(readString(latestDelivery.attemptedAt) ?? '');
-  const lastSeenAt = Date.parse(readString(latestDelivery.pushDeviceLastSeenAt) ?? '');
-  if (!Number.isFinite(attemptedAt) || !Number.isFinite(lastSeenAt)) {
-    return false;
-  }
-  return attemptedAt - lastSeenAt >= STALE_PUSH_DEVICE_AGE_MS;
-}
-
-function relatedBoardLabel(log: AdminAuditLog) {
-  const href = relatedBoardHref(log);
-  if (href === '/audit-log') {
-    return 'Audit';
-  }
-  if (href.startsWith('/partners/')) {
-    return 'Partner detail';
-  }
-  if (href.startsWith('/bookings/')) {
-    return 'Booking detail';
-  }
-  if (href.startsWith('/notifications')) {
-    return 'Notification board';
-  }
-  return titleCaseBoardLabel(href.slice(1));
-}
-
-function titleCaseBoardLabel(value: string) {
-  return value
-    .replace(/[-/]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function readMetadataObject(metadata: unknown): Record<string, unknown> {
-  if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
-    return metadata as Record<string, unknown>;
-  }
-  return {};
-}
-
-function firstRecord(...values: unknown[]) {
-  for (const value of values) {
-    const record = readRecord(value);
-    if (Object.keys(record).length > 0) {
-      return record;
-    }
-  }
-  return {};
-}
-
-function readRecord(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return {};
-}
-
-function readString(value: unknown) {
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
-}
-
-function readNumber(value: unknown) {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value === 'string') {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-}
-
-function readStringList(value: unknown) {
-  return Array.isArray(value)
-    ? value.map((item) => readString(item)).filter((item): item is string => Boolean(item))
-    : [];
-}
-
-function readNumberList(value: unknown) {
-  return Array.isArray(value)
-    ? value.map((item) => readNumber(item)).filter((item): item is number => item !== null)
-    : [];
-}
-
-function serviceOptionLabel(value: Record<string, unknown>) {
-  const name = readString(value.name);
-  const duration = readNumber(value.durationMin);
-  if (!name) {
-    return null;
-  }
-  return duration ? `${name} / ${duration} min` : name;
-}
-
-function formatBps(value: number | null) {
-  if (value === null) {
-    return '-';
-  }
-  return `${(value / 100).toFixed(2).replace(/\.00$/, '')}%`;
-}
-
-function formatDistance(value: number) {
-  return formatDistanceMeters(value, '-');
-}
-
-function reviewPriorityLabel(action: string) {
-  const priority = auditPriority(action);
-  if (priority >= 4) {
-    return 'Review this first';
-  }
-  if (priority >= 3) {
-    return 'Check before close';
-  }
-  if (priority >= 2) {
-    return 'Follow related flow';
-  }
-  return 'Reference event';
-}
-
-function auditRelativeTime(value: string) {
-  return formatRelativeTime(value, { justNow: 'Updated just now' });
-}
-
-function opsHint(action: string, target: string) {
-  if (isPublicSiteAction(action)) {
-    return 'Review the managed route and section order in Website Content.';
-  }
-  if (action === 'booking.ops_note.add') {
-    return 'Internal operator note was added to the booking handoff trail.';
-  }
-  if (action === 'booking.ops_task.update') {
-    return 'Structured booking handling status was updated by an operator.';
-  }
-  if (action.startsWith('booking.')) {
-    return 'Review booking state changes and verify Customer/Partner handoff.';
-  }
-  if (action.startsWith('payment.')) {
-    return 'Confirm the money state matches the booking state before closing the loop.';
-  }
-  if (isPayoutAction(action)) {
-    return 'Confirm transfer references, withholding logs, and Partner payout release checks before release.';
-  }
-  if (isFinanceCloseoutAction(action)) {
-    return 'Open the owning finance record and confirm its ledger evidence before ending the shift.';
-  }
-  if (action.startsWith('notification.')) {
-    return 'Check alert delivery status if the Customer or Partner missed an alert.';
-  }
-  if (isPushDeviceAction(action)) {
-    return 'Check push token freshness and alert delivery status before re-enabling alerts.';
-  }
-  if (action.startsWith('operational_policy.')) {
-    return 'Confirm the policy change matches the current owner decision and active booking controls.';
-  }
-  if (isServicePricingAction(action)) {
-    return 'Review service price, Partner payout, VAT, costs, and before/after changes.';
-  }
-  if (action.startsWith('provider.')) {
-    return 'Review Partner approval status, moderation, or queue movement.';
-  }
-  return `Audit trail for ${target || 'system'} activity.`;
-}
-
-function isPublicSiteAction(action: string) {
-  return action.startsWith('PUBLIC_SITE_');
-}
-
-const publicSiteActionLabels: Readonly<Record<string, string>> = {
-  PUBLIC_SITE_PAGE_CREATED: 'Page created',
-  PUBLIC_SITE_PAGE_UPDATED: 'Page updated',
-  PUBLIC_SITE_PAGE_DELETED: 'Page deleted',
-  PUBLIC_SITE_SECTION_CREATED: 'Section created',
-  PUBLIC_SITE_SECTION_UPDATED: 'Section updated',
-  PUBLIC_SITE_SECTION_DELETED: 'Section deleted',
-};
-
-function opsDetail(action: string) {
-  if (action === 'booking.ops_note.add') {
-    return 'Use the note to understand Customer/Partner contact history before taking the next action.';
-  }
-  if (action === 'booking.ops_task.update') {
-    return 'Use the status to see which handoff checks are done, pending, or blocked.';
-  }
-  if (action.endsWith('.refund')) {
-    return 'Refund actions should line up with booking cancellation or service failure notes.';
-  }
-  if (action.endsWith('.capture')) {
-    return 'Capture should only happen once service completion is confirmed.';
-  }
-  if (isPayoutAction(action)) {
-    return 'Payout updates should line up with earnings, tax logs, bank references, and active account controls.';
-  }
-  if (action === 'booking.completed.closeout') {
-    return 'Completed closeout should leave payment, earning, tax, wallet, and chat archive records aligned.';
-  }
-  if (action === 'notification.retry') {
-    return 'Retry events should line up with FCM delivery status, token freshness, and audit evidence.';
-  }
-  if (isPushDeviceAction(action)) {
-    return 'Device recovery events should line up with a fresh token or operator-confirmed delivery recovery.';
-  }
-  if (action.endsWith('.retry')) {
-    return 'Retry events are useful when a delivery or operation needed another pass.';
-  }
-  if (action.startsWith('operational_policy.')) {
-    return 'Operational policy edits can change matching timers, marketplace Partner visibility, wallet gates, and alert routing.';
-  }
-  if (isServicePricingAction(action)) {
-    return 'Price policy changes affect customer price, Partner payout, tax withholding, cash debt, and payout batches.';
-  }
-  if (action.endsWith('.approve') || action.endsWith('.reject')) {
-    return 'Partner review actions should match verification evidence and moderation notes.';
-  }
-  return 'Use this row to confirm who acted, when they acted, and what object changed.';
-}

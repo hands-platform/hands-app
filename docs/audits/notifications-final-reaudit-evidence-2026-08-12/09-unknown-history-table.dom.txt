@@ -1,0 +1,454 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Messaging":
+        - /url: /notifications
+      - generic: Notification Delivery
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Messaging workspace":
+    - strong: Messaging
+    - generic "Messaging pages":
+      - link "Notification Delivery":
+        - /url: /notifications
+      - link "Notification Templates":
+        - /url: /notifications/templates
+      - link "Push Send":
+        - /url: /notifications/push-send
+  - heading "Notification Delivery" [level=1]
+  - paragraph: Review unresolved mobile send issues and inspect delivery records.
+  - generic "Notification delivery data status":
+    - generic: History · 24h+
+    - generic: Asia/Ho_Chi_Minh
+    - generic: Generated 12 Aug 2026, 14:33
+    - button "Refresh now":
+      - text: Refresh now
+    - generic: Unknown source records · 0
+  - generic "Notification data source":
+    - link "Production":
+      - /url: /notifications?issue=no-route&scope=history
+    - link "Unknown source":
+      - /url: /notifications?issue=no-route&scope=history&dataScope=unknown
+    - link "Synthetic":
+      - /url: /notifications?issue=no-route&scope=history&dataScope=synthetic
+  - generic "Notification Delivery mode":
+    - link "Needs action":
+      - /url: /notifications?issue=no-route&scope=history&dataScope=unknown
+    - link "Delivery records":
+      - /url: /notifications?mode=records&dataScope=unknown&range=all&sort=oldest
+  - region "Delivery health":
+    - heading "Delivery health" [level=2]
+    - paragraph: Current delivery debt and 24h+ backlog stay visible together. Counts are scoped to the selected data source.
+    - generic: 4 current · 2,477 history
+    - region "Current delivery debt":
+      - paragraph: CURRENT · UNDER 24H
+      - heading "Current delivery debt" [level=3]
+      - generic: 4 signals
+      - term: Failure groups
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?dataScope=unknown
+      - term: Failed
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=failed&dataScope=unknown
+      - term: No attempt
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=no-attempt&dataScope=unknown
+      - term: No route recipients
+      - definition: "4"
+      - link "Review":
+        - /url: /notifications?issue=no-route&dataScope=unknown
+      - term: Stale routes
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=stale-route&dataScope=unknown
+    - region "Historical delivery debt":
+      - paragraph: HISTORY · 24H+
+      - heading "Historical delivery debt" [level=3]
+      - generic: Open history
+      - term: Failure groups
+      - definition: "9"
+      - link "Review":
+        - /url: /notifications?scope=history&dataScope=unknown
+      - term: Failed
+      - definition: "747"
+      - link "Review":
+        - /url: /notifications?issue=failed&scope=history&dataScope=unknown
+      - term: No attempt
+      - definition: "451"
+      - link "Review":
+        - /url: /notifications?issue=no-attempt&scope=history&dataScope=unknown
+      - term: No route recipients
+      - definition: 1,270
+      - link "Review":
+        - /url: /notifications?issue=no-route&scope=history&dataScope=unknown
+      - term: Stale routes
+      - definition: "0"
+      - link "Review":
+        - /url: /notifications?issue=stale-route&scope=history&dataScope=unknown
+      - paragraph: "Oldest failure group: 20 May 2026, 20:54 · lifecycle is read-only because Notification records do not have a persistent assignment or resolution field."
+  - generic "Notification delivery issue":
+    - link "Failure groups":
+      - /url: /notifications?scope=history&dataScope=unknown
+    - link "Failed":
+      - /url: /notifications?issue=failed&scope=history&dataScope=unknown
+    - link "No send attempt after 15m":
+      - /url: /notifications?issue=no-attempt&scope=history&dataScope=unknown
+    - link "No active push route · 1,270 recipients · 75,163 notifications":
+      - /url: /notifications?issue=no-route&scope=history&dataScope=unknown
+    - link "App route needs refresh":
+      - /url: /notifications?issue=stale-route&scope=history&dataScope=unknown
+  - generic "Notification action age scope":
+    - link "Current · under 24h":
+      - /url: /notifications?issue=no-route&dataScope=unknown
+    - link "24h+ history":
+      - /url: /notifications?issue=no-route&scope=history&dataScope=unknown
+    - link "All ages":
+      - /url: /notifications?issue=no-route&scope=all&dataScope=unknown
+  - region "No active push route":
+    - heading "No active push route" [level=2]
+    - paragraph: Notifications without an enabled target-role push route and not already successful.
+    - generic: 1,270 recipients · 75,163 notifications
+    - link "Open failure groups":
+      - /url: /notifications
+    - region "Notification delivery records":
+      - table:
+        - rowgroup:
+          - row "Recipient / route Latest notification First / latest Unresolved Next action":
+            - columnheader "Recipient / route"
+            - columnheader "Latest notification"
+            - columnheader "First / latest"
+            - columnheader "Unresolved"
+            - columnheader "Next action"
+        - rowgroup:
+          - 'row "Push route: inactive Partner 5337 Partner · Push route: inactive Partner now: offline Partner Verification Approved Verification approved 10 Jun 2026, 16:28 First 10 Jun 2026, 16:28 Latest 10 Jun 2026, 16:28 1 notification One recipient route recovery unit Primary Actions for Partner 5337 · Verification approved · 10 Jun 2026, 16:28 Actions for Partner 5337 · Verification approved · 10 Jun 2026, 16:28"':
+            - 'cell "Push route: inactive Partner 5337 Partner · Push route: inactive Partner now: offline"':
+              - generic: P5
+              - 'img "Push route: inactive"'
+              - link "Partner 5337":
+                - /url: /partners/cmq7v9pny004svyvgekjmn8gd
+              - generic: "Partner · Push route: inactive"
+              - generic: "Partner now: offline"
+            - cell "Partner Verification Approved Verification approved 10 Jun 2026, 16:28":
+              - generic: Partner Verification Approved
+              - strong: Verification approved
+              - time: 10 Jun 2026, 16:28
+            - cell "First 10 Jun 2026, 16:28 Latest 10 Jun 2026, 16:28":
+              - text: First
+              - time: 10 Jun 2026, 16:28
+              - text: Latest
+              - time: 10 Jun 2026, 16:28
+            - cell "1 notification One recipient route recovery unit":
+              - strong: 1 notification
+              - generic: One recipient route recovery unit
+            - cell "Primary Actions for Partner 5337 · Verification approved · 10 Jun 2026, 16:28 Actions for Partner 5337 · Verification approved · 10 Jun 2026, 16:28":
+              - navigation "Primary Actions for Partner 5337 · Verification approved · 10 Jun 2026, 16:28":
+                - link "Open recipient":
+                  - /url: /partners/cmq7v9pny004svyvgekjmn8gd
+                  - generic: Open recipient
+              - button "Actions for Partner 5337 · Verification approved · 10 Jun 2026, 16:28":
+          - 'row "Push route: inactive Partner 5230 Partner · Push route: inactive Partner now: offline Partner Verification Approved Verification approved 10 Jun 2026, 16:30 First 10 Jun 2026, 16:30 Latest 10 Jun 2026, 16:30 1 notification One recipient route recovery unit Primary Actions for Partner 5230 · Verification approved · 10 Jun 2026, 16:30 Actions for Partner 5230 · Verification approved · 10 Jun 2026, 16:30"':
+            - 'cell "Push route: inactive Partner 5230 Partner · Push route: inactive Partner now: offline"':
+              - generic: P5
+              - 'img "Push route: inactive"'
+              - link "Partner 5230":
+                - /url: /partners/cmq7vca6b00ibvyvgkdnhk0jg
+              - generic: "Partner · Push route: inactive"
+              - generic: "Partner now: offline"
+            - cell "Partner Verification Approved Verification approved 10 Jun 2026, 16:30":
+              - generic: Partner Verification Approved
+              - strong: Verification approved
+              - time: 10 Jun 2026, 16:30
+            - cell "First 10 Jun 2026, 16:30 Latest 10 Jun 2026, 16:30":
+              - text: First
+              - time: 10 Jun 2026, 16:30
+              - text: Latest
+              - time: 10 Jun 2026, 16:30
+            - cell "1 notification One recipient route recovery unit":
+              - strong: 1 notification
+              - generic: One recipient route recovery unit
+            - cell "Primary Actions for Partner 5230 · Verification approved · 10 Jun 2026, 16:30 Actions for Partner 5230 · Verification approved · 10 Jun 2026, 16:30":
+              - navigation "Primary Actions for Partner 5230 · Verification approved · 10 Jun 2026, 16:30":
+                - link "Open recipient":
+                  - /url: /partners/cmq7vca6b00ibvyvgkdnhk0jg
+                  - generic: Open recipient
+              - button "Actions for Partner 5230 · Verification approved · 10 Jun 2026, 16:30":
+          - 'row "Push route: inactive Partner 9568 Partner · Push route: inactive Partner now: offline Partner Verification Approved Verification approved 10 Jun 2026, 16:35 First 10 Jun 2026, 16:35 Latest 10 Jun 2026, 16:35 1 notification One recipient route recovery unit Primary Actions for Partner 9568 · Verification approved · 10 Jun 2026, 16:35 Actions for Partner 9568 · Verification approved · 10 Jun 2026, 16:35"':
+            - 'cell "Push route: inactive Partner 9568 Partner · Push route: inactive Partner now: offline"':
+              - generic: P9
+              - 'img "Push route: inactive"'
+              - link "Partner 9568":
+                - /url: /partners/cmq7vilag000avysc8tzqlizs
+              - generic: "Partner · Push route: inactive"
+              - generic: "Partner now: offline"
+            - cell "Partner Verification Approved Verification approved 10 Jun 2026, 16:35":
+              - generic: Partner Verification Approved
+              - strong: Verification approved
+              - time: 10 Jun 2026, 16:35
+            - cell "First 10 Jun 2026, 16:35 Latest 10 Jun 2026, 16:35":
+              - text: First
+              - time: 10 Jun 2026, 16:35
+              - text: Latest
+              - time: 10 Jun 2026, 16:35
+            - cell "1 notification One recipient route recovery unit":
+              - strong: 1 notification
+              - generic: One recipient route recovery unit
+            - cell "Primary Actions for Partner 9568 · Verification approved · 10 Jun 2026, 16:35 Actions for Partner 9568 · Verification approved · 10 Jun 2026, 16:35":
+              - navigation "Primary Actions for Partner 9568 · Verification approved · 10 Jun 2026, 16:35":
+                - link "Open recipient":
+                  - /url: /partners/cmq7vilag000avysc8tzqlizs
+                  - generic: Open recipient
+              - button "Actions for Partner 9568 · Verification approved · 10 Jun 2026, 16:35":
+          - 'row "Push route: inactive Partner 8285 Partner · Push route: inactive Partner now: offline Partner Verification Approved Verification approved 10 Jun 2026, 16:36 First 10 Jun 2026, 16:36 Latest 10 Jun 2026, 16:36 1 notification One recipient route recovery unit Primary Actions for Partner 8285 · Verification approved · 10 Jun 2026, 16:36 Actions for Partner 8285 · Verification approved · 10 Jun 2026, 16:36"':
+            - 'cell "Push route: inactive Partner 8285 Partner · Push route: inactive Partner now: offline"':
+              - generic: P8
+              - 'img "Push route: inactive"'
+              - link "Partner 8285":
+                - /url: /partners/cmq7vjulg00gmvysct0hc253k
+              - generic: "Partner · Push route: inactive"
+              - generic: "Partner now: offline"
+            - cell "Partner Verification Approved Verification approved 10 Jun 2026, 16:36":
+              - generic: Partner Verification Approved
+              - strong: Verification approved
+              - time: 10 Jun 2026, 16:36
+            - cell "First 10 Jun 2026, 16:36 Latest 10 Jun 2026, 16:36":
+              - text: First
+              - time: 10 Jun 2026, 16:36
+              - text: Latest
+              - time: 10 Jun 2026, 16:36
+            - cell "1 notification One recipient route recovery unit":
+              - strong: 1 notification
+              - generic: One recipient route recovery unit
+            - cell "Primary Actions for Partner 8285 · Verification approved · 10 Jun 2026, 16:36 Actions for Partner 8285 · Verification approved · 10 Jun 2026, 16:36":
+              - navigation "Primary Actions for Partner 8285 · Verification approved · 10 Jun 2026, 16:36":
+                - link "Open recipient":
+                  - /url: /partners/cmq7vjulg00gmvysct0hc253k
+                  - generic: Open recipient
+              - button "Actions for Partner 8285 · Verification approved · 10 Jun 2026, 16:36":
+          - 'row "Push route: inactive Partner 5354 Partner · Push route: inactive Partner now: offline Booking Marketplace Available Nearby booking available 10 Jun 2026, 16:38 First 10 Jun 2026, 16:28 Latest 10 Jun 2026, 16:38 52 notifications One recipient route recovery unit Primary Actions for Partner 5354 · Nearby booking available · 10 Jun 2026, 16:38 Actions for Partner 5354 · Nearby booking available · 10 Jun 2026, 16:38"':
+            - 'cell "Push route: inactive Partner 5354 Partner · Push route: inactive Partner now: offline"':
+              - generic: P5
+              - 'img "Push route: inactive"'
+              - link "Partner 5354":
+                - /url: /partners/cmq7v9poh004xvyvg7o8bk9c1
+              - generic: "Partner · Push route: inactive"
+              - generic: "Partner now: offline"
+            - cell "Booking Marketplace Available Nearby booking available 10 Jun 2026, 16:38":
+              - generic: Booking Marketplace Available
+              - strong: Nearby booking available
+              - time: 10 Jun 2026, 16:38
+            - cell "First 10 Jun 2026, 16:28 Latest 10 Jun 2026, 16:38":
+              - text: First
+              - time: 10 Jun 2026, 16:28
+              - text: Latest
+              - time: 10 Jun 2026, 16:38
+            - cell "52 notifications One recipient route recovery unit":
+              - strong: 52 notifications
+              - generic: One recipient route recovery unit
+            - cell "Primary Actions for Partner 5354 · Nearby booking available · 10 Jun 2026, 16:38 Actions for Partner 5354 · Nearby booking available · 10 Jun 2026, 16:38":
+              - navigation "Primary Actions for Partner 5354 · Nearby booking available · 10 Jun 2026, 16:38":
+                - link "Open recipient":
+                  - /url: /partners/cmq7v9poh004xvyvg7o8bk9c1
+                  - generic: Open recipient
+              - button "Actions for Partner 5354 · Nearby booking available · 10 Jun 2026, 16:38":
+          - 'row "Push route: inactive Partner 5248 Partner · Push route: inactive Partner now: offline Booking Marketplace Available Nearby booking available 10 Jun 2026, 16:38 First 10 Jun 2026, 16:30 Latest 10 Jun 2026, 16:38 50 notifications One recipient route recovery unit Primary Actions for Partner 5248 · Nearby booking available · 10 Jun 2026, 16:38 Actions for Partner 5248 · Nearby booking available · 10 Jun 2026, 16:38"':
+            - 'cell "Push route: inactive Partner 5248 Partner · Push route: inactive Partner now: offline"':
+              - generic: P5
+              - 'img "Push route: inactive"'
+              - link "Partner 5248":
+                - /url: /partners/cmq7vca6u00igvyvgiz6sctly
+              - generic: "Partner · Push route: inactive"
+              - generic: "Partner now: offline"
+            - cell "Booking Marketplace Available Nearby booking available 10 Jun 2026, 16:38":
+              - generic: Booking Marketplace Available
+              - strong: Nearby booking available
+              - time: 10 Jun 2026, 16:38
+            - cell "First 10 Jun 2026, 16:30 Latest 10 Jun 2026, 16:38":
+              - text: First
+              - time: 10 Jun 2026, 16:30
+              - text: Latest
+              - time: 10 Jun 2026, 16:38
+            - cell "50 notifications One recipient route recovery unit":
+              - strong: 50 notifications
+              - generic: One recipient route recovery unit
+            - cell "Primary Actions for Partner 5248 · Nearby booking available · 10 Jun 2026, 16:38 Actions for Partner 5248 · Nearby booking available · 10 Jun 2026, 16:38":
+              - navigation "Primary Actions for Partner 5248 · Nearby booking available · 10 Jun 2026, 16:38":
+                - link "Open recipient":
+                  - /url: /partners/cmq7vca6u00igvyvgiz6sctly
+                  - generic: Open recipient
+              - button "Actions for Partner 5248 · Nearby booking available · 10 Jun 2026, 16:38":
+          - 'row "Push route: inactive Partner 9591 Partner · Push route: inactive Partner now: offline Booking Marketplace Available Nearby booking available 10 Jun 2026, 16:38 First 10 Jun 2026, 16:35 Latest 10 Jun 2026, 16:38 48 notifications One recipient route recovery unit Primary Actions for Partner 9591 · Nearby booking available · 10 Jun 2026, 16:38 Actions for Partner 9591 · Nearby booking available · 10 Jun 2026, 16:38"':
+            - 'cell "Push route: inactive Partner 9591 Partner · Push route: inactive Partner now: offline"':
+              - generic: P9
+              - 'img "Push route: inactive"'
+              - link "Partner 9591":
+                - /url: /partners/cmq7vilb3000fvysc2yia7zj3
+              - generic: "Partner · Push route: inactive"
+              - generic: "Partner now: offline"
+            - cell "Booking Marketplace Available Nearby booking available 10 Jun 2026, 16:38":
+              - generic: Booking Marketplace Available
+              - strong: Nearby booking available
+              - time: 10 Jun 2026, 16:38
+            - cell "First 10 Jun 2026, 16:35 Latest 10 Jun 2026, 16:38":
+              - text: First
+              - time: 10 Jun 2026, 16:35
+              - text: Latest
+              - time: 10 Jun 2026, 16:38
+            - cell "48 notifications One recipient route recovery unit":
+              - strong: 48 notifications
+              - generic: One recipient route recovery unit
+            - cell "Primary Actions for Partner 9591 · Nearby booking available · 10 Jun 2026, 16:38 Actions for Partner 9591 · Nearby booking available · 10 Jun 2026, 16:38":
+              - navigation "Primary Actions for Partner 9591 · Nearby booking available · 10 Jun 2026, 16:38":
+                - link "Open recipient":
+                  - /url: /partners/cmq7vilb3000fvysc2yia7zj3
+                  - generic: Open recipient
+              - button "Actions for Partner 9591 · Nearby booking available · 10 Jun 2026, 16:38":
+          - 'row "Push route: inactive Partner 8308 Partner · Push route: inactive Partner now: offline Booking Marketplace Available Nearby booking available 10 Jun 2026, 16:38 First 10 Jun 2026, 16:36 Latest 10 Jun 2026, 16:38 43 notifications One recipient route recovery unit Primary Actions for Partner 8308 · Nearby booking available · 10 Jun 2026, 16:38 Actions for Partner 8308 · Nearby booking available · 10 Jun 2026, 16:38"':
+            - 'cell "Push route: inactive Partner 8308 Partner · Push route: inactive Partner now: offline"':
+              - generic: P8
+              - 'img "Push route: inactive"'
+              - link "Partner 8308":
+                - /url: /partners/cmq7vjum600grvyscboctd87a
+              - generic: "Partner · Push route: inactive"
+              - generic: "Partner now: offline"
+            - cell "Booking Marketplace Available Nearby booking available 10 Jun 2026, 16:38":
+              - generic: Booking Marketplace Available
+              - strong: Nearby booking available
+              - time: 10 Jun 2026, 16:38
+            - cell "First 10 Jun 2026, 16:36 Latest 10 Jun 2026, 16:38":
+              - text: First
+              - time: 10 Jun 2026, 16:36
+              - text: Latest
+              - time: 10 Jun 2026, 16:38
+            - cell "43 notifications One recipient route recovery unit":
+              - strong: 43 notifications
+              - generic: One recipient route recovery unit
+            - cell "Primary Actions for Partner 8308 · Nearby booking available · 10 Jun 2026, 16:38 Actions for Partner 8308 · Nearby booking available · 10 Jun 2026, 16:38":
+              - navigation "Primary Actions for Partner 8308 · Nearby booking available · 10 Jun 2026, 16:38":
+                - link "Open recipient":
+                  - /url: /partners/cmq7vjum600grvyscboctd87a
+                  - generic: Open recipient
+              - button "Actions for Partner 8308 · Nearby booking available · 10 Jun 2026, 16:38":
+          - 'row "Push route: inactive Demo Customer UNKNOWN · Push route: inactive Service Started Service started 13 Jun 2026, 03:06 First 18 May 2026, 20:58 Latest 13 Jun 2026, 03:06 447 notifications One recipient route recovery unit Primary Actions for Demo Customer · Service started · 13 Jun 2026, 03:06 Actions for Demo Customer · Service started · 13 Jun 2026, 03:06"':
+            - 'cell "Push route: inactive Demo Customer UNKNOWN · Push route: inactive"':
+              - generic: DC
+              - 'img "Push route: inactive"'
+              - link "Demo Customer":
+                - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+              - generic: "UNKNOWN · Push route: inactive"
+            - cell "Service Started Service started 13 Jun 2026, 03:06":
+              - generic: Service Started
+              - strong: Service started
+              - time: 13 Jun 2026, 03:06
+            - cell "First 18 May 2026, 20:58 Latest 13 Jun 2026, 03:06":
+              - text: First
+              - time: 18 May 2026, 20:58
+              - text: Latest
+              - time: 13 Jun 2026, 03:06
+            - cell "447 notifications One recipient route recovery unit":
+              - strong: 447 notifications
+              - generic: One recipient route recovery unit
+            - cell "Primary Actions for Demo Customer · Service started · 13 Jun 2026, 03:06 Actions for Demo Customer · Service started · 13 Jun 2026, 03:06":
+              - navigation "Primary Actions for Demo Customer · Service started · 13 Jun 2026, 03:06":
+                - link "Open recipient":
+                  - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+                  - generic: Open recipient
+              - button "Actions for Demo Customer · Service started · 13 Jun 2026, 03:06":
+          - 'row "Push route: inactive Demo Customer CUSTOMER · Push route: inactive Payment Updated Payment updated 7 Aug 2026, 14:34 First 18 May 2026, 20:58 Latest 7 Aug 2026, 14:34 2,121 notifications One recipient route recovery unit Primary Actions for Demo Customer · Payment updated · 7 Aug 2026, 14:34 Actions for Demo Customer · Payment updated · 7 Aug 2026, 14:34"':
+            - 'cell "Push route: inactive Demo Customer CUSTOMER · Push route: inactive"':
+              - generic: DC
+              - 'img "Push route: inactive"'
+              - link "Demo Customer":
+                - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+              - generic: "CUSTOMER · Push route: inactive"
+            - cell "Payment Updated Payment updated 7 Aug 2026, 14:34":
+              - generic: Payment Updated
+              - strong: Payment updated
+              - time: 7 Aug 2026, 14:34
+            - cell "First 18 May 2026, 20:58 Latest 7 Aug 2026, 14:34":
+              - text: First
+              - time: 18 May 2026, 20:58
+              - text: Latest
+              - time: 7 Aug 2026, 14:34
+            - cell "2,121 notifications One recipient route recovery unit":
+              - strong: 2,121 notifications
+              - generic: One recipient route recovery unit
+            - cell "Primary Actions for Demo Customer · Payment updated · 7 Aug 2026, 14:34 Actions for Demo Customer · Payment updated · 7 Aug 2026, 14:34":
+              - navigation "Primary Actions for Demo Customer · Payment updated · 7 Aug 2026, 14:34":
+                - link "Open recipient":
+                  - /url: /customers/cmpb9dvqj0001vyqs82n3di6k
+                  - generic: Open recipient
+              - button "Actions for Demo Customer · Payment updated · 7 Aug 2026, 14:34":
+    - generic: Showing 1 to 10 of 1270 entries
+    - navigation "Notification delivery pages":
+      - generic "First page":
+      - generic "Previous page":
+      - link "Page 1":
+        - /url: /notifications?issue=no-route&scope=history&dataScope=unknown
+        - text: "1"
+      - link "Page 2":
+        - /url: /notifications?issue=no-route&scope=history&dataScope=unknown&page=2
+        - text: "2"
+      - link "Page 3":
+        - /url: /notifications?issue=no-route&scope=history&dataScope=unknown&page=3
+        - text: "3"
+      - link "Page 4":
+        - /url: /notifications?issue=no-route&scope=history&dataScope=unknown&page=4
+        - text: "4"
+      - link "Page 5":
+        - /url: /notifications?issue=no-route&scope=history&dataScope=unknown&page=5
+        - text: "5"
+      - link "Next page":
+        - /url: /notifications?issue=no-route&scope=history&dataScope=unknown&page=2
+      - link "Last page":
+        - /url: /notifications?issue=no-route&scope=history&dataScope=unknown&page=127
+- alert

@@ -52,6 +52,16 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             required
             type="password"
           />
+          <AdminFormInput
+            autoComplete="one-time-code"
+            className="admin-form-control-fluid"
+            inputMode="numeric"
+            label="Authenticator or recovery code"
+            labelVisibility="visible"
+            maxLength={32}
+            name="mfaCode"
+            placeholder="Required after MFA enrollment"
+          />
           <AdminFormControlButton className="button-primary admin-auth-submit" type="submit">
             Sign in
           </AdminFormControlButton>

@@ -1,4 +1,5 @@
 import {
+  buildOperationsPolicyAuditHref,
   buildOperationsPolicyDecisionHref,
   buildOperationsPolicyDetailsHref,
   buildOperationsPolicyLoadPlan,
@@ -6,128 +7,143 @@ import {
 } from './operations-policy-page-model';
 
 describe('operations policy page model', () => {
-  it('loads the compact operations policy sample by default', () => {
+  it('loads only settings for the default policy workspace', () => {
     const plan = buildOperationsPolicyLoadPlan({});
-    const bookingsUrl = new URL(plan.bookingsHref!, 'http://admin.local');
-    const policyAuditUrl = new URL(plan.policyAuditHref!, 'http://admin.local');
-    const bookingGateAuditUrl = new URL(plan.bookingGateAuditHref!, 'http://admin.local');
 
-    expect(plan.detailsMode).toBe('summary');
-    expect(plan.shouldRenderFullDiagnostics).toBe(false);
-    expect(plan.shouldRenderAdvancedIndex).toBe(false);
-    expect(plan.shouldRenderPolicyOverview).toBe(true);
-    expect(plan.shouldRenderMatchingPolicy).toBe(true);
-    expect(plan.shouldRenderDecisionSummary).toBe(true);
-    expect(bookingsUrl.pathname).toBe('/admin/bookings');
-    expect(bookingsUrl.searchParams.get('take')).toBe('3');
-    expect(plan.providersHref).toBeNull();
-    expect(policyAuditUrl.searchParams.get('take')).toBe('3');
-    expect(bookingGateAuditUrl.searchParams.get('take')).toBe('3');
+    expect(plan).toMatchObject({
+      bookingGateAuditHref: null,
+      bookingsHref: null,
+      detailsMode: 'summary',
+      matchingPreviewHref: null,
+      policyAuditHref: null,
+      policyWriteAuditHealthHref: null,
+      providersHref: null,
+      settingsHref: '/admin/operational-policy',
+      shouldRenderPolicyOverview: true,
+    });
   });
 
-  it('keeps details=all as a lightweight advanced review index', () => {
+  it('checks operator audit health only when a policy editor is requested', () => {
+    const plan = buildOperationsPolicyLoadPlan({ edit: 'matching.provider_response_window_minutes' });
+
+    expect(plan.policyWriteAuditHealthHref).toBe('/admin/operational-policy/audit?source=operator&take=1');
+    expect(buildOperationsPolicyLoadPlan({}).policyWriteAuditHealthHref).toBeNull();
+  });
+
+  it('normalizes the empty details=all chooser to Policies', () => {
     const plan = buildOperationsPolicyLoadPlan({ details: 'all' });
-    expect(plan.detailsMode).toBe('all');
-    expect(plan.shouldRenderAdvancedIndex).toBe(true);
-    expect(plan.shouldRenderFullDiagnostics).toBe(false);
+
+    expect(plan.detailsMode).toBe('summary');
+    expect(plan.shouldRenderAdvancedIndex).toBe(false);
+    expect(plan.settingsHref).toBe('/admin/operational-policy');
+    expect(buildOperationsPolicyDetailsHref('all')).toBe('/operations-policy');
+  });
+
+  it('loads settings only for matching and high-impact policy editors', () => {
+    const matching = buildOperationsPolicyLoadPlan({ details: 'matching' });
+    const decisions = buildOperationsPolicyLoadPlan({ details: 'decisions' });
+
+    for (const plan of [matching, decisions]) {
+      expect(plan.settingsHref).toBe('/admin/operational-policy');
+      expect(plan.bookingsHref).toBeNull();
+      expect(plan.providersHref).toBeNull();
+      expect(plan.policyAuditHref).toBeNull();
+      expect(plan.bookingGateAuditHref).toBeNull();
+      expect(plan.shouldRenderPolicyOverview).toBe(true);
+    }
+  });
+
+  it('loads bounded history and only the evidence each matching workspace needs', () => {
+    for (const matching of ['supply', 'simulation'] as const) {
+      const plan = buildOperationsPolicyLoadPlan({ details: 'matching', matching });
+      expect(new URL(plan.bookingsHref!, 'http://admin.local').searchParams.get('take')).toBe('20');
+      expect(plan.matchingPreviewHref).toBe(
+        matching === 'simulation' ? '/admin/operations-policy/matching-preview' : null,
+      );
+      if (matching === 'supply') {
+        expect(new URL(plan.providersHref!, 'http://admin.local').searchParams.get('take')).toBe('30');
+      } else {
+        expect(plan.providersHref).toBeNull();
+      }
+      expect(plan.policyAuditHref).toBeNull();
+      expect(plan.bookingGateAuditHref).toBeNull();
+    }
+  });
+
+  it('loads the server-filtered audit without an unnecessary settings request', () => {
+    const audit = buildOperationsPolicyLoadPlan({ details: 'audit' });
+    expect(audit.settingsHref).toBeNull();
+    expect(audit.policyAuditHref).toBe('/admin/operational-policy/audit?source=operator&take=8');
+    for (const plan of [audit, buildOperationsPolicyLoadPlan({ details: 'decisions', decision: 'evidence' })]) {
+      expect(plan.bookingsHref).toBeNull();
+      expect(plan.providersHref).toBeNull();
+      expect(plan.policyAuditHref).toContain('/admin/operational-policy/audit');
+      expect(plan.bookingGateAuditHref).toBeNull();
+      expect(plan.shouldRenderAuditReview).toBe(true);
+    }
+  });
+
+  it('keeps a bounded cursor history for Older, Newer and deep audit pages', () => {
+    const cursor1 = auditCursor('audit-1', 'automated_smoke');
+    const cursor2 = auditCursor('audit-2', 'automated_smoke');
+    const cursor3 = auditCursor('audit-3', 'automated_smoke');
+    const deepPage = buildOperationsPolicyLoadPlan({
+      audit: 'automated_smoke',
+      auditHistory: [cursor1, cursor2],
+      cursor: cursor3,
+      details: 'audit',
+    });
+
+    expect(deepPage).toMatchObject({
+      auditCursor: cursor3,
+      auditCursorHistory: [cursor1, cursor2],
+      auditSource: 'automated_smoke',
+      policyAuditHref: `/admin/operational-policy/audit?source=automated_smoke&take=8&cursor=${cursor3}`,
+    });
+    expect(buildOperationsPolicyAuditHref('automated_smoke', cursor3, [cursor1, cursor2]))
+      .toBe(`/operations-policy?details=audit&audit=automated_smoke&cursor=${cursor3}&auditHistory=${cursor1}&auditHistory=${cursor2}`);
+  });
+
+  it('drops unsafe audit cursors and resets history with a source change link', () => {
+    const plan = buildOperationsPolicyLoadPlan({
+      auditHistory: ['cursor-1'],
+      cursor: 'cursor?unsafe=true',
+      details: 'audit',
+    });
+
+    expect(plan.auditCursor).toBeNull();
+    expect(plan.auditCursorHistory).toEqual([]);
+    expect(buildOperationsPolicyAuditHref('legacy_unknown')).toBe('/operations-policy?details=audit&audit=legacy_unknown');
+  });
+
+  it('keeps the requested diagnostic route and renders an explicit permission denial', () => {
+    const plan = buildOperationsPolicyLoadPlan(
+      { details: 'matching', matching: 'simulation' },
+      { allowFullDiagnostics: false },
+    );
+
+    expect(plan.detailsMode).toBe('matching');
+    expect(plan.settingsHref).toBeNull();
     expect(plan.bookingsHref).toBeNull();
     expect(plan.providersHref).toBeNull();
-    expect(plan.policyAuditHref).toBeNull();
-    expect(plan.bookingGateAuditHref).toBeNull();
+    expect(plan.matchingPreviewHref).toBeNull();
+    expect(plan.shouldRenderPermissionDenied).toBe(true);
     expect(plan.shouldRenderPolicyOverview).toBe(false);
-    expect(plan.shouldRenderMatchingPolicy).toBe(false);
-    expect(plan.shouldRenderDecisionSummary).toBe(false);
   });
 
-  it('scopes matching, decision, and audit workspaces to bounded data windows', () => {
-    const matching = buildOperationsPolicyLoadPlan({ details: 'matching' });
-    const matchingSupply = buildOperationsPolicyLoadPlan({
-      details: 'matching',
-      matching: 'supply',
-    });
-    const matchingSimulation = buildOperationsPolicyLoadPlan({
-      details: 'matching',
-      matching: 'simulation',
-    });
-    const decisions = buildOperationsPolicyLoadPlan({ details: 'decisions' });
-    const decisionEvidence = buildOperationsPolicyLoadPlan({
-      details: 'decisions',
-      decision: 'evidence',
-    });
-    const audit = buildOperationsPolicyLoadPlan({ details: 'audit' });
-
-    expect(new URL(matching.bookingsHref!, 'http://admin.local').searchParams.get('take')).toBe('3');
-    expect(matching.providersHref).toBeNull();
-    expect(matching.matchingMode).toBe('policy');
-    expect(matching.shouldRenderMatchingReview).toBe(true);
-    expect(matching.shouldRenderMatchingSupply).toBe(false);
-    expect(matching.shouldRenderMatchingSimulation).toBe(false);
-    expect(matching.shouldRenderMatchingPolicy).toBe(true);
-    expect(matching.policyAuditHref).toBeNull();
-    expect(matching.bookingGateAuditHref).toBeNull();
-
-    expect(new URL(matchingSupply.bookingsHref!, 'http://admin.local').searchParams.get('take')).toBe('20');
-    expect(new URL(matchingSupply.providersHref!, 'http://admin.local').searchParams.get('take')).toBe('30');
-    expect(matchingSupply.shouldRenderMatchingSupply).toBe(true);
-
-    expect(new URL(matchingSimulation.bookingsHref!, 'http://admin.local').searchParams.get('take')).toBe('20');
-    expect(new URL(matchingSimulation.providersHref!, 'http://admin.local').searchParams.get('take')).toBe('30');
-    expect(matchingSimulation.shouldRenderMatchingSimulation).toBe(true);
-
-    expect(new URL(decisions.bookingsHref!, 'http://admin.local').searchParams.get('take')).toBe('3');
-    expect(decisions.providersHref).toBeNull();
-    expect(decisions.decisionMode).toBe('editor');
-    expect(decisions.shouldRenderDecisionReview).toBe(true);
-    expect(decisions.shouldRenderDecisionEvidence).toBe(false);
-    expect(decisions.shouldRenderMatchingPolicy).toBe(false);
-    expect(decisions.shouldRenderDecisionSummary).toBe(true);
-    expect(decisions.policyAuditHref).toBeNull();
-    expect(decisions.bookingGateAuditHref).toBeNull();
-
-    expect(new URL(decisionEvidence.bookingsHref!, 'http://admin.local').searchParams.get('take')).toBe('15');
-    expect(new URL(decisionEvidence.providersHref!, 'http://admin.local').searchParams.get('take')).toBe('20');
-    expect(decisionEvidence.decisionMode).toBe('evidence');
-    expect(decisionEvidence.shouldRenderDecisionEvidence).toBe(true);
-
-    expect(audit.bookingsHref).toBeNull();
-    expect(audit.providersHref).toBeNull();
-    expect(new URL(audit.policyAuditHref!, 'http://admin.local').searchParams.get('take')).toBe('20');
-    expect(new URL(audit.bookingGateAuditHref!, 'http://admin.local').searchParams.get('take')).toBe('20');
-    expect(audit.shouldRenderAuditReview).toBe(true);
-    expect(audit.shouldRenderMatchingPolicy).toBe(false);
-    expect(audit.shouldRenderDecisionSummary).toBe(false);
-  });
-
-  it('falls back to the compact sample when full diagnostics are not allowed', () => {
-    const plan = buildOperationsPolicyLoadPlan({ details: 'all' }, { allowFullDiagnostics: false });
-    const bookingsUrl = new URL(plan.bookingsHref!, 'http://admin.local');
-    const policyAuditUrl = new URL(plan.policyAuditHref!, 'http://admin.local');
-    const bookingGateAuditUrl = new URL(plan.bookingGateAuditHref!, 'http://admin.local');
-
-    expect(plan.detailsMode).toBe('summary');
-    expect(plan.shouldRenderFullDiagnostics).toBe(false);
-    expect(bookingsUrl.searchParams.get('take')).toBe('3');
-    expect(plan.providersHref).toBeNull();
-    expect(policyAuditUrl.searchParams.get('take')).toBe('3');
-    expect(bookingGateAuditUrl.searchParams.get('take')).toBe('3');
-  });
-
-  it('builds stable summary and full diagnostics links', () => {
-    expect(buildOperationsPolicyDetailsHref('all')).toBe('/operations-policy?details=all');
+  it('builds compatible top-level and legacy editor links', () => {
+    expect(buildOperationsPolicyDetailsHref('summary')).toBe('/operations-policy');
     expect(buildOperationsPolicyDetailsHref('matching')).toBe('/operations-policy?details=matching');
     expect(buildOperationsPolicyDetailsHref('decisions')).toBe('/operations-policy?details=decisions');
     expect(buildOperationsPolicyDetailsHref('audit')).toBe('/operations-policy?details=audit');
-    expect(buildOperationsPolicyDetailsHref('summary')).toBe('/operations-policy');
     expect(buildOperationsPolicyDecisionHref('editor')).toBe('/operations-policy?details=decisions');
-    expect(buildOperationsPolicyDecisionHref('evidence')).toBe(
-      '/operations-policy?details=decisions&decision=evidence',
-    );
+    expect(buildOperationsPolicyDecisionHref('evidence')).toBe('/operations-policy?details=decisions&decision=evidence');
     expect(buildOperationsPolicyMatchingHref('policy')).toBe('/operations-policy?details=matching');
-    expect(buildOperationsPolicyMatchingHref('supply')).toBe(
-      '/operations-policy?details=matching&matching=supply',
-    );
-    expect(buildOperationsPolicyMatchingHref('simulation')).toBe(
-      '/operations-policy?details=matching&matching=simulation',
-    );
+    expect(buildOperationsPolicyMatchingHref('supply')).toBe('/operations-policy?details=matching&matching=supply');
+    expect(buildOperationsPolicyMatchingHref('simulation')).toBe('/operations-policy?details=matching&matching=simulation');
   });
 });
+
+function auditCursor(id: string, source: string) {
+  return Buffer.from(JSON.stringify({ id, source }), 'utf8').toString('base64url');
+}

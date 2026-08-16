@@ -1,5 +1,7 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import {
+  AdminOperatorPermissionCategory,
+  AdminUserProvenance,
   BookingStatus,
   PaymentAdminOperationStatus,
   PaymentMethod,
@@ -289,28 +291,28 @@ describe('PaymentsService status check queue', () => {
 
 describe('PaymentsService callbacks', () => {
   it('accepts a non-terminal callback and records accepted evidence', async () => {
-    const { prisma, service } = createService({
+    const { prisma, service } = createMomoCallbackService({
       existingPayment: payment({ status: PaymentStatus.AUTHORIZED }),
       updatedPayment: payment({ status: PaymentStatus.CAPTURED }),
     });
 
-    const result = await service.handleCallback(PaymentMethod.CASH, {
-      providerRef: 'cash-booking-1',
+    const result = await service.handleCallback(PaymentMethod.MOMO, {
+      amount: 300000,
+      orderId: 'momo-booking-1',
       signature: 'gateway-signature',
       status: 'CAPTURED',
       vnp_SecureHash: 'gateway-secure-hash',
     });
 
-    expect(result).toEqual({ ok: true, replay: false, payment: payment({ status: PaymentStatus.CAPTURED }) });
+    expect(result).toEqual({ ok: true, replay: false });
     expect(prisma.payment.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           rawMeta: expect.objectContaining({
-            callbackSignatureVerified: true,
-            callbackVerificationMode: 'cash-internal',
-            providerRef: 'cash-booking-1',
-            signature: '[REDACTED]',
-            vnp_SecureHash: '[REDACTED]',
+            amount: 300000,
+            callbackSignatureVerified: false,
+            callbackVerificationMode: 'dev-unverified',
+            orderId: 'momo-booking-1',
           }),
           status: PaymentStatus.CAPTURED,
         }),
@@ -319,19 +321,18 @@ describe('PaymentsService callbacks', () => {
     );
     expect(prisma.paymentCallbackAttempt.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        method: PaymentMethod.CASH,
+        method: PaymentMethod.MOMO,
         outcome: 'ACCEPTED',
         paymentId: 'payment-1',
-        providerRef: 'cash-booking-1',
+        providerRef: 'momo-booking-1',
         providerStatus: PaymentStatus.CAPTURED,
         rawPayload: {
-          providerRef: 'cash-booking-1',
-          signature: '[REDACTED]',
+          amount: 300000,
+          orderId: 'momo-booking-1',
           status: 'CAPTURED',
-          vnp_SecureHash: '[REDACTED]',
         },
-        signatureVerified: true,
-        verificationMode: 'cash-internal',
+        signatureVerified: false,
+        verificationMode: 'dev-unverified',
       }),
     });
   });
@@ -394,7 +395,7 @@ describe('PaymentsService callbacks', () => {
 
   it('notifies the booking customer after an accepted payment status update', async () => {
     const notifications = { create: vi.fn().mockResolvedValue({ id: 'notification-1' }) };
-    const { service } = createService({
+    const { service } = createMomoCallbackService({
       existingPayment: payment({ status: PaymentStatus.AUTHORIZED }),
       notificationLookupPayment: {
         id: 'payment-1',
@@ -405,8 +406,9 @@ describe('PaymentsService callbacks', () => {
       updatedPayment: payment({ status: PaymentStatus.CAPTURED }),
     });
 
-    await service.handleCallback(PaymentMethod.CASH, {
-      providerRef: 'cash-booking-1',
+    await service.handleCallback(PaymentMethod.MOMO, {
+      amount: 300000,
+      orderId: 'momo-booking-1',
       status: 'CAPTURED',
     });
 
@@ -421,16 +423,17 @@ describe('PaymentsService callbacks', () => {
   });
 
   it('treats duplicate terminal callbacks with the same status as replay', async () => {
-    const { prisma, service } = createService({
+    const { prisma, service } = createMomoCallbackService({
       existingPayment: payment({ status: PaymentStatus.CAPTURED }),
     });
 
-    const result = await service.handleCallback(PaymentMethod.CASH, {
-      providerRef: 'cash-booking-1',
+    const result = await service.handleCallback(PaymentMethod.MOMO, {
+      amount: 300000,
+      orderId: 'momo-booking-1',
       status: 'CAPTURED',
     });
 
-    expect(result).toEqual({ ok: true, replay: true, payment: payment({ status: PaymentStatus.CAPTURED }) });
+    expect(result).toEqual({ ok: true, replay: true });
     expect(prisma.payment.updateMany).not.toHaveBeenCalled();
     expect(prisma.paymentCallbackAttempt.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -442,13 +445,14 @@ describe('PaymentsService callbacks', () => {
   });
 
   it('rejects terminal callbacks that conflict with stored payment status', async () => {
-    const { prisma, service } = createService({
+    const { prisma, service } = createMomoCallbackService({
       existingPayment: payment({ status: PaymentStatus.RELEASED }),
     });
 
     await expect(
-      service.handleCallback(PaymentMethod.CASH, {
-        providerRef: 'cash-booking-1',
+      service.handleCallback(PaymentMethod.MOMO, {
+        amount: 300000,
+        orderId: 'momo-booking-1',
         status: 'CAPTURED',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
@@ -465,11 +469,11 @@ describe('PaymentsService callbacks', () => {
   });
 
   it('records rejected evidence when the provider reference is unknown', async () => {
-    const { prisma, service } = createService({ existingPayment: null });
+    const { prisma, service } = createMomoCallbackService({ existingPayment: null });
 
     await expect(
-      service.handleCallback(PaymentMethod.CASH, {
-        providerRef: 'missing-payment',
+      service.handleCallback(PaymentMethod.MOMO, {
+        orderId: 'missing-payment',
         status: 'CAPTURED',
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
@@ -484,6 +488,66 @@ describe('PaymentsService callbacks', () => {
         providerStatus: PaymentStatus.CAPTURED,
       }),
     });
+  });
+
+  it('rejects a callback without a gateway amount before changing payment state', async () => {
+    const { prisma, service } = createMomoCallbackService({
+      existingPayment: payment({ status: PaymentStatus.AUTHORIZED }),
+    });
+
+    await expect(
+      service.handleCallback(PaymentMethod.MOMO, {
+        orderId: 'momo-booking-1',
+        status: 'CAPTURED',
+      }),
+    ).rejects.toThrow('Payment callback amount is required');
+
+    expect(prisma.payment.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('does not notify when accepted callback evidence cannot be committed', async () => {
+    const notifications = { create: vi.fn() };
+    const { prisma, service } = createMomoCallbackService({
+      existingPayment: payment({ status: PaymentStatus.AUTHORIZED }),
+      notifications,
+      updatedPayment: payment({ status: PaymentStatus.CAPTURED }),
+    });
+    prisma.paymentCallbackAttempt.create
+      .mockRejectedValueOnce(new Error('audit storage unavailable'))
+      .mockResolvedValueOnce({ id: 'rejected-attempt-1' });
+
+    await expect(
+      service.handleCallback(PaymentMethod.MOMO, {
+        amount: 300000,
+        orderId: 'momo-booking-1',
+        status: 'CAPTURED',
+      }),
+    ).rejects.toThrow('audit storage unavailable');
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.paymentCallbackAttempt.create).toHaveBeenCalledTimes(2);
+    expect(notifications.create).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when neither accepted nor rejected callback evidence can be persisted', async () => {
+    const notifications = { create: vi.fn() };
+    const { prisma, service } = createMomoCallbackService({
+      existingPayment: payment({ status: PaymentStatus.AUTHORIZED }),
+      notifications,
+      updatedPayment: payment({ status: PaymentStatus.CAPTURED }),
+    });
+    prisma.paymentCallbackAttempt.create.mockRejectedValue(new Error('audit storage unavailable'));
+
+    await expect(
+      service.handleCallback(PaymentMethod.MOMO, {
+        amount: 300000,
+        orderId: 'momo-booking-1',
+        status: 'CAPTURED',
+      }),
+    ).rejects.toThrow('Payment callback evidence is temporarily unavailable');
+
+    expect(prisma.paymentCallbackAttempt.create).toHaveBeenCalledTimes(2);
+    expect(notifications.create).not.toHaveBeenCalled();
   });
 });
 
@@ -508,8 +572,9 @@ describe('PaymentsService refunds', () => {
       service.requestRefund('admin-1', 'payment-1', { reason: 'Customer cancellation evidence reviewed' }),
     ).resolves.toEqual(expect.objectContaining({ status: PaymentStatus.CAPTURED }));
 
-    expect(prisma.refund.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
+    expect(prisma.refund.upsert).toHaveBeenCalledWith({
+      where: { paymentId: 'payment-1' },
+      create: expect.objectContaining({
         paymentId: 'payment-1',
         reason: 'Customer cancellation evidence reviewed',
         status: 'REQUESTED',
@@ -519,6 +584,7 @@ describe('PaymentsService refunds', () => {
           requestedAt: expect.any(String),
         }),
       }),
+      update: {},
     });
     expect(adapter.refund).not.toHaveBeenCalled();
     expect(prisma.payment.updateMany).not.toHaveBeenCalled();
@@ -530,6 +596,8 @@ describe('PaymentsService refunds', () => {
       'payment.refund.request',
       'payment:payment-1',
       expect.objectContaining({ refundId: 'refund-1' }),
+      undefined,
+      prisma,
     );
   });
 
@@ -582,10 +650,9 @@ describe('PaymentsService refunds', () => {
       service.refund('support-user-2', 'payment-1'),
     ).rejects.toThrow('Payment refund requires approval from a finance approver');
 
-    expect(prisma.user.findFirst).toHaveBeenCalledWith({
-      where: { id: 'support-user-2', roles: { has: Role.FINANCE_APPROVER } },
-      select: { id: true },
-    });
+    expect(prisma.user.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'support-user-2' } }),
+    );
     expect(prisma.payment.updateMany).not.toHaveBeenCalled();
     expect(settlements.reverseBookingSettlementSnapshotForRefund).not.toHaveBeenCalled();
     expect(earnings.cancelForRefund).not.toHaveBeenCalled();
@@ -640,6 +707,8 @@ describe('PaymentsService refunds', () => {
         refundId: 'refund-1',
         requestedByAdminId: 'admin-1',
       }),
+      undefined,
+      prisma,
     );
   });
 
@@ -725,15 +794,30 @@ describe('PaymentsService refunds', () => {
         }),
       },
     });
-    expect(prisma.refund.update).toHaveBeenNthCalledWith(1, {
-      where: { id: 'refund-1' },
+    expect(admin.writeAudit).toHaveBeenCalledWith(
+      'finance-admin-2',
+      'payment.refund.approval.claim',
+      'payment:payment-1',
+      expect.objectContaining({
+        approvalAdminId: 'finance-admin-2',
+        refundId: 'refund-1',
+        requestedByAdminId: 'admin-1',
+      }),
+      undefined,
+      prisma,
+    );
+    expect(prisma.refund.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'refund-1',
+        status: { in: ['APPROVAL_PROCESSING', 'PROVIDER_PROCESSING'] },
+      },
       data: expect.objectContaining({
         status: 'GATEWAY_CONFIRMED',
         metadata: expect.objectContaining({ gatewayConfirmedAt: expect.any(String) }),
       }),
     });
-    expect(prisma.refund.update).toHaveBeenNthCalledWith(2, {
-      where: { id: 'refund-1' },
+    expect(prisma.refund.updateMany).toHaveBeenCalledWith({
+      where: { id: 'refund-1', status: 'GATEWAY_CONFIRMED' },
       data: expect.objectContaining({
         status: 'COMPLETED',
         metadata: expect.objectContaining({ completedAt: expect.any(String) }),
@@ -759,6 +843,8 @@ describe('PaymentsService refunds', () => {
         earningCancellation: { skipped: false, earningId: 'earning-1' },
         settlementReversal: expect.objectContaining({ settlementStatus: 'REVERSED' }),
       }),
+      undefined,
+      expect.objectContaining({ payment: expect.any(Object) }),
     );
   });
 
@@ -805,6 +891,8 @@ describe('PaymentsService refunds', () => {
           receivableAmount: 430000,
         },
       }),
+      undefined,
+      expect.objectContaining({ payment: expect.any(Object) }),
     );
   });
 
@@ -835,6 +923,49 @@ describe('PaymentsService refunds', () => {
 });
 
 describe('PaymentsService conditional transitions', () => {
+  it.each([
+    ['capture', (service: PaymentsService) => service.captureForAdmin('support-user-2', 'payment-1', {
+      idempotencyKey: 'capture-payment-1',
+      reason: 'Manual capture',
+    })],
+    ['release', (service: PaymentsService) => service.releaseForAdmin('support-user-2', 'payment-1', {
+      idempotencyKey: 'release-payment-1',
+      reason: 'Manual release',
+    })],
+  ])('rejects admin %s by an operator without finance approver authority', async (_action, execute) => {
+    const authorized = payment({ status: PaymentStatus.AUTHORIZED });
+    const { prisma, service } = createService({ existingPayment: authorized });
+    prisma.user.findFirst.mockResolvedValueOnce({
+      id: 'support-user-2',
+      email: 'support-user-2@hands.test',
+      fullName: 'Support User 2',
+      roles: [Role.ADMIN],
+      updatedAt: new Date('2026-08-14T00:00:00.000Z'),
+      adminUserProvenance: AdminUserProvenance.PRODUCTION,
+      fixtureKind: null,
+      fixtureRunId: null,
+      fixtureExpiresAt: null,
+      adminOperatorCredential: {
+        disabledAt: null,
+        lastLoginAt: new Date('2026-08-14T00:00:00.000Z'),
+        lockedUntil: null,
+        mfaState: 'VERIFIED',
+        setupCompletedAt: new Date('2026-08-01T00:00:00.000Z'),
+      },
+      adminOperatorPermission: {
+        categories: [AdminOperatorPermissionCategory.FINANCE],
+        updatedAt: new Date('2026-08-14T00:00:00.000Z'),
+        version: 1,
+      },
+      financeApproverRequestsTargeted: [],
+    });
+
+    await expect(execute(service)).rejects.toThrow(
+      `Payment ${_action} requires approval from a finance approver`,
+    );
+    expect(prisma.paymentAdminOperationClaim.create).not.toHaveBeenCalled();
+  });
+
   it('requires provider capture before a real VNPay booking can open matching', () => {
     const adapter = gatewayAdapter(PaymentMethod.VNPAY);
     const { service } = createService({
@@ -944,21 +1075,40 @@ describe('PaymentsService conditional transitions', () => {
     expect(adapter.release).not.toHaveBeenCalled();
   });
 
+  it('calls the provider outside a database transaction and conditionally persists release', async () => {
+    const authorized = payment({ method: PaymentMethod.CASH, status: PaymentStatus.AUTHORIZED });
+    const released = payment({ method: PaymentMethod.CASH, status: PaymentStatus.RELEASED });
+    const adapter = cashAdapter();
+    const { prisma, service } = createService({
+      cashPaymentAdapter: adapter,
+      existingPayment: authorized,
+      updatedPayment: released,
+    });
+    prisma.payment.findUniqueOrThrow.mockResolvedValueOnce(authorized).mockResolvedValue(released);
+
+    await expect(service.release('payment-1')).resolves.toEqual(released);
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(adapter.release).toHaveBeenCalledOnce();
+    expect(adapter.release.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.payment.updateMany.mock.invocationCallOrder[0],
+    );
+  });
+
   it('releases an unmatched customer wallet reservation with an exact compensating ledger entry', async () => {
     const authorized = payment({ method: PaymentMethod.CUSTOMER_WALLET, status: PaymentStatus.AUTHORIZED });
     const released = payment({ method: PaymentMethod.CUSTOMER_WALLET, status: PaymentStatus.RELEASED });
     const { prisma, service } = createService({ existingPayment: authorized, updatedPayment: released });
-    prisma.payment.findUniqueOrThrow.mockResolvedValueOnce(authorized).mockResolvedValue(released);
+    prisma.payment.findUniqueOrThrow
+      .mockResolvedValueOnce(authorized)
+      .mockResolvedValueOnce(authorized)
+      .mockResolvedValue(released);
 
     await expect(service.release('payment-1')).resolves.toEqual(released);
 
     expect(prisma.customerWalletLedgerEntry.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'customer-wallet-payment:booking-1:release' },
-      update: expect.objectContaining({
-        amount: 300_000,
-        bookingId: 'booking-1',
-        type: 'REFUND',
-      }),
+      update: {},
       create: expect.objectContaining({
         amount: 300_000,
         bookingId: 'booking-1',
@@ -972,18 +1122,21 @@ describe('PaymentsService conditional transitions', () => {
     });
   });
 
-  it('reuses the admin transaction when closing an unmatched customer wallet payment', async () => {
+  it('uses a short internal transaction when closing an unmatched customer wallet payment', async () => {
     const authorized = payment({ method: PaymentMethod.CUSTOMER_WALLET, status: PaymentStatus.AUTHORIZED });
     const released = payment({ method: PaymentMethod.CUSTOMER_WALLET, status: PaymentStatus.RELEASED });
     const { prisma, service } = createService({ existingPayment: authorized, updatedPayment: released });
-    prisma.payment.findUniqueOrThrow.mockResolvedValueOnce(authorized).mockResolvedValue(released);
+    prisma.payment.findUniqueOrThrow
+      .mockResolvedValueOnce(authorized)
+      .mockResolvedValueOnce(authorized)
+      .mockResolvedValueOnce(authorized)
+      .mockResolvedValue(released);
 
     await expect(
       service.closeUnmatchedBookingPayment(
         'payment-1',
         'Post-match cancellation approved',
         { source: 'ADMIN_POST_MATCH_CANCELLATION' },
-        prisma as never,
       ),
     ).resolves.toMatchObject({
       payment: released,
@@ -991,7 +1144,7 @@ describe('PaymentsService conditional transitions', () => {
       released: true,
     });
 
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
     expect(prisma.customerWalletLedgerEntry.upsert).toHaveBeenCalledTimes(1);
   });
 
@@ -1059,11 +1212,7 @@ describe('PaymentsService conditional transitions', () => {
     );
     expect(prisma.customerWalletLedgerEntry.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'customer-wallet-payment:booking-1:refund' },
-      update: expect.objectContaining({
-        amount: 300_000,
-        bookingId: 'booking-1',
-        type: 'REFUND',
-      }),
+      update: {},
       create: expect.objectContaining({
         amount: 300_000,
         bookingId: 'booking-1',
@@ -1105,8 +1254,8 @@ describe('PaymentsService conditional transitions', () => {
         }),
       },
     });
-    expect(prisma.refund.update).toHaveBeenNthCalledWith(1, {
-      where: { id: 'refund-1' },
+    expect(prisma.refund.updateMany).toHaveBeenCalledWith({
+      where: { id: 'refund-1', status: { in: ['APPROVAL_PROCESSING'] } },
       data: expect.objectContaining({ status: 'PROVIDER_PROCESSING' }),
     });
   });
@@ -1131,8 +1280,8 @@ describe('PaymentsService conditional transitions', () => {
       where: { id: 'refund-1', status: 'REQUESTED' },
       data: expect.objectContaining({ status: 'APPROVAL_PROCESSING' }),
     });
-    expect(prisma.refund.update).toHaveBeenCalledWith({
-      where: { id: 'refund-1' },
+    expect(prisma.refund.updateMany).toHaveBeenCalledWith({
+      where: { id: 'refund-1', status: 'APPROVAL_PROCESSING' },
       data: expect.objectContaining({
         status: 'REQUESTED',
         metadata: expect.objectContaining({
@@ -1173,8 +1322,8 @@ describe('PaymentsService conditional transitions', () => {
       service.refund('finance-admin-2', 'payment-1'),
     ).resolves.toEqual(expect.objectContaining({ status: PaymentStatus.CAPTURED }));
 
-    expect(prisma.refund.update).toHaveBeenCalledWith({
-      where: { id: 'refund-1' },
+    expect(prisma.refund.updateMany).toHaveBeenCalledWith({
+      where: { id: 'refund-1', status: { in: ['APPROVAL_PROCESSING'] } },
       data: expect.objectContaining({
         status: 'PROVIDER_PROCESSING',
         metadata: expect.objectContaining({
@@ -1228,8 +1377,11 @@ describe('PaymentsService conditional transitions', () => {
       refundId: 'refund-1',
     });
 
-    expect(prisma.refund.update).toHaveBeenCalledWith({
-      where: { id: 'refund-1' },
+    expect(prisma.refund.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'refund-1',
+        status: { in: ['APPROVAL_PROCESSING', 'PROVIDER_PROCESSING'] },
+      },
       data: expect.objectContaining({
         status: 'PROVIDER_PROCESSING',
         metadata: expect.objectContaining({ providerLastCheckedAt: expect.any(String) }),
@@ -1238,6 +1390,89 @@ describe('PaymentsService conditional transitions', () => {
     expect(prisma.payment.updateMany).not.toHaveBeenCalled();
     expect(settlements.reverseBookingSettlementSnapshotForRefund).not.toHaveBeenCalled();
     expect(earnings.cancelForRefund).not.toHaveBeenCalled();
+  });
+
+  it('does not regress a concurrently completed refund when a stale provider check finishes later', async () => {
+    const captured = payment({
+      method: PaymentMethod.MOMO,
+      providerRef: 'booking-1',
+      status: PaymentStatus.CAPTURED,
+    });
+    const processing = providerProcessingRefund(captured);
+    const completed = { ...processing, status: 'COMPLETED' };
+    const adapter = gatewayAdapter(PaymentMethod.MOMO);
+    adapter.checkRefund.mockResolvedValueOnce({
+      status: PaymentStatus.PENDING,
+      providerFinalized: false,
+      rawMeta: { providerRefundState: 'PROCESSING' },
+    });
+    const { prisma, service } = createService({
+      existingPayment: captured,
+      existingRefund: processing,
+      momoPaymentAdapter: adapter,
+    });
+    prisma.refund.updateMany.mockResolvedValueOnce({ count: 0 });
+    prisma.refund.findUnique
+      .mockResolvedValueOnce(processing)
+      .mockResolvedValueOnce(completed);
+
+    await expect(service.checkAndFinalizeRefund('refund-1')).resolves.toEqual({
+      completed: true,
+      paymentId: 'payment-1',
+      refundId: 'refund-1',
+    });
+
+    expect(prisma.refund.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'refund-1',
+        status: { in: ['APPROVAL_PROCESSING', 'PROVIDER_PROCESSING'] },
+      },
+      data: expect.objectContaining({ status: 'PROVIDER_PROCESSING' }),
+    });
+    expect(prisma.payment.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('recovers an approval-processing refund by querying the provider without resending it', async () => {
+    const captured = payment({
+      method: PaymentMethod.MOMO,
+      providerRef: 'booking-1',
+      status: PaymentStatus.CAPTURED,
+    });
+    const adapter = gatewayAdapter(PaymentMethod.MOMO);
+    adapter.checkRefund.mockResolvedValueOnce({
+      status: PaymentStatus.PENDING,
+      providerFinalized: false,
+      rawMeta: { providerRefundState: 'PROCESSING' },
+    });
+    const approvalProcessing = {
+      ...providerProcessingRefund(captured),
+      status: 'APPROVAL_PROCESSING',
+    };
+    const { prisma, service } = createService({
+      existingPayment: captured,
+      existingRefund: approvalProcessing,
+      momoPaymentAdapter: adapter,
+    });
+
+    await expect(service.checkAndFinalizeRefund('refund-1')).resolves.toEqual({
+      completed: false,
+      paymentId: 'payment-1',
+      refundId: 'refund-1',
+    });
+
+    expect(adapter.checkRefund).toHaveBeenCalledOnce();
+    expect(adapter.refund).not.toHaveBeenCalled();
+    expect(prisma.refund.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'refund-1',
+        status: { in: ['APPROVAL_PROCESSING', 'PROVIDER_PROCESSING'] },
+      },
+      data: expect.objectContaining({
+        status: 'PROVIDER_PROCESSING',
+        metadata: expect.objectContaining({ providerLastCheckedAt: expect.any(String) }),
+      }),
+    });
+    expect(prisma.payment.updateMany).not.toHaveBeenCalled();
   });
 
   it('finalizes payment and accounting only after provider refund confirmation', async () => {
@@ -1277,8 +1512,11 @@ describe('PaymentsService conditional transitions', () => {
       refundId: 'refund-1',
     });
 
-    expect(prisma.refund.update).toHaveBeenNthCalledWith(1, {
-      where: { id: 'refund-1' },
+    expect(prisma.refund.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'refund-1',
+        status: { in: ['APPROVAL_PROCESSING', 'PROVIDER_PROCESSING'] },
+      },
       data: expect.objectContaining({ status: 'GATEWAY_CONFIRMED' }),
     });
     expect(prisma.payment.updateMany).toHaveBeenCalledWith({
@@ -1292,6 +1530,8 @@ describe('PaymentsService conditional transitions', () => {
       'payment.refund',
       'payment:payment-1',
       expect.objectContaining({ approvalAdminId: 'finance-admin-2' }),
+      undefined,
+      expect.objectContaining({ payment: expect.any(Object) }),
     );
   });
 
@@ -1350,8 +1590,8 @@ describe('PaymentsService conditional transitions', () => {
 
     expect(adapter.refund).not.toHaveBeenCalled();
     expect(prisma.refund.create).not.toHaveBeenCalled();
-    expect(prisma.refund.update).toHaveBeenCalledWith({
-      where: { id: 'refund-1' },
+    expect(prisma.refund.updateMany).toHaveBeenCalledWith({
+      where: { id: 'refund-1', status: 'GATEWAY_CONFIRMED' },
       data: expect.objectContaining({ status: 'COMPLETED' }),
     });
   });
@@ -1572,6 +1812,9 @@ function createService({
       findUnique: vi.fn().mockResolvedValue(
         existingRefund === undefined ? requestedRefund() : existingRefund,
       ),
+      findUniqueOrThrow: vi.fn().mockResolvedValue(
+        existingRefund === undefined ? requestedRefund() : existingRefund,
+      ),
       create: vi.fn().mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
         id: 'refund-1',
         ...data,
@@ -1594,7 +1837,32 @@ function createService({
       findMany: vi.fn().mockResolvedValue([]),
     },
     user: {
-      findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }),
+      findFirst: vi.fn().mockResolvedValue({
+        id: 'finance-admin-2',
+        email: 'finance-admin-2@hands.test',
+        fullName: 'Finance Admin 2',
+        roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+        updatedAt: new Date('2026-08-14T00:00:00.000Z'),
+        adminUserProvenance: AdminUserProvenance.PRODUCTION,
+        fixtureKind: null,
+        fixtureRunId: null,
+        fixtureExpiresAt: null,
+        adminOperatorCredential: {
+          disabledAt: null,
+          lastLoginAt: new Date('2026-08-14T00:00:00.000Z'),
+          lockedUntil: null,
+          mfaState: 'VERIFIED',
+          setupCompletedAt: new Date('2026-08-01T00:00:00.000Z'),
+        },
+        adminOperatorPermission: {
+          categories: [AdminOperatorPermissionCategory.FINANCE],
+          updatedAt: new Date('2026-08-14T00:00:00.000Z'),
+          version: 1,
+        },
+        financeApproverRequestsTargeted: [
+          { executedAt: new Date('2026-08-01T00:00:00.000Z'), id: 'grant-1', requestedEnabled: true },
+        ],
+      }),
     },
   };
   const config = { get: vi.fn() };
@@ -1621,6 +1889,34 @@ function createService({
       (settlements ?? { reverseBookingSettlementSnapshotForRefund: vi.fn() }) as never,
     ),
   };
+}
+
+function createMomoCallbackService(options: Parameters<typeof createService>[0]) {
+  const adapter = gatewayAdapter(PaymentMethod.MOMO);
+  adapter.parseCallback.mockImplementation((payload: unknown) => {
+    const body = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {};
+    return {
+      providerRef: String(body.orderId ?? ''),
+      rawMeta: body,
+      status: body.status === 'CAPTURED' ? PaymentStatus.CAPTURED : PaymentStatus.AUTHORIZED,
+    };
+  });
+  const asMomoPayment = (record: ReturnType<typeof payment> | null | undefined) =>
+    record
+      ? { ...record, method: PaymentMethod.MOMO, providerRef: 'momo-booking-1' }
+      : record;
+  const fixture = createService({
+    ...options,
+    existingPayment: asMomoPayment(options.existingPayment) ?? null,
+    updatedPayment: asMomoPayment(options.updatedPayment) ?? undefined,
+    momoPaymentAdapter: adapter,
+  });
+  fixture.config.get.mockImplementation((key: string) => {
+    if (key === 'NODE_ENV') return 'test';
+    if (key === 'ALLOW_UNVERIFIED_PAYMENT_CALLBACKS') return 'true';
+    return undefined;
+  });
+  return fixture;
 }
 
 function paymentAdminOperationClaimDelegate() {

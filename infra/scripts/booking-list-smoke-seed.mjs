@@ -120,13 +120,20 @@ try {
     );
   }
 } catch (error) {
-  await cleanupSmokeData().catch(() => undefined);
+  let cleanupError = null;
+  try {
+    await cleanupSmokeData();
+  } catch (caughtCleanupError) {
+    cleanupError = caughtCleanupError instanceof Error ? caughtCleanupError.message : String(caughtCleanupError);
+  }
   console.error(
     JSON.stringify(
       {
         ok: false,
         envFile: { path: envPath, exists: envFileExists },
         error: error instanceof Error ? error.message : String(error),
+        cleanupError,
+        residualFixtureIds: cleanupError ? Object.values(ids) : [],
       },
       null,
       2,

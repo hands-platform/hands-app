@@ -5,6 +5,37 @@ import 'package:provider_app/src/features/provider_services/data/repositories/pr
 import 'package:provider_app/src/features/provider_services/domain/entities/provider_service_price.dart';
 
 void main() {
+  test('partner service names use vi, en, legacy, then a stable fallback', () {
+    final vietnamese = ProviderServicePriceModel.fromJson({
+      'id': 'svc-vi',
+      'name': 'Legacy Massage',
+      'nameTranslations': {
+        'vi': 'Massage Việt',
+        'en': 'English Massage',
+      },
+    });
+    final englishFallback = ProviderServicePriceModel.fromJson({
+      'id': 'svc-en',
+      'name': 'Legacy Massage',
+      'nameTranslations': {'vi': ' ', 'en': 'English Massage'},
+    });
+    final legacyFallback = ProviderServicePriceModel.fromJson({
+      'id': 'svc-legacy',
+      'name': 'Legacy Massage',
+      'nameTranslations': null,
+    });
+    final unavailable = ProviderServicePriceModel.fromJson({
+      'id': 'svc-unavailable',
+      'name': ' ',
+      'nameTranslations': {'vi': null, 'en': ''},
+    });
+
+    expect(vietnamese.name, 'Massage Việt');
+    expect(englishFallback.name, 'English Massage');
+    expect(legacyFallback.name, 'Legacy Massage');
+    expect(unavailable.name, 'Dịch vụ không khả dụng');
+  });
+
   test('parses payout rule fee details for partner service pricing', () {
     final service = ProviderServicePriceModel.fromJson({
       'id': 'svc-foot-60',

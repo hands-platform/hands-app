@@ -1,4 +1,4 @@
-import { AppUsageOrigin, BookingStatus } from '@prisma/client';
+import { AppUsageOrigin, BookingStatus, PaymentStatus } from '@prisma/client';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -58,10 +58,11 @@ describe('getAdminUsageOverview', () => {
       ])
       .mockResolvedValueOnce([{
         appOpenCount: 8,
-        bookingRequestCount: 2,
+        createdBookingCount: 7,
         completedBookingCount: 1,
         label: '07/19',
         periodStart: new Date('2026-07-19T00:00:00.000Z'),
+        preferredRequestCount: 6,
         providerProfileViewCount: 5,
         sessionStartCount: 4,
       }])
@@ -119,6 +120,7 @@ describe('getAdminUsageOverview', () => {
         bookingActivityThroughAt: new Date('2026-07-19T03:00:00.000Z'),
         reviewActivityThroughAt: new Date('2026-07-19T03:30:00.000Z'),
         refundActivityThroughAt: new Date('2026-07-19T03:45:00.000Z'),
+        unknownBookingCount: 0,
         unknownAggregateCount: 0,
         usageAggregatedThroughAt: new Date('2026-07-19T04:00:00.000Z'),
       }]);
@@ -139,7 +141,12 @@ describe('getAdminUsageOverview', () => {
       comparison: { totals: { activeCustomerCount: 8, appOpenCount: 35 } },
       appliedRange: { dayCount: 7, granularity: 'daily' },
       dataThroughAt: '2026-07-19T04:00:00.000Z',
-      provenance: { unknownAggregateCount: 0, usageFixtures: 'guaranteed' },
+      provenance: {
+        booking: 'guaranteed',
+        unknownBookingCount: 0,
+        unknownUsageAggregateCount: 0,
+        usage: 'guaranteed',
+      },
       freshness: {
         bookingActivityThroughAt: '2026-07-19T03:00:00.000Z',
         usageAggregatedThroughAt: '2026-07-19T04:00:00.000Z',
@@ -164,6 +171,12 @@ describe('getAdminUsageOverview', () => {
         overview.bookingQuality.refundCount +
         overview.bookingQuality.unresolvedCount,
     );
+    expect(overview.behavior.trend.reduce((sum, row) => sum + row.createdBookingCount, 0)).toBe(
+      overview.bookingQuality.createdBookingCount,
+    );
+    expect(overview.behavior.trend.reduce((sum, row) => sum + row.preferredRequestCount, 0)).toBe(
+      overview.totals.partnerBookingRequestCount,
+    );
     expect(overview.regionUsage).toHaveLength(1);
     expect(queryRaw).toHaveBeenCalledTimes(12);
 
@@ -178,17 +191,28 @@ describe('getAdminUsageOverview', () => {
     const rawEventQueries = queryRaw.mock.calls
       .map(([query]) => query as { strings?: string[]; values?: unknown[] })
       .filter((query) => query.strings?.join(' ').includes('"AppUsageEvent"'));
+    const bookingQueries = queryRaw.mock.calls
+      .map(([query]) => query as { strings?: string[]; values?: unknown[] })
+      .filter((query) => query.strings?.join(' ').includes('"Booking"'));
     expect(sql).toContain('"AppUsageDailyAggregate"');
     expect(sql).toContain('booking."closedAt"');
     expect(sql).toContain('"origin"');
     expect(sql).toContain('PRODUCTION');
     expect(summarySql).not.toContain('booking."updatedAt"');
+    expect(summarySql).toMatch(/Payment[\s\S]+paymentFailureCount/);
+    expect((queryRaw.mock.calls[0]?.[0] as { values?: unknown[] }).values).toContain(PaymentStatus.FAILED);
+    expect(summarySql).toContain("booking.metadata #>> '{dataOrigin}'");
     expect(regionSql).not.toContain('booking."updatedAt"');
     expect(sql).toContain("booking.metadata #>> '{dataOrigin}'");
+    expect(sql).toContain("= 'PRODUCTION'");
+    expect(sql).toContain("<> 'SYNTHETIC'");
+    expect(sql).toContain('customer_user."fixtureKind" IS NULL');
     expect(sql).not.toContain("event.metadata #>> '{dataOrigin}'");
     expect(aggregateQueries.length).toBeGreaterThan(0);
     expect(aggregateQueries.every((query) => query.values?.includes(AppUsageOrigin.PRODUCTION))).toBe(true);
     expect(rawEventQueries.every((query) => query.values?.includes(AppUsageOrigin.PRODUCTION))).toBe(true);
+    expect(bookingQueries.length).toBeGreaterThan(0);
+    expect(bookingQueries.every((query) => query.strings?.join(' ').includes("metadata #>> '{dataOrigin}'"))).toBe(true);
     expect((queryRaw.mock.calls[5]?.[0] as { values?: unknown[] }).values).toEqual(
       expect.arrayContaining([
         BookingStatus.CANCELLED,
@@ -197,6 +221,9 @@ describe('getAdminUsageOverview', () => {
         BookingStatus.REFUNDED,
       ]),
     );
+    const rankingSql = (queryRaw.mock.calls[5]?.[0] as { strings?: string[] }).strings?.join(' ') ?? '';
+    expect(rankingSql).toContain('INNER JOIN usage');
+    expect(rankingSql).toContain('usage."totalEventCount" > 0');
   });
 
   it('classifies production aggregate freshness without treating missing data as current', () => {

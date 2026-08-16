@@ -92,6 +92,100 @@ function rawQueryText(mock: ReturnType<typeof vi.fn>, call = 0) {
   return query?.strings?.join('?') ?? '';
 }
 
+function bookedPayoutSnapshot(
+  customerPrice: number,
+  providerPayoutAmount: number,
+  vatBps = 800,
+) {
+  return {
+    payoutRuleIdSnapshot: 'payout-rule-booked-1',
+    providerPayoutAmountSnapshot: providerPayoutAmount,
+    payoutRuleSnapshot: {
+      id: 'payout-rule-booked-1',
+      customerPrice,
+      providerPayoutAmount,
+      vatBps,
+      otherCostAmount: 0,
+      currency: 'VND',
+    },
+  };
+}
+
+describe('EarningsService booking payout snapshots', () => {
+  type SnapshotCalculator = {
+    calculateServicePayoutFee: (
+      tx: unknown,
+      input: {
+        grossAmount: number;
+        currency: string;
+        services: Array<{
+          serviceId: string;
+          price: number;
+          quantity: number;
+          payoutRuleIdSnapshot?: string | null;
+          providerPayoutAmountSnapshot?: number | null;
+          payoutRuleSnapshot?: unknown;
+        }>;
+      },
+    ) => Promise<{
+      platformFeeAmount: number;
+      ruleSnapshot: { providerPayoutAmount: number };
+    }>;
+  };
+
+  it('uses the booked payout snapshot without reading a later catalog rule', async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      {
+        id: 'payout-rule-changed-later',
+        serviceId: 'service-1',
+        customerPrice: 600_000,
+        providerPayoutAmount: 100_000,
+        vatBps: 800,
+        otherCostAmount: 0,
+        currency: 'VND',
+      },
+    ]);
+    const service = new EarningsService({} as never) as unknown as SnapshotCalculator;
+
+    const result = await service.calculateServicePayoutFee(
+      { servicePayoutRule: { findMany } },
+      {
+        grossAmount: 600_000,
+        currency: 'VND',
+        services: [
+          {
+            serviceId: 'service-1',
+            price: 600_000,
+            quantity: 1,
+            ...bookedPayoutSnapshot(600_000, 430_000),
+          },
+        ],
+      },
+    );
+
+    expect(result.platformFeeAmount).toBe(170_000);
+    expect(result.ruleSnapshot.providerPayoutAmount).toBe(430_000);
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when a completed booking has no payout snapshot', async () => {
+    const findMany = vi.fn();
+    const service = new EarningsService({} as never) as unknown as SnapshotCalculator;
+
+    await expect(
+      service.calculateServicePayoutFee(
+        { servicePayoutRule: { findMany } },
+        {
+          grossAmount: 600_000,
+          currency: 'VND',
+          services: [{ serviceId: 'service-1', price: 600_000, quantity: 1 }],
+        },
+      ),
+    ).rejects.toThrow('Booking payout snapshot is missing or invalid for service service-1');
+    expect(findMany).not.toHaveBeenCalled();
+  });
+});
+
 describe('EarningsService payout batches', () => {
   it('exposes a partner bank correction request on the wallet summary', async () => {
     const reviewedAt = new Date('2026-06-28T09:30:00.000Z');
@@ -1175,6 +1269,7 @@ describe('EarningsService payout batches', () => {
 
   it('blocks payout batches from ledger balance even when earning aggregate is positive', async () => {
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       booking: {
         count: vi.fn().mockResolvedValue(1),
       },
@@ -1260,7 +1355,9 @@ describe('EarningsService payout batches', () => {
       status: EarningStatus.PAID,
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       providerEarning: {
+        findUnique: vi.fn().mockResolvedValue(earning),
         update: vi.fn(),
       },
       providerWalletLedgerEntry: {
@@ -1268,9 +1365,6 @@ describe('EarningsService payout batches', () => {
       },
     };
     const prisma = {
-      providerEarning: {
-        findUnique: vi.fn().mockResolvedValue(earning),
-      },
       $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
         callback(tx),
       ),
@@ -1287,17 +1381,7 @@ describe('EarningsService payout batches', () => {
     expect(tx.providerEarning.update).not.toHaveBeenCalled();
     expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'earning:earning-paid-1:paid-refund-receivable' },
-      update: {
-        amount: -430_000,
-        currency: 'VND',
-        notes: 'Paid earning converted to partner receivable by refund workflow',
-        metadata: {
-          previousNetAmount: 430_000,
-          previousStatus: EarningStatus.PAID,
-          refundAfterPayout: true,
-          partnerReceivableAmount: 430_000,
-        },
-      },
+      update: {},
       create: {
         providerProfileId: 'provider-1',
         bookingId: 'booking-paid-refund-1',
@@ -1330,11 +1414,16 @@ describe('EarningsService payout batches', () => {
       },
       payoutBatch: null,
     };
-    const prisma = {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       providerEarning: {
         findUnique: vi.fn().mockResolvedValue(earning),
       },
-      $transaction: vi.fn(),
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
     };
     const service = new EarningsService(prisma as never);
 
@@ -1345,7 +1434,8 @@ describe('EarningsService payout batches', () => {
       retainedFeeAmount: 30_000,
     });
 
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(tx.$queryRaw).toHaveBeenCalledOnce();
   });
 
   it('does not create another reversal for an earning already cancelled by post-match approval', async () => {
@@ -1361,11 +1451,16 @@ describe('EarningsService payout batches', () => {
       },
       payoutBatch: null,
     };
-    const prisma = {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       providerEarning: {
         findUnique: vi.fn().mockResolvedValue(earning),
       },
-      $transaction: vi.fn(),
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
     };
     const service = new EarningsService(prisma as never);
 
@@ -1375,7 +1470,8 @@ describe('EarningsService payout batches', () => {
       earningId: 'earning-approved-1',
     });
 
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(tx.$queryRaw).toHaveBeenCalledOnce();
   });
 
   it('keeps payout evidence on partner receivable ledger when refund happens after a paid payout batch', async () => {
@@ -1396,14 +1492,15 @@ describe('EarningsService payout batches', () => {
       status: EarningStatus.PAID,
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      providerEarning: {
+        findUnique: vi.fn().mockResolvedValue(earning),
+      },
       providerWalletLedgerEntry: {
         upsert: vi.fn().mockResolvedValue({ id: 'refund-receivable-ledger-1' }),
       },
     };
     const prisma = {
-      providerEarning: {
-        findUnique: vi.fn().mockResolvedValue(earning),
-      },
       $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
         callback(tx),
       ),
@@ -1414,16 +1511,7 @@ describe('EarningsService payout batches', () => {
 
     expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'earning:earning-paid-batch-1:paid-refund-receivable' },
-      update: expect.objectContaining({
-        amount: -430_000,
-        reference: 'VCB-PAID-001',
-        metadata: expect.objectContaining({
-          payoutBatchId: 'payout-batch-paid-1',
-          payoutBatchStatus: PayoutBatchStatus.PAID,
-          payoutPaidAt: paidAt.toISOString(),
-          payoutTransferRef: 'VCB-PAID-001',
-        }),
-      }),
+      update: {},
       create: expect.objectContaining({
         payoutBatchId: 'payout-batch-paid-1',
         reference: 'VCB-PAID-001',
@@ -1457,6 +1545,7 @@ describe('EarningsService payout batches', () => {
           serviceId: 'service-1',
           price: 600_000,
           quantity: 1,
+          ...bookedPayoutSnapshot(600_000, 430_000),
           service: { id: 'service-1', name: 'Massage' },
         },
       ],
@@ -1472,6 +1561,8 @@ describe('EarningsService payout batches', () => {
       currency: 'VND',
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      booking: { findUniqueOrThrow: vi.fn().mockResolvedValue(booking) },
       platformFeePolicyVersion: {
         findFirst: vi.fn().mockResolvedValue({
           id: 'platform-policy-1',
@@ -1526,7 +1617,7 @@ describe('EarningsService payout batches', () => {
         }),
       },
       providerEarning: {
-        findUnique: vi.fn().mockResolvedValue({ id: 'earning-1' }),
+        findUnique: vi.fn().mockResolvedValueOnce(null).mockResolvedValue(earning),
         upsert: vi.fn().mockResolvedValue(earning),
       },
       providerPlatformFeeLog: {
@@ -1552,6 +1643,21 @@ describe('EarningsService payout batches', () => {
 
     await expect(service.createForCompletedBooking('booking-1', 'provider-1')).resolves.toEqual(earning);
 
+    expect(tx.providerEarning.findUnique).toHaveBeenCalledWith({
+      where: { bookingId: 'booking-1' },
+    });
+    expect(tx.providerEarning.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { bookingId: 'booking-1' },
+        update: {},
+      }),
+    );
+    expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { sourceKey: 'earning:earning-1:booking' },
+        update: {},
+      }),
+    );
     expect(settlements.upsertBookingSettlementSnapshot).toHaveBeenCalledWith(
       expect.objectContaining({
         bookingId: 'booking-1',
@@ -1578,13 +1684,11 @@ describe('EarningsService payout batches', () => {
       preserveExistingLifecycle: true,
     });
 
-    expect(tx.providerEarning.findUnique).toHaveBeenCalledWith({
-      where: { bookingId: 'booking-1' },
-      select: { id: true },
-    });
-    const repairUpdate = tx.providerEarning.upsert.mock.calls.at(-1)?.[0].update;
-    expect(repairUpdate).not.toHaveProperty('status');
-    expect(repairUpdate).not.toHaveProperty('availableAt');
+    expect(tx.providerEarning.upsert).toHaveBeenCalledTimes(1);
+    expect(tx.providerPlatformFeeLog.create).toHaveBeenCalledTimes(1);
+    expect(tx.providerTaxLog.create).toHaveBeenCalledTimes(1);
+    expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledTimes(1);
+    expect(settlements.upsertBookingSettlementSnapshot).toHaveBeenCalledTimes(1);
   });
 
   it('reconstructs paid settlement accounting from retained evidence without mutating earning or wallet rows', async () => {
@@ -1645,6 +1749,7 @@ describe('EarningsService payout batches', () => {
       },
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       booking: { findUnique: vi.fn().mockResolvedValue(booking) },
       paymentFeePolicyVersion: { findFirst: vi.fn().mockResolvedValue(null) },
     };
@@ -1709,6 +1814,7 @@ describe('EarningsService payout batches', () => {
           serviceId: 'service-1',
           price: 600_000,
           quantity: 1,
+          ...bookedPayoutSnapshot(600_000, 430_000),
           service: { id: 'service-1', name: 'Massage' },
         },
       ],
@@ -1724,6 +1830,8 @@ describe('EarningsService payout batches', () => {
       currency: 'VND',
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      booking: { findUniqueOrThrow: vi.fn().mockResolvedValue(booking) },
       paymentFeePolicyVersion: {
         findFirst: vi.fn().mockResolvedValue({
           id: 'payment-fee-policy-1',
@@ -1795,6 +1903,7 @@ describe('EarningsService payout batches', () => {
         }),
       },
       providerEarning: {
+        findUnique: vi.fn().mockResolvedValue(null),
         upsert: vi.fn().mockResolvedValue(earning),
       },
       providerPlatformFeeLog: {
@@ -1892,6 +2001,7 @@ describe('EarningsService payout batches', () => {
             serviceId: 'service-1',
             price: 600_000,
             quantity: 1,
+            ...bookedPayoutSnapshot(600_000, 430_000),
             service: { id: 'service-1', name: 'Massage' },
           },
         ],
@@ -1907,6 +2017,8 @@ describe('EarningsService payout batches', () => {
         currency: 'VND',
       };
       const tx = {
+        $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+        booking: { findUniqueOrThrow: vi.fn().mockResolvedValue(booking) },
         paymentFeePolicyVersion: {
           findFirst: vi.fn().mockResolvedValue({
             id: `payment-fee-policy-${scenario.paymentMethod.toLowerCase()}`,
@@ -1978,6 +2090,7 @@ describe('EarningsService payout batches', () => {
           }),
         },
         providerEarning: {
+          findUnique: vi.fn().mockResolvedValue(null),
           upsert: vi.fn().mockResolvedValue(earning),
         },
         providerPlatformFeeLog: {
@@ -2066,6 +2179,7 @@ describe('EarningsService payout batches', () => {
           serviceId: 'service-1',
           price: 600_000,
           quantity: 1,
+          ...bookedPayoutSnapshot(600_000, 430_000),
           service: { id: 'service-1', name: 'Massage' },
         },
       ],
@@ -2081,6 +2195,8 @@ describe('EarningsService payout batches', () => {
       currency: 'VND',
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      booking: { findUniqueOrThrow: vi.fn().mockResolvedValue(booking) },
       platformFeePolicyVersion: {
         findFirst: vi.fn().mockResolvedValue({
           id: 'platform-policy-1',
@@ -2135,6 +2251,7 @@ describe('EarningsService payout batches', () => {
         }),
       },
       providerEarning: {
+        findUnique: vi.fn().mockResolvedValue(null),
         upsert: vi.fn().mockResolvedValue(earning),
       },
       providerPlatformFeeLog: {
@@ -2214,6 +2331,7 @@ describe('EarningsService payout batches', () => {
           serviceId: 'service-1',
           price: 600_000,
           quantity: 1,
+          ...bookedPayoutSnapshot(600_000, 430_000),
           service: { id: 'service-1', name: 'Massage' },
         },
       ],
@@ -2230,6 +2348,8 @@ describe('EarningsService payout batches', () => {
     };
     const walletUpsert = vi.fn(async (input) => ({ id: `wallet-${input.where.sourceKey}` }));
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      booking: { findUniqueOrThrow: vi.fn().mockResolvedValue(booking) },
       platformFeePolicyVersion: {
         findFirst: vi.fn().mockResolvedValue({
           id: 'platform-policy-1',
@@ -2284,6 +2404,7 @@ describe('EarningsService payout batches', () => {
         }),
       },
       providerEarning: {
+        findUnique: vi.fn().mockResolvedValue(null),
         upsert: vi.fn().mockResolvedValue(earning),
       },
       providerPlatformFeeLog: {
@@ -2312,7 +2433,7 @@ describe('EarningsService payout batches', () => {
     expect(tx.providerEarning.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({ netAmount: -170_000 }),
-        update: expect.objectContaining({ netAmount: -170_000 }),
+        update: {},
       }),
     );
     expect(walletUpsert).toHaveBeenCalledTimes(3);
@@ -2383,6 +2504,7 @@ describe('EarningsService payout batches', () => {
           serviceId: 'service-1',
           price: 600_000,
           quantity: 1,
+          ...bookedPayoutSnapshot(600_000, 430_000),
           service: { id: 'service-1', name: 'Massage' },
         },
       ],
@@ -2399,6 +2521,8 @@ describe('EarningsService payout batches', () => {
     };
     const walletUpsert = vi.fn(async (input) => ({ id: `wallet-${input.where.sourceKey}` }));
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      booking: { findUniqueOrThrow: vi.fn().mockResolvedValue(booking) },
       platformFeePolicyVersion: {
         findFirst: vi.fn().mockResolvedValue({
           id: 'platform-policy-1',
@@ -2453,6 +2577,7 @@ describe('EarningsService payout batches', () => {
         }),
       },
       providerEarning: {
+        findUnique: vi.fn().mockResolvedValue(null),
         upsert: vi.fn().mockResolvedValue(earning),
       },
       providerPlatformFeeLog: {
@@ -2483,7 +2608,7 @@ describe('EarningsService payout batches', () => {
     expect(tx.providerEarning.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({ netAmount: -110_000 }),
-        update: expect.objectContaining({ netAmount: -110_000 }),
+        update: {},
       }),
     );
     expect(walletUpsert).toHaveBeenCalledWith(
@@ -2636,6 +2761,7 @@ describe('EarningsService payout batches', () => {
       currency: 'VND',
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue({ id: 'provider-1' }),
       },
@@ -2669,6 +2795,7 @@ describe('EarningsService payout batches', () => {
       where: { providerProfileId: 'provider-1' },
       _sum: { amount: true },
     });
+    expect(tx.$queryRaw).toHaveBeenCalledOnce();
     expect(tx.providerWalletLedgerEntry.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         providerProfileId: 'provider-1',
@@ -2703,6 +2830,7 @@ describe('EarningsService payout batches', () => {
       amount: 1000000,
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue({ id: 'provider-1' }),
       },
@@ -2742,6 +2870,7 @@ describe('EarningsService payout batches', () => {
       amount: 1000000,
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue({ id: 'provider-1' }),
       },
@@ -2781,19 +2910,28 @@ describe('EarningsService payout batches', () => {
       amount: 500000,
       currency: 'VND',
       status: 'REQUESTED',
+      requestNote: 'Please send after the shift',
+      metadata: {
+        requestedBankAccountId: 'bank-account-1',
+      },
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       accountingJournalBatch: {
         upsert: vi.fn().mockResolvedValue({ id: 'withdrawal-lock-journal-1' }),
       },
       providerBankAccount: {
         findFirst: vi.fn().mockResolvedValue({ id: 'bank-account-1' }),
       },
+      providerPayoutBatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 0 } }),
+      },
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 750000 } }),
       },
       providerWalletWithdrawalRequest: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        findUnique: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockResolvedValue(createdRequest),
       },
     };
@@ -2809,6 +2947,7 @@ describe('EarningsService payout batches', () => {
 
     await expect(
       service.createProviderWalletWithdrawalRequestForProviderUser('partner-user-1', {
+        idempotencyKey: 'withdrawal-request-1',
         amount: 500000,
         bankAccountId: ' bank-account-1 ',
         requestNote: ' Please send after the shift ',
@@ -2824,9 +2963,10 @@ describe('EarningsService payout batches', () => {
       },
     });
     expect(tx.providerWalletWithdrawalRequest.create).toHaveBeenCalledWith({
-      data: {
-        providerProfileId: 'provider-1',
-        bankAccountId: 'bank-account-1',
+        data: {
+          providerProfileId: 'provider-1',
+          idempotencyKey: 'withdrawal-request-1',
+          bankAccountId: 'bank-account-1',
         amount: 500000,
         currency: 'VND',
         status: 'REQUESTED',
@@ -2834,8 +2974,10 @@ describe('EarningsService payout batches', () => {
         metadata: {
           currentWalletBalance: 750000,
           pendingWithdrawalAmount: 0,
-          availableWalletBalance: 750000,
-          source: 'PARTNER_APP_WALLET_WITHDRAWAL_REQUEST',
+          pendingPayoutAmount: 0,
+            availableWalletBalance: 750000,
+            requestedBankAccountId: 'bank-account-1',
+            source: 'PARTNER_APP_WALLET_WITHDRAWAL_REQUEST',
         },
       },
     });
@@ -2869,16 +3011,105 @@ describe('EarningsService payout batches', () => {
     );
   });
 
+  it('returns the existing withdrawal when the same partner replays the same idempotency key and payload', async () => {
+    const existingRequest = {
+      id: 'withdrawal-request-existing',
+      providerProfileId: 'provider-1',
+      idempotencyKey: 'withdrawal-request-replay-1',
+      bankAccountId: 'bank-account-1',
+      amount: 500000,
+      currency: 'VND',
+      status: ProviderWalletWithdrawalRequestStatus.REQUESTED,
+      requestNote: 'Please send after the shift',
+      metadata: { requestedBankAccountId: 'bank-account-1' },
+    };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      providerWalletWithdrawalRequest: {
+        findUnique: vi.fn().mockResolvedValue(existingRequest),
+        aggregate: vi.fn(),
+        create: vi.fn(),
+      },
+      providerBankAccount: { findFirst: vi.fn() },
+      providerWalletLedgerEntry: { aggregate: vi.fn() },
+      providerPayoutBatch: { aggregate: vi.fn() },
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'provider-1', userId: 'partner-user-1' }),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.createProviderWalletWithdrawalRequestForProviderUser('partner-user-1', {
+        idempotencyKey: 'withdrawal-request-replay-1',
+        amount: 500000,
+        bankAccountId: 'bank-account-1',
+        requestNote: ' Please send after the shift ',
+      }),
+    ).resolves.toEqual(existingRequest);
+
+    expect(tx.providerBankAccount.findFirst).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
+    expect(tx.providerWalletWithdrawalRequest.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects reuse of a withdrawal idempotency key with a different payload', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      providerWalletWithdrawalRequest: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'withdrawal-request-existing',
+          providerProfileId: 'provider-1',
+          amount: 500000,
+          requestNote: null,
+          metadata: { requestedBankAccountId: 'bank-account-1' },
+        }),
+        create: vi.fn(),
+      },
+      providerBankAccount: { findFirst: vi.fn() },
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'provider-1', userId: 'partner-user-1' }),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.createProviderWalletWithdrawalRequestForProviderUser('partner-user-1', {
+        idempotencyKey: 'withdrawal-request-replay-1',
+        amount: 600000,
+        bankAccountId: 'bank-account-1',
+      }),
+    ).rejects.toThrow('Idempotency key was already used for a different withdrawal request');
+
+    expect(tx.providerBankAccount.findFirst).not.toHaveBeenCalled();
+    expect(tx.providerWalletWithdrawalRequest.create).not.toHaveBeenCalled();
+  });
+
   it('rejects partner wallet withdrawal requests above available balance after pending requests', async () => {
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       providerBankAccount: {
         findFirst: vi.fn().mockResolvedValue({ id: 'bank-account-1' }),
       },
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 750000 } }),
       },
+      providerPayoutBatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 0 } }),
+      },
       providerWalletWithdrawalRequest: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 400000 } }),
+        findUnique: vi.fn().mockResolvedValue(null),
         create: vi.fn(),
       },
     };
@@ -2894,6 +3125,7 @@ describe('EarningsService payout batches', () => {
 
     await expect(
       service.createProviderWalletWithdrawalRequestForProviderUser('partner-user-1', {
+        idempotencyKey: 'withdrawal-request-2',
         amount: 500000,
         bankAccountId: 'bank-account-1',
       }),
@@ -3128,14 +3360,19 @@ describe('EarningsService payout batches', () => {
 
   it('rejects partner wallet withdrawal requests above prepaid wallet balance', async () => {
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       providerBankAccount: {
         findFirst: vi.fn().mockResolvedValue({ id: 'bank-account-1' }),
       },
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 300000 } }),
       },
+      providerPayoutBatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 0 } }),
+      },
       providerWalletWithdrawalRequest: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        findUnique: vi.fn().mockResolvedValue(null),
         create: vi.fn(),
       },
     };
@@ -3151,6 +3388,7 @@ describe('EarningsService payout batches', () => {
 
     await expect(
       service.createProviderWalletWithdrawalRequestForProviderUser('partner-user-1', {
+        idempotencyKey: 'withdrawal-request-3',
         amount: 500000,
         bankAccountId: 'bank-account-1',
       }),
@@ -3189,6 +3427,7 @@ describe('EarningsService payout batches', () => {
       transferRef: 'BANK-OUT-001',
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       accountingJournalBatch: {
         upsert: vi.fn().mockResolvedValue({ id: 'withdrawal-journal-1' }),
       },
@@ -3197,6 +3436,9 @@ describe('EarningsService payout batches', () => {
       },
       providerBankAccount: {
         findFirst: vi.fn().mockResolvedValue({ id: 'bank-account-1' }),
+      },
+      providerPayoutBatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 0 } }),
       },
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 750000 } }),
@@ -3232,11 +3474,7 @@ describe('EarningsService payout batches', () => {
 
     expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'partner-wallet-withdrawal:withdrawal-request-1:paid' },
-      update: expect.objectContaining({
-        amount: -500000,
-        reference: 'BANK-OUT-001',
-        notes: 'Manual transfer completed',
-      }),
+      update: {},
       create: expect.objectContaining({
         providerProfileId: 'provider-1',
         type: ProviderWalletLedgerType.PARTNER_WALLET_WITHDRAWAL_PAID,
@@ -3355,9 +3593,11 @@ describe('EarningsService payout batches', () => {
       },
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       accountingJournalBatch: { upsert: vi.fn() },
       monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
       providerBankAccount: { findFirst: vi.fn().mockResolvedValue({ id: 'bank-race' }) },
+      providerPayoutBatch: { aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 0 } }) },
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 700000 } }),
         findUnique: vi.fn().mockResolvedValue(null),
@@ -3409,6 +3649,7 @@ describe('EarningsService payout batches', () => {
       paidAt: null,
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       accountingJournalBatch: {
         upsert: vi.fn(),
       },
@@ -3417,6 +3658,9 @@ describe('EarningsService payout batches', () => {
       },
       providerBankAccount: {
         findFirst: vi.fn().mockResolvedValue({ id: 'bank-closed-period' }),
+      },
+      providerPayoutBatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 0 } }),
       },
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 750000 } }),
@@ -3472,11 +3716,15 @@ describe('EarningsService payout batches', () => {
       paidAt: null,
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       accountingJournalBatch: {
         upsert: vi.fn().mockResolvedValue({ id: 'withdrawal-release-journal-1' }),
       },
       providerBankAccount: {
         findFirst: vi.fn().mockResolvedValue({ id: 'bank-account-1' }),
+      },
+      providerPayoutBatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 0 } }),
       },
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 750000 } }),
@@ -3548,6 +3796,7 @@ describe('EarningsService payout batches', () => {
       metadata: { requestedFrom: 'partner-app' },
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       accountingJournalBatch: {
         upsert: vi.fn().mockResolvedValue({ id: 'withdrawal-release-journal-1' }),
       },
@@ -3556,10 +3805,7 @@ describe('EarningsService payout batches', () => {
         upsert: vi.fn(),
       },
       providerWalletWithdrawalRequest: {
-        update: vi.fn().mockResolvedValue({
-          ...existingRequest,
-          status: ProviderWalletWithdrawalRequestStatus.REJECTED,
-        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         findUniqueOrThrow: vi.fn().mockResolvedValue({
           ...existingRequest,
           status: ProviderWalletWithdrawalRequestStatus.REJECTED,
@@ -3586,6 +3832,7 @@ describe('EarningsService payout batches', () => {
     );
 
     expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.$queryRaw).toHaveBeenCalledOnce();
     expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledTimes(2);
     expect(tx.accountingJournalBatch.upsert).toHaveBeenNthCalledWith(
       2,
@@ -3609,8 +3856,11 @@ describe('EarningsService payout batches', () => {
         }),
       }),
     );
-    expect(tx.providerWalletWithdrawalRequest.update).toHaveBeenCalledWith({
-      where: { id: 'withdrawal-request-1' },
+    expect(tx.providerWalletWithdrawalRequest.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'withdrawal-request-1',
+        status: ProviderWalletWithdrawalRequestStatus.APPROVED,
+      },
       data: expect.objectContaining({
         status: ProviderWalletWithdrawalRequestStatus.REJECTED,
         metadata: expect.objectContaining({
@@ -3631,6 +3881,59 @@ describe('EarningsService payout batches', () => {
         bankAccount: true,
       }),
     });
+  });
+
+  it('rejects a stale non-paid withdrawal decision with a conditional status claim', async () => {
+    const existingRequest = {
+      id: 'withdrawal-request-decision-race',
+      providerProfileId: 'provider-decision-race',
+      bankAccountId: 'bank-decision-race',
+      amount: 500000,
+      currency: 'VND',
+      status: ProviderWalletWithdrawalRequestStatus.APPROVED,
+      transferRef: null,
+      adminNote: null,
+      correctionReason: null,
+      paidAt: null,
+      metadata: null,
+    };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      accountingJournalBatch: { upsert: vi.fn().mockResolvedValue({ id: 'journal-1' }) },
+      providerWalletWithdrawalRequest: {
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+        findUniqueOrThrow: vi.fn(),
+      },
+    };
+    const prisma = {
+      providerWalletWithdrawalRequest: { findUnique: vi.fn().mockResolvedValue(existingRequest) },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+    const beforeCommit = vi.fn();
+
+    await expect(
+      service.updateProviderWalletWithdrawalRequestForAdmin(
+        existingRequest.id,
+        { status: ProviderWalletWithdrawalRequestStatus.REJECTED },
+        'admin-user-1',
+        beforeCommit,
+      ),
+    ).rejects.toThrow(
+      'Partner wallet withdrawal changed while this action was running. Reload and review the latest status.',
+    );
+
+    expect(tx.providerWalletWithdrawalRequest.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: existingRequest.id,
+        status: ProviderWalletWithdrawalRequestStatus.APPROVED,
+      },
+      data: expect.objectContaining({ status: ProviderWalletWithdrawalRequestStatus.REJECTED }),
+    });
+    expect(tx.providerWalletWithdrawalRequest.findUniqueOrThrow).not.toHaveBeenCalled();
+    expect(beforeCommit).not.toHaveBeenCalled();
   });
 
   it('marks payout batch earnings, withholding, and wallet ledger paid together', async () => {
@@ -3660,6 +3963,7 @@ describe('EarningsService payout batches', () => {
       providerProfile: { user: { id: 'partner-user' } },
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       accountingJournalBatch: {
         upsert: vi.fn().mockResolvedValue({ id: 'payout-journal-1' }),
       },
@@ -3674,16 +3978,21 @@ describe('EarningsService payout batches', () => {
       },
       providerEarning: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: 380000 } }),
-        updateMany: vi.fn(),
+        findMany: vi.fn().mockResolvedValue(existingBatch.earnings),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
       providerPayoutBatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 0 } }),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         findUniqueOrThrow: vi.fn().mockResolvedValue(paidBatch),
       },
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 380000 } }),
         findFirst: vi.fn().mockResolvedValue(null),
-        upsert: vi.fn(),
+        upsert: vi.fn().mockImplementation(({ create }) => ({ id: 'paid-ledger-1', ...create })),
+      },
+      providerWalletWithdrawalRequest: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
       },
       withholdingLog: {
         updateMany: vi.fn(),
@@ -3713,8 +4022,9 @@ describe('EarningsService payout batches', () => {
     });
     expect(tx.providerEarning.updateMany).toHaveBeenCalledWith({
       where: {
+        id: { in: ['earning-1'] },
         payoutBatchId: 'payout-batch-1',
-        status: { not: EarningStatus.CANCELLED },
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
       },
       data: {
         status: EarningStatus.PAID,
@@ -3794,6 +4104,7 @@ describe('EarningsService payout batches', () => {
       ],
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       accountingJournalBatch: {
         upsert: vi.fn(),
       },
@@ -3804,9 +4115,11 @@ describe('EarningsService payout batches', () => {
         findFirst: vi.fn().mockResolvedValue({ id: 'bank-race' }),
       },
       providerEarning: {
+        findMany: vi.fn().mockResolvedValue(existingBatch.earnings),
         updateMany: vi.fn(),
       },
       providerPayoutBatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 0 } }),
         findUniqueOrThrow: vi.fn(),
         updateMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
@@ -3817,6 +4130,9 @@ describe('EarningsService payout batches', () => {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 380000 } }),
         findFirst: vi.fn().mockResolvedValue(null),
         upsert: vi.fn(),
+      },
+      providerWalletWithdrawalRequest: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
       },
       withholdingLog: {
         updateMany: vi.fn(),
@@ -3855,6 +4171,60 @@ describe('EarningsService payout batches', () => {
     expect(tx.providerPayoutBatch.findUniqueOrThrow).not.toHaveBeenCalled();
   });
 
+  it('re-reads payout earnings under the wallet lock and rejects a concurrent refund cancellation', async () => {
+    const staleEarning = {
+      id: 'earning-refund-race',
+      providerProfileId: 'provider-refund-race',
+      bookingId: 'booking-refund-race',
+      netAmount: 380000,
+      currency: 'VND',
+      status: EarningStatus.AVAILABLE,
+    };
+    const existingBatch = {
+      id: 'payout-batch-refund-race',
+      providerProfileId: 'provider-refund-race',
+      totalNetAmount: 380000,
+      currency: 'VND',
+      status: PayoutBatchStatus.PROCESSING,
+      transferRef: 'BANK-REFUND-RACE',
+      notes: null,
+      paidAt: null,
+      earnings: [staleEarning],
+    };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      providerBankAccount: { findFirst: vi.fn().mockResolvedValue({ id: 'bank-1' }) },
+      providerEarning: {
+        findMany: vi.fn().mockResolvedValue([
+          { ...staleEarning, status: EarningStatus.CANCELLED, netAmount: 0 },
+        ]),
+        updateMany: vi.fn(),
+      },
+      providerPayoutBatch: { updateMany: vi.fn() },
+      providerSanction: { findFirst: vi.fn().mockResolvedValue(null) },
+      providerWalletLedgerEntry: { upsert: vi.fn() },
+    };
+    const prisma = {
+      providerPayoutBatch: { findUnique: vi.fn().mockResolvedValue(existingBatch) },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.updatePayoutBatch(existingBatch.id, { status: PayoutBatchStatus.PAID }),
+    ).rejects.toThrow('Payout batch contains a cancelled earning');
+
+    expect(tx.$queryRaw).toHaveBeenCalledOnce();
+    expect(tx.providerEarning.findMany).toHaveBeenCalledWith({
+      where: { payoutBatchId: existingBatch.id },
+    });
+    expect(tx.providerPayoutBatch.updateMany).not.toHaveBeenCalled();
+    expect(tx.providerEarning.updateMany).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+  });
+
   it('rejects payout paid closeout in a finalized monthly period before status or ledger writes', async () => {
     const existingBatch = {
       id: 'payout-batch-closed-period',
@@ -3877,6 +4247,7 @@ describe('EarningsService payout batches', () => {
       ],
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       accountingJournalBatch: {
         upsert: vi.fn(),
       },
@@ -3887,9 +4258,11 @@ describe('EarningsService payout batches', () => {
         findFirst: vi.fn().mockResolvedValue({ id: 'bank-closed-period' }),
       },
       providerEarning: {
+        findMany: vi.fn().mockResolvedValue(existingBatch.earnings),
         updateMany: vi.fn(),
       },
       providerPayoutBatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 0 } }),
         updateMany: vi.fn(),
       },
       providerSanction: {
@@ -3899,6 +4272,9 @@ describe('EarningsService payout batches', () => {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 380000 } }),
         findFirst: vi.fn().mockResolvedValue(null),
         upsert: vi.fn(),
+      },
+      providerWalletWithdrawalRequest: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
       },
       withholdingLog: {
         updateMany: vi.fn(),
@@ -3946,10 +4322,15 @@ describe('EarningsService payout batches', () => {
       ],
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       providerBankAccount: {
         findFirst: vi.fn().mockResolvedValue(null),
       },
+      providerEarning: {
+        findMany: vi.fn().mockResolvedValue(existingBatch.earnings),
+      },
       providerPayoutBatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 0 } }),
         updateMany: vi.fn(),
       },
       providerSanction: {
@@ -3958,6 +4339,9 @@ describe('EarningsService payout batches', () => {
       providerWalletLedgerEntry: {
         aggregate: vi.fn(),
         findFirst: vi.fn(),
+      },
+      providerWalletWithdrawalRequest: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
       },
     };
     const prisma = {
@@ -3999,10 +4383,15 @@ describe('EarningsService payout batches', () => {
       ],
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       providerBankAccount: {
         findFirst: vi.fn().mockResolvedValue({ id: 'bank-total-drift' }),
       },
+      providerEarning: {
+        findMany: vi.fn().mockResolvedValue(existingBatch.earnings),
+      },
       providerPayoutBatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 0 } }),
         updateMany: vi.fn(),
       },
       providerSanction: {
@@ -4011,6 +4400,9 @@ describe('EarningsService payout batches', () => {
       providerWalletLedgerEntry: {
         aggregate: vi.fn(),
         findFirst: vi.fn(),
+      },
+      providerWalletWithdrawalRequest: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
       },
     };
     const prisma = {
@@ -4052,10 +4444,15 @@ describe('EarningsService payout batches', () => {
       ],
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       providerBankAccount: {
         findFirst: vi.fn().mockResolvedValue({ id: 'bank-low-wallet' }),
       },
+      providerEarning: {
+        findMany: vi.fn().mockResolvedValue(existingBatch.earnings),
+      },
       providerPayoutBatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 0 } }),
         updateMany: vi.fn(),
       },
       providerSanction: {
@@ -4064,6 +4461,9 @@ describe('EarningsService payout batches', () => {
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 379999 } }),
         findFirst: vi.fn(),
+      },
+      providerWalletWithdrawalRequest: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
       },
     };
     const prisma = {
@@ -4105,10 +4505,15 @@ describe('EarningsService payout batches', () => {
       ],
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       providerBankAccount: {
         findFirst: vi.fn().mockResolvedValue({ id: 'bank-duplicate-ledger' }),
       },
+      providerEarning: {
+        findMany: vi.fn().mockResolvedValue(existingBatch.earnings),
+      },
       providerPayoutBatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 0 } }),
         updateMany: vi.fn(),
       },
       providerSanction: {
@@ -4117,6 +4522,9 @@ describe('EarningsService payout batches', () => {
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 380000 } }),
         findFirst: vi.fn().mockResolvedValue({ id: 'existing-payout-ledger' }),
+      },
+      providerWalletWithdrawalRequest: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
       },
     };
     const prisma = {
@@ -4157,11 +4565,15 @@ describe('EarningsService payout batches', () => {
     };
     const createService = (bankAccount: { id: string } | null, paidLedger: { id: string } | null) => {
       const tx = {
+        $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
         accountingJournalBatch: {
           upsert: vi.fn(),
         },
         providerBankAccount: {
           findFirst: vi.fn().mockResolvedValue(bankAccount),
+        },
+        providerPayoutBatch: {
+          aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 0 } }),
         },
         providerWalletLedgerEntry: {
           aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 750000 } }),
@@ -4261,6 +4673,7 @@ describe('EarningsService payout batches', () => {
       entries: [],
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       monthlyTaxClosing: {
         findUnique: vi.fn().mockResolvedValue(null),
       },
@@ -4281,6 +4694,7 @@ describe('EarningsService payout batches', () => {
         create: vi.fn().mockResolvedValue(reversalJournal),
       },
       providerPayoutBatch: {
+        findUnique: vi.fn().mockResolvedValue(payoutBatch),
         updateMany: vi.fn(),
       },
       providerEarning: {
@@ -4315,6 +4729,9 @@ describe('EarningsService payout batches', () => {
       reversalWalletLedgerEntry: reversalLedger,
     });
 
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.providerPayoutBatch.findUnique.mock.invocationCallOrder[0],
+    );
     expect(tx.providerWalletLedgerEntry.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         amount: 380000,
@@ -4396,6 +4813,7 @@ describe('EarningsService payout batches', () => {
     const reversalLedger = { id: 'ledger-withdrawal-reversal', amount: 500000 };
     const reversalJournal = { id: 'journal-withdrawal-reversal', entries: [] };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       monthlyTaxClosing: {
         findUnique: vi.fn().mockResolvedValue(null),
       },
@@ -4420,6 +4838,7 @@ describe('EarningsService payout batches', () => {
         create: vi.fn().mockResolvedValue(reversalJournal),
       },
       providerWalletWithdrawalRequest: {
+        findUnique: vi.fn().mockResolvedValue(withdrawalRequest),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         findUniqueOrThrow: vi.fn().mockResolvedValue(reversedRequest),
       },
@@ -4449,6 +4868,9 @@ describe('EarningsService payout batches', () => {
       reversalWalletLedgerEntry: reversalLedger,
     });
 
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.providerWalletWithdrawalRequest.findUnique.mock.invocationCallOrder[0],
+    );
     expect(tx.providerWalletLedgerEntry.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         amount: 500000,
@@ -4487,6 +4909,7 @@ describe('EarningsService payout batches', () => {
       status: PayoutBatchStatus.PAID,
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
       monthlyTaxClosing: {
         findUnique: vi.fn().mockResolvedValue({ status: MonthlyTaxClosingStatus.CLOSED }),
       },
@@ -4497,6 +4920,9 @@ describe('EarningsService payout batches', () => {
       accountingJournalBatch: {
         findUnique: vi.fn(),
         create: vi.fn(),
+      },
+      providerPayoutBatch: {
+        findUnique: vi.fn().mockResolvedValue(payoutBatch),
       },
     };
     const prisma = {

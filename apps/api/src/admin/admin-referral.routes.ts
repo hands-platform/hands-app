@@ -149,6 +149,27 @@ export class AdminReferralRoutes extends AdminAnalyticsRoutes {
     return this.admin.listCustomerReferralRewardQueue({ take, skip, q, status, reward, fraud, range });
   }
 
+  @Get('referrals/customers/workspace')
+  customerReferralWorkspace(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('q') q?: string,
+    @Query('status') status?: string,
+    @Query('reward') reward?: string,
+    @Query('fraud') fraud?: string,
+    @Query('range') range?: string,
+  ) {
+    return this.admin.customerReferralWorkspace({ take, skip, q, status, reward, fraud, range });
+  }
+
+  @Get('referrals/customers/fixtures')
+  customerReferralFixtures(
+    @Query('include') include?: string,
+    @Query('take') take?: string,
+  ) {
+    return include === 'confirmed' ? this.admin.listCustomerReferralFixtureRewards({ take }) : [];
+  }
+
   @Get('referrals/customers/:id')
   customerReferralParent(@Param('id') customerProfileId: string) {
     return this.admin.getCustomerReferralParent(customerProfileId);

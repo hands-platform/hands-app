@@ -130,7 +130,6 @@ async function updatePayoutStatus(formData: FormData, status: 'PROCESSING' | 'PA
 }
 
 async function reversePaidDisbursement(path: string, formData: FormData) {
-  const approvalAdminId = requiredFormValue(formData, 'approvalAdminId');
   const reason = requiredFormValue(formData, 'reason');
   const reversalReference = requiredFormValue(formData, 'reversalReference');
   const attachmentUrl = String(formData.get('attachmentUrl') ?? '').trim();
@@ -140,7 +139,6 @@ async function reversePaidDisbursement(path: string, formData: FormData) {
   }
 
   await adminPostOrThrow(path, {
-    approvalAdminId,
     reason,
     reversalReference,
     attachmentUrl: attachmentUrl || undefined,

@@ -2,12 +2,13 @@
 
 ## MVP Auth
 
-- `POST /api/auth/request-otp` generates a cryptographic six-digit OTP in production, stores the
-  five-minute challenge in Redis, and returns `DEV_OTP` only for local testing outside production.
+- `POST /api/auth/request-otp` generates a cryptographic six-digit OTP, stores the five-minute
+  challenge in Redis, and returns a fixed `DEV_OTP` only when `NODE_ENV` is `development` or `test`
+  and `MOBILE_AUTH_ALLOW_DEV_OTP=true`. Shared and production environments ignore the switch.
 - OTP delivery is handled by `OtpDeliveryService`, which supports a local `dev` provider and an HTTP SMS-provider adapter.
 - `POST /api/auth/verify-otp` validates the Redis OTP, consumes it after successful verification, and returns signed access/refresh tokens.
-- Phone-level resend cooldown and failed-attempt limits are enforced before issuing a mobile
-  session.
+- Phone-level resend cooldown, hashed phone/prefix/global daily send budgets, and failed-attempt
+  limits are enforced before issuing a mobile session.
 - If Redis is unavailable in local development, the API uses an in-memory OTP fallback so the demo
   flow remains usable. Production fails closed.
 - `POST /api/auth/refresh` verifies the refresh-token signature and `tokenType=refresh`, consumes the

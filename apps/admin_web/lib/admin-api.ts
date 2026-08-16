@@ -202,6 +202,14 @@ export type AdminReferralReward = {
   calculationSnapshot?: Record<string, unknown> | null;
   createdAt: string;
   currency: string;
+  evidence?: {
+    blocker?: {
+      code: string;
+      message: string;
+    } | null;
+    ready: boolean;
+  };
+  isFixture?: boolean;
   latestDecision?: AdminReferralRewardLatestDecision | null;
   qualifyingBookingId?: string | null;
   status: AdminReferralRewardStatus;
@@ -286,6 +294,12 @@ export type AdminReferralParentSummary = {
   referralCount: number;
   rewardQueueSummaries: AdminReferralRewardQueueSummary[];
   totalCount: number;
+};
+
+export type AdminCustomerReferralWorkspace = {
+  asOf: string;
+  rows: AdminCustomerReferralRewardQueueRow[];
+  summary: AdminReferralParentSummary;
 };
 
 export type AdminReferralTotals = {
@@ -723,10 +737,11 @@ export type AdminUsageOverviewPartnerDiscoveryRow = {
 
 export type AdminUsageOverviewTrendRow = {
   appOpenCount: number;
-  bookingRequestCount: number;
+  createdBookingCount: number;
   completedBookingCount: number;
   label: string;
   periodStart?: string | null;
+  preferredRequestCount: number;
   providerProfileViewCount: number;
   sessionStartCount: number;
 };
@@ -781,7 +796,7 @@ export type AdminUsageOverview = {
     reviewActivityThroughAt: string | null;
     refundActivityThroughAt: string | null;
     usageAggregatedThroughAt: string | null;
-    usageStatus: 'fresh' | 'delayed' | 'unknown';
+    usageStatus: 'fresh' | 'delayed' | 'unknown' | 'failed';
   };
   generatedAt: string;
   source: 'stored-usage-aggregates';
@@ -884,9 +899,10 @@ export type AdminUsageOverview = {
     completedPartners: AdminUsageOverviewRankRow[];
   };
   provenance: {
-    bookingFixtures: 'explicit-markers-excluded';
-    unknownAggregateCount: number;
-    usageFixtures: 'guaranteed' | 'not-guaranteed';
+    booking: 'guaranteed' | 'incomplete';
+    unknownBookingCount: number;
+    unknownUsageAggregateCount: number;
+    usage: 'guaranteed' | 'incomplete';
   };
 };
 
@@ -1211,10 +1227,65 @@ export type AdminMarketingDimensionRow = AdminMarketingStats & {
 export type AdminMarketingAttributionQuality = {
   attributedFirstOpens: number;
   unknownFirstOpens: number;
-  firstOpenCoverageRate: number;
+  firstOpenCoverageRate: number | null;
   attributedSignups: number;
   unknownSignups: number;
-  signupCoverageRate: number;
+  signupCoverageRate: number | null;
+};
+
+export type AdminMarketingDecisionReadinessStatus =
+  | 'INSUFFICIENT'
+  | 'PARTIAL'
+  | 'READY'
+  | 'STALE';
+
+export type AdminMarketingSpendCoverage = {
+  trackingExpected: boolean;
+  expectedDayCount: number;
+  recordedDayCount: number;
+  missingDates: string[];
+  lastRecordedDate: string | null;
+  latestUpdatedAt: string | null;
+  totalSpendAmount: number | null;
+  hasExplicitZeroRows: boolean;
+  unmatchedCampaignRowCount: number;
+  unmatchedOutcomeCampaignCount: number;
+  duplicateCanonicalCampaignCount: number;
+  matchedCampaignCount: number;
+  campaignKeyCount: number;
+  status: 'COMPLETE' | 'PARTIAL' | 'MISSING' | 'STALE';
+};
+
+export type AdminMarketingDecisionReadiness = {
+  status: AdminMarketingDecisionReadinessStatus;
+  reasons: string[];
+  attributionCoveragePercent: number | null;
+  spendCoveragePercent: number | null;
+  campaignJoinCoveragePercent: number | null;
+  lastCompleteDate: string | null;
+};
+
+export type AdminMarketingActionItem = {
+  actionLabel: string;
+  campaignKey: string | null;
+  detail: string;
+  evidenceReadiness: AdminMarketingDecisionReadinessStatus;
+  key: string;
+  observedValue: number;
+  observedValueKind: 'count' | 'money' | 'multiplier' | 'percent';
+  scope: string;
+  severity: 'danger' | 'warning';
+  threshold: string;
+  title: string;
+};
+
+export type AdminMarketingActionSummary = {
+  totalCount: number;
+  visibleCount: number;
+  hiddenCount: number;
+  items: AdminMarketingActionItem[];
+  generatedAt: string;
+  thresholdVersion: string;
 };
 
 export type AdminMarketingUnknownAttributionReason =
@@ -1303,6 +1374,36 @@ export type AdminMarketingSummary = Omit<
   comparison: AdminMarketingComparison;
   trend: AdminMarketingTrendPoint[];
   unknownAttributionDiagnostics: AdminMarketingUnknownAttributionDiagnostics;
+  campaignUniverseCount: number;
+  spendCoverage: AdminMarketingSpendCoverage;
+  decisionReadiness: AdminMarketingDecisionReadiness;
+  actionSummary: AdminMarketingActionSummary;
+};
+
+export type AdminMarketingSpendLedgerPage = {
+  generatedAt: string;
+  range: AdminMarketingOverviewRange;
+  rangeLabel: string;
+  windowStartAt: string;
+  windowEndAt: string;
+  rows: Array<{
+    id: string;
+    campaignId: string;
+    campaignKey: string | null;
+    campaignName: string | null;
+    currency: string;
+    notes: string | null;
+    platform: string;
+    regionCode: string;
+    source: string;
+    spendAmount: number;
+    spendDate: string;
+    updatedAt: string;
+    updatedById: string | null;
+  }>;
+  skip: number;
+  take: number;
+  totalCount: number;
 };
 
 export type AdminMarketingDimensionPage = Pick<
@@ -2277,6 +2378,63 @@ export type AdminBookingMatchingEvidence = {
   readonly matchedAt: string | null;
   readonly matchSource: AdminBookingMatchSource | null;
   readonly chatReady: boolean;
+};
+
+export type AdminMatchingPreviewStatus =
+  | 'UNAVAILABLE'
+  | 'BLOCKED_NO_REFERENCE'
+  | 'DEMO_PREVIEW_ONLY'
+  | 'INCOMPLETE_EVIDENCE'
+  | 'BLOCKED_NO_ELIGIBLE_SUPPLY'
+  | 'READY_WITH_PRODUCTION_EVIDENCE';
+
+export type AdminMatchingPreview = {
+  status: AdminMatchingPreviewStatus;
+  reference: {
+    kind: 'BOOKING' | 'DEMO';
+    bookingId: string | null;
+    bookingStatus: string | null;
+    serviceId: string | null;
+    lat: number | null;
+    lng: number | null;
+    observedAt: string | null;
+    label: string;
+  };
+  checkedAt: string;
+  evidence: {
+    totalEvaluated: number;
+    returnedCandidates: number;
+    truncated: boolean;
+    newestAt: string | null;
+    oldestAt: string | null;
+  };
+  stages: Array<{
+    code: string;
+    label: string;
+    passedCount: number;
+    excludedCount: number;
+    actionHref: string | null;
+    actionLabel: string | null;
+  }>;
+  primaryBlocker: {
+    code: string;
+    title: string;
+    detail: string;
+    actionHref: string | null;
+    actionLabel: string | null;
+  } | null;
+  candidates: Array<{
+    partnerId: string;
+    name: string;
+    distanceMeters: number;
+    locationUpdatedAt: string;
+    stage: 'VISIBLE' | 'INVITABLE' | 'FINAL_GATE_READY';
+    blockerCodes: string[];
+  }>;
+  safety: {
+    dryRun: true;
+    mutationsPerformed: false;
+  };
 };
 
 export type AdminBookingDetail = AdminBooking & {
@@ -3601,6 +3759,14 @@ export type AdminServiceCatalogItem = {
   priceStep: number;
   displayOrder: number;
   active: boolean;
+  publicationStatus?: 'DRAFT' | 'PUBLISHED' | 'HIDDEN' | 'ARCHIVED';
+  provenance?: 'OPERATOR' | 'SEED' | 'SMOKE_TEST' | 'MIGRATION';
+  provenanceRunId?: string | null;
+  catalogVersion?: number;
+  publishedAt?: string | null;
+  publishedById?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
   payoutRules?: AdminServicePayoutRule[];
   providers?: Array<{
     id: string;
@@ -3663,15 +3829,168 @@ export type AdminServiceCatalogItem = {
   _count?: { providers?: number; bookings?: number };
 };
 
+export type AdminServiceCatalogDraftPayload = {
+  serviceGroupKey: string;
+  requestId: string;
+  expectedVersion: number;
+  intent: 'SAVE_DRAFT' | 'PUBLISH' | 'HIDE' | 'ARCHIVE';
+  reason?: string | null;
+  nameTranslations: Record<string, string>;
+  description?: string | null;
+  priceStep: number;
+  displayOrder: number;
+  durations: Array<{
+    durationMin: number;
+    enabled: boolean;
+    basePrice?: number;
+    providerPayoutAmount?: number;
+    displayOrder: number;
+  }>;
+};
+
+export type AdminServiceCatalogDraft = {
+  id: string;
+  serviceGroupKey: string;
+  version: number;
+  payload: AdminServiceCatalogDraftPayload;
+  updatedById: string;
+  updatedAt: string;
+};
+
+export type AdminServiceCatalogGroup = {
+  key: string;
+  name: string;
+  nameTranslations?: Record<string, string> | null;
+  description?: string | null;
+  durationSummary: string;
+  activeOptionCount: number;
+  missingStandardDurations: number[];
+  minBasePrice: number | null;
+  maxBasePrice: number | null;
+  payoutRuleCount: number;
+  options: AdminServiceCatalogItem[];
+  draft?: AdminServiceCatalogDraft | null;
+};
+
+export type AdminServiceCatalogImpact = {
+  groupKey: string;
+  activePartnerCount: number;
+  customPricePartnerCount: number;
+  openBookingLineCount: number;
+};
+
+export type AdminServiceCatalogHealth = {
+  status: 'healthy' | 'degraded';
+  checkedAt: string;
+  liveGroupCount: number;
+  liveOptionCount: number;
+  blockedOptionCount: number;
+  anomalyCount: number;
+  liveEnViReadyGroupCount: number;
+  currentPayoutRuleCount: number;
+  historicalPayoutRuleCount: number;
+  workingDraftCount: number;
+  lastPublishedAt: string | null;
+  lastPublishedById: string | null;
+  lastPublishedGroupKey: string | null;
+  auditTarget: string | null;
+};
+
 export type AdminTaxPolicyVersion = {
   id: string;
   name: string;
   status: string;
+  lifecycleStatus?: string;
+  provenance?: string;
+  jurisdiction?: string;
+  timezone?: string;
   effectiveFrom: string;
   effectiveTo?: string | null;
   notes?: string | null;
   createdAt?: string;
+  updatedAt?: string;
+  legalSourceTitle?: string | null;
+  legalSourceUrl?: string | null;
+  promulgatedDate?: string | null;
+  taxSubject?: string | null;
+  changeSummary?: string | null;
+  supersedesPolicyVersionId?: string | null;
+  revision?: number;
+  payloadHash?: string | null;
+  createdById?: string | null;
+  approvedByAdminId?: string | null;
+  approvedAt?: string | null;
+  activatedAt?: string | null;
+  supersededAt?: string | null;
+  archivedAt?: string | null;
   rules?: AdminTaxRule[];
+  createdBy?: Pick<AdminUser, 'id' | 'fullName' | 'email'> | null;
+  supersedesPolicyVersion?: Pick<AdminTaxPolicyVersion, 'id' | 'name' | 'provenance'> | null;
+};
+
+export type AdminTaxPolicyCapabilities = {
+  actorId: string;
+  canDraft: boolean;
+  canSubmit: boolean;
+  canDecide: boolean;
+  draftBlockers: Array<{ code: string; message: string }>;
+  submitBlockers: Array<{ code: string; message: string }>;
+  decisionBlockers: Array<{ code: string; message: string }>;
+  generatedAt: string;
+  independentCheckerCount: number;
+  source: string;
+  warning: string | null;
+};
+
+export type AdminTaxPolicyWorkspaceSummary = {
+  generatedAt: string;
+  drafts: {
+    needsAuthor: number;
+    awaitingChecker: number;
+    approved: number;
+    scheduled: number;
+  };
+  history: { production: number; testOrLegacy: number };
+  nextScheduled: AdminTaxPolicyVersion | null;
+};
+
+export type AdminTaxPolicyVersionPage = {
+  items: AdminTaxPolicyVersion[];
+  total: number;
+  skip: number;
+  take: number;
+};
+
+export type AdminTaxPolicyApprovalRequest = {
+  id: string;
+  policyVersionId: string;
+  status: string;
+  payloadHash: string;
+  operatorReason: string;
+  decisionReason?: string | null;
+  requestedAt: string;
+  decidedAt?: string | null;
+  scheduledFor?: string | null;
+  activatedAt?: string | null;
+  failureCode?: string | null;
+  maker?: Pick<AdminUser, 'id' | 'fullName' | 'email' | 'phone'>;
+  checker?: Pick<AdminUser, 'id' | 'fullName' | 'email' | 'phone'> | null;
+  policyVersion?: AdminTaxPolicyVersion;
+  replayed?: boolean;
+};
+
+export type AdminTaxPolicyApprovalRequestPage = {
+  items: AdminTaxPolicyApprovalRequest[];
+  total: number;
+  skip: number;
+  take: number;
+};
+
+export type AdminTaxPolicyAuditLogPage = {
+  items: AdminAuditLog[];
+  total: number;
+  skip: number;
+  take: number;
 };
 
 export type AdminTaxRule = {
@@ -3681,10 +4000,78 @@ export type AdminTaxRule = {
   serviceType?: string | null;
   minGrossAmount?: number | null;
   maxGrossAmount?: number | null;
+  taxKind?: string;
+  category?: string | null;
+  collectionMode?: string | null;
   rateBps: number;
   fixedAmount: number;
   active: boolean;
   createdAt?: string;
+};
+
+export type AdminTaxPolicySimulation = {
+  amount: number;
+  currency: 'VND';
+  grossAmount: number;
+  policyName: string;
+  policyVersionId: string;
+  serviceType: string;
+  lines: Array<{
+    amount: number;
+    fixedAmount: number;
+    rateBps: number;
+    ruleId: string;
+    scope: string;
+    taxKind: string;
+  }>;
+};
+
+export type AdminTaxPolicyIntegritySummary = {
+  generatedAt: string;
+  range: '30d';
+  rangeStart: string;
+  total: number;
+  recordIntegrity: {
+    healthy: number;
+    amountMismatch: number;
+    missingTaxLog: number;
+    missingSnapshot: number;
+    oldestAmountMismatch: string | null;
+    oldestMissingTaxLog: string | null;
+    oldestMissingSnapshot: string | null;
+  };
+  taxApplicability: {
+    noActivePolicy: number;
+    noApprovedTaxProfile: number;
+    noMatchingRule: number;
+    oldestNoActivePolicy: string | null;
+    oldestNoApprovedTaxProfile: string | null;
+    oldestNoMatchingRule: string | null;
+  };
+};
+
+export type AdminTaxPolicyIntegrityRecordPage = {
+  generatedAt: string;
+  issue: string;
+  items: Array<{
+    bookingId: string;
+    classification: 'APPLICABILITY_READINESS' | 'CURRENT_REGRESSION' | 'LEGACY_MIGRATION_DEBT' | 'UNKNOWN';
+    createdAt: string;
+    evidenceSource: 'LEGACY' | 'PRODUCTION' | 'TEST' | 'UNKNOWN';
+    grossAmount: number;
+    id: string;
+    policyProvenance: string | null;
+    policyVersionId: string | null;
+    providerDisplayName: string;
+    providerProfileId: string;
+    taxLogWithholdingAmount: number;
+    withholdingAmount: number;
+  }>;
+  skip: number;
+  sort: 'newest' | 'oldest';
+  source: 'all' | 'legacy' | 'production' | 'test' | 'unknown';
+  take: number;
+  total: number;
 };
 
 export type AdminBookingSettlementStatus = 'DRAFT' | 'POSTED' | 'REVERSED';
@@ -4135,7 +4522,19 @@ export type AdminBookingSettlementRepairCheckpoint = {
   status: 'PASSED' | 'FAILED';
 };
 
-export type AdminBookingSettlementGapRepairResult = {
+export type AdminBookingSettlementGapRepairResult =
+  | {
+      actorId: string;
+      approvalRequested: true;
+      auditLogId: string;
+      bookingId: string;
+      policyDecision: 'APPROVED';
+      policyVersion: string;
+      repairMode: 'CANONICAL_COMPLETION_SETTLEMENT' | 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION';
+      requestedAt: string;
+      sourceVersion: string;
+    }
+  | {
   actorId: string;
   approvalAdminId: string;
   auditLogId: string;
@@ -4149,7 +4548,7 @@ export type AdminBookingSettlementGapRepairResult = {
   repaired: true;
   settlementSnapshotId: string;
   sourceVersion: string;
-};
+  };
 
 export type AdminSettlementAuditCheckState = 'PASS' | 'FAIL' | 'UNKNOWN' | 'NOT_APPLICABLE';
 
@@ -5778,8 +6177,10 @@ export type AdminAuditLog = {
   action: string;
   target: string;
   metadata?: unknown;
+  policyProvenance?: string | null;
   createdAt: string;
   actor?: { id?: string; email?: string | null; phone?: string; fullName?: string | null };
+  policyDefinition?: { category: string; label: string };
 };
 
 export type AdminAuditLogPage = {
@@ -5787,6 +6188,113 @@ export type AdminAuditLogPage = {
   skip: number;
   take: number;
   totalCount: number;
+};
+
+export type AdminOperationalPolicyAuditPage = {
+  items: AdminAuditLog[];
+  nextCursor: string | null;
+  source: 'operator' | 'automated_smoke' | 'legacy_unknown';
+};
+
+export type AdminAuditActorType = 'HUMAN' | 'SYSTEM' | 'SERVICE' | 'UNKNOWN';
+export type AdminAuditArea = 'OPERATOR' | 'POLICY' | 'MONEY' | 'BOOKING' | 'SECURITY' | 'SYSTEM' | 'UNKNOWN';
+export type AdminAuditSeverity = 'INFO' | 'NOTICE' | 'REVIEW' | 'CRITICAL';
+export type AdminAuditOutcome =
+  | 'SUCCEEDED'
+  | 'FAILED'
+  | 'DENIED'
+  | 'SKIPPED'
+  | 'OPENED'
+  | 'ACKNOWLEDGED'
+  | 'RESOLVED'
+  | 'RECORDED'
+  | 'UNKNOWN';
+
+export type AdminAuditEventView = {
+  id: string;
+  schemaVersion: number;
+  occurredAt: string;
+  recordedAt: string;
+  eventType: string;
+  eventLabel: string;
+  area: AdminAuditArea;
+  severity: AdminAuditSeverity;
+  outcome: AdminAuditOutcome;
+  tags: string[];
+  actor: {
+    type: AdminAuditActorType;
+    id: string | null;
+    key: string | null;
+    labelSnapshot: string;
+    attribution: 'RECORDED' | 'LEGACY_INFERRED';
+  };
+  object: { type: string; id: string; labelSnapshot: string };
+  reason?: { code?: string; text?: string };
+  change?: { before?: unknown; after?: unknown; changedFields?: string[] };
+  changeSummary: string;
+  context: {
+    correlationId: string | null;
+    requestId: string | null;
+    routeTemplate: string | null;
+    source: string;
+  };
+  payload: unknown;
+  payloadHash: string | null;
+  integrity: 'HASHED' | 'LEGACY_UNVERIFIED';
+  related: { href: string; label: string } | null;
+};
+
+export type AdminAuditWorkspaceResponse = {
+  actionableIncidents: Array<{
+    id: string;
+    href: string;
+    label: string;
+    openedAt: string;
+    source: string;
+    target: string;
+  }>;
+  items: AdminAuditEventView[];
+  totalCount: number;
+  facets: {
+    areas: Array<{ value: string; count: number }>;
+    severities: Array<{ value: string; count: number }>;
+    outcomes: Array<{ value: string; count: number }>;
+    actorTypes: Array<{ value: string; count: number }>;
+  };
+  summary: {
+    reviewRequired: number;
+    failed: number;
+    unacknowledged: number;
+    unknownClassification: number;
+  };
+  cursor: { next: string | null; previous?: string | null };
+  generatedAt: string;
+  timezone: 'Asia/Ho_Chi_Minh';
+  sourceStatus: 'LIVE' | 'DEGRADED' | 'UNAVAILABLE';
+  source: {
+    dataLagSeconds: number | null;
+    lastRecordedAt: string | null;
+    state: 'AVAILABLE' | 'EMPTY';
+  };
+  savedViews: Array<{ key: string; label: string; count: number }>;
+  take: number;
+  window: { range: string; label: string; from: string | null; to: string | null };
+};
+
+export type AdminAuditEventDetail = {
+  event: AdminAuditEventView;
+  generatedAt: string;
+  timezone: 'Asia/Ho_Chi_Minh';
+};
+
+export type AdminAuditExportResponse = {
+  events: AdminAuditEventView[];
+  format: 'csv' | 'json';
+  generatedAt: string;
+  limit: number;
+  rowCount: number;
+  timezone: 'Asia/Ho_Chi_Minh';
+  truncated: boolean;
 };
 
 export type AdminShiftHandoffOperator = {
@@ -5870,8 +6378,20 @@ export type AdminOperationalPolicySetting = {
   options?: Array<{ value: string; label: string; tradeoff: string }> | null;
   requiresRestart?: boolean;
   enforced: boolean;
+  lifecycle: 'live' | 'locked' | 'planned' | 'deprecated';
+  risk?: 'low' | 'medium' | 'high';
+  blastRadius?: string;
+  consumerContract?: {
+    consumerIds: string[];
+    integrationTestIds: string[];
+    applicationScope: string;
+    fallbackBehavior: string;
+  };
   updatedAt?: string | null;
   updatedBy?: { phone?: string | null; fullName?: string | null } | null;
+  auditId?: string | null;
+  auditSource?: 'operator' | 'automated_smoke' | 'legacy_unknown' | null;
+  effectiveAt?: string | null;
 };
 
 type AdminNotificationPushDevice = {
@@ -6085,8 +6605,27 @@ export type AdminNotificationTemplateTranslation = {
   locale: string;
   title: string;
   body: string;
+  status: 'SOURCE_COPIED' | 'NEEDS_TRANSLATION' | 'NEEDS_REVIEW' | 'READY';
+  reviewedAt?: string | null;
+  reviewedByAdminId?: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type AdminNotificationTemplateCatalog = {
+  health: {
+    complete: boolean;
+    contractIssues: string[];
+    missingKeys: string[];
+    unexpectedKeys: string[];
+  };
+  lastChange: {
+    actorId: string;
+    changedAt: string;
+    templateKey: string;
+  } | null;
+  statusCounts: Record<string, number>;
+  templates: AdminNotificationTemplate[];
 };
 
 export type AdminNotificationTemplate = {
@@ -6097,6 +6636,17 @@ export type AdminNotificationTemplate = {
   description?: string | null;
   variables?: unknown;
   requiredVariables?: unknown;
+  runtimeRoutes?: Array<{
+    targetRole: 'CUSTOMER' | 'PROVIDER';
+    type: string;
+  }>;
+  openBehavior?: {
+    payloadKeys: string[];
+    possibleDestinations: string[];
+    summary: string;
+    variesByPayload: boolean;
+  };
+  contractIssues?: string[];
   enabled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -6106,24 +6656,38 @@ export type AdminNotificationTemplate = {
 export type AdminPushCampaign = {
   id: string;
   targetRole: string;
-  targetUserId?: string | null;
+  targetSegment: string;
+  appDestination: string;
   locale?: string | null;
   title: string;
   body: string;
   status: string;
+  operatorReason?: string | null;
   recipientCount: number;
+  eligibleDeviceCount: number;
+  excludedUserCount: number;
+  excludedDeviceCount: number;
   notificationCount: number;
-  createdById: string;
-  metadata?: unknown;
+  deliveredDeviceCount: number;
+  failedDeviceCount: number;
+  pendingDeviceCount: number;
+  skippedDeviceCount: number;
   createdAt: string;
   sentAt?: string | null;
+  confirmedAt?: string | null;
+  queuedAt?: string | null;
+  processingAt?: string | null;
+  completedAt?: string | null;
+  failedAt?: string | null;
+  queueJobId?: string | null;
   recipients?: Array<{
-    id: string;
-    campaignId: string;
-    userId: string;
-    notificationId?: string | null;
     status: string;
-    createdAt: string;
+    eligibleDeviceCount: number;
+    deliveredDeviceCount: number;
+    failedDeviceCount: number;
+    skippedDeviceCount: number;
+    lastErrorCode?: string | null;
+    processedAt?: string | null;
   }>;
 };
 
@@ -6132,25 +6696,41 @@ export type AdminPushCampaignSummary = {
   totalCount: number;
   totalNotifications: number;
   totalRecipients: number;
+  eligibleDevices: number;
+  deliveredDevices: number;
+  failedDevices: number;
+  pendingDevices: number;
+  skippedDevices: number;
+  queuedOrProcessing: number;
+  needsAttention: number;
+  lastCompletedAt?: string | null;
 };
 
 export type AdminPushCampaignPreview = {
+  previewId: string;
+  expiresAt: string;
   targetRole: 'CUSTOMER' | 'PROVIDER';
-  targetUserId?: string | null;
-  targetSegment?: string;
-  appDestination?: string;
-  recipientCount: number;
-  sendLimit: number;
-  willSendCount: number;
-  capped: boolean;
+  targetSegment: string;
+  targetAccountLabel?: string;
+  locale: 'en' | 'vi' | 'ko' | 'ja' | 'zh';
+  destination: {
+    value: string;
+    label: string;
+    mode: 'LIST' | 'DETAIL';
+    targetSummary: string;
+  };
+  eligibleUsers: number;
+  eligibleDevices: number;
+  excludedUsers: number;
+  excludedDevices: number;
+  exclusions: Array<{ code: string; count: number; label: string }>;
+  manualUserLimit: number;
+  state: 'READY' | 'ZERO_RECIPIENTS' | 'OVER_LIMIT' | 'INVALID_DESTINATION';
   sampleRecipients: Array<{
-    id: string;
-    phone: string;
-    fullName?: string | null;
-    roles: string[];
-    customerProfile?: { id: string } | null;
-    providerProfile?: { id: string; displayName?: string | null; status?: string | null } | null;
-    pushDevices?: Array<{ id: string; platform: string; role: string; updatedAt: string }>;
+    displayLabel: string;
+    maskedPhone?: string;
+    platform?: string;
+    lastActiveAt?: string;
   }>;
 };
 
@@ -6163,6 +6743,24 @@ export type AdminExternalReadiness = {
   currentStageCommands?: string[];
   deferredCommands?: string[];
   timestamp: string;
+  launchProfile?: 'CASH_ONLY' | 'ONLINE_PAYMENTS';
+  referralReleaseProfile?: 'ANDROID_MVP' | 'IOS_RELEASE';
+  generatedAt?: string;
+  counts?: {
+    total?: number;
+    active?: number;
+    needsAction: number;
+    launchBlockers: number;
+    degraded: number;
+    unknown: number;
+    notMonitored?: number;
+    evidenceGaps?: number;
+    deferred: number;
+    required?: number;
+    configurationReady?: number;
+    runtimeVerified?: number;
+  };
+  services?: AdminExternalServiceStatus[];
   checks: Array<{
     name: string;
     category: string;
@@ -6177,6 +6775,46 @@ export type AdminExternalReadiness = {
     commands?: string[];
     secretSafe?: boolean;
   }>;
+};
+
+export type AdminExternalServiceStatus = {
+  id: string;
+  name: string;
+  category: 'auth' | 'core' | 'maps' | 'payments' | 'storage' | 'messaging' | 'referrals';
+  launchScope?: 'CURRENT_STAGE' | 'DEFERRED';
+  enabled: boolean;
+  requiredForCurrentLaunch: boolean;
+  configurationStatus: 'CONFIGURED' | 'INCOMPLETE' | 'DISABLED' | 'DEFERRED' | 'UNKNOWN';
+  configurationCheckedAt: string | null;
+  runtimeStatus: 'HEALTHY' | 'DEGRADED' | 'DOWN' | 'UNKNOWN' | 'NOT_MONITORED';
+  probeType: 'CONFIG' | 'CONNECTIVITY' | 'FUNCTIONAL_E2E' | 'NONE';
+  evidenceLevel?: 'CONFIGURATION_ONLY' | 'CONNECTIVITY' | 'FUNCTIONAL';
+  lastVerifiedAt?: string | null;
+  verificationMethod?: string;
+  lastProbeAt: string | null;
+  lastSuccessAt: string | null;
+  failureSince: string | null;
+  latencyMs: number | null;
+  isStale: boolean;
+  evidenceSummary: string;
+  impactSummary: string;
+  ownerTeam: string;
+  evidenceHref?: string | null;
+  relatedWorkspaceHref?: string | null;
+  runbookHref?: string | null;
+  escalationRoute: string | null;
+  runbookUrl: string | null;
+  deferredReason?: string | null;
+  futureReadiness?: 'NOT_STARTED' | 'PARTIAL' | 'READY_FOR_REENTRY' | null;
+  reentryChecks?: Array<{
+    label: string;
+    status: 'VERIFIED' | 'PENDING' | 'FUTURE';
+  }>;
+  reviewTrigger?: string | null;
+  reviewedAt?: string | null;
+  platformScope?: 'ANDROID_MVP' | 'IOS_RELEASE' | null;
+  safeOperatorAction: string | null;
+  evidenceGap?: boolean;
 };
 
 export type AdminVietnamOverviewRegion = {
@@ -6343,6 +6981,137 @@ export type AdminCalendarEvent = {
   url: string;
 };
 
+export type AdminFinanceApproverGovernanceIdentity = {
+  email: string | null;
+  fullName: string | null;
+  id: string;
+};
+
+export type AdminFinanceApproverGovernanceBlocker = {
+  code: string;
+  message: string;
+};
+
+export type AdminFinanceApproverGovernanceSummary = {
+  backupReady: boolean | null;
+  blockers: AdminFinanceApproverGovernanceBlocker[];
+  currentActor: AdminFinanceApproverGovernanceIdentity & {
+    canDecide: boolean;
+    canReadHistory: boolean;
+    canRequest: boolean;
+  };
+  eligibleCandidateCount: number;
+  fixtureExcludedCount: number;
+  unattestedLegacyCount: number;
+  lastEvaluatedAt: string;
+  pendingRequestCount: number;
+  primaryReady: boolean | null;
+  readiness: 'READY' | 'BLOCKED' | 'UNKNOWN';
+  requiredApproverCount: number;
+  verifiedRealApproverCount: number;
+};
+
+export type AdminFinanceApproverGovernanceOperator = AdminFinanceApproverGovernanceIdentity & {
+  accountStatus: 'ACTIVE' | 'DISABLED' | 'LOCKED' | 'MISSING' | 'SETUP_INCOMPLETE' | 'TEST_FIXTURE';
+  action: {
+    allowed: boolean;
+    blockers: AdminFinanceApproverGovernanceBlocker[];
+    requestedEnabled: boolean;
+  };
+  financeAccess: 'APPROVER' | 'PREPARATION_ONLY';
+  attestationStatus: 'ATTESTED' | 'GOVERNED_WORKFLOW' | 'NOT_REQUIRED' | 'UNATTESTED';
+  credentialState: 'ACTIVE' | 'DISABLED' | 'LOCKED' | 'MISSING' | 'SETUP_INCOMPLETE';
+  fixtureExpiresAt: string | null;
+  fixtureKind: string | null;
+  fixtureRunId: string | null;
+  isCurrentActor: boolean;
+  lastChangedAt: string | null;
+  mfaVerified: boolean;
+  openFinanceWork: { available: boolean; count: number | null };
+  pendingRequest: {
+    id: string;
+    requestedAt: string;
+    requestedEnabled: boolean;
+    targetUserId: string;
+  } | null;
+  permissionVersion: number | null;
+  policyBlockers: AdminFinanceApproverGovernanceBlocker[];
+  provenance: 'PRODUCTION' | 'FIXTURE' | 'UNKNOWN';
+  source: 'FIXTURE' | 'LEGACY' | 'PRODUCTION' | 'TEST_RUN' | 'UNKNOWN';
+  reviewStatus: 'NONE' | 'PENDING';
+  separationReadiness: 'READY' | 'BLOCKED';
+};
+
+export type AdminFinanceApproverGovernanceRequest = {
+  createdAt: string;
+  decidedAt: string | null;
+  decidedByAdmin: AdminFinanceApproverGovernanceIdentity | null;
+  decidedByAdminId: string | null;
+  decisionReason: string | null;
+  executedAt: string | null;
+  expectedTargetUpdatedAt: string;
+  id: string;
+  idempotencyKey: string;
+  operatorReason: string;
+  previousEnabled: boolean;
+  previousRoles: string[];
+  requestedAt: string;
+  requestedByAdmin: AdminFinanceApproverGovernanceIdentity;
+  requestedByAdminId: string;
+  requestedEnabled: boolean;
+  source: 'FIXTURE' | 'LEGACY' | 'PRODUCTION' | 'TEST_RUN' | 'UNKNOWN';
+  sourceReference: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  targetUser: AdminFinanceApproverGovernanceIdentity;
+  targetUserId: string;
+  targetPolicy: {
+    attestationStatus: 'ATTESTED' | 'GOVERNED_WORKFLOW' | 'NOT_REQUIRED' | 'UNATTESTED';
+    blockers: AdminFinanceApproverGovernanceBlocker[];
+    credentialState: 'ACTIVE' | 'DISABLED' | 'LOCKED' | 'MISSING' | 'SETUP_INCOMPLETE';
+    mfaVerified: boolean;
+    permissionVersion: number | null;
+    ready: boolean;
+  };
+  updatedAt: string;
+};
+
+export type AdminFinanceApproverGovernanceHistoryEvent = {
+  action: string;
+  actor: AdminFinanceApproverGovernanceIdentity;
+  createdAt: string;
+  id: string;
+  metadata: unknown;
+  target: string;
+};
+
+export type AdminFinanceApproverGovernanceHistoryItem = AdminFinanceApproverGovernanceRequest & {
+  events: AdminFinanceApproverGovernanceHistoryEvent[];
+};
+
+export type AdminFinanceApproverGovernancePage<T> = {
+  items: T[];
+  skip: number;
+  take: number;
+  totalCount: number;
+};
+
+export type AdminFinanceApproverGovernanceReceipt = {
+  request: AdminFinanceApproverGovernanceRequest;
+  receipt: {
+    auditHref: string;
+    decidedAt: string | null;
+    decisionMaker: AdminFinanceApproverGovernanceIdentity | null;
+    executedAt: string | null;
+    replayed: boolean;
+    requestId: string;
+    requestedAt: string;
+    requestedEnabled: boolean;
+    requester: AdminFinanceApproverGovernanceIdentity;
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    target: AdminFinanceApproverGovernanceIdentity;
+  };
+};
+
 export async function apiGet<T>(path: string, fallback: T): Promise<T> {
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -6361,7 +7130,9 @@ export async function apiGet<T>(path: string, fallback: T): Promise<T> {
 
 export type AdminGetResult<T> = {
   data: T;
+  errorCode?: string | null;
   ok: boolean;
+  requestId?: string | null;
   status: number | null;
 };
 
@@ -6394,11 +7165,26 @@ export async function adminGetResult<T>(
     });
 
     if (!response.ok) {
-      return { data: fallback, ok: false, status: response.status };
+      const requestId = response.headers.get('x-request-id') ?? response.headers.get('x-correlation-id');
+      let errorCode: string | null = null;
+      try {
+        const payload = (await response.clone().json()) as { code?: unknown };
+        errorCode = typeof payload?.code === 'string' ? payload.code : null;
+      } catch {
+        errorCode = null;
+      }
+      return {
+        data: fallback,
+        ...(errorCode ? { errorCode } : {}),
+        ok: false,
+        ...(requestId ? { requestId } : {}),
+        status: response.status,
+      };
     }
 
+    const body = await response.text();
     return {
-      data: (await response.json()) as T,
+      data: body.trim() ? (JSON.parse(body) as T) : fallback,
       ok: true,
       status: response.status,
     };
@@ -6575,11 +7361,11 @@ export function adminRealtimeSocketBaseUrl() {
 }
 
 export const getAdminAccessToken = cache(async function getAdminAccessToken() {
-  const operatorIdentity = await currentAdminWebSessionIdentity();
-  if (!operatorIdentity) {
+  const session = await currentAdminWebSession();
+  if (!session) {
     throw new Error('Admin Web session is required for Admin API access');
   }
-  return createAdminWebApiToken(operatorIdentity);
+  return createAdminWebApiToken(session.sub, new Date(), process.env, session.jti);
 });
 
 export class AdminApiRequestError extends Error {
@@ -6721,11 +7507,13 @@ async function verifyAdminOperatorWriteAccess(
 }
 
 async function currentAdminWebSessionIdentity() {
+  return (await currentAdminWebSession())?.sub ?? null;
+}
+
+async function currentAdminWebSession() {
   try {
     const headerList = await headers();
-    const session = getAdminWebSession({ headers: headerList });
-
-    return session?.sub ?? null;
+    return getAdminWebSession({ headers: headerList });
   } catch {
     return null;
   }

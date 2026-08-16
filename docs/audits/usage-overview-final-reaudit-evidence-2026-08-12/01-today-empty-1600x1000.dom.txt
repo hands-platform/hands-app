@@ -1,0 +1,105 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - link "Insights":
+        - /url: /marketing-analytics
+      - generic: Customer Usage
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - navigation "Insights workspace":
+    - strong: Insights
+    - generic "Insights pages":
+      - link "Marketing Analytics":
+        - /url: /marketing-analytics
+      - link "Customer Usage":
+        - /url: /usage-overview
+  - heading "Customer Usage" [level=1]
+  - paragraph: Customer reach, booking outcomes, and the records that need an operator decision.
+  - heading "Reporting period" [level=2]
+  - paragraph: Applied dates use Asia/Ho_Chi_Minh. Presets compare with the immediately preceding period of equal length.
+  - generic: 2026-08-12 – 2026-08-12 · 1 day · Vietnam time
+  - button "Refresh Customer Usage report":
+    - text: Refresh now
+  - status
+  - generic "Usage overview range":
+    - link "Today":
+      - /url: /usage-overview?range=today
+    - link "Yesterday":
+      - /url: /usage-overview?range=yesterday
+    - link "7 days":
+      - /url: /usage-overview?range=7d
+    - link "30 days":
+      - /url: /usage-overview?range=30d
+    - link "This month":
+      - /url: /usage-overview?range=month
+    - link "Custom":
+      - /url: /usage-overview?range=custom
+  - generic "Applied usage report scope":
+    - generic: 2026-08-12 – 2026-08-12 · 1 day · Vietnam time
+    - generic: Hourly
+    - generic: Compared with 2026-08-11 – 2026-08-11
+    - generic: Report generated 12 Aug 2026, 16:08 ICT
+    - generic: Usage signal time unavailable
+  - status:
+    - strong: Synthetic usage excluded
+    - generic: Every usage total on this report reads only server-owned production aggregates.
+  - alert:
+    - strong: Production usage freshness is unknown
+    - generic: No production usage aggregate timestamp is available for this period.
+  - group "Source activity times":
+    - generic "Source activity times"
+  - heading "No tracked usage in this period" [level=2]
+  - paragraph: No stored app usage or booking event was recorded in the selected reporting period. Check the range, event collection, and aggregate freshness before treating this as zero demand.
+  - generic: No data
+  - link "Use last 7 days":
+    - /url: /usage-overview?range=7d
+  - paragraph: "Possible causes: no app activity, delayed daily aggregation, or a period before usage tracking began."
+  - generic "Show empty report"
+- alert

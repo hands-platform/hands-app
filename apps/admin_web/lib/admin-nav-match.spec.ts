@@ -106,7 +106,7 @@ describe('hrefMatchesPath', () => {
     ['/referrals/customers', '', 'Growth & Communications', 'Referrals', 'Customer Referrals'],
     ['/referrals/partners', '', 'Growth & Communications', 'Referrals', 'Partner Referrals'],
     ['/bookings/post-match-cancellations', '', 'Booking Operations', 'Booking Closeout', 'Post-match Cancellations'],
-    ['/setup', '', 'Administration & Settings', 'System Health', 'Setup Readiness'],
+    ['/setup', '', 'Administration & Settings', 'System Health', 'External Services'],
     ['/app-sessions', '', 'Administration & Settings', 'System Health', 'App Session Diagnostics'],
     ['/background-jobs', '', 'Administration & Settings', 'System Health', 'Background Jobs'],
     ['/payouts', 'range=all&withdrawalStatus=REVIEW_REQUIRED', 'Finance Records & Close', 'Partner Money', 'Payout / Withdrawal Risk'],

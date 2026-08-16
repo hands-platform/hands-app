@@ -13,12 +13,29 @@ const PUBLIC_PATH_PREFIXES = ['/api/', '/files/', '/login', '/r/'];
 type AdminOperatorAccessGateProps = {
   readonly children: ReactNode;
   readonly operatorAccess?: AdminOperatorAccess | null;
+  readonly operatorAccessAvailable?: boolean;
 };
 
-export async function AdminOperatorAccessGate({ children, operatorAccess }: AdminOperatorAccessGateProps) {
+export async function AdminOperatorAccessGate({ children, operatorAccess, operatorAccessAvailable = true }: AdminOperatorAccessGateProps) {
   const pathname = await currentRequestPathname();
   if (!pathname || isPublicPath(pathname)) {
     return <>{children}</>;
+  }
+
+  if (!operatorAccessAvailable) {
+    return (
+      <>
+        <title>Operator access unavailable | HANDS Admin</title>
+        <main className="admin-content admin-operator-access-denied-shell">
+          <AdminErrorState
+            action={<AdminFormControlLink href={pathname}>Retry</AdminFormControlLink>}
+            className="admin-operator-access-denied-card"
+            message="Operator permissions could not be verified. Page content remains hidden until the Admin API is available. No access denial was inferred."
+            title="Operator access unavailable"
+          />
+        </main>
+      </>
+    );
   }
 
   const access = await getAdminOperatorPageAccess(pathname, operatorAccess);

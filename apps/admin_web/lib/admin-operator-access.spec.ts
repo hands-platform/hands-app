@@ -21,7 +21,7 @@ describe('admin operator page access', () => {
   });
 
   it('fails closed when a protected Admin page has no operator category mapping', async () => {
-    const sessionSecret = 'test-session-secret';
+    const sessionSecret = 'test-session-secret-with-32-characters';
     process.env = {
       ...process.env,
       ADMIN_ACCESS_TOKEN: 'server-admin-token',
@@ -68,8 +68,8 @@ describe('admin operator page access', () => {
     );
   });
 
-  it('reuses already loaded operator access while still recording page activity', async () => {
-    const sessionSecret = 'test-session-secret';
+  it('reuses already loaded operator access without recording an allowed page view', async () => {
+    const sessionSecret = 'test-session-secret-with-32-characters';
     process.env = {
       ...process.env,
       ADMIN_ACCESS_TOKEN: 'server-admin-token',
@@ -108,18 +108,11 @@ describe('admin operator page access', () => {
       allowed: true,
       category: 'BOOKINGS_REALTIME',
     });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/admin/operator-activity'),
-      expect.objectContaining({
-        body: expect.stringContaining('admin_web.page_view'),
-        method: 'POST',
-      }),
-    );
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('keeps the configured env Master Admin unrestricted when a stored ADMIN row exists', async () => {
-    const sessionSecret = 'test-session-secret';
+    const sessionSecret = 'test-session-secret-with-32-characters';
     process.env = {
       ...process.env,
       ADMIN_ACCESS_TOKEN: 'server-admin-token',
@@ -162,9 +155,10 @@ describe('admin operator page access', () => {
         roles: ['ADMIN', 'MASTER_ADMIN'],
       },
     });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/admin/operator-activity'),
-      expect.objectContaining({ method: 'POST' }),
+      expect.stringContaining('/admin/users/admin-operator-access'),
+      expect.any(Object),
     );
   });
 

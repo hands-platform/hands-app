@@ -1,0 +1,105 @@
+- link "Skip to main content":
+  - /url: "#admin-main-content"
+- complementary:
+  - strong: HANDS Admin
+  - navigation "Admin navigation":
+    - link "Shift Command":
+      - /url: /
+      - generic: Shift Command
+    - generic "Booking Operations":
+      - generic: Booking Operations
+    - generic "Customer Support":
+      - generic: Customer Support
+    - generic "Partner Operations":
+      - generic: Partner Operations
+    - generic "Finance Operations":
+      - generic: Finance Operations
+    - generic "Finance Records & Close":
+      - generic: Finance Records & Close
+    - generic "Growth & Communications":
+      - generic: Growth & Communications
+    - link "Insights":
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link "Coupons":
+      - /url: /coupons
+      - generic: Coupons
+    - link "Referrals":
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link "Messaging":
+      - /url: /notifications
+      - generic: Messaging
+    - link "Website Content":
+      - /url: /website-content
+      - generic: Website Content
+    - generic "Administration & Settings":
+      - generic: Administration & Settings
+- main:
+  - generic "Admin workspace":
+    - navigation "Breadcrumb":
+      - link "HANDS":
+        - /url: /
+      - generic: Growth & Communications
+      - generic: Website Content
+    - generic "Workspace actions":
+      - button "Search Ctrl K":
+        - text: Search
+        - generic: Ctrl K
+      - button "Switch to dark mode":
+      - link "Operations Policy":
+        - /url: /operations-policy
+      - button "Operation alerts, 0":
+      - button "Sign out":
+  - heading "Website Content" [level=1]
+  - paragraph: Edit Draft content without interrupting the current Live website.
+  - generic "Page actions":
+    - link "Back to Pages":
+      - /url: /website-content?view=pages&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6
+  - region "Route status":
+    - generic: Website
+    - strong: hands.vn
+    - generic: Language
+    - strong: KO
+    - generic: Public URL
+    - link "http://localhost:3200/ko":
+      - /url: http://localhost:3200/ko
+    - generic: Live
+    - generic: Not live
+    - generic: Draft
+    - generic: Needs content
+  - link "Preview Draft":
+    - /url: http://localhost:3200/ko?cmsPreview=[REDACTED]
+  - link "Review Publish":
+    - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=publishing#publish-draft
+  - navigation "Page workspace":
+    - link "Overview":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=overview&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6
+    - link "Content":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=content&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6
+    - link "SEO & publishing":
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=publishing&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6
+    - link "Activity" [active]:
+      - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&workspace=activity&sectionId=legacy-revision-section-cms6bst3r000rvynomsvnhhj6
+  - heading "Revision history" [level=2]
+  - paragraph: Only revisions that were previously Live are eligible for rollback.
+  - region "Website revision history":
+    - table:
+      - rowgroup:
+        - row "Revision State Readiness Published Publisher Action":
+          - columnheader "Revision"
+          - columnheader "State"
+          - columnheader "Readiness"
+          - columnheader "Published"
+          - columnheader "Publisher"
+          - columnheader "Action"
+      - rowgroup:
+        - row:
+          - cell:
+            - status:
+              - paragraph: No published revision history.
+  - heading "Delete Draft route" [level=2]
+  - paragraph: Only routes that have never been Live can be deleted.
+  - link "Review deletion":
+    - /url: /website-content?view=pages&pageId=cms6bst3r000qvynovauef2ej&deletePageId=cms6bst3r000qvynovauef2ej
+- alert

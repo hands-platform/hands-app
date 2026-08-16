@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac, createHash } from 'crypto';
 
@@ -172,6 +172,96 @@ export class S3PresignService {
       throw new Error(`Storage object deletion failed with status ${response.status}`);
     }
     return { deleted: true, storageMode: this.storageMode() };
+  }
+
+  async copyObject(
+    key: string,
+    sourceVisibility: 'PUBLIC' | 'PRIVATE',
+    targetVisibility: 'PUBLIC' | 'PRIVATE',
+    targetKey = key,
+  ) {
+    const sourceBucket = this.bucketForVisibility(sourceVisibility);
+    const targetBucket = this.bucketForVisibility(targetVisibility);
+    const copySource = `/${sourceBucket}/${encodePath(key)}`;
+    const url = this.presign({
+      method: 'PUT',
+      key: targetKey,
+      bucket: targetBucket,
+      expiresInSeconds: 300,
+      headers: { 'x-amz-copy-source': copySource },
+    });
+    if (!url) {
+      throw new ServiceUnavailableException('File storage copy is unavailable');
+    }
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: { 'x-amz-copy-source': copySource },
+    });
+    if (!response.ok) {
+      throw new ServiceUnavailableException(
+        `File storage copy failed with status ${response.status}`,
+      );
+    }
+    return { copied: true, storageMode: this.storageMode() };
+  }
+
+  async scanObject(key: string, visibility: 'PUBLIC' | 'PRIVATE') {
+    const endpoint = this.config.get<string>('FILE_MALWARE_SCAN_URL')?.trim();
+    if (!endpoint) {
+      if (this.config.get<string>('NODE_ENV')?.trim().toLowerCase() === 'production') {
+        throw new ServiceUnavailableException('File malware scanning is not configured');
+      }
+      return { clean: true, mode: 'not-configured-non-production' as const };
+    }
+    const scannerToken = this.config.get<string>('FILE_MALWARE_SCAN_TOKEN')?.trim();
+    if (
+      this.config.get<string>('NODE_ENV')?.trim().toLowerCase() === 'production' &&
+      !scannerToken
+    ) {
+      throw new ServiceUnavailableException('File malware scanner authentication is not configured');
+    }
+    const downloadUrl = this.presign({
+      method: 'GET',
+      key,
+      bucket: this.bucketForVisibility(visibility),
+      expiresInSeconds: 300,
+    });
+    if (!downloadUrl) {
+      throw new ServiceUnavailableException('File malware scanning is unavailable');
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(scannerToken
+            ? { authorization: `Bearer ${scannerToken}` }
+            : {}),
+        },
+        body: JSON.stringify({ downloadUrl }),
+        signal: AbortSignal.timeout(15_000),
+      });
+    } catch {
+      throw new ServiceUnavailableException('File malware scanning is temporarily unavailable');
+    }
+    if (!response.ok) {
+      throw new ServiceUnavailableException(
+        `File malware scanning failed with status ${response.status}`,
+      );
+    }
+    const result = await response.json().catch(() => null) as
+      | { clean?: boolean; status?: string }
+      | null;
+    const status = result?.status?.trim().toLowerCase();
+    if (result?.clean === true || status === 'clean') {
+      return { clean: true, mode: 'external-scanner' as const };
+    }
+    if (result?.clean === false || status === 'infected' || status === 'malicious') {
+      return { clean: false, mode: 'external-scanner' as const };
+    }
+    throw new ServiceUnavailableException('File malware scanner returned an invalid result');
   }
 
   private defaultBucket() {

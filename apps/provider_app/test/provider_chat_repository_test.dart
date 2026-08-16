@@ -177,6 +177,7 @@ void main() {
       'contentType': 'image/jpeg',
       'visibility': 'PRIVATE',
       'purpose': 'chat-attachment',
+      'sizeBytes': 3,
     });
     expect(bodies['upload'], [1, 2, 3]);
     expect(bodies['complete'], {'sizeBytes': 3});

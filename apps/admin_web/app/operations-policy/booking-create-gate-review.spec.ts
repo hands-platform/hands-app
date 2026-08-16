@@ -42,7 +42,7 @@ describe('booking create gate review builder', () => {
           pillClass: 'pill-danger',
         }),
         expect.objectContaining({
-          evidence: '1 reject(s)',
+          evidence: '1 reject',
           gate: 'Service area',
         }),
       ]),
@@ -76,7 +76,7 @@ describe('booking create gate review builder', () => {
       expect.objectContaining({
         current: '15 min',
         defaultValue: '15 min',
-        evidence: '2 historical row(s)',
+        evidence: '2 historical rows',
         pillClass: 'pill-success',
       }),
     );

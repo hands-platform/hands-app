@@ -1,0 +1,296 @@
+- link:
+  - /url: "#admin-main-content"
+  - text: Skip to main content
+- complementary:
+  - strong: HANDS Admin
+  - navigation:
+    - link:
+      - /url: /
+      - generic: Shift Command
+    - generic: Booking Operations
+    - generic: Customer Support
+    - generic: Partner Operations
+    - generic: Finance Operations
+    - generic: Finance Records & Close
+    - generic: Growth & Communications
+    - link:
+      - /url: /marketing-analytics
+      - generic: Insights
+    - link:
+      - /url: /coupons
+      - generic: Coupons
+    - link:
+      - /url: /referrals/customers
+      - generic: Referrals
+    - link:
+      - /url: /notifications
+      - generic: Messaging
+    - link:
+      - /url: /website-content
+      - generic: Website Content
+    - generic: Administration & Settings
+- main:
+  - navigation:
+    - link:
+      - /url: /
+      - text: HANDS
+    - generic: Growth & Communications
+    - link:
+      - /url: /notifications
+      - text: Messaging
+    - generic: Notification Delivery
+  - button:
+    - text: Search
+    - generic: Ctrl K
+  - button:
+  - link:
+    - /url: /operations-policy
+  - button:
+  - button:
+  - navigation:
+    - strong: Messaging
+    - link:
+      - /url: /notifications
+      - text: Notification Delivery
+    - link:
+      - /url: /notifications/templates
+      - text: Notification Templates
+    - link:
+      - /url: /notifications/push-send
+      - text: Push Send
+  - heading [level=1]: Notification Delivery
+  - paragraph: Review unresolved mobile send issues and inspect delivery records.
+  - button "Cancel confirmation"
+  - alertdialog "Mark legacy alert cmsprm4j reviewed?":
+    - heading "Mark legacy alert cmsprm4j reviewed?" [level=2]
+    - generic: Review
+    - generic: Record that this unlinked legacy alert was manually reviewed. This does not mark a source incident recovered and does not retry notification delivery.
+    - link "Cancel" [active]:
+      - /url: /notifications?issue=no-route&dataScope=unknown&range=all&sort=oldest&scope=current
+    - generic: Review evidence
+    - textbox "Review evidence":
+      - /placeholder: What evidence was checked and why can this legacy alert be closed?
+    - button "Mark reviewed"
+    - link "Audit trail":
+      - /url: /audit-log?bucket=Notification&q=cmsprm4j00001vyccc4ba3ct1&range=all
+    - link "Background Jobs":
+      - /url: /background-jobs?review=OPEN&range=ALL
+  - generic: Current · under 24h
+  - generic: Asia/Ho_Chi_Minh
+  - generic: Generated 12 Aug 2026, 14:32
+  - button:
+    - text: Refresh now
+  - generic: Unknown source records · 0
+  - link:
+    - /url: /notifications?issue=no-route
+    - text: Production
+  - link:
+    - /url: /notifications?issue=no-route&dataScope=unknown
+    - text: Unknown source
+  - link:
+    - /url: /notifications?issue=no-route&dataScope=synthetic
+    - text: Synthetic
+  - link:
+    - /url: /notifications?issue=no-route&dataScope=unknown
+    - text: Needs action
+  - link:
+    - /url: /notifications?mode=records&dataScope=unknown&range=all&sort=oldest
+    - text: Delivery records
+  - region:
+    - heading [level=2]: Delivery health
+    - paragraph: Current delivery debt and 24h+ backlog stay visible together. Counts are scoped to the selected data source.
+    - generic: 4 current · 2,477 history
+    - region:
+      - paragraph: CURRENT · UNDER 24H
+      - heading [level=3]: Current delivery debt
+      - generic: 4 signals
+      - term: Failure groups
+      - definition: "0"
+      - link:
+        - /url: /notifications?dataScope=unknown
+        - text: Review
+      - term: Failed
+      - definition: "0"
+      - link:
+        - /url: /notifications?issue=failed&dataScope=unknown
+        - text: Review
+      - term: No attempt
+      - definition: "0"
+      - link:
+        - /url: /notifications?issue=no-attempt&dataScope=unknown
+        - text: Review
+      - term: No route recipients
+      - definition: "4"
+      - link:
+        - /url: /notifications?issue=no-route&dataScope=unknown
+        - text: Review
+      - term: Stale routes
+      - definition: "0"
+      - link:
+        - /url: /notifications?issue=stale-route&dataScope=unknown
+        - text: Review
+    - region:
+      - paragraph: HISTORY · 24H+
+      - heading [level=3]: Historical delivery debt
+      - generic: Open history
+      - term: Failure groups
+      - definition: "9"
+      - link:
+        - /url: /notifications?scope=history&dataScope=unknown
+        - text: Review
+      - term: Failed
+      - definition: "747"
+      - link:
+        - /url: /notifications?issue=failed&scope=history&dataScope=unknown
+        - text: Review
+      - term: No attempt
+      - definition: "451"
+      - link:
+        - /url: /notifications?issue=no-attempt&scope=history&dataScope=unknown
+        - text: Review
+      - term: No route recipients
+      - definition: 1,270
+      - link:
+        - /url: /notifications?issue=no-route&scope=history&dataScope=unknown
+        - text: Review
+      - term: Stale routes
+      - definition: "0"
+      - link:
+        - /url: /notifications?issue=stale-route&scope=history&dataScope=unknown
+        - text: Review
+      - paragraph: "Oldest failure group: 20 May 2026, 20:54 · lifecycle is read-only because Notification records do not have a persistent assignment or resolution field."
+  - link:
+    - /url: /notifications?dataScope=unknown
+    - text: Failure groups
+  - link:
+    - /url: /notifications?issue=failed&dataScope=unknown
+    - text: Failed
+  - link:
+    - /url: /notifications?issue=no-attempt&dataScope=unknown
+    - text: No send attempt after 15m
+  - link:
+    - /url: /notifications?issue=no-route&dataScope=unknown
+    - text: No active push route · 4 recipients · 20 notifications
+  - link:
+    - /url: /notifications?issue=stale-route&dataScope=unknown
+    - text: App route needs refresh
+  - link:
+    - /url: /notifications?issue=no-route&dataScope=unknown
+    - text: Current · under 24h
+  - link:
+    - /url: /notifications?issue=no-route&scope=history&dataScope=unknown
+    - text: 24h+ history
+  - link:
+    - /url: /notifications?issue=no-route&scope=all&dataScope=unknown
+    - text: All ages
+  - region:
+    - heading [level=2]: No active push route
+    - paragraph: Notifications without an enabled target-role push route and not already successful.
+    - generic: 4 recipients · 20 notifications
+    - link:
+      - /url: /notifications
+      - text: Open failure groups
+    - region:
+      - table:
+        - rowgroup:
+          - row:
+            - columnheader: Recipient / route
+            - columnheader: Latest notification
+            - columnheader: First / latest
+            - columnheader: Unresolved
+            - columnheader: Next action
+        - rowgroup:
+          - row:
+            - cell:
+              - generic: DA
+              - strong: Demo Admin
+              - generic: "UNKNOWN · Push route: inactive"
+            - cell:
+              - generic: Admin System Background Job Queue Stale
+              - strong: Background queue is stale
+              - time: 12 Aug 2026, 14:25
+            - cell:
+              - text: First
+              - time: 11 Aug 2026, 16:57
+              - text: Latest
+              - time: 12 Aug 2026, 14:25
+            - cell:
+              - strong: 5 notifications
+              - generic: One recipient route recovery unit
+            - cell:
+              - navigation:
+                - link:
+                  - /url: /audit-log?bucket=Notification&q=cmsprm4j00001vyccc4ba3ct1&range=all
+                  - generic: Audit trail
+              - button:
+          - row:
+            - cell:
+              - generic: LA
+              - strong: Local Admin Web Actor
+              - generic: "UNKNOWN · Push route: inactive"
+            - cell:
+              - generic: Admin System Background Job Queue Stale
+              - strong: Background queue is stale
+              - time: 12 Aug 2026, 14:25
+            - cell:
+              - text: First
+              - time: 11 Aug 2026, 16:57
+              - text: Latest
+              - time: 12 Aug 2026, 14:25
+            - cell:
+              - strong: 5 notifications
+              - generic: One recipient route recovery unit
+            - cell:
+              - navigation:
+                - link:
+                  - /url: /audit-log?bucket=Notification&q=cmsprm4je0003vycc2vaxboux&range=all
+                  - generic: Audit trail
+              - button:
+          - row:
+            - cell:
+              - generic: LA
+              - strong: Local Admin Web Actor
+              - generic: "UNKNOWN · Push route: inactive"
+            - cell:
+              - generic: Admin System Background Job Queue Stale
+              - strong: Background queue is stale
+              - time: 12 Aug 2026, 14:25
+            - cell:
+              - text: First
+              - time: 11 Aug 2026, 16:57
+              - text: Latest
+              - time: 12 Aug 2026, 14:25
+            - cell:
+              - strong: 5 notifications
+              - generic: One recipient route recovery unit
+            - cell:
+              - navigation:
+                - link:
+                  - /url: /audit-log?bucket=Notification&q=cmsprm4ji0005vyccmgjuw0m3&range=all
+                  - generic: Audit trail
+              - button:
+          - row:
+            - cell:
+              - generic: HS
+              - strong: HANDS Smoke Admin
+              - generic: "UNKNOWN · Push route: inactive"
+            - cell:
+              - generic: Admin System Background Job Queue Stale
+              - strong: Background queue is stale
+              - time: 12 Aug 2026, 14:25
+            - cell:
+              - text: First
+              - time: 11 Aug 2026, 16:57
+              - text: Latest
+              - time: 12 Aug 2026, 14:25
+            - cell:
+              - strong: 5 notifications
+              - generic: One recipient route recovery unit
+            - cell:
+              - navigation:
+                - link:
+                  - /url: /audit-log?bucket=Notification&q=cmsprm4jl0007vycc5jmw9wbr&range=all
+                  - generic: Audit trail
+              - button:
+    - generic: Showing 1 to 4 of 4 entries
+- alert

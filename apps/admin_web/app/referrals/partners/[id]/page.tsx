@@ -1,10 +1,9 @@
 import { notFound } from 'next/navigation';
 
 import { canViewAdminDeveloperSystem } from '../../../../components/admin-developer-system-section';
-import { type AdminPartnerReferralParent, type AdminUser, adminGet } from '../../../../lib/admin-api';
+import { type AdminPartnerReferralParent, adminGet } from '../../../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../../../lib/admin-operator-access';
-import { buildFinanceApproverOptions } from '../../../finance-tax/finance-approver-options';
-import { ReferralParentDetailPage, referralParentNeedsFinanceApprover } from '../../referral-detail';
+import { ReferralParentDetailPage } from '../../referral-detail';
 
 type PageProps = {
   readonly params: Promise<{ id: string }>;
@@ -19,16 +18,10 @@ export default async function PartnerReferralDetailPage({ params }: PageProps) {
   if (!row) {
     notFound();
   }
-  const financeApproverUsers = referralParentNeedsFinanceApprover(row)
-    ? await adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
-    : [];
-  const financeApproverOptions = buildFinanceApproverOptions(financeApproverUsers, operatorAccess?.id ?? null);
-
   return (
     <ReferralParentDetailPage
       audience="partner"
       canViewDeveloperSetup={canViewAdminDeveloperSystem(operatorAccess)}
-      financeApproverOptions={financeApproverOptions}
       row={row}
     />
   );

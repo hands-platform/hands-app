@@ -23,7 +23,7 @@ describe('Admin booking chat messages route', () => {
     process.env = {
       ...process.env,
       ADMIN_WEB_ALLOW_DEV_REALTIME_TOKEN: undefined,
-      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret-with-32-chars',
       NODE_ENV: 'production',
     };
     const { GET } = await import('./route');
@@ -40,7 +40,7 @@ describe('Admin booking chat messages route', () => {
   });
 
   it('proxies retained chat messages for a signed Admin Web session', async () => {
-    const sessionSecret = 'test-admin-session-secret';
+    const sessionSecret = 'test-admin-session-secret-with-32-chars';
     process.env = {
       ...process.env,
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,

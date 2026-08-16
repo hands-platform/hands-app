@@ -9,6 +9,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUrl,
   Max,
   MaxLength,
   Min,
@@ -17,9 +18,7 @@ import {
 } from 'class-validator';
 import {
   ProviderAgreementType,
-  ProviderBankAccountStatus,
   ProviderDocumentType,
-  ProviderTaxProfileStatus,
   TaxPolicyStatus,
   TaxRuleScope,
 } from '@prisma/client';
@@ -164,9 +163,6 @@ export class CreateProviderBankAccountDto {
   @Allow()
   qrBankingInfo?: unknown;
 
-  @IsOptional()
-  @IsEnum(ProviderBankAccountStatus)
-  status?: ProviderBankAccountStatus;
 }
 
 export class UpsertProviderTaxProfileDto {
@@ -188,9 +184,6 @@ export class UpsertProviderTaxProfileDto {
   @MaxLength(500)
   registeredAddress!: string;
 
-  @IsOptional()
-  @IsEnum(ProviderTaxProfileStatus)
-  status?: ProviderTaxProfileStatus;
 }
 
 export class AcceptProviderAgreementDto {
@@ -210,13 +203,7 @@ export class AcceptProviderAgreementDto {
   deviceId?: string;
 }
 
-class TaxPolicyFinanceApprovalDto {
-  @Transform(({ value }) => trimString(value))
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(64)
-  approvalAdminId!: string;
-
+class TaxPolicyMutationEvidenceDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @MinLength(10)
@@ -224,7 +211,7 @@ class TaxPolicyFinanceApprovalDto {
   operatorReason!: string;
 }
 
-export class CreateTaxPolicyVersionDto extends TaxPolicyFinanceApprovalDto {
+export class CreateTaxPolicyVersionDto extends TaxPolicyMutationEvidenceDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
@@ -249,9 +236,48 @@ export class CreateTaxPolicyVersionDto extends TaxPolicyFinanceApprovalDto {
   @IsString()
   @MaxLength(1000)
   notes?: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(240)
+  legalSourceTitle!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsUrl({ require_protocol: true, protocols: ['https'] })
+  @MaxLength(1000)
+  legalSourceUrl!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsDateString()
+  promulgatedDate!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(240)
+  taxSubject!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(10)
+  @MaxLength(1000)
+  changeSummary!: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(64)
+  supersedesPolicyVersionId?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(10000)
+  defaultRateBps?: number;
 }
 
-export class UpdateTaxPolicyVersionDto extends TaxPolicyFinanceApprovalDto {
+export class UpdateTaxPolicyVersionDto extends TaxPolicyMutationEvidenceDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
@@ -277,9 +303,45 @@ export class UpdateTaxPolicyVersionDto extends TaxPolicyFinanceApprovalDto {
   @IsString()
   @MaxLength(1000)
   notes?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(240)
+  legalSourceTitle?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsUrl({ require_protocol: true, protocols: ['https'] })
+  @MaxLength(1000)
+  legalSourceUrl?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsDateString()
+  promulgatedDate?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(240)
+  taxSubject?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(10)
+  @MaxLength(1000)
+  changeSummary?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(64)
+  supersedesPolicyVersionId?: string | null;
 }
 
-export class CreateTaxRuleDto extends TaxPolicyFinanceApprovalDto {
+export class CreateTaxRuleDto extends TaxPolicyMutationEvidenceDto {
   @IsOptional()
   @IsEnum(TaxRuleScope)
   scope?: TaxRuleScope;
@@ -320,7 +382,7 @@ export class CreateTaxRuleDto extends TaxPolicyFinanceApprovalDto {
   active?: boolean;
 }
 
-export class UpdateTaxRuleDto extends TaxPolicyFinanceApprovalDto {
+export class UpdateTaxRuleDto extends TaxPolicyMutationEvidenceDto {
   @IsOptional()
   @IsEnum(TaxRuleScope)
   scope?: TaxRuleScope;
@@ -359,6 +421,40 @@ export class UpdateTaxRuleDto extends TaxPolicyFinanceApprovalDto {
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+}
+
+export class SubmitTaxPolicyApprovalRequestDto {
+  @IsOptional()
+  @IsBoolean()
+  cleanSourceAcknowledged?: boolean;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(10)
+  @MaxLength(1000)
+  operatorReason!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(160)
+  idempotencyKey!: string;
+}
+
+export enum TaxPolicyApprovalDecision {
+  APPROVE = 'APPROVE',
+  REJECT = 'REJECT',
+}
+
+export class DecideTaxPolicyApprovalRequestDto {
+  @IsEnum(TaxPolicyApprovalDecision)
+  decision!: TaxPolicyApprovalDecision;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MinLength(10)
+  @MaxLength(1000)
+  decisionReason!: string;
 }
 
 

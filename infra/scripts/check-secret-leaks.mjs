@@ -113,6 +113,13 @@ function checkLine(file, lineNumber, line) {
     addFinding(file, lineNumber, 'JWT token literal');
   }
 
+  if (
+    /hands_admin_session/.test(line) &&
+    /\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b/.test(line)
+  ) {
+    addFinding(file, lineNumber, 'signed Admin Web session cookie literal');
+  }
+
   if (/-----BEGIN (?:RSA |EC |OPENSSH |)PRIVATE KEY-----/.test(line)) {
     addFinding(file, lineNumber, 'private key block');
   }

@@ -3,6 +3,7 @@ abstract class ProviderVerificationRepository {
 
   Future<Map<String, dynamic>> createVerificationUpload({
     String contentType = 'image/jpeg',
+    required int sizeBytes,
   });
 
   Future<Map<String, dynamic>> uploadVerificationFile({

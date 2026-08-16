@@ -7,25 +7,40 @@ const DEV_JWT_REFRESH_SECRET = 'dev-refresh-secret';
 const DEV_ADMIN_REALTIME_TOKEN_SECRET = 'dev-admin-realtime-token-secret';
 const DEV_ADMIN_WEB_API_TOKEN_SECRET = 'dev-admin-web-api-token-secret';
 const INSECURE_SECRET_VALUES = new Set(['change-me', 'changeme', 'secret', 'password']);
+const MINIMUM_PRODUCTION_SECRET_LENGTH = 32;
+const SECRET_NAMES = [
+  'ADMIN_ACCESS_TOKEN',
+  'JWT_ACCESS_SECRET',
+  'JWT_REFRESH_SECRET',
+  'ADMIN_REALTIME_TOKEN_SECRET',
+  'ADMIN_WEB_API_TOKEN_SECRET',
+  'ADMIN_WEB_SESSION_COOKIE_SECRET',
+] as const;
 
 export function jwtAccessSecretFromEnv(env: NodeJS.ProcessEnv = process.env) {
-  return jwtSecretOrDevFallback('JWT_ACCESS_SECRET', env.JWT_ACCESS_SECRET, env.NODE_ENV);
+  const secret = jwtSecretOrDevFallback('JWT_ACCESS_SECRET', env.JWT_ACCESS_SECRET, env.NODE_ENV);
+  assertSeparate('JWT_ACCESS_SECRET', secret, (name) => env[name]);
+  return secret;
 }
 
 export function jwtAccessSecretFromConfig(config: ConfigReader) {
-  return jwtSecretOrDevFallback(
+  const secret = jwtSecretOrDevFallback(
     'JWT_ACCESS_SECRET',
     config.get<string>('JWT_ACCESS_SECRET'),
     config.get<string>('NODE_ENV'),
   );
+  assertSeparate('JWT_ACCESS_SECRET', secret, (name) => config.get<string>(name));
+  return secret;
 }
 
 export function jwtRefreshSecretFromConfig(config: ConfigReader) {
-  return jwtSecretOrDevFallback(
+  const secret = jwtSecretOrDevFallback(
     'JWT_REFRESH_SECRET',
     config.get<string>('JWT_REFRESH_SECRET'),
     config.get<string>('NODE_ENV'),
   );
+  assertSeparate('JWT_REFRESH_SECRET', secret, (name) => config.get<string>(name));
+  return secret;
 }
 
 export function adminRealtimeTokenSecretFromConfig(config: ConfigReader) {
@@ -34,10 +49,7 @@ export function adminRealtimeTokenSecretFromConfig(config: ConfigReader) {
     config.get<string>('ADMIN_REALTIME_TOKEN_SECRET'),
     config.get<string>('NODE_ENV'),
   );
-  const accessSecret = config.get<string>('JWT_ACCESS_SECRET')?.trim();
-  if (accessSecret && secret === accessSecret) {
-    throw new Error('ADMIN_REALTIME_TOKEN_SECRET must be separate from JWT_ACCESS_SECRET.');
-  }
+  assertSeparate('ADMIN_REALTIME_TOKEN_SECRET', secret, (name) => config.get<string>(name));
   return secret;
 }
 
@@ -47,18 +59,16 @@ export function adminWebApiTokenSecretFromConfig(config: ConfigReader) {
     config.get<string>('ADMIN_WEB_API_TOKEN_SECRET'),
     config.get<string>('NODE_ENV'),
   );
-  for (const name of ['JWT_ACCESS_SECRET', 'ADMIN_REALTIME_TOKEN_SECRET', 'ADMIN_WEB_SESSION_COOKIE_SECRET']) {
-    const value = config.get<string>(name)?.trim();
-    if (value && value === secret) {
-      throw new Error(`ADMIN_WEB_API_TOKEN_SECRET must be separate from ${name}.`);
-    }
-  }
+  assertSeparate('ADMIN_WEB_API_TOKEN_SECRET', secret, (name) => config.get<string>(name));
   return secret;
 }
 
 function jwtSecretOrDevFallback(name: string, value: string | undefined, nodeEnv: string | undefined) {
   const trimmed = value?.trim();
   if (trimmed && !INSECURE_SECRET_VALUES.has(trimmed.toLowerCase())) {
+    if (nodeEnv === 'production' && trimmed.length < MINIMUM_PRODUCTION_SECRET_LENGTH) {
+      throw new Error(`${name} must contain at least 32 characters in production.`);
+    }
     return trimmed;
   }
 
@@ -67,6 +77,19 @@ function jwtSecretOrDevFallback(name: string, value: string | undefined, nodeEnv
   }
 
   return devSecretFor(name);
+}
+
+function assertSeparate(
+  name: string,
+  secret: string,
+  valueFor: (otherName: (typeof SECRET_NAMES)[number]) => string | undefined,
+) {
+  for (const otherName of SECRET_NAMES) {
+    if (otherName === name) continue;
+    if (valueFor(otherName)?.trim() === secret) {
+      throw new Error(`${name} must be separate from ${otherName}.`);
+    }
+  }
 }
 
 function devSecretFor(name: string) {

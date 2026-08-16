@@ -1,4 +1,5 @@
 import { createHmac, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
+import { adminWebSessionCookieSecretFromEnv } from './admin-session-secret';
 
 export const ADMIN_WEB_SESSION_COOKIE_NAME = 'hands_admin_session';
 export const ADMIN_WEB_SESSION_MAX_TTL_SECONDS = 8 * 60 * 60;
@@ -14,6 +15,7 @@ export type AdminWebSession = {
   role: 'ADMIN';
   sessionVersion: 1;
   sub: string;
+  mfaEnrollmentRequired?: boolean;
 };
 
 type AdminWebAccessAllowed = {
@@ -38,6 +40,7 @@ type AdminWebSessionCookieOptions = {
   secret: string;
   sessionVersion?: 1;
   sub?: string;
+  mfaEnrollmentRequired?: boolean;
 };
 
 export type AdminWebLoginResult =
@@ -75,7 +78,7 @@ export function getAdminWebSession(
   env: NodeJS.ProcessEnv = process.env,
   nowMs = Date.now(),
 ) {
-  const secret = env.ADMIN_WEB_SESSION_COOKIE_SECRET?.trim();
+  const secret = adminWebSessionCookieSecretFromEnv(env);
   if (!secret) {
     return null;
   }
@@ -99,7 +102,7 @@ export function authenticateAdminWebLogin(
   }
 
   const email = env.ADMIN_WEB_LOGIN_EMAIL?.trim().toLowerCase();
-  const sessionSecret = env.ADMIN_WEB_SESSION_COOKIE_SECRET?.trim();
+  const sessionSecret = adminWebSessionCookieSecretFromEnv(env);
   const requestedEmail = credentials.email.trim().toLowerCase();
 
   if (!email || !sessionSecret || requestedEmail !== email) {
@@ -141,6 +144,7 @@ export function createAdminWebSessionCookieValue({
   secret,
   sessionVersion = 1,
   sub = 'admin-web',
+  mfaEnrollmentRequired = false,
 }: AdminWebSessionCookieOptions) {
   const payload: AdminWebSession = {
     exp: Math.floor(expiresAtMs / 1000),
@@ -149,6 +153,7 @@ export function createAdminWebSessionCookieValue({
     role,
     sessionVersion,
     sub,
+    mfaEnrollmentRequired,
   };
   const payloadSegment = Buffer.from(JSON.stringify(payload)).toString('base64url');
   const signature = signAdminWebSessionPayload(payloadSegment, secret);
@@ -179,7 +184,8 @@ export function verifyAdminWebSessionCookieValue(
       typeof payload.sub !== 'string' ||
       typeof payload.iat !== 'number' ||
       typeof payload.exp !== 'number' ||
-      typeof payload.jti !== 'string'
+      typeof payload.jti !== 'string' ||
+      (payload.mfaEnrollmentRequired !== undefined && typeof payload.mfaEnrollmentRequired !== 'boolean')
     ) {
       return null;
     }

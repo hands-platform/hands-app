@@ -354,12 +354,14 @@ describe('earnings policy', () => {
 
   it('normalizes partner wallet withdrawal request input', () => {
     const request = normalizeProviderWalletWithdrawalRequestInput({
+      idempotencyKey: ' withdrawal-request-1 ',
       amount: 500000,
       bankAccountId: ' bank-account-1 ',
       requestNote: '  Send to my primary bank  ',
     });
 
     expect(request).toEqual({
+      idempotencyKey: 'withdrawal-request-1',
       amount: 500000,
       bankAccountId: 'bank-account-1',
       requestNote: 'Send to my primary bank',
@@ -369,10 +371,21 @@ describe('earnings policy', () => {
   it('rejects empty partner wallet withdrawal amounts', () => {
     expect(() =>
       normalizeProviderWalletWithdrawalRequestInput({
+        idempotencyKey: 'withdrawal-request-1',
         amount: 0,
         bankAccountId: 'bank-account-1',
       }),
     ).toThrow('Withdrawal amount must be greater than 0 VND');
+  });
+
+  it('requires a stable idempotency key for partner wallet withdrawal requests', () => {
+    expect(() =>
+      normalizeProviderWalletWithdrawalRequestInput({
+        idempotencyKey: 'short',
+        amount: 500000,
+        bankAccountId: 'bank-account-1',
+      }),
+    ).toThrow('Idempotency key must be a stable request key');
   });
 
   it('requires a correction reason before sending withdrawal requests back to the partner', () => {
@@ -501,5 +514,21 @@ describe('earnings policy', () => {
         transferRef: 'BANK-001',
       }),
     ).toThrow('Paid withdrawal requests cannot be moved back to an unpaid status');
+  });
+
+  it('prevents terminal withdrawal requests from being reactivated', () => {
+    for (const currentStatus of [
+      ProviderWalletWithdrawalRequestStatus.REJECTED,
+      ProviderWalletWithdrawalRequestStatus.CANCELLED,
+      ProviderWalletWithdrawalRequestStatus.FAILED,
+      ProviderWalletWithdrawalRequestStatus.REVERSED,
+    ]) {
+      expect(() =>
+        normalizeProviderWalletWithdrawalRequestUpdateInput({
+          currentStatus,
+          requestedStatus: ProviderWalletWithdrawalRequestStatus.APPROVED,
+        }),
+      ).toThrow(`Withdrawal request cannot move from ${currentStatus} to APPROVED`);
+    }
   });
 });

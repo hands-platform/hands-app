@@ -10,6 +10,9 @@ import { UsageOverviewTrendChart } from './usage-overview-trend-chart';
 const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 
 vi.mock('next/navigation', () => ({
+  redirect: (href: string) => {
+    throw new Error(`NEXT_REDIRECT:${href}`);
+  },
   useRouter: () => ({ refresh: vi.fn() }),
 }));
 
@@ -48,7 +51,7 @@ describe('UsageOverviewPage', () => {
     expect(markup).toContain('Booking outcomes');
     expect(markup).toContain('Current customer base · Usage data time unavailable');
     expect(markup).toContain('Cohort retention');
-    expect(markup).toContain('Customer activity · Top 5');
+    expect(markup).toContain('Most active customers · Top 5');
     expect(markup).toContain('Partner discovery · Top 5');
     expect(markup).toContain('Open Vietnam Overview');
     expect(markup.indexOf('Needs attention')).toBeLessThan(markup.indexOf('Unique-customer reach'));
@@ -84,6 +87,25 @@ describe('UsageOverviewPage', () => {
     expect(markup).not.toContain('/vietnam-overview?view=period&amp;range=30d');
     expect(pageSource).toContain('AdminFormDate');
     expect(pageSource).not.toContain('type="date"');
+  });
+
+  it('redirects a bare custom range to an explicit default window', async () => {
+    const today = new Intl.DateTimeFormat('en-CA', {
+      day: '2-digit',
+      month: '2-digit',
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+    }).format(new Date());
+    const to = new Date(`${today}T00:00:00.000Z`);
+    const from = new Date(to);
+    from.setUTCDate(from.getUTCDate() - 6);
+
+    await expect(UsageOverviewPage({
+      searchParams: Promise.resolve({ range: 'custom' }),
+    })).rejects.toThrow(
+      `NEXT_REDIRECT:/usage-overview?range=custom&from=${from.toISOString().slice(0, 10)}&to=${today}`,
+    );
+    expect(mockedAdminGet).not.toHaveBeenCalled();
   });
 
   it('links action signals to existing filtered operation pages', async () => {
@@ -137,6 +159,20 @@ describe('UsageOverviewPage', () => {
     expect(markup).not.toContain('Usage provenance is incomplete');
   });
 
+  it('preserves a partial custom range and leaves the missing date empty', async () => {
+    mockedAdminGet.mockClear();
+    const page = await UsageOverviewPage({
+      searchParams: Promise.resolve({ from: '2026-07-01', range: 'custom' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(mockedAdminGet).not.toHaveBeenCalled();
+    expect(markup).toContain('value="2026-07-01"');
+    expect(markup).toContain('Enter valid From and To dates.');
+    expect(markup).toContain('aria-invalid="true"');
+    expect(markup).toContain('name="to" value=""');
+  });
+
   it('shows production provenance only for a guaranteed API response and keeps scope metadata separate', async () => {
     const overview = emptyUsageOverview('30d');
     mockedAdminGet.mockResolvedValue({
@@ -150,19 +186,21 @@ describe('UsageOverviewPage', () => {
         usageStatus: 'fresh',
       },
       provenance: {
-        bookingFixtures: 'explicit-markers-excluded',
-        unknownAggregateCount: 0,
-        usageFixtures: 'guaranteed',
+        booking: 'guaranteed',
+        unknownBookingCount: 0,
+        unknownUsageAggregateCount: 0,
+        usage: 'guaranteed',
       },
     });
 
     const page = await UsageOverviewPage({ searchParams: Promise.resolve({ range: '30d' }) });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Synthetic usage excluded');
+    expect(markup).toContain('Production verified');
+    expect(markup).toContain('Explicit production origin required');
     expect(markup).toContain('Report generated');
-    expect(markup).toContain('Usage signals through');
-    expect(markup).not.toContain('Usage provenance is incomplete');
+    expect(markup).toContain('Through');
+    expect(markup).not.toContain('Verification incomplete');
     expect(pageSource).not.toContain("].join(' · ')");
   });
 
@@ -178,17 +216,59 @@ describe('UsageOverviewPage', () => {
       },
       provenance: {
         ...overview.provenance,
-        unknownAggregateCount: 3,
+        unknownUsageAggregateCount: 3,
+        usage: 'incomplete',
       },
     });
 
     const page = await UsageOverviewPage({ searchParams: Promise.resolve({ range: '30d' }) });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Usage provenance is incomplete');
-    expect(markup).toContain('3 unknown aggregate rows are excluded');
-    expect(markup).toContain('Production usage signals may be delayed');
-    expect(markup).toContain('As of usage data through');
+    expect(markup).toContain('Verification incomplete');
+    expect(markup).toContain('3 unknown rows excluded');
+    expect(markup).toContain('Usage exceeds the 48-hour freshness threshold');
+    expect(markup).toContain('Delayed');
+  });
+
+  it('renders usage values as unavailable while retaining independent booking activity', async () => {
+    const overview = emptyUsageOverview('7d');
+    mockedAdminGet.mockResolvedValue({
+      ...overview,
+      behavior: {
+        ...overview.behavior,
+        trend: [{
+          appOpenCount: 0,
+          completedBookingCount: 1,
+          createdBookingCount: 4,
+          label: '08/10',
+          periodStart: '2026-08-10T00:00:00.000Z',
+          preferredRequestCount: 2,
+          providerProfileViewCount: 0,
+          sessionStartCount: 0,
+        }],
+      },
+      freshness: {
+        ...overview.freshness,
+        reportGeneratedAt: '2026-08-10T04:00:00.000Z',
+        usageStatus: 'failed',
+      },
+      totals: {
+        ...overview.totals,
+        activeCustomerCount: 17,
+        partnerProfileViewCount: 33,
+      },
+    });
+
+    const page = await UsageOverviewPage({ searchParams: Promise.resolve({ range: '7d' }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Usage telemetry');
+    expect(markup).toContain('Data unavailable');
+    expect(markup).not.toContain('>17<');
+    expect(markup).not.toContain('>33<');
+    expect(markup).toContain('Bookings created');
+    expect(markup).toContain('Preferred Partner requests');
+    expect(markup).toContain('Completed during period');
   });
 
   it('renders accessible trend summaries and exact chart data', () => {
@@ -196,10 +276,11 @@ describe('UsageOverviewPage', () => {
       <UsageOverviewTrendChart
         rows={[{
           appOpenCount: 4,
-          bookingRequestCount: 2,
           completedBookingCount: 1,
+          createdBookingCount: 3,
           label: '08/10',
           periodStart: '2026-08-10T00:00:00.000Z',
+          preferredRequestCount: 2,
           providerProfileViewCount: 3,
           sessionStartCount: 2,
         }]}
@@ -211,6 +292,9 @@ describe('UsageOverviewPage', () => {
     expect(markup).toContain('admin-data-table');
     expect(markup).toContain('Customer activity exact values by reporting interval');
     expect(markup).toContain('Booking activity exact values by reporting interval');
+    expect(markup).toContain('Bookings created');
+    expect(markup).toContain('Preferred Partner requests');
+    expect(markup).toContain('Completed during period');
   });
 
   it('uses shared surfaces and direct icon tone selectors', () => {
@@ -224,6 +308,8 @@ describe('UsageOverviewPage', () => {
     expect(pageSource).toContain('UsageOverviewRefreshButton');
     expect(readFileSync(new URL('./usage-overview-refresh-button.tsx', import.meta.url), 'utf8')).toContain('window.location.reload()');
     expect(css).toContain('.usage-overview-filter-panel > .admin-filter-panel-header {');
+    expect(css).toContain('.usage-overview-v2 .usage-overview-data-health {');
+    expect(css).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
     expect(css).toContain('display: grid;');
     expect(css).toContain('grid-template-columns: minmax(0, 1fr);');
     for (const tone of ['primary', 'info', 'success', 'warning', 'danger', 'neutral']) {

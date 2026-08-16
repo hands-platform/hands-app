@@ -10,6 +10,7 @@ type NotificationsTableSectionProps = {
   readonly emptyMessage: string;
   readonly headers?: readonly string[];
   readonly hrefForPage?: (page: number) => string;
+  readonly layout?: 'delivery' | 'failure-groups' | 'route-groups';
   readonly pagination?: NotificationTablePagination;
   readonly rows: readonly NotificationTableRow[];
 };
@@ -19,12 +20,13 @@ export function NotificationsTableSection({
   emptyMessage,
   headers = ['Created', 'Recipient', 'Notification', 'Send status', 'Next action'],
   hrefForPage,
+  layout = 'delivery',
   pagination,
   rows,
 }: NotificationsTableSectionProps) {
   return (
     <AdminTableCard
-      className={`admin-section notification-table-shell has-${headers.length}-columns${rows.length === 0 ? ' is-empty' : ''}`}
+      className={`admin-section notification-table-shell has-${headers.length}-columns is-${layout}${rows.length === 0 ? ' is-empty' : ''}`}
     >
       <AdminTableScroll ariaLabel="Notification delivery records">
         <AdminDataTable

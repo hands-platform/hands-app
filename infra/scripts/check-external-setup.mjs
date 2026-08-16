@@ -31,6 +31,7 @@ const momoEndpointEnvKeys = ['MOMO_BASE_URL', 'MOMO_IPN_URL', 'MOMO_REDIRECT_URL
 const vnpayEnvKeys = ['VNPAY_TMN_CODE', 'VNPAY_HASH_SECRET'];
 const vnpayEndpointEnvKeys = ['VNPAY_PAYMENT_URL', 'VNPAY_API_URL', 'VNPAY_RETURN_URL'];
 const adminWebSecretEnvKeys = [
+  'ADMIN_MFA_ENCRYPTION_KEY',
   'ADMIN_WEB_API_TOKEN_SECRET',
   'ADMIN_REALTIME_TOKEN_SECRET',
   'ADMIN_WEB_SESSION_COOKIE_SECRET',
@@ -464,13 +465,13 @@ addRecommended(
   'admin-security',
   'Admin Web scoped token and session secrets',
   allHaveDistinctSecretValues(adminWebSecretEnvKeys),
-  'Set separate non-placeholder ADMIN_WEB_API_TOKEN_SECRET, ADMIN_REALTIME_TOKEN_SECRET, and ADMIN_WEB_SESSION_COOKIE_SECRET values.',
+  'Set separate non-placeholder ADMIN_MFA_ENCRYPTION_KEY, ADMIN_WEB_API_TOKEN_SECRET, ADMIN_REALTIME_TOKEN_SECRET, and ADMIN_WEB_SESSION_COOKIE_SECRET values.',
 );
 addPhaseRequired(
   'admin-security',
   'Admin Web scoped token and session secrets',
   allHaveDistinctSecretValues(adminWebSecretEnvKeys),
-  'Production requires separate non-placeholder ADMIN_WEB_API_TOKEN_SECRET, ADMIN_REALTIME_TOKEN_SECRET, and ADMIN_WEB_SESSION_COOKIE_SECRET values.',
+  'Production requires separate non-placeholder ADMIN_MFA_ENCRYPTION_KEY, ADMIN_WEB_API_TOKEN_SECRET, ADMIN_REALTIME_TOKEN_SECRET, and ADMIN_WEB_SESSION_COOKIE_SECRET values.',
   ['production'],
 );
 addPhaseRequired(
