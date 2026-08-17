@@ -1,4 +1,5 @@
 import type { MouseEventHandler, ReactNode } from 'react';
+import Link from 'next/link';
 
 export type AdminSegmentedControlOption<Value extends string = string> = {
   readonly ariaLabel?: string;
@@ -26,22 +27,21 @@ export function AdminSegmentedControl<Value extends string = string>({
 }: AdminSegmentedControlProps<Value>) {
   const links = options.map((option, index) => {
     const active = option.value === activeValue;
+    const linkProps = {
+      'aria-current': semantics !== 'tabs' && active ? 'page' as const : undefined,
+      'aria-label': option.ariaLabel,
+      'aria-selected': semantics === 'tabs' ? active : undefined,
+      className: mergeClassNames('booking-date-filter-button', active ? 'is-active' : undefined),
+      href: option.href,
+      key: `${option.value}-${index}`,
+      onClick: option.onClick,
+      role: semantics === 'tabs' ? 'tab' : undefined,
+      title: option.title,
+    };
 
-    return (
-      <a
-        aria-current={semantics !== 'tabs' && active ? 'page' : undefined}
-        aria-label={option.ariaLabel}
-        aria-selected={semantics === 'tabs' ? active : undefined}
-        className={mergeClassNames('booking-date-filter-button', active ? 'is-active' : undefined)}
-        href={option.href}
-        key={`${option.value}-${index}`}
-        onClick={option.onClick}
-        role={semantics === 'tabs' ? 'tab' : undefined}
-        title={option.title}
-      >
-        {option.label}
-      </a>
-    );
+    return isInternalRoute(option.href)
+      ? <Link {...linkProps} prefetch={false} scroll={false}>{option.label}</Link>
+      : <a {...linkProps}>{option.label}</a>;
   });
 
   const classNames = mergeClassNames('booking-date-filter-buttons', className);
@@ -58,6 +58,10 @@ export function AdminSegmentedControl<Value extends string = string>({
       {links}
     </div>
   );
+}
+
+function isInternalRoute(href: string) {
+  return href.startsWith('/') && !href.startsWith('//');
 }
 
 function mergeClassNames(...classNames: Array<string | undefined>) {

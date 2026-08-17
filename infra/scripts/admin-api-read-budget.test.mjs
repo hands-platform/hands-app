@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  adminApiBudgetAccessToken,
   buildReadTargets,
   evaluateBudget,
   normalizeAdminApiBaseUrl,
@@ -9,6 +10,17 @@ import {
   positiveInteger,
   summarizeSamples,
 } from './admin-api-read-budget.mjs';
+
+test('prefers an explicit or operator-scoped budget token over the legacy maintenance token', () => {
+  const env = {
+    ADMIN_ACCESS_TOKEN: 'legacy-maintenance-token',
+    ADMIN_API_BUDGET_ACCESS_TOKEN: 'operator-scoped-token',
+  };
+
+  assert.equal(adminApiBudgetAccessToken(env), 'operator-scoped-token');
+  assert.equal(adminApiBudgetAccessToken(env, 'explicit-token'), 'explicit-token');
+  assert.equal(adminApiBudgetAccessToken({ ADMIN_ACCESS_TOKEN: 'legacy-maintenance-token' }), 'legacy-maintenance-token');
+});
 
 test('covers bounded core, Finance, Partner, customer, chat and notification read models', () => {
   const targets = buildReadTargets({

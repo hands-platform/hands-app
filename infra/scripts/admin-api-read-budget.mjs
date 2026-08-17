@@ -240,6 +240,15 @@ export function evaluateBudget(metric, budget) {
   return violations;
 }
 
+export function adminApiBudgetAccessToken(env, explicitToken) {
+  return (
+    explicitToken?.trim() ||
+    env.ADMIN_API_BUDGET_ACCESS_TOKEN?.trim() ||
+    env.ADMIN_ACCESS_TOKEN?.trim() ||
+    ''
+  );
+}
+
 export function buildReadTargets({
   bankTransactionId,
   bookingId,
@@ -383,9 +392,11 @@ export function buildReadTargets({
 export async function runAdminApiReadBudget(options = {}) {
   const envFile = options.envFile ?? '.env';
   const { env } = loadMergedEnv(envFile);
-  const token = env.ADMIN_ACCESS_TOKEN?.trim();
+  const token = adminApiBudgetAccessToken(env, options.token);
   if (!token) {
-    throw new Error('ADMIN_ACCESS_TOKEN is required for the Admin API read budget smoke.');
+    throw new Error(
+      'ADMIN_API_BUDGET_ACCESS_TOKEN is required. Use a current operator-scoped Admin Web API token.',
+    );
   }
 
   const baseUrl = normalizeAdminApiBaseUrl(

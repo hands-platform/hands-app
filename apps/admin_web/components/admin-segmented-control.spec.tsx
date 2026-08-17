@@ -20,6 +20,8 @@ describe('AdminSegmentedControl', () => {
       'aria-current': 'page',
       className: 'booking-date-filter-button is-active',
       href: '/usage-overview?range=today',
+      prefetch: false,
+      scroll: false,
       title: 'Show today',
     });
     expect(segmented.props.children[1].props['aria-current']).toBeUndefined();
@@ -69,5 +71,14 @@ describe('AdminSegmentedControl', () => {
       'aria-selected': true,
       role: 'tab',
     });
+  });
+
+  it('keeps hash-only controls as native anchors', () => {
+    const segmented = AdminSegmentedControl({
+      activeValue: 'month',
+      options: [{ href: '#calendar-view-month', label: 'Month', value: 'month' }],
+    });
+
+    expect(segmented.props.children[0].type).toBe('a');
   });
 });

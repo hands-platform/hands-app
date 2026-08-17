@@ -2,7 +2,6 @@
 
 import type { ReactNode } from 'react';
 import { Suspense, useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 
 import type { AdminNavSection } from '../lib/admin-navigation';
@@ -34,7 +33,6 @@ const confirmationSearchKeys = [
 ];
 
 export function AdminRootShell({ children, sections }: AdminRootShellProps) {
-  const pathname = usePathname();
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
 
   useEffect(() => {
@@ -87,10 +85,6 @@ export function AdminRootShell({ children, sections }: AdminRootShellProps) {
       sessionStorage.removeItem(confirmationReturnFocusKey);
     }
   });
-
-  if (pathname === '/login') {
-    return <div className="auth-shell">{children}</div>;
-  }
 
   return (
     <div className="shell" data-mobile-nav-open={mobileNavigationOpen ? 'true' : undefined}>

@@ -1,6 +1,7 @@
 import { RefreshCw, RotateCcw, Search } from 'lucide-react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminDirectoryFilterForm } from '../../components/admin-directory-filter-form';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import {
   AdminFormControlButton,
@@ -267,7 +268,7 @@ export default async function OperationsPolicyPage({
             />
           ) : (
             <>
-              <form className="operations-policy-filter-bar" method="get" noValidate>
+              <AdminDirectoryFilterForm className="operations-policy-filter-bar" method="get" noValidate>
                 <AdminFormSearch
                   defaultValue={query}
                   label="Search policies"
@@ -323,7 +324,7 @@ export default async function OperationsPolicyPage({
                     Reset
                   </AdminFormControlLink>
                 </div>
-              </form>
+              </AdminDirectoryFilterForm>
 
               {policyGroups.length === 0 ? (
                 <AdminEmptyState

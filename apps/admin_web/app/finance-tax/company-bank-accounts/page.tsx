@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { AlertTriangle, Archive, Pencil, Plus, RotateCcw, ShieldCheck } from 'lucide-react';
 import { revalidatePath } from 'next/cache';
 
+import { AdminDirectoryFilterForm } from '../../../components/admin-directory-filter-form';
 import {
   AdminFormControlLink,
   AdminFormControlButton,
@@ -460,7 +461,7 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
         resultTone="info"
         title={companyBankAccountViewTitle(view)}
       >
-        <form className="company-bank-account-filters" method="get">
+        <AdminDirectoryFilterForm className="company-bank-account-filters" method="get">
           <input name="view" type="hidden" value={view} />
           <AdminFormSelect defaultValue={filters.purpose} label="Purpose" labelVisibility="visible" name="purpose" options={companyBankPurposeFilterOptions} />
           <AdminFormSelect defaultValue={filters.currency} label="Currency" labelVisibility="visible" name="currency" options={companyBankCurrencyFilterOptions} />
@@ -471,7 +472,7 @@ export default async function CompanyBankAccountsPage({ searchParams }: CompanyB
             <AdminFormControlButton className="button-primary" type="submit">Apply filters</AdminFormControlButton>
             <AdminFormControlLink className="button-secondary" href={`${COMPANY_BANK_ACCOUNTS_PATH}?view=${view}`}>Reset</AdminFormControlLink>
           </div>
-        </form>
+        </AdminDirectoryFilterForm>
         <FinanceDataTable
           scrollClassName="company-bank-account-table"
           emptyMessage={filtersActive

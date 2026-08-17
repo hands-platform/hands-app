@@ -17,6 +17,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDirectoryFilterForm } from '../../components/admin-directory-filter-form';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminFormControlButton, AdminFormDate } from '../../components/admin-form-controls';
@@ -166,7 +167,7 @@ function UsageRangePanel({
         }))}
       />
       {range === 'custom' ? (
-        <form action="/usage-overview" className="usage-overview-custom-range" method="get">
+        <AdminDirectoryFilterForm action="/usage-overview" className="usage-overview-custom-range" method="get">
           <input name="range" type="hidden" value="custom" />
           <AdminFormDate
             ariaDescribedBy={validationError ? 'usage-custom-range-error' : undefined}
@@ -192,7 +193,7 @@ function UsageRangePanel({
               {validationError}
             </small>
           ) : null}
-        </form>
+        </AdminDirectoryFilterForm>
       ) : null}
       <AdminFilterSummary
         ariaLabel="Applied usage report scope"

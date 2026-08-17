@@ -11,9 +11,11 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react';
+import Link from 'next/link';
 
 import { Search } from 'lucide-react';
 
+import { AdminDirectoryFilterForm } from './admin-directory-filter-form';
 import { AdminFormDatePickerField } from './admin-form-date-picker-field';
 
 type AdminFormSelectOption = {
@@ -198,17 +200,34 @@ type AdminDrawerFormGridFieldsProps = {
   readonly className?: string;
 } & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'className'>;
 
-export function AdminFormShell({ children, className, ...formProps }: AdminFormShellProps) {
+export function AdminFormShell({ action, children, className, method, ...formProps }: AdminFormShellProps) {
+  if (method?.toLowerCase() === 'get' && (typeof action === 'string' || action === undefined)) {
+    return (
+      <AdminDirectoryFilterForm {...formProps} action={action} className={joinClassNames(className)} method="get">
+        {children}
+      </AdminDirectoryFilterForm>
+    );
+  }
+
   return (
-    <form {...formProps} className={joinClassNames(className)}>
+    <form {...formProps} action={action} className={joinClassNames(className)} method={method}>
       {children}
     </form>
   );
 }
 
-export function AdminFormGrid({ children, className, ...formProps }: AdminFormGridProps) {
+export function AdminFormGrid({ action, children, className, method, ...formProps }: AdminFormGridProps) {
+  const mergedClassName = joinClassNames('admin-form-grid form-grid', className);
+  if (method?.toLowerCase() === 'get' && (typeof action === 'string' || action === undefined)) {
+    return (
+      <AdminDirectoryFilterForm {...formProps} action={action} className={mergedClassName} method="get">
+        {children}
+      </AdminDirectoryFilterForm>
+    );
+  }
+
   return (
-    <form {...formProps} className={joinClassNames('admin-form-grid form-grid', className)}>
+    <form {...formProps} action={action} className={mergedClassName} method={method}>
       {children}
     </form>
   );
@@ -651,18 +670,17 @@ export function AdminFormControlLink({
   href,
   title,
 }: AdminFormControlLinkProps) {
-  return (
-    <a
-      aria-current={ariaCurrent}
-      aria-label={ariaLabel}
-      className={joinClassNames('admin-form-control-link', normalizeButtonClassNames(className, 'button button-secondary'))}
-      download={download}
-      href={href}
-      title={title}
-    >
-      {children}
-    </a>
-  );
+  const linkProps = {
+    'aria-current': ariaCurrent,
+    'aria-label': ariaLabel,
+    className: joinClassNames('admin-form-control-link', normalizeButtonClassNames(className, 'button button-secondary')),
+    href,
+    title,
+  };
+
+  return isInternalRoute(href) && download === undefined
+    ? <Link {...linkProps} prefetch={false}>{children}</Link>
+    : <a {...linkProps} download={download}>{children}</a>;
 }
 
 export function AdminFormControlButton({
@@ -688,6 +706,10 @@ export function AdminFormControlButton({
 
 function joinClassNames(...classNames: Array<string | undefined>) {
   return mergeClassNameTokens(classNames.flatMap(splitClassNames));
+}
+
+function isInternalRoute(href: string) {
+  return href.startsWith('/') && !href.startsWith('//');
 }
 
 function normalizeButtonClassNames(className: string | undefined, defaultClassName: string) {

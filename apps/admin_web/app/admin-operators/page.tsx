@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { History, KeyRound, RefreshCw, Shield, UserPlus, Users } from 'lucide-react';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDirectoryFilterForm } from '../../components/admin-directory-filter-form';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -15,6 +16,7 @@ import { AdminTablePanel } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
 import { adminGetResult } from '../../lib/admin-api';
+import { getCurrentAdminOperatorAccessResult } from '../../lib/admin-operator-access';
 import {
   FINANCE_APPROVER_ROLE,
   MASTER_ADMIN_ROLE,
@@ -119,13 +121,6 @@ type OperatorDirectory = {
   };
 };
 
-type CurrentAccess = {
-  readonly categories: string[];
-  readonly id: string;
-  readonly permissionState: 'CONFIGURED' | 'MIGRATION_REQUIRED';
-  readonly roles: string[];
-};
-
 type CurrentMfa = {
   readonly enrolledAt: string | null;
   readonly recoveryCodesRemaining: number;
@@ -192,25 +187,26 @@ const EMPTY_INVITATIONS: InvitationDirectory = { expiredCount: 0, items: [], pen
 
 export default async function AdminOperatorsPage({ searchParams }: { readonly searchParams?: Promise<PageParams> }) {
   const params = searchParams ? await searchParams : {};
-  const currentAccessResult = await adminGetResult<CurrentAccess | null>('/admin/users/admin-operator-access', null);
-  const currentMfaResult = await adminGetResult<CurrentMfa>('/admin/admin-operators/me/mfa', {
+  const currentAccessPromise = getCurrentAdminOperatorAccessResult();
+  const currentMfaPromise = adminGetResult<CurrentMfa>('/admin/admin-operators/me/mfa', {
     enrolledAt: null,
     recoveryCodesRemaining: 0,
     state: 'UNAVAILABLE',
   });
-  const currentAccess = currentAccessResult.data;
-  const isMaster = Boolean(currentAccess?.roles.includes(MASTER_ADMIN_ROLE));
   const directoryPath = `/admin/users/admin-operators?${directoryQuery(params)}`;
   const directoryPromise = adminGetResult<OperatorDirectory>(directoryPath, EMPTY_DIRECTORY);
-  const invitationsPromise = isMaster
-    ? adminGetResult<InvitationDirectory>('/admin/admin-operator-invitations', EMPTY_INVITATIONS)
-    : Promise.resolve({ data: EMPTY_INVITATIONS, ok: true, status: 200 } as const);
   const selectedPromise = params.operatorId
     ? adminGetResult<OperatorDirectoryItem | null>(
         `/admin/users/admin-operators/${encodeURIComponent(params.operatorId)}`,
         null,
       )
     : Promise.resolve({ data: null, ok: true, status: 200 } as const);
+  const currentAccessResult = await currentAccessPromise;
+  const currentAccess = currentAccessResult.data;
+  const isMaster = Boolean(currentAccess?.roles.includes(MASTER_ADMIN_ROLE));
+  const invitationsPromise = isMaster
+    ? adminGetResult<InvitationDirectory>('/admin/admin-operator-invitations', EMPTY_INVITATIONS)
+    : Promise.resolve({ data: EMPTY_INVITATIONS, ok: true, status: 200 } as const);
   const sessionsPromise = isMaster && params.operatorId
     ? adminGetResult<OperatorSession[]>(
         `/admin/users/${encodeURIComponent(params.operatorId)}/admin-web-sessions`,
@@ -223,7 +219,8 @@ export default async function AdminOperatorsPage({ searchParams }: { readonly se
         { items: [], totalCount: 0 },
       )
     : Promise.resolve({ data: { items: [] as OperatorHistory['items'], totalCount: 0 }, ok: true, status: 200 });
-  const [directoryResult, invitationsResult, selectedResult, sessionsResult, historyResult] = await Promise.all([
+  const [currentMfaResult, directoryResult, invitationsResult, selectedResult, sessionsResult, historyResult] = await Promise.all([
+    currentMfaPromise,
     directoryPromise,
     invitationsPromise,
     selectedPromise,
@@ -295,7 +292,7 @@ export default async function AdminOperatorsPage({ searchParams }: { readonly se
           status={<StatusBadge tone={directoryResult.ok ? 'info' : 'danger'}>{directoryResult.ok ? `${directory.page.filteredTotal} result(s)` : 'Unavailable'}</StatusBadge>}
           title="Find an operator"
         />
-        <form action="/admin-operators" className="operator-access-filter-bar" method="get">
+        <AdminDirectoryFilterForm action="/admin-operators" className="operator-access-filter-bar" method="get">
           <AdminFormSearch defaultValue={params.q} label="Search name or admin email" name="q" placeholder="Name, email, or operator ID" />
           <AdminFormSelect
             defaultValue={params.status ?? ''}
@@ -337,7 +334,7 @@ export default async function AdminOperatorsPage({ searchParams }: { readonly se
           />
           <AdminFormControlButton className="button-primary" type="submit">Apply filters</AdminFormControlButton>
           <AdminFormControlLink className="button-secondary" href="/admin-operators">Reset</AdminFormControlLink>
-        </form>
+        </AdminDirectoryFilterForm>
       </AdminSection>
 
       {directoryResult.ok ? (

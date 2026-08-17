@@ -82,6 +82,10 @@ to the static master credential when the API rejects a login or is unavailable. 
 explicit `ADMIN_OPERATOR_BOOTSTRAP_USER_ID`. This bootstrap uses the configured password hash and salt, records an audit
 entry, and does not print or persist the plaintext password.
 
+Admin API performance budgets must use a current operator-scoped token through
+`ADMIN_API_BUDGET_ACCESS_TOKEN`. The legacy `ADMIN_ACCESS_TOKEN` remains a maintenance-script fallback only and may be
+rejected by session-backed Admin REST authentication.
+
 Admin Web realtime Socket.IO connections must not expose `ADMIN_ACCESS_TOKEN` to the browser. The local
 `/api/admin/realtime-token` route mints a short-lived `typ=admin-realtime`, `aud=hands-socket`,
 `scope=admin:realtime` token signed with `ADMIN_REALTIME_TOKEN_SECRET`. That token is accepted only by Socket.IO

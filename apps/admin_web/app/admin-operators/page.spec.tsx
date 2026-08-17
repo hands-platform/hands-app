@@ -4,14 +4,19 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
 import { adminGetResult } from '../../lib/admin-api';
+import { getCurrentAdminOperatorAccessResult } from '../../lib/admin-operator-access';
 import AdminOperatorsPage from './page';
 
 vi.mock('../../lib/admin-api', async () => ({
   ...(await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api')),
   adminGetResult: vi.fn(),
 }));
+vi.mock('../../lib/admin-operator-access', () => ({
+  getCurrentAdminOperatorAccessResult: vi.fn(),
+}));
 
 const mockedAdminGetResult = vi.mocked(adminGetResult);
+const mockedCurrentAccessResult = vi.mocked(getCurrentAdminOperatorAccessResult);
 
 const operator = {
   allowedActions: {
@@ -65,11 +70,11 @@ function ok<T>(data: T) {
 
 describe('AdminOperatorsPage', () => {
   beforeEach(() => {
+    mockedCurrentAccessResult.mockResolvedValue(
+      ok({ categories: ['SYSTEM_ADMIN_OPERATORS'], id: 'master-1', roles: ['ADMIN', 'MASTER_ADMIN'] }),
+    );
     mockedAdminGetResult.mockImplementation(async (path, fallback) => {
       const value = String(path);
-      if (value === '/admin/users/admin-operator-access') {
-        return ok({ categories: ['SYSTEM_ADMIN_OPERATORS'], id: 'master-1', permissionState: 'CONFIGURED', roles: ['ADMIN', 'MASTER_ADMIN'] }) as never;
-      }
       if (value.startsWith('/admin/users/admin-operators?')) {
         return ok({
           items: [operator],
@@ -97,7 +102,8 @@ describe('AdminOperatorsPage', () => {
   it('renders the exact server-backed operator directory and secure invitation workflow', async () => {
     const markup = renderToStaticMarkup(await AdminOperatorsPage({}));
 
-    expect(mockedAdminGetResult).toHaveBeenCalledWith('/admin/users/admin-operator-access', null);
+    expect(mockedCurrentAccessResult).toHaveBeenCalledOnce();
+    expect(mockedAdminGetResult).not.toHaveBeenCalledWith('/admin/users/admin-operator-access', null);
     expect(mockedAdminGetResult).toHaveBeenCalledWith(
       '/admin/users/admin-operators?take=25',
       expect.objectContaining({ items: [], summary: expect.objectContaining({ total: 0 }) }),

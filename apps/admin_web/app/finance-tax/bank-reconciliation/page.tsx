@@ -144,6 +144,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
   const reviewAssignmentNotice = readParam(params, 'reviewAssignmentNotice');
   const requestedReviewOwnerConfirmation = readParam(params, 'confirm') === 'review-owner';
   const requestedBatchOwnerConfirmation = readParam(params, 'confirm') === 'batch-owner';
+  const needsAdminDirectory = requestedReviewOwnerConfirmation || requestedBatchOwnerConfirmation;
   const requestedBankTransactionId = readParam(params, 'bankTransactionId');
   const requestedBatchImportId = readParam(params, 'batchImportId');
   const isReviewWorkspace = workspace === 'operations';
@@ -170,6 +171,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
     companyBankAccounts,
     importHistory,
     paymentClearingOverview,
+    adminUsers,
   ] = await Promise.all([
     isReviewWorkspace
       ? adminGet<AdminBankReconciliationSummary>(
@@ -244,15 +246,14 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
       buildBookingPaymentClearingSummaryApiHref({ ...overviewFilters, review: 'all' }),
       emptyBookingPaymentClearingSummary(),
     ),
+    needsAdminDirectory
+      ? adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
+      : Promise.resolve([]),
   ]);
   const hasBulkAssignableTransactions =
     !requestedReviewOwnerConfirmation &&
     bankReconciliationReviewNeedsOwner(filters.review) &&
     transactions.some((transaction) => ['UNMATCHED', 'PARTIALLY_MATCHED'].includes(transaction.status));
-  const needsAdminDirectory = requestedReviewOwnerConfirmation || requestedBatchOwnerConfirmation;
-  const adminUsers = needsAdminDirectory
-    ? await adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
-    : [];
   const pagination = buildTaxSettlementServerPagination(transactions, filters, queueSummary.count);
   const showBulkReviewAssignment =
     hasBulkAssignableTransactions &&

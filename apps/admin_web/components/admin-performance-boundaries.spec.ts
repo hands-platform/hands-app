@@ -12,6 +12,18 @@ describe('Admin Web performance boundaries', () => {
     expect(header).not.toContain('operator-access-forms');
   });
 
+  it('short-circuits the login route before loading operator access and the client Admin shell', () => {
+    const layout = readFileSync('app/layout.tsx', 'utf8');
+    const loginBranch = layout.slice(
+      layout.indexOf("requestPathname === '/login'"),
+      layout.indexOf('const operatorAccessResult'),
+    );
+
+    expect(loginBranch).toContain('className="auth-shell"');
+    expect(loginBranch).not.toContain('AdminRootShell');
+    expect(loginBranch).not.toContain('getCurrentAdminOperatorAccessResult');
+  });
+
   it('loads chart implementations through viewport-deferred client boundaries', () => {
     const dashboard = readFileSync('app/page.tsx', 'utf8');
     const marketing = readFileSync('app/marketing-analytics/page.tsx', 'utf8');

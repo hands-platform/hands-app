@@ -18,6 +18,7 @@ import {
   adminGetResult,
 } from '../../lib/admin-api';
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDirectoryFilterForm } from '../../components/admin-directory-filter-form';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import {
   AdminFormControlButton,
@@ -588,7 +589,7 @@ function HistoryView({
           Test / legacy evidence · {summaryAvailable ? summary.history.testOrLegacy : 'Unavailable'}
         </AdminFormControlLink>
       </div>
-      <form className="tax-policy-filter-form" method="get">
+      <AdminDirectoryFilterForm className="tax-policy-filter-form" method="get">
         <input name="view" type="hidden" value="history" />
         <input name="source" type="hidden" value={filters.source} />
         <AdminFormInput defaultValue={filters.q} label="Search policy, ID, or legal source" labelVisibility="visible" name="q" />
@@ -602,7 +603,7 @@ function HistoryView({
         <AdminFormDate defaultValue={filters.effectiveFrom} label="Effective from" labelVisibility="visible" mode="date" name="effectiveFrom" />
         <AdminFormDate defaultValue={filters.effectiveTo} label="Effective to" labelVisibility="visible" mode="date" name="effectiveTo" />
         <AdminFormControlButton className="button-secondary" type="submit">Apply filters</AdminFormControlButton>
-      </form>
+      </AdminDirectoryFilterForm>
       <PolicyListTable
         emptyMessage={filters.source === 'production'
           ? 'No governed production policy history matches the selected server filters.'
@@ -688,7 +689,7 @@ function IntegrityView({
             <AdminEmptyState message="Retry before concluding that this exception queue is empty." title="Filtered evidence unavailable" />
           ) : (
             <>
-              <form className="tax-policy-filter-form" method="get">
+              <AdminDirectoryFilterForm className="tax-policy-filter-form" method="get">
                 <input name="view" type="hidden" value="integrity" />
                 <input name="issue" type="hidden" value={issue} />
                 <input name="auditAction" type="hidden" value={auditFilters.action} />
@@ -705,7 +706,7 @@ function IntegrityView({
                   { label: 'Newest first', value: 'newest' },
                 ]} />
                 <AdminFormControlButton className="button-secondary" type="submit">Apply evidence filters</AdminFormControlButton>
-              </form>
+              </AdminDirectoryFilterForm>
               <AdminTableScroll ariaLabel={`${integrityIssueLabel(issue)} Tax Policy evidence table`}>
                 <AdminDataTable emptyMessage="No records match this issue and evidence filter." headers={['Partner / booking evidence', 'Source / classification', 'Created · Vietnam', 'Amounts', 'Action']} rowCount={issueRecords.items.length}>
                   {issueRecords.items.map((record) => (
@@ -758,7 +759,7 @@ function IntegrityView({
         description="Exact Tax Policy and tax rule lifecycle events. This total is not derived from broad text search."
         title="Lifecycle audit"
       >
-        <form className="tax-policy-filter-form" method="get">
+        <AdminDirectoryFilterForm className="tax-policy-filter-form" method="get">
           <input name="view" type="hidden" value="integrity" />
           {issue ? <input name="issue" type="hidden" value={issue} /> : null}
           <input name="issueFrom" type="hidden" value={issueFilters.from} />
@@ -777,7 +778,7 @@ function IntegrityView({
           <AdminFormDate defaultValue={auditFilters.from} label="From" labelVisibility="visible" mode="date" name="auditFrom" />
           <AdminFormDate defaultValue={auditFilters.to} label="To" labelVisibility="visible" mode="date" name="auditTo" />
           <AdminFormControlButton className="button-secondary" type="submit">Apply audit filters</AdminFormControlButton>
-        </form>
+        </AdminDirectoryFilterForm>
         {auditEventId ? (
           <div className="tax-policy-audit-event" id="tax-policy-audit-event">
             {auditEventUnavailable ? (
@@ -1186,7 +1187,7 @@ function PolicySimulation({
   return (
     <AdminDisclosure className="tax-policy-disclosure admin-mt-16">
       <summary>Saved policy preview · production calculation contract</summary>
-      <form className="tax-policy-simulation-form admin-mt-12" method="get">
+      <AdminDirectoryFilterForm className="tax-policy-simulation-form admin-mt-12" method="get">
         <input name="view" type="hidden" value="drafts" />
         <input name="policyId" type="hidden" value={policyId} />
         <AdminFormSelect
@@ -1207,7 +1208,7 @@ function PolicySimulation({
           type="number"
         />
         <AdminFormControlButton className="button-outline" type="submit">Run read-only preview</AdminFormControlButton>
-      </form>
+      </AdminDirectoryFilterForm>
       {unavailable || !proposed ? (
         <AdminNoticeCard className="admin-mt-12" role="alert" tone="danger">
           The production withholding preview could not be loaded. No missing calculation is represented as zero.

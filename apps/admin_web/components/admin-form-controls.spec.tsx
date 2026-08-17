@@ -35,6 +35,7 @@ describe('Admin form controls', () => {
       className: 'admin-form-grid form-grid compact-form audit-filter-form',
       method: 'get',
     });
+    expect(grid.type.name).toBe('AdminDirectoryFilterForm');
     expect(textContent(grid)).toBe('Filters');
   });
 
@@ -500,6 +501,7 @@ describe('Admin form controls', () => {
     });
 
     expect(link.props.className).toBe('admin-form-control-link button button-outline admin-inline-action');
+    expect(link.props.prefetch).toBe(false);
     expect(button.props.className).toBe(
       'admin-form-control-button button button-sm button-primary payout-action',
     );

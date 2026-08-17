@@ -48,22 +48,6 @@ describe('AdminRootShell', () => {
     expect(markup).not.toContain('Live Workspace');
   });
 
-  it('renders login as an auth-only page without sidebar or navbar chrome', () => {
-    mockUsePathname.mockReturnValue('/login');
-
-    const markup = renderToStaticMarkup(
-      <AdminRootShell sections={adminNavSections}>
-        <div>Login content</div>
-      </AdminRootShell>,
-    );
-
-    expect(markup).toContain('class="auth-shell"');
-    expect(markup).toContain('Login content');
-    expect(markup).not.toContain('class="sidebar"');
-    expect(markup).not.toContain('aria-label="Admin navigation"');
-    expect(markup).not.toContain('class="topbar vuexy-navbar"');
-  });
-
   it('restores focus to settlement repair triggers after route-based drawers close', () => {
     const source = readFileSync('components/admin-root-shell.tsx', 'utf8');
 

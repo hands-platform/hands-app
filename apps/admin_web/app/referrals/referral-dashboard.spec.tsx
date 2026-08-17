@@ -620,8 +620,9 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('href="/referrals/customers?q=smoke&amp;status=pending"');
     expect(markup).toContain('href="/referrals/customers?q=smoke&amp;status=pending&amp;reward=held"');
     expect(markup).toContain('href="/referrals/customers?q=smoke&amp;status=pending&amp;reward=credited"');
+    expect(markup).toContain('aria-current="page" class="booking-date-filter-button is-active"');
     expect(markup).toContain(
-      'aria-current="page" class="booking-date-filter-button is-active" href="/referrals/customers?q=smoke&amp;status=pending&amp;reward=available"',
+      'href="/referrals/customers?q=smoke&amp;status=pending&amp;reward=available"',
     );
   });
 

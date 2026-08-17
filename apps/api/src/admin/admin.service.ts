@@ -9993,12 +9993,11 @@ export class AdminService {
       ADMIN_PARTNER_OVERVIEW_RANK_LIMIT,
       ADMIN_PARTNER_OVERVIEW_RANK_LIMIT,
     );
-    const locationFreshnessMinutes = await this.partnerLocationFreshnessMinutes();
+    const locationFreshnessPromise = this.partnerLocationFreshnessMinutes();
     const window = adminPartnerOverviewRangeWindow(normalizeAdminPartnerOverviewRange(query.range));
     const dateWhere = adminPartnerOverviewDateWhere(window);
     const active7dStart = adminUsageRangeWindow('7d', now).startAt ?? now;
     const active30dStart = adminUsageRangeWindow('30d', now).startAt ?? now;
-    const locationFreshBoundary = new Date(now.getTime() - locationFreshnessMinutes * 60_000);
     const serviceIdFilter = normalizeOptionalText(query.serviceId);
     const verificationStatusFilter = normalizeVerificationStatusFilter(query.verificationStatus);
     const onlineStatusesFilter = normalizePartnerOnlineStatusFilter(query.onlineStatus);
@@ -10013,6 +10012,22 @@ export class AdminService {
       verificationStatus: verificationStatusFilter,
       walletStatus: walletStatusFilter,
     });
+    const providerStatusCountRowsPromise = this.prisma.providerProfile.groupBy({
+      by: ['status'],
+      where: baseWhere,
+      _count: { _all: true },
+    });
+    const approvedProviderWhere = partnerOverviewAnd(baseWhere, {
+      verification: { is: { status: VerificationStatus.APPROVED } },
+      kyc: { is: { status: ProviderKycStatus.APPROVED } },
+    });
+    const approvedProviderStatusCountRowsPromise = this.prisma.providerProfile.groupBy({
+      by: ['status'],
+      where: approvedProviderWhere,
+      _count: { _all: true },
+    });
+    const locationFreshnessMinutes = await locationFreshnessPromise;
+    const locationFreshBoundary = new Date(now.getTime() - locationFreshnessMinutes * 60_000);
     const onlineStatuses = [
       ProviderStatus.ONLINE_AVAILABLE,
       ProviderStatus.ONLINE_BUSY,
@@ -10030,13 +10045,13 @@ export class AdminService {
     } satisfies Prisma.BookingWhereInput;
 
     const [
-      totalPartners,
+      providerStatusCountRows,
+      approvedProviderStatusCountRows,
       approvedPartners,
       pendingVerification,
       approvalIncompletePartners,
       approvedNeverOnlinePartners,
       approvedNoCompletedBookingPartners,
-      onlineNow,
       locationFreshPartners,
       activePartners7d,
       inactivePartners7d,
@@ -10049,9 +10064,6 @@ export class AdminService {
       availableBlockedNoServicePartners,
       availableBlockedNegativeWalletPartners,
       availableBlockedAccountPartners,
-      availableSoonPartners,
-      busyPartners,
-      offlinePartners,
       averageRating,
       providerRows,
       openBookingRows,
@@ -10078,7 +10090,8 @@ export class AdminService {
       customerVisibilityMissingDocumentsPartners,
       customerVisibilityNoServicePartners,
     ] = await Promise.all([
-      this.prisma.providerProfile.count({ where: baseWhere }),
+      providerStatusCountRowsPromise,
+      approvedProviderStatusCountRowsPromise,
       this.prisma.providerProfile.count({
         where: partnerOverviewAnd(baseWhere, {
           verification: { is: { status: VerificationStatus.APPROVED } },
@@ -10116,9 +10129,6 @@ export class AdminService {
           kyc: { is: { status: ProviderKycStatus.APPROVED } },
           selectedBookings: { none: { status: BookingStatus.COMPLETED } },
         }),
-      }),
-      this.prisma.providerProfile.count({
-        where: partnerOverviewAnd(baseWhere, { status: { in: onlineStatuses } }),
       }),
       this.prisma.providerProfile.count({
         where: partnerOverviewAnd(baseWhere, {
@@ -10205,27 +10215,6 @@ export class AdminService {
           baseWhere,
           adminPartnerAvailableBlockReasonWhere('account', locationFreshBoundary),
         ),
-      }),
-      this.prisma.providerProfile.count({
-        where: partnerOverviewAnd(baseWhere, {
-          verification: { is: { status: VerificationStatus.APPROVED } },
-          kyc: { is: { status: ProviderKycStatus.APPROVED } },
-          status: ProviderStatus.ONLINE_AVAILABLE_SOON,
-        }),
-      }),
-      this.prisma.providerProfile.count({
-        where: partnerOverviewAnd(baseWhere, {
-          verification: { is: { status: VerificationStatus.APPROVED } },
-          kyc: { is: { status: ProviderKycStatus.APPROVED } },
-          status: ProviderStatus.ONLINE_BUSY,
-        }),
-      }),
-      this.prisma.providerProfile.count({
-        where: partnerOverviewAnd(baseWhere, {
-          verification: { is: { status: VerificationStatus.APPROVED } },
-          kyc: { is: { status: ProviderKycStatus.APPROVED } },
-          status: ProviderStatus.OFFLINE,
-        }),
       }),
       this.prisma.review.aggregate({
         where: {
@@ -10587,6 +10576,21 @@ export class AdminService {
       }),
     ]);
 
+    const providerStatusCounts = new Map(
+      providerStatusCountRows.map((row) => [row.status, row._count._all]),
+    );
+    const approvedProviderStatusCounts = new Map(
+      approvedProviderStatusCountRows.map((row) => [row.status, row._count._all]),
+    );
+    const totalPartners = [...providerStatusCounts.values()].reduce((sum, count) => sum + count, 0);
+    const onlineNow = onlineStatuses.reduce(
+      (sum, status) => sum + (providerStatusCounts.get(status) ?? 0),
+      0,
+    );
+    const availableSoonPartners = approvedProviderStatusCounts.get(ProviderStatus.ONLINE_AVAILABLE_SOON) ?? 0;
+    const busyPartners = approvedProviderStatusCounts.get(ProviderStatus.ONLINE_BUSY) ?? 0;
+    const offlinePartners = approvedProviderStatusCounts.get(ProviderStatus.OFFLINE) ?? 0;
+
     const walletBalanceByProvider = new Map(
       providerRows.map((provider) => [
         provider.id,
@@ -10648,10 +10652,6 @@ export class AdminService {
       role: Role.PROVIDER,
       user: { providerProfile: { is: baseWhere } },
     } satisfies Prisma.AppUsageDailyAggregateWhereInput;
-    const approvedProviderWhere = partnerOverviewAnd(baseWhere, {
-      verification: { is: { status: VerificationStatus.APPROVED } },
-      kyc: { is: { status: ProviderKycStatus.APPROVED } },
-    });
     const [
       boundedAppUsageRows,
       exactRangeAppUsage,

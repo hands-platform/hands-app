@@ -2106,6 +2106,7 @@ describe('AdminService partner overview request events', () => {
       providerProfile: {
         count: vi.fn().mockResolvedValue(0),
         findMany: vi.fn().mockResolvedValue([]),
+        groupBy: vi.fn().mockResolvedValue([]),
       },
       review: {
         aggregate: vi.fn().mockResolvedValue({ _avg: { rating: null }, _count: { rating: 0 } }),
@@ -2153,7 +2154,8 @@ describe('AdminService partner overview request events', () => {
     const overview = await service.getPartnerOverview({ range: '7d', walletStatus: 'negative' });
 
     expect(overview.filters.walletStatus).toBe('negative');
-    expect(prisma.providerProfile.count).toHaveBeenCalledWith({
+    expect(prisma.providerProfile.groupBy).toHaveBeenCalledWith({
+      by: ['status'],
       where: {
         AND: [
           { deletedAt: null },
@@ -2164,6 +2166,7 @@ describe('AdminService partner overview request events', () => {
           },
         ],
       },
+      _count: { _all: true },
     });
     expect(prisma.providerWalletLedgerEntry.groupBy).not.toHaveBeenCalled();
 
@@ -2337,6 +2340,9 @@ describe('AdminService partner overview request events', () => {
             providerRow('critical-wallet', 'Critical Wallet Partner'),
             providerRow('high-inactive', 'High Inactive Partner'),
           ]),
+        groupBy: vi.fn().mockResolvedValue([
+          { status: ProviderStatus.OFFLINE, _count: { _all: 2 } },
+        ]),
       },
       review: {
         aggregate: vi.fn().mockResolvedValue({ _avg: { rating: null }, _count: { rating: 0 } }),
@@ -2456,6 +2462,7 @@ describe('AdminService partner overview request events', () => {
       providerProfile: {
         count: vi.fn().mockResolvedValue(0),
         findMany: vi.fn().mockResolvedValue([]),
+        groupBy: vi.fn().mockResolvedValue([]),
       },
       review: {
         aggregate: vi.fn().mockResolvedValue({ _avg: { rating: null }, _count: { rating: 0 } }),
@@ -2669,6 +2676,10 @@ describe('AdminService partner overview request events', () => {
             sessions: [{ appVersion: '1.0.0', lastSeenAt: providerUpdatedAt }],
             selectedBookings: [],
           },
+        ]),
+        groupBy: vi.fn().mockResolvedValue([
+          { status: ProviderStatus.ONLINE_AVAILABLE, _count: { _all: 1 } },
+          { status: ProviderStatus.ONLINE_AVAILABLE_SOON, _count: { _all: 1 } },
         ]),
       },
       review: {
@@ -2992,6 +3003,7 @@ describe('AdminService partner overview request events', () => {
       providerProfile: {
         count: vi.fn().mockResolvedValue(0),
         findMany: vi.fn().mockResolvedValue([]),
+        groupBy: vi.fn().mockResolvedValue([]),
       },
       review: {
         aggregate: vi.fn().mockResolvedValue({ _avg: { rating: null }, _count: { rating: 0 } }),
