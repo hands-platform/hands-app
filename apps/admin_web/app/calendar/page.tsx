@@ -6,8 +6,8 @@ import { getAdminWebSession } from '../../lib/admin-session';
 
 import { CalendarClient } from './calendar-client';
 import {
+  CALENDAR_EVENT_RANGE_LIMIT,
   calendarMonthGridRange,
-  collectCalendarEventPages,
 } from './calendar-model';
 
 export default async function CalendarPage() {
@@ -16,24 +16,21 @@ export default async function CalendarPage() {
   const operatorId = session?.sub ?? 'admin-web';
   const operatorName = displayOperatorName(operatorId);
   const initialRange = calendarMonthGridRange(new Date());
-  const initialEvents = await collectCalendarEventPages(async (skip, take) => {
-    const initialQuery = new URLSearchParams({
-      from: initialRange.from,
-      skip: String(skip),
-      take: String(take),
-      to: initialRange.to,
-    });
-
-    const events = await adminGet<AdminCalendarEvent[] | null>(
-      `/admin/calendar-events?${initialQuery.toString()}`,
-      null,
-    );
-    if (!events) {
-      throw new Error('Calendar events request failed');
-    }
-
-    return events;
+  const initialQuery = new URLSearchParams({
+    from: initialRange.from,
+    range: 'bounded',
+    to: initialRange.to,
   });
+  const initialEvents = await adminGet<AdminCalendarEvent[] | null>(
+    `/admin/calendar-events?${initialQuery.toString()}`,
+    null,
+  );
+  if (!initialEvents) {
+    throw new Error('Calendar events request failed');
+  }
+  if (initialEvents.length > CALENDAR_EVENT_RANGE_LIMIT) {
+    throw new Error(`Calendar range exceeds ${CALENDAR_EVENT_RANGE_LIMIT} events`);
+  }
 
   return (
     <AdminPageTemplate title="Calendar">

@@ -20,9 +20,9 @@ import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge
 import {
   buildCalendarMetrics,
   buildCalendarTagFilters,
+  CALENDAR_EVENT_RANGE_LIMIT,
   calendarTagTone,
   canEditCalendarEvent,
-  collectCalendarEventPages,
   createBlankDraft,
   filterCalendarEvents,
   fromCalendarEventInput,
@@ -676,23 +676,24 @@ async function deleteCalendarEvent(id: string) {
 }
 
 async function listCalendarEvents(range: CalendarEventRange) {
-  return collectCalendarEventPages(async (skip, take) => {
-    const query = new URLSearchParams({
-      from: range.from,
-      skip: String(skip),
-      take: String(take),
-      to: range.to,
-    });
-    const response = await fetch(`/api/admin/calendar-events?${query.toString()}`, {
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      throw new Error('Calendar events request failed');
-    }
-
-    return (await response.json()) as CalendarEventRecord[];
+  const query = new URLSearchParams({
+    from: range.from,
+    range: 'bounded',
+    to: range.to,
   });
+  const response = await fetch(`/api/admin/calendar-events?${query.toString()}`, {
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error('Calendar events request failed');
+  }
+
+  const events = (await response.json()) as CalendarEventRecord[];
+  if (events.length > CALENDAR_EVENT_RANGE_LIMIT) {
+    throw new Error(`Calendar range exceeds ${CALENDAR_EVENT_RANGE_LIMIT} events`);
+  }
+  return events;
 }
 
 function calendarRangeKey(range: CalendarEventRange) {

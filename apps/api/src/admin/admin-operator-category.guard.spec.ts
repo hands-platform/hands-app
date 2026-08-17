@@ -27,6 +27,19 @@ describe('AdminOperatorCategoryGuard', () => {
     });
   });
 
+  it('reuses access loaded by Admin Web session authentication', async () => {
+    const { guard, prisma } = createGuard(null);
+
+    await expect(
+      guard.canActivate(
+        contextFixture('GET', '/api/admin/usage-overview', {
+          adminPermissionCategories: [AdminOperatorPermissionCategory.CUSTOMERS_DIRECTORY],
+        }),
+      ),
+    ).resolves.toBe(true);
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
   it('allows Master Admin without category setup', async () => {
     const { guard } = createGuard({
       roles: [Role.ADMIN, Role.MASTER_ADMIN],
@@ -480,7 +493,11 @@ function createGuard(storedAccess: unknown) {
 function contextFixture(
   method: string,
   originalUrl: string,
-  overrides: Partial<{ adminMfaEnrollmentRequired: boolean; authProvider: string }> = {},
+  overrides: Partial<{
+    adminMfaEnrollmentRequired: boolean;
+    adminPermissionCategories: AdminOperatorPermissionCategory[];
+    authProvider: string;
+  }> = {},
   body?: Record<string, unknown>,
 ) {
   return {

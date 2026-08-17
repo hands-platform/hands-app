@@ -214,7 +214,7 @@ describe('ChatArchivePage', () => {
       searchParams: Promise.resolve({ page: '999', q: 'late', range: '7d', sender: 'partner' }),
     })).rejects.toThrow('REDIRECT:/chat-archive?q=late&sender=partner&range=7d&page=2');
     expect(mockedRedirect).toHaveBeenCalledWith('/chat-archive?q=late&sender=partner&range=7d&page=2');
-    expect(mockedAdminGetResult).toHaveBeenCalledTimes(1);
+    expect(mockedAdminGetResult).toHaveBeenCalledTimes(2);
   });
 
   it('keeps full transcripts in Booking Activity and removes nested scrolling contracts', () => {

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, useTransition } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-import { AdminFormControlButton } from './admin-form-controls';
+import { AdminFormControlButton } from './admin-form-light-controls';
 
 type StartShiftRefreshButtonProps = {
   readonly refreshIntervalMs?: number;

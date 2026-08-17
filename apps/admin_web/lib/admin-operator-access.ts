@@ -33,6 +33,15 @@ export const getCurrentAdminOperatorAccessResult = cache(async function getCurre
     return { data: null, ok: true, status: null };
   }
 
+  const forwardedAccess = await forwardedAdminOperatorAccess(identity);
+  if (forwardedAccess) {
+    return {
+      data: resolveEnvMasterAdminAccess(identity, forwardedAccess),
+      ok: true,
+      status: 200,
+    };
+  }
+
   const result = await adminGetResult<AdminOperatorAccess | null>(
     `/admin/users/admin-operator-access?identity=${encodeURIComponent(identity)}`,
     null,
@@ -103,6 +112,28 @@ async function currentAdminWebSessionIdentity() {
   } catch {
     return null;
   }
+}
+
+async function forwardedAdminOperatorAccess(identity: string): Promise<AdminOperatorAccess | null> {
+  try {
+    const headerList = await headers();
+    const id = headerList.get('x-hands-admin-operator-id');
+    if (!id || id !== identity) {
+      return null;
+    }
+
+    return {
+      categories: commaSeparatedHeaderValues(headerList.get('x-hands-admin-operator-categories')),
+      id,
+      roles: commaSeparatedHeaderValues(headerList.get('x-hands-admin-operator-roles')),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function commaSeparatedHeaderValues(value: string | null) {
+  return value?.split(',').map((item) => item.trim()).filter(Boolean) ?? [];
 }
 
 function adminOperatorAuditTarget(pathname: string) {

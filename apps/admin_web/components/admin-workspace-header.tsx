@@ -20,14 +20,14 @@ import {
 } from '../lib/admin-navigation';
 import { adminBreadcrumbContext } from '../lib/admin-nav-match';
 import { AdminEmptyState } from './admin-empty-state';
-import { AdminFormShell } from './admin-form-controls';
+import { AdminFormShell } from './admin-form-light-controls';
 import { AdminIconButton } from './admin-icon-button';
 import { AdminIconLink } from './admin-icon-link';
+import { AdminReauthenticateOperatorForm } from './admin-reauthenticate-operator-form';
 import { AdminThemeToggle } from './admin-theme-toggle';
 import { AdminTopbarButton } from './admin-topbar-button';
 import { AdminTopbarSearchInput } from './admin-topbar-search-input';
 import { AdminAttentionBadge } from './status-badge';
-import { ReauthenticateOperatorForm } from '../app/admin-operators/operator-access-forms';
 
 type AdminWorkspaceHeaderProps = {
   readonly navigationToggle?: ReactNode;
@@ -345,7 +345,7 @@ export function AdminWorkspaceHeader({ navigationToggle, sections }: AdminWorksp
             <KeyRound aria-hidden="true" size={18} />
           </summary>
           <div className="topbar-dropdown topbar-reauth-panel">
-            <ReauthenticateOperatorForm />
+            <AdminReauthenticateOperatorForm />
           </div>
         </details>
         <AdminFormShell action="/api/admin/session/logout" method="post">

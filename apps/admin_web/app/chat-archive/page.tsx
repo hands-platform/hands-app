@@ -47,9 +47,14 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
     redirect(plan.archivePageHref(1));
   }
 
-  const summaryResult = plan.archiveSummaryHref
-    ? await adminGetResult<ChatArchiveSummary>(plan.archiveSummaryHref, {})
-    : null;
+  const [summaryResult, messagesResult] = await Promise.all([
+    plan.archiveSummaryHref
+      ? adminGetResult<ChatArchiveSummary>(plan.archiveSummaryHref, {})
+      : Promise.resolve(null),
+    plan.archiveHref
+      ? adminGetResult<AdminChatArchiveMessage[]>(plan.archiveHref, [])
+      : Promise.resolve(null),
+  ]);
   const matchingMessages = summaryResult?.ok
     ? nonNegativeInteger(summaryResult.data.matchingMessages)
     : null;
@@ -61,9 +66,6 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
     redirect(plan.archivePageHref(totalPages));
   }
 
-  const messagesResult = plan.archiveHref
-    ? await adminGetResult<AdminChatArchiveMessage[]>(plan.archiveHref, [])
-    : null;
   const messages = messagesResult?.ok ? messagesResult.data : [];
   const visibleFrom = messages.length > 0 ? (plan.activePage - 1) * plan.archivePageSize + 1 : 0;
   const visibleTo = messages.length > 0 ? visibleFrom + messages.length - 1 : 0;

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminWebSessionCookieSecretFromEnv } from './lib/admin-session-secret';
 
 const ADMIN_WEB_SESSION_COOKIE_NAME = 'hands_admin_session';
+const ADMIN_OPERATOR_CATEGORIES_HEADER = 'x-hands-admin-operator-categories';
+const ADMIN_OPERATOR_ID_HEADER = 'x-hands-admin-operator-id';
+const ADMIN_OPERATOR_ROLES_HEADER = 'x-hands-admin-operator-roles';
 const NO_STORE_HEADERS = {
   'cache-control': 'no-store',
   pragma: 'no-cache',
@@ -29,6 +32,11 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL('/admin-operators?mfa=setup', request.url), {
           headers: NO_STORE_HEADERS,
         });
+      }
+      if (serverSession.operatorAccess) {
+        requestHeaders.set(ADMIN_OPERATOR_ID_HEADER, serverSession.operatorAccess.id);
+        requestHeaders.set(ADMIN_OPERATOR_ROLES_HEADER, serverSession.operatorAccess.roles.join(','));
+        requestHeaders.set(ADMIN_OPERATOR_CATEGORIES_HEADER, serverSession.operatorAccess.categories.join(','));
       }
       return NextResponse.next({ request: { headers: requestHeaders } });
     }
@@ -116,13 +124,31 @@ async function getServerAdminSessionState(request: NextRequest) {
     const body = (await response.json()) as {
       authenticated?: unknown;
       mfaEnrollmentRequired?: unknown;
+      operatorAccess?: {
+        categories?: unknown;
+        id?: unknown;
+        roles?: unknown;
+      };
     };
+    const operatorAccess = body.operatorAccess;
     return {
       valid: body.authenticated === true,
       mfaEnrollmentRequired: body.mfaEnrollmentRequired === true,
+      operatorAccess:
+        typeof operatorAccess?.id === 'string' &&
+        Array.isArray(operatorAccess.roles) &&
+        operatorAccess.roles.every((role) => typeof role === 'string') &&
+        Array.isArray(operatorAccess.categories) &&
+        operatorAccess.categories.every((category) => typeof category === 'string')
+          ? {
+              categories: operatorAccess.categories,
+              id: operatorAccess.id,
+              roles: operatorAccess.roles,
+            }
+          : null,
     };
   } catch {
-    return { valid: false, mfaEnrollmentRequired: false };
+    return { valid: false, mfaEnrollmentRequired: false, operatorAccess: null };
   }
 }
 
@@ -158,6 +184,9 @@ function isBrowserFacingApi(pathname: string) {
 
 function requestHeadersWithAdminPathname(request: NextRequest, pathname: string) {
   const requestHeaders = new Headers(request.headers);
+  requestHeaders.delete(ADMIN_OPERATOR_CATEGORIES_HEADER);
+  requestHeaders.delete(ADMIN_OPERATOR_ID_HEADER);
+  requestHeaders.delete(ADMIN_OPERATOR_ROLES_HEADER);
   requestHeaders.set('x-admin-pathname', pathname);
   return requestHeaders;
 }

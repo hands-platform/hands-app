@@ -22,6 +22,7 @@ export async function GET(request: Request) {
     {
       authenticated: true,
       mfaEnrollmentRequired: state.mfaEnrollmentRequired,
+      operatorAccess: state.operatorAccess,
       role: session.role,
       sub: session.sub,
     },

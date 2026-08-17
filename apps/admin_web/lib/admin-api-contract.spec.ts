@@ -92,6 +92,7 @@ describe('admin api auth guard', () => {
       typ: 'admin-web-api',
     });
     expect(payload.exp - payload.iat).toBe(300);
+    expect(payload.iat % 60).toBe(0);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -276,6 +277,46 @@ describe('admin api auth guard', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/admin/bank-reconciliation/bank-1/matches'),
       expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('reuses proxy-verified operator access before sending an Admin write', async () => {
+    const sessionSecret = 'test-session-secret-with-32-characters';
+    process.env = {
+      ...process.env,
+      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret-with-32-chars',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+      NODE_ENV: 'production',
+    };
+    const sessionCookieValue = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      secret: sessionSecret,
+      sub: 'operator-1',
+    });
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({
+        cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookieValue}`,
+        'x-hands-admin-operator-categories': 'FINANCE_BANK_RECONCILIATION',
+        'x-hands-admin-operator-id': 'operator-1',
+        'x-hands-admin-operator-roles': 'ADMIN',
+      }) as never,
+    );
+    const fetchMock = vi.spyOn(global, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes('/admin/users/admin-operator-access')) {
+        throw new Error('proxy-verified access should avoid a second read');
+      }
+      if (url.includes('/admin/operator-activity')) {
+        return Response.json({ ok: true });
+      }
+      return Response.json({ method: init?.method, ok: true });
+    });
+
+    await expect(
+      adminPostOrThrow('/admin/bank-reconciliation/bank-1/matches', { amount: 500_000 }),
+    ).resolves.toMatchObject({ method: 'POST' });
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).not.toEqual(
+      expect.arrayContaining([expect.stringContaining('/admin/users/admin-operator-access')]),
     );
   });
 

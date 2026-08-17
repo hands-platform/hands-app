@@ -52,11 +52,13 @@ describe('calendar client structure', () => {
     const clientSource = readFileSync(join(process.cwd(), 'app/calendar/calendar-client.tsx'), 'utf8');
 
     expect(pageSource).toContain('calendarMonthGridRange(new Date())');
-    expect(pageSource).toContain('collectCalendarEventPages(async (skip, take) =>');
+    expect(pageSource).not.toContain('collectCalendarEventPages');
     expect(pageSource).toContain('`/admin/calendar-events?${initialQuery.toString()}`');
+    expect(pageSource).toContain("range: 'bounded'");
     expect(clientSource).toContain('listCalendarEvents(range)');
-    expect(clientSource).toContain('collectCalendarEventPages(async (skip, take) =>');
+    expect(clientSource).not.toContain('collectCalendarEventPages');
     expect(clientSource).toContain("fetch(`/api/admin/calendar-events?${query.toString()}`");
+    expect(clientSource).toContain("range: 'bounded'");
     expect(clientSource).toContain('from: info.start.toISOString()');
     expect(clientSource).toContain('to: info.end.toISOString()');
     expect(clientSource).toContain("calendarEventRequest('/api/admin/calendar-events'");

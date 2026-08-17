@@ -1,6 +1,7 @@
 'use client';
 
 import type { FormHTMLAttributes, ReactNode, SubmitEvent } from 'react';
+import { startTransition } from 'react';
 
 type AdminDirectoryFilterFormProps = {
   readonly canonicalDefaults?: Readonly<Record<string, string>>;
@@ -15,17 +16,18 @@ export function AdminDirectoryFilterForm({
   onSubmit,
   ...formProps
 }: AdminDirectoryFilterFormProps) {
-  const handleSubmit = canonicalDefaults
-    ? (event: SubmitEvent<HTMLFormElement>) => {
-        onSubmit?.(event);
-        if (event.defaultPrevented) return;
-        event.preventDefault();
-        const action = event.currentTarget.getAttribute('action') || window.location.pathname;
-        window.location.assign(
-          canonicalGetFormHref(action, new FormData(event.currentTarget).entries(), canonicalDefaults),
-        );
-      }
-    : onSubmit;
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+    onSubmit?.(event);
+    if (event.defaultPrevented) return;
+    event.preventDefault();
+    const action = event.currentTarget.getAttribute('action') || window.location.pathname;
+    const href = canonicalGetFormHref(
+      action,
+      new FormData(event.currentTarget).entries(),
+      canonicalDefaults ?? {},
+    );
+    startTransition(() => window.history.pushState(null, '', href));
+  };
 
   return (
     <form

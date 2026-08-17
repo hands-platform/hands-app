@@ -1,12 +1,13 @@
 import { ListChecks } from 'lucide-react';
 import { AdminEmptyState } from '../components/admin-empty-state';
 import { AdminFilterChipGroup } from '../components/admin-filter-chip-group';
-import { AdminFormControlLink } from '../components/admin-form-controls';
+import { AdminFormControlLink } from '../components/admin-form-light-controls';
 import { AdminPageTemplate } from '../components/admin-page-template';
 import { AdminQueueMeta } from '../components/admin-overview-card';
 import { AdminTextLink } from '../components/admin-text-link';
 import { AdminActionCard, AdminDisclosure, AdminSection, AdminTaskGrid } from '../components/admin-surface';
-import { StartShiftChartWidgets, StartShiftLiveMetrics } from '../components/start-shift-chart-widgets';
+import { StartShiftChartWidgetsDeferred } from '../components/start-shift-chart-widgets-deferred';
+import { StartShiftLiveMetrics } from '../components/start-shift-live-metrics';
 import {
   StartShiftDemandSupplyWidgets,
   StartShiftRankingWidgets,
@@ -1160,7 +1161,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         }
         title={filters.range === 'today' ? 'Today result' : 'Period result'}
       >
-        <StartShiftChartWidgets
+        <StartShiftChartWidgetsDeferred
           analytics={startShiftAnalytics}
           fallbackBusinessTotals={
             earningsResponse

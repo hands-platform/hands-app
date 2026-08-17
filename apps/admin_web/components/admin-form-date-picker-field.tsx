@@ -1,5 +1,6 @@
 'use client';
 
+import 'react-datepicker/dist/react-datepicker.css';
 import { forwardRef, memo, useEffect, useState, type ChangeEventHandler, type MouseEventHandler } from 'react';
 import DatePicker from 'react-datepicker';
 

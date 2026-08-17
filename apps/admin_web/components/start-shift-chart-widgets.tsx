@@ -21,16 +21,13 @@ import {
 import type { AdminStartShiftAnalytics } from '../lib/admin-api';
 import { AdminDataTable } from './admin-data-table';
 import { AdminCard, AdminCardHeader } from './admin-surface';
+import { StartShiftLiveMetrics, type StartShiftLiveMetric } from './start-shift-live-metrics';
 import { StatusBadge } from './status-badge';
+
+export { StartShiftLiveMetrics };
 
 type StartShiftChartState = 'empty' | 'ready' | 'stale' | 'unavailable';
 type StartShiftBucket = AdminStartShiftAnalytics['buckets'][number];
-
-type StartShiftLiveMetric = {
-  href?: string;
-  label: string;
-  value: number | string;
-};
 
 type StartShiftChartWidgetsProps = {
   analytics: AdminStartShiftAnalytics | null;
@@ -183,35 +180,6 @@ function BookingFlowTooltip({ active, label, payload }: TooltipContentProps<numb
   );
 }
 
-function LiveMetricStrip({ metrics }: { metrics: readonly StartShiftLiveMetric[] }) {
-  if (!metrics.length) {
-    return null;
-  }
-  return (
-    <div className="start-shift-live-strip" aria-label="Current live operations" role="list">
-      {metrics.map((metric) => {
-        const content = (
-          <>
-            <span>{metric.label}</span>
-            <strong>{metric.value}</strong>
-          </>
-        );
-        return metric.href ? (
-          <Link href={metric.href} key={metric.label} prefetch={false} role="listitem">
-            {content}
-          </Link>
-        ) : (
-          <div key={metric.label} role="listitem">{content}</div>
-        );
-      })}
-    </div>
-  );
-}
-
-export function StartShiftLiveMetrics({ metrics }: { metrics: readonly StartShiftLiveMetric[] }) {
-  return <LiveMetricStrip metrics={metrics} />;
-}
-
 function BookingFlowCard({
   analytics,
   liveMetrics = [],
@@ -238,7 +206,7 @@ function BookingFlowCard({
         description="Independent event counts grouped by when each event occurred; this is not a booking cohort funnel"
         title={<span id="start-shift-booking-flow-title">Operational events</span>}
       />
-      <LiveMetricStrip metrics={liveMetrics} />
+      <StartShiftLiveMetrics metrics={liveMetrics} />
       {currentBucket && isToday ? (
         <div className="start-shift-current-hour" aria-label={`Current hour ${currentBucket.label}`}>
           <div>

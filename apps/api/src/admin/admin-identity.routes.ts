@@ -134,6 +134,11 @@ export class AdminIdentityRoutes extends AdminNotificationRoutes {
       ok: true,
       sessionId: user.sessionId,
       mfaEnrollmentRequired: user.adminMfaEnrollmentRequired === true,
+      operatorAccess: {
+        id: user.id,
+        roles: user.roles,
+        categories: user.adminPermissionCategories ?? [],
+      },
     };
   }
 
@@ -225,8 +230,15 @@ export class AdminIdentityRoutes extends AdminNotificationRoutes {
     @Query('to') to?: string,
     @Query('take') take?: string,
     @Query('skip') skip?: string,
+    @Query('range') range?: string,
   ) {
-    return this.admin.listAdminCalendarEvents({ from, skip, take, to });
+    return this.admin.listAdminCalendarEvents({
+      from,
+      skip,
+      take,
+      to,
+      ...(range === 'bounded' ? { boundedRange: true } : {}),
+    });
   }
 
   @Post('calendar-events')

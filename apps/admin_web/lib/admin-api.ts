@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { after } from 'next/server';
 import { cache } from 'react';
 
 import { getAdminWebSession } from './admin-session';
@@ -13,6 +14,7 @@ import {
 import type { AdminQueueAgeCounts, AdminQueueSlaSummary } from './admin-queue-list';
 
 const API_BASE_URL = process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api';
+const ADMIN_API_TOKEN_CACHE_WINDOW_MS = 60_000;
 
 export type AdminBookingStatus =
   | 'CREATED'
@@ -7216,7 +7218,7 @@ export async function adminPost<T>(path: string, body: unknown, fallback: T): Pr
     });
 
     if (!response.ok) {
-      await recordAdminOperatorActivityForIdentity(
+      await scheduleAdminOperatorActivityForIdentity(
         operatorContext.operatorIdentity,
         'admin_web.action_failed',
         `POST ${path}`,
@@ -7229,7 +7231,7 @@ export async function adminPost<T>(path: string, body: unknown, fallback: T): Pr
     }
 
     if (path !== '/admin/operator-activity') {
-      await recordAdminOperatorActivityForIdentity(
+      await scheduleAdminOperatorActivityForIdentity(
         operatorContext.operatorIdentity,
         'admin_web.action',
         `POST ${path}`,
@@ -7281,7 +7283,7 @@ export async function adminPatch<T>(path: string, body: unknown, fallback: T): P
     });
 
     if (!response.ok) {
-      await recordAdminOperatorActivityForIdentity(
+      await scheduleAdminOperatorActivityForIdentity(
         operatorContext.operatorIdentity,
         'admin_web.action_failed',
         `PATCH ${path}`,
@@ -7293,7 +7295,7 @@ export async function adminPatch<T>(path: string, body: unknown, fallback: T): P
       return fallback;
     }
 
-    await recordAdminOperatorActivityForIdentity(
+    await scheduleAdminOperatorActivityForIdentity(
       operatorContext.operatorIdentity,
       'admin_web.action',
       `PATCH ${path}`,
@@ -7326,7 +7328,7 @@ export async function adminDelete<T>(path: string, fallback: T): Promise<T> {
     });
 
     if (!response.ok) {
-      await recordAdminOperatorActivityForIdentity(
+      await scheduleAdminOperatorActivityForIdentity(
         operatorContext.operatorIdentity,
         'admin_web.action_failed',
         `DELETE ${path}`,
@@ -7338,7 +7340,7 @@ export async function adminDelete<T>(path: string, fallback: T): Promise<T> {
       return fallback;
     }
 
-    await recordAdminOperatorActivityForIdentity(
+    await scheduleAdminOperatorActivityForIdentity(
       operatorContext.operatorIdentity,
       'admin_web.action',
       `DELETE ${path}`,
@@ -7365,7 +7367,8 @@ export const getAdminAccessToken = cache(async function getAdminAccessToken() {
   if (!session) {
     throw new Error('Admin Web session is required for Admin API access');
   }
-  return createAdminWebApiToken(session.sub, new Date(), process.env, session.jti);
+  const cacheWindowStart = Math.floor(Date.now() / ADMIN_API_TOKEN_CACHE_WINDOW_MS) * ADMIN_API_TOKEN_CACHE_WINDOW_MS;
+  return createAdminWebApiToken(session.sub, new Date(cacheWindowStart), process.env, session.jti);
 });
 
 export class AdminApiRequestError extends Error {
@@ -7427,7 +7430,7 @@ async function adminJsonRequestOrThrow<T>(
   });
 
   if (!response.ok) {
-    await recordAdminOperatorActivityForIdentity(
+    await scheduleAdminOperatorActivityForIdentity(
       operatorContext.operatorIdentity,
       'admin_web.action_failed',
       `${method} ${path}`,
@@ -7440,7 +7443,7 @@ async function adminJsonRequestOrThrow<T>(
     throw new AdminApiRequestError(method, path, response.status, errorPayload);
   }
 
-  await recordAdminOperatorActivityForIdentity(
+  await scheduleAdminOperatorActivityForIdentity(
     operatorContext.operatorIdentity,
     'admin_web.action',
     `${method} ${path}`,
@@ -7486,7 +7489,8 @@ async function verifyAdminOperatorWriteAccess(
     return { category, denied: true, operatorIdentity };
   }
 
-  const access = await fetchAdminOperatorAccess(operatorIdentity);
+  const forwardedAccess = await forwardedAdminOperatorAccess(operatorIdentity);
+  const access = forwardedAccess ?? await fetchAdminOperatorAccess(operatorIdentity);
   if (hasAdminOperatorCategory(access, category)) {
     return { category, denied: false, operatorIdentity };
   }
@@ -7536,6 +7540,42 @@ async function fetchAdminOperatorAccess(identity: string) {
   const responseText = await response.text();
   const access = responseText.trim() ? (JSON.parse(responseText) as AdminOperatorAccess | null) : null;
   return resolveEnvMasterAdminAccess(identity, access);
+}
+
+async function forwardedAdminOperatorAccess(identity: string): Promise<AdminOperatorAccess | null> {
+  try {
+    const headerList = await headers();
+    const id = headerList.get('x-hands-admin-operator-id');
+    if (!id || id !== identity) {
+      return null;
+    }
+
+    return {
+      categories: commaSeparatedHeaderValues(headerList.get('x-hands-admin-operator-categories')),
+      id,
+      roles: commaSeparatedHeaderValues(headerList.get('x-hands-admin-operator-roles')),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function commaSeparatedHeaderValues(value: string | null) {
+  return value?.split(',').map((item) => item.trim()).filter(Boolean) ?? [];
+}
+
+function scheduleAdminOperatorActivityForIdentity(
+  operatorIdentity: string | null,
+  action: string,
+  target: string,
+  metadata: Record<string, unknown>,
+) {
+  try {
+    after(() => recordAdminOperatorActivityForIdentity(operatorIdentity, action, target, metadata));
+    return Promise.resolve();
+  } catch {
+    return recordAdminOperatorActivityForIdentity(operatorIdentity, action, target, metadata);
+  }
 }
 
 async function recordAdminOperatorActivityForIdentity(

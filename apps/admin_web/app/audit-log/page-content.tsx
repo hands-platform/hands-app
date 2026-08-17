@@ -46,16 +46,18 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
   const params = searchParams ? await searchParams : {};
   const filters = auditFilters(params);
   const pageHref = auditPageHref(params);
-  const workspaceResult = await adminGetResult<AdminAuditWorkspaceResponse>(
-    auditWorkspaceApiHref(filters),
-    EMPTY_WORKSPACE,
-  );
-  const selectedEventResult = filters.event && workspaceResult.ok
-      ? await adminGetResult<AdminAuditEventDetail | null>(
+  const [workspaceResult, selectedEventResult] = await Promise.all([
+    adminGetResult<AdminAuditWorkspaceResponse>(
+      auditWorkspaceApiHref(filters),
+      EMPTY_WORKSPACE,
+    ),
+    filters.event
+      ? adminGetResult<AdminAuditEventDetail | null>(
         `/admin/audit-logs/events/${encodeURIComponent(filters.event)}${filters.bucket ? `?bucket=${encodeURIComponent(filters.bucket)}` : ''}`,
         null,
       )
-    : null;
+      : Promise.resolve(null),
+  ]);
   const workspace = workspaceResult.data;
   const permissionDenied = workspaceResult.status === 401 || workspaceResult.status === 403;
   const refreshedHref = auditHrefFromFilters({ ...filters, cursor: '', event: '' });

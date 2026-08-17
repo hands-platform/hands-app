@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { RequestMethod } from '@nestjs/common';
 import { HEADERS_METADATA, METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
-import { ReferralRewardMode, Role } from '@prisma/client';
+import { AdminOperatorPermissionCategory, ReferralRewardMode, Role } from '@prisma/client';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { AdminController } from './admin.controller';
 import type { AdminService } from './admin.service';
@@ -216,6 +216,24 @@ describe('AdminController notification and push actions', () => {
   };
   const controller = new AdminController(admin as unknown as AdminService);
   const user = { id: 'admin-1', roles: [Role.ADMIN], sessionId: 'admin-session-1' } as AuthenticatedUser;
+
+  it('returns the access already verified for the current Admin Web session', () => {
+    expect(
+      controller.currentAdminOperatorSession({
+        ...user,
+        adminPermissionCategories: [AdminOperatorPermissionCategory.BOOKINGS_REALTIME],
+      }),
+    ).toEqual({
+      ok: true,
+      sessionId: 'admin-session-1',
+      mfaEnrollmentRequired: false,
+      operatorAccess: {
+        categories: [AdminOperatorPermissionCategory.BOOKINGS_REALTIME],
+        id: 'admin-1',
+        roles: [Role.ADMIN],
+      },
+    });
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();

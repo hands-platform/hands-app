@@ -6,7 +6,7 @@ describe('Admin form control usage', () => {
     const offenders = ['app', 'components']
       .flatMap((directory) => listTsxFiles(join(process.cwd(), directory)))
       .filter((filePath) => !filePath.endsWith('.spec.tsx'))
-      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-form-controls.tsx')
+      .filter((filePath) => !isSharedFormControlFile(filePath))
       .filter((filePath) => legacyToneButtonClassNamePattern.test(readFileSync(filePath, 'utf8')))
       .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
 
@@ -35,6 +35,7 @@ describe('Admin form control usage', () => {
     const allowedRawInputFiles = new Set([
       'components/admin-form-controls.tsx',
       'components/admin-form-date-picker-field.tsx',
+      'components/admin-form-light-controls.tsx',
     ]);
     const offenders = productionTsxFiles()
       .filter((filePath) => !allowedRawInputFiles.has(relative(process.cwd(), filePath).replaceAll('\\', '/')))
@@ -522,6 +523,13 @@ function productionTsxFiles() {
   return ['app', 'components']
     .flatMap((directory) => listTsxFiles(join(process.cwd(), directory)))
     .filter((filePath) => !filePath.endsWith('.spec.tsx'));
+}
+
+function isSharedFormControlFile(filePath: string) {
+  return [
+    'components/admin-form-controls.tsx',
+    'components/admin-form-light-controls.tsx',
+  ].includes(relative(process.cwd(), filePath).replaceAll('\\', '/'));
 }
 
 function usesVuexyDatePickerSkin(source: string) {

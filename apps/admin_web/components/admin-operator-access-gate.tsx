@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 import type { ReactNode } from 'react';
 
-import { AdminFormControlLink } from './admin-form-controls';
+import { AdminFormControlLink } from './admin-form-light-controls';
 import { AdminErrorState } from './admin-surface';
 import type { AdminOperatorAccess } from '../lib/admin-api';
 import { getAdminOperatorPageAccess } from '../lib/admin-operator-access';

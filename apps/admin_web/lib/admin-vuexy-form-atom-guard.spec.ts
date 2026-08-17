@@ -6,6 +6,7 @@ const allowedNativeControlFiles = new Set([
   'components/action-menu.tsx',
   'components/admin-form-date-picker-field.tsx',
   'components/admin-form-controls.tsx',
+  'components/admin-form-light-controls.tsx',
   'components/confirm-dialog.tsx',
 ]);
 

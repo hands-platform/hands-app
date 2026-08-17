@@ -37,8 +37,9 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
   }
 
   const summaryHref = buildCustomerDataHrefs(filters).summaryHref;
-  const [summaryResult, operatorAccess] = await Promise.all([
+  const [summaryResult, listResult, operatorAccess] = await Promise.all([
     adminGetResult<AdminCustomerSummary>(summaryHref, { totalCount: 0 }),
+    adminGetResult<AdminCustomerDirectoryRow[]>(buildCustomerDataHrefs(filters).listHref, []),
     getCurrentAdminOperatorAccess(),
   ]);
   if (!summaryResult.ok) {
@@ -56,10 +57,6 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
     redirect(buildCustomerListHref(filters, { page: lastPage }));
   }
 
-  const listResult = await adminGetResult<AdminCustomerDirectoryRow[]>(
-    buildCustomerDataHrefs(filters).listHref,
-    [],
-  );
   if (!listResult.ok) {
     return (
       <AdminPageTemplate

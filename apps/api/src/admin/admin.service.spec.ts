@@ -3118,6 +3118,22 @@ describe('AdminService operations calendar', () => {
     );
   });
 
+  it('loads a calendar range in one bounded query while retaining overflow evidence', async () => {
+    const prisma = {
+      adminCalendarEvent: {
+        findMany: vi.fn().mockResolvedValue([calendarEvent]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listAdminCalendarEvents({ boundedRange: true, skip: '200', take: '20' });
+
+    expect(prisma.adminCalendarEvent.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 1_001 }),
+    );
+    expect(prisma.adminCalendarEvent.findMany.mock.calls[0]?.[0]).not.toHaveProperty('skip');
+  });
+
   it('creates calendar events for the current Admin Web operator identity', async () => {
     const prisma = {
       adminCalendarEvent: {

@@ -13,6 +13,7 @@ vi.mock('next/navigation', () => ({
   redirect: vi.fn((href: string) => {
     throw new Error(`NEXT_REDIRECT:${href}`);
   }),
+  useRouter: () => ({ push: vi.fn() }),
 }));
 
 vi.mock('../../lib/admin-api', async () => {
@@ -164,7 +165,7 @@ describe('CustomersPage', () => {
     expect(markup).not.toContain('href="/customers/directory-customer');
   });
 
-  it('redirects an out-of-range page to the last page before loading rows', async () => {
+  it('redirects an out-of-range page while the parallel row read is in flight', async () => {
     mockedAdminGetResult.mockResolvedValueOnce({
       data: {
         totalCount: 35,
@@ -177,7 +178,7 @@ describe('CustomersPage', () => {
     await expect(
       CustomersPage({ searchParams: Promise.resolve({ page: '99', view: 'all' }) }),
     ).rejects.toThrow('NEXT_REDIRECT:/customers?view=all&page=4');
-    expect(mockedAdminGetResult).toHaveBeenCalledTimes(1);
+    expect(mockedAdminGetResult).toHaveBeenCalledTimes(2);
   });
 
   it('does not send an invalid custom date range to the API', async () => {

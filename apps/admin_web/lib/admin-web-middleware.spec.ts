@@ -72,7 +72,15 @@ describe('Admin web proxy', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
-        Response.json({ authenticated: true, mfaEnrollmentRequired: false }),
+        Response.json({
+          authenticated: true,
+          mfaEnrollmentRequired: false,
+          operatorAccess: {
+            categories: ['PARTNERS_DIRECTORY'],
+            id: 'admin@hands.vn',
+            roles: ['ADMIN'],
+          },
+        }),
       ),
     );
 
@@ -86,6 +94,45 @@ describe('Admin web proxy', () => {
     expect(response.headers.get('x-middleware-request-x-admin-pathname')).toBe(
       '/partners?review=approval-pending&sort=oldest',
     );
+    expect(response.headers.get('x-middleware-request-x-hands-admin-operator-id')).toBe('admin@hands.vn');
+    expect(response.headers.get('x-middleware-request-x-hands-admin-operator-roles')).toBe('ADMIN');
+    expect(response.headers.get('x-middleware-request-x-hands-admin-operator-categories')).toBe(
+      'PARTNERS_DIRECTORY',
+    );
+  });
+
+  it('removes spoofed operator access headers when the server does not return access', async () => {
+    const sessionSecret = 'test-admin-session-secret-with-32-chars';
+    process.env = {
+      ...process.env,
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+      NODE_ENV: 'production',
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(Response.json({ authenticated: true, mfaEnrollmentRequired: false })),
+    );
+    const { proxy } = await import('../proxy');
+    const sessionCookie = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      secret: sessionSecret,
+      sub: 'admin@hands.vn',
+    });
+
+    const response = await proxy(
+      new NextRequest('http://localhost/bookings', {
+        headers: {
+          cookie: `hands_admin_session=${sessionCookie}`,
+          'x-hands-admin-operator-categories': 'SYSTEM',
+          'x-hands-admin-operator-id': 'attacker',
+          'x-hands-admin-operator-roles': 'MASTER_ADMIN',
+        },
+      }),
+    );
+
+    expect(response.headers.get('x-middleware-request-x-hands-admin-operator-categories')).toBeNull();
+    expect(response.headers.get('x-middleware-request-x-hands-admin-operator-id')).toBeNull();
+    expect(response.headers.get('x-middleware-request-x-hands-admin-operator-roles')).toBeNull();
   });
 
   it('rejects a signed cookie after the server session is revoked', async () => {

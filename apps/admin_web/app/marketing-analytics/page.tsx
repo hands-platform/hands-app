@@ -110,7 +110,7 @@ import {
   normalizeMarketingAnalyticsFilters,
   type MarketingSpendDraft,
 } from './marketing-analytics-model';
-import { MarketingAnalyticsTrendChart } from './marketing-analytics-trend-chart';
+import { MarketingAnalyticsTrendChartDeferred } from './marketing-analytics-trend-chart-deferred';
 import {
   MarketingSpendActionForm,
   MarketingSpendSubmitButton,
@@ -725,7 +725,7 @@ export default async function MarketingAnalyticsPage({
             id="marketing-acquisition-trend"
             title="Acquisition and booking trend"
           >
-            <MarketingAnalyticsTrendChart points={overview.trend} />
+            <MarketingAnalyticsTrendChartDeferred points={overview.trend} />
           </AdminSection>
           <InsightCard overview={overview} />
         </>

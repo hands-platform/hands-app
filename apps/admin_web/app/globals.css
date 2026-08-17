@@ -34451,3 +34451,17 @@ label.admin-directory-filter-select:not(.admin-form-control-labeled) {
   padding: 0 14px 0 42px;
   text-indent: 28px;
 }
+.admin-deferred-chart-placeholder {
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: 6px;
+  min-height: 320px;
+}
+
+.admin-deferred-chart-placeholder.is-dashboard {
+  min-height: 520px;
+}
+
+.admin-deferred-chart-placeholder.is-usage {
+  min-height: 560px;
+}

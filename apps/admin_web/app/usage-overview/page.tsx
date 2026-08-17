@@ -48,7 +48,7 @@ import {
   usageOverviewHref,
   validateUsageCustomRange,
 } from './usage-overview-model';
-import { UsageOverviewTrendChart } from './usage-overview-trend-chart';
+import { UsageOverviewTrendChartDeferred } from './usage-overview-trend-chart-deferred';
 import { UsageOverviewRefreshButton } from './usage-overview-refresh-button';
 
 type UsageOverviewPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -325,7 +325,7 @@ function UsageOverviewContent({ overview }: { readonly overview: AdminUsageOverv
         statusLabel={overview.rangeLabel}
         title="Activity trends"
       >
-        <UsageOverviewTrendChart rows={overview.behavior.trend} usageAvailable={usageAvailable} />
+        <UsageOverviewTrendChartDeferred rows={overview.behavior.trend} usageAvailable={usageAvailable} />
       </AdminSection>
 
       <AdminOverviewGrid ariaLabel="Customer period and current base" variant="insight">

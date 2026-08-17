@@ -297,13 +297,20 @@ export class AdminOperatorCategoryGuard implements CanActivate {
       throw new ForbiddenException('Admin route has no permission category');
     }
 
-    const storedAccess = await this.prisma.user.findUnique({
-      where: { id: user.id },
-      select: {
-        roles: true,
-        adminOperatorPermission: { select: { categories: true } },
-      },
-    });
+    const storedAccess =
+      (user.authProvider === 'admin-web' || user.authProvider === 'admin-realtime') &&
+      Array.isArray(user.adminPermissionCategories)
+        ? {
+            roles: user.roles,
+            adminOperatorPermission: { categories: user.adminPermissionCategories },
+          }
+        : await this.prisma.user.findUnique({
+            where: { id: user.id },
+            select: {
+              roles: true,
+              adminOperatorPermission: { select: { categories: true } },
+            },
+          });
     if (!storedAccess?.roles.includes(Role.ADMIN)) {
       await this.recordAuthorizationDenial(user, method, path, 'ADMIN_ROLE_REVOKED', requiredCategory);
       throw new ForbiddenException('Admin operator access has been revoked');

@@ -2,7 +2,7 @@ import {
   AdminFormControlButton,
   AdminFormInput,
   AdminFormShell,
-} from '../../components/admin-form-controls';
+} from '../../components/admin-form-light-controls';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminCard } from '../../components/admin-surface';
 
@@ -34,24 +34,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </AdminInlineNotice>
         ) : null}
         <AdminFormShell action={action} className="admin-auth-form" method="post">
-          <AdminFormInput
-            autoComplete="username"
-            className="admin-form-control-fluid"
-            label="Email"
-            labelVisibility="visible"
-            name="email"
-            required
-            type="email"
-          />
-          <AdminFormInput
-            autoComplete="current-password"
-            className="admin-form-control-fluid"
-            label="Password"
-            labelVisibility="visible"
-            name="password"
-            required
-            type="password"
-          />
+          <AdminFormInput autoComplete="username" className="admin-form-control-fluid" label="Email" labelVisibility="visible" name="email" required type="email" />
+          <AdminFormInput autoComplete="current-password" className="admin-form-control-fluid" label="Password" labelVisibility="visible" name="password" required type="password" />
           <AdminFormInput
             autoComplete="one-time-code"
             className="admin-form-control-fluid"

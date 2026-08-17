@@ -40,13 +40,31 @@ async function requestAdminSessionApi(session: AdminWebSession, method: 'GET' | 
     const body = (await response.json().catch(() => null)) as {
       mfaEnrollmentRequired?: unknown;
       ok?: unknown;
+      operatorAccess?: {
+        categories?: unknown;
+        id?: unknown;
+        roles?: unknown;
+      };
     } | null;
+    const operatorAccess = body?.operatorAccess;
     return {
       valid: body?.ok === true,
       mfaEnrollmentRequired: body?.mfaEnrollmentRequired === true,
+      operatorAccess:
+        typeof operatorAccess?.id === 'string' &&
+        Array.isArray(operatorAccess.roles) &&
+        operatorAccess.roles.every((role) => typeof role === 'string') &&
+        Array.isArray(operatorAccess.categories) &&
+        operatorAccess.categories.every((category) => typeof category === 'string')
+          ? {
+              categories: operatorAccess.categories,
+              id: operatorAccess.id,
+              roles: operatorAccess.roles,
+            }
+          : null,
       status: response.status,
     };
   } catch {
-    return { valid: false, mfaEnrollmentRequired: false, status: null };
+    return { valid: false, mfaEnrollmentRequired: false, operatorAccess: null, status: null };
   }
 }

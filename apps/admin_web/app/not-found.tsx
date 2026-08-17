@@ -1,6 +1,6 @@
 import { headers } from 'next/headers';
 
-import { AdminFormControlLink } from '../components/admin-form-controls';
+import { AdminFormControlLink } from '../components/admin-form-light-controls';
 import { AdminPageTemplate } from '../components/admin-page-template';
 import { AdminErrorState } from '../components/admin-surface';
 

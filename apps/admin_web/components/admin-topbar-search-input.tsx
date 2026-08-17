@@ -1,6 +1,6 @@
 import type { ChangeEventHandler, Ref } from 'react';
 
-import { AdminFormSearch } from './admin-form-controls';
+import { AdminFormSearch } from './admin-form-light-controls';
 
 type AdminTopbarSearchInputProps = {
   readonly autoFocus?: boolean;
