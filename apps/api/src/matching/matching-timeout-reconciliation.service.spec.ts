@@ -94,7 +94,7 @@ describe('BookingTimeoutReconciliationService', () => {
     expect(queue.add).toHaveBeenCalledWith(
       'booking-timeout',
       { bookingId: 'booking-expired-payment-pending' },
-      expect.objectContaining({ delay: 0, attempts: 3, removeOnFail: true }),
+      expect.objectContaining({ delay: 0, attempts: 3, removeOnFail: false }),
     );
   });
 

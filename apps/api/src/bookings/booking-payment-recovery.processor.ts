@@ -6,7 +6,7 @@ import {
 } from '../payments/payment-booking-recovery.queue';
 import { BookingsService } from './bookings.service';
 
-@Processor(PAYMENT_BOOKING_RECOVERY_QUEUE_NAME)
+@Processor({ name: PAYMENT_BOOKING_RECOVERY_QUEUE_NAME, configKey: 'worker' })
 export class BookingPaymentRecoveryProcessor extends WorkerHost {
   constructor(private readonly bookings: BookingsService) {
     super();

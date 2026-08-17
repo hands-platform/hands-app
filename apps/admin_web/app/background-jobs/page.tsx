@@ -603,9 +603,11 @@ export default async function BackgroundJobsPage({ searchParams }: BackgroundJob
 
 const BACKGROUND_JOB_QUEUE_OPTIONS = [
   { label: 'All queues', value: 'ALL' },
+  { label: 'Admin push campaigns', value: 'admin-push-campaign' },
   { label: 'Bank statement escalation', value: 'bank-statement-escalation' },
   { label: 'Booking timeout', value: 'booking-timeouts' },
   { label: 'Notification delivery', value: 'notification-retry' },
+  { label: 'Payment booking recovery', value: 'payment-booking-recovery' },
   { label: 'Payment provider refund status', value: 'payment-refund-status' },
   { label: 'Payment status check', value: 'payment-status-check' },
 ] as const;

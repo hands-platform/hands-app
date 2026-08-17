@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './observability/all-exceptions.filter';
 import { requestIdMiddleware } from './observability/request-id.middleware';
 import { RedisStateService } from './redis/redis-state.service';
+import { RedisIoAdapter } from './realtime/redis-io.adapter';
 import { corsOriginFromEnv } from './security/cors-origin';
 import { apiRateLimitPolicies, rateLimitMiddleware } from './security/rate-limit.middleware';
 import { securityHeadersMiddleware } from './security/security-headers.middleware';
@@ -13,6 +14,13 @@ import { trustProxyFromConfig } from './security/trust-proxy';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
+  app.enableShutdownHooks(['SIGINT', 'SIGTERM']);
+  const redisIoAdapter = new RedisIoAdapter(
+    app,
+    config.get<string>('REDIS_URL') ?? 'redis://localhost:6379',
+  );
+  await redisIoAdapter.connect();
+  app.useWebSocketAdapter(redisIoAdapter);
   app.getHttpAdapter().getInstance().set('trust proxy', trustProxyFromConfig(config));
   app.enableCors({ origin: corsOriginFromEnv(), credentials: true, exposedHeaders: ['x-request-id'] });
   app.use(securityHeadersMiddleware);

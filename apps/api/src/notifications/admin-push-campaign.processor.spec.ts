@@ -26,7 +26,12 @@ function campaignFixture(overrides: Record<string, unknown> = {}) {
 }
 
 function jobFixture(name = ADMIN_PUSH_CAMPAIGN_JOB_NAME) {
-  return { data: { campaignId: 'campaign-1' }, name } as never;
+  return {
+    attemptsMade: 0,
+    data: { campaignId: 'campaign-1' },
+    name,
+    opts: { attempts: 3 },
+  } as never;
 }
 
 describe('AdminPushCampaignProcessor', () => {
@@ -126,5 +131,32 @@ describe('AdminPushCampaignProcessor', () => {
       reason: 'UNSUPPORTED_JOB',
     });
     expect(prisma.adminPushCampaign.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('marks a campaign failed only after BullMQ exhausts all attempts', async () => {
+    const prisma = {
+      adminPushCampaign: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+    };
+    const processor = new AdminPushCampaignProcessor(prisma as never, {} as never);
+    const retryingJob = {
+      ...jobFixture(),
+      attemptsMade: 2,
+      data: { campaignId: 'campaign-1' },
+      name: ADMIN_PUSH_CAMPAIGN_JOB_NAME,
+      opts: { attempts: 3 },
+    } as never;
+    const exhaustedJob = { ...retryingJob, attemptsMade: 3 } as never;
+
+    await processor.onFailed(retryingJob);
+    expect(prisma.adminPushCampaign.updateMany).not.toHaveBeenCalled();
+
+    await processor.onFailed(exhaustedJob);
+    expect(prisma.adminPushCampaign.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'campaign-1',
+        status: { in: ['QUEUED', 'PROCESSING'] },
+      },
+      data: { failedAt: expect.any(Date), status: 'FAILED' },
+    });
   });
 });

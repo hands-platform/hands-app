@@ -247,6 +247,7 @@ describe('PushDeliveryService', () => {
       }),
     );
     const lastRequest = mockFetch.mock.calls[mockFetch.mock.calls.length - 1]?.[1] as RequestInit;
+    expect(lastRequest.signal).toBeInstanceOf(AbortSignal);
     expect(JSON.parse(String(lastRequest.body))).toMatchObject({
       message: {
         android: {
@@ -262,6 +263,24 @@ describe('PushDeliveryService', () => {
           },
         },
       },
+    });
+  });
+
+  it('classifies an unavailable FCM network request as retryable delivery evidence', async () => {
+    mockFetch.mockRejectedValueOnce(new TypeError('network unavailable'));
+
+    await expect(
+      pushService({
+        PUSH_PROVIDER: 'fcm',
+        FIREBASE_PROJECT_ID: 'hands-demo',
+        FIREBASE_CLIENT_EMAIL: 'firebase-admin@example.test',
+        FIREBASE_PRIVATE_KEY: 'placeholder-firebase-admin-private-key',
+      }).send(message),
+    ).resolves.toMatchObject({
+      provider: 'FCM',
+      status: 'FAILED',
+      disableDevice: false,
+      failureCode: 'FCM_DELIVERY_UNAVAILABLE',
     });
   });
 

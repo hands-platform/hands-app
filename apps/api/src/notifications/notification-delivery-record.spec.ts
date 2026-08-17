@@ -1,6 +1,6 @@
 import {
-  notificationDeliveryCreateInput,
   notificationDeliveryJobResult,
+  notificationDeliveryResultUpdate,
 } from './notification-delivery-record';
 
 describe('notification delivery record helpers', () => {
@@ -12,24 +12,18 @@ describe('notification delivery record helpers', () => {
     response: { reason: 'registration token fcm-token-1 leaked' },
   };
 
-  it('builds masked delivery create input from a push send result', () => {
+  it('builds a masked delivery result update from a push send result', () => {
     expect(
-      notificationDeliveryCreateInput({
-        notificationId: 'notification-1',
-        pushDeviceId: 'device-1',
+      notificationDeliveryResultUpdate({
         pushToken: 'fcm-token-1',
         result: failedResult,
       }),
     ).toEqual({
-      data: {
-        notificationId: 'notification-1',
-        pushDeviceId: 'device-1',
-        provider: 'FCM',
-        status: 'FAILED',
-        response: {
-          reason: 'registration token [masked] leaked',
-          failureCode: 'messaging/registration-token-not-registered',
-        },
+      provider: 'FCM',
+      status: 'FAILED',
+      response: {
+        reason: 'registration token [masked] leaked',
+        failureCode: 'messaging/registration-token-not-registered',
       },
     });
   });

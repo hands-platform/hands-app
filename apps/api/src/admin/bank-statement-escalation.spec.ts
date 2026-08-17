@@ -111,6 +111,7 @@ describe('Bank statement escalation queue', () => {
     };
     const backgroundJobs = {
       syncFailureNotifications: vi.fn().mockResolvedValue({ alertedCount: 1, scannedCount: 1 }),
+      syncMissingDurableJobs: vi.fn().mockResolvedValue({ registeredCount: 2, scannedCount: 2 }),
       syncQueueHealthAlerts: vi.fn().mockResolvedValue({ alertedCount: 1, scannedCount: 4 }),
     };
     const processor = new BankStatementEscalationProcessor(
@@ -123,9 +124,11 @@ describe('Bank statement escalation queue', () => {
       name: BACKGROUND_JOB_FAILURE_MONITOR_JOB_NAME,
     } as Job<BankStatementEscalationJob>)).resolves.toEqual({
       failures: { alertedCount: 1, scannedCount: 1 },
+      missingJobs: { registeredCount: 2, scannedCount: 2 },
       queueHealth: { alertedCount: 1, scannedCount: 4 },
     });
     expect(backgroundJobs.syncFailureNotifications).toHaveBeenCalledOnce();
+    expect(backgroundJobs.syncMissingDurableJobs).toHaveBeenCalledOnce();
     expect(backgroundJobs.syncQueueHealthAlerts).toHaveBeenCalledOnce();
     expect(admin.syncCompanyBankTransactionImportBatchEscalations).not.toHaveBeenCalled();
     expect(admin.syncCompanyBankTransactionReviewEscalations).not.toHaveBeenCalled();
@@ -142,6 +145,7 @@ describe('Bank statement escalation queue', () => {
     };
     const backgroundJobs = {
       syncFailureNotifications: vi.fn(),
+      syncMissingDurableJobs: vi.fn(),
       syncQueueHealthAlerts: vi.fn(),
     };
     const processor = new BankStatementEscalationProcessor(

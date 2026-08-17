@@ -3,9 +3,11 @@ import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } fro
 
 const BACKGROUND_JOB_QUEUES = [
   'ALL',
+  'admin-push-campaign',
   'bank-statement-escalation',
   'booking-timeouts',
   'notification-retry',
+  'payment-booking-recovery',
   'payment-refund-status',
   'payment-status-check',
 ] as const;

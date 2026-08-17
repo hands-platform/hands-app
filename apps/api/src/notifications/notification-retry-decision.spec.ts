@@ -53,6 +53,14 @@ describe('notificationRetryDecision', () => {
       failureClass: 'transient',
       state: 'allowed',
     });
+    expect(notificationRetryDecision([device], [failure('FCM_DELIVERY_UNAVAILABLE')], now)).toMatchObject({
+      failureClass: 'transient',
+      state: 'allowed',
+    });
+    expect(notificationRetryDecision([device], [failure('HTTP_503')], now)).toMatchObject({
+      failureClass: 'transient',
+      state: 'allowed',
+    });
   });
 
   it('blocks unknown failures and excludes already accepted paths', () => {

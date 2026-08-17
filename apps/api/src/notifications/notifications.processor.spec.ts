@@ -38,6 +38,22 @@ function createNotificationRetryProcessor(
   return new NotificationRetryProcessor(prisma as never, pushDelivery as never);
 }
 
+let deliverySequence = 0;
+
+function deliveryTransactionFixture() {
+  return {
+    $queryRaw: vi.fn(),
+    notificationDelivery: {
+      create: vi.fn().mockImplementation(async () => ({ id: `delivery-${++deliverySequence}` })),
+      findFirst: vi.fn().mockResolvedValue(null),
+      update: vi.fn(),
+    },
+    pushDevice: {
+      update: vi.fn(),
+    },
+  };
+}
+
 describe('NotificationRetryProcessor', () => {
   it('skips an ambiguous notification without querying or sending to app devices', async () => {
     const prisma = {
@@ -71,14 +87,7 @@ describe('NotificationRetryProcessor', () => {
 
   it('preserves the Partner chat contract from persistence through queued FCM delivery', async () => {
     let storedNotification: Record<string, unknown> | undefined;
-    const tx = {
-      notificationDelivery: {
-        create: vi.fn(),
-      },
-      pushDevice: {
-        update: vi.fn(),
-      },
-    };
+    const tx = deliveryTransactionFixture();
     const prisma = {
       notification: {
         create: vi.fn(async (input: { data: Record<string, unknown> }) => {
@@ -265,10 +274,7 @@ describe('NotificationRetryProcessor', () => {
         findUnique: vi.fn().mockResolvedValue({ value: 'FCM_FOR_ALL_BOOKINGS' }),
       },
       $transaction: vi.fn(async (callback: (transactionClient: unknown) => Promise<void>) =>
-        callback({
-          notificationDelivery: { create: vi.fn() },
-          pushDevice: { update: vi.fn() },
-        }),
+        callback(deliveryTransactionFixture()),
       ),
     };
     const pushDelivery = {
@@ -309,10 +315,7 @@ describe('NotificationRetryProcessor', () => {
         findUnique: vi.fn().mockResolvedValue({ value: 'IN_APP_WITH_PUSH_LATER' }),
       },
       $transaction: vi.fn(async (callback: (transactionClient: unknown) => Promise<void>) =>
-        callback({
-          notificationDelivery: { create: vi.fn() },
-          pushDevice: { update: vi.fn() },
-        }),
+        callback(deliveryTransactionFixture()),
       ),
     };
     const pushDelivery = {
@@ -353,10 +356,7 @@ describe('NotificationRetryProcessor', () => {
         findUnique: vi.fn(),
       },
       $transaction: vi.fn(async (callback: (transactionClient: unknown) => Promise<void>) =>
-        callback({
-          notificationDelivery: { create: vi.fn() },
-          pushDevice: { update: vi.fn() },
-        }),
+        callback(deliveryTransactionFixture()),
       ),
     };
     const pushDelivery = {
@@ -380,14 +380,7 @@ describe('NotificationRetryProcessor', () => {
   });
 
   it('sends only target-role push devices when notification data carries targetRole', async () => {
-    const tx = {
-      notificationDelivery: {
-        create: vi.fn(),
-      },
-      pushDevice: {
-        update: vi.fn(),
-      },
-    };
+    const tx = deliveryTransactionFixture();
     const prisma = {
       notification: {
         findUnique: vi.fn().mockResolvedValue({
@@ -436,14 +429,7 @@ describe('NotificationRetryProcessor', () => {
   });
 
   it('retries only devices without a previous successful delivery', async () => {
-    const tx = {
-      notificationDelivery: {
-        create: vi.fn(),
-      },
-      pushDevice: {
-        update: vi.fn(),
-      },
-    };
+    const tx = deliveryTransactionFixture();
     const prisma = {
       notification: {
         findUnique: vi.fn().mockResolvedValue({
@@ -505,6 +491,100 @@ describe('NotificationRetryProcessor', () => {
     expect(tx.notificationDelivery.create).toHaveBeenCalledTimes(1);
   });
 
+  it('does not send twice while another worker owns a fresh device delivery claim', async () => {
+    const tx = deliveryTransactionFixture();
+    tx.notificationDelivery.findFirst.mockResolvedValue({
+      attemptedAt: new Date(),
+      id: 'delivery-processing',
+      provider: 'FCM',
+      status: 'PROCESSING',
+    });
+    const prisma = {
+      notification: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'notification-1',
+          userId: 'user-1',
+          title: 'Booking update',
+          body: 'A booking update is available.',
+          type: 'payment.updated',
+          data: { bookingId: 'booking-1', targetRole: Role.CUSTOMER },
+          deliveries: [],
+        }),
+      },
+      pushDevice: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'device-1', role: Role.CUSTOMER, token: 'fcm-token-1' },
+        ]),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
+        callback(tx),
+      ),
+    };
+    const pushDelivery = { send: vi.fn() };
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
+
+    await expect(
+      processor.process({ data: { notificationId: 'notification-1' } } as never),
+    ).resolves.toMatchObject({
+      results: [{ deviceId: 'device-1', status: 'PROCESSING' }],
+    });
+    expect(pushDelivery.send).not.toHaveBeenCalled();
+    expect(tx.notificationDelivery.create).not.toHaveBeenCalled();
+  });
+
+  it('marks a stale delivery claim unknown without resending an uncertain push', async () => {
+    const tx = deliveryTransactionFixture();
+    tx.notificationDelivery.findFirst.mockResolvedValue({
+      attemptedAt: new Date('2026-08-01T00:00:00.000Z'),
+      id: 'delivery-stale',
+      provider: 'FCM',
+      status: 'PROCESSING',
+    });
+    const prisma = {
+      notification: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'notification-1',
+          userId: 'user-1',
+          title: 'Booking update',
+          body: 'A booking update is available.',
+          type: 'payment.updated',
+          data: { bookingId: 'booking-1', targetRole: Role.CUSTOMER },
+          deliveries: [],
+        }),
+      },
+      pushDevice: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'device-1', role: Role.CUSTOMER, token: 'fcm-token-1' },
+        ]),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
+        callback(tx),
+      ),
+    };
+    const pushDelivery = { send: vi.fn() };
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
+
+    await expect(
+      processor.process({ data: { notificationId: 'notification-1' } } as never),
+    ).resolves.toMatchObject({
+      results: [
+        {
+          deviceId: 'device-1',
+          status: 'FAILED',
+          failureCode: 'DELIVERY_OUTCOME_UNKNOWN',
+        },
+      ],
+    });
+    expect(pushDelivery.send).not.toHaveBeenCalled();
+    expect(tx.notificationDelivery.update).toHaveBeenCalledWith({
+      where: { id: 'delivery-stale' },
+      data: expect.objectContaining({
+        status: 'FAILED',
+        response: expect.objectContaining({ failureCode: 'DELIVERY_OUTCOME_UNKNOWN' }),
+      }),
+    });
+  });
+
   it('skips a retry when every target device was already delivered successfully', async () => {
     const prisma = {
       notification: {
@@ -549,14 +629,7 @@ describe('NotificationRetryProcessor', () => {
   });
 
   it('sends only the recent push-device budget for one notification job', async () => {
-    const tx = {
-      notificationDelivery: {
-        create: vi.fn(),
-      },
-      pushDevice: {
-        update: vi.fn(),
-      },
-    };
+    const tx = deliveryTransactionFixture();
     const devices = Array.from({ length: 12 }, (_, index) => ({
       id: `device-${index + 1}`,
       role: Role.CUSTOMER,
@@ -608,14 +681,7 @@ describe('NotificationRetryProcessor', () => {
   });
 
   it('records one delivery result per enabled push device without disabling transient failures', async () => {
-    const tx = {
-      notificationDelivery: {
-        create: vi.fn(),
-      },
-      pushDevice: {
-        update: vi.fn(),
-      },
-    };
+    const tx = deliveryTransactionFixture();
     const prisma = {
       notification: {
         findUnique: vi.fn().mockResolvedValue({
@@ -658,33 +724,13 @@ describe('NotificationRetryProcessor', () => {
 
     await expect(
       processor.process({ data: { notificationId: 'notification-1' } } as never),
-    ).resolves.toEqual({
-      notificationId: 'notification-1',
-      userId: 'user-1',
-      results: [
-        {
-          deviceId: 'device-1',
-          provider: 'FCM',
-          status: 'SENT',
-          disableDevice: false,
-          failureCode: undefined,
-        },
-        {
-          deviceId: 'device-2',
-          provider: 'FCM',
-          status: 'FAILED',
-          disableDevice: false,
-          failureCode: 'messaging/internal-error',
-        },
-      ],
-    });
+    ).rejects.toThrow('retryable push delivery failure');
 
     expect(pushDelivery.send).toHaveBeenCalledTimes(2);
     expect(tx.notificationDelivery.create).toHaveBeenCalledTimes(2);
-    expect(tx.notificationDelivery.create).toHaveBeenNthCalledWith(2, {
+    expect(tx.notificationDelivery.update).toHaveBeenNthCalledWith(2, {
+      where: { id: expect.any(String) },
       data: {
-        notificationId: 'notification-1',
-        pushDeviceId: 'device-2',
         provider: 'FCM',
         status: 'FAILED',
         response: {
@@ -697,14 +743,7 @@ describe('NotificationRetryProcessor', () => {
   });
 
   it('disables a push device after a permanent FCM token failure', async () => {
-    const tx = {
-      notificationDelivery: {
-        create: vi.fn(),
-      },
-      pushDevice: {
-        update: vi.fn(),
-      },
-    };
+    const tx = deliveryTransactionFixture();
     const prisma = {
       notification: {
         findUnique: vi.fn().mockResolvedValue({
@@ -772,10 +811,9 @@ describe('NotificationRetryProcessor', () => {
       },
       providerOverride: undefined,
     });
-    expect(tx.notificationDelivery.create).toHaveBeenCalledWith({
+    expect(tx.notificationDelivery.update).toHaveBeenCalledWith({
+      where: { id: expect.any(String) },
       data: {
-        notificationId: 'notification-1',
-        pushDeviceId: 'device-1',
         provider: 'FCM',
         status: 'FAILED',
         response: {
@@ -784,7 +822,7 @@ describe('NotificationRetryProcessor', () => {
         },
       },
     });
-    expect(JSON.stringify(tx.notificationDelivery.create.mock.calls)).not.toContain('fcm-token-1');
+    expect(JSON.stringify(tx.notificationDelivery.update.mock.calls)).not.toContain('fcm-token-1');
     expect(tx.pushDevice.update).toHaveBeenCalledWith({
       where: { id: 'device-1' },
       data: { enabled: false, lastSeenAt: expect.any(Date) },

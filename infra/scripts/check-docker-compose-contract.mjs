@@ -27,6 +27,14 @@ const requiredMarkers = [
     marker: 'REDIS_URL: redis://redis:6379',
   },
   {
+    name: 'redis persists security and queue state on every write',
+    marker: '"--appendfsync", "always"',
+  },
+  {
+    name: 'redis fails writes instead of evicting security or queue state',
+    marker: '"--maxmemory-policy", "noeviction"',
+  },
+  {
     name: 'api minio uses compose minio service',
     marker: 'S3_ENDPOINT: http://minio:9000',
   },

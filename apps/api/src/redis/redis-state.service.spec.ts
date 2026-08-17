@@ -41,6 +41,62 @@ describe('RedisStateService OTP consumption', () => {
   });
 });
 
+describe('RedisStateService atomic state projections', () => {
+  beforeEach(() => {
+    redis.eval.mockReset();
+  });
+
+  it('increments OTP attempts and assigns the TTL in one Redis script', async () => {
+    redis.eval.mockResolvedValue(2);
+    const service = createService();
+
+    await expect(service.incrementOtpAttempts('+84900000000')).resolves.toBe(2);
+    expect(redis.eval).toHaveBeenCalledWith(
+      expect.stringContaining("redis.call('INCR', KEYS[1])"),
+      1,
+      'auth:otp:attempts:+84900000000',
+      300,
+    );
+    expect(redis.eval.mock.calls[0]?.[0]).toContain("redis.call('EXPIRE', KEYS[1], ARGV[1])");
+  });
+
+  it('opens, closes, and updates matching projections atomically', async () => {
+    redis.eval.mockResolvedValue(1);
+    const service = createService();
+
+    await service.openMatching('booking-1', { status: 'OPEN_MATCHING' }, 600);
+    await service.addParticipant('booking-1', 'provider-1', 600);
+    await service.closeMatching('booking-1');
+
+    expect(redis.eval).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining("redis.call('SADD', KEYS[2], ARGV[3])"),
+      2,
+      'matching:booking-1',
+      'matching:active',
+      JSON.stringify({ status: 'OPEN_MATCHING' }),
+      600,
+      'booking-1',
+    );
+    expect(redis.eval).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining("redis.call('EXPIRE', KEYS[1], ARGV[2])"),
+      1,
+      'matching:booking-1:participants',
+      'provider-1',
+      600,
+    );
+    expect(redis.eval).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining("redis.call('SREM', KEYS[2], ARGV[1])"),
+      2,
+      'matching:booking-1',
+      'matching:active',
+      'booking-1',
+    );
+  });
+});
+
 vi.mock('ioredis', () => ({
   default: vi.fn(function RedisMock() {
     return redis;

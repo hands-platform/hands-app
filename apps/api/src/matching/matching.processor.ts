@@ -16,7 +16,7 @@ import { MatchingGateway } from './matching.gateway';
 const RECOVERABLE_CANCELLATION_REASONS = ['customer_cancelled', 'preferred_provider_rejected'] as const;
 const CANCELLATION_PAYMENT_PENDING_NOTE = 'Payment closure pending after';
 
-@Processor(BOOKING_TIMEOUT_QUEUE_NAME)
+@Processor({ name: BOOKING_TIMEOUT_QUEUE_NAME, configKey: 'worker' })
 export class BookingTimeoutProcessor extends WorkerHost {
   constructor(
     private readonly prisma: PrismaService,

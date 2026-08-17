@@ -157,23 +157,47 @@ export class RedisStateService implements OnModuleDestroy {
   }
 
   async openMatching(bookingId: string, payload: unknown, ttlSeconds = this.activeMatchingTtlSeconds) {
-    await this.redis.set(
+    await this.redis.eval(
+      [
+        "redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[2])",
+        "redis.call('SADD', KEYS[2], ARGV[3])",
+        'return 1',
+      ].join('\n'),
+      2,
       `matching:${bookingId}`,
+      'matching:active',
       JSON.stringify(payload),
-      'EX',
-      ttlSeconds,
+      Math.max(1, Math.trunc(ttlSeconds)),
+      bookingId,
     );
-    await this.redis.sadd('matching:active', bookingId);
   }
 
   async closeMatching(bookingId: string) {
-    await this.redis.del(`matching:${bookingId}`);
-    await this.redis.srem('matching:active', bookingId);
+    await this.redis.eval(
+      [
+        "redis.call('DEL', KEYS[1])",
+        "redis.call('SREM', KEYS[2], ARGV[1])",
+        'return 1',
+      ].join('\n'),
+      2,
+      `matching:${bookingId}`,
+      'matching:active',
+      bookingId,
+    );
   }
 
   async addParticipant(bookingId: string, providerId: string, ttlSeconds = this.activeMatchingTtlSeconds) {
-    await this.redis.sadd(`matching:${bookingId}:participants`, providerId);
-    await this.redis.expire(`matching:${bookingId}:participants`, ttlSeconds);
+    await this.redis.eval(
+      [
+        "local added = redis.call('SADD', KEYS[1], ARGV[1])",
+        "redis.call('EXPIRE', KEYS[1], ARGV[2])",
+        'return added',
+      ].join('\n'),
+      1,
+      `matching:${bookingId}:participants`,
+      providerId,
+      Math.max(1, Math.trunc(ttlSeconds)),
+    );
   }
 
   async setOtp(phone: string, otp: string) {
@@ -193,11 +217,18 @@ export class RedisStateService implements OnModuleDestroy {
 
   async incrementOtpAttempts(phone: string) {
     const key = `auth:otp:attempts:${phone}`;
-    const count = await this.redis.incr(key);
-    if (count === 1) {
-      await this.redis.expire(key, OTP_TTL_SECONDS);
-    }
-    return count;
+    const count = await this.redis.eval(
+      [
+        "local count = redis.call('INCR', KEYS[1])",
+        "local ttl = redis.call('TTL', KEYS[1])",
+        "if count == 1 or ttl < 0 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end",
+        'return count',
+      ].join('\n'),
+      1,
+      key,
+      OTP_TTL_SECONDS,
+    );
+    return Number(count);
   }
 
   getOtp(phone: string) {

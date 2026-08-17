@@ -2,12 +2,14 @@ import { backgroundJobWorkflow } from './background-job-workflows';
 
 describe('background job workflow destinations', () => {
   it.each([
+    ['admin-push-campaign', '/notifications?view=campaigns'],
     [
       'bank-statement-escalation',
       '/finance-tax/bank-reconciliation?range=today&review=unmatched&importRange=all&importReview=escalated',
     ],
     ['booking-timeouts', '/bookings?view=attention&dateRange=today'],
     ['notification-retry', '/notifications?range=today&review=needs-retry'],
+    ['payment-booking-recovery', '/bookings?view=attention&dateRange=today'],
     ['payment-refund-status', '/refunds?range=all'],
     ['payment-status-check', '/payments?range=today&review=needs-action'],
   ])('maps %s to its owning operational workflow', (queueName, href) => {

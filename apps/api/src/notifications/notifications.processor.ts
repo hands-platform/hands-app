@@ -16,8 +16,8 @@ import {
   notificationPushData,
 } from './notification-push-payload';
 import {
-  notificationDeliveryCreateInput,
   notificationDeliveryJobResult,
+  notificationDeliveryResultUpdate,
 } from './notification-delivery-record';
 import {
   isRoleNeutralNotificationType,
@@ -26,6 +26,7 @@ import {
 } from './notification-target-role';
 import { PushDeliveryService, type PushSendResult } from './push-delivery.service';
 import type { PushProvider } from './push-provider';
+import { notificationRetryFailureClass } from './notification-retry-decision';
 
 export const notificationSendPushDeviceOrder = [
   { updatedAt: 'desc' },
@@ -37,6 +38,8 @@ const notificationSendInclude = Prisma.validator<Prisma.NotificationInclude>()({
     select: { pushDeviceId: true },
   },
 });
+const NOTIFICATION_DELIVERY_CLAIM_STALE_MS = 2 * 60_000;
+const NOTIFICATION_DELIVERY_UNKNOWN_CODE = 'DELIVERY_OUTCOME_UNKNOWN';
 
 type NotificationForSend = Prisma.NotificationGetPayload<{ include: typeof notificationSendInclude }>;
 type EnabledPushDevice = Prisma.PushDeviceGetPayload<Record<string, never>>;
@@ -92,7 +95,7 @@ export function adminPushLatestDeliveryCounts(
   };
 }
 
-@Processor(NOTIFICATION_SEND_QUEUE_NAME)
+@Processor({ name: NOTIFICATION_SEND_QUEUE_NAME, configKey: 'worker' })
 export class NotificationRetryProcessor extends WorkerHost {
   constructor(
     private readonly prisma: PrismaService,
@@ -170,6 +173,16 @@ export class NotificationRetryProcessor extends WorkerHost {
     }
 
     await this.updateCampaignEvidence(notification, targetDevices.length);
+
+    if (
+      results.some(
+        (result) =>
+          result.status === 'FAILED' &&
+          notificationRetryFailureClass(result.failureCode ?? null) === 'transient',
+      )
+    ) {
+      throw new Error(`Notification ${notification.id} has a retryable push delivery failure`);
+    }
 
     return {
       notificationId: notification.id,
@@ -311,6 +324,16 @@ export class NotificationRetryProcessor extends WorkerHost {
     data: ReturnType<typeof notificationPushData>,
     providerOverride: PushProvider | undefined,
   ) {
+    const claim = await this.claimDeliveryAttempt(notification.id, device);
+    if (claim.state !== 'CLAIMED') {
+      return {
+        deviceId: device.id,
+        provider: claim.provider,
+        status: claim.status,
+        disableDevice: false,
+        failureCode: claim.failureCode,
+      };
+    }
     const result = await this.pushDelivery.send({
       token: device.token,
       title: notification.title,
@@ -319,25 +342,21 @@ export class NotificationRetryProcessor extends WorkerHost {
       providerOverride,
     });
 
-    await this.recordDeliveryResult(notification.id, device, result);
+    await this.recordDeliveryResult(claim.deliveryId, device, result);
 
     return notificationDeliveryJobResult({ deviceId: device.id, result });
   }
 
   private async recordDeliveryResult(
-    notificationId: string,
+    deliveryId: string,
     device: EnabledPushDevice,
     result: PushSendResult,
   ) {
     await this.prisma.$transaction(async (tx) => {
-      await tx.notificationDelivery.create(
-        notificationDeliveryCreateInput({
-          notificationId,
-          pushDeviceId: device.id,
-          pushToken: device.token,
-          result,
-        }),
-      );
+      await tx.notificationDelivery.update({
+        where: { id: deliveryId },
+        data: notificationDeliveryResultUpdate({ pushToken: device.token, result }),
+      });
 
       if (result.disableDevice) {
         await tx.pushDevice.update({
@@ -345,6 +364,67 @@ export class NotificationRetryProcessor extends WorkerHost {
           data: { enabled: false, lastSeenAt: new Date() },
         });
       }
+    });
+  }
+
+  private claimDeliveryAttempt(notificationId: string, device: EnabledPushDevice) {
+    const now = new Date();
+    const staleBefore = new Date(now.getTime() - NOTIFICATION_DELIVERY_CLAIM_STALE_MS);
+    const lockKey = `notification-delivery:${notificationId}:${device.id}`;
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`,
+      );
+      const latest = await tx.notificationDelivery.findFirst({
+        where: { notificationId, pushDeviceId: device.id },
+        orderBy: [{ attemptedAt: 'desc' }, { id: 'desc' }],
+        select: { attemptedAt: true, id: true, provider: true, status: true },
+      });
+      if (latest?.status === 'SENT') {
+        return {
+          state: 'SKIPPED' as const,
+          provider: latest.provider,
+          status: 'SENT' as const,
+        };
+      }
+      if (latest?.status === 'PROCESSING' && latest.attemptedAt > staleBefore) {
+        return {
+          state: 'SKIPPED' as const,
+          provider: latest.provider,
+          status: 'PROCESSING' as const,
+        };
+      }
+      if (latest?.status === 'PROCESSING') {
+        await tx.notificationDelivery.update({
+          where: { id: latest.id },
+          data: {
+            status: 'FAILED',
+            response: {
+              failureCode: NOTIFICATION_DELIVERY_UNKNOWN_CODE,
+              reason: 'The worker stopped after delivery started, so the provider outcome is unknown.',
+            },
+          },
+        });
+        return {
+          state: 'SKIPPED' as const,
+          provider: latest.provider,
+          status: 'FAILED' as const,
+          failureCode: NOTIFICATION_DELIVERY_UNKNOWN_CODE,
+        };
+      }
+
+      const claim = await tx.notificationDelivery.create({
+        data: {
+          notificationId,
+          pushDeviceId: device.id,
+          provider: 'PENDING',
+          status: 'PROCESSING',
+          response: { claimedAt: now.toISOString() },
+        },
+        select: { id: true },
+      });
+      return { state: 'CLAIMED' as const, deliveryId: claim.id };
     });
   }
 

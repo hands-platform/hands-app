@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -8,7 +8,7 @@ import {
 } from './admin-push-campaign.queue';
 import { NotificationsService } from './notifications.service';
 
-@Processor(ADMIN_PUSH_CAMPAIGN_QUEUE_NAME)
+@Processor({ name: ADMIN_PUSH_CAMPAIGN_QUEUE_NAME, configKey: 'worker' })
 export class AdminPushCampaignProcessor extends WorkerHost {
   constructor(
     private readonly prisma: PrismaService,
@@ -79,5 +79,19 @@ export class AdminPushCampaignProcessor extends WorkerHost {
       data: { notificationCount },
     });
     return { campaignId: campaign.id, notificationCount, queued: true };
+  }
+
+  @OnWorkerEvent('failed')
+  async onFailed(job: Job<AdminPushCampaignJob> | undefined) {
+    if (!job || job.name !== ADMIN_PUSH_CAMPAIGN_JOB_NAME) return;
+    const attempts = Math.max(1, job.opts.attempts ?? 1);
+    if (job.attemptsMade < attempts) return;
+    await this.prisma.adminPushCampaign.updateMany({
+      where: {
+        id: job.data.campaignId,
+        status: { in: ['QUEUED', 'PROCESSING'] },
+      },
+      data: { failedAt: new Date(), status: 'FAILED' },
+    });
   }
 }

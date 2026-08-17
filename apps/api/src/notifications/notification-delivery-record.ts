@@ -4,20 +4,14 @@ import {
   toJson,
 } from './notification-push-payload';
 
-export function notificationDeliveryCreateInput(input: {
-  notificationId: string;
-  pushDeviceId: string;
+export function notificationDeliveryResultUpdate(input: {
   pushToken: string;
   result: PushSendResult;
 }) {
   return {
-    data: {
-      notificationId: input.notificationId,
-      pushDeviceId: input.pushDeviceId,
-      provider: input.result.provider,
-      status: input.result.status,
-      response: toJson(notificationDeliveryResponse(input.result, input.pushToken)),
-    },
+    provider: input.result.provider,
+    status: input.result.status,
+    response: toJson(notificationDeliveryResponse(input.result, input.pushToken)),
   };
 }
 

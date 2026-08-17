@@ -7,6 +7,7 @@ import { MatchingModule } from '../matching/matching.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ADMIN_PUSH_CAMPAIGN_QUEUE_NAME } from '../notifications/admin-push-campaign.queue';
 import { NOTIFICATION_SEND_QUEUE_NAME } from '../notifications/notification-send.queue';
+import { PAYMENT_BOOKING_RECOVERY_QUEUE_NAME } from '../payments/payment-booking-recovery.queue';
 import { PAYMENT_REFUND_STATUS_QUEUE_NAME } from '../payments/payment-refund-status.queue';
 import { PAYMENT_STATUS_CHECK_QUEUE_NAME } from '../payments/payment-status.queue';
 import { PaymentsModule } from '../payments/payments.module';
@@ -29,6 +30,7 @@ import { BankStatementEscalationScheduler } from './bank-statement-escalation.sc
       { name: BANK_STATEMENT_ESCALATION_QUEUE_NAME },
       { name: BOOKING_TIMEOUT_QUEUE_NAME },
       { name: NOTIFICATION_SEND_QUEUE_NAME },
+      { name: PAYMENT_BOOKING_RECOVERY_QUEUE_NAME },
       { name: PAYMENT_REFUND_STATUS_QUEUE_NAME },
       { name: PAYMENT_STATUS_CHECK_QUEUE_NAME },
     ),

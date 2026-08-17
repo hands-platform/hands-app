@@ -6,7 +6,7 @@ import {
 } from './payment-refund-status.queue';
 import { PaymentsService } from './payments.service';
 
-@Processor(PAYMENT_REFUND_STATUS_QUEUE_NAME)
+@Processor({ name: PAYMENT_REFUND_STATUS_QUEUE_NAME, configKey: 'worker' })
 export class PaymentRefundStatusProcessor extends WorkerHost {
   constructor(private readonly payments: PaymentsService) {
     super();

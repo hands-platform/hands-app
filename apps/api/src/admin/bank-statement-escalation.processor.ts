@@ -9,7 +9,7 @@ import {
   type BankStatementEscalationJob,
 } from './bank-statement-escalation.queue';
 
-@Processor(BANK_STATEMENT_ESCALATION_QUEUE_NAME)
+@Processor({ name: BANK_STATEMENT_ESCALATION_QUEUE_NAME, configKey: 'worker' })
 export class BankStatementEscalationProcessor extends WorkerHost {
   constructor(
     private readonly admin: AdminService,
@@ -34,11 +34,12 @@ export class BankStatementEscalationProcessor extends WorkerHost {
       };
     }
     if (job.name === BACKGROUND_JOB_FAILURE_MONITOR_JOB_NAME) {
-      const [failures, queueHealth] = await Promise.all([
+      const [failures, missingJobs, queueHealth] = await Promise.all([
         this.backgroundJobs.syncFailureNotifications(),
+        this.backgroundJobs.syncMissingDurableJobs(),
         this.backgroundJobs.syncQueueHealthAlerts(),
       ]);
-      return { failures, queueHealth };
+      return { failures, missingJobs, queueHealth };
     }
     return { skipped: true, reason: 'UNSUPPORTED_JOB' };
   }

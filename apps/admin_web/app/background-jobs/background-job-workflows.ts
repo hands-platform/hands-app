@@ -7,6 +7,11 @@ export type BackgroundJobWorkflow = {
 };
 
 const backgroundJobWorkflows: Record<string, BackgroundJobWorkflow> = {
+  'admin-push-campaign': {
+    actionLabel: 'Open workflow',
+    href: '/notifications?view=campaigns',
+    label: 'Push campaign delivery',
+  },
   'bank-statement-escalation': {
     actionLabel: 'Open workflow',
     href: '/finance-tax/bank-reconciliation?range=today&review=unmatched&importRange=all&importReview=escalated',
@@ -21,6 +26,11 @@ const backgroundJobWorkflows: Record<string, BackgroundJobWorkflow> = {
     actionLabel: 'Open workflow',
     href: '/notifications?range=today&review=needs-retry',
     label: 'Notification retry',
+  },
+  'payment-booking-recovery': {
+    actionLabel: 'Open workflow',
+    href: '/bookings?view=attention&dateRange=today',
+    label: 'Booking payment recovery',
   },
   'payment-status-check': {
     actionLabel: 'Open workflow',

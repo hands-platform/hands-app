@@ -112,6 +112,11 @@ export function notificationRetryFailureClass(failureCode: string | null) {
     normalized === 'messaging/internal-error' ||
     normalized === 'messaging/server-unavailable' ||
     normalized === 'unavailable' ||
+    normalized === 'fcm_delivery_unavailable' ||
+    normalized === 'resource_exhausted' ||
+    normalized === 'internal' ||
+    normalized === 'http_429' ||
+    /^http_5\d\d$/u.test(normalized) ||
     normalized.includes('timeout')
   ) {
     return 'transient' as const;

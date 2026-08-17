@@ -8,7 +8,7 @@ import {
   type TaxPolicyActivationJob,
 } from './tax-policy-activation.queue';
 
-@Processor(TAX_POLICY_ACTIVATION_QUEUE_NAME)
+@Processor({ name: TAX_POLICY_ACTIVATION_QUEUE_NAME, configKey: 'worker' })
 export class TaxPolicyActivationProcessor extends WorkerHost {
   constructor(private readonly onboarding: ProviderOnboardingService) {
     super();

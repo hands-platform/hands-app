@@ -13,6 +13,9 @@ import { resolvePushProvider, type PushProvider } from './push-provider';
 
 export const FCM_ANDROID_NOTIFICATION_CHANNEL_ID = 'hands_priority_alerts';
 const FCM_MESSAGING_SCOPE = 'https://www.googleapis.com/auth/firebase.messaging';
+const DEFAULT_FCM_HTTP_TIMEOUT_MS = 15_000;
+const MIN_FCM_HTTP_TIMEOUT_MS = 1_000;
+const MAX_FCM_HTTP_TIMEOUT_MS = 60_000;
 
 export type PushMessage = {
   token: string;
@@ -114,6 +117,7 @@ export class PushDeliveryService {
             },
           },
         }),
+        signal: AbortSignal.timeout(this.fcmHttpTimeoutMs()),
       });
 
       if (!response.ok) {
@@ -132,7 +136,7 @@ export class PushDeliveryService {
         },
       };
     } catch (error) {
-      const failureCode = firebaseFailureCode(error);
+      const failureCode = fcmDeliveryFailureCode(error);
       const reason = safeErrorMessage(error, message.token);
       return {
         provider: 'FCM',
@@ -173,6 +177,15 @@ export class PushDeliveryService {
 
   private readFirebaseConfig(): FirebaseCredentialConfig {
     return readFirebaseCredentialConfig(this.config);
+  }
+
+  private fcmHttpTimeoutMs() {
+    const configured = Number(this.config.get<string>('FCM_HTTP_TIMEOUT_MS'));
+    return Number.isInteger(configured) &&
+        configured >= MIN_FCM_HTTP_TIMEOUT_MS &&
+        configured <= MAX_FCM_HTTP_TIMEOUT_MS
+      ? configured
+      : DEFAULT_FCM_HTTP_TIMEOUT_MS;
   }
 }
 
@@ -241,6 +254,14 @@ function fcmSendUrl(projectId: string) {
 function fcmNotificationDeduplicationId(data?: Record<string, string>) {
   const notificationId = data?.notificationId?.trim();
   return notificationId ? notificationId.slice(0, 64) : undefined;
+}
+
+function fcmDeliveryFailureCode(error: unknown) {
+  if (error instanceof DOMException && error.name === 'TimeoutError') {
+    return 'FCM_DELIVERY_TIMEOUT';
+  }
+  const code = firebaseFailureCode(error);
+  return code === 'FCM_DELIVERY_FAILED' ? 'FCM_DELIVERY_UNAVAILABLE' : code;
 }
 
 async function fcmHttpError(response: Response) {

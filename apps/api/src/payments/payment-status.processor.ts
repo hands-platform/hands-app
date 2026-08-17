@@ -7,7 +7,7 @@ import {
 import { PAYMENT_STATUS_CHECK_QUEUE_NAME, type PaymentStatusJob } from './payment-status.queue';
 import { PaymentsService } from './payments.service';
 
-@Processor(PAYMENT_STATUS_CHECK_QUEUE_NAME)
+@Processor({ name: PAYMENT_STATUS_CHECK_QUEUE_NAME, configKey: 'worker' })
 export class PaymentStatusProcessor extends WorkerHost {
   constructor(
     private readonly payments: PaymentsService,

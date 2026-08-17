@@ -1,13 +1,37 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common';
-import { AdminOperatorPermissionCategory, Prisma, Role } from '@prisma/client';
-import type { Job, Queue } from 'bullmq';
+import {
+  AdminOperatorPermissionCategory,
+  BookingStatus,
+  PaymentMethod,
+  PaymentStatus,
+  Prisma,
+  Role,
+} from '@prisma/client';
+import type { Job, JobsOptions, Queue } from 'bullmq';
 import { BOOKING_TIMEOUT_QUEUE_NAME } from '../matching/booking-timeout.queue';
-import { NOTIFICATION_SEND_QUEUE_NAME } from '../notifications/notification-send.queue';
+import {
+  ADMIN_PUSH_CAMPAIGN_QUEUE_NAME,
+  adminPushCampaignJob,
+} from '../notifications/admin-push-campaign.queue';
+import {
+  NOTIFICATION_SEND_QUEUE_NAME,
+  notificationSendJob,
+} from '../notifications/notification-send.queue';
 import { notificationDataWithDeliveryContract } from '../notifications/notification-data-scope';
 import { toJson } from '../notifications/notification-push-payload';
-import { PAYMENT_REFUND_STATUS_QUEUE_NAME } from '../payments/payment-refund-status.queue';
-import { PAYMENT_STATUS_CHECK_QUEUE_NAME } from '../payments/payment-status.queue';
+import {
+  PAYMENT_BOOKING_RECOVERY_QUEUE_NAME,
+  paymentBookingRecoveryJob,
+} from '../payments/payment-booking-recovery.queue';
+import {
+  PAYMENT_REFUND_STATUS_QUEUE_NAME,
+  paymentRefundStatusJob,
+} from '../payments/payment-refund-status.queue';
+import {
+  PAYMENT_STATUS_CHECK_QUEUE_NAME,
+  paymentStatusCheckJob,
+} from '../payments/payment-status.queue';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   BANK_STATEMENT_ESCALATION_QUEUE_NAME,
@@ -59,6 +83,9 @@ const BACKGROUND_JOB_FAILURE_ALERT_MAX_AGE_MS = 15 * 60_000;
 const BACKGROUND_JOB_RECURRING_INCIDENT_SCAN_LIMIT = 100;
 const BACKGROUND_JOB_RECURRING_INCIDENT_FILTER_SCAN_LIMIT = 500;
 const BACKGROUND_JOB_RECURRING_INCIDENT_SUMMARY_SCAN_LIMIT = 1_000;
+const MISSING_DURABLE_JOB_SCAN_LIMIT = 100;
+const MISSING_NOTIFICATION_JOB_MAX_AGE_MS = 15 * 60_000;
+const MISSING_NOTIFICATION_JOB_MIN_AGE_MS = 30_000;
 
 @Injectable()
 export class AdminBackgroundJobsService {
@@ -75,6 +102,12 @@ export class AdminBackgroundJobsService {
     @Optional()
     @InjectQueue(PAYMENT_REFUND_STATUS_QUEUE_NAME)
     private readonly paymentRefundStatusQueue?: Queue,
+    @Optional()
+    @InjectQueue(ADMIN_PUSH_CAMPAIGN_QUEUE_NAME)
+    private readonly adminPushCampaignQueue?: Queue,
+    @Optional()
+    @InjectQueue(PAYMENT_BOOKING_RECOVERY_QUEUE_NAME)
+    private readonly paymentBookingRecoveryQueue?: Queue,
   ) {}
 
   async health(input: BackgroundJobHealthQueryDto = {}) {
@@ -549,6 +582,137 @@ export class AdminBackgroundJobsService {
     };
   }
 
+  async syncMissingDurableJobs(now = new Date()) {
+    const notificationWindow = {
+      gte: new Date(now.getTime() - MISSING_NOTIFICATION_JOB_MAX_AGE_MS),
+      lte: new Date(now.getTime() - MISSING_NOTIFICATION_JOB_MIN_AGE_MS),
+    };
+    const [payments, refunds, bookings, notifications, campaigns] = await Promise.all([
+      this.prisma.payment.findMany({
+        where: {
+          method: { in: [PaymentMethod.MOMO, PaymentMethod.VNPAY] },
+          status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] },
+          OR: [
+            { rawMeta: { path: ['authorizationState'], equals: 'INITIALIZING' } },
+            { rawMeta: { path: ['authorizationState'], equals: 'RETRY_PENDING' } },
+          ],
+        },
+        orderBy: { id: 'asc' },
+        select: { id: true },
+        take: MISSING_DURABLE_JOB_SCAN_LIMIT,
+      }),
+      this.paymentRefundStatusQueue
+        ? this.prisma.refund.findMany({
+            where: { status: { in: ['PROVIDER_PROCESSING', 'GATEWAY_CONFIRMED'] } },
+            orderBy: { createdAt: 'asc' },
+            select: { id: true },
+            take: MISSING_DURABLE_JOB_SCAN_LIMIT,
+          })
+        : Promise.resolve([]),
+      this.paymentBookingRecoveryQueue
+        ? this.prisma.booking.findMany({
+            where: {
+              status: BookingStatus.CREATED,
+              payment: {
+                is: {
+                  rawMeta: { path: ['authorizationState'], equals: 'READY' },
+                  status: { in: [PaymentStatus.AUTHORIZED, PaymentStatus.CAPTURED] },
+                },
+              },
+            },
+            orderBy: { createdAt: 'asc' },
+            select: { id: true, payment: { select: { id: true } } },
+            take: MISSING_DURABLE_JOB_SCAN_LIMIT,
+          })
+        : Promise.resolve([]),
+      this.prisma.notification.findMany({
+        where: {
+          createdAt: notificationWindow,
+          deliveries: { none: {} },
+          user: { pushDevices: { some: { enabled: true } } },
+          OR: [
+            { data: { path: ['deliveryIntent'], equals: 'PUSH' } },
+            { data: { path: ['deliveryIntent'], equals: 'PUSH_AND_IN_APP' } },
+          ],
+        },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true },
+        take: MISSING_DURABLE_JOB_SCAN_LIMIT,
+      }),
+      this.adminPushCampaignQueue
+        ? this.prisma.adminPushCampaign.findMany({
+            where: {
+              status: { in: ['QUEUED', 'PROCESSING'] },
+              recipients: {
+                some: { status: { in: ['SNAPSHOTTED', 'PROCESSING'] } },
+              },
+            },
+            orderBy: { createdAt: 'asc' },
+            select: { id: true },
+            take: MISSING_DURABLE_JOB_SCAN_LIMIT,
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const registrations = [
+      ...payments.map((payment) => {
+        const job = paymentStatusCheckJob(payment.id);
+        return this.registerMissingJob('paymentStatus', this.paymentStatusQueue, job);
+      }),
+      ...(this.paymentRefundStatusQueue
+        ? refunds.map((refund) => {
+            const job = paymentRefundStatusJob(refund.id);
+            return this.registerMissingJob('refundStatus', this.paymentRefundStatusQueue!, job);
+          })
+        : []),
+      ...(this.paymentBookingRecoveryQueue
+        ? bookings.flatMap((booking) => {
+            if (!booking.payment) return [];
+            const job = paymentBookingRecoveryJob({
+              bookingId: booking.id,
+              paymentId: booking.payment.id,
+            });
+            return [this.registerMissingJob(
+              'bookingRecovery',
+              this.paymentBookingRecoveryQueue!,
+              job,
+            )];
+          })
+        : []),
+      ...notifications.map((notification) => {
+        const job = notificationSendJob(notification.id);
+        return this.registerMissingJob('notification', this.notificationSendQueue, job);
+      }),
+      ...(this.adminPushCampaignQueue
+        ? campaigns.map((campaign) => {
+            const job = adminPushCampaignJob(campaign.id);
+            return this.registerMissingJob('campaign', this.adminPushCampaignQueue!, job);
+          })
+        : []),
+    ];
+    const results = await Promise.all(registrations);
+    const failedCount = results.filter((result) => result.status === 'FAILED').length;
+    if (failedCount > 0) {
+      throw new Error(`Failed to register ${failedCount} durable background job(s)`);
+    }
+    const byFlow = Object.fromEntries(
+      ['paymentStatus', 'refundStatus', 'bookingRecovery', 'notification', 'campaign'].map((flow) => {
+        const flowResults = results.filter((result) => result.flow === flow);
+        return [flow, {
+          failedCount: flowResults.filter((result) => result.status === 'FAILED').length,
+          registeredCount: flowResults.filter((result) => result.status === 'REGISTERED').length,
+        }];
+      }),
+    );
+
+    return {
+      byFlow,
+      failedCount,
+      registeredCount: results.filter((result) => result.status === 'REGISTERED').length,
+      scannedCount: payments.length + refunds.length + bookings.length + notifications.length + campaigns.length,
+    };
+  }
+
   acknowledgeFailure(
     actorId: string,
     queueName: string,
@@ -614,7 +778,30 @@ export class AdminBackgroundJobsService {
         queue: this.paymentRefundStatusQueue,
         staleAfterMs: IMMEDIATE_QUEUE_STALE_AFTER_MS,
       }] : []),
+      ...(this.adminPushCampaignQueue ? [{
+        label: 'Admin push campaigns',
+        queue: this.adminPushCampaignQueue,
+        staleAfterMs: IMMEDIATE_QUEUE_STALE_AFTER_MS,
+      }] : []),
+      ...(this.paymentBookingRecoveryQueue ? [{
+        label: 'Payment booking recovery',
+        queue: this.paymentBookingRecoveryQueue,
+        staleAfterMs: IMMEDIATE_QUEUE_STALE_AFTER_MS,
+      }] : []),
     ];
+  }
+
+  private async registerMissingJob(
+    flow: string,
+    queue: Queue,
+    job: { data: Record<string, unknown>; name: string; options: JobsOptions },
+  ) {
+    try {
+      await queue.add(job.name, job.data, job.options);
+      return { flow, status: 'REGISTERED' as const };
+    } catch {
+      return { flow, status: 'FAILED' as const };
+    }
   }
 
   private alertBackgroundJobFailure(

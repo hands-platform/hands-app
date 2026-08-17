@@ -1180,6 +1180,102 @@ describe('AdminBackgroundJobsService', () => {
     )).rejects.toThrow('must be acknowledged before resolution');
     expect(fixture.tx.adminAuditLog.create).not.toHaveBeenCalled();
   });
+
+  it('re-registers bounded durable work with stable queue helpers', async () => {
+    const notificationQueue = queueFixture('notification-retry');
+    const paymentQueue = queueFixture('payment-status-check');
+    const refundQueue = queueFixture('payment-refund-status');
+    const campaignQueue = queueFixture('admin-push-campaign');
+    const bookingRecoveryQueue = queueFixture('payment-booking-recovery');
+    const prisma = {
+      payment: { findMany: vi.fn().mockResolvedValue([{ id: 'payment-1' }]) },
+      refund: { findMany: vi.fn().mockResolvedValue([{ id: 'refund-1' }]) },
+      booking: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'booking-1', payment: { id: 'payment-ready-1' } },
+        ]),
+      },
+      notification: { findMany: vi.fn().mockResolvedValue([{ id: 'notification-1' }]) },
+      adminPushCampaign: { findMany: vi.fn().mockResolvedValue([{ id: 'campaign-1' }]) },
+    } as unknown as PrismaService;
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation'),
+      queueFixture('booking-timeouts'),
+      notificationQueue,
+      paymentQueue,
+      prisma,
+      refundQueue,
+      campaignQueue,
+      bookingRecoveryQueue,
+    );
+
+    await expect(service.syncMissingDurableJobs(
+      new Date('2026-08-17T12:00:00.000+07:00'),
+    )).resolves.toMatchObject({
+      byFlow: {
+        bookingRecovery: { failedCount: 0, registeredCount: 1 },
+        campaign: { failedCount: 0, registeredCount: 1 },
+        notification: { failedCount: 0, registeredCount: 1 },
+        paymentStatus: { failedCount: 0, registeredCount: 1 },
+        refundStatus: { failedCount: 0, registeredCount: 1 },
+      },
+      failedCount: 0,
+      registeredCount: 5,
+      scannedCount: 5,
+    });
+    expect(paymentQueue.add).toHaveBeenCalledWith(
+      'payment-status-check',
+      { paymentId: 'payment-1' },
+      expect.objectContaining({ jobId: 'payment-status-check-payment-1' }),
+    );
+    expect(refundQueue.add).toHaveBeenCalledWith(
+      'payment-refund-status',
+      { refundId: 'refund-1' },
+      expect.objectContaining({ jobId: 'payment-refund-status-refund-1' }),
+    );
+    expect(bookingRecoveryQueue.add).toHaveBeenCalledWith(
+      'payment-booking-recovery',
+      { bookingId: 'booking-1', paymentId: 'payment-ready-1' },
+      expect.objectContaining({ jobId: 'payment-booking-recovery-booking-1' }),
+    );
+    expect(notificationQueue.add).toHaveBeenCalledWith(
+      'notification-send',
+      { notificationId: 'notification-1' },
+      expect.objectContaining({ deduplication: expect.objectContaining({ id: 'notification-1' }) }),
+    );
+    expect(campaignQueue.add).toHaveBeenCalledWith(
+      'admin-push-campaign-send',
+      { campaignId: 'campaign-1' },
+      expect.objectContaining({ deduplication: expect.objectContaining({ id: 'campaign-1' }) }),
+    );
+    expect(prisma.notification.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      take: 100,
+      where: expect.objectContaining({
+        deliveries: { none: {} },
+        user: { pushDevices: { some: { enabled: true } } },
+      }),
+    }));
+  });
+
+  it('fails the monitor when a durable job cannot be registered', async () => {
+    const paymentQueue = queueFixture('payment-status-check');
+    vi.mocked(paymentQueue.add).mockRejectedValueOnce(new Error('Redis unavailable'));
+    const prisma = {
+      payment: { findMany: vi.fn().mockResolvedValue([{ id: 'payment-1' }]) },
+      notification: { findMany: vi.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation'),
+      queueFixture('booking-timeouts'),
+      queueFixture('notification-retry'),
+      paymentQueue,
+      prisma,
+    );
+
+    await expect(service.syncMissingDurableJobs()).rejects.toThrow(
+      'Failed to register 1 durable background job(s)',
+    );
+  });
 });
 
 function queueFixture(
@@ -1197,6 +1293,7 @@ function queueFixture(
   } = {},
 ) {
   return {
+    add: vi.fn().mockResolvedValue({}),
     getJobCounts: vi.fn().mockResolvedValue({
       active: input.counts?.active ?? 0,
       delayed: input.counts?.delayed ?? 0,

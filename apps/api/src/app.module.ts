@@ -31,6 +31,17 @@ import { UsersModule } from './users/users.module';
       useFactory: (config: ConfigService) => ({
         connection: {
           url: config.get<string>('REDIS_URL') ?? 'redis://localhost:6379',
+          connectTimeout: 5_000,
+          enableOfflineQueue: false,
+          maxRetriesPerRequest: 3,
+        },
+      }),
+    }),
+    BullModule.forRootAsync('worker', {
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        connection: {
+          url: config.get<string>('REDIS_URL') ?? 'redis://localhost:6379',
           maxRetriesPerRequest: null,
         },
       }),
