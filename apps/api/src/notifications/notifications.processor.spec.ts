@@ -585,6 +585,54 @@ describe('NotificationRetryProcessor', () => {
     });
   });
 
+  it('never resends a delivery whose provider outcome was already marked unknown', async () => {
+    const tx = deliveryTransactionFixture();
+    tx.notificationDelivery.findFirst.mockResolvedValue({
+      attemptedAt: new Date('2026-08-01T00:00:00.000Z'),
+      id: 'delivery-unknown',
+      provider: 'FCM',
+      response: { failureCode: 'DELIVERY_OUTCOME_UNKNOWN' },
+      status: 'FAILED',
+    });
+    const prisma = {
+      notification: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'notification-1',
+          userId: 'user-1',
+          title: 'Booking update',
+          body: 'A booking update is available.',
+          type: 'payment.updated',
+          data: { bookingId: 'booking-1', targetRole: Role.CUSTOMER },
+          deliveries: [],
+        }),
+      },
+      pushDevice: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'device-1', role: Role.CUSTOMER, token: 'fcm-token-1' },
+        ]),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
+        callback(tx),
+      ),
+    };
+    const pushDelivery = { send: vi.fn() };
+    const processor = createNotificationRetryProcessor(prisma, pushDelivery);
+
+    await expect(
+      processor.process({ data: { notificationId: 'notification-1' } } as never),
+    ).resolves.toMatchObject({
+      results: [
+        {
+          deviceId: 'device-1',
+          status: 'FAILED',
+          failureCode: 'DELIVERY_OUTCOME_UNKNOWN',
+        },
+      ],
+    });
+    expect(pushDelivery.send).not.toHaveBeenCalled();
+    expect(tx.notificationDelivery.create).not.toHaveBeenCalled();
+  });
+
   it('skips a retry when every target device was already delivered successfully', async () => {
     const prisma = {
       notification: {

@@ -102,7 +102,7 @@ export class ProviderOnboardingService implements OnModuleInit {
         jobId: TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME,
         repeat: { every: 60_000 },
         removeOnComplete: true,
-        removeOnFail: false,
+        removeOnFail: { count: 500 },
       },
     );
   }

@@ -4,6 +4,8 @@ const NOTIFICATION_SEND_BACKOFF_MS = 5_000;
 export const NOTIFICATION_SEND_QUEUE_NAME = 'notification-retry';
 export const NOTIFICATION_SEND_JOB_NAME = 'notification-send';
 export const NOTIFICATION_SEND_PUSH_DEVICE_LIMIT = 10;
+export const NOTIFICATION_DELIVERY_CLAIM_STALE_MS = 2 * 60_000;
+export const NOTIFICATION_DELIVERY_UNKNOWN_CODE = 'DELIVERY_OUTCOME_UNKNOWN';
 
 export type NotificationSendJob = {
   notificationId: string;
@@ -21,7 +23,7 @@ export function notificationSendJob(notificationId: string) {
         keepLastIfActive: true,
       },
       removeOnComplete: true,
-      removeOnFail: false,
+      removeOnFail: { count: 500 },
     },
   };
 }

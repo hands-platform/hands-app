@@ -19,7 +19,7 @@ export function paymentRefundStatusJob(refundId: string) {
       attempts: PAYMENT_REFUND_STATUS_ATTEMPTS,
       backoff: { type: 'fixed', delay: PAYMENT_REFUND_STATUS_BACKOFF_MS },
       removeOnComplete: true,
-      removeOnFail: false,
+      removeOnFail: { count: 500 },
     },
   };
 }

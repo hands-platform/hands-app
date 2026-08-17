@@ -21,7 +21,7 @@ describe('MatchingService booking timeout queue', () => {
         delay: 600_000,
         jobId: 'booking-timeout-booking-1',
         removeOnComplete: true,
-        removeOnFail: false,
+        removeOnFail: { count: 500 },
       },
     );
   });

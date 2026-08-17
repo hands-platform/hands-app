@@ -742,6 +742,7 @@ export class BookingsService {
           matchingPolicy,
           eligibleBackupProviderCount: eligibleBackupProviders.length,
           timeoutAt: booking.expiresAt ?? timing.expiresAt,
+          tolerateInfrastructureFailure: true,
         });
       }
       return clientBookingResponse(booking);
@@ -766,6 +767,7 @@ export class BookingsService {
       matchingPolicy,
       eligibleBackupProviderCount: eligibleBackupProviders.length,
       timeoutAt: booking.expiresAt ?? timing.expiresAt,
+      tolerateInfrastructureFailure: true,
     });
     await this.announceInitialOpenMatchingBooking({
       userId: customerUserId,
@@ -1073,6 +1075,7 @@ export class BookingsService {
     matchingPolicy: MatchingPolicy;
     eligibleBackupProviderCount: number;
     timeoutAt: Date;
+    tolerateInfrastructureFailure?: boolean;
   }) {
     const result = this.matching.openBooking({
       booking: clientBookingResponse(input.booking),
@@ -1085,6 +1088,19 @@ export class BookingsService {
         run: () => this.scheduleBookingPaymentStatusCheck(input.booking),
       },
     ]);
+    if (input.tolerateInfrastructureFailure) {
+      await this.runPostCommitBookingEffects(input.booking.id, [
+        {
+          label: 'matching-active-booking-register',
+          run: () => this.matching.registerActiveBooking(input.booking.id, result),
+        },
+        {
+          label: 'matching-timeout-schedule',
+          run: () => this.matching.scheduleBookingTimeout(input.booking.id, input.timeoutAt),
+        },
+      ]);
+      return result;
+    }
     await this.matching.registerActiveBooking(input.booking.id, result);
     await this.matching.scheduleBookingTimeout(input.booking.id, input.timeoutAt);
     return result;

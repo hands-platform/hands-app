@@ -85,6 +85,17 @@ describe('AuthService OTP production guard', () => {
     expect(otpDelivery.deliverOtp).not.toHaveBeenCalled();
   });
 
+  it('clears the pending OTP and resend cooldown when SMS delivery fails', async () => {
+    const { otpDelivery, redisState, service } = createOtpService({ NODE_ENV: 'production' });
+    otpDelivery.deliverOtp.mockRejectedValueOnce(new Error('SMS timeout'));
+
+    await expect(
+      service.requestOtp({ phone: '+84900000000', role: Role.CUSTOMER }),
+    ).rejects.toThrow('SMS timeout');
+
+    expect(redisState.clearPendingOtp).toHaveBeenCalledWith('+84900000000');
+  });
+
   it('enforces a hashed phone daily OTP send budget before storing or delivering a code', async () => {
     const { otpDelivery, redisState, service } = createOtpService({
       NODE_ENV: 'production',
@@ -466,7 +477,7 @@ describe('AuthService refresh', () => {
           releaseConsume = () => resolve(!revoked);
         }),
     );
-    redisState.revokeRefreshToken.mockImplementation(async () => {
+    redisState.revokeRefreshSession.mockImplementation(async () => {
       revoked = true;
       releaseConsume?.();
     });
@@ -487,8 +498,9 @@ describe('AuthService refresh', () => {
     );
 
     await expect(service.logout('refresh-token-1')).resolves.toEqual({ ok: true });
-    expect(redisState.revokeRefreshToken).toHaveBeenCalledWith(expect.any(String), expect.any(Number));
-    expect(redisState.revokeRefreshFamily).toHaveBeenCalledWith(
+    expect(redisState.revokeRefreshSession).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Number),
       expect.any(String),
       30 * 24 * 60 * 60,
     );
@@ -893,6 +905,7 @@ function createService(refreshPayload: Record<string, unknown>, roles: Role[]) {
     consumeRefreshToken: vi.fn().mockResolvedValue(true),
     isRefreshFamilyRevoked: vi.fn().mockResolvedValue(false),
     revokeRefreshFamily: vi.fn().mockResolvedValue(undefined),
+    revokeRefreshSession: vi.fn().mockResolvedValue(undefined),
     revokeRefreshToken: vi.fn().mockResolvedValue(undefined),
   };
   const socketAuth = { disconnectMobileFamily: vi.fn() };
@@ -929,6 +942,7 @@ function createOtpService({
       | 'consumeOtpIfMatches'
       | 'consumeAdminMfaTotp'
       | 'consumeRateLimit'
+      | 'clearPendingOtp'
       | 'getOtp'
       | 'incrementOtpAttempts'
       | 'reserveOtpSend'
@@ -936,6 +950,7 @@ function createOtpService({
       | 'consumeRefreshToken'
       | 'isRefreshFamilyRevoked'
       | 'revokeRefreshFamily'
+      | 'revokeRefreshSession'
       | 'revokeRefreshToken',
       ReturnType<typeof vi.fn>
     >
@@ -972,6 +987,7 @@ function createOtpService({
     }),
   };
   const redisState = {
+    clearPendingOtp: vi.fn().mockResolvedValue(undefined),
     consumeAdminMfaTotp: vi.fn().mockResolvedValue(true),
     consumeOtp: vi.fn().mockResolvedValue(undefined),
     consumeOtpIfMatches: vi.fn().mockResolvedValue(false),
@@ -982,6 +998,7 @@ function createOtpService({
     consumeRefreshToken: vi.fn().mockResolvedValue(true),
     isRefreshFamilyRevoked: vi.fn().mockResolvedValue(false),
     revokeRefreshFamily: vi.fn().mockResolvedValue(undefined),
+    revokeRefreshSession: vi.fn().mockResolvedValue(undefined),
     revokeRefreshToken: vi.fn().mockResolvedValue(undefined),
     setOtp: vi.fn().mockResolvedValue(undefined),
     ...redisStateOverrides,

@@ -191,6 +191,69 @@ describe('ChatService message validation', () => {
     });
   });
 
+  it('returns the committed chat message and records evidence when notification registration fails', async () => {
+    const notifications = {
+      create: vi.fn().mockRejectedValue(new Error('Notification queue unavailable')),
+    };
+    const auditUpsert = vi.fn().mockResolvedValue({ id: 'audit-1' });
+    const prisma = {
+      chatRoom: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'chat-room-1',
+            booking: {
+              customerProfileId: 'customer-1',
+              selectedProviderId: 'partner-1',
+            },
+          })
+          .mockResolvedValueOnce({
+            bookingId: 'booking-1',
+            booking: {
+              customerProfile: { userId: 'customer-user' },
+              selectedProvider: { userId: 'partner-user' },
+            },
+          }),
+      },
+      customerProfile: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      chatMessage: {
+        create: vi.fn().mockResolvedValue({
+          id: 'message-1',
+          chatRoomId: 'chat-room-1',
+          senderId: 'customer-user',
+          body: 'See you soon',
+        }),
+      },
+      adminAuditLog: { upsert: auditUpsert },
+    };
+    const service = new ChatService(prisma as never, notifications as never);
+
+    await expect(
+      service.createMessage(
+        'chat-room-1',
+        { id: 'customer-user', roles: [Role.CUSTOMER] },
+        { text: 'See you soon' },
+      ),
+    ).resolves.toEqual(expect.objectContaining({ id: 'message-1' }));
+
+    expect(auditUpsert).toHaveBeenCalledWith({
+      where: { eventId: 'chat-message-notification-failed:message-1:partner-user' },
+      update: {},
+      create: expect.objectContaining({
+        eventId: 'chat-message-notification-failed:message-1:partner-user',
+        action: 'chat.message.notification_failed',
+        metadata: expect.objectContaining({
+          chatMessageId: 'message-1',
+          chatRoomId: 'chat-room-1',
+          recipientUserId: 'partner-user',
+        }),
+      }),
+    });
+    expect(auditUpsert.mock.calls[0]?.[0]?.create?.metadata).not.toHaveProperty('body');
+  });
+
   it('rejects oversized realtime chat messages at the service boundary', async () => {
     const prisma = {
       chatRoom: {

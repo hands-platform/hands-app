@@ -17,7 +17,7 @@ export function adminPushCampaignJob(campaignId: string) {
       backoff: { type: 'exponential', delay: ADMIN_PUSH_CAMPAIGN_BACKOFF_MS },
       deduplication: { id: campaignId, keepLastIfActive: true },
       removeOnComplete: true,
-      removeOnFail: false,
+      removeOnFail: { count: 500 },
     },
   };
 }

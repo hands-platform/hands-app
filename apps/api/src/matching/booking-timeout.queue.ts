@@ -15,7 +15,7 @@ export function bookingTimeoutJob(bookingId: string, expiresAt: Date) {
       delay: Math.max(expiresAt.getTime() - Date.now(), 0),
       jobId: `${BOOKING_TIMEOUT_JOB_NAME}-${bookingId}`,
       removeOnComplete: true,
-      removeOnFail: false,
+      removeOnFail: { count: 500 },
     },
   };
 }

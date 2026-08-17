@@ -5,6 +5,7 @@ import { developmentOtpFromConfig } from './development-otp';
 type SmsProvider = 'dev' | 'http' | 'vonage';
 
 const supportedHttpSmsProviders = new Set(['http', 'viettel', 'fpt', 'custom']);
+const SMS_DELIVERY_TIMEOUT_MS = 5_000;
 
 @Injectable()
 export class OtpDeliveryService {
@@ -46,6 +47,7 @@ export class OtpDeliveryService {
         senderId,
         message: `Your HANDS verification code is ${otp}. It expires in 5 minutes.`,
       }),
+      signal: AbortSignal.timeout(SMS_DELIVERY_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -81,6 +83,7 @@ export class OtpDeliveryService {
         'content-type': 'application/x-www-form-urlencoded',
       },
       body: body.toString(),
+      signal: AbortSignal.timeout(SMS_DELIVERY_TIMEOUT_MS),
     });
 
     const responseBody = await response.text().catch(() => '');

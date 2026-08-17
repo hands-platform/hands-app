@@ -339,6 +339,31 @@ describe('AdminBackgroundJobsService', () => {
     });
   });
 
+  it('includes tax policy activation in background queue health when configured', async () => {
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation'),
+      queueFixture('booking-timeouts'),
+      queueFixture('notification-retry'),
+      queueFixture('payment-status-check'),
+      prismaFixture().prisma,
+      undefined,
+      undefined,
+      undefined,
+      queueFixture('tax-policy-activation'),
+    );
+
+    const result = await service.health();
+
+    expect(result.queues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: 'Tax policy activation',
+          name: 'tax-policy-activation',
+        }),
+      ]),
+    );
+  });
+
   it('marks an immediate queue stale when its oldest waiting job exceeds the SLA', async () => {
     const queuedAt = Date.now() - 5 * 60_000;
     const service = new AdminBackgroundJobsService(
@@ -1183,10 +1208,10 @@ describe('AdminBackgroundJobsService', () => {
 
   it('re-registers bounded durable work with stable queue helpers', async () => {
     const notificationQueue = queueFixture('notification-retry');
-    const paymentQueue = queueFixture('payment-status-check');
-    const refundQueue = queueFixture('payment-refund-status');
+    const paymentQueue = queueFixture('payment-status-check', { jobState: null });
+    const refundQueue = queueFixture('payment-refund-status', { jobState: null });
     const campaignQueue = queueFixture('admin-push-campaign');
-    const bookingRecoveryQueue = queueFixture('payment-booking-recovery');
+    const bookingRecoveryQueue = queueFixture('payment-booking-recovery', { jobState: null });
     const prisma = {
       payment: { findMany: vi.fn().mockResolvedValue([{ id: 'payment-1' }]) },
       refund: { findMany: vi.fn().mockResolvedValue([{ id: 'refund-1' }]) },
@@ -1196,6 +1221,10 @@ describe('AdminBackgroundJobsService', () => {
         ]),
       },
       notification: { findMany: vi.fn().mockResolvedValue([{ id: 'notification-1' }]) },
+      notificationDelivery: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'delivery-stale-1' }]),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
       adminPushCampaign: { findMany: vi.fn().mockResolvedValue([{ id: 'campaign-1' }]) },
     } as unknown as PrismaService;
     const service = new AdminBackgroundJobsService(
@@ -1219,6 +1248,7 @@ describe('AdminBackgroundJobsService', () => {
         paymentStatus: { failedCount: 0, registeredCount: 1 },
         refundStatus: { failedCount: 0, registeredCount: 1 },
       },
+      closedUncertainDeliveryCount: 1,
       failedCount: 0,
       registeredCount: 5,
       scannedCount: 5,
@@ -1232,6 +1262,15 @@ describe('AdminBackgroundJobsService', () => {
       'payment-refund-status',
       { refundId: 'refund-1' },
       expect.objectContaining({ jobId: 'payment-refund-status-refund-1' }),
+    );
+    expect(prisma.refund.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          status: {
+            in: ['APPROVAL_PROCESSING', 'PROVIDER_PROCESSING', 'GATEWAY_CONFIRMED'],
+          },
+        },
+      }),
     );
     expect(bookingRecoveryQueue.add).toHaveBeenCalledWith(
       'payment-booking-recovery',
@@ -1255,14 +1294,83 @@ describe('AdminBackgroundJobsService', () => {
         user: { pushDevices: { some: { enabled: true } } },
       }),
     }));
+    expect(prisma.notificationDelivery.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        id: { in: ['delivery-stale-1'] },
+        status: 'PROCESSING',
+      }),
+      data: expect.objectContaining({
+        status: 'FAILED',
+        response: expect.objectContaining({ failureCode: 'DELIVERY_OUTCOME_UNKNOWN' }),
+      }),
+    });
+  });
+
+  it('retries retained failed durable jobs and reports the recovery truthfully', async () => {
+    const paymentQueue = queueFixture('payment-status-check', { jobState: 'failed' });
+    const prisma = {
+      payment: { findMany: vi.fn().mockResolvedValue([{ id: 'payment-1' }]) },
+      notification: { findMany: vi.fn().mockResolvedValue([]) },
+      notificationDelivery: { findMany: vi.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation'),
+      queueFixture('booking-timeouts'),
+      queueFixture('notification-retry'),
+      paymentQueue,
+      prisma,
+    );
+
+    await expect(service.syncMissingDurableJobs()).resolves.toMatchObject({
+      byFlow: { paymentStatus: { retriedCount: 1 } },
+      registeredCount: 0,
+      retriedCount: 1,
+    });
+    expect(paymentQueue.add).not.toHaveBeenCalled();
+  });
+
+  it('removes a retained failed job after recording its resolution', async () => {
+    const fixture = prismaFixture({
+      reviewLogs: [
+        {
+          action: 'admin.background_jobs.failure_alerted',
+          createdAt: new Date('2026-07-14T04:00:00.000+07:00'),
+          metadata: {},
+        },
+        {
+          action: 'admin.background_jobs.failure_acknowledged',
+          createdAt: new Date('2026-07-14T04:05:00.000+07:00'),
+          metadata: {},
+        },
+      ],
+    });
+    const paymentQueue = queueFixture('payment-status-check');
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation'),
+      queueFixture('booking-timeouts'),
+      queueFixture('notification-retry'),
+      paymentQueue,
+      fixture.prisma,
+    );
+
+    await expect(service.resolveFailure(
+      'internal-admin',
+      'payment-status-check',
+      'payment-failure-1',
+      'Provider credentials corrected',
+      'master@hands.vn',
+    )).resolves.toMatchObject({ ok: true, status: 'RESOLVED' });
+    const job = await paymentQueue.getJob('payment-failure-1');
+    expect(job?.remove).toHaveBeenCalledOnce();
   });
 
   it('fails the monitor when a durable job cannot be registered', async () => {
-    const paymentQueue = queueFixture('payment-status-check');
+    const paymentQueue = queueFixture('payment-status-check', { jobState: null });
     vi.mocked(paymentQueue.add).mockRejectedValueOnce(new Error('Redis unavailable'));
     const prisma = {
       payment: { findMany: vi.fn().mockResolvedValue([{ id: 'payment-1' }]) },
       notification: { findMany: vi.fn().mockResolvedValue([]) },
+      notificationDelivery: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
     const service = new AdminBackgroundJobsService(
       queueFixture('bank-statement-escalation'),
@@ -1289,7 +1397,7 @@ function queueFixture(
     schedulers?: Array<{ key: string; name: string; next: number }>;
     waiting?: Job[];
     workers?: number;
-    jobState?: string;
+    jobState?: string | null;
   } = {},
 ) {
   return {
@@ -1312,8 +1420,10 @@ function queueFixture(
       }[type] ?? [];
       return Promise.resolve(jobs.slice(start, end + 1));
     }),
-    getJob: vi.fn().mockResolvedValue({
+    getJob: vi.fn().mockResolvedValue(input.jobState === null ? null : {
       getState: vi.fn().mockResolvedValue(input.jobState ?? 'failed'),
+      remove: vi.fn().mockResolvedValue(undefined),
+      retry: vi.fn().mockResolvedValue(undefined),
     }),
     getWorkersCount: vi.fn().mockResolvedValue(input.workers ?? 1),
     name,

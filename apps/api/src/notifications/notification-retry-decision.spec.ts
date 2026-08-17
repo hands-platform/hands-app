@@ -22,6 +22,13 @@ function failure(code: string, attemptedAt = '2026-08-10T11:00:00.000Z') {
 }
 
 describe('notificationRetryDecision', () => {
+  it('allows a safe retry when no provider delivery attempt exists', () => {
+    expect(notificationRetryDecision([device], [], now)).toMatchObject({
+      failureClass: 'transient',
+      state: 'allowed',
+    });
+  });
+
   it('blocks permanent payload and provider configuration failures', () => {
     expect(notificationRetryDecision([device], [failure('INVALID_ARGUMENT')], now)).toMatchObject({
       failureClass: 'payload-config',

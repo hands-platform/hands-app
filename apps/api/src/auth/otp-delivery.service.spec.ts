@@ -81,6 +81,7 @@ describe('OtpDeliveryService', () => {
       }),
     );
     const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(request.signal).toBeInstanceOf(AbortSignal);
     expect(JSON.parse(String(request.body))).toEqual({
       message: 'Your HANDS verification code is 654321. It expires in 5 minutes.',
       senderId: 'HANDS',
@@ -118,6 +119,7 @@ describe('OtpDeliveryService', () => {
       }),
     );
     const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(request.signal).toBeInstanceOf(AbortSignal);
     const body = new URLSearchParams(String(request.body));
     expect(body.get('api_key')).toBe('51830fa7');
     expect(body.get('api_secret')).toBe('test-vonage-secret');

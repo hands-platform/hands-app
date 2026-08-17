@@ -90,7 +90,13 @@ export class AuthService {
     const developmentOtp = developmentOtpFromConfig(this.config);
     const otp = developmentOtp ?? this.generateOtp();
     await this.storeOtp(phone, otp);
-    const delivery = await this.otpDelivery.deliverOtp(phone, otp);
+    let delivery: Awaited<ReturnType<OtpDeliveryService['deliverOtp']>>;
+    try {
+      delivery = await this.otpDelivery.deliverOtp(phone, otp);
+    } catch (error) {
+      await this.clearFailedOtpDelivery(phone);
+      throw error;
+    }
 
     return {
       phone,
@@ -187,7 +193,7 @@ export class AuthService {
       payload.exp,
       familyId,
     );
-    this.socketAuth?.disconnectMobileFamily(familyId);
+    await this.socketAuth?.disconnectMobileFamily(familyId);
     return { ok: true };
   }
 
@@ -648,6 +654,17 @@ export class AuthService {
     }
   }
 
+  private async clearFailedOtpDelivery(phone: string) {
+    this.fallbackOtps.delete(phone);
+    this.fallbackOtpAttempts.delete(phone);
+    this.fallbackOtpSendCooldowns.delete(phone);
+    try {
+      await this.redisState.clearPendingOtp(phone);
+    } catch {
+      this.logger.warn('Redis OTP delivery cleanup unavailable.');
+    }
+  }
+
   private async reserveOtpSend(phone: string) {
     try {
       const reserved = await this.redisState.reserveOtpSend(phone);
@@ -887,10 +904,12 @@ export class AuthService {
     const ttlSeconds = refreshTokenTtlSeconds(expiresAtSeconds);
     const familyTtlSeconds = refreshFamilyTtlSeconds(ttlSeconds);
     try {
-      await Promise.all([
-        this.redisState.revokeRefreshToken(tokenHash, ttlSeconds),
-        this.redisState.revokeRefreshFamily(familyId, familyTtlSeconds),
-      ]);
+      await this.redisState.revokeRefreshSession(
+        tokenHash,
+        ttlSeconds,
+        familyId,
+        familyTtlSeconds,
+      );
     } catch {
       if (this.isProduction()) {
         this.logger.warn('Redis refresh token revocation unavailable.');

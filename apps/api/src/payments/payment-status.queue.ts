@@ -19,7 +19,7 @@ export function paymentStatusCheckJob(paymentId: string) {
       attempts: PAYMENT_STATUS_CHECK_ATTEMPTS,
       backoff: { type: 'exponential', delay: PAYMENT_STATUS_CHECK_BACKOFF_MS },
       removeOnComplete: true,
-      removeOnFail: false,
+      removeOnFail: { count: 500 },
     },
   };
 }

@@ -276,7 +276,7 @@ describe('NotificationsService retry queue', () => {
       keepLastIfActive: true,
     },
     removeOnComplete: true,
-    removeOnFail: false,
+    removeOnFail: { count: 500 },
   };
 
   it('enqueues created notifications with the standard retry policy', async () => {
@@ -625,7 +625,7 @@ describe('NotificationsService retry queue', () => {
     });
   });
 
-  it('blocks retry when no classified failed path exists', async () => {
+  it('allows a controlled retry when no provider delivery attempt exists', async () => {
     const prisma = {
       notification: {
         findUniqueOrThrow: vi.fn().mockResolvedValue({
@@ -645,14 +645,16 @@ describe('NotificationsService retry queue', () => {
     };
     const service = new NotificationsService(prisma as never, queue as never);
 
-    await expect(service.retry('notification-1')).rejects.toThrow(
-      'No classified delivery failure is available for a safe retry',
-    );
+    await expect(service.retry('notification-1')).resolves.toMatchObject({
+      notificationId: 'notification-1',
+      ok: true,
+      retrySnapshot: { unattempted: 1 },
+    });
 
     expect(prisma.notification.findUniqueOrThrow).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'notification-1' } }),
     );
-    expect(queue.add).not.toHaveBeenCalled();
+    expect(queue.add).toHaveBeenCalledOnce();
   });
 
   it('rejects retry when every target path was already accepted', async () => {

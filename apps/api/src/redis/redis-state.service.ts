@@ -254,6 +254,14 @@ export class RedisStateService implements OnModuleDestroy {
     await this.redis.del(`auth:otp:${phone}`, `auth:otp:attempts:${phone}`);
   }
 
+  async clearPendingOtp(phone: string) {
+    await this.redis.del(
+      `auth:otp:${phone}`,
+      `auth:otp:attempts:${phone}`,
+      `auth:otp:send-cooldown:${phone}`,
+    );
+  }
+
   async revokeRefreshToken(tokenHash: string, ttlSeconds: number) {
     await this.redis.set(`auth:refresh:revoked:${tokenHash}`, '1', 'EX', Math.max(1, Math.trunc(ttlSeconds)));
   }
@@ -264,6 +272,26 @@ export class RedisStateService implements OnModuleDestroy {
       '1',
       'EX',
       Math.max(1, Math.trunc(ttlSeconds)),
+    );
+  }
+
+  async revokeRefreshSession(
+    tokenHash: string,
+    tokenTtlSeconds: number,
+    familyId: string,
+    familyTtlSeconds: number,
+  ) {
+    await this.redis.eval(
+      [
+        "redis.call('SET', KEYS[1], '1', 'EX', ARGV[1])",
+        "redis.call('SET', KEYS[2], '1', 'EX', ARGV[2])",
+        'return 1',
+      ].join('\n'),
+      2,
+      `auth:refresh:revoked:${tokenHash}`,
+      `auth:refresh:family-revoked:${familyId}`,
+      Math.max(1, Math.trunc(tokenTtlSeconds)),
+      Math.max(1, Math.trunc(familyTtlSeconds)),
     );
   }
 

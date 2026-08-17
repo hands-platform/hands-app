@@ -26,7 +26,10 @@ describe('BookingTimeoutReconciliationService', () => {
       },
       adminAuditLog: { findMany: vi.fn().mockResolvedValue([]) },
     };
-    const queue = { add: vi.fn().mockResolvedValue({ id: 'job-1' }) };
+    const queue = {
+      add: vi.fn().mockResolvedValue({ id: 'job-1' }),
+      getJob: vi.fn().mockResolvedValue(null),
+    };
     const service = new BookingTimeoutReconciliationService(prisma as never, queue as never);
 
     await expect(service.reconcileBatch(now)).resolves.toEqual({
@@ -94,7 +97,7 @@ describe('BookingTimeoutReconciliationService', () => {
     expect(queue.add).toHaveBeenCalledWith(
       'booking-timeout',
       { bookingId: 'booking-expired-payment-pending' },
-      expect.objectContaining({ delay: 0, attempts: 3, removeOnFail: false }),
+      expect.objectContaining({ delay: 0, attempts: 3, removeOnFail: { count: 500 } }),
     );
   });
 
@@ -110,6 +113,7 @@ describe('BookingTimeoutReconciliationService', () => {
     };
     const queue = {
       add: vi.fn().mockRejectedValueOnce(new Error('queue unavailable')).mockResolvedValueOnce({}),
+      getJob: vi.fn().mockResolvedValue(null),
     };
     const service = new BookingTimeoutReconciliationService(prisma as never, queue as never);
 
@@ -134,7 +138,10 @@ describe('BookingTimeoutReconciliationService', () => {
       },
       adminAuditLog: { findMany: vi.fn().mockResolvedValue([]) },
     };
-    const queue = { add: vi.fn().mockResolvedValue({ id: 'job-1' }) };
+    const queue = {
+      add: vi.fn().mockResolvedValue({ id: 'job-1' }),
+      getJob: vi.fn().mockResolvedValue(null),
+    };
     const service = new BookingTimeoutReconciliationService(prisma as never, queue as never);
 
     await expect(service.reconcileBatch(now)).resolves.toEqual({
@@ -173,6 +180,35 @@ describe('BookingTimeoutReconciliationService', () => {
       scheduled: 0,
       skipped: false,
     });
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  it('retries a retained failed timeout job instead of accepting a duplicate id', async () => {
+    const now = new Date('2026-08-17T01:05:30.000Z');
+    const prisma = {
+      booking: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'booking-expired', expiresAt: new Date(0), status: BookingStatus.OPEN_MATCHING },
+        ]),
+      },
+      adminAuditLog: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+    const failedJob = {
+      getState: vi.fn().mockResolvedValue('failed'),
+      retry: vi.fn().mockResolvedValue(undefined),
+    };
+    const queue = {
+      add: vi.fn(),
+      getJob: vi.fn().mockResolvedValue(failedJob),
+    };
+    const service = new BookingTimeoutReconciliationService(prisma as never, queue as never);
+
+    await expect(service.reconcileBatch(now)).resolves.toEqual({
+      failed: 0,
+      scheduled: 1,
+      skipped: false,
+    });
+    expect(failedJob.retry).toHaveBeenCalledOnce();
     expect(queue.add).not.toHaveBeenCalled();
   });
 });

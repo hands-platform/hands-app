@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import {
   AdminOperatorPermissionCategory,
   FilePurpose,
@@ -19,6 +19,8 @@ import {
 
 @Injectable()
 export class ChatService {
+  private readonly logger = new Logger(ChatService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications?: NotificationsService,
@@ -61,7 +63,11 @@ export class ChatService {
       },
       include: { sender: { select: { id: true, fullName: true, roles: true } } },
     });
-    await this.notifyChatMessageRecipients(chatRoomId, user.id);
+    try {
+      await this.notifyChatMessageRecipients(chatRoomId, user.id, message.id);
+    } catch (error) {
+      await this.recordNotificationFailure(message.id, chatRoomId, null, error);
+    }
     return message;
   }
 
@@ -119,7 +125,11 @@ export class ChatService {
     }
   }
 
-  private async notifyChatMessageRecipients(chatRoomId: string, senderUserId: string) {
+  private async notifyChatMessageRecipients(
+    chatRoomId: string,
+    senderUserId: string,
+    chatMessageId: string,
+  ) {
     if (!this.notifications) {
       return;
     }
@@ -149,17 +159,68 @@ export class ChatService {
     );
 
     for (const recipient of recipients) {
-      await this.notifications.create({
-        userId: recipient.userId,
-        targetRole: recipient.targetRole,
-        type: 'chat.message.created',
-        title: 'New chat message',
-        body: 'A new message is available in your booking chat.',
-        data: chatNotificationRoutingData({
-          bookingId: chatRoom.bookingId,
-          chatRoomId,
-        }),
+      try {
+        await this.notifications.create({
+          userId: recipient.userId,
+          targetRole: recipient.targetRole,
+          type: 'chat.message.created',
+          title: 'New chat message',
+          body: 'A new message is available in your booking chat.',
+          data: chatNotificationRoutingData({
+            bookingId: chatRoom.bookingId,
+            chatRoomId,
+          }),
+        });
+      } catch (error) {
+        await this.recordNotificationFailure(chatMessageId, chatRoomId, recipient.userId, error);
+      }
+    }
+  }
+
+  private async recordNotificationFailure(
+    chatMessageId: string,
+    chatRoomId: string,
+    recipientUserId: string | null,
+    error: unknown,
+  ) {
+    const message = error instanceof Error ? error.message : String(error);
+    this.logger.error(
+      `Chat message ${chatMessageId} committed, but notification delivery registration failed: ${message}`,
+      error instanceof Error ? error.stack : undefined,
+    );
+    const recipientKey = recipientUserId ?? 'unknown';
+    try {
+      await this.prisma.adminAuditLog.upsert({
+        where: { eventId: `chat-message-notification-failed:${chatMessageId}:${recipientKey}` },
+        update: {},
+        create: {
+          eventId: `chat-message-notification-failed:${chatMessageId}:${recipientKey}`,
+          actorId: null,
+          actorKey: 'chat-message-notification',
+          actorType: 'SYSTEM',
+          action: 'chat.message.notification_failed',
+          area: 'BOOKING',
+          objectId: chatMessageId,
+          objectType: 'ChatMessage',
+          outcome: 'FAILED',
+          severity: 'REVIEW',
+          source: 'chat_service',
+          target: `chat_message:${chatMessageId}`,
+          metadata: {
+            chatMessageId,
+            chatRoomId,
+            recipientUserId,
+            error: message.replace(/[\r\n\t]+/g, ' ').trim().slice(0, 500),
+          },
+        },
       });
+    } catch (auditError) {
+      this.logger.error(
+        `Could not record chat notification failure for ${chatMessageId}: ${
+          auditError instanceof Error ? auditError.message : String(auditError)
+        }`,
+        auditError instanceof Error ? auditError.stack : undefined,
+      );
     }
   }
 

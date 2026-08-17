@@ -18,7 +18,7 @@ export function paymentBookingRecoveryJob(data: PaymentBookingRecoveryJob) {
       attempts: PAYMENT_BOOKING_RECOVERY_ATTEMPTS,
       backoff: { type: 'exponential', delay: PAYMENT_BOOKING_RECOVERY_BACKOFF_MS },
       removeOnComplete: true,
-      removeOnFail: false,
+      removeOnFail: { count: 500 },
     },
   };
 }

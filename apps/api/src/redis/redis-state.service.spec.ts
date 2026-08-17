@@ -147,6 +147,25 @@ describe('RedisStateService refresh token revocation', () => {
     expect(redis.set).toHaveBeenCalledWith('auth:refresh:revoked:token-hash', '1', 'EX', 120);
   });
 
+  it('atomically revokes a refresh token and its family during logout', async () => {
+    redis.eval.mockResolvedValue(1);
+    const service = createService();
+
+    await service.revokeRefreshSession('token-hash', 120.9, 'family-1', 3600.9);
+
+    expect(redis.eval).toHaveBeenCalledWith(
+      expect.stringContaining("redis.call('SET', KEYS[1], '1', 'EX', ARGV[1])"),
+      2,
+      'auth:refresh:revoked:token-hash',
+      'auth:refresh:family-revoked:family-1',
+      120,
+      3600,
+    );
+    expect(redis.eval.mock.calls[0]?.[0]).toContain(
+      "redis.call('SET', KEYS[2], '1', 'EX', ARGV[2])",
+    );
+  });
+
   it('stores and checks refresh family revocation separately from token hashes', async () => {
     redis.set.mockResolvedValue('OK');
     redis.get.mockResolvedValue('1');
@@ -177,6 +196,21 @@ describe('RedisStateService rate-limit buckets', () => {
 
     expect(redis.del).toHaveBeenCalledWith(
       'rate-limit:admin-reauthentication:admin-1:session-1',
+    );
+  });
+});
+
+describe('RedisStateService OTP cleanup', () => {
+  it('clears the code, attempt counter, and resend cooldown together', async () => {
+    redis.del.mockResolvedValue(3);
+    const service = createService();
+
+    await service.clearPendingOtp('+84900000000');
+
+    expect(redis.del).toHaveBeenCalledWith(
+      'auth:otp:+84900000000',
+      'auth:otp:attempts:+84900000000',
+      'auth:otp:send-cooldown:+84900000000',
     );
   });
 });

@@ -13,7 +13,7 @@ describe('adminPushCampaignJob', () => {
         backoff: { type: 'exponential', delay: 5_000 },
         deduplication: { id: 'campaign-1', keepLastIfActive: true },
         removeOnComplete: true,
-        removeOnFail: false,
+        removeOnFail: { count: 500 },
       },
     });
   });

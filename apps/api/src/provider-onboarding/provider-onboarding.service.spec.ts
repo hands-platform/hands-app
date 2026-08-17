@@ -18,6 +18,27 @@ import {
 } from '@prisma/client';
 
 import { ProviderOnboardingService } from './provider-onboarding.service';
+import { TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME } from './tax-policy-activation.queue';
+
+describe('ProviderOnboardingService tax policy scheduler', () => {
+  it('bounds failed repeatable sweep history', async () => {
+    const queue = { add: vi.fn().mockResolvedValue({ id: 'tax-sweep' }) };
+    const service = new ProviderOnboardingService({} as never, undefined, queue as never);
+
+    await service.onModuleInit();
+
+    expect(queue.add).toHaveBeenCalledWith(
+      TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME,
+      {},
+      {
+        jobId: TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME,
+        repeat: { every: 60_000 },
+        removeOnComplete: true,
+        removeOnFail: { count: 500 },
+      },
+    );
+  });
+});
 
 const taxPolicyLegalMetadata = {
   changeSummary: 'Create the reviewed Vietnam withholding schedule.',

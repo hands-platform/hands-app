@@ -94,7 +94,7 @@ describe('PaymentsService status check queue', () => {
         attempts: 5,
         backoff: { type: 'exponential', delay: 10_000 },
         removeOnComplete: true,
-        removeOnFail: false,
+        removeOnFail: { count: 500 },
       },
     );
   });
@@ -113,7 +113,7 @@ describe('PaymentsService status check queue', () => {
         attempts: 30,
         backoff: { type: 'fixed', delay: 60_000 },
         removeOnComplete: true,
-        removeOnFail: false,
+        removeOnFail: { count: 500 },
       },
     );
   });

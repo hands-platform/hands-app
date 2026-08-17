@@ -756,6 +756,56 @@ describe('BookingsService booking creation', () => {
     });
   });
 
+  it('keeps a newly opened booking available when matching infrastructure registration fails', async () => {
+    const adminAuditLogCreate = vi.fn().mockResolvedValue({ id: 'audit-1' });
+    const matching = {
+      openBooking: vi.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
+      registerActiveBooking: vi.fn().mockRejectedValue(new Error('Redis unavailable')),
+      scheduleBookingTimeout: vi.fn().mockResolvedValue(undefined),
+    };
+    const service = new BookingsService(
+      { adminAuditLog: { create: adminAuditLogCreate } } as never,
+      matching as never,
+      {} as never,
+      { scheduleStatusCheck: vi.fn() } as never,
+      {} as never,
+      {} as never,
+    );
+    const activation = service as unknown as {
+      activateOpenMatchingBooking(input: {
+        booking: { id: string };
+        matchingPolicy: ReturnType<typeof matchingPolicy>;
+        eligibleBackupProviderCount: number;
+        timeoutAt: Date;
+        tolerateInfrastructureFailure: boolean;
+      }): Promise<{ bookingId: string; event: string }>;
+    };
+
+    await expect(
+      activation.activateOpenMatchingBooking({
+        booking: { id: 'booking-1' },
+        matchingPolicy: matchingPolicy(),
+        eligibleBackupProviderCount: 0,
+        timeoutAt: new Date('2026-08-17T03:10:00.000Z'),
+        tolerateInfrastructureFailure: true,
+      }),
+    ).resolves.toEqual({ bookingId: 'booking-1', event: 'booking.opened' });
+
+    expect(matching.registerActiveBooking).toHaveBeenCalledTimes(3);
+    expect(matching.scheduleBookingTimeout).toHaveBeenCalledTimes(1);
+    expect(adminAuditLogCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'booking.post_commit_effect.failed',
+          metadata: expect.objectContaining({
+            effect: 'matching-active-booking-register',
+            attempts: 3,
+          }),
+        }),
+      }),
+    );
+  });
+
   it('closes a recovered matching projection when customer cancellation wins during activation', async () => {
     const createdBooking = {
       id: 'booking-1',

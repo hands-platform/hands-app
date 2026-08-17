@@ -160,11 +160,15 @@ export class SocketAuthService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  disconnectMobileFamily(familyId: string) {
+  async disconnectMobileFamily(familyId: string) {
     this.disconnectMobileFamilyLocally(familyId);
-    void this.redisState?.publishAdminSocketRevocation({ id: familyId, scope: 'mobile-family' }).catch(() => {
+    if (!this.redisState) return;
+    try {
+      await this.redisState.publishAdminSocketRevocation({ id: familyId, scope: 'mobile-family' });
+    } catch (error) {
       this.logger.warn('Mobile family socket revocation publish failed');
-    });
+      throw error;
+    }
   }
 
   private scheduleAuthenticationChecks(socket: AuthenticatedSocket, user: AuthenticatedUser) {

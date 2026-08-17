@@ -12,6 +12,7 @@ import { PAYMENT_REFUND_STATUS_QUEUE_NAME } from '../payments/payment-refund-sta
 import { PAYMENT_STATUS_CHECK_QUEUE_NAME } from '../payments/payment-status.queue';
 import { PaymentsModule } from '../payments/payments.module';
 import { ProvidersModule } from '../providers/providers.module';
+import { TAX_POLICY_ACTIVATION_QUEUE_NAME } from '../provider-onboarding/tax-policy-activation.queue';
 import { ReferralsModule } from '../referrals/referrals.module';
 import { SiteContentModule } from '../site-content/site-content.module';
 import { AdminBackgroundJobsService } from './admin-background-jobs.service';
@@ -33,6 +34,7 @@ import { BankStatementEscalationScheduler } from './bank-statement-escalation.sc
       { name: PAYMENT_BOOKING_RECOVERY_QUEUE_NAME },
       { name: PAYMENT_REFUND_STATUS_QUEUE_NAME },
       { name: PAYMENT_STATUS_CHECK_QUEUE_NAME },
+      { name: TAX_POLICY_ACTIVATION_QUEUE_NAME },
     ),
     EarningsModule,
     FilesModule,

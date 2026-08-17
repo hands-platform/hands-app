@@ -18,7 +18,7 @@ describe('notification send queue descriptor', () => {
           keepLastIfActive: true,
         },
         removeOnComplete: true,
-        removeOnFail: false,
+        removeOnFail: { count: 500 },
       },
     });
   });

@@ -39,6 +39,15 @@ export function notificationRetryDecision(
     return blocked('unknown', 'No eligible unresolved push path remains.');
   }
 
+  if (deliveries.length === 0) {
+    return {
+      evidence: 'No provider delivery attempt exists, so retrying cannot duplicate an accepted push.',
+      failureClass: 'transient',
+      reason: 'The notification was persisted but no provider delivery attempt was recorded.',
+      state: 'allowed',
+    };
+  }
+
   const latestByDevice = latestDeliveriesByDevice(deliveries);
   const latestFailure = deliveries
     .filter((delivery) => delivery.status === 'FAILED')

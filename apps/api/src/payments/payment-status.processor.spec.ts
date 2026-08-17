@@ -24,7 +24,7 @@ describe('PaymentStatusProcessor', () => {
         attempts: 3,
         backoff: { type: 'exponential', delay: 5_000 },
         removeOnComplete: true,
-        removeOnFail: false,
+        removeOnFail: { count: 500 },
       },
     );
   });

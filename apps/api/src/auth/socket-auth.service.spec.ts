@@ -161,7 +161,7 @@ describe('SocketAuthService', () => {
     const remoteSocket = socketFixture();
     await service.authenticate(localSocket as never);
 
-    service.disconnectMobileFamily('mobile-family-1');
+    await service.disconnectMobileFamily('mobile-family-1');
     expect(redisState.publishAdminSocketRevocation).toHaveBeenCalledWith({
       id: 'mobile-family-1',
       scope: 'mobile-family',
@@ -171,6 +171,22 @@ describe('SocketAuthService', () => {
     await service.authenticate(remoteSocket as never);
     receiveRevocation?.({ id: 'mobile-family-1', scope: 'mobile-family' });
     expect(remoteSocket.disconnect).toHaveBeenCalledWith(true);
+  });
+
+  it('does not report mobile revocation success when cross-instance fan-out fails', async () => {
+    const user = mobileNestUser();
+    const authTokens = { authenticateSocketToken: vi.fn().mockResolvedValue(user) };
+    const redisState = {
+      publishAdminSocketRevocation: vi.fn().mockRejectedValue(new Error('Redis unavailable')),
+      subscribeAdminSocketRevocations: vi.fn().mockResolvedValue(vi.fn()),
+    };
+    const service = new SocketAuthService(authTokens as never, redisState as never);
+    await service.onModuleInit();
+    const socket = socketFixture();
+    await service.authenticate(socket as never);
+
+    await expect(service.disconnectMobileFamily('mobile-family-1')).rejects.toThrow('Redis unavailable');
+    expect(socket.disconnect).toHaveBeenCalledWith(true);
   });
 
   it('retries the cross-instance revocation subscription after a transient failure', async () => {

@@ -51,6 +51,26 @@ describe('Bank statement escalation queue', () => {
     expect(BANK_STATEMENT_ESCALATION_INTERVAL_MS).toBe(5 * 60_000);
   });
 
+  it('retries scheduler registration after a transient Redis failure', async () => {
+    vi.useFakeTimers();
+    const queue = {
+      upsertJobScheduler: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('Redis unavailable'))
+        .mockResolvedValue(undefined),
+    };
+    const scheduler = new BankStatementEscalationScheduler(queue as unknown as Queue);
+
+    await scheduler.onApplicationBootstrap();
+    expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(4);
+
+    scheduler.onModuleDestroy();
+    vi.useRealTimers();
+  });
+
   it('runs the bounded Admin escalation sweep for the supported job', async () => {
     const admin = {
       syncCompanyBankTransactionImportBatchEscalations: vi.fn().mockResolvedValue({

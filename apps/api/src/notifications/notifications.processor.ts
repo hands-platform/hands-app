@@ -7,10 +7,13 @@ import {
 } from '../matching/matching.policy';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  NOTIFICATION_DELIVERY_CLAIM_STALE_MS,
+  NOTIFICATION_DELIVERY_UNKNOWN_CODE,
   NOTIFICATION_SEND_QUEUE_NAME,
   NOTIFICATION_SEND_PUSH_DEVICE_LIMIT,
   type NotificationSendJob,
 } from './notification-send.queue';
+import { notificationDeliveryFailureCode } from './notification-delivery-failure';
 import {
   isPartnerAlert,
   notificationPushData,
@@ -38,8 +41,6 @@ const notificationSendInclude = Prisma.validator<Prisma.NotificationInclude>()({
     select: { pushDeviceId: true },
   },
 });
-const NOTIFICATION_DELIVERY_CLAIM_STALE_MS = 2 * 60_000;
-const NOTIFICATION_DELIVERY_UNKNOWN_CODE = 'DELIVERY_OUTCOME_UNKNOWN';
 
 type NotificationForSend = Prisma.NotificationGetPayload<{ include: typeof notificationSendInclude }>;
 type EnabledPushDevice = Prisma.PushDeviceGetPayload<Record<string, never>>;
@@ -379,13 +380,24 @@ export class NotificationRetryProcessor extends WorkerHost {
       const latest = await tx.notificationDelivery.findFirst({
         where: { notificationId, pushDeviceId: device.id },
         orderBy: [{ attemptedAt: 'desc' }, { id: 'desc' }],
-        select: { attemptedAt: true, id: true, provider: true, status: true },
+        select: { attemptedAt: true, id: true, provider: true, response: true, status: true },
       });
       if (latest?.status === 'SENT') {
         return {
           state: 'SKIPPED' as const,
           provider: latest.provider,
           status: 'SENT' as const,
+        };
+      }
+      if (
+        latest?.status === 'FAILED' &&
+        notificationDeliveryFailureCode(latest.response) === NOTIFICATION_DELIVERY_UNKNOWN_CODE
+      ) {
+        return {
+          state: 'SKIPPED' as const,
+          provider: latest.provider,
+          status: 'FAILED' as const,
+          failureCode: NOTIFICATION_DELIVERY_UNKNOWN_CODE,
         };
       }
       if (latest?.status === 'PROCESSING' && latest.attemptedAt > staleBefore) {

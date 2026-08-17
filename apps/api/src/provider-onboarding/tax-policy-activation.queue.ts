@@ -19,8 +19,7 @@ export function taxPolicyActivationJob(
       delay: Math.max(effectiveFrom.getTime() - Date.now(), 0),
       jobId: `${TAX_POLICY_ACTIVATION_JOB_NAME}-${approvalRequestId}`,
       removeOnComplete: true,
-      removeOnFail: false,
+      removeOnFail: { count: 500 },
     },
   };
 }
-

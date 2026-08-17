@@ -1,5 +1,12 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  Optional,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import {
   AdminOperatorPermissionCategory,
   BookingStatus,
@@ -9,12 +16,15 @@ import {
   Role,
 } from '@prisma/client';
 import type { Job, JobsOptions, Queue } from 'bullmq';
+import { registerOrRetryBullJob } from '../common/bullmq-job-registration';
 import { BOOKING_TIMEOUT_QUEUE_NAME } from '../matching/booking-timeout.queue';
 import {
   ADMIN_PUSH_CAMPAIGN_QUEUE_NAME,
   adminPushCampaignJob,
 } from '../notifications/admin-push-campaign.queue';
 import {
+  NOTIFICATION_DELIVERY_CLAIM_STALE_MS,
+  NOTIFICATION_DELIVERY_UNKNOWN_CODE,
   NOTIFICATION_SEND_QUEUE_NAME,
   notificationSendJob,
 } from '../notifications/notification-send.queue';
@@ -33,6 +43,7 @@ import {
   paymentStatusCheckJob,
 } from '../payments/payment-status.queue';
 import { PrismaService } from '../prisma/prisma.service';
+import { TAX_POLICY_ACTIVATION_QUEUE_NAME } from '../provider-onboarding/tax-policy-activation.queue';
 import {
   BANK_STATEMENT_ESCALATION_QUEUE_NAME,
   BANK_STATEMENT_ESCALATION_INTERVAL_MS,
@@ -108,6 +119,9 @@ export class AdminBackgroundJobsService {
     @Optional()
     @InjectQueue(PAYMENT_BOOKING_RECOVERY_QUEUE_NAME)
     private readonly paymentBookingRecoveryQueue?: Queue,
+    @Optional()
+    @InjectQueue(TAX_POLICY_ACTIVATION_QUEUE_NAME)
+    private readonly taxPolicyActivationQueue?: Queue,
   ) {}
 
   async health(input: BackgroundJobHealthQueryDto = {}) {
@@ -587,7 +601,8 @@ export class AdminBackgroundJobsService {
       gte: new Date(now.getTime() - MISSING_NOTIFICATION_JOB_MAX_AGE_MS),
       lte: new Date(now.getTime() - MISSING_NOTIFICATION_JOB_MIN_AGE_MS),
     };
-    const [payments, refunds, bookings, notifications, campaigns] = await Promise.all([
+    const staleDeliveryBefore = new Date(now.getTime() - NOTIFICATION_DELIVERY_CLAIM_STALE_MS);
+    const [payments, refunds, bookings, notifications, campaigns, staleDeliveries] = await Promise.all([
       this.prisma.payment.findMany({
         where: {
           method: { in: [PaymentMethod.MOMO, PaymentMethod.VNPAY] },
@@ -603,7 +618,9 @@ export class AdminBackgroundJobsService {
       }),
       this.paymentRefundStatusQueue
         ? this.prisma.refund.findMany({
-            where: { status: { in: ['PROVIDER_PROCESSING', 'GATEWAY_CONFIRMED'] } },
+            where: {
+              status: { in: ['APPROVAL_PROCESSING', 'PROVIDER_PROCESSING', 'GATEWAY_CONFIRMED'] },
+            },
             orderBy: { createdAt: 'asc' },
             select: { id: true },
             take: MISSING_DURABLE_JOB_SCAN_LIMIT,
@@ -652,7 +669,31 @@ export class AdminBackgroundJobsService {
             take: MISSING_DURABLE_JOB_SCAN_LIMIT,
           })
         : Promise.resolve([]),
+      this.prisma.notificationDelivery.findMany({
+        where: { status: 'PROCESSING', attemptedAt: { lte: staleDeliveryBefore } },
+        orderBy: { attemptedAt: 'asc' },
+        select: { id: true },
+        take: MISSING_DURABLE_JOB_SCAN_LIMIT,
+      }),
     ]);
+
+    const closedUncertainDeliveryCount = staleDeliveries.length === 0
+      ? 0
+      : (await this.prisma.notificationDelivery.updateMany({
+          where: {
+            id: { in: staleDeliveries.map((delivery) => delivery.id) },
+            status: 'PROCESSING',
+            attemptedAt: { lte: staleDeliveryBefore },
+          },
+          data: {
+            status: 'FAILED',
+            response: toJson({
+              failureCode: NOTIFICATION_DELIVERY_UNKNOWN_CODE,
+              reason: 'The worker stopped after delivery started, so the provider outcome is unknown.',
+              reconciledAt: now.toISOString(),
+            }),
+          },
+        })).count;
 
     const registrations = [
       ...payments.map((payment) => {
@@ -699,16 +740,21 @@ export class AdminBackgroundJobsService {
       ['paymentStatus', 'refundStatus', 'bookingRecovery', 'notification', 'campaign'].map((flow) => {
         const flowResults = results.filter((result) => result.flow === flow);
         return [flow, {
+          existingCount: flowResults.filter((result) => result.status === 'EXISTING').length,
           failedCount: flowResults.filter((result) => result.status === 'FAILED').length,
           registeredCount: flowResults.filter((result) => result.status === 'REGISTERED').length,
+          retriedCount: flowResults.filter((result) => result.status === 'RETRIED').length,
         }];
       }),
     );
 
     return {
       byFlow,
+      closedUncertainDeliveryCount,
+      existingCount: results.filter((result) => result.status === 'EXISTING').length,
       failedCount,
       registeredCount: results.filter((result) => result.status === 'REGISTERED').length,
+      retriedCount: results.filter((result) => result.status === 'RETRIED').length,
       scannedCount: payments.length + refunds.length + bookings.length + notifications.length + campaigns.length,
     };
   }
@@ -788,6 +834,11 @@ export class AdminBackgroundJobsService {
         queue: this.paymentBookingRecoveryQueue,
         staleAfterMs: IMMEDIATE_QUEUE_STALE_AFTER_MS,
       }] : []),
+      ...(this.taxPolicyActivationQueue ? [{
+        label: 'Tax policy activation',
+        queue: this.taxPolicyActivationQueue,
+        staleAfterMs: IMMEDIATE_QUEUE_STALE_AFTER_MS,
+      }] : []),
     ];
   }
 
@@ -797,8 +848,8 @@ export class AdminBackgroundJobsService {
     job: { data: Record<string, unknown>; name: string; options: JobsOptions },
   ) {
     try {
-      await queue.add(job.name, job.data, job.options);
-      return { flow, status: 'REGISTERED' as const };
+      const result = await registerOrRetryBullJob(queue, job);
+      return { flow, status: result.status };
     } catch {
       return { flow, status: 'FAILED' as const };
     }
@@ -1258,7 +1309,7 @@ export class AdminBackgroundJobsService {
     const target = backgroundFailureTarget(queueName, jobId);
     if (!target) throw new NotFoundException('Retained failed background job not found');
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw(backgroundJobAdvisoryLock(target));
       const normalizedOperatorIdentity = operatorIdentity?.trim() || null;
       const operatorSelect = {
@@ -1370,6 +1421,18 @@ export class AdminBackgroundJobsService {
         updatedAt: review.createdAt,
       };
     });
+    if (action === BACKGROUND_JOB_FAILURE_RESOLVED_ACTION) {
+      try {
+        if ((await job.getState()) === 'failed') {
+          await job.remove();
+        }
+      } catch {
+        throw new ServiceUnavailableException(
+          'Background job resolution was recorded, but the retained failure could not be cleared',
+        );
+      }
+    }
+    return result;
   }
 }
 

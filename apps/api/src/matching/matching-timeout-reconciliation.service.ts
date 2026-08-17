@@ -2,6 +2,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { BookingOpsTaskStatus, BookingOpsTaskType, BookingStatus } from '@prisma/client';
 import { Queue } from 'bullmq';
+import { registerOrRetryBullJob } from '../common/bullmq-job-registration';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   BOOKING_TIMEOUT_QUEUE_NAME,
@@ -132,7 +133,7 @@ export class BookingTimeoutReconciliationService
                 )}`,
               }
             : job.options;
-          return this.queue.add(job.name, job.data, options);
+          return registerOrRetryBullJob(this.queue, { ...job, options });
         }),
       );
       return {

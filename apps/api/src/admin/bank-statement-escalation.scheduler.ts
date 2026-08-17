@@ -1,5 +1,5 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import {
   BACKGROUND_JOB_FAILURE_MONITOR_JOB_NAME,
@@ -10,9 +10,13 @@ import {
   BANK_STATEMENT_ESCALATION_SCHEDULER_ID,
 } from './bank-statement-escalation.queue';
 
+const SCHEDULER_REGISTRATION_RETRY_MS = 5_000;
+
 @Injectable()
-export class BankStatementEscalationScheduler implements OnApplicationBootstrap {
+export class BankStatementEscalationScheduler implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(BankStatementEscalationScheduler.name);
+  private destroyed = false;
+  private registrationRetry?: NodeJS.Timeout;
 
   constructor(
     @InjectQueue(BANK_STATEMENT_ESCALATION_QUEUE_NAME)
@@ -20,6 +24,18 @@ export class BankStatementEscalationScheduler implements OnApplicationBootstrap 
   ) {}
 
   async onApplicationBootstrap() {
+    await this.registerSchedulers();
+  }
+
+  onModuleDestroy() {
+    this.destroyed = true;
+    if (this.registrationRetry) {
+      clearTimeout(this.registrationRetry);
+      this.registrationRetry = undefined;
+    }
+  }
+
+  private async registerSchedulers() {
     try {
       await Promise.all([
         this.upsertScheduler(
@@ -31,10 +47,23 @@ export class BankStatementEscalationScheduler implements OnApplicationBootstrap 
           BACKGROUND_JOB_FAILURE_MONITOR_JOB_NAME,
         ),
       ]);
+      if (this.registrationRetry) {
+        clearTimeout(this.registrationRetry);
+        this.registrationRetry = undefined;
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to register Admin background schedulers: ${message}`);
+      this.scheduleRegistrationRetry();
     }
+  }
+
+  private scheduleRegistrationRetry() {
+    if (this.destroyed || this.registrationRetry) return;
+    this.registrationRetry = setTimeout(() => {
+      this.registrationRetry = undefined;
+      void this.registerSchedulers();
+    }, SCHEDULER_REGISTRATION_RETRY_MS);
   }
 
   private upsertScheduler(schedulerId: string, jobName: string) {
