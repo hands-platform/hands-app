@@ -47,6 +47,21 @@ describe('LocationsGateway provider location updates', () => {
     expect(redisState.setProviderLocation).not.toHaveBeenCalled();
   });
 
+  it('rejects an oversized booking id before querying provider or booking records', async () => {
+    const { gateway, redisState, prisma } = createGateway();
+
+    const result = await gateway.updateProviderLocation({} as never, {
+      bookingId: 'b'.repeat(129),
+      lat: 10.7769,
+      lng: 106.7009,
+    });
+
+    expect(result).toEqual({ ok: false, error: 'INVALID_LOCATION_PAYLOAD' });
+    expect(prisma.providerProfile.findUnique).not.toHaveBeenCalled();
+    expect(prisma.booking.findFirst).not.toHaveBeenCalled();
+    expect(redisState.setProviderLocation).not.toHaveBeenCalled();
+  });
+
   it('rejects provider location updates outside the Vietnam service area', async () => {
     const { gateway, redisState, prisma } = createGateway();
 

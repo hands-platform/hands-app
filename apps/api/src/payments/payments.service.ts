@@ -275,8 +275,12 @@ export class PaymentsService {
         fromStatuses: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED],
         paymentId,
         targetStatus: prepared.status,
+        where: { rawMeta: { path: ['authorizationState'], equals: 'PENDING' } },
       });
       paymentForAuthorization = transition.payment;
+      if (!transition.transitioned) {
+        return paymentForAuthorization;
+      }
     }
     let authorization: Awaited<ReturnType<PaymentAdapter['authorize']>>;
     try {

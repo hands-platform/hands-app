@@ -187,7 +187,7 @@ describe('ProviderAvailabilityReconciliationService', () => {
     });
 
     service.onModuleInit();
-    expect(prisma.providerProfile.findMany).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(prisma.providerProfile.findMany).toHaveBeenCalledOnce());
     let shutdownCompleted = false;
     const shutdown = service.onModuleDestroy().then(() => {
       shutdownCompleted = true;
@@ -198,6 +198,37 @@ describe('ProviderAvailabilityReconciliationService', () => {
     releaseFind([]);
     await shutdown;
     expect(shutdownCompleted).toBe(true);
+  });
+
+  it('allows only one API replica to run the scheduled reconciliation batch', async () => {
+    let releaseFind: (value: unknown[]) => void = () => undefined;
+    const firstPrisma = prismaFixture([], 0);
+    firstPrisma.providerProfile.findMany.mockReturnValue(new Promise<unknown[]>((resolve) => {
+      releaseFind = resolve;
+    }));
+    const secondPrisma = prismaFixture([], 0);
+    const redisState = {
+      setProviderStatus: vi.fn().mockResolvedValue(undefined),
+      tryAcquireLease: vi.fn()
+        .mockResolvedValueOnce('lease-token-1')
+        .mockResolvedValueOnce(null),
+      releaseLease: vi.fn().mockResolvedValue(1),
+    };
+    const first = reconciliationService(firstPrisma, redisState);
+    const second = reconciliationService(secondPrisma, redisState);
+
+    first.onModuleInit();
+    await vi.waitFor(() => expect(firstPrisma.providerProfile.findMany).toHaveBeenCalledOnce());
+    second.onModuleInit();
+    await vi.waitFor(() => expect(redisState.tryAcquireLease).toHaveBeenCalledTimes(2));
+
+    expect(secondPrisma.providerProfile.findMany).not.toHaveBeenCalled();
+    releaseFind([]);
+    await Promise.all([first.onModuleDestroy(), second.onModuleDestroy()]);
+    expect(redisState.releaseLease).toHaveBeenCalledWith(
+      'provider-availability-reconciliation',
+      'lease-token-1',
+    );
   });
 });
 
@@ -219,12 +250,20 @@ describe('provider availability reconciliation settings', () => {
 
 function reconciliationService(
   prisma: ReturnType<typeof prismaFixture>,
-  redisState: { setProviderStatus: ReturnType<typeof vi.fn> },
+  redisState: {
+    setProviderStatus: ReturnType<typeof vi.fn>;
+    tryAcquireLease?: ReturnType<typeof vi.fn>;
+    releaseLease?: ReturnType<typeof vi.fn>;
+  },
 ) {
   return new ProviderAvailabilityReconciliationService(
     { get: vi.fn().mockReturnValue(undefined) } as never,
     prisma as never,
-    redisState as never,
+    {
+      tryAcquireLease: vi.fn().mockResolvedValue('lease-token'),
+      releaseLease: vi.fn().mockResolvedValue(1),
+      ...redisState,
+    } as never,
   );
 }
 

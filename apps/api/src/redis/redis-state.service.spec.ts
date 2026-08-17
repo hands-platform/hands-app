@@ -95,6 +95,31 @@ describe('RedisStateService atomic state projections', () => {
       'booking-1',
     );
   });
+
+  it('acquires a tokenized lease and only releases the matching owner token', async () => {
+    redis.set.mockResolvedValue('OK');
+    redis.eval.mockResolvedValue(1);
+    const service = createService();
+
+    const token = await service.tryAcquireLease('availability-reconciliation', 120.9);
+    expect(token).toEqual(expect.any(String));
+    expect(redis.set).toHaveBeenCalledWith(
+      'lease:availability-reconciliation',
+      token,
+      'EX',
+      120,
+      'NX',
+    );
+
+    await service.releaseLease('availability-reconciliation', token!);
+    expect(redis.eval).toHaveBeenCalledWith(
+      expect.stringContaining("redis.call('GET', KEYS[1]) == ARGV[1]"),
+      1,
+      'lease:availability-reconciliation',
+      token,
+    );
+    expect(redis.eval.mock.calls.at(-1)?.[0]).toContain("redis.call('DEL', KEYS[1])");
+  });
 });
 
 vi.mock('ioredis', () => ({

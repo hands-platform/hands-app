@@ -24,6 +24,7 @@ import {
   BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
   DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT,
 } from '../matching/matching.policy';
+import { NotificationsService } from '../notifications/notifications.service';
 import { BookingsService } from './bookings.service';
 import { bookingCreationFingerprint } from './bookings.creation-idempotency';
 import { providerBookingHistoryWhere } from './bookings.provider-query';
@@ -643,6 +644,53 @@ describe('BookingsService booking creation', () => {
     expect(updateMany).not.toHaveBeenCalled();
   });
 
+  it('claims an unstarted gateway authorization during durable booking recovery', async () => {
+    const pendingBooking = {
+      id: 'booking-1',
+      status: BookingStatus.CREATED,
+      payment: {
+        id: 'payment-1',
+        method: PaymentMethod.MOMO,
+        status: PaymentStatus.PENDING,
+        rawMeta: { authorizationState: 'PENDING' },
+      },
+    };
+    const claimedBooking = {
+      ...pendingBooking,
+      payment: {
+        ...pendingBooking.payment,
+        rawMeta: { authorizationState: 'INITIALIZING' },
+      },
+    };
+    const prisma = {
+      booking: {
+        findUnique: vi.fn()
+          .mockResolvedValueOnce(pendingBooking)
+          .mockResolvedValueOnce(claimedBooking),
+      },
+    };
+    const payments = {
+      requiresPostBookingAuthorization: vi.fn().mockReturnValue(true),
+      refreshAuthorizationForBooking: vi.fn().mockResolvedValue(claimedBooking.payment),
+      paymentCanOpenMatching: vi.fn().mockReturnValue(false),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      payments as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(service.recoverCreatedBookingAfterPayment('booking-1', 'payment-1')).resolves.toEqual({
+      skipped: true,
+      reason: 'PAYMENT_NOT_READY',
+      bookingId: 'booking-1',
+    });
+    expect(payments.refreshAuthorizationForBooking).toHaveBeenCalledWith('payment-1', 'booking-1');
+  });
+
   it('recovers a captured VNPay booking with a fresh matching window exactly once', async () => {
     const createdBooking = {
       id: 'booking-1',
@@ -856,6 +904,52 @@ describe('BookingsService booking creation', () => {
         }),
       }),
     );
+  });
+
+  it('records a source-keyed notification payload for durable post-commit recovery', async () => {
+    const adminAuditLogCreate = vi.fn().mockResolvedValue({ id: 'audit-failure-1' });
+    const notificationService = new NotificationsService(
+      {
+        $transaction: vi.fn().mockRejectedValue(new Error('database unavailable')),
+        notificationTemplate: { findUnique: vi.fn() },
+      } as never,
+      { add: vi.fn() } as never,
+    );
+    const service = new BookingsService(
+      { adminAuditLog: { create: adminAuditLogCreate } } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      notificationService,
+      {} as never,
+    );
+    const postCommit = service as unknown as {
+      runPostCommitBookingEffects(
+        bookingId: string,
+        effects: Array<{ label: string; run: () => Promise<unknown> }>,
+      ): Promise<void>;
+    };
+    const recoveryInput = {
+      body: 'Your booking is ready.',
+      resolveTemplate: false,
+      sourceKey: 'booking:booking-1:opened:user-1',
+      targetRole: Role.CUSTOMER,
+      title: 'Booking ready',
+      type: 'booking.opened',
+      userId: 'user-1',
+    };
+
+    await postCommit.runPostCommitBookingEffects('booking-1', [{
+      label: 'customer-opened-notification',
+      run: () => notificationService.create(recoveryInput),
+    }]);
+
+    expect(adminAuditLogCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'booking.post_commit_effect.failed',
+        metadata: expect.objectContaining({ notificationRecoveries: [recoveryInput] }),
+      }),
+    });
   });
 
   it('closes a recovered matching projection when customer cancellation wins during activation', async () => {

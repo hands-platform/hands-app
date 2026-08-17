@@ -17,6 +17,7 @@ const SCHEDULER_REGISTRATION_HEARTBEAT_MS = BANK_STATEMENT_ESCALATION_INTERVAL_M
 export class BankStatementEscalationScheduler implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(BankStatementEscalationScheduler.name);
   private destroyed = false;
+  private registrationInFlight?: Promise<void>;
   private registrationRetry?: NodeJS.Timeout;
 
   constructor(
@@ -25,14 +26,26 @@ export class BankStatementEscalationScheduler implements OnApplicationBootstrap,
   ) {}
 
   async onApplicationBootstrap() {
-    await this.registerSchedulers();
+    await this.startRegistration();
   }
 
-  onModuleDestroy() {
+  async onModuleDestroy() {
     this.destroyed = true;
     if (this.registrationRetry) {
       clearTimeout(this.registrationRetry);
       this.registrationRetry = undefined;
+    }
+    await this.registrationInFlight;
+  }
+
+  private async startRegistration() {
+    if (this.destroyed || this.registrationInFlight) return;
+    const registration = this.registerSchedulers();
+    this.registrationInFlight = registration;
+    try {
+      await registration;
+    } finally {
+      if (this.registrationInFlight === registration) this.registrationInFlight = undefined;
     }
   }
 
@@ -64,7 +77,7 @@ export class BankStatementEscalationScheduler implements OnApplicationBootstrap,
     if (this.destroyed || this.registrationRetry) return;
     this.registrationRetry = setTimeout(() => {
       this.registrationRetry = undefined;
-      void this.registerSchedulers();
+      void this.startRegistration();
     }, delayMs);
     this.registrationRetry.unref();
   }

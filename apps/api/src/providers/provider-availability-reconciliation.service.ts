@@ -14,6 +14,8 @@ const DEFAULT_INTERVAL_MS = 60_000;
 const MIN_INTERVAL_MS = 30_000;
 const MAX_INTERVAL_MS = 15 * 60_000;
 const MAX_BATCH_SIZE = 500;
+const PROVIDER_AVAILABILITY_RECONCILIATION_LEASE = 'provider-availability-reconciliation';
+const MAX_RECONCILIATION_LEASE_SECONDS = 5 * 60;
 
 @Injectable()
 export class ProviderAvailabilityReconciliationService
@@ -186,7 +188,16 @@ export class ProviderAvailabilityReconciliationService
   }
 
   private async runScheduledBatch() {
+    let leaseToken: string | null = null;
     try {
+      leaseToken = await this.redisState.tryAcquireLease(
+        PROVIDER_AVAILABILITY_RECONCILIATION_LEASE,
+        Math.min(
+          MAX_RECONCILIATION_LEASE_SECONDS,
+          Math.max(60, Math.ceil(this.intervalMs / 1_000) * 2),
+        ),
+      );
+      if (!leaseToken) return;
       const result = await this.reconcileBatch();
       if (result.updated || result.raceSkipped) {
         this.logger.log(
@@ -197,6 +208,17 @@ export class ProviderAvailabilityReconciliationService
       this.logger.error(
         `Partner availability reconciliation failed: ${error instanceof Error ? error.message : String(error)}`,
       );
+    } finally {
+      if (leaseToken) {
+        await this.redisState.releaseLease(
+          PROVIDER_AVAILABILITY_RECONCILIATION_LEASE,
+          leaseToken,
+        ).catch((error) => {
+          this.logger.warn(
+            `Partner availability reconciliation lease release failed: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
+      }
     }
   }
 

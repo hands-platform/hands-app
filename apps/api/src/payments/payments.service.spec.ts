@@ -182,7 +182,11 @@ describe('PaymentsService status check queue', () => {
     await expect(service.refreshAuthorizationForBooking('payment-1', 'booking-1')).resolves.toEqual(readyPayment);
 
     expect(prisma.payment.updateMany).toHaveBeenNthCalledWith(1, {
-      where: { id: 'payment-1', status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] } },
+      where: {
+        id: 'payment-1',
+        rawMeta: { path: ['authorizationState'], equals: 'PENDING' },
+        status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] },
+      },
       data: expect.objectContaining({
         providerRef: 'booking-1',
         rawMeta: expect.objectContaining({ authorizationState: 'INITIALIZING' }),
@@ -198,6 +202,36 @@ describe('PaymentsService status check queue', () => {
         rawMeta: expect.objectContaining({ authorizationState: 'READY' }),
       }),
     });
+  });
+
+  it('does not start a second gateway checkout after another caller claims authorization', async () => {
+    const existingPayment = payment({
+      method: PaymentMethod.MOMO,
+      providerRef: null,
+      status: PaymentStatus.PENDING,
+    });
+    const claimedPayment = {
+      ...existingPayment,
+      providerRef: 'booking-1',
+      rawMeta: { authorizationState: 'INITIALIZING' },
+    };
+    const adapter = gatewayAdapter(PaymentMethod.MOMO);
+    const { prisma, service } = createService({
+      existingPayment,
+      momoPaymentAdapter: adapter,
+      updatedPayment: claimedPayment,
+    });
+    prisma.payment.updateMany.mockResolvedValueOnce({ count: 0 });
+    prisma.payment.findUniqueOrThrow
+      .mockReset()
+      .mockResolvedValueOnce(existingPayment)
+      .mockResolvedValueOnce(claimedPayment);
+
+    await expect(service.refreshAuthorizationForBooking('payment-1', 'booking-1')).resolves.toEqual(
+      claimedPayment,
+    );
+
+    expect(adapter.authorize).not.toHaveBeenCalled();
   });
 
   it('keeps a timed-out gateway booking quarantined and schedules an idempotent status check', async () => {

@@ -23,7 +23,12 @@ import {
   MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
   MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
 } from '../matching/matching.policy';
-import { NotificationsService } from '../notifications/notifications.service';
+import {
+  NotificationsService,
+  createNotifications,
+  notificationBatchFailure,
+  notificationRecoveryAuditPayloads,
+} from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import {
   customerWalletBookingLockKey,
@@ -530,6 +535,7 @@ export class BookingsService {
           lastError instanceof Error ? lastError.stack : undefined,
         );
         try {
+          const notificationRecoveries = notificationRecoveryAuditPayloads(lastError);
           await this.prisma.adminAuditLog.create({
             data: {
               actorId: null,
@@ -550,6 +556,7 @@ export class BookingsService {
                 error: lastError instanceof Error
                   ? lastError.message.slice(0, 500)
                   : String(lastError).slice(0, 500),
+                ...(notificationRecoveries ? { notificationRecoveries } : {}),
               },
             },
           });
@@ -1362,7 +1369,7 @@ export class BookingsService {
   }
 
   async recoverCreatedBookingAfterPayment(bookingId: string, paymentId: string) {
-    const booking = await this.prisma.booking.findUnique({
+    let booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
       include: paymentRecoveryBookingInclude,
     });
@@ -1379,7 +1386,21 @@ export class BookingsService {
       return { skipped: true, reason: 'NOT_GATEWAY_PAYMENT', bookingId };
     }
 
-    const paymentMetadata = jsonObject(booking.payment.rawMeta);
+    let paymentMetadata = jsonObject(booking.payment.rawMeta);
+    if (paymentMetadata.authorizationState === 'PENDING') {
+      await this.payments.refreshAuthorizationForBooking(booking.payment.id, booking.id);
+      booking = await this.prisma.booking.findUnique({
+        where: { id: bookingId },
+        include: paymentRecoveryBookingInclude,
+      });
+      if (!booking || booking.payment?.id !== paymentId) {
+        return { skipped: true, reason: 'BOOKING_PAYMENT_NOT_FOUND' };
+      }
+      if (booking.status !== BookingStatus.CREATED) {
+        return { skipped: true, reason: 'BOOKING_NOT_CREATED', bookingId, status: booking.status };
+      }
+      paymentMetadata = jsonObject(booking.payment.rawMeta);
+    }
     if (
       paymentMetadata.authorizationState !== 'READY' ||
       !this.payments.paymentCanOpenMatching(booking.payment.method, booking.payment.status)
@@ -2341,18 +2362,16 @@ export class BookingsService {
     releasedPayment: boolean;
     refundRequested?: boolean;
   }) {
-    await Promise.all([
+    await createNotifications(this.notifications, [
       ...Array.from(input.providerUserIds, (providerUserId) =>
-        this.notifications.create(providerBookingCancelledNotification(providerUserId, input.bookingId)),
+        providerBookingCancelledNotification(providerUserId, input.bookingId),
       ),
-      this.notifications.create(
-        customerBookingCancelledNotification({
+      customerBookingCancelledNotification({
           userId: input.customerUserId,
           bookingId: input.bookingId,
           releasedPayment: input.releasedPayment,
           refundRequested: input.refundRequested,
         }),
-      ),
     ]);
   }
 
@@ -2372,21 +2391,17 @@ export class BookingsService {
     selectedProviderUserId?: string;
     chatRoomId?: string;
   }) {
-    await Promise.all([
+    await createNotifications(this.notifications, [
       ...(input.selectedProviderUserId
         ? [
-            this.notifications.create(
-              selectedPartnerMatchedProviderNotification(input.selectedProviderUserId, input.bookingId),
-            ),
+            selectedPartnerMatchedProviderNotification(input.selectedProviderUserId, input.bookingId),
           ]
         : []),
-      this.notifications.create(
-        selectedPartnerMatchedCustomerNotification({
+      selectedPartnerMatchedCustomerNotification({
           userId: input.customerUserId,
           bookingId: input.bookingId,
           chatRoomId: input.chatRoomId,
         }),
-      ),
     ]);
   }
 
@@ -2668,22 +2683,18 @@ export class BookingsService {
     selectedProviderUserId?: string;
     chatRoomId?: string;
   }) {
-    await Promise.all([
+    await createNotifications(this.notifications, [
       ...(input.selectedProviderUserId
         ? [
-            this.notifications.create(
-              firstPickMatchedProviderNotification(input.selectedProviderUserId, input.bookingId),
-            ),
+            firstPickMatchedProviderNotification(input.selectedProviderUserId, input.bookingId),
           ]
         : []),
-      this.notifications.create(
-        firstPickMatchedCustomerNotification({
+      firstPickMatchedCustomerNotification({
           userId: input.customerUserId,
           bookingId: input.bookingId,
           provider: input.provider,
           chatRoomId: input.chatRoomId,
         }),
-      ),
     ]);
   }
 
@@ -2767,23 +2778,19 @@ export class BookingsService {
     providerUserId?: string;
     chatRoomId?: string;
   }) {
-    await Promise.all([
-      this.notifications.create(
-        serviceStartedCustomerNotification({
+    await createNotifications(this.notifications, [
+      serviceStartedCustomerNotification({
           userId: input.customerUserId,
           bookingId: input.bookingId,
           chatRoomId: input.chatRoomId,
         }),
-      ),
       ...(input.providerUserId
         ? [
-            this.notifications.create(
-              serviceStartedProviderNotification({
+            serviceStartedProviderNotification({
                 userId: input.providerUserId,
                 bookingId: input.bookingId,
                 chatRoomId: input.chatRoomId,
               }),
-            ),
           ]
         : []),
     ]);
@@ -2798,8 +2805,11 @@ export class BookingsService {
   }
 
   private async notifyBackupProvidersAndRecordTrace(input: BackupProviderNotificationInput) {
-    const { trace, websocketError } = await this.notifyBackupProviders(input);
+    const { notificationError, trace, websocketError } = await this.notifyBackupProviders(input);
     await this.recordBackupNotificationTrace(input.bookingId, trace);
+    if (notificationError) {
+      throw notificationError;
+    }
     if (websocketError) {
       throw websocketError;
     }
@@ -2814,10 +2824,8 @@ export class BookingsService {
       notificationId: string;
     }> = [];
 
-    const notificationResults = await Promise.allSettled(
-      input.providers.map(async (backupProvider) => {
-        const notification = await this.notifications.create(
-          backupBookingAvailableNotification({
+    const notificationInputs = input.providers.map((backupProvider) =>
+      backupBookingAvailableNotification({
             userId: backupProvider.userId,
             bookingId: input.bookingId,
             providerProfileId: backupProvider.id,
@@ -2825,28 +2833,31 @@ export class BookingsService {
             backupProviderRadiusMeters: input.backupProviderRadiusMeters,
             alertPolicy,
           }),
-        );
-        return {
-          providerProfileId: backupProvider.id,
-          userId: backupProvider.userId,
-          distanceMeters: backupProvider.distanceMeters,
-          notificationId: notification.id,
-        };
-      }),
+    );
+    const notificationResults = await Promise.allSettled(
+      notificationInputs.map((notification) => this.notifications.create(notification)),
     );
     notificationResults.forEach((result, index) => {
       if (result.status === 'fulfilled') {
-        notifiedProviders.push(result.value);
-        return;
+        const backupProvider = input.providers[index];
+        if (!backupProvider) return;
+        notifiedProviders.push({
+          providerProfileId: backupProvider.id,
+          userId: backupProvider.userId,
+          distanceMeters: backupProvider.distanceMeters,
+          notificationId: result.value.id,
+        });
       }
-      const provider = input.providers[index];
-      this.logger.error(
-        `Backup Partner notification failed for booking ${input.bookingId} and Partner ${
-          provider?.id ?? 'unknown'
-        }: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`,
-        result.reason instanceof Error ? result.reason.stack : undefined,
-      );
     });
+    const notificationError = notificationBatchFailure(notificationResults);
+    if (notificationError) {
+      this.logger.error(
+        `Backup Partner notifications failed for booking ${input.bookingId}: ${
+          notificationError instanceof Error ? notificationError.message : String(notificationError)
+        }`,
+        notificationError instanceof Error ? notificationError.stack : undefined,
+      );
+    }
 
     let websocketError: unknown;
     try {
@@ -2859,6 +2870,7 @@ export class BookingsService {
       websocketError = error;
     }
     return {
+      notificationError,
       trace: backupNotificationTrace({
         stage: input.stage,
         alertPolicy,

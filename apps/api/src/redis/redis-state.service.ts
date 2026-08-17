@@ -66,6 +66,32 @@ export class RedisStateService implements OnModuleDestroy {
     return this.redis.hget('providers:status', providerId);
   }
 
+  async tryAcquireLease(name: string, ttlSeconds: number) {
+    const token = randomUUID();
+    const acquired = await this.redis.set(
+      `lease:${name}`,
+      token,
+      'EX',
+      Math.max(1, Math.trunc(ttlSeconds)),
+      'NX',
+    );
+    return acquired === 'OK' ? token : null;
+  }
+
+  releaseLease(name: string, token: string) {
+    return this.redis.eval(
+      [
+        "if redis.call('GET', KEYS[1]) == ARGV[1] then",
+        "  return redis.call('DEL', KEYS[1])",
+        'end',
+        'return 0',
+      ].join('\n'),
+      1,
+      `lease:${name}`,
+      token,
+    );
+  }
+
   async setProviderLocation(providerId: string, location: { lat: number; lng: number; recordedAt?: string }) {
     await this.redis.set(
       `provider:${providerId}:location`,

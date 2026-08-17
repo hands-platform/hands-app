@@ -91,6 +91,7 @@ type TaxPolicySessionAssurance = {
 export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ProviderOnboardingService.name);
   private destroyed = false;
+  private taxPolicySchedulerInFlight?: Promise<void>;
   private taxPolicySchedulerRetry?: NodeJS.Timeout;
 
   constructor(
@@ -102,14 +103,28 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
   ) {}
 
   async onModuleInit() {
-    await this.registerTaxPolicySweep();
+    await this.startTaxPolicySchedulerRegistration();
   }
 
-  onModuleDestroy() {
+  async onModuleDestroy() {
     this.destroyed = true;
     if (this.taxPolicySchedulerRetry) {
       clearTimeout(this.taxPolicySchedulerRetry);
       this.taxPolicySchedulerRetry = undefined;
+    }
+    await this.taxPolicySchedulerInFlight;
+  }
+
+  private async startTaxPolicySchedulerRegistration() {
+    if (this.destroyed || this.taxPolicySchedulerInFlight) return;
+    const registration = this.registerTaxPolicySweep();
+    this.taxPolicySchedulerInFlight = registration;
+    try {
+      await registration;
+    } finally {
+      if (this.taxPolicySchedulerInFlight === registration) {
+        this.taxPolicySchedulerInFlight = undefined;
+      }
     }
   }
 
@@ -147,7 +162,7 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
     if (this.destroyed || this.taxPolicySchedulerRetry) return;
     this.taxPolicySchedulerRetry = setTimeout(() => {
       this.taxPolicySchedulerRetry = undefined;
-      void this.registerTaxPolicySweep();
+      void this.startTaxPolicySchedulerRegistration();
     }, delayMs);
     this.taxPolicySchedulerRetry.unref();
   }

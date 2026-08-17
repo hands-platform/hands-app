@@ -79,6 +79,27 @@ describe('ProviderOnboardingService tax policy scheduler', () => {
     service.onModuleDestroy();
     vi.useRealTimers();
   });
+
+  it('waits for an in-flight Tax sweep registration during shutdown', async () => {
+    let releaseRegistration!: () => void;
+    const registration = new Promise<void>((resolve) => {
+      releaseRegistration = resolve;
+    });
+    const queue = { upsertJobScheduler: vi.fn().mockReturnValue(registration) };
+    const service = new ProviderOnboardingService({} as never, undefined, queue as never);
+    const init = service.onModuleInit();
+    await vi.waitFor(() => expect(queue.upsertJobScheduler).toHaveBeenCalledOnce());
+    let shutdownComplete = false;
+    const shutdown = service.onModuleDestroy().then(() => {
+      shutdownComplete = true;
+    });
+
+    await Promise.resolve();
+    expect(shutdownComplete).toBe(false);
+    releaseRegistration();
+    await Promise.all([init, shutdown]);
+    expect(shutdownComplete).toBe(true);
+  });
 });
 
 const taxPolicyLegalMetadata = {

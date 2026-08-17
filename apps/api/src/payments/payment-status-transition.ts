@@ -9,6 +9,7 @@ type PaymentTransitionInput = {
   idempotentTarget?: boolean;
   paymentId: string;
   targetStatus: PaymentStatus;
+  where?: Prisma.PaymentWhereInput;
 };
 
 export async function transitionPaymentStatus(
@@ -17,6 +18,7 @@ export async function transitionPaymentStatus(
 ) {
   const result = await client.payment.updateMany({
     where: {
+      ...input.where,
       id: input.paymentId,
       status: { in: [...input.fromStatuses] },
     },

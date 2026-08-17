@@ -33,6 +33,11 @@ import { notificationDataWithDeliveryContract } from '../notifications/notificat
 import { toJson } from '../notifications/notification-push-payload';
 import { notificationRetryFailureClass } from '../notifications/notification-retry-decision';
 import {
+  NotificationsService,
+  createNotifications,
+  type CreateNotificationInput,
+} from '../notifications/notifications.service';
+import {
   isRoleNeutralNotificationType,
   notificationTargetRole,
   pushDeviceMatchesTargetRole,
@@ -107,6 +112,8 @@ const BACKGROUND_JOB_RECURRING_INCIDENT_FILTER_SCAN_LIMIT = 500;
 const BACKGROUND_JOB_RECURRING_INCIDENT_SUMMARY_SCAN_LIMIT = 1_000;
 const MISSING_DURABLE_JOB_SCAN_LIMIT = 100;
 const MISSING_NOTIFICATION_JOB_MIN_AGE_MS = 30_000;
+const POST_COMMIT_EFFECT_FAILED_ACTION = 'booking.post_commit_effect.failed';
+const POST_COMMIT_EFFECT_RECOVERED_ACTION = 'booking.post_commit_effect.recovered';
 
 type DurableJobFlow =
   | 'bookingRecovery'
@@ -118,6 +125,7 @@ type DurableJobFlow =
 @Injectable()
 export class AdminBackgroundJobsService {
   private readonly durableScanCursors: Partial<Record<DurableJobFlow, string>> = {};
+  private postCommitNotificationRecoveryCursor?: string;
 
   constructor(
     @InjectQueue(BANK_STATEMENT_ESCALATION_QUEUE_NAME)
@@ -141,6 +149,8 @@ export class AdminBackgroundJobsService {
     @Optional()
     @InjectQueue(TAX_POLICY_ACTIVATION_QUEUE_NAME)
     private readonly taxPolicyActivationQueue?: Queue,
+    @Optional()
+    private readonly notifications?: NotificationsService,
   ) {}
 
   async health(input: BackgroundJobHealthQueryDto = {}) {
@@ -634,6 +644,10 @@ export class AdminBackgroundJobsService {
           OR: [
             { rawMeta: { path: ['authorizationState'], equals: 'INITIALIZING' } },
             { rawMeta: { path: ['authorizationState'], equals: 'RETRY_PENDING' } },
+            {
+              rawMeta: { path: ['authorizationState'], equals: 'READY' },
+              status: PaymentStatus.PENDING,
+            },
           ],
         },
         orderBy: { id: 'asc' },
@@ -658,8 +672,17 @@ export class AdminBackgroundJobsService {
               status: BookingStatus.CREATED,
               payment: {
                 is: {
-                  rawMeta: { path: ['authorizationState'], equals: 'READY' },
-                  status: { in: [PaymentStatus.AUTHORIZED, PaymentStatus.CAPTURED] },
+                  method: { in: [PaymentMethod.MOMO, PaymentMethod.VNPAY] },
+                  OR: [
+                    {
+                      rawMeta: { path: ['authorizationState'], equals: 'PENDING' },
+                      status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] },
+                    },
+                    {
+                      rawMeta: { path: ['authorizationState'], equals: 'READY' },
+                      status: { in: [PaymentStatus.AUTHORIZED, PaymentStatus.CAPTURED] },
+                    },
+                  ],
                 },
               },
             },
@@ -802,6 +825,7 @@ export class AdminBackgroundJobsService {
       }),
     );
 
+    const postCommitNotificationRecovery = await this.syncPostCommitNotificationRecoveries();
     return {
       byFlow,
       closedUncertainDeliveryCount,
@@ -810,7 +834,86 @@ export class AdminBackgroundJobsService {
       registeredCount: results.filter((result) => result.status === 'REGISTERED').length,
       retriedCount: results.filter((result) => result.status === 'RETRIED').length,
       scannedCount: payments.length + refunds.length + bookings.length + notifications.length + campaigns.length,
+      postCommitNotificationRecovery,
     };
+  }
+
+  async syncPostCommitNotificationRecoveries() {
+    if (!this.notifications) {
+      return { existingCount: 0, failedCount: 0, recoveredCount: 0, scannedCount: 0, skippedCount: 0 };
+    }
+    const failures = await this.prisma.adminAuditLog.findMany({
+      where: {
+        action: POST_COMMIT_EFFECT_FAILED_ACTION,
+      },
+      orderBy: { id: 'asc' },
+      ...(this.postCommitNotificationRecoveryCursor
+        ? { cursor: { id: this.postCommitNotificationRecoveryCursor }, skip: 1 }
+        : {}),
+      select: { id: true, metadata: true, objectId: true, target: true },
+      take: MISSING_DURABLE_JOB_SCAN_LIMIT,
+    });
+    this.postCommitNotificationRecoveryCursor = failures.length === MISSING_DURABLE_JOB_SCAN_LIMIT
+      ? failures.at(-1)?.id
+      : undefined;
+    const recoveredRows = failures.length === 0
+      ? []
+      : await this.prisma.adminAuditLog.findMany({
+          where: {
+            action: POST_COMMIT_EFFECT_RECOVERED_ACTION,
+            OR: failures.map((failure) => ({
+              metadata: { path: ['failureAuditId'], equals: failure.id },
+            })),
+          },
+          select: { metadata: true },
+        });
+    const recoveredFailureIds = new Set(
+      recoveredRows
+        .map((row) => jsonString(jsonObject(row.metadata).failureAuditId))
+        .filter((value): value is string => Boolean(value)),
+    );
+    let existingCount = 0;
+    let failedCount = 0;
+    let recoveredCount = 0;
+    let skippedCount = 0;
+
+    for (const failure of failures) {
+      if (recoveredFailureIds.has(failure.id)) {
+        existingCount += 1;
+        continue;
+      }
+      const inputs = postCommitNotificationRecoveryInputs(failure.metadata);
+      if (inputs.length === 0) {
+        skippedCount += 1;
+        continue;
+      }
+      try {
+        const notifications = await createNotifications(this.notifications, inputs);
+        await this.prisma.adminAuditLog.create({
+          data: {
+            ...SYSTEM_MONITOR_AUDIT_FIELDS,
+            action: POST_COMMIT_EFFECT_RECOVERED_ACTION,
+            area: 'BOOKING',
+            objectId: failure.objectId,
+            objectType: 'Booking',
+            outcome: 'SUCCEEDED',
+            severity: 'INFO',
+            target: failure.target,
+            metadata: {
+              effect: jsonString(jsonObject(failure.metadata).effect),
+              failureAuditId: failure.id,
+              notificationIds: notifications.map((notification) => notification.id),
+              sourceKeys: inputs.map((input) => input.sourceKey!),
+            },
+          },
+        });
+        recoveredCount += 1;
+      } catch {
+        failedCount += 1;
+      }
+    }
+
+    return { existingCount, failedCount, recoveredCount, scannedCount: failures.length, skippedCount };
   }
 
   acknowledgeFailure(
@@ -1859,6 +1962,56 @@ function jsonStringArray(value: Prisma.JsonValue | undefined) {
 
 function jsonNonNegativeNumber(value: Prisma.JsonValue | undefined) {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function postCommitNotificationRecoveryInputs(
+  metadataValue: Prisma.JsonValue | null | undefined,
+): CreateNotificationInput[] {
+  const metadata = jsonObject(metadataValue);
+  const recoveries = Array.isArray(metadata.notificationRecoveries)
+    ? metadata.notificationRecoveries
+    : metadata.notificationRecovery
+      ? [metadata.notificationRecovery]
+      : [];
+  return recoveries
+    .map((recovery) => postCommitNotificationRecoveryInput(recovery))
+    .filter((input): input is CreateNotificationInput => Boolean(input));
+}
+
+function postCommitNotificationRecoveryInput(
+  recoveryValue: Prisma.JsonValue,
+): CreateNotificationInput | null {
+  const recovery = jsonObject(recoveryValue);
+  const userId = boundedJsonString(recovery.userId, 128);
+  const type = boundedJsonString(recovery.type, 100);
+  const title = boundedJsonString(recovery.title, 500);
+  const body = boundedJsonString(recovery.body, 2_000);
+  const sourceKey = boundedJsonString(recovery.sourceKey, 200);
+  if (!userId || !type || !title || !body || !sourceKey) return null;
+  const targetRole = jsonString(recovery.targetRole);
+  if (targetRole && targetRole !== Role.CUSTOMER && targetRole !== Role.PROVIDER) return null;
+  const templateKey = boundedJsonString(recovery.templateKey, 160);
+  const locale = boundedJsonString(recovery.locale, 16);
+  const resolveTemplate = typeof recovery.resolveTemplate === 'boolean'
+    ? recovery.resolveTemplate
+    : undefined;
+  return {
+    body,
+    data: recovery.data,
+    ...(locale ? { locale } : {}),
+    ...(resolveTemplate !== undefined ? { resolveTemplate } : {}),
+    sourceKey,
+    ...(targetRole ? { targetRole: targetRole as CreateNotificationInput['targetRole'] } : {}),
+    ...(templateKey ? { templateKey } : {}),
+    title,
+    type,
+    userId,
+  };
+}
+
+function boundedJsonString(value: Prisma.JsonValue | undefined, maxLength: number) {
+  const text = jsonString(value)?.trim();
+  return text && text.length <= maxLength ? text : null;
 }
 
 function backgroundQueueHealthEvent(row: {

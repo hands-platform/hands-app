@@ -59,6 +59,23 @@ export type CreateNotificationInput = {
   data?: unknown;
 };
 
+class RecoverableNotificationCreateError extends Error {
+  readonly recoveryInputs: CreateNotificationInput[];
+
+  constructor(inputs: CreateNotificationInput[], cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause));
+    this.name = 'RecoverableNotificationCreateError';
+    this.recoveryInputs = inputs;
+    this.cause = cause;
+  }
+}
+
+export function notificationRecoveryAuditPayloads(error: unknown) {
+  return error instanceof RecoverableNotificationCreateError
+    ? toJson(error.recoveryInputs)
+    : null;
+}
+
 type RetryNotificationResult = NotificationRetryAuditResult & {
   readonly ok: true;
   readonly notificationId: string;
@@ -79,11 +96,16 @@ export class NotificationsService {
   ) {}
 
   async create(input: CreateNotificationInput) {
-    const notification = await this.persist(input, 'PUSH_AND_IN_APP');
-
-    await this.enqueueNotificationSend(notification.id);
-
-    return notification;
+    try {
+      const notification = await this.persist(input, 'PUSH_AND_IN_APP');
+      await this.enqueueNotificationSend(notification.id);
+      return notification;
+    } catch (error) {
+      if (input.sourceKey?.trim()) {
+        throw new RecoverableNotificationCreateError([input], error);
+      }
+      throw error;
+    }
   }
 
   createInApp(input: CreateNotificationInput) {
@@ -506,6 +528,32 @@ function notificationRoleMatches(
     targetRole === role ||
     (targetRole === null && isRoleNeutralNotificationType(notification.type))
   );
+}
+
+export async function createNotifications(
+  service: Pick<NotificationsService, 'create'>,
+  inputs: CreateNotificationInput[],
+) {
+  const results = await Promise.allSettled(inputs.map((input) => service.create(input)));
+  const failure = notificationBatchFailure(results);
+  if (failure) throw failure;
+  return results.map(
+    (result) => (result as PromiseFulfilledResult<Awaited<ReturnType<NotificationsService['create']>>>).value,
+  );
+}
+
+export function notificationBatchFailure(results: PromiseSettledResult<unknown>[]) {
+  const failures = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
+  if (failures.length === 0) return null;
+  const recoveryInputs = failures.flatMap((failure) =>
+    failure.reason instanceof RecoverableNotificationCreateError
+      ? failure.reason.recoveryInputs
+      : [],
+  );
+  if (recoveryInputs.length > 0) {
+    return new RecoverableNotificationCreateError(recoveryInputs, failures[0]?.reason);
+  }
+  return failures[0]?.reason;
 }
 
 function resolvedNotificationTargetRole(input: CreateNotificationInput) {

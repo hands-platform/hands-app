@@ -1,5 +1,9 @@
 import { Role } from '@prisma/client';
-import { NotificationsService } from './notifications.service';
+import {
+  NotificationsService,
+  createNotifications,
+  notificationRecoveryAuditPayloads,
+} from './notifications.service';
 
 describe('NotificationsService role isolation', () => {
   it('filters role-targeted notifications for a dual-role identity', async () => {
@@ -61,6 +65,59 @@ describe('NotificationsService role isolation', () => {
         data: expect.objectContaining({ targetRole: Role.CUSTOMER }),
       }),
     });
+  });
+
+  it('exposes a source-keyed notification as safe post-commit recovery evidence', async () => {
+    const prisma = {
+      $transaction: vi.fn().mockRejectedValue(new Error('database unavailable')),
+      notificationTemplate: { findUnique: vi.fn() },
+    };
+    const queue = { add: vi.fn() };
+    const service = new NotificationsService(prisma as never, queue as never);
+    const input = {
+      body: 'Your booking is ready.',
+      resolveTemplate: false,
+      sourceKey: 'booking:booking-1:opened:user-1',
+      targetRole: Role.CUSTOMER,
+      title: 'Booking ready',
+      type: 'booking.opened',
+      userId: 'user-1',
+    } as const;
+
+    const error = await service.create(input).catch((failure: unknown) => failure);
+
+    expect(notificationRecoveryAuditPayloads(error)).toEqual([input]);
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  it('retains every failed source-keyed input from a notification batch', async () => {
+    const service = {
+      create: vi.fn().mockImplementation((input: { sourceKey: string }) => {
+        const prisma = {
+          $transaction: vi.fn().mockRejectedValue(new Error(`failed:${input.sourceKey}`)),
+          notificationTemplate: { findUnique: vi.fn() },
+        };
+        return new NotificationsService(prisma as never, { add: vi.fn() } as never).create({
+          body: 'Body',
+          resolveTemplate: false,
+          sourceKey: input.sourceKey,
+          targetRole: Role.CUSTOMER,
+          title: 'Title',
+          type: 'booking.opened',
+          userId: 'user-1',
+        });
+      }),
+    };
+    const inputs = [{ sourceKey: 'source-1' }, { sourceKey: 'source-2' }];
+
+    const error = await createNotifications(service as never, inputs as never).catch(
+      (failure: unknown) => failure,
+    );
+
+    expect(notificationRecoveryAuditPayloads(error)).toEqual([
+      expect.objectContaining({ sourceKey: 'source-1' }),
+      expect.objectContaining({ sourceKey: 'source-2' }),
+    ]);
   });
 
   it('does not mark another app role notification as read', async () => {

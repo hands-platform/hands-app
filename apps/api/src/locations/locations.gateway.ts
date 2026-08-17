@@ -26,6 +26,7 @@ const ACTIVE_BOOKING_LOCATION_STATUSES = new Set<BookingStatus>([
   BookingStatus.ARRIVED,
   BookingStatus.IN_SERVICE,
 ]);
+const MAX_SOCKET_RESOURCE_ID_LENGTH = 128;
 
 type ParsedProviderLocationPayload =
   | { ok: true; bookingId?: string; lat: number; lng: number }
@@ -53,7 +54,10 @@ function parseProviderLocationPayload(payload: {
   }
 
   const bookingId = payload.bookingId?.trim();
-  if (payload.bookingId !== undefined && !bookingId) {
+  if (
+    payload.bookingId !== undefined &&
+    (!bookingId || bookingId.length > MAX_SOCKET_RESOURCE_ID_LENGTH)
+  ) {
     return { ok: false, error: 'INVALID_LOCATION_PAYLOAD' };
   }
 

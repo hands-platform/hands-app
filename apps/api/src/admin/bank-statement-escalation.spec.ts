@@ -85,6 +85,31 @@ describe('Bank statement escalation queue', () => {
     vi.useRealTimers();
   });
 
+  it('waits for an in-flight scheduler registration during shutdown', async () => {
+    let releaseRegistration!: () => void;
+    const registration = new Promise<void>((resolve) => {
+      releaseRegistration = resolve;
+    });
+    const queue = {
+      upsertJobScheduler: vi.fn()
+        .mockReturnValueOnce(registration)
+        .mockResolvedValue(undefined),
+    };
+    const scheduler = new BankStatementEscalationScheduler(queue as unknown as Queue);
+    const bootstrap = scheduler.onApplicationBootstrap();
+    await vi.waitFor(() => expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(2));
+    let shutdownComplete = false;
+    const shutdown = scheduler.onModuleDestroy().then(() => {
+      shutdownComplete = true;
+    });
+
+    await Promise.resolve();
+    expect(shutdownComplete).toBe(false);
+    releaseRegistration();
+    await Promise.all([bootstrap, shutdown]);
+    expect(shutdownComplete).toBe(true);
+  });
+
   it('runs the bounded Admin escalation sweep for the supported job', async () => {
     const admin = {
       syncCompanyBankTransactionImportBatchEscalations: vi.fn().mockResolvedValue({

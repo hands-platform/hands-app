@@ -116,7 +116,11 @@ import {
   OPERATIONAL_POLICY_DEFINITIONS,
   START_SHIFT_ACTION_SLA_POLICY_KEYS,
 } from '../matching/matching.policy';
-import { NotificationsService } from '../notifications/notifications.service';
+import {
+  NotificationsService,
+  createNotifications,
+  notificationRecoveryAuditPayloads,
+} from '../notifications/notifications.service';
 import {
   ADMIN_PUSH_CAMPAIGN_QUEUE_NAME,
   adminPushCampaignJob,
@@ -3593,6 +3597,7 @@ export class AdminService {
             }`,
             lastError instanceof Error ? lastError.stack : undefined,
           );
+          const notificationRecoveries = notificationRecoveryAuditPayloads(lastError);
           await this.prisma.adminAuditLog.create({
             data: {
               actorId: null,
@@ -3613,6 +3618,7 @@ export class AdminService {
                 error: lastError instanceof Error
                   ? lastError.message.slice(0, 500)
                   : String(lastError).slice(0, 500),
+                ...(notificationRecoveries ? { notificationRecoveries } : {}),
               },
             },
           }).catch(() => undefined);
@@ -16031,9 +16037,9 @@ export class AdminService {
       {
         label: 'partner-notifications',
         run: () =>
-          Promise.all(
-            [...partnerUserIds].map((userId) =>
-              this.notifications.create({
+          createNotifications(
+            this.notifications,
+            [...partnerUserIds].map((userId) => ({
                 userId,
                 sourceKey: `booking:${bookingId}:booking.no_show:${userId}`,
                 targetRole: Role.PROVIDER,
@@ -16041,8 +16047,7 @@ export class AdminService {
                 title: 'Booking marked no-show',
                 body: 'HANDS operations marked this booking as no-show. Check the booking note before fee or payout follow-up.',
                 data: { bookingId, reason, noShowPolicy },
-              }),
-            ),
+              })),
           ),
       },
       ...(this.matchingGateway

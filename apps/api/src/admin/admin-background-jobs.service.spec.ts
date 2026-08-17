@@ -1,5 +1,5 @@
 import type { Job, Queue } from 'bullmq';
-import { Role } from '@prisma/client';
+import { PaymentStatus, Role } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
 import { AdminBackgroundJobsService } from './admin-background-jobs.service';
 import {
@@ -1304,6 +1304,16 @@ describe('AdminBackgroundJobsService', () => {
       { paymentId: 'payment-1' },
       expect.objectContaining({ jobId: 'payment-status-check-payment-1' }),
     );
+    expect(prisma.payment.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        OR: expect.arrayContaining([
+          {
+            rawMeta: { path: ['authorizationState'], equals: 'READY' },
+            status: PaymentStatus.PENDING,
+          },
+        ]),
+      }),
+    }));
     expect(refundQueue.add).toHaveBeenCalledWith(
       'payment-refund-status',
       { refundId: 'refund-1' },
@@ -1323,6 +1333,19 @@ describe('AdminBackgroundJobsService', () => {
       { bookingId: 'booking-1', paymentId: 'payment-ready-1' },
       expect.objectContaining({ jobId: 'payment-booking-recovery-booking-1' }),
     );
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        payment: {
+          is: expect.objectContaining({
+            OR: expect.arrayContaining([
+              expect.objectContaining({
+                rawMeta: { path: ['authorizationState'], equals: 'PENDING' },
+              }),
+            ]),
+          }),
+        },
+      }),
+    }));
     expect(notificationQueue.add).toHaveBeenCalledWith(
       'notification-send',
       { notificationId: 'notification-1' },
@@ -1359,6 +1382,123 @@ describe('AdminBackgroundJobsService', () => {
         response: expect.objectContaining({ failureCode: 'DELIVERY_OUTCOME_UNKNOWN' }),
       }),
     });
+  });
+
+  it('replays a source-keyed post-commit notification and records immutable recovery evidence', async () => {
+    const failure = {
+      id: 'audit-failure-1',
+      objectId: 'booking-1',
+      target: 'booking:booking-1',
+      metadata: {
+        effect: 'service-start-notifications',
+        notificationRecoveries: [
+          {
+            body: 'Service started.',
+            sourceKey: 'booking:booking-1:service-started:user-1',
+            targetRole: Role.CUSTOMER,
+            title: 'Service started',
+            type: 'booking.service_started',
+            userId: 'user-1',
+          },
+          {
+            body: 'The service has started.',
+            sourceKey: 'booking:booking-1:service-started:provider-1',
+            targetRole: Role.PROVIDER,
+            title: 'Service started',
+            type: 'booking.service_started',
+            userId: 'provider-1',
+          },
+        ],
+      },
+    };
+    const prisma = {
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-recovery-1' }),
+        findMany: vi.fn()
+          .mockResolvedValueOnce([failure])
+          .mockResolvedValueOnce([]),
+      },
+    } as unknown as PrismaService;
+    const notifications = {
+      create: vi.fn()
+        .mockResolvedValueOnce({ id: 'notification-1' })
+        .mockResolvedValueOnce({ id: 'notification-2' }),
+    };
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation'),
+      queueFixture('booking-timeouts'),
+      queueFixture('notification-retry'),
+      queueFixture('payment-status-check'),
+      prisma,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      notifications as never,
+    );
+
+    await expect(service.syncPostCommitNotificationRecoveries()).resolves.toEqual({
+      existingCount: 0,
+      failedCount: 0,
+      recoveredCount: 1,
+      scannedCount: 1,
+      skippedCount: 0,
+    });
+    expect(notifications.create).toHaveBeenCalledTimes(2);
+    expect(notifications.create).toHaveBeenNthCalledWith(1, failure.metadata.notificationRecoveries[0]);
+    expect(notifications.create).toHaveBeenNthCalledWith(2, failure.metadata.notificationRecoveries[1]);
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'booking.post_commit_effect.recovered',
+        metadata: expect.objectContaining({
+          failureAuditId: 'audit-failure-1',
+          notificationIds: ['notification-1', 'notification-2'],
+        }),
+        outcome: 'SUCCEEDED',
+      }),
+    });
+  });
+
+  it('rejects malformed post-commit recovery payloads before notification delivery', async () => {
+    const prisma = {
+      adminAuditLog: {
+        findMany: vi.fn()
+          .mockResolvedValueOnce([{
+            id: 'audit-failure-1',
+            objectId: 'booking-1',
+            target: 'booking:booking-1',
+            metadata: {
+              notificationRecovery: {
+                body: 'Service started.',
+                sourceKey: 'x'.repeat(201),
+                title: 'Service started',
+                type: 'booking.service_started',
+                userId: 'user-1',
+              },
+            },
+          }])
+          .mockResolvedValueOnce([]),
+      },
+    } as unknown as PrismaService;
+    const notifications = { create: vi.fn() };
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation'),
+      queueFixture('booking-timeouts'),
+      queueFixture('notification-retry'),
+      queueFixture('payment-status-check'),
+      prisma,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      notifications as never,
+    );
+
+    await expect(service.syncPostCommitNotificationRecoveries()).resolves.toMatchObject({
+      recoveredCount: 0,
+      skippedCount: 1,
+    });
+    expect(notifications.create).not.toHaveBeenCalled();
   });
 
   it('continues durable notification recovery past the first 100 rows without aging rows out', async () => {
