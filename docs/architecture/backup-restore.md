@@ -41,6 +41,8 @@ FORCE=1 sh infra/scripts/restore-db.sh backups/massage-vn-YYYYMMDD-HHMMSS.dump
 - Back up object storage separately; database backups only preserve `FileAsset` metadata and object keys.
 - Run `npm.cmd run api:smoke` after staging restores.
 
+### Object Storage Restore Smoke
+
 For a local, disposable verification of the object-storage restore procedure, run:
 
 ```powershell
@@ -53,6 +55,20 @@ volume, restores into a fresh MinIO target, and verifies the restored object byt
 All generated Docker resources use a unique `hands-storage-restore-*` prefix and are removed in `finally`.
 It never connects to configured staging or production object storage. Run the provider-specific backup
 and restore procedure separately before release, retaining the evidence listed below.
+
+### PostgreSQL Restore Smoke
+
+For a local, disposable PostgreSQL backup and restore drill, run:
+
+```powershell
+npm.cmd run database:restore-smoke
+```
+
+The database drill creates a uniquely named local PostGIS source, applies the full Prisma migration
+history, writes representative Customer, Partner, booking, and payment records, produces a custom-format
+dump and SHA-256 checksum, removes the source, restores into a fresh PostGIS target, verifies Prisma
+migration status and restored ownership links, and removes all generated containers and temporary files.
+It refuses non-local Docker engines and fails if its loopback-only host port is already in use.
 
 ## Isolated Restore Drill
 

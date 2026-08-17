@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { createHmac, randomUUID } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -32,7 +32,9 @@ const runId = `payment_lifecycle_${Date.now()}`;
 const closedMonthlyPeriod = `${8000 + (Date.now() % 1000)}-12`;
 const ids = {
   actor: `${runId}_actor`,
+  actorSession: `${runId}_actor_session`,
   approver: `${runId}_approver`,
+  approverSession: `${runId}_approver_session`,
   customerUser: `${runId}_customer_user`,
   customerProfile: `${runId}_customer_profile`,
   monthlyClosing: `${runId}_monthly_closing`,
@@ -48,11 +50,14 @@ const fixtures = methods.map((method) => ({
 }));
 const bookingIds = fixtures.map((fixture) => fixture.bookingId);
 const paymentIds = fixtures.map((fixture) => fixture.paymentId);
-const prisma = new PrismaClient({ datasources: { db: { url: requiredEnv('DATABASE_URL') } } });
+const databaseUrl = requiredEnv('DATABASE_URL');
+const redisUrl = requiredEnv('REDIS_URL');
+const prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
 let apiProcess;
 let apiErrorTail = '';
 
 assertLocalFixtureMode();
+assertDisposableLifecycleTarget(databaseUrl, redisUrl);
 assertCondition(Number.isInteger(port) && port > 0 && port < 65536, 'Invalid payment smoke port.');
 assertCondition(existsSync(apiEntry), 'API build is missing. Run the API build before payment lifecycle smoke.');
 
@@ -63,16 +68,8 @@ try {
   apiProcess = startApi();
   await waitForHealth();
 
-  const actorToken = jwt.sign(
-    { sub: ids.actor, activeRole: Role.ADMIN, roles: [Role.ADMIN] },
-    jwtAccessSecret(),
-    { expiresIn: '10m' },
-  );
-  const approverToken = jwt.sign(
-    { sub: ids.approver, activeRole: Role.ADMIN, roles: [Role.ADMIN] },
-    jwtAccessSecret(),
-    { expiresIn: '10m' },
-  );
+  const actorToken = adminAccessToken(ids.actor, ids.actorSession);
+  const approverToken = adminAccessToken(ids.approver, ids.approverSession);
 
   await captureMomo();
   await captureVnpay();
@@ -84,7 +81,10 @@ try {
     await request(`/admin/payments/${fixture.paymentId}/refund-request`, {
       method: 'POST',
       token: actorToken,
-      body: { reason: `Payment lifecycle smoke ${fixture.method} refund` },
+      body: {
+        idempotencyKey: `payment-smoke:refund-request:${fixture.paymentId}`,
+        reason: `Payment lifecycle smoke ${fixture.method} refund`,
+      },
     });
     await request(`/admin/payments/${fixture.paymentId}/refund`, {
       method: 'POST',
@@ -98,10 +98,12 @@ try {
     actorToken,
     reversalReportingBaseline,
   );
-  const withholdingCsv = await verifyPartnerWithholdingCsv(
-    reversalReporting.period,
-    reversalReporting.withholdingPage,
-  );
+  const withholdingCsv = adminEvidenceMode
+    ? await verifyPartnerWithholdingCsv(
+        reversalReporting.period,
+        reversalReporting.withholdingPage,
+      )
+    : { exported: false, reason: 'Admin evidence mode disabled.' };
   const adminEvidence = adminEvidenceMode
     ? await verifyAdminWebEvidence(verification.evidence[PaymentMethod.CARD])
     : undefined;
@@ -214,25 +216,22 @@ async function waitForHealth() {
 }
 
 async function seed() {
+  const now = new Date();
   await prisma.user.createMany({
     data: [
       {
         id: ids.actor,
         phone: smokePhone('01'),
         fullName: 'Payment Smoke Actor',
-        roles: [Role.ADMIN],
-        adminUserProvenance: AdminUserProvenance.FIXTURE,
-        fixtureKind: 'PAYMENT_LIFECYCLE_SMOKE',
-        fixtureRunId: runId,
+        roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+        adminUserProvenance: AdminUserProvenance.PRODUCTION,
       },
       {
         id: ids.approver,
         phone: smokePhone('02'),
         fullName: 'Payment Smoke Approver',
         roles: [Role.ADMIN, Role.FINANCE_APPROVER],
-        adminUserProvenance: AdminUserProvenance.FIXTURE,
-        fixtureKind: 'PAYMENT_LIFECYCLE_SMOKE',
-        fixtureRunId: runId,
+        adminUserProvenance: AdminUserProvenance.PRODUCTION,
       },
       {
         id: ids.customerUser,
@@ -260,6 +259,68 @@ async function seed() {
       {
         userId: ids.approver,
         categories: [AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING],
+      },
+    ],
+  });
+  await prisma.adminOperatorCredential.createMany({
+    data: [
+      {
+        userId: ids.actor,
+        email: `${runId}.actor@hands.test`,
+        passwordHash: 'disposable-smoke-only-hash',
+        passwordSalt: 'disposable-smoke-only-salt',
+        setupCompletedAt: now,
+        mfaState: 'VERIFIED',
+      },
+      {
+        userId: ids.approver,
+        email: `${runId}.approver@hands.test`,
+        passwordHash: 'disposable-smoke-only-hash',
+        passwordSalt: 'disposable-smoke-only-salt',
+        setupCompletedAt: now,
+        mfaState: 'VERIFIED',
+      },
+    ],
+  });
+  await prisma.adminWebSession.createMany({
+    data: [
+      {
+        id: ids.actorSession,
+        userId: ids.actor,
+        expiresAt: new Date(now.getTime() + 30 * 60_000),
+        lastSeenAt: now,
+        reauthenticatedAt: now,
+        mfaVerifiedAt: now,
+      },
+      {
+        id: ids.approverSession,
+        userId: ids.approver,
+        expiresAt: new Date(now.getTime() + 30 * 60_000),
+        lastSeenAt: now,
+        reauthenticatedAt: now,
+        mfaVerifiedAt: now,
+      },
+    ],
+  });
+  await prisma.adminAuditLog.createMany({
+    data: [
+      {
+        actorId: ids.approver,
+        action: 'admin_user.finance_approver.legacy_attestation.approved',
+        target: `finance_approver_attestation:${ids.actor}:${runId}`,
+        metadata: {
+          attestorId: ids.actor,
+          sourceReference: `disposable-payment-lifecycle:${runId}`,
+        },
+      },
+      {
+        actorId: ids.actor,
+        action: 'admin_user.finance_approver.legacy_attestation.approved',
+        target: `finance_approver_attestation:${ids.approver}:${runId}`,
+        metadata: {
+          attestorId: ids.approver,
+          sourceReference: `disposable-payment-lifecycle:${runId}`,
+        },
       },
     ],
   });
@@ -301,6 +362,21 @@ async function seed() {
         rawMeta: { smoke: 'payment-lifecycle' },
       },
     });
+    if (fixture.method === PaymentMethod.CARD) {
+      await prisma.paymentCallbackAttempt.create({
+        data: {
+          paymentId: fixture.paymentId,
+          method: fixture.method,
+          providerRef: fixture.providerRef,
+          outcome: 'ACCEPTED',
+          signatureVerified: true,
+          verificationMode: 'disposable-provider-confirmed-fixture',
+          providerStatus: PaymentStatus.AUTHORIZED,
+          callbackAmount: 300000,
+          rawPayload: { smoke: 'payment-lifecycle', providerConfirmed: true },
+        },
+      });
+    }
   }
 }
 
@@ -341,8 +417,15 @@ async function captureCard(actorToken) {
   const captured = await request(`/admin/payments/${fixture.paymentId}/capture`, {
     method: 'POST',
     token: actorToken,
+    body: {
+      idempotencyKey: `payment-smoke:capture:${fixture.paymentId}`,
+      reason: 'Disposable payment lifecycle CARD capture',
+    },
   });
-  assertCondition(captured.status === PaymentStatus.CAPTURED, 'CARD payment was not captured.');
+  assertCondition(
+    captured.action === 'CAPTURE' && captured.after?.paymentStatus === PaymentStatus.CAPTURED,
+    'CARD payment was not captured.',
+  );
 }
 
 async function seedSettlementSnapshots() {
@@ -687,22 +770,7 @@ async function request(path, options = {}) {
 }
 
 async function cleanup() {
-  await prisma.bookingPaymentClearingEntry.deleteMany({ where: { bookingId: { in: bookingIds } } });
-  await prisma.accountingJournalBatch.deleteMany({ where: { bookingId: { in: bookingIds } } });
-  await prisma.bookingSettlementReversalEntry.deleteMany({ where: { bookingId: { in: bookingIds } } });
-  await prisma.bookingSettlementSnapshot.deleteMany({ where: { bookingId: { in: bookingIds } } });
-  await prisma.monthlyTaxClosing.deleteMany({ where: { id: ids.monthlyClosing } });
-  await prisma.refund.deleteMany({ where: { bookingId: { in: bookingIds } } });
-  await prisma.paymentCallbackAttempt.deleteMany({ where: { paymentId: { in: paymentIds } } });
-  await prisma.notification.deleteMany({ where: { userId: ids.customerUser } });
-  await prisma.adminAuditLog.deleteMany({ where: { actorId: { in: [ids.actor, ids.approver] } } });
-  await prisma.payment.deleteMany({ where: { id: { in: paymentIds } } });
-  await prisma.booking.deleteMany({ where: { id: { in: bookingIds } } });
-  await prisma.customerProfile.deleteMany({ where: { id: ids.customerProfile } });
-  await prisma.providerProfile.deleteMany({ where: { id: ids.providerProfile } });
-  await prisma.user.deleteMany({
-    where: { id: { in: [ids.actor, ids.approver, ids.customerUser, ids.providerUser] } },
-  });
+  // Financial and audit rows are append-only. The disposable schema is the cleanup boundary.
 }
 
 function fixtureFor(method) {
@@ -722,8 +790,23 @@ function smokePhone(suffix) {
   return `+84988${String(Date.now()).slice(-5)}${suffix}`;
 }
 
-function jwtAccessSecret() {
-  return env.JWT_ACCESS_SECRET?.trim() || 'dev-access-secret';
+function adminAccessToken(userId, sessionId) {
+  return jwt.sign(
+    {
+      sub: userId,
+      typ: 'admin-web-api',
+      aud: 'hands-api',
+      scope: 'admin:api',
+      role: Role.ADMIN,
+      jti: sessionId,
+    },
+    adminWebApiTokenSecret(),
+    { expiresIn: '10m' },
+  );
+}
+
+function adminWebApiTokenSecret() {
+  return env.ADMIN_WEB_API_TOKEN_SECRET?.trim() || 'dev-admin-web-api-token-secret';
 }
 
 function adminSessionCookie() {
@@ -732,7 +815,7 @@ function adminSessionCookie() {
     JSON.stringify({
       exp: now + 300,
       iat: now,
-      jti: randomUUID(),
+      jti: ids.actorSession,
       role: 'ADMIN',
       sessionVersion: 1,
       sub: ids.actor,
@@ -742,6 +825,46 @@ function adminSessionCookie() {
     .update(payload)
     .digest('base64url');
   return `${payload}.${signature}`;
+}
+
+function assertDisposableLifecycleTarget(targetDatabaseUrl, targetRedisUrl) {
+  let database;
+  let redisTarget;
+  try {
+    database = new URL(targetDatabaseUrl);
+    redisTarget = new URL(targetRedisUrl);
+  } catch {
+    throw new Error('Payment lifecycle smoke requires valid DATABASE_URL and REDIS_URL values.');
+  }
+  const databaseName = decodeURIComponent(database.pathname.replace(/^\/+|\/+$/gu, ''));
+  const schema = database.searchParams.get('schema')?.trim() ?? '';
+  const databaseAllowed =
+    /^(?:(?:hands|finance[_-]approver)[_-](?:it|integration))_[a-z0-9_-]+$/u.test(databaseName) &&
+    /^hands_(?:it|integration)_[a-z0-9_]+$/u.test(schema);
+  const exactDatabaseTarget = `${databaseName}:${schema}`;
+  assertCondition(
+    databaseAllowed && allowlist(env.INTEGRATION_DATABASE_ALLOWLIST).has(exactDatabaseTarget),
+    `Refusing payment lifecycle smoke writes to non-disposable target ${exactDatabaseTarget}`,
+  );
+
+  assertCondition(
+    ['127.0.0.1', 'localhost', '::1'].includes(redisTarget.hostname),
+    'Payment lifecycle smoke Redis must use a loopback host.',
+  );
+  const normalizedRedisTarget = targetRedisUrl.replace(/\/$/u, '');
+  assertCondition(
+    allowlist(env.INTEGRATION_REDIS_ALLOWLIST).has(normalizedRedisTarget),
+    `Payment lifecycle smoke Redis target ${normalizedRedisTarget} is not explicitly allowlisted`,
+  );
+}
+
+function allowlist(value) {
+  return new Set(
+    String(value ?? '')
+      .split(',')
+      .map((item) => item.trim().replace(/\/$/u, ''))
+      .filter(Boolean),
+  );
 }
 
 function requiredEnv(key) {

@@ -257,11 +257,21 @@ jobs:
       - name: Run CASH refund and settlement lifecycle
         run: npm run bookings:cash-lifecycle-smoke
 
+      - name: Run payment callback and refund lifecycle
+        env:
+          MOMO_GATEWAY_ENABLED: 'false'
+          PAYMENT_LIFECYCLE_SMOKE_PORT: '3002'
+          VNPAY_GATEWAY_ENABLED: 'false'
+        run: npm run payments:lifecycle-smoke
+
       - name: Run provider wallet summary concurrency
         run: npm run finance:provider-wallet-summary-concurrency-smoke
 
       - name: Run Partner withdrawal and payout lifecycle
         run: npm run finance:provider-withdrawal-smoke
+
+      - name: Run disposable PostgreSQL restore drill
+        run: npm run database:restore-smoke
 
       - name: Run disposable object storage restore drill
         run: npm run storage:restore-smoke

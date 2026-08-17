@@ -178,6 +178,8 @@ function Invoke-Harness {
   Invoke-Check "script syntax: api smoke" "node --check infra\scripts\api-smoke.mjs"
   Invoke-Check "script syntax: admin api budget" "node --check infra\scripts\admin-api-read-budget.mjs"
   Invoke-Check "script syntax: admin web smoke" "node --check infra\scripts\admin-web-smoke.mjs"
+  Invoke-Check "script syntax: payment lifecycle smoke" "node --check infra\scripts\payment-lifecycle-smoke.mjs"
+  Invoke-Check "script syntax: database restore smoke" "node --check infra\scripts\database-restore-smoke.mjs"
   Invoke-Check "script syntax: realtime smoke" "node --check infra\scripts\realtime-smoke.mjs"
   Invoke-Check "script syntax: final authority" "node --check infra\scripts\check-final-authority.mjs"
   Invoke-Check "script syntax: admin sensitive exposure" "node --check infra\scripts\check-admin-sensitive-exposure.mjs"

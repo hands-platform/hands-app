@@ -21,6 +21,7 @@
     "external:check:referrals": "node infra/scripts/check-external-setup.mjs --phase=referrals",
     "storage:smoke": "node infra/scripts/storage-smoke.mjs",
     "storage:restore-smoke": "node infra/scripts/object-storage-restore-smoke.mjs",
+    "database:restore-smoke": "node infra/scripts/database-restore-smoke.mjs",
     "external:check:production": "node infra/scripts/check-external-setup.mjs --phase=production",
     "external:check:network": "node infra/scripts/check-production-network.mjs",
     "external:check:network:dry-run": "node infra/scripts/check-production-network.mjs --dry-run",
