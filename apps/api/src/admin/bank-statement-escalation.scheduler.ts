@@ -11,6 +11,7 @@ import {
 } from './bank-statement-escalation.queue';
 
 const SCHEDULER_REGISTRATION_RETRY_MS = 5_000;
+const SCHEDULER_REGISTRATION_HEARTBEAT_MS = BANK_STATEMENT_ESCALATION_INTERVAL_MS;
 
 @Injectable()
 export class BankStatementEscalationScheduler implements OnApplicationBootstrap, OnModuleDestroy {
@@ -51,19 +52,21 @@ export class BankStatementEscalationScheduler implements OnApplicationBootstrap,
         clearTimeout(this.registrationRetry);
         this.registrationRetry = undefined;
       }
+      this.scheduleRegistration(SCHEDULER_REGISTRATION_HEARTBEAT_MS);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to register Admin background schedulers: ${message}`);
-      this.scheduleRegistrationRetry();
+      this.scheduleRegistration(SCHEDULER_REGISTRATION_RETRY_MS);
     }
   }
 
-  private scheduleRegistrationRetry() {
+  private scheduleRegistration(delayMs: number) {
     if (this.destroyed || this.registrationRetry) return;
     this.registrationRetry = setTimeout(() => {
       this.registrationRetry = undefined;
       void this.registerSchedulers();
-    }, SCHEDULER_REGISTRATION_RETRY_MS);
+    }, delayMs);
+    this.registrationRetry.unref();
   }
 
   private upsertScheduler(schedulerId: string, jobName: string) {

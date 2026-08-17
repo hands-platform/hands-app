@@ -19,6 +19,8 @@ import { RedisStateService } from '../redis/redis-state.service';
 import { corsOriginFromEnv } from '../security/cors-origin';
 import { socketEventAllowed } from '../security/socket-rate-limit';
 
+const MAX_SOCKET_RESOURCE_ID_LENGTH = 128;
+
 @WebSocketGateway({ cors: { origin: corsOriginFromEnv(), credentials: true } })
 export class MatchingGateway implements OnGatewayConnection {
   constructor(
@@ -54,17 +56,21 @@ export class MatchingGateway implements OnGatewayConnection {
   }
 
   @SubscribeMessage('booking.join_room')
-  async joinBookingRoom(@ConnectedSocket() client: Socket, @MessageBody() payload: { bookingId: string }) {
+  async joinBookingRoom(@ConnectedSocket() client: Socket, @MessageBody() payload: unknown) {
     const user = await this.socketAuth.requireCurrentUser(client);
     if (!(await socketEventAllowed(this.redisState, user.id, 'booking.join_room', 60))) {
       return { ok: false, error: 'BOOKING_RATE_LIMITED' };
     }
-    const allowed = await this.canAccessBookingRoom(payload.bookingId, user);
+    const bookingId = socketBookingId(payload);
+    if (!bookingId) {
+      return { ok: false, error: 'BOOKING_INVALID_PAYLOAD' };
+    }
+    const allowed = await this.canAccessBookingRoom(bookingId, user);
     if (!allowed) {
       if (user.roles.includes(Role.ADMIN)) {
         await this.socketAuth.recordAdminAuthorizationDenial(
           user,
-          `booking:${payload.bookingId}`,
+          `booking:${bookingId}`,
           'BOOKING_ROOM_FORBIDDEN',
         );
       }
@@ -72,7 +78,7 @@ export class MatchingGateway implements OnGatewayConnection {
     }
 
     try {
-      await client.join(SOCKET_ROOMS.booking(payload.bookingId));
+      await client.join(SOCKET_ROOMS.booking(bookingId));
       return { ok: true };
     } catch {
       return { ok: false, error: 'BOOKING_ROOM_JOIN_FAILED' };
@@ -267,6 +273,16 @@ export class MatchingGateway implements OnGatewayConnection {
 
 function providerBookingSignal(bookingId: string, event: string, status: string) {
   return { bookingId, event, status };
+}
+
+function socketBookingId(payload: unknown) {
+  if (!payload || typeof payload !== 'object') return null;
+  const value = (payload as Record<string, unknown>).bookingId;
+  if (typeof value !== 'string') return null;
+  const bookingId = value.trim();
+  return bookingId.length > 0 && bookingId.length <= MAX_SOCKET_RESOURCE_ID_LENGTH
+    ? bookingId
+    : null;
 }
 
 function bookingStatusFromPayload(payload: unknown, fallback: string) {

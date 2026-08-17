@@ -45,6 +45,20 @@ describe('ProviderOnboardingService tax policy scheduler', () => {
         },
       },
     );
+    service.onModuleDestroy();
+  });
+
+  it('refreshes the Tax sweep scheduler after a successful heartbeat interval', async () => {
+    vi.useFakeTimers();
+    const queue = { upsertJobScheduler: vi.fn().mockResolvedValue({ id: 'tax-sweep' }) };
+    const service = new ProviderOnboardingService({} as never, undefined, queue as never);
+
+    await service.onModuleInit();
+    await vi.advanceTimersByTimeAsync(TAX_POLICY_ACTIVATION_SWEEP_INTERVAL_MS);
+
+    expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(2);
+    service.onModuleDestroy();
+    vi.useRealTimers();
   });
 
   it('retries Tax sweep scheduler registration after Redis recovers', async () => {

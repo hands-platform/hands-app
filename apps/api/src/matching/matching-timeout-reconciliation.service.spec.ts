@@ -211,4 +211,32 @@ describe('BookingTimeoutReconciliationService', () => {
     expect(failedJob.retry).toHaveBeenCalledOnce();
     expect(queue.add).not.toHaveBeenCalled();
   });
+
+  it('waits for the active reconciliation batch during module shutdown', async () => {
+    let releaseFind: (value: unknown[]) => void = () => undefined;
+    const findManyResult = new Promise<unknown[]>((resolve) => {
+      releaseFind = resolve;
+    });
+    const prisma = {
+      booking: { findMany: vi.fn().mockReturnValue(findManyResult) },
+      adminAuditLog: { findMany: vi.fn() },
+    };
+    const service = new BookingTimeoutReconciliationService(
+      prisma as never,
+      { add: vi.fn() } as never,
+    );
+
+    service.onModuleInit();
+    expect(prisma.booking.findMany).toHaveBeenCalledOnce();
+    let shutdownCompleted = false;
+    const shutdown = service.onModuleDestroy().then(() => {
+      shutdownCompleted = true;
+    });
+    await Promise.resolve();
+    expect(shutdownCompleted).toBe(false);
+
+    releaseFind([]);
+    await shutdown;
+    expect(shutdownCompleted).toBe(true);
+  });
 });

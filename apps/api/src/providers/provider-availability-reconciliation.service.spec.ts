@@ -174,6 +174,31 @@ describe('ProviderAvailabilityReconciliationService', () => {
     expect(result.updated).toBe(0);
     expect(redisState.setProviderStatus).not.toHaveBeenCalled();
   });
+
+  it('waits for the active reconciliation batch during module shutdown', async () => {
+    let releaseFind: (value: unknown[]) => void = () => undefined;
+    const findManyResult = new Promise<unknown[]>((resolve) => {
+      releaseFind = resolve;
+    });
+    const prisma = prismaFixture([], 0);
+    prisma.providerProfile.findMany.mockReturnValue(findManyResult);
+    const service = reconciliationService(prisma, {
+      setProviderStatus: vi.fn().mockResolvedValue(undefined),
+    });
+
+    service.onModuleInit();
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledOnce();
+    let shutdownCompleted = false;
+    const shutdown = service.onModuleDestroy().then(() => {
+      shutdownCompleted = true;
+    });
+    await Promise.resolve();
+    expect(shutdownCompleted).toBe(false);
+
+    releaseFind([]);
+    await shutdown;
+    expect(shutdownCompleted).toBe(true);
+  });
 });
 
 describe('provider availability reconciliation settings', () => {

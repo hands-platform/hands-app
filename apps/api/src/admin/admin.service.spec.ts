@@ -758,7 +758,21 @@ describe('AdminService no-show concurrency', () => {
 
     expect(providerAvailabilityLifecycle.reconcile).toHaveBeenCalledWith('partner-1');
     expect(matchingGateway.emitBookingExpired).toHaveBeenCalledWith(currentBooking.id, selectedBooking);
+    expect(redisState.closeMatching).toHaveBeenCalledTimes(3);
     expect(notifications.create).toHaveBeenCalledTimes(2);
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceKey: `booking:${currentBooking.id}:booking.no_show:customer-user-1`,
+      }),
+    );
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'booking.post_commit_effect.failed',
+        objectId: currentBooking.id,
+        source: 'admin_service',
+        metadata: expect.objectContaining({ attempts: 3, effect: 'matching-close' }),
+      }),
+    });
   });
 
   it('rejects a stale no-show decision before task, audit, or notification side effects', async () => {

@@ -1,18 +1,18 @@
 import type { Job, Queue } from 'bullmq';
+import { Role } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
 import { AdminBackgroundJobsService } from './admin-background-jobs.service';
-import { BANK_STATEMENT_ESCALATION_SCHEDULER_ID } from './bank-statement-escalation.queue';
+import {
+  BACKGROUND_JOB_FAILURE_MONITOR_SCHEDULER_ID,
+  BANK_STATEMENT_ESCALATION_SCHEDULER_ID,
+} from './bank-statement-escalation.queue';
 
 describe('AdminBackgroundJobsService', () => {
   it('returns bounded queue health without exposing job payloads or raw connection secrets', async () => {
     const now = Date.now();
     const bankQueue = queueFixture('bank-statement-escalation', {
       completed: [jobFixture({ finishedOn: now - 10_000, id: 'bank-complete-1' })],
-      schedulers: [{
-        key: BANK_STATEMENT_ESCALATION_SCHEDULER_ID,
-        name: 'bank-statement-escalation-sweep',
-        next: now + 60_000,
-      }],
+      schedulers: backgroundMonitorSchedulers(now),
     });
     const notificationQueue = queueFixture('notification-retry', {
       counts: { failed: 1 },
@@ -47,7 +47,7 @@ describe('AdminBackgroundJobsService', () => {
     expect(result.queues[0]).toMatchObject({
       expectedSchedulerPresent: true,
       name: 'bank-statement-escalation',
-      schedulerCount: 1,
+      schedulerCount: 2,
       status: 'HEALTHY',
       workers: 1,
     });
@@ -628,11 +628,7 @@ describe('AdminBackgroundJobsService', () => {
     });
     const service = new AdminBackgroundJobsService(
       queueFixture('bank-statement-escalation', {
-        schedulers: [{
-          key: BANK_STATEMENT_ESCALATION_SCHEDULER_ID,
-          name: 'bank-statement-escalation-sweep',
-          next: Date.now() + 60_000,
-        }],
+        schedulers: backgroundMonitorSchedulers(),
       }),
       queueFixture('booking-timeouts'),
       queueFixture('notification-retry'),
@@ -701,7 +697,7 @@ describe('AdminBackgroundJobsService', () => {
     });
   });
 
-  it('skips duplicate or stale failures instead of notifying them again', async () => {
+  it('skips duplicate failures without aging retained failures out of the scan', async () => {
     const now = new Date('2026-07-14T04:00:00.000+07:00');
     const fixture = prismaFixture({ existingAudit: true });
     const service = new AdminBackgroundJobsService(
@@ -720,11 +716,35 @@ describe('AdminBackgroundJobsService', () => {
       alertedCount: 0,
       missingRecipientCount: 0,
       recoveredIncidentCount: 0,
-      scannedCount: 1,
-      skippedCount: 1,
+      scannedCount: 2,
+      skippedCount: 2,
     });
     expect(fixture.tx.notification.create).not.toHaveBeenCalled();
     expect(fixture.tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('alerts an untracked retained failure after the monitor was unavailable for more than 15 minutes', async () => {
+    const now = new Date('2026-07-14T04:30:00.000+07:00');
+    const fixture = prismaFixture();
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation'),
+      queueFixture('booking-timeouts'),
+      queueFixture('notification-retry', {
+        failed: [jobFixture({ failedOn: now.getTime() - 20 * 60_000, id: 'older-failure-1' })],
+      }),
+      queueFixture('payment-status-check'),
+      fixture.prisma,
+    );
+
+    await expect(service.syncFailureNotifications(now)).resolves.toMatchObject({
+      alertedCount: 1,
+      scannedCount: 1,
+    });
+    expect(fixture.tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        target: 'background_job_failure:notification-retry:older-failure-1',
+      }),
+    });
   });
 
   it('opens one incident and sends one alert for the first recurring job failure', async () => {
@@ -979,6 +999,28 @@ describe('AdminBackgroundJobsService', () => {
     expect(lockQuery.sql ?? lockQuery.text).toContain('::text');
   });
 
+  it('alerts when a required scheduler and queue worker are missing without waiting for job lag', async () => {
+    const now = new Date('2026-07-14T05:00:00.000+07:00');
+    const fixture = prismaFixture();
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation', { schedulers: [], workers: 0 }),
+      queueFixture('booking-timeouts'),
+      queueFixture('notification-retry'),
+      queueFixture('payment-status-check'),
+      fixture.prisma,
+    );
+
+    await expect(service.syncQueueHealthAlerts(now)).resolves.toMatchObject({ alertedCount: 1 });
+    expect(fixture.tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        metadata: expect.objectContaining({
+          healthReasons: ['NO_WORKERS', 'SCHEDULER_MISSING'],
+        }),
+        target: 'background_job_queue_health:bank-statement-escalation',
+      }),
+    });
+  });
+
   it('deduplicates a stale episode and records recovery without another notification', async () => {
     const now = new Date('2026-07-14T05:10:00.000+07:00');
     const target = 'background_job_queue_health:notification-retry';
@@ -1224,7 +1266,7 @@ describe('AdminBackgroundJobsService', () => {
           { id: 'booking-1', payment: { id: 'payment-ready-1' } },
         ]),
       },
-      notification: { findMany: vi.fn().mockResolvedValue([{ id: 'notification-1' }]) },
+      notification: { findMany: vi.fn().mockResolvedValue([recoverableNotification('notification-1')]) },
       notificationDelivery: {
         findMany: vi.fn().mockResolvedValue([{ id: 'delivery-stale-1' }]),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -1291,11 +1333,19 @@ describe('AdminBackgroundJobsService', () => {
       { campaignId: 'campaign-1' },
       expect.objectContaining({ deduplication: expect.objectContaining({ id: 'campaign-1' }) }),
     );
+    expect(prisma.adminPushCampaign.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        status: { in: ['QUEUED', 'PROCESSING', 'FAILED'] },
+      }),
+    }));
     expect(prisma.notification.findMany).toHaveBeenCalledWith(expect.objectContaining({
       take: 100,
       where: expect.objectContaining({
         createdAt: { lte: new Date('2026-08-17T04:59:30.000Z') },
-        deliveries: { none: {} },
+        OR: [
+          { deliveries: { none: {} } },
+          { deliveries: { some: { status: 'FAILED' } } },
+        ],
         user: { pushDevices: { some: { enabled: true } } },
       }),
     }));
@@ -1313,15 +1363,15 @@ describe('AdminBackgroundJobsService', () => {
 
   it('continues durable notification recovery past the first 100 rows without aging rows out', async () => {
     const notificationQueue = queueFixture('notification-retry');
-    const firstPage = Array.from({ length: 100 }, (_, index) => ({
-      id: `notification-${String(index + 1).padStart(3, '0')}`,
-    }));
+    const firstPage = Array.from({ length: 100 }, (_, index) =>
+      recoverableNotification(`notification-${String(index + 1).padStart(3, '0')}`),
+    );
     const prisma = {
       payment: { findMany: vi.fn().mockResolvedValue([]) },
       notification: {
         findMany: vi.fn()
           .mockResolvedValueOnce(firstPage)
-          .mockResolvedValueOnce([{ id: 'notification-101' }]),
+          .mockResolvedValueOnce([recoverableNotification('notification-101')]),
       },
       notificationDelivery: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
@@ -1352,6 +1402,53 @@ describe('AdminBackgroundJobsService', () => {
       }),
     }));
     expect(notificationQueue.add).toHaveBeenCalledTimes(101);
+  });
+
+  it('recovers transient notification deliveries without retrying unknown or wrong-role paths', async () => {
+    const notificationQueue = queueFixture('notification-retry');
+    const prisma = {
+      payment: { findMany: vi.fn().mockResolvedValue([]) },
+      notification: {
+        findMany: vi.fn().mockResolvedValue([
+          recoverableNotification('notification-transient', {
+            deliveries: [{
+              pushDeviceId: 'device-1',
+              response: { failureCode: 'messaging/internal-error' },
+              status: 'FAILED',
+            }],
+          }),
+          recoverableNotification('notification-unknown', {
+            deliveries: [{
+              pushDeviceId: 'device-1',
+              response: { failureCode: 'DELIVERY_OUTCOME_UNKNOWN' },
+              status: 'FAILED',
+            }],
+          }),
+          recoverableNotification('notification-wrong-role', {
+            user: { pushDevices: [{ id: 'device-1', role: Role.CUSTOMER }] },
+          }),
+        ]),
+      },
+      notificationDelivery: { findMany: vi.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation'),
+      queueFixture('booking-timeouts'),
+      notificationQueue,
+      queueFixture('payment-status-check'),
+      prisma,
+    );
+
+    await expect(service.syncMissingDurableJobs()).resolves.toMatchObject({
+      byFlow: { notification: { registeredCount: 1 } },
+      scannedCount: 3,
+    });
+    expect(notificationQueue.add).toHaveBeenCalledTimes(1);
+    expect(notificationQueue.add).toHaveBeenCalledWith(
+      'notification-send',
+      { notificationId: 'notification-transient' },
+      expect.any(Object),
+    );
   });
 
   it('retries retained failed durable jobs and reports the recovery truthfully', async () => {
@@ -1457,7 +1554,9 @@ function queueFixture(
       paused: input.counts?.paused ?? 0,
       waiting: input.counts?.waiting ?? 0,
     }),
-    getJobSchedulers: vi.fn().mockResolvedValue(input.schedulers ?? []),
+    getJobSchedulers: vi.fn().mockResolvedValue(
+      input.schedulers ?? (name === 'bank-statement-escalation' ? backgroundMonitorSchedulers() : []),
+    ),
     getJobs: vi.fn((type: string, start = 0, end = -1) => {
       const jobs = {
         active: input.active ?? [],
@@ -1476,6 +1575,47 @@ function queueFixture(
     getWorkersCount: vi.fn().mockResolvedValue(input.workers ?? 1),
     name,
   } as unknown as Queue;
+}
+
+function backgroundMonitorSchedulers(now: number | Date = Date.now()) {
+  const next = (now instanceof Date ? now.getTime() : now) + 60_000;
+  return [
+    {
+      key: BANK_STATEMENT_ESCALATION_SCHEDULER_ID,
+      name: 'bank-statement-escalation-sweep',
+      next,
+    },
+    {
+      key: BACKGROUND_JOB_FAILURE_MONITOR_SCHEDULER_ID,
+      name: 'background-job-failure-monitor',
+      next,
+    },
+  ];
+}
+
+type RecoverableNotificationFixture = {
+  data: { deliveryIntent: string; targetRole: Role };
+  deliveries: Array<{ pushDeviceId: string; response: unknown; status: string }>;
+  id: string;
+  type: string;
+  user: { pushDevices: Array<{ id: string; role: Role }> };
+};
+
+function recoverableNotification(
+  id: string,
+  overrides: Partial<RecoverableNotificationFixture> = {},
+) {
+  return { ...recoverableNotificationBase(id), ...overrides };
+}
+
+function recoverableNotificationBase(id: string): RecoverableNotificationFixture {
+  return {
+    data: { deliveryIntent: 'PUSH_AND_IN_APP', targetRole: Role.PROVIDER },
+    deliveries: [],
+    id,
+    type: 'booking.requested',
+    user: { pushDevices: [{ id: 'device-1', role: Role.PROVIDER }] },
+  };
 }
 
 function jobFixture(input: {

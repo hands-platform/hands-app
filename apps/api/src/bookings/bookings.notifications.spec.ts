@@ -27,6 +27,7 @@ describe('booking notification payloads', () => {
       }),
     ).toEqual({
       userId: 'customer-user-1',
+      sourceKey: 'booking:booking-1:booking.opened:customer-user-1',
       targetRole: Role.CUSTOMER,
       type: 'booking.opened',
       title: 'Booking request sent',
@@ -59,6 +60,7 @@ describe('booking notification payloads', () => {
       }),
     ).toEqual({
       userId: 'provider-user-1',
+      sourceKey: 'booking:booking-1:booking.requested:provider-user-1',
       targetRole: Role.PROVIDER,
       type: 'booking.requested',
       title: 'New direct booking request',
@@ -134,6 +136,7 @@ describe('booking notification payloads', () => {
   it('builds matched and service lifecycle payloads', () => {
     expect(selectedPartnerMatchedProviderNotification('provider-user-1', 'booking-1')).toEqual({
       userId: 'provider-user-1',
+      sourceKey: 'booking:booking-1:booking.matched.selected:provider-user-1',
       targetRole: Role.PROVIDER,
       templateKey: 'booking.matched.partner',
       type: 'booking.matched',
@@ -174,6 +177,7 @@ describe('booking notification payloads', () => {
       }),
     ).toEqual({
       userId: 'provider-user-1',
+      sourceKey: 'booking:booking-1:service.started:provider-user-1',
       targetRole: Role.PROVIDER,
       templateKey: 'service.started.partner',
       type: 'service.started',
@@ -209,6 +213,7 @@ describe('booking notification payloads', () => {
       }),
     ).toEqual({
       userId: 'provider-user-1',
+      sourceKey: 'booking:booking-1:booking.backup_available:provider-user-1:provider-1',
       targetRole: Role.PROVIDER,
       type: 'booking.backup_available',
       title: 'Nearby booking available',
@@ -230,6 +235,7 @@ describe('booking notification payloads', () => {
       }),
     ).toEqual({
       userId: 'provider-user-1',
+      sourceKey: 'booking:booking-1:provider.payout_setup_required:provider-user-1',
       targetRole: Role.PROVIDER,
       type: 'provider.payout_setup_required',
       title: 'Payout setup required',

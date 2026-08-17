@@ -328,6 +328,42 @@ describe('NotificationsService retry queue', () => {
     );
   });
 
+  it('reuses a source-keyed notification when queue registration is retried', async () => {
+    const notification = { id: 'notification-1' };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      notification: {
+        create: vi.fn().mockResolvedValue(notification),
+        findFirst: vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(notification),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const queue = {
+      add: vi.fn()
+        .mockRejectedValueOnce(new Error('Redis unavailable'))
+        .mockResolvedValueOnce({ id: 'notification-1' }),
+    };
+    const service = new NotificationsService(prisma as never, queue as never);
+    const input = {
+      body: 'A booking update is ready.',
+      resolveTemplate: false,
+      sourceKey: 'booking:booking-1:opened:user-1',
+      targetRole: Role.CUSTOMER,
+      title: 'Booking update',
+      type: 'booking.opened',
+      userId: 'user-1',
+    } as const;
+
+    await expect(service.create(input)).rejects.toThrow('Redis unavailable');
+    await expect(service.create(input)).resolves.toEqual(notification);
+
+    expect(tx.notification.create).toHaveBeenCalledTimes(1);
+    expect(tx.notification.findFirst).toHaveBeenCalledTimes(2);
+    expect(queue.add).toHaveBeenCalledTimes(2);
+  });
+
   it('creates Admin in-app notifications without enqueuing mobile push delivery', async () => {
     const notification = { id: 'notification-admin-1' };
     const prisma = {

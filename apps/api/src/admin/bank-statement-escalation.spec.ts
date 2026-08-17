@@ -49,6 +49,20 @@ describe('Bank statement escalation queue', () => {
     );
     expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(2);
     expect(BANK_STATEMENT_ESCALATION_INTERVAL_MS).toBe(5 * 60_000);
+    scheduler.onModuleDestroy();
+  });
+
+  it('refreshes both scheduler registrations after a successful heartbeat interval', async () => {
+    vi.useFakeTimers();
+    const queue = { upsertJobScheduler: vi.fn().mockResolvedValue(undefined) };
+    const scheduler = new BankStatementEscalationScheduler(queue as unknown as Queue);
+
+    await scheduler.onApplicationBootstrap();
+    await vi.advanceTimersByTimeAsync(BANK_STATEMENT_ESCALATION_INTERVAL_MS);
+
+    expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(4);
+    scheduler.onModuleDestroy();
+    vi.useRealTimers();
   });
 
   it('retries scheduler registration after a transient Redis failure', async () => {

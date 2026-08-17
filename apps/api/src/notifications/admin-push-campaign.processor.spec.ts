@@ -99,6 +99,28 @@ describe('AdminPushCampaignProcessor', () => {
     expect(notifications.enqueuePersistedNotification).not.toHaveBeenCalled();
   });
 
+  it('resumes a failed campaign when snapshotted recipients remain', async () => {
+    const prisma = {
+      adminPushCampaign: {
+        findUnique: vi.fn().mockResolvedValue(campaignFixture({ status: 'FAILED' })),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      adminPushCampaignRecipient: { update: vi.fn() },
+    };
+    const notifications = {
+      enqueuePersistedNotification: vi.fn().mockResolvedValue(true),
+      persistAdminPushRecipient: vi.fn().mockResolvedValue({ id: 'notification-1' }),
+    };
+    const processor = new AdminPushCampaignProcessor(prisma as never, notifications as never);
+
+    await expect(processor.process(jobFixture())).resolves.toMatchObject({ queued: true });
+    expect(prisma.adminPushCampaign.update).toHaveBeenNthCalledWith(1, {
+      where: { id: 'campaign-1' },
+      data: { processingAt: expect.any(Date), status: 'PROCESSING' },
+    });
+    expect(notifications.persistAdminPushRecipient).toHaveBeenCalledTimes(1);
+  });
+
   it('records an enqueue error and lets BullMQ retry the campaign job', async () => {
     const prisma = {
       adminPushCampaign: {

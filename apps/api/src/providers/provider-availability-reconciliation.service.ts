@@ -24,7 +24,9 @@ export class ProviderAvailabilityReconciliationService
   private readonly enabled: boolean;
   private readonly intervalMs: number;
   private cursor: string | undefined;
+  private inFlight: Promise<void> | undefined;
   private running = false;
+  private stopping = false;
   private timer: NodeJS.Timeout | undefined;
 
   constructor(
@@ -45,13 +47,15 @@ export class ProviderAvailabilityReconciliationService
 
   onModuleInit() {
     if (!this.enabled) return;
-    this.timer = setInterval(() => void this.runScheduledBatch(), this.intervalMs);
+    this.timer = setInterval(() => void this.startScheduledBatch(), this.intervalMs);
     this.timer.unref();
-    void this.runScheduledBatch();
+    void this.startScheduledBatch();
   }
 
-  onModuleDestroy() {
+  async onModuleDestroy() {
+    this.stopping = true;
     if (this.timer) clearInterval(this.timer);
+    await this.inFlight;
   }
 
   async reconcileBatch(now = new Date()) {
@@ -193,6 +197,17 @@ export class ProviderAvailabilityReconciliationService
       this.logger.error(
         `Partner availability reconciliation failed: ${error instanceof Error ? error.message : String(error)}`,
       );
+    }
+  }
+
+  private async startScheduledBatch() {
+    if (this.stopping || this.inFlight) return;
+    const inFlight = this.runScheduledBatch();
+    this.inFlight = inFlight;
+    try {
+      await inFlight;
+    } finally {
+      if (this.inFlight === inFlight) this.inFlight = undefined;
     }
   }
 }

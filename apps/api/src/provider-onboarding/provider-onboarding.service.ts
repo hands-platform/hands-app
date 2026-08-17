@@ -62,6 +62,7 @@ import { assertTaxPolicyFixtureWriteEnvironment } from './tax-policy-fixture-wri
 const ADMIN_TAX_POLICY_VERSION_DEFAULT_TAKE = 20;
 const ADMIN_TAX_POLICY_VERSION_MAX_TAKE = 100;
 const TAX_POLICY_SCHEDULER_REGISTRATION_RETRY_MS = 5_000;
+const TAX_POLICY_SCHEDULER_HEARTBEAT_MS = TAX_POLICY_ACTIVATION_SWEEP_INTERVAL_MS;
 
 type AdminTaxPolicyVersionListOptions = {
   readonly effectiveFrom?: string | null;
@@ -133,18 +134,22 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
         clearTimeout(this.taxPolicySchedulerRetry);
         this.taxPolicySchedulerRetry = undefined;
       }
+      this.scheduleTaxPolicySchedulerRegistration(TAX_POLICY_SCHEDULER_HEARTBEAT_MS);
     } catch (error) {
       this.logger.error(
         `Failed to register Tax policy activation scheduler: ${error instanceof Error ? error.message : String(error)}`,
       );
-      if (!this.taxPolicySchedulerRetry) {
-        this.taxPolicySchedulerRetry = setTimeout(() => {
-          this.taxPolicySchedulerRetry = undefined;
-          void this.registerTaxPolicySweep();
-        }, TAX_POLICY_SCHEDULER_REGISTRATION_RETRY_MS);
-        this.taxPolicySchedulerRetry.unref();
-      }
+      this.scheduleTaxPolicySchedulerRegistration(TAX_POLICY_SCHEDULER_REGISTRATION_RETRY_MS);
     }
+  }
+
+  private scheduleTaxPolicySchedulerRegistration(delayMs: number) {
+    if (this.destroyed || this.taxPolicySchedulerRetry) return;
+    this.taxPolicySchedulerRetry = setTimeout(() => {
+      this.taxPolicySchedulerRetry = undefined;
+      void this.registerTaxPolicySweep();
+    }, delayMs);
+    this.taxPolicySchedulerRetry.unref();
   }
 
   async getSnapshot(userId?: string) {

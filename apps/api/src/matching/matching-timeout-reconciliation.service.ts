@@ -18,7 +18,9 @@ export class BookingTimeoutReconciliationService
 {
   private readonly logger = new Logger(BookingTimeoutReconciliationService.name);
   private cursor: string | undefined;
+  private inFlight: Promise<void> | undefined;
   private running = false;
+  private stopping = false;
   private timer: NodeJS.Timeout | undefined;
 
   constructor(
@@ -27,13 +29,15 @@ export class BookingTimeoutReconciliationService
   ) {}
 
   onModuleInit() {
-    this.timer = setInterval(() => void this.runScheduledBatch(), RECONCILIATION_INTERVAL_MS);
+    this.timer = setInterval(() => void this.startScheduledBatch(), RECONCILIATION_INTERVAL_MS);
     this.timer.unref();
-    void this.runScheduledBatch();
+    void this.startScheduledBatch();
   }
 
-  onModuleDestroy() {
+  async onModuleDestroy() {
+    this.stopping = true;
     if (this.timer) clearInterval(this.timer);
+    await this.inFlight;
   }
 
   async reconcileBatch(now = new Date()) {
@@ -158,6 +162,17 @@ export class BookingTimeoutReconciliationService
       this.logger.error(
         `Booking timeout reconciliation failed: ${error instanceof Error ? error.message : String(error)}`,
       );
+    }
+  }
+
+  private async startScheduledBatch() {
+    if (this.stopping || this.inFlight) return;
+    const inFlight = this.runScheduledBatch();
+    this.inFlight = inFlight;
+    try {
+      await inFlight;
+    } finally {
+      if (this.inFlight === inFlight) this.inFlight = undefined;
     }
   }
 }

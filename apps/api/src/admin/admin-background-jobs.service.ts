@@ -28,8 +28,15 @@ import {
   NOTIFICATION_SEND_QUEUE_NAME,
   notificationSendJob,
 } from '../notifications/notification-send.queue';
+import { notificationDeliveryFailureCode } from '../notifications/notification-delivery-failure';
 import { notificationDataWithDeliveryContract } from '../notifications/notification-data-scope';
 import { toJson } from '../notifications/notification-push-payload';
+import { notificationRetryFailureClass } from '../notifications/notification-retry-decision';
+import {
+  isRoleNeutralNotificationType,
+  notificationTargetRole,
+  pushDeviceMatchesTargetRole,
+} from '../notifications/notification-target-role';
 import {
   PAYMENT_BOOKING_RECOVERY_QUEUE_NAME,
   paymentBookingRecoveryJob,
@@ -48,6 +55,7 @@ import {
   TAX_POLICY_ACTIVATION_SWEEP_SCHEDULER_ID,
 } from '../provider-onboarding/tax-policy-activation.queue';
 import {
+  BACKGROUND_JOB_FAILURE_MONITOR_SCHEDULER_ID,
   BANK_STATEMENT_ESCALATION_QUEUE_NAME,
   BANK_STATEMENT_ESCALATION_INTERVAL_MS,
   BANK_STATEMENT_ESCALATION_SCHEDULER_ID,
@@ -58,7 +66,7 @@ import type {
 } from './admin-system.dto';
 
 type BackgroundQueueDefinition = {
-  expectedSchedulerId?: string;
+  expectedSchedulerIds?: string[];
   label: string;
   queue: Queue;
   staleAfterMs: number;
@@ -93,7 +101,7 @@ const BACKGROUND_JOB_FAILURE_REVIEW_ACTIONS = [
   BACKGROUND_JOB_FAILURE_ACKNOWLEDGED_ACTION,
   BACKGROUND_JOB_FAILURE_RESOLVED_ACTION,
 ] as const;
-const BACKGROUND_JOB_FAILURE_ALERT_MAX_AGE_MS = 15 * 60_000;
+const BACKGROUND_JOB_FAILURE_ALERT_BATCH_SIZE = 25;
 const BACKGROUND_JOB_RECURRING_INCIDENT_SCAN_LIMIT = 100;
 const BACKGROUND_JOB_RECURRING_INCIDENT_FILTER_SCAN_LIMIT = 500;
 const BACKGROUND_JOB_RECURRING_INCIDENT_SUMMARY_SCAN_LIMIT = 1_000;
@@ -558,12 +566,16 @@ export class AdminBackgroundJobsService {
   }
 
   async syncFailureNotifications(now = new Date()) {
-    const cutoffMs = now.getTime() - BACKGROUND_JOB_FAILURE_ALERT_MAX_AGE_MS;
     const definitions = this.queueDefinitions();
-    const failures = (
+    const candidates = (
       await Promise.all(
         definitions.map(async (definition) => {
-          const jobs = await definition.queue.getJobs('failed', 0, FAILED_JOB_LIMIT_PER_QUEUE - 1, false);
+          const jobs = await definition.queue.getJobs(
+            'failed',
+            0,
+            FAILED_JOB_LIST_MAX_SCAN_PER_QUEUE - 1,
+            false,
+          );
           return jobs.map((job) => ({
             ...backgroundFailedJob(definition.queue.name, job),
             label: definition.label,
@@ -572,11 +584,13 @@ export class AdminBackgroundJobsService {
       )
     )
       .flat()
-      .filter((failure) => failure.id && dateTimeMs(failure.failedAt) >= cutoffMs)
+      .filter((failure) => failure.id);
+    const failures = (await this.withFailureReviewState(candidates))
+      .filter((failure) => failure.review.status === 'UNTRACKED')
       .sort((left, right) => dateTimeMs(left.failedAt) - dateTimeMs(right.failedAt));
 
     const results: Array<'ALERTED' | 'MISSING_RECIPIENT' | 'SKIPPED'> = [];
-    for (const failure of failures) {
+    for (const failure of failures.slice(0, BACKGROUND_JOB_FAILURE_ALERT_BATCH_SIZE)) {
       results.push(await this.alertBackgroundJobFailure(failure, now));
     }
     const recoveredIncidentCount = await this.syncRecurringFailureIncidentRecoveries(now);
@@ -585,7 +599,7 @@ export class AdminBackgroundJobsService {
       alertedCount: results.filter((result) => result === 'ALERTED').length,
       missingRecipientCount: results.filter((result) => result === 'MISSING_RECIPIENT').length,
       recoveredIncidentCount,
-      scannedCount: failures.length,
+      scannedCount: candidates.length,
       skippedCount: results.filter((result) => result === 'SKIPPED').length,
     };
   }
@@ -658,22 +672,41 @@ export class AdminBackgroundJobsService {
       this.prisma.notification.findMany({
         where: {
           createdAt: notificationWindow,
-          deliveries: { none: {} },
-          user: { pushDevices: { some: { enabled: true } } },
           OR: [
+            { deliveries: { none: {} } },
+            { deliveries: { some: { status: 'FAILED' } } },
+          ],
+          user: { pushDevices: { some: { enabled: true } } },
+          AND: [{ OR: [
             { data: { path: ['deliveryIntent'], equals: 'PUSH' } },
             { data: { path: ['deliveryIntent'], equals: 'PUSH_AND_IN_APP' } },
-          ],
+          ] }],
         },
         orderBy: { id: 'asc' },
         ...durableScanCursor(this.durableScanCursors.notification),
-        select: { id: true },
+        select: {
+          data: true,
+          deliveries: {
+            orderBy: [{ attemptedAt: 'desc' }, { id: 'desc' }],
+            select: { pushDeviceId: true, response: true, status: true },
+          },
+          id: true,
+          type: true,
+          user: {
+            select: {
+              pushDevices: {
+                where: { enabled: true },
+                select: { id: true, role: true },
+              },
+            },
+          },
+        },
         take: MISSING_DURABLE_JOB_SCAN_LIMIT,
       }),
       this.adminPushCampaignQueue
         ? this.prisma.adminPushCampaign.findMany({
             where: {
-              status: { in: ['QUEUED', 'PROCESSING'] },
+              status: { in: ['QUEUED', 'PROCESSING', 'FAILED'] },
               recipients: {
                 some: { status: { in: ['SNAPSHOTTED', 'PROCESSING'] } },
               },
@@ -741,7 +774,7 @@ export class AdminBackgroundJobsService {
             )];
           })
         : []),
-      ...notifications.map((notification) => {
+      ...notifications.filter(notificationNeedsDurableJob).map((notification) => {
         const job = notificationSendJob(notification.id);
         return this.registerMissingJob('notification', this.notificationSendQueue, job);
       }),
@@ -820,7 +853,10 @@ export class AdminBackgroundJobsService {
   private queueDefinitions(): BackgroundQueueDefinition[] {
     return [
       {
-        expectedSchedulerId: BANK_STATEMENT_ESCALATION_SCHEDULER_ID,
+        expectedSchedulerIds: [
+          BANK_STATEMENT_ESCALATION_SCHEDULER_ID,
+          BACKGROUND_JOB_FAILURE_MONITOR_SCHEDULER_ID,
+        ],
         label: 'Bank statement escalation',
         queue: this.bankStatementEscalationQueue,
         staleAfterMs: 2 * BANK_STATEMENT_ESCALATION_INTERVAL_MS,
@@ -856,7 +892,7 @@ export class AdminBackgroundJobsService {
         staleAfterMs: IMMEDIATE_QUEUE_STALE_AFTER_MS,
       }] : []),
       ...(this.taxPolicyActivationQueue ? [{
-        expectedSchedulerId: TAX_POLICY_ACTIVATION_SWEEP_SCHEDULER_ID,
+        expectedSchedulerIds: [TAX_POLICY_ACTIVATION_SWEEP_SCHEDULER_ID],
         label: 'Tax policy activation',
         queue: this.taxPolicyActivationQueue,
         staleAfterMs: IMMEDIATE_QUEUE_STALE_AFTER_MS,
@@ -1183,7 +1219,8 @@ export class AdminBackgroundJobsService {
     detectedAt: Date,
   ) {
     const target = `background_job_queue_health:${queue.name}`;
-    const stale = queue.openJobLagMs > queue.staleAfterMs;
+    const healthReasons = backgroundQueueHealthReasons(queue);
+    const needsAttention = healthReasons.length > 0;
 
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw(backgroundJobAdvisoryLock(target));
@@ -1201,7 +1238,7 @@ export class AdminBackgroundJobsService {
         select: { action: true, actorId: true, id: true },
       });
 
-      if (!stale) {
+      if (!needsAttention) {
         if (latest?.action !== BACKGROUND_JOB_QUEUE_STALE_ALERT_ACTION) return 'SKIPPED' as const;
         await tx.adminAuditLog.create({
           data: {
@@ -1213,6 +1250,7 @@ export class AdminBackgroundJobsService {
             metadata: {
               detectedAt: detectedAt.toISOString(),
               openJobLagMs: queue.openJobLagMs,
+              healthReasons,
               previousAlertAuditId: latest.id,
               queueName: queue.name,
               source: 'system_monitor',
@@ -1237,8 +1275,8 @@ export class AdminBackgroundJobsService {
           data: {
             userId: recipient.id,
             type: 'admin.system.background_job.queue_stale',
-            title: 'Background queue is stale',
-            body: `${queue.label} has exceeded its queue processing SLA.`,
+            title: 'Background queue needs attention',
+            body: `${queue.label} requires review: ${healthReasons.join(', ')}.`,
             data: toJson(notificationDataWithDeliveryContract({
               destination: `/background-jobs?queue=${encodeURIComponent(queue.name)}&review=OPEN&range=ALL`,
               queueName: queue.name,
@@ -1258,6 +1296,7 @@ export class AdminBackgroundJobsService {
           target,
           metadata: {
             detectedAt: detectedAt.toISOString(),
+            healthReasons,
             notificationIds,
             oldestOpenJobAt: queue.oldestOpenJobAt,
             oldestOpenJobState: queue.oldestOpenJobState,
@@ -1273,7 +1312,9 @@ export class AdminBackgroundJobsService {
     });
   }
 
-  private async withFailureReviewState(failedJobs: ReturnType<typeof backgroundFailedJob>[]) {
+  private async withFailureReviewState<T extends ReturnType<typeof backgroundFailedJob>>(
+    failedJobs: T[],
+  ) {
     const targets = failedJobs
       .map((failure) => backgroundFailureTarget(failure.queueName, failure.id))
       .filter((target): target is string => Boolean(target));
@@ -1484,8 +1525,10 @@ async function backgroundQueueSnapshot(definition: BackgroundQueueDefinition, no
     activeJobs[0],
     delayedJobs[0],
   );
-  const expectedSchedulerPresent = definition.expectedSchedulerId
-    ? schedulers.some((scheduler) => scheduler.key === definition.expectedSchedulerId)
+  const expectedSchedulerPresent = definition.expectedSchedulerIds?.length
+    ? definition.expectedSchedulerIds.every((schedulerId) =>
+        schedulers.some((scheduler) => scheduler.key === schedulerId),
+      )
     : true;
   const status = backgroundQueueStatus({
     active: counts.active ?? 0,
@@ -1503,7 +1546,7 @@ async function backgroundQueueSnapshot(definition: BackgroundQueueDefinition, no
       paused: counts.paused ?? 0,
       waiting: counts.waiting ?? 0,
     },
-    expectedSchedulerId: definition.expectedSchedulerId ?? null,
+    expectedSchedulerId: definition.expectedSchedulerIds?.[0] ?? null,
     expectedSchedulerPresent,
     failedJobs: failedJobs.map((job) => backgroundFailedJob(definition.queue.name, job)),
     label: definition.label,
@@ -1543,6 +1586,51 @@ function backgroundQueueStatus(input: {
   }
   if (input.stale) return 'STALE';
   return input.active > 0 ? 'RUNNING' : 'HEALTHY';
+}
+
+function backgroundQueueHealthReasons(queue: {
+  expectedSchedulerPresent: boolean;
+  openJobLagMs: number;
+  staleAfterMs: number;
+  workers: number;
+}) {
+  return [
+    ...(queue.openJobLagMs > queue.staleAfterMs ? ['PROCESSING_STALE'] : []),
+    ...(queue.workers === 0 ? ['NO_WORKERS'] : []),
+    ...(!queue.expectedSchedulerPresent ? ['SCHEDULER_MISSING'] : []),
+  ];
+}
+
+function notificationNeedsDurableJob(notification: {
+  data: unknown;
+  deliveries: Array<{
+    pushDeviceId: string | null;
+    response: unknown;
+    status: string;
+  }>;
+  type: string;
+  user: { pushDevices: Array<{ id: string; role: Role | null }> };
+}) {
+  const targetRole = notificationTargetRole(notification);
+  const roleNeutral = isRoleNeutralNotificationType(notification.type);
+  const devices = notification.user.pushDevices.filter((device) =>
+    roleNeutral || pushDeviceMatchesTargetRole(device, targetRole),
+  );
+  if (devices.length === 0) return false;
+
+  const latestByDevice = new Map<string, (typeof notification.deliveries)[number]>();
+  for (const delivery of notification.deliveries) {
+    if (delivery.pushDeviceId && !latestByDevice.has(delivery.pushDeviceId)) {
+      latestByDevice.set(delivery.pushDeviceId, delivery);
+    }
+  }
+  return devices.some((device) => {
+    const latest = latestByDevice.get(device.id);
+    return !latest || (
+      latest.status === 'FAILED' &&
+      notificationRetryFailureClass(notificationDeliveryFailureCode(latest.response)) === 'transient'
+    );
+  });
 }
 
 function backgroundQueueOpenJobLag(

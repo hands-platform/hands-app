@@ -83,4 +83,40 @@ describe('ChatGateway Admin room authorization evidence', () => {
     ).resolves.toEqual({ ok: false, error: 'CHAT_RATE_LIMITED' });
     expect(createMessage).not.toHaveBeenCalled();
   });
+
+  it.each([
+    [null],
+    [{ chatRoomId: '', text: 'hello' }],
+    [{ chatRoomId: 'chat-room-1', text: 'x'.repeat(2001) }],
+  ])('rejects malformed message payloads before calling the chat service', async (payload) => {
+    const createMessage = vi.fn();
+    const gateway = new ChatGateway(
+      {
+        requireCurrentUser: vi.fn().mockResolvedValue({ id: 'customer-1', roles: [Role.CUSTOMER] }),
+      } as never,
+      { createMessage } as never,
+    );
+
+    await expect(gateway.createMessage({} as never, payload)).resolves.toEqual({
+      ok: false,
+      error: 'CHAT_INVALID_PAYLOAD',
+    });
+    expect(createMessage).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed room joins before checking room access', async () => {
+    const canAccessChatRoom = vi.fn();
+    const gateway = new ChatGateway(
+      {
+        requireCurrentUser: vi.fn().mockResolvedValue({ id: 'customer-1', roles: [Role.CUSTOMER] }),
+      } as never,
+      { canAccessChatRoom } as never,
+    );
+
+    await expect(gateway.joinChatRoom({} as never, { chatRoomId: 'x'.repeat(129) })).resolves.toEqual({
+      ok: false,
+      error: 'CHAT_INVALID_PAYLOAD',
+    });
+    expect(canAccessChatRoom).not.toHaveBeenCalled();
+  });
 });

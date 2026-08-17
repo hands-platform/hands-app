@@ -188,6 +188,7 @@ describe('ChatService message validation', () => {
         bookingId: 'booking-1',
         chatRoomId: 'chat-room-1',
       },
+      sourceKey: 'chat-message:message-1:partner-user',
     });
   });
 

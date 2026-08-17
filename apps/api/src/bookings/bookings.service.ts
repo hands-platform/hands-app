@@ -726,6 +726,10 @@ export class BookingsService {
     let booking: OpenBookingForClientResponse = creation.booking;
 
     if (creation.replayed) {
+      booking = await this.resumeUnstartedBookingPaymentAuthorization(
+        booking,
+        requiresPostBookingAuthorization,
+      );
       if (booking.status === BookingStatus.CREATED) {
         await this.scheduleBookingPaymentStatusCheck(booking);
         return clientBookingResponse(booking);
@@ -1339,6 +1343,22 @@ export class BookingsService {
 
     const payment = await this.payments.refreshAuthorizationForBooking(booking.payment.id, booking.id);
     return { ...booking, payment };
+  }
+
+  private async resumeUnstartedBookingPaymentAuthorization(
+    booking: OpenBookingForClientResponse,
+    requiresPostBookingAuthorization: boolean,
+  ) {
+    if (
+      booking.status !== BookingStatus.CREATED ||
+      !booking.payment ||
+      jsonObject(booking.payment.rawMeta).authorizationState !== 'PENDING'
+    ) {
+      return booking;
+    }
+
+    const authorized = await this.refreshBookingPaymentAuthorization(booking);
+    return this.openBookingAfterPaymentAuthorization(authorized, requiresPostBookingAuthorization);
   }
 
   async recoverCreatedBookingAfterPayment(bookingId: string, paymentId: string) {
@@ -3370,6 +3390,7 @@ export class BookingsService {
   }) {
     await this.notifications.create({
       userId: input.customerUserId,
+      sourceKey: `booking:${input.bookingId}:booking.cancelled.post-match:${input.customerUserId}`,
       targetRole: Role.CUSTOMER,
       type: 'booking.cancelled',
       title: 'Booking cancelled',
@@ -4049,7 +4070,7 @@ function safeBookingCompletionErrorMessage(error: unknown) {
 }
 
 function bookingPostCommitEffectRetryable(label: string) {
-  return label.startsWith('matching-') || label.includes('realtime');
+  return label.startsWith('matching-') || label.includes('realtime') || label.includes('notification');
 }
 
 function appendDatedBookingNote(existingNotes: string | null | undefined, message: string, now = new Date()) {

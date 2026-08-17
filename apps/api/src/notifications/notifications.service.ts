@@ -53,6 +53,7 @@ export type CreateNotificationInput = {
   type: string;
   locale?: string;
   resolveTemplate?: boolean;
+  sourceKey?: string;
   title: string;
   body: string;
   data?: unknown;
@@ -157,7 +158,14 @@ export class NotificationsService {
             targetRole: targetRole ?? undefined,
             type: input.type,
           });
-    const traceableData = addManagedTemplateKey(input.data, templateKey);
+    const sourceKey = input.sourceKey?.trim();
+    if (sourceKey && sourceKey.length > 200) {
+      throw new InternalServerErrorException('Notification source key is too long');
+    }
+    const traceableData = addNotificationSourceKey(
+      addManagedTemplateKey(input.data, templateKey),
+      sourceKey,
+    );
     const data = notificationDataWithDeliveryContract(
       notificationDataWithTargetRole(traceableData, targetRole ?? undefined),
       deliveryIntent,
@@ -170,14 +178,29 @@ export class NotificationsService {
       input.resolveTemplate === false || !templateKey
         ? fallback
         : await this.resolveNotificationCopy(scopedInput, templateKey, fallback);
-    return this.prisma.notification.create({
-      data: {
-        userId: input.userId,
-        type: input.type,
-        title: copy.title,
-        body: copy.body,
-        data: toJson(data),
-      },
+    const createData = {
+      userId: input.userId,
+      type: input.type,
+      title: copy.title,
+      body: copy.body,
+      data: toJson(data),
+    };
+    if (!sourceKey) {
+      return this.prisma.notification.create({ data: createData });
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`notification:${sourceKey}`}, 0))`,
+      );
+      const existing = await tx.notification.findFirst({
+        where: {
+          userId: input.userId,
+          type: input.type,
+          data: { path: ['sourceKey'], equals: sourceKey },
+        },
+      });
+      return existing ?? tx.notification.create({ data: createData });
     });
   }
 
@@ -552,6 +575,12 @@ function addManagedTemplateKey(data: unknown, templateKey: string | null) {
   if (!templateKey) return data;
   const record = readPlainRecord(data);
   return { ...(record ?? {}), managedTemplateKey: templateKey };
+}
+
+function addNotificationSourceKey(data: unknown, sourceKey: string | undefined) {
+  if (!sourceKey) return data;
+  const record = readPlainRecord(data);
+  return { ...(record ?? {}), sourceKey };
 }
 
 function assertResolvedNotificationCopy(

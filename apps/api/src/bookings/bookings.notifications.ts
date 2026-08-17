@@ -3,6 +3,7 @@ import { chatNotificationRoutingData } from '../notifications/notification-push-
 
 export type BookingNotificationPayload = {
   userId: string;
+  sourceKey: string;
   targetRole: Extract<Role, 'CUSTOMER' | 'PROVIDER'>;
   templateKey?: string;
   type: string;
@@ -25,6 +26,7 @@ export function bookingOpenedNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    sourceKey: bookingNotificationSourceKey('booking.opened', input.bookingId, input.userId),
     targetRole: Role.CUSTOMER,
     type: 'booking.opened',
     title: input.preferredProvider ? 'Booking request sent' : 'Booking opened',
@@ -46,6 +48,7 @@ export function preferredProviderRequestedNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    sourceKey: bookingNotificationSourceKey('booking.requested', input.bookingId, input.userId),
     targetRole: Role.PROVIDER,
     type: 'booking.requested',
     title: 'New direct booking request',
@@ -60,6 +63,7 @@ export function providerBookingCancelledNotification(
 ): BookingNotificationPayload {
   return {
     userId,
+    sourceKey: bookingNotificationSourceKey('booking.cancelled', bookingId, userId),
     targetRole: Role.PROVIDER,
     type: 'booking.cancelled',
     title: 'Booking cancelled',
@@ -76,6 +80,7 @@ export function customerBookingCancelledNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    sourceKey: bookingNotificationSourceKey('booking.cancelled', input.bookingId, input.userId),
     targetRole: Role.CUSTOMER,
     type: 'booking.cancelled',
     title: 'Booking cancelled',
@@ -95,6 +100,12 @@ export function customerProviderJoinedNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    sourceKey: bookingNotificationSourceKey(
+      'provider.joined',
+      input.bookingId,
+      input.userId,
+      input.provider.id,
+    ),
     targetRole: Role.CUSTOMER,
     templateKey: 'provider.joined',
     type: 'provider.joined',
@@ -114,6 +125,7 @@ export function selectedPartnerMatchedProviderNotification(
 ): BookingNotificationPayload {
   return {
     userId,
+    sourceKey: bookingNotificationSourceKey('booking.matched.selected', bookingId, userId),
     targetRole: Role.PROVIDER,
     templateKey: 'booking.matched.partner',
     type: 'booking.matched',
@@ -130,6 +142,7 @@ export function selectedPartnerMatchedCustomerNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    sourceKey: bookingNotificationSourceKey('booking.matched.selected', input.bookingId, input.userId),
     targetRole: Role.CUSTOMER,
     templateKey: 'booking.matched',
     type: 'booking.matched',
@@ -145,6 +158,7 @@ export function firstPickMatchedProviderNotification(
 ): BookingNotificationPayload {
   return {
     userId,
+    sourceKey: bookingNotificationSourceKey('booking.matched.first-pick', bookingId, userId),
     targetRole: Role.PROVIDER,
     templateKey: 'booking.matched.partner',
     type: 'booking.matched',
@@ -162,6 +176,7 @@ export function firstPickMatchedCustomerNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    sourceKey: bookingNotificationSourceKey('booking.matched.first-pick', input.bookingId, input.userId),
     targetRole: Role.CUSTOMER,
     templateKey: 'booking.matched',
     type: 'booking.matched',
@@ -182,6 +197,12 @@ export function customerFirstPickRejectedNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    sourceKey: bookingNotificationSourceKey(
+      'booking.rejected',
+      input.bookingId,
+      input.userId,
+      input.providerProfileId,
+    ),
     targetRole: Role.CUSTOMER,
     type: 'booking.rejected',
     title: 'Partner declined your booking',
@@ -197,6 +218,12 @@ export function customerMarketplaceProviderAcceptedNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    sourceKey: bookingNotificationSourceKey(
+      'provider.accepted',
+      input.bookingId,
+      input.userId,
+      input.provider.id,
+    ),
     targetRole: Role.CUSTOMER,
     templateKey: 'provider.accepted',
     type: 'provider.accepted',
@@ -217,6 +244,12 @@ export function customerMarketplaceProviderRejectedNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    sourceKey: bookingNotificationSourceKey(
+      'provider.rejected',
+      input.bookingId,
+      input.userId,
+      input.provider.id,
+    ),
     targetRole: Role.CUSTOMER,
     templateKey: 'provider.rejected',
     type: 'provider.rejected',
@@ -237,6 +270,7 @@ export function serviceStartedCustomerNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    sourceKey: bookingNotificationSourceKey('service.started', input.bookingId, input.userId),
     targetRole: Role.CUSTOMER,
     templateKey: 'service.started',
     type: 'service.started',
@@ -254,6 +288,7 @@ export function serviceStartedProviderNotification(input: {
   const chatRoomId = input.chatRoomId?.trim();
   return {
     userId: input.userId,
+    sourceKey: bookingNotificationSourceKey('service.started', input.bookingId, input.userId),
     targetRole: Role.PROVIDER,
     templateKey: 'service.started.partner',
     type: 'service.started',
@@ -276,6 +311,7 @@ export function customerServiceCompletedNotification(
 ): BookingNotificationPayload {
   return {
     userId,
+    sourceKey: bookingNotificationSourceKey('service.completed', bookingId, userId),
     targetRole: Role.CUSTOMER,
     type: 'service.completed',
     title: 'Service completed',
@@ -290,6 +326,7 @@ export function providerEarningCreatedNotification(
 ): BookingNotificationPayload {
   return {
     userId,
+    sourceKey: bookingNotificationSourceKey('earning.created', bookingId, userId),
     targetRole: Role.PROVIDER,
     type: 'earning.created',
     title: 'Earning created',
@@ -308,6 +345,12 @@ export function backupBookingAvailableNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    sourceKey: bookingNotificationSourceKey(
+      'booking.backup_available',
+      input.bookingId,
+      input.userId,
+      input.providerProfileId,
+    ),
     targetRole: Role.PROVIDER,
     type: 'booking.backup_available',
     title: 'Nearby booking available',
@@ -331,6 +374,11 @@ export function providerPayoutSetupRequiredNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    sourceKey: bookingNotificationSourceKey(
+      'provider.payout_setup_required',
+      input.bookingId,
+      input.userId,
+    ),
     targetRole: Role.PROVIDER,
     type: 'provider.payout_setup_required',
     title: 'Payout setup required',
@@ -341,4 +389,13 @@ export function providerPayoutSetupRequiredNotification(input: {
       missing: input.missing,
     },
   };
+}
+
+function bookingNotificationSourceKey(
+  event: string,
+  bookingId: string,
+  userId: string,
+  discriminator?: string,
+) {
+  return ['booking', bookingId, event, userId, discriminator].filter(Boolean).join(':');
 }

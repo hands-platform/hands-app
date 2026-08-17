@@ -159,20 +159,29 @@ export class ChatService {
     );
 
     for (const recipient of recipients) {
-      try {
-        await this.notifications.create({
-          userId: recipient.userId,
-          targetRole: recipient.targetRole,
-          type: 'chat.message.created',
-          title: 'New chat message',
-          body: 'A new message is available in your booking chat.',
-          data: chatNotificationRoutingData({
-            bookingId: chatRoom.bookingId,
-            chatRoomId,
-          }),
-        });
-      } catch (error) {
-        await this.recordNotificationFailure(chatMessageId, chatRoomId, recipient.userId, error);
+      let lastError: unknown;
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        try {
+          await this.notifications.create({
+            userId: recipient.userId,
+            sourceKey: `chat-message:${chatMessageId}:${recipient.userId}`,
+            targetRole: recipient.targetRole,
+            type: 'chat.message.created',
+            title: 'New chat message',
+            body: 'A new message is available in your booking chat.',
+            data: chatNotificationRoutingData({
+              bookingId: chatRoom.bookingId,
+              chatRoomId,
+            }),
+          });
+          lastError = undefined;
+          break;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      if (lastError) {
+        await this.recordNotificationFailure(chatMessageId, chatRoomId, recipient.userId, lastError);
       }
     }
   }

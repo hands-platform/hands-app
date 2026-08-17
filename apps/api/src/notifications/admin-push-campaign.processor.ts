@@ -25,7 +25,14 @@ export class AdminPushCampaignProcessor extends WorkerHost {
       where: { id: job.data.campaignId },
       include: { recipients: { orderBy: { createdAt: 'asc' } } },
     });
-    if (!campaign || !['QUEUED', 'PROCESSING'].includes(campaign.status)) {
+    const hasPendingRecipients = campaign?.recipients.some((recipient) =>
+      ['SNAPSHOTTED', 'PROCESSING'].includes(recipient.status),
+    );
+    if (
+      !campaign ||
+      (!['QUEUED', 'PROCESSING'].includes(campaign.status) &&
+        !(campaign.status === 'FAILED' && hasPendingRecipients))
+    ) {
       return { skipped: true, reason: 'CAMPAIGN_NOT_QUEUEABLE' };
     }
 

@@ -365,6 +365,58 @@ describe('BookingsService booking creation', () => {
     });
   });
 
+  it('resumes an unstarted gateway authorization when a CREATED booking is replayed', async () => {
+    const pendingBooking = {
+      id: 'booking-1',
+      status: BookingStatus.CREATED,
+      payment: {
+        id: 'payment-1',
+        method: PaymentMethod.MOMO,
+        rawMeta: { authorizationState: 'PENDING' },
+        status: PaymentStatus.PENDING,
+      },
+    };
+    const authorizedBooking = {
+      ...pendingBooking,
+      status: BookingStatus.OPEN_MATCHING,
+      payment: {
+        ...pendingBooking.payment,
+        rawMeta: { authorizationState: 'READY' },
+      },
+    };
+    const payments = {
+      refreshAuthorizationForBooking: vi.fn().mockResolvedValue(authorizedBooking.payment),
+    };
+    const service = new BookingsService(
+      {} as never,
+      {} as never,
+      {} as never,
+      payments as never,
+      {} as never,
+      {} as never,
+    );
+    const flow = service as unknown as {
+      openBookingAfterPaymentAuthorization(
+        booking: typeof pendingBooking,
+        required: boolean,
+      ): Promise<typeof authorizedBooking>;
+      resumeUnstartedBookingPaymentAuthorization(
+        booking: typeof pendingBooking,
+        required: boolean,
+      ): Promise<typeof authorizedBooking>;
+    };
+    flow.openBookingAfterPaymentAuthorization = vi.fn().mockResolvedValue(authorizedBooking);
+
+    await expect(
+      flow.resumeUnstartedBookingPaymentAuthorization(pendingBooking, true),
+    ).resolves.toEqual(authorizedBooking);
+    expect(payments.refreshAuthorizationForBooking).toHaveBeenCalledWith('payment-1', 'booking-1');
+    expect(flow.openBookingAfterPaymentAuthorization).toHaveBeenCalledWith(
+      expect.objectContaining({ payment: authorizedBooking.payment }),
+      true,
+    );
+  });
+
   it('reserves an authorized customer wallet payment under a customer-scoped database lock', async () => {
     const booking = {
       id: 'booking-wallet-1',
@@ -1206,7 +1258,7 @@ describe('BookingsService booking creation', () => {
 });
 
 describe('BookingsService booking-open delivery isolation', () => {
-  it('continues preferred Partner notification and realtime when the customer notification fails', async () => {
+  it('retries the customer notification and continues preferred Partner notification and realtime', async () => {
     const notifications = {
       create: vi
         .fn()
@@ -1241,7 +1293,7 @@ describe('BookingsService booking-open delivery isolation', () => {
       userId: 'customer-user-1',
     });
 
-    expect(notifications.create).toHaveBeenCalledTimes(2);
+    expect(notifications.create).toHaveBeenCalledTimes(3);
     expect(matchingGateway.emitDirectBookingRequested).toHaveBeenCalledWith('partner-user-1', 'booking-1', {
       bookingId: 'booking-1',
     });

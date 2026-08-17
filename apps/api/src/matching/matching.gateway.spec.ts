@@ -379,4 +379,28 @@ describe('MatchingGateway admin booking realtime', () => {
       gateway.joinBookingRoom(client as never, { bookingId: 'booking-1' }),
     ).resolves.toEqual({ ok: false, error: 'BOOKING_ROOM_JOIN_FAILED' });
   });
+
+  it.each([null, {}, { bookingId: '' }, { bookingId: 'x'.repeat(129) }])(
+    'rejects malformed booking room payloads before authorization queries',
+    async (payload) => {
+      const prisma = {
+        customerProfile: { findUnique: vi.fn() },
+        providerProfile: { findUnique: vi.fn() },
+        booking: { findFirst: vi.fn() },
+      };
+      const gateway = new MatchingGateway(
+        {
+          requireCurrentUser: vi.fn().mockResolvedValue({ id: 'customer-1', roles: [Role.CUSTOMER] }),
+        } as never,
+        prisma as never,
+      );
+
+      await expect(gateway.joinBookingRoom({} as never, payload)).resolves.toEqual({
+        ok: false,
+        error: 'BOOKING_INVALID_PAYLOAD',
+      });
+      expect(prisma.customerProfile.findUnique).not.toHaveBeenCalled();
+      expect(prisma.booking.findFirst).not.toHaveBeenCalled();
+    },
+  );
 });

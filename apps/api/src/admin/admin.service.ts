@@ -3576,15 +3576,46 @@ export class AdminService {
   ) {
     await Promise.all(
       effects.map(async (effect) => {
-        try {
-          await effect.run();
-        } catch (error) {
+        let lastError: unknown;
+        for (let attempt = 1; attempt <= 3; attempt += 1) {
+          try {
+            await effect.run();
+            return;
+          } catch (error) {
+            lastError = error;
+            if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 25 * attempt));
+          }
+        }
+        if (lastError) {
           this.logger.error(
             `Admin booking ${bookingId} committed, but post-commit effect ${effect.label} failed: ${
-              error instanceof Error ? error.message : String(error)
+              lastError instanceof Error ? lastError.message : String(lastError)
             }`,
-            error instanceof Error ? error.stack : undefined,
+            lastError instanceof Error ? lastError.stack : undefined,
           );
+          await this.prisma.adminAuditLog.create({
+            data: {
+              actorId: null,
+              actorKey: 'admin-booking-post-commit-effects',
+              actorType: 'SYSTEM',
+              action: 'booking.post_commit_effect.failed',
+              area: 'BOOKING',
+              objectId: bookingId,
+              objectType: 'Booking',
+              outcome: 'FAILED',
+              severity: 'REVIEW',
+              source: 'admin_service',
+              target: `booking:${bookingId}`,
+              metadata: {
+                bookingId,
+                effect: effect.label,
+                attempts: 3,
+                error: lastError instanceof Error
+                  ? lastError.message.slice(0, 500)
+                  : String(lastError).slice(0, 500),
+              },
+            },
+          }).catch(() => undefined);
         }
       }),
     );
@@ -15989,6 +16020,7 @@ export class AdminService {
         run: () =>
           this.notifications.create({
             userId: updated.customerProfile.userId,
+            sourceKey: `booking:${bookingId}:booking.no_show:${updated.customerProfile.userId}`,
             targetRole: Role.CUSTOMER,
             type: 'booking.no_show',
             title: 'No-show under review',
@@ -16003,6 +16035,7 @@ export class AdminService {
             [...partnerUserIds].map((userId) =>
               this.notifications.create({
                 userId,
+                sourceKey: `booking:${bookingId}:booking.no_show:${userId}`,
                 targetRole: Role.PROVIDER,
                 type: 'booking.no_show',
                 title: 'Booking marked no-show',
