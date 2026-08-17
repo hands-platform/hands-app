@@ -30,11 +30,11 @@ const vuexyTemplateAnchors = [
   'src/views/apps/calendar/AddEventSidebar.tsx',
   'src/views/apps/calendar/Calendar.tsx',
 ] as const;
+const localFigmaSourcesAvailable = existsSync(figmaSourcePath) && existsSync(repoFigmaMirrorPath);
+const localVuexySourcesAvailable = localFigmaSourcesAvailable && existsSync(vuexyTemplatePath);
 
 describe('Admin Vuexy source documentation', () => {
   it('documents the exact local Figma file and Vuexy template paths used for Admin design work', () => {
-    expect(existsSync(figmaSourcePath)).toBe(true);
-    expect(existsSync(vuexyTemplatePath)).toBe(true);
     expect(architectureDoc).toContain(figmaSourcePath);
     expect(architectureDoc).toContain(vuexyTemplatePath);
     expect(comparisonDoc).toContain(figmaSourcePath);
@@ -42,18 +42,12 @@ describe('Admin Vuexy source documentation', () => {
   });
 
   it('documents the local Figma package format so future design work uses the right source path', () => {
-    const figmaHeader = readFileSync(figmaSourcePath).subarray(0, 256);
-
-    expect(figmaHeader.subarray(0, 2).toString('utf8')).toBe('PK');
-    expect(figmaHeader.toString('utf8')).toContain('canvas.fig');
-    expect(figmaHeader.toString('utf8')).toContain('fig-kiwi');
     expect(comparisonDoc).toContain('ZIP package');
     expect(comparisonDoc).toContain('fig-kiwi');
     expect(comparisonDoc).toContain('thumbnail.png');
   });
 
   it('documents the gitignored repo-local Figma mirror for local design checks', () => {
-    expect(existsSync(repoFigmaMirrorPath)).toBe(true);
     expect(gitignore).toContain('design/figma/*.fig');
     expect(figmaReadme).toContain('large binary asset');
     expect(figmaReadme).toContain('Current workspace mirror');
@@ -63,23 +57,14 @@ describe('Admin Vuexy source documentation', () => {
   });
 
   it('documents the verified SHA256 identity for the source Figma package and workspace mirror', () => {
-    const sourceHash = sha256File(figmaSourcePath);
-    const mirrorHash = sha256File(repoFigmaMirrorPath);
-
-    expect(sourceHash).toBe(figmaSourceSha256);
-    expect(mirrorHash).toBe(figmaSourceSha256);
     expect(figmaReadme).toContain(figmaSourceSha256);
     expect(comparisonDoc).toContain(figmaSourceSha256);
   });
 
   it('documents the verified Figma package metadata and the local Vuexy implementation anchors', () => {
-    const meta = readFigmaMeta();
-
-    expect(meta.file_name).toBe('vuexy-figma-admin-dashboard-ui-kit');
     expect(comparisonDoc).toContain('vuexy-figma-admin-dashboard-ui-kit');
 
     for (const anchor of vuexyTemplateAnchors) {
-      expect(existsSync(`${vuexyTemplatePath}/${anchor}`)).toBe(true);
       expect(architectureDoc).toContain(anchor);
       expect(comparisonDoc).toContain(anchor);
     }
@@ -97,6 +82,23 @@ describe('Admin Vuexy source documentation', () => {
     for (const guardFile of guardFiles) {
       expect(existsSync(resolve(repoRoot, 'apps/admin_web', guardFile)), `${guardFile} should exist`).toBe(true);
       expect(designGoalDoc).toContain(guardFile);
+    }
+  });
+
+  it.skipIf(!localFigmaSourcesAvailable)('verifies the local Figma packages against the documented identity', () => {
+    const figmaHeader = readFileSync(figmaSourcePath).subarray(0, 256);
+
+    expect(figmaHeader.subarray(0, 2).toString('utf8')).toBe('PK');
+    expect(figmaHeader.toString('utf8')).toContain('canvas.fig');
+    expect(figmaHeader.toString('utf8')).toContain('fig-kiwi');
+    expect(sha256File(figmaSourcePath)).toBe(figmaSourceSha256);
+    expect(sha256File(repoFigmaMirrorPath)).toBe(figmaSourceSha256);
+    expect(readFigmaMeta().file_name).toBe('vuexy-figma-admin-dashboard-ui-kit');
+  });
+
+  it.skipIf(!localVuexySourcesAvailable)('verifies the documented local Vuexy implementation anchors', () => {
+    for (const anchor of vuexyTemplateAnchors) {
+      expect(existsSync(`${vuexyTemplatePath}/${anchor}`)).toBe(true);
     }
   });
 });
