@@ -31,7 +31,9 @@ describe('OperationsPolicyForm', () => {
     expect(validatePolicyChange(setting, '12', 'short', true).reason).toContain('12 characters');
     expect(validatePolicyChange(setting, '12', 'Long enough reason', false).confirmed).toContain('Confirm');
     expect(validatePolicyChange(setting, '2', 'Long enough reason', true).value).toContain('at least 3');
-    expect(validatePolicyChange(setting, '31', 'Long enough reason', true).value).toContain('no greater than 30');
+    expect(validatePolicyChange(setting, '31', 'Long enough reason', true).value).toContain(
+      'no greater than 30',
+    );
     expect(validatePolicyChange(setting, '12', 'Long enough reason', true)).toEqual({});
   });
 
@@ -42,7 +44,7 @@ describe('OperationsPolicyForm', () => {
     expect(source).toContain('errorSummaryRef.current?.focus()');
     expect(source).toContain('Open audit record');
     expect(source).toContain('Revert to Before');
-    expect(source).toContain("name=\"intent\"");
+    expect(source).toContain('name="intent"');
     expect(source).toContain('hasUnsavedChanges');
     expect(source).toContain('if (isPending)');
     expect(source).toContain("isPending ? 'Saving policy…'");
@@ -51,8 +53,9 @@ describe('OperationsPolicyForm', () => {
     expect(source).not.toContain("destination.pathname !== '/operations-policy'");
     expect(source).toContain('confirmedNavigationRef.current = true');
     expect(source).toContain('if (confirmedNavigationRef.current)');
-    expect(source).toContain('window.sessionStorage.setItem(draftStorageKey');
+    expect(source).toMatch(/window\.sessionStorage\.setItem\(\s*draftStorageKey/);
     expect(source).toContain('window.sessionStorage.removeItem(draftStorageKey)');
+    expect(source).toContain('const restoreTimer = window.setTimeout');
     expect(source).toContain('window.history.forward()');
     expect(source).toContain("event.returnValue = ''");
   });

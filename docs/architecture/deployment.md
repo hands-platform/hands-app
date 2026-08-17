@@ -53,6 +53,8 @@ The deployment scripts pass the selected environment file to Compose as both its
 
 The scripted flow builds images, starts only PostgreSQL/Redis/MinIO, runs `prisma migrate deploy` in a one-off API container, and starts API/Admin/Nginx only after migration succeeds. It never runs reset, development migration, or seed implicitly.
 
+Before a production deployment, record the release commit, image or artifact identifiers, migration directories included in the release, and the last verified backup. The deploy scripts build from the current checkout; the release owner must retain the previous deployable artifact or commit before replacing it. Follow [Release Rollback And Incident Response](../runbooks/release-rollback-incident-response.md) for go/no-go, rollback, and incident evidence.
+
 ## Nginx Routing
 
 `infra/nginx/nginx.conf` separates production hosts so Admin Web route handlers are not intercepted by the Nest API proxy:
@@ -96,3 +98,5 @@ The script fails on missing required runtime values and warns about recommended 
 - Schedule database backups and test restore on staging.
 - Use `infra/scripts/collect-logs.*` when investigating staging or production issues.
 - Run `npm.cmd run api:smoke` against staging after deployment.
+- Record a successful isolated restore drill using [Backup And Restore](backup-restore.md) before relying on a backup for production recovery.
+- Confirm the previous application artifact remains deployable and review the rollback decision tree before opening production traffic.

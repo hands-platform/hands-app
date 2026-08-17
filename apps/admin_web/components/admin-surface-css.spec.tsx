@@ -100,8 +100,7 @@ describe('Admin surface CSS', () => {
     const inlineBlock = cssRuleBlockAt(inlineIndex);
     const inlineIconIndex = globalsCss.indexOf('.admin-inline-notice-icon {');
     const inlineIconBlock = cssRuleBlockAt(inlineIconIndex);
-    const cardIndex = globalsCss.indexOf('.admin-notice-card {');
-    const cardBlock = cssRuleBlockAt(cardIndex);
+    const cardBlock = cssRuleBlock('.admin-notice-card {');
     const cardIconIndex = globalsCss.indexOf('.admin-notice-card-icon {');
     const cardIconBlock = cssRuleBlockAt(cardIconIndex);
 

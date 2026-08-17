@@ -129,7 +129,7 @@ describe('admin navigation', () => {
     expect(finance.workspaceHrefs).toContain('/finance-tax/monthly-tax-closing');
     expect(finance.workspaceHrefs).toContain('/finance-tax/payment-fees');
     expect(finance.workspaceHrefs).not.toContain('/finance-tax/payment-fees?settings=policy');
-    expect(finance.sidebarHrefs).not.toContain('/finance-tax/company-bank-accounts');
+    expect(finance.sidebarHrefs).toContain('/finance-tax/company-bank-accounts');
 
     expect(master.allDestinations).toEqual(allAdminNavSections.flatMap(adminNavSectionDestinations));
     expect(master.localGroups).toContain('System Health');

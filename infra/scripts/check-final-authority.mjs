@@ -150,10 +150,11 @@ function checkOnDemandBookingContract() {
     'HANDS MVP is on-demand only',
     'const timing = openBookingRequestTiming({',
   ]);
-  requireMarkers('apps/api/src/bookings/bookings.lifecycle.ts', read('apps/api/src/bookings/bookings.lifecycle.ts'), [
-    'const openedAt = input.openedAt ?? new Date();',
-    'scheduledStartAt: openedAt',
-  ]);
+  requireMarkers(
+    'apps/api/src/bookings/bookings.lifecycle.ts',
+    read('apps/api/src/bookings/bookings.lifecycle.ts'),
+    ['const openedAt = input.openedAt ?? new Date();', 'scheduledStartAt: openedAt'],
+  );
   requireMarkers('infra/scripts/api-smoke.mjs', smoke, [
     'Customer-supplied scheduledStartAt should not create scheduled booking',
     'ignoredFutureScheduledStartAt',
@@ -176,7 +177,11 @@ function checkAddressBasedBookingContract() {
     rejectMarker('apps/api/src/bookings/bookings.service.ts', service, marker);
   }
 
-  rejectMarker('apps/customer_app/lib/main.dart', customerApp, 'Please refresh your current GPS before booking');
+  rejectMarker(
+    'apps/customer_app/lib/main.dart',
+    customerApp,
+    'Please refresh your current GPS before booking',
+  );
   requireMarkers('apps/api/src/bookings/bookings.service.ts', service, [
     'const customerCurrentLocation = normalizeBookingAttemptCurrentLocation(',
     'preferredProviderBookingDistanceGateError',
@@ -208,7 +213,7 @@ function checkCustomerFinalSelectionContract() {
     'FIRST_PICK_ACCEPTED_FIRST',
     'Booking is already matched or no longer open for first-pick acceptance',
     'matchCustomerSelectedProvider',
-    'announceCustomerSelectedPartnerMatched',
+    'notifyCustomerSelectedPartnerMatched',
   ]);
   requireMarkers('apps/api/src/bookings/bookings.participants.ts', participants, [
     'selectedProviderId: input.providerProfileId',
@@ -287,8 +292,10 @@ function checkPayoutBatchContract() {
   const matchingPolicy = read('apps/api/src/matching/matching.policy.ts');
   const adminEarnings = read('apps/admin_web/app/earnings/page.tsx');
   const adminEarningsLedger = read('apps/admin_web/app/earnings/earnings-ledger-section.tsx');
-  const operationsPolicy = read('apps/admin_web/app/operations-policy/page.tsx');
-  const actionGatePolicyChecklist = read('apps/admin_web/app/operations-policy/action-gate-policy-checklist.ts');
+  const actionGatePolicyChecklist = read(
+    'apps/admin_web/app/operations-policy/action-gate-policy-checklist.ts',
+  );
+  const operationsPolicyForm = read('apps/admin_web/app/operations-policy/operations-policy-form.tsx');
   const policyImpactDetails = read('apps/admin_web/app/operations-policy/policy-impact-details.ts');
   const smoke = read('infra/scripts/api-smoke.mjs');
   requireMarkers('apps/api/src/earnings/earnings.policy.ts', earningsPolicy, [
@@ -298,13 +305,11 @@ function checkPayoutBatchContract() {
     "export const PAYOUT_BATCH_CYCLE_POLICY_KEY = 'payout.batch_cycle_policy';",
     'Payout remains batch-based and admin-controlled',
   ]);
-  requireMarkers('apps/admin_web/app/earnings/page.tsx', adminEarnings, [
-    'return isCashDebt(earning);',
-  ]);
+  requireMarkers('apps/admin_web/app/earnings/page.tsx', adminEarnings, ['return isCashDebt(earning);']);
   requireMarkers('apps/admin_web/app/earnings/earnings-ledger-section.tsx', adminEarningsLedger, [
     'payout batching, and cash',
   ]);
-  requireMarkers('apps/admin_web/app/operations-policy/page.tsx', operationsPolicy, [
+  requireMarkers('apps/admin_web/app/operations-policy/operations-policy-form.tsx', operationsPolicyForm, [
     'id={operationalPolicyAnchor(setting.key)}',
   ]);
   requireMarkers(
@@ -393,21 +398,25 @@ function checkLegacyRiskRoutesAreRedirectOnly() {
 
   for (const dir of ['apps/admin_web/app/provider-risk', 'apps/admin_web/app/partner-risk']) {
     for (const file of [...listFilesIfExists(dir, '.ts'), ...listFilesIfExists(dir, '.tsx')]) {
-      fail(file, 'Legacy risk route must stay redirect-only. Use /partner-controls or /partners for admin work.');
+      fail(
+        file,
+        'Legacy risk route must stay redirect-only. Use /partner-controls or /partners for admin work.',
+      );
     }
   }
 
-  requireMarkers('apps/admin_web/app/providers/legacy-provider-redirect.ts', read('apps/admin_web/app/providers/legacy-provider-redirect.ts'), [
-    'buildLegacyPartnerQueryString',
-    'new URLSearchParams()',
-  ]);
+  requireMarkers(
+    'apps/admin_web/app/providers/legacy-provider-redirect.ts',
+    read('apps/admin_web/app/providers/legacy-provider-redirect.ts'),
+    ['buildLegacyPartnerQueryString', 'new URLSearchParams()'],
+  );
   requireMarkers('apps/admin_web/app/providers/page.tsx', read('apps/admin_web/app/providers/page.tsx'), [
-    "redirect(`/partners${buildLegacyPartnerQueryString(searchParams ? await searchParams : {})}`);",
+    'redirect(`/partners${buildLegacyPartnerQueryString(searchParams ? await searchParams : {})}`);',
   ]);
   requireMarkers(
     'apps/admin_web/app/providers/[id]/page.tsx',
     read('apps/admin_web/app/providers/[id]/page.tsx'),
-    ["redirect(`/partners/${id}${buildLegacyPartnerQueryString(searchParams ? await searchParams : {})}`);"],
+    ['redirect(`/partners/${id}${buildLegacyPartnerQueryString(searchParams ? await searchParams : {})}`);'],
   );
 }
 
@@ -506,20 +515,19 @@ function checkAdminPeopleManagementIsFactual() {
   const adminSmoke = read('infra/scripts/admin-web-smoke.mjs');
 
   requireMarkers('apps/admin_web/app/customers/page.tsx', customerList, [
-    'Total customers',
     'Customer directory',
     'completed work',
-    'Last activity',
+    'Current situation',
+    'allCustomerCount',
   ]);
   requireMarkers('apps/admin_web/app/customers/[id]/page.tsx', customerDetail, [
     'Profile and contact',
-    'Booking history',
+    'paymentTypeLabel',
     'Current / In Progress',
     'Pre-match Cancellations',
     'Partner Cancellations',
-    'Payment Type',
     'customer-chat-history-section',
-    'Admin archive for every matched booking',
+    'retained messages remain available to operations',
   ]);
   requireMarkers('apps/admin_web/app/partners/page.tsx', partnerList, [
     'PartnerMasterListSection',
@@ -531,9 +539,11 @@ function checkAdminPeopleManagementIsFactual() {
     'row.completedWorkCount',
     'Last work',
   ]);
-  requireMarkers('apps/admin_web/app/partners/[id]/partner-detail-operating-ledger-section.tsx', read('apps/admin_web/app/partners/[id]/partner-detail-operating-ledger-section.tsx'), [
-    'Partner operating ledger',
-  ]);
+  requireMarkers(
+    'apps/admin_web/app/partners/[id]/partner-detail-operating-ledger-section.tsx',
+    read('apps/admin_web/app/partners/[id]/partner-detail-operating-ledger-section.tsx'),
+    ['Partner operating ledger'],
+  );
   requireMarkers('apps/admin_web/app/partners/[id]/page.tsx', partnerDetail, [
     'Partner chat retention ledger',
     'Customer final selection creates the Partner chat',
@@ -556,24 +566,21 @@ function checkAdminDashboardOperationsCoverage() {
   const dashboard = read('apps/admin_web/app/page.tsx');
   const dashboardDoc = read('docs/architecture/operations-dashboard.md');
   const adminSmoke = read('infra/scripts/admin-web-smoke.mjs');
-  const requiredKpis = [
-    'Start Shift',
-    'Needs action now',
-    'Live now',
+  const requiredDashboardMarkers = [
+    'Shift Command',
+    'Next action',
+    'Open queues',
     'Money status',
     'Additional work',
     'Today result',
     'Customer and Partner leaders',
     'Demand and supply',
-    'Matching now',
     'Customer choice',
     'In service',
-    'Ready Partners',
-    'Payment holds',
-    'Cash debt',
+    'Ready Partner location',
   ];
 
-  requireMarkers('apps/admin_web/app/page.tsx', dashboard, requiredKpis);
+  requireMarkers('apps/admin_web/app/page.tsx', dashboard, requiredDashboardMarkers);
   requireMarkers('docs/architecture/operations-dashboard.md', dashboardDoc, [
     'Admin home page is the first shift screen',
     'Total booking volume',
@@ -586,7 +593,15 @@ function checkAdminDashboardOperationsCoverage() {
     'Active app presence',
     'Partner supply',
   ]);
-  requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, requiredKpis);
+  requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, [
+    'Shift Command',
+    'Next action',
+    'Open queues',
+    'Money status',
+    'Today result',
+    'In service',
+    'Open handoff',
+  ]);
 }
 
 function checkBookingDetailIsSourceOfTruth() {
@@ -620,13 +635,23 @@ function checkOperationsPolicyControlPlane() {
   const matchingPolicy = read('apps/api/src/matching/matching.policy.ts');
   const operationsPolicy = read('apps/admin_web/app/operations-policy/page.tsx');
   const policyEnforcementTrace = read('apps/admin_web/app/operations-policy/policy-enforcement-trace.ts');
-  const operationsOwnerDecisionBacklog = read('apps/admin_web/app/operations-policy/owner-decision-backlog.ts');
+  const operationsOwnerDecisionBacklog = read(
+    'apps/admin_web/app/operations-policy/owner-decision-backlog.ts',
+  );
   const operationsMatchingPlaybook = read('apps/admin_web/app/operations-policy/matching-playbook.ts');
+  const operationsPolicyWorkspace = [
+    operationsPolicy,
+    read('apps/admin_web/app/operations-policy/operations-policy-final-partner-choice-section.tsx'),
+    read('apps/admin_web/app/operations-policy/operations-policy-matching-stage-impact-section.tsx'),
+    read('apps/admin_web/app/operations-policy/operations-policy-enforcement-trace-section.tsx'),
+    read('apps/admin_web/app/operations-policy/operations-policy-form.tsx'),
+    read('apps/admin_web/app/operations-policy/booking-acceptance-matrix.ts'),
+  ].join('\n');
   const apiPolicyCoverage = read('infra/scripts/check-api-policy-coverage.mjs');
   const adminSmoke = read('infra/scripts/admin-web-smoke.mjs');
 
   requireMarkers('apps/api/src/matching/matching.policy.ts', matchingPolicy, [
-    "export const DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES = 10;",
+    'export const DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES = 10;',
     'export const DEFAULT_BACKUP_PROVIDER_RADIUS_METERS = 10000;',
     "export const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';",
     "export const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';",
@@ -635,7 +660,7 @@ function checkOperationsPolicyControlPlane() {
     'First-pick partner acceptance can match first under API rules',
     'No policy can automatically assign the final partner.',
   ]);
-  requireMarkers('apps/admin_web/app/operations-policy/page.tsx', operationsPolicy, [
+  requireMarkers('apps/admin_web/app/operations-policy', operationsPolicyWorkspace, [
     'Final partner choice control matrix',
     'Current partner acceptance impact',
     'Matching stage impact preview',
@@ -645,8 +670,8 @@ function checkOperationsPolicyControlPlane() {
     'OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes',
     'OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters',
     'OPERATIONAL_POLICY_KEYS.walletNegativeGate',
-    'Keep first-pick priority with customer fallback.',
-    'The preferred Partner can match first under API rules, marketplace Partners can still enter the shortlist, and the customer chooses only when first-pick does not win.',
+    'Keep first-pick priority with customer fallback before production rollout.',
+    'Customer fallback selection applies when first-pick does not validly match first.',
   ]);
   requireMarkers('apps/admin_web/app/operations-policy/policy-enforcement-trace.ts', policyEnforcementTrace, [
     "api: 'POST /customer/bookings'",
@@ -655,11 +680,15 @@ function checkOperationsPolicyControlPlane() {
     'Negative wallet gates final acceptance and service start',
     'Cash-service company fee debt is enforced before final acceptance',
   ]);
-  requireMarkers('apps/admin_web/app/operations-policy/owner-decision-backlog.ts', operationsOwnerDecisionBacklog, [
-    'Marketplace partner radius',
-    'Negative wallet direct-request boundary',
-    'href: operationalPolicyHref(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)',
-  ]);
+  requireMarkers(
+    'apps/admin_web/app/operations-policy/owner-decision-backlog.ts',
+    operationsOwnerDecisionBacklog,
+    [
+      'Marketplace partner radius',
+      'Negative wallet direct-request boundary',
+      'href: operationalPolicyHref(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)',
+    ],
+  );
   requireMarkers('apps/admin_web/app/operations-policy/matching-playbook.ts', operationsMatchingPlaybook, [
     'Customer picks one first-pick partner',
     'Marketplace partners can participate by policy',

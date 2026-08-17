@@ -19,10 +19,7 @@ import { StatusBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { AdminOperationalPolicySetting } from '../../lib/admin-api';
 import { operationalPolicyAnchor } from '../../lib/operations-policy';
-import {
-  initialOperationsPolicyActionState,
-  updateOperationalPolicy,
-} from './actions';
+import { initialOperationsPolicyActionState, updateOperationalPolicy } from './actions';
 import { policyImpactDetails } from './policy-impact-details';
 import { policyDisplayValue } from './policy-value-display';
 
@@ -45,17 +42,28 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
   const [reason, setReason] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [confirmationLabel, setConfirmationLabel] = useState('');
-  const [touched, setTouched] = useState({ confirmationLabel: false, confirmed: false, reason: false, value: false });
+  const [touched, setTouched] = useState({
+    confirmationLabel: false,
+    confirmed: false,
+    reason: false,
+    value: false,
+  });
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const errorSummaryRef = useRef<HTMLDivElement>(null);
   const confirmedNavigationRef = useRef(false);
   const validation = validatePolicyChange(setting, nextValue, reason, confirmed, confirmationLabel);
-  const valueError = actionState.fieldErrors?.value ?? (touched.value || submitAttempted ? validation.value : undefined);
-  const reasonError = actionState.fieldErrors?.reason ?? (touched.reason || submitAttempted ? validation.reason : undefined);
-  const confirmationError = actionState.fieldErrors?.confirmed ?? (touched.confirmed || submitAttempted ? validation.confirmed : undefined);
-  const labelError = actionState.fieldErrors?.confirmationLabel ??
+  const valueError =
+    actionState.fieldErrors?.value ?? (touched.value || submitAttempted ? validation.value : undefined);
+  const reasonError =
+    actionState.fieldErrors?.reason ?? (touched.reason || submitAttempted ? validation.reason : undefined);
+  const confirmationError =
+    actionState.fieldErrors?.confirmed ??
+    (touched.confirmed || submitAttempted ? validation.confirmed : undefined);
+  const labelError =
+    actionState.fieldErrors?.confirmationLabel ??
     (touched.confirmationLabel || submitAttempted ? validation.confirmationLabel : undefined);
-  const isDirty = nextValue !== String(setting.value) || reason.length > 0 || confirmed || confirmationLabel.length > 0;
+  const isDirty =
+    nextValue !== String(setting.value) || reason.length > 0 || confirmed || confirmationLabel.length > 0;
   const hasUnsavedChanges = actionState.status !== 'success' && isDirty;
   const canSubmit =
     !isPending &&
@@ -80,10 +88,13 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
         nextValue?: string;
         reason?: string;
       };
-      if (typeof draft.nextValue === 'string') setNextValue(draft.nextValue);
-      if (typeof draft.reason === 'string') setReason(draft.reason);
-      if (typeof draft.confirmed === 'boolean') setConfirmed(draft.confirmed);
-      if (typeof draft.confirmationLabel === 'string') setConfirmationLabel(draft.confirmationLabel);
+      const restoreTimer = window.setTimeout(() => {
+        if (typeof draft.nextValue === 'string') setNextValue(draft.nextValue);
+        if (typeof draft.reason === 'string') setReason(draft.reason);
+        if (typeof draft.confirmed === 'boolean') setConfirmed(draft.confirmed);
+        if (typeof draft.confirmationLabel === 'string') setConfirmationLabel(draft.confirmationLabel);
+      }, 0);
+      return () => window.clearTimeout(restoreTimer);
     } catch {
       window.sessionStorage.removeItem(draftStorageKey);
     }
@@ -100,7 +111,8 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
         destination.href === window.location.href ||
         link.hasAttribute('download') ||
         link.getAttribute('target') === '_blank'
-      ) return;
+      )
+        return;
       if (isPending || !confirmDiscard()) {
         event.preventDefault();
         event.stopPropagation();
@@ -126,12 +138,15 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
         return;
       }
       if (hasUnsavedChanges && !confirmDiscard()) {
-        window.sessionStorage.setItem(draftStorageKey, JSON.stringify({
-          confirmationLabel,
-          confirmed,
-          nextValue,
-          reason,
-        }));
+        window.sessionStorage.setItem(
+          draftStorageKey,
+          JSON.stringify({
+            confirmationLabel,
+            confirmed,
+            nextValue,
+            reason,
+          }),
+        );
         window.history.forward();
       }
     };
@@ -168,7 +183,11 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
           </AdminFormControlLink>
         }
         description={displayOperationalWording(setting.description)}
-        status={<StatusBadge tone={risk === 'high' ? 'danger' : risk === 'medium' ? 'warning' : 'info'}>{risk} risk</StatusBadge>}
+        status={
+          <StatusBadge tone={risk === 'high' ? 'danger' : risk === 'medium' ? 'warning' : 'info'}>
+            {risk} risk
+          </StatusBadge>
+        }
         title={`Change ${displayOperationalWording(setting.label)}`}
       />
       <AdminTraceSummary
@@ -193,17 +212,13 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
         <strong>{impact.title}</strong>
         <p className="muted">{impact.detail}</p>
         <p className="muted admin-mt-6">
-          Saved changes take effect immediately unless a service restart is required. The policy value and audit
-          event are committed together.
+          Saved changes take effect immediately unless a service restart is required. The policy value and
+          audit event are committed together.
         </p>
       </AdminNotePanel>
 
       {actionState.status === 'error' ? (
-        <div
-          className="operations-policy-change-alert admin-mt-12"
-          ref={errorSummaryRef}
-          tabIndex={-1}
-        >
+        <div className="operations-policy-change-alert admin-mt-12" ref={errorSummaryRef} tabIndex={-1}>
           <AdminNoticeCard role="alert" tone="danger">
             <strong>Policy change not saved</strong>
             <p>{actionState.message}</p>
@@ -212,14 +227,35 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
       ) : null}
 
       {actionState.status === 'success' && actionState.success ? (
-        <AdminNoticeCard className="operations-policy-success-summary admin-mt-12" role="status" tone="success">
+        <AdminNoticeCard
+          className="operations-policy-success-summary admin-mt-12"
+          role="status"
+          tone="success"
+        >
           <strong>{actionState.success.policy} saved</strong>
           <dl>
-            <div><dt>Before → After</dt><dd>{actionState.success.before} → {actionState.success.after}</dd></div>
-            <div><dt>Audit ID</dt><dd>{actionState.success.auditId ?? 'Open audit trail'}</dd></div>
-            <div><dt>Changed by</dt><dd>{actionState.success.changedBy}</dd></div>
-            <div><dt>Effective at</dt><dd>{actionState.success.effectiveAt}</dd></div>
-            <div><dt>Reason</dt><dd>{actionState.success.reason}</dd></div>
+            <div>
+              <dt>Before → After</dt>
+              <dd>
+                {actionState.success.before} → {actionState.success.after}
+              </dd>
+            </div>
+            <div>
+              <dt>Audit ID</dt>
+              <dd>{actionState.success.auditId ?? 'Open audit trail'}</dd>
+            </div>
+            <div>
+              <dt>Changed by</dt>
+              <dd>{actionState.success.changedBy}</dd>
+            </div>
+            <div>
+              <dt>Effective at</dt>
+              <dd>{actionState.success.effectiveAt}</dd>
+            </div>
+            <div>
+              <dt>Reason</dt>
+              <dd>{actionState.success.reason}</dd>
+            </div>
           </dl>
           <AdminFormActionRow className="admin-mt-12">
             <AdminFormControlLink className="button-secondary" href={actionState.success.auditHref}>
@@ -247,7 +283,10 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
           label="New value"
           labelVisibility="visible"
           name="value"
-          onChange={(event) => { setNextValue(event.target.value); setTouched((current) => ({ ...current, value: true })); }}
+          onChange={(event) => {
+            setNextValue(event.target.value);
+            setTouched((current) => ({ ...current, value: true }));
+          }}
           options={setting.options.map((option) => ({
             label: displayOperationalWording(option.label),
             value: option.value,
@@ -262,7 +301,10 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
           label="New value"
           labelVisibility="visible"
           name="value"
-          onChange={(event) => { setNextValue(event.target.value); setTouched((current) => ({ ...current, value: true })); }}
+          onChange={(event) => {
+            setNextValue(event.target.value);
+            setTouched((current) => ({ ...current, value: true }));
+          }}
           options={[
             { label: 'Enabled', value: 'true' },
             { label: 'Disabled', value: 'false' },
@@ -283,12 +325,19 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
           max={isNumber ? (setting.max ?? undefined) : undefined}
           min={isNumber ? (setting.min ?? undefined) : undefined}
           name="value"
-          onChange={(event) => { setNextValue(event.target.value); setTouched((current) => ({ ...current, value: true })); }}
+          onChange={(event) => {
+            setNextValue(event.target.value);
+            setTouched((current) => ({ ...current, value: true }));
+          }}
           type={isNumber ? 'number' : 'text'}
           value={nextValue}
         />
       )}
-      {valueError ? <p className="admin-form-field-message" id="operations-policy-value-error">{valueError}</p> : (
+      {valueError ? (
+        <p className="admin-form-field-message" id="operations-policy-value-error">
+          {valueError}
+        </p>
+      ) : (
         <p className="admin-form-field-help" id="operations-policy-value-error">
           {nextValue === String(setting.value)
             ? 'Choose a value different from the current value.'
@@ -304,7 +353,10 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
         labelVisibility="visible"
         maxLength={500}
         name="reason"
-        onChange={(event) => { setReason(event.target.value); setTouched((current) => ({ ...current, reason: true })); }}
+        onChange={(event) => {
+          setReason(event.target.value);
+          setTouched((current) => ({ ...current, reason: true }));
+        }}
         placeholder="State the operating evidence and expected outcome."
         value={reason}
       />
@@ -312,7 +364,11 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
         <span>12–500 characters after whitespace normalization</span>
         <span>{normalizeReason(reason).length}/500</span>
       </div>
-      {reasonError ? <p className="admin-form-field-message" id="operations-policy-reason-error">{reasonError}</p> : null}
+      {reasonError ? (
+        <p className="admin-form-field-message" id="operations-policy-reason-error">
+          {reasonError}
+        </p>
+      ) : null}
 
       <AdminFormCheckbox
         ariaDescribedBy={confirmationError ? 'operations-policy-confirmation-error' : undefined}
@@ -321,12 +377,19 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
         className="admin-mt-12"
         label="I reviewed the before and after values, operating impact, and effective time."
         name="confirmed"
-        onChange={(event) => { setConfirmed(event.target.checked); setTouched((current) => ({ ...current, confirmed: true })); }}
+        onChange={(event) => {
+          setConfirmed(event.target.checked);
+          setTouched((current) => ({ ...current, confirmed: true }));
+        }}
         value="yes"
       >
         I reviewed the before and after values, operating impact, and effective time.
       </AdminFormCheckbox>
-      {confirmationError ? <p className="admin-form-field-message" id="operations-policy-confirmation-error">{confirmationError}</p> : null}
+      {confirmationError ? (
+        <p className="admin-form-field-message" id="operations-policy-confirmation-error">
+          {confirmationError}
+        </p>
+      ) : null}
 
       {risk === 'high' ? (
         <>
@@ -337,12 +400,21 @@ export function OperationsPolicyForm({ setting }: OperationsPolicyFormProps) {
             label={`Type “${setting.label}” to confirm`}
             labelVisibility="visible"
             name="confirmationLabel"
-            onChange={(event) => { setConfirmationLabel(event.target.value); setTouched((current) => ({ ...current, confirmationLabel: true })); }}
+            onChange={(event) => {
+              setConfirmationLabel(event.target.value);
+              setTouched((current) => ({ ...current, confirmationLabel: true }));
+            }}
             type="text"
             value={confirmationLabel}
           />
-          <p className="admin-form-field-help" id="operations-policy-label-confirmation-help">Required because this change can affect {blastRadius.toLowerCase()}.</p>
-          {labelError ? <p className="admin-form-field-message" id="operations-policy-label-confirmation-error">{labelError}</p> : null}
+          <p className="admin-form-field-help" id="operations-policy-label-confirmation-help">
+            Required because this change can affect {blastRadius.toLowerCase()}.
+          </p>
+          {labelError ? (
+            <p className="admin-form-field-message" id="operations-policy-label-confirmation-error">
+              {labelError}
+            </p>
+          ) : null}
         </>
       ) : null}
 

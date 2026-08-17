@@ -32,7 +32,8 @@ const bannedPatterns = [
   },
   {
     label: 'partner hierarchy wording',
-    pattern: /\b(trusted|trust review|trusted badge|trust badge|partner badge|profile badge|promoted into)\b/i,
+    pattern:
+      /\b(trusted|trust review|trusted badge|trust badge|partner badge|profile badge|promoted into)\b/i,
   },
   {
     label: 'legacy provider display wording',
@@ -51,8 +52,16 @@ const violations = [];
 
 for (const file of dartFiles) {
   const source = readFileSync(file, 'utf8');
+  const normalizedFile = normalizePath(file);
+  const koreanLocaleRanges = normalizedFile.startsWith('apps/customer_app/lib')
+    ? findDartLocaleMapRanges(source, 'ko')
+    : [];
   for (const literal of extractDartStringLiterals(source)) {
-    recordViolations(file, literal.value, literal.line);
+    recordViolations(file, literal.value, literal.line, {
+      allowHangul: koreanLocaleRanges.some(
+        (range) => literal.index >= range.start && literal.index < range.end,
+      ),
+    });
   }
 }
 
@@ -82,7 +91,7 @@ if (violations.length > 0) {
   process.exitCode = 1;
 }
 
-function recordViolations(file, value, line) {
+function recordViolations(file, value, line, { allowHangul = false } = {}) {
   const normalized = value.replace(/\s+/g, ' ').trim();
   if (!normalized) {
     return;
@@ -90,7 +99,7 @@ function recordViolations(file, value, line) {
   if (ignoredTechnicalLiterals.has(normalized) || isTechnicalLiteral(normalized)) {
     return;
   }
-  if (file.startsWith('apps/provider_app/lib')) {
+  if (normalizePath(file).startsWith('apps/provider_app/lib')) {
     for (const phrase of providerAppBannedVisibleCopy) {
       if (normalized.includes(phrase)) {
         violations.push({
@@ -104,6 +113,9 @@ function recordViolations(file, value, line) {
     }
   }
   for (const rule of bannedPatterns) {
+    if (allowHangul && rule.label === 'non-English Hangul visible copy') {
+      continue;
+    }
     const match = normalized.match(rule.pattern);
     if (match) {
       violations.push({
@@ -127,9 +139,66 @@ function extractDartStringLiterals(source) {
     literals.push({
       value,
       line: lineNumberAt(source, match.index ?? 0),
+      index: match.index ?? 0,
+      end: (match.index ?? 0) + match[0].length,
     });
   }
   return literals;
+}
+
+function findDartLocaleMapRanges(source, locale) {
+  const masked = maskDartNonStructuralText(source);
+  const ranges = [];
+  const pattern = new RegExp(`(['"])${locale}\\1\\s*:\\s*\\{`, 'g');
+
+  for (const match of source.matchAll(pattern)) {
+    const start = match.index ?? 0;
+    const brace = start + match[0].lastIndexOf('{');
+    const end = matchingBraceEnd(masked, brace);
+    if (end !== -1) {
+      ranges.push({ start, end });
+    }
+  }
+
+  return ranges;
+}
+
+function maskDartNonStructuralText(source) {
+  const chars = source.split('');
+  for (const literal of extractDartStringLiterals(source)) {
+    maskRange(chars, source, literal.index, literal.end);
+  }
+
+  const stringsMasked = chars.join('');
+  const commentPattern = /\/\/[^\r\n]*|\/\*[\s\S]*?\*\//g;
+  for (const match of stringsMasked.matchAll(commentPattern)) {
+    const start = match.index ?? 0;
+    maskRange(chars, source, start, start + match[0].length);
+  }
+  return chars.join('');
+}
+
+function maskRange(chars, source, start, end) {
+  for (let index = start; index < end; index += 1) {
+    if (source[index] !== '\n' && source[index] !== '\r') {
+      chars[index] = ' ';
+    }
+  }
+}
+
+function matchingBraceEnd(source, openingBrace) {
+  let depth = 0;
+  for (let index = openingBrace; index < source.length; index += 1) {
+    if (source[index] === '{') {
+      depth += 1;
+    } else if (source[index] === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return index + 1;
+      }
+    }
+  }
+  return -1;
 }
 
 function lineNumberAt(source, index) {
@@ -153,6 +222,10 @@ function isTechnicalLiteral(value) {
     return true;
   }
   return /^[a-z0-9-]+$/.test(value);
+}
+
+function normalizePath(path) {
+  return path.replaceAll('\\', '/');
 }
 
 function listFiles(dir, extension) {
