@@ -52,6 +52,17 @@ describe('BookingTimeoutReconciliationService', () => {
                 },
               },
               {
+                status: BookingStatus.CANCELLED,
+                closedReason: { in: ['customer_cancelled', 'preferred_provider_rejected'] },
+                opsTasks: {
+                  some: {
+                    note: { startsWith: 'Payment closure pending after' },
+                    status: 'PENDING',
+                    type: 'PAYMENT_REVIEWED',
+                  },
+                },
+              },
+              {
                 status: BookingStatus.EXPIRED,
                 closedReason: 'admin_expired',
                 opsTasks: {
@@ -107,6 +118,38 @@ describe('BookingTimeoutReconciliationService', () => {
       scheduled: 1,
       skipped: false,
     });
+  });
+
+  it('requeues pending cancellation payment closure immediately with a minute-scoped job id', async () => {
+    const now = new Date('2026-08-17T01:05:30.000Z');
+    const prisma = {
+      booking: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'booking-cancelled',
+            expiresAt: new Date('2026-08-17T01:10:00.000Z'),
+            status: BookingStatus.CANCELLED,
+          },
+        ]),
+      },
+      adminAuditLog: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+    const queue = { add: vi.fn().mockResolvedValue({ id: 'job-1' }) };
+    const service = new BookingTimeoutReconciliationService(prisma as never, queue as never);
+
+    await expect(service.reconcileBatch(now)).resolves.toEqual({
+      failed: 0,
+      scheduled: 1,
+      skipped: false,
+    });
+    expect(queue.add).toHaveBeenCalledWith(
+      'booking-timeout',
+      { bookingId: 'booking-cancelled' },
+      expect.objectContaining({
+        delay: 0,
+        jobId: `booking-cancellation-payment-recovery-booking-cancelled-${Math.floor(now.getTime() / 60_000)}`,
+      }),
+    );
   });
 
   it('does not requeue an expired timeout whose payment closure audit already exists', async () => {

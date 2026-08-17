@@ -574,7 +574,10 @@ function withFinancePolicyTestReads(value: unknown) {
   if (!value || typeof value !== 'object' || financePolicyTestClients.has(value)) return value;
   financePolicyTestClients.add(value);
   const client = value as {
-    adminAuditLog?: { findMany?: ReturnType<typeof vi.fn> };
+    adminAuditLog?: {
+      findMany?: ReturnType<typeof vi.fn>;
+      upsert?: ReturnType<typeof vi.fn>;
+    };
     user?: {
       findFirst?: ReturnType<typeof vi.fn>;
       findMany?: ReturnType<typeof vi.fn>;
@@ -607,6 +610,11 @@ function withFinancePolicyTestReads(value: unknown) {
   });
   client.adminAuditLog ??= {};
   client.adminAuditLog.findMany ??= vi.fn().mockResolvedValue([]);
+  client.adminAuditLog.upsert ??= vi
+    .fn()
+    .mockImplementation((input: { create: { metadata?: unknown } }) =>
+      Promise.resolve({ id: 'audit-claim-1', metadata: input.create.metadata ?? null }),
+    );
   return client;
 }
 
@@ -11057,6 +11065,38 @@ describe('AdminService query orchestration', () => {
         }),
       }),
     });
+  });
+
+  it('does not mark completed closeout done when referral reward creation fails', async () => {
+    const completedAt = new Date('2026-08-17T03:00:00.000Z');
+    const prisma = {
+      adminAuditLog: { create: vi.fn() },
+      booking: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.COMPLETED,
+          notes: null,
+          closedAt: completedAt,
+          selectedProviderId: 'partner-1',
+          payment: null,
+        }),
+        update: vi.fn(),
+      },
+    };
+    const earnings = {
+      createForCompletedBooking: vi.fn().mockResolvedValue({ id: 'earning-1', netAmount: 700_000 }),
+    };
+    const referrals = {
+      createRewardsForCompletedBooking: vi.fn().mockRejectedValue(new Error('Referral ledger unavailable')),
+    };
+    const service = createAdminService(prisma, { earnings, referrals });
+
+    await expect(
+      service.closeoutCompletedBooking('admin-1', 'booking-1', { note: 'Closeout checked' }),
+    ).rejects.toThrow('Referral ledger unavailable');
+
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
   it('lists only customer referral parents and summarizes reward exposure', async () => {
@@ -35693,7 +35733,7 @@ describe('AdminService query orchestration', () => {
     });
   });
 
-  it('rejects a concurrent post-match cancellation decision after payment closure without duplicating earning changes', async () => {
+  it('rejects an opposite concurrent post-match cancellation decision before payment closure', async () => {
     const booking = {
       id: 'booking-1',
       status: BookingStatus.CANCELLED,
@@ -35721,10 +35761,7 @@ describe('AdminService query orchestration', () => {
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'booking-1' }]),
       booking: {
-        findUniqueOrThrow: vi.fn().mockResolvedValue({
-          ...booking,
-          closedReason: 'post_match_cancellation_approved',
-        }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(booking),
         update: vi.fn(),
       },
       providerEarning: {
@@ -35735,6 +35772,7 @@ describe('AdminService query orchestration', () => {
       },
       adminAuditLog: {
         create: vi.fn(),
+        upsert: vi.fn().mockResolvedValue({ metadata: { decision: 'HELD' } }),
       },
     };
     const payments = {
@@ -35761,7 +35799,7 @@ describe('AdminService query orchestration', () => {
       }),
     ).rejects.toBeInstanceOf(ConflictException);
 
-    expect(payments.closeUnmatchedBookingPayment).toHaveBeenCalledTimes(1);
+    expect(payments.closeUnmatchedBookingPayment).not.toHaveBeenCalled();
     expect(tx.providerEarning.update).not.toHaveBeenCalled();
     expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
     expect(tx.booking.update).not.toHaveBeenCalled();
@@ -35962,7 +36000,7 @@ describe('AdminService query orchestration', () => {
     ).rejects.toThrow('Wallet release failed');
 
     expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });
 
   it('rejects post-match cancellation decisions for pre-match cancellations', async () => {
@@ -36018,7 +36056,7 @@ describe('AdminService query orchestration', () => {
     ).rejects.toThrow('Post-match cancellation requires matching evidence');
     expect(tx.booking.update).not.toHaveBeenCalled();
     expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });
 
   it('moderates a review, recalculates published rating, and writes an audit log', async () => {

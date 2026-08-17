@@ -696,6 +696,66 @@ describe('BookingsService booking creation', () => {
     expect(notifications.create).toHaveBeenCalledWith(expect.objectContaining({ userId: 'customer-user-1' }));
   });
 
+  it('rolls payment recovery back to CREATED when the required matching projection cannot register', async () => {
+    const createdBooking = {
+      id: 'booking-1',
+      status: BookingStatus.CREATED,
+      metadata: {},
+      expiresAt: new Date(Date.now() + 600_000),
+      preferredProvider: null,
+      selectedProviderId: null,
+      customerProfile: { userId: 'customer-user-1' },
+      services: [{ serviceId: 'service-1' }],
+      payment: {
+        id: 'payment-1',
+        method: PaymentMethod.VNPAY,
+        status: PaymentStatus.CAPTURED,
+        rawMeta: { authorizationState: 'READY' },
+      },
+    };
+    const openedBooking = { ...createdBooking, status: BookingStatus.OPEN_MATCHING };
+    const prisma = {
+      booking: {
+        findUnique: vi.fn().mockResolvedValue(createdBooking),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(openedBooking),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      providerProfile: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+    const matching = {
+      getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
+      openBooking: vi.fn().mockReturnValue({ bookingId: 'booking-1' }),
+      registerActiveBooking: vi.fn().mockRejectedValue(new Error('Redis unavailable')),
+      scheduleBookingTimeout: vi.fn(),
+      closeBooking: vi.fn().mockResolvedValue(undefined),
+    };
+    const payments = {
+      paymentCanOpenMatching: vi.fn().mockReturnValue(true),
+      paymentRequiresCaptureBeforeMatching: vi.fn().mockReturnValue(false),
+      requiresPostBookingAuthorization: vi.fn().mockReturnValue(true),
+      scheduleStatusCheck: vi.fn(),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      {} as never,
+      payments as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(service.recoverCreatedBookingAfterPayment('booking-1', 'payment-1')).rejects.toThrow(
+      'Redis unavailable',
+    );
+
+    expect(matching.scheduleBookingTimeout).not.toHaveBeenCalled();
+    expect(matching.closeBooking).toHaveBeenCalledWith('booking-1');
+    expect(prisma.booking.updateMany).toHaveBeenLastCalledWith({
+      where: { id: 'booking-1', status: BookingStatus.OPEN_MATCHING },
+      data: { status: BookingStatus.CREATED },
+    });
+  });
+
   it('closes a recovered matching projection when customer cancellation wins during activation', async () => {
     const createdBooking = {
       id: 'booking-1',
@@ -1464,12 +1524,22 @@ describe('BookingsService final partner selection', () => {
       'booking-1',
       expect.objectContaining({ event: 'booking.matched' }),
     );
+    expect(matching.closeBooking).toHaveBeenCalledTimes(3);
+    expect(adminAuditLogCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'booking.post_commit_effect.failed',
+          metadata: expect.objectContaining({ effect: 'matching-close', attempts: 3 }),
+        }),
+      }),
+    );
   });
 
   it('rejects final selection when the Partner received another active booking first', async () => {
     const prisma = {
       $queryRaw: vi
         .fn()
+        .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ id: 'booking-already-active' }]),
@@ -1749,6 +1819,53 @@ describe('BookingsService final partner selection', () => {
     expect(matching.selectFinalProvider).not.toHaveBeenCalled();
     expect(matchingGateway.emitBookingMatched).not.toHaveBeenCalled();
   });
+
+  it('rechecks Partner account readiness inside the final selection transaction', async () => {
+    const prisma = {
+      customerProfile: { findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }) },
+      providerProfile: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue(approvedPartner({ blockedAt: new Date(), blockedReason: 'Safety review' })),
+      },
+      bookingService: { findMany: vi.fn().mockResolvedValue([{ serviceId: 'service-1' }]) },
+      providerService: providerServiceReadinessQueries(),
+      booking: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'booking-1',
+          customerProfileId: 'customer-1',
+          status: BookingStatus.OPEN_MATCHING,
+          preferredProviderId: null,
+        }),
+        update: vi.fn(),
+      },
+      bookingParticipant: {
+        findUnique: vi.fn().mockResolvedValue({
+          providerProfileId: 'partner-1',
+          status: ParticipantStatus.JOINED,
+        }),
+      },
+      providerWalletLedgerEntry: { aggregate: vi.fn() },
+    };
+    attachTransaction(prisma);
+    const matching = { closeBooking: vi.fn(), selectFinalProvider: vi.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(service.selectProvider('booking-1', 'customer-user-1', 'partner-1')).rejects.toThrow(
+      'Partner account is blocked by admin review: Safety review',
+    );
+
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(prisma.providerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
+    expect(matching.selectFinalProvider).not.toHaveBeenCalled();
+  });
 });
 
 describe('BookingsService provider service lifecycle', () => {
@@ -1761,6 +1878,7 @@ describe('BookingsService provider service lifecycle', () => {
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
+      providerService: providerServiceReadinessQueries(),
       booking: {
         findUniqueOrThrow: vi
           .fn()
@@ -1805,6 +1923,7 @@ describe('BookingsService provider service lifecycle', () => {
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
+      providerService: providerServiceReadinessQueries(),
       booking: {
         findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
@@ -3665,6 +3784,7 @@ describe('BookingsService marketplace participation', () => {
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
+      providerService: providerServiceReadinessQueries(),
       booking: {
         findUniqueOrThrow: vi
           .fn()
@@ -3719,6 +3839,7 @@ describe('BookingsService marketplace participation', () => {
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
+      providerService: providerServiceReadinessQueries(),
       booking: {
         findUniqueOrThrow: vi
           .fn()
@@ -3765,6 +3886,7 @@ describe('BookingsService marketplace participation', () => {
     };
     const prisma = {
       providerProfile: { findUnique: vi.fn().mockResolvedValue(approvedPartner()) },
+      providerService: providerServiceReadinessQueries(),
       booking: {
         findUniqueOrThrow: vi
           .fn()
@@ -3812,6 +3934,7 @@ describe('BookingsService marketplace participation', () => {
           }),
         ),
       },
+      providerService: providerServiceReadinessQueries(),
       booking: {
         findUniqueOrThrow: vi.fn().mockResolvedValue(openMarketplaceBooking()),
       },
@@ -3843,6 +3966,36 @@ describe('BookingsService marketplace participation', () => {
     expect(prisma.providerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
     expect(bookingParticipantUpsert).not.toHaveBeenCalled();
     expect(matching.registerParticipant).not.toHaveBeenCalled();
+  });
+
+  it('blocks direct marketplace participation when the Partner does not offer the booking service', async () => {
+    const prisma = {
+      providerProfile: { findUnique: vi.fn().mockResolvedValue(approvedPartner()) },
+      providerService: providerServiceReadinessQueries({
+        configuredServiceCount: 1,
+        providerServices: [],
+      }),
+      booking: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue(openMarketplaceBooking()),
+        update: vi.fn(),
+      },
+    };
+    const matching = { getPolicy: vi.fn(), registerParticipant: vi.fn(), joinBooking: vi.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(service.joinBooking('booking-1', 'partner-user-1')).rejects.toThrow(
+      'Partner does not offer this service',
+    );
+
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(matching.getPolicy).not.toHaveBeenCalled();
   });
 });
 
@@ -4357,6 +4510,18 @@ function approvedDocument(type: ProviderDocumentType) {
   };
 }
 
+function providerServiceReadinessQueries(
+  input: {
+    configuredServiceCount?: number;
+    providerServices?: Array<{ active: boolean; serviceId: string }>;
+  } = {},
+) {
+  return {
+    count: vi.fn().mockResolvedValue(input.configuredServiceCount ?? 0),
+    findMany: vi.fn().mockResolvedValue(input.providerServices ?? []),
+  };
+}
+
 function providerCancelledBooking(overrides: Record<string, unknown> = {}) {
   return {
     id: 'booking-1',
@@ -4474,6 +4639,7 @@ function openMarketplaceBooking() {
     lat: 10.7769,
     lng: 106.7009,
     addressSnapshot: { latitude: 10.7769, longitude: 106.7009 },
+    services: [{ serviceId: 'service-1' }],
     participants: [
       {
         providerProfileId: 'first-pick-partner',
@@ -4537,6 +4703,19 @@ function matchingPolicy() {
 function attachTransaction<T extends Record<string, unknown>>(client: T) {
   if (!('$queryRaw' in client)) {
     Object.assign(client, { $queryRaw: vi.fn().mockResolvedValue([]) });
+  }
+  if (!('providerProfile' in client)) {
+    Object.assign(client, {
+      providerProfile: { findUnique: vi.fn().mockResolvedValue(approvedPartner()) },
+    });
+  }
+  if (!('bookingService' in client)) {
+    Object.assign(client, {
+      bookingService: { findMany: vi.fn().mockResolvedValue([{ serviceId: 'service-1' }]) },
+    });
+  }
+  if (!('providerService' in client)) {
+    Object.assign(client, { providerService: providerServiceReadinessQueries() });
   }
   const transaction = vi.fn(async (callback: (transactionClient: T) => Promise<unknown>) => callback(client));
   Object.assign(client, { $transaction: transaction });

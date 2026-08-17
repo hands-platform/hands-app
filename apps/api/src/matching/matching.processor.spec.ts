@@ -88,6 +88,61 @@ describe('BookingTimeoutProcessor', () => {
     );
   });
 
+  it('recovers a customer cancellation payment closeout from its durable pending task', async () => {
+    const booking = {
+      id: 'booking-cancelled',
+      status: BookingStatus.CANCELLED,
+      closedReason: 'customer_cancelled',
+      payment: { id: 'payment-1', status: PaymentStatus.AUTHORIZED },
+    };
+    const prisma = {
+      booking: { findUnique: vi.fn().mockResolvedValue(booking), update: vi.fn() },
+      bookingOpsTask: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      adminAuditLog: { upsert: vi.fn() },
+    };
+    const redisState = { closeMatching: vi.fn() };
+    const gateway = { emitBookingExpired: vi.fn() };
+    const payments = {
+      closeUnmatchedBookingPayment: vi.fn().mockResolvedValue({ released: true }),
+    };
+    const processor = new BookingTimeoutProcessor(
+      prisma as never,
+      redisState as never,
+      gateway as never,
+      payments as never,
+    );
+
+    await expect(processor.process({ data: { bookingId: booking.id } } as never)).resolves.toEqual({
+      recovered: true,
+      bookingId: booking.id,
+    });
+    expect(payments.closeUnmatchedBookingPayment).toHaveBeenCalledWith(
+      'payment-1',
+      'Payment closure recovered after booking cancellation',
+    );
+    expect(prisma.bookingOpsTask.updateMany).toHaveBeenCalledWith({
+      where: {
+        bookingId: booking.id,
+        note: { startsWith: 'Payment closure pending after' },
+        status: 'PENDING',
+        type: 'PAYMENT_REVIEWED',
+      },
+      data: {
+        status: 'DONE',
+        note: 'Payment closure completed after booking cancellation.',
+      },
+    });
+    expect(prisma.adminAuditLog.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { eventId: `booking-cancellation-payment-closure:${booking.id}` },
+        create: expect.objectContaining({
+          action: 'booking.cancellation.payment_closure_recorded',
+          source: 'booking_cancellation_payment_worker',
+        }),
+      }),
+    );
+  });
+
   it('recovers an admin-expired booking payment task and matching projection', async () => {
     const booking = {
       id: 'booking-admin-expired',

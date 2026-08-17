@@ -57,6 +57,17 @@ export class BookingTimeoutReconciliationService
                   },
                 },
                 {
+                  status: BookingStatus.CANCELLED,
+                  closedReason: { in: ['customer_cancelled', 'preferred_provider_rejected'] },
+                  opsTasks: {
+                    some: {
+                      note: { startsWith: 'Payment closure pending after' },
+                      status: BookingOpsTaskStatus.PENDING,
+                      type: BookingOpsTaskType.PAYMENT_REVIEWED,
+                    },
+                  },
+                },
+                {
                   status: BookingStatus.EXPIRED,
                   closedReason: 'admin_expired',
                   opsTasks: {
@@ -107,8 +118,21 @@ export class BookingTimeoutReconciliationService
 
       const results = await Promise.allSettled(
         recoverableBookings.map((booking) => {
-          const job = bookingTimeoutJob(booking.id, booking.expiresAt ?? now);
-          return this.queue.add(job.name, job.data, job.options);
+          const cancellationRecovery = booking.status === BookingStatus.CANCELLED;
+          const job = bookingTimeoutJob(
+            booking.id,
+            cancellationRecovery ? now : (booking.expiresAt ?? now),
+          );
+          const options = cancellationRecovery
+            ? {
+                ...job.options,
+                delay: 0,
+                jobId: `booking-cancellation-payment-recovery-${booking.id}-${Math.floor(
+                  now.getTime() / RECONCILIATION_INTERVAL_MS,
+                )}`,
+              }
+            : job.options;
+          return this.queue.add(job.name, job.data, options);
         }),
       );
       return {

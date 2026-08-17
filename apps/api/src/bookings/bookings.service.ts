@@ -381,6 +381,7 @@ const providerCancellationBookingInclude = {
 const joinableBookingForPartnerInclude = {
   addressSnapshot: true,
   participants: { select: { providerProfileId: true, status: true } },
+  services: { select: { serviceId: true } },
 } satisfies Prisma.BookingInclude;
 
 const participantResponseBookingInclude = {
@@ -508,14 +509,55 @@ export class BookingsService {
   ) {
     await Promise.all(
       effects.map(async (effect) => {
+        const attempts = bookingPostCommitEffectRetryable(effect.label) ? 3 : 1;
+        let lastError: unknown;
+        for (let attempt = 1; attempt <= attempts; attempt += 1) {
+          try {
+            await effect.run();
+            return;
+          } catch (error) {
+            lastError = error;
+            if (attempt < attempts) {
+              await new Promise((resolve) => setTimeout(resolve, 25 * attempt));
+            }
+          }
+        }
+
+        this.logger.error(
+          `Booking ${bookingId} committed, but post-commit effect ${effect.label} failed: ${
+            lastError instanceof Error ? lastError.message : String(lastError)
+          }`,
+          lastError instanceof Error ? lastError.stack : undefined,
+        );
         try {
-          await effect.run();
-        } catch (error) {
+          await this.prisma.adminAuditLog.create({
+            data: {
+              actorId: null,
+              actorKey: 'booking-post-commit-effects',
+              actorType: 'SYSTEM',
+              action: 'booking.post_commit_effect.failed',
+              area: 'BOOKING',
+              objectId: bookingId,
+              objectType: 'Booking',
+              outcome: 'FAILED',
+              severity: 'REVIEW',
+              source: 'bookings_service',
+              target: `booking:${bookingId}`,
+              metadata: {
+                bookingId,
+                effect: effect.label,
+                attempts,
+                error: lastError instanceof Error
+                  ? lastError.message.slice(0, 500)
+                  : String(lastError).slice(0, 500),
+              },
+            },
+          });
+        } catch (auditError) {
           this.logger.error(
-            `Booking ${bookingId} committed, but post-commit effect ${effect.label} failed: ${
-              error instanceof Error ? error.message : String(error)
+            `Booking ${bookingId} post-commit failure evidence could not be recorded: ${
+              auditError instanceof Error ? auditError.message : String(auditError)
             }`,
-            error instanceof Error ? error.stack : undefined,
           );
         }
       }),
@@ -1042,15 +1084,9 @@ export class BookingsService {
         label: 'payment-status-check-schedule',
         run: () => this.scheduleBookingPaymentStatusCheck(input.booking),
       },
-      {
-        label: 'matching-register',
-        run: () => this.matching.registerActiveBooking(input.booking.id, result),
-      },
-      {
-        label: 'matching-timeout-schedule',
-        run: () => this.matching.scheduleBookingTimeout(input.booking.id, input.timeoutAt),
-      },
     ]);
+    await this.matching.registerActiveBooking(input.booking.id, result);
+    await this.matching.scheduleBookingTimeout(input.booking.id, input.timeoutAt);
     return result;
   }
 
@@ -1924,6 +1960,11 @@ export class BookingsService {
     });
     this.assertBookingOpenForPartnerResponse(booking);
     assertProviderCanReceiveBooking(provider);
+    await this.assertProviderOffersBookingServices(
+      this.prisma,
+      provider.id,
+      booking.services.map((service) => service.serviceId),
+    );
     const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
     const distanceMeters = this.requireProviderWithinMatchingRadius(booking, provider, matchingPolicy);
 
@@ -2323,6 +2364,8 @@ export class BookingsService {
       const matchedBooking = await this.prisma.$transaction(async (transaction) => {
         await lockProviderBookingAssignment(transaction, input.providerId);
         await lockBookingLifecycle(transaction, input.bookingId);
+        await lockProviderBookingReadiness(transaction, input.providerId);
+        await this.assertProviderReadyForFinalAssignment(transaction, input.bookingId, input.providerId);
         await this.assertProviderHasNoOtherActiveBooking(transaction, input.bookingId, input.providerId);
         const participant = await transaction.bookingParticipant.findUnique({
           where: bookingParticipantCompoundKey(input.bookingId, input.providerId),
@@ -2462,6 +2505,8 @@ export class BookingsService {
       const matchedBooking = await this.prisma.$transaction(async (transaction) => {
         await lockProviderBookingAssignment(transaction, input.providerId);
         await lockBookingLifecycle(transaction, input.bookingId);
+        await lockProviderBookingReadiness(transaction, input.providerId);
+        await this.assertProviderReadyForFinalAssignment(transaction, input.bookingId, input.providerId);
         await this.assertProviderHasNoOtherActiveBooking(transaction, input.bookingId, input.providerId);
         await this.assertProviderWalletCanFinalizeBooking(transaction, input.providerId);
         const matchedBooking = await transaction.booking.update({
@@ -2522,6 +2567,61 @@ export class BookingsService {
       throw new BadRequestException(
         'Partner must complete the current booking before receiving or joining another booking',
       );
+    }
+  }
+
+  private async assertProviderReadyForFinalAssignment(
+    transaction: Prisma.TransactionClient,
+    bookingId: string,
+    providerProfileId: string,
+  ) {
+    const [provider, bookingServices] = await Promise.all([
+      transaction.providerProfile.findUnique({
+        where: { id: providerProfileId },
+        include: providerBookingReadinessInclude,
+      }),
+      transaction.bookingService.findMany({
+        where: { bookingId },
+        select: { serviceId: true },
+      }),
+    ]);
+    if (!provider) {
+      throw new BadRequestException('Partner or booking is no longer available for final selection');
+    }
+
+    assertProviderCanReceiveBooking(provider);
+    await this.assertProviderOffersBookingServices(
+      transaction,
+      providerProfileId,
+      bookingServices.map((service) => service.serviceId),
+    );
+  }
+
+  private async assertProviderOffersBookingServices(
+    client: PrismaService | Prisma.TransactionClient,
+    providerProfileId: string,
+    serviceIds: string[],
+  ) {
+    const uniqueServiceIds = [...new Set(serviceIds)];
+    if (uniqueServiceIds.length === 0) {
+      throw new BadRequestException('Booking service is required before Partner participation');
+    }
+
+    const [configuredServiceCount, providerServices] = await Promise.all([
+      client.providerService.count({ where: { providerProfileId } }),
+      client.providerService.findMany({
+        where: { providerProfileId, serviceId: { in: uniqueServiceIds } },
+        select: { active: true, serviceId: true },
+      }),
+    ]);
+    const providerServiceById = new Map(
+      providerServices.map((providerService) => [providerService.serviceId, providerService]),
+    );
+    for (const serviceId of uniqueServiceIds) {
+      assertProviderOffersRequestedService({
+        providerService: providerServiceById.get(serviceId),
+        configuredServiceCount,
+      });
     }
   }
 
@@ -3921,9 +4021,19 @@ async function lockProviderBookingAssignment(tx: Prisma.TransactionClient, provi
   );
 }
 
+async function lockProviderBookingReadiness(tx: Prisma.TransactionClient, providerProfileId: string) {
+  await tx.$queryRaw(
+    Prisma.sql`SELECT "id" FROM "ProviderProfile" WHERE "id" = ${providerProfileId} FOR UPDATE`,
+  );
+}
+
 function safeBookingCompletionErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : 'Booking completion failed after capture reservation';
   return message.replace(/[\r\n\t]+/g, ' ').trim().slice(0, 500);
+}
+
+function bookingPostCommitEffectRetryable(label: string) {
+  return label.startsWith('matching-') || label.includes('realtime');
 }
 
 function appendDatedBookingNote(existingNotes: string | null | undefined, message: string, now = new Date()) {

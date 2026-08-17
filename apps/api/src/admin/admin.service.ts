@@ -16247,45 +16247,45 @@ export class AdminService {
       `Completed booking closeout reconciled by operations${note ? `: ${note}` : '.'}`,
     );
 
-    const updated = await this.prisma.booking.update({
-      where: { id: bookingId },
-      data: {
-        notes,
-        opsTasks: {
-          upsert: {
-            where: { bookingId_type: { bookingId, type: BookingOpsTaskType.PAYMENT_REVIEWED } },
-            update: {
-              status: BookingOpsTaskStatus.DONE,
-              note: note ?? 'Payment, earning, tax, and wallet closeout reconciled.',
-              actorId,
-            },
-            create: {
-              type: BookingOpsTaskType.PAYMENT_REVIEWED,
-              status: BookingOpsTaskStatus.DONE,
-              note: note ?? 'Payment, earning, tax, and wallet closeout reconciled.',
-              actorId,
+    const referralRewards = await this.referrals.createRewardsForCompletedBooking(bookingId);
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.booking.update({
+        where: { id: bookingId },
+        data: {
+          notes,
+          opsTasks: {
+            upsert: {
+              where: { bookingId_type: { bookingId, type: BookingOpsTaskType.PAYMENT_REVIEWED } },
+              update: {
+                status: BookingOpsTaskStatus.DONE,
+                note: note ?? 'Payment, earning, tax, and wallet closeout reconciled.',
+                actorId,
+              },
+              create: {
+                type: BookingOpsTaskType.PAYMENT_REVIEWED,
+                status: BookingOpsTaskStatus.DONE,
+                note: note ?? 'Payment, earning, tax, and wallet closeout reconciled.',
+                actorId,
+              },
             },
           },
         },
-      },
-      select: adminBookingDetailSelect,
+        select: adminBookingDetailSelect,
+      });
+      await this.writeAudit(actorId, 'booking.completed.closeout', `booking:${bookingId}`, {
+        bookingId,
+        paymentId: capturedPayment?.id,
+        paymentStatus: capturedPayment?.status,
+        earningId: earning.id,
+        netAmount: earning.netAmount,
+        note,
+        referralRewards: {
+          customerRewardId: referralRewards.customerReward?.id ?? null,
+          partnerRewardId: referralRewards.partnerReward?.id ?? null,
+        },
+      }, undefined, tx);
+      return updated;
     });
-    const referralRewards = await this.referrals.createRewardsForCompletedBooking(bookingId);
-
-    await this.writeAudit(actorId, 'booking.completed.closeout', `booking:${bookingId}`, {
-      bookingId,
-      paymentId: capturedPayment?.id,
-      paymentStatus: capturedPayment?.status,
-      earningId: earning.id,
-      netAmount: earning.netAmount,
-      note,
-      referralRewards: {
-        customerRewardId: referralRewards.customerReward?.id ?? null,
-        partnerRewardId: referralRewards.partnerReward?.id ?? null,
-      },
-    });
-
-    return updated;
   }
 
   async approvePostMatchCancellation(
@@ -16323,40 +16323,68 @@ export class AdminService {
     const decisionReasonLabel = postMatchCancellationDecisionReasonLabel(decisionReason);
     const closureNote = normalizedNote ? `${decisionReasonLabel}: ${normalizedNote}` : decisionReasonLabel;
 
-    const preflight = await this.prisma.booking.findUniqueOrThrow({
-      where: { id: bookingId },
-      select: {
-        status: true,
-        matchedAt: true,
-        selectedProviderId: true,
-        closedReason: true,
-        payment: { select: { id: true, method: true, status: true } },
-        earning: { select: { status: true, netAmount: true } },
-      },
+    const decisionClaimEventId = `booking-post-match-cancellation-decision:${bookingId}`;
+    const preflight = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "Booking" WHERE "id" = ${bookingId} FOR UPDATE`);
+      const booking = await tx.booking.findUniqueOrThrow({
+        where: { id: bookingId },
+        select: {
+          status: true,
+          matchedAt: true,
+          selectedProviderId: true,
+          closedReason: true,
+          payment: { select: { id: true, method: true, status: true } },
+          earning: { select: { status: true, netAmount: true } },
+        },
+      });
+      if (booking.status !== BookingStatus.CANCELLED) {
+        throw new BadRequestException(`Booking status ${booking.status} is not a cancellation review`);
+      }
+      if (!booking.matchedAt && !booking.selectedProviderId) {
+        throw new BadRequestException('Post-match cancellation requires matching evidence');
+      }
+      if (
+        booking.closedReason === POST_MATCH_CANCELLATION_APPROVED_REASON ||
+        booking.closedReason === POST_MATCH_CANCELLATION_HELD_REASON
+      ) {
+        throw new ConflictException('Post-match cancellation has already been resolved');
+      }
+      const hasRetainablePartnerFee = Boolean(
+        booking.earning &&
+        booking.earning.status === EarningStatus.PENDING &&
+        booking.earning.netAmount < 0,
+      );
+      if (decision === 'HELD' && !hasRetainablePartnerFee) {
+        throw new BadRequestException('No active Partner fee deduction exists to keep');
+      }
+      if (booking.earning && booking.earning.netAmount !== 0 && !hasRetainablePartnerFee) {
+        throw new ConflictException('Partner earning state cannot be resolved safely from this review');
+      }
+
+      const claim = await tx.adminAuditLog.upsert({
+        where: { eventId: decisionClaimEventId },
+        update: {},
+        create: {
+          eventId: decisionClaimEventId,
+          actorId,
+          actorKey: actorId,
+          actorType: 'HUMAN',
+          action: 'booking.post_match_cancellation.decision_claimed',
+          area: 'BOOKING',
+          objectId: bookingId,
+          objectType: 'Booking',
+          outcome: 'OPENED',
+          severity: 'REVIEW',
+          source: 'admin_api',
+          target: `booking:${bookingId}`,
+          metadata: { bookingId, decision, decisionReason, decisionReasonLabel },
+        },
+      });
+      if (jsonString(jsonObject(claim.metadata).decision) !== decision) {
+        throw new ConflictException('Another post-match cancellation decision is already in progress');
+      }
+      return booking;
     });
-    if (preflight.status !== BookingStatus.CANCELLED) {
-      throw new BadRequestException(`Booking status ${preflight.status} is not a cancellation review`);
-    }
-    if (!preflight.matchedAt && !preflight.selectedProviderId) {
-      throw new BadRequestException('Post-match cancellation requires matching evidence');
-    }
-    if (
-      preflight.closedReason === POST_MATCH_CANCELLATION_APPROVED_REASON ||
-      preflight.closedReason === POST_MATCH_CANCELLATION_HELD_REASON
-    ) {
-      throw new ConflictException('Post-match cancellation has already been resolved');
-    }
-    const hasRetainablePartnerFee = Boolean(
-      preflight.earning &&
-      preflight.earning.status === EarningStatus.PENDING &&
-      preflight.earning.netAmount < 0,
-    );
-    if (decision === 'HELD' && !hasRetainablePartnerFee) {
-      throw new BadRequestException('No active Partner fee deduction exists to keep');
-    }
-    if (preflight.earning && preflight.earning.netAmount !== 0 && !hasRetainablePartnerFee) {
-      throw new ConflictException('Partner earning state cannot be resolved safely from this review');
-    }
 
     let paymentResolution:
       | {

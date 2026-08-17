@@ -13,6 +13,9 @@ import { RedisStateService } from '../redis/redis-state.service';
 import { BOOKING_TIMEOUT_QUEUE_NAME, type BookingTimeoutJob } from './booking-timeout.queue';
 import { MatchingGateway } from './matching.gateway';
 
+const RECOVERABLE_CANCELLATION_REASONS = ['customer_cancelled', 'preferred_provider_rejected'] as const;
+const CANCELLATION_PAYMENT_PENDING_NOTE = 'Payment closure pending after';
+
 @Processor(BOOKING_TIMEOUT_QUEUE_NAME)
 export class BookingTimeoutProcessor extends WorkerHost {
   constructor(
@@ -34,6 +37,11 @@ export class BookingTimeoutProcessor extends WorkerHost {
       return { skipped: true };
     }
 
+    const cancellationPaymentRecovery =
+      booking.status === BookingStatus.CANCELLED &&
+      RECOVERABLE_CANCELLATION_REASONS.includes(
+        booking.closedReason as (typeof RECOVERABLE_CANCELLATION_REASONS)[number],
+      );
     let expired = booking;
     if (booking.status === BookingStatus.OPEN_MATCHING) {
       const expiredAt = new Date();
@@ -83,37 +91,51 @@ export class BookingTimeoutProcessor extends WorkerHost {
         return { skipped: true };
       }
     } else if (
-      booking.status !== BookingStatus.EXPIRED ||
-      !['preferred_provider_no_response', 'matching_request_expired', 'admin_expired'].includes(
-        booking.closedReason ?? '',
-      )
+      !cancellationPaymentRecovery &&
+      (booking.status !== BookingStatus.EXPIRED ||
+        !['preferred_provider_no_response', 'matching_request_expired', 'admin_expired'].includes(
+          booking.closedReason ?? '',
+        ))
     ) {
       return { skipped: true };
     }
 
     const paymentClosure = expired.payment
       ? await this.payments.closeUnmatchedBookingPayment(
-        expired.payment.id,
-        'Payment refund requested because matching expired without a partner',
-      )
+          expired.payment.id,
+          cancellationPaymentRecovery
+            ? 'Payment closure recovered after booking cancellation'
+            : 'Payment refund requested because matching expired without a partner',
+        )
       : null;
     await this.redisState.closeMatching(booking.id);
     await this.gateway.emitBookingExpired(booking.id, expired);
+    const closureEventId = cancellationPaymentRecovery
+      ? `booking-cancellation-payment-closure:${booking.id}`
+      : `booking-timeout-payment-closure:${booking.id}`;
     await this.prisma.adminAuditLog.upsert({
-      where: { eventId: `booking-timeout-payment-closure:${booking.id}` },
+      where: { eventId: closureEventId },
       update: {},
       create: {
-        eventId: `booking-timeout-payment-closure:${booking.id}`,
+        eventId: closureEventId,
         actorId: null,
-        actorKey: 'booking-timeout-worker',
-        actorLabelSnapshot: 'HANDS booking timeout worker',
+        actorKey: cancellationPaymentRecovery
+          ? 'booking-cancellation-payment-worker'
+          : 'booking-timeout-worker',
+        actorLabelSnapshot: cancellationPaymentRecovery
+          ? 'HANDS booking cancellation payment worker'
+          : 'HANDS booking timeout worker',
         actorType: 'SYSTEM',
-        action: 'booking.timeout.payment_closure_recorded',
+        action: cancellationPaymentRecovery
+          ? 'booking.cancellation.payment_closure_recorded'
+          : 'booking.timeout.payment_closure_recorded',
         area: 'BOOKING',
         objectId: booking.id,
         objectType: 'Booking',
         outcome: paymentClosure?.refundRequested ? 'OPENED' : 'SUCCEEDED',
-        source: 'matching_timeout_worker',
+        source: cancellationPaymentRecovery
+          ? 'booking_cancellation_payment_worker'
+          : 'matching_timeout_worker',
         target: `booking:${booking.id}`,
         metadata: {
           bookingId: booking.id,
@@ -123,6 +145,25 @@ export class BookingTimeoutProcessor extends WorkerHost {
         },
       },
     });
+    if (cancellationPaymentRecovery) {
+      await this.prisma.bookingOpsTask.updateMany({
+        where: {
+          bookingId: booking.id,
+          note: { startsWith: CANCELLATION_PAYMENT_PENDING_NOTE },
+          status: BookingOpsTaskStatus.PENDING,
+          type: BookingOpsTaskType.PAYMENT_REVIEWED,
+        },
+        data: {
+          status: paymentClosure?.refundRequested
+            ? BookingOpsTaskStatus.PENDING
+            : BookingOpsTaskStatus.DONE,
+          note: paymentClosure?.refundRequested
+            ? 'Captured payment refund is pending finance review.'
+            : 'Payment closure completed after booking cancellation.',
+        },
+      });
+      return { recovered: true, bookingId: booking.id };
+    }
     if (booking.closedReason === 'admin_expired') {
       await this.prisma.bookingOpsTask.updateMany({
         where: {
