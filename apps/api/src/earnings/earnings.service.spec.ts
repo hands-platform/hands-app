@@ -1645,6 +1645,17 @@ describe('EarningsService payout batches', () => {
 
     await expect(service.createForCompletedBooking('booking-1', 'provider-1')).resolves.toEqual(earning);
 
+    const [bookingLock, settlementLock] = tx.$queryRaw.mock.calls.slice(0, 2).map(
+      ([query]) => query as { strings: readonly string[]; values: unknown[] },
+    );
+    expect(bookingLock.strings.join('')).toContain('FROM "Booking"');
+    expect(bookingLock.strings.join('')).toContain('FOR UPDATE');
+    expect(bookingLock.values).toContain('booking-1');
+    expect(settlementLock.values).toContain('booking-settlement:booking-1');
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.$queryRaw.mock.invocationCallOrder[1],
+    );
+
     expect(tx.providerEarning.findUnique).toHaveBeenCalledWith({
       where: { bookingId: 'booking-1' },
     });
@@ -1718,6 +1729,39 @@ describe('EarningsService payout batches', () => {
     await expect(
       service.createForCompletedBooking('booking-missing-completion-time', 'provider-1'),
     ).rejects.toThrow('requires an authoritative completion time');
+  });
+
+  it('does not create an earning after a concurrent refund changed the locked booking state', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      booking: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'booking-refunded-before-closeout',
+          selectedProviderId: 'provider-1',
+          status: BookingStatus.REFUNDED,
+          closedAt: new Date('2026-06-13T03:02:00.000Z'),
+          services: [],
+          payment: null,
+          review: null,
+        }),
+      },
+      providerEarning: {
+        findUnique: vi.fn(),
+        upsert: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.createForCompletedBooking('booking-refunded-before-closeout', 'provider-1'),
+    ).rejects.toThrow('Earnings can be created only for completed bookings');
+
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(tx.providerEarning.findUnique).not.toHaveBeenCalled();
+    expect(tx.providerEarning.upsert).not.toHaveBeenCalled();
   });
 
   it('reconstructs paid settlement accounting from retained evidence without mutating earning or wallet rows', async () => {

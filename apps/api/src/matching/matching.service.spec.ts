@@ -16,10 +16,12 @@ describe('MatchingService booking timeout queue', () => {
       'booking-timeout',
       { bookingId: 'booking-1' },
       {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5_000 },
         delay: 600_000,
         jobId: 'booking-timeout-booking-1',
         removeOnComplete: true,
-        removeOnFail: false,
+        removeOnFail: true,
       },
     );
   });

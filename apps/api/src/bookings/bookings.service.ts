@@ -384,6 +384,10 @@ const participantResponseBookingInclude = {
   chatRoom: true,
   services: { select: { serviceId: true } },
   payment: true,
+  opsTasks: {
+    where: { type: BookingOpsTaskType.PAYMENT_REVIEWED },
+    select: { status: true, type: true },
+  },
 } satisfies Prisma.BookingInclude;
 
 const providerActiveWorkStatuses: BookingStatus[] = [
@@ -1867,9 +1871,24 @@ export class BookingsService {
       );
     }
 
-    await this.matching.registerParticipant(bookingId, provider.id, matchingPolicy);
     const result = this.matching.joinBooking(bookingId, participant);
-    await this.announceProviderJoined({ bookingId, provider, matchingPayload: result });
+    await this.runPostCommitBookingEffects(bookingId, [
+      {
+        label: 'matching-participant-register',
+        run: () => this.matching.registerParticipant(bookingId, provider.id, matchingPolicy),
+      },
+      {
+        label: 'provider-joined-notification',
+        run: async () => {
+          const customerUserId = await this.getCustomerUserIdForBooking(bookingId);
+          await this.notifyCustomerProviderJoined(customerUserId, bookingId, provider);
+        },
+      },
+      {
+        label: 'provider-joined-realtime',
+        run: () => this.matchingGateway.emitProviderJoined(bookingId, result),
+      },
+    ]);
     return result;
   }
 
@@ -1985,6 +2004,34 @@ export class BookingsService {
       where: { id: bookingId },
       include: participantResponseBookingInclude,
     });
+    if (
+      status === ParticipantStatus.REJECTED &&
+      isPreferredProviderPaymentClosureRetry(booking, provider.id)
+    ) {
+      const cancellation = await this.bookingCancellationResultWithPaymentRelease(
+        booking,
+        'Preferred partner rejected after gateway payment capture',
+        provider.userId,
+      );
+      const clientResult = clientBookingResponse(cancellation.result);
+      await this.runPostCommitBookingEffects(bookingId, [
+        { label: 'matching-close', run: () => this.matching.closeBooking(bookingId) },
+        {
+          label: 'first-pick-rejected-notification',
+          run: () =>
+            this.notifyCustomerFirstPickRejected(
+              booking.customerProfile.userId,
+              bookingId,
+              provider.id,
+            ),
+        },
+        {
+          label: 'cancellation-realtime',
+          run: () => this.matchingGateway.emitBookingExpired(bookingId, clientResult),
+        },
+      ]);
+      return clientResult;
+    }
     this.assertBookingOpenForPartnerResponse(booking);
 
     const { participantKey, responseRoute } = await this.requireParticipantResponseTarget({
@@ -2170,16 +2217,6 @@ export class BookingsService {
     );
   }
 
-  private async announceProviderJoined(input: {
-    bookingId: string;
-    provider: { id: string; displayName: string };
-    matchingPayload: unknown;
-  }) {
-    const customerUserId = await this.getCustomerUserIdForBooking(input.bookingId);
-    await this.notifyCustomerProviderJoined(customerUserId, input.bookingId, input.provider);
-    await this.matchingGateway.emitProviderJoined(input.bookingId, input.matchingPayload);
-  }
-
   private async notifyCustomerSelectedPartnerMatched(input: {
     bookingId: string;
     customerUserId: string;
@@ -2279,10 +2316,33 @@ export class BookingsService {
             preferredProviderId: input.providerId,
             expiresAt: { gt: new Date() },
           },
-          data: bookingFirstPickRejectedUpdateData({
-            bookingId: input.bookingId,
-            providerProfileId: input.providerId,
-          }),
+          data: {
+            ...bookingFirstPickRejectedUpdateData({
+              bookingId: input.bookingId,
+              providerProfileId: input.providerId,
+            }),
+            opsTasks: {
+              upsert: {
+                where: {
+                  bookingId_type: {
+                    bookingId: input.bookingId,
+                    type: BookingOpsTaskType.PAYMENT_REVIEWED,
+                  },
+                },
+                update: {
+                  status: BookingOpsTaskStatus.PENDING,
+                  note: 'Payment closure pending after preferred partner rejection.',
+                  actorId: input.providerUserId,
+                },
+                create: {
+                  type: BookingOpsTaskType.PAYMENT_REVIEWED,
+                  status: BookingOpsTaskStatus.PENDING,
+                  note: 'Payment closure pending after preferred partner rejection.',
+                  actorId: input.providerUserId,
+                },
+              },
+            },
+          },
           include: firstPickRejectedBookingInclude,
         });
         await transaction.providerBookingRequestEvent.create({
@@ -2457,21 +2517,39 @@ export class BookingsService {
     participant: unknown;
   }) {
     if (input.status === ParticipantStatus.ACCEPTED) {
-      await this.notifyCustomerMarketplaceProviderAccepted(
-        input.customerUserId,
-        input.bookingId,
-        input.provider,
-      );
-      await this.matchingGateway.emitProviderAccepted(input.bookingId, input.participant);
+      await this.runPostCommitBookingEffects(input.bookingId, [
+        {
+          label: 'marketplace-accepted-notification',
+          run: () =>
+            this.notifyCustomerMarketplaceProviderAccepted(
+              input.customerUserId,
+              input.bookingId,
+              input.provider,
+            ),
+        },
+        {
+          label: 'marketplace-accepted-realtime',
+          run: () => this.matchingGateway.emitProviderAccepted(input.bookingId, input.participant),
+        },
+      ]);
     }
 
     if (input.status === ParticipantStatus.REJECTED) {
-      await this.notifyCustomerMarketplaceProviderRejected(
-        input.customerUserId,
-        input.bookingId,
-        input.provider,
-      );
-      await this.matchingGateway.emitProviderRejected(input.bookingId, input.participant);
+      await this.runPostCommitBookingEffects(input.bookingId, [
+        {
+          label: 'marketplace-rejected-notification',
+          run: () =>
+            this.notifyCustomerMarketplaceProviderRejected(
+              input.customerUserId,
+              input.bookingId,
+              input.provider,
+            ),
+        },
+        {
+          label: 'marketplace-rejected-realtime',
+          run: () => this.matchingGateway.emitProviderRejected(input.bookingId, input.participant),
+        },
+      ]);
     }
   }
 
@@ -2801,18 +2879,14 @@ export class BookingsService {
     const provider = await this.requireProvider(providerUserId);
     this.assertProviderBookingActionLocationInput(input);
     const cancellation = await this.closeProviderBookingAfterMatch({
+      addressText: input.addressText,
       bookingId,
+      lat: input.lat,
+      lng: input.lng,
       providerProfileId: provider.id,
       providerUserId: provider.userId,
       note: input.note,
       reasonCode: input.reasonCode,
-    });
-    await this.recordProviderBookingActionLocation({
-      bookingId,
-      providerProfileId: provider.id,
-      addressText: input.addressText,
-      lat: input.lat,
-      lng: input.lng,
     });
 
     const paymentClosure = cancellation.autoApproved
@@ -2857,7 +2931,10 @@ export class BookingsService {
   }
 
   private async closeProviderBookingAfterMatch(input: {
+    addressText?: string;
     bookingId: string;
+    lat: number;
+    lng: number;
     providerProfileId: string;
     providerUserId: string;
     note: string;
@@ -2940,6 +3017,17 @@ export class BookingsService {
       if (!providerPostMatchCancellableStatuses.includes(booking.status)) {
         throw new BadRequestException(`Booking status ${booking.status} cannot be cancelled by Partner`);
       }
+
+      await this.recordProviderBookingActionLocation(
+        {
+          addressText: input.addressText,
+          bookingId: input.bookingId,
+          lat: input.lat,
+          lng: input.lng,
+          providerProfileId: input.providerProfileId,
+        },
+        tx,
+      );
 
       const { minutesAfterMatch, autoApprovalWindow } = isPostMatchCancellationAutoApprovalWindow(
         booking.matchedAt,
@@ -3609,6 +3697,31 @@ function isCustomerPaymentClosureRetry(booking: {
     booking.status === BookingStatus.CANCELLED &&
     booking.closedByRole === Role.CUSTOMER &&
     booking.closedReason === 'customer_cancelled' &&
+    !booking.selectedProviderId &&
+    booking.opsTasks?.some(
+      (task) =>
+        task.type === BookingOpsTaskType.PAYMENT_REVIEWED &&
+        task.status === BookingOpsTaskStatus.PENDING,
+    ) === true
+  );
+}
+
+function isPreferredProviderPaymentClosureRetry(
+  booking: {
+    closedByRole?: Role | null;
+    closedReason?: string | null;
+    opsTasks?: Array<{ status: BookingOpsTaskStatus; type: BookingOpsTaskType }>;
+    preferredProviderId?: string | null;
+    selectedProviderId?: string | null;
+    status: BookingStatus;
+  },
+  providerProfileId: string,
+) {
+  return (
+    booking.status === BookingStatus.CANCELLED &&
+    booking.closedByRole === Role.PROVIDER &&
+    booking.closedReason === 'preferred_provider_rejected' &&
+    booking.preferredProviderId === providerProfileId &&
     !booking.selectedProviderId &&
     booking.opsTasks?.some(
       (task) =>

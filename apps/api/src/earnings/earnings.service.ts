@@ -1076,6 +1076,7 @@ export class EarningsService {
     providerProfileId: string,
     options?: { occurredAt?: Date; preserveExistingLifecycle?: boolean },
   ) {
+    await this.lockBookingLifecycle(tx, bookingId);
     await this.lockBookingSettlement(tx, bookingId);
     const booking = await tx.booking.findUniqueOrThrow({
       where: { id: bookingId },
@@ -4084,6 +4085,12 @@ export class EarningsService {
   private async lockBookingSettlement(client: TxClient, bookingId: string) {
     await client.$queryRaw(
       Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`booking-settlement:${bookingId}`}, 0))`,
+    );
+  }
+
+  private async lockBookingLifecycle(client: TxClient, bookingId: string) {
+    await client.$queryRaw(
+      Prisma.sql`SELECT "id" FROM "Booking" WHERE "id" = ${bookingId} FOR UPDATE`,
     );
   }
 

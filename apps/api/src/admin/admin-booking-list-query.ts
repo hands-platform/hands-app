@@ -438,9 +438,12 @@ export function adminBookingListStatusGroupWhere(
         OR: [
           { expiresAt: { lte: now } },
           {
-            createdAt: { lte: adminBookingMatchingDelayBefore(options) },
+            openedAt: { lte: adminBookingMatchingDelayBefore(options) },
             participants: {
-              none: { status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] } },
+              none: {
+                respondedAt: { not: null },
+                status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
+              },
             },
           },
         ],

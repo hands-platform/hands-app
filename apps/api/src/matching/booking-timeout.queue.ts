@@ -10,10 +10,12 @@ export function bookingTimeoutJob(bookingId: string, expiresAt: Date) {
     name: BOOKING_TIMEOUT_JOB_NAME,
     data: { bookingId },
     options: {
+      attempts: 3,
+      backoff: { type: 'exponential' as const, delay: 5_000 },
       delay: Math.max(expiresAt.getTime() - Date.now(), 0),
       jobId: `${BOOKING_TIMEOUT_JOB_NAME}-${bookingId}`,
       removeOnComplete: true,
-      removeOnFail: false,
+      removeOnFail: true,
     },
   };
 }

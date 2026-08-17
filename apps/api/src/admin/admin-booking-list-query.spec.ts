@@ -191,9 +191,12 @@ describe('admin booking list query', () => {
       OR: [
         { expiresAt: { lte: new Date('2026-07-18T05:00:00.000Z') } },
         {
-          createdAt: { lte: new Date('2026-07-18T04:45:00.000Z') },
+          openedAt: { lte: new Date('2026-07-18T04:45:00.000Z') },
           participants: {
-            none: { status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] } },
+            none: {
+              respondedAt: { not: null },
+              status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
+            },
           },
         },
       ],

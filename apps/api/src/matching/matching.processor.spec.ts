@@ -49,6 +49,7 @@ describe('BookingTimeoutProcessor', () => {
         }),
         update: vi.fn(),
       },
+      adminAuditLog: { upsert: vi.fn() },
     };
     const redisState = { closeMatching: vi.fn() };
     const gateway = { emitBookingExpired: vi.fn() };
@@ -67,6 +68,17 @@ describe('BookingTimeoutProcessor', () => {
     ).resolves.toEqual({ expired: true, bookingId: 'booking-1' });
 
     expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { eventId: 'booking-timeout-payment-closure:booking-1' },
+        create: expect.objectContaining({
+          actorType: 'SYSTEM',
+          action: 'booking.timeout.payment_closure_recorded',
+          objectId: 'booking-1',
+          outcome: 'SUCCEEDED',
+        }),
+      }),
+    );
     expect(payments.closeUnmatchedBookingPayment).toHaveBeenCalledTimes(1);
     expect(redisState.closeMatching).toHaveBeenCalledWith('booking-1');
     expect(gateway.emitBookingExpired).not.toHaveBeenCalled();
@@ -83,12 +95,16 @@ describe('BookingTimeoutProcessor', () => {
           expiresAt: responseDeadline,
           payment: { id: 'payment-1', status: PaymentStatus.CAPTURED },
         }),
-        update: vi.fn().mockResolvedValue({
-          id: 'booking-1',
-          status: BookingStatus.EXPIRED,
-          payment: { id: 'payment-1', status: PaymentStatus.CAPTURED },
-        }),
+        update: vi
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'booking-1',
+            status: BookingStatus.EXPIRED,
+            payment: { id: 'payment-1', status: PaymentStatus.CAPTURED },
+          })
+          .mockResolvedValueOnce({ id: 'booking-1' }),
       },
+      adminAuditLog: { upsert: vi.fn() },
     };
     const redisState = { closeMatching: vi.fn() };
     const gateway = { emitBookingExpired: vi.fn() };
@@ -134,6 +150,14 @@ describe('BookingTimeoutProcessor', () => {
       }),
     );
     expect(prisma.booking.update.mock.calls[0]?.[0]?.data).not.toHaveProperty('expiresAt');
+    expect(prisma.adminAuditLog.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          outcome: 'OPENED',
+          metadata: expect.objectContaining({ refundRequested: true }),
+        }),
+      }),
+    );
   });
 
   it('records a generic expiry when an open marketplace booking has no preferred partner', async () => {
@@ -146,13 +170,17 @@ describe('BookingTimeoutProcessor', () => {
           expiresAt: new Date(Date.now() - 1_000),
           payment: null,
         }),
-        update: vi.fn().mockResolvedValue({
-          id: 'booking-1',
-          status: BookingStatus.EXPIRED,
-          closedReason: 'matching_request_expired',
-          payment: null,
-        }),
+        update: vi
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'booking-1',
+            status: BookingStatus.EXPIRED,
+            closedReason: 'matching_request_expired',
+            payment: null,
+          })
+          .mockResolvedValueOnce({ id: 'booking-1' }),
       },
+      adminAuditLog: { upsert: vi.fn() },
     };
     const processor = new BookingTimeoutProcessor(
       prisma as never,

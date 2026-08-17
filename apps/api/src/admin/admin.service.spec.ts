@@ -6216,7 +6216,8 @@ describe('AdminService query orchestration', () => {
             updatedAt: { gte: new Date('2026-07-17T05:00:00.000Z') },
             participants: {
               some: {
-                status: { in: [ParticipantStatus.ACCEPTED, ParticipantStatus.SELECTED] },
+                respondedAt: { not: null },
+                status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
               },
             },
           },
@@ -6237,7 +6238,15 @@ describe('AdminService query orchestration', () => {
         AND: [
           adminBookingProductionDataWhere(),
           { updatedAt: { gte: new Date('2026-07-17T05:00:00.000Z') } },
-          { status: BookingStatus.OPEN_MATCHING, participants: { none: {} } },
+          {
+            status: BookingStatus.OPEN_MATCHING,
+            participants: {
+              none: {
+                respondedAt: { not: null },
+                status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
+              },
+            },
+          },
         ],
       },
     });

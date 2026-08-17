@@ -6583,7 +6583,10 @@ export class AdminService {
               selectedProviderId: null,
               updatedAt: { gte: liveBookingBoundary },
               participants: {
-                some: { status: { in: [ParticipantStatus.ACCEPTED, ParticipantStatus.SELECTED] } },
+                some: {
+                  respondedAt: { not: null },
+                  status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
+                },
               },
             },
           ],
@@ -6603,7 +6606,15 @@ export class AdminService {
           AND: [
             productionBookingWhere,
             { updatedAt: { gte: liveBookingBoundary } },
-            { status: BookingStatus.OPEN_MATCHING, participants: { none: {} } },
+            {
+              status: BookingStatus.OPEN_MATCHING,
+              participants: {
+                none: {
+                  respondedAt: { not: null },
+                  status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
+                },
+              },
+            },
           ],
         },
       }),

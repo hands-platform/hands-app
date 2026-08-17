@@ -85,12 +85,36 @@ export class BookingTimeoutProcessor extends WorkerHost {
       return { skipped: true };
     }
 
-    if (expired.payment) {
-      await this.payments.closeUnmatchedBookingPayment(
+    const paymentClosure = expired.payment
+      ? await this.payments.closeUnmatchedBookingPayment(
         expired.payment.id,
         'Payment refund requested because matching expired without a partner',
-      );
-    }
+      )
+      : null;
+    await this.prisma.adminAuditLog.upsert({
+      where: { eventId: `booking-timeout-payment-closure:${booking.id}` },
+      update: {},
+      create: {
+        eventId: `booking-timeout-payment-closure:${booking.id}`,
+        actorId: null,
+        actorKey: 'booking-timeout-worker',
+        actorLabelSnapshot: 'HANDS booking timeout worker',
+        actorType: 'SYSTEM',
+        action: 'booking.timeout.payment_closure_recorded',
+        area: 'BOOKING',
+        objectId: booking.id,
+        objectType: 'Booking',
+        outcome: paymentClosure?.refundRequested ? 'OPENED' : 'SUCCEEDED',
+        source: 'matching_timeout_worker',
+        target: `booking:${booking.id}`,
+        metadata: {
+          bookingId: booking.id,
+          paymentId: expired.payment?.id ?? null,
+          refundRequested: paymentClosure?.refundRequested ?? false,
+          released: paymentClosure?.released ?? false,
+        },
+      },
+    });
 
     await this.redisState.closeMatching(booking.id);
     if (transitioned) {
