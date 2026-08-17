@@ -185,7 +185,6 @@ describe('StartShiftChartWidgets', () => {
             requestsPreviousDay: 13,
           },
           granularity: 'hour',
-          range: 'today',
         }}
         rangeLabel="Today"
         section="operations"
@@ -214,7 +213,7 @@ describe('StartShiftChartWidgets', () => {
     };
     const markup = renderToStaticMarkup(
       <StartShiftChartWidgets
-        analytics={{ ...analytics, buckets: [pastBucket, futureBucket], granularity: 'hour', range: 'today' }}
+        analytics={{ ...analytics, buckets: [pastBucket, futureBucket], granularity: 'hour' }}
         rangeLabel="Today (Vietnam)"
         section="operations"
         state="ready"

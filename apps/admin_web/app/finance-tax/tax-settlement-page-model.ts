@@ -509,6 +509,13 @@ export function buildBookingSettlementSnapshotSummaryApiHref(filters: BookingSet
   return `/admin/booking-settlement-snapshots/summary?${params.toString()}`;
 }
 
+export function buildBookingSettlementSnapshotExportApiHref(filters: BookingSettlementFilters) {
+  return buildBookingSettlementSnapshotSummaryApiHref(filters).replace(
+    '/booking-settlement-snapshots/summary?',
+    '/booking-settlement-snapshots/export?',
+  );
+}
+
 export function buildBookingSettlementReversalApiHref(filters: BookingSettlementFilters) {
   const params = new URLSearchParams({
     range: filters.range,

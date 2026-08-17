@@ -45,6 +45,7 @@ import { formatDateOnly } from '../../../lib/admin-format';
 import { buildCsvDataHref } from '../../../lib/csv-export';
 import { readSearchParam } from '../../../lib/date-range';
 import {
+  OPERATIONAL_POLICY_CACHE_OPTIONS,
   OPERATIONAL_POLICY_KEYS,
 } from '../../../lib/operations-policy';
 import {
@@ -384,7 +385,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     adminGet<ProviderDetail | null>(providerEndpoint, null),
     shouldLoadFinanceRecords || shouldLoadEvidenceRecords
       ? Promise.resolve<AdminOperationalPolicySetting[]>([])
-      : adminGet<AdminOperationalPolicySetting[]>(PARTNER_DETAIL_OPERATIONAL_POLICY_HREF, []),
+      : adminGet<AdminOperationalPolicySetting[]>(
+          PARTNER_DETAIL_OPERATIONAL_POLICY_HREF,
+          [],
+          OPERATIONAL_POLICY_CACHE_OPTIONS,
+        ),
   ]);
 
   if (!provider) {

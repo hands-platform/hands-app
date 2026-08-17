@@ -18,7 +18,7 @@ import {
   type TooltipContentProps,
 } from 'recharts';
 
-import type { AdminStartShiftAnalytics } from '../lib/admin-api';
+import type { AdminStartShiftChartAnalytics } from '../lib/admin-api';
 import { AdminDataTable } from './admin-data-table';
 import { AdminCard, AdminCardHeader } from './admin-surface';
 import { StartShiftLiveMetrics, type StartShiftLiveMetric } from './start-shift-live-metrics';
@@ -27,10 +27,10 @@ import { StatusBadge } from './status-badge';
 export { StartShiftLiveMetrics };
 
 type StartShiftChartState = 'empty' | 'ready' | 'stale' | 'unavailable';
-type StartShiftBucket = AdminStartShiftAnalytics['buckets'][number];
+type StartShiftBucket = AdminStartShiftChartAnalytics['buckets'][number];
 
 type StartShiftChartWidgetsProps = {
-  analytics: AdminStartShiftAnalytics | null;
+  analytics: AdminStartShiftChartAnalytics | null;
   fallbackBusinessTotals?: {
     grossAmount: string;
     partnerNetAmount: string;
@@ -56,7 +56,7 @@ function compactMoney(value: number) {
 }
 
 function sumBuckets(
-  analytics: AdminStartShiftAnalytics,
+  analytics: AdminStartShiftChartAnalytics,
   key: keyof Pick<
     StartShiftBucket,
     | 'bookingRequests'
@@ -82,7 +82,7 @@ function sumBuckets(
   return analytics.buckets.reduce((sum, bucket) => sum + (bucket[key] ?? 0), 0);
 }
 
-function generatedLabel(analytics: AdminStartShiftAnalytics | null) {
+function generatedLabel(analytics: AdminStartShiftChartAnalytics | null) {
   if (!analytics) {
     return 'Not generated';
   }
@@ -96,7 +96,7 @@ function generatedLabel(analytics: AdminStartShiftAnalytics | null) {
   }).format(new Date(analytics.generatedAt));
 }
 
-function latestCompletedBucket(analytics: AdminStartShiftAnalytics) {
+function latestCompletedBucket(analytics: AdminStartShiftChartAnalytics) {
   for (let index = analytics.buckets.length - 1; index >= 0; index -= 1) {
     const bucket = analytics.buckets[index];
     if (bucket && !bucket.isFuture) {
@@ -126,7 +126,7 @@ function AccessibleBucketTable({
   columns,
   title,
 }: {
-  analytics: AdminStartShiftAnalytics;
+  analytics: AdminStartShiftChartAnalytics;
   columns: Array<{ key: keyof StartShiftBucket; label: string }>;
   title: string;
 }) {

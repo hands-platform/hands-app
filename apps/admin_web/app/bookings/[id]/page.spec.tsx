@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import { adminGet } from '../../../lib/admin-api';
+import { OPERATIONAL_POLICY_CACHE_OPTIONS } from '../../../lib/operations-policy';
 import {
   readBookingDetailCheckpoint,
   readBookingDetailDiagnosticsView,
@@ -66,6 +67,9 @@ describe('BookingDetailPage data loading', () => {
     expect(
       mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/operational-policy?keys=')),
     ).toBe(true);
+    expect(
+      mockedAdminGet.mock.calls.find(([href]) => href.startsWith('/admin/operational-policy?keys='))?.[2],
+    ).toEqual(OPERATIONAL_POLICY_CACHE_OPTIONS);
     expect(mockedAdminGet).toHaveBeenCalledWith(
       '/admin/bookings/booking-operator-load/notifications?take=8',
       [],

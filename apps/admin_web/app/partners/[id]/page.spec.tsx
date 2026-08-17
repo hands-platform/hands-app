@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 import type { AdminProvider } from '../../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import { adminGet, adminGetResult } from '../../../lib/admin-api';
+import { OPERATIONAL_POLICY_CACHE_OPTIONS } from '../../../lib/operations-policy';
 import ProviderDetailPage from './page';
 
 vi.mock('next/navigation', () => ({
@@ -51,12 +52,12 @@ describe('ProviderDetailPage data loading', () => {
       ProviderDetailPage({ params: Promise.resolve({ id: 'partner-policy-load' }) }),
     ).rejects.toThrow('NEXT_NOT_FOUND');
 
-    const policyHref = mockedAdminGet.mock.calls
-      .map(([href]) => href)
-      .find((href) => href.startsWith('/admin/operational-policy'));
+    const policyCall = mockedAdminGet.mock.calls.find(([href]) => href.startsWith('/admin/operational-policy'));
+    const policyHref = policyCall?.[0];
     expect(policyHref).toBe(
       '/admin/operational-policy?keys=matching.provider_response_window_minutes%2Cmatching.marketplace_partner_radius_meters%2Cmatching.marketplace_partner_location_max_age_minutes',
     );
+    expect(policyCall?.[2]).toEqual(OPERATIONAL_POLICY_CACHE_OPTIONS);
     expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/operational-policy', []);
   });
 

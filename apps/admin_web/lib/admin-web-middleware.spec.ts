@@ -3,6 +3,7 @@ import { createAdminWebSessionCookieValue } from './admin-session';
 
 describe('Admin web proxy', () => {
   const originalEnv = { ...process.env };
+  const apiTokenSecret = 'test-admin-api-token-secret-with-32-chars';
 
   afterEach(() => {
     process.env = { ...originalEnv };
@@ -60,6 +61,7 @@ describe('Admin web proxy', () => {
     const sessionSecret = 'test-admin-session-secret-with-32-chars';
     process.env = {
       ...process.env,
+      ADMIN_WEB_API_TOKEN_SECRET: apiTokenSecret,
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
       NODE_ENV: 'production',
     };
@@ -73,7 +75,7 @@ describe('Admin web proxy', () => {
       'fetch',
       vi.fn().mockResolvedValue(
         Response.json({
-          authenticated: true,
+          ok: true,
           mfaEnrollmentRequired: false,
           operatorAccess: {
             categories: ['PARTNERS_DIRECTORY'],
@@ -99,18 +101,27 @@ describe('Admin web proxy', () => {
     expect(response.headers.get('x-middleware-request-x-hands-admin-operator-categories')).toBe(
       'PARTNERS_DIRECTORY',
     );
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:3000/api/admin/admin-operators/me/session',
+      expect.objectContaining({
+        cache: 'no-store',
+        headers: expect.objectContaining({ authorization: expect.stringMatching(/^Bearer /u) }),
+        method: 'GET',
+      }),
+    );
   });
 
   it('removes spoofed operator access headers when the server does not return access', async () => {
     const sessionSecret = 'test-admin-session-secret-with-32-chars';
     process.env = {
       ...process.env,
+      ADMIN_WEB_API_TOKEN_SECRET: apiTokenSecret,
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
       NODE_ENV: 'production',
     };
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(Response.json({ authenticated: true, mfaEnrollmentRequired: false })),
+      vi.fn().mockResolvedValue(Response.json({ ok: true, mfaEnrollmentRequired: false })),
     );
     const { proxy } = await import('../proxy');
     const sessionCookie = createAdminWebSessionCookieValue({
@@ -139,10 +150,11 @@ describe('Admin web proxy', () => {
     const sessionSecret = 'test-admin-session-secret-with-32-chars';
     process.env = {
       ...process.env,
+      ADMIN_WEB_API_TOKEN_SECRET: apiTokenSecret,
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
       NODE_ENV: 'production',
     };
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ authenticated: false }, { status: 401 })));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ ok: false }, { status: 401 })));
     const { proxy } = await import('../proxy');
     const sessionCookie = createAdminWebSessionCookieValue({
       expiresAtMs: Date.now() + 60_000,
@@ -164,13 +176,14 @@ describe('Admin web proxy', () => {
     const sessionSecret = 'test-admin-session-secret-with-32-chars';
     process.env = {
       ...process.env,
+      ADMIN_WEB_API_TOKEN_SECRET: apiTokenSecret,
       ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
       NODE_ENV: 'production',
     };
     vi.stubGlobal(
       'fetch',
       vi.fn().mockImplementation(() =>
-        Promise.resolve(Response.json({ authenticated: true, mfaEnrollmentRequired: true })),
+        Promise.resolve(Response.json({ ok: true, mfaEnrollmentRequired: true })),
       ),
     );
     const { proxy } = await import('../proxy');

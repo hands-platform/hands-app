@@ -1,21 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import type {
-  AdminBookingSettlementSnapshot,
-  AdminBookingSettlementSnapshotSummary,
-} from '../../../../../../lib/admin-api';
+import type { AdminBookingSettlementSnapshot } from '../../../../../../lib/admin-api';
 import { adminGetResult } from '../../../../../../lib/admin-api';
 import { recordAdminOperatorActivity } from '../../../../../../lib/admin-operator-access';
 import { requireAdminWebAccess } from '../../../../../../lib/admin-session';
 import {
-  buildBookingSettlementSnapshotApiHref,
+  buildBookingSettlementSnapshotExportApiHref,
   buildBookingSettlementSnapshotRowsCsvContent,
-  buildBookingSettlementSnapshotSummaryApiHref,
-  emptyBookingSettlementSummary,
   readBookingSettlementAuditFilters,
 } from '../../../../../finance-tax/tax-settlement-page-model';
 
-const EXPORT_PAGE_SIZE = 100;
 const MAX_EXPORT_ROWS = 100_000;
 const EXPORT_TIMEZONE = 'Asia/Ho_Chi_Minh';
 const NO_STORE_HEADERS = {
@@ -30,19 +24,23 @@ export async function GET(request: NextRequest) {
   }
 
   const filters = readBookingSettlementAuditFilters(Object.fromEntries(request.nextUrl.searchParams.entries()));
-  const summaryResult = await adminGetResult<AdminBookingSettlementSnapshotSummary>(
-    buildBookingSettlementSnapshotSummaryApiHref(filters),
-    emptyBookingSettlementSummary(),
+  const exportResult = await adminGetResult<{
+    rows: AdminBookingSettlementSnapshot[];
+    totalRows: number;
+    truncated: boolean;
+  }>(
+    buildBookingSettlementSnapshotExportApiHref(filters),
+    { rows: [], totalRows: 0, truncated: false },
   );
-  if (!summaryResult.ok) {
+  if (!exportResult.ok) {
     return exportFailureResponse(filters, 'failed', {
-      error: 'SETTLEMENT_AUDIT_SUMMARY_UNAVAILABLE',
-      upstreamStatus: summaryResult.status,
+      error: 'SETTLEMENT_AUDIT_ROWS_UNAVAILABLE',
+      upstreamStatus: exportResult.status,
     });
   }
 
-  const totalRows = summaryResult.data.count;
-  if (totalRows > MAX_EXPORT_ROWS) {
+  const { rows, totalRows, truncated } = exportResult.data;
+  if (truncated || totalRows > MAX_EXPORT_ROWS) {
     return exportFailureResponse(
       filters,
       'failed',
@@ -55,58 +53,18 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const snapshots: AdminBookingSettlementSnapshot[] = [];
-  const seenCursors = new Set<string>();
-  let cursor: string | undefined;
-  while (snapshots.length < totalRows) {
-    const pageFilters = { ...filters, ...(cursor ? { cursor } : {}), page: 1, take: EXPORT_PAGE_SIZE };
-    const pageResult = await adminGetResult<AdminBookingSettlementSnapshot[]>(
-      buildBookingSettlementSnapshotApiHref(pageFilters),
-      [],
-    );
-    if (!pageResult.ok) {
-      return exportFailureResponse(filters, snapshots.length > 0 ? 'partial' : 'failed', {
-        error: 'SETTLEMENT_AUDIT_ROWS_UNAVAILABLE',
-        expectedRows: totalRows,
-        receivedRows: snapshots.length,
-        upstreamStatus: pageResult.status,
-      });
-    }
-    if (pageResult.data.length === 0) {
-      return exportFailureResponse(
-        filters,
-        snapshots.length > 0 ? 'partial' : 'failed',
-        {
-          error: 'SETTLEMENT_AUDIT_EXPORT_INCOMPLETE',
-          expectedRows: totalRows,
-          receivedRows: snapshots.length,
-        },
-      );
-    }
-    snapshots.push(...pageResult.data);
-    const nextCursor = pageResult.data.at(-1)?.auditCursor;
-    if (snapshots.length < totalRows && (!nextCursor || seenCursors.has(nextCursor))) {
-      return exportFailureResponse(
-        filters,
-        'partial',
-        {
-          error: 'SETTLEMENT_AUDIT_EXPORT_CURSOR_INVALID',
-          expectedRows: totalRows,
-          receivedRows: snapshots.length,
-        },
-      );
-    }
-    if (nextCursor) {
-      seenCursors.add(nextCursor);
-      cursor = nextCursor;
-    }
+  if (rows.length !== totalRows) {
+    return exportFailureResponse(filters, rows.length > 0 ? 'partial' : 'failed', {
+      error: 'SETTLEMENT_AUDIT_EXPORT_INCOMPLETE',
+      expectedRows: totalRows,
+      receivedRows: rows.length,
+    });
   }
 
-  const completeRows = snapshots.slice(0, totalRows);
   const generatedAt = new Date().toISOString();
   const generatedBy = access.session?.sub ?? access.mode;
   const activeFilters = exportFilterDescription(filters);
-  const csv = buildBookingSettlementSnapshotRowsCsvContent(completeRows, {
+  const csv = buildBookingSettlementSnapshotRowsCsvContent(rows, {
     activeFilters,
     generatedAt,
     generatedBy,

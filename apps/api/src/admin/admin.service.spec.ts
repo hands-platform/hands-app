@@ -21762,6 +21762,56 @@ describe('AdminService query orchestration', () => {
     expect(listSelect.paymentClearingEntries.select.bankReconciliationMatches).toBeDefined();
   });
 
+  it('loads a complete booking settlement export with one projection query', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          amountAtRisk: 600_000,
+          id: 'settlement-1',
+          postedAt: new Date('2026-07-20T02:00:00.000Z'),
+          totalRows: 1,
+        },
+      ]),
+      bookingSettlementSnapshot: {
+        findMany: vi.fn().mockResolvedValue([bookingSettlementAuditFixture()]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.exportBookingSettlementSnapshots({ range: 'all', review: 'integrity-exceptions', sort: 'oldest' }),
+    ).resolves.toEqual({
+      rows: [expect.objectContaining({ id: 'settlement-1' })],
+      totalRows: 1,
+      truncated: false,
+    });
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.bookingSettlementSnapshot.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not hydrate a booking settlement export above the hard row limit', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          amountAtRisk: 0,
+          id: 'settlement-over-limit',
+          postedAt: new Date('2026-07-20T02:00:00.000Z'),
+          totalRows: 100_001,
+        },
+      ]),
+      bookingSettlementSnapshot: { findMany: vi.fn() },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.exportBookingSettlementSnapshots({ range: 'all' })).resolves.toEqual({
+      rows: [],
+      totalRows: 100_001,
+      truncated: true,
+    });
+    expect(prisma.bookingSettlementSnapshot.findMany).not.toHaveBeenCalled();
+  });
+
   it('rejects a booking settlement cursor when the requested sort changes', async () => {
     const prisma = {
       $queryRaw: vi.fn(),

@@ -3,10 +3,52 @@ import {
   buildDashboardDetailsHref,
   buildDashboardOperationsHref,
   buildDashboardRange,
+  buildStartShiftChartAnalytics,
   buildDashboardViewMode,
 } from './dashboard-page-model';
+import type { AdminStartShiftAnalytics } from '../lib/admin-api';
 
 describe('dashboard page model', () => {
+  it('keeps the chart client payload to the fields rendered by chart widgets', () => {
+    const analytics = {
+      buckets: [],
+      comparison: null,
+      customerPulse: {
+        activeCustomerRecords: 0,
+        appOpenEvents: 0,
+        bookingCustomers: 0,
+        completedBookings: 0,
+        failedPaymentCustomers: 0,
+        firstBookingCustomers: 0,
+        highIntentNoBookingCustomers: 0,
+        matchingFailureCustomers: 0,
+        openMatchAverageWaitMinutes: 0,
+        preferredRequests: 0,
+        providerProfileViews: 0,
+        recentActiveCustomers: 0,
+        repeatCustomers: 0,
+        sessionStartEvents: 0,
+      },
+      customerRankings: { highestValue: [], mostActive: [], mostCompleted: [], needsAttention: [] },
+      demandSupply: { failureRegions: [], services: [] },
+      generatedAt: '2026-08-17T00:00:00.000Z',
+      granularity: 'day',
+      needsAction: [],
+      partnerRankings: { fastestResponse: [], highestRated: [], mostActive: [], mostCompleted: [], needsAttention: [] },
+      range: '7d',
+      timezone: 'Asia/Ho_Chi_Minh',
+    } satisfies AdminStartShiftAnalytics;
+
+    expect(Object.keys(buildStartShiftChartAnalytics(analytics) ?? {}).sort()).toEqual([
+      'buckets',
+      'comparison',
+      'customerPulse',
+      'generatedAt',
+      'granularity',
+      'timezone',
+    ]);
+    expect(buildStartShiftChartAnalytics(null)).toBeNull();
+  });
   it('keeps the default dashboard in summary mode', () => {
     expect(buildDashboardViewMode({})).toEqual({
       detailsMode: 'summary',

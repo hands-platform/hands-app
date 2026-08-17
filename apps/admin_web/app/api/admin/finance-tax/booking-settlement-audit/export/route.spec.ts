@@ -5,7 +5,6 @@ import type { AdminBookingSettlementSnapshot } from '../../../../../../lib/admin
 import { adminGetResult } from '../../../../../../lib/admin-api';
 import { recordAdminOperatorActivity } from '../../../../../../lib/admin-operator-access';
 import { requireAdminWebAccess } from '../../../../../../lib/admin-session';
-import { emptyBookingSettlementSummary } from '../../../../../finance-tax/tax-settlement-page-model';
 import { GET } from './route';
 
 vi.mock('../../../../../../lib/admin-api', async () => {
@@ -66,20 +65,12 @@ describe('booking settlement audit export route', () => {
     expect(mockedAdminGetResult).not.toHaveBeenCalled();
   });
 
-  it('exports every filtered row across server pages with scope and actor metadata', async () => {
-    const firstPage = Array.from({ length: 100 }, (_, index) => snapshotFixture(`snapshot-${index + 1}`));
-    firstPage[99] = { ...firstPage[99], auditCursor: 'cursor-100' };
-    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
-      if (href.includes('/summary?')) {
-        return { data: { ...emptyBookingSettlementSummary(), count: 101 }, ok: true, status: 200 };
-      }
-      if (href.includes('cursor=cursor-100')) {
-        return { data: [{ ...snapshotFixture('snapshot-101'), auditCursor: 'cursor-101' }], ok: true, status: 200 };
-      }
-      if (href.includes('/admin/booking-settlement-snapshots?')) {
-        return { data: firstPage, ok: true, status: 200 };
-      }
-      return { data: fallback, ok: true, status: 200 };
+  it('exports every filtered row from one upstream request with scope and actor metadata', async () => {
+    const rows = Array.from({ length: 101 }, (_, index) => snapshotFixture(`snapshot-${index + 1}`));
+    mockedAdminGetResult.mockResolvedValue({
+      data: { rows, totalRows: rows.length, truncated: false },
+      ok: true,
+      status: 200,
     });
 
     const response = await GET(
@@ -99,13 +90,10 @@ describe('booking settlement audit export route', () => {
     expect(body).toContain('"Asia/Ho_Chi_Minh"');
     expect(body).toContain('"range=all;review=integrity-exceptions;q=Demo Customer"');
     expect(body).not.toContain('+84900000042');
+    expect(mockedAdminGetResult).toHaveBeenCalledTimes(1);
     expect(mockedAdminGetResult).toHaveBeenCalledWith(
-      '/admin/booking-settlement-snapshots?range=all&review=integrity-exceptions&q=Demo+Customer&sort=oldest&take=100',
-      [],
-    );
-    expect(mockedAdminGetResult).toHaveBeenCalledWith(
-      '/admin/booking-settlement-snapshots?range=all&review=integrity-exceptions&q=Demo+Customer&sort=oldest&take=100&cursor=cursor-100',
-      [],
+      '/admin/booking-settlement-snapshots/export?range=all&review=integrity-exceptions&q=Demo+Customer&sort=oldest',
+      { rows: [], totalRows: 0, truncated: false },
     );
     expect(mockedRecordAdminOperatorActivity).toHaveBeenCalledWith(
       'finance.booking_settlement_audit.export',
@@ -114,18 +102,16 @@ describe('booking settlement audit export route', () => {
     );
   });
 
-  it('fails closed when the next cursor is missing from a partial export page', async () => {
-    mockedAdminGetResult
-      .mockResolvedValueOnce({
-        data: { ...emptyBookingSettlementSummary(), count: 101 },
-        ok: true,
-        status: 200,
-      })
-      .mockResolvedValueOnce({
-        data: Array.from({ length: 100 }, (_, index) => snapshotFixture(`snapshot-${index + 1}`)),
-        ok: true,
-        status: 200,
-      });
+  it('fails closed when the export payload is incomplete', async () => {
+    mockedAdminGetResult.mockResolvedValue({
+      data: {
+        rows: Array.from({ length: 100 }, (_, index) => snapshotFixture(`snapshot-${index + 1}`)),
+        totalRows: 101,
+        truncated: false,
+      },
+      ok: true,
+      status: 200,
+    });
 
     const response = await GET(
       new NextRequest(
@@ -135,7 +121,7 @@ describe('booking settlement audit export route', () => {
 
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toEqual({
-      error: 'SETTLEMENT_AUDIT_EXPORT_CURSOR_INVALID',
+      error: 'SETTLEMENT_AUDIT_EXPORT_INCOMPLETE',
       expectedRows: 101,
       receivedRows: 100,
     });
@@ -146,8 +132,12 @@ describe('booking settlement audit export route', () => {
     );
   });
 
-  it('returns a non-CSV error when the authoritative summary is unavailable', async () => {
-    mockedAdminGetResult.mockResolvedValue({ data: emptyBookingSettlementSummary(), ok: false, status: 503 });
+  it('returns a non-CSV error when the authoritative export is unavailable', async () => {
+    mockedAdminGetResult.mockResolvedValue({
+      data: { rows: [], totalRows: 0, truncated: false },
+      ok: false,
+      status: 503,
+    });
 
     const response = await GET(
       new NextRequest('http://localhost/api/admin/finance-tax/booking-settlement-audit/export?range=all&review=open'),
@@ -155,7 +145,7 @@ describe('booking settlement audit export route', () => {
 
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toEqual({
-      error: 'SETTLEMENT_AUDIT_SUMMARY_UNAVAILABLE',
+      error: 'SETTLEMENT_AUDIT_ROWS_UNAVAILABLE',
       upstreamStatus: 503,
     });
     expect(mockedRecordAdminOperatorActivity).toHaveBeenCalledWith(

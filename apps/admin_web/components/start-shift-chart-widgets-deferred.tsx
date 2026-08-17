@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 
-import type { AdminStartShiftAnalytics } from '../lib/admin-api';
+import type { AdminStartShiftChartAnalytics } from '../lib/admin-api';
 import { AdminDeferredRender } from './admin-deferred-render';
 import type { StartShiftLiveMetric } from './start-shift-live-metrics';
 
@@ -12,7 +12,7 @@ const DeferredStartShiftChartWidgets = dynamic(
 );
 
 type StartShiftChartWidgetsDeferredProps = {
-  analytics: AdminStartShiftAnalytics | null;
+  analytics: AdminStartShiftChartAnalytics | null;
   fallbackBusinessTotals?: {
     grossAmount: string;
     partnerNetAmount: string;

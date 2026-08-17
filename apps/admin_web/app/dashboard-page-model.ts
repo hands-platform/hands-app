@@ -1,3 +1,4 @@
+import type { AdminStartShiftAnalytics, AdminStartShiftChartAnalytics } from '../lib/admin-api';
 import { normalizeDateRange, readSearchParam } from '../lib/date-range';
 import { OPERATIONAL_POLICY_KEYS } from '../lib/operations-policy';
 
@@ -5,6 +6,20 @@ export type DashboardDetailsMode = 'summary' | 'all' | 'booking' | 'operations';
 export type DashboardOperationsMode = 'live' | 'analysis' | 'partner' | 'closeout';
 
 type DashboardParams = Record<string, string | string[] | undefined>;
+
+export function buildStartShiftChartAnalytics(
+  analytics: AdminStartShiftAnalytics | null,
+): AdminStartShiftChartAnalytics | null {
+  if (!analytics) return null;
+  return {
+    buckets: analytics.buckets,
+    comparison: analytics.comparison,
+    customerPulse: analytics.customerPulse,
+    generatedAt: analytics.generatedAt,
+    granularity: analytics.granularity,
+    timezone: analytics.timezone,
+  };
+}
 
 export type DashboardViewMode = {
   readonly detailsMode: DashboardDetailsMode;

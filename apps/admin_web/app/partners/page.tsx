@@ -9,6 +9,7 @@ import { AdminErrorState, AdminSection } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
 import { readSearchParam } from '../../lib/date-range';
+import { OPERATIONAL_POLICY_CACHE_OPTIONS } from '../../lib/operations-policy';
 import {
   buildPartnerExportHref,
   buildPartnerExportSlug,
@@ -108,7 +109,11 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const [providersResult, summaryResult, operationalPolicies] = await Promise.all([
     adminGetResult<AdminProvider[]>(dataHrefs.listHref, []),
     adminGetResult<AdminProviderSummary>(dataHrefs.summaryHref, { totalCount: 0 }),
-    adminGet<AdminOperationalPolicySetting[]>(buildProviderOpsPolicyApiHref(), []),
+    adminGet<AdminOperationalPolicySetting[]>(
+      buildProviderOpsPolicyApiHref(),
+      [],
+      OPERATIONAL_POLICY_CACHE_OPTIONS,
+    ),
   ]);
   const partnerListMode = partnerPrimaryListMode(filters.review);
   const partnerReviewContent = partnerReviewModeContent(filters.review);

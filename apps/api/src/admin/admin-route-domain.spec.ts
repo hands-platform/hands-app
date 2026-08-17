@@ -135,7 +135,7 @@ describe('Admin route domain manifest', () => {
       route.path.startsWith('booking-settlement-'),
     );
 
-    expect(routes).toHaveLength(15);
+    expect(routes).toHaveLength(16);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminSettlementRoutes']));
     expect(routes.map((route) => `${route.method} ${route.path}`)).toEqual(
       expect.arrayContaining([
@@ -143,6 +143,7 @@ describe('Admin route domain manifest', () => {
         'GET booking-settlement-gaps/preview-batch',
         'POST booking-settlement-gaps/:id/repair',
         'GET booking-settlement-snapshots',
+        'GET booking-settlement-snapshots/export',
         'GET booking-settlement-snapshots/:id',
         'GET booking-settlement-reversals',
         'GET booking-settlement-reversals/:id',

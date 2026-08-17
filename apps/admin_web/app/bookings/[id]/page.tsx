@@ -190,7 +190,7 @@ import {
   adminGet,
 } from '../../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
-import { OPERATIONAL_POLICY_KEYS } from '../../../lib/operations-policy';
+import { OPERATIONAL_POLICY_CACHE_OPTIONS, OPERATIONAL_POLICY_KEYS } from '../../../lib/operations-policy';
 import { attentionLevel } from '../../../lib/admin-attention-flags';
 import { postMatchCancellationWorkspaceFromHref } from '../../../lib/admin-nav-match';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
@@ -1236,7 +1236,11 @@ async function loadBookingDetailPageData(
       null,
     ),
     includeOperationalRecords
-      ? adminGet<AdminOperationalPolicySetting[]>(BOOKING_DETAIL_OPERATIONAL_POLICY_HREF, [])
+      ? adminGet<AdminOperationalPolicySetting[]>(
+          BOOKING_DETAIL_OPERATIONAL_POLICY_HREF,
+          [],
+          OPERATIONAL_POLICY_CACHE_OPTIONS,
+        )
       : Promise.resolve([]),
     adminGet<AdminNotification[]>(
       `/admin/bookings/${encodedId}/notifications?take=${BOOKING_DETAIL_NOTIFICATION_ROW_PREVIEW_LIMIT}`,

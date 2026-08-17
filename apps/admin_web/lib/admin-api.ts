@@ -596,6 +596,11 @@ export type AdminStartShiftAnalytics = {
   timezone: 'Asia/Ho_Chi_Minh';
 };
 
+export type AdminStartShiftChartAnalytics = Pick<
+  AdminStartShiftAnalytics,
+  'buckets' | 'comparison' | 'customerPulse' | 'generatedAt' | 'granularity' | 'timezone'
+>;
+
 export type AdminStartShiftCustomerRanking = {
   activeRecords: number;
   appOpenEvents: number;

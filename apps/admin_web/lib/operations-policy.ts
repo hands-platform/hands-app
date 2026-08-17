@@ -1,4 +1,10 @@
-import type { AdminOperationalPolicySetting } from './admin-api';
+import type { AdminGetOptions, AdminOperationalPolicySetting } from './admin-api';
+
+export const OPERATIONAL_POLICY_CACHE_OPTIONS = {
+  freshness: 'stable',
+  revalidateSeconds: 300,
+  tags: ['operations-policy'],
+} satisfies AdminGetOptions;
 
 export const OPERATIONAL_POLICY_KEYS = {
   startShiftMatchingDelaysSlaMinutes: 'command.start_shift.matching_delays_sla_minutes',

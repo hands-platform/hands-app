@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAdminWebSessionStateWithApi } from './lib/admin-session-api';
 import { adminWebSessionCookieSecretFromEnv } from './lib/admin-session-secret';
+import type { AdminWebSession } from './lib/admin-session';
 
 const ADMIN_WEB_SESSION_COOKIE_NAME = 'hands_admin_session';
 const ADMIN_OPERATOR_CATEGORIES_HEADER = 'x-hands-admin-operator-categories';
@@ -20,7 +22,7 @@ export async function proxy(request: NextRequest) {
 
   const cookieSession = await getValidAdminWebCookieSession(request);
   if (cookieSession) {
-    const serverSession = await getServerAdminSessionState(request);
+    const serverSession = await getAdminWebSessionStateWithApi(cookieSession);
     if (serverSession.valid) {
       if (serverSession.mfaEnrollmentRequired && pathname !== '/admin-operators') {
         if (isBrowserFacingApi(pathname)) {
@@ -101,54 +103,9 @@ async function verifyAdminWebSessionCookieValue(cookieValue: string, secret: str
       typeof payload.jti === 'string' &&
       (payload.mfaEnrollmentRequired === undefined || typeof payload.mfaEnrollmentRequired === 'boolean') &&
       payload.exp > Math.floor(nowMs / 1000);
-    return valid
-      ? {
-          mfaEnrollmentRequired: payload.mfaEnrollmentRequired === true,
-        }
-      : null;
+    return valid ? (payload as AdminWebSession) : null;
   } catch {
     return null;
-  }
-}
-
-async function getServerAdminSessionState(request: NextRequest) {
-  try {
-    const response = await fetch(new URL('/api/admin/session/me', request.url), {
-      cache: 'no-store',
-      headers: { cookie: request.headers.get('cookie') ?? '' },
-      redirect: 'manual',
-    });
-    if (!response.ok) {
-      return { valid: false, mfaEnrollmentRequired: false };
-    }
-    const body = (await response.json()) as {
-      authenticated?: unknown;
-      mfaEnrollmentRequired?: unknown;
-      operatorAccess?: {
-        categories?: unknown;
-        id?: unknown;
-        roles?: unknown;
-      };
-    };
-    const operatorAccess = body.operatorAccess;
-    return {
-      valid: body.authenticated === true,
-      mfaEnrollmentRequired: body.mfaEnrollmentRequired === true,
-      operatorAccess:
-        typeof operatorAccess?.id === 'string' &&
-        Array.isArray(operatorAccess.roles) &&
-        operatorAccess.roles.every((role) => typeof role === 'string') &&
-        Array.isArray(operatorAccess.categories) &&
-        operatorAccess.categories.every((category) => typeof category === 'string')
-          ? {
-              categories: operatorAccess.categories,
-              id: operatorAccess.id,
-              roles: operatorAccess.roles,
-            }
-          : null,
-    };
-  } catch {
-    return { valid: false, mfaEnrollmentRequired: false, operatorAccess: null };
   }
 }
 

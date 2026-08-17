@@ -41,6 +41,7 @@ import {
   buildDashboardDataHrefs,
   buildDashboardDetailsHref,
   buildDashboardRange,
+  buildStartShiftChartAnalytics,
   buildDashboardViewMode,
 } from './dashboard-page-model';
 import {
@@ -425,6 +426,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     startShiftSummaryResponse?.generatedAt,
   );
   const startShiftAnalytics = startShiftAnalyticsResponse ?? startShiftSummaryResponse?.analytics ?? null;
+  const startShiftChartAnalytics = buildStartShiftChartAnalytics(startShiftAnalytics);
   const startShiftAnalyticsSourceState = dashboardSourceState(
     startShiftAnalytics,
     startShiftAnalytics?.generatedAt,
@@ -1168,7 +1170,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         title={filters.range === 'today' ? 'Today result' : 'Period result'}
       >
         <StartShiftChartWidgetsDeferred
-          analytics={startShiftAnalytics}
+          analytics={startShiftChartAnalytics}
           fallbackBusinessTotals={
             earningsResponse
               ? {

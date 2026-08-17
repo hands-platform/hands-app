@@ -130,6 +130,7 @@ describe('AdminController notification and push actions', () => {
     verifyBookingSettlementRepair: vi.fn(),
     repairBookingSettlementGap: vi.fn(),
     listBookingSettlementSnapshots: vi.fn(),
+    exportBookingSettlementSnapshots: vi.fn(),
     getBookingSettlementSnapshot: vi.fn(),
     bookingSettlementSnapshotSummary: vi.fn(),
     listBookingSettlementReversals: vi.fn(),
@@ -1386,6 +1387,44 @@ describe('AdminController notification and push actions', () => {
       period: undefined,
       paymentMethod: undefined,
       q: 'booking-42',
+    });
+  });
+
+  it('exposes one bounded booking settlement export request with the same filters', async () => {
+    admin.exportBookingSettlementSnapshots.mockResolvedValue({
+      rows: [{ id: 'settlement-1' }],
+      totalRows: 1,
+      truncated: false,
+    });
+
+    await expect(
+      controller.exportBookingSettlementSnapshots(
+        'all',
+        'integrity-exceptions',
+        '2026-07',
+        'CARD',
+        'booking-42',
+        'oldest',
+        'accounting',
+        'allocation',
+        'open',
+      ),
+    ).resolves.toEqual({ rows: [{ id: 'settlement-1' }], totalRows: 1, truncated: false });
+
+    expect(routeMetadata('exportBookingSettlementSnapshots')).toEqual({
+      method: RequestMethod.GET,
+      path: 'booking-settlement-snapshots/export',
+    });
+    expect(admin.exportBookingSettlementSnapshots).toHaveBeenCalledWith({
+      owner: 'accounting',
+      paymentMethod: 'CARD',
+      period: '2026-07',
+      q: 'booking-42',
+      range: 'all',
+      reason: 'allocation',
+      review: 'integrity-exceptions',
+      sort: 'oldest',
+      status: 'open',
     });
   });
 

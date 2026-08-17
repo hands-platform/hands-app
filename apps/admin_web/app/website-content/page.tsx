@@ -166,7 +166,7 @@ async function ContentDirectory({ canCreate, params, view }: { canCreate: boolea
         <Link aria-current={view === 'news' ? 'page' : undefined} href={listHref({ view: 'news' })} prefetch={false}>News</Link>
       </nav>
       <AdminSection className="admin-mb-16" title="Filters" description="Search by page name or address and narrow the current work queue.">
-        <form action="/website-content" className="website-content-filter-grid">
+        <AdminFormGrid action="/website-content" className="website-content-filter-grid" method="get">
           <input name="view" type="hidden" value={view} />
           <AdminFormInput defaultValue={value(params.q)} label="Name or route" labelVisibility="visible" name="q" type="search" />
           <AdminFormSelect defaultValue={value(params.site) ?? ''} label="Website" labelVisibility="visible" name="site" options={[{ label: 'All websites', value: '' }, ...publicSiteOptions]} />
@@ -178,7 +178,7 @@ async function ContentDirectory({ canCreate, params, view }: { canCreate: boolea
             <AdminFormControlButton className="button-primary" type="submit">Apply</AdminFormControlButton>
             <AdminFormControlLink className="button-secondary" href={listHref({ view })}>Clear filters</AdminFormControlLink>
           </AdminFormActionRow>
-        </form>
+        </AdminFormGrid>
       </AdminSection>
       {!result.ok ? (
         <AdminNoticeCard tone="danger"><strong>{view === 'news' ? 'News could not be loaded' : 'Pages could not be loaded'}</strong><p>Retry this view. The result is unavailable, not an empty content library.</p><AdminFormControlLink className="button-secondary" href={listHref(listQuery(params))}>Retry</AdminFormControlLink></AdminNoticeCard>

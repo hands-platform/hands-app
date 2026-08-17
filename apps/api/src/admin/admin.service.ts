@@ -959,6 +959,7 @@ const ADMIN_AUDIT_LOG_LIST_LIMIT = 50;
 const ADMIN_AUDIT_EXPORT_LIMIT = 5_000;
 const ADMIN_PAYMENT_OPERATIONS_DEFAULT_LIMIT = 50;
 const ADMIN_PAYMENT_OPERATIONS_MAX_LIMIT = 100;
+const ADMIN_BOOKING_SETTLEMENT_EXPORT_MAX_ROWS = 100_000;
 const ADMIN_BOOKING_SETTLEMENT_GAP_DEFAULT_LIMIT = 20;
 const ADMIN_BOOKING_SETTLEMENT_GAP_MAX_LIMIT = 50;
 const ADMIN_BOOKING_SETTLEMENT_DRY_RUN_DEFAULT_LIMIT = 100;
@@ -10024,6 +10025,96 @@ export class AdminService {
       where: approvedProviderWhere,
       _count: { _all: true },
     });
+    const cancellationStatuses = [BookingStatus.CANCELLED, BookingStatus.NO_SHOW, BookingStatus.EXPIRED];
+    const appUsageStartDay = appUsageDay(window.startAt);
+    const appUsageEndDay = appUsageDay(window.endAt);
+    const comparisonWindow = adminPartnerOverviewComparisonWindow(window);
+    const comparisonDateWhere = adminPartnerOverviewDateWhere(comparisonWindow);
+    const comparisonUsageStartDay = appUsageDay(comparisonWindow.startAt);
+    const comparisonUsageEndDay = appUsageDay(new Date(comparisonWindow.endAt.getTime() - 1));
+    const inactiveAppBoundary = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const appUsageProviderWhere = {
+      role: Role.PROVIDER,
+      user: { providerProfile: { is: baseWhere } },
+    } satisfies Prisma.AppUsageDailyAggregateWhereInput;
+    const exactAppUsagePromise = Promise.all([
+      this.prisma.appUsageDailyAggregate.aggregate({
+        where: {
+          ...appUsageProviderWhere,
+          day: { gte: appUsageStartDay, lte: appUsageEndDay },
+        },
+        _sum: {
+          appOpenCount: true,
+          sessionStartCount: true,
+          totalEventCount: true,
+        },
+      }),
+      this.prisma.appUsageDailyAggregate.aggregate({
+        where: {
+          ...appUsageProviderWhere,
+          day: { gte: comparisonUsageStartDay, lte: comparisonUsageEndDay },
+        },
+        _sum: {
+          appOpenCount: true,
+          sessionStartCount: true,
+          totalEventCount: true,
+        },
+      }),
+      this.prisma.providerProfile.count({
+        where: partnerOverviewAnd(baseWhere, {
+          user: {
+            appUsageDailyAggregates: {
+              some: {
+                role: Role.PROVIDER,
+                day: { gte: appUsageStartDay, lte: appUsageEndDay },
+                totalEventCount: { gt: 0 },
+              },
+            },
+          },
+        }),
+      }),
+      this.prisma.providerProfile.count({
+        where: partnerOverviewAnd(approvedProviderWhere, {
+          AND: [
+            { user: { appUsageDailyAggregates: { some: { role: Role.PROVIDER } } } },
+            {
+              user: {
+                appUsageDailyAggregates: {
+                  none: {
+                    role: Role.PROVIDER,
+                    lastOccurredAt: { gte: inactiveAppBoundary },
+                  },
+                },
+              },
+            },
+          ],
+        }),
+      }),
+      this.prisma.providerProfile.count({
+        where: partnerOverviewAnd(approvedProviderWhere, {
+          user: { appUsageDailyAggregates: { none: { role: Role.PROVIDER } } },
+        }),
+      }),
+    ]);
+    const statusWhere = (period: ReturnType<typeof adminPartnerOverviewDateWhere>) => ({
+      closedAt: period,
+      selectedProviderId: { not: null },
+      selectedProvider: { is: baseWhere },
+      status: { in: [BookingStatus.COMPLETED, ...cancellationStatuses] },
+      ...(serviceIdFilter ? { services: { some: { serviceId: serviceIdFilter } } } : {}),
+    });
+    const periodStatusRowsPromise = Promise.all([
+      this.prisma.booking.groupBy({
+        by: ['status'],
+        where: statusWhere(dateWhere),
+        _count: { _all: true },
+      }),
+      this.prisma.booking.groupBy({
+        by: ['status'],
+        where: statusWhere(comparisonDateWhere),
+        _count: { _all: true },
+      }),
+    ]);
     const locationFreshnessMinutes = await locationFreshnessPromise;
     const locationFreshBoundary = new Date(now.getTime() - locationFreshnessMinutes * 60_000);
     const onlineStatuses = [
@@ -10031,7 +10122,6 @@ export class AdminService {
       ProviderStatus.ONLINE_BUSY,
       ProviderStatus.ONLINE_AVAILABLE_SOON,
     ];
-    const cancellationStatuses = [BookingStatus.CANCELLED, BookingStatus.NO_SHOW, BookingStatus.EXPIRED];
     const completedBookingWhere = {
       status: BookingStatus.COMPLETED,
       ...(dateWhere ? { closedAt: dateWhere } : {}),
@@ -10599,13 +10689,6 @@ export class AdminService {
     const providerUserIds = providerRows
       .map((provider) => provider.user.id)
       .filter((userId): userId is string => Boolean(userId));
-    const appUsageStartDay = appUsageDay(window.startAt);
-    const appUsageEndDay = appUsageDay(window.endAt);
-    const comparisonWindow = adminPartnerOverviewComparisonWindow(window);
-    const comparisonDateWhere = adminPartnerOverviewDateWhere(comparisonWindow);
-    const comparisonUsageStartDay = appUsageDay(comparisonWindow.startAt);
-    const comparisonUsageEndDay = appUsageDay(new Date(comparisonWindow.endAt.getTime() - 1));
-    const inactiveAppBoundary = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const boundedAppUsagePromise =
       providerUserIds.length > 0
         ? Promise.all([
@@ -10646,98 +10729,22 @@ export class AdminService {
             }),
           ])
         : Promise.resolve([[], [], []] as const);
-    const appUsageProviderWhere = {
-      role: Role.PROVIDER,
-      user: { providerProfile: { is: baseWhere } },
-    } satisfies Prisma.AppUsageDailyAggregateWhereInput;
     const [
       boundedAppUsageRows,
-      exactRangeAppUsage,
-      exactPreviousAppUsage,
-      exactAppActivePartners,
-      exactAppInactivePartners,
-      exactAppNotTrackedPartners,
+      [
+        exactRangeAppUsage,
+        exactPreviousAppUsage,
+        exactAppActivePartners,
+        exactAppInactivePartners,
+        exactAppNotTrackedPartners,
+      ],
     ] = await Promise.all([
       boundedAppUsagePromise,
-      this.prisma.appUsageDailyAggregate.aggregate({
-        where: {
-          ...appUsageProviderWhere,
-          day: { gte: appUsageStartDay, lte: appUsageEndDay },
-        },
-        _sum: {
-          appOpenCount: true,
-          sessionStartCount: true,
-          totalEventCount: true,
-        },
-      }),
-      this.prisma.appUsageDailyAggregate.aggregate({
-        where: {
-          ...appUsageProviderWhere,
-          day: { gte: comparisonUsageStartDay, lte: comparisonUsageEndDay },
-        },
-        _sum: {
-          appOpenCount: true,
-          sessionStartCount: true,
-          totalEventCount: true,
-        },
-      }),
-      this.prisma.providerProfile.count({
-        where: partnerOverviewAnd(baseWhere, {
-          user: {
-            appUsageDailyAggregates: {
-              some: {
-                role: Role.PROVIDER,
-                day: { gte: appUsageStartDay, lte: appUsageEndDay },
-                totalEventCount: { gt: 0 },
-              },
-            },
-          },
-        }),
-      }),
-      this.prisma.providerProfile.count({
-        where: partnerOverviewAnd(approvedProviderWhere, {
-          AND: [
-            { user: { appUsageDailyAggregates: { some: { role: Role.PROVIDER } } } },
-            {
-              user: {
-                appUsageDailyAggregates: {
-                  none: {
-                    role: Role.PROVIDER,
-                    lastOccurredAt: { gte: inactiveAppBoundary },
-                  },
-                },
-              },
-            },
-          ],
-        }),
-      }),
-      this.prisma.providerProfile.count({
-        where: partnerOverviewAnd(approvedProviderWhere, {
-          user: { appUsageDailyAggregates: { none: { role: Role.PROVIDER } } },
-        }),
-      }),
+      exactAppUsagePromise,
     ]);
     const [rangeAppUsageRows, latestAppUsageRows, previousAppUsageRowsRaw] = boundedAppUsageRows;
     const previousAppUsageRows = previousAppUsageRowsRaw ?? [];
-    const statusWhere = (period: ReturnType<typeof adminPartnerOverviewDateWhere>) => ({
-      closedAt: period,
-      selectedProviderId: { not: null },
-      selectedProvider: { is: baseWhere },
-      status: { in: [BookingStatus.COMPLETED, ...cancellationStatuses] },
-      ...(serviceIdFilter ? { services: { some: { serviceId: serviceIdFilter } } } : {}),
-    });
-    const [periodStatusRowsRaw, previousStatusRowsRaw] = await Promise.all([
-      this.prisma.booking.groupBy({
-        by: ['status'],
-        where: statusWhere(dateWhere),
-        _count: { _all: true },
-      }),
-      this.prisma.booking.groupBy({
-        by: ['status'],
-        where: statusWhere(comparisonDateWhere),
-        _count: { _all: true },
-      }),
-    ]);
+    const [periodStatusRowsRaw, previousStatusRowsRaw] = await periodStatusRowsPromise;
     const periodStatusRows = periodStatusRowsRaw ?? [];
     const previousStatusRows = previousStatusRowsRaw ?? [];
 
@@ -18340,6 +18347,40 @@ export class AdminService {
     `);
     const ids = idRows.map((row) => row.id).filter(Boolean);
     if (ids.length === 0) return [];
+    return this.hydrateBookingSettlementAuditRows(idRows, checkedAt, options);
+  }
+
+  async exportBookingSettlementSnapshots(options: AdminPaymentOperationsQuery = {}) {
+    const checkedAt = new Date().toISOString();
+    const idRows = await this.prisma.$queryRaw<AdminBookingSettlementAuditExportIdRow[]>(Prisma.sql`
+      ${adminBookingSettlementAuditProjectionCteSql(options, checkedAt)}
+      SELECT
+        audit."id",
+        audit."postedAt",
+        audit."amountAtRisk",
+        (COUNT(*) OVER())::bigint AS "totalRows"
+      FROM "settlementAuditProjection" audit
+      WHERE ${adminBookingSettlementAuditFilterSql(options)}
+      ORDER BY ${adminBookingSettlementAuditOrderSql(options)}
+      LIMIT ${ADMIN_BOOKING_SETTLEMENT_EXPORT_MAX_ROWS + 1}
+    `);
+    const totalRows = Number(idRows[0]?.totalRows ?? 0);
+    if (totalRows > ADMIN_BOOKING_SETTLEMENT_EXPORT_MAX_ROWS) {
+      return { rows: [], totalRows, truncated: true };
+    }
+    if (idRows.length === 0) {
+      return { rows: [], totalRows: 0, truncated: false };
+    }
+    const rows = await this.hydrateBookingSettlementAuditRows(idRows, checkedAt, options);
+    return { rows, totalRows, truncated: false };
+  }
+
+  private async hydrateBookingSettlementAuditRows(
+    idRows: AdminBookingSettlementAuditIdRow[],
+    checkedAt: string,
+    options: AdminPaymentOperationsQuery,
+  ) {
+    const ids = idRows.map((row) => row.id).filter(Boolean);
     const snapshots = await this.prisma.bookingSettlementSnapshot.findMany({
       where: { id: { in: ids } },
       select: adminBookingSettlementSnapshotListSelect,
@@ -48352,6 +48393,10 @@ type AdminBookingSettlementAuditIdRow = {
   amountAtRisk: bigint | number;
   id: string;
   postedAt: Date;
+};
+
+type AdminBookingSettlementAuditExportIdRow = AdminBookingSettlementAuditIdRow & {
+  totalRows: bigint | number;
 };
 
 type AdminBookingSettlementAuditCursor = {

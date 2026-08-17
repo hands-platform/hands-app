@@ -127,6 +127,31 @@ export class AdminSettlementRoutes extends AdminPaymentRoutes {
     });
   }
 
+  @Get('booking-settlement-snapshots/export')
+  exportBookingSettlementSnapshots(
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+    @Query('period') period?: string,
+    @Query('paymentMethod') paymentMethod?: string,
+    @Query('q') q?: string,
+    @Query('sort') sort?: string,
+    @Query('owner') owner?: string,
+    @Query('reason') reason?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.admin.exportBookingSettlementSnapshots({
+      ...(owner ? { owner } : {}),
+      paymentMethod,
+      period,
+      q,
+      range,
+      ...(reason ? { reason } : {}),
+      review,
+      sort,
+      ...(status ? { status } : {}),
+    });
+  }
+
   @Get('booking-settlement-reversals')
   bookingSettlementReversals(
     @Query('take') take?: string,

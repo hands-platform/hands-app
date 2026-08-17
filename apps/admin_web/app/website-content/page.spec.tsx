@@ -21,6 +21,8 @@ describe('WebsiteContentPage', () => {
     expect(mockedGet).toHaveBeenCalledWith(expect.stringContaining('contentType=pages&page=2&take=20'), expect.anything());
     expect(html).toContain('Managed pages');
     expect(html).toContain('Draft changes');
+    expect(html).toContain('admin-directory-filter-form');
+    expect(html).toContain('action="/website-content"');
     expect(html).not.toContain('Article body');
     expect(html).not.toContain('Publish immediately');
   });

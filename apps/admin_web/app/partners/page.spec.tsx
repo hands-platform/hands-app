@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 
 import type { AdminProvider } from '../../lib/admin-api';
 import { adminGet, adminGetResult } from '../../lib/admin-api';
+import { OPERATIONAL_POLICY_CACHE_OPTIONS } from '../../lib/operations-policy';
 import { buildPartnerOperationRow } from './partner-operation-row';
 import ProvidersPage from './page';
 
@@ -63,6 +64,13 @@ describe('ProvidersPage', () => {
     );
     expect(markup).toContain('href="/partners?review=unsettled"');
     expect(markup).not.toContain('0 matching Partners');
+    expect(
+      mockedAdminGet.mock.calls.find(([href]) => href.startsWith('/admin/operational-policy')),
+    ).toEqual([
+      expect.stringContaining('/admin/operational-policy?keys='),
+      [],
+      OPERATIONAL_POLICY_CACHE_OPTIONS,
+    ]);
   });
 
   it('uses the shared Vuexy badge atom for the active sort summary', () => {
