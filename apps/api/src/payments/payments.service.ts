@@ -735,7 +735,7 @@ export class PaymentsService {
     const requestedAt = new Date();
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw(
-        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`payment-refund:${paymentId}`}, 0))`,
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`payment-refund:${paymentId}`}, 0))::text AS "lockResult"`,
       );
       const current = await tx.payment.findUnique({ where: { id: paymentId } });
       if (!current) {

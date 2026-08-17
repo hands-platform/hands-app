@@ -17,6 +17,14 @@ test('combines setup and network failures without copying configured secrets', (
       ok: false,
       results: [{ name: 'api-readiness', status: 'FAIL', error: 'DNS lookup failed', url: 'secret-query' }],
     },
+    {
+      ok: false,
+      productionViolationCount: 2,
+      fixtureCount: 1,
+      unknownCount: 1,
+      pendingRequestCount: 3,
+      releaseBlockingAccounts: [{ id: 'must-not-copy' }],
+    },
   );
 
   assert.equal(report.ok, false);
@@ -26,10 +34,23 @@ test('combines setup and network failures without copying configured secrets', (
   assert.deepEqual(report.network.blockers, [
     { name: 'api-readiness', status: 'FAIL', error: 'DNS lookup failed' },
   ]);
+  assert.deepEqual(report.financeGovernance, {
+    ok: false,
+    productionViolationCount: 2,
+    fixtureCount: 1,
+    unknownCount: 1,
+    pendingRequestCount: 3,
+    errorCode: null,
+  });
   assert.doesNotMatch(JSON.stringify(report), /must-not-copy|secret-query/);
 });
 
-test('passes only when both setup and network gates pass', () => {
-  assert.equal(buildReleaseReadinessReport({ ok: true, checks: [] }, { ok: true, results: [] }).ok, true);
-  assert.equal(buildReleaseReadinessReport({ ok: true, checks: [] }, { ok: false, results: [] }).ok, false);
+test('passes only when setup, network, and finance governance gates pass', () => {
+  const pass = { ok: true };
+  assert.equal(buildReleaseReadinessReport({ ok: true, checks: [] }, { ok: true, results: [] }, pass).ok, true);
+  assert.equal(buildReleaseReadinessReport({ ok: true, checks: [] }, { ok: false, results: [] }, pass).ok, false);
+  assert.equal(
+    buildReleaseReadinessReport({ ok: true, checks: [] }, { ok: true, results: [] }, { ok: false }).ok,
+    false,
+  );
 });

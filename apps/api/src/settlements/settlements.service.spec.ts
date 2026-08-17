@@ -682,7 +682,17 @@ describe('SettlementsService', () => {
         }),
       },
       customerWalletLedgerEntry: {
-        upsert: vi.fn().mockResolvedValue({ id: 'customer-wallet-ledger-1' }),
+        upsert: vi.fn().mockResolvedValue({
+          id: 'customer-wallet-ledger-1',
+          amount: -600_000,
+          bookingId: 'booking-wallet-1',
+          currency: 'VND',
+          customerProfileId: 'customer-1',
+          metadata: { reservationState: 'HELD' },
+          notes: 'Customer wallet amount reserved for booking payment.',
+          reference: 'payment-wallet-1',
+          type: 'CUSTOMER_WALLET_PAYMENT',
+        }),
       },
     };
     const service = new SettlementsService(prisma as never);

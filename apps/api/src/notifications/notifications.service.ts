@@ -213,7 +213,7 @@ export class NotificationsService {
 
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw(
-        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`notification:${sourceKey}`}, 0))`,
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`notification:${sourceKey}`}, 0))::text AS "lockResult"`,
       );
       const existing = await tx.notification.findFirst({
         where: {

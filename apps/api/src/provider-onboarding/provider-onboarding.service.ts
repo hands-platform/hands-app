@@ -1939,7 +1939,7 @@ export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy 
   ) {
     return this.prisma.$transaction(
       async (tx) => {
-        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('hands-tax-policy-activation'))`;
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('hands-tax-policy-activation'))::text AS "lockResult"`;
         const policy = await tx.taxPolicyVersion.findUnique({
           where: { id: policyVersionId },
           include: { rules: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] } },

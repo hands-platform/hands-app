@@ -1,12 +1,21 @@
 import { Prisma, PrismaClient, Role } from '@prisma/client';
 
+import { disposableIntegrationDatabaseTarget } from '../common/disposable-integration-database';
 import { AdminService } from './admin.service';
 
-const integrationDescribe =
-  process.env.RUN_OPERATIONAL_POLICY_DB_INTEGRATION === '1' ? describe : describe.skip;
+const integrationEnabled = process.env.RUN_OPERATIONAL_POLICY_DB_INTEGRATION === '1';
+const integrationTarget = integrationEnabled
+  ? disposableIntegrationDatabaseTarget(
+      process.env.DATABASE_URL,
+      process.env.INTEGRATION_DATABASE_ALLOWLIST,
+    )
+  : null;
+const integrationDescribe = integrationEnabled ? describe : describe.skip;
 
 integrationDescribe('Operational policy PostgreSQL concurrency', () => {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({
+    ...(integrationTarget ? { datasources: { db: { url: integrationTarget.databaseUrl } } } : {}),
+  });
   const runId = `operations-policy-concurrency-${Date.now()}`;
   const key = 'matching.provider_response_window_minutes';
   const actorIds = [`${runId}-actor-a`, `${runId}-actor-b`];
@@ -20,10 +29,6 @@ integrationDescribe('Operational policy PostgreSQL concurrency', () => {
   );
 
   beforeAll(async () => {
-    // `prisma db push` cannot materialize the migration-owned dbgenerated() default in a disposable DB.
-    await prisma.$executeRawUnsafe(
-      'ALTER TABLE "AdminAuditLog" ALTER COLUMN "timelineAt" SET DEFAULT CURRENT_TIMESTAMP',
-    );
     await prisma.user.createMany({
       data: actorIds.map((id, index) => ({
         id,

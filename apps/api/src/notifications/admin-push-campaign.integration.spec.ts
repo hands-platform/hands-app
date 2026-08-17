@@ -1,10 +1,20 @@
 import { PrismaClient, Role } from '@prisma/client';
 
-const integrationDescribe =
-  process.env.RUN_ADMIN_PUSH_DB_INTEGRATION === '1' ? describe : describe.skip;
+import { disposableIntegrationDatabaseTarget } from '../common/disposable-integration-database';
+
+const integrationEnabled = process.env.RUN_ADMIN_PUSH_DB_INTEGRATION === '1';
+const integrationTarget = integrationEnabled
+  ? disposableIntegrationDatabaseTarget(
+      process.env.DATABASE_URL,
+      process.env.INTEGRATION_DATABASE_ALLOWLIST,
+    )
+  : null;
+const integrationDescribe = integrationEnabled ? describe : describe.skip;
 
 integrationDescribe('Admin push campaign PostgreSQL invariants', () => {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({
+    ...(integrationTarget ? { datasources: { db: { url: integrationTarget.databaseUrl } } } : {}),
+  });
   const runId = `admin-push-integration-${Date.now()}`;
 
   afterEach(async () => {

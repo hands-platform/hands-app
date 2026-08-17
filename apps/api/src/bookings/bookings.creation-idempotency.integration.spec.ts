@@ -7,12 +7,22 @@ import {
   ServicePublicationStatus,
 } from '@prisma/client';
 
+import { disposableIntegrationDatabaseTarget } from '../common/disposable-integration-database';
 import { BookingsService } from './bookings.service';
 
-const integrationDescribe = process.env.RUN_BOOKING_DB_INTEGRATION === '1' ? describe : describe.skip;
+const integrationEnabled = process.env.RUN_BOOKING_DB_INTEGRATION === '1';
+const integrationTarget = integrationEnabled
+  ? disposableIntegrationDatabaseTarget(
+      process.env.DATABASE_URL,
+      process.env.INTEGRATION_DATABASE_ALLOWLIST,
+    )
+  : null;
+const integrationDescribe = integrationEnabled ? describe : describe.skip;
 
 integrationDescribe('Booking creation PostgreSQL idempotency', () => {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({
+    ...(integrationTarget ? { datasources: { db: { url: integrationTarget.databaseUrl } } } : {}),
+  });
   const runId = `booking-idempotency-${Date.now()}`;
   const userId = `${runId}:user`;
   const customerProfileId = `${runId}:customer`;

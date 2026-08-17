@@ -375,7 +375,7 @@ export class NotificationRetryProcessor extends WorkerHost {
 
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw(
-        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`,
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))::text AS "lockResult"`,
       );
       const latest = await tx.notificationDelivery.findFirst({
         where: { notificationId, pushDeviceId: device.id },

@@ -879,8 +879,6 @@ const CUSTOMER_WALLET_REPLAY_FIELDS = [
   'bookingId',
   'currency',
   'customerProfileId',
-  'metadata',
-  'notes',
   'reference',
   'type',
 ] as const;

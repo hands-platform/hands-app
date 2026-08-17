@@ -1095,7 +1095,7 @@ export class ReferralsService {
       ? customerWalletBookingLockKey(reward.walletOwnerCustomerProfileId)
       : `${reward.walletOwnerProviderProfileId as string}:${reward.currency}`;
     await tx.$queryRaw(
-      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`,
+      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))::text AS "lockResult"`,
     );
   }
 
@@ -1435,7 +1435,7 @@ export class ReferralsService {
     ].sort();
     for (const lockKey of lockKeys) {
       await tx.$queryRaw(
-        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`,
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))::text AS "lockResult"`,
       );
     }
   }

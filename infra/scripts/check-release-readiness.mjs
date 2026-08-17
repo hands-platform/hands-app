@@ -17,7 +17,12 @@ const network = runJson([
   ...(envArg ? [envArg] : []),
   ...(timeoutArg ? [timeoutArg] : []),
 ]);
-const report = buildReleaseReadinessReport(setup, network);
+const financeGovernance = runJson([
+  resolve(repoRoot, 'infra', 'scripts', 'check-finance-approver-governance.mjs'),
+  '--release',
+  ...(envArg ? [envArg] : []),
+]);
+const report = buildReleaseReadinessReport(setup, network, financeGovernance);
 
 console.log(JSON.stringify(report, null, 2));
 if (!report.ok) {

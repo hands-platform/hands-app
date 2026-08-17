@@ -4078,13 +4078,13 @@ export class EarningsService {
 
   private async lockProviderPayoutAssignment(client: TxClient, providerProfileId: string) {
     await client.$queryRaw(
-      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`provider-payout-assignment:${providerProfileId}`}, 0))`,
+      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`provider-payout-assignment:${providerProfileId}`}, 0))::text AS "lockResult"`,
     );
   }
 
   private async lockBookingSettlement(client: TxClient, bookingId: string) {
     await client.$queryRaw(
-      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`booking-settlement:${bookingId}`}, 0))`,
+      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`booking-settlement:${bookingId}`}, 0))::text AS "lockResult"`,
     );
   }
 
@@ -4096,7 +4096,7 @@ export class EarningsService {
 
   private async lockFinanceMutation(client: TxClient, key: string) {
     await client.$queryRaw(
-      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`,
+      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))::text AS "lockResult"`,
     );
   }
 

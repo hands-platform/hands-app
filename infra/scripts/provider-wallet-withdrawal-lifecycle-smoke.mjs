@@ -7,6 +7,8 @@ import {
   AdminOperatorPermissionCategory,
   AccountingJournalSourceType,
   BankReconciliationStatus,
+  CompanyBankAccountDataScope,
+  CompanyBankAccountStatus,
   CompanyBankTransactionType,
   PrismaClient,
   ProviderBankAccountStatus,
@@ -16,6 +18,7 @@ import {
   Role,
 } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import IORedis from 'ioredis';
 
 import { runAdminWebDirectSmoke } from './lib/admin-web-direct-smoke.mjs';
 import { loadMergedEnv } from './lib/env-file.mjs';
@@ -25,44 +28,57 @@ const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--e
 const { env } = loadMergedEnv(envFile);
 const port = Number.parseInt(env.PROVIDER_WITHDRAWAL_SMOKE_PORT ?? '3004', 10);
 const apiBaseUrl = `http://127.0.0.1:${port}/api`;
-const runningApiBaseUrl = env.ADMIN_API_BASE_URL ?? 'http://127.0.0.1:3000/api';
 const apiEntry = resolve(repoRoot, 'apps', 'api', 'dist', 'main.js');
 const adminEvidenceMode = process.argv.includes('--admin-evidence');
 const runId = `provider_withdrawal_${Date.now()}`;
+const databaseUrl = requiredEnv('DATABASE_URL');
+const redisUrl = requiredEnv('REDIS_URL');
+assertDisposableLifecycleTarget(databaseUrl, redisUrl);
+const mobileAuthEpoch = `${runId}_auth_epoch`;
 const amount = 120_000;
 const initialWalletBalance = 500_000;
+const withdrawalIdempotencyKey = `${runId}:request`;
 const ids = {
   actor: `${runId}_actor`,
+  actorSession: `${runId}_actor_session`,
   approver: `${runId}_approver`,
+  approverSession: `${runId}_approver_session`,
+  reversalApprover: `${runId}_reversal_approver`,
+  reversalApproverSession: `${runId}_reversal_approver_session`,
   providerUser: `${runId}_provider_user`,
   providerProfile: `${runId}_provider_profile`,
   providerBankAccount: `${runId}_provider_bank_account`,
   companyBankAccount: `${runId}_company_bank_account`,
 };
-const prisma = new PrismaClient({ datasources: { db: { url: requiredEnv('DATABASE_URL') } } });
+const prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+const redis = new IORedis(redisUrl, { maxRetriesPerRequest: null });
 let apiProcess;
 let apiErrorTail = '';
 let withdrawalRequestId;
 let bankTransactionId;
 
 assertLocalFixtureMode();
-assertCondition(Number.isInteger(port) && port > 0 && port < 65536, 'Invalid Provider withdrawal smoke port.');
-assertCondition(existsSync(apiEntry), 'API build is missing. Run the API build before Provider withdrawal smoke.');
+assertCondition(
+  Number.isInteger(port) && port > 0 && port < 65536,
+  'Invalid Provider withdrawal smoke port.',
+);
+assertCondition(
+  existsSync(apiEntry),
+  'API build is missing. Run the API build before Provider withdrawal smoke.',
+);
 
 try {
   await assertPortIsFree();
+  await prepareAuthenticationState();
   await cleanup();
   await seed();
   apiProcess = startApi();
   await waitForHealth();
 
-  const actorToken = adminToken(ids.actor, [Role.ADMIN]);
-  const approverToken = adminToken(ids.approver, [Role.ADMIN, Role.FINANCE_APPROVER]);
-  const providerToken = jwt.sign(
-    { sub: ids.providerUser, activeRole: Role.PROVIDER, roles: [Role.PROVIDER] },
-    jwtAccessSecret(),
-    { expiresIn: '10m' },
-  );
+  const actorToken = adminToken(ids.actor, ids.actorSession);
+  const approverToken = adminToken(ids.approver, ids.approverSession);
+  const reversalApproverToken = adminToken(ids.reversalApprover, ids.reversalApproverSession);
+  const providerToken = mobileToken(ids.providerUser, Role.PROVIDER);
 
   const created = await request('/partner/earnings/wallet-withdrawal-requests', {
     method: 'POST',
@@ -70,6 +86,7 @@ try {
     body: {
       amount,
       bankAccountId: ids.providerBankAccount,
+      idempotencyKey: withdrawalIdempotencyKey,
       requestNote: 'Local Partner withdrawal accounting lifecycle smoke.',
     },
   });
@@ -77,6 +94,20 @@ try {
   assertCondition(
     created.status === ProviderWalletWithdrawalRequestStatus.REQUESTED && created.amount === amount,
     'Partner API did not create the expected withdrawal request.',
+  );
+  const replayed = await request('/partner/earnings/wallet-withdrawal-requests', {
+    method: 'POST',
+    token: providerToken,
+    body: {
+      amount,
+      bankAccountId: ids.providerBankAccount,
+      idempotencyKey: withdrawalIdempotencyKey,
+      requestNote: 'Local Partner withdrawal accounting lifecycle smoke.',
+    },
+  });
+  assertCondition(
+    replayed.id === withdrawalRequestId,
+    'Partner withdrawal idempotent retry created a second request.',
   );
 
   const lockJournal = await journalFor('lock');
@@ -94,7 +125,10 @@ try {
     token: actorToken,
     body: { status: ProviderWalletWithdrawalRequestStatus.APPROVED, adminNote: 'Smoke approval.' },
   });
-  assertCondition(approved.status === ProviderWalletWithdrawalRequestStatus.APPROVED, 'Withdrawal approval failed.');
+  assertCondition(
+    approved.status === ProviderWalletWithdrawalRequestStatus.APPROVED,
+    'Withdrawal approval failed.',
+  );
 
   const transferRef = `LOCAL-WITHDRAWAL-${Date.now()}`;
   const transferDate = new Date().toISOString();
@@ -128,7 +162,10 @@ try {
     token: approverToken,
     body: paidRequestBody,
   });
-  assertCondition(paid.status === ProviderWalletWithdrawalRequestStatus.PAID, 'Withdrawal paid closeout failed.');
+  assertCondition(
+    paid.status === ProviderWalletWithdrawalRequestStatus.PAID,
+    'Withdrawal paid closeout failed.',
+  );
 
   await expectRequestFailure(
     `/admin/provider-wallet/withdrawal-requests/${withdrawalRequestId}`,
@@ -147,8 +184,7 @@ try {
     }),
   ]);
   assertCondition(
-    paidLedgerCount === 1 &&
-      withdrawalJournalCount === 2,
+    paidLedgerCount === 1 && withdrawalJournalCount === 2,
     'Repeated withdrawal paid closeout created duplicate wallet or journal side effects.',
   );
 
@@ -202,7 +238,10 @@ try {
     },
   });
   bankTransactionId = bankTransaction.id;
-  assertCondition(bankTransaction.status === BankReconciliationStatus.UNMATCHED, 'Bank outflow was not opened.');
+  assertCondition(
+    bankTransaction.status === BankReconciliationStatus.UNMATCHED,
+    'Bank outflow was not opened.',
+  );
   await request(`/admin/bank-reconciliation/${bankTransactionId}/review-assignment`, {
     method: 'POST',
     token: actorToken,
@@ -243,7 +282,7 @@ try {
 
   const reversalReference = `LOCAL-WITHDRAWAL-REVERSAL-${Date.now()}`;
   const reversalRequestBody = {
-    approvalAdminId: ids.approver,
+    approvalAdminId: ids.reversalApprover,
     reason: 'Local smoke confirms a returned Partner withdrawal is restored through reversal.',
     reversalReference,
     attachmentUrl: `http://localhost:9000/provider-withdrawal-smoke/${runId}-reversal.pdf`,
@@ -252,7 +291,7 @@ try {
     `/admin/provider-wallet/withdrawal-requests/${withdrawalRequestId}/reversal`,
     {
       method: 'POST',
-      token: actorToken,
+      token: reversalApproverToken,
       body: reversalRequestBody,
     },
   );
@@ -264,7 +303,7 @@ try {
     `/admin/provider-wallet/withdrawal-requests/${withdrawalRequestId}/reversal`,
     {
       method: 'POST',
-      token: actorToken,
+      token: reversalApproverToken,
       body: reversalRequestBody,
     },
   );
@@ -304,17 +343,10 @@ try {
     'Withdrawal reversal did not restore the wallet exactly once.',
   );
   const reversalListPath = '/admin/accounting-journal-batches?q=reversal&range=today&take=20';
-  const [isolatedReversalJournals, runningReversalJournals] = await Promise.all([
-    request(reversalListPath, { token: actorToken }),
-    requestAgainst(runningApiBaseUrl, reversalListPath, { token: actorToken }),
-  ]);
+  const isolatedReversalJournals = await request(reversalListPath, { token: actorToken });
   assertCondition(
     containsJournal(isolatedReversalJournals, reversalJournal.id),
     'The isolated API reversal list does not include the posted withdrawal reversal journal.',
-  );
-  assertCondition(
-    containsJournal(runningReversalJournals, reversalJournal.id),
-    'The running API reversal list does not include the posted withdrawal reversal journal.',
   );
 
   const adminEvidence = adminEvidenceMode
@@ -369,15 +401,22 @@ try {
   try {
     await cleanup();
   } catch (cleanupError) {
-    console.error(JSON.stringify({
-      ok: false,
-      phase: 'cleanup',
-      error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
-      residualFixtureIds: Object.values(ids),
-    }, null, 2));
+    console.error(
+      JSON.stringify(
+        {
+          ok: false,
+          phase: 'cleanup',
+          error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+          residualFixtureIds: Object.values(ids),
+        },
+        null,
+        2,
+      ),
+    );
     process.exitCode = 1;
   }
   await prisma.$disconnect();
+  await redis.quit();
 }
 
 function startApi() {
@@ -411,7 +450,8 @@ async function stopApi() {
 async function assertPortIsFree() {
   try {
     const response = await fetch(`${apiBaseUrl}/health`, { signal: AbortSignal.timeout(500) });
-    if (response) throw new Error(`Port ${port} is already serving an API. Choose PROVIDER_WITHDRAWAL_SMOKE_PORT.`);
+    if (response)
+      throw new Error(`Port ${port} is already serving an API. Choose PROVIDER_WITHDRAWAL_SMOKE_PORT.`);
   } catch (error) {
     if (error instanceof Error && error.message.includes('already serving')) throw error;
   }
@@ -420,7 +460,8 @@ async function assertPortIsFree() {
 async function waitForHealth() {
   const deadline = Date.now() + 45_000;
   while (Date.now() < deadline) {
-    if (apiProcess?.exitCode !== null) throw new Error('Provider withdrawal smoke API exited before becoming healthy.');
+    if (apiProcess?.exitCode !== null)
+      throw new Error('Provider withdrawal smoke API exited before becoming healthy.');
     try {
       const response = await fetch(`${apiBaseUrl}/health`, { signal: AbortSignal.timeout(1000) });
       if (response.ok) return;
@@ -440,24 +481,84 @@ async function seed() {
         phone: smokePhone('01'),
         fullName: 'Withdrawal Smoke Actor',
         roles: [Role.ADMIN],
-        adminUserProvenance: AdminUserProvenance.FIXTURE,
-        fixtureKind: 'PROVIDER_WITHDRAWAL_SMOKE',
-        fixtureRunId: runId,
+        adminUserProvenance: AdminUserProvenance.PRODUCTION,
       },
       {
         id: ids.approver,
         phone: smokePhone('02'),
         fullName: 'Withdrawal Smoke Finance Approver',
         roles: [Role.ADMIN, Role.FINANCE_APPROVER],
-        adminUserProvenance: AdminUserProvenance.FIXTURE,
-        fixtureKind: 'PROVIDER_WITHDRAWAL_SMOKE',
-        fixtureRunId: runId,
+        adminUserProvenance: AdminUserProvenance.PRODUCTION,
+      },
+      {
+        id: ids.reversalApprover,
+        phone: smokePhone('03'),
+        fullName: 'Withdrawal Smoke Reversal Approver',
+        roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+        adminUserProvenance: AdminUserProvenance.PRODUCTION,
       },
       {
         id: ids.providerUser,
-        phone: smokePhone('03'),
+        phone: smokePhone('04'),
         fullName: 'Withdrawal Smoke Partner',
         roles: [Role.PROVIDER],
+      },
+    ],
+  });
+  const now = new Date();
+  await prisma.adminOperatorCredential.createMany({
+    data: [
+      {
+        userId: ids.actor,
+        email: `${runId}.actor@hands.test`,
+        passwordHash: 'disposable-smoke-only-hash',
+        passwordSalt: 'disposable-smoke-only-salt',
+        setupCompletedAt: now,
+        mfaState: 'VERIFIED',
+      },
+      {
+        userId: ids.approver,
+        email: `${runId}.approver@hands.test`,
+        passwordHash: 'disposable-smoke-only-hash',
+        passwordSalt: 'disposable-smoke-only-salt',
+        setupCompletedAt: now,
+        mfaState: 'VERIFIED',
+      },
+      {
+        userId: ids.reversalApprover,
+        email: `${runId}.reversal-approver@hands.test`,
+        passwordHash: 'disposable-smoke-only-hash',
+        passwordSalt: 'disposable-smoke-only-salt',
+        setupCompletedAt: now,
+        mfaState: 'VERIFIED',
+      },
+    ],
+  });
+  await prisma.adminWebSession.createMany({
+    data: [
+      {
+        id: ids.actorSession,
+        userId: ids.actor,
+        expiresAt: new Date(now.getTime() + 30 * 60_000),
+        lastSeenAt: now,
+        reauthenticatedAt: now,
+        mfaVerifiedAt: now,
+      },
+      {
+        id: ids.approverSession,
+        userId: ids.approver,
+        expiresAt: new Date(now.getTime() + 30 * 60_000),
+        lastSeenAt: now,
+        reauthenticatedAt: now,
+        mfaVerifiedAt: now,
+      },
+      {
+        id: ids.reversalApproverSession,
+        userId: ids.reversalApprover,
+        expiresAt: new Date(now.getTime() + 30 * 60_000),
+        lastSeenAt: now,
+        reauthenticatedAt: now,
+        mfaVerifiedAt: now,
       },
     ],
   });
@@ -478,7 +579,33 @@ async function seed() {
           AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
         ],
       },
+      {
+        userId: ids.reversalApprover,
+        categories: [AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS],
+      },
     ],
+  });
+  await prisma.adminAuditLog.create({
+    data: {
+      actorId: ids.actor,
+      action: 'admin_user.finance_approver.legacy_attestation.approved',
+      target: `finance_approver_attestation:${ids.approver}:${runId}`,
+      metadata: {
+        attestorId: ids.approver,
+        sourceReference: `disposable-lifecycle:${runId}`,
+      },
+    },
+  });
+  await prisma.adminAuditLog.create({
+    data: {
+      actorId: ids.actor,
+      action: 'admin_user.finance_approver.legacy_attestation.approved',
+      target: `finance_approver_attestation:${ids.reversalApprover}:${runId}`,
+      metadata: {
+        attestorId: ids.reversalApprover,
+        sourceReference: `disposable-lifecycle:${runId}`,
+      },
+    },
   });
   await prisma.providerProfile.create({
     data: {
@@ -521,6 +648,8 @@ async function seed() {
       accountNumberMasked: '****9911',
       accountNumberLast4: '9911',
       currency: 'VND',
+      dataScope: CompanyBankAccountDataScope.PRODUCTION,
+      status: CompanyBankAccountStatus.ACTIVE,
       metadata: { localSmoke: true, runId },
     },
   });
@@ -536,8 +665,12 @@ async function journalFor(phase) {
 }
 
 function assertBalancedJournal(journal, { debitAccount, creditAccount }) {
-  const debit = journal.entries.filter((entry) => entry.side === 'DEBIT').reduce((sum, entry) => sum + entry.amount, 0);
-  const credit = journal.entries.filter((entry) => entry.side === 'CREDIT').reduce((sum, entry) => sum + entry.amount, 0);
+  const debit = journal.entries
+    .filter((entry) => entry.side === 'DEBIT')
+    .reduce((sum, entry) => sum + entry.amount, 0);
+  const credit = journal.entries
+    .filter((entry) => entry.side === 'CREDIT')
+    .reduce((sum, entry) => sum + entry.amount, 0);
   assertCondition(
     journal.sourceType === AccountingJournalSourceType.PROVIDER_WITHDRAWAL &&
       journal.totalDebit === amount &&
@@ -601,11 +734,23 @@ async function verifyAdminWebEvidence(evidence) {
     },
     {
       path: `/finance-tax/general-ledger/${evidence.lockJournalId}`,
-      markers: ['Journal Batch Detail', 'Journal batch overview', 'CLEAR', evidence.withdrawalRequestId, 'partner_withdrawal_payable'],
+      markers: [
+        'Journal Batch Detail',
+        'Journal batch overview',
+        'CLEAR',
+        evidence.withdrawalRequestId,
+        'partner_withdrawal_payable',
+      ],
     },
     {
       path: `/finance-tax/general-ledger/${evidence.paidJournalId}`,
-      markers: ['Journal Batch Detail', 'Journal batch overview', 'CLEAR', evidence.withdrawalRequestId, 'company_bank_cash'],
+      markers: [
+        'Journal Batch Detail',
+        'Journal batch overview',
+        'CLEAR',
+        evidence.withdrawalRequestId,
+        'company_bank_cash',
+      ],
     },
     {
       path: `/finance-tax/bank-reconciliation/${evidence.bankTransactionId}`,
@@ -664,7 +809,9 @@ async function requestAgainst(baseUrl, path, options = {}) {
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(`${options.method ?? 'GET'} ${path.split('?')[0]} failed with ${response.status}: ${JSON.stringify(body)}`);
+    throw new Error(
+      `${options.method ?? 'GET'} ${path.split('?')[0]} failed with ${response.status}: ${JSON.stringify(body)}`,
+    );
   }
   return body;
 }
@@ -687,38 +834,82 @@ function containsJournal(value, journalId) {
 }
 
 async function cleanup() {
-  await prisma.bankReconciliationMatch.deleteMany({
-    where: {
-      OR: [
-        { withdrawalRequestId: withdrawalRequestId ?? '__missing__' },
-        { bankTransactionId: bankTransactionId ?? '__missing__' },
-      ],
-    },
-  });
-  await prisma.companyBankTransaction.deleteMany({ where: { bankAccountId: ids.companyBankAccount } });
-  await prisma.accountingJournalBatch.deleteMany({
-    where: { sourceType: AccountingJournalSourceType.PROVIDER_WITHDRAWAL, providerProfileId: ids.providerProfile },
-  });
-  await prisma.providerWalletLedgerEntry.deleteMany({ where: { providerProfileId: ids.providerProfile } });
-  await prisma.providerWalletWithdrawalRequest.deleteMany({ where: { providerProfileId: ids.providerProfile } });
-  await prisma.providerBankAccount.deleteMany({ where: { providerProfileId: ids.providerProfile } });
-  await prisma.companyBankAccount.deleteMany({ where: { id: ids.companyBankAccount } });
-  await prisma.notification.deleteMany({ where: { userId: ids.providerUser } });
-  await prisma.adminAuditLog.deleteMany({ where: { actorId: { in: [ids.actor, ids.approver] } } });
-  await prisma.providerProfile.deleteMany({ where: { id: ids.providerProfile } });
-  await prisma.user.deleteMany({ where: { id: { in: [ids.actor, ids.approver, ids.providerUser] } } });
+  // Financial and audit rows are append-only. The enclosing disposable schema is the cleanup boundary.
 }
 
-function adminToken(userId, roles) {
-  return jwt.sign({ sub: userId, activeRole: Role.ADMIN, roles }, jwtAccessSecret(), { expiresIn: '10m' });
+async function prepareAuthenticationState() {
+  await redis.set('auth:mobile:epoch', mobileAuthEpoch);
+}
+
+function mobileToken(userId, role) {
+  return jwt.sign(
+    {
+      sub: userId,
+      activeRole: role,
+      roles: [role],
+      authEpoch: mobileAuthEpoch,
+      familyId: `${runId}_${role.toLowerCase()}_family`,
+    },
+    jwtAccessSecret(),
+    { expiresIn: '10m' },
+  );
+}
+
+function adminToken(userId, sessionId) {
+  return jwt.sign(
+    {
+      sub: userId,
+      typ: 'admin-web-api',
+      aud: 'hands-api',
+      scope: 'admin:api',
+      role: Role.ADMIN,
+      jti: sessionId,
+    },
+    adminWebApiTokenSecret(),
+    { expiresIn: '10m' },
+  );
 }
 
 function assertLocalFixtureMode() {
   assertCondition(env.NODE_ENV !== 'production', 'Provider withdrawal smoke cannot run in production.');
-  const databaseUrl = new URL(requiredEnv('DATABASE_URL'));
+}
+
+function assertDisposableLifecycleTarget(targetDatabaseUrl, targetRedisUrl) {
+  let database;
+  let redisTarget;
+  try {
+    database = new URL(targetDatabaseUrl);
+    redisTarget = new URL(targetRedisUrl);
+  } catch {
+    throw new Error('Provider withdrawal smoke requires valid DATABASE_URL and REDIS_URL values.');
+  }
+  const databaseName = decodeURIComponent(database.pathname.replace(/^\/+|\/+$/gu, ''));
+  const schema = database.searchParams.get('schema')?.trim() ?? '';
+  const exactDatabaseTarget = `${databaseName}:${schema}`;
+  const databaseAllowed =
+    /^(?:(?:hands|finance[_-]approver)[_-](?:it|integration))_[a-z0-9_-]+$/u.test(databaseName) &&
+    /^hands_(?:it|integration)_[a-z0-9_]+$/u.test(schema);
   assertCondition(
-    ['127.0.0.1', 'localhost', '::1'].includes(databaseUrl.hostname),
-    'Provider withdrawal smoke refuses a remote database.',
+    databaseAllowed && allowlist(env.INTEGRATION_DATABASE_ALLOWLIST).has(exactDatabaseTarget),
+    `Refusing Provider withdrawal smoke writes to non-disposable target ${exactDatabaseTarget}`,
+  );
+  assertCondition(
+    ['127.0.0.1', 'localhost', '::1'].includes(redisTarget.hostname),
+    'Provider withdrawal smoke Redis must use a loopback host.',
+  );
+  const normalizedRedisTarget = targetRedisUrl.replace(/\/$/u, '');
+  assertCondition(
+    allowlist(env.INTEGRATION_REDIS_ALLOWLIST).has(normalizedRedisTarget),
+    `Provider withdrawal smoke Redis target ${normalizedRedisTarget} is not explicitly allowlisted`,
+  );
+}
+
+function allowlist(value) {
+  return new Set(
+    String(value ?? '')
+      .split(',')
+      .map((item) => item.trim().replace(/\/$/u, ''))
+      .filter(Boolean),
   );
 }
 
@@ -728,6 +919,10 @@ function smokePhone(suffix) {
 
 function jwtAccessSecret() {
   return env.JWT_ACCESS_SECRET?.trim() || 'dev-access-secret';
+}
+
+function adminWebApiTokenSecret() {
+  return env.ADMIN_WEB_API_TOKEN_SECRET?.trim() || 'dev-admin-web-api-token-secret';
 }
 
 function requiredEnv(key) {

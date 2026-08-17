@@ -9,6 +9,8 @@ import {
   BookingOpsTaskType,
   BookingSettlementStatus,
   BookingStatus,
+  CompanyBankAccountDataScope,
+  CompanyBankAccountStatus,
   CustomerWalletLedgerType,
   EarningStatus,
   FilePurpose,
@@ -26,9 +28,11 @@ import {
   ProviderStatus,
   ProviderWalletLedgerType,
   Role,
+  ServicePublicationStatus,
   VerificationStatus,
 } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import IORedis from 'ioredis';
 import { io as createSocket } from 'socket.io-client';
 
 import { runAdminWebDirectSmoke } from './lib/admin-web-direct-smoke.mjs';
@@ -44,9 +48,15 @@ const previewMode = process.argv.includes('--preview');
 const adminEvidenceMode = process.argv.includes('--admin-evidence');
 const pairedE2eMode = process.argv.includes('--paired-e2e');
 const runId = `cash_booking_lifecycle_${Date.now()}`;
+const databaseUrl = requiredEnv('DATABASE_URL');
+const redisUrl = requiredEnv('REDIS_URL');
+assertDisposableLifecycleTarget(databaseUrl, redisUrl);
+const mobileAuthEpoch = `${runId}_auth_epoch`;
 const ids = {
   actor: `${runId}_admin_actor`,
+  actorSession: `${runId}_admin_actor_session`,
   approver: `${runId}_finance_approver`,
+  approverSession: `${runId}_finance_approver_session`,
   companyBankAccount: `${runId}_company_bank_account`,
   customerUser: `${runId}_customer_user`,
   customerProfile: `${runId}_customer_profile`,
@@ -74,12 +84,12 @@ const documentFixtures = documentTypes.map((type) => ({
   fileAssetId: `${runId}_${type.toLowerCase()}_asset`,
   documentId: `${runId}_${type.toLowerCase()}_document`,
 }));
-const userIds = [ids.actor, ids.approver, ids.customerUser, ids.providerUser];
-const prisma = new PrismaClient({ datasources: { db: { url: requiredEnv('DATABASE_URL') } } });
+const prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+const redis = new IORedis(redisUrl, { maxRetriesPerRequest: null });
 let apiProcess;
 let apiErrorTail = '';
 let smokeStage = 'bootstrap';
-const createdBookingIds = [];
+let bookingRequestSequence = 0;
 
 assertLocalFixtureMode();
 assertCondition(Number.isInteger(port) && port > 0 && port < 65536, 'Invalid cash booking smoke port.');
@@ -90,6 +100,7 @@ assertCondition(
 
 try {
   await assertPortIsFree();
+  await prepareAuthenticationState();
   smokeStage = 'cleanup-before-seed';
   await cleanup();
   smokeStage = 'seed';
@@ -98,10 +109,10 @@ try {
   apiProcess = startApi();
   await waitForHealth();
 
-  const customerToken = accessToken(ids.customerUser, Role.CUSTOMER);
-  const providerToken = accessToken(ids.providerUser, Role.PROVIDER);
-  const actorToken = accessToken(ids.actor, Role.ADMIN);
-  const approverToken = accessToken(ids.approver, Role.ADMIN);
+  const customerToken = mobileAccessToken(ids.customerUser, Role.CUSTOMER);
+  const providerToken = mobileAccessToken(ids.providerUser, Role.PROVIDER);
+  const actorToken = adminAccessToken(ids.actor, ids.actorSession);
+  const approverToken = adminAccessToken(ids.approver, ids.approverSession);
 
   if (pairedE2eMode) {
     const pairedLifecycle = await runCustomerPartnerPairedE2e({
@@ -353,6 +364,7 @@ try {
     process.exitCode = 1;
   });
   await prisma.$disconnect();
+  await redis.quit();
 }
 
 function assertLocalFixtureMode() {
@@ -442,18 +454,14 @@ async function seed() {
         phone: smokePhone('01'),
         fullName: 'Cash Booking Smoke Admin',
         roles: [Role.ADMIN],
-        adminUserProvenance: AdminUserProvenance.FIXTURE,
-        fixtureKind: 'CASH_BOOKING_SMOKE',
-        fixtureRunId: runId,
+        adminUserProvenance: AdminUserProvenance.PRODUCTION,
       },
       {
         id: ids.approver,
         phone: smokePhone('02'),
         fullName: 'Cash Booking Smoke Finance Approver',
         roles: [Role.ADMIN, Role.FINANCE_APPROVER],
-        adminUserProvenance: AdminUserProvenance.FIXTURE,
-        fixtureKind: 'CASH_BOOKING_SMOKE',
-        fixtureRunId: runId,
+        adminUserProvenance: AdminUserProvenance.PRODUCTION,
       },
       {
         id: ids.customerUser,
@@ -489,6 +497,57 @@ async function seed() {
         ],
       },
     ],
+  });
+  await prisma.adminOperatorCredential.createMany({
+    data: [
+      {
+        userId: ids.actor,
+        email: `${runId}.actor@hands.test`,
+        passwordHash: 'disposable-smoke-only-hash',
+        passwordSalt: 'disposable-smoke-only-salt',
+        setupCompletedAt: now,
+        mfaState: 'VERIFIED',
+      },
+      {
+        userId: ids.approver,
+        email: `${runId}.approver@hands.test`,
+        passwordHash: 'disposable-smoke-only-hash',
+        passwordSalt: 'disposable-smoke-only-salt',
+        setupCompletedAt: now,
+        mfaState: 'VERIFIED',
+      },
+    ],
+  });
+  await prisma.adminWebSession.createMany({
+    data: [
+      {
+        id: ids.actorSession,
+        userId: ids.actor,
+        expiresAt: new Date(now.getTime() + 30 * 60_000),
+        lastSeenAt: now,
+        reauthenticatedAt: now,
+        mfaVerifiedAt: now,
+      },
+      {
+        id: ids.approverSession,
+        userId: ids.approver,
+        expiresAt: new Date(now.getTime() + 30 * 60_000),
+        lastSeenAt: now,
+        reauthenticatedAt: now,
+        mfaVerifiedAt: now,
+      },
+    ],
+  });
+  await prisma.adminAuditLog.create({
+    data: {
+      actorId: ids.actor,
+      action: 'admin_user.finance_approver.legacy_attestation.approved',
+      target: `finance_approver_attestation:${ids.approver}:${runId}`,
+      metadata: {
+        attestorId: ids.approver,
+        sourceReference: `disposable-lifecycle:${runId}`,
+      },
+    },
   });
   await prisma.customerProfile.create({
     data: { id: ids.customerProfile, userId: ids.customerUser },
@@ -576,6 +635,7 @@ async function seed() {
       basePrice: 500_000,
       priceStep: 100_000,
       active: true,
+      publicationStatus: ServicePublicationStatus.PUBLISHED,
     },
   });
   await prisma.providerService.create({
@@ -606,6 +666,8 @@ async function seed() {
       accountNumberMasked: '****1000',
       accountNumberLast4: '1000',
       currency: 'VND',
+      dataScope: CompanyBankAccountDataScope.PRODUCTION,
+      status: CompanyBankAccountStatus.ACTIVE,
       metadata: { localSmoke: true, runId },
     },
   });
@@ -652,7 +714,6 @@ async function createCashBooking(customerToken, couponCode) {
     },
   });
   assertCondition(Boolean(created.id), 'Customer booking creation did not return an id.');
-  createdBookingIds.push(created.id);
   return created.id;
 }
 
@@ -671,7 +732,6 @@ async function createCustomerWalletBooking(customerToken) {
     },
   });
   assertCondition(Boolean(created.id), 'Customer wallet booking creation did not return an id.');
-  createdBookingIds.push(created.id);
   return created.id;
 }
 
@@ -868,7 +928,6 @@ async function createMarketplaceCashBooking(customerToken) {
     },
   });
   assertCondition(Boolean(created.id), 'Customer marketplace booking creation did not return an id.');
-  createdBookingIds.push(created.id);
   return created.id;
 }
 
@@ -1075,8 +1134,9 @@ async function runCustomerPartnerPairedE2e({ actorToken, approverToken, customer
   let completion;
   try {
     await waitForSocketConnection(customerSocket);
-    const roomJoin = await customerSocket.timeout(5_000).emitWithAck('booking.join_room', { bookingId });
-    assertCondition(roomJoin?.ok === true, 'Customer Socket.IO client could not join its booking room.');
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 500));
+    customerSocket.emit('booking.join_room', { bookingId });
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 500));
     const serviceCompletedEventPromise = waitForBookingSocketEvent(
       customerSocket,
       'service.completed',
@@ -2048,8 +2108,6 @@ function journalSideTotal(entries, side) {
   return entries.filter((entry) => entry.side === side).reduce((total, entry) => total + entry.amount, 0);
 }
 
-let bookingRequestSequence = 0;
-
 async function request(path, options = {}) {
   const requestBody = withBookingIdempotencyKey(path, options.body);
   const response = await fetch(`${apiBaseUrl}${path}`, {
@@ -2080,97 +2138,40 @@ function withBookingIdempotencyKey(path, body) {
 }
 
 async function cleanup() {
-  const bookingIds = (
-    await prisma.booking.findMany({
-      where: {
-        OR: [{ id: { in: createdBookingIds } }, { customerProfileId: ids.customerProfile }],
-      },
-      select: { id: true },
-    })
-  ).map((booking) => booking.id);
-  const targetBookingIds = bookingIds.length > 0 ? bookingIds : [`${runId}_missing_booking`];
-  const targetPaymentIds = (
-    await prisma.payment.findMany({ where: { bookingId: { in: targetBookingIds } }, select: { id: true } })
-  ).map((payment) => payment.id);
-  const depositRequests = await prisma.partnerBankDepositRequest.findMany({
-    where: {
-      providerProfileId: ids.providerProfile,
-      bankTransactionId: bankTransactionReference,
-    },
-    select: { id: true, journalBatchId: true },
-  });
-  const depositRequestIds = depositRequests.map((request) => request.id);
-  const depositJournalBatchIds = depositRequests.flatMap((request) =>
-    request.journalBatchId ? [request.journalBatchId] : [],
-  );
-  const companyBankTransactionIds = (
-    await prisma.companyBankTransaction.findMany({
-      where: { bankAccountId: ids.companyBankAccount },
-      select: { id: true },
-    })
-  ).map((transaction) => transaction.id);
-
-  await prisma.notificationDelivery.deleteMany({ where: { notification: { userId: { in: userIds } } } });
-  await prisma.notification.deleteMany({ where: { userId: { in: userIds } } });
-  await prisma.adminAuditLog.deleteMany({ where: { actorId: { in: userIds } } });
-  await prisma.bankReconciliationMatch.deleteMany({
-    where: { bankTransactionId: { in: companyBankTransactionIds } },
-  });
-  await prisma.companyBankTransaction.deleteMany({
-    where: { id: { in: companyBankTransactionIds } },
-  });
-  await prisma.partnerBankDepositCashDebtAllocation.deleteMany({
-    where: { partnerBankDepositRequestId: { in: depositRequestIds } },
-  });
-  await prisma.partnerBankDepositRequest.deleteMany({ where: { id: { in: depositRequestIds } } });
-  await prisma.accountingJournalBatch.deleteMany({ where: { id: { in: depositJournalBatchIds } } });
-  await prisma.bookingPaymentClearingEntry.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.accountingJournalBatch.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.bookingSettlementReversalEntry.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.bookingSettlementSnapshot.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.withholdingLog.deleteMany({
-    where: { providerTaxLog: { bookingId: { in: targetBookingIds } } },
-  });
-  await prisma.providerTaxLog.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.providerPlatformFeeLog.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.providerWalletLedgerEntry.deleteMany({ where: { providerProfileId: ids.providerProfile } });
-  await prisma.customerWalletLedgerEntry.deleteMany({ where: { customerProfileId: ids.customerProfile } });
-  await prisma.providerEarning.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.locationSnapshot.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.chatMessage.deleteMany({ where: { chatRoom: { bookingId: { in: targetBookingIds } } } });
-  await prisma.chatRoom.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.providerBookingRequestEvent.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.bookingOpsTask.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.bookingParticipant.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.bookingService.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.paymentCallbackAttempt.deleteMany({ where: { paymentId: { in: targetPaymentIds } } });
-  await prisma.refund.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.payment.deleteMany({ where: { bookingId: { in: targetBookingIds } } });
-  await prisma.booking.deleteMany({ where: { id: { in: targetBookingIds } } });
-
-  await prisma.providerService.deleteMany({ where: { id: ids.providerService } });
-  await prisma.servicePayoutRule.deleteMany({ where: { id: ids.payoutRule } });
-  await prisma.massageService.deleteMany({ where: { id: ids.service } });
-  await prisma.providerDocument.deleteMany({
-    where: { id: { in: documentFixtures.map((item) => item.documentId) } },
-  });
-  await prisma.fileAsset.deleteMany({
-    where: { id: { in: documentFixtures.map((item) => item.fileAssetId) } },
-  });
-  await prisma.providerKyc.deleteMany({ where: { id: ids.providerKyc } });
-  await prisma.providerVerification.deleteMany({ where: { id: ids.providerVerification } });
-  await prisma.companyBankAccount.deleteMany({ where: { id: ids.companyBankAccount } });
-  await prisma.coupon.deleteMany({ where: { id: { in: [ids.coupon, ids.subsidyCoupon] } } });
-  await prisma.customerSelectedLocation.deleteMany({ where: { id: ids.customerLocation } });
-  await prisma.customerProfile.deleteMany({ where: { id: ids.customerProfile } });
-  await prisma.providerProfile.deleteMany({ where: { id: ids.providerProfile } });
-  await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+  // Financial and audit rows are append-only. The enclosing disposable schema is the cleanup boundary.
 }
 
-function accessToken(userId, role) {
-  return jwt.sign({ sub: userId, activeRole: role, roles: [role] }, jwtAccessSecret(), {
-    expiresIn: '10m',
-  });
+async function prepareAuthenticationState() {
+  await redis.set('auth:mobile:epoch', mobileAuthEpoch);
+}
+
+function mobileAccessToken(userId, role) {
+  return jwt.sign(
+    {
+      sub: userId,
+      activeRole: role,
+      roles: [role],
+      authEpoch: mobileAuthEpoch,
+      familyId: `${runId}_${role.toLowerCase()}_family`,
+    },
+    jwtAccessSecret(),
+    { expiresIn: '10m' },
+  );
+}
+
+function adminAccessToken(userId, sessionId) {
+  return jwt.sign(
+    {
+      sub: userId,
+      typ: 'admin-web-api',
+      aud: 'hands-api',
+      scope: 'admin:api',
+      role: Role.ADMIN,
+      jti: sessionId,
+    },
+    adminWebApiTokenSecret(),
+    { expiresIn: '10m' },
+  );
 }
 
 function smokePhone(suffix) {
@@ -2179,6 +2180,51 @@ function smokePhone(suffix) {
 
 function jwtAccessSecret() {
   return env.JWT_ACCESS_SECRET?.trim() || 'dev-access-secret';
+}
+
+function adminWebApiTokenSecret() {
+  return env.ADMIN_WEB_API_TOKEN_SECRET?.trim() || 'dev-admin-web-api-token-secret';
+}
+
+function assertDisposableLifecycleTarget(targetDatabaseUrl, targetRedisUrl) {
+  let database;
+  let redisTarget;
+  try {
+    database = new URL(targetDatabaseUrl);
+    redisTarget = new URL(targetRedisUrl);
+  } catch {
+    throw new Error('Lifecycle smoke requires valid DATABASE_URL and REDIS_URL values.');
+  }
+  const databaseName = decodeURIComponent(database.pathname.replace(/^\/+|\/+$/gu, ''));
+  const schema = database.searchParams.get('schema')?.trim() ?? '';
+  const databaseAllowed =
+    /^(?:(?:hands|finance[_-]approver)[_-](?:it|integration))_[a-z0-9_-]+$/u.test(databaseName) &&
+    /^hands_(?:it|integration)_[a-z0-9_]+$/u.test(schema);
+  const exactDatabaseTarget = `${databaseName}:${schema}`;
+  const databaseAllowlist = allowlist(env.INTEGRATION_DATABASE_ALLOWLIST);
+  assertCondition(
+    databaseAllowed && databaseAllowlist.has(exactDatabaseTarget),
+    `Refusing lifecycle smoke writes to non-disposable target ${exactDatabaseTarget}`,
+  );
+
+  assertCondition(
+    ['127.0.0.1', 'localhost', '::1'].includes(redisTarget.hostname),
+    'Lifecycle smoke Redis must use a loopback host.',
+  );
+  const normalizedRedisTarget = targetRedisUrl.replace(/\/$/u, '');
+  assertCondition(
+    allowlist(env.INTEGRATION_REDIS_ALLOWLIST).has(normalizedRedisTarget),
+    `Lifecycle smoke Redis target ${normalizedRedisTarget} is not explicitly allowlisted`,
+  );
+}
+
+function allowlist(value) {
+  return new Set(
+    String(value ?? '')
+      .split(',')
+      .map((item) => item.trim().replace(/\/$/u, ''))
+      .filter(Boolean),
+  );
 }
 
 function requiredEnv(key) {

@@ -4066,7 +4066,7 @@ async function lockBookingLifecycle(tx: Prisma.TransactionClient, bookingId: str
 
 async function lockProviderBookingAssignment(tx: Prisma.TransactionClient, providerProfileId: string) {
   await tx.$queryRaw(
-    Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`provider-booking-assignment:${providerProfileId}`}, 0))`,
+    Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`provider-booking-assignment:${providerProfileId}`}, 0))::text AS "lockResult"`,
   );
 }
 

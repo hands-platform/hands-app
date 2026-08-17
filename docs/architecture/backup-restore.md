@@ -41,6 +41,19 @@ FORCE=1 sh infra/scripts/restore-db.sh backups/massage-vn-YYYYMMDD-HHMMSS.dump
 - Back up object storage separately; database backups only preserve `FileAsset` metadata and object keys.
 - Run `npm.cmd run api:smoke` after staging restores.
 
+For a local, disposable verification of the object-storage restore procedure, run:
+
+```powershell
+npm.cmd run storage:restore-smoke
+```
+
+This drill uses only a local Docker engine. It writes one private and one public fixture to an ephemeral
+MinIO source, mirrors both buckets to a separate logical backup volume, removes the source container and
+volume, restores into a fresh MinIO target, and verifies the restored object bytes and SHA-256 evidence.
+All generated Docker resources use a unique `hands-storage-restore-*` prefix and are removed in `finally`.
+It never connects to configured staging or production object storage. Run the provider-specific backup
+and restore procedure separately before release, retaining the evidence listed below.
+
 ## Isolated Restore Drill
 
 Never point a restore drill at production, a shared developer database, or a staging database used by another operator. The operator must first verify that the target is disposable and isolated, then record that verification in the drill evidence.

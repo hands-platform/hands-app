@@ -161,18 +161,18 @@ jobs:
     name: Migration and paired lifecycle smoke
     needs: node
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     services:
       postgres:
         image: postgis/postgis:16-3.4
         env:
-          POSTGRES_DB: massage_vn
+          POSTGRES_DB: finance_approver_it_ci
           POSTGRES_PASSWORD: massage
           POSTGRES_USER: massage
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U massage -d massage_vn"
+          --health-cmd "pg_isready -U massage -d finance_approver_it_ci"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
@@ -187,7 +187,10 @@ jobs:
           --health-retries 10
     env:
       ADMIN_ACCESS_TOKEN: ci-admin-access-token
-      DATABASE_URL: postgresql://massage:massage@127.0.0.1:5432/massage_vn?schema=public
+      DATABASE_URL: postgresql://massage:massage@127.0.0.1:5432/hands_integration_ci?schema=hands_integration_ci
+      INTEGRATION_DATABASE_ALLOWLIST: hands_integration_ci:hands_integration_ci
+      INTEGRATION_REDIS_ALLOWLIST: redis://127.0.0.1:6379
+      ADMIN_WEB_API_TOKEN_SECRET: ci-admin-web-api-secret-with-at-least-32-characters
       JWT_ACCESS_SECRET: ci-access-secret-with-at-least-32-characters
       JWT_REFRESH_SECRET: ci-refresh-secret-with-at-least-32-characters
       REDIS_URL: redis://127.0.0.1:6379
@@ -208,11 +211,57 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate --schema apps/api/prisma/schema.prisma
 
+      - name: Create disposable lifecycle database
+        run: >-
+          echo "CREATE DATABASE hands_integration_ci;" |
+          npx prisma db execute --stdin
+          --url "postgresql://massage:massage@127.0.0.1:5432/finance_approver_it_ci?schema=public"
+
+      - name: Run finance approver governance isolation
+        env:
+          DATABASE_URL: postgresql://massage:massage@127.0.0.1:5432/finance_approver_it_ci?schema=finance_approver_it_ci
+          FINANCE_APPROVER_INTEGRATION_DATABASE_ALLOWLIST: finance_approver_it_ci:finance_approver_it_ci
+          RUN_FINANCE_APPROVER_DB_INTEGRATION: '1'
+        run: |
+          npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
+          npm run test --workspace @massage-vn/api -- src/admin/admin-finance-approver-governance.integration.spec.ts
+
       - name: Apply migration history
         run: npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
+
+      - name: Verify migration status
+        run: npx prisma migrate status --schema apps/api/prisma/schema.prisma
+
+      - name: Verify release finance governance on a clean target
+        run: npm run security:finance-approvers -- --release
 
       - name: Build API
         run: npm run build --workspace @massage-vn/api
 
+      - name: Run PostgreSQL concurrency contracts
+        env:
+          RUN_ADMIN_PUSH_DB_INTEGRATION: '1'
+          RUN_BOOKING_DB_INTEGRATION: '1'
+          RUN_COMPANY_BANK_ACCOUNT_DB_INTEGRATION: '1'
+          RUN_OPERATIONAL_POLICY_DB_INTEGRATION: '1'
+        run: >-
+          npm run test --workspace @massage-vn/api --
+          src/admin/admin-company-bank-account-concurrency.integration.spec.ts
+          src/admin/admin-operational-policy-concurrency.integration.spec.ts
+          src/bookings/bookings.creation-idempotency.integration.spec.ts
+          src/notifications/admin-push-campaign.integration.spec.ts
+
       - name: Run Customer and Partner paired lifecycle
         run: npm run mobile:paired-e2e
+
+      - name: Run CASH refund and settlement lifecycle
+        run: npm run bookings:cash-lifecycle-smoke
+
+      - name: Run provider wallet summary concurrency
+        run: npm run finance:provider-wallet-summary-concurrency-smoke
+
+      - name: Run Partner withdrawal and payout lifecycle
+        run: npm run finance:provider-withdrawal-smoke
+
+      - name: Run disposable object storage restore drill
+        run: npm run storage:restore-smoke

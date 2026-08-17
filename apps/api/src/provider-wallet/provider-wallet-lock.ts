@@ -8,6 +8,6 @@ export async function lockProviderWalletLedger(
   currency = DEFAULT_PROVIDER_WALLET_CURRENCY,
 ) {
   await client.$queryRaw(
-    Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`${providerProfileId}:${currency}`}, 0))`,
+    Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`${providerProfileId}:${currency}`}, 0))::text AS "lockResult"`,
   );
 }

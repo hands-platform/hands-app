@@ -17877,7 +17877,7 @@ export class AdminService {
     return this.prisma.$transaction(
       async (lockTx) => {
         await lockTx.$queryRaw(
-          Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`booking_settlement_gap_repair:${bookingId}`}))`,
+          Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`booking_settlement_gap_repair:${bookingId}`}))::text AS "lockResult"`,
         );
 
         const preview = await this.previewBookingSettlementGapRepair(bookingId);
@@ -21258,7 +21258,9 @@ export class AdminService {
     const lockKey = `${target}:assignment:${candidate.assignmentAuditLogId}`;
 
     return this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))::text AS "lockResult"`,
+      );
 
       const latestAssignment = await tx.adminAuditLog.findFirst({
         where: {
@@ -21408,7 +21410,9 @@ export class AdminService {
     const lockKey = `${target}:reconciliation_escalation`;
 
     return this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))::text AS "lockResult"`,
+      );
 
       const latestAssignment = await tx.adminAuditLog.findFirst({
         where: {
@@ -21566,7 +21570,9 @@ export class AdminService {
     const lockKey = `finance_review_escalation_resolution:${notification.id}`;
 
     return this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))::text AS "lockResult"`,
+      );
 
       const current = await tx.notification.findUnique({
         where: { id: notification.id },
@@ -21706,7 +21712,9 @@ export class AdminService {
     const target = `company_bank_transaction_batch:${candidate.batchImportId}`;
 
     return this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${target}))`);
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${target}))::text AS "lockResult"`,
+      );
 
       const existing = await tx.adminAuditLog.findFirst({
         where: {
@@ -27686,7 +27694,7 @@ export class AdminService {
 
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw(
-        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`service-catalog:${command.serviceGroupKey}`}, 0))`,
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`service-catalog:${command.serviceGroupKey}`}, 0))::text AS "lockResult"`,
       );
       const replayDraft = await tx.serviceCatalogDraft.findUnique({
         where: { lastMutationKey: command.requestId },
@@ -29694,7 +29702,7 @@ export class AdminService {
       ? `${ownerId}:${currency}`
       : customerWalletBookingLockKey(ownerId);
     await tx.$queryRaw(
-      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`,
+      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))::text AS "lockResult"`,
     );
   }
 

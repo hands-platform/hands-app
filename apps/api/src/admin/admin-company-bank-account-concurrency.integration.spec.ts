@@ -1,17 +1,32 @@
-import { PrismaClient, Role } from '@prisma/client';
+import {
+  AdminOperatorPermissionCategory,
+  AdminUserProvenance,
+  PrismaClient,
+  Role,
+} from '@prisma/client';
 
+import { disposableIntegrationDatabaseTarget } from '../common/disposable-integration-database';
 import { AdminService } from './admin.service';
+import { FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION } from './finance-approver-policy';
 
-const integrationDescribe =
-  process.env.RUN_COMPANY_BANK_ACCOUNT_DB_INTEGRATION === '1' ? describe : describe.skip;
+const integrationEnabled = process.env.RUN_COMPANY_BANK_ACCOUNT_DB_INTEGRATION === '1';
+const integrationTarget = integrationEnabled
+  ? disposableIntegrationDatabaseTarget(
+      process.env.DATABASE_URL,
+      process.env.INTEGRATION_DATABASE_ALLOWLIST,
+    )
+  : null;
+const integrationDescribe = integrationEnabled ? describe : describe.skip;
 
 integrationDescribe('Company bank account PostgreSQL concurrency', () => {
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({
+    ...(integrationTarget ? { datasources: { db: { url: integrationTarget.databaseUrl } } } : {}),
+  });
   const runId = `company-bank-concurrency-${Date.now()}`;
   const actorIds = [
-    'company-bank-concurrency:maker-a',
-    'company-bank-concurrency:maker-b',
-    'company-bank-concurrency:checker',
+    `${runId}-maker-a`,
+    `${runId}-maker-b`,
+    `${runId}-checker`,
   ];
   const last4 = String(Date.now()).slice(-4);
   const service = new AdminService(
@@ -30,8 +45,47 @@ integrationDescribe('Company bank account PostgreSQL concurrency', () => {
         fullName: `Company bank concurrency actor ${index + 1}`,
         phone: `admin:${id}`,
         roles: index === 2 ? [Role.ADMIN, Role.FINANCE_APPROVER] : [Role.ADMIN],
+        adminUserProvenance: AdminUserProvenance.PRODUCTION,
       })),
       skipDuplicates: true,
+    });
+    await prisma.adminOperatorCredential.upsert({
+      where: { userId: actorIds[2] },
+      create: {
+        userId: actorIds[2],
+        email: `${runId}.checker@hands.test`,
+        passwordHash: 'integration-only-hash',
+        passwordSalt: 'integration-only-salt',
+        setupCompletedAt: new Date(),
+        mfaState: 'VERIFIED',
+      },
+      update: {
+        disabledAt: null,
+        lockedUntil: null,
+        setupCompletedAt: new Date(),
+        mfaState: 'VERIFIED',
+      },
+    });
+    await prisma.adminOperatorPermission.upsert({
+      where: { userId: actorIds[2] },
+      create: {
+        userId: actorIds[2],
+        categories: [AdminOperatorPermissionCategory.FINANCE],
+      },
+      update: {
+        categories: { set: [AdminOperatorPermissionCategory.FINANCE] },
+      },
+    });
+    await prisma.adminAuditLog.create({
+      data: {
+        actorId: actorIds[0],
+        action: FINANCE_APPROVER_LEGACY_ATTESTATION_ACTION,
+        target: `finance_approver_attestation:${actorIds[2]}:${runId}`,
+        metadata: {
+          attestorId: actorIds[1],
+          sourceReference: `disposable-integration:${runId}`,
+        },
+      },
     });
   });
 
