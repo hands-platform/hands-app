@@ -233,6 +233,21 @@ describe('admin booking list query', () => {
     });
   });
 
+  it('keeps every active matched lifecycle state in the handoff repair queue', () => {
+    expect(adminBookingListStatusGroupWhere('handoff-repair')).toEqual({
+      status: {
+        in: [
+          BookingStatus.MATCHED,
+          BookingStatus.PROVIDER_ON_THE_WAY,
+          BookingStatus.ARRIVED,
+          BookingStatus.IN_SERVICE,
+        ],
+      },
+      selectedProviderId: { not: null },
+      chatRoom: { is: null },
+    });
+  });
+
   it('defaults action queues to oldest and records or monitor queues to newest', () => {
     expect(adminBookingListDefaultSort('needs-action')).toBe('oldest');
     expect(adminBookingListDefaultSort('matching-delays')).toBe('oldest');

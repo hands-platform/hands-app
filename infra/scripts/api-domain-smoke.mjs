@@ -205,7 +205,7 @@ assert.equal(walletBlock.walletBalance, -145000);
 assert.equal(walletBlock.walletDebtAmount, 145000);
 assert.equal(walletBlock.marketplaceVisibilityBlocked, false);
 assert.equal(walletBlock.marketplaceJoinBlocked, false);
-assert.equal(walletBlock.directFirstPickBlocked, false);
+assert.equal(walletBlock.directFirstPickBlocked, true);
 assert.equal(walletBlock.alreadyMatchedServiceBlocked, true);
 assert.equal(walletBlock.payoutReleaseBlocked, true);
 assert.equal(walletBlock.walletSettlementMethod, PROVIDER_WALLET_SETTLEMENT_METHOD);

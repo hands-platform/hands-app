@@ -783,6 +783,11 @@ describe('PaymentsService refunds', () => {
       data: { status: 'REFUNDED' },
       where: { id: 'booking-1' },
     });
+    expect(prisma.$queryRaw).toHaveBeenCalledWith(
+      expect.objectContaining({
+        strings: expect.arrayContaining([expect.stringContaining('FROM "Booking"')]),
+      }),
+    );
     expect(prisma.refund.updateMany).toHaveBeenCalledWith({
       where: { id: 'refund-1', status: 'REQUESTED' },
       data: {

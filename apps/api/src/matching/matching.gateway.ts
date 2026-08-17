@@ -118,15 +118,17 @@ export class MatchingGateway implements OnGatewayConnection {
     await this.emitBookingMonitorEvent(bookingId, 'booking.matched', payload);
     await this.emitProviderSignal(
       'booking.matched',
-      providerBookingSignal(bookingId, 'booking.matched', 'MATCHED'),
+      providerBookingSignal(bookingId, 'booking.matched', bookingStatusFromPayload(payload, 'MATCHED')),
     );
   }
 
   async emitBookingExpired(bookingId: string, payload: unknown) {
-    await this.emitBookingMonitorEvent(bookingId, 'booking.expired', payload);
+    const status = bookingStatusFromPayload(payload, 'EXPIRED');
+    const event = status === BookingStatus.CANCELLED ? 'booking.cancelled' : 'booking.expired';
+    await this.emitBookingMonitorEvent(bookingId, event, payload);
     await this.emitProviderSignal(
-      'booking.expired',
-      providerBookingSignal(bookingId, 'booking.expired', 'EXPIRED'),
+      event,
+      providerBookingSignal(bookingId, event, status),
     );
   }
 
@@ -261,4 +263,14 @@ export class MatchingGateway implements OnGatewayConnection {
 
 function providerBookingSignal(bookingId: string, event: string, status: string) {
   return { bookingId, event, status };
+}
+
+function bookingStatusFromPayload(payload: unknown, fallback: string) {
+  if (!payload || typeof payload !== 'object') return fallback;
+  if ('status' in payload && typeof payload.status === 'string') return payload.status;
+  if ('booking' in payload && payload.booking && typeof payload.booking === 'object') {
+    const booking = payload.booking;
+    if ('status' in booking && typeof booking.status === 'string') return booking.status;
+  }
+  return fallback;
 }

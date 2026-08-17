@@ -54,7 +54,7 @@ class OpenBookingCard extends StatelessWidget {
     }.contains(booking['status']);
     final walletBlocksMarketplaceParticipation =
         providerWalletBlocksMarketplaceParticipation(
-      walletBlocked: walletBlocked,
+      marketplaceJoinBlocked: walletBlocked,
       isPreferredRequest: isPreferredRequest,
       isMatched: isMatched,
     );

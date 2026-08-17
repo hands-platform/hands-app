@@ -5,6 +5,7 @@ export const BOOKING_MONITOR_REALTIME_EVENTS = [
   'provider.rejected',
   'booking.matched',
   'booking.expired',
+  'booking.cancelled',
   'service.started',
   'service.completed',
 ] as const;

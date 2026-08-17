@@ -1065,16 +1065,16 @@ function assertNegativeWalletBlockResponse(label, message) {
     '"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"',
     '"walletBlocked":true',
     '"marketplaceVisibilityBlocked":false',
-    '"marketplaceJoinBlocked":true',
-    '"directFirstPickBlocked":false',
+    '"marketplaceJoinBlocked":false',
+    '"directFirstPickBlocked":true',
     '"alreadyMatchedServiceBlocked":true',
     '"payoutReleaseBlocked":true',
     '"walletDebtAmount":',
     '"walletSettlementRequired":true',
     '"walletSettlementMethod":"PROVIDER_DEPOSIT_OR_ADMIN_OFFSET"',
     '"walletSettlementReference":"HANDS-WALLET-',
-    '"displayMessage":"Phí HANDS chưa được thanh toán nên bạn không thể tham gia đặt lịch này."',
-    'Bạn vẫn có thể xem yêu cầu đặt lịch và phản hồi yêu cầu chỉ định trực tiếp',
+    '"displayMessage":"Phí HANDS chưa được thanh toán nên bạn chưa thể xác nhận nhận lịch này."',
+    'Bạn vẫn có thể xem và tham gia yêu cầu đặt lịch',
     'Quyền tham gia đặt lịch và nhận tiền chi trả',
   ];
   const missingMarkers = requiredMarkers.filter((marker) => !message.includes(marker));
@@ -3693,8 +3693,8 @@ if (
   walletDebtProviderEarningsSummary.walletBalance >= 0 ||
   walletDebtProviderEarningsSummary.walletBlocked !== true ||
   walletDebtProviderEarningsSummary.marketplaceVisibilityBlocked !== false ||
-  walletDebtProviderEarningsSummary.marketplaceJoinBlocked !== true ||
-  walletDebtProviderEarningsSummary.directFirstPickBlocked !== false ||
+  walletDebtProviderEarningsSummary.marketplaceJoinBlocked !== false ||
+  walletDebtProviderEarningsSummary.directFirstPickBlocked !== true ||
   walletDebtProviderEarningsSummary.alreadyMatchedServiceBlocked !== true ||
   walletDebtProviderEarningsSummary.payoutReleaseBlocked !== true ||
   walletDebtProviderEarningsSummary.walletDebtAmount <= 0 ||
@@ -3732,7 +3732,7 @@ if (
   );
 }
 const expectedProviderWalletBlockReason =
-  'Outstanding HANDS fee settlement must be completed before marketplace participation, service start, or payout release.';
+  'Outstanding HANDS fee settlement must be completed before final booking acceptance, service start, or payout release.';
 if (walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWalletBlockReason) {
   throw new Error(
     `Negative wallet block reason should be readable and operator-approved: ${JSON.stringify(
@@ -3742,7 +3742,7 @@ if (walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWall
 }
 if (
   walletDebtProviderEarningsSummary.walletBlockDisplayMessage !==
-  'Phí HANDS chưa được thanh toán nên bạn không thể tham gia đặt lịch này.'
+  'Phí HANDS chưa được thanh toán nên bạn chưa thể xác nhận nhận lịch này.'
 ) {
   throw new Error(
     `Negative wallet summary should include the wallet block display message: ${JSON.stringify(
@@ -3750,19 +3750,17 @@ if (
     )}`,
   );
 }
-const negativeWalletMarketplaceAcceptError = await expectRequestFailure(
-  'Negative provider wallet blocks marketplace final acceptance after debt appears',
-  () =>
-    postJson(
-      `/provider/bookings/${walletDebtJoinedBeforeDebtBooking.id}/accept`,
-      walletDebtProviderAuth.accessToken,
-    ),
-  400,
+const negativeWalletMarketplaceAccepted = await postJson(
+  `/provider/bookings/${walletDebtJoinedBeforeDebtBooking.id}/accept`,
+  walletDebtProviderAuth.accessToken,
 );
-assertNegativeWalletBlockResponse(
-  'marketplace final acceptance after debt appears',
-  negativeWalletMarketplaceAcceptError,
-);
+if (negativeWalletMarketplaceAccepted.status !== 'ACCEPTED') {
+  throw new Error(
+    `Negative wallet should not block marketplace participation before customer selection: ${JSON.stringify(
+      negativeWalletMarketplaceAccepted,
+    )}`,
+  );
+}
 const negativeWalletMarketplaceSelectionError = await expectRequestFailure(
   'Negative provider wallet blocks customer final selection of marketplace participant',
   () =>
@@ -3806,22 +3804,27 @@ if (
     })}`,
   );
 }
-const negativeWalletMarketplaceJoinError = await expectRequestFailure(
-  'Negative wallet marketplace join is blocked before settlement',
-  () =>
-    postJson(`/provider/bookings/${blockedOpenMatchingBooking.id}/join`, walletDebtProviderAuth.accessToken),
-  400,
-);
-assertNegativeWalletBlockResponse('marketplace join before settlement', negativeWalletMarketplaceJoinError);
-const directAcceptedWithDebt = await postJson(
-  `/provider/bookings/${blockedDirectBooking.id}/accept`,
+const negativeWalletMarketplaceJoin = await postJson(
+  `/provider/bookings/${blockedOpenMatchingBooking.id}/join`,
   walletDebtProviderAuth.accessToken,
 );
-if (directAcceptedWithDebt.status !== 'IN_SERVICE') {
+if (negativeWalletMarketplaceJoin.event !== 'provider.joined') {
   throw new Error(
-    `Negative wallet should not block preferred direct request acceptance: ${JSON.stringify(directAcceptedWithDebt)}`,
+    `Negative wallet should allow marketplace participation before final selection: ${JSON.stringify(
+      negativeWalletMarketplaceJoin,
+    )}`,
   );
 }
+const directAcceptanceWalletBlockError = await expectRequestFailure(
+  'Negative wallet blocks preferred Partner final acceptance',
+  () =>
+    postJson(
+      `/provider/bookings/${blockedDirectBooking.id}/accept`,
+      walletDebtProviderAuth.accessToken,
+    ),
+  400,
+);
+assertNegativeWalletBlockResponse('preferred Partner final acceptance', directAcceptanceWalletBlockError);
 const payoutWalletBlockError = await expectRequestFailure(
   'Negative provider wallet holds payout batch creation',
   () =>

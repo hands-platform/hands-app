@@ -85,6 +85,7 @@ import {
   providerWalletSettlementSteps,
   throwProviderWalletBlocked,
 } from '../provider-wallet/provider-wallet.policy';
+import { lockProviderWalletLedger } from '../provider-wallet/provider-wallet-lock';
 import {
   CASH_SETTLEMENT_HIGH_DEBT_THRESHOLD,
   CASH_SETTLEMENT_STALE_MS,
@@ -1354,8 +1355,8 @@ export class EarningsService {
       walletBalance,
       walletBlocked,
       marketplaceVisibilityBlocked: false,
-      marketplaceJoinBlocked: walletBlocked,
-      directFirstPickBlocked: false,
+      marketplaceJoinBlocked: false,
+      directFirstPickBlocked: walletBlocked,
       alreadyMatchedServiceBlocked: walletBlocked,
       payoutReleaseBlocked: walletBlocked,
       walletDebtAmount,
@@ -4071,9 +4072,7 @@ export class EarningsService {
     providerProfileId: string,
     currency: string,
   ) {
-    await client.$queryRaw(
-      Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`${providerProfileId}:${currency}`}, 0))`,
-    );
+    await lockProviderWalletLedger(client, providerProfileId, currency);
   }
 
   private async lockProviderPayoutAssignment(client: TxClient, providerProfileId: string) {

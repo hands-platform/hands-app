@@ -1077,6 +1077,11 @@ export class PaymentsService {
       reason: 'NOT_ATTEMPTED',
     };
     const payment = await this.prisma.$transaction(async (tx) => {
+      const paymentBooking = await tx.payment.findUniqueOrThrow({
+        where: { id: paymentId },
+        select: { bookingId: true },
+      });
+      await lockPaymentBookingLifecycle(tx, paymentBooking.bookingId);
       const transition = await transitionPaymentStatus(tx, {
         data: { status: PaymentStatus.REFUNDED },
         fromStatuses: [PaymentStatus.CAPTURED],
@@ -1755,6 +1760,12 @@ export class PaymentsService {
     }
     return payment;
   }
+}
+
+async function lockPaymentBookingLifecycle(tx: Prisma.TransactionClient, bookingId: string) {
+  await tx.$queryRaw(
+    Prisma.sql`SELECT "id" FROM "Booking" WHERE "id" = ${bookingId} FOR UPDATE`,
+  );
 }
 
 function paymentActionState(record: AdminPaymentActionRecord) {

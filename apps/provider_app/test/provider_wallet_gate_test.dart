@@ -66,7 +66,7 @@ void main() {
     expect(
       view.steps,
       contains(
-          'Quyền tham gia đặt lịch và nhận tiền chi trả sẽ được khôi phục khi số dư ví không còn âm.'),
+          'Quyền xác nhận nhận lịch, bắt đầu dịch vụ và nhận tiền chi trả sẽ được khôi phục khi số dư ví không còn âm.'),
     );
   });
 
@@ -111,20 +111,20 @@ void main() {
       'message': {
         'code': 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT',
         'message':
-            'Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.',
+            'Outstanding HANDS fee settlement must be completed before final booking acceptance, service start, or payout release.',
         'displayMessage': providerWalletBlockFallbackReasonClean,
         'walletBlocked': true,
         'marketplaceVisibilityBlocked': false,
-        'marketplaceJoinBlocked': true,
-        'directFirstPickBlocked': false,
-        'alreadyMatchedServiceBlocked': false,
+        'marketplaceJoinBlocked': false,
+        'directFirstPickBlocked': true,
+        'alreadyMatchedServiceBlocked': true,
         'payoutReleaseBlocked': true,
         'walletBalance': -80000,
         'walletDebtAmount': 80000,
         'walletSettlementRequired': true,
         'walletSettlementReference': 'HANDS-WALLET-BLOCKED',
         'walletSettlementInstruction':
-            'Marketplace requests stay visible for review, but participation is blocked until settlement.',
+            'Marketplace participation stays open, but final acceptance and service start are blocked until settlement.',
       },
       'error': 'Bad Request',
       'statusCode': 400,
@@ -135,10 +135,10 @@ void main() {
 
     expect(summary, isNotNull);
     expect(walletSummary['walletBlocked'], isTrue);
-    expect(walletSummary['marketplaceJoinBlocked'], isTrue);
-    expect(walletSummary['directFirstPickBlocked'], isFalse);
-    expect(walletSummary['alreadyMatchedServiceBlocked'], isFalse);
-    expect(providerWalletMarketplaceJoinBlocked(walletSummary), isTrue);
+    expect(walletSummary['marketplaceJoinBlocked'], isFalse);
+    expect(walletSummary['directFirstPickBlocked'], isTrue);
+    expect(walletSummary['alreadyMatchedServiceBlocked'], isTrue);
+    expect(providerWalletMarketplaceJoinBlocked(walletSummary), isFalse);
     expect(walletSummary['walletDebtAmount'], 80000);
     expect(walletSummary['displayMessage'],
         providerWalletBlockFallbackReasonClean);
@@ -150,7 +150,7 @@ void main() {
         providerWalletBlockFallbackReasonClean);
     expect(
       providerWalletSettlementInstruction(walletSummary),
-      contains('participation is blocked'),
+      contains('final acceptance and service start are blocked'),
     );
     expect(providerWalletSettlementReference(walletSummary),
         'HANDS-WALLET-BLOCKED');
@@ -389,7 +389,7 @@ void main() {
     );
     expect(
       providerWalletBlockFallbackReasonClean,
-      'Phí HANDS chưa được thanh toán nên bạn không thể tham gia đặt lịch này.',
+      'Phí HANDS chưa được thanh toán nên bạn chưa thể xác nhận nhận lịch này.',
     );
     expect(guidance.detailMessage, providerMarketplaceJoinBlockReasonClean);
     expect(providerActionBlockCopy(guidance.detailMessage)?.title,
@@ -406,7 +406,7 @@ void main() {
       () {
     expect(
       providerWalletBlocksMarketplaceParticipation(
-        walletBlocked: true,
+        marketplaceJoinBlocked: true,
         isPreferredRequest: false,
         isMatched: false,
       ),
@@ -414,7 +414,7 @@ void main() {
     );
     expect(
       providerWalletBlocksMarketplaceParticipation(
-        walletBlocked: true,
+        marketplaceJoinBlocked: true,
         isPreferredRequest: true,
         isMatched: false,
       ),
@@ -424,7 +424,7 @@ void main() {
     );
     expect(
       providerWalletBlocksMarketplaceParticipation(
-        walletBlocked: true,
+        marketplaceJoinBlocked: true,
         isPreferredRequest: false,
         isMatched: false,
       ),
@@ -434,7 +434,7 @@ void main() {
     );
     expect(
       providerWalletBlocksMarketplaceParticipation(
-        walletBlocked: true,
+        marketplaceJoinBlocked: true,
         isPreferredRequest: false,
         isMatched: true,
       ),

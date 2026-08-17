@@ -29,7 +29,7 @@ Future<void> showProviderWalletSettlementDialog({
               ),
               const SizedBox(height: 10),
               Text(
-                'Bạn không thể tham gia đặt lịch công khai cho đến khi thanh toán phí HANDS còn thiếu.',
+                'Bạn vẫn có thể tham gia yêu cầu đặt lịch, nhưng chưa thể xác nhận nhận lịch hoặc bắt đầu dịch vụ cho đến khi thanh toán phí HANDS còn thiếu.',
                 style: theme.textTheme.bodyMedium,
               ),
               const SizedBox(height: 12),

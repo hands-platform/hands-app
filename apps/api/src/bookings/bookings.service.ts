@@ -31,6 +31,7 @@ import {
 } from '../payments/customer-wallet-payment';
 import { paymentCaptureSourceStatuses, transitionPaymentStatus } from '../payments/payment-status-transition';
 import { throwProviderWalletBlocked } from '../provider-wallet/provider-wallet.policy';
+import { lockProviderWalletLedger } from '../provider-wallet/provider-wallet-lock';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProviderAvailabilityLifecycleService } from '../providers/provider-availability-lifecycle.service';
 import {
@@ -47,7 +48,6 @@ import {
   formatMatchingRadius,
   isCustomerSelectableParticipantForFinalChoice,
   isMarketplaceParticipationWindowOpen,
-  isMarketplacePartnerAction,
   isVietnamBookingCoordinate,
   normalizeBookingCoordinate,
   providerLifecycleAllowedPreviousStatuses,
@@ -490,6 +490,26 @@ export class BookingsService {
         `Partner availability release sync failed for ${providerProfileId}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
+  }
+
+  private async runPostCommitBookingEffects(
+    bookingId: string,
+    effects: Array<{ label: string; run: () => Promise<unknown> }>,
+  ) {
+    await Promise.all(
+      effects.map(async (effect) => {
+        try {
+          await effect.run();
+        } catch (error) {
+          this.logger.error(
+            `Booking ${bookingId} committed, but post-commit effect ${effect.label} failed: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+            error instanceof Error ? error.stack : undefined,
+          );
+        }
+      }),
+    );
   }
 
   private async recordBookingGateRejection(input: BookingGateRejectionAuditInput) {
@@ -1390,16 +1410,25 @@ export class BookingsService {
           cancellableBooking.expiresAt,
         );
 
-    await this.matching.closeBooking(bookingId);
     const clientResult = clientBookingResponse(cancellation.result);
-    await this.announceCustomerBookingCancelled({
-      bookingId,
-      customerUserId,
-      providerUserIds: cancellation.providerUserIds,
-      releasedPayment: cancellation.releasedPayment,
-      refundRequested: cancellation.refundRequested,
-      matchingPayload: clientResult,
-    });
+    await this.runPostCommitBookingEffects(bookingId, [
+      { label: 'matching-close', run: () => this.matching.closeBooking(bookingId) },
+      {
+        label: 'cancellation-notifications',
+        run: () =>
+          this.notifyBookingCancelled({
+            bookingId,
+            customerUserId,
+            providerUserIds: cancellation.providerUserIds,
+            releasedPayment: cancellation.releasedPayment,
+            refundRequested: cancellation.refundRequested,
+          }),
+      },
+      {
+        label: 'cancellation-realtime',
+        run: () => this.matchingGateway.emitBookingExpired(bookingId, clientResult),
+      },
+    ]);
     return clientResult;
   }
 
@@ -1414,9 +1443,14 @@ export class BookingsService {
         const booking = await transaction.booking.update({
           where: {
             id: bookingId,
-            status: BookingStatus.OPEN_MATCHING,
             selectedProviderId: null,
-            expiresAt: { gt: new Date() },
+            OR: [
+              { status: BookingStatus.CREATED },
+              {
+                status: BookingStatus.OPEN_MATCHING,
+                expiresAt: { gt: new Date() },
+              },
+            ],
           },
           data: {
             ...customerCancellationCloseData(),
@@ -1543,24 +1577,6 @@ export class BookingsService {
       releasedPayment: closure?.released ?? false,
       refundRequested: closure?.refundRequested ?? false,
     };
-  }
-
-  private async announceCustomerBookingCancelled(input: {
-    bookingId: string;
-    customerUserId: string;
-    providerUserIds: Iterable<string>;
-    releasedPayment: boolean;
-    refundRequested: boolean;
-    matchingPayload: unknown;
-  }) {
-    await this.notifyBookingCancelled({
-      bookingId: input.bookingId,
-      customerUserId: input.customerUserId,
-      providerUserIds: input.providerUserIds,
-      releasedPayment: input.releasedPayment,
-      refundRequested: input.refundRequested,
-    });
-    await this.matchingGateway.emitBookingExpired(input.bookingId, input.matchingPayload);
   }
 
   private async readOperationalPolicyValue(key: string, fallback: string) {
@@ -1795,9 +1811,6 @@ export class BookingsService {
     });
     this.assertBookingOpenForPartnerResponse(booking);
     assertProviderCanReceiveBooking(provider);
-    if (isMarketplacePartnerAction(provider.id, booking.preferredProviderId)) {
-      await this.ensureProviderWalletCanJoinMarketplace(provider.id);
-    }
     const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
     const distanceMeters = this.requireProviderWithinMatchingRadius(booking, provider, matchingPolicy);
 
@@ -1856,17 +1869,28 @@ export class BookingsService {
       providerId,
       preferredProviderId: ownedBooking.preferredProviderId,
     });
-    const booking = await this.matchCustomerSelectedProvider({ bookingId, customerUserId, providerId });
-
-    await this.matching.closeBooking(bookingId);
-    const result = this.matching.selectFinalProvider(bookingId, clientBookingResponse(booking));
-    await this.announceCustomerSelectedPartnerMatched({
+    const booking = await this.matchCustomerSelectedProvider({
       bookingId,
       customerUserId,
-      selectedProviderUserId: booking.selectedProvider?.userId,
-      chatRoomId: booking.chatRoom?.id,
-      matchingPayload: result,
+      providerId,
+      preferredProviderId: ownedBooking.preferredProviderId,
     });
+
+    const result = this.matching.selectFinalProvider(bookingId, clientBookingResponse(booking));
+    await this.runPostCommitBookingEffects(bookingId, [
+      { label: 'matching-close', run: () => this.matching.closeBooking(bookingId) },
+      {
+        label: 'matched-notifications',
+        run: () =>
+          this.notifyCustomerSelectedPartnerMatched({
+            bookingId,
+            customerUserId,
+            selectedProviderUserId: booking.selectedProvider?.userId,
+            chatRoomId: booking.chatRoom?.id,
+          }),
+      },
+      { label: 'matched-realtime', run: () => this.matchingGateway.emitBookingMatched(bookingId, result) },
+    ]);
     return result;
   }
 
@@ -1908,9 +1932,6 @@ export class BookingsService {
     ) {
       throw new BadRequestException('Partner must participate or accept before customer selection');
     }
-    if (isMarketplacePartnerAction(input.providerId, input.preferredProviderId)) {
-      await this.ensureProviderWalletCanJoinMarketplace(input.providerId);
-    }
   }
 
   async updateParticipant(
@@ -1942,20 +1963,26 @@ export class BookingsService {
         providerUserId: provider.userId,
       });
 
-      await this.matching.closeBooking(bookingId);
       const result = this.matching.selectFinalProvider(
         bookingId,
         clientBookingResponse(updated),
         MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
       );
-      await this.announceFirstPickAcceptedMatched({
-        bookingId,
-        customerUserId: booking.customerProfile.userId,
-        provider,
-        selectedProviderUserId: updated.selectedProvider?.userId,
-        chatRoomId: updated.chatRoom?.id,
-        matchingPayload: result,
-      });
+      await this.runPostCommitBookingEffects(bookingId, [
+        { label: 'matching-close', run: () => this.matching.closeBooking(bookingId) },
+        {
+          label: 'matched-notifications',
+          run: () =>
+            this.notifyFirstPickAcceptedMatched({
+              bookingId,
+              customerUserId: booking.customerProfile.userId,
+              provider,
+              selectedProviderUserId: updated.selectedProvider?.userId,
+              chatRoomId: updated.chatRoom?.id,
+            }),
+        },
+        { label: 'matched-realtime', run: () => this.matchingGateway.emitBookingMatched(bookingId, result) },
+      ]);
       return result;
     }
 
@@ -1967,23 +1994,21 @@ export class BookingsService {
         providerUserId: provider.userId,
         ...rejectionReason,
       });
-      await this.matching.closeBooking(bookingId);
-      await this.notifyCustomerFirstPickRejected(booking.customerProfile.userId, bookingId, provider.id);
       const cancellation = await this.bookingCancellationResultWithPaymentRelease(
         updated,
         'Preferred partner rejected after gateway payment capture',
         provider.userId,
       );
       const clientResult = clientBookingResponse(cancellation.result);
-      await this.matchingGateway.emitBookingExpired(bookingId, clientResult);
+      await this.runPostCommitBookingEffects(bookingId, [
+        { label: 'matching-close', run: () => this.matching.closeBooking(bookingId) },
+        {
+          label: 'first-pick-rejected-notification',
+          run: () => this.notifyCustomerFirstPickRejected(booking.customerProfile.userId, bookingId, provider.id),
+        },
+        { label: 'cancellation-realtime', run: () => this.matchingGateway.emitBookingExpired(bookingId, clientResult) },
+      ]);
       return clientResult;
-    }
-
-    if (
-      status === ParticipantStatus.ACCEPTED &&
-      isMarketplacePartnerAction(provider.id, booking.preferredProviderId)
-    ) {
-      await this.ensureProviderWalletCanJoinMarketplace(provider.id);
     }
 
     let updatedParticipant;
@@ -2083,18 +2108,19 @@ export class BookingsService {
     releasedPayment: boolean;
     refundRequested?: boolean;
   }) {
-    for (const providerUserId of input.providerUserIds) {
-      await this.notifications.create(providerBookingCancelledNotification(providerUserId, input.bookingId));
-    }
-
-    await this.notifications.create(
-      customerBookingCancelledNotification({
-        userId: input.customerUserId,
-        bookingId: input.bookingId,
-        releasedPayment: input.releasedPayment,
-        refundRequested: input.refundRequested,
-      }),
-    );
+    await Promise.all([
+      ...Array.from(input.providerUserIds, (providerUserId) =>
+        this.notifications.create(providerBookingCancelledNotification(providerUserId, input.bookingId)),
+      ),
+      this.notifications.create(
+        customerBookingCancelledNotification({
+          userId: input.customerUserId,
+          bookingId: input.bookingId,
+          releasedPayment: input.releasedPayment,
+          refundRequested: input.refundRequested,
+        }),
+      ),
+    ]);
   }
 
   private async notifyCustomerProviderJoined(
@@ -2123,38 +2149,46 @@ export class BookingsService {
     selectedProviderUserId?: string;
     chatRoomId?: string;
   }) {
-    if (input.selectedProviderUserId) {
-      await this.notifications.create(
-        selectedPartnerMatchedProviderNotification(input.selectedProviderUserId, input.bookingId),
-      );
-    }
-    await this.notifications.create(
-      selectedPartnerMatchedCustomerNotification({
-        userId: input.customerUserId,
-        bookingId: input.bookingId,
-        chatRoomId: input.chatRoomId,
-      }),
-    );
-  }
-
-  private async announceCustomerSelectedPartnerMatched(input: {
-    bookingId: string;
-    customerUserId: string;
-    selectedProviderUserId?: string;
-    chatRoomId?: string;
-    matchingPayload: unknown;
-  }) {
-    await this.notifyCustomerSelectedPartnerMatched(input);
-    await this.matchingGateway.emitBookingMatched(input.bookingId, input.matchingPayload);
+    await Promise.all([
+      ...(input.selectedProviderUserId
+        ? [
+            this.notifications.create(
+              selectedPartnerMatchedProviderNotification(input.selectedProviderUserId, input.bookingId),
+            ),
+          ]
+        : []),
+      this.notifications.create(
+        selectedPartnerMatchedCustomerNotification({
+          userId: input.customerUserId,
+          bookingId: input.bookingId,
+          chatRoomId: input.chatRoomId,
+        }),
+      ),
+    ]);
   }
 
   private async matchCustomerSelectedProvider(input: {
     bookingId: string;
     customerUserId: string;
     providerId: string;
+    preferredProviderId?: string | null;
   }): Promise<SelectedBookingForClientResponse> {
     try {
       const matchedBooking = await this.prisma.$transaction(async (transaction) => {
+        await lockProviderBookingAssignment(transaction, input.providerId);
+        await lockBookingLifecycle(transaction, input.bookingId);
+        await this.assertProviderHasNoOtherActiveBooking(transaction, input.bookingId, input.providerId);
+        const participant = await transaction.bookingParticipant.findUnique({
+          where: bookingParticipantCompoundKey(input.bookingId, input.providerId),
+          select: { providerProfileId: true, status: true },
+        });
+        if (
+          !participant ||
+          !isCustomerSelectableParticipantForFinalChoice(participant, input.preferredProviderId)
+        ) {
+          throw new BadRequestException('Partner must participate or accept before customer selection');
+        }
+        await this.assertProviderWalletCanFinalizeBooking(transaction, input.providerId);
         const matchedBooking = await transaction.booking.update({
           where: {
             id: input.bookingId,
@@ -2257,6 +2291,10 @@ export class BookingsService {
   }): Promise<MatchedBookingForClientResponse> {
     try {
       const matchedBooking = await this.prisma.$transaction(async (transaction) => {
+        await lockProviderBookingAssignment(transaction, input.providerId);
+        await lockBookingLifecycle(transaction, input.bookingId);
+        await this.assertProviderHasNoOtherActiveBooking(transaction, input.bookingId, input.providerId);
+        await this.assertProviderWalletCanFinalizeBooking(transaction, input.providerId);
         const matchedBooking = await transaction.booking.update({
           where: {
             id: input.bookingId,
@@ -2293,6 +2331,31 @@ export class BookingsService {
     }
   }
 
+  private async assertProviderHasNoOtherActiveBooking(
+    transaction: Prisma.TransactionClient,
+    bookingId: string,
+    providerProfileId: string,
+  ) {
+    const activeBookings = await transaction.$queryRaw<Array<{ id: string }>>(
+      Prisma.sql`
+        SELECT "id"
+        FROM "Booking"
+        WHERE "selectedProviderId" = ${providerProfileId}
+          AND "id" <> ${bookingId}
+          AND "status" IN (${Prisma.join(
+            providerActiveWorkStatuses.map((status) => Prisma.sql`${status}::"BookingStatus"`),
+          )})
+        LIMIT 1
+        FOR UPDATE
+      `,
+    );
+    if (activeBookings.length > 0) {
+      throw new BadRequestException(
+        'Partner must complete the current booking before receiving or joining another booking',
+      );
+    }
+  }
+
   private async notifyFirstPickAcceptedMatched(input: {
     bookingId: string;
     customerUserId: string;
@@ -2300,31 +2363,23 @@ export class BookingsService {
     selectedProviderUserId?: string;
     chatRoomId?: string;
   }) {
-    if (input.selectedProviderUserId) {
-      await this.notifications.create(
-        firstPickMatchedProviderNotification(input.selectedProviderUserId, input.bookingId),
-      );
-    }
-    await this.notifications.create(
-      firstPickMatchedCustomerNotification({
-        userId: input.customerUserId,
-        bookingId: input.bookingId,
-        provider: input.provider,
-        chatRoomId: input.chatRoomId,
-      }),
-    );
-  }
-
-  private async announceFirstPickAcceptedMatched(input: {
-    bookingId: string;
-    customerUserId: string;
-    provider: { id: string; displayName: string };
-    selectedProviderUserId?: string;
-    chatRoomId?: string;
-    matchingPayload: unknown;
-  }) {
-    await this.notifyFirstPickAcceptedMatched(input);
-    await this.matchingGateway.emitBookingMatched(input.bookingId, input.matchingPayload);
+    await Promise.all([
+      ...(input.selectedProviderUserId
+        ? [
+            this.notifications.create(
+              firstPickMatchedProviderNotification(input.selectedProviderUserId, input.bookingId),
+            ),
+          ]
+        : []),
+      this.notifications.create(
+        firstPickMatchedCustomerNotification({
+          userId: input.customerUserId,
+          bookingId: input.bookingId,
+          provider: input.provider,
+          chatRoomId: input.chatRoomId,
+        }),
+      ),
+    ]);
   }
 
   private async notifyCustomerFirstPickRejected(
@@ -2629,8 +2684,12 @@ export class BookingsService {
     return isMarketplaceParticipationWindowOpen(booking, policy);
   }
 
-  private async ensureProviderWalletCanJoinMarketplace(providerProfileId: string) {
-    const wallet = await this.prisma.providerWalletLedgerEntry.aggregate({
+  private async assertProviderWalletCanFinalizeBooking(
+    transaction: Prisma.TransactionClient,
+    providerProfileId: string,
+  ) {
+    await lockProviderWalletLedger(transaction, providerProfileId);
+    const wallet = await transaction.providerWalletLedgerEntry.aggregate({
       where: { providerProfileId },
       _sum: { amount: true },
     });
@@ -2717,17 +2776,26 @@ export class BookingsService {
           provider.userId,
         )
       : null;
-    await this.matching.closeBooking(bookingId);
     const bookingResult = paymentClosure?.result ?? cancellation.booking;
     const partnerResult = partnerBookingResponse(bookingResult, provider.id);
-    await this.announceProviderPostMatchCancellation({
-      bookingId,
-      customerUserId: cancellation.booking.customerProfile.userId,
-      autoApproved: cancellation.autoApproved,
-      reasonCode: cancellation.reasonCode,
-      reasonLabel: cancellation.reasonLabel,
-      matchingPayload: partnerResult,
-    });
+    await this.runPostCommitBookingEffects(bookingId, [
+      { label: 'matching-close', run: () => this.matching.closeBooking(bookingId) },
+      {
+        label: 'post-match-cancellation-notification',
+        run: () =>
+          this.notifyProviderPostMatchCancellation({
+            bookingId,
+            customerUserId: cancellation.booking.customerProfile.userId,
+            autoApproved: cancellation.autoApproved,
+            reasonCode: cancellation.reasonCode,
+            reasonLabel: cancellation.reasonLabel,
+          }),
+      },
+      {
+        label: 'cancellation-realtime',
+        run: () => this.matchingGateway.emitBookingExpired(bookingId, partnerResult),
+      },
+    ]);
 
     return {
       ...partnerResult,
@@ -2944,13 +3012,12 @@ export class BookingsService {
     return result;
   }
 
-  private async announceProviderPostMatchCancellation(input: {
+  private async notifyProviderPostMatchCancellation(input: {
     bookingId: string;
     customerUserId: string;
     autoApproved: boolean;
     reasonCode: ProviderCancellationReasonCode;
     reasonLabel: string;
-    matchingPayload: unknown;
   }) {
     await this.notifications.create({
       userId: input.customerUserId,
@@ -2969,12 +3036,12 @@ export class BookingsService {
         reasonLabel: input.reasonLabel,
       },
     });
-    await this.matchingGateway.emitBookingExpired(input.bookingId, input.matchingPayload);
   }
 
   private async startProviderService(input: { bookingId: string; providerProfileId: string }) {
-    await this.ensureProviderWalletCanJoinMarketplace(input.providerProfileId);
     const updated = await this.prisma.$transaction(async (tx) => {
+      await lockBookingLifecycle(tx, input.bookingId);
+      await this.assertProviderWalletCanFinalizeBooking(tx, input.providerProfileId);
       const allowedPreviousStatuses =
         providerLifecycleAllowedPreviousStatuses(BookingStatus.IN_SERVICE) ?? [];
       const transition = await tx.booking.updateMany({
@@ -3559,6 +3626,12 @@ function cleanOptionalLocationAddress(value: string | null | undefined) {
 async function lockBookingLifecycle(tx: Prisma.TransactionClient, bookingId: string) {
   await tx.$queryRaw(
     Prisma.sql`SELECT "id" FROM "Booking" WHERE "id" = ${bookingId} FOR UPDATE`,
+  );
+}
+
+async function lockProviderBookingAssignment(tx: Prisma.TransactionClient, providerProfileId: string) {
+  await tx.$queryRaw(
+    Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`provider-booking-assignment:${providerProfileId}`}, 0))`,
   );
 }
 

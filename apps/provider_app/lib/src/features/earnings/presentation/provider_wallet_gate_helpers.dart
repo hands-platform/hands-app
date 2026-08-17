@@ -1,20 +1,20 @@
 import '../../../core/provider_value_helpers.dart';
 
 const providerWalletBlockFallbackReasonClean =
-    'Phí HANDS chưa được thanh toán nên bạn không thể tham gia đặt lịch này.';
+    'Phí HANDS chưa được thanh toán nên bạn chưa thể xác nhận nhận lịch này.';
 
 const providerWalletBlockHintClean =
-    'Bạn vẫn có thể xem yêu cầu đặt lịch và phản hồi yêu cầu chỉ định trực tiếp. Hãy thanh toán phí HANDS còn thiếu trước khi tham gia đặt lịch công khai.';
+    'Bạn vẫn có thể xem và tham gia yêu cầu đặt lịch. Hãy thanh toán phí HANDS còn thiếu trước khi xác nhận nhận lịch, bắt đầu dịch vụ hoặc nhận tiền chi trả.';
 
 const providerMarketplaceJoinBlockReasonClean =
-    'Phí HANDS chưa được thanh toán nên bạn không thể tham gia đặt lịch này.';
+    'Phí HANDS chưa được thanh toán nên bạn chưa thể xác nhận nhận lịch này.';
 
 bool providerWalletBlocksMarketplaceParticipation({
-  required bool walletBlocked,
+  required bool marketplaceJoinBlocked,
   required bool isPreferredRequest,
   required bool isMatched,
 }) {
-  return walletBlocked && !isPreferredRequest && !isMatched;
+  return marketplaceJoinBlocked && !isPreferredRequest && !isMatched;
 }
 
 String providerMarketplaceJoinButtonLabel({
@@ -213,7 +213,7 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
     if (reference != null)
       'Dùng mã $reference khi gửi khoản nộp hoặc yêu cầu bù trừ.',
     'Sau khi quản trị viên xác nhận khoản nộp hoặc bù trừ, hãy làm mới trạng thái ví.',
-    'Quyền tham gia đặt lịch và nhận tiền chi trả sẽ được khôi phục khi số dư ví không còn âm.',
+    'Quyền xác nhận nhận lịch, bắt đầu dịch vụ và nhận tiền chi trả sẽ được khôi phục khi số dư ví không còn âm.',
   ];
 }
 

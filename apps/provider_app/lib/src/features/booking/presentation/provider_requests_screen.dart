@@ -144,6 +144,17 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen>
       });
       unawaited(loadOpenBookings(showLoading: false));
     }));
+    _realtimeDisposers.add(_socket.onEvent('booking.cancelled', (payload) {
+      if (!mounted) {
+        return;
+      }
+      final booking =
+          payload is Map<String, dynamic> ? payload : const <String, dynamic>{};
+      setState(() {
+        statusMessage = providerClosedBookingMessage(booking);
+      });
+      unawaited(loadOpenBookings(showLoading: false));
+    }));
   }
 
   void detachRealtimeListeners() {
@@ -384,9 +395,6 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen>
       statusMessage = null;
     });
     try {
-      if (!await ensureWalletCanJoinMarketplace()) {
-        return;
-      }
       await ref.read(providerRepositoryProvider).joinBooking(bookingId);
       setState(() {
         joinedBookingIds = {...joinedBookingIds, bookingId};
@@ -567,36 +575,6 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen>
     if (mounted) {
       setState(() => error = providerAppErrorMessage(exception));
     }
-  }
-
-  Future<bool> ensureWalletCanJoinMarketplace() async {
-    try {
-      final summary =
-          await ref.read(providerRepositoryProvider).earningsSummary();
-      final marketplaceJoinBlocked =
-          providerWalletMarketplaceJoinBlocked(summary);
-      if (marketplaceJoinBlocked) {
-        final blockReason = providerWalletBlockReason(summary) ??
-            providerWalletBlockFallbackReasonClean;
-        if (mounted) {
-          setState(() {
-            requestActionsWalletBlocked = true;
-            error = blockReason;
-            statusMessage = providerWalletBlockHintClean;
-          });
-          await showWalletSettlementDialog(summary);
-        }
-        return false;
-      }
-    } catch (exception) {
-      if (mounted) {
-        setState(() {
-          statusMessage =
-              'Không thể làm mới trạng thái ví trên thiết bị. Máy chủ sẽ xác minh thanh toán trước khi cho phép tham gia.';
-        });
-      }
-    }
-    return true;
   }
 
   Future<void> showWalletSettlementDialog(Map<String, dynamic> summary) async {

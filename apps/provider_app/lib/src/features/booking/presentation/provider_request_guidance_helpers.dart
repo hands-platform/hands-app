@@ -108,7 +108,7 @@ ProviderRequestGuidance providerRequestGuidance({
     'IN_SERVICE',
   }.contains(booking['status']);
   final actionBlockedByWallet = providerWalletBlocksMarketplaceParticipation(
-    walletBlocked: walletBlocked,
+    marketplaceJoinBlocked: walletBlocked,
     isPreferredRequest: isPreferredRequest,
     isMatched: isMatched,
   );

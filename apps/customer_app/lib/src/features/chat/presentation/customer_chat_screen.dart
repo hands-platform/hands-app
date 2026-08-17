@@ -20,6 +20,7 @@ const _bookingLifecycleEventMessages = <String, String>{
   'service.started': 'Your service has started.',
   'service.completed': 'Your service is complete.',
   'booking.expired': 'This booking is no longer active.',
+  'booking.cancelled': 'This booking was cancelled.',
 };
 
 class ChatScreen extends ConsumerStatefulWidget {

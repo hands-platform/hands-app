@@ -386,7 +386,14 @@ export function adminBookingListStatusGroupWhere(
       };
     case 'handoff-repair':
       return {
-        status: BookingStatus.MATCHED,
+        status: {
+          in: [
+            BookingStatus.MATCHED,
+            BookingStatus.PROVIDER_ON_THE_WAY,
+            BookingStatus.ARRIVED,
+            BookingStatus.IN_SERVICE,
+          ],
+        },
         selectedProviderId: { not: null },
         chatRoom: { is: null },
       };

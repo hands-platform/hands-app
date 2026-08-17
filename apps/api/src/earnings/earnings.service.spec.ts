@@ -261,7 +261,8 @@ describe('EarningsService payout batches', () => {
     await expect(service.summaryForProviderUser('provider-user-1')).resolves.toMatchObject({
       walletBalance: -225_000,
       walletBlocked: true,
-      marketplaceJoinBlocked: true,
+      marketplaceJoinBlocked: false,
+      directFirstPickBlocked: true,
       walletDebtAmount: 225_000,
       walletSettlementRequired: true,
     });

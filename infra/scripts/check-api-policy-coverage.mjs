@@ -198,14 +198,14 @@ const requiredCoverage = [
     markers: [
       'Cash booking did not create a negative provider wallet',
       'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT',
-      'Negative wallet should not block preferred direct request acceptance',
+      'Negative wallet blocks preferred Partner final acceptance',
       'Negative provider wallet blocks customer final selection of marketplace participant',
       'Negative wallet partner should still see marketplace request before settlement',
-      'Negative wallet marketplace join is blocked before settlement',
+      'Negative wallet should allow marketplace participation before final selection',
       'Negative provider wallet holds payout batch creation',
       'assertNegativeWalletBlockResponse',
       'walletSettlementReference',
-      'Bạn vẫn có thể xem yêu cầu đặt lịch và phản hồi yêu cầu chỉ định trực tiếp',
+      'Bạn vẫn có thể xem và tham gia yêu cầu đặt lịch',
     ],
   },
   {
@@ -213,9 +213,9 @@ const requiredCoverage = [
     markers: [
       'wallet.negative_balance_gate',
       'Negative wallet partner should still see marketplace request before settlement',
-      'Negative provider wallet blocks marketplace final acceptance',
+      'Negative wallet should not block marketplace participation before customer selection',
       'Negative provider wallet blocks customer final selection of marketplace participant',
-      'marketplace final acceptance',
+      'preferred Partner final acceptance',
       'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET',
     ],
   },
@@ -312,6 +312,16 @@ function checkNegativeWalletBookingFunctionBoundaries() {
     'async updateParticipant(',
     'private async notifyBackupProviders(',
   );
+  const customerFinalSelection = sliceBetween(
+    bookingSource,
+    'private async matchCustomerSelectedProvider(',
+    'private async matchFirstPickAcceptedProvider(',
+  );
+  const firstPickFinalAcceptance = sliceBetween(
+    bookingSource,
+    'private async matchFirstPickAcceptedProvider(',
+    'private async assertProviderHasNoOtherActiveBooking(',
+  );
   const lifecycleStatus = sliceBetween(
     bookingSource,
     'async updateProviderBookingStatus(',
@@ -319,57 +329,37 @@ function checkNegativeWalletBookingFunctionBoundaries() {
   );
 
   const missingMarkers = [];
-  if (
-    !joinBooking.includes('isMarketplacePartnerAction(provider.id, booking.preferredProviderId)') ||
-    !joinBooking.includes('await this.ensureProviderWalletCanJoinMarketplace(provider.id);')
-  ) {
-    missingMarkers.push(
-      'joinBooking must block negative-wallet marketplace participation without blocking direct first-pick replies',
-    );
+  if (joinBooking.includes('assertProviderWalletCanFinalizeBooking')) {
+    missingMarkers.push('joinBooking must not apply the final-acceptance wallet gate');
   }
-  if (
-    !assertCustomerCanSelectProvider.includes(
-      'await this.ensureProviderWalletCanJoinMarketplace(input.providerId);',
-    )
-  ) {
-    missingMarkers.push('selectProvider must keep the negative-wallet marketplace final selection gate');
+  if (assertCustomerCanSelectProvider.includes('assertProviderWalletCanFinalizeBooking')) {
+    missingMarkers.push('selectProvider pre-read must not make a non-atomic wallet decision');
   }
-  if (
-    !assertCustomerCanSelectProvider.includes(
-      'if (isMarketplacePartnerAction(input.providerId, input.preferredProviderId))',
-    )
-  ) {
-    missingMarkers.push(
-      'selectProvider must not block direct first-pick final selection for negative wallet',
-    );
+  if (!customerFinalSelection.includes('await this.assertProviderWalletCanFinalizeBooking(transaction')) {
+    missingMarkers.push('customer final selection must enforce the wallet gate inside its transaction');
   }
-  if (!updateParticipant.includes('await this.ensureProviderWalletCanJoinMarketplace(provider.id);')) {
-    missingMarkers.push('updateParticipant must keep the negative-wallet marketplace participation gate');
+  if (!firstPickFinalAcceptance.includes('await this.assertProviderWalletCanFinalizeBooking(transaction')) {
+    missingMarkers.push('preferred Partner final acceptance must enforce the wallet gate inside its transaction');
+  }
+  if (updateParticipant.includes('ensureProviderWalletCanJoinMarketplace')) {
+    missingMarkers.push('marketplace participant join or accept must not use the final-acceptance wallet gate');
   }
   const firstPickAcceptedBranch = updateParticipant.indexOf("responseRoute === 'first-pick-accepted'");
   const firstPickRejectedBranch = updateParticipant.indexOf("responseRoute === 'first-pick-rejected'");
-  const marketplaceWalletGate = updateParticipant.indexOf(
-    'await this.ensureProviderWalletCanJoinMarketplace(provider.id);',
-  );
   if (
     !updateParticipant.includes('bookingParticipantResponseRoute(') ||
     !updateParticipant.includes('booking.preferredProviderId') ||
     firstPickAcceptedBranch === -1 ||
-    firstPickRejectedBranch === -1 ||
-    marketplaceWalletGate === -1 ||
-    firstPickAcceptedBranch > marketplaceWalletGate ||
-    firstPickRejectedBranch > marketplaceWalletGate
+    firstPickRejectedBranch === -1
   ) {
-    missingMarkers.push(
-      'updateParticipant must keep the preferred first-pick branch before marketplace wallet gate',
-    );
+    missingMarkers.push('updateParticipant must preserve explicit preferred Partner response branches');
   }
   const serviceStartBranch = lifecycleStatus.indexOf('status === BookingStatus.IN_SERVICE');
   const serviceStartHelperCall = lifecycleStatus.indexOf(
     'return this.startProviderService({ bookingId, providerProfileId: provider.id });',
   );
   const serviceStartWalletGate = lifecycleStatus.indexOf(
-    'await this.ensureProviderWalletCanJoinMarketplace(input.providerProfileId);',
+    'await this.assertProviderWalletCanFinalizeBooking(tx, input.providerProfileId);',
   );
   if (
     serviceStartBranch === -1 ||
@@ -393,7 +383,8 @@ function checkProviderMobileWalletGateBoundaries() {
   const providerWalletGateTest = readFileSync(providerWalletGateTestPath, 'utf8');
   const providerRequestsScreen = readFileSync(providerRequestsScreenPath, 'utf8');
   const providerOpenBookingCard = readFileSync(providerOpenBookingCardPath, 'utf8');
-  const walletBlockDisplayMessage = 'Phí HANDS chưa được thanh toán nên bạn không thể tham gia đặt lịch này.';
+  const walletBlockDisplayMessage =
+    'Phí HANDS chưa được thanh toán nên bạn chưa thể xác nhận nhận lịch này.';
   const missingMarkers = [];
   const joinBooking = sliceBetween(
     providerRequestsScreen,
@@ -410,7 +401,7 @@ function checkProviderMobileWalletGateBoundaries() {
     ['partner app cash-fee block message', walletBlockDisplayMessage],
     [
       'partner app marketplace-only gate expression',
-      'return walletBlocked && !isPreferredRequest && !isMatched;',
+      'return marketplaceJoinBlocked && !isPreferredRequest && !isMatched;',
     ],
     ['partner app reads explicit settled-wallet marketplace flag', "summary['marketplaceJoinBlocked']"],
     ['partner app renders wallet settlement guidance', 'providerWalletBlockHintClean'],
@@ -421,12 +412,15 @@ function checkProviderMobileWalletGateBoundaries() {
   }
 
   for (const [label, marker] of [
-    ['partner app marketplace join preflight', 'if (!await ensureWalletCanJoinMarketplace())'],
     ['partner app marketplace join endpoint path', '.joinBooking(bookingId)'],
   ]) {
     if (!joinBooking.includes(marker)) {
       missingMarkers.push(`missing ${label}: ${marker}`);
     }
+  }
+
+  if (joinBooking.includes('ensureWalletCanJoinMarketplace')) {
+    missingMarkers.push('marketplace participation must not run the final-acceptance wallet gate');
   }
 
   if (respondToBooking.includes('ensureWalletCanJoinMarketplace')) {
@@ -478,7 +472,7 @@ function checkProviderMobileWalletGateBoundaries() {
   return {
     area: 'partner app negative wallet marketplace-only gate',
     status: missingMarkers.length === 0 ? 'PASS' : 'FAIL',
-    markerCount: 17,
+    markerCount: 16,
     missingMarkers,
   };
 }

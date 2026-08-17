@@ -180,6 +180,40 @@ describe('MatchingGateway admin booking realtime', () => {
     expect(JSON.stringify(emit.mock.calls.at(-1))).not.toContain('private-phone');
   });
 
+  it('publishes the committed booking status in matched provider signals', async () => {
+    const gateway = new MatchingGateway({} as never, {} as never);
+    const { emit, server } = realtimeServer();
+    gateway.server = server;
+
+    await gateway.emitBookingMatched('booking-1', {
+      bookingId: 'booking-1',
+      status: BookingStatus.IN_SERVICE,
+    });
+
+    expect(emit).toHaveBeenLastCalledWith('booking.matched', {
+      bookingId: 'booking-1',
+      event: 'booking.matched',
+      status: BookingStatus.IN_SERVICE,
+    });
+  });
+
+  it('publishes cancellation as cancellation rather than expiration', async () => {
+    const gateway = new MatchingGateway({} as never, {} as never);
+    const { emit, server } = realtimeServer();
+    gateway.server = server;
+
+    await gateway.emitBookingExpired('booking-1', {
+      bookingId: 'booking-1',
+      status: BookingStatus.CANCELLED,
+    });
+
+    expect(emit).toHaveBeenLastCalledWith('booking.cancelled', {
+      bookingId: 'booking-1',
+      event: 'booking.cancelled',
+      status: BookingStatus.CANCELLED,
+    });
+  });
+
   it('does not expose booking details in provider booking-opened signals', async () => {
     const gateway = new MatchingGateway({} as never, {} as never);
     const { emit, server } = realtimeServer();
