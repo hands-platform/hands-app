@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { relative, resolve } from 'node:path';
 
 const root = resolve(process.argv.find((arg) => arg.startsWith('--root='))?.slice('--root='.length) ?? '.');
 const smokePath = resolve(root, 'infra/scripts/api-smoke.mjs');
@@ -278,7 +278,7 @@ if (failed.length > 0) {
 
 function checkNegativeWalletBlockCallSites() {
   const matches = findFilesContaining(apiSourceRoot, 'throwProviderWalletBlocked').map((file) =>
-    file.replace(`${root}\\`, '').replaceAll('\\', '/'),
+    relative(root, file).replaceAll('\\', '/'),
   );
   const allowedFiles = [
     'apps/api/src/bookings/bookings.service.ts',
