@@ -465,12 +465,32 @@ describe('AuthTokenService admin realtime socket tokens', () => {
       authProvider: 'nest',
       sessionFamilyId: 'mobile-family-1',
     });
-    expect(redisState.isRefreshFamilyRevoked).toHaveBeenCalledWith('mobile-family-1');
+    expect(redisState.isMobileSessionActive).toHaveBeenCalledWith(
+      'mobile-family-1',
+      'mobile-auth-epoch-1',
+    );
+  });
+
+  it('rejects a Nest access token after Redis establishes a replacement authentication epoch', async () => {
+    const { prisma, redisState, service, signNestToken } = createAdminRealtimeServiceAndToken();
+    redisState.isMobileSessionActive.mockResolvedValue(false);
+
+    await expect(
+      service.authenticateBearerToken(
+        signNestToken({
+          sub: 'customer-user-1',
+          roles: [Role.CUSTOMER],
+          activeRole: Role.CUSTOMER,
+        }),
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
   it('rejects a Nest access token after its refresh family is revoked', async () => {
     const { prisma, redisState, service, signNestToken } = createAdminRealtimeServiceAndToken();
-    redisState.isRefreshFamilyRevoked.mockResolvedValue(true);
+    redisState.isMobileSessionActive.mockResolvedValue(false);
     prisma.user.findUnique.mockResolvedValue({
       id: 'customer-user-1',
       roles: [Role.CUSTOMER],
@@ -494,7 +514,7 @@ describe('AuthTokenService admin realtime socket tokens', () => {
   it('does not include Redis error details in mobile revocation logs', async () => {
     const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     const { prisma, redisState, service, signNestToken } = createAdminRealtimeServiceAndToken();
-    redisState.isRefreshFamilyRevoked.mockRejectedValue(
+    redisState.isMobileSessionActive.mockRejectedValue(
       new Error('redis://operator:private-secret@internal:6379'),
     );
 
@@ -759,6 +779,7 @@ function createAdminRealtimeServiceAndToken() {
   };
   const redisState = {
     consumeRateLimit: vi.fn().mockResolvedValue({ count: 1 }),
+    isMobileSessionActive: vi.fn().mockResolvedValue(true),
     isRefreshFamilyRevoked: vi.fn().mockResolvedValue(false),
   };
   const service = new AuthTokenService(jwt, config as never, prisma as never, redisState as never);
@@ -780,7 +801,7 @@ function createAdminRealtimeServiceAndToken() {
   };
   const signNestToken = (payload: Record<string, unknown>) =>
     jwt.sign(
-      { familyId: 'mobile-family-1', ...payload },
+      { authEpoch: 'mobile-auth-epoch-1', familyId: 'mobile-family-1', ...payload },
       { secret: 'test-jwt-access-secret', expiresIn: '15m' },
     );
   const signNestTokenWithoutExpiration = (payload: Record<string, unknown>) =>

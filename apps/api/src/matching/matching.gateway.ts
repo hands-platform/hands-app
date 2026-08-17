@@ -71,8 +71,12 @@ export class MatchingGateway implements OnGatewayConnection {
       return { ok: false, error: 'BOOKING_ROOM_FORBIDDEN' };
     }
 
-    void client.join(SOCKET_ROOMS.booking(payload.bookingId));
-    return { ok: true };
+    try {
+      await client.join(SOCKET_ROOMS.booking(payload.bookingId));
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'BOOKING_ROOM_JOIN_FAILED' };
+    }
   }
 
   async emitProviderJoined(bookingId: string, payload: unknown) {

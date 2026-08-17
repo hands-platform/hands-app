@@ -43,7 +43,10 @@ import {
   paymentStatusCheckJob,
 } from '../payments/payment-status.queue';
 import { PrismaService } from '../prisma/prisma.service';
-import { TAX_POLICY_ACTIVATION_QUEUE_NAME } from '../provider-onboarding/tax-policy-activation.queue';
+import {
+  TAX_POLICY_ACTIVATION_QUEUE_NAME,
+  TAX_POLICY_ACTIVATION_SWEEP_SCHEDULER_ID,
+} from '../provider-onboarding/tax-policy-activation.queue';
 import {
   BANK_STATEMENT_ESCALATION_QUEUE_NAME,
   BANK_STATEMENT_ESCALATION_INTERVAL_MS,
@@ -95,11 +98,19 @@ const BACKGROUND_JOB_RECURRING_INCIDENT_SCAN_LIMIT = 100;
 const BACKGROUND_JOB_RECURRING_INCIDENT_FILTER_SCAN_LIMIT = 500;
 const BACKGROUND_JOB_RECURRING_INCIDENT_SUMMARY_SCAN_LIMIT = 1_000;
 const MISSING_DURABLE_JOB_SCAN_LIMIT = 100;
-const MISSING_NOTIFICATION_JOB_MAX_AGE_MS = 15 * 60_000;
 const MISSING_NOTIFICATION_JOB_MIN_AGE_MS = 30_000;
+
+type DurableJobFlow =
+  | 'bookingRecovery'
+  | 'campaign'
+  | 'notification'
+  | 'paymentStatus'
+  | 'refundStatus';
 
 @Injectable()
 export class AdminBackgroundJobsService {
+  private readonly durableScanCursors: Partial<Record<DurableJobFlow, string>> = {};
+
   constructor(
     @InjectQueue(BANK_STATEMENT_ESCALATION_QUEUE_NAME)
     private readonly bankStatementEscalationQueue: Queue,
@@ -598,7 +609,6 @@ export class AdminBackgroundJobsService {
 
   async syncMissingDurableJobs(now = new Date()) {
     const notificationWindow = {
-      gte: new Date(now.getTime() - MISSING_NOTIFICATION_JOB_MAX_AGE_MS),
       lte: new Date(now.getTime() - MISSING_NOTIFICATION_JOB_MIN_AGE_MS),
     };
     const staleDeliveryBefore = new Date(now.getTime() - NOTIFICATION_DELIVERY_CLAIM_STALE_MS);
@@ -613,6 +623,7 @@ export class AdminBackgroundJobsService {
           ],
         },
         orderBy: { id: 'asc' },
+        ...durableScanCursor(this.durableScanCursors.paymentStatus),
         select: { id: true },
         take: MISSING_DURABLE_JOB_SCAN_LIMIT,
       }),
@@ -621,7 +632,8 @@ export class AdminBackgroundJobsService {
             where: {
               status: { in: ['APPROVAL_PROCESSING', 'PROVIDER_PROCESSING', 'GATEWAY_CONFIRMED'] },
             },
-            orderBy: { createdAt: 'asc' },
+            orderBy: { id: 'asc' },
+            ...durableScanCursor(this.durableScanCursors.refundStatus),
             select: { id: true },
             take: MISSING_DURABLE_JOB_SCAN_LIMIT,
           })
@@ -637,7 +649,8 @@ export class AdminBackgroundJobsService {
                 },
               },
             },
-            orderBy: { createdAt: 'asc' },
+            orderBy: { id: 'asc' },
+            ...durableScanCursor(this.durableScanCursors.bookingRecovery),
             select: { id: true, payment: { select: { id: true } } },
             take: MISSING_DURABLE_JOB_SCAN_LIMIT,
           })
@@ -652,7 +665,8 @@ export class AdminBackgroundJobsService {
             { data: { path: ['deliveryIntent'], equals: 'PUSH_AND_IN_APP' } },
           ],
         },
-        orderBy: { createdAt: 'asc' },
+        orderBy: { id: 'asc' },
+        ...durableScanCursor(this.durableScanCursors.notification),
         select: { id: true },
         take: MISSING_DURABLE_JOB_SCAN_LIMIT,
       }),
@@ -664,7 +678,8 @@ export class AdminBackgroundJobsService {
                 some: { status: { in: ['SNAPSHOTTED', 'PROCESSING'] } },
               },
             },
-            orderBy: { createdAt: 'asc' },
+            orderBy: { id: 'asc' },
+            ...durableScanCursor(this.durableScanCursors.campaign),
             select: { id: true },
             take: MISSING_DURABLE_JOB_SCAN_LIMIT,
           })
@@ -676,6 +691,12 @@ export class AdminBackgroundJobsService {
         take: MISSING_DURABLE_JOB_SCAN_LIMIT,
       }),
     ]);
+
+    this.durableScanCursors.paymentStatus = nextDurableScanCursor(payments);
+    this.durableScanCursors.refundStatus = nextDurableScanCursor(refunds);
+    this.durableScanCursors.bookingRecovery = nextDurableScanCursor(bookings);
+    this.durableScanCursors.notification = nextDurableScanCursor(notifications);
+    this.durableScanCursors.campaign = nextDurableScanCursor(campaigns);
 
     const closedUncertainDeliveryCount = staleDeliveries.length === 0
       ? 0
@@ -835,6 +856,7 @@ export class AdminBackgroundJobsService {
         staleAfterMs: IMMEDIATE_QUEUE_STALE_AFTER_MS,
       }] : []),
       ...(this.taxPolicyActivationQueue ? [{
+        expectedSchedulerId: TAX_POLICY_ACTIVATION_SWEEP_SCHEDULER_ID,
         label: 'Tax policy activation',
         queue: this.taxPolicyActivationQueue,
         staleAfterMs: IMMEDIATE_QUEUE_STALE_AFTER_MS,
@@ -1497,6 +1519,16 @@ async function backgroundQueueSnapshot(definition: BackgroundQueueDefinition, no
     status,
     workers,
   };
+}
+
+function durableScanCursor(
+  cursor: string | undefined,
+): { cursor?: { id: string }; skip?: number } {
+  return cursor ? { cursor: { id: cursor }, skip: 1 } : {};
+}
+
+function nextDurableScanCursor(rows: Array<{ id: string }>) {
+  return rows.length === MISSING_DURABLE_JOB_SCAN_LIMIT ? rows.at(-1)?.id : undefined;
 }
 
 function backgroundQueueStatus(input: {

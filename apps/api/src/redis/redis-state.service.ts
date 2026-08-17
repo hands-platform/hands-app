@@ -1,6 +1,7 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
+import { randomUUID } from 'node:crypto';
 import { PROVIDER_LOCATION_TTL_SECONDS, ProviderCachedLocation } from '../locations/location-update-policy';
 import { resolveMatchingPolicy } from '../matching/matching.policy';
 
@@ -8,6 +9,7 @@ const OTP_TTL_SECONDS = 60 * 5;
 const OTP_SEND_COOLDOWN_SECONDS = 60;
 const ADMIN_MFA_TOTP_REPLAY_TTL_SECONDS = 90;
 const ADMIN_SOCKET_REVOCATION_CHANNEL = 'admin:socket-auth:revocations';
+const MOBILE_AUTH_EPOCH_KEY = 'auth:mobile:epoch';
 
 export type AdminSocketRevocation = {
   id: string;
@@ -297,6 +299,71 @@ export class RedisStateService implements OnModuleDestroy {
 
   async isRefreshFamilyRevoked(familyId: string) {
     return (await this.redis.get(`auth:refresh:family-revoked:${familyId}`)) === '1';
+  }
+
+  async getOrCreateMobileAuthEpoch() {
+    const candidate = randomUUID();
+    const created = await this.redis.set(MOBILE_AUTH_EPOCH_KEY, candidate, 'NX');
+    if (created === 'OK') return candidate;
+
+    const current = await this.redis.get(MOBILE_AUTH_EPOCH_KEY);
+    if (!current) {
+      throw new Error('Mobile authentication epoch is unavailable');
+    }
+    return current;
+  }
+
+  async isMobileAuthEpochCurrent(epoch: string) {
+    return (await this.getOrCreateMobileAuthEpoch()) === epoch;
+  }
+
+  async isMobileSessionActive(familyId: string, epoch: string) {
+    await this.getOrCreateMobileAuthEpoch();
+    const result = await this.redis.eval(
+      [
+        "if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end",
+        "if redis.call('GET', KEYS[2]) == '1' then return 0 end",
+        'return 1',
+      ].join('\n'),
+      2,
+      MOBILE_AUTH_EPOCH_KEY,
+      `auth:refresh:family-revoked:${familyId}`,
+      epoch,
+    );
+    return Number(result) === 1;
+  }
+
+  async consumeRefreshTokenForEpoch(
+    tokenHash: string,
+    tokenTtlSeconds: number,
+    familyId: string,
+    familyTtlSeconds: number,
+    epoch: string,
+  ) {
+    await this.getOrCreateMobileAuthEpoch();
+    const result = Number(await this.redis.eval(
+      [
+        "if redis.call('GET', KEYS[1]) ~= ARGV[1] then return -1 end",
+        "if redis.call('GET', KEYS[3]) == '1' then return -2 end",
+        "local consumed = redis.call('SET', KEYS[2], '1', 'EX', ARGV[2], 'NX')",
+        'if not consumed then',
+        "  redis.call('SET', KEYS[3], '1', 'EX', ARGV[3])",
+        '  return 0',
+        'end',
+        'return 1',
+      ].join('\n'),
+      3,
+      MOBILE_AUTH_EPOCH_KEY,
+      `auth:refresh:revoked:${tokenHash}`,
+      `auth:refresh:family-revoked:${familyId}`,
+      epoch,
+      Math.max(1, Math.trunc(tokenTtlSeconds)),
+      Math.max(1, Math.trunc(familyTtlSeconds)),
+    ));
+    if (result === 1) return 'CONSUMED' as const;
+    if (result === -1) return 'EPOCH_MISMATCH' as const;
+    if (result === -2) return 'FAMILY_REVOKED' as const;
+    return 'REPLAY' as const;
   }
 
   async consumeRefreshToken(tokenHash: string, ttlSeconds: number) {

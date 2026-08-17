@@ -365,4 +365,18 @@ describe('MatchingGateway admin booking realtime', () => {
       select: { id: true },
     });
   });
+
+  it('does not acknowledge a booking room until the Socket.IO adapter joins it', async () => {
+    const gateway = new MatchingGateway(
+      {
+        requireCurrentUser: vi.fn().mockResolvedValue({ id: 'admin-1', roles: [Role.ADMIN], adminPermissionCategories: [AdminOperatorPermissionCategory.BOOKINGS_DETAIL] }),
+      } as never,
+      {} as never,
+    );
+    const client = { join: vi.fn().mockRejectedValue(new Error('Redis adapter unavailable')) };
+
+    await expect(
+      gateway.joinBookingRoom(client as never, { bookingId: 'booking-1' }),
+    ).resolves.toEqual({ ok: false, error: 'BOOKING_ROOM_JOIN_FAILED' });
+  });
 });

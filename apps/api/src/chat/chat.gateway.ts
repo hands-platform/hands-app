@@ -54,8 +54,12 @@ export class ChatGateway implements OnGatewayConnection {
       return { ok: false, error: 'CHAT_ROOM_FORBIDDEN' };
     }
 
-    void client.join(SOCKET_ROOMS.chat(payload.chatRoomId));
-    return { ok: true };
+    try {
+      await client.join(SOCKET_ROOMS.chat(payload.chatRoomId));
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'CHAT_ROOM_JOIN_FAILED' };
+    }
   }
 
   @SubscribeMessage('chat.message.create')

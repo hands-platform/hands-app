@@ -35254,6 +35254,73 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('keeps a confirmed campaign recoverable when its first queue add fails', async () => {
+    const preview = {
+      appDestination: 'notificationCenter',
+      body: 'A reviewed HANDS update is ready.',
+      consumedAt: null,
+      copyHash: 'copy-hash',
+      createdById: 'admin-1',
+      eligibleDeviceCount: 1,
+      expiresAt: new Date(Date.now() + 60_000),
+      id: 'preview-queue-deferred',
+      locale: 'en',
+      recipientCount: 1,
+      recipientFingerprint: createHash('sha256')
+        .update(JSON.stringify([{ deviceIds: ['push-device-1'], userId: 'customer-user-1' }]))
+        .digest('hex'),
+      recipients: [],
+      status: 'PREVIEWED',
+      targetRole: Role.CUSTOMER,
+      targetSegment: 'all',
+      targetUserId: null,
+      title: 'HANDS update',
+    };
+    const prisma = {
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+      adminPushCampaign: {
+        findUnique: vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(preview),
+        update: vi.fn(),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      pushDevice: {
+        count: vi.fn().mockResolvedValue(1),
+        groupBy: vi.fn().mockResolvedValue([{ userId: 'customer-user-1', _count: { _all: 1 } }]),
+      },
+      user: {
+        count: vi.fn().mockResolvedValue(1),
+        findMany: vi.fn().mockResolvedValue([{
+          id: 'customer-user-1',
+          phone: null,
+          fullName: 'Customer One',
+          providerProfile: null,
+          pushDevices: [{ id: 'push-device-1', platform: 'android', updatedAt: new Date() }],
+        }]),
+      },
+    };
+    const campaignQueue = { add: vi.fn().mockRejectedValue(new Error('Redis unavailable')) };
+    const service = createAdminService(prisma, { campaignQueue });
+
+    await expect(service.confirmAdminPushCampaign('admin-1', {
+      confirmationPhrase: 'SEND 1',
+      idempotencyKey: 'push-queue-deferred-request-1',
+      previewId: preview.id,
+      reason: 'Send the reviewed customer service notice.',
+    })).rejects.toThrow('Push campaign queue is unavailable');
+
+    expect(prisma.adminPushCampaign.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: 'QUEUED' }) }),
+    );
+    expect(prisma.adminPushCampaign.update).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'admin_push_campaign.queue_deferred',
+        target: `admin_push_campaign:${preview.id}`,
+        metadata: expect.objectContaining({ errorCode: 'QUEUE_ENQUEUE_FAILED' }),
+      }),
+    });
+  });
+
   it('expires a stale preview receipt without resolving or queueing an audience', async () => {
     const preview = {
       consumedAt: null,

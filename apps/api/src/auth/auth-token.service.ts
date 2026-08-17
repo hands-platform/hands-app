@@ -14,6 +14,7 @@ import { normalizeVietnamPhoneIdentifier } from './phone-number';
 
 type NestJwtPayload = {
   activeRole?: Role;
+  authEpoch?: string;
   exp?: number;
   familyId?: string;
   role?: Role;
@@ -21,7 +22,10 @@ type NestJwtPayload = {
   roles?: Role[];
 };
 
-type NestAuthenticatedUser = AuthenticatedUser & { sessionFamilyId: string };
+type NestAuthenticatedUser = AuthenticatedUser & {
+  sessionAuthEpoch: string;
+  sessionFamilyId: string;
+};
 
 type SupabaseJwtPayload = {
   sub?: string;
@@ -128,7 +132,13 @@ export class AuthTokenService {
         secret: jwtAccessSecretFromConfig(this.config),
       });
 
-      if (!payload.sub || !payload.exp || !payload.familyId || nestJwtCarriesAdminRole(payload)) {
+      if (
+        !payload.sub ||
+        !payload.exp ||
+        !payload.authEpoch ||
+        !payload.familyId ||
+        nestJwtCarriesAdminRole(payload)
+      ) {
         return null;
       }
 
@@ -137,6 +147,7 @@ export class AuthTokenService {
         activeRole: payload.activeRole ?? payload.role,
         roles: payload.roles ?? [],
         authProvider: 'nest',
+        sessionAuthEpoch: payload.authEpoch,
         sessionFamilyId: payload.familyId,
         ...(payload.exp ? { tokenExpiresAt: payload.exp * 1000 } : {}),
       };
@@ -148,7 +159,12 @@ export class AuthTokenService {
   private async verifyCurrentMobileUser(
     tokenUser: NestAuthenticatedUser,
   ): Promise<AuthenticatedUser | null> {
-    if (!(await this.isMobileSessionFamilyActive(tokenUser.sessionFamilyId))) {
+    if (
+      !(await this.isMobileSessionFamilyActive(
+        tokenUser.sessionFamilyId,
+        tokenUser.sessionAuthEpoch,
+      ))
+    ) {
       return null;
     }
     const claimedRoles = tokenUser.roles.filter((role) => SUPABASE_MOBILE_ROLES.has(role));
@@ -189,13 +205,13 @@ export class AuthTokenService {
     };
   }
 
-  private async isMobileSessionFamilyActive(familyId: string) {
+  private async isMobileSessionFamilyActive(familyId: string, authEpoch: string) {
     if (!this.redisState) {
       this.logger.warn('Mobile access-token revocation state is unavailable');
       return false;
     }
     try {
-      return !(await this.redisState.isRefreshFamilyRevoked(familyId));
+      return await this.redisState.isMobileSessionActive(familyId, authEpoch);
     } catch {
       this.logger.warn('Mobile access-token revocation check failed');
       return false;

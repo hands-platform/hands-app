@@ -18,25 +18,52 @@ import {
 } from '@prisma/client';
 
 import { ProviderOnboardingService } from './provider-onboarding.service';
-import { TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME } from './tax-policy-activation.queue';
+import {
+  TAX_POLICY_ACTIVATION_SWEEP_INTERVAL_MS,
+  TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME,
+  TAX_POLICY_ACTIVATION_SWEEP_SCHEDULER_ID,
+} from './tax-policy-activation.queue';
 
 describe('ProviderOnboardingService tax policy scheduler', () => {
   it('bounds failed repeatable sweep history', async () => {
-    const queue = { add: vi.fn().mockResolvedValue({ id: 'tax-sweep' }) };
+    const queue = { upsertJobScheduler: vi.fn().mockResolvedValue({ id: 'tax-sweep' }) };
     const service = new ProviderOnboardingService({} as never, undefined, queue as never);
 
     await service.onModuleInit();
 
-    expect(queue.add).toHaveBeenCalledWith(
-      TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME,
-      {},
+    expect(queue.upsertJobScheduler).toHaveBeenCalledWith(
+      TAX_POLICY_ACTIVATION_SWEEP_SCHEDULER_ID,
+      { every: TAX_POLICY_ACTIVATION_SWEEP_INTERVAL_MS },
       {
-        jobId: TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME,
-        repeat: { every: 60_000 },
-        removeOnComplete: true,
-        removeOnFail: { count: 500 },
+        name: TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME,
+        data: {},
+        opts: {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5_000 },
+          removeOnComplete: { count: 25 },
+          removeOnFail: { count: 500 },
+        },
       },
     );
+  });
+
+  it('retries Tax sweep scheduler registration after Redis recovers', async () => {
+    vi.useFakeTimers();
+    const queue = {
+      upsertJobScheduler: vi.fn()
+        .mockRejectedValueOnce(new Error('Redis unavailable'))
+        .mockResolvedValueOnce({ id: 'tax-sweep' }),
+    };
+    const service = new ProviderOnboardingService({} as never, undefined, queue as never);
+
+    await service.onModuleInit();
+    expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(2);
+
+    service.onModuleDestroy();
+    vi.useRealTimers();
   });
 });
 

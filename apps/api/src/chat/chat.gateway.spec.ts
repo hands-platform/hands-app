@@ -31,6 +31,20 @@ describe('ChatGateway Admin room authorization evidence', () => {
     expect(client.join).not.toHaveBeenCalled();
   });
 
+  it('does not acknowledge a chat room until the Socket.IO adapter joins it', async () => {
+    const gateway = new ChatGateway(
+      {
+        requireCurrentUser: vi.fn().mockResolvedValue({ id: 'customer-1', roles: [Role.CUSTOMER] }),
+      } as never,
+      { canAccessChatRoom: vi.fn().mockResolvedValue(true) } as never,
+    );
+    const client = { join: vi.fn().mockRejectedValue(new Error('Redis adapter unavailable')) };
+
+    await expect(
+      gateway.joinChatRoom(client as never, { chatRoomId: 'chat-room-1' }),
+    ).resolves.toEqual({ ok: false, error: 'CHAT_ROOM_JOIN_FAILED' });
+  });
+
   it('removes stale room members before broadcasting a new message', async () => {
     const allowedUser = { id: 'customer-1', roles: [Role.CUSTOMER] };
     const staleUser = { id: 'provider-1', roles: [Role.PROVIDER] };

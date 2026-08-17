@@ -340,6 +340,7 @@ describe('AdminBackgroundJobsService', () => {
   });
 
   it('includes tax policy activation in background queue health when configured', async () => {
+    const taxQueue = queueFixture('tax-policy-activation');
     const service = new AdminBackgroundJobsService(
       queueFixture('bank-statement-escalation'),
       queueFixture('booking-timeouts'),
@@ -349,7 +350,7 @@ describe('AdminBackgroundJobsService', () => {
       undefined,
       undefined,
       undefined,
-      queueFixture('tax-policy-activation'),
+      taxQueue,
     );
 
     const result = await service.health();
@@ -357,8 +358,11 @@ describe('AdminBackgroundJobsService', () => {
     expect(result.queues).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          expectedSchedulerId: 'tax-policy-activation-sweep-every-minute',
+          expectedSchedulerPresent: false,
           label: 'Tax policy activation',
           name: 'tax-policy-activation',
+          status: 'ATTENTION',
         }),
       ]),
     );
@@ -1290,6 +1294,7 @@ describe('AdminBackgroundJobsService', () => {
     expect(prisma.notification.findMany).toHaveBeenCalledWith(expect.objectContaining({
       take: 100,
       where: expect.objectContaining({
+        createdAt: { lte: new Date('2026-08-17T04:59:30.000Z') },
         deliveries: { none: {} },
         user: { pushDevices: { some: { enabled: true } } },
       }),
@@ -1304,6 +1309,49 @@ describe('AdminBackgroundJobsService', () => {
         response: expect.objectContaining({ failureCode: 'DELIVERY_OUTCOME_UNKNOWN' }),
       }),
     });
+  });
+
+  it('continues durable notification recovery past the first 100 rows without aging rows out', async () => {
+    const notificationQueue = queueFixture('notification-retry');
+    const firstPage = Array.from({ length: 100 }, (_, index) => ({
+      id: `notification-${String(index + 1).padStart(3, '0')}`,
+    }));
+    const prisma = {
+      payment: { findMany: vi.fn().mockResolvedValue([]) },
+      notification: {
+        findMany: vi.fn()
+          .mockResolvedValueOnce(firstPage)
+          .mockResolvedValueOnce([{ id: 'notification-101' }]),
+      },
+      notificationDelivery: { findMany: vi.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+    const service = new AdminBackgroundJobsService(
+      queueFixture('bank-statement-escalation'),
+      queueFixture('booking-timeouts'),
+      notificationQueue,
+      queueFixture('payment-status-check'),
+      prisma,
+    );
+    const now = new Date('2026-08-17T12:00:00.000+07:00');
+
+    await expect(service.syncMissingDurableJobs(now)).resolves.toMatchObject({
+      registeredCount: 100,
+      scannedCount: 100,
+    });
+    await expect(service.syncMissingDurableJobs(now)).resolves.toMatchObject({
+      registeredCount: 1,
+      scannedCount: 1,
+    });
+
+    const secondQuery = vi.mocked(prisma.notification.findMany).mock.calls[1]?.[0];
+    expect(secondQuery).toEqual(expect.objectContaining({
+      cursor: { id: 'notification-100' },
+      skip: 1,
+      where: expect.objectContaining({
+        createdAt: { lte: new Date('2026-08-17T04:59:30.000Z') },
+      }),
+    }));
+    expect(notificationQueue.add).toHaveBeenCalledTimes(101);
   });
 
   it('retries retained failed durable jobs and reports the recovery truthfully', async () => {

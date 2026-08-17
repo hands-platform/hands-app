@@ -112,7 +112,81 @@ function createService() {
 
 describe('RedisStateService refresh token revocation', () => {
   beforeEach(() => {
+    redis.eval.mockReset();
+    redis.get.mockReset();
     redis.set.mockReset();
+  });
+
+  it('creates one durable mobile authentication epoch and reuses the winning value', async () => {
+    redis.set.mockResolvedValueOnce('OK').mockResolvedValueOnce(null);
+    redis.get.mockResolvedValueOnce('existing-epoch');
+    const service = createService();
+
+    const created = await service.getOrCreateMobileAuthEpoch();
+    await expect(service.getOrCreateMobileAuthEpoch()).resolves.toBe('existing-epoch');
+
+    expect(created).toMatch(/^[0-9a-f-]{36}$/);
+    expect(redis.set).toHaveBeenNthCalledWith(1, 'auth:mobile:epoch', created, 'NX');
+    expect(redis.set).toHaveBeenNthCalledWith(
+      2,
+      'auth:mobile:epoch',
+      expect.stringMatching(/^[0-9a-f-]{36}$/),
+      'NX',
+    );
+  });
+
+  it('rejects a token epoch after Redis establishes a replacement epoch', async () => {
+    redis.set.mockResolvedValue(null);
+    redis.get.mockResolvedValue('replacement-epoch');
+    const service = createService();
+
+    await expect(service.isMobileAuthEpochCurrent('lost-epoch')).resolves.toBe(false);
+    await expect(service.isMobileAuthEpochCurrent('replacement-epoch')).resolves.toBe(true);
+  });
+
+  it('checks the mobile epoch and family revocation in one Redis operation', async () => {
+    redis.set.mockResolvedValue(null);
+    redis.get.mockResolvedValue('mobile-auth-epoch-1');
+    redis.eval.mockResolvedValue(1);
+    const service = createService();
+
+    await expect(
+      service.isMobileSessionActive('family-1', 'mobile-auth-epoch-1'),
+    ).resolves.toBe(true);
+    expect(redis.eval).toHaveBeenCalledWith(
+      expect.stringContaining("redis.call('GET', KEYS[1]) ~= ARGV[1]"),
+      2,
+      'auth:mobile:epoch',
+      'auth:refresh:family-revoked:family-1',
+      'mobile-auth-epoch-1',
+    );
+  });
+
+  it('atomically validates the epoch and family while consuming a refresh token', async () => {
+    redis.set.mockResolvedValue(null);
+    redis.get.mockResolvedValue('mobile-auth-epoch-1');
+    redis.eval.mockResolvedValue(1);
+    const service = createService();
+
+    await expect(
+      service.consumeRefreshTokenForEpoch(
+        'token-hash',
+        120.9,
+        'family-1',
+        3600.9,
+        'mobile-auth-epoch-1',
+      ),
+    ).resolves.toBe('CONSUMED');
+    expect(redis.eval).toHaveBeenCalledWith(
+      expect.stringContaining("redis.call('SET', KEYS[2], '1', 'EX', ARGV[2], 'NX')"),
+      3,
+      'auth:mobile:epoch',
+      'auth:refresh:revoked:token-hash',
+      'auth:refresh:family-revoked:family-1',
+      'mobile-auth-epoch-1',
+      120,
+      3600,
+    );
   });
 
   it('atomically consumes a refresh token only when its revocation key does not exist', async () => {

@@ -410,13 +410,35 @@ describe('AuthService refresh', () => {
       accessToken: 'signed-token-1',
       refreshToken: 'signed-token-2',
     });
-    expect(redisState.consumeRefreshToken).toHaveBeenCalledWith(expect.any(String), expect.any(Number));
-    expect(redisState.consumeRefreshToken.mock.calls[0]?.[0]).not.toContain('refresh-token-1');
+    expect(redisState.consumeRefreshTokenForEpoch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Number),
+      expect.any(String),
+      30 * 24 * 60 * 60,
+      'mobile-auth-epoch-1',
+    );
+    expect(redisState.consumeRefreshTokenForEpoch.mock.calls[0]?.[0]).not.toContain('refresh-token-1');
     expect(signedPayloads[0]).toEqual(expect.objectContaining({ familyId: expect.any(String) }));
     expect(signedPayloads[1]).toEqual(expect.objectContaining({ familyId: expect.any(String) }));
+    expect(signedPayloads[0]).toEqual(expect.objectContaining({ authEpoch: 'mobile-auth-epoch-1' }));
+    expect(signedPayloads[1]).toEqual(expect.objectContaining({ authEpoch: 'mobile-auth-epoch-1' }));
     expect((signedPayloads[0] as { familyId: string }).familyId).toBe(
       (signedPayloads[1] as { familyId: string }).familyId,
     );
+  });
+
+  it('rejects refresh tokens from a Redis authentication epoch that was replaced', async () => {
+    const { prisma, redisState, service } = createService(
+      { sub: 'user-1', tokenType: 'refresh', activeRole: Role.CUSTOMER },
+      [Role.CUSTOMER],
+    );
+    redisState.consumeRefreshTokenForEpoch.mockResolvedValue('EPOCH_MISMATCH');
+
+    await expect(service.refresh('refresh-token-1')).rejects.toThrow(
+      'Refresh token belongs to an expired authentication epoch',
+    );
+    expect(redisState.consumeRefreshTokenForEpoch).toHaveBeenCalledOnce();
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
   it('rejects a refresh token that was already revoked', async () => {
@@ -429,14 +451,11 @@ describe('AuthService refresh', () => {
       },
       [Role.CUSTOMER],
     );
-    redisState.consumeRefreshToken.mockResolvedValue(false);
+    redisState.consumeRefreshTokenForEpoch.mockResolvedValue('REPLAY');
 
     await expect(service.refresh('refresh-token-1')).rejects.toThrow('Refresh token has been revoked');
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
-    expect(redisState.revokeRefreshFamily).toHaveBeenCalledWith(
-      expect.any(String),
-      30 * 24 * 60 * 60,
-    );
+    expect(redisState.consumeRefreshTokenForEpoch).toHaveBeenCalledOnce();
   });
 
   it('allows only one concurrent refresh to consume the same token', async () => {
@@ -445,13 +464,13 @@ describe('AuthService refresh', () => {
       [Role.CUSTOMER],
     );
     let consumed = false;
-    redisState.consumeRefreshToken.mockImplementation(async () => {
+    redisState.consumeRefreshTokenForEpoch.mockImplementation(async () => {
       if (consumed) {
-        return false;
+        return 'REPLAY';
       }
       consumed = true;
       await Promise.resolve();
-      return true;
+      return 'CONSUMED';
     });
 
     const results = await Promise.allSettled([
@@ -471,10 +490,10 @@ describe('AuthService refresh', () => {
     );
     let releaseConsume: (() => void) | undefined;
     let revoked = false;
-    redisState.consumeRefreshToken.mockImplementation(
+    redisState.consumeRefreshTokenForEpoch.mockImplementation(
       () =>
-        new Promise<boolean>((resolve) => {
-          releaseConsume = () => resolve(!revoked);
+        new Promise<'CONSUMED' | 'REPLAY'>((resolve) => {
+          releaseConsume = () => resolve(revoked ? 'REPLAY' : 'CONSUMED');
         }),
     );
     redisState.revokeRefreshSession.mockImplementation(async () => {
@@ -511,7 +530,7 @@ describe('AuthService refresh', () => {
     const { config, jwt, prisma, service } = createOtpService({
       NODE_ENV: 'production',
       redisState: {
-        consumeRefreshToken: vi.fn().mockRejectedValue(new Error('redis down')),
+        consumeRefreshTokenForEpoch: vi.fn().mockRejectedValue(new Error('redis down')),
       },
     });
     config.get.mockImplementation((key: string) => {
@@ -521,6 +540,7 @@ describe('AuthService refresh', () => {
     });
     jwt.verify.mockReturnValue({
       sub: 'user-1',
+      authEpoch: 'mobile-auth-epoch-1',
       tokenType: 'refresh',
       activeRole: Role.CUSTOMER,
     });
@@ -889,7 +909,7 @@ describe('AuthService Admin operator login', () => {
 function createService(refreshPayload: Record<string, unknown>, roles: Role[]) {
   const signedPayloads: unknown[] = [];
   const jwt = {
-    verify: vi.fn().mockReturnValue(refreshPayload),
+    verify: vi.fn().mockReturnValue({ authEpoch: 'mobile-auth-epoch-1', ...refreshPayload }),
     sign: vi.fn((payload: unknown) => {
       signedPayloads.push(payload);
       return `signed-token-${signedPayloads.length}`;
@@ -902,7 +922,9 @@ function createService(refreshPayload: Record<string, unknown>, roles: Role[]) {
   };
   const config = { get: vi.fn().mockReturnValue(undefined) };
   const redisState = {
-    consumeRefreshToken: vi.fn().mockResolvedValue(true),
+    consumeRefreshTokenForEpoch: vi.fn().mockResolvedValue('CONSUMED'),
+    getOrCreateMobileAuthEpoch: vi.fn().mockResolvedValue('mobile-auth-epoch-1'),
+    isMobileAuthEpochCurrent: vi.fn().mockResolvedValue(true),
     isRefreshFamilyRevoked: vi.fn().mockResolvedValue(false),
     revokeRefreshFamily: vi.fn().mockResolvedValue(undefined),
     revokeRefreshSession: vi.fn().mockResolvedValue(undefined),
@@ -947,7 +969,9 @@ function createOtpService({
       | 'incrementOtpAttempts'
       | 'reserveOtpSend'
       | 'setOtp'
-      | 'consumeRefreshToken'
+      | 'consumeRefreshTokenForEpoch'
+      | 'getOrCreateMobileAuthEpoch'
+      | 'isMobileAuthEpochCurrent'
       | 'isRefreshFamilyRevoked'
       | 'revokeRefreshFamily'
       | 'revokeRefreshSession'
@@ -995,7 +1019,9 @@ function createOtpService({
     getOtp: vi.fn().mockResolvedValue(null),
     incrementOtpAttempts: vi.fn().mockResolvedValue(1),
     reserveOtpSend: vi.fn().mockResolvedValue(true),
-    consumeRefreshToken: vi.fn().mockResolvedValue(true),
+    consumeRefreshTokenForEpoch: vi.fn().mockResolvedValue('CONSUMED'),
+    getOrCreateMobileAuthEpoch: vi.fn().mockResolvedValue('mobile-auth-epoch-1'),
+    isMobileAuthEpochCurrent: vi.fn().mockResolvedValue(true),
     isRefreshFamilyRevoked: vi.fn().mockResolvedValue(false),
     revokeRefreshFamily: vi.fn().mockResolvedValue(undefined),
     revokeRefreshSession: vi.fn().mockResolvedValue(undefined),

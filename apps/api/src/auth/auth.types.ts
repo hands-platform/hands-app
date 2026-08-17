@@ -7,6 +7,7 @@ export type AuthenticatedUser = {
   authProvider?: 'nest' | 'supabase' | 'admin-realtime' | 'admin-web';
   externalUserId?: string;
   sessionId?: string;
+  sessionAuthEpoch?: string;
   sessionFamilyId?: string;
   tokenExpiresAt?: number;
   adminPermissionCategories?: AdminOperatorPermissionCategory[];

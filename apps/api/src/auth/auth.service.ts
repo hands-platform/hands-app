@@ -33,6 +33,7 @@ import { developmentOtpFromConfig } from './development-otp';
 
 type RefreshPayload = {
   activeRole?: Role;
+  authEpoch?: string;
   authProvider?: 'supabase';
   familyId?: string;
   jti?: string;
@@ -151,7 +152,7 @@ export class AuthService {
     });
 
     const sessionUser = { ...user, roles: [role] };
-    const { accessToken, refreshToken } = this.signSessionTokens(sessionUser, role);
+    const { accessToken, refreshToken } = await this.signSessionTokens(sessionUser, role);
 
     return {
       user: sessionUser,
@@ -164,7 +165,12 @@ export class AuthService {
   async refresh(refreshToken: string) {
     const payload = this.verifyRefreshToken(refreshToken);
     const refreshFamilyId = payload.familyId ?? refreshTokenHash(refreshToken);
-    await this.consumeRefreshToken(refreshToken, payload.exp, refreshFamilyId);
+    await this.consumeRefreshToken(
+      refreshToken,
+      payload.exp,
+      refreshFamilyId,
+      payload.authEpoch,
+    );
 
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user) {
@@ -177,7 +183,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token requires an explicit mobile role');
     }
 
-    const session = this.signSessionTokens(user, activeRole, {
+    const session = await this.signSessionTokens(user, activeRole, {
       authProvider: payload.authProvider,
       refreshFamilyId,
       refreshed: true,
@@ -187,6 +193,7 @@ export class AuthService {
 
   async logout(refreshToken: string) {
     const payload = this.verifyRefreshToken(refreshToken);
+    await this.assertMobileAuthEpoch(payload.authEpoch);
     const familyId = payload.familyId ?? refreshTokenHash(refreshToken);
     await this.revokeRefreshToken(
       refreshToken,
@@ -516,7 +523,7 @@ export class AuthService {
     this.assertMobileIdentityBoundary(user.roles);
 
     const sessionUser = { ...user, roles: [role] };
-    const { accessToken, refreshToken } = this.signSessionTokens(sessionUser, role, {
+    const { accessToken, refreshToken } = await this.signSessionTokens(sessionUser, role, {
       authProvider: 'supabase',
     });
 
@@ -548,7 +555,7 @@ export class AuthService {
     }
   }
 
-  private signSessionTokens(
+  private async signSessionTokens(
     user: { id: string; roles: Role[] },
     activeRole: Role | undefined,
     extraPayload: {
@@ -557,6 +564,7 @@ export class AuthService {
       refreshFamilyId?: string;
     } = {},
   ) {
+    const authEpoch = await this.mobileAuthEpoch();
     const { refreshFamilyId = randomUUID(), ...accessMetadata } = extraPayload;
     const sessionRoles = activeRole
       ? [activeRole]
@@ -564,6 +572,7 @@ export class AuthService {
     const sessionPayload = {
       sub: user.id,
       roles: sessionRoles,
+      authEpoch,
       familyId: refreshFamilyId,
       ...(activeRole ? { activeRole } : {}),
       ...accessMetadata,
@@ -576,6 +585,7 @@ export class AuthService {
       refreshToken: this.jwt.sign(
         {
           sub: user.id,
+          authEpoch,
           tokenType: 'refresh',
           jti: randomUUID(),
           familyId: refreshFamilyId,
@@ -585,6 +595,30 @@ export class AuthService {
         { secret: this.refreshSecret(), expiresIn: '30d' },
       ),
     };
+  }
+
+  private async mobileAuthEpoch() {
+    try {
+      return await this.redisState.getOrCreateMobileAuthEpoch();
+    } catch {
+      this.logger.warn('Redis mobile authentication epoch unavailable.');
+      throw new ServiceUnavailableException('Authentication service is temporarily unavailable');
+    }
+  }
+
+  private async assertMobileAuthEpoch(epoch: string | undefined) {
+    if (!epoch) {
+      throw new UnauthorizedException('Refresh token belongs to an expired authentication epoch');
+    }
+    try {
+      if (!(await this.redisState.isMobileAuthEpochCurrent(epoch))) {
+        throw new UnauthorizedException('Refresh token belongs to an expired authentication epoch');
+      }
+    } catch (error) {
+      if (error instanceof UnauthorizedException) throw error;
+      this.logger.warn('Redis mobile authentication epoch lookup unavailable.');
+      throw new ServiceUnavailableException('Authentication service is temporarily unavailable');
+    }
   }
 
   private resolveRefreshActiveRole(payload: RefreshPayload, userRoles: Role[]) {
@@ -863,7 +897,11 @@ export class AuthService {
     refreshToken: string,
     expiresAtSeconds: number | undefined,
     familyId: string,
+    authEpoch: string | undefined,
   ) {
+    if (!authEpoch) {
+      throw new UnauthorizedException('Refresh token belongs to an expired authentication epoch');
+    }
     const tokenHash = refreshTokenHash(refreshToken);
     const ttlSeconds = refreshTokenTtlSeconds(expiresAtSeconds);
     const familyTtlSeconds = refreshFamilyTtlSeconds(ttlSeconds);
@@ -875,11 +913,20 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token has been revoked');
     }
     try {
-      if (await this.redisState.isRefreshFamilyRevoked(familyId)) {
+      const result = await this.redisState.consumeRefreshTokenForEpoch(
+        tokenHash,
+        ttlSeconds,
+        familyId,
+        familyTtlSeconds,
+        authEpoch,
+      );
+      if (result === 'EPOCH_MISMATCH') {
+        throw new UnauthorizedException('Refresh token belongs to an expired authentication epoch');
+      }
+      if (result === 'FAMILY_REVOKED') {
         throw new UnauthorizedException('Refresh token family has been revoked');
       }
-      if (!(await this.redisState.consumeRefreshToken(tokenHash, ttlSeconds))) {
-        await this.redisState.revokeRefreshFamily(familyId, familyTtlSeconds);
+      if (result === 'REPLAY') {
         throw new UnauthorizedException('Refresh token has been revoked');
       }
     } catch (error) {

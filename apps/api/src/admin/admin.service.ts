@@ -34707,7 +34707,7 @@ export class AdminService {
     try {
       job = await this.adminPushCampaignQueue.add(request.name, request.data, request.options);
     } catch {
-      await this.failAdminPushCampaignQueue(preview.id, actorId, 'QUEUE_ENQUEUE_FAILED');
+      await this.deferAdminPushCampaignQueue(preview.id, actorId, 'QUEUE_ENQUEUE_FAILED');
       throw new ServiceUnavailableException('Push campaign queue is unavailable');
     }
 
@@ -34891,6 +34891,19 @@ export class AdminService {
       failedAt: failedAt.toISOString(),
       source: 'admin_manual_push',
     });
+  }
+
+  private async deferAdminPushCampaignQueue(campaignId: string, actorId: string, errorCode: string) {
+    await this.writeAudit(
+      actorId,
+      'admin_push_campaign.queue_deferred',
+      `admin_push_campaign:${campaignId}`,
+      {
+        campaignId,
+        errorCode,
+        source: 'admin_manual_push',
+      },
+    );
   }
 
   async retryNotification(actorId: string, notificationId: string, rawReason?: string) {

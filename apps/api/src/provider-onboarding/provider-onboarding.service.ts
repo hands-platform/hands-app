@@ -4,7 +4,9 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
+  OnModuleDestroy,
   OnModuleInit,
   Optional,
 } from '@nestjs/common';
@@ -50,13 +52,16 @@ import {
 } from '../admin/finance-approver-policy';
 import {
   TAX_POLICY_ACTIVATION_QUEUE_NAME,
+  TAX_POLICY_ACTIVATION_SWEEP_INTERVAL_MS,
   TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME,
+  TAX_POLICY_ACTIVATION_SWEEP_SCHEDULER_ID,
   taxPolicyActivationJob,
 } from './tax-policy-activation.queue';
 import { assertTaxPolicyFixtureWriteEnvironment } from './tax-policy-fixture-write-guard';
 
 const ADMIN_TAX_POLICY_VERSION_DEFAULT_TAKE = 20;
 const ADMIN_TAX_POLICY_VERSION_MAX_TAKE = 100;
+const TAX_POLICY_SCHEDULER_REGISTRATION_RETRY_MS = 5_000;
 
 type AdminTaxPolicyVersionListOptions = {
   readonly effectiveFrom?: string | null;
@@ -82,7 +87,11 @@ type TaxPolicySessionAssurance = {
 };
 
 @Injectable()
-export class ProviderOnboardingService implements OnModuleInit {
+export class ProviderOnboardingService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(ProviderOnboardingService.name);
+  private destroyed = false;
+  private taxPolicySchedulerRetry?: NodeJS.Timeout;
+
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly notifications?: NotificationsService,
@@ -92,19 +101,50 @@ export class ProviderOnboardingService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    if (!this.taxPolicyActivationQueue) {
-      return;
+    await this.registerTaxPolicySweep();
+  }
+
+  onModuleDestroy() {
+    this.destroyed = true;
+    if (this.taxPolicySchedulerRetry) {
+      clearTimeout(this.taxPolicySchedulerRetry);
+      this.taxPolicySchedulerRetry = undefined;
     }
-    await this.taxPolicyActivationQueue.add(
-      TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME,
-      {},
-      {
-        jobId: TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME,
-        repeat: { every: 60_000 },
-        removeOnComplete: true,
-        removeOnFail: { count: 500 },
-      },
-    );
+  }
+
+  private async registerTaxPolicySweep() {
+    if (!this.taxPolicyActivationQueue || this.destroyed) return;
+    try {
+      await this.taxPolicyActivationQueue.upsertJobScheduler(
+        TAX_POLICY_ACTIVATION_SWEEP_SCHEDULER_ID,
+        { every: TAX_POLICY_ACTIVATION_SWEEP_INTERVAL_MS },
+        {
+          name: TAX_POLICY_ACTIVATION_SWEEP_JOB_NAME,
+          data: {},
+          opts: {
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 5_000 },
+            removeOnComplete: { count: 25 },
+            removeOnFail: { count: 500 },
+          },
+        },
+      );
+      if (this.taxPolicySchedulerRetry) {
+        clearTimeout(this.taxPolicySchedulerRetry);
+        this.taxPolicySchedulerRetry = undefined;
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to register Tax policy activation scheduler: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      if (!this.taxPolicySchedulerRetry) {
+        this.taxPolicySchedulerRetry = setTimeout(() => {
+          this.taxPolicySchedulerRetry = undefined;
+          void this.registerTaxPolicySweep();
+        }, TAX_POLICY_SCHEDULER_REGISTRATION_RETRY_MS);
+        this.taxPolicySchedulerRetry.unref();
+      }
+    }
   }
 
   async getSnapshot(userId?: string) {
