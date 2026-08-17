@@ -6817,7 +6817,6 @@ export class AdminService {
       'notifications',
       'payoutBatches',
       'cashSettlements',
-      'analytics',
       'paymentClearingWorkload',
       'bankReconciliationWorkload',
       'partnerDepositWorkload',
@@ -6831,7 +6830,6 @@ export class AdminService {
       this.notificationSummary(notificationRange),
       this.payoutBatchSummary({ range }),
       this.cashSettlementSummary({ range }),
-      this.startShiftAnalytics(range),
       this.bookingPaymentClearingReviewOwnerSummary({
         range: 'all',
         review: 'open',
@@ -6846,15 +6844,15 @@ export class AdminService {
 
     const operations = adminSettledValue(results[0]);
     return {
-      analytics: adminSettledValue(results[7]),
+      analytics: null,
       cashSettlements: adminSettledValue(results[6]),
       dataClass: 'live' as const,
       earnings: adminSettledValue(results[2]),
       financeReviewWorkload: {
-        bankReconciliation: adminSettledValue(results[9]),
-        companyBankAccounts: adminSettledValue(results[11]),
-        partnerBankDeposits: adminSettledValue(results[10]),
-        paymentClearing: adminSettledValue(results[8]),
+        bankReconciliation: adminSettledValue(results[8]),
+        companyBankAccounts: adminSettledValue(results[10]),
+        partnerBankDeposits: adminSettledValue(results[9]),
+        paymentClearing: adminSettledValue(results[7]),
       },
       generatedAt: now.toISOString(),
       lastEventAt: operations?.lastEventAt ?? null,

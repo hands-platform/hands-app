@@ -28,6 +28,11 @@ export default async function NotificationTemplatesPage({ searchParams }: { sear
       : await adminGetResult<AdminNotificationTemplateCatalog>(
           '/admin/notifications/templates?take=50',
           EMPTY_CATALOG,
+          {
+            freshness: 'stable',
+            revalidateSeconds: 300,
+            tags: ['notification-template-catalog'],
+          },
         );
   const result = browserFixture === 'catalog-incomplete' && loadedResult.ok
     ? {

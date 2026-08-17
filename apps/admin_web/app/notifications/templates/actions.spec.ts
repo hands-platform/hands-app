@@ -1,4 +1,4 @@
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 import { vi } from 'vitest';
 
 import { AdminApiRequestError, adminPatchOrThrow } from '../../../lib/admin-api';
@@ -8,7 +8,7 @@ import {
 } from './actions';
 import { INITIAL_NOTIFICATION_TEMPLATE_ACTION_STATE } from './notification-template-action-state';
 
-vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn(), updateTag: vi.fn() }));
 vi.mock('../../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../../lib/admin-api')>('../../../lib/admin-api');
   return { ...actual, adminPatchOrThrow: vi.fn() };
@@ -46,6 +46,7 @@ describe('notification template actions', () => {
       ],
     });
     expect(result).toMatchObject({ status: 'saved', templateKey: 'provider.joined' });
+    expect(updateTag).toHaveBeenCalledWith('notification-template-catalog');
     expect(revalidatePath).toHaveBeenCalledWith('/notifications/templates');
   });
 

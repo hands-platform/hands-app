@@ -98,6 +98,56 @@ function Get-ApiBuildStatus {
   }
 }
 
+function Get-AdminBuildStatus {
+  param(
+    [string]$Root,
+    [string]$Mode,
+    [string]$DistDir,
+    [string]$ExpectedBuildId
+  )
+
+  if ($Mode -ne "production") {
+    return [pscustomobject]@{
+      freshness = "development"
+      message = "Admin Web is running in development mode."
+      buildId = $null
+    }
+  }
+
+  $resolvedDistDir = if ([string]::IsNullOrWhiteSpace($DistDir)) { ".next" } else { $DistDir }
+  $buildIdPath = Join-Path $Root "apps\admin_web\$resolvedDistDir\BUILD_ID"
+  if (-not (Test-Path -LiteralPath $buildIdPath)) {
+    return [pscustomobject]@{
+      freshness = "missing"
+      message = "Admin Web BUILD_ID is missing at $buildIdPath. Rebuild and restart the production Admin."
+      buildId = $null
+    }
+  }
+
+  $buildId = (Get-Content -Raw -LiteralPath $buildIdPath).Trim()
+  if ([string]::IsNullOrWhiteSpace($ExpectedBuildId)) {
+    return [pscustomobject]@{
+      freshness = "unknown"
+      message = "The running Admin build ID was not recorded. Restart the production Admin before relying on this runtime."
+      buildId = $buildId
+    }
+  }
+
+  if ($buildId -ne $ExpectedBuildId) {
+    return [pscustomobject]@{
+      freshness = "stale"
+      message = "Admin Web build output changed after the server started. Restart the production Admin to avoid missing CSS or JavaScript chunks."
+      buildId = $buildId
+    }
+  }
+
+  return [pscustomobject]@{
+    freshness = "fresh"
+    message = "Admin Web BUILD_ID matches the running production server."
+    buildId = $buildId
+  }
+}
+
 function Test-LocalPortListening {
   param([object]$Port)
 
@@ -143,6 +193,7 @@ function Get-HttpProbeStatus {
 $apiProcess = Get-OptionalProcessById $state.apiPid
 $adminProcess = Get-OptionalProcessById $state.adminPid
 $apiBuildStatus = Get-ApiBuildStatus -Root $RepoRoot
+$adminBuildStatus = Get-AdminBuildStatus -Root $RepoRoot -Mode $state.adminMode -DistDir $state.adminDistDir -ExpectedBuildId $state.adminBuildId
 $apiHealthUrl = "http://localhost:$($state.apiPort)/api/health"
 $adminUrl = "http://localhost:$($state.adminPort)"
 $apiPortListening = Test-LocalPortListening $state.apiPort
@@ -171,6 +222,9 @@ $adminProbe = Get-HttpProbeStatus -Url $adminUrl -AllowedStatusCodes @(200, 307,
   apiBuildMessage = $apiBuildStatus.message
   apiSourceUpdatedAt = $apiBuildStatus.sourceUpdatedAt
   apiDistUpdatedAt = $apiBuildStatus.distUpdatedAt
+  adminBuildFreshness = $adminBuildStatus.freshness
+  adminBuildMessage = $adminBuildStatus.message
+  adminBuildId = $adminBuildStatus.buildId
   apiHealth = $apiHealthUrl
   adminUrl = $adminUrl
 } | ConvertTo-Json -Depth 5

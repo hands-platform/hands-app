@@ -409,9 +409,12 @@ describe('Admin route domain manifest', () => {
     );
     const writeRoutes = routes.filter((route) => route.method !== 'GET');
 
-    expect(routes).toHaveLength(18);
+    expect(routes).toHaveLength(19);
     expect(writeRoutes).toHaveLength(1);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminAnalyticsRoutes']));
+    expect(routes.map((route) => `${route.method} ${route.path}`)).toContain(
+      'GET dashboard/start-shift-analytics',
+    );
     expect(writeRoutes.map((route) => `${route.method} ${route.path}`)).toEqual([
       'POST marketing/spend-daily',
     ]);

@@ -27,9 +27,9 @@ describe('AdminDesktopOnlyGate', () => {
 
   it('wraps the complete Admin root shell at the application layout boundary', () => {
     expect(layoutSource).toContain('<AdminDesktopOnlyGate>');
-    expect(layoutSource).toContain('<AdminRootShell sections={navSections}>');
+    expect(layoutSource).toContain('<AdminRootShellLoader sections={navSections}>');
     expect(layoutSource.indexOf('<AdminDesktopOnlyGate>')).toBeLessThan(
-      layoutSource.indexOf('<AdminRootShell sections={navSections}>'),
+      layoutSource.indexOf('<AdminRootShellLoader sections={navSections}>'),
     );
   });
 

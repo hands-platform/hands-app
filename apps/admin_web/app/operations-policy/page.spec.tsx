@@ -37,7 +37,11 @@ describe('OperationsPolicyPage', () => {
     const markup = renderToStaticMarkup(await OperationsPolicyPage({ searchParams: Promise.resolve({}) }));
 
     expect(mockedAdminGetResult).toHaveBeenCalledTimes(1);
-    expect(mockedAdminGetResult).toHaveBeenCalledWith('/admin/operational-policy', []);
+    expect(mockedAdminGetResult).toHaveBeenCalledWith('/admin/operational-policy', [], {
+      freshness: 'aggregate',
+      revalidateSeconds: 30,
+      tags: ['operations-policy'],
+    });
     expect(markup).toContain('Policy command strip');
     expect(markup).toContain('Workspace');
     expect(markup).toContain('Shift &amp; Queue SLA');

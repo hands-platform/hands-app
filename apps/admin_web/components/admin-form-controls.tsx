@@ -201,7 +201,7 @@ type AdminDrawerFormGridFieldsProps = {
 } & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'className'>;
 
 export function AdminFormShell({ action, children, className, method, ...formProps }: AdminFormShellProps) {
-  if (method?.toLowerCase() === 'get' && (typeof action === 'string' || action === undefined)) {
+  if ((method ?? 'get').toLowerCase() === 'get' && (typeof action === 'string' || action === undefined)) {
     return (
       <AdminDirectoryFilterForm {...formProps} action={action} className={joinClassNames(className)} method="get">
         {children}
@@ -218,7 +218,7 @@ export function AdminFormShell({ action, children, className, method, ...formPro
 
 export function AdminFormGrid({ action, children, className, method, ...formProps }: AdminFormGridProps) {
   const mergedClassName = joinClassNames('admin-form-grid form-grid', className);
-  if (method?.toLowerCase() === 'get' && (typeof action === 'string' || action === undefined)) {
+  if ((method ?? 'get').toLowerCase() === 'get' && (typeof action === 'string' || action === undefined)) {
     return (
       <AdminDirectoryFilterForm {...formProps} action={action} className={mergedClassName} method="get">
         {children}

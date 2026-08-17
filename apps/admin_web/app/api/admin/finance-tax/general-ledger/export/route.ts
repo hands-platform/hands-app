@@ -7,6 +7,7 @@ import type {
 import { adminGetResult } from '../../../../../../lib/admin-api';
 import { recordAdminOperatorActivity } from '../../../../../../lib/admin-operator-access';
 import { requireAdminWebAccess } from '../../../../../../lib/admin-session';
+import { mapInBatches } from '../../../../../../lib/bounded-parallel';
 import {
   buildAccountingJournalBatchApiHref,
   buildAccountingJournalBatchRowsCsvContent,
@@ -16,6 +17,7 @@ import {
 } from '../../../../../finance-tax/tax-settlement-page-model';
 
 const EXPORT_PAGE_SIZE = 100;
+const EXPORT_CONCURRENCY = 4;
 const MAX_EXPORT_ROWS = 100_000;
 const EXPORT_TIMEZONE = 'Asia/Ho_Chi_Minh';
 const NO_STORE_HEADERS = { 'cache-control': 'no-store', pragma: 'no-cache' };
@@ -42,14 +44,19 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const rows: AdminAccountingJournalBatch[] = [];
-  for (let page = 1; rows.length < summaryResult.data.count; page += 1) {
-    const pageResult = await adminGetResult<AdminAccountingJournalBatch[]>(
+  const pageCount = Math.ceil(summaryResult.data.count / EXPORT_PAGE_SIZE);
+  const pageResults = await mapInBatches(
+    Array.from({ length: pageCount }, (_, index) => index + 1),
+    EXPORT_CONCURRENCY,
+    (page) => adminGetResult<AdminAccountingJournalBatch[]>(
       buildAccountingJournalBatchApiHref({ ...filters, page, take: EXPORT_PAGE_SIZE }),
       [],
-    );
-    if (!pageResult.ok) return upstreamExportError('JOURNAL_BATCH_ROWS_UNAVAILABLE', pageResult.status);
-    if (pageResult.data.length === 0) {
+    ),
+  );
+  const failedPage = pageResults.find((pageResult) => !pageResult.ok);
+  if (failedPage) return upstreamExportError('JOURNAL_BATCH_ROWS_UNAVAILABLE', failedPage.status);
+  const rows = pageResults.flatMap((pageResult) => pageResult.data);
+  if (rows.length < summaryResult.data.count) {
       return NextResponse.json(
         {
           error: 'JOURNAL_BATCH_EXPORT_INCOMPLETE',
@@ -58,8 +65,6 @@ export async function GET(request: NextRequest) {
         },
         { headers: NO_STORE_HEADERS, status: 502 },
       );
-    }
-    rows.push(...pageResult.data);
   }
 
   const generatedAt = new Date().toISOString();

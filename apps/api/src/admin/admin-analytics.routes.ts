@@ -16,6 +16,11 @@ export class AdminAnalyticsRoutes extends AdminIdentityRoutes {
     return this.admin.startShiftSummary(dateRange);
   }
 
+  @Get('dashboard/start-shift-analytics')
+  startShiftAnalytics(@Query('dateRange') dateRange?: string) {
+    return this.admin.startShiftAnalytics(dateRange);
+  }
+
   @Get(['vietnam-overview', 'maps/vietnam-overview'])
   vietnamOverview(@Query('range') range?: string) {
     return this.admin.getVietnamOverview(range);

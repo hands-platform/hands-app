@@ -1,5 +1,6 @@
 'use client';
 
+import '../app/globals.css';
 import type { ReactNode } from 'react';
 import { Suspense, useEffect, useState } from 'react';
 import { Menu, X } from 'lucide-react';

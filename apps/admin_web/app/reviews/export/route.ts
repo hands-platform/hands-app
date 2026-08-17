@@ -4,6 +4,7 @@ import type { AdminReview, AdminReviewSummary } from '../../../lib/admin-api';
 import { adminGetResult } from '../../../lib/admin-api';
 import { requireAdminWebAccess } from '../../../lib/admin-session';
 import { buildCsvContent } from '../../../lib/csv-export';
+import { mapInBatches } from '../../../lib/bounded-parallel';
 import {
   REVIEW_EXPORT_COLUMNS,
   buildReviewDataHrefs,
@@ -13,6 +14,7 @@ import {
 } from '../review-page-model';
 
 export const dynamic = 'force-dynamic';
+const EXPORT_CONCURRENCY = 4;
 
 export async function GET(request: NextRequest) {
   const access = requireAdminWebAccess(request);
@@ -30,20 +32,22 @@ export async function GET(request: NextRequest) {
     return exportError('Review export summary could not be loaded.', 502);
   }
 
-  const reviews: AdminReview[] = [];
   const matchingCount = reviewMatchingCount(summaryResult.data, filters.review);
   const pageCount = Math.ceil(Math.max(0, matchingCount) / 100);
-  for (let page = 1; page <= pageCount; page += 1) {
+  const pageResults = await mapInBatches(
+    Array.from({ length: pageCount }, (_, index) => index + 1),
+    EXPORT_CONCURRENCY,
+    async (page) => {
     const listHref = buildReviewDataHrefs({ ...filters, page, pageSize: 100 }).listHref;
     const pageResult = await adminGetResult<AdminReview[]>(listHref, []);
-    if (!pageResult.ok) {
-      return exportError(`Review export failed while loading page ${page}.`, 502);
-    }
-    reviews.push(...pageResult.data);
-    if (pageResult.data.length < 100) {
-      break;
-    }
+      return { page, pageResult };
+    },
+  );
+  const failedPage = pageResults.find(({ pageResult }) => !pageResult.ok);
+  if (failedPage) {
+    return exportError(`Review export failed while loading page ${failedPage.page}.`, 502);
   }
+  const reviews = pageResults.flatMap(({ pageResult }) => pageResult.data);
 
   if (reviews.length !== matchingCount) {
     return exportError(

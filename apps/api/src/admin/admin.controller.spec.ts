@@ -208,6 +208,7 @@ describe('AdminController notification and push actions', () => {
     listAppSessions: vi.fn(),
     appSessionSummary: vi.fn(),
     startShiftSummary: vi.fn(),
+    startShiftAnalytics: vi.fn(),
     listChatArchive: vi.fn(),
     chatArchiveSummary: vi.fn(),
     listBookingNotifications: vi.fn(),
@@ -2805,6 +2806,14 @@ describe('AdminController notification and push actions', () => {
       path: 'dashboard/start-shift-summary',
     });
     expect(admin.startShiftSummary).toHaveBeenCalledWith('7d');
+
+    admin.startShiftAnalytics.mockResolvedValue({ range: '7d' });
+    await expect(controller.startShiftAnalytics('7d')).resolves.toEqual({ range: '7d' });
+    expect(routeMetadata('startShiftAnalytics')).toEqual({
+      method: RequestMethod.GET,
+      path: 'dashboard/start-shift-analytics',
+    });
+    expect(admin.startShiftAnalytics).toHaveBeenCalledWith('7d');
   });
 
   it('exposes chat archive as a paged filtered audit list with a separate summary', async () => {

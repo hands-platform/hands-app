@@ -219,7 +219,7 @@ describe('ReviewsTableSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'booking-custom-date-grid vuexy-review-custom-date-grid',
+        'admin-directory-filter-form booking-custom-date-grid vuexy-review-custom-date-grid',
         'admin-form-control-button button button-primary booking-date-apply-button',
       ]),
     );

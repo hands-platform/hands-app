@@ -45,7 +45,15 @@ describe('NotificationTemplatesPage', () => {
 
   it('loads the bounded catalog through an error-aware result', async () => {
     await NotificationTemplatesPage({ searchParams: Promise.resolve({}) });
-    expect(mockedAdminGetResult).toHaveBeenCalledWith('/admin/notifications/templates?take=50', expect.objectContaining({ templates: [] }));
+    expect(mockedAdminGetResult).toHaveBeenCalledWith(
+      '/admin/notifications/templates?take=50',
+      expect.objectContaining({ templates: [] }),
+      {
+        freshness: 'stable',
+        revalidateSeconds: 300,
+        tags: ['notification-template-catalog'],
+      },
+    );
   });
 
   it('separates API failure from an empty catalog', async () => {

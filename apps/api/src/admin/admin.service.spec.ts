@@ -6400,9 +6400,6 @@ describe('AdminService query orchestration', () => {
     const cashSettlementSummary = vi
       .spyOn(service, 'cashSettlementSummary')
       .mockResolvedValue({ source: 'cash' } as never);
-    const startShiftAnalytics = vi
-      .spyOn(service, 'startShiftAnalytics')
-      .mockResolvedValue({ source: 'analytics' } as never);
     const paymentClearingWorkload = vi
       .spyOn(service, 'bookingPaymentClearingReviewOwnerSummary')
       .mockResolvedValue({ source: 'payment-clearing-workload' } as never);
@@ -6419,7 +6416,7 @@ describe('AdminService query orchestration', () => {
     const result = await service.startShiftSummary('7d');
 
     expect(result).toMatchObject({
-      analytics: { source: 'analytics' },
+      analytics: null,
       cashSettlements: { source: 'cash' },
       earnings: { source: 'earnings' },
       financeReviewWorkload: {
@@ -6446,7 +6443,6 @@ describe('AdminService query orchestration', () => {
     expect(earningsSummary).toHaveBeenCalledWith({ range: '7d' });
     expect(payoutBatchSummary).toHaveBeenCalledWith({ range: '7d' });
     expect(cashSettlementSummary).toHaveBeenCalledWith({ range: '7d' });
-    expect(startShiftAnalytics).toHaveBeenCalledWith('7d');
     expect(paymentClearingWorkload).toHaveBeenCalledWith({
       range: 'all',
       review: 'open',

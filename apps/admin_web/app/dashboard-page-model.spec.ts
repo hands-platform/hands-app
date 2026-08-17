@@ -60,6 +60,9 @@ describe('dashboard page model', () => {
     expect(hrefs.startShiftSummaryHref).toBe(
       '/admin/dashboard/start-shift-summary?dateRange=today',
     );
+    expect(hrefs.startShiftAnalyticsHref).toBe(
+      '/admin/dashboard/start-shift-analytics?dateRange=today',
+    );
     expect(hrefs.bookingsHref).toBeNull();
     expect(hrefs.partnersHref).toBeNull();
     expect(hrefs.appSessionsHref).toBeNull();
@@ -111,6 +114,9 @@ describe('dashboard page model', () => {
     expect(hrefs.bookingsHref).toBeNull();
     expect(hrefs.startShiftSummaryHref).toBe(
       '/admin/dashboard/start-shift-summary?dateRange=7d',
+    );
+    expect(hrefs.startShiftAnalyticsHref).toBe(
+      '/admin/dashboard/start-shift-analytics?dateRange=7d',
     );
     expect(hrefs.notificationsHref).toBeNull();
     expect(hrefs.paymentsHref).toBeNull();

@@ -1,4 +1,4 @@
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 import { vi } from 'vitest';
 
 import {
@@ -9,7 +9,7 @@ import {
 } from '../../lib/admin-api';
 import { initialOperationsPolicyActionState, updateOperationalPolicy } from './actions';
 
-vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn(), updateTag: vi.fn() }));
 vi.mock('../../lib/admin-api', async (importOriginal) => {
   const original = await importOriginal<typeof import('../../lib/admin-api')>();
   return { ...original, adminGetResult: vi.fn(), adminPatchOrThrow: vi.fn() };
@@ -44,6 +44,7 @@ describe('operations policy actions', () => {
         value: 12,
       },
     );
+    expect(updateTag).toHaveBeenCalledWith('operations-policy');
     expect(revalidatePath).toHaveBeenCalledWith('/operations-policy');
     expect(result).toMatchObject({
       status: 'success',

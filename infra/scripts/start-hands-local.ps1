@@ -156,6 +156,7 @@ Clear-ApiDist -Root $RepoRoot
 
 $apiLog = Join-Path $logDir "api.log"
 $adminLog = Join-Path $logDir "admin.log"
+$adminProductionDistDir = ".next-hands-local-prod"
 
 $apiCommand = @"
 Set-Location '$RepoRoot'
@@ -171,8 +172,16 @@ $adminCommand = if ($AdminProduction) {
 Set-Location '$RepoRoot'
 `$env:NODE_ENV='production'
 `$env:ADMIN_API_BASE_URL='http://localhost:$ApiPort/api'
-npm.cmd run build --workspace @massage-vn/admin-web *> '$adminLog'
-if (`$LASTEXITCODE -ne 0) { exit `$LASTEXITCODE }
+`$env:ADMIN_NEXT_DIST_DIR='$adminProductionDistDir'
+`$nextEnvPath = Join-Path '$RepoRoot' 'apps\admin_web\next-env.d.ts'
+`$nextEnvBeforeBuild = [System.IO.File]::ReadAllText(`$nextEnvPath)
+try {
+  npm.cmd run build --workspace @massage-vn/admin-web *> '$adminLog'
+  `$adminBuildExitCode = `$LASTEXITCODE
+} finally {
+  [System.IO.File]::WriteAllText(`$nextEnvPath, `$nextEnvBeforeBuild)
+}
+if (`$adminBuildExitCode -ne 0) { exit `$adminBuildExitCode }
 npm.cmd run start --workspace @massage-vn/admin-web -- --port $AdminPort *>> '$adminLog'
 "@
 } else {
@@ -218,6 +227,8 @@ $state = [pscustomobject]@{
   apiPort = $ApiPort
   adminPort = $AdminPort
   adminMode = if ($AdminProduction) { "production" } else { "development" }
+  adminDistDir = if ($AdminProduction) { $adminProductionDistDir } else { ".next" }
+  adminBuildId = $null
   apiPid = $apiProcess.Id
   adminPid = if ($adminProcess) { $adminProcess.Id } else { $null }
   startedAt = (Get-Date).ToString("o")
@@ -229,6 +240,14 @@ if (-not $apiHealthWaitedBeforeAdmin) {
 }
 if (-not $SkipAdmin) {
   Wait-HttpReady -Url "http://localhost:$AdminPort" -TimeoutSeconds 90 -AllowedStatusCodes @(200, 307, 308, 404)
+  if ($AdminProduction) {
+    $adminBuildIdPath = Join-Path $RepoRoot "apps\admin_web\$adminProductionDistDir\BUILD_ID"
+    if (-not (Test-Path -LiteralPath $adminBuildIdPath)) {
+      throw "Production Admin BUILD_ID is missing at $adminBuildIdPath"
+    }
+    $state.adminBuildId = (Get-Content -Raw -LiteralPath $adminBuildIdPath).Trim()
+    $state | ConvertTo-Json | Set-Content -Path $statePath -Encoding utf8
+  }
 }
 
 Write-Host "HANDS local services started"

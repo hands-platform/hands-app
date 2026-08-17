@@ -39,6 +39,16 @@ describe('Admin form controls', () => {
     expect(textContent(grid)).toBe('Filters');
   });
 
+  it('uses client URL navigation for implicit GET filters without intercepting server actions', () => {
+    const filter = AdminFormGrid({ action: '/partners', children: 'Partner filters' });
+    const action = AdminFormGrid({ action: async () => undefined, children: 'Save changes' });
+
+    expect(filter.type.name).toBe('AdminDirectoryFilterForm');
+    expect(filter.props.method).toBe('get');
+    expect(action.type).toBe('form');
+    expect(action.props.method).toBeUndefined();
+  });
+
   it('renders nested form field grids without creating another form element', () => {
     const fields = AdminFormGridFields({
       children: 'Two selects',

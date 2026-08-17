@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { AdminApiRequestError, adminPatchOrThrow } from '../../lib/admin-api';
 import {
@@ -107,6 +107,7 @@ export async function saveServiceCatalogGroup(
     };
   }
 
+  updateTag('service-catalog');
   revalidatePath('/services');
   revalidatePath('/audit-log');
   const reasonCode =

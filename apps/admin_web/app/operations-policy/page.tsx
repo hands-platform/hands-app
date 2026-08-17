@@ -75,7 +75,13 @@ export default async function OperationsPolicyPage({
   const canLoadFullDiagnostics = hasAdminOperatorCategory(operatorAccess, 'DEVELOPER_SYSTEM');
   const loadPlan = buildOperationsPolicyLoadPlan(params, { allowFullDiagnostics: canLoadFullDiagnostics });
   const [settingsResult, bookingsResult, providersResult, matchingPreviewResult, auditResult, auditHealthResult] = await Promise.all([
-    getOptionalResult<AdminOperationalPolicySetting[]>(loadPlan.settingsHref, []),
+    loadPlan.settingsHref
+      ? adminGetResult<AdminOperationalPolicySetting[]>(loadPlan.settingsHref, [], {
+          freshness: 'aggregate',
+          revalidateSeconds: 30,
+          tags: ['operations-policy'],
+        })
+      : Promise.resolve({ data: [], ok: true, status: null }),
     getOptionalResult<AdminBooking[]>(loadPlan.bookingsHref, []),
     getOptionalResult<AdminProvider[]>(loadPlan.providersHref, []),
     getOptionalResult<AdminMatchingPreview | null>(loadPlan.matchingPreviewHref, null),

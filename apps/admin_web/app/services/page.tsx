@@ -15,8 +15,16 @@ type ServicesPageSearchParams = Promise<Record<string, string | string[] | undef
 export default async function ServicesPage({ searchParams }: { searchParams?: ServicesPageSearchParams }) {
   const params = (await searchParams) ?? {};
   const [groupsResult, healthResult] = await Promise.all([
-    adminGetResult<AdminServiceCatalogGroup[]>('/admin/services/groups?scope=operational', []),
-    adminGetResult<AdminServiceCatalogHealth | null>('/admin/services/health', null),
+    adminGetResult<AdminServiceCatalogGroup[]>('/admin/services/groups?scope=operational', [], {
+      freshness: 'stable',
+      revalidateSeconds: 300,
+      tags: ['service-catalog'],
+    }),
+    adminGetResult<AdminServiceCatalogHealth | null>('/admin/services/health', null, {
+      freshness: 'stable',
+      revalidateSeconds: 300,
+      tags: ['service-catalog'],
+    }),
   ]);
   const groupedServices = groupsResult.data.map(toServiceCatalogGroup);
   const dialogMode = readDialogMode(params.dialog);
@@ -26,6 +34,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
     ? await adminGetResult<AdminServiceCatalogImpact | null>(
         `/admin/services/groups/${encodeURIComponent(editGroup.key)}/impact`,
         null,
+        { freshness: 'aggregate', revalidateSeconds: 30, tags: ['service-catalog'] },
       )
     : null;
 

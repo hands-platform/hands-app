@@ -28,7 +28,9 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next-hands-local-prod/types/**/*.ts",
+    ".next-hands-local-prod/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

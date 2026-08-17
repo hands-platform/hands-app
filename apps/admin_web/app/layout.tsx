@@ -1,13 +1,11 @@
-import './globals.css';
+import './login.css';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import type { ReactNode } from 'react';
 import { AdminDesktopOnlyGate } from '../components/admin-desktop-only-gate';
-import { AdminOperatorAccessGate } from '../components/admin-operator-access-gate';
-import { AdminRootShell } from '../components/admin-root-shell';
+import { AdminRootShellLoader } from '../components/admin-root-shell-loader';
 import { AdminThemeScript } from '../components/admin-theme-script';
 import { getCurrentAdminOperatorAccessResult } from '../lib/admin-operator-access';
-import { adminNavSectionsForAccess } from '../lib/admin-navigation';
 
 export const metadata: Metadata = {
   title: {
@@ -33,6 +31,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     );
   }
 
+  const [{ AdminOperatorAccessGate }, { adminNavSectionsForAccess }] = await Promise.all([
+    import('../components/admin-operator-access-gate'),
+    import('../lib/admin-navigation'),
+  ]);
   const operatorAccessResult = await getCurrentAdminOperatorAccessResult();
   const operatorAccess = operatorAccessResult.data;
   const navSections = adminNavSectionsForAccess(operatorAccess);
@@ -44,9 +46,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       </head>
       <body>
         <AdminDesktopOnlyGate>
-          <AdminRootShell sections={navSections}>
+          <AdminRootShellLoader sections={navSections}>
             <AdminOperatorAccessGate operatorAccess={operatorAccess} operatorAccessAvailable={operatorAccessResult.ok}>{children}</AdminOperatorAccessGate>
-          </AdminRootShell>
+          </AdminRootShellLoader>
         </AdminDesktopOnlyGate>
       </body>
     </html>

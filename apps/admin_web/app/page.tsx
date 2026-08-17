@@ -25,6 +25,7 @@ import {
   AdminPayoutBatch,
   AdminProvider,
   AdminRefundSummary,
+  AdminStartShiftAnalytics,
   AdminStartShiftSummary,
   adminGet,
 } from '../lib/admin-api';
@@ -362,11 +363,16 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const dashboardViewMode = buildDashboardViewMode(params);
   const dashboardDataHrefs = buildDashboardDataHrefs(params);
   const selectedRangeLabel = dateRangeLabel(filters.range);
-  const [startShiftSummaryResponse, currentOperatorAccess] = await Promise.all([
+  const [startShiftSummaryResponse, startShiftAnalyticsResponse, currentOperatorAccess] = await Promise.all([
     adminGet<AdminStartShiftSummary | null>(dashboardDataHrefs.startShiftSummaryHref, null, {
       freshness: 'aggregate',
       revalidateSeconds: 15,
       tags: ['start-shift-summary'],
+    }),
+    adminGet<AdminStartShiftAnalytics | null>(dashboardDataHrefs.startShiftAnalyticsHref, null, {
+      freshness: 'aggregate',
+      revalidateSeconds: 30,
+      tags: ['start-shift-analytics'],
     }),
     getCurrentAdminOperatorAccess(),
   ]);
@@ -418,7 +424,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     startShiftSummaryResponse,
     startShiftSummaryResponse?.generatedAt,
   );
-  const startShiftAnalytics = startShiftSummaryResponse?.analytics ?? null;
+  const startShiftAnalytics = startShiftAnalyticsResponse ?? startShiftSummaryResponse?.analytics ?? null;
   const startShiftAnalyticsSourceState = dashboardSourceState(
     startShiftAnalytics,
     startShiftAnalytics?.generatedAt,

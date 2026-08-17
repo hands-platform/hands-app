@@ -165,7 +165,11 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         ? adminGetResult<AdminEarning[]>(plan.recentEarningsHref, [])
         : Promise.resolve(successResult<AdminEarning[]>([])),
       plan.view === 'drafts'
-        ? adminGetResult<AdminServiceCatalogGroup[]>('/admin/services/groups?scope=operational', [])
+        ? adminGetResult<AdminServiceCatalogGroup[]>('/admin/services/groups?scope=operational', [], {
+            freshness: 'stable',
+            revalidateSeconds: 300,
+            tags: ['service-catalog'],
+          })
         : Promise.resolve(successResult<AdminServiceCatalogGroup[]>([])),
       adminGetResult(plan.capabilityHref, EMPTY_CAPABILITIES),
       adminGetResult(plan.workspaceSummaryHref, EMPTY_WORKSPACE_SUMMARY),

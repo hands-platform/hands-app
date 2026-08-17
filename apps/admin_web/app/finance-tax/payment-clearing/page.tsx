@@ -85,11 +85,6 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
   const assignmentNotice = readParam(params, 'assignmentNotice');
   const requestedOwnerConfirmation = readParam(params, 'confirm') === 'review-owner';
   const requestedClearingEntryId = readParam(params, 'clearingEntryId');
-  const currentOperatorAccess = paymentClearingReviewNeedsOwner(filters.review) || requestedOwnerConfirmation
-    ? await getCurrentAdminOperatorAccess()
-    : null;
-  const currentOperatorId = currentOperatorAccess?.id ?? null;
-  const apiFilters = paymentClearingApiFilters(filters, reviewOwner, currentOperatorId);
   const overviewFilters = {
     ...filters,
     assigneeAdminId: undefined,
@@ -100,6 +95,22 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
     range: 'all' as const,
     review: 'all' as const,
   };
+  const overviewSummaryPromise = adminGet<AdminBookingPaymentClearingSummary>(
+    buildBookingPaymentClearingSummaryApiHref(overviewFilters),
+    emptyBookingPaymentClearingSummary(),
+  );
+  const bankOverviewSummaryPromise = adminGet<AdminBankReconciliationSummary>(
+    buildBankReconciliationSummaryApiHref({ ...overviewFilters, review: 'all' }),
+    emptyBankReconciliationSummary(),
+  );
+  const adminUsersPromise = requestedOwnerConfirmation
+    ? adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
+    : Promise.resolve([]);
+  const currentOperatorAccess = paymentClearingReviewNeedsOwner(filters.review) || requestedOwnerConfirmation
+    ? await getCurrentAdminOperatorAccess()
+    : null;
+  const currentOperatorId = currentOperatorAccess?.id ?? null;
+  const apiFilters = paymentClearingApiFilters(filters, reviewOwner, currentOperatorId);
   const settlementFilters = readBookingSettlementFilters(params);
   const monthlyFilters = readMonthlyTaxClosingFilters(params);
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
@@ -108,10 +119,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
       buildBookingPaymentClearingSummaryApiHref(apiFilters),
       emptyBookingPaymentClearingSummary(),
     ),
-    adminGet<AdminBookingPaymentClearingSummary>(
-      buildBookingPaymentClearingSummaryApiHref(overviewFilters),
-      emptyBookingPaymentClearingSummary(),
-    ),
+    overviewSummaryPromise,
     paymentClearingReviewNeedsOwner(filters.review)
       ? adminGet<AdminFinanceReviewOwnerWorkloadSummary>(
           buildBookingPaymentClearingReviewOwnerSummaryApiHref(apiFilters),
@@ -119,13 +127,8 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
         )
       : Promise.resolve(emptyFinanceReviewOwnerWorkloadSummary()),
     adminGet<AdminBookingPaymentClearingEntry[]>(buildBookingPaymentClearingApiHref(apiFilters), []),
-    adminGet<AdminBankReconciliationSummary>(
-      buildBankReconciliationSummaryApiHref({ ...overviewFilters, review: 'all' }),
-      emptyBankReconciliationSummary(),
-    ),
-    requestedOwnerConfirmation
-      ? adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
-      : Promise.resolve([]),
+    bankOverviewSummaryPromise,
+    adminUsersPromise,
   ]);
   const pagination = buildTaxSettlementServerPagination(entries, filters, queueSummary.count);
   const currentQueueHref = paymentClearingQueueHref(filters, reviewOwner);

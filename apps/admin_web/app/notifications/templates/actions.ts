@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 
 import {
   AdminApiRequestError,
@@ -25,6 +25,7 @@ export async function updateNotificationTemplate(
         ...(translations.length > 0 ? { translations } : {}),
       },
     );
+    updateTag('notification-template-catalog');
     revalidatePath('/notifications/templates');
     const changed = translations.length > 0
       ? translations.map((translation) => languageName(translation.locale)).join(', ')

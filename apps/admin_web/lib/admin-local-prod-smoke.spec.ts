@@ -16,6 +16,10 @@ describe('local production Admin smoke scripts', () => {
     expect(startScript).toContain('[switch]$AdminProduction');
     expect(startScript).toContain('npm.cmd run build --workspace @massage-vn/admin-web');
     expect(startScript).toContain('npm.cmd run start --workspace @massage-vn/admin-web -- --port $AdminPort');
+    expect(startScript).toContain('`$env:ADMIN_NEXT_DIST_DIR=\'$adminProductionDistDir\'');
+    expect(startScript).toContain('`$nextEnvBeforeBuild = [System.IO.File]::ReadAllText(`$nextEnvPath)');
+    expect(startScript).toContain('[System.IO.File]::WriteAllText(`$nextEnvPath, `$nextEnvBeforeBuild)');
+    expect(startScript).toContain('$state.adminBuildId = (Get-Content -Raw -LiteralPath $adminBuildIdPath).Trim()');
   });
 
   it('treats a reachable local listener as running even when the wrapper process has exited', () => {
@@ -25,6 +29,14 @@ describe('local production Admin smoke scripts', () => {
     expect(statusScript).toContain('$adminPortListening = Test-LocalPortListening $state.adminPort');
     expect(statusScript).toContain('apiRunning = [bool]$apiProcess -or $apiPortListening');
     expect(statusScript).toContain('adminRunning = [bool]$adminProcess -or $adminPortListening');
+  });
+
+  it('reports when production Admin build output changed after server start', () => {
+    const statusScript = readFileSync('../../infra/scripts/status-hands-local.ps1', 'utf8');
+
+    expect(statusScript).toContain('function Get-AdminBuildStatus');
+    expect(statusScript).toContain('if ($buildId -ne $ExpectedBuildId)');
+    expect(statusScript).toContain('adminBuildFreshness = $adminBuildStatus.freshness');
   });
 
   it('starts production Admin Web only after API health is ready', () => {

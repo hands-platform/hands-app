@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 
 import {
   AdminApiRequestError,
@@ -110,6 +110,7 @@ export async function updateOperationalPolicy(
       },
     );
 
+    updateTag('operations-policy');
     revalidatePath('/operations-policy');
     revalidatePath('/audit-log');
     return {

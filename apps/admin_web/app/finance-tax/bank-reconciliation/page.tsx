@@ -150,9 +150,6 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
   const isReviewWorkspace = workspace === 'operations';
   const isImportWorkspace = workspace === 'imports';
   const isManualWorkspace = workspace === 'manual';
-  const currentOperatorAccess = await getCurrentAdminOperatorAccess();
-  const currentOperatorId = currentOperatorAccess?.id ?? null;
-  const apiFilters = { ...filters, q: undefined };
   const overviewFilters = {
     ...filters,
     assigneeAdminId: undefined,
@@ -162,6 +159,37 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
     range: 'all' as const,
     review: 'all' as const,
   };
+  const overviewSummaryPromise = isReviewWorkspace
+    ? adminGet<AdminBankReconciliationSummary>(
+        buildBankReconciliationSummaryApiHref(overviewFilters),
+        emptyBankReconciliationSummary(),
+      )
+    : Promise.resolve(emptyBankReconciliationSummary());
+  const companyBankAccountsPromise = isImportWorkspace || isManualWorkspace
+    ? adminGet<AdminCompanyBankAccount[]>('/admin/company-bank-accounts?status=ACTIVE', [])
+    : Promise.resolve([]);
+  const importHistoryPromise = isImportWorkspace
+    ? adminGet<AdminCompanyBankTransactionImportBatchHistory>(
+        buildImportHistoryApiHref({
+          page: importHistoryPage,
+          q: importHistoryQuery,
+          range: importHistoryRange,
+          review: importHistoryReview,
+          take: importHistoryTake,
+        }),
+        { items: [], pagination: { skip: 0, take: importHistoryTake, total: 0 } },
+      )
+    : Promise.resolve({ items: [], pagination: { skip: 0, take: importHistoryTake, total: 0 } });
+  const paymentClearingOverviewPromise = adminGet<AdminBookingPaymentClearingSummary>(
+    buildBookingPaymentClearingSummaryApiHref({ ...overviewFilters, review: 'all' }),
+    emptyBookingPaymentClearingSummary(),
+  );
+  const adminUsersPromise = needsAdminDirectory
+    ? adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
+    : Promise.resolve([]);
+  const currentOperatorAccess = await getCurrentAdminOperatorAccess();
+  const currentOperatorId = currentOperatorAccess?.id ?? null;
+  const apiFilters = { ...filters, q: undefined };
   const [
     queueSummary,
     overviewSummary,
@@ -185,12 +213,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
           emptyBankReconciliationSummary(),
         )
       : Promise.resolve(emptyBankReconciliationSummary()),
-    isReviewWorkspace
-      ? adminGet<AdminBankReconciliationSummary>(
-          buildBankReconciliationSummaryApiHref(overviewFilters),
-          emptyBankReconciliationSummary(),
-        )
-      : Promise.resolve(emptyBankReconciliationSummary()),
+    overviewSummaryPromise,
     isReviewWorkspace
       ? adminGet<AdminBankReconciliationEvidenceSourceSummary>(
           bankReconciliationApiHref(
@@ -227,28 +250,10 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
           [],
         )
       : Promise.resolve([]),
-    isImportWorkspace || isManualWorkspace
-      ? adminGet<AdminCompanyBankAccount[]>('/admin/company-bank-accounts?status=ACTIVE', [])
-      : Promise.resolve([]),
-    isImportWorkspace
-      ? adminGet<AdminCompanyBankTransactionImportBatchHistory>(
-          buildImportHistoryApiHref({
-            page: importHistoryPage,
-            q: importHistoryQuery,
-            range: importHistoryRange,
-            review: importHistoryReview,
-            take: importHistoryTake,
-          }),
-          { items: [], pagination: { skip: 0, take: importHistoryTake, total: 0 } },
-        )
-      : Promise.resolve({ items: [], pagination: { skip: 0, take: importHistoryTake, total: 0 } }),
-    adminGet<AdminBookingPaymentClearingSummary>(
-      buildBookingPaymentClearingSummaryApiHref({ ...overviewFilters, review: 'all' }),
-      emptyBookingPaymentClearingSummary(),
-    ),
-    needsAdminDirectory
-      ? adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
-      : Promise.resolve([]),
+    companyBankAccountsPromise,
+    importHistoryPromise,
+    paymentClearingOverviewPromise,
+    adminUsersPromise,
   ]);
   const hasBulkAssignableTransactions =
     !requestedReviewOwnerConfirmation &&
