@@ -25,6 +25,7 @@ import {
   DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT,
 } from '../matching/matching.policy';
 import { BookingsService } from './bookings.service';
+import { bookingCreationFingerprint } from './bookings.creation-idempotency';
 import { providerBookingHistoryWhere } from './bookings.provider-query';
 import { PROVIDER_ACTIVE_WORK_STATUS_VALUES } from './bookings.provider-readiness';
 
@@ -205,6 +206,7 @@ describe('BookingsService booking creation', () => {
       },
       booking: {
         create: vi.fn().mockResolvedValue(booking),
+        findFirst: vi.fn().mockResolvedValue(null),
         findUnique: vi.fn().mockResolvedValue({ metadata: {} }),
         update: vi.fn().mockResolvedValue({}),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -213,6 +215,7 @@ describe('BookingsService booking creation', () => {
         findMany: vi.fn().mockResolvedValue([]),
       },
     };
+    attachTransaction(prisma);
     const matching = {
       getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
       openBooking: vi.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
@@ -240,6 +243,7 @@ describe('BookingsService booking creation', () => {
     );
 
     await service.createOpenMatchingBooking('customer-user-1', {
+      idempotencyKey: 'booking-request-1',
       serviceId: 'service-1',
       address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
       lat: 10.7769,
@@ -284,6 +288,7 @@ describe('BookingsService booking creation', () => {
 
   it('keeps a real gateway booking in CREATED until post-booking authorization succeeds', async () => {
     const create = vi.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.CREATED });
+    const findFirst = vi.fn().mockResolvedValue(null);
     const findUniqueOrThrow = vi
       .fn()
       .mockResolvedValue({ id: 'booking-1', status: BookingStatus.OPEN_MATCHING });
@@ -296,8 +301,10 @@ describe('BookingsService booking creation', () => {
         status: PaymentStatus.PENDING,
       }),
     };
+    const prisma = { booking: { create, findFirst, findUniqueOrThrow, updateMany } };
+    attachTransaction(prisma);
     const service = new BookingsService(
-      { booking: { create, findUniqueOrThrow, updateMany } } as never,
+      prisma as never,
       {} as never,
       {} as never,
       payments as never,
@@ -313,6 +320,7 @@ describe('BookingsService booking creation', () => {
       ): Promise<unknown>;
     };
     await gatewayFlow.createOpenMatchingBookingRecord({
+      idempotencyKey: 'booking-request-1',
       addressPayload: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
       addressText: 'District 1, Ho Chi Minh City, Vietnam',
       bookingGateSnapshot: {},
@@ -364,7 +372,10 @@ describe('BookingsService booking creation', () => {
     };
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ lockResult: null }]),
-      booking: { create: vi.fn().mockResolvedValue(booking) },
+      booking: {
+        create: vi.fn().mockResolvedValue(booking),
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
       customerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 700_000 } }),
         create: vi.fn().mockResolvedValue({ id: 'wallet-reservation-1' }),
@@ -394,11 +405,12 @@ describe('BookingsService booking creation', () => {
       createOpenMatchingBookingRecord(input: Record<string, unknown>): Promise<typeof booking>;
     };
 
-    await expect(walletFlow.createOpenMatchingBookingRecord(walletBookingCreateInput())).resolves.toEqual(
+    await expect(walletFlow.createOpenMatchingBookingRecord(walletBookingCreateInput())).resolves.toEqual({
       booking,
-    );
+      replayed: false,
+    });
 
-    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
     expect(tx.customerWalletLedgerEntry.aggregate).toHaveBeenCalledWith({
       where: { customerProfileId: 'customer-1', currency: 'VND' },
       _sum: { amount: true },
@@ -425,7 +437,7 @@ describe('BookingsService booking creation', () => {
   it('rejects a customer wallet booking before creating records when the locked balance is insufficient', async () => {
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ lockResult: null }]),
-      booking: { create: vi.fn() },
+      booking: { create: vi.fn(), findFirst: vi.fn().mockResolvedValue(null) },
       customerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 499_999 } }),
         create: vi.fn(),
@@ -452,6 +464,98 @@ describe('BookingsService booking creation', () => {
     );
     expect(tx.booking.create).not.toHaveBeenCalled();
     expect(tx.customerWalletLedgerEntry.create).not.toHaveBeenCalled();
+  });
+
+  it('returns the existing booking when the same customer replays the same idempotency key and payload', async () => {
+    const input = { ...walletBookingCreateInput(), paymentMethod: PaymentMethod.CASH };
+    let storedBooking: Record<string, unknown> | null = null;
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ lockResult: null }]),
+      booking: {
+        findFirst: vi.fn(async () => storedBooking),
+        create: vi.fn(async (args: { data: Record<string, unknown> }) => {
+          storedBooking = {
+            id: 'booking-idempotent-1',
+            metadata: args.data.metadata,
+            status: BookingStatus.OPEN_MATCHING,
+          };
+          return storedBooking;
+        }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      { buildAuthorization: vi.fn().mockReturnValue({ amount: 500_000 }) } as never,
+      {} as never,
+      {} as never,
+    );
+    const flow = service as unknown as {
+      createOpenMatchingBookingRecord(input: Record<string, unknown>): Promise<unknown>;
+    };
+
+    await expect(flow.createOpenMatchingBookingRecord(input)).resolves.toMatchObject({
+      replayed: false,
+    });
+    await expect(flow.createOpenMatchingBookingRecord(input)).resolves.toMatchObject({
+      booking: { id: 'booking-idempotent-1' },
+      replayed: true,
+    });
+
+    expect(tx.booking.create).toHaveBeenCalledTimes(1);
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects reuse of a booking idempotency key with a different payload', async () => {
+    const original = { ...walletBookingCreateInput(), paymentMethod: PaymentMethod.CASH };
+    const fingerprint = bookingCreationFingerprint({
+      address: original.addressPayload,
+      lat: original.bookingLat,
+      lng: original.bookingLng,
+      paymentMethod: original.paymentMethod,
+      serviceId: original.serviceId,
+    });
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ lockResult: null }]),
+      booking: {
+        create: vi.fn(),
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'booking-idempotent-1',
+          metadata: {
+            bookingCreationRequest: {
+              fingerprint,
+              idempotencyKey: original.idempotencyKey,
+            },
+          },
+        }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      { buildAuthorization: vi.fn().mockReturnValue({ amount: 500_000 }) } as never,
+      {} as never,
+      {} as never,
+    );
+    const flow = service as unknown as {
+      createOpenMatchingBookingRecord(input: Record<string, unknown>): Promise<unknown>;
+    };
+
+    await expect(
+      flow.createOpenMatchingBookingRecord({
+        ...original,
+        addressPayload: { addressText: 'District 3, Ho Chi Minh City, Vietnam' },
+      }),
+    ).rejects.toThrow('Booking idempotency key was reused with a different request');
+    expect(tx.booking.create).not.toHaveBeenCalled();
   });
 
   it('does not open VNPay matching while the provider payment is still pending', async () => {
@@ -786,6 +890,7 @@ describe('BookingsService booking creation', () => {
 
     await expect(
       service.createOpenMatchingBooking('customer-user-1', {
+        idempotencyKey: 'booking-request-too-far-1',
         serviceId: 'service-1',
         address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
         lat: 10.7769,
@@ -905,6 +1010,7 @@ describe('BookingsService booking creation', () => {
       },
       booking: {
         create: vi.fn().mockResolvedValue(booking),
+        findFirst: vi.fn().mockResolvedValue(null),
         findUnique: vi.fn().mockResolvedValue({ metadata: {} }),
         update: vi.fn().mockResolvedValue({}),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -921,6 +1027,7 @@ describe('BookingsService booking creation', () => {
         ]),
       },
     };
+    attachTransaction(prisma);
     const matching = {
       getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
       openBooking: vi.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
@@ -948,6 +1055,7 @@ describe('BookingsService booking creation', () => {
     );
 
     await service.createOpenMatchingBooking('customer-user-1', {
+      idempotencyKey: 'booking-request-backup-1',
       serviceId: 'service-1',
       address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
       lat: 10.7769,
@@ -983,6 +1091,117 @@ describe('BookingsService booking creation', () => {
       ['clean-user'],
       'booking-1',
       expect.objectContaining({ bookingId: 'booking-1' }),
+    );
+  });
+});
+
+describe('BookingsService booking-open delivery isolation', () => {
+  it('continues preferred Partner notification and realtime when the customer notification fails', async () => {
+    const notifications = {
+      create: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('Customer notification unavailable'))
+        .mockResolvedValueOnce({ id: 'preferred-notification-1' }),
+    };
+    const matchingGateway = {
+      emitDirectBookingRequested: vi.fn(),
+      emitBookingOpened: vi.fn(),
+    };
+    const service = new BookingsService(
+      {} as never,
+      {} as never,
+      matchingGateway as never,
+      {} as never,
+      notifications as never,
+      {} as never,
+    );
+    const flow = service as unknown as {
+      announceInitialOpenMatchingBooking(input: Record<string, unknown>): Promise<void>;
+      notifyBackupProvidersAndRecordTrace: ReturnType<typeof vi.fn>;
+    };
+    flow.notifyBackupProvidersAndRecordTrace = vi.fn();
+
+    await flow.announceInitialOpenMatchingBooking({
+      bookingId: 'booking-1',
+      customerDiscountAmount: 0,
+      eligibleBackupProviders: [],
+      matchingPayload: { bookingId: 'booking-1' },
+      matchingPolicy: matchingPolicy(),
+      preferredProvider: { id: 'partner-1', userId: 'partner-user-1', displayName: 'Linh' },
+      userId: 'customer-user-1',
+    });
+
+    expect(notifications.create).toHaveBeenCalledTimes(2);
+    expect(matchingGateway.emitDirectBookingRequested).toHaveBeenCalledWith('partner-user-1', 'booking-1', {
+      bookingId: 'booking-1',
+    });
+  });
+
+  it('continues backup notification delivery and realtime after one Partner notification fails', async () => {
+    const notifications = {
+      create: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('First Partner notification unavailable'))
+        .mockResolvedValueOnce({ id: 'notification-2' }),
+    };
+    const matchingGateway = { emitBackupBookingAvailable: vi.fn() };
+    const service = new BookingsService(
+      {} as never,
+      {} as never,
+      matchingGateway as never,
+      {} as never,
+      notifications as never,
+      {} as never,
+    );
+    const flow = service as unknown as {
+      notifyBackupProviders(input: Record<string, unknown>): Promise<{
+        trace: { notifiedCount: number; providers: Array<{ providerProfileId: string }> };
+        websocketError?: unknown;
+      }>;
+    };
+    const input = backupProviderNotificationInput();
+
+    await expect(flow.notifyBackupProviders(input)).resolves.toMatchObject({
+      trace: {
+        notifiedCount: 1,
+        providers: [{ providerProfileId: 'partner-2' }],
+        websocketTargetCount: 2,
+      },
+      websocketError: undefined,
+    });
+    expect(notifications.create).toHaveBeenCalledTimes(2);
+    expect(matchingGateway.emitBackupBookingAvailable).toHaveBeenCalledWith(
+      ['partner-user-1', 'partner-user-2'],
+      'booking-1',
+      { bookingId: 'booking-1' },
+    );
+  });
+
+  it('records backup notification evidence before surfacing a websocket failure', async () => {
+    const notifications = { create: vi.fn().mockResolvedValue({ id: 'notification-1' }) };
+    const matchingGateway = {
+      emitBackupBookingAvailable: vi.fn().mockRejectedValue(new Error('Realtime unavailable')),
+    };
+    const service = new BookingsService(
+      {} as never,
+      {} as never,
+      matchingGateway as never,
+      {} as never,
+      notifications as never,
+      {} as never,
+    );
+    const flow = service as unknown as {
+      notifyBackupProvidersAndRecordTrace(input: Record<string, unknown>): Promise<void>;
+      recordBackupNotificationTrace: ReturnType<typeof vi.fn>;
+    };
+    flow.recordBackupNotificationTrace = vi.fn();
+
+    await expect(flow.notifyBackupProvidersAndRecordTrace(backupProviderNotificationInput())).rejects.toThrow(
+      'Realtime unavailable',
+    );
+    expect(flow.recordBackupNotificationTrace).toHaveBeenCalledWith(
+      'booking-1',
+      expect.objectContaining({ notifiedCount: 2, websocketTargetCount: 2 }),
     );
   });
 });
@@ -2998,9 +3217,9 @@ describe('BookingsService marketplace participation', () => {
   it('does not expose open marketplace requests before Partner identity approval', async () => {
     const prisma = {
       providerProfile: {
-        findUnique: vi.fn().mockResolvedValue(
-          approvedPartner({ verification: { status: VerificationStatus.SUBMITTED } }),
-        ),
+        findUnique: vi
+          .fn()
+          .mockResolvedValue(approvedPartner({ verification: { status: VerificationStatus.SUBMITTED } })),
       },
       booking: { findMany: vi.fn() },
     };
@@ -3754,10 +3973,7 @@ describe('BookingsService partner response wallet gates', () => {
       service.updateParticipant('booking-1', 'partner-user-1', ParticipantStatus.ACCEPTED),
     ).resolves.toEqual(acceptedParticipant);
 
-    expect(matchingGateway.emitProviderAccepted).toHaveBeenCalledWith(
-      'booking-1',
-      acceptedParticipant,
-    );
+    expect(matchingGateway.emitProviderAccepted).toHaveBeenCalledWith('booking-1', acceptedParticipant);
   });
 
   it('matches the booking when the preferred first-pick partner accepts first', async () => {
@@ -4118,6 +4334,21 @@ function approvedPartner(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function backupProviderNotificationInput() {
+  return {
+    stage: 'initial_open',
+    bookingId: 'booking-1',
+    providers: [
+      { id: 'partner-1', userId: 'partner-user-1', distanceMeters: 1_000 },
+      { id: 'partner-2', userId: 'partner-user-2', distanceMeters: 2_000 },
+    ],
+    backupProviderRadiusMeters: 10_000,
+    backupOpenMode: 'IMMEDIATE',
+    backupProviderInvitationLimit: 25,
+    matchingPayload: { bookingId: 'booking-1' },
+  };
+}
+
 function approvedDocument(type: ProviderDocumentType) {
   return {
     type,
@@ -4262,6 +4493,7 @@ function openFirstPickBooking() {
 
 function walletBookingCreateInput() {
   return {
+    idempotencyKey: 'booking-request-wallet-1',
     addressPayload: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
     addressText: 'District 1, Ho Chi Minh City, Vietnam',
     bookingGateSnapshot: {},
@@ -4303,7 +4535,7 @@ function matchingPolicy() {
 }
 
 function attachTransaction<T extends Record<string, unknown>>(client: T) {
-  if (!("$queryRaw" in client)) {
+  if (!('$queryRaw' in client)) {
     Object.assign(client, { $queryRaw: vi.fn().mockResolvedValue([]) });
   }
   const transaction = vi.fn(async (callback: (transactionClient: T) => Promise<unknown>) => callback(client));
@@ -4324,10 +4556,7 @@ describe('BookingsService backup notification evidence concurrency', () => {
             metadata: { backupNotificationTraces: [existingTrace] },
             updatedAt: new Date('2026-08-16T06:00:01.000Z'),
           }),
-        updateMany: vi
-          .fn()
-          .mockResolvedValueOnce({ count: 0 })
-          .mockResolvedValueOnce({ count: 1 }),
+        updateMany: vi.fn().mockResolvedValueOnce({ count: 0 }).mockResolvedValueOnce({ count: 1 }),
       },
     };
     const service = new BookingsService(
@@ -4342,9 +4571,7 @@ describe('BookingsService backup notification evidence concurrency', () => {
       recordBackupNotificationTrace(bookingId: string, trace: unknown): Promise<void>;
     };
 
-    await expect(
-      service.recordBackupNotificationTrace('booking-1', nextTrace),
-    ).resolves.toBeUndefined();
+    await expect(service.recordBackupNotificationTrace('booking-1', nextTrace)).resolves.toBeUndefined();
 
     expect(prisma.booking.findUnique).toHaveBeenCalledTimes(2);
     expect(prisma.booking.updateMany).toHaveBeenNthCalledWith(2, {

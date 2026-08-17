@@ -35,6 +35,8 @@ Legacy customer aliases `/customer/providers/nearby` and `/customer/providers/:i
 
 `POST /customer/bookings/:id/cancel` is only a pre-commitment customer action. Once a partner has accepted, been selected, or the booking is matched/on the way/arrived/in service, direct customer cancellation is blocked and the booking must be reviewed through retained chat evidence by HANDS operations.
 
+`POST /customer/bookings` requires a stable `idempotencyKey` (8-128 URL-safe characters). Replaying the same customer key with the same booking intent returns the existing booking; reusing it with a different intent returns `409 Conflict`.
+
 ## Partner
 
 - `GET /partner/me`

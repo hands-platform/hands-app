@@ -18,6 +18,7 @@ void main() {
 
     final booking = await repository.createBooking(
       'service-foot-60',
+      idempotencyKey: 'booking-request-1',
       providerId: 'partner-1',
       couponCode: ' hands10 ',
       selectedLocationId: 'location-1',
@@ -38,6 +39,7 @@ void main() {
     expect(booking['id'], 'booking-1');
 
     expect(api.postBody['serviceId'], 'service-foot-60');
+    expect(api.postBody['idempotencyKey'], 'booking-request-1');
     expect(api.postBody['providerId'], 'partner-1');
     expect(api.postBody['selectedLocationId'], 'location-1');
     expect(api.postBody['couponCode'], 'HANDS10');

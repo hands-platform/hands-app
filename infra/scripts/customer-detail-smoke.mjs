@@ -802,12 +802,23 @@ async function request(path, options = {}) {
 const getJson = (path, accessToken) =>
   request(path, { headers: { authorization: `Bearer ${accessToken}` } });
 
+let bookingRequestSequence = 0;
+
 const postJson = (path, accessToken, body = {}) =>
   request(path, {
-    body: JSON.stringify(body),
+    body: JSON.stringify(withBookingIdempotencyKey(path, body)),
     headers: { authorization: `Bearer ${accessToken}` },
     method: 'POST',
   });
+
+function withBookingIdempotencyKey(path, body) {
+  if (path !== '/customer/bookings' || body.idempotencyKey) return body;
+  bookingRequestSequence += 1;
+  return {
+    ...body,
+    idempotencyKey: `customer-detail-booking-${Date.now()}-${process.pid}-${bookingRequestSequence}`,
+  };
+}
 
 const patchJson = (path, accessToken, body = {}) =>
   request(path, {

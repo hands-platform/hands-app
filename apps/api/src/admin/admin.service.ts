@@ -15815,35 +15815,46 @@ export class AdminService {
   }
 
   async repairBookingChatRoom(actorId: string, bookingId: string) {
-    const booking = await this.prisma.booking.findUniqueOrThrow({
-      where: { id: bookingId },
-      select: {
-        id: true,
-        status: true,
-        selectedProviderId: true,
-        chatRoom: { select: { id: true } },
-      },
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "Booking" WHERE "id" = ${bookingId} FOR UPDATE`);
+      const booking = await tx.booking.findUniqueOrThrow({
+        where: { id: bookingId },
+        select: {
+          id: true,
+          status: true,
+          selectedProviderId: true,
+          chatRoom: { select: { id: true } },
+        },
+      });
+      const chatRepairEligibleStatuses: BookingStatus[] = [
+        BookingStatus.MATCHED,
+        BookingStatus.PROVIDER_ON_THE_WAY,
+        BookingStatus.ARRIVED,
+        BookingStatus.IN_SERVICE,
+        BookingStatus.COMPLETED,
+      ];
+      if (!chatRepairEligibleStatuses.includes(booking.status)) {
+        throw new BadRequestException(`Booking status ${booking.status} cannot repair a chat room`);
+      }
+      if (!booking.selectedProviderId) {
+        throw new BadRequestException('Final partner selection is required before repairing chat room');
+      }
+
+      const updated = await tx.booking.update({
+        where: { id: bookingId },
+        data: { chatRoom: { upsert: { create: {}, update: {} } } },
+        select: adminBookingDetailSelect,
+      });
+      await this.writeAudit(actorId, 'booking.chat_room.repair', `booking:${bookingId}`, {
+        bookingId,
+        status: booking.status,
+        selectedProviderId: booking.selectedProviderId,
+        previousChatRoomId: booking.chatRoom?.id ?? null,
+        repairedChatRoomId: updated.chatRoom?.id ?? null,
+      }, undefined, tx);
+
+      return updated;
     });
-
-    if (!booking.selectedProviderId) {
-      throw new BadRequestException('Final partner selection is required before repairing chat room');
-    }
-
-    const updated = await this.prisma.booking.update({
-      where: { id: bookingId },
-      data: { chatRoom: { upsert: { create: {}, update: {} } } },
-      select: adminBookingDetailSelect,
-    });
-
-    await this.writeAudit(actorId, 'booking.chat_room.repair', `booking:${bookingId}`, {
-      bookingId,
-      status: booking.status,
-      selectedProviderId: booking.selectedProviderId,
-      previousChatRoomId: booking.chatRoom?.id ?? null,
-      repairedChatRoomId: updated.chatRoom?.id ?? null,
-    });
-
-    return updated;
   }
 
   async markBookingNoShow(actorId: string, bookingId: string, input: { reason?: string }) {
@@ -16039,6 +16050,9 @@ export class AdminService {
         booking.status === BookingStatus.EXPIRED &&
         booking.closedReason === 'admin_expired' &&
         !booking.selectedProviderId;
+      if (booking.payment && !this.payments) {
+        throw new ServiceUnavailableException('Booking expiration payment resolver is unavailable');
+      }
       if (!paymentClosureRetry && booking.status !== BookingStatus.OPEN_MATCHING) {
         throw new BadRequestException(`Booking status ${booking.status} cannot be expired`);
       }
@@ -16060,12 +16074,13 @@ export class AdminService {
         throw new ConflictException('Booking still has a customer-selectable Partner response');
       }
 
+      let realtimeBooking: unknown = booking;
       if (!paymentClosureRetry) {
         const notes = appendDatedAdminNote(
           booking.notes,
           `Matching expired by operations${reason ? `: ${reason}` : '.'}`,
         );
-        await tx.booking.update({
+        realtimeBooking = await tx.booking.update({
           where: { id: bookingId },
           data: {
             status: BookingStatus.EXPIRED,
@@ -16093,6 +16108,21 @@ export class AdminService {
             },
           },
         });
+        await tx.bookingOpsTask.upsert({
+          where: { bookingId_type: { bookingId, type: BookingOpsTaskType.PAYMENT_REVIEWED } },
+          update: {
+            status: BookingOpsTaskStatus.PENDING,
+            note: 'Booking closeout is pending after matching expiration.',
+            actorId,
+          },
+          create: {
+            bookingId,
+            type: BookingOpsTaskType.PAYMENT_REVIEWED,
+            status: BookingOpsTaskStatus.PENDING,
+            note: 'Booking closeout is pending after matching expiration.',
+            actorId,
+          },
+        });
 
         await this.writeAudit(actorId, 'booking.expire.manual', `booking:${bookingId}`, {
           bookingId,
@@ -16105,6 +16135,7 @@ export class AdminService {
       }
 
       return {
+        realtimeBooking,
         payment: booking.payment,
         paymentClosureRetry,
         previousStatus: booking.status,
@@ -16112,10 +16143,6 @@ export class AdminService {
       };
     });
 
-    await this.redisState.closeMatching(bookingId);
-    if (result.payment && !this.payments) {
-      throw new ServiceUnavailableException('Booking expiration payment resolver is unavailable');
-    }
     const closure = result.payment
       ? await this.payments!.closeUnmatchedBookingPayment(
           result.payment.id,
@@ -16123,6 +16150,10 @@ export class AdminService {
           { requestedByAdminId: actorId, source: 'ADMIN_MATCHING_EXPIRED' },
         )
       : null;
+    await this.redisState.closeMatching(bookingId);
+    if (this.matchingGateway) {
+      await this.matchingGateway.emitBookingExpired(bookingId, result.realtimeBooking);
+    }
     const updated = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.booking.update({
         where: { id: bookingId },
@@ -16161,14 +16192,6 @@ export class AdminService {
       }, undefined, tx);
       return updated;
     });
-    if (!result.paymentClosureRetry && this.matchingGateway) {
-      await this.runPostCommitBookingEffects(bookingId, [
-        {
-          label: 'expiration-realtime',
-          run: () => this.matchingGateway!.emitBookingExpired(bookingId, updated),
-        },
-      ]);
-    }
     return updated;
   }
 

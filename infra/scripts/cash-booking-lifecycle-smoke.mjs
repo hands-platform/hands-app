@@ -2048,14 +2048,17 @@ function journalSideTotal(entries, side) {
   return entries.filter((entry) => entry.side === side).reduce((total, entry) => total + entry.amount, 0);
 }
 
+let bookingRequestSequence = 0;
+
 async function request(path, options = {}) {
+  const requestBody = withBookingIdempotencyKey(path, options.body);
   const response = await fetch(`${apiBaseUrl}${path}`, {
     method: options.method ?? 'GET',
     headers: {
-      ...(options.body ? { 'content-type': 'application/json' } : {}),
+      ...(requestBody ? { 'content-type': 'application/json' } : {}),
       ...(options.token ? { authorization: `Bearer ${options.token}` } : {}),
     },
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body: requestBody ? JSON.stringify(requestBody) : undefined,
     signal: AbortSignal.timeout(15_000),
   });
   const body = await response.json().catch(() => ({}));
@@ -2065,6 +2068,15 @@ async function request(path, options = {}) {
     );
   }
   return body;
+}
+
+function withBookingIdempotencyKey(path, body) {
+  if (path !== '/customer/bookings' || !body || body.idempotencyKey) return body;
+  bookingRequestSequence += 1;
+  return {
+    ...body,
+    idempotencyKey: `cash-smoke-booking-${Date.now()}-${process.pid}-${bookingRequestSequence}`,
+  };
 }
 
 async function cleanup() {

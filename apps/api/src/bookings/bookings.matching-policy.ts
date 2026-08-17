@@ -30,18 +30,17 @@ export function bookingMatchingPolicySnapshot(policy: MatchingPolicy) {
 export function bookingCreateMetadata(input: {
   policy: MatchingPolicy;
   bookingGate: Prisma.InputJsonValue;
+  bookingCreationRequest?: Prisma.InputJsonObject;
 }): Prisma.InputJsonObject {
   return {
     dataOrigin: 'PRODUCTION',
     matchingPolicy: bookingMatchingPolicySnapshot(input.policy),
     bookingGate: input.bookingGate,
+    ...(input.bookingCreationRequest ? { bookingCreationRequest: input.bookingCreationRequest } : {}),
   };
 }
 
-export function restoreBookingMatchingPolicy(
-  metadata: unknown,
-  fallback: MatchingPolicy,
-): MatchingPolicy {
+export function restoreBookingMatchingPolicy(metadata: unknown, fallback: MatchingPolicy): MatchingPolicy {
   const metadataRecord = readPlainRecord(metadata);
   const snapshot = readPlainRecord(metadataRecord?.matchingPolicy);
   if (!snapshot) {

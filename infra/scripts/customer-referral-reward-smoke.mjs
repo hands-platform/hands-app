@@ -488,12 +488,23 @@ function getJson(path, accessToken) {
   return request(path, { headers: { authorization: `Bearer ${accessToken}` } });
 }
 
+let bookingRequestSequence = 0;
+
 function postJson(path, accessToken, body = {}) {
   return request(path, {
-    body: JSON.stringify(body),
+    body: JSON.stringify(withBookingIdempotencyKey(path, body)),
     headers: { authorization: `Bearer ${accessToken}` },
     method: 'POST',
   });
+}
+
+function withBookingIdempotencyKey(path, body) {
+  if (path !== '/customer/bookings' || body.idempotencyKey) return body;
+  bookingRequestSequence += 1;
+  return {
+    ...body,
+    idempotencyKey: `referral-smoke-booking-${Date.now()}-${process.pid}-${bookingRequestSequence}`,
+  };
 }
 
 function jwtAccessSecretFromEnv(sourceEnv) {

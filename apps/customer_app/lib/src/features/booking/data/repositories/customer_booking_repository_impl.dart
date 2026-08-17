@@ -97,6 +97,7 @@ class CustomerBookingRepositoryImpl implements CustomerBookingRepository {
   @override
   Future<Map<String, dynamic>> createBooking(
     String serviceId, {
+    required String idempotencyKey,
     String? providerId,
     String? couponCode,
     String? selectedLocationId,
@@ -111,6 +112,7 @@ class CustomerBookingRepositoryImpl implements CustomerBookingRepository {
     DateTime? currentLocationUpdatedAt,
   }) async {
     final result = await _api.postJson('/customer/bookings', {
+      'idempotencyKey': idempotencyKey,
       'serviceId': serviceId,
       if (providerId != null) 'providerId': providerId,
       if (selectedLocationId != null) 'selectedLocationId': selectedLocationId,

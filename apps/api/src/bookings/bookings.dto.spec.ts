@@ -60,15 +60,34 @@ describe('booking request DTO validation', () => {
 
   it('uses a concrete DTO for customer booking creation', () => {
     expect(createCustomerBookingBodyMetatype()?.constructor.name).toBe('Function');
-    expect((createCustomerBookingBodyMetatype() as { name?: string })?.name).toBe(
-      'CreateCustomerBookingDto',
-    );
+    expect((createCustomerBookingBodyMetatype() as { name?: string })?.name).toBe('CreateCustomerBookingDto');
+  });
+
+  it('requires a stable idempotency key for customer booking creation', async () => {
+    const metatype = createCustomerBookingBodyMetatype();
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const booking = {
+      address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+      idempotencyKey: ' booking-request-1 ',
+      lat: 10.7769,
+      lng: 106.7009,
+      paymentMethod: PaymentMethod.CASH,
+      serviceId: 'service-1',
+    };
+
+    await expect(
+      pipe.transform(booking, { type: 'body', metatype: metatype as never, data: '' }),
+    ).resolves.toMatchObject({ idempotencyKey: 'booking-request-1' });
+    await expect(
+      pipe.transform(
+        { ...booking, idempotencyKey: 'short' },
+        { type: 'body', metatype: metatype as never, data: '' },
+      ),
+    ).rejects.toThrow();
   });
 
   it('uses a concrete DTO for partner post-match cancellation notes', () => {
-    expect((cancelProviderBookingBodyMetatype() as { name?: string })?.name).toBe(
-      'CancelProviderBookingDto',
-    );
+    expect((cancelProviderBookingBodyMetatype() as { name?: string })?.name).toBe('CancelProviderBookingDto');
     expect((completeProviderBookingBodyMetatype() as { name?: string })?.name).toBe(
       'CompleteProviderBookingDto',
     );
@@ -171,6 +190,7 @@ describe('booking request DTO validation', () => {
 
     const transformed = await pipe.transform(
       {
+        idempotencyKey: 'booking-request-schedule-1',
         serviceId: 'service-1',
         providerId: 'provider-1',
         address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
@@ -192,6 +212,7 @@ describe('booking request DTO validation', () => {
 
     const transformed = await pipe.transform(
       {
+        idempotencyKey: 'booking-request-location-1',
         serviceId: 'service-1',
         selectedLocationId: 'saved-location-1',
         paymentMethod: PaymentMethod.CASH,

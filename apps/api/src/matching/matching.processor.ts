@@ -1,5 +1,11 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { BookingStatus, ParticipantStatus, Prisma } from '@prisma/client';
+import {
+  BookingOpsTaskStatus,
+  BookingOpsTaskType,
+  BookingStatus,
+  ParticipantStatus,
+  Prisma,
+} from '@prisma/client';
 import { Job } from 'bullmq';
 import { PaymentsService } from '../payments/payments.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -29,7 +35,6 @@ export class BookingTimeoutProcessor extends WorkerHost {
     }
 
     let expired = booking;
-    let transitioned = false;
     if (booking.status === BookingStatus.OPEN_MATCHING) {
       const expiredAt = new Date();
       try {
@@ -71,7 +76,6 @@ export class BookingTimeoutProcessor extends WorkerHost {
           },
           include: { payment: true },
         });
-        transitioned = true;
       } catch (error) {
         if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2025') {
           throw error;
@@ -80,7 +84,9 @@ export class BookingTimeoutProcessor extends WorkerHost {
       }
     } else if (
       booking.status !== BookingStatus.EXPIRED ||
-      !['preferred_provider_no_response', 'matching_request_expired'].includes(booking.closedReason ?? '')
+      !['preferred_provider_no_response', 'matching_request_expired', 'admin_expired'].includes(
+        booking.closedReason ?? '',
+      )
     ) {
       return { skipped: true };
     }
@@ -91,6 +97,8 @@ export class BookingTimeoutProcessor extends WorkerHost {
         'Payment refund requested because matching expired without a partner',
       )
       : null;
+    await this.redisState.closeMatching(booking.id);
+    await this.gateway.emitBookingExpired(booking.id, expired);
     await this.prisma.adminAuditLog.upsert({
       where: { eventId: `booking-timeout-payment-closure:${booking.id}` },
       update: {},
@@ -115,10 +123,23 @@ export class BookingTimeoutProcessor extends WorkerHost {
         },
       },
     });
-
-    await this.redisState.closeMatching(booking.id);
-    if (transitioned) {
-      await this.gateway.emitBookingExpired(booking.id, expired);
+    if (booking.closedReason === 'admin_expired') {
+      await this.prisma.bookingOpsTask.updateMany({
+        where: {
+          bookingId: booking.id,
+          note: { startsWith: 'Booking closeout is pending' },
+          status: BookingOpsTaskStatus.PENDING,
+          type: BookingOpsTaskType.PAYMENT_REVIEWED,
+        },
+        data: {
+          status: paymentClosure?.refundRequested
+            ? BookingOpsTaskStatus.PENDING
+            : BookingOpsTaskStatus.DONE,
+          note: paymentClosure?.refundRequested
+            ? 'Captured payment refund is pending finance review.'
+            : 'Payment closure completed after matching expiration.',
+        },
+      });
     }
 
     return { expired: true, bookingId: booking.id };

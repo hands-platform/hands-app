@@ -838,6 +838,7 @@ async function assertWithholdingRemittanceLifecycle({
 }
 
 let smokePhoneSequence = 0;
+let bookingRequestSequence = 0;
 function uniqueSmokePhone(prefix = '+849') {
   smokePhoneSequence += 1;
   const seed = BigInt(Date.now()) * 1000n + BigInt(process.pid % 1000) + BigInt(smokePhoneSequence);
@@ -872,14 +873,24 @@ const patchJson = (path, accessToken, body, extraHeaders = {}) =>
   });
 
 const postJson = async (path, accessToken, body = {}) => {
+  const normalizedBody = applyBookingAttemptLocationDefaults(path, body);
   const response = await request(path, {
     method: 'POST',
     headers: { authorization: `Bearer ${accessToken}` },
-    body: JSON.stringify(applyBookingAttemptLocationDefaults(path, body)),
+    body: JSON.stringify(withBookingIdempotencyKey(path, normalizedBody)),
   });
   apiSmokeBookingTracker.record(path, response);
   return response;
 };
+
+function withBookingIdempotencyKey(path, body) {
+  if (path !== '/customer/bookings' || body.idempotencyKey) return body;
+  bookingRequestSequence += 1;
+  return {
+    ...body,
+    idempotencyKey: `api-smoke-booking-${Date.now()}-${process.pid}-${bookingRequestSequence}`,
+  };
+}
 
 function createSmokeUploadBody(contentType, sizeBytes) {
   const body = Buffer.alloc(sizeBytes);

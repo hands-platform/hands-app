@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +20,9 @@ import '../../map/presentation/customer_map_widgets.dart';
 import '../domain/repositories/customer_booking_repository.dart';
 import 'customer_booking_error_messages.dart';
 import 'customer_booking_ui_helpers.dart';
+
+String _newBookingIdempotencyKey() =>
+    'customer-booking-${DateTime.now().microsecondsSinceEpoch}-${math.Random().nextInt(0x7fffffff)}';
 
 class BookingConfirmationPage extends ConsumerStatefulWidget {
   const BookingConfirmationPage({
@@ -54,6 +58,7 @@ class _BookingConfirmationPageState
     text: localDemoAccessEnabled ? demoCustomerAddress : '',
   );
   final couponController = TextEditingController();
+  final bookingIdempotencyKey = _newBookingIdempotencyKey();
   double? customerLat;
   double? customerLng;
   double? currentGpsLat;
@@ -271,6 +276,7 @@ class _BookingConfirmationPageState
       final selectedLocationId = savedLocation?['id'] as String?;
       final booking = await ref.read(customerRepositoryProvider).createBooking(
             widget.selectedService['id'] as String,
+            idempotencyKey: bookingIdempotencyKey,
             providerId: widget.providerDetail['id'] as String?,
             couponCode: appliedCouponCode,
             selectedLocationId: selectedLocationId,

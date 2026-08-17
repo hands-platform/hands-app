@@ -3,10 +3,10 @@ import { BookingTimeoutProcessor } from './matching.processor';
 
 describe('BookingTimeoutProcessor', () => {
   it('does not expire or refund when matching wins the timeout race', async () => {
-    const raceError = new Prisma.PrismaClientKnownRequestError(
-      'No booking matched the timeout condition',
-      { code: 'P2025', clientVersion: 'test' },
-    );
+    const raceError = new Prisma.PrismaClientKnownRequestError('No booking matched the timeout condition', {
+      code: 'P2025',
+      clientVersion: 'test',
+    });
     const prisma = {
       booking: {
         findUnique: vi.fn().mockResolvedValue({
@@ -29,16 +29,16 @@ describe('BookingTimeoutProcessor', () => {
       payments as never,
     );
 
-    await expect(
-      processor.process({ data: { bookingId: 'booking-1' } } as never),
-    ).resolves.toEqual({ skipped: true });
+    await expect(processor.process({ data: { bookingId: 'booking-1' } } as never)).resolves.toEqual({
+      skipped: true,
+    });
 
     expect(payments.closeUnmatchedBookingPayment).not.toHaveBeenCalled();
     expect(redisState.closeMatching).not.toHaveBeenCalled();
     expect(gateway.emitBookingExpired).not.toHaveBeenCalled();
   });
 
-  it('retries payment release for an already persisted timeout without emitting it twice', async () => {
+  it('re-emits expiry while retrying an already persisted timeout', async () => {
     const prisma = {
       booking: {
         findUnique: vi.fn().mockResolvedValue({
@@ -63,9 +63,10 @@ describe('BookingTimeoutProcessor', () => {
       payments as never,
     );
 
-    await expect(
-      processor.process({ data: { bookingId: 'booking-1' } } as never),
-    ).resolves.toEqual({ expired: true, bookingId: 'booking-1' });
+    await expect(processor.process({ data: { bookingId: 'booking-1' } } as never)).resolves.toEqual({
+      expired: true,
+      bookingId: 'booking-1',
+    });
 
     expect(prisma.booking.update).not.toHaveBeenCalled();
     expect(prisma.adminAuditLog.upsert).toHaveBeenCalledWith(
@@ -81,7 +82,134 @@ describe('BookingTimeoutProcessor', () => {
     );
     expect(payments.closeUnmatchedBookingPayment).toHaveBeenCalledTimes(1);
     expect(redisState.closeMatching).toHaveBeenCalledWith('booking-1');
-    expect(gateway.emitBookingExpired).not.toHaveBeenCalled();
+    expect(gateway.emitBookingExpired).toHaveBeenCalledWith(
+      'booking-1',
+      expect.objectContaining({ status: BookingStatus.EXPIRED }),
+    );
+  });
+
+  it('recovers an admin-expired booking payment task and matching projection', async () => {
+    const booking = {
+      id: 'booking-admin-expired',
+      status: BookingStatus.EXPIRED,
+      closedReason: 'admin_expired',
+      payment: { id: 'payment-1', status: PaymentStatus.AUTHORIZED },
+    };
+    const prisma = {
+      booking: { findUnique: vi.fn().mockResolvedValue(booking), update: vi.fn() },
+      bookingOpsTask: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      adminAuditLog: { upsert: vi.fn() },
+    };
+    const redisState = { closeMatching: vi.fn() };
+    const gateway = { emitBookingExpired: vi.fn() };
+    const payments = {
+      closeUnmatchedBookingPayment: vi.fn().mockResolvedValue({ released: true }),
+    };
+    const processor = new BookingTimeoutProcessor(
+      prisma as never,
+      redisState as never,
+      gateway as never,
+      payments as never,
+    );
+
+    await expect(processor.process({ data: { bookingId: booking.id } } as never)).resolves.toEqual({
+      expired: true,
+      bookingId: booking.id,
+    });
+
+    expect(prisma.bookingOpsTask.updateMany).toHaveBeenCalledWith({
+      where: {
+        bookingId: booking.id,
+        note: { startsWith: 'Booking closeout is pending' },
+        status: 'PENDING',
+        type: 'PAYMENT_REVIEWED',
+      },
+      data: {
+        status: 'DONE',
+        note: 'Payment closure completed after matching expiration.',
+      },
+    });
+    expect(redisState.closeMatching).toHaveBeenCalledWith(booking.id);
+    expect(gateway.emitBookingExpired).toHaveBeenCalledWith(booking.id, booking);
+  });
+
+  it('keeps admin expiry recovery pending until realtime succeeds', async () => {
+    const booking = {
+      id: 'booking-admin-expired-retry',
+      status: BookingStatus.EXPIRED,
+      closedReason: 'admin_expired',
+      payment: { id: 'payment-1', status: PaymentStatus.AUTHORIZED },
+    };
+    const prisma = {
+      booking: { findUnique: vi.fn().mockResolvedValue(booking), update: vi.fn() },
+      bookingOpsTask: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      adminAuditLog: { upsert: vi.fn() },
+    };
+    const redisState = { closeMatching: vi.fn() };
+    const gateway = {
+      emitBookingExpired: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('Realtime unavailable'))
+        .mockResolvedValueOnce(undefined),
+    };
+    const payments = {
+      closeUnmatchedBookingPayment: vi.fn().mockResolvedValue({ released: true }),
+    };
+    const processor = new BookingTimeoutProcessor(
+      prisma as never,
+      redisState as never,
+      gateway as never,
+      payments as never,
+    );
+    const job = { data: { bookingId: booking.id } } as never;
+
+    await expect(processor.process(job)).rejects.toThrow('Realtime unavailable');
+    expect(prisma.bookingOpsTask.updateMany).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.upsert).not.toHaveBeenCalled();
+
+    await expect(processor.process(job)).resolves.toEqual({
+      expired: true,
+      bookingId: booking.id,
+    });
+    expect(prisma.bookingOpsTask.updateMany).toHaveBeenCalledTimes(1);
+    expect(prisma.adminAuditLog.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not record timeout recovery complete until realtime succeeds', async () => {
+    const booking = {
+      id: 'booking-realtime-retry',
+      status: BookingStatus.EXPIRED,
+      closedReason: 'matching_request_expired',
+      payment: null,
+    };
+    const prisma = {
+      booking: { findUnique: vi.fn().mockResolvedValue(booking), update: vi.fn() },
+      adminAuditLog: { upsert: vi.fn() },
+    };
+    const redisState = { closeMatching: vi.fn() };
+    const gateway = {
+      emitBookingExpired: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('Realtime unavailable'))
+        .mockResolvedValueOnce(undefined),
+    };
+    const processor = new BookingTimeoutProcessor(
+      prisma as never,
+      redisState as never,
+      gateway as never,
+      { closeUnmatchedBookingPayment: vi.fn() } as never,
+    );
+    const job = { data: { bookingId: booking.id } } as never;
+
+    await expect(processor.process(job)).rejects.toThrow('Realtime unavailable');
+    expect(prisma.adminAuditLog.upsert).not.toHaveBeenCalled();
+
+    await expect(processor.process(job)).resolves.toEqual({
+      expired: true,
+      bookingId: booking.id,
+    });
+    expect(gateway.emitBookingExpired).toHaveBeenCalledTimes(2);
+    expect(prisma.adminAuditLog.upsert).toHaveBeenCalledTimes(1);
   });
 
   it('queues refund review instead of releasing a captured gateway payment', async () => {
@@ -116,9 +244,10 @@ describe('BookingTimeoutProcessor', () => {
       payments as never,
     );
 
-    await expect(
-      processor.process({ data: { bookingId: 'booking-1' } } as never),
-    ).resolves.toEqual({ expired: true, bookingId: 'booking-1' });
+    await expect(processor.process({ data: { bookingId: 'booking-1' } } as never)).resolves.toEqual({
+      expired: true,
+      bookingId: 'booking-1',
+    });
 
     expect(payments.closeUnmatchedBookingPayment).toHaveBeenCalledWith(
       'payment-1',

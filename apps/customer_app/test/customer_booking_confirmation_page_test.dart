@@ -850,6 +850,7 @@ class _RecordingBookingRepository implements CustomerBookingRepository {
   double? currentLat;
   double? currentLng;
   DateTime? currentLocationUpdatedAt;
+  String? idempotencyKey;
   String? paymentMethod;
   int cancelCalls = 0;
 
@@ -875,6 +876,7 @@ class _RecordingBookingRepository implements CustomerBookingRepository {
   @override
   Future<Map<String, dynamic>> createBooking(
     String serviceId, {
+    required String idempotencyKey,
     String? providerId,
     String? couponCode,
     String? selectedLocationId,
@@ -888,6 +890,7 @@ class _RecordingBookingRepository implements CustomerBookingRepository {
     double? currentLng,
     DateTime? currentLocationUpdatedAt,
   }) async {
+    this.idempotencyKey = idempotencyKey;
     this.currentLat = currentLat;
     this.currentLng = currentLng;
     this.currentLocationUpdatedAt = currentLocationUpdatedAt;

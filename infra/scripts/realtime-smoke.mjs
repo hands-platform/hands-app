@@ -111,12 +111,23 @@ async function request(path, options = {}) {
   return body;
 }
 
+let bookingRequestSequence = 0;
+
 const postJson = (path, accessToken, body = {}) =>
   request(path, {
     method: 'POST',
     headers: accessToken ? { authorization: `Bearer ${accessToken}` } : {},
-    body: JSON.stringify(body),
+    body: JSON.stringify(withBookingIdempotencyKey(path, body)),
   });
+
+function withBookingIdempotencyKey(path, body) {
+  if (path !== '/customer/bookings' || body.idempotencyKey) return body;
+  bookingRequestSequence += 1;
+  return {
+    ...body,
+    idempotencyKey: `realtime-smoke-booking-${Date.now()}-${process.pid}-${bookingRequestSequence}`,
+  };
+}
 
 const getJson = (path, accessToken) =>
   request(path, {

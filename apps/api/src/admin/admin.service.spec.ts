@@ -10721,6 +10721,7 @@ describe('AdminService query orchestration', () => {
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'booking-1' }]),
       adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+      bookingOpsTask: { upsert: vi.fn().mockResolvedValue({ id: 'payment-task-1' }) },
       booking: {
         findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
@@ -10769,6 +10770,20 @@ describe('AdminService query orchestration', () => {
       }),
     );
     expect(redisState.closeMatching).toHaveBeenCalledWith('booking-1');
+    expect(payments.closeUnmatchedBookingPayment.mock.invocationCallOrder[0]).toBeLessThan(
+      redisState.closeMatching.mock.invocationCallOrder[0],
+    );
+    expect(tx.bookingOpsTask.upsert).toHaveBeenCalledWith({
+      where: {
+        bookingId_type: { bookingId: 'booking-1', type: BookingOpsTaskType.PAYMENT_REVIEWED },
+      },
+      update: expect.objectContaining({ status: BookingOpsTaskStatus.PENDING }),
+      create: expect.objectContaining({
+        bookingId: 'booking-1',
+        status: BookingOpsTaskStatus.PENDING,
+        type: BookingOpsTaskType.PAYMENT_REVIEWED,
+      }),
+    });
     expect(matchingGateway.emitBookingExpired).toHaveBeenCalledWith('booking-1', updated);
     expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -10789,6 +10804,105 @@ describe('AdminService query orchestration', () => {
       }),
     });
     vi.useRealTimers();
+  });
+
+  it('leaves a durable payment-review task when admin expiry payment closure fails', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'booking-1' }]),
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+      bookingOpsTask: { upsert: vi.fn().mockResolvedValue({ id: 'payment-task-1' }) },
+      booking: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'booking-1',
+          expiresAt: new Date('2026-08-05T09:50:00.000Z'),
+          notes: null,
+          preferredProviderId: null,
+          selectedProviderId: null,
+          status: BookingStatus.OPEN_MATCHING,
+          closedReason: null,
+          participants: [],
+          payment: { id: 'payment-1', status: PaymentStatus.AUTHORIZED },
+        }),
+        update: vi.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.EXPIRED }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const payments = {
+      closeUnmatchedBookingPayment: vi.fn().mockRejectedValue(new Error('Payment resolver unavailable')),
+    };
+    const redisState = { closeMatching: vi.fn() };
+    const service = createAdminService(prisma, { payments, redisState });
+
+    await expect(service.expireBooking('admin-1', 'booking-1', {})).rejects.toThrow(
+      'Payment resolver unavailable',
+    );
+
+    expect(tx.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: BookingStatus.EXPIRED }) }),
+    );
+    expect(tx.bookingOpsTask.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ status: BookingOpsTaskStatus.PENDING }),
+      }),
+    );
+    expect(redisState.closeMatching).not.toHaveBeenCalled();
+  });
+
+  it('keeps the durable closeout task pending when matching cleanup fails', async () => {
+    const updated = { id: 'booking-1', status: BookingStatus.EXPIRED };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'booking-1' }]),
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+      bookingOpsTask: { upsert: vi.fn().mockResolvedValue({ id: 'closeout-task-1' }) },
+      booking: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'booking-1',
+          expiresAt: new Date('2026-08-05T09:50:00.000Z'),
+          notes: null,
+          preferredProviderId: null,
+          selectedProviderId: null,
+          status: BookingStatus.OPEN_MATCHING,
+          closedReason: null,
+          participants: [],
+          payment: { id: 'payment-1', status: PaymentStatus.AUTHORIZED },
+        }),
+        update: vi.fn().mockResolvedValue(updated),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const payments = {
+      closeUnmatchedBookingPayment: vi.fn().mockResolvedValue({
+        payment: { id: 'payment-1', status: PaymentStatus.RELEASED },
+        refundRequested: false,
+        released: true,
+      }),
+    };
+    const redisState = { closeMatching: vi.fn().mockRejectedValue(new Error('Redis unavailable')) };
+    const matchingGateway = { emitBookingExpired: vi.fn() };
+    const service = createAdminService(prisma, { matchingGateway, payments, redisState });
+
+    await expect(service.expireBooking('admin-1', 'booking-1', {})).rejects.toThrow(
+      'Redis unavailable',
+    );
+
+    expect(payments.closeUnmatchedBookingPayment).toHaveBeenCalledTimes(1);
+    expect(tx.bookingOpsTask.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          note: 'Booking closeout is pending after matching expiration.',
+          status: BookingOpsTaskStatus.PENDING,
+        }),
+      }),
+    );
+    expect(tx.booking.update).toHaveBeenCalledTimes(1);
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ action: 'booking.expire.payment_close' }) }),
+    );
+    expect(matchingGateway.emitBookingExpired).not.toHaveBeenCalled();
   });
 
   it('retries only payment closure after an admin-expired booking was already committed', async () => {
@@ -12138,6 +12252,76 @@ describe('AdminService query orchestration', () => {
         }),
       }),
     );
+  });
+
+  it('repairs a booking chat room and writes audit evidence in one locked transaction', async () => {
+    const updated = {
+      id: 'booking-1',
+      status: BookingStatus.MATCHED,
+      chatRoom: { id: 'chat-room-1' },
+    };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'booking-1' }]),
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+      booking: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.MATCHED,
+          selectedProviderId: 'partner-1',
+          chatRoom: null,
+        }),
+        update: vi.fn().mockResolvedValue(updated),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.repairBookingChatRoom('admin-1', 'booking-1')).resolves.toEqual(updated);
+
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(tx.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { chatRoom: { upsert: { create: {}, update: {} } } },
+        where: { id: 'booking-1' },
+      }),
+    );
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'booking.chat_room.repair',
+        actorId: 'admin-1',
+        metadata: expect.objectContaining({
+          previousChatRoomId: null,
+          repairedChatRoomId: 'chat-room-1',
+          selectedProviderId: 'partner-1',
+        }),
+      }),
+    });
+  });
+
+  it('rejects chat repair when the locked booking is no longer in a matched lifecycle state', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'booking-1' }]),
+      booking: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.CANCELLED,
+          selectedProviderId: 'partner-1',
+          chatRoom: null,
+        }),
+        update: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.repairBookingChatRoom('admin-1', 'booking-1')).rejects.toThrow(
+      'Booking status CANCELLED cannot repair a chat room',
+    );
+    expect(tx.booking.update).not.toHaveBeenCalled();
   });
 
   it('rejects retained booking chat lookup for unknown bookings', async () => {

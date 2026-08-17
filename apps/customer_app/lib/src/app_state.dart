@@ -157,6 +157,7 @@ class CustomerRepository {
 
   Future<Map<String, dynamic>> createBooking(
     String serviceId, {
+    required String idempotencyKey,
     String? providerId,
     String? couponCode,
     String? selectedLocationId,
@@ -172,6 +173,7 @@ class CustomerRepository {
   }) async {
     return _bookingRepository.createBooking(
       serviceId,
+      idempotencyKey: idempotencyKey,
       providerId: providerId,
       couponCode: couponCode,
       selectedLocationId: selectedLocationId,

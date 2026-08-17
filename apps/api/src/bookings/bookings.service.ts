@@ -65,6 +65,12 @@ import {
   preferredProviderBookingDistanceGateError,
 } from './bookings.gate';
 import {
+  bookingCreationFingerprint,
+  bookingCreationLockKey,
+  bookingCreationRequestFromMetadata,
+  bookingCreationRequestMetadata,
+} from './bookings.creation-idempotency';
+import {
   preferredProviderRejectionReasonCodes,
   type PreferredProviderRejectionReasonCode,
 } from './bookings.dto';
@@ -523,6 +529,7 @@ export class BookingsService {
   async createOpenMatchingBooking(
     userId: string | undefined,
     input: {
+      idempotencyKey: string;
       serviceId: string;
       providerId?: string;
       couponCode?: string;
@@ -652,8 +659,9 @@ export class BookingsService {
     const requiresPostBookingAuthorization = this.payments.requiresPostBookingAuthorization(
       input.paymentMethod,
     );
-    let booking: OpenBookingForClientResponse = await this.createOpenMatchingBookingRecord({
+    const creation = await this.createOpenMatchingBookingRecord({
       customerProfileId: customer.id,
+      idempotencyKey: input.idempotencyKey,
       selectedLocationId: selectedLocation?.id,
       addressPayload,
       addressText,
@@ -671,7 +679,31 @@ export class BookingsService {
       priceSummary,
       preferredProviderDistanceMeters: distanceGate.preferredProviderDistanceMeters,
       requiresPostBookingAuthorization,
+      couponCode: coupon?.code,
     });
+    let booking: OpenBookingForClientResponse = creation.booking;
+
+    if (creation.replayed) {
+      if (booking.status === BookingStatus.CREATED) {
+        await this.scheduleBookingPaymentStatusCheck(booking);
+        return clientBookingResponse(booking);
+      }
+      if (booking.status === BookingStatus.OPEN_MATCHING) {
+        const eligibleBackupProviders = await this.findInitialEligibleBackupProviders({
+          booking,
+          serviceId: service.id,
+          preferredProviderId: preferredProvider?.id,
+          matchingPolicy,
+        });
+        return this.activateOpenMatchingBooking({
+          booking,
+          matchingPolicy,
+          eligibleBackupProviderCount: eligibleBackupProviders.length,
+          timeoutAt: booking.expiresAt ?? timing.expiresAt,
+        });
+      }
+      return clientBookingResponse(booking);
+    }
 
     booking = await this.refreshBookingPaymentAuthorization(booking);
     booking = await this.openBookingAfterPaymentAuthorization(booking, requiresPostBookingAuthorization);
@@ -696,7 +728,6 @@ export class BookingsService {
     await this.announceInitialOpenMatchingBooking({
       userId: customerUserId,
       bookingId: booking.id,
-      customerProfileId: customer.id,
       preferredProvider,
       couponCode: coupon?.code,
       customerDiscountAmount: priceSummary.discountAmount,
@@ -1026,7 +1057,6 @@ export class BookingsService {
   private async announceInitialOpenMatchingBooking(input: {
     userId: string;
     bookingId: string;
-    customerProfileId: string;
     preferredProvider?: { id: string; userId: string; displayName: string } | null;
     couponCode?: string;
     customerDiscountAmount: number;
@@ -1035,7 +1065,43 @@ export class BookingsService {
     eligibleBackupProviders: BackupProviderNotificationInput['providers'];
   }) {
     await this.runPostCommitBookingEffects(input.bookingId, [
-      { label: 'open-notifications-realtime', run: () => this.announceOpenBooking(input) },
+      {
+        label: 'customer-opened-notification',
+        run: () =>
+          this.notifyCustomerBookingOpened({
+            userId: input.userId,
+            bookingId: input.bookingId,
+            preferredProvider: input.preferredProvider,
+            couponCode: input.couponCode,
+            discountAmount: input.customerDiscountAmount,
+          }),
+      },
+      ...(input.preferredProvider?.userId
+        ? [
+            {
+              label: 'preferred-partner-notification',
+              run: () =>
+                this.notifyPreferredProviderRequested(
+                  input.preferredProvider!.userId,
+                  input.bookingId,
+                ),
+            },
+            {
+              label: 'preferred-partner-realtime',
+              run: () =>
+                this.matchingGateway.emitDirectBookingRequested(
+                  input.preferredProvider!.userId,
+                  input.bookingId,
+                  input.matchingPayload,
+                ),
+            },
+          ]
+        : [
+            {
+              label: 'marketplace-opened-realtime',
+              run: () => this.matchingGateway.emitBookingOpened(input.bookingId, input.matchingPayload),
+            },
+          ]),
       {
         label: 'backup-provider-notifications',
         run: () =>
@@ -1054,6 +1120,7 @@ export class BookingsService {
 
   private async createOpenMatchingBookingRecord(input: {
     customerProfileId: string;
+    idempotencyKey: string;
     selectedLocationId?: string | null;
     addressPayload: Prisma.InputJsonValue;
     addressText: string;
@@ -1078,7 +1145,18 @@ export class BookingsService {
     priceSummary: ReturnType<typeof resolveBookingPriceSummary>;
     preferredProviderDistanceMeters: number | null;
     requiresPostBookingAuthorization: boolean;
+    couponCode?: string | null;
   }) {
+    const fingerprint = bookingCreationFingerprint({
+      address: input.addressPayload,
+      couponCode: input.couponCode,
+      lat: input.bookingLat,
+      lng: input.bookingLng,
+      notes: input.notes,
+      paymentMethod: input.paymentMethod,
+      preferredProviderId: input.preferredProvider?.id,
+      serviceId: input.serviceId,
+    });
     const createArgs = {
       data: {
         customerProfileId: input.customerProfileId,
@@ -1105,6 +1183,7 @@ export class BookingsService {
         metadata: bookingCreateMetadata({
           policy: input.matchingPolicy,
           bookingGate: input.bookingGateSnapshot as Prisma.InputJsonValue,
+          bookingCreationRequest: bookingCreationRequestMetadata(input.idempotencyKey, fingerprint),
         }),
         services: bookingServiceLineCreate({
           serviceId: input.serviceId,
@@ -1130,11 +1209,35 @@ export class BookingsService {
       include: openBookingForClientInclude,
     } satisfies Prisma.BookingCreateArgs;
 
-    if (input.paymentMethod !== PaymentMethod.CUSTOMER_WALLET) {
-      return this.prisma.booking.create(createArgs);
-    }
-
     const result = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${bookingCreationLockKey(
+          input.customerProfileId,
+          input.idempotencyKey,
+        )}, 0))::text AS "lockResult"`,
+      );
+      const existing = await tx.booking.findFirst({
+        where: {
+          customerProfileId: input.customerProfileId,
+          metadata: {
+            path: ['bookingCreationRequest', 'idempotencyKey'],
+            equals: input.idempotencyKey,
+          },
+        },
+        include: openBookingForClientInclude,
+      });
+      if (existing) {
+        const request = bookingCreationRequestFromMetadata(existing.metadata);
+        if (request?.fingerprint !== fingerprint) {
+          throw new ConflictException('Booking idempotency key was reused with a different request');
+        }
+        return { booking: existing, replayed: true as const };
+      }
+
+      if (input.paymentMethod !== PaymentMethod.CUSTOMER_WALLET) {
+        return { booking: await tx.booking.create(createArgs), replayed: false as const };
+      }
+
       await tx.$queryRaw(
         Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${customerWalletBookingLockKey(
           input.customerProfileId,
@@ -1172,7 +1275,7 @@ export class BookingsService {
           type: CustomerWalletLedgerType.CUSTOMER_WALLET_PAYMENT,
         },
       });
-      return booking;
+      return { booking, replayed: false as const };
     });
     return result;
   }
@@ -1285,7 +1388,6 @@ export class BookingsService {
     await this.announceInitialOpenMatchingBooking({
       userId: recoveredBooking.customerProfile.userId,
       bookingId: recoveredBooking.id,
-      customerProfileId: recoveredBooking.customerProfileId,
       preferredProvider: recoveredBooking.preferredProvider,
       couponCode: stringOrUndefined(paymentMetadata.couponCode),
       customerDiscountAmount: nonNegativeNumber(paymentMetadata.discountAmount),
@@ -1327,36 +1429,6 @@ export class BookingsService {
     if (booking.payment?.id) {
       await this.payments.scheduleStatusCheck(booking.payment.id);
     }
-  }
-
-  private async announceOpenBooking(input: {
-    userId: string;
-    bookingId: string;
-    customerProfileId: string;
-    preferredProvider?: { id: string; userId: string; displayName: string } | null;
-    couponCode?: string;
-    customerDiscountAmount: number;
-    matchingPayload: ReturnType<MatchingService['openBooking']>;
-  }) {
-    await this.notifyCustomerBookingOpened({
-      userId: input.userId,
-      bookingId: input.bookingId,
-      preferredProvider: input.preferredProvider,
-      couponCode: input.couponCode,
-      discountAmount: input.customerDiscountAmount,
-    });
-
-    if (input.preferredProvider?.userId) {
-      await this.notifyPreferredProviderRequested(input.preferredProvider.userId, input.bookingId);
-      await this.matchingGateway.emitDirectBookingRequested(
-        input.preferredProvider.userId,
-        input.bookingId,
-        input.matchingPayload,
-      );
-      return;
-    }
-
-    await this.matchingGateway.emitBookingOpened(input.bookingId, input.matchingPayload);
   }
 
   private async resolveCoupon(code: string) {
@@ -2590,8 +2662,11 @@ export class BookingsService {
   }
 
   private async notifyBackupProvidersAndRecordTrace(input: BackupProviderNotificationInput) {
-    const trace = await this.notifyBackupProviders(input);
+    const { trace, websocketError } = await this.notifyBackupProviders(input);
     await this.recordBackupNotificationTrace(input.bookingId, trace);
+    if (websocketError) {
+      throw websocketError;
+    }
   }
 
   private async notifyBackupProviders(input: BackupProviderNotificationInput) {
@@ -2603,35 +2678,59 @@ export class BookingsService {
       notificationId: string;
     }> = [];
 
-    for (const backupProvider of input.providers) {
-      const notification = await this.notifications.create(
-        backupBookingAvailableNotification({
-          userId: backupProvider.userId,
-          bookingId: input.bookingId,
+    const notificationResults = await Promise.allSettled(
+      input.providers.map(async (backupProvider) => {
+        const notification = await this.notifications.create(
+          backupBookingAvailableNotification({
+            userId: backupProvider.userId,
+            bookingId: input.bookingId,
+            providerProfileId: backupProvider.id,
+            distanceMeters: backupProvider.distanceMeters,
+            backupProviderRadiusMeters: input.backupProviderRadiusMeters,
+            alertPolicy,
+          }),
+        );
+        return {
           providerProfileId: backupProvider.id,
+          userId: backupProvider.userId,
           distanceMeters: backupProvider.distanceMeters,
-          backupProviderRadiusMeters: input.backupProviderRadiusMeters,
-          alertPolicy,
-        }),
-      );
-      notifiedProviders.push({
-        providerProfileId: backupProvider.id,
-        userId: backupProvider.userId,
-        distanceMeters: backupProvider.distanceMeters,
-        notificationId: notification.id,
-      });
-    }
-    await this.matchingGateway.emitBackupBookingAvailable(
-      input.providers.map((provider) => provider.userId),
-      input.bookingId,
-      input.matchingPayload,
+          notificationId: notification.id,
+        };
+      }),
     );
-    return backupNotificationTrace({
-      stage: input.stage,
-      alertPolicy,
-      notifiedProviders,
-      websocketTargetCount: input.providers.length,
+    notificationResults.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        notifiedProviders.push(result.value);
+        return;
+      }
+      const provider = input.providers[index];
+      this.logger.error(
+        `Backup Partner notification failed for booking ${input.bookingId} and Partner ${
+          provider?.id ?? 'unknown'
+        }: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`,
+        result.reason instanceof Error ? result.reason.stack : undefined,
+      );
     });
+
+    let websocketError: unknown;
+    try {
+      await this.matchingGateway.emitBackupBookingAvailable(
+        input.providers.map((provider) => provider.userId),
+        input.bookingId,
+        input.matchingPayload,
+      );
+    } catch (error) {
+      websocketError = error;
+    }
+    return {
+      trace: backupNotificationTrace({
+        stage: input.stage,
+        alertPolicy,
+        notifiedProviders,
+        websocketTargetCount: input.providers.length,
+      }),
+      websocketError,
+    };
   }
 
   private async recordBackupNotificationTrace(bookingId: string, trace: BackupNotificationTrace) {

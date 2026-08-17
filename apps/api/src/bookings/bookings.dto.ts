@@ -12,6 +12,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -45,10 +46,14 @@ export const preferredProviderRejectionReasonCodes = [
   'SAFETY_OR_PERSONAL_REASON',
   'OTHER',
 ] as const;
-export type PreferredProviderRejectionReasonCode =
-  (typeof preferredProviderRejectionReasonCodes)[number];
+export type PreferredProviderRejectionReasonCode = (typeof preferredProviderRejectionReasonCodes)[number];
 
 export class CreateCustomerBookingDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @Matches(/^[A-Za-z0-9:_-]{8,128}$/u, { message: 'idempotencyKey must be a stable request key' })
+  idempotencyKey!: string;
+
   @IsString()
   serviceId!: string;
 

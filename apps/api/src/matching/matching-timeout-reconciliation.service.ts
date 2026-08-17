@@ -1,6 +1,6 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { BookingStatus } from '@prisma/client';
+import { BookingOpsTaskStatus, BookingOpsTaskType, BookingStatus } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -54,6 +54,17 @@ export class BookingTimeoutReconciliationService
                   status: BookingStatus.EXPIRED,
                   closedReason: {
                     in: ['preferred_provider_no_response', 'matching_request_expired'],
+                  },
+                },
+                {
+                  status: BookingStatus.EXPIRED,
+                  closedReason: 'admin_expired',
+                  opsTasks: {
+                    some: {
+                      note: { startsWith: 'Booking closeout is pending' },
+                      status: BookingOpsTaskStatus.PENDING,
+                      type: BookingOpsTaskType.PAYMENT_REVIEWED,
+                    },
                   },
                 },
               ],

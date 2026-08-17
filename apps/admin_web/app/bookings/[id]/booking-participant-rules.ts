@@ -36,6 +36,14 @@ export function bookingCustomerSelectableParticipantsForFinalChoice(booking: Adm
 export function bookingDetailExpiryEligibility(booking: AdminBookingDetail) {
   return bookingExpiryEligibility({
     customerChoiceCandidateCount: bookingCustomerSelectableParticipantsForFinalChoice(booking).length,
+    closedReason: booking.closedReason,
+    closeoutRecoveryPending:
+      booking.opsTasks?.some(
+        (task) =>
+          task.type === 'PAYMENT_REVIEWED' &&
+          task.status === 'PENDING' &&
+          task.note?.startsWith('Booking closeout is pending'),
+      ) ?? false,
     expiresAt: booking.expiresAt,
     selectedProviderId: bookingSelectedProviderId(booking),
     status: booking.status,

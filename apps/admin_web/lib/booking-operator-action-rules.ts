@@ -45,6 +45,8 @@ export function bookingOperatorAuditNotes(auditLogs?: readonly AdminAuditLog[]):
 
 export type BookingExpiryEligibilityInput = {
   readonly status: string;
+  readonly closedReason?: string | null;
+  readonly closeoutRecoveryPending?: boolean;
   readonly expiresAt?: string | Date | null;
   readonly selectedProviderId?: string | null;
   readonly customerChoiceCandidateCount: number;
@@ -59,16 +61,27 @@ export type BookingExpiryEligibility = {
     | 'DEADLINE_UNAVAILABLE'
     | 'FINAL_PARTNER_SELECTED'
     | 'SELECTABLE_CANDIDATE_EXISTS'
-    | 'STATUS_NOT_OPEN_MATCHING';
+    | 'STATUS_NOT_OPEN_MATCHING'
+    | 'CLOSEOUT_RECOVERY';
 };
 
 export function bookingExpiryEligibility({
   status,
+  closedReason,
+  closeoutRecoveryPending = false,
   expiresAt,
   selectedProviderId,
   customerChoiceCandidateCount,
   nowMs = Date.now(),
 }: BookingExpiryEligibilityInput): BookingExpiryEligibility {
+  if (
+    status === 'EXPIRED' &&
+    closedReason === 'admin_expired' &&
+    closeoutRecoveryPending &&
+    !selectedProviderId
+  ) {
+    return { allowed: true, reason: 'CLOSEOUT_RECOVERY' };
+  }
   if (status !== 'OPEN_MATCHING') {
     return { allowed: false, reason: 'STATUS_NOT_OPEN_MATCHING' };
   }

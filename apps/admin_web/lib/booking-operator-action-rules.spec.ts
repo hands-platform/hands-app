@@ -34,6 +34,19 @@ describe('booking operator action rules', () => {
     ).toEqual({ allowed: false, reason: 'SELECTABLE_CANDIDATE_EXISTS' });
   });
 
+  it('allows an admin-expired booking to retry its incomplete closeout', () => {
+    expect(
+      bookingExpiryEligibility({
+        closedReason: 'admin_expired',
+        customerChoiceCandidateCount: 0,
+        expiresAt: '2026-08-05T12:00:00.000Z',
+        closeoutRecoveryPending: true,
+        selectedProviderId: null,
+        status: 'EXPIRED',
+      }),
+    ).toEqual({ allowed: true, reason: 'CLOSEOUT_RECOVERY' });
+  });
+
   it('allows no-show marking only before service completion or cancellation', () => {
     expect(canMarkNoShow('OPEN_MATCHING')).toBe(true);
     expect(canMarkNoShow('MATCHED')).toBe(true);

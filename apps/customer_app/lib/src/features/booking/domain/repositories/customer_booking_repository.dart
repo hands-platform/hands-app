@@ -63,6 +63,7 @@ abstract class CustomerBookingRepository {
 
   Future<Map<String, dynamic>> createBooking(
     String serviceId, {
+    required String idempotencyKey,
     String? providerId,
     String? couponCode,
     String? selectedLocationId,

@@ -559,13 +559,20 @@ function BookingCannotCompleteServiceSection({
   }
 
   const handleNoShow = !matchingExpiry.canSubmit && noShow.canSubmit;
+  const retryExpiryCloseout = matchingExpiry.status === 'EXPIRED';
 
   return (
     <AdminSection
       className="ops-command-center admin-mb-16"
       description="Choose the single outcome supported by the current booking state and retained evidence."
       id="cannot-complete-service"
-      title={handleNoShow ? 'No-show review' : 'Close matching without a Partner'}
+      title={
+        handleNoShow
+          ? 'No-show review'
+          : retryExpiryCloseout
+            ? 'Retry matching closeout'
+            : 'Close matching without a Partner'
+      }
     >
       <span aria-hidden="true" id="matching-expiry" />
       <span aria-hidden="true" id="no-show-handling" />
@@ -582,30 +589,48 @@ function BookingCannotCompleteServiceSection({
         </AdminOpsNoteForm>
       ) : (
         <AdminDisclosure ariaLabel="Review matching expiry impact">
-          <summary>Review matching expiry impact</summary>
+          <summary>{retryExpiryCloseout ? 'Review closeout retry' : 'Review matching expiry impact'}</summary>
           <AdminCard className="booking-action-note-panel">
             <AdminDetailGrid>
-              <DecisionImpact label="Booking" value="OPEN_MATCHING becomes EXPIRED" />
+              <DecisionImpact
+                label="Booking"
+                value={
+                  retryExpiryCloseout
+                    ? 'Already EXPIRED; lifecycle state is unchanged'
+                    : 'OPEN_MATCHING becomes EXPIRED'
+                }
+              />
               <DecisionImpact label="Matching" value="Redis matching and Partner participation close" />
-              <DecisionImpact label="Payment" value="Only PENDING or AUTHORIZED payment is released" />
+              <DecisionImpact
+                label="Payment"
+                value="Any existing PENDING or AUTHORIZED payment is released"
+              />
               <DecisionImpact
                 label="Customer"
                 value="Contact checkpoint remains pending; no automatic message"
               />
               <DecisionImpact
                 label="Recovery"
-                value="No automatic recovery action is defined"
+                value={
+                  retryExpiryCloseout
+                    ? 'Retries payment closure and matching projection cleanup'
+                    : 'Payment closure failures stay in the durable review queue'
+                }
               />
             </AdminDetailGrid>
             <AdminOpsNoteForm action={expireBooking}>
               <input type="hidden" name="bookingId" value={bookingId} />
               <AdminFormTextarea
-                label="Expiry reason"
+                label={retryExpiryCloseout ? 'Retry note' : 'Expiry reason'}
                 name="reason"
                 placeholder="Example: Matching deadline passed and no selectable Partner remained."
                 required
               />
-              <AdminFormControlButton type="submit">Expire booking and close matching</AdminFormControlButton>
+              <AdminFormControlButton type="submit">
+                {retryExpiryCloseout
+                  ? 'Retry booking closeout'
+                  : 'Expire booking and close matching'}
+              </AdminFormControlButton>
             </AdminOpsNoteForm>
           </AdminCard>
         </AdminDisclosure>

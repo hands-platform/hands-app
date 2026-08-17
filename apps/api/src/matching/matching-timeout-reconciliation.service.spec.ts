@@ -51,6 +51,17 @@ describe('BookingTimeoutReconciliationService', () => {
                   in: ['preferred_provider_no_response', 'matching_request_expired'],
                 },
               },
+              {
+                status: BookingStatus.EXPIRED,
+                closedReason: 'admin_expired',
+                opsTasks: {
+                  some: {
+                    note: { startsWith: 'Booking closeout is pending' },
+                    status: 'PENDING',
+                    type: 'PAYMENT_REVIEWED',
+                  },
+                },
+              },
             ],
           },
         ],
@@ -101,7 +112,9 @@ describe('BookingTimeoutReconciliationService', () => {
   it('does not requeue an expired timeout whose payment closure audit already exists', async () => {
     const prisma = {
       booking: {
-        findMany: vi.fn().mockResolvedValue([
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
           { id: 'booking-closed', expiresAt: new Date(0), status: BookingStatus.EXPIRED },
         ]),
       },
