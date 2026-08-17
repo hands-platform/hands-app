@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { useState, type KeyboardEvent } from 'react';
 
 import type {
-  AdminStartShiftAnalytics,
   AdminStartShiftCustomerRanking,
+  AdminStartShiftDemandSupplyAnalytics,
   AdminStartShiftPartnerRanking,
+  AdminStartShiftRankingAnalytics,
 } from '../lib/admin-api';
 import { partnerDisplayText } from '../lib/admin-copy';
 import { formatMoney } from '../lib/admin-format';
@@ -271,7 +272,7 @@ export function StartShiftRankingWidgets({
   analytics,
   rangeLabel,
 }: {
-  analytics: AdminStartShiftAnalytics;
+  analytics: AdminStartShiftRankingAnalytics;
   rangeLabel: string;
 }) {
   const [customerMode, setCustomerMode] = useState<CustomerMode>(
@@ -351,7 +352,7 @@ export function StartShiftDemandSupplyWidgets({
   analytics,
   readyPartners,
 }: {
-  analytics: AdminStartShiftAnalytics;
+  analytics: AdminStartShiftDemandSupplyAnalytics;
   readyPartners: number;
 }) {
   const hourlyGaps = analytics.buckets

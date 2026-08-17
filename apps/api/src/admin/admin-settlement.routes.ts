@@ -1,4 +1,4 @@
-import { Body, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Get, Param, PayloadTooLargeException, Post, Query, StreamableFile } from '@nestjs/common';
 
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -128,7 +128,7 @@ export class AdminSettlementRoutes extends AdminPaymentRoutes {
   }
 
   @Get('booking-settlement-snapshots/export')
-  exportBookingSettlementSnapshots(
+  async exportBookingSettlementSnapshots(
     @Query('range') range?: string,
     @Query('review') review?: string,
     @Query('period') period?: string,
@@ -139,7 +139,7 @@ export class AdminSettlementRoutes extends AdminPaymentRoutes {
     @Query('reason') reason?: string,
     @Query('status') status?: string,
   ) {
-    return this.admin.exportBookingSettlementSnapshots({
+    const result = await this.admin.exportBookingSettlementSnapshots({
       ...(owner ? { owner } : {}),
       paymentMethod,
       period,
@@ -150,6 +150,14 @@ export class AdminSettlementRoutes extends AdminPaymentRoutes {
       sort,
       ...(status ? { status } : {}),
     });
+    if (result.truncated || !result.stream) {
+      throw new PayloadTooLargeException({
+        code: 'SETTLEMENT_AUDIT_EXPORT_TOO_LARGE',
+        limit: 100_000,
+        totalRows: result.totalRows,
+      });
+    }
+    return new StreamableFile(result.stream, { type: 'application/x-ndjson; charset=utf-8' });
   }
 
   @Get('booking-settlement-reversals')

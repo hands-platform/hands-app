@@ -554,6 +554,16 @@ export function buildAccountingJournalBatchSummaryApiHref(filters: FinanceAccoun
   );
 }
 
+export function buildAccountingJournalBatchExportApiHref(filters: FinanceAccountingFilters) {
+  const href = appendGeneralLedgerFilters(
+    buildFinanceAccountingSummaryApiHref('/admin/accounting-journal-batches/export', filters),
+    filters,
+  );
+  const url = new URL(href, 'http://hands.local');
+  if (filters.sort) url.searchParams.set('sort', filters.sort);
+  return `${url.pathname}${url.search}`;
+}
+
 export function buildAccountingJournalBatchDetailApiHref(id: string) {
   return `/admin/accounting-journal-batches/${encodeURIComponent(id)}`;
 }
@@ -2711,6 +2721,20 @@ function buildBookingSettlementSnapshotRowsCsvRows(
   });
 }
 
+export function buildBookingSettlementSnapshotCsvRow(
+  row: AdminBookingSettlementSnapshot,
+  context: {
+    readonly activeFilters: string;
+    readonly generatedAt: string;
+    readonly generatedBy: string;
+    readonly sort: string;
+    readonly timezone: string;
+    readonly totalRows: number;
+  },
+) {
+  return buildBookingSettlementSnapshotRowsCsvRows([row], context)[0];
+}
+
 function finiteCsvNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : '';
 }
@@ -2934,7 +2958,7 @@ const PARTNER_WITHHOLDING_TAX_ROWS_CSV_COLUMNS = [
   'total_partner_tax_withheld',
 ];
 
-const BOOKING_SETTLEMENT_SNAPSHOT_ROWS_CSV_COLUMNS = [
+export const BOOKING_SETTLEMENT_SNAPSHOT_ROWS_CSV_COLUMNS = [
   'generated_at',
   'timezone',
   'generated_by',

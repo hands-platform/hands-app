@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { renderToStaticMarkup } from 'react-dom/server';
+import type { ReactNode } from 'react';
+import { renderToReadableStream, renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
 import type {
@@ -33,6 +34,12 @@ const dashboardTraceSummarySource = readFileSync('app/dashboard-trace-summary.ts
 const globalCss = readFileSync('app/globals.css', 'utf8');
 const START_SHIFT_SUMMARY_HREF = '/admin/dashboard/start-shift-summary?dateRange=today';
 const START_SHIFT_ANALYTICS_HREF = '/admin/dashboard/start-shift-analytics?dateRange=today';
+
+async function renderDashboardMarkup(page: ReactNode) {
+  const stream = await renderToReadableStream(page);
+  await stream.allReady;
+  return new Response(stream).text();
+}
 
 function startShiftAdminResponse(href: string, fallback: unknown, aggregate: AdminStartShiftSummary) {
   if (href === START_SHIFT_SUMMARY_HREF) return aggregate;
@@ -468,7 +475,7 @@ describe('DashboardPage', () => {
     const page = await DashboardPage({
       searchParams: Promise.resolve({ details: 'operations', range: 'today' }),
     });
-    const markup = renderToStaticMarkup(page);
+    const markup = await renderDashboardMarkup(page);
     expect(markup).toContain('<h2 id="dashboard-money-status-title">Money status</h2>');
     expect(markup).toContain('Finance work is prioritized in Next action and Open queues above.');
     expect(mockedAdminGet).toHaveBeenCalledTimes(2);
@@ -490,7 +497,7 @@ describe('DashboardPage', () => {
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
     });
-    const markup = renderToStaticMarkup(page);
+    const markup = await renderDashboardMarkup(page);
 
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
@@ -508,6 +515,25 @@ describe('DashboardPage', () => {
     expect(hrefs.some((href) => String(href).startsWith('/admin/notifications?'))).toBe(false);
   });
 
+  it('renders the command workspace without waiting for period analytics', async () => {
+    const aggregate = startShiftSummaryFixture();
+    aggregate.analytics = null;
+    mockedAdminGet.mockImplementation((href, fallback) => {
+      if (href === START_SHIFT_SUMMARY_HREF) return Promise.resolve(aggregate);
+      if (href === START_SHIFT_ANALYTICS_HREF) return new Promise(() => undefined);
+      return Promise.resolve(fallback);
+    });
+
+    const page = await Promise.race([
+      DashboardPage({ searchParams: Promise.resolve({}) }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('dashboard blocked')), 200)),
+    ]);
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('id="dashboard-needs-action-now"');
+    expect(markup).toContain('Analytics loading');
+  });
+
   it('uses one Start Shift aggregate request when every summary source is available', async () => {
     const aggregate = startShiftSummaryFixture();
     mockedApiGet.mockResolvedValue({
@@ -518,7 +544,7 @@ describe('DashboardPage', () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
 
     const page = await DashboardPage({ searchParams: Promise.resolve({}) });
-    const markup = renderToStaticMarkup(page);
+    const markup = await renderDashboardMarkup(page);
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
     expect(markup).toContain('<h2 id="dashboard-needs-action-now-title">Next action</h2>');
@@ -586,7 +612,7 @@ describe('DashboardPage', () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
 
     const page = await DashboardPage({ searchParams: Promise.resolve({}) });
-    const markup = renderToStaticMarkup(page);
+    const markup = await renderDashboardMarkup(page);
     const commandSection = markup.slice(
       markup.indexOf('id="dashboard-needs-action-now"'),
       markup.indexOf('id="dashboard-money-status"'),
@@ -631,7 +657,7 @@ describe('DashboardPage', () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
 
     const page = await DashboardPage({ searchParams: Promise.resolve({}) });
-    const markup = renderToStaticMarkup(page);
+    const markup = await renderDashboardMarkup(page);
     const commandSection = markup.slice(
       markup.indexOf('id="dashboard-needs-action-now"'),
       markup.indexOf('id="dashboard-historical-backlog"'),
@@ -675,7 +701,7 @@ describe('DashboardPage', () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
 
     const page = await DashboardPage({ searchParams: Promise.resolve({}) });
-    const markup = renderToStaticMarkup(page);
+    const markup = await renderDashboardMarkup(page);
 
     expect(markup).toContain('Next action');
     expect(markup).toContain('Open queues');
@@ -728,7 +754,7 @@ describe('DashboardPage', () => {
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
     });
-    const markup = renderToStaticMarkup(page);
+    const markup = await renderDashboardMarkup(page);
 
     expect(markup).toContain('<h2 id="dashboard-money-status-title">Money status</h2>');
     expect(markup).toContain('Use the prioritized finance queues');
@@ -795,7 +821,7 @@ describe('DashboardPage', () => {
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
     });
-    const markup = renderToStaticMarkup(page);
+    const markup = await renderDashboardMarkup(page);
 
     expect(mockedAdminGet).toHaveBeenCalledTimes(2);
     expect(markup).toContain('<h3>Notification failures</h3>');
@@ -875,7 +901,7 @@ describe('DashboardPage', () => {
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
     });
-    const markup = renderToStaticMarkup(page);
+    const markup = await renderDashboardMarkup(page);
 
     expect(markup).toContain('Partner supply');
     expect(markup).toContain(
@@ -940,7 +966,7 @@ describe('DashboardPage', () => {
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
     });
-    const markup = renderToStaticMarkup(page);
+    const markup = await renderDashboardMarkup(page);
 
     expect(markup).toContain('<h3>Partner supply</h3>');
     expect(markup).toContain('<span class="pill pill-warn">Refresh</span>');
@@ -979,7 +1005,7 @@ describe('DashboardPage', () => {
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
     });
-    const markup = renderToStaticMarkup(page);
+    const markup = await renderDashboardMarkup(page);
 
     expect(mockedAdminGet).toHaveBeenCalledTimes(2);
     expect(markup).toContain('Payment holds');
@@ -1044,7 +1070,7 @@ describe('DashboardPage', () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => startShiftAdminResponse(href, fallback, aggregate));
 
     const page = await DashboardPage({ searchParams: Promise.resolve({}) });
-    const markup = renderToStaticMarkup(page);
+    const markup = await renderDashboardMarkup(page);
 
     expect(markup).toContain('<h3>Matching exceptions</h3>');
     expect(markup).toContain('<strong class="ops-task-card-value">5 expired / 7 no Partner</strong>');
@@ -1074,7 +1100,7 @@ describe('DashboardPage', () => {
     const page = await DashboardPage({
       searchParams: Promise.resolve({}),
     });
-    const markup = renderToStaticMarkup(page);
+    const markup = await renderDashboardMarkup(page);
 
     expect(markup).toContain('<h1>Shift Command</h1>');
     expect(markup).toContain('aria-label="Shift context"');
@@ -1273,7 +1299,7 @@ describe('DashboardPage', () => {
     const page = await DashboardPage({
       searchParams: Promise.resolve({ details: 'operations', operations: 'analysis' }),
     });
-    const markup = renderToStaticMarkup(page);
+    const markup = await renderDashboardMarkup(page);
 
     expect(markup).toContain('<h1>Shift Command</h1>');
     expect(markup).toContain('id="dashboard-needs-action-now"');

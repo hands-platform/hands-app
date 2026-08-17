@@ -4,6 +4,8 @@ import {
   buildDashboardOperationsHref,
   buildDashboardRange,
   buildStartShiftChartAnalytics,
+  buildStartShiftDemandSupplyAnalytics,
+  buildStartShiftRankingAnalytics,
   buildDashboardViewMode,
 } from './dashboard-page-model';
 import type { AdminStartShiftAnalytics } from '../lib/admin-api';
@@ -48,6 +50,14 @@ describe('dashboard page model', () => {
       'timezone',
     ]);
     expect(buildStartShiftChartAnalytics(null)).toBeNull();
+    expect(Object.keys(buildStartShiftRankingAnalytics(analytics)).sort()).toEqual([
+      'customerRankings',
+      'partnerRankings',
+    ]);
+    expect(Object.keys(buildStartShiftDemandSupplyAnalytics(analytics)).sort()).toEqual([
+      'buckets',
+      'demandSupply',
+    ]);
   });
   it('keeps the default dashboard in summary mode', () => {
     expect(buildDashboardViewMode({})).toEqual({

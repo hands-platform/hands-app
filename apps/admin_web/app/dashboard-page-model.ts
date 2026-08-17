@@ -1,4 +1,9 @@
-import type { AdminStartShiftAnalytics, AdminStartShiftChartAnalytics } from '../lib/admin-api';
+import type {
+  AdminStartShiftAnalytics,
+  AdminStartShiftChartAnalytics,
+  AdminStartShiftDemandSupplyAnalytics,
+  AdminStartShiftRankingAnalytics,
+} from '../lib/admin-api';
 import { normalizeDateRange, readSearchParam } from '../lib/date-range';
 import { OPERATIONAL_POLICY_KEYS } from '../lib/operations-policy';
 
@@ -18,6 +23,24 @@ export function buildStartShiftChartAnalytics(
     generatedAt: analytics.generatedAt,
     granularity: analytics.granularity,
     timezone: analytics.timezone,
+  };
+}
+
+export function buildStartShiftRankingAnalytics(
+  analytics: AdminStartShiftAnalytics,
+): AdminStartShiftRankingAnalytics {
+  return {
+    customerRankings: analytics.customerRankings,
+    partnerRankings: analytics.partnerRankings,
+  };
+}
+
+export function buildStartShiftDemandSupplyAnalytics(
+  analytics: AdminStartShiftAnalytics,
+): AdminStartShiftDemandSupplyAnalytics {
+  return {
+    buckets: analytics.buckets,
+    demandSupply: analytics.demandSupply,
   };
 }
 

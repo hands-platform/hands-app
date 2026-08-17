@@ -34,6 +34,18 @@ export class AdminLedgerRoutes extends AdminSettlementRoutes {
     return this.admin.accountingJournalBatchSummary({ period, q, range, review, source });
   }
 
+  @Get('accounting-journal-batches/export')
+  exportAccountingJournalBatches(
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+    @Query('q') q?: string,
+    @Query('period') period?: string,
+    @Query('source') source?: string,
+    @Query('sort') sort?: string,
+  ) {
+    return this.admin.exportAccountingJournalBatches({ period, q, range, review, sort, source });
+  }
+
   @Get('accounting-journal-batches/:id')
   accountingJournalBatchDetail(@Param('id') id: string) {
     return this.admin.accountingJournalBatchDetail(id);

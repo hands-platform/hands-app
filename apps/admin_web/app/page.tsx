@@ -1,4 +1,5 @@
 import { ListChecks } from 'lucide-react';
+import { Suspense } from 'react';
 import { AdminEmptyState } from '../components/admin-empty-state';
 import { AdminFilterChipGroup } from '../components/admin-filter-chip-group';
 import { AdminFormControlLink } from '../components/admin-form-light-controls';
@@ -42,6 +43,8 @@ import {
   buildDashboardDetailsHref,
   buildDashboardRange,
   buildStartShiftChartAnalytics,
+  buildStartShiftDemandSupplyAnalytics,
+  buildStartShiftRankingAnalytics,
   buildDashboardViewMode,
 } from './dashboard-page-model';
 import {
@@ -364,19 +367,32 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const dashboardViewMode = buildDashboardViewMode(params);
   const dashboardDataHrefs = buildDashboardDataHrefs(params);
   const selectedRangeLabel = dateRangeLabel(filters.range);
-  const [startShiftSummaryResponse, startShiftAnalyticsResponse, currentOperatorAccess] = await Promise.all([
-    adminGet<AdminStartShiftSummary | null>(dashboardDataHrefs.startShiftSummaryHref, null, {
+  const startShiftSummaryRequest = adminGet<AdminStartShiftSummary | null>(
+    dashboardDataHrefs.startShiftSummaryHref,
+    null,
+    {
       freshness: 'aggregate',
       revalidateSeconds: 15,
       tags: ['start-shift-summary'],
-    }),
-    adminGet<AdminStartShiftAnalytics | null>(dashboardDataHrefs.startShiftAnalyticsHref, null, {
+    },
+  );
+  const startShiftAnalyticsRequest = adminGet<AdminStartShiftAnalytics | null>(
+    dashboardDataHrefs.startShiftAnalyticsHref,
+    null,
+    {
       freshness: 'aggregate',
       revalidateSeconds: 30,
       tags: ['start-shift-analytics'],
-    }),
+    },
+  );
+  const [startShiftSummaryResponse, currentOperatorAccess] = await Promise.all([
+    startShiftSummaryRequest,
     getCurrentAdminOperatorAccess(),
   ]);
+  const startShiftAnalyticsPromise = startShiftAnalyticsRequest.then(
+    (analytics) => analytics ?? startShiftSummaryResponse?.analytics ?? null,
+  );
+  const startShiftCommandAnalytics = startShiftSummaryResponse?.analytics ?? null;
   const dashboardSummaryResponse = startShiftSummaryResponse?.operations ?? null;
   const providers: AdminProvider[] = [];
   const bookings: AdminBooking[] = [];
@@ -425,12 +441,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     startShiftSummaryResponse,
     startShiftSummaryResponse?.generatedAt,
   );
-  const startShiftAnalytics = startShiftAnalyticsResponse ?? startShiftSummaryResponse?.analytics ?? null;
-  const startShiftChartAnalytics = buildStartShiftChartAnalytics(startShiftAnalytics);
-  const startShiftAnalyticsSourceState = dashboardSourceState(
-    startShiftAnalytics,
-    startShiftAnalytics?.generatedAt,
-  );
   const financeReviewWorkload = startShiftSummaryResponse?.financeReviewWorkload;
   const paymentClearingWorkloadState = dashboardSourceState(financeReviewWorkload?.paymentClearing);
   const bankReconciliationWorkloadState = dashboardSourceState(financeReviewWorkload?.bankReconciliation);
@@ -446,29 +456,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     currentOperatorId: currentOperatorAccess?.id,
     summaries: financeReviewWorkload,
   });
-  const hasStartShiftAnalyticsActivity = Boolean(
-    startShiftAnalytics &&
-    (startShiftAnalytics.buckets.some(
-      (bucket) =>
-        (bucket.bookingRequests ?? 0) > 0 ||
-        (bucket.completed ?? 0) > 0 ||
-        (bucket.cancelled ?? 0) > 0 ||
-        (bucket.noShow ?? 0) > 0 ||
-        (bucket.grossAmount ?? 0) > 0 ||
-        (bucket.platformFee ?? 0) > 0 ||
-        (bucket.partnerNetAmount ?? 0) > 0 ||
-        (bucket.refundAmount ?? 0) > 0,
-    ) ||
-      Object.values(startShiftAnalytics.customerPulse).some((value) => value > 0)),
-  );
-  const startShiftChartState =
-    startShiftAnalyticsSourceState === 'unavailable'
-      ? 'unavailable'
-      : startShiftAnalyticsSourceState === 'stale'
-        ? 'stale'
-        : hasStartShiftAnalyticsActivity
-          ? 'ready'
-          : 'empty';
   const dashboardSourceStates = [
     { label: 'Operations', state: dashboardSummaryState },
     { label: 'Payments', state: paymentSummaryState },
@@ -477,7 +464,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     { label: 'Notifications', state: notificationSummaryState },
     { label: 'Payouts', state: payoutSummaryState },
     { label: 'Cash settlements', state: cashSummaryState },
-    { label: 'Analytics', state: startShiftAnalyticsSourceState },
     { label: 'Payment clearing workload', state: paymentClearingWorkloadState },
     { label: 'Bank reconciliation workload', state: bankReconciliationWorkloadState },
     { label: 'Partner deposit workload', state: partnerDepositWorkloadState },
@@ -630,23 +616,23 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     ...(dashboardSummaryState === 'unavailable' ? [] : exactActionQueueItems),
     ...operationsAttentionItems,
   ].slice(0, 5);
-  const prioritizedAnalyticsActions = prioritizeStartShiftActions(startShiftAnalytics?.needsAction ?? []);
+  const prioritizedAnalyticsActions = prioritizeStartShiftActions(startShiftCommandAnalytics?.needsAction ?? []);
   const analyticsActionQueues = splitStartShiftActions(prioritizedAnalyticsActions);
   const analyticsImmediateCommandItems = prioritizedAnalyticsActions.map(startShiftCommandItem);
-  const immediateCommandItems = startShiftAnalytics
+  const immediateCommandItems = startShiftCommandAnalytics
     ? analyticsActionQueues.primary.map(startShiftCommandItem)
     : fallbackImmediateCommandItems;
-  const secondaryImmediateCommandItems = startShiftAnalytics
+  const secondaryImmediateCommandItems = startShiftCommandAnalytics
     ? analyticsActionQueues.secondary.map(startShiftCommandItem)
     : [];
-  const legacyImmediateCommandItems = startShiftAnalytics
+  const legacyImmediateCommandItems = startShiftCommandAnalytics
     ? analyticsActionQueues.legacy.map(startShiftCommandItem)
     : [];
   const immediateCommandHrefs = new Set(
-    (startShiftAnalytics ? analyticsImmediateCommandItems : immediateCommandItems).map((item) => item.href),
+    (startShiftCommandAnalytics ? analyticsImmediateCommandItems : immediateCommandItems).map((item) => item.href),
   );
   const immediateCommandKeys = new Set(
-    startShiftAnalytics
+    startShiftCommandAnalytics
       ? prioritizedAnalyticsActions.filter((item) => item.action.count > 0).map((item) => item.action.key)
       : [],
   );
@@ -875,21 +861,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     financeReviewOpenCount > 0 ||
     settlementBacklogCount > 0 ||
     historicalMoneyCaseCount > 0;
-  const hasPerformanceRankings = Boolean(
-    startShiftAnalytics &&
-    [
-      ...Object.values(startShiftAnalytics.customerRankings),
-      ...Object.values(startShiftAnalytics.partnerRankings),
-    ].some((rows) => rows.length > 0),
-  );
-  const hasDemandSupplyDetails = Boolean(
-    startShiftAnalytics &&
-    (startShiftAnalytics.demandSupply.services.length > 0 ||
-      startShiftAnalytics.demandSupply.failureRegions.length > 0 ||
-      startShiftAnalytics.buckets.some(
-        (bucket) => !bucket.isFuture && (bucket.bookingRequests ?? 0) > (bucket.matched ?? 0),
-      )),
-  );
   const operatorLabel =
     currentOperatorAccess?.fullName?.trim() || currentOperatorAccess?.email?.trim() || 'Signed-in operator';
   const additionalWorkState = dashboardSummaryState;
@@ -1130,49 +1101,90 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </AdminSection>
       ) : null}
 
+      <Suspense fallback={<StartShiftAnalyticsFallback range={filters.range} />}>
+        <StartShiftAnalyticsSections
+          analyticsPromise={startShiftAnalyticsPromise}
+          earnings={earningsResponse ? earnings : null}
+          range={filters.range}
+          readyPartners={partnerSupply.onlineAvailable}
+          selectedRangeLabel={selectedRangeLabel}
+        />
+      </Suspense>
+    </AdminPageTemplate>
+  );
+}
+
+async function StartShiftAnalyticsSections({
+  analyticsPromise,
+  earnings,
+  range,
+  readyPartners,
+  selectedRangeLabel,
+}: {
+  analyticsPromise: Promise<AdminStartShiftAnalytics | null>;
+  earnings: AdminEarningSummary | null;
+  range: AdminDateRange;
+  readyPartners: number;
+  selectedRangeLabel: string;
+}) {
+  const analytics = await analyticsPromise;
+  const chartAnalytics = buildStartShiftChartAnalytics(analytics);
+  const rankingAnalytics = analytics ? buildStartShiftRankingAnalytics(analytics) : null;
+  const demandSupplyAnalytics = analytics ? buildStartShiftDemandSupplyAnalytics(analytics) : null;
+  const sourceState = dashboardSourceState(analytics, analytics?.generatedAt);
+  const hasActivity = Boolean(
+    analytics &&
+    (analytics.buckets.some(
+      (bucket) =>
+        (bucket.bookingRequests ?? 0) > 0 ||
+        (bucket.completed ?? 0) > 0 ||
+        (bucket.cancelled ?? 0) > 0 ||
+        (bucket.noShow ?? 0) > 0 ||
+        (bucket.grossAmount ?? 0) > 0 ||
+        (bucket.platformFee ?? 0) > 0 ||
+        (bucket.partnerNetAmount ?? 0) > 0 ||
+        (bucket.refundAmount ?? 0) > 0,
+    ) || Object.values(analytics.customerPulse).some((value) => value > 0)),
+  );
+  const chartState =
+    sourceState === 'unavailable'
+      ? 'unavailable'
+      : sourceState === 'stale'
+        ? 'stale'
+        : hasActivity
+          ? 'ready'
+          : 'empty';
+  const hasPerformanceRankings = Boolean(
+    analytics &&
+    [...Object.values(analytics.customerRankings), ...Object.values(analytics.partnerRankings)]
+      .some((rows) => rows.length > 0),
+  );
+  const hasDemandSupplyDetails = Boolean(
+    analytics &&
+    (analytics.demandSupply.services.length > 0 ||
+      analytics.demandSupply.failureRegions.length > 0 ||
+      analytics.buckets.some(
+        (bucket) => !bucket.isFuture && (bucket.bookingRequests ?? 0) > (bucket.matched ?? 0),
+      )),
+  );
+
+  return (
+    <>
       <AdminSection
-        actions={
-          <>
-            <AdminFilterChipGroup ariaLabel="Shift command analytics range">
-              {dashboardRangeLinks.map((link) =>
-                filters.range === link.range ? (
-                  <StatusBadgeLink href={link.href} key={link.range} tone="info">
-                    {link.label}
-                  </StatusBadgeLink>
-                ) : (
-                  <AdminTextLink href={link.href} key={link.range}>
-                    {link.label}
-                  </AdminTextLink>
-                ),
-              )}
-            </AdminFilterChipGroup>
-          </>
-        }
+        actions={<StartShiftAnalyticsRangeLinks range={range} />}
         className="admin-mt-20"
         id="dashboard-today-result"
         status={
-          <StatusBadge
-            tone={
-              startShiftChartState === 'unavailable'
-                ? 'danger'
-                : startShiftChartState === 'stale'
-                  ? 'warning'
-                  : 'info'
-            }
-          >
-            {startShiftChartState === 'unavailable'
-              ? 'Data unavailable'
-              : startShiftChartState === 'stale'
-                ? 'Stale'
-                : selectedRangeLabel}
+          <StatusBadge tone={chartState === 'unavailable' ? 'danger' : chartState === 'stale' ? 'warning' : 'info'}>
+            {chartState === 'unavailable' ? 'Data unavailable' : chartState === 'stale' ? 'Stale' : selectedRangeLabel}
           </StatusBadge>
         }
-        title={filters.range === 'today' ? 'Today result' : 'Period result'}
+        title={range === 'today' ? 'Today result' : 'Period result'}
       >
         <StartShiftChartWidgetsDeferred
-          analytics={startShiftChartAnalytics}
+          analytics={chartAnalytics}
           fallbackBusinessTotals={
-            earningsResponse
+            earnings
               ? {
                   grossAmount: money(earnings.grossAmount, earnings.currency),
                   partnerNetAmount: money(earnings.netAmount, earnings.currency),
@@ -1182,11 +1194,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           }
           rangeLabel={selectedRangeLabel}
           section="all"
-          state={startShiftChartState}
+          state={chartState}
         />
       </AdminSection>
 
-      {hasPerformanceRankings && startShiftAnalytics ? (
+      {hasPerformanceRankings && rankingAnalytics ? (
         <AdminSection
           actions={
             <AdminFilterChipGroup ariaLabel="Performance directories">
@@ -1199,11 +1211,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           status={<StatusBadge tone="info">{selectedRangeLabel}</StatusBadge>}
           title="Customer and Partner leaders"
         >
-          <StartShiftRankingWidgets analytics={startShiftAnalytics} rangeLabel={selectedRangeLabel} />
+          <StartShiftRankingWidgets analytics={rankingAnalytics} rangeLabel={selectedRangeLabel} />
         </AdminSection>
       ) : null}
 
-      {hasDemandSupplyDetails && startShiftAnalytics ? (
+      {hasDemandSupplyDetails && demandSupplyAnalytics ? (
         <AdminSection
           actions={
             <AdminFilterChipGroup ariaLabel="Demand and supply workspaces">
@@ -1213,20 +1225,45 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           }
           className="admin-mt-20"
           id="dashboard-demand-supply"
-          status={
-            <StatusBadge tone={partnerSupply.onlineAvailable > 0 ? 'success' : 'warning'}>
-              {partnerSupply.onlineAvailable} ready now
-            </StatusBadge>
-          }
+          status={<StatusBadge tone={readyPartners > 0 ? 'success' : 'warning'}>{readyPartners} ready now</StatusBadge>}
           title="Demand and supply"
         >
-          <StartShiftDemandSupplyWidgets
-            analytics={startShiftAnalytics}
-            readyPartners={partnerSupply.onlineAvailable}
-          />
+          <StartShiftDemandSupplyWidgets analytics={demandSupplyAnalytics} readyPartners={readyPartners} />
         </AdminSection>
       ) : null}
-    </AdminPageTemplate>
+    </>
+  );
+}
+
+function StartShiftAnalyticsFallback({ range }: { range: AdminDateRange }) {
+  return (
+    <AdminSection
+      actions={<StartShiftAnalyticsRangeLinks range={range} />}
+      className="admin-mt-20"
+      id="dashboard-today-result-loading"
+      status={<StatusBadge tone="info">Loading</StatusBadge>}
+      title={range === 'today' ? 'Today result' : 'Period result'}
+    >
+      <AdminEmptyState framed message="Loading period analytics." title="Analytics loading" />
+    </AdminSection>
+  );
+}
+
+function StartShiftAnalyticsRangeLinks({ range }: { range: AdminDateRange }) {
+  return (
+    <AdminFilterChipGroup ariaLabel="Shift command analytics range">
+      {dashboardRangeLinks.map((link) =>
+        range === link.range ? (
+          <StatusBadgeLink href={link.href} key={link.range} tone="info">
+            {link.label}
+          </StatusBadgeLink>
+        ) : (
+          <AdminTextLink href={link.href} key={link.range}>
+            {link.label}
+          </AdminTextLink>
+        ),
+      )}
+    </AdminFilterChipGroup>
   );
 }
 

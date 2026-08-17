@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { Readable } from 'node:stream';
 
 import { InjectQueue } from '@nestjs/bullmq';
 import { ConfigService } from '@nestjs/config';
@@ -960,6 +961,7 @@ const ADMIN_AUDIT_EXPORT_LIMIT = 5_000;
 const ADMIN_PAYMENT_OPERATIONS_DEFAULT_LIMIT = 50;
 const ADMIN_PAYMENT_OPERATIONS_MAX_LIMIT = 100;
 const ADMIN_BOOKING_SETTLEMENT_EXPORT_MAX_ROWS = 100_000;
+const ADMIN_ACCOUNTING_JOURNAL_EXPORT_MAX_ROWS = 100_000;
 const ADMIN_BOOKING_SETTLEMENT_GAP_DEFAULT_LIMIT = 20;
 const ADMIN_BOOKING_SETTLEMENT_GAP_MAX_LIMIT = 50;
 const ADMIN_BOOKING_SETTLEMENT_DRY_RUN_DEFAULT_LIMIT = 100;
@@ -10038,10 +10040,12 @@ export class AdminService {
       user: { providerProfile: { is: baseWhere } },
     } satisfies Prisma.AppUsageDailyAggregateWhereInput;
     const exactAppUsagePromise = Promise.all([
-      this.prisma.appUsageDailyAggregate.aggregate({
+      this.prisma.appUsageDailyAggregate.groupBy({
+        by: ['userId'],
         where: {
           ...appUsageProviderWhere,
           day: { gte: appUsageStartDay, lte: appUsageEndDay },
+          totalEventCount: { gt: 0 },
         },
         _sum: {
           appOpenCount: true,
@@ -10049,7 +10053,8 @@ export class AdminService {
           totalEventCount: true,
         },
       }),
-      this.prisma.appUsageDailyAggregate.aggregate({
+      this.prisma.appUsageDailyAggregate.groupBy({
+        by: ['userId'],
         where: {
           ...appUsageProviderWhere,
           day: { gte: comparisonUsageStartDay, lte: comparisonUsageEndDay },
@@ -10060,40 +10065,13 @@ export class AdminService {
           totalEventCount: true,
         },
       }),
-      this.prisma.providerProfile.count({
-        where: partnerOverviewAnd(baseWhere, {
-          user: {
-            appUsageDailyAggregates: {
-              some: {
-                role: Role.PROVIDER,
-                day: { gte: appUsageStartDay, lte: appUsageEndDay },
-                totalEventCount: { gt: 0 },
-              },
-            },
-          },
-        }),
-      }),
-      this.prisma.providerProfile.count({
-        where: partnerOverviewAnd(approvedProviderWhere, {
-          AND: [
-            { user: { appUsageDailyAggregates: { some: { role: Role.PROVIDER } } } },
-            {
-              user: {
-                appUsageDailyAggregates: {
-                  none: {
-                    role: Role.PROVIDER,
-                    lastOccurredAt: { gte: inactiveAppBoundary },
-                  },
-                },
-              },
-            },
-          ],
-        }),
-      }),
-      this.prisma.providerProfile.count({
-        where: partnerOverviewAnd(approvedProviderWhere, {
-          user: { appUsageDailyAggregates: { none: { role: Role.PROVIDER } } },
-        }),
+      this.prisma.appUsageDailyAggregate.groupBy({
+        by: ['userId'],
+        where: {
+          role: Role.PROVIDER,
+          user: { providerProfile: { is: approvedProviderWhere } },
+        },
+        _max: { lastOccurredAt: true },
       }),
     ]);
     const statusWhere = (period: ReturnType<typeof adminPartnerOverviewDateWhere>) => ({
@@ -10732,11 +10710,9 @@ export class AdminService {
     const [
       boundedAppUsageRows,
       [
-        exactRangeAppUsage,
-        exactPreviousAppUsage,
-        exactAppActivePartners,
-        exactAppInactivePartners,
-        exactAppNotTrackedPartners,
+        exactRangeAppUsageRows,
+        exactPreviousAppUsageRows,
+        exactTrackedApprovedAppUsageRows,
       ],
     ] = await Promise.all([
       boundedAppUsagePromise,
@@ -10747,6 +10723,20 @@ export class AdminService {
     const [periodStatusRowsRaw, previousStatusRowsRaw] = await periodStatusRowsPromise;
     const periodStatusRows = periodStatusRowsRaw ?? [];
     const previousStatusRows = previousStatusRowsRaw ?? [];
+    const exactRangeAppUsage = partnerOverviewAppUsageTotals(exactRangeAppUsageRows);
+    const exactPreviousAppUsage = partnerOverviewAppUsageTotals(exactPreviousAppUsageRows);
+    const approvedAndKycPartners = [...approvedProviderStatusCounts.values()].reduce(
+      (sum, count) => sum + count,
+      0,
+    );
+    const exactAppActivePartners = exactRangeAppUsageRows.length;
+    const exactAppInactivePartners = exactTrackedApprovedAppUsageRows.filter(
+      (row) => !row._max.lastOccurredAt || row._max.lastOccurredAt < inactiveAppBoundary,
+    ).length;
+    const exactAppNotTrackedPartners = Math.max(
+      0,
+      approvedAndKycPartners - exactTrackedApprovedAppUsageRows.length,
+    );
 
     const completedMap = new Map(
       completedByProviderRows
@@ -10795,54 +10785,21 @@ export class AdminService {
       const cancelled = cancelledMap.get(providerId)?.count ?? 0;
       return percentageValue(cancelled, completed + cancelled) >= 20;
     });
-    const [lowRatingPartnerCount, qualityRiskPartnerCount] = await Promise.all([
-      this.prisma.providerProfile.count({
-        where: partnerOverviewAnd(baseWhere, {
-          OR: [
-            {
-              reviews: {
-                some: {
-                  rating: { lte: 2 },
-                  status: ReviewStatus.PUBLISHED,
-                  ...(dateWhere ? { createdAt: dateWhere } : {}),
-                },
-              },
-            },
-            { ratingAvg: { lt: 3 }, reviewCount: { gt: 0 } },
-          ],
-        }),
-      }),
-      this.prisma.providerProfile.count({
-        where: partnerOverviewAnd(baseWhere, {
-          OR: [
-            ...(highCancellationPartnerIds.length > 0 ? [{ id: { in: highCancellationPartnerIds } }] : []),
-            {
-              reports: {
-                some: {
-                  status: ProviderReportStatus.OPEN,
-                  ...(dateWhere ? { createdAt: dateWhere } : {}),
-                  OR: [
-                    { category: { contains: 'no-show', mode: 'insensitive' } },
-                    { summary: { contains: 'no-show', mode: 'insensitive' } },
-                    { details: { contains: 'no-show', mode: 'insensitive' } },
-                  ],
-                },
-              },
-            },
-            {
-              reviews: {
-                some: {
-                  rating: { lte: 2 },
-                  status: ReviewStatus.PUBLISHED,
-                  ...(dateWhere ? { createdAt: dateWhere } : {}),
-                },
-              },
-            },
-            { ratingAvg: { lt: 3 }, reviewCount: { gt: 0 } },
-          ],
-        }),
-      }),
+    const lifetimeLowRatingRows = await this.prisma.providerProfile.findMany({
+      where: partnerOverviewAnd(baseWhere, { ratingAvg: { lt: 3 }, reviewCount: { gt: 0 } }),
+      select: { id: true },
+    });
+    const lowRatingPartnerIds = new Set([
+      ...lowReviewMap.keys(),
+      ...lifetimeLowRatingRows.map((row) => row.id),
     ]);
+    const qualityRiskPartnerIds = new Set([
+      ...highCancellationPartnerIds,
+      ...noShowReportMap.keys(),
+      ...lowRatingPartnerIds,
+    ]);
+    const lowRatingPartnerCount = lowRatingPartnerIds.size;
+    const qualityRiskPartnerCount = qualityRiskPartnerIds.size;
     const eligibleProviderIds = new Set(
       providerRows
         .filter((provider) =>
@@ -10975,16 +10932,16 @@ export class AdminService {
     );
     const appOpenCount = riskStatusFilter
       ? boundedAppOpenCount
-      : numberValue(exactRangeAppUsage._sum.appOpenCount);
+      : exactRangeAppUsage.appOpenCount;
     const sessionStartCount = riskStatusFilter
       ? boundedSessionStartCount
-      : numberValue(exactRangeAppUsage._sum.sessionStartCount);
+      : exactRangeAppUsage.sessionStartCount;
     const previousAppOpenCount = riskStatusFilter
       ? boundedPreviousAppOpenCount
-      : numberValue(exactPreviousAppUsage._sum.appOpenCount);
+      : exactPreviousAppUsage.appOpenCount;
     const previousSessionStartCount = riskStatusFilter
       ? boundedPreviousSessionStartCount
-      : numberValue(exactPreviousAppUsage._sum.sessionStartCount);
+      : exactPreviousAppUsage.sessionStartCount;
     const completedBookingCount = partnerOverviewStatusCount(periodStatusRows, [BookingStatus.COMPLETED]);
     const cancellationCount = partnerOverviewStatusCount(periodStatusRows, cancellationStatuses);
     const previousCompletedBookingCount = partnerOverviewStatusCount(previousStatusRows, [
@@ -18366,13 +18323,20 @@ export class AdminService {
     `);
     const totalRows = Number(idRows[0]?.totalRows ?? 0);
     if (totalRows > ADMIN_BOOKING_SETTLEMENT_EXPORT_MAX_ROWS) {
-      return { rows: [], totalRows, truncated: true };
+      return { stream: null, totalRows, truncated: true };
     }
-    if (idRows.length === 0) {
-      return { rows: [], totalRows: 0, truncated: false };
-    }
-    const rows = await this.hydrateBookingSettlementAuditRows(idRows, checkedAt, options);
-    return { rows, totalRows, truncated: false };
+
+    const hydrateRows = this.hydrateBookingSettlementAuditRows.bind(this);
+    const stream = Readable.from((async function* () {
+      yield `${JSON.stringify({ totalRows, type: 'metadata' })}\n`;
+      for (let offset = 0; offset < idRows.length; offset += 500) {
+        const rows = await hydrateRows(idRows.slice(offset, offset + 500), checkedAt, options);
+        for (const row of rows) {
+          yield `${JSON.stringify({ row, type: 'row' })}\n`;
+        }
+      }
+    })());
+    return { stream, totalRows, truncated: false };
   }
 
   private async hydrateBookingSettlementAuditRows(
@@ -18627,6 +18591,44 @@ export class AdminService {
         ? [{ ...row, integrity: adminAccountingJournalIntegrityFromRow(integrityRow, checkedAt) }]
         : [];
     });
+  }
+
+  async exportAccountingJournalBatches(options: AdminPaymentOperationsQuery = {}) {
+    const checkedAt = new Date().toISOString();
+    const exportRows = await this.prisma.$queryRaw<AdminAccountingJournalExportRow[]>(
+      adminAccountingJournalIntegrityExportSql(options, ADMIN_ACCOUNTING_JOURNAL_EXPORT_MAX_ROWS + 1),
+    );
+    const totalRows = numberValue(exportRows[0]?.totalRows);
+    if (totalRows > ADMIN_ACCOUNTING_JOURNAL_EXPORT_MAX_ROWS) {
+      return { rows: [], totalRows, truncated: true };
+    }
+
+    return {
+      rows: exportRows.map((row) => ({
+        bookingId: row.bookingId,
+        createdAt: adminIsoDateTime(row.createdAt),
+        currency: row.currency,
+        customerProfileId: row.customerProfileId,
+        id: row.id,
+        integrity: adminAccountingJournalIntegrityFromRow(row, checkedAt),
+        monthlyPeriod: row.monthlyPeriod,
+        paymentId: row.paymentId,
+        postedAt: adminIsoDateTime(row.postedAt),
+        providerProfileId: row.providerProfileId,
+        reversedAt: adminIsoDateTime(row.reversedAt),
+        settlementReversalEntryId: row.settlementReversalEntryId,
+        settlementSnapshotId: row.settlementSnapshotId,
+        sourceId: row.sourceId,
+        sourceKey: row.sourceKey,
+        sourceType: row.sourceType,
+        status: row.status,
+        totalCredit: numberValue(row.headerCredit),
+        totalDebit: numberValue(row.headerDebit),
+        updatedAt: adminIsoDateTime(row.updatedAt),
+      })),
+      totalRows,
+      truncated: exportRows.length < totalRows,
+    };
   }
 
   async accountingJournalBatchSummary(options: AdminPaymentOperationsQuery = {}) {
@@ -42815,6 +42817,23 @@ function normalizePartnerSelectionSort(value: unknown): PartnerOverviewSelection
     : 'views';
 }
 
+function partnerOverviewAppUsageTotals(
+  rows: ReadonlyArray<{
+    _sum: {
+      appOpenCount: bigint | number | null;
+      sessionStartCount: bigint | number | null;
+    };
+  }>,
+) {
+  return rows.reduce(
+    (totals, row) => ({
+      appOpenCount: totals.appOpenCount + numberValue(row._sum.appOpenCount),
+      sessionStartCount: totals.sessionStartCount + numberValue(row._sum.sessionStartCount),
+    }),
+    { appOpenCount: 0, sessionStartCount: 0 },
+  );
+}
+
 function partnerOverviewProviderWhere(options: {
   readonly city?: string;
   readonly onlineStatuses: readonly ProviderStatus[] | null;
@@ -48977,6 +48996,23 @@ type AdminAccountingJournalIntegrityRow = {
   status: AccountingJournalBatchStatus;
 };
 
+type AdminAccountingJournalExportRow = AdminAccountingJournalIntegrityRow & {
+  bookingId: string | null;
+  createdAt: Date | string;
+  currency: string;
+  customerProfileId: string | null;
+  paymentId: string | null;
+  postedAt: Date | string;
+  providerProfileId: string | null;
+  reversedAt: Date | string | null;
+  settlementReversalEntryId: string | null;
+  settlementSnapshotId: string | null;
+  sourceId: string;
+  sourceKey: string;
+  totalRows: bigint | number;
+  updatedAt: Date | string;
+};
+
 function adminAccountingJournalIntegrityFromRow(
   row: AdminAccountingJournalIntegrityRow,
   checkedAt: string,
@@ -49148,6 +49184,47 @@ function adminAccountingJournalIntegrityPageSql(
     WHERE ${adminAccountingJournalIntegrityReviewSql(options)}
     ORDER BY ${adminAccountingJournalIntegrityOrderSql(options)}
     OFFSET ${skip}
+    LIMIT ${take}
+  `;
+}
+
+function adminAccountingJournalIntegrityExportSql(
+  options: AdminPaymentOperationsQuery,
+  take: number,
+) {
+  return Prisma.sql`
+    ${adminAccountingJournalIntegrityCte(options)}
+    SELECT
+      integrity."id",
+      integrity."sourceKey",
+      integrity."sourceType",
+      integrity."sourceId",
+      integrity."bookingId",
+      integrity."customerProfileId",
+      integrity."providerProfileId",
+      integrity."paymentId",
+      integrity."settlementSnapshotId",
+      integrity."settlementReversalEntryId",
+      integrity."monthlyPeriod",
+      integrity."currency",
+      integrity."status",
+      integrity."totalDebit" AS "headerDebit",
+      integrity."totalCredit" AS "headerCredit",
+      integrity."postedAt",
+      integrity."reversedAt",
+      integrity."createdAt",
+      integrity."updatedAt",
+      integrity."entryCount",
+      integrity."entryDebit",
+      integrity."entryCredit",
+      integrity."formulaDelta",
+      integrity."formulaEvidenceAvailable",
+      integrity."linkedMonthlyPeriod",
+      integrity."discrepancyAmount",
+      COUNT(*) OVER()::bigint AS "totalRows"
+    FROM journal_integrity integrity
+    WHERE ${adminAccountingJournalIntegrityReviewSql(options)}
+    ORDER BY ${adminAccountingJournalIntegrityOrderSql(options)}
     LIMIT ${take}
   `;
 }

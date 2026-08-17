@@ -5,11 +5,19 @@ export type CsvRow = Record<string, CsvCell>;
 export function buildCsvContent(rows: CsvRow[], fallbackHeaders: string[] = []) {
   const headers = uniqueHeaders(rows, fallbackHeaders);
   const lines = [
-    headers.map(csvEscape).join(','),
-    ...rows.map((row) => headers.map((header) => csvEscape(row[header])).join(',')),
+    buildCsvHeader(headers),
+    ...rows.map((row) => buildCsvRowContent(row, headers)),
   ];
 
   return lines.join('\r\n');
+}
+
+export function buildCsvHeader(headers: readonly string[]) {
+  return headers.map(csvEscape).join(',');
+}
+
+export function buildCsvRowContent(row: CsvRow, headers: readonly string[]) {
+  return headers.map((header) => csvEscape(row[header])).join(',');
 }
 
 export function buildCsvDataHref(rows: CsvRow[], fallbackHeaders: string[] = []) {

@@ -2778,16 +2778,28 @@ describe('AdminService partner overview request events', () => {
         groupBy: vi.fn().mockResolvedValue([]),
       },
       appUsageDailyAggregate: {
-        aggregate: vi
-          .fn()
-          .mockResolvedValueOnce({
-            _sum: { appOpenCount: 6, sessionStartCount: 2, totalEventCount: 8 },
-          })
-          .mockResolvedValueOnce({
-            _sum: { appOpenCount: 3, sessionStartCount: 1, totalEventCount: 4 },
-          }),
         groupBy: vi
           .fn()
+          .mockResolvedValueOnce([
+            {
+              userId: 'provider-user-viewed',
+              _sum: { appOpenCount: 6, sessionStartCount: 2, totalEventCount: 8 },
+              _max: { lastOccurredAt: new Date() },
+            },
+          ])
+          .mockResolvedValueOnce([
+            {
+              userId: 'provider-user-viewed',
+              _sum: { appOpenCount: 3, sessionStartCount: 1, totalEventCount: 4 },
+            },
+          ])
+          .mockResolvedValueOnce([
+            { userId: 'provider-user-viewed', _max: { lastOccurredAt: new Date() } },
+            {
+              userId: 'provider-user-price',
+              _max: { lastOccurredAt: new Date('2026-05-01T00:00:00.000Z') },
+            },
+          ])
           .mockResolvedValueOnce([
             {
               userId: 'provider-user-viewed',
@@ -2982,7 +2994,7 @@ describe('AdminService partner overview request events', () => {
       }),
     );
     expect(prisma.appUsageDailyAggregate.groupBy).toHaveBeenNthCalledWith(
-      1,
+      4,
       expect.objectContaining({
         by: ['userId'],
         where: expect.objectContaining({
@@ -2991,7 +3003,7 @@ describe('AdminService partner overview request events', () => {
         }),
       }),
     );
-    const appUsageDayRange = prisma.appUsageDailyAggregate.groupBy.mock.calls[0]?.[0]?.where?.day;
+    const appUsageDayRange = prisma.appUsageDailyAggregate.groupBy.mock.calls[3]?.[0]?.where?.day;
     expect(appUsageDayRange.lte.getTime() - appUsageDayRange.gte.getTime()).toBe(6 * 24 * 60 * 60 * 1000);
   });
 
@@ -21778,13 +21790,21 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(
-      service.exportBookingSettlementSnapshots({ range: 'all', review: 'integrity-exceptions', sort: 'oldest' }),
-    ).resolves.toEqual({
-      rows: [expect.objectContaining({ id: 'settlement-1' })],
-      totalRows: 1,
-      truncated: false,
+    const result = await service.exportBookingSettlementSnapshots({
+      range: 'all',
+      review: 'integrity-exceptions',
+      sort: 'oldest',
     });
+
+    expect(result).toEqual({ stream: expect.anything(), totalRows: 1, truncated: false });
+    let body = '';
+    for await (const chunk of result.stream!) body += chunk.toString();
+    const lines = body.trim().split('\n').map((line) => JSON.parse(line));
+    expect(lines[0]).toEqual({ totalRows: 1, type: 'metadata' });
+    expect(lines[1]).toEqual(expect.objectContaining({
+      row: expect.objectContaining({ id: 'settlement-1' }),
+      type: 'row',
+    }));
 
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
     expect(prisma.bookingSettlementSnapshot.findMany).toHaveBeenCalledTimes(1);
@@ -21805,7 +21825,7 @@ describe('AdminService query orchestration', () => {
     const service = createAdminService(prisma);
 
     await expect(service.exportBookingSettlementSnapshots({ range: 'all' })).resolves.toEqual({
-      rows: [],
+      stream: null,
       totalRows: 100_001,
       truncated: true,
     });
@@ -22335,6 +22355,89 @@ describe('AdminService query orchestration', () => {
         _count: { select: { entries: true } },
       }),
       where: { id: { in: ['journal-unbalanced-1', 'journal-draft-1'] } },
+    });
+  });
+
+  it('exports journal batches with one bounded projection query', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          bookingId: 'booking-1',
+          createdAt: new Date('2026-07-10T10:00:00.000Z'),
+          currency: 'VND',
+          customerProfileId: 'customer-1',
+          discrepancyAmount: 0n,
+          entryCount: 2n,
+          entryCredit: 500000n,
+          entryDebit: 500000n,
+          formulaDelta: 0n,
+          formulaEvidenceAvailable: true,
+          headerCredit: 500000n,
+          headerDebit: 500000n,
+          id: 'journal-batch-1',
+          linkedMonthlyPeriod: '2026-07',
+          monthlyPeriod: '2026-07',
+          paymentId: 'payment-1',
+          postedAt: new Date('2026-07-10T10:00:00.000Z'),
+          providerProfileId: 'provider-1',
+          reversedAt: null,
+          settlementReversalEntryId: null,
+          settlementSnapshotId: 'settlement-1',
+          sourceId: 'settlement-1',
+          sourceKey: 'journal:settlement:settlement-1',
+          sourceType: AccountingJournalSourceType.BOOKING_SETTLEMENT,
+          status: AccountingJournalBatchStatus.POSTED,
+          totalRows: 1n,
+          updatedAt: new Date('2026-07-10T10:00:00.000Z'),
+        },
+      ]),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.exportAccountingJournalBatches({
+        q: 'booking-1',
+        range: 'all',
+        review: 'needs-action',
+        sort: 'largest-discrepancy',
+      }),
+    ).resolves.toEqual({
+      rows: [
+        expect.objectContaining({
+          id: 'journal-batch-1',
+          integrity: expect.objectContaining({ state: 'CLEAR' }),
+          totalCredit: 500000,
+          totalDebit: 500000,
+        }),
+      ],
+      totalRows: 1,
+      truncated: false,
+    });
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    const query = prisma.$queryRaw.mock.calls[0]?.[0] as { sql?: string; text?: string; values?: unknown[] };
+    const queryText = query.sql ?? query.text ?? '';
+    expect(queryText).toContain('COUNT(*) OVER()');
+    expect(queryText).toContain('LIMIT');
+    expect(queryText).not.toContain('OFFSET');
+    expect(query.values).toContain(100_001);
+  });
+
+  it('rejects oversized journal exports without hydrating rows', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          id: 'journal-batch-1',
+          totalRows: 100_001n,
+        },
+      ]),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.exportAccountingJournalBatches({ range: 'all' })).resolves.toEqual({
+      rows: [],
+      totalRows: 100_001,
+      truncated: true,
     });
   });
 

@@ -5,7 +5,6 @@ import type { AdminAccountingJournalBatch } from '../../../../../../lib/admin-ap
 import { adminGetResult } from '../../../../../../lib/admin-api';
 import { recordAdminOperatorActivity } from '../../../../../../lib/admin-operator-access';
 import { requireAdminWebAccess } from '../../../../../../lib/admin-session';
-import { emptyAccountingJournalBatchSummary } from '../../../../../finance-tax/tax-settlement-page-model';
 import { GET } from './route';
 
 vi.mock('../../../../../../lib/admin-api', async () => {
@@ -66,23 +65,16 @@ describe('journal batch export route', () => {
     expect(mockedAdminGetResult).not.toHaveBeenCalled();
   });
 
-  it('exports every filtered row across bounded server pages with integrity and actor metadata', async () => {
+  it('exports every filtered row from one bounded API request with integrity and actor metadata', async () => {
     const firstPage = Array.from({ length: 100 }, (_, index) => journalFixture(`journal-${index + 1}`));
-    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
-      if (href.includes('/summary?')) {
-        return {
-          data: { ...emptyAccountingJournalBatchSummary(), count: 101 },
-          ok: true,
-          status: 200,
-        };
-      }
-      if (href.includes('skip=100')) {
-        return { data: [journalFixture('journal-101')], ok: true, status: 200 };
-      }
-      if (href.includes('/admin/accounting-journal-batches?')) {
-        return { data: firstPage, ok: true, status: 200 };
-      }
-      return { data: fallback, ok: true, status: 200 };
+    mockedAdminGetResult.mockResolvedValue({
+      data: {
+        rows: [...firstPage, journalFixture('journal-101')],
+        totalRows: 101,
+        truncated: false,
+      },
+      ok: true,
+      status: 200,
     });
 
     const response = await GET(
@@ -105,13 +97,10 @@ describe('journal batch export route', () => {
     expect(body).toContain('"HEADER_ENTRY_MISMATCH|FORMULA_DELTA"');
     expect(body).toContain('"2026-08-09T00:00:00.000Z"');
     expect(mockedAdminGetResult).toHaveBeenCalledWith(
-      '/admin/accounting-journal-batches?range=all&take=100&period=2026-07&q=booking+42&sort=largest-discrepancy&review=all&source=BOOKING_SETTLEMENT',
-      [],
+      '/admin/accounting-journal-batches/export?range=all&period=2026-07&q=booking+42&review=all&source=BOOKING_SETTLEMENT&sort=largest-discrepancy',
+      { rows: [], totalRows: 0, truncated: false },
     );
-    expect(mockedAdminGetResult).toHaveBeenCalledWith(
-      '/admin/accounting-journal-batches?range=all&take=100&period=2026-07&q=booking+42&sort=largest-discrepancy&skip=100&review=all&source=BOOKING_SETTLEMENT',
-      [],
-    );
+    expect(mockedAdminGetResult).toHaveBeenCalledTimes(1);
     expect(mockedRecordAdminOperatorActivity).toHaveBeenCalledWith(
       'finance.journal_batches.export',
       '/finance-tax/general-ledger',
@@ -121,7 +110,7 @@ describe('journal batch export route', () => {
 
   it('returns a non-CSV error when the authoritative summary is unavailable', async () => {
     mockedAdminGetResult.mockResolvedValue({
-      data: emptyAccountingJournalBatchSummary(),
+      data: { rows: [], totalRows: 0, truncated: false },
       ok: false,
       status: 503,
     });
@@ -132,7 +121,7 @@ describe('journal batch export route', () => {
 
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toEqual({
-      error: 'JOURNAL_BATCH_SUMMARY_UNAVAILABLE',
+      error: 'JOURNAL_BATCH_ROWS_UNAVAILABLE',
       upstreamStatus: 503,
     });
     expect(mockedRecordAdminOperatorActivity).not.toHaveBeenCalled();
@@ -140,7 +129,7 @@ describe('journal batch export route', () => {
 
   it('rejects an export above the audited row limit without loading rows', async () => {
     mockedAdminGetResult.mockResolvedValue({
-      data: { ...emptyAccountingJournalBatchSummary(), count: 100_001 },
+      data: { rows: [], totalRows: 100_001, truncated: true },
       ok: true,
       status: 200,
     });

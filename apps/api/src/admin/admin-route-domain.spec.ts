@@ -161,11 +161,12 @@ describe('Admin route domain manifest', () => {
         route.path.startsWith('booking-payment-clearing/'),
     );
 
-    expect(routes).toHaveLength(9);
+    expect(routes).toHaveLength(10);
     expect(new Set(routes.map((route) => route.owner))).toEqual(new Set(['AdminLedgerRoutes']));
     expect(routes.map((route) => `${route.method} ${route.path}`)).toEqual(
       expect.arrayContaining([
         'GET accounting-journal-batches',
+        'GET accounting-journal-batches/export',
         'GET accounting-journal-batches/:id',
         'GET booking-payment-clearing',
         'GET booking-payment-clearing/:id',

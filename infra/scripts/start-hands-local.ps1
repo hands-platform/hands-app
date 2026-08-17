@@ -3,10 +3,16 @@ param(
   [int]$ApiPort = 3000,
   [int]$AdminPort = 3101,
   [switch]$SkipAdmin,
-  [switch]$AdminProduction
+  [switch]$AdminProduction,
+  [switch]$AdminDevelopment
 )
 
 $ErrorActionPreference = "Stop"
+
+if ($AdminProduction -and $AdminDevelopment) {
+  throw "Choose either -AdminProduction or -AdminDevelopment, not both."
+}
+$useAdminProduction = -not $AdminDevelopment
 
 function Assert-PortFree {
   param([int]$Port)
@@ -167,7 +173,7 @@ if (`$LASTEXITCODE -ne 0) { exit `$LASTEXITCODE }
 npm.cmd run start --workspace @massage-vn/api *> '$apiLog'
 "@
 
-$adminCommand = if ($AdminProduction) {
+$adminCommand = if ($useAdminProduction) {
 @"
 Set-Location '$RepoRoot'
 `$env:NODE_ENV='production'
@@ -202,7 +208,7 @@ $apiProcess = Start-Process powershell -ArgumentList @(
 ) -WindowStyle Hidden -PassThru
 
 $apiHealthWaitedBeforeAdmin = $false
-if ($AdminProduction -and -not $SkipAdmin) {
+if ($useAdminProduction -and -not $SkipAdmin) {
   # Production Admin starts after API health is ready to avoid concurrent API and Next build contention.
   Wait-HttpReady -Url "http://localhost:$ApiPort/api/health" -TimeoutSeconds 90
   $apiHealthWaitedBeforeAdmin = $true
@@ -226,8 +232,8 @@ $state = [pscustomobject]@{
   repoRoot = $RepoRoot
   apiPort = $ApiPort
   adminPort = $AdminPort
-  adminMode = if ($AdminProduction) { "production" } else { "development" }
-  adminDistDir = if ($AdminProduction) { $adminProductionDistDir } else { ".next" }
+  adminMode = if ($useAdminProduction) { "production" } else { "development" }
+  adminDistDir = if ($useAdminProduction) { $adminProductionDistDir } else { ".next" }
   adminBuildId = $null
   apiPid = $apiProcess.Id
   adminPid = if ($adminProcess) { $adminProcess.Id } else { $null }
@@ -240,7 +246,7 @@ if (-not $apiHealthWaitedBeforeAdmin) {
 }
 if (-not $SkipAdmin) {
   Wait-HttpReady -Url "http://localhost:$AdminPort" -TimeoutSeconds 90 -AllowedStatusCodes @(200, 307, 308, 404)
-  if ($AdminProduction) {
+  if ($useAdminProduction) {
     $adminBuildIdPath = Join-Path $RepoRoot "apps\admin_web\$adminProductionDistDir\BUILD_ID"
     if (-not (Test-Path -LiteralPath $adminBuildIdPath)) {
       throw "Production Admin BUILD_ID is missing at $adminBuildIdPath"
@@ -255,7 +261,7 @@ Write-Host "API:   http://localhost:$ApiPort/api/health"
 if ($SkipAdmin) {
   Write-Host "Admin: skipped, existing admin can continue using http://localhost:$ApiPort/api"
 } else {
-  $adminModeLabel = if ($AdminProduction) { "production" } else { "development" }
+  $adminModeLabel = if ($useAdminProduction) { "production" } else { "development" }
   Write-Host "Admin: http://localhost:$AdminPort ($adminModeLabel)"
 }
 Write-Host "Logs:  $logDir"

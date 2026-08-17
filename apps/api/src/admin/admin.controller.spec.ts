@@ -1,5 +1,6 @@
 import 'reflect-metadata';
-import { RequestMethod } from '@nestjs/common';
+import { Readable } from 'node:stream';
+import { RequestMethod, StreamableFile } from '@nestjs/common';
 import { HEADERS_METADATA, METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { AdminOperatorPermissionCategory, ReferralRewardMode, Role } from '@prisma/client';
 import type { AuthenticatedUser } from '../auth/auth.types';
@@ -146,6 +147,7 @@ describe('AdminController notification and push actions', () => {
     platformVatSummary: vi.fn(),
     paymentFeeSummary: vi.fn(),
     listAccountingJournalBatches: vi.fn(),
+    exportAccountingJournalBatches: vi.fn(),
     accountingJournalBatchSummary: vi.fn(),
     accountingJournalBatchDetail: vi.fn(),
     listBookingPaymentClearingEntries: vi.fn(),
@@ -1391,25 +1393,28 @@ describe('AdminController notification and push actions', () => {
   });
 
   it('exposes one bounded booking settlement export request with the same filters', async () => {
+    const stream = Readable.from(['{"totalRows":1,"type":"metadata"}\n']);
     admin.exportBookingSettlementSnapshots.mockResolvedValue({
-      rows: [{ id: 'settlement-1' }],
+      stream,
       totalRows: 1,
       truncated: false,
     });
 
-    await expect(
-      controller.exportBookingSettlementSnapshots(
-        'all',
-        'integrity-exceptions',
-        '2026-07',
-        'CARD',
-        'booking-42',
-        'oldest',
-        'accounting',
-        'allocation',
-        'open',
-      ),
-    ).resolves.toEqual({ rows: [{ id: 'settlement-1' }], totalRows: 1, truncated: false });
+    const result = await controller.exportBookingSettlementSnapshots(
+      'all',
+      'integrity-exceptions',
+      '2026-07',
+      'CARD',
+      'booking-42',
+      'oldest',
+      'accounting',
+      'allocation',
+      'open',
+    );
+
+    expect(result).toBeInstanceOf(StreamableFile);
+    expect(result.getHeaders().type).toBe('application/x-ndjson; charset=utf-8');
+    expect(result.getStream()).toBe(stream);
 
     expect(routeMetadata('exportBookingSettlementSnapshots')).toEqual({
       method: RequestMethod.GET,
@@ -1734,6 +1739,38 @@ describe('AdminController notification and push actions', () => {
       range: '7d',
       review: 'reversed',
       source: 'BOOKING_SETTLEMENT_REVERSAL',
+    });
+  });
+
+  it('exposes one bounded accounting journal export request with the same filters', async () => {
+    admin.exportAccountingJournalBatches.mockResolvedValue({
+      rows: [{ id: 'journal-batch-1' }],
+      totalRows: 1,
+      truncated: false,
+    });
+
+    await expect(
+      controller.exportAccountingJournalBatches(
+        'all',
+        'needs-action',
+        'booking-1',
+        '2026-07',
+        'BOOKING_SETTLEMENT',
+        'largest-discrepancy',
+      ),
+    ).resolves.toEqual({ rows: [{ id: 'journal-batch-1' }], totalRows: 1, truncated: false });
+
+    expect(routeMetadata('exportAccountingJournalBatches')).toEqual({
+      method: RequestMethod.GET,
+      path: 'accounting-journal-batches/export',
+    });
+    expect(admin.exportAccountingJournalBatches).toHaveBeenCalledWith({
+      period: '2026-07',
+      q: 'booking-1',
+      range: 'all',
+      review: 'needs-action',
+      sort: 'largest-discrepancy',
+      source: 'BOOKING_SETTLEMENT',
     });
   });
 

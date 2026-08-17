@@ -9,6 +9,7 @@ import {
   AdminPostMatchCancellationOperationsSummary,
   adminGetResult,
 } from '../../lib/admin-api';
+import { OPERATIONAL_POLICY_CACHE_OPTIONS } from '../../lib/operations-policy';
 import { dashboardSourceState } from '../dashboard-trace-summary';
 import { BookingMonitor } from './booking-monitor';
 import type { BookingTableGroupKey } from './booking-monitor-list-section';
@@ -140,8 +141,14 @@ export async function renderBookingMonitorRoute({ kind, searchParams }: BookingM
   const loadPlan = buildBookingMonitorRouteLoadPlan(params, kind);
   const [bookingPageResult, auditLogsResult, policySettingsResult, routeSummaryResult] = await Promise.all([
     adminGetResult<AdminBookingPage>(loadPlan.bookingsHref, EMPTY_BOOKING_PAGE),
-    adminGetResult<AdminAuditLog[]>(loadPlan.bookingGateAuditHref, []),
-    adminGetResult<AdminOperationalPolicySetting[]>(loadPlan.policySettingsHref, []),
+    loadPlan.bookingGateAuditHref
+      ? adminGetResult<AdminAuditLog[]>(loadPlan.bookingGateAuditHref, [])
+      : Promise.resolve({ data: [], ok: true as const, status: 200 }),
+    adminGetResult<AdminOperationalPolicySetting[]>(
+      loadPlan.policySettingsHref,
+      [],
+      OPERATIONAL_POLICY_CACHE_OPTIONS,
+    ),
     bookingSummaryRequest(kind, loadPlan.summaryHref),
   ]);
   const bookingPage = bookingPageResult.data;

@@ -24,7 +24,7 @@ const BOOKING_MONITOR_POLICY_KEYS = [
 ] as const;
 
 export type BookingMonitorRouteLoadPlan = {
-  readonly bookingGateAuditHref: string;
+  readonly bookingGateAuditHref: string | null;
   readonly bookingsHref: string;
   readonly summaryHref: string;
   readonly policySettingsHref: string;
@@ -34,8 +34,9 @@ export function buildBookingMonitorRouteLoadPlan(
   params: Record<string, string | string[] | undefined> | undefined,
   kind: BookingMonitorRouteKind,
 ): BookingMonitorRouteLoadPlan {
+  const view = readSingleSearchParam(params?.view);
   return {
-    bookingGateAuditHref: bookingCreateRejectionAuditPath(),
+    bookingGateAuditHref: kind === 'all' && view === 'blocked-create' ? bookingCreateRejectionAuditPath() : null,
     bookingsHref: bookingListApiPath(params, kind),
     summaryHref: bookingSummaryApiPath(params, kind),
     policySettingsHref: `/admin/operational-policy?${new URLSearchParams({

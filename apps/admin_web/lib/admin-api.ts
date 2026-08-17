@@ -601,6 +601,16 @@ export type AdminStartShiftChartAnalytics = Pick<
   'buckets' | 'comparison' | 'customerPulse' | 'generatedAt' | 'granularity' | 'timezone'
 >;
 
+export type AdminStartShiftRankingAnalytics = Pick<
+  AdminStartShiftAnalytics,
+  'customerRankings' | 'partnerRankings'
+>;
+
+export type AdminStartShiftDemandSupplyAnalytics = Pick<
+  AdminStartShiftAnalytics,
+  'buckets' | 'demandSupply'
+>;
+
 export type AdminStartShiftCustomerRanking = {
   activeRecords: number;
   appOpenEvents: number;
@@ -4923,6 +4933,12 @@ export type AdminAccountingJournalBatch = {
   } | null;
 };
 
+export type AdminAccountingJournalBatchExport = {
+  rows: AdminAccountingJournalBatch[];
+  totalRows: number;
+  truncated: boolean;
+};
+
 export type AdminAccountingJournalIntegrity = {
   blockerCodes: Array<
     | 'ENTRY_UNBALANCED'
@@ -7197,6 +7213,18 @@ export async function adminGetResult<T>(
     };
   } catch {
     return { data: fallback, ok: false, status: null };
+  }
+}
+
+export async function adminGetResponse(path: string): Promise<Response | null> {
+  try {
+    const token = await getAdminAccessToken();
+    return await fetch(`${API_BASE_URL}${path}`, {
+      cache: 'no-store',
+      headers: { authorization: `Bearer ${token}` },
+    });
+  } catch {
+    return null;
   }
 }
 

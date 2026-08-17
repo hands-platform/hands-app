@@ -1,23 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import type {
-  AdminAccountingJournalBatch,
-  AdminAccountingJournalBatchSummary,
+  AdminAccountingJournalBatchExport,
 } from '../../../../../../lib/admin-api';
 import { adminGetResult } from '../../../../../../lib/admin-api';
 import { recordAdminOperatorActivity } from '../../../../../../lib/admin-operator-access';
 import { requireAdminWebAccess } from '../../../../../../lib/admin-session';
-import { mapInBatches } from '../../../../../../lib/bounded-parallel';
 import {
-  buildAccountingJournalBatchApiHref,
+  buildAccountingJournalBatchExportApiHref,
   buildAccountingJournalBatchRowsCsvContent,
-  buildAccountingJournalBatchSummaryApiHref,
-  emptyAccountingJournalBatchSummary,
   readFinanceAccountingFilters,
 } from '../../../../../finance-tax/tax-settlement-page-model';
 
-const EXPORT_PAGE_SIZE = 100;
-const EXPORT_CONCURRENCY = 4;
 const MAX_EXPORT_ROWS = 100_000;
 const EXPORT_TIMEZONE = 'Asia/Ho_Chi_Minh';
 const NO_STORE_HEADERS = { 'cache-control': 'no-store', pragma: 'no-cache' };
@@ -32,36 +26,23 @@ export async function GET(request: NextRequest) {
     Object.fromEntries(request.nextUrl.searchParams.entries()),
     'needs-action',
   );
-  const summaryResult = await adminGetResult<AdminAccountingJournalBatchSummary>(
-    buildAccountingJournalBatchSummaryApiHref(filters),
-    emptyAccountingJournalBatchSummary(),
+  const exportResult = await adminGetResult<AdminAccountingJournalBatchExport>(
+    buildAccountingJournalBatchExportApiHref(filters),
+    { rows: [], totalRows: 0, truncated: false },
   );
-  if (!summaryResult.ok) return upstreamExportError('JOURNAL_BATCH_SUMMARY_UNAVAILABLE', summaryResult.status);
-  if (summaryResult.data.count > MAX_EXPORT_ROWS) {
+  if (!exportResult.ok) return upstreamExportError('JOURNAL_BATCH_ROWS_UNAVAILABLE', exportResult.status);
+  if (exportResult.data.truncated || exportResult.data.totalRows > MAX_EXPORT_ROWS) {
     return NextResponse.json(
-      { error: 'JOURNAL_BATCH_EXPORT_TOO_LARGE', limit: MAX_EXPORT_ROWS, totalRows: summaryResult.data.count },
+      { error: 'JOURNAL_BATCH_EXPORT_TOO_LARGE', limit: MAX_EXPORT_ROWS, totalRows: exportResult.data.totalRows },
       { headers: NO_STORE_HEADERS, status: 413 },
     );
   }
-
-  const pageCount = Math.ceil(summaryResult.data.count / EXPORT_PAGE_SIZE);
-  const pageResults = await mapInBatches(
-    Array.from({ length: pageCount }, (_, index) => index + 1),
-    EXPORT_CONCURRENCY,
-    (page) => adminGetResult<AdminAccountingJournalBatch[]>(
-      buildAccountingJournalBatchApiHref({ ...filters, page, take: EXPORT_PAGE_SIZE }),
-      [],
-    ),
-  );
-  const failedPage = pageResults.find((pageResult) => !pageResult.ok);
-  if (failedPage) return upstreamExportError('JOURNAL_BATCH_ROWS_UNAVAILABLE', failedPage.status);
-  const rows = pageResults.flatMap((pageResult) => pageResult.data);
-  if (rows.length < summaryResult.data.count) {
+  if (exportResult.data.rows.length < exportResult.data.totalRows) {
       return NextResponse.json(
         {
           error: 'JOURNAL_BATCH_EXPORT_INCOMPLETE',
-          expectedRows: summaryResult.data.count,
-          receivedRows: rows.length,
+          expectedRows: exportResult.data.totalRows,
+          receivedRows: exportResult.data.rows.length,
         },
         { headers: NO_STORE_HEADERS, status: 502 },
       );
@@ -70,19 +51,19 @@ export async function GET(request: NextRequest) {
   const generatedAt = new Date().toISOString();
   const activeFilters = exportFilterDescription(filters);
   const sort = filters.sort ?? (filters.review === 'needs-action' ? 'oldest' : 'newest');
-  const csv = buildAccountingJournalBatchRowsCsvContent(rows.slice(0, summaryResult.data.count), {
+  const csv = buildAccountingJournalBatchRowsCsvContent(exportResult.data.rows, {
     activeFilters,
     generatedAt,
     generatedBy: access.session?.sub ?? access.mode,
     sort,
     timezone: EXPORT_TIMEZONE,
-    totalRows: summaryResult.data.count,
+    totalRows: exportResult.data.totalRows,
   });
 
   await recordAdminOperatorActivity('finance.journal_batches.export', '/finance-tax/general-ledger', {
     filters: activeFilters,
     generatedAt,
-    rowCount: summaryResult.data.count,
+    rowCount: exportResult.data.totalRows,
     sort,
   });
 

@@ -141,6 +141,7 @@
     "admin:operator-fixtures:cleanup": "node infra/scripts/admin-operator-fixture-cleanup.mjs",
     "admin:secrets:rotate-local": "powershell -ExecutionPolicy Bypass -File infra/scripts/rotate-local-admin-secrets.ps1",
     "local:start": "powershell -ExecutionPolicy Bypass -File infra/scripts/start-hands-local.ps1 -AdminPort 3102",
+    "local:start:dev": "powershell -ExecutionPolicy Bypass -File infra/scripts/start-hands-local.ps1 -AdminDevelopment -AdminPort 3102",
     "local:start:prod": "powershell -ExecutionPolicy Bypass -File infra/scripts/start-hands-local.ps1 -AdminProduction -AdminPort 3101",
     "local:stop": "powershell -ExecutionPolicy Bypass -File infra/scripts/stop-hands-local.ps1",
     "local:status": "powershell -ExecutionPolicy Bypass -File infra/scripts/status-hands-local.ps1",

@@ -16,7 +16,6 @@ describe('booking monitor route load plan', () => {
   it('opens the exact server-counted needs-action queue by default', () => {
     const loadPlan = buildBookingMonitorRouteLoadPlan(undefined, 'all');
     const policyUrl = new URL(loadPlan.policySettingsHref, 'http://admin.local');
-    const auditUrl = new URL(loadPlan.bookingGateAuditHref, 'http://admin.local');
 
     expect(policyUrl.pathname).toBe('/admin/operational-policy');
     expect(policyUrl.searchParams.get('keys')?.split(',')).toEqual([
@@ -29,6 +28,13 @@ describe('booking monitor route load plan', () => {
     ]);
     expect(loadPlan.bookingsHref).toBe('/admin/bookings/page?statusGroup=needs-action&page=1&pageSize=20');
     expect(loadPlan.summaryHref).toBe('/admin/bookings/summary');
+    expect(loadPlan.bookingGateAuditHref).toBeNull();
+  });
+
+  it('loads create rejection audit evidence only for the blocked-create view', () => {
+    const loadPlan = buildBookingMonitorRouteLoadPlan({ view: 'blocked-create' }, 'all');
+    const auditUrl = new URL(loadPlan.bookingGateAuditHref!, 'http://admin.local');
+
     expect(auditUrl.pathname).toBe('/admin/audit-logs');
     expect(auditUrl.searchParams.get('action')).toBe('booking.create.rejected');
     expect(auditUrl.searchParams.get('take')).toBe('20');

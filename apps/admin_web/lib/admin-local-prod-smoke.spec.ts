@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 describe('local production Admin smoke scripts', () => {
-  it('exposes a production Admin Web start mode without replacing the dev start command', () => {
+  it('defaults to production Admin Web while retaining an explicit development command', () => {
     const rootPackage = JSON.parse(readFileSync('../../package.json', 'utf8')) as {
       scripts: Record<string, string>;
     };
@@ -13,7 +13,12 @@ describe('local production Admin smoke scripts', () => {
     expect(rootPackage.scripts['local:start:prod']).toBe(
       'powershell -ExecutionPolicy Bypass -File infra/scripts/start-hands-local.ps1 -AdminProduction -AdminPort 3101',
     );
+    expect(rootPackage.scripts['local:start:dev']).toBe(
+      'powershell -ExecutionPolicy Bypass -File infra/scripts/start-hands-local.ps1 -AdminDevelopment -AdminPort 3102',
+    );
     expect(startScript).toContain('[switch]$AdminProduction');
+    expect(startScript).toContain('[switch]$AdminDevelopment');
+    expect(startScript).toContain('$useAdminProduction = -not $AdminDevelopment');
     expect(startScript).toContain('npm.cmd run build --workspace @massage-vn/admin-web');
     expect(startScript).toContain('npm.cmd run start --workspace @massage-vn/admin-web -- --port $AdminPort');
     expect(startScript).toContain('`$env:ADMIN_NEXT_DIST_DIR=\'$adminProductionDistDir\'');
@@ -47,13 +52,13 @@ describe('local production Admin smoke scripts', () => {
     expect(productionWaitIndex).toBeGreaterThan(-1);
     expect(adminStartIndex).toBeGreaterThan(-1);
     expect(productionWaitIndex).toBeLessThan(adminStartIndex);
-    expect(startScript).toContain('if ($AdminProduction -and -not $SkipAdmin)');
+    expect(startScript).toContain('if ($useAdminProduction -and -not $SkipAdmin)');
     expect(startScript).toContain('Wait-HttpReady -Url "http://localhost:$ApiPort/api/health" -TimeoutSeconds 90');
   });
 
   it('does not leak local development NODE_ENV into production Admin builds', () => {
     const startScript = readFileSync('../../infra/scripts/start-hands-local.ps1', 'utf8');
-    const productionAdminCommandIndex = startScript.indexOf('$adminCommand = if ($AdminProduction)');
+    const productionAdminCommandIndex = startScript.indexOf('$adminCommand = if ($useAdminProduction)');
     const nodeEnvIndex = startScript.indexOf("`$env:NODE_ENV='production'", productionAdminCommandIndex);
     const adminBuildIndex = startScript.indexOf('npm.cmd run build --workspace @massage-vn/admin-web', productionAdminCommandIndex);
 

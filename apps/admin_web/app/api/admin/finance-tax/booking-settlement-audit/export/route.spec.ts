@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { vi } from 'vitest';
 
 import type { AdminBookingSettlementSnapshot } from '../../../../../../lib/admin-api';
-import { adminGetResult } from '../../../../../../lib/admin-api';
+import { adminGetResponse } from '../../../../../../lib/admin-api';
 import { recordAdminOperatorActivity } from '../../../../../../lib/admin-operator-access';
 import { requireAdminWebAccess } from '../../../../../../lib/admin-session';
 import { GET } from './route';
@@ -11,7 +11,7 @@ vi.mock('../../../../../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../../../../../lib/admin-api')>(
     '../../../../../../lib/admin-api',
   );
-  return { ...actual, adminGetResult: vi.fn() };
+  return { ...actual, adminGetResponse: vi.fn() };
 });
 
 vi.mock('../../../../../../lib/admin-operator-access', () => ({
@@ -25,13 +25,13 @@ vi.mock('../../../../../../lib/admin-session', async () => {
   return { ...actual, requireAdminWebAccess: vi.fn() };
 });
 
-const mockedAdminGetResult = vi.mocked(adminGetResult);
+const mockedAdminGetResponse = vi.mocked(adminGetResponse);
 const mockedRecordAdminOperatorActivity = vi.mocked(recordAdminOperatorActivity);
 const mockedRequireAdminWebAccess = vi.mocked(requireAdminWebAccess);
 
 describe('booking settlement audit export route', () => {
   beforeEach(() => {
-    mockedAdminGetResult.mockReset();
+    mockedAdminGetResponse.mockReset();
     mockedRecordAdminOperatorActivity.mockReset();
     mockedRecordAdminOperatorActivity.mockResolvedValue({ ok: true });
     mockedRequireAdminWebAccess.mockReset();
@@ -62,16 +62,12 @@ describe('booking settlement audit export route', () => {
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({ error: 'ADMIN_WEB_ACCESS_REQUIRED' });
-    expect(mockedAdminGetResult).not.toHaveBeenCalled();
+    expect(mockedAdminGetResponse).not.toHaveBeenCalled();
   });
 
   it('exports every filtered row from one upstream request with scope and actor metadata', async () => {
     const rows = Array.from({ length: 101 }, (_, index) => snapshotFixture(`snapshot-${index + 1}`));
-    mockedAdminGetResult.mockResolvedValue({
-      data: { rows, totalRows: rows.length, truncated: false },
-      ok: true,
-      status: 200,
-    });
+    mockedAdminGetResponse.mockResolvedValue(exportResponse(rows, rows.length));
 
     const response = await GET(
       new NextRequest(
@@ -90,10 +86,9 @@ describe('booking settlement audit export route', () => {
     expect(body).toContain('"Asia/Ho_Chi_Minh"');
     expect(body).toContain('"range=all;review=integrity-exceptions;q=Demo Customer"');
     expect(body).not.toContain('+84900000042');
-    expect(mockedAdminGetResult).toHaveBeenCalledTimes(1);
-    expect(mockedAdminGetResult).toHaveBeenCalledWith(
+    expect(mockedAdminGetResponse).toHaveBeenCalledTimes(1);
+    expect(mockedAdminGetResponse).toHaveBeenCalledWith(
       '/admin/booking-settlement-snapshots/export?range=all&review=integrity-exceptions&q=Demo+Customer&sort=oldest',
-      { rows: [], totalRows: 0, truncated: false },
     );
     expect(mockedRecordAdminOperatorActivity).toHaveBeenCalledWith(
       'finance.booking_settlement_audit.export',
@@ -103,15 +98,10 @@ describe('booking settlement audit export route', () => {
   });
 
   it('fails closed when the export payload is incomplete', async () => {
-    mockedAdminGetResult.mockResolvedValue({
-      data: {
-        rows: Array.from({ length: 100 }, (_, index) => snapshotFixture(`snapshot-${index + 1}`)),
-        totalRows: 101,
-        truncated: false,
-      },
-      ok: true,
-      status: 200,
-    });
+    mockedAdminGetResponse.mockResolvedValue(exportResponse(
+      Array.from({ length: 100 }, (_, index) => snapshotFixture(`snapshot-${index + 1}`)),
+      101,
+    ));
 
     const response = await GET(
       new NextRequest(
@@ -119,12 +109,8 @@ describe('booking settlement audit export route', () => {
       ),
     );
 
-    expect(response.status).toBe(502);
-    await expect(response.json()).resolves.toEqual({
-      error: 'SETTLEMENT_AUDIT_EXPORT_INCOMPLETE',
-      expectedRows: 101,
-      receivedRows: 100,
-    });
+    expect(response.status).toBe(200);
+    await expect(response.text()).rejects.toThrow('SETTLEMENT_AUDIT_EXPORT_INCOMPLETE');
     expect(mockedRecordAdminOperatorActivity).toHaveBeenCalledWith(
       'finance.booking_settlement_audit.export_partial',
       '/finance-tax/booking-settlement-audit',
@@ -133,11 +119,7 @@ describe('booking settlement audit export route', () => {
   });
 
   it('returns a non-CSV error when the authoritative export is unavailable', async () => {
-    mockedAdminGetResult.mockResolvedValue({
-      data: { rows: [], totalRows: 0, truncated: false },
-      ok: false,
-      status: 503,
-    });
+    mockedAdminGetResponse.mockResolvedValue(new Response(null, { status: 503 }));
 
     const response = await GET(
       new NextRequest('http://localhost/api/admin/finance-tax/booking-settlement-audit/export?range=all&review=open'),
@@ -154,7 +136,38 @@ describe('booking settlement audit export route', () => {
       expect.objectContaining({ upstreamStatus: 503 }),
     );
   });
+
+  it('rejects an oversized stream before sending CSV headers', async () => {
+    mockedAdminGetResponse.mockResolvedValue(new Response(JSON.stringify({
+      code: 'SETTLEMENT_AUDIT_EXPORT_TOO_LARGE',
+      limit: 100_000,
+      totalRows: 100_001,
+    }), { status: 413 }));
+
+    const response = await GET(
+      new NextRequest('http://localhost/api/admin/finance-tax/booking-settlement-audit/export?range=all&review=open'),
+    );
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toEqual({
+      error: 'SETTLEMENT_AUDIT_EXPORT_TOO_LARGE',
+      limit: 100_000,
+      totalRows: 100_001,
+    });
+  });
 });
+
+function exportResponse(rows: AdminBookingSettlementSnapshot[], totalRows: number) {
+  const body = [
+    JSON.stringify({ totalRows, type: 'metadata' }),
+    ...rows.map((row) => JSON.stringify({ row, type: 'row' })),
+    '',
+  ].join('\n');
+  return new Response(body, {
+    headers: { 'content-type': 'application/x-ndjson; charset=utf-8' },
+    status: 200,
+  });
+}
 
 function snapshotFixture(id: string): AdminBookingSettlementSnapshot {
   return {

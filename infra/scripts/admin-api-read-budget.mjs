@@ -39,6 +39,11 @@ const coreReadTargets = [
     path: '/admin/dashboard/start-shift-summary?dateRange=7d',
     budget: { p90Ms: 750, maxBytes: 96 * 1024 },
   },
+  {
+    label: 'start-shift-analytics',
+    path: '/admin/dashboard/start-shift-analytics?dateRange=7d',
+    budget: { p90Ms: 1_500, maxBytes: 160 * 1024 },
+  },
 ];
 
 const financeReadTargets = [
