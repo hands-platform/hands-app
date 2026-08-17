@@ -532,7 +532,10 @@ describe('BookingsService booking creation', () => {
     };
     const prisma = {
       booking: {
-        findUnique: vi.fn().mockResolvedValue(createdBooking),
+        findUnique: vi
+          .fn()
+          .mockResolvedValueOnce(createdBooking)
+          .mockResolvedValueOnce({ selectedProviderId: null, status: BookingStatus.OPEN_MATCHING }),
         findUniqueOrThrow: vi.fn().mockResolvedValue(recoveredBooking),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         update: vi.fn(),
@@ -569,7 +572,7 @@ describe('BookingsService booking creation', () => {
       status: BookingStatus.OPEN_MATCHING,
     });
 
-    expect(prisma.booking.updateMany).toHaveBeenCalledTimes(2);
+    expect(prisma.booking.updateMany).toHaveBeenCalledTimes(1);
     expect(prisma.booking.updateMany).toHaveBeenNthCalledWith(1, {
       where: { id: 'booking-1', status: BookingStatus.CREATED },
       data: {
@@ -587,6 +590,91 @@ describe('BookingsService booking creation', () => {
       expect.objectContaining({ status: 'OPEN_MATCHING' }),
     );
     expect(notifications.create).toHaveBeenCalledWith(expect.objectContaining({ userId: 'customer-user-1' }));
+  });
+
+  it('closes a recovered matching projection when customer cancellation wins during activation', async () => {
+    const createdBooking = {
+      id: 'booking-1',
+      customerProfileId: 'customer-1',
+      customerProfile: { userId: 'customer-user-1' },
+      status: BookingStatus.CREATED,
+      scheduledStartAt: new Date(Date.now() + 60_000),
+      scheduledEndAt: new Date(Date.now() + 3_600_000),
+      address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+      addressSnapshot: null,
+      lat: 10.7769,
+      lng: 106.7009,
+      notes: null,
+      metadata: {},
+      openedAt: new Date(),
+      expiresAt: new Date(Date.now() - 60_000),
+      preferredProviderId: null,
+      selectedProviderId: null,
+      preferredProvider: null,
+      selectedProvider: null,
+      participants: [],
+      services: [{ serviceId: 'service-1', price: 500000, service: massageService() }],
+      payment: {
+        id: 'payment-1',
+        bookingId: 'booking-1',
+        method: PaymentMethod.VNPAY,
+        amount: 500000,
+        currency: 'VND',
+        providerRef: 'booking-1',
+        status: PaymentStatus.CAPTURED,
+        rawMeta: { authorizationState: 'READY', authorizationVerifiedBy: 'STATUS_QUERY' },
+      },
+    };
+    const recoveredBooking = {
+      ...createdBooking,
+      status: BookingStatus.OPEN_MATCHING,
+      expiresAt: new Date(Date.now() + 600_000),
+    };
+    const prisma = {
+      booking: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValueOnce(createdBooking)
+          .mockResolvedValueOnce({ selectedProviderId: null, status: BookingStatus.CANCELLED }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(recoveredBooking),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      providerProfile: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+    const matching = {
+      getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
+      openBooking: vi.fn().mockReturnValue({ id: 'booking-1', status: 'OPEN_MATCHING' }),
+      registerActiveBooking: vi.fn(),
+      scheduleBookingTimeout: vi.fn(),
+      closeBooking: vi.fn(),
+    };
+    const matchingGateway = { emitBookingOpened: vi.fn(), emitBackupBookingAvailable: vi.fn() };
+    const payments = {
+      requiresPostBookingAuthorization: vi.fn().mockReturnValue(true),
+      paymentCanOpenMatching: vi.fn().mockReturnValue(true),
+      paymentRequiresCaptureBeforeMatching: vi.fn().mockReturnValue(true),
+      scheduleStatusCheck: vi.fn(),
+    };
+    const notifications = { create: vi.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      payments as never,
+      notifications as never,
+      {} as never,
+    );
+
+    await expect(service.recoverCreatedBookingAfterPayment('booking-1', 'payment-1')).resolves.toEqual({
+      skipped: true,
+      reason: 'BOOKING_NO_LONGER_OPEN',
+      bookingId: 'booking-1',
+      status: BookingStatus.CANCELLED,
+    });
+
+    expect(matching.closeBooking).toHaveBeenCalledWith('booking-1');
+    expect(matchingGateway.emitBookingOpened).not.toHaveBeenCalled();
+    expect(notifications.create).not.toHaveBeenCalled();
   });
 
   it('rejects booking creation when fresh customer GPS is 50km or more from the service address', async () => {
@@ -1466,7 +1554,9 @@ describe('BookingsService provider service lifecycle', () => {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     };
-    const matchingGateway = { emitProviderArrived: vi.fn() };
+    const matchingGateway = {
+      emitProviderArrived: vi.fn().mockRejectedValue(new Error('Realtime unavailable')),
+    };
     const service = new BookingsService(
       prisma as never,
       {} as never,
@@ -1549,7 +1639,7 @@ describe('BookingsService provider service lifecycle', () => {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     };
-    const notifications = { create: vi.fn() };
+    const notifications = { create: vi.fn().mockRejectedValue(new Error('Notification queue unavailable')) };
     const matchingGateway = { emitServiceStarted: vi.fn() };
     const service = new BookingsService(
       prisma as never,
@@ -2103,7 +2193,7 @@ describe('BookingsService service completion', () => {
       }),
     };
     const matchingGateway = { emitServiceCompleted: vi.fn() };
-    const notifications = { create: vi.fn() };
+    const notifications = { create: vi.fn().mockRejectedValue(new Error('Notification queue unavailable')) };
     const earnings = { createForCompletedBooking: vi.fn() };
     const payments = {
       confirmGatewayCaptureForBookingCompletion: vi.fn().mockResolvedValue({}),
@@ -2120,12 +2210,18 @@ describe('BookingsService service completion', () => {
       providerAvailabilityLifecycle as never,
     );
 
-    await service.complete('booking-1', 'partner-user-1', {
-      lat: 10.7769,
-      lng: 106.7009,
-    });
+    await expect(
+      service.complete('booking-1', 'partner-user-1', {
+        lat: 10.7769,
+        lng: 106.7009,
+      }),
+    ).resolves.toEqual(expect.any(Object));
 
     expect(providerAvailabilityLifecycle.reconcile).toHaveBeenCalledWith('partner-1');
+    expect(matchingGateway.emitServiceCompleted).toHaveBeenCalledWith(
+      'booking-1',
+      expect.objectContaining({ event: 'service.completed' }),
+    );
     expect(payments.confirmGatewayCaptureForBookingCompletion).toHaveBeenCalledWith(
       'partner-user-1',
       'booking-1',

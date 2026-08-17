@@ -74,6 +74,7 @@ describe('booking participant helpers', () => {
         status: ParticipantStatus.JOINED,
         distanceMeters: 1200,
         providerStatusAtJoin: ProviderStatus.ONLINE_AVAILABLE,
+        respondedAt,
       },
     });
   });

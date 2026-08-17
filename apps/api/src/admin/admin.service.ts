@@ -43,6 +43,7 @@ import {
   MonthlyTaxClosingStatus,
   ManualWalletAdjustmentRequestStatus,
   PartnerBankDepositRequestStatus,
+  PaymentAdminOperationStatus,
   PayoutBatchStatus,
   PaymentMethod,
   PaymentFeePayer,
@@ -176,11 +177,13 @@ import { adminPayoutBankOutflowReconciliationCteSql } from './admin-payout-bank-
 import { paymentCaptureSourceStatuses, transitionPaymentStatus } from '../payments/payment-status-transition';
 import { customerWalletBookingLockKey } from '../payments/customer-wallet-payment';
 import { PaymentsService } from '../payments/payments.service';
+import { MatchingGateway } from '../matching/matching.gateway';
 import { REQUIRED_KYC_DOCUMENT_TYPES } from '../provider-onboarding/provider-onboarding.policy';
 import {
   PROVIDER_AVAILABILITY_TIMEZONE,
   resolveProviderAvailability,
 } from '../providers/provider-availability';
+import { ProviderAvailabilityLifecycleService } from '../providers/provider-availability-lifecycle.service';
 import {
   publicProviderIdentityWhere,
   REQUIRED_PUBLIC_BOOKING_DOCUMENT_TYPES,
@@ -3563,7 +3566,29 @@ export class AdminService {
     private readonly adminPushCampaignQueue?: Queue,
     @Optional() private readonly config?: ConfigService,
     @Optional() private readonly socketAuth?: SocketAuthService,
+    @Optional() private readonly matchingGateway?: MatchingGateway,
+    @Optional() private readonly providerAvailabilityLifecycle?: ProviderAvailabilityLifecycleService,
   ) {}
+
+  private async runPostCommitBookingEffects(
+    bookingId: string,
+    effects: Array<{ label: string; run: () => Promise<unknown> }>,
+  ) {
+    await Promise.all(
+      effects.map(async (effect) => {
+        try {
+          await effect.run();
+        } catch (error) {
+          this.logger.error(
+            `Admin booking ${bookingId} committed, but post-commit effect ${effect.label} failed: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+            error instanceof Error ? error.stack : undefined,
+          );
+        }
+      }),
+    );
+  }
 
   matchingPreview(referenceBookingId?: string) {
     return buildAdminMatchingPreview(
@@ -15833,6 +15858,7 @@ export class AdminService {
         ? 'No-show marked; evidence-assisted admin review active, verify evidence before closeout.'
         : 'No-show requires payment and customer communication review.');
     const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "Booking" WHERE "id" = ${bookingId} FOR UPDATE`);
       const booking = await tx.booking.findUniqueOrThrow({
         where: { id: bookingId },
         select: {
@@ -15844,6 +15870,25 @@ export class AdminService {
       });
       if (!noShowEligibleStatuses.includes(booking.status)) {
         throw new BadRequestException(`Booking status ${booking.status} cannot be marked as no-show`);
+      }
+      const activePaymentOperation = await tx.paymentAdminOperationClaim.findFirst({
+        where: {
+          payment: { bookingId },
+          status: {
+            in: [
+              PaymentAdminOperationStatus.IN_PROGRESS,
+              PaymentAdminOperationStatus.REVIEW_REQUIRED,
+            ],
+          },
+        },
+        select: { id: true, status: true },
+      });
+      if (activePaymentOperation) {
+        throw new ConflictException({
+          code: 'BOOKING_PAYMENT_OPERATION_IN_PROGRESS',
+          message: 'A payment operation is in progress for this booking. Reload before marking no-show.',
+          operationClaimId: activePaymentOperation.id,
+        });
       }
       const notes = appendDatedAdminNote(
         booking.notes,
@@ -15894,15 +15939,6 @@ export class AdminService {
       return result;
     });
 
-    await this.notifications.create({
-      userId: updated.customerProfile.userId,
-      targetRole: Role.CUSTOMER,
-      type: 'booking.no_show',
-      title: 'No-show under review',
-      body: 'HANDS operations marked this booking as no-show. Payment and support review is pending.',
-      data: { bookingId, reason, noShowPolicy },
-    });
-
     const partnerUserIds = new Set<string>();
     if (updated.selectedProvider?.userId) {
       partnerUserIds.add(updated.selectedProvider.userId);
@@ -15916,18 +15952,53 @@ export class AdminService {
       }
     }
 
-    await Promise.all(
-      [...partnerUserIds].map((userId) =>
-        this.notifications.create({
-          userId,
-          targetRole: Role.PROVIDER,
-          type: 'booking.no_show',
-          title: 'Booking marked no-show',
-          body: 'HANDS operations marked this booking as no-show. Check the booking note before fee or payout follow-up.',
-          data: { bookingId, reason, noShowPolicy },
-        }),
-      ),
-    );
+    await this.runPostCommitBookingEffects(bookingId, [
+      { label: 'matching-close', run: () => this.redisState.closeMatching(bookingId) },
+      ...(updated.selectedProvider?.id && this.providerAvailabilityLifecycle
+        ? [
+            {
+              label: 'partner-availability-reconcile',
+              run: () => this.providerAvailabilityLifecycle!.reconcile(updated.selectedProvider!.id),
+            },
+          ]
+        : []),
+      {
+        label: 'customer-notification',
+        run: () =>
+          this.notifications.create({
+            userId: updated.customerProfile.userId,
+            targetRole: Role.CUSTOMER,
+            type: 'booking.no_show',
+            title: 'No-show under review',
+            body: 'HANDS operations marked this booking as no-show. Payment and support review is pending.',
+            data: { bookingId, reason, noShowPolicy },
+          }),
+      },
+      {
+        label: 'partner-notifications',
+        run: () =>
+          Promise.all(
+            [...partnerUserIds].map((userId) =>
+              this.notifications.create({
+                userId,
+                targetRole: Role.PROVIDER,
+                type: 'booking.no_show',
+                title: 'Booking marked no-show',
+                body: 'HANDS operations marked this booking as no-show. Check the booking note before fee or payout follow-up.',
+                data: { bookingId, reason, noShowPolicy },
+              }),
+            ),
+          ),
+      },
+      ...(this.matchingGateway
+        ? [
+            {
+              label: 'no-show-realtime',
+              run: () => this.matchingGateway!.emitBookingExpired(bookingId, updated),
+            },
+          ]
+        : []),
+    ]);
 
     return updated;
   }
@@ -16041,7 +16112,7 @@ export class AdminService {
           { requestedByAdminId: actorId, source: 'ADMIN_MATCHING_EXPIRED' },
         )
       : null;
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.booking.update({
         where: { id: bookingId },
         data: {
@@ -16079,6 +16150,15 @@ export class AdminService {
       }, undefined, tx);
       return updated;
     });
+    if (!result.paymentClosureRetry && this.matchingGateway) {
+      await this.runPostCommitBookingEffects(bookingId, [
+        {
+          label: 'expiration-realtime',
+          run: () => this.matchingGateway!.emitBookingExpired(bookingId, updated),
+        },
+      ]);
+    }
+    return updated;
   }
 
   async closeoutCompletedBooking(actorId: string, bookingId: string, input: { note?: string }) {

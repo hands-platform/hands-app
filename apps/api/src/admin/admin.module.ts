@@ -3,12 +3,14 @@ import { forwardRef, Module } from '@nestjs/common';
 import { EarningsModule } from '../earnings/earnings.module';
 import { FilesModule } from '../files/files.module';
 import { BOOKING_TIMEOUT_QUEUE_NAME } from '../matching/booking-timeout.queue';
+import { MatchingModule } from '../matching/matching.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ADMIN_PUSH_CAMPAIGN_QUEUE_NAME } from '../notifications/admin-push-campaign.queue';
 import { NOTIFICATION_SEND_QUEUE_NAME } from '../notifications/notification-send.queue';
 import { PAYMENT_REFUND_STATUS_QUEUE_NAME } from '../payments/payment-refund-status.queue';
 import { PAYMENT_STATUS_CHECK_QUEUE_NAME } from '../payments/payment-status.queue';
 import { PaymentsModule } from '../payments/payments.module';
+import { ProvidersModule } from '../providers/providers.module';
 import { ReferralsModule } from '../referrals/referrals.module';
 import { SiteContentModule } from '../site-content/site-content.module';
 import { AdminBackgroundJobsService } from './admin-background-jobs.service';
@@ -33,7 +35,9 @@ import { BankStatementEscalationScheduler } from './bank-statement-escalation.sc
     EarningsModule,
     FilesModule,
     NotificationsModule,
+    forwardRef(() => MatchingModule),
     forwardRef(() => PaymentsModule),
+    ProvidersModule,
     ReferralsModule,
     SiteContentModule,
   ],

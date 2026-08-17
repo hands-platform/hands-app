@@ -220,9 +220,12 @@ describe('admin booking list query', () => {
 
     expect(adminBookingListStatusGroupWhere('no-supply', { matchingDelayBefore })).toEqual({
       status: BookingStatus.OPEN_MATCHING,
-      createdAt: { lte: matchingDelayBefore },
+      openedAt: { lte: matchingDelayBefore },
       participants: {
-        none: { status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] } },
+        none: {
+          respondedAt: { not: null },
+          status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
+        },
       },
     });
     expect(adminBookingListStatusGroupWhere('matched')).toEqual({
@@ -274,7 +277,10 @@ describe('admin booking list query', () => {
     expect(adminBookingListStatusGroupWhere('customer-choice')).toEqual({
       status: BookingStatus.OPEN_MATCHING,
       participants: {
-        some: { status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] } },
+        some: {
+          respondedAt: { not: null },
+          status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
+        },
       },
     });
     expect(adminBookingListStatusGroupWhere('pre-match-cancellations')).toEqual({

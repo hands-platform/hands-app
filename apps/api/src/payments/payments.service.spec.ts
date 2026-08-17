@@ -601,6 +601,25 @@ describe('PaymentsService refunds', () => {
     );
   });
 
+  it('rejects a refund request while the booking lifecycle is still active', async () => {
+    const captured = payment({ method: PaymentMethod.MOMO, status: PaymentStatus.CAPTURED });
+    const adapter = gatewayAdapter(PaymentMethod.MOMO);
+    const { prisma, service } = createService({
+      bookingStatus: BookingStatus.IN_SERVICE,
+      existingPayment: captured,
+      existingRefund: null,
+      momoPaymentAdapter: adapter,
+    });
+
+    await expect(service.requestRefund('admin-1', captured.id)).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'BOOKING_NOT_REFUNDABLE' }),
+    });
+
+    expect(prisma.refund.upsert).not.toHaveBeenCalled();
+    expect(adapter.refund).not.toHaveBeenCalled();
+    expect(prisma.payment.updateMany).not.toHaveBeenCalled();
+  });
+
   it('rejects admin refunds without approval from a different admin', async () => {
     const admin = { writeAudit: vi.fn() };
     const earnings = {
@@ -779,9 +798,20 @@ describe('PaymentsService refunds', () => {
       data: { status: PaymentStatus.REFUNDED },
       where: { id: 'payment-1', status: { in: [PaymentStatus.CAPTURED] } },
     });
-    expect(prisma.booking.update).toHaveBeenCalledWith({
-      data: { status: 'REFUNDED' },
-      where: { id: 'booking-1' },
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'booking-1',
+        status: {
+          in: [
+            BookingStatus.COMPLETED,
+            BookingStatus.CANCELLED,
+            BookingStatus.NO_SHOW,
+            BookingStatus.EXPIRED,
+            BookingStatus.REFUNDED,
+          ],
+        },
+      },
+      data: { status: BookingStatus.REFUNDED },
     });
     expect(prisma.$queryRaw).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -1803,6 +1833,7 @@ function createService({
   cashPaymentAdapter,
   momoPaymentAdapter,
   vnpayPaymentAdapter,
+  bookingStatus = BookingStatus.COMPLETED,
 }: {
   admin?: { writeAudit: ReturnType<typeof vi.fn> };
   earnings?: { cancelForRefund: ReturnType<typeof vi.fn> };
@@ -1816,6 +1847,7 @@ function createService({
   cashPaymentAdapter?: ReturnType<typeof cashAdapter>;
   momoPaymentAdapter?: ReturnType<typeof gatewayAdapter>;
   vnpayPaymentAdapter?: ReturnType<typeof gatewayAdapter>;
+  bookingStatus?: BookingStatus;
 }) {
   const findUnique = vi.fn();
   if (notificationLookupPayment) {
@@ -1834,8 +1866,9 @@ function createService({
       updateMany: vi.fn().mockResolvedValue({ count: updateCount }),
     },
     booking: {
-      findUniqueOrThrow: vi.fn().mockResolvedValue({ customerProfileId: 'customer-1' }),
+      findUniqueOrThrow: vi.fn().mockResolvedValue({ customerProfileId: 'customer-1', status: bookingStatus }),
       update: vi.fn(),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     customerWalletLedgerEntry: {
       findUnique: vi.fn().mockResolvedValue({

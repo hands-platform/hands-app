@@ -45,6 +45,7 @@ export function bookingParticipantJoinUpsert(input: {
       status: ParticipantStatus.JOINED,
       distanceMeters: input.distanceMeters,
       providerStatusAtJoin: input.providerStatusAtJoin,
+      respondedAt: input.respondedAt ?? new Date(),
     },
   };
 }

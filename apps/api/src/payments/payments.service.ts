@@ -111,6 +111,14 @@ const paymentAdminOperationClaimReplaySelect = {
   status: true,
 } satisfies Prisma.PaymentAdminOperationClaimSelect;
 
+const REFUND_BOOKING_SOURCE_STATUSES = [
+  BookingStatus.COMPLETED,
+  BookingStatus.CANCELLED,
+  BookingStatus.NO_SHOW,
+  BookingStatus.EXPIRED,
+  BookingStatus.REFUNDED,
+] as const;
+
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
@@ -732,6 +740,7 @@ export class PaymentsService {
       if (current.status !== PaymentStatus.CAPTURED) {
         throw paymentTransitionConflict(paymentId, current.status, PaymentStatus.REFUNDED);
       }
+      await this.assertBookingCanBeRefunded(tx, current.bookingId);
 
       const createData = paymentRefundRequestCreateData({
         amount: current.amount,
@@ -803,6 +812,7 @@ export class PaymentsService {
       if (current.status !== PaymentStatus.CAPTURED) {
         throw paymentTransitionConflict(paymentId, current.status, PaymentStatus.REFUNDED);
       }
+      await this.assertBookingCanBeRefunded(tx, current.bookingId);
       const refund = await tx.refund.findUnique({ where: { paymentId } });
       if (!refund) {
         throw new ConflictException('Payment refund must be requested before finance approval');
@@ -1082,6 +1092,7 @@ export class PaymentsService {
         select: { bookingId: true },
       });
       await lockPaymentBookingLifecycle(tx, paymentBooking.bookingId);
+      await this.assertBookingCanBeRefunded(tx, paymentBooking.bookingId);
       const transition = await transitionPaymentStatus(tx, {
         data: { status: PaymentStatus.REFUNDED },
         fromStatuses: [PaymentStatus.CAPTURED],
@@ -1089,10 +1100,18 @@ export class PaymentsService {
         paymentId,
         targetStatus: PaymentStatus.REFUNDED,
       });
-      await tx.booking.update({
-        where: { id: transition.payment.bookingId },
+      const bookingTransition = await tx.booking.updateMany({
+        where: {
+          id: transition.payment.bookingId,
+          status: { in: [...REFUND_BOOKING_SOURCE_STATUSES] },
+        },
         data: { status: BookingStatus.REFUNDED },
       });
+      if (bookingTransition.count !== 1) {
+        throw new ConflictException(
+          `Booking ${transition.payment.bookingId} changed while refund finalization was running`,
+        );
+      }
       const refundTransition = await tx.refund.updateMany({
         where: { id: refund.id, status: 'GATEWAY_CONFIRMED' },
         data: {
@@ -1139,6 +1158,22 @@ export class PaymentsService {
     await this.notifyPaymentUpdated(payment.id);
 
     return payment;
+  }
+
+  private async assertBookingCanBeRefunded(
+    client: Pick<Prisma.TransactionClient, 'booking'>,
+    bookingId: string,
+  ) {
+    const booking = await client.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+      select: { status: true },
+    });
+    if (!REFUND_BOOKING_SOURCE_STATUSES.includes(booking.status as (typeof REFUND_BOOKING_SOURCE_STATUSES)[number])) {
+      throw new ConflictException({
+        code: 'BOOKING_NOT_REFUNDABLE',
+        message: `Booking ${bookingId} cannot be refunded from status ${booking.status}`,
+      });
+    }
   }
 
   private async tryScheduleRefundStatusCheck(refundId: string) {

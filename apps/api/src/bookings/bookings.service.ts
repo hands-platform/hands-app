@@ -1002,9 +1002,20 @@ export class BookingsService {
       policy: input.matchingPolicy,
       payload: bookingOpenMatchingPayload(input.matchingPolicy, input.eligibleBackupProviderCount),
     });
-    await this.scheduleBookingPaymentStatusCheck(input.booking);
-    await this.matching.registerActiveBooking(input.booking.id, result);
-    await this.matching.scheduleBookingTimeout(input.booking.id, input.timeoutAt);
+    await this.runPostCommitBookingEffects(input.booking.id, [
+      {
+        label: 'payment-status-check-schedule',
+        run: () => this.scheduleBookingPaymentStatusCheck(input.booking),
+      },
+      {
+        label: 'matching-register',
+        run: () => this.matching.registerActiveBooking(input.booking.id, result),
+      },
+      {
+        label: 'matching-timeout-schedule',
+        run: () => this.matching.scheduleBookingTimeout(input.booking.id, input.timeoutAt),
+      },
+    ]);
     return result;
   }
 
@@ -1019,16 +1030,22 @@ export class BookingsService {
     matchingPolicy: MatchingPolicy;
     eligibleBackupProviders: BackupProviderNotificationInput['providers'];
   }) {
-    await this.announceOpenBooking(input);
-    await this.notifyBackupProvidersAndRecordTrace({
-      stage: 'initial_open',
-      bookingId: input.bookingId,
-      providers: input.eligibleBackupProviders,
-      backupProviderRadiusMeters: input.matchingPolicy.backupProviderRadiusMeters,
-      backupOpenMode: input.matchingPolicy.backupOpenMode,
-      backupProviderInvitationLimit: input.matchingPolicy.backupProviderInvitationLimit,
-      matchingPayload: input.matchingPayload,
-    });
+    await this.runPostCommitBookingEffects(input.bookingId, [
+      { label: 'open-notifications-realtime', run: () => this.announceOpenBooking(input) },
+      {
+        label: 'backup-provider-notifications',
+        run: () =>
+          this.notifyBackupProvidersAndRecordTrace({
+            stage: 'initial_open',
+            bookingId: input.bookingId,
+            providers: input.eligibleBackupProviders,
+            backupProviderRadiusMeters: input.matchingPolicy.backupProviderRadiusMeters,
+            backupOpenMode: input.matchingPolicy.backupOpenMode,
+            backupProviderInvitationLimit: input.matchingPolicy.backupProviderInvitationLimit,
+            matchingPayload: input.matchingPayload,
+          }),
+      },
+    ]);
   }
 
   private async createOpenMatchingBookingRecord(input: {
@@ -1239,6 +1256,26 @@ export class BookingsService {
         data: { status: BookingStatus.CREATED },
       });
       throw error;
+    }
+
+    const currentBooking = await this.prisma.booking.findUnique({
+      where: { id: booking.id },
+      select: { selectedProviderId: true, status: true },
+    });
+    if (
+      !currentBooking ||
+      currentBooking.status !== BookingStatus.OPEN_MATCHING ||
+      currentBooking.selectedProviderId
+    ) {
+      await this.runPostCommitBookingEffects(booking.id, [
+        { label: 'stale-recovery-matching-close', run: () => this.matching.closeBooking(booking.id) },
+      ]);
+      return {
+        skipped: true,
+        reason: 'BOOKING_NO_LONGER_OPEN',
+        bookingId,
+        status: currentBooking?.status ?? null,
+      };
     }
 
     await this.announceInitialOpenMatchingBooking({
@@ -2444,22 +2481,26 @@ export class BookingsService {
     providerUserId?: string;
     chatRoomId?: string;
   }) {
-    await this.notifications.create(
-      serviceStartedCustomerNotification({
-        userId: input.customerUserId,
-        bookingId: input.bookingId,
-        chatRoomId: input.chatRoomId,
-      }),
-    );
-    if (input.providerUserId) {
-      await this.notifications.create(
-        serviceStartedProviderNotification({
-          userId: input.providerUserId,
+    await Promise.all([
+      this.notifications.create(
+        serviceStartedCustomerNotification({
+          userId: input.customerUserId,
           bookingId: input.bookingId,
           chatRoomId: input.chatRoomId,
         }),
-      );
-    }
+      ),
+      ...(input.providerUserId
+        ? [
+            this.notifications.create(
+              serviceStartedProviderNotification({
+                userId: input.providerUserId,
+                bookingId: input.bookingId,
+                chatRoomId: input.chatRoomId,
+              }),
+            ),
+          ]
+        : []),
+    ]);
   }
 
   private async notifyCustomerServiceCompleted(customerUserId: string, bookingId: string) {
@@ -2736,7 +2777,12 @@ export class BookingsService {
       allowedPreviousStatuses: allowedPreviousStatuses ?? [booking.status],
     });
     if (status === BookingStatus.ARRIVED) {
-      await this.matchingGateway.emitProviderArrived(bookingId, updated);
+      await this.runPostCommitBookingEffects(bookingId, [
+        {
+          label: 'arrival-realtime',
+          run: () => this.matchingGateway.emitProviderArrived(bookingId, updated),
+        },
+      ]);
     }
     return updated;
   }
@@ -3078,13 +3124,22 @@ export class BookingsService {
     chatRoomId?: string;
     matchingPayload: unknown;
   }) {
-    await this.notifyServiceStarted({
-      bookingId: input.bookingId,
-      customerUserId: input.customerUserId,
-      providerUserId: input.providerUserId,
-      chatRoomId: input.chatRoomId,
-    });
-    await this.matchingGateway.emitServiceStarted(input.bookingId, input.matchingPayload);
+    await this.runPostCommitBookingEffects(input.bookingId, [
+      {
+        label: 'service-start-notifications',
+        run: () =>
+          this.notifyServiceStarted({
+            bookingId: input.bookingId,
+            customerUserId: input.customerUserId,
+            providerUserId: input.providerUserId,
+            chatRoomId: input.chatRoomId,
+          }),
+      },
+      {
+        label: 'service-start-realtime',
+        run: () => this.matchingGateway.emitServiceStarted(input.bookingId, input.matchingPayload),
+      },
+    ]);
   }
 
   async complete(
@@ -3348,17 +3403,36 @@ export class BookingsService {
     selectedProviderUserId?: string;
     matchingPayload: unknown;
   }) {
-    const customerUserId = await this.getCustomerUserIdForBooking(input.bookingId);
-    await this.notifyCustomerServiceCompleted(customerUserId, input.bookingId);
-    if (input.selectedProviderUserId) {
-      await this.notifyProviderEarningCreated(input.selectedProviderUserId, input.bookingId);
-      await this.notifyProviderFirstRevenuePayoutSetup(
-        input.providerProfileId,
-        input.selectedProviderUserId,
-        input.bookingId,
-      );
-    }
-    await this.matchingGateway.emitServiceCompleted(input.bookingId, input.matchingPayload);
+    await this.runPostCommitBookingEffects(input.bookingId, [
+      {
+        label: 'service-completed-customer-notification',
+        run: async () => {
+          const customerUserId = await this.getCustomerUserIdForBooking(input.bookingId);
+          await this.notifyCustomerServiceCompleted(customerUserId, input.bookingId);
+        },
+      },
+      ...(input.selectedProviderUserId
+        ? [
+            {
+              label: 'earning-created-notification',
+              run: () => this.notifyProviderEarningCreated(input.selectedProviderUserId!, input.bookingId),
+            },
+            {
+              label: 'first-revenue-payout-setup-notification',
+              run: () =>
+                this.notifyProviderFirstRevenuePayoutSetup(
+                  input.providerProfileId,
+                  input.selectedProviderUserId!,
+                  input.bookingId,
+                ),
+            },
+          ]
+        : []),
+      {
+        label: 'service-completed-realtime',
+        run: () => this.matchingGateway.emitServiceCompleted(input.bookingId, input.matchingPayload),
+      },
+    ]);
   }
 
   private async notifyProviderFirstRevenuePayoutSetup(

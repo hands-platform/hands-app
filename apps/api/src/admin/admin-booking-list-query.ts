@@ -373,15 +373,21 @@ export function adminBookingListStatusGroupWhere(
       return {
         status: BookingStatus.OPEN_MATCHING,
         participants: {
-          some: { status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] } },
+          some: {
+            respondedAt: { not: null },
+            status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
+          },
         },
       };
     case 'no-supply':
       return {
         status: BookingStatus.OPEN_MATCHING,
-        createdAt: { lte: adminBookingMatchingDelayBefore(options) },
+        openedAt: { lte: adminBookingMatchingDelayBefore(options) },
         participants: {
-          none: { status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] } },
+          none: {
+            respondedAt: { not: null },
+            status: { in: [ParticipantStatus.JOINED, ParticipantStatus.ACCEPTED] },
+          },
         },
       };
     case 'handoff-repair':

@@ -26,6 +26,7 @@ import {
   PartnerBankDepositRequestStatus,
   ParticipantStatus,
   PayoutBatchStatus,
+  PaymentAdminOperationStatus,
   PaymentStatus,
   CompanyBankTransactionType,
   PaymentFeePayer,
@@ -429,6 +430,8 @@ function createAdminService(
     redisState?: unknown;
     referrals?: unknown;
     socketAuth?: unknown;
+    matchingGateway?: unknown;
+    providerAvailabilityLifecycle?: unknown;
   } = {},
 ) {
   const prismaClient = prisma as {
@@ -446,6 +449,9 @@ function createAdminService(
     };
     providerWalletLedgerEntry?: {
       groupBy?: ReturnType<typeof vi.fn>;
+    };
+    paymentAdminOperationClaim?: {
+      findFirst?: ReturnType<typeof vi.fn>;
     };
     monthlyTaxClosing?: {
       findFirst?: ReturnType<typeof vi.fn>;
@@ -496,6 +502,8 @@ function createAdminService(
   prismaClient.customerWalletLedgerEntry.groupBy ??= vi.fn().mockResolvedValue([]);
   prismaClient.providerWalletLedgerEntry ??= {};
   prismaClient.providerWalletLedgerEntry.groupBy ??= vi.fn().mockResolvedValue([]);
+  prismaClient.paymentAdminOperationClaim ??= {};
+  prismaClient.paymentAdminOperationClaim.findFirst ??= vi.fn().mockResolvedValue(null);
   prismaClient.monthlyTaxClosing ??= {};
   prismaClient.monthlyTaxClosing.findFirst ??= vi.fn().mockResolvedValue({ status: 'DRAFT' });
   prismaClient.operationalPolicySetting ??= {};
@@ -555,6 +563,8 @@ function createAdminService(
     (deps.campaignQueue ?? undefined) as never,
     (deps.config ?? undefined) as never,
     (deps.socketAuth ?? undefined) as never,
+    (deps.matchingGateway ?? undefined) as never,
+    (deps.providerAvailabilityLifecycle ?? undefined) as never,
   );
 }
 
@@ -652,7 +662,9 @@ describe('AdminService no-show concurrency', () => {
       $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(prisma)),
     };
     const notifications = { create: vi.fn().mockResolvedValue({ id: 'notification-1' }) };
-    const service = createAdminService(prisma, { notifications });
+    const redisState = { closeMatching: vi.fn().mockResolvedValue(undefined) };
+    const matchingGateway = { emitBookingExpired: vi.fn().mockResolvedValue(undefined) };
+    const service = createAdminService(prisma, { matchingGateway, notifications, redisState });
 
     await expect(
       service.markBookingNoShow('admin-1', currentBooking.id, { reason: 'Evidence reviewed' }),
@@ -668,6 +680,77 @@ describe('AdminService no-show concurrency', () => {
     expect(prisma.bookingOpsTask.upsert).toHaveBeenCalledOnce();
     expect(prisma.adminAuditLog.create).toHaveBeenCalledOnce();
     expect(notifications.create).toHaveBeenCalledOnce();
+    expect(redisState.closeMatching).toHaveBeenCalledWith(currentBooking.id);
+    expect(matchingGateway.emitBookingExpired).toHaveBeenCalledWith(currentBooking.id, updatedBooking);
+  });
+
+  it('blocks no-show while a booking completion payment operation is active', async () => {
+    const prisma = {
+      adminAuditLog: { create: vi.fn() },
+      booking: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue(currentBooking),
+        updateMany: vi.fn(),
+      },
+      bookingOpsTask: { upsert: vi.fn() },
+      operationalPolicySetting: { findUnique: vi.fn().mockResolvedValue(null) },
+      paymentAdminOperationClaim: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'completion-claim-1',
+          status: PaymentAdminOperationStatus.IN_PROGRESS,
+        }),
+      },
+      $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(prisma)),
+    };
+    const notifications = { create: vi.fn() };
+    const service = createAdminService(prisma, { notifications });
+
+    await expect(service.markBookingNoShow('admin-1', currentBooking.id, {})).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'BOOKING_PAYMENT_OPERATION_IN_PROGRESS' }),
+    });
+
+    expect(prisma.booking.updateMany).not.toHaveBeenCalled();
+    expect(prisma.bookingOpsTask.upsert).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
+    expect(notifications.create).not.toHaveBeenCalled();
+  });
+
+  it('reconciles the selected Partner and still emits realtime when Redis cleanup fails after no-show', async () => {
+    const selectedBooking = {
+      ...updatedBooking,
+      selectedProvider: { id: 'partner-1', userId: 'partner-user-1' },
+    };
+    const prisma = {
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+      booking: {
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValueOnce(currentBooking)
+          .mockResolvedValueOnce(selectedBooking),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      bookingOpsTask: { upsert: vi.fn().mockResolvedValue({ id: 'task-1' }) },
+      operationalPolicySetting: { findUnique: vi.fn().mockResolvedValue(null) },
+      paymentAdminOperationClaim: { findFirst: vi.fn().mockResolvedValue(null) },
+      $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(prisma)),
+    };
+    const notifications = { create: vi.fn().mockResolvedValue({ id: 'notification-1' }) };
+    const redisState = { closeMatching: vi.fn().mockRejectedValue(new Error('Redis unavailable')) };
+    const matchingGateway = { emitBookingExpired: vi.fn().mockResolvedValue(undefined) };
+    const providerAvailabilityLifecycle = { reconcile: vi.fn().mockResolvedValue(undefined) };
+    const service = createAdminService(prisma, {
+      matchingGateway,
+      notifications,
+      providerAvailabilityLifecycle,
+      redisState,
+    });
+
+    await expect(service.markBookingNoShow('admin-1', currentBooking.id, {})).resolves.toEqual(
+      selectedBooking,
+    );
+
+    expect(providerAvailabilityLifecycle.reconcile).toHaveBeenCalledWith('partner-1');
+    expect(matchingGateway.emitBookingExpired).toHaveBeenCalledWith(currentBooking.id, selectedBooking);
+    expect(notifications.create).toHaveBeenCalledTimes(2);
   });
 
   it('rejects a stale no-show decision before task, audit, or notification side effects', async () => {
@@ -10648,6 +10731,7 @@ describe('AdminService query orchestration', () => {
       $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
     };
     const redisState = { closeMatching: vi.fn().mockResolvedValue(undefined) };
+    const matchingGateway = { emitBookingExpired: vi.fn().mockResolvedValue(undefined) };
     const payments = {
       closeUnmatchedBookingPayment: vi.fn().mockResolvedValue({
         payment: { id: 'payment-1', status: PaymentStatus.RELEASED },
@@ -10655,7 +10739,7 @@ describe('AdminService query orchestration', () => {
         released: true,
       }),
     };
-    const service = createAdminService(prisma, { payments, redisState });
+    const service = createAdminService(prisma, { matchingGateway, payments, redisState });
 
     await expect(
       service.expireBooking('admin-1', 'booking-1', { reason: 'Deadline reviewed' }),
@@ -10676,6 +10760,7 @@ describe('AdminService query orchestration', () => {
       }),
     );
     expect(redisState.closeMatching).toHaveBeenCalledWith('booking-1');
+    expect(matchingGateway.emitBookingExpired).toHaveBeenCalledWith('booking-1', updated);
     expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         action: 'booking.expire.manual',
