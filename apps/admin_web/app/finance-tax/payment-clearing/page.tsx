@@ -952,7 +952,7 @@ function paymentClearingTableDescription(
   review: (typeof PAYMENT_CLEARING_REVIEW_LINKS)[number]['review'],
 ) {
   if (review === 'open') {
-    return 'Oldest unmatched payment evidence appears first. Assign one owner, inspect the retained evidence, and resolve it through reconciliation.';
+    return 'Oldest first. Assign an owner, verify evidence, then reconcile.';
   }
   if (review === 'unresolved') {
     return 'Open and partially matched payment evidence is ordered by the selected global sort. Review the remaining amount, owner, and bank evidence before matching.';

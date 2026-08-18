@@ -556,6 +556,7 @@ export default async function PaymentClearingDetailPage({
         title="Bank reconciliation matches"
       >
         <FinanceDataTable
+            ariaLabel="Bank reconciliation matches for this payment clearing"
             emptyMessage="No bank reconciliation matches are linked to this clearing row."
             headers={['Bank transaction', 'Journal entry', 'Counterparty', 'Amount', 'Matched', 'Status']}
             rowCount={matches.length}

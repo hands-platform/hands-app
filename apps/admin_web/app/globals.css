@@ -15311,6 +15311,10 @@ a.action-button-card:hover {
     grid-column: auto;
   }
 
+  .payment-clearing-operations-filter > .admin-filter-panel-body > .finance-list-more-filters:not([open]) > summary > small {
+    display: none;
+  }
+
   .payment-clearing-operations-filter > .admin-filter-panel-body > .finance-list-more-filters[open] {
     grid-column: 1 / -1;
   }

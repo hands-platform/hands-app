@@ -1090,6 +1090,7 @@ export default async function BankReconciliationDetailPage({
         title="Reconciliation matches"
       >
         <FinanceDataTable
+          ariaLabel="Bank transaction reconciliation match history"
           emptyMessage="No reconciliation matches are linked to this bank transaction."
           headers={[
             'Matched source',

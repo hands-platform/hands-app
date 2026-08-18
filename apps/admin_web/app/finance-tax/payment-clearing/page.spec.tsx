@@ -78,6 +78,9 @@ describe('PaymentClearingPage Vuexy links', () => {
     expect(globalCss).toMatch(
       /\.payment-clearing-operations-filter > \.admin-filter-panel-body > \.finance-list-more-filters\[open\]\s*{\s*grid-column: 1 \/ -1;/,
     );
+    expect(globalCss).toMatch(
+      /\.payment-clearing-operations-filter > \.admin-filter-panel-body > \.finance-list-more-filters:not\(\[open\]\) > summary > small\s*{\s*display: none;/,
+    );
   });
 
   it('connects payment evidence to the four-part payment matching workspace', () => {
@@ -141,6 +144,7 @@ describe('PaymentClearingPage Vuexy links', () => {
     expect(source).toContain(".getAll('clearingEntryIds')");
     expect(source).toContain('clearingEntryIds.length > 50');
     expect(source).toContain('name="clearingEntryIds"');
+    expect(source).toContain('Oldest first. Assign an owner, verify evidence, then reconcile.');
   });
 
   it('separates all-date command metrics from the currently filtered table summary', () => {

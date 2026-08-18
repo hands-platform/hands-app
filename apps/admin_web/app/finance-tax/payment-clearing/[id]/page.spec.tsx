@@ -31,6 +31,10 @@ describe('PaymentClearingDetailPage Vuexy links', () => {
     expect(source).toContain('href={detailHref}>Retry');
   });
 
+  it('gives retained reconciliation matches a contextual table name', () => {
+    expect(source).toContain('ariaLabel="Bank reconciliation matches for this payment clearing"');
+  });
+
   it('supports protected owner assignment from the evidence detail', () => {
     expect(source).toContain("readParam(query, 'confirm') === 'review-owner'");
     expect(source).toContain('buildPaymentClearingReviewOwnerOptions');

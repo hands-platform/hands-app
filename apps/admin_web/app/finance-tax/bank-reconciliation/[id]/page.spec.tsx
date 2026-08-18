@@ -162,4 +162,8 @@ describe('BankReconciliationDetailPage Vuexy links', () => {
     expect(source).toContain('Support reference:');
     expect(source).toContain('href={requestedDetailHref}>Retry');
   });
+
+  it('gives retained reconciliation history a contextual table name', () => {
+    expect(source).toContain('ariaLabel="Bank transaction reconciliation match history"');
+  });
 });
