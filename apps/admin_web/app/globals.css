@@ -2537,6 +2537,13 @@ a {
   color: var(--admin-muted);
 }
 
+.finance-evidence-key {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
 .finance-tax-close-cockpit .finance-tax-period-control {
   align-items: center;
   column-gap: 24px;
@@ -6231,6 +6238,24 @@ a.action-button-card:hover {
 }
 
 @media (min-width: 1200px) {
+  .admin-page-header:has(+ .payment-matching-workspace-tabs) {
+    margin-bottom: 8px;
+    padding: 12px 18px;
+  }
+
+  .admin-page-header:has(+ .payment-matching-workspace-tabs) .admin-page-header-copy {
+    gap: 4px;
+  }
+
+  .admin-page-header:has(+ .payment-matching-workspace-tabs) .admin-page-header-copy > p {
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .payment-clearing-command-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .referral-dashboard-filter-form .admin-directory-filter-grid {
     grid-template-columns: minmax(0, 1fr) auto;
   }
@@ -15166,6 +15191,107 @@ a.action-button-card:hover {
   .finance-matching-operations-filter .finance-list-more-filters {
     margin-top: 0;
     padding-block: 10px;
+  }
+
+  .payment-clearing-operations-filter > .admin-filter-panel-header {
+    align-items: center;
+  }
+
+  .payment-clearing-operations-filter .admin-filter-panel-copy {
+    align-items: baseline;
+    display: flex;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .payment-clearing-operations-filter .admin-filter-panel-copy > h2,
+  .payment-clearing-operations-filter .admin-filter-panel-copy > p {
+    margin-bottom: 0;
+  }
+
+  .payment-clearing-operations-filter .admin-filter-panel-copy > p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .payment-clearing-operations-filter > .admin-filter-panel-body {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .payment-clearing-operations-filter .filter-form > .admin-form-action-row {
+    align-self: end;
+    grid-column: auto;
+  }
+
+  .payment-clearing-operations-filter > .admin-filter-panel-body > .finance-list-filter-group-wide {
+    grid-column: auto;
+  }
+
+  .payment-clearing-operations-filter .booking-date-filter-bar.finance-list-filter-group {
+    margin-top: 0;
+    padding-block: 6px;
+  }
+
+  .payment-clearing-operations-filter .finance-list-filter-buttons {
+    flex-wrap: nowrap;
+  }
+
+  .payment-clearing-operations-filter .finance-list-more-filters {
+    grid-column: 1 / -1;
+    padding-block: 6px;
+  }
+
+  .payment-clearing-operations-filter .admin-filter-summary {
+    display: none;
+  }
+
+  .payment-clearing-results-panel {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .payment-clearing-results-panel > .admin-filter-panel-header {
+    align-items: baseline;
+  }
+
+  .payment-clearing-results-panel .admin-filter-panel-copy {
+    align-items: baseline;
+    display: flex;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .payment-clearing-results-panel .admin-filter-panel-copy > h2,
+  .payment-clearing-results-panel .admin-filter-panel-copy > p {
+    margin-bottom: 0;
+  }
+
+  .payment-clearing-results-panel .admin-filter-panel-copy > h2 {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .payment-clearing-results-panel .admin-filter-panel-copy > p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .payment-clearing-results-panel > .admin-filter-panel-body {
+    gap: 8px;
+  }
+
+  .payment-clearing-results-panel .payment-clearing-bulk-assignment {
+    margin-bottom: 0;
+  }
+
+  .payment-clearing-results-panel .payment-clearing-selection-controls {
+    padding-block: 4px;
+  }
+
+  .payment-clearing-results-panel .payment-clearing-evidence-table {
+    margin-top: 0;
   }
 }
 

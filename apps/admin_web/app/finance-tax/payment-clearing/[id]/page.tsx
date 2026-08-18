@@ -223,7 +223,7 @@ export default async function PaymentClearingDetailPage({
       <FinanceTablePanel
         description={
           <>
-            {entry.type} / {shortId(entry.sourceKey)} · Occurred <DateTimeText value={entry.occurredAt} />
+            {entry.type} · Clearing {shortId(entry.id)} · Occurred <DateTimeText value={entry.occurredAt} />
           </>
         }
         resultLabel={entry.status}
@@ -241,7 +241,20 @@ export default async function PaymentClearingDetailPage({
           />
           <FinanceDetailInfoItem label="Payment" value={entry.payment ? `${entry.payment.method} · ${entry.payment.status}` : '-'} />
           <FinanceDetailInfoItem label="Clearing ID" value={entry.id} />
-          <FinanceDetailInfoItem label="Record key" value={entry.sourceKey} />
+          <FinanceDetailInfoItem
+            label="Record key"
+            value={
+              <code className="finance-evidence-key" title={entry.sourceKey}>
+                {entry.sourceKey.split(':').map((segment, index, segments) => (
+                  <span key={`${segment}-${index}`}>
+                    {segment}
+                    {index < segments.length - 1 ? ':' : null}
+                    <wbr />
+                  </span>
+                ))}
+              </code>
+            }
+          />
           <FinanceDetailInfoItem
             label="Current owner"
             value={

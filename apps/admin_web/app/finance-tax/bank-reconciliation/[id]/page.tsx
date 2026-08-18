@@ -299,7 +299,24 @@ export default async function BankReconciliationDetailPage({
                 </StatusBadge>
                 <DateTimeText value={candidate.occurredAt} />
                 <span className="muted">
-                  {(candidate.eligible ? candidate.reasons : candidate.exclusionReasons ?? []).join(' · ')}
+                  {candidate.eligible ? (
+                    <>
+                      {candidate.transferRefMatch
+                        ? 'Transfer reference matches the payment provider reference · '
+                        : null}
+                      {candidate.exactAmount ? (
+                        'Remaining clearing amount matches exactly'
+                      ) : (
+                        <>
+                          <MoneyText amount={candidate.amountDelta} currency={candidate.currency} /> amount gap
+                        </>
+                      )}
+                      {' · '}
+                      {candidate.dateDeltaDays} day date gap
+                    </>
+                  ) : (
+                    (candidate.exclusionReasons ?? []).join(' · ')
+                  )}
                 </span>
               </AdminTableSubstack>
             </td>

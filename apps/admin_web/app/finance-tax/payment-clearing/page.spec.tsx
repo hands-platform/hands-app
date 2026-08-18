@@ -41,8 +41,12 @@ describe('PaymentClearingPage Vuexy links', () => {
   });
 
   it('keeps the finance list compact by avoiding duplicated page-template metrics', () => {
-    expect(source).toContain('<FinanceListCommandBoard ariaLabel="Clearing command board">');
-    expect(source).not.toContain('metrics={[');
+    expect(source).toContain('ariaLabel="Clearing command board"');
+    expect(source).toContain('<AdminMiniMetricStrip');
+    expect(source).toContain('className="admin-mb-16 payment-clearing-command-strip"');
+    expect(source).toContain('payment-clearing-operations-filter');
+    expect(source).toContain('className="payment-clearing-results-panel"');
+    expect(source).not.toContain('<FinanceListCommandBoard');
   });
 
   it('connects payment evidence to the four-part payment matching workspace', () => {
@@ -70,10 +74,10 @@ describe('PaymentClearingPage Vuexy links', () => {
     expect(source).toContain("(['all', 'mine', 'unassigned', 'assigned'] as const)");
     expect(source).toContain("id: 'review-owner'");
     expect(source).toContain("'Review owner'");
-    expect(source).toContain('label="Unassigned reviews"');
-    expect(source).toContain('label="Open exposure"');
-    expect(source).toContain('label="Over SLA"');
-    expect(source).toContain('label="Terminal outcomes"');
+    expect(source).toContain('Unassigned · ${paymentClearingOldestScope(');
+    expect(source).toContain("label: 'Open exposure · All dates'");
+    expect(source).toContain('Over 48h · ${paymentClearingOldestScope(');
+    expect(source).toContain("label: 'Cleared / reversed · All dates'");
     expect(source).not.toContain('Cleared ratio');
     expect(source).toContain('/review-assignment`');
     expect(source).toContain('The status and original age do not change.');
@@ -202,10 +206,10 @@ describe('PaymentClearingPage Vuexy links', () => {
       searchParams: Promise.resolve({ range: 'today' }),
     }));
 
-    expect(markup).toContain('Unassigned reviews');
+    expect(markup).toContain('Unassigned ·');
     expect(markup).toContain('Open exposure');
-    expect(markup).toContain('Over SLA');
-    expect(markup).toContain('Terminal outcomes');
+    expect(markup).toContain('Over 48h');
+    expect(markup).toContain('Cleared / reversed');
     expect(markup).not.toContain('Cleared ratio');
     expect(markup).toContain('All unresolved payment evidence');
     expect(markup).toContain('Review owner workload');

@@ -134,6 +134,9 @@ describe('BankReconciliationDetailPage Vuexy links', () => {
     expect(source).toContain('No selectable payment clearing candidate available');
     expect(source).toContain('recommended · ${manualReviewPaymentClearingCandidateCount} manual review');
     expect(source).toContain("? 'Not selectable'");
+    expect(source).toContain('<MoneyText amount={candidate.amountDelta} currency={candidate.currency} /> amount gap');
+    expect(source).toContain('{candidate.dateDeltaDays} day date gap');
+    expect(source).not.toContain("candidate.reasons : candidate.exclusionReasons");
   });
 
   it('keeps candidate evidence searchable before the review owner gate is satisfied', () => {

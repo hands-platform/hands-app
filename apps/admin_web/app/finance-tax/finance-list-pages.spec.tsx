@@ -446,6 +446,9 @@ describe('finance list pages', () => {
         expect(markup).toContain('booking-settlement-audit-command-strip');
         expect(markup).toContain('Global action required');
         expect(markup).toContain('Amount at risk · global');
+      } else if (_name === 'payment clearing') {
+        expect(markup).toContain('admin-mini-metric-strip admin-mb-16 payment-clearing-command-strip');
+        expect(markup).toContain('card admin-card admin-mini-metric is-');
       } else {
         expect(markup).toContain('finance-list-command-board admin-mb-16');
         expect(markup).not.toContain('usage-overview-command-grid finance-list-command-board');
@@ -460,10 +463,10 @@ describe('finance list pages', () => {
 
       if (_name === 'payment clearing') {
         expect(markup).toContain('Clearing command board');
-        expect(markup).toContain('Unassigned reviews');
+        expect(markup).toContain('Unassigned ·');
         expect(markup).toContain('Open exposure');
-        expect(markup).toContain('Over SLA');
-        expect(markup).toContain('Terminal outcomes');
+        expect(markup).toContain('Over 48h');
+        expect(markup).toContain('Cleared / reversed');
         expect(markup).not.toContain('Cleared ratio');
         expect(markup).toContain('Bank matches 0');
         expect(markup).toContain('money-text money-text-positive');

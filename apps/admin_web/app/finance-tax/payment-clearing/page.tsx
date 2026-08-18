@@ -1,4 +1,3 @@
-import { Archive, CircleDollarSign, Clock3, UserRoundX } from 'lucide-react';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
@@ -22,6 +21,7 @@ import {
   AdminFormShell,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminMiniMetricStrip } from '../../../components/admin-overview-card';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
@@ -34,7 +34,6 @@ import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
 import { financePaymentClearingStatusPill } from '../finance-status-badge-model';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
-import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinanceReviewOwnerWorkloadPanel } from '../finance-review-owner-workload-panel';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { FinanceTablePanel } from '../finance-table-panel';
@@ -284,85 +283,80 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
       />
 
       {paymentClearingReviewNeedsOwner(filters.review) ? (
-      <FinanceListCommandBoard ariaLabel="Clearing command board">
-        <FinanceListCommandCard
-          detail="Open payment evidence without an accountable Finance operator."
-          href={paymentClearingQueueHref(
-            {
+        <AdminMiniMetricStrip
+          ariaLabel="Clearing command board"
+          className="admin-mb-16 payment-clearing-command-strip"
+          metrics={[
+          {
+            href: paymentClearingQueueHref(
+              {
+                ...filters,
+                page: 1,
+                paymentClearingAge: undefined,
+                q: undefined,
+                range: 'all',
+                review: 'open',
+                sort: 'oldest',
+              },
+              'unassigned',
+            ),
+            label: `Unassigned · ${paymentClearingOldestScope(
+              overviewSummary.oldestUnassignedOpenAt,
+              overviewSummary.unassignedCount,
+            )}`,
+            tone: overviewSummary.unassignedCount > 0 ? 'danger' : 'success',
+            value: String(overviewSummary.unassignedCount),
+          },
+          {
+            href: paymentClearingQueueHref({
               ...filters,
               page: 1,
               paymentClearingAge: undefined,
               q: undefined,
               range: 'all',
-              review: 'open',
-              sort: 'oldest',
-            },
-            'unassigned',
-          )}
-          icon={UserRoundX}
-          label="Unassigned reviews"
-          scope={paymentClearingOldestScope(
-            overviewSummary.oldestUnassignedOpenAt,
-            overviewSummary.unassignedCount,
-          )}
-          tone={overviewSummary.unassignedCount > 0 ? 'danger' : 'success'}
-          value={String(overviewSummary.unassignedCount)}
-        />
-        <FinanceListCommandCard
-          detail={`${overviewSummary.openCount + overviewSummary.partiallyClearedCount} unresolved record(s), including partial matches.`}
-          href={paymentClearingQueueHref({
-            ...filters,
-            page: 1,
-            paymentClearingAge: undefined,
-            q: undefined,
-            range: 'all',
-            review: 'unresolved',
-            sort: 'oldest',
-          }, 'all')}
-          icon={CircleDollarSign}
-          label="Open exposure"
-          scope="All dates"
-          tone={unresolvedAmount > 0 ? 'warning' : 'success'}
-          value={<MoneyText amount={unresolvedAmount} currency={overviewSummary.currency} />}
-        />
-        <FinanceListCommandCard
-          detail={`${formatMoney(overviewSummary.over48hAmount, overviewSummary.currency)} remains over the 48-hour review threshold.`}
-          href={paymentClearingQueueHref(
-            {
-              ...filters,
-              page: 1,
-              paymentClearingAge: '48h',
-              q: undefined,
-              range: 'all',
               review: 'unresolved',
               sort: 'oldest',
-            },
-            'all',
-          )}
-          icon={Clock3}
-          label="Over SLA"
-          scope={paymentClearingOldestScope(oldestUnresolvedAt, overviewSummary.openCount + overviewSummary.partiallyClearedCount)}
-          tone={overviewSummary.over48hCount > 0 ? 'danger' : 'success'}
-          value={String(overviewSummary.over48hCount)}
+            }, 'all'),
+            label: 'Open exposure · All dates',
+            tone: unresolvedAmount > 0 ? 'warning' : 'success',
+            value: <MoneyText amount={unresolvedAmount} currency={overviewSummary.currency} />,
+          },
+          {
+            href: paymentClearingQueueHref(
+              {
+                ...filters,
+                page: 1,
+                paymentClearingAge: '48h',
+                q: undefined,
+                range: 'all',
+                review: 'unresolved',
+                sort: 'oldest',
+              },
+              'all',
+            ),
+            label: `Over 48h · ${paymentClearingOldestScope(
+              oldestUnresolvedAt,
+              overviewSummary.openCount + overviewSummary.partiallyClearedCount,
+            )}`,
+            tone: overviewSummary.over48hCount > 0 ? 'danger' : 'success',
+            value: String(overviewSummary.over48hCount),
+          },
+          {
+            href: paymentClearingQueueHref({
+              ...filters,
+              page: 1,
+              paymentClearingAge: undefined,
+              q: undefined,
+              range: 'all',
+              review: 'terminal',
+              sort: 'recent',
+            }, 'all'),
+            label: 'Cleared / reversed · All dates',
+            tone: 'info',
+            value: `${overviewSummary.clearedCount} / ${overviewSummary.reversedCount}`,
+          },
+          ]}
         />
-        <FinanceListCommandCard
-          detail="Terminal records retained for accounting review. Cleared and reversed are shown separately."
-          href={paymentClearingQueueHref({
-            ...filters,
-            page: 1,
-            paymentClearingAge: undefined,
-            q: undefined,
-            range: 'all',
-            review: 'terminal',
-            sort: 'recent',
-          }, 'all')}
-          icon={Archive}
-          label="Terminal outcomes"
-          scope="All dates"
-          tone="info"
-          value={`${overviewSummary.clearedCount} cleared · ${overviewSummary.reversedCount} reversed`}
-        />
-      </FinanceListCommandBoard>
       ) : (
         <AdminInlineNotice className="admin-mb-16" role="status" tone="info">
           Payment matching history retains {overviewSummary.clearedCount} cleared and {overviewSummary.reversedCount}{' '}
@@ -398,7 +392,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
       ) : null}
 
       <AdminFilterPanel
-        className="admin-mb-16 finance-matching-operations-filter"
+        className="admin-mb-16 finance-matching-operations-filter payment-clearing-operations-filter"
         description={paymentClearingFilterDescription(
           filters.review,
           reviewOwner,
@@ -565,6 +559,15 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
       >
         <input name="redirectTo" type="hidden" value={currentQueueHref} />
       <FinanceTablePanel
+        actions={
+          showBulkReviewAssignment ? (
+            <PaymentClearingSelectionControls
+              loadOwnerOptions={loadPaymentClearingReviewOwnerOptions}
+              visibleCount={pagination.rows.length}
+            />
+          ) : null
+        }
+        className="payment-clearing-results-panel"
         grouped
         description={
           assignmentNotice === 'bulk-assigned'
@@ -583,12 +586,6 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
         resultTone={paymentClearingResultTone(filters.review, pagination.totalRows)}
         title={paymentClearingTableTitle(filters.review)}
       >
-        {showBulkReviewAssignment ? (
-          <PaymentClearingSelectionControls
-            loadOwnerOptions={loadPaymentClearingReviewOwnerOptions}
-            visibleCount={pagination.rows.length}
-          />
-        ) : null}
         <FinanceDataTable
           ariaLabel="Payment clearing evidence table"
           emptyMessage="No payment clearing rows match the current filters."
