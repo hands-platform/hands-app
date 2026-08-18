@@ -15216,7 +15216,7 @@ a.action-button-card:hover {
   }
 
   .payment-clearing-operations-filter > .admin-filter-panel-body {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   }
 
   .payment-clearing-operations-filter .filter-form > .admin-form-action-row {
@@ -15225,7 +15225,7 @@ a.action-button-card:hover {
   }
 
   .payment-clearing-operations-filter > .admin-filter-panel-body > .finance-list-filter-group-wide {
-    grid-column: auto;
+    grid-column: 1 / -1;
   }
 
   .payment-clearing-operations-filter .booking-date-filter-bar.finance-list-filter-group {
@@ -15234,7 +15234,8 @@ a.action-button-card:hover {
   }
 
   .payment-clearing-operations-filter .finance-list-filter-buttons {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    overflow-x: visible;
   }
 
   .payment-clearing-operations-filter .finance-list-more-filters {
@@ -15248,6 +15249,7 @@ a.action-button-card:hover {
 
   .payment-clearing-results-panel {
     gap: 8px;
+    grid-template-columns: minmax(0, 1fr);
     padding: 10px;
   }
 
@@ -15280,6 +15282,7 @@ a.action-button-card:hover {
 
   .payment-clearing-results-panel > .admin-filter-panel-body {
     gap: 8px;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .payment-clearing-results-panel .payment-clearing-bulk-assignment {
@@ -15291,7 +15294,25 @@ a.action-button-card:hover {
   }
 
   .payment-clearing-results-panel .payment-clearing-evidence-table {
+    justify-self: stretch;
     margin-top: 0;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+@media (min-width: 1400px) {
+  .payment-clearing-operations-filter > .admin-filter-panel-body {
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 270px) minmax(200px, 220px);
+  }
+
+  .payment-clearing-operations-filter > .admin-filter-panel-body > .finance-list-more-filters {
+    grid-column: auto;
+  }
+
+  .payment-clearing-operations-filter > .admin-filter-panel-body > .finance-list-more-filters[open] {
+    grid-column: 1 / -1;
   }
 }
 

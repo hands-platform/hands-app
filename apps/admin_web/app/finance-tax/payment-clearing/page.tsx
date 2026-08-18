@@ -8,7 +8,7 @@ import type {
   AdminFinanceReviewOwnerWorkloadSummary,
   AdminUser,
 } from '../../../lib/admin-api';
-import { adminGet, adminPostOrThrow } from '../../../lib/admin-api';
+import { adminGet, adminGetResult, adminPostOrThrow } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminInlineNotice } from '../../../components/admin-inline-notice';
@@ -16,6 +16,7 @@ import {
   AdminFormActionRow,
   AdminFormCheckbox,
   AdminFormControlButton,
+  AdminFormControlLink,
   AdminFormSearch,
   AdminFormSelect,
   AdminFormShell,
@@ -23,6 +24,7 @@ import {
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminMiniMetricStrip } from '../../../components/admin-overview-card';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
+import { AdminErrorState } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -84,6 +86,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
   const assignmentNotice = readParam(params, 'assignmentNotice');
   const requestedOwnerConfirmation = readParam(params, 'confirm') === 'review-owner';
   const requestedClearingEntryId = readParam(params, 'clearingEntryId');
+  const currentQueueHref = paymentClearingQueueHref(filters, reviewOwner);
   const overviewFilters = {
     ...filters,
     assigneeAdminId: undefined,
@@ -94,11 +97,11 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
     range: 'all' as const,
     review: 'all' as const,
   };
-  const overviewSummaryPromise = adminGet<AdminBookingPaymentClearingSummary>(
+  const overviewSummaryPromise = adminGetResult<AdminBookingPaymentClearingSummary>(
     buildBookingPaymentClearingSummaryApiHref(overviewFilters),
     emptyBookingPaymentClearingSummary(),
   );
-  const bankOverviewSummaryPromise = adminGet<AdminBankReconciliationSummary>(
+  const bankOverviewSummaryPromise = adminGetResult<AdminBankReconciliationSummary>(
     buildBankReconciliationSummaryApiHref({ ...overviewFilters, review: 'all' }),
     emptyBankReconciliationSummary(),
   );
@@ -113,24 +116,63 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
   const settlementFilters = readBookingSettlementFilters(params);
   const monthlyFilters = readMonthlyTaxClosingFilters(params);
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
-  const [queueSummary, overviewSummary, reviewOwnerSummary, entries, bankOverviewSummary, adminUsers] = await Promise.all([
-    adminGet<AdminBookingPaymentClearingSummary>(
+  const [
+    queueSummaryResult,
+    overviewSummaryResult,
+    reviewOwnerSummaryResult,
+    entriesResult,
+    bankOverviewSummaryResult,
+    adminUsers,
+  ] = await Promise.all([
+    adminGetResult<AdminBookingPaymentClearingSummary>(
       buildBookingPaymentClearingSummaryApiHref(apiFilters),
       emptyBookingPaymentClearingSummary(),
     ),
     overviewSummaryPromise,
     paymentClearingReviewNeedsOwner(filters.review)
-      ? adminGet<AdminFinanceReviewOwnerWorkloadSummary>(
+      ? adminGetResult<AdminFinanceReviewOwnerWorkloadSummary>(
           buildBookingPaymentClearingReviewOwnerSummaryApiHref(apiFilters),
           emptyFinanceReviewOwnerWorkloadSummary(),
         )
-      : Promise.resolve(emptyFinanceReviewOwnerWorkloadSummary()),
-    adminGet<AdminBookingPaymentClearingEntry[]>(buildBookingPaymentClearingApiHref(apiFilters), []),
+      : Promise.resolve({
+          data: emptyFinanceReviewOwnerWorkloadSummary(),
+          errorCode: null,
+          ok: true,
+          requestId: null,
+          status: 200,
+        }),
+    adminGetResult<AdminBookingPaymentClearingEntry[]>(buildBookingPaymentClearingApiHref(apiFilters), []),
     bankOverviewSummaryPromise,
     adminUsersPromise,
   ]);
+  const failedResult = [
+    queueSummaryResult,
+    overviewSummaryResult,
+    reviewOwnerSummaryResult,
+    entriesResult,
+    bankOverviewSummaryResult,
+  ].find((result) => !result.ok);
+  if (failedResult) {
+    const supportReference = failedResult.requestId ? ` Support reference: ${failedResult.requestId}.` : '';
+    return (
+      <AdminPageTemplate
+        description="Payment clearing data could not be loaded from the authoritative Finance API."
+        title="Payment Matching"
+      >
+        <AdminErrorState
+          action={<AdminFormControlLink href={currentQueueHref}>Retry</AdminFormControlLink>}
+          message={`Retry before assigning reviews or making reconciliation decisions.${supportReference}`}
+          title="Payment clearing data unavailable"
+        />
+      </AdminPageTemplate>
+    );
+  }
+  const queueSummary = queueSummaryResult.data;
+  const overviewSummary = overviewSummaryResult.data;
+  const reviewOwnerSummary = reviewOwnerSummaryResult.data;
+  const entries = entriesResult.data;
+  const bankOverviewSummary = bankOverviewSummaryResult.data;
   const pagination = buildTaxSettlementServerPagination(entries, filters, queueSummary.count);
-  const currentQueueHref = paymentClearingQueueHref(filters, reviewOwner);
   const requestedEntry = requestedOwnerConfirmation
     ? entries.find((entry) => entry.id === requestedClearingEntryId) ?? null
     : null;

@@ -3,28 +3,35 @@ import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
-import { adminGet } from '../../../lib/admin-api';
+import { adminGet, adminGetResult } from '../../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import PaymentClearingPage, { generateMetadata } from './page';
 
 vi.mock('../../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../../lib/admin-api')>('../../../lib/admin-api');
-  return { ...actual, adminGet: vi.fn() };
+  return { ...actual, adminGet: vi.fn(), adminGetResult: vi.fn() };
 });
 vi.mock('../../../lib/admin-operator-access', () => ({
   getCurrentAdminOperatorAccess: vi.fn(),
 }));
 
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedAdminGetResult = vi.mocked(adminGetResult);
 const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAccess);
 
 describe('PaymentClearingPage Vuexy links', () => {
   const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8');
   const selectionSource = readFileSync(join(__dirname, 'payment-clearing-selection-controls.tsx'), 'utf8');
   const modelSource = readFileSync(join(__dirname, '..', 'tax-settlement-page-model.ts'), 'utf8');
+  const globalCss = readFileSync(join(__dirname, '..', '..', 'globals.css'), 'utf8');
 
   beforeEach(() => {
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => ({
+      data: await mockedAdminGet(href, fallback),
+      ok: true,
+      status: 200,
+    }));
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue({ id: 'finance-admin' } as never);
   });
 
@@ -49,6 +56,30 @@ describe('PaymentClearingPage Vuexy links', () => {
     expect(source).not.toContain('<FinanceListCommandBoard');
   });
 
+  it('keeps desktop payment filters and the result table inside the available content width', () => {
+    expect(globalCss).toMatch(
+      /\.payment-clearing-operations-filter > \.admin-filter-panel-body\s*{\s*grid-template-columns: minmax\(0, 3fr\) minmax\(0, 2fr\);/,
+    );
+    expect(globalCss).toMatch(
+      /\.payment-clearing-operations-filter > \.admin-filter-panel-body > \.finance-list-filter-group-wide\s*{\s*grid-column: 1 \/ -1;/,
+    );
+    expect(globalCss).toMatch(
+      /\.payment-clearing-results-panel > \.admin-filter-panel-body\s*{\s*gap: 8px;\s*grid-template-columns: minmax\(0, 1fr\);/,
+    );
+    expect(globalCss).toMatch(
+      /\.payment-clearing-results-panel\s*{\s*gap: 8px;\s*grid-template-columns: minmax\(0, 1fr\);/,
+    );
+    expect(globalCss).toMatch(
+      /\.payment-clearing-results-panel \.payment-clearing-evidence-table\s*{\s*justify-self: stretch;/,
+    );
+    expect(globalCss).toMatch(
+      /@media \(min-width: 1400px\)[\s\S]*\.payment-clearing-operations-filter > \.admin-filter-panel-body\s*{\s*grid-template-columns: minmax\(0, 1fr\) minmax\(250px, 270px\) minmax\(200px, 220px\);/,
+    );
+    expect(globalCss).toMatch(
+      /\.payment-clearing-operations-filter > \.admin-filter-panel-body > \.finance-list-more-filters\[open\]\s*{\s*grid-column: 1 \/ -1;/,
+    );
+  });
+
   it('connects payment evidence to the four-part payment matching workspace', () => {
     expect(source).toContain('ariaLabel="Payment matching workspace"');
     expect(source).toContain("paymentMatchingTabLabel(\n              'Bank transactions'");
@@ -68,6 +99,30 @@ describe('PaymentClearingPage Vuexy links', () => {
     await expect(generateMetadata({ searchParams: Promise.resolve({ review: 'terminal' }) })).resolves.toEqual({
       title: 'Payment Matching History',
     });
+  });
+
+  it('renders an actionable error instead of zero-value queue data when a list read fails', async () => {
+    mockedAdminGetResult.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/booking-payment-clearing?')) {
+        return {
+          data: fallback,
+          ok: false,
+          requestId: 'req-payment-clearing',
+          status: 503,
+        };
+      }
+      return { data: await mockedAdminGet(href, fallback), ok: true, status: 200 };
+    });
+
+    const markup = renderToStaticMarkup(await PaymentClearingPage({
+      searchParams: Promise.resolve({ age: '48h', range: 'all', review: 'open' }),
+    }));
+
+    expect(markup).toContain('Payment clearing data unavailable');
+    expect(markup).toContain('Retry before assigning reviews or making reconciliation decisions.');
+    expect(markup).toContain('Support reference: req-payment-clearing.');
+    expect(markup).toContain('>Retry<');
+    expect(markup).not.toContain('No payment clearing rows match the current filters.');
   });
 
   it('operates payment clearing as an accountable oldest-first review queue', () => {
